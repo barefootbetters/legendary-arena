@@ -568,8 +568,10 @@ const validateSeqConstraint = (actions: Array<{ seq: number }>): boolean => {
 // hash -> AccountId`, server-side (D-5301 / D-24126); the server never trusts a
 // client-supplied identity or score. A reader that scored from either block
 // would reopen the D-5301 trust hole. They let a portable record SAY who played
-// and under which profile — nothing SCORES from them. This packet is reader-only
-// (`LAGN_VERSION` is not flipped); a future server-producer packet emits them.
+// and under which profile — nothing SCORES from them. WP-406 flipped
+// `LAGN_VERSION` to 1.4.0, and the result-LAGN producer
+// (`GET /api/match/:matchId/result-lagn`) now emits them; readers still accept
+// pre-1.4.0 records that carry neither block.
 
 /**
  * One match participant: which seat, the participant's public id, and an
