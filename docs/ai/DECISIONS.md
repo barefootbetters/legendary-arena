@@ -39371,6 +39371,66 @@ card descriptively carries). **Packet:** WP-640 / EC-675.
 
 Protect this file.
 
+### D-24453 — Result-LAGN 1.5.0 producer: emit `battle_plan` + `result.score` from domain tables, flip the writer, no new blob carve-out (Active 2026-09-04 — WP-641 / EC-676)
+
+**Context.** WP-640 / D-24452 added the LAGN 1.5.0 reader contract — two optional
+DESCRIPTIVE blocks, `battle_plan` (the team's three free-text phases) and a nested
+`result.score` (the end-of-match report card) — but left `LAGN_VERSION` at 1.4.0
+(reader-only). WP-641 is the closing packet of the Battle-Plan / report-card arc:
+the producer that gives those blocks a concrete emitter, plus the writer flip that
+activates them.
+
+**Decision.**
+1. **Writer flip (lockstep).** `LAGN_VERSION` flips `1.4.0 → 1.5.0`
+   (`packages/lagn-spec/src/validator.ts`), with `packages/lagn-spec/package.json`
+   `version` bumped to `1.5.0` in the **same commit** (the EC-422 manifest lock — a
+   split briefly advertises the wrong version). No `migrate.ts` change: the flip
+   makes the registered `1.0.0 → 1.5.0` migration chain reachable on its own. Both
+   LAGN emitters (`/lagn` setup, `/result-lagn`) now stamp 1.5.0; readers still
+   accept every version back to 1.0.0, so no stored record migrates.
+2. **`GET /api/match/:matchId/result-lagn` emits both blocks.** `battle_plan` from
+   `legendary.battle_plan` (WP-635 `readBattlePlan`; the whole block omitted when the
+   row is absent or all three phases are null/empty). `result.score` from the
+   match-level `legendary.competitive_scores` row, resolved
+   `matchId → readReplayHashByMatchId → findCompetitiveScore(replayHash)` (LIMIT 1 —
+   the score runs on the whole reduced final `G`, so any one seat's row serves; the
+   VP/contribution split is the only per-seat part and is display-only, D-4803).
+   `result.score` rides **only** when `result` (whose `outcome` is required) rides;
+   an unscored/casual match (no `competitive_scores` row) **omits** it (the
+   honest-partial posture, like a handleless seat omitted from `players`).
+3. **`grade` is computed at emit time (frozen).** Not stored anywhere — banded fresh
+   via `gradeForFinalScore` (`@legendary-arena/game-engine`, the runtime-safe `.`
+   surface), a frozen snapshot of the operator-tunable bands as they stood at emit
+   time. `par_score` is `score_breakdown.parScore` (jsonb — there is NO `par_score`
+   column); `par_version` is the column.
+4. **No new persistence-boundary carve-out.** Both new reads are DOMAIN-table reads
+   (`legendary.battle_plan`, `legendary.competitive_scores`); the `replay_hash`
+   lookup is the blessed D-24187 `bgio.replay_artifacts` surface. No `state`/`log`/
+   `G`/`ctx` blob read is added; the existing composition (D-24153) + gameover
+   (D-24169) blob reads are unchanged. `competitive_scores` is READ, never written.
+
+**Constraint.** **Descriptive and non-authoritative** — nothing scores, credits,
+ranks, or verifies from the emitted blocks (the D-24214 / D-24215 posture extended).
+Competitive credit stays `matchId → bgio blob → re-reduce → re-verify hash →
+AccountId`, server-side (D-5301 / D-24126); wiring either block back as an input
+would reopen that trust hole. No submission-flow / credit change. The endpoint stays
+guest-readable (a finished match's result is public). §21 / D-11804 TRIGGERED: three
+`api-endpoints.md` rows replaced whole (result-lagn + `/lagn` stamp + the loadouts
+writer-value note).
+
+**Vision.** `00.3 §17.1` (scoring surface — surface-touch, not authority): NG-1..NG-7
+not crossed; determinism untouched (reads only, no re-execution, no RNG/clock).
+
+_Active 2026-09-04 — WP-641 / EC-676. Related: D-24452 (the 1.5.0 reader contract this
+emits); D-24216 (the WP-406 result-LAGN producer + 1.4.0 writer flip this extends);
+D-24214 / D-24215 (the descriptive players/scoring_profile posture this mirrors);
+D-24153 / D-24169 (the existing blob-read carve-outs, unchanged); D-24187 (the
+`replay_hash` artifacts surface); D-5301 / D-24126 (credit stays server-side);
+D-4803 (per-seat VP split is display-only); D-11804 (three api-catalog rows replaced
+whole); EC-422 (the manifest-lockstep precedent). **Packet:** WP-641 / EC-676._
+
+Protect this file.
+
 ### D-24454 — Deck-Reshuffle Notable-Event Overlay (`deckReshuffled`) (Active 2026-09-03 — WP-642 / EC-677)
 
 **Context.** The player's hero deck already reshuffles the discard back into the deck on exhaustion — `drawCardsIntoHand` (`drawCards.logic.ts`, WP-236 / D-24051), exercised at the start-of-turn auto-draw (`game.ts` play-phase `onBegin`) and its observation-harness mirror (`applyOnBeginParity`). The mechanic works. But it was **silent**: no `G.messages` log line, no notable event, no VFX — the deck pip dropped to 0 and refilled on the next draw with no signal. An operator report ("my hero deck isn't being shuffled when it is empty") diagnosed to a feedback gap, not a logic bug (a Loki / Legacy-Virus solo match cycled the deck for 10 turns of full hands — the reshuffle plainly ran).
