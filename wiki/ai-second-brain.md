@@ -633,6 +633,23 @@ navigation-first tiers and the same
 request said "text-to-speech," but a hands-free loop needs both legs; both are
 below.
 
+A spoken request adds a front-end and a back-end around the *unchanged* typed
+path:
+
+```
+Operator speech
+   │  speech → text (STT)
+   ▼
+Open WebUI ─►  LiteLLM  ─►  knowledge-query MCP  ─►  navigation-first retrieval
+   ▲                                                        │  answer + provenance
+   │  text → speech (TTS)                                   ▼
+   └──────────────────  Operator audio  ◄──────────────────┘
+```
+
+Only the STT front-end and TTS back-end are new; the boxed retrieval path is the
+typed path unchanged. That is why voice reopens no retrieval, citation, or
+governance question — it wraps the same engine.
+
 **The chat surface already does this.** Open WebUI — the Preferred chat surface
 ([Proposed stack](#proposed-stack)) — has a hands-free conversation mode built
 in: the operator speaks, the model answers, the reply is read back, and the mic
@@ -644,8 +661,8 @@ re-arms for the next turn. Two properties make it a good fit for this design:
 - Voice mode carries its **own system prompt**, separate from the chat prompts —
   which is the hook the citation problem below needs.
 
-**Three swappable legs, each a config row, not code.** Each leg is chosen per the
-same owned-vs-hosted tension the rest of the platform already navigates:
+**Three swappable legs.** Each is chosen per the same owned-vs-hosted tension the
+rest of the platform already navigates:
 
 | Leg | Local (owned host) | Hosted (quality) |
 |---|---|---|
@@ -653,12 +670,11 @@ same owned-vs-hosted tension the rest of the platform already navigates:
 | Reasoning | the LiteLLM roster | same |
 | Text → speech | Piper or Kokoro behind an OpenAI-shaped endpoint | any OpenAI-compatible `/audio/speech` endpoint |
 
-Both audio legs speak the **same OpenAI-compatible shape** as the model calls,
-so they belong behind LiteLLM for the same reason the
-[endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch) does:
-swapping a voice or a transcriber is a gateway/config change, not a code edit.
-That is *Model Independence* extended one layer out to audio, and wiring it that
-way from the start costs nothing.
+Both audio legs expose the **same OpenAI-compatible shape** as the model calls, so
+they sit behind LiteLLM too — a voice or transcriber swap is a gateway config
+change, not a code edit (*Model Independence*, one layer out to audio), the same
+property the [endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)
+gives the reasoning leg.
 
 **Spoken answers and citable answers are different surfaces.** This is the one
 real design problem voice introduces, and it lands squarely on *Auditability*.
@@ -683,8 +699,8 @@ not on this descriptive page.
 [governance lifecycle](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)
 a natural new inflow, and it inherits the same rule as every other capture: a
 spoken exchange is **Transient**, never promoted to Authoritative without the
-operator sitting down at a keyboard. Speaking to the brain is a retrieval and
-capture act, never a governance one.
+operator sitting down at a keyboard. **Voice is a capture surface, not a
+governance surface.**
 
 > **Sequencing: there is no brain to talk to yet.** The platform is still
 > `status: draft` — nothing described here is running, so voice is a step in the
@@ -1319,7 +1335,12 @@ This is the summary index; the individual gotchas and their nuances live in
   (Tailscale setup, the voice-mode system prompt, do-this-week-vs-after-the-box
   steps). Voice touches **no Locked row** and is **not** a new `DECISIONS.md`
   entry — speech in and speech out are agent-layer pieces, replaceable like
-  LiteLLM and Open WebUI.
+  LiteLLM and Open WebUI. *Same-day presentation polish (review feedback):* added
+  the STT → retrieval → TTS pipeline diagram that shows the boxed retrieval path
+  is the typed path unchanged, tightened repeated "config, not code" phrasing to a
+  single statement, and distilled the Transient rule to a one-line contract —
+  *voice is a capture surface, not a governance surface.* Wording only; no
+  decision changed.
 
 ## Open Questions
 
