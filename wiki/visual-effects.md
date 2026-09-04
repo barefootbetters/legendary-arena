@@ -724,12 +724,16 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > is the **follow-on** — the same engine signal now exists to drive it whenever
 > a VFX WP wires it. The **Dr. Doom** reveal-a-Tech-Hero skip — a third
 > reveal-to-avoid Master Strike producer — now **also fires `strikeBlocked`**
-> (shipped, WP-645 / D-24457; it reuses `masterStrike`). The **one remaining
-> deferred producer** (a future WP that adds it, like `escapeResolved`) is a
-> villain **Ambush** block (the green deflection — no ambush-avoidance mechanic
-> exists yet, so `'ambush'` is *not* a `threatKind` value; a value with no
-> producer is drift). See [Priority tiers](#priority-tiers) and
-> [Decisions Pending](#decisions-pending).
+> (shipped, WP-645 / D-24457; it reuses `masterStrike`). And the **villain
+> Ambush** block — the **green** deflection — now fires too (shipped, WP-646 /
+> D-24458): the `reveal-or-wound` matched-Hero reveal on the `onAmbush` timing
+> adds the `'ambush'` `threatKind`. So **all three reveal-to-avoid threat classes
+> the shield-block effect targets are covered** (Master Strike red / Scheme Twist
+> purple / Ambush green). The remaining *unclaimed* reveal-avoidances are the
+> **`onFight` / `onEscape`** timings of the *same* `reveal-or-wound` handler —
+> each a different threat class that would add its own `threatKind`
+> (`'fight'` / `'escape'`) in a future WP. See [Priority tiers](#priority-tiers)
+> and [Decisions Pending](#decisions-pending).
 
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
@@ -1021,9 +1025,12 @@ right owner.
   [shield-block](#surface-block) beat's overlay-chip half ships; the
   `VfxOverlay` shield burst is the follow-on. The **Dr. Doom** reveal-a-Tech-Hero
   skip (a third `masterStrike` producer) also fires `strikeBlocked` as of
-  **WP-645 / D-24457**. The **one remaining** deferred producer is a villain
-  **Ambush** block, a future WP that adds an `'ambush'` `threatKind` value with
-  its emit site.
+  **WP-645 / D-24457**, and the villain **Ambush** block (the `'ambush'`
+  `threatKind`, the `reveal-or-wound` `onAmbush` reveal) as of **WP-646 /
+  D-24458** — so all three reveal-to-avoid threat classes are covered. The only
+  *unclaimed* reveal-avoidances left are the **`onFight` / `onEscape`** timings
+  of the same `reveal-or-wound` handler, each a future WP adding its own
+  `'fight'` / `'escape'` `threatKind`.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 

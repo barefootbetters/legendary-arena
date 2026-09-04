@@ -335,6 +335,13 @@ describe('composeStrikeBlockedNarrative (WP-644)', () => {
     );
   });
 
+  it('emits the locked ambush sentence (WP-646)', () => {
+    assert.equal(
+      composeStrikeBlockedNarrative('ambush'),
+      'The Ambush was blocked.',
+    );
+  });
+
   it('is byte-stable across calls per threatKind (no drift)', () => {
     assert.equal(
       composeStrikeBlockedNarrative('masterStrike'),
@@ -344,12 +351,18 @@ describe('composeStrikeBlockedNarrative (WP-644)', () => {
       composeStrikeBlockedNarrative('schemeTwist'),
       composeStrikeBlockedNarrative('schemeTwist'),
     );
+    assert.equal(
+      composeStrikeBlockedNarrative('ambush'),
+      composeStrikeBlockedNarrative('ambush'),
+    );
   });
 
-  it('the two threat kinds produce distinct sentences', () => {
-    assert.notEqual(
+  it('the three threat kinds produce distinct sentences (WP-646)', () => {
+    const sentences = new Set([
       composeStrikeBlockedNarrative('masterStrike'),
       composeStrikeBlockedNarrative('schemeTwist'),
-    );
+      composeStrikeBlockedNarrative('ambush'),
+    ]);
+    assert.equal(sentences.size, 3, 'each threat kind has a distinct sentence');
   });
 });

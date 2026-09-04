@@ -130,30 +130,38 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
  * Closed canonical union of the threat classes a `strikeBlocked` event can
  * report (WP-644 / D-24456).
  *
- * Exactly the two producer sites that exist today: a Master Strike avoided
- * (the Magneto reveal-an-X-Men-Hero skip in `mastermindHandlers.ts`) and a
- * Scheme Twist penalty avoided (the reveal-or-punish matched-Hero dodge in
- * `schemeTwistResolvers.ts`). A speculative `'ambush'` value is deliberately
- * NOT added — no ambush-avoidance producer exists, and a value with no emit
- * site is drift; a future ambush-block WP adds the value with its producer
- * together. (Other reveal-to-avoid Master Strike branches — e.g. the Dr. Doom
- * reveal-a-Tech-Hero skip — are a deferred follow-on producer, not a new
- * threat kind: they would also carry `'masterStrike'`.)
+ * The three reveal-to-avoid threat classes the shield-block effect targets,
+ * each with a real producer:
+ *   - `masterStrike` — a Master Strike avoided by revealing a Hero: the Magneto
+ *     reveal-an-X-Men-Hero skip (WP-644) and the Dr. Doom reveal-a-Tech-Hero skip
+ *     (WP-645), both in `mastermindHandlers.ts`.
+ *   - `schemeTwist` — a Scheme Twist penalty avoided by the reveal-or-punish
+ *     matched-Hero dodge in `schemeTwistResolvers.ts` (WP-644).
+ *   - `ambush` — a villain Ambush avoided by the `reveal-or-wound` matched-Hero
+ *     reveal on the `onAmbush` timing, in `villainEffectRevealOrWound`
+ *     (`villain/villainEffects.execute.ts`, WP-646 / D-24458).
+ * The same `reveal-or-wound` handler also fires at the `onFight` / `onEscape`
+ * timings; those reveal-avoidances are a different threat class and are NOT yet
+ * producers — each would add its own value (`'fight'` / `'escape'`) with its emit
+ * site in a future WP. A value with no emit site is drift, so none is added
+ * speculatively.
  */
-export type StrikeBlockThreatKind = 'masterStrike' | 'schemeTwist';
+export type StrikeBlockThreatKind = 'masterStrike' | 'schemeTwist' | 'ambush';
 
 // why: drift-detection array — must match `StrikeBlockThreatKind` exactly
 // (the `notableEvents.types.test.ts` runtime drift assertion checks keyset +
 // length + uniqueness, per WP-563 / D-24372 — a runtime check, never a bare
 // `satisfies`). Mirrors the `SchemeTwistResolverKey` / `SCHEME_TWIST_RESOLVER_KEYS`
-// pair. Two entries: `masterStrike` (Magneto reveal-X-Men strike skip),
-// `schemeTwist` (reveal-or-punish twist dodge).
+// pair. Three entries: `masterStrike` (Magneto + Dr. Doom reveal-Hero strike
+// skips), `schemeTwist` (reveal-or-punish twist dodge), `ambush` (reveal-or-wound
+// onAmbush reveal, WP-646).
 /**
  * All strike-block threat kinds in canonical order. Single source of truth.
  */
 export const STRIKE_BLOCK_THREAT_KINDS: readonly StrikeBlockThreatKind[] = [
   'masterStrike',
   'schemeTwist',
+  'ambush',
 ] as const;
 
 // ---------------------------------------------------------------------------

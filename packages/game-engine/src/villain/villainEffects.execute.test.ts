@@ -102,6 +102,10 @@ function makeG(options: MakeGOptions): LegendaryGameState {
       ? { cardDisplayData: options.cardDisplayData }
       : {}),
     ...(options.cardTraits !== undefined ? { cardTraits: options.cardTraits } : {}),
+    // why: WP-646 — the reveal-or-wound handler now pushes a strikeBlocked on the
+    // onAmbush timing (the first notableEvents.push in this file), so the array
+    // must exist for tests that read it; setup guarantees it in the real engine.
+    notableEvents: [],
     turnEconomy: {
       attack: 0,
       recruit: 0,
@@ -1217,6 +1221,86 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.playerZones['0']!.discard.length, 0, 'ranged-holder unaffected');
     assert.equal(G.playerZones['1']!.discard.length, 1, 'ranged-less player wounded');
     assert.equal(G.piles.wounds.length, 1);
+  });
+
+  it('WP-646 an onAmbush reveal emits one strikeBlocked (ambush) for the revealing player; a wounded player gets none', () => {
+    const G = makeG({
+      hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([XMEN]), // reveals → strikeBlocked
+        '1': zone([PLAIN]), // no match → wounded, no strikeBlocked
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
+    assert.equal(blocked.length, 1, 'exactly one strikeBlocked — only the revealing player');
+    const event = blocked[0]!;
+    if (event.type === 'strikeBlocked') {
+      assert.equal(event.playerId, '0');
+      assert.equal(event.threatKind, 'ambush');
+      assert.equal(event.narrative, 'The Ambush was blocked.');
+    }
+  });
+
+  it('WP-646 an onAmbush reveal by both players emits two strikeBlocked, one per revealer (sorted)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
+      playerZones: { '0': zone([XMEN]), '1': zone([], [XMEN]) }, // hand + in-play both reveal
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
+    assert.equal(blocked.length, 2, 'one strikeBlocked per revealing player');
+    assert.deepEqual(
+      blocked.map((event) => (event.type === 'strikeBlocked' ? event.playerId : '')),
+      ['0', '1'],
+    );
+  });
+
+  it('WP-646 an onFight reveal emits NO strikeBlocked (this producer is onAmbush-scoped)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
+      playerZones: { '0': zone([XMEN]) },
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    assert.ok(
+      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
+      'no strikeBlocked on the onFight timing',
+    );
+  });
+
+  it('WP-646 an onEscape reveal emits NO strikeBlocked (this producer is onAmbush-scoped)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-x', 'onEscape', 'team', 'x-men')],
+      playerZones: { '0': zone([XMEN]) },
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    assert.ok(
+      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
+      'no strikeBlocked on the onEscape timing',
+    );
+  });
+
+  it('WP-646 an onAmbush WOUND (no matching Hero) emits NO strikeBlocked', () => {
+    const G = makeG({
+      hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
+      playerZones: { '0': zone([PLAIN]) }, // no match → wounded, not a block
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    assert.equal(G.playerZones['0']!.discard.length, 1, 'the player took the wound');
+    assert.ok(
+      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
+      'no strikeBlocked when the wound is taken',
+    );
   });
 
   it('AC-5 empty wound pile → a no-match player takes no wound and no hollow is recorded', () => {
