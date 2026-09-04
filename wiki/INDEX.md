@@ -456,6 +456,12 @@ Software tools and services used in development or operations.
 
 Brand governance and commercial-positioning references.
 
+- [Branding](branding.md) — *(draft)* The visual index of the approved
+  Legendary Arena marks: the horizontal lockup, the square hero/villain
+  emblem, and the gold hero half, each rendered inline, with where the
+  master files live (`C:\pcloud\LA\brand\`) and which brand tokens the
+  marks use. Mirrors the brand-folder and `brand-tokens.css` sources;
+  owns neither.
 - [Monetization Model](monetization-model.md) — How Legendary Arena
   makes money: four fairness-safe revenue streams (canonical:
   VISION §Financial Sustainability), the locked profile-page
