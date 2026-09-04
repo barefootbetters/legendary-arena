@@ -7,6 +7,7 @@ tags:
   - content-strategy
   - designer-reference
 related:
+  - branding.md
   - ewiki-authoring.md
   - wiki-viewer.md
   - hugo-web-system.md
@@ -537,7 +538,11 @@ on the light-theme footer. A single-colour gold mark reads on both. If a future
 footer graphic carries white or black detail, ship a **light/dark pair** and
 swap on `html[data-theme]` — don't assume one asset works everywhere. (Source
 art lives in pCloud, e.g. `C:\pcloud\LA\brand\`; only the optimized web export
-is committed — the same source-vs-derivative rule as post images.)
+is committed — the same source-vs-derivative rule as post images.) The
+approved marks, and the same dark-surface reasoning (the full lockup and the
+white villain half read only on dark), are catalogued on the
+[Branding](branding.md) page — including transparent SVG masters of the
+emblem, lockup, and wordmark plus dark-plate display variants.
 
 **Do not branch the footer partial on `.Section`.** `footer.html` is rendered
 with `partialCached` keyed on `.Kind`/`.Layout` (see the note in

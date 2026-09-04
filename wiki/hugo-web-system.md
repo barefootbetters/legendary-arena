@@ -14,6 +14,7 @@ tags:
   - designer-reference
   - wordpress
 related:
+  - branding.md
   - hugo-onboarding.md
   - architecture-inventory.md
   - wiki-viewer.md
@@ -917,6 +918,11 @@ set with no manual `extend_head.html` override required:
 | `apple-touch-icon.png` | `<link rel="apple-touch-icon">` | iOS home-screen icon |
 | `safari-pinned-tab.svg` | `<link rel="mask-icon">` | Safari pinned-tab monochrome mask |
 | — | `<meta name="theme-color">` + `msapplication-TileColor` (default `#2e2e33`) | Browser/OS chrome tint |
+
+**Source art for these icons** is the Legendary Arena emblem, catalogued
+with its vector masters on the [Branding](branding.md) page — the transparent
+`logo-la-emblem.svg` is the natural source for regenerating the PNG sizes, and
+the gold hero half feeds the monochrome `safari-pinned-tab.svg` mask.
 
 **How to replace an icon:** overwrite the corresponding file in
 `static/` with the same filename, commit, and push. Cloudflare Pages

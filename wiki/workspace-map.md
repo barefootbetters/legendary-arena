@@ -8,6 +8,7 @@ tags:
   - workflow
   - layer-marketing
 related:
+  - branding.md
   - data-file-locations.md
   - video-production-workflow.md
   - youtube-channel-plan.md
@@ -86,7 +87,7 @@ up not knowing which one is current.
 | Vendor attachment, invoice, quote | pCloud | `C:\pcloud\LA\ops\vendors\` — **not** left in Outlook |
 | Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\LA\ops\legal\` |
 | Accounting, tax, or bank document | pCloud | `C:\pcloud\LA\ops\accounting\` or `…\taxes\` — never git, never a server disk |
-| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\LA\brand\` — drafts stay in `C:\pcloud\LA\logo-drafts\` |
+| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\LA\brand\` — drafts stay in `C:\pcloud\LA\logo-drafts\`. The approved marks are catalogued (rendered inline, with vector masters) on the [Branding](branding.md) page |
 | A payment, refund, or chargeback record | Hosted | **Stripe** is the ledger. Postgres keeps references only — see System of record |
 | A player profile, entitlement, or team | Hosted | PostgreSQL `legendary.*` — see System of record |
 | A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
