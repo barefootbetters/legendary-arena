@@ -35,10 +35,13 @@
  * ext_ids are set-qualified `setAbbr/slug`); D-5201 (AccountId).
  */
 
+import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { LAGN_VERSION, type LAGN, type LagnPlayer } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
 
+import type { CompetitiveScoreRecord } from '../competition/competition.types.js';
 import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
+import type { BattlePlanRecord } from './battlePlan.types.js';
 
 /**
  * The nine-field match-setup composition as read from the blob, in the
@@ -475,15 +478,107 @@ export function buildResultPlayers(
   return players;
 }
 
+// ============================================================================
+// Battle Plan + Report Card blocks — Server Layer (WP-641 / D-24453)
+// ============================================================================
+//
+// why: WP-640's 1.5.0 reader contract (D-24452) added two DESCRIPTIVE blocks —
+// a top-level `battle_plan` (the team's three free-text phases) and a nested
+// `result.score` (the end-of-match report card). This producer gives them a
+// concrete emitter. Both are read from DOMAIN tables — `legendary.battle_plan`
+// (WP-635) and `legendary.competitive_scores` (via the D-24187 `replay_hash`
+// mapping) — never the bgio blob, so no new persistence-boundary carve-out is
+// needed (contrast the composition/gameover blob reads above, which use the
+// D-24153 / D-24169 carve-outs). Like `players` / `scoring_profile`, they are
+// descriptive only (D-24214 / D-24215 posture): nothing scores, credits, ranks,
+// or verifies from them — competitive credit stays `matchId -> bgio blob ->
+// re-reduce -> re-verify hash -> AccountId`, server-side (D-5301 / D-24126).
+
+/** The LAGN `battle_plan` block shape, derived from the 1.5.0 schema. */
+type LagnBattlePlan = NonNullable<LAGN['battle_plan']>;
+
+/** The LAGN nested `result.score` report-card shape, derived from the schema. */
+type LagnResultScore = NonNullable<NonNullable<LAGN['result']>['score']>;
+
+/**
+ * Map a persisted competitive-score row to the LAGN `result.score` report card.
+ *
+ * why: `par_score` comes from `score_breakdown.parScore` (a jsonb field — there
+ * is NO `par_score` column), and `grade` is COMPUTED fresh via
+ * `gradeForFinalScore` (a FROZEN snapshot of the operator-tunable bands as they
+ * stand at emit time — the grade is stored nowhere). `par_version` is the
+ * persisted column. The score is MATCH-LEVEL (identical across every seat's row —
+ * it runs on the whole reduced final `G`), so the caller reads ANY one row and
+ * this mapper never picks a seat.
+ *
+ * @param record The competitive-score row read for the match (any one row).
+ * @returns The LAGN report-card block.
+ */
+export function toResultScore(record: CompetitiveScoreRecord): LagnResultScore {
+  return {
+    raw_score: record.rawScore,
+    par_score: record.scoreBreakdown.parScore,
+    final_score: record.finalScore,
+    grade: gradeForFinalScore(record.finalScore),
+    scoring_config_version: record.scoringConfigVersion,
+    par_version: record.parVersion,
+  };
+}
+
+/**
+ * Map a persisted Battle Plan row to the LAGN `battle_plan` block, or `undefined`
+ * when there is nothing to report.
+ *
+ * why: the whole block is OMITTED when the row is `null` (no plan was ever
+ * written) OR when all three phases are absent (null or empty string — the API
+ * stores an empty string to clear a phase). An empty object would assert "a plan
+ * exists but says nothing," a different and misleading claim than "no plan". Each
+ * present phase is copied verbatim.
+ *
+ * @param record The persisted Battle Plan record, or `null` when absent.
+ * @returns The LAGN battle_plan block, or `undefined` when absent/all-empty.
+ */
+export function toBattlePlanBlock(
+  record: BattlePlanRecord | null,
+): LagnBattlePlan | undefined {
+  if (record === null) {
+    return undefined;
+  }
+  const block: LagnBattlePlan = {};
+  if (record.preBattle !== null && record.preBattle !== '') {
+    block.pre_battle = record.preBattle;
+  }
+  if (record.battleAdjustments !== null && record.battleAdjustments !== '') {
+    block.battle_adjustments = record.battleAdjustments;
+  }
+  if (record.postBattle !== null && record.postBattle !== '') {
+    block.post_battle = record.postBattle;
+  }
+  // why: an all-empty plan omits the whole block — see the JSDoc rationale.
+  if (
+    block.pre_battle === undefined &&
+    block.battle_adjustments === undefined &&
+    block.post_battle === undefined
+  ) {
+    return undefined;
+  }
+  return block;
+}
+
 /**
  * Build a result LAGN for a completed match: the Tier-1 setup (reused verbatim
  * from `buildMatchLagn` — no fork) PLUS `scoring_profile` and, when present, the
- * `players[]` roster and the `result` block.
+ * `players[]` roster, the `result` block, the `battle_plan` block, and the
+ * nested `result.score` report card.
  *
  * **Construction-only**: like `buildMatchLagn`, this never calls `validate()` —
  * the route validates the built document exactly once before returning it. It
- * stamps `LAGN_VERSION` (1.4.0 as of the WP-406 writer flip), so `players[]`
- * clears the WP-405 version gate.
+ * stamps `LAGN_VERSION` (1.5.0 as of the WP-641 writer flip), so `players[]`,
+ * `battle_plan`, and `result.score` all clear the WP-405 / WP-640 version gates.
+ *
+ * why: `result.score` rides ONLY when `result` rides — the schema nests it under
+ * `result`, whose `outcome` is required, and the endpoint only runs for finished
+ * matches. `battle_plan` is an independent top-level block.
  *
  * @param matchId The match id (the LAGN `game_id`).
  * @param composition The 9-field composition read from the blob.
@@ -492,7 +587,9 @@ export function buildResultPlayers(
  * @param players The projected roster, or `undefined` to omit `players[]`.
  * @param result The projected outcome, or `undefined` to omit `result`.
  * @param scoringProfile The descriptive scoring-profile label.
- * @returns A result LAGN document (setup + scoring_profile + optional players/result).
+ * @param battlePlan The projected Battle Plan block, or `undefined` to omit it.
+ * @param score The projected report card, or `undefined` to omit `result.score`.
+ * @returns A result LAGN document (setup + scoring_profile + optional players/result/battle_plan/score).
  */
 export function buildResultMatchLagn(
   matchId: string,
@@ -502,6 +599,8 @@ export function buildResultMatchLagn(
   players: LagnPlayer[] | undefined,
   result: { outcome: 'victory' | 'defeat' } | undefined,
   scoringProfile: string,
+  battlePlan: LagnBattlePlan | undefined,
+  score: LagnResultScore | undefined,
 ): LAGN {
   const document: LAGN = {
     ...buildMatchLagn(matchId, composition, numPlayers, resolveName),
@@ -511,7 +610,12 @@ export function buildResultMatchLagn(
     document.players = players;
   }
   if (result !== undefined) {
-    document.result = result;
+    // why: `result.score` nests under `result` — attach it only when both the
+    // result block AND a score are present; an unscored/casual match omits it.
+    document.result = score !== undefined ? { ...result, score } : result;
+  }
+  if (battlePlan !== undefined) {
+    document.battle_plan = battlePlan;
   }
   return document;
 }

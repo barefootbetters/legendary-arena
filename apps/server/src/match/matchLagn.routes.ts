@@ -53,9 +53,15 @@ import {
   buildResultPlayers,
   buildNameResolver,
   toLagnResult,
+  toBattlePlanBlock,
+  toResultScore,
   DEFAULT_SCORING_PROFILE,
 } from './matchLagn.logic.js';
+import { readBattlePlan } from './battlePlan.persistence.js';
 import { readSeatAccounts } from './seatAccount.logic.js';
+
+import { findCompetitiveScore } from '../competition/competition.logic.js';
+import { readReplayHashByMatchId } from '../replay/matchReplay.logic.js';
 
 import type { DatabaseClient } from '../identity/identity.types.js';
 
@@ -79,6 +85,9 @@ export interface MatchLagnLogic {
   readonly readSeatAccounts: typeof readSeatAccounts;
   readonly readMatchGameover: typeof readMatchGameover;
   readonly readAccountPublicIdentities: typeof readAccountPublicIdentities;
+  readonly readBattlePlan: typeof readBattlePlan;
+  readonly readReplayHashByMatchId: typeof readReplayHashByMatchId;
+  readonly findCompetitiveScore: typeof findCompetitiveScore;
 }
 
 const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
@@ -86,6 +95,9 @@ const PRODUCTION_MATCH_LAGN_LOGIC: MatchLagnLogic = {
   readSeatAccounts,
   readMatchGameover,
   readAccountPublicIdentities,
+  readBattlePlan,
+  readReplayHashByMatchId,
+  findCompetitiveScore,
 };
 
 /**
@@ -247,6 +259,28 @@ export function registerMatchLagnRoutes(
       const players = buildResultPlayers(seats, identities);
       const result = toLagnResult(gameover);
 
+      // Battle Plan block — a DOMAIN-table read of `legendary.battle_plan`
+      // (WP-635), NOT a bgio blob read, so no new persistence carve-out. Omitted
+      // when the match has no plan row or all three phases are empty.
+      const battlePlanRecord = await matchLagnLogic.readBattlePlan(matchId, database);
+      const battlePlan = toBattlePlanBlock(battlePlanRecord);
+
+      // Report card — the match-level score. The `replay_hash` mapping is the
+      // blessed D-24187 `bgio.replay_artifacts` surface (no `state`/`log` read),
+      // then `findCompetitiveScore` reads the `legendary.competitive_scores`
+      // DOMAIN table (LIMIT 1 — the score is match-level, so ANY one row serves;
+      // it is READ, never written). Omitted for an unscored/casual match, which
+      // has no artifact and/or no score row (the honest-partial posture).
+      const replayHash = await matchLagnLogic.readReplayHashByMatchId(
+        matchId,
+        database,
+      );
+      const scoreRecord =
+        replayHash === null
+          ? null
+          : await matchLagnLogic.findCompetitiveScore(replayHash, database);
+      const score = scoreRecord === null ? undefined : toResultScore(scoreRecord);
+
       // Build (construction-only) then validate EXACTLY once before the 200.
       const lagn = buildResultMatchLagn(
         matchId,
@@ -256,6 +290,8 @@ export function registerMatchLagnRoutes(
         players,
         result,
         DEFAULT_SCORING_PROFILE,
+        battlePlan,
+        score,
       );
       const validation = validate(lagn);
       if (validation.valid !== true) {

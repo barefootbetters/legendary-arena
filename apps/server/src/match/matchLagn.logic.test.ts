@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 
 import { validate, LAGN_VERSION } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
+import type { ScoreBreakdown } from '@legendary-arena/game-engine';
 
 import {
   buildMatchLagn,
@@ -25,10 +26,13 @@ import {
   buildResultPlayers,
   buildResultMatchLagn,
   toLagnResult,
+  toResultScore,
+  toBattlePlanBlock,
   DEFAULT_SCORING_PROFILE,
   type MatchLagnComposition,
   type ResultPlayerIdentity,
 } from './matchLagn.logic.js';
+import type { CompetitiveScoreRecord } from '../competition/competition.types.js';
 import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
 
 /** A complete, valid 9-field composition fixture. */
@@ -42,6 +46,34 @@ const VALID_COMPOSITION: MatchLagnComposition = {
   woundsCount: 30,
   officersCount: 20,
   sidekicksCount: 0,
+};
+
+/**
+ * A competitive-score row fixture. `toResultScore` reads only `rawScore`,
+ * `finalScore`, `scoreBreakdown.parScore`, `scoringConfigVersion`, and
+ * `parVersion`; the other columns are filler for the record shape. `finalScore`
+ * 100 sits in the `b` band (`gradeForFinalScore`: `b` ≤ 150).
+ */
+const SCORE_RECORD: CompetitiveScoreRecord = {
+  submissionId: 1,
+  accountId: 'account-ana' as AccountId,
+  replayHash: 'sha256:deadbeef',
+  scenarioKey: 'core/loki-god-of-mischief|core/the-legacy-virus|1',
+  rawScore: 3900,
+  finalScore: 100,
+  // why: the mapper reads scoreBreakdown.parScore only, so a focused stub keeps
+  // the fixture readable rather than reconstructing the whole ScoreBreakdown; the
+  // double cast is because a one-field literal is not structurally a full breakdown.
+  scoreBreakdown: { parScore: 3800 } as unknown as ScoreBreakdown,
+  parVersion: 'par-v3',
+  scoringConfigVersion: 7,
+  stateHash: 'sha256:cafef00d',
+  createdAt: '2026-09-04T00:00:00.000Z',
+  outcome: 'heroes-win',
+  playerCount: 1,
+  isRankedEligible: true,
+  teamKey: null,
+  henchmanKey: null,
 };
 
 /** An identity resolver (name === id) for mapping-shape assertions. */
@@ -389,7 +421,7 @@ describe('buildResultPlayers — roster projection (D-24214)', () => {
 });
 
 describe('buildResultMatchLagn — composed document', () => {
-  test('setup + scoring_profile + players + result, and validates as 1.4.0', () => {
+  test('setup + scoring_profile + players + result, and validates as 1.5.0', () => {
     const players = buildResultPlayers(
       [{ playerId: '0', accountId: 'account-ana' as AccountId }],
       new Map([['account-ana' as AccountId, { displayHandle: 'ana', displayName: 'Ana' }]]),
@@ -402,6 +434,8 @@ describe('buildResultMatchLagn — composed document', () => {
       players,
       { outcome: 'victory' },
       DEFAULT_SCORING_PROFILE,
+      undefined,
+      undefined,
     );
     assert.equal(lagn.lagn_version, LAGN_VERSION);
     assert.equal(lagn.scoring_profile, 'classic');
@@ -419,11 +453,165 @@ describe('buildResultMatchLagn — composed document', () => {
       undefined,
       undefined,
       DEFAULT_SCORING_PROFILE,
+      undefined,
+      undefined,
     );
     assert.equal('players' in lagn, false);
     assert.equal('result' in lagn, false);
+    assert.equal('battle_plan' in lagn, false);
     assert.equal(lagn.scoring_profile, 'classic');
     assert.equal(validate(lagn).valid, true);
+  });
+
+  test('AC-1/AC-4: a scored match emits result.score (six integer fields) and validates', () => {
+    const lagn = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      undefined,
+      { outcome: 'victory' },
+      DEFAULT_SCORING_PROFILE,
+      undefined,
+      toResultScore(SCORE_RECORD),
+    );
+    // why: the score nests under result; result.score rides only with result.
+    assert.equal(lagn.result?.outcome, 'victory');
+    assert.deepEqual(lagn.result?.score, {
+      raw_score: 3900,
+      par_score: 3800,
+      final_score: 100,
+      grade: 'b',
+      scoring_config_version: 7,
+      par_version: 'par-v3',
+    });
+    // why: the schema's `.int()` on the three score fields is load-bearing — a
+    // fractional value would be rejected at validate(); pin the invariant here.
+    assert.equal(Number.isInteger(lagn.result?.score?.raw_score), true);
+    assert.equal(Number.isInteger(lagn.result?.score?.par_score), true);
+    assert.equal(Number.isInteger(lagn.result?.score?.final_score), true);
+    assert.equal(validate(lagn).valid, true);
+  });
+
+  test('AC-2: an unscored match omits result.score; the rest is unchanged', () => {
+    const lagn = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      undefined,
+      { outcome: 'defeat' },
+      DEFAULT_SCORING_PROFILE,
+      undefined,
+      undefined,
+    );
+    assert.equal(lagn.result?.outcome, 'defeat');
+    assert.equal('score' in (lagn.result ?? {}), false);
+    assert.equal(validate(lagn).valid, true);
+  });
+
+  test('AC-3: a battle_plan block rides; an omitted plan omits the block', () => {
+    const withPlan = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      undefined,
+      { outcome: 'victory' },
+      DEFAULT_SCORING_PROFILE,
+      { pre_battle: 'Recruit Covert early.', post_battle: 'Clutch fight on turn 9.' },
+      undefined,
+    );
+    assert.deepEqual(withPlan.battle_plan, {
+      pre_battle: 'Recruit Covert early.',
+      post_battle: 'Clutch fight on turn 9.',
+    });
+    assert.equal(validate(withPlan).valid, true);
+
+    const withoutPlan = buildResultMatchLagn(
+      'match-1',
+      VALID_COMPOSITION,
+      1,
+      identityResolver,
+      undefined,
+      { outcome: 'victory' },
+      DEFAULT_SCORING_PROFILE,
+      undefined,
+      undefined,
+    );
+    assert.equal('battle_plan' in withoutPlan, false);
+  });
+});
+
+describe('toResultScore — competitive-score row → report card (WP-641)', () => {
+  test('maps the six fields; par_score from score_breakdown.parScore; grade computed', () => {
+    const score = toResultScore(SCORE_RECORD);
+    assert.equal(score.raw_score, 3900);
+    // why: par_score is the jsonb score_breakdown.parScore — there is NO column.
+    assert.equal(score.par_score, 3800);
+    assert.equal(score.final_score, 100);
+    // why: grade is computed fresh via gradeForFinalScore (a frozen snapshot),
+    // never read from a stored column.
+    assert.equal(score.grade, 'b');
+    assert.equal(score.scoring_config_version, 7);
+    assert.equal(score.par_version, 'par-v3');
+  });
+
+  test('grade tracks final_score through gradeForFinalScore (a legendary run)', () => {
+    const legendary = toResultScore({ ...SCORE_RECORD, finalScore: -900 });
+    // why: -900 is well under the legendary band ceiling (-500), so the producer
+    // must band it 'legendary' exactly as the client does — same function, no drift.
+    assert.equal(legendary.grade, 'legendary');
+    assert.equal(legendary.final_score, -900);
+  });
+});
+
+describe('toBattlePlanBlock — battle_plan projection (WP-641)', () => {
+  test('maps the three present phases verbatim', () => {
+    const block = toBattlePlanBlock({
+      matchId: 'match-1',
+      preBattle: 'Plan A',
+      battleAdjustments: 'Pivot to the city',
+      postBattle: 'Won on the wire',
+      updatedByExtId: 'acct-1',
+      createdAt: '2026-09-04T00:00:00.000Z',
+      updatedAt: '2026-09-04T00:00:00.000Z',
+    });
+    assert.deepEqual(block, {
+      pre_battle: 'Plan A',
+      battle_adjustments: 'Pivot to the city',
+      post_battle: 'Won on the wire',
+    });
+  });
+
+  test('omits a null / empty-string phase but keeps the present ones', () => {
+    const block = toBattlePlanBlock({
+      matchId: 'match-1',
+      preBattle: 'Plan A',
+      battleAdjustments: null,
+      postBattle: '',
+      updatedByExtId: 'acct-1',
+      createdAt: '2026-09-04T00:00:00.000Z',
+      updatedAt: '2026-09-04T00:00:00.000Z',
+    });
+    assert.deepEqual(block, { pre_battle: 'Plan A' });
+  });
+
+  test('returns undefined for a null row', () => {
+    assert.equal(toBattlePlanBlock(null), undefined);
+  });
+
+  test('returns undefined when all three phases are null or empty', () => {
+    const block = toBattlePlanBlock({
+      matchId: 'match-1',
+      preBattle: null,
+      battleAdjustments: '',
+      postBattle: null,
+      updatedByExtId: 'acct-1',
+      createdAt: '2026-09-04T00:00:00.000Z',
+      updatedAt: '2026-09-04T00:00:00.000Z',
+    });
+    assert.equal(block, undefined);
   });
 });
 
