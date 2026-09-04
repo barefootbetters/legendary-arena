@@ -17,7 +17,7 @@
  */
 
 import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
-import type { SchemeTwistResolverKey } from './notableEvents.types.js';
+import type { SchemeTwistResolverKey, StrikeBlockThreatKind } from './notableEvents.types.js';
 
 // ---------------------------------------------------------------------------
 // Effect-keyword → human label
@@ -331,4 +331,29 @@ export function composeBystanderRevealedNarrative(
  */
 export function composeDeckReshuffledNarrative(): string {
   return 'The hero deck was reshuffled from the discard pile.';
+}
+
+// ---------------------------------------------------------------------------
+// Strike-blocked narrative
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for a `strikeBlocked` event
+ * (WP-644 / D-24456).
+ *
+ * Pure + byte-stable: a total function of the `threatKind` returning one of
+ * two constant sentences, so every emission is identical — replay-deterministic
+ * by construction. Voiced in the third person (audience-neutral) because the
+ * notable-event overlay is a public, all-audience projection; the blocking
+ * seat travels on the event's `playerId`, not in the copy. Written as an
+ * explicit `if/else` (no nested ternary) per the code-style rules.
+ *
+ * @param threatKind - Which threat class the player avoided.
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeStrikeBlockedNarrative(threatKind: StrikeBlockThreatKind): string {
+  if (threatKind === 'masterStrike') {
+    return 'The Master Strike was blocked.';
+  }
+  return 'The Scheme Twist penalty was blocked.';
 }

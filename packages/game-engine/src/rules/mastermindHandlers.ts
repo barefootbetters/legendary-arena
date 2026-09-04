@@ -16,7 +16,10 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { composeMastermindStrikeNarrative } from '../events/notableEvents.compose.js';
+import {
+  composeMastermindStrikeNarrative,
+  composeStrikeBlockedNarrative,
+} from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
@@ -353,6 +356,15 @@ function resolveMagnetoStrike(
       pushLog(gameState,
         `[Magneto Master Strike] Player ${playerId} revealed an X-Men Hero — no discard.`,
       );
+      // why: WP-644 / D-24456 — announce the avoided Master Strike, additive to
+      // the silent reveal-skip (the deckReshuffled push idiom). One event per
+      // blocking player; the terminal mastermindStrikeResolved still fires below.
+      gameState.notableEvents.push({
+        type: 'strikeBlocked',
+        playerId,
+        threatKind: 'masterStrike',
+        narrative: composeStrikeBlockedNarrative('masterStrike'),
+      });
       continue;
     }
 

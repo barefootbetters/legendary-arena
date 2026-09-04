@@ -28,7 +28,10 @@ import { attachBystanderToVillain, carryEscapedBystandersToPile } from '../board
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
 import { applyEscapedPileResourceLoss } from './schemeResourceLoss.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
-import { composeSchemeTwistNarrative } from '../events/notableEvents.compose.js';
+import {
+  composeSchemeTwistNarrative,
+  composeStrikeBlockedNarrative,
+} from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 
 // ---------------------------------------------------------------------------
@@ -136,6 +139,16 @@ function revealOrPunish(
             `[Scheme Twist] Player ${playerId} reveals "${cardId}" — ${condition.field} "${condition.value}" condition met; penalty avoided.`,
             'applied',
           );
+          // why: WP-644 / D-24456 — announce the dodged Scheme Twist penalty, ONE
+          // per blocking player. ADDITIVE to the resolver's terminal
+          // schemeTwistResolved (pushed once at the end) — the twist still fires
+          // its own event; this records the per-player dodge on top.
+          gameState.notableEvents.push({
+            type: 'strikeBlocked',
+            playerId,
+            threatKind: 'schemeTwist',
+            narrative: composeStrikeBlockedNarrative('schemeTwist'),
+          });
           break;
         }
       }
@@ -180,10 +193,13 @@ function revealOrPunish(
   }
 
   // why: WP-200 — terminal emission after all per-player mutations + message
-  // pushes settle. One event per twist (D-20001 closed union); resolverKey
-  // is the locked camelCase form of the resolverId. Pushed via `.push(...)`
-  // (write-only invariant — never sort / splice / mutate prior entries).
-  // Single push site per resolver — EC grep gate is exactly 5 across the file.
+  // pushes settle. One `schemeTwistResolved` per twist (D-20001 closed union);
+  // resolverKey is the locked camelCase form of the resolverId. Pushed via
+  // `.push(...)` (write-only invariant — never sort / splice / mutate prior
+  // entries). One terminal `schemeTwistResolved` per resolver; WP-644 adds an
+  // ADDITIVE `strikeBlocked` push in the revealOrPunish `matchFound` branch
+  // above (one per dodging player) — a different event type, not a second
+  // terminal.
   // why: WP-200 — fallback to UNKNOWN_TWIST_CARD_ID when called via the
   // legacy test path without the 5th argument. Production dispatch always
   // passes a real cardId; the fallback only surfaces in pre-WP-200 unit

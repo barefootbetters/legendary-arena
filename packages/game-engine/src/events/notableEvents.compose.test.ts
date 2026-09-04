@@ -22,6 +22,7 @@ import {
   composeHealNarrative,
   composeBystanderRevealedNarrative,
   composeDeckReshuffledNarrative,
+  composeStrikeBlockedNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -316,5 +317,39 @@ describe('composeDeckReshuffledNarrative (WP-642)', () => {
 
   it('is byte-stable across calls (no inputs, no drift)', () => {
     assert.equal(composeDeckReshuffledNarrative(), composeDeckReshuffledNarrative());
+  });
+});
+
+describe('composeStrikeBlockedNarrative (WP-644)', () => {
+  it('emits the locked masterStrike sentence', () => {
+    assert.equal(
+      composeStrikeBlockedNarrative('masterStrike'),
+      'The Master Strike was blocked.',
+    );
+  });
+
+  it('emits the locked schemeTwist sentence', () => {
+    assert.equal(
+      composeStrikeBlockedNarrative('schemeTwist'),
+      'The Scheme Twist penalty was blocked.',
+    );
+  });
+
+  it('is byte-stable across calls per threatKind (no drift)', () => {
+    assert.equal(
+      composeStrikeBlockedNarrative('masterStrike'),
+      composeStrikeBlockedNarrative('masterStrike'),
+    );
+    assert.equal(
+      composeStrikeBlockedNarrative('schemeTwist'),
+      composeStrikeBlockedNarrative('schemeTwist'),
+    );
+  });
+
+  it('the two threat kinds produce distinct sentences', () => {
+    assert.notEqual(
+      composeStrikeBlockedNarrative('masterStrike'),
+      composeStrikeBlockedNarrative('schemeTwist'),
+    );
   });
 });

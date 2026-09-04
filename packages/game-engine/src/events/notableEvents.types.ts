@@ -3,10 +3,11 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries eight locked variants — `fightResolved`, `ambushResolved`,
+ * carries nine locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
- * `healResolved`, `bystanderRevealed`, `deckReshuffled` — each composed at
- * its fire site via a pure narrative helper from `notableEvents.compose.ts`.
+ * `healResolved`, `bystanderRevealed`, `deckReshuffled`, `strikeBlocked` —
+ * each composed at its fire site via a pure narrative helper from
+ * `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -26,14 +27,15 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Eight variants in fixed canonical order: a Fight resolution, an Ambush
+ * Nine variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
  * Strike resolution, a Mastermind defeat, a Wound heal, a Bystander
- * reveal-and-capture, and a hero-deck reshuffle. `'mastermindDefeated'` was
- * added per D-20008 (citing D-20001), `'healResolved'` per WP-381 / D-24182,
- * `'bystanderRevealed'` per WP-602 / D-24412, and `'deckReshuffled'` per
- * WP-642 / D-24454 so the arena-client overlay can report those outcomes
- * — G.messages is not projected to clients. Adding a ninth variant requires
+ * reveal-and-capture, a hero-deck reshuffle, and a blocked/avoided threat.
+ * `'mastermindDefeated'` was added per D-20008 (citing D-20001),
+ * `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per WP-602 /
+ * D-24412, `'deckReshuffled'` per WP-642 / D-24454, and `'strikeBlocked'` per
+ * WP-644 / D-24456 so the arena-client overlay can report those outcomes
+ * — G.messages is not projected to clients. Adding a tenth variant requires
  * a new `DECISIONS.md` entry (e.g., WP-186's eventual `'escapeResolved'` per
  * D-20001).
  */
@@ -45,19 +47,22 @@ export type NotableGameEventType =
   | 'mastermindDefeated'
   | 'healResolved'
   | 'bystanderRevealed'
-  | 'deckReshuffled';
+  | 'deckReshuffled'
+  | 'strikeBlocked';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The eight-entry canonical order is locked:
+// parity + length + uniqueness). The nine-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
 // `mastermindStrikeResolved` (Mastermind Strike handler terminal),
 // `mastermindDefeated` (fightMastermind vanquish fire site, D-20008),
 // `healResolved` (healWounds fire site, WP-381 / D-24182),
 // `bystanderRevealed` (villainDeck.reveal bystander-capture fire site,
-// WP-602 / D-24412), and `deckReshuffled` (the onBegin auto-draw + its
-// applyOnBeginParity mirror, on empty-deck reshuffle, WP-642 / D-24454).
+// WP-602 / D-24412), `deckReshuffled` (the onBegin auto-draw + its
+// applyOnBeginParity mirror, on empty-deck reshuffle, WP-642 / D-24454),
+// and `strikeBlocked` (the Magneto reveal-X-Men strike skip + the
+// reveal-or-punish twist dodge, per blocking player, WP-644 / D-24456).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -72,6 +77,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'healResolved',
   'bystanderRevealed',
   'deckReshuffled',
+  'strikeBlocked',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -114,6 +120,40 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'killbots',
   'secretInvasion',
   'portals',
+] as const;
+
+// ---------------------------------------------------------------------------
+// StrikeBlockThreatKind
+// ---------------------------------------------------------------------------
+
+/**
+ * Closed canonical union of the threat classes a `strikeBlocked` event can
+ * report (WP-644 / D-24456).
+ *
+ * Exactly the two producer sites that exist today: a Master Strike avoided
+ * (the Magneto reveal-an-X-Men-Hero skip in `mastermindHandlers.ts`) and a
+ * Scheme Twist penalty avoided (the reveal-or-punish matched-Hero dodge in
+ * `schemeTwistResolvers.ts`). A speculative `'ambush'` value is deliberately
+ * NOT added — no ambush-avoidance producer exists, and a value with no emit
+ * site is drift; a future ambush-block WP adds the value with its producer
+ * together. (Other reveal-to-avoid Master Strike branches — e.g. the Dr. Doom
+ * reveal-a-Tech-Hero skip — are a deferred follow-on producer, not a new
+ * threat kind: they would also carry `'masterStrike'`.)
+ */
+export type StrikeBlockThreatKind = 'masterStrike' | 'schemeTwist';
+
+// why: drift-detection array — must match `StrikeBlockThreatKind` exactly
+// (the `notableEvents.types.test.ts` runtime drift assertion checks keyset +
+// length + uniqueness, per WP-563 / D-24372 — a runtime check, never a bare
+// `satisfies`). Mirrors the `SchemeTwistResolverKey` / `SCHEME_TWIST_RESOLVER_KEYS`
+// pair. Two entries: `masterStrike` (Magneto reveal-X-Men strike skip),
+// `schemeTwist` (reveal-or-punish twist dodge).
+/**
+ * All strike-block threat kinds in canonical order. Single source of truth.
+ */
+export const STRIKE_BLOCK_THREAT_KINDS: readonly StrikeBlockThreatKind[] = [
+  'masterStrike',
+  'schemeTwist',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -281,6 +321,33 @@ export interface DeckReshuffledEvent {
 }
 
 /**
+ * Emitted when a player AVOIDS an incoming threat's harmful effect by
+ * revealing a Hero (WP-644 / D-24456) — the two sites the engine already
+ * models but emitted silently until now:
+ *   - `mastermindHandlers.ts` `resolveMagnetoStrike` reveal branch: a player
+ *     holding an X-Men Hero reveals it and is skipped (`threatKind:
+ *     'masterStrike'`);
+ *   - `schemeTwistResolvers.ts` `revealOrPunish` `matchFound` branch: a player
+ *     revealing a matching Hero dodges the penalty (`threatKind: 'schemeTwist'`).
+ * Emitted ONE PER BLOCKING PLAYER (both branches iterate players); the
+ * reveal-or-punish emit is ADDITIVE to the resolver's terminal
+ * `schemeTwistResolved`. Minimal payload per D-20001 (no `eventId` / `seq` /
+ * `timestamp` / card id — like `healResolved` / `deckReshuffled`). Public and
+ * rendered verbatim by the client (D-20002); presentation parity only, not a
+ * new mechanic or reward — the avoidance already happens, this announces it.
+ */
+export interface StrikeBlockedEvent {
+  /** Discriminator. */
+  type: 'strikeBlocked';
+  /** boardgame.io player-index string ("0", "1", ...) of the player who blocked the threat. */
+  playerId: string;
+  /** Which threat class was avoided — drives the client's per-threat presentation. */
+  threatKind: StrikeBlockThreatKind;
+  /** Engine-composed single-sentence English narrative. */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -295,4 +362,5 @@ export type NotableGameEvent =
   | MastermindDefeatedEvent
   | HealResolvedEvent
   | BystanderRevealedEvent
-  | DeckReshuffledEvent;
+  | DeckReshuffledEvent
+  | StrikeBlockedEvent;
