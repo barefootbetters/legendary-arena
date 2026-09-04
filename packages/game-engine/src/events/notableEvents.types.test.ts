@@ -1,8 +1,8 @@
 /**
  * Drift-detection + JSON-serialisability tests for notable game event types.
  *
- * Pins the seven-variant `NOTABLE_EVENT_TYPES` array against the
- * `NotableGameEventType` union and the seven-entry `SCHEME_TWIST_RESOLVER_KEYS`
+ * Pins the eight-variant `NOTABLE_EVENT_TYPES` array against the
+ * `NotableGameEventType` union and the eight-entry `SCHEME_TWIST_RESOLVER_KEYS`
  * array against the `SchemeTwistResolverKey` union (bidirectional + length +
  * uniqueness). Pins JSON round-trip per event variant so a future widening
  * cannot smuggle a non-serialisable field into `NotableGameEvent`.
@@ -25,11 +25,12 @@ import type {
   MastermindStrikeResolvedEvent,
   MastermindDefeatedEvent,
   BystanderRevealedEvent,
+  DeckReshuffledEvent,
   NotableGameEvent,
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly seven entries in canonical order', () => {
+  it('contains exactly eight entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -40,6 +41,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'mastermindDefeated',
         'healResolved',
         'bystanderRevealed',
+        'deckReshuffled',
       ],
     );
   });
@@ -61,6 +63,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'mastermindDefeated',
       'healResolved',
       'bystanderRevealed',
+      'deckReshuffled',
     ];
     for (const member of unionMembers) {
       assert.ok(
@@ -193,6 +196,16 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
       narrative: 'Bystander "Hostage" was revealed and captured by "Magneto".',
     };
     const cloned = JSON.parse(JSON.stringify(original)) as BystanderRevealedEvent;
+    assert.deepStrictEqual(cloned, original);
+  });
+
+  it('DeckReshuffledEvent round-trips through JSON.stringify/parse', () => {
+    const original: DeckReshuffledEvent = {
+      type: 'deckReshuffled',
+      playerId: '0',
+      narrative: 'The hero deck was reshuffled from the discard pile.',
+    };
+    const cloned = JSON.parse(JSON.stringify(original)) as DeckReshuffledEvent;
     assert.deepStrictEqual(cloned, original);
   });
 

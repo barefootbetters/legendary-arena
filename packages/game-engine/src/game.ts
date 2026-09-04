@@ -6,6 +6,7 @@ import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
+import { composeDeckReshuffledNarrative } from './events/notableEvents.compose.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
@@ -717,7 +718,22 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             // end-of-turn cleanup draw here). Absent override → the default HAND_SIZE.
             const fillTarget = G.handSizeOverrides?.[ctx.currentPlayer] ?? HAND_SIZE;
             const cardsToDraw = Math.max(0, fillTarget - activePlayerZones.hand.length);
-            drawCardsIntoHand(activePlayerZones, cardsToDraw, { random });
+            const reshuffleCount = drawCardsIntoHand(activePlayerZones, cardsToDraw, { random });
+            // why: WP-642 / D-24454 — announce the empty-deck reshuffle that
+            // drawCardsIntoHand just performed (WP-236's reshuffle was silent —
+            // no log line, no notable event, no VFX — so players reported "my
+            // hero deck isn't shuffling"). Additive: the reshuffle mechanic is
+            // unchanged; this only pushes a deckReshuffled notable event when a
+            // reshuffle actually occurred. Minimal payload (D-20001), no card id
+            // (the healResolved shape). The applyOnBeginParity mirror pushes the
+            // same event so the runFixture finalStateHash oracle stays faithful.
+            if (reshuffleCount > 0) {
+              G.notableEvents.push({
+                type: 'deckReshuffled',
+                playerId: ctx.currentPlayer,
+                narrative: composeDeckReshuffledNarrative(),
+              });
+            }
             if (G.handSizeOverrides?.[ctx.currentPlayer] !== undefined) {
               delete G.handSizeOverrides[ctx.currentPlayer];
             }

@@ -116,6 +116,9 @@ describe('applyOnBeginParity (WP-266)', () => {
 
     assert.equal(zones.hand.length, HAND_SIZE);
     assert.deepEqual(zones.hand, ['h1', 'h2', 'c1', 'c2', 'c3', 'c4']);
+    // why: WP-642 — a top-up that never exhausts the deck pushes NO
+    // deckReshuffled notable event.
+    assert.equal(gameState.notableEvents.length, 0);
   });
 
   it('reshuffles the discard into the deck via the supplied provider on exhaustion', () => {
@@ -133,6 +136,15 @@ describe('applyOnBeginParity (WP-266)', () => {
     assert.deepEqual(zones.hand, ['c1', 'c2', 'd5', 'd4', 'd3', 'd2']);
     assert.deepEqual(zones.deck, ['d1']);
     assert.deepEqual(zones.discard, []);
+    // why: WP-642 / D-24454 — the mirror emits exactly one deckReshuffled
+    // notable event for the drawing seat when the draw reshuffled, matching the
+    // real game.ts onBegin so the runFixture finalStateHash oracle stays faithful.
+    assert.equal(gameState.notableEvents.length, 1);
+    assert.deepEqual(gameState.notableEvents[0], {
+      type: 'deckReshuffled',
+      playerId: '0',
+      narrative: 'The hero deck was reshuffled from the discard pile.',
+    });
   });
 
   it('draws fewer than HAND_SIZE without throwing when deck and discard are exhausted', () => {

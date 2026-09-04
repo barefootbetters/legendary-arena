@@ -21,6 +21,7 @@ import {
   composeEffectResultLogLine,
   composeHealNarrative,
   composeBystanderRevealedNarrative,
+  composeDeckReshuffledNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -302,5 +303,18 @@ describe('composeBystanderRevealedNarrative (WP-602)', () => {
       composeBystanderRevealedNarrative('core-bystander-00', 'test-mastermind-base'),
       'Bystander "core-bystander-00" was revealed and captured by "test-mastermind-base".',
     );
+  });
+});
+
+describe('composeDeckReshuffledNarrative (WP-642)', () => {
+  it('emits the locked constant sentence', () => {
+    assert.equal(
+      composeDeckReshuffledNarrative(),
+      'The hero deck was reshuffled from the discard pile.',
+    );
+  });
+
+  it('is byte-stable across calls (no inputs, no drift)', () => {
+    assert.equal(composeDeckReshuffledNarrative(), composeDeckReshuffledNarrative());
   });
 });

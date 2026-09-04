@@ -313,3 +313,22 @@ export function composeBystanderRevealedNarrative(
 ): string {
   return `Bystander "${bystanderName}" was revealed and captured by "${captorName}".`;
 }
+
+// ---------------------------------------------------------------------------
+// Deck-reshuffle narrative
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for a `deckReshuffled` event (WP-642).
+ *
+ * Pure + byte-stable: takes no inputs and returns a constant sentence, so
+ * every emission is identical — replay-deterministic by construction. Voiced
+ * in the third person (audience-neutral) because the notable-event overlay is
+ * a public, all-audience projection: a per-seat "your deck" wording would
+ * mislead the other players who also see it.
+ *
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeDeckReshuffledNarrative(): string {
+  return 'The hero deck was reshuffled from the discard pile.';
+}

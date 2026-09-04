@@ -1,7 +1,7 @@
 /**
  * sfxManifest.ts
  *
- * Maps each of the seven notable game event types to the CC0 sound-effect clip
+ * Maps each of the eight notable game event types to the CC0 sound-effect clip
  * played when that event resolves (WP-412 Surface 1 coverage). The keys are
  * the `NotableGameEventType` discriminators the center-screen overlay already
  * keys on (`NotableEventOverlay.vue`); the values are absolute clip URLs.
@@ -17,7 +17,7 @@
 import type { NotableGameEvent } from '../composables/useNotableEventStream';
 
 /**
- * The six notable-event discriminators, derived type-only from the engine
+ * The eight notable-event discriminators, derived type-only from the engine
  * union (via the `NotableGameEvent` alias) so this module never names the
  * engine union directly — the same runtime-safe-surface discipline
  * `useNotableEventStream` follows.
@@ -32,8 +32,8 @@ const SFX_BASE_URL = 'https://images.legendary-arena.com/audio/sound-effects/';
 /**
  * Exhaustive map of every `NotableGameEventType` variant to its CC0 clip URL.
  * The `Record<SfxEventKey, string>` type is the load-bearing drift pin: adding a
- * seventh engine event variant fails `vue-tsc` here until it is mapped, and the
- * `sfxManifest.test.ts` drift test fails if any of the six is unmapped or empty.
+ * ninth engine event variant fails `vue-tsc` here until it is mapped, and the
+ * `sfxManifest.test.ts` drift test fails if any of the eight is unmapped or empty.
  */
 export const sfxManifest: Record<SfxEventKey, string> = {
   fightResolved: `${SFX_BASE_URL}villain-defeated.mp3`,
@@ -54,4 +54,11 @@ export const sfxManifest: Record<SfxEventKey, string> = {
   // not-yet-uploaded clip 404s on preload and no-ops, so the overlay ships complete
   // and the sting starts playing once the byte lands. Hyphenated filename per convention.
   bystanderRevealed: `${SFX_BASE_URL}bystander-revealed.mp3`,
+  // why: WP-642 — the exhaustive Record forces the 8th variant (deckReshuffled)
+  // to carry a clip. The CC0 byte is operator-pending on R2 (same posture as
+  // every clip here — WP-412/413/425/602 all shipped their URLs before the
+  // upload); a not-yet-uploaded clip 404s on preload and no-ops, so the overlay
+  // + sting ship complete and the shuffle sound starts once the byte lands.
+  // Hyphenated filename per convention.
+  deckReshuffled: `${SFX_BASE_URL}deck-shuffled.mp3`,
 };

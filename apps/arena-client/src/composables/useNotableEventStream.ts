@@ -20,7 +20,8 @@ import type { UIState } from '@legendary-arena/game-engine';
  * Structural alias for one notable game event variant from the WP-200
  * discriminated union (`fightResolved` / `ambushResolved` /
  * `schemeTwistResolved` / `mastermindStrikeResolved` /
- * `mastermindDefeated` / `healResolved` / `bystanderRevealed`). Derived from the
+ * `mastermindDefeated` / `healResolved` / `bystanderRevealed` /
+ * `deckReshuffled`). Derived from the
  * `UIState.notableEvents` array element type so the arena-client never
  * names the engine union directly — keeps the runtime-safe engine
  * surface (the `.` subpath) as the sole import surface and avoids a
@@ -56,9 +57,10 @@ export function eventCardId(event: NotableGameEvent): string {
   // the overlay names the bystander via cardDisplayData (NOT '' — a '' would drop
   // the card-name row). Placed before the healResolved '' fallthrough below.
   if (event.type === 'bystanderRevealed') return event.revealedCardId;
-  // why: WP-381 — healResolved carries no card identity (the overlay renders
-  // only its chip + narrative), so there is no ext_id to resolve. Returning ''
-  // also keeps this helper exhaustive over the widened NotableGameEvent union.
+  // why: WP-381 healResolved and WP-642 deckReshuffled carry no card identity
+  // (the overlay renders only their chip + narrative), so there is no ext_id to
+  // resolve. Returning '' also keeps this helper exhaustive over the widened
+  // NotableGameEvent union.
   return '';
 }
 

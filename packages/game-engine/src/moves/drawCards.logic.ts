@@ -41,18 +41,27 @@ export const HAND_SIZE = 6;
  * @param playerZones - The active player's zones; deck/hand/discard mutated.
  * @param count - The maximum number of cards to draw (may be 0).
  * @param shuffleContext - Provides the deterministic reshuffle (random.Shuffle).
+ * @returns The number of times the discard was reshuffled into the deck during
+ *   this call — 0 when no reshuffle was needed, or 1 when the deck was
+ *   exhausted mid-draw and refilled. It can never exceed 1 in a single call:
+ *   drawn cards go to the hand (not the discard), so once the discard has been
+ *   reshuffled in it stays empty and cannot reshuffle again. WP-642 / D-24454
+ *   uses this so the onBegin auto-draw and its harness mirror can announce a
+ *   reshuffle (the `deckReshuffled` notable event) without re-detecting it.
+ *   Callers that only draw ignore the return (backward-compatible).
  */
 export function drawCardsIntoHand(
   playerZones: PlayerZones,
   count: number,
   shuffleContext: ShuffleProvider,
-): void {
+): number {
+  let reshuffleCount = 0;
   for (let cardsDrawn = 0; cardsDrawn < count; cardsDrawn++) {
     // If the deck is empty, attempt to reshuffle the discard back into it.
     if (playerZones.deck.length === 0) {
       if (playerZones.discard.length === 0) {
         // No cards available anywhere — stop drawing.
-        return;
+        return reshuffleCount;
       }
 
       // why: reshuffling the discard into the deck is the standard Legendary
@@ -62,17 +71,19 @@ export function drawCardsIntoHand(
       const reshuffled = moveAllCards(playerZones.discard, []);
       playerZones.discard = reshuffled.from;
       playerZones.deck = shuffleDeck(reshuffled.to, shuffleContext);
+      reshuffleCount++;
     }
 
     const topCard = playerZones.deck[0];
     if (!topCard) {
-      return;
+      return reshuffleCount;
     }
 
     const result = moveCardFromZone(playerZones.deck, playerZones.hand, topCard);
     playerZones.deck = result.from;
     playerZones.hand = result.to;
   }
+  return reshuffleCount;
 }
 
 /**
