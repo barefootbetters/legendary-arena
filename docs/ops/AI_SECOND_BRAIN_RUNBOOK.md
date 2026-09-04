@@ -43,6 +43,21 @@
   credentials, independent backups, and resource limits so it cannot starve the
   game server. Split it onto its own host once contention, load, or a resident
   local model justifies it (ewiki *Hosting and security posture*).
+- **Calendar view + gates.** The command sections below (§1–§10) are the *how*;
+  [§12. Execution schedule & checklist](#12-execution-schedule--checklist-phased)
+  is the *when* — the phased plan (pilot → thin platform → surfaces → voice), the
+  per-phase gates, and the non-goals, all in one place. Honest estimate: **~3 days
+  to a usable navigation brain, ~2 weeks to the thin owned platform, ~a month
+  before LiteLLM / Open WebUI / voice earn their operating cost.**
+- **Repo layout (settled going in).** Design docs (this runbook, the ewiki page,
+  D-24341) stay in the **engine repo**. The **platform code** (docker-compose,
+  ingestion, the knowledge-query MCP server, schema, skills) gets its **own
+  `second-brain` repo at the thin-platform stage (§12 Phase 3), not the engine
+  repo** — the engine repo's WP/EC + reward-integrity CI would wrongly gate infra
+  commits, and it is cross-domain, not Legendary Arena. The **corpus is per-domain
+  and owned**: each domain keeps its own home, sensitive domains (client
+  engineering, formulations) live in **neither the engine repo nor any hosted
+  surface**. See ewiki *Open Questions* #6.
 
 > **Safety guardrails (non-negotiable — from the design record).**
 > - **Read-only connectors first.** Every MCP server gets its own least-privilege
@@ -418,3 +433,153 @@ been used for real work, failures captured, and restore rehearsed:
 
 Expanding past the pilot is a fresh, explicit decision — record it against
 [D-24341](../ai/DECISIONS.md#d-24341) (or a successor) before building.
+
+---
+
+## 12. Execution schedule & checklist (phased)
+
+The *when* to §1–§10's *how*. Assumes one operator, the existing Ubuntu lab box,
+the Legendary Arena corpus already in Git, and Claude Code already working. Slip a
+phase if the census is incomplete or co-location isolation is sloppy.
+
+**Honest estimate**
+
+| Target | Calendar time | "Done" means |
+|---|---|---|
+| **Pilot you can use** | **3–5 days** | Census + `INDEX.md` + Filesystem/Git MCP + one cited task + one restore drill |
+| **Thin platform** | **10–14 days** | Above + Postgres/pgvector on one reference corpus + knowledge-query MCP + isolated co-located services + rehearsed backup |
+| **Preferred stack** | **4–6 weeks** | Thin platform + LiteLLM + Open WebUI + first skills pack + voice over Tailscale + this runbook *executed*, not just drafted |
+| **End-state** | **2–3 months** | Dedicated host, local/hosted roster settled, second domain onboarded, restore proven on a fresh box, coach optionally on a real gateway |
+
+Three days buys the **navigation-first brain**, not the stack diagram. The
+Legendary Arena slice makes 3 days realistic *because it is already structured,
+cross-referenced Markdown* — the other domains stay **stubbed** ("exists, not in
+pilot") in the census, or 3 days evaporates.
+
+### Phase 0 — Preconditions (before the clock starts)
+
+- [ ] Architecture stays locked: knowledge owned locally, AI is not the system of
+      record, governance never vectorized, human review is the authority boundary.
+- [ ] Read this runbook (§1–§10) for commands; the ewiki page stays the *why*.
+- [ ] Read [`AI_SECOND_BRAIN_VOICE_MOBILE.md`](AI_SECOND_BRAIN_VOICE_MOBILE.md) —
+      but **do not implement voice yet** (Phase 6).
+- [ ] Lab box access (Ubuntu 24.04, root, SSH keys; UFW / Fail2Ban already in the
+      lab posture).
+- [ ] Local clones of `DECISIONS.md`, the working WP/EC set, the wiki Markdown, the
+      Architecture Inventory; [Data & File Locations](../../wiki/data-file-locations.md)
+      open for the Legendary Arena slice.
+- [ ] **Repo decision (see §0):** design docs stay in the engine repo; platform
+      code gets its own `second-brain` repo **at Phase 3**, not before and not in
+      the engine repo; corpus is per-domain and owned; nothing sensitive in the
+      engine repo or on ewiki.
+- [ ] Decision: **co-locate to bootstrap**, dedicated host later.
+- [ ] Decision: **no LiteLLM / Open WebUI / voice in the 3-day window.**
+- [ ] Decision: ingestion = skip or pure-custom this week; do **not** pin
+      LlamaIndex yet (ewiki *Open Questions* #1).
+- [ ] Secrets stay on the box (`.env` in an owned vault, **never** in any repo);
+      each MCP server gets its own least-privilege credential.
+
+### Phase 1 — Day 1: Census + navigation substrate (no Docker, no models)
+
+- [ ] Create `KNOWLEDGE_INVENTORY.md` **on the box** (not on ewiki). Every source
+      carries: path, domain, class (Authoritative / Reference / Transient),
+      retrieval (navigate / vector / skip), backup class, owner.
+- [ ] Legendary Arena filled completely; Engineering / Barefoot Betters / Research
+      **stubbed** as "exists, not in pilot." No client paths or formulations copied
+      onto the hosted wiki.
+- [ ] `knowledge/legendary-arena/INDEX.md` written; stub `INDEX.md` for the other
+      domains. Each index only links + one-line descriptions — no duplicated policy.
+      Every Authoritative doc is reachable from an index.
+- [ ] Agent context files (operating context, not facts): identity +
+      non-negotiables, current priorities / active WPs, domain routing rules, the
+      promotion rule (Transient → Reference → Authoritative is a human act).
+- [ ] **Gate:** find `D-24341` and `WP-594` from `INDEX.md` in under a minute, by
+      hand, no AI.
+
+### Phase 2 — Day 2: Agent can navigate and cite
+
+- [ ] Filesystem MCP jailed to corpus paths only; Git MCP read-only on governed
+      repos. **No** Postgres / Browser / knowledge-query MCP yet.
+- [ ] The coding agent loads the context files + those two MCPs, opens the relevant
+      `INDEX.md` first, then follows links; answers cite `source_path` + heading;
+      it does not treat Transient notes as decisions.
+- [ ] **Gate:** "What is locked by D-24341?" is answered *cited from Markdown*, not
+      from model memory.
+
+### Phase 3 — Day 3: One task with teeth + recoverability
+
+- [ ] Pick one bounded review (config / inventory / dependency audit / co-host
+      isolation vs D-24341). Read-only connectors only; retrieval before
+      generation; every finding cites a file + heading; the output is written as a
+      **Transient** verification report, never promoted.
+- [ ] Backup list = Git corpus + inventory + MCP/agent config. The vector index is
+      **not** a backup target. Restore onto a throwaway directory/container and
+      re-ask the Phase 2 question.
+- [ ] **Gate:** pilot verdict written (what answered, what failed, which
+      index/rule you will add). **Scope frozen — no new services until the brain
+      has been used for real work.** *(No optional vector in Phase 3: the vector
+      layer starts in Phase 5, after real use — ewiki Locked sequencing.)*
+
+### Phase 4 — Days 4–5: Use it before expanding
+
+- [ ] Run 5–10 real operator questions through **navigation only**. Log misses
+      (missing index entry, unrecorded decision, bad citation); fix indexes and
+      context files.
+- [ ] Confirm no governance file was embedded; confirm co-located processes have a
+      separate user, credentials, and backups.
+
+### Phase 5 — Days 6–14: Thin vector layer + honest co-location
+
+*(Only after Phase 4 real use.)*
+
+- [ ] Postgres + `pgvector` on the brain's **own** DB (separate role from the
+      game). HNSW on the embedding column; plain indexes on `domain`,
+      `source_path`. `nomic-embed-text` (768-d) via Ollama.
+- [ ] Ingest **Reference class only**; provenance on every chunk (`source_path`,
+      `domain`, `header_path`, `content_hash`, `git_commit`, `ingested_at`);
+      incremental skip by content hash.
+- [ ] One knowledge-query MCP: read-only, hybrid retrieval, **never returns
+      governance docs**. Open WebUI not required yet; if added it hits the same
+      table.
+- [ ] Make co-location honest: process/user isolation from the game stack,
+      least-privilege credential per MCP, resource limits so embeddings cannot
+      starve matches, secret-rotation notes.
+- [ ] Restore drill on a **fresh** host/VM (not just a new folder); the vector
+      index is **rebuilt from source**, never restored as truth.
+- [ ] **Gate:** a reference question returns chunks *with provenance*; a governance
+      question still routes through `INDEX.md`, not the vector API.
+
+### Phase 6 — Weeks 3–6: Preferred surfaces, then voice + host cutover
+
+- [ ] LiteLLM on the brain host for **brain traffic only**; do **not** point the
+      `api.legendary-arena.com` coach at the brain host — the coach stays on the
+      shipped in-server shim until a second LLM surface exists.
+- [ ] Open WebUI in front of LiteLLM over the same store, behind an auth gate; first
+      skills from §8, each with purpose / inputs / outputs / verification. No
+      always-on ingest; extraction skill writes Transient or Reference only.
+- [ ] Voice (only once the navigation slice already answers): Tailscale Serve HTTPS
+      (mic needs a secure context), Open WebUI conversation mode, local Whisper +
+      Piper first (hosted STT **never** for Engineering / Barefoot Betters). Voice
+      prompt = 2–3-sentence spoken answer + verbal pointer; full citations stay in
+      the pane; voice captures land Transient. Measure CPU Whisper on 5–15 s vs long
+      utterances.
+- [ ] Decide the dedicated-host trigger (contention, a resident local model, or
+      corpus growth); an accelerated unified-memory box **only** if a
+      sensitive-domain workload has already proven the need.
+
+### Done-when (platform, not just pilot)
+
+- [ ] Any governed decision found in under a minute via routing + `INDEX.md`.
+- [ ] Fresh-host restore from backups alone; vector rebuilt from source.
+- [ ] Model / agent swap is config, not a data migration.
+- [ ] A project question answers with file + heading citations.
+- [ ] A new domain = a new folder + `INDEX.md` (+ ingest if it has reference
+      material) — no architecture change.
+
+### Non-goals until the above is green
+
+No always-on ingestion; no vectorizing DECISIONS / WPs / ECs / runbooks; no
+CRM / PM / mail-archive / Git replacement; no multi-agent orchestration as an
+authority; no knowledge graph; no residential-ISP system of record; no publishing
+formulation or client detail onto ewiki. (These mirror §11 and the ewiki *Scope
+boundaries*; expanding past any of them is a fresh decision against D-24341.)
