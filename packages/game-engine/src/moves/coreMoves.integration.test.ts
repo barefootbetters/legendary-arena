@@ -13,6 +13,7 @@ import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { drawCards, playCard, endTurn } from './coreMoves.impl.js';
 import { HAND_SIZE } from './drawCards.logic.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import type { LegendaryGameState } from '../types.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
@@ -348,6 +349,44 @@ describe('playCard', () => {
 
     assert.deepEqual(gameState.playerZones['0']!.hand, handBefore);
     assert.deepEqual(gameState.playerZones['0']!.inPlay, inPlayBefore);
+  });
+
+  // why: WP-643 / D-24455 — a Wound has no "play a Wound" path (wiki/wounds.md).
+  // The engine rejects it with a silent void return (the D-24185 pre-commit
+  // precondition class), so a raw socket message cannot strand the Wound in
+  // inPlay beyond healWounds' hand-only reach.
+  it('WP-643: playing a Wound is a silent no-op — Wound stays in hand, nothing played', () => {
+    const gameState = makeTestGameState({
+      hand: [WOUND_EXT_ID, 'card-y'],
+      inPlay: [],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    playCard(context, { cardId: WOUND_EXT_ID });
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID, 'card-y'],
+      'the Wound (and every other card) stays in hand');
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [],
+      'no card is moved to inPlay');
+    assert.deepEqual(gameState.turnEconomy.attack, 0);
+    assert.deepEqual(gameState.turnEconomy.recruit, 0);
+    assert.equal(gameState.messages.length, 0,
+      'the guard returns before pushLog — no "played" line is emitted for a Wound');
+  });
+
+  it('WP-643: the Wound guard is Wound-specific — a non-Wound in the same hand still plays', () => {
+    const gameState = makeTestGameState({
+      hand: [WOUND_EXT_ID, 'card-y'],
+      inPlay: [],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    playCard(context, { cardId: 'card-y' });
+
+    assert.deepEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID],
+      'the played Hero leaves the hand; the Wound remains');
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, ['card-y'],
+      'the non-Wound card plays normally');
   });
 });
 

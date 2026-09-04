@@ -18,6 +18,7 @@ import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 const CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
 
@@ -535,6 +536,43 @@ describe('getLegalMoves — discard-to-play payability mirrors the move guard (W
       1,
       'an unmarked card is offered exactly as before',
     );
+  });
+});
+
+describe('getLegalMoves — a Wound is never offered as playCard (WP-643 / D-24455)', () => {
+  // why: WP-643. getLegalMoves enumerated playCard for EVERY hand card, but playCard
+  // refuses WOUND_EXT_ID (a Wound has no "play a Wound" path — wiki/wounds.md). Enumerating
+  // it wedged the turn: the bot re-picks the unplayable Wound, nothing mutates, the legal
+  // set never changes (the getLegalMoves↔move-guard divergence class). The skip mirrors the
+  // discard-to-play `continue` directly above it in the playCard loop.
+
+  test('does NOT offer playCard for a Wound alone in hand', () => {
+    const gameState = makeG({ hand: [WOUND_EXT_ID], currentStage: 'main' });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(
+      legalMoves.filter((move) => move.name === 'playCard').length,
+      0,
+      'a Wound must not be offered as a playCard',
+    );
+    // why: the bot must retain a way out of the turn, or suppression relocates the wedge.
+    assert.ok(
+      legalMoves.some((move) => move.name === 'advanceStage'),
+      'advanceStage remains available so the turn can still end',
+    );
+  });
+
+  test('offers playCard for the other hand cards but NOT the Wound', () => {
+    const gameState = makeG({ hand: [WOUND_EXT_ID, 'hero-a' as CardExtId, 'hero-b' as CardExtId], currentStage: 'main' });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    const playedCardIds = legalMoves
+      .filter((move) => move.name === 'playCard')
+      .map((move) => (move.args as { cardId: string }).cardId);
+    assert.deepEqual(playedCardIds, ['hero-a', 'hero-b'],
+      'the two Heroes are enumerated in hand order and the Wound is skipped');
   });
 });
 

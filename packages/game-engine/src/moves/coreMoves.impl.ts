@@ -35,6 +35,7 @@ import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -345,6 +346,22 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
+    return;
+  }
+
+  // why: WP-643 / D-24455 — a Wound has no "play a Wound" path (wiki/wounds.md:
+  // Wounds carry no Attack/Recruit and cannot be played; their only interaction
+  // is the Healing ability, used directly from hand via healWounds). This is a
+  // card-specific PRE-COMMIT precondition (the D-24185 class): a playCard whose
+  // target is WOUND_EXT_ID returns void with NO commit — the Wound stays in hand
+  // and no economy is granted — before any zone removal. Without this guard a raw
+  // socket message (or any non-UI caller) could move the Wound hand → inPlay,
+  // where healWounds (which reads the hand only) can no longer reach it. Runs as
+  // part of validation, before the hand removal, so the "validate → gate →
+  // mutate → void" move contract is preserved. The getLegalMoves enumeration is
+  // kept in lockstep (ai.legalMoves.ts skips WOUND_EXT_ID) so the bot never picks
+  // a move this precondition would silently reject.
+  if (args.cardId === WOUND_EXT_ID) {
     return;
   }
 
