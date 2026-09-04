@@ -169,9 +169,10 @@ follow-up WP): the [Surface 1](#surface-1) notable-event effects (Master
 Strike, mastermind-defeated, fight), the [Surface 1b](#surface-1b)
 fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
 [Surface 4](#endgame) endgame finales, the [faction battle
-cries](#faction-cries) (licensing-gated, D-24259), the proposed
-[shield-block / effect-negation](#surface-block) beat (blocked on a new
-`strikeBlocked` / prevention event), and the
+cries](#faction-cries) (licensing-gated, D-24259), the
+[shield-block](#surface-block) **`VfxOverlay` burst** (the `strikeBlocked`
+engine event + its "Blocked!" overlay chip **shipped** in WP-644; the
+Captain-America-shield particle burst is the follow-on), and the
 [event-storm coalescing algorithm](#decisions-pending) (not needed until a
 second effect class ships).
 
@@ -412,7 +413,7 @@ build in this order rather than attempting twenty effects at once:
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
 | **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
-| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); the [shield-block / effect-negation](#surface-block) beat (blocked on a proposed `strikeBlocked` / prevention event); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
+| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); the [shield-block](#surface-block) **`VfxOverlay` burst** (the `strikeBlocked` engine event + its "Blocked!" overlay chip ship today, WP-644; the shield particle burst is the follow-on); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -425,7 +426,7 @@ candidate signals, in decreasing order of readiness:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Eight variants are locked, and — unlike the game
+player-visible outcomes. Nine variants are locked, and — unlike the game
 log — they **are** projected as `UIState.notableEvents`. The arena client
 already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -445,6 +446,7 @@ stream — one effect per event type — with zero new engine work.
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 | `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
+| `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — the Magneto Master Strike reveal-an-X-Men-Hero skip, or the reveal-or-punish Scheme Twist matched-Hero dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (WP-644):** the engine event + the overlay chip; the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) is the follow-on |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -702,27 +704,31 @@ untouched. It is the mirror of the [`mastermindStrikeResolved`](#surface-1)
 "uh-oh" jolt: same dramatic moment, opposite outcome — relief instead of
 dread — so it earns a comparably big, one-shot flourish.
 
-The visual generalises across the three threat classes by **recolour only**
-(the render is identical): a **red** deflection for a Master Strike, a
-**purple** one for a Scheme Twist, a **green** one for an Ambush — matching
-each threat's own colour on [Surface 1](#surface-1). An optional **BLOCKED!**
-call-out (the defensive sibling of the [synergy call-out](#synergy-callout))
-pops on the intercept.
+The visual generalises across threat classes by **recolour only** (the render
+is identical): a **red** deflection for a Master Strike and a **purple** one
+for a Scheme Twist — the two the engine reports today — with a **green** Ambush
+deflection reserved for when an ambush-avoidance producer exists. An optional
+**BLOCKED!** call-out (the defensive sibling of the
+[synergy call-out](#synergy-callout)) pops on the intercept.
 
-> **This is blocked on a new engine signal — Tier 3, the same posture as
-> escape effects.** There is **no prevention / block event today.** The
-> notable-event vocabulary is the [locked set](#surface-1) plus the deferred
-> `escapeResolved`; none of them records "a threat was blocked / negated /
-> avoided," and `appliedEffects` carries only the keywords that *fired*, not
-> the ones a hero *stopped*. So the trigger this effect would ride — a
-> proposed **`strikeBlocked`** (or more general **`effectPrevented`**)
-> notable event — **does not exist**, and this mock is a **proposal**, not a
-> buildable surface. It is explicitly **Tier 3** and gated on that engine
-> work exactly the way escape effects are gated on `escapeResolved` (see
-> [Priority tiers](#priority-tiers) and
-> [Decisions Pending](#decisions-pending)). Until that event lands, the
-> client has no way to know a block happened, so nothing here may be wired
-> against the locked [input-surface contract](#input-surface-authority).
+> **Shipped — the `strikeBlocked` engine event lands in WP-644 (D-24456).**
+> The engine now emits a **`strikeBlocked`** notable event at the two
+> prevention sites it already modelled but announced *silently* — the
+> **Magneto Master Strike** reveal-an-X-Men-Hero skip
+> (`mastermindHandlers.ts`) and the **reveal-or-punish Scheme Twist**
+> matched-Hero dodge (`schemeTwistResolvers.ts`) — one event **per blocking
+> player**, carrying a closed `threatKind` (`masterStrike` / `schemeTwist`).
+> It rides the existing `UIState.notableEvents` projection, so WP-644 raises
+> the **[Surface-1](#surface-1) `NotableEventOverlay` "Blocked!" chip** today.
+> The Captain-America-shield **`VfxOverlay` burst** below (`block-shield.svg`)
+> is the **follow-on** — the same engine signal now exists to drive it whenever
+> a VFX WP wires it. **Deferred producers** (each a future WP that adds the
+> producer, like `escapeResolved`): a villain **Ambush** block (the green
+> deflection — no ambush-avoidance mechanic exists yet, so `'ambush'` is *not*
+> a `threatKind` value — a value with no producer is drift), and other
+> reveal-to-avoid Master Strikes (e.g. the **Dr. Doom** reveal-a-Tech-Hero
+> skip) which would also carry `masterStrike`. See
+> [Priority tiers](#priority-tiers) and [Decisions Pending](#decisions-pending).
 
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
@@ -1007,11 +1013,16 @@ right owner.
   shared with the audio layer).
 - **`escapeResolved` event** (WP-186) — required before escape effects
   (Tier 3) are possible.
-- **`strikeBlocked` / `effectPrevented` event** — required before the
-  [shield-block / effect-negation](#surface-block) beat (Tier 3) is possible.
-  No notable event records a threat being blocked, negated, or avoided
-  today, and `appliedEffects` carries only the keywords that *fired* — so
-  the trigger this effect would ride does not exist yet.
+- **`strikeBlocked` event — RESOLVED (shipped, WP-644 / D-24456).** The engine
+  now emits `strikeBlocked` at the two prevention sites it already modelled
+  silently — the Magneto Master Strike reveal-X-Men skip and the
+  reveal-or-punish Scheme Twist matched-Hero dodge — so the
+  [shield-block](#surface-block) beat's overlay-chip half ships; the
+  `VfxOverlay` shield burst is the follow-on. Remaining as future *producer*
+  WPs (each adds a `threatKind` value or emit site with its mechanic): a
+  villain **Ambush** block (`'ambush'`) and other reveal-to-avoid Master
+  Strikes (the **Dr. Doom** reveal-a-Tech-Hero skip, which reuses
+  `masterStrike`).
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 

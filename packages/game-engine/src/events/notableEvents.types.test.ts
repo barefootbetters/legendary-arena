@@ -1,11 +1,13 @@
 /**
  * Drift-detection + JSON-serialisability tests for notable game event types.
  *
- * Pins the eight-variant `NOTABLE_EVENT_TYPES` array against the
- * `NotableGameEventType` union and the eight-entry `SCHEME_TWIST_RESOLVER_KEYS`
- * array against the `SchemeTwistResolverKey` union (bidirectional + length +
- * uniqueness). Pins JSON round-trip per event variant so a future widening
- * cannot smuggle a non-serialisable field into `NotableGameEvent`.
+ * Pins the nine-variant `NOTABLE_EVENT_TYPES` array against the
+ * `NotableGameEventType` union, the eight-entry `SCHEME_TWIST_RESOLVER_KEYS`
+ * array against the `SchemeTwistResolverKey` union, and the two-entry
+ * `STRIKE_BLOCK_THREAT_KINDS` array against the `StrikeBlockThreatKind` union
+ * (bidirectional + length + uniqueness). Pins JSON round-trip per event variant
+ * so a future widening cannot smuggle a non-serialisable field into
+ * `NotableGameEvent`.
  *
  * Uses node:test and node:assert only. No boardgame.io imports.
  */
@@ -15,10 +17,12 @@ import assert from 'node:assert/strict';
 import {
   NOTABLE_EVENT_TYPES,
   SCHEME_TWIST_RESOLVER_KEYS,
+  STRIKE_BLOCK_THREAT_KINDS,
 } from './notableEvents.types.js';
 import type {
   NotableGameEventType,
   SchemeTwistResolverKey,
+  StrikeBlockThreatKind,
   FightResolvedEvent,
   AmbushResolvedEvent,
   SchemeTwistResolvedEvent,
@@ -26,11 +30,12 @@ import type {
   MastermindDefeatedEvent,
   BystanderRevealedEvent,
   DeckReshuffledEvent,
+  StrikeBlockedEvent,
   NotableGameEvent,
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly eight entries in canonical order', () => {
+  it('contains exactly nine entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -42,6 +47,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'healResolved',
         'bystanderRevealed',
         'deckReshuffled',
+        'strikeBlocked',
       ],
     );
   });
@@ -64,6 +70,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'healResolved',
       'bystanderRevealed',
       'deckReshuffled',
+      'strikeBlocked',
     ];
     for (const member of unionMembers) {
       assert.ok(
@@ -125,6 +132,38 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
   it('every canonical array entry is assignable to SchemeTwistResolverKey', () => {
     const typed: SchemeTwistResolverKey[] = [...SCHEME_TWIST_RESOLVER_KEYS];
     assert.equal(typed.length, SCHEME_TWIST_RESOLVER_KEYS.length);
+  });
+});
+
+describe('STRIKE_BLOCK_THREAT_KINDS drift detection (WP-644)', () => {
+  // why: RUNTIME assertions (not a bare `satisfies`) per WP-563 / D-24372 —
+  // engine test files are not typechecked in CI, so a compile-time pin would
+  // be documentation only.
+  it('contains exactly two entries in canonical order', () => {
+    assert.deepStrictEqual(
+      [...STRIKE_BLOCK_THREAT_KINDS],
+      ['masterStrike', 'schemeTwist'],
+    );
+  });
+
+  it('has no duplicate entries', () => {
+    const unique = new Set<string>(STRIKE_BLOCK_THREAT_KINDS);
+    assert.equal(unique.size, STRIKE_BLOCK_THREAT_KINDS.length);
+  });
+
+  it('every union member is present in the canonical array', () => {
+    const unionMembers: StrikeBlockThreatKind[] = ['masterStrike', 'schemeTwist'];
+    for (const member of unionMembers) {
+      assert.ok(
+        STRIKE_BLOCK_THREAT_KINDS.includes(member),
+        `union member "${member}" missing from canonical array`,
+      );
+    }
+  });
+
+  it('every canonical array entry is assignable to StrikeBlockThreatKind', () => {
+    const typed: StrikeBlockThreatKind[] = [...STRIKE_BLOCK_THREAT_KINDS];
+    assert.equal(typed.length, STRIKE_BLOCK_THREAT_KINDS.length);
   });
 });
 
@@ -207,6 +246,29 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
     };
     const cloned = JSON.parse(JSON.stringify(original)) as DeckReshuffledEvent;
     assert.deepStrictEqual(cloned, original);
+  });
+
+  it('StrikeBlockedEvent round-trips through JSON.stringify/parse', () => {
+    const masterStrike: StrikeBlockedEvent = {
+      type: 'strikeBlocked',
+      playerId: '0',
+      threatKind: 'masterStrike',
+      narrative: 'The Master Strike was blocked.',
+    };
+    const schemeTwist: StrikeBlockedEvent = {
+      type: 'strikeBlocked',
+      playerId: '1',
+      threatKind: 'schemeTwist',
+      narrative: 'The Scheme Twist penalty was blocked.',
+    };
+    assert.deepStrictEqual(
+      JSON.parse(JSON.stringify(masterStrike)) as StrikeBlockedEvent,
+      masterStrike,
+    );
+    assert.deepStrictEqual(
+      JSON.parse(JSON.stringify(schemeTwist)) as StrikeBlockedEvent,
+      schemeTwist,
+    );
   });
 
   it('NotableGameEvent[] round-trips with mixed variants', () => {

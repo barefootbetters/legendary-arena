@@ -516,6 +516,46 @@ describe('mastermindStrikeHandler — Magneto reveal-or-discard (WP-476 / D-2428
     assert.equal(gameState.pendingDiscardChoices, undefined, 'no discard choice parked');
   });
 
+  it('emits a strikeBlocked for a player who reveals an X-Men Hero (WP-644)', () => {
+    const gameState = makeCo2eState(
+      'core/magneto',
+      { '0': ['xm-a', 'b', 'c', 'd', 'e'] },
+      { 'xm-a': co2eStat(3) },
+      { 'xm-a': XMEN },
+    );
+
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    const blocked = gameState.notableEvents.find((notableEvent) => notableEvent.type === 'strikeBlocked');
+    assert.ok(blocked, 'strikeBlocked emitted for the revealing player');
+    if (blocked && blocked.type === 'strikeBlocked') {
+      assert.equal(blocked.playerId, '0');
+      assert.equal(blocked.threatKind, 'masterStrike');
+      assert.equal(blocked.narrative, 'The Master Strike was blocked.');
+    }
+    // why: WP-644 — the strikeBlocked is ADDITIVE; the terminal
+    // mastermindStrikeResolved still fires for the strike itself.
+    assert.ok(
+      gameState.notableEvents.some((notableEvent) => notableEvent.type === 'mastermindStrikeResolved'),
+      'terminal mastermindStrikeResolved still emitted',
+    );
+  });
+
+  it('emits NO strikeBlocked for a player who does not reveal an X-Men Hero (WP-644)', () => {
+    const gameState = makeCo2eState('core/magneto', { '0': ['a', 'b', 'c'] }, {}, {});
+
+    mastermindStrikeHandler(gameState, ctxFor('0'), { cardId: 'strike' }, {});
+
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked without an X-Men reveal',
+    );
+    assert.ok(
+      gameState.notableEvents.some((notableEvent) => notableEvent.type === 'mastermindStrikeResolved'),
+      'terminal mastermindStrikeResolved emitted',
+    );
+  });
+
   it('the CURRENT player who must discard gets a parked pendingDiscardChoice, nothing discarded yet (AC-2)', () => {
     const gameState = makeCo2eState(
       'core/magneto',

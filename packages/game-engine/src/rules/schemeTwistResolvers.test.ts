@@ -682,7 +682,7 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 import { makeCardStatEntry, makePlayerZones } from '../test/fixtureBuilders.js';
 
 describe('WP-200 — schemeTwistResolved emission per resolver', () => {
-  it('revealOrPunish emits exactly one event with resolverKey "revealOrPunish"', () => {
+  it('revealOrPunish emits its terminal schemeTwistResolved AND a strikeBlocked when a player dodges (WP-644)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1'] });
     gameState.playerZones['0']!.hand = ['hero-tech-1'];
     gameState.cardTraits['hero-tech-1'] = { heroClass: 'tech', team: null };
@@ -695,14 +695,47 @@ describe('WP-200 — schemeTwistResolved emission per resolver', () => {
       TWIST_CARD_ID,
     );
 
-    assert.equal(gameState.notableEvents.length, 1, 'exactly one event emitted');
-    const event = gameState.notableEvents[0]!;
-    assert.equal(event.type, 'schemeTwistResolved');
-    if (event.type === 'schemeTwistResolved') {
-      assert.equal(event.twistCardId, TWIST_CARD_ID);
-      assert.equal(event.resolverKey, 'revealOrPunish');
-      assert.ok(event.narrative.length > 0, 'narrative is non-empty');
+    // why: WP-644 — the dodging player emits a strikeBlocked ADDITIVE to the
+    // resolver's terminal schemeTwistResolved (2 events total).
+    assert.equal(gameState.notableEvents.length, 2, 'terminal schemeTwistResolved + strikeBlocked');
+
+    const terminal = gameState.notableEvents.find((notableEvent) => notableEvent.type === 'schemeTwistResolved');
+    assert.ok(terminal, 'terminal schemeTwistResolved still emitted');
+    if (terminal && terminal.type === 'schemeTwistResolved') {
+      assert.equal(terminal.twistCardId, TWIST_CARD_ID);
+      assert.equal(terminal.resolverKey, 'revealOrPunish');
+      assert.ok(terminal.narrative.length > 0, 'narrative is non-empty');
     }
+
+    const blocked = gameState.notableEvents.find((notableEvent) => notableEvent.type === 'strikeBlocked');
+    assert.ok(blocked, 'strikeBlocked emitted for the dodging player');
+    if (blocked && blocked.type === 'strikeBlocked') {
+      assert.equal(blocked.playerId, '0');
+      assert.equal(blocked.threatKind, 'schemeTwist');
+      assert.equal(blocked.narrative, 'The Scheme Twist penalty was blocked.');
+    }
+  });
+
+  it('revealOrPunish emits NO strikeBlocked when the player takes the penalty (WP-644)', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1'] });
+    gameState.playerZones['0']!.hand = ['hero-ranged-1'];
+    gameState.cardTraits['hero-ranged-1'] = { heroClass: 'ranged', team: null };
+
+    SCHEME_TWIST_RESOLVERS['reveal-or-punish'](
+      gameState,
+      makeRevealContext(),
+      emptyImplementationMap,
+      { condition: { field: 'heroClass', value: 'tech' }, penalty: 'gainWound' },
+      TWIST_CARD_ID,
+    );
+
+    // No matching Hero → the penalty is taken → only the terminal event.
+    assert.equal(gameState.notableEvents.length, 1);
+    assert.equal(gameState.notableEvents[0]!.type, 'schemeTwistResolved');
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked when the penalty is taken',
+    );
   });
 
   it('chainedReveals emits exactly one event with resolverKey "chainedReveals"', () => {
