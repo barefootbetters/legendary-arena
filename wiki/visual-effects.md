@@ -245,7 +245,7 @@ row by row:
 | Local move dispatch (`playCard` / `recruitHero` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ — [Surface 3](#surface-3) |
 | `G` | Engine-internal | ❌ never |
 | `ctx` | Engine-internal | ❌ never |
-| `G.messages` (game log) | Not projected (D-20008) | ❌ — works in-engine, silently does nothing in the browser |
+| `G.messages` (raw engine log array) | Engine-internal — not itself a `UIState` field (the log's content IS projected separately, as `UIState.log`) | ❌ — VFX reads the typed `notableEvents`, never the log (flat narration, not a trigger vocabulary) |
 | Any server round-trip | External | ❌ — VFX derives entirely from already-projected `UIState` |
 
 ### Non-Goals — the VFX layer MUST NOT
@@ -859,11 +859,15 @@ priority order is fixed and non-negotiable:
   count. A keyword is enough to fire an effect; anything richer needs new
   event fields. Hero-KO is the exception — the KO'd heroes are named in
   `narrative`.
-- **Do not drive effects off the game log.** `G.messages` is **not**
-  projected to clients (D-20008). Only `notableEvents` and typed `UIState`
-  surfaces reach the browser. Effects built on the log would work in the
-  engine and do nothing in production. (Restated as a hard rule in the
-  [contract](#input-surface-authority).)
+- **Do not drive effects off the game log.** The log's content *is*
+  projected to clients — as `UIState.log`, the typed `LogEntry[]` the HUD
+  game log renders (WP-434 / D-24253) — but VFX must still **not** ride it.
+  The raw `G.messages` engine array is not itself a `UIState` field, and the
+  log is **flat narration, not a structured trigger vocabulary**: VFX reacts
+  to the curated `notableEvents` stream and typed `UIState` surfaces instead
+  (the curated-channel rule behind D-20008 / D-20002). An effect keyed off
+  the log would mis-fire on narration lines even though the text is present.
+  (Restated as a hard rule in the [contract](#input-surface-authority).)
 - **`lastPlayEffectsFired` is a scalar, not a stream.** It is overwritten
   each play and reset to `0` each turn — so the combo consumer must track
   its own last-seen value and fire on *change* (as `useComboCue` does), not
@@ -1186,7 +1190,8 @@ finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
   — `NotableGameEventType` (6 locked variants) + payloads; header notes
-  `G.messages` is not projected and `escapeResolved` is deferred
+  the raw `G.messages` field is not itself projected (the log's content is,
+  as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts),
   [`uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)
   — `game.lastPlayEffectsFired`, `progress.escapedVillains`,
@@ -1206,8 +1211,9 @@ finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
   pattern this page mirrors), D-24246 (the apex `>= 5 → legendary` tier,
   shared audio + visual), D-24085 (the `functions/` determinism exemption
   D-24365 mirrors), D-20001 (minimal notable-event payload; deferred
-  `escapeResolved`), D-20008 (`mastermindDefeated` added because `G.messages`
-  is not projected), D-24159 / WP-367 (the deck-exhaustion final-turn
+  `escapeResolved`), D-20008 (`mastermindDefeated` added so a Mastermind
+  defeat raises a curated on-screen event — the raw `G.messages` field is not
+  projected), D-24159 / WP-367 (the deck-exhaustion final-turn
   **tie**)
 - VFX / animation libraries (confirm each license at adoption):
   - [canvas-confetti](https://github.com/catdad/canvas-confetti) (MIT)

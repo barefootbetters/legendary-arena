@@ -154,8 +154,10 @@ always compatible with a later Heal.
   event (WP-381) carrying the healed count and a
   `composeHealNarrative(count)` sentence
   ([`notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)).
-  `G.messages` is not projected to clients, so this event is what drives
-  the center-screen "Healed" overlay.
+  The heal's log line rides `UIState.log` like any other, but the
+  center-screen "Healed" **overlay** is driven by this notable event — the
+  overlay layer reacts to the curated `notableEvents` stream, not to the
+  game log.
 - **The Legacy Virus scheme.** *"The Legacy Virus"* loses for the heroes
   when the **Wound stack runs out** — a resource-loss condition modelled
   as `pile-depleted` / `wounds` with the wound stack sized `6×players`
