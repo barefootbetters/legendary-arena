@@ -1341,6 +1341,17 @@ This is the summary index; the individual gotchas and their nuances live in
   single statement, and distilled the Transient rule to a one-line contract —
   *voice is a capture surface, not a governance surface.* Wording only; no
   decision changed.
+- **2026-09-04 — repo-layout question + phased execution schedule (Preferred /
+  Open, no re-lock).** Answered "does the second brain need its own repo?" as
+  [Open Questions](#open-questions) #6: design docs stay in the engine repo, the
+  **platform code gets its own `second-brain` repo at the thin-platform stage**
+  (the engine repo's WP/EC + reward-integrity CI would wrongly gate cross-domain
+  infra), and the **corpus stays per-domain and owned** with sensitive domains in
+  neither the engine repo nor any hosted surface. Paired with a phased execution
+  schedule + checklist (pilot → thin platform → surfaces → voice, with honest
+  estimates and per-phase gates) added as §12 of the
+  [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md). Both are
+  **Preferred / Open** — no Locked row moved, no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -1411,6 +1422,30 @@ is built.
    or the brain platform is running and wants a shared gateway. Never LiteLLM on
    the brain host for this coach (D2) — it couples the live game server to the
    brain host for no gain. Deferred, not gated; blocks nothing.
+6. **Repo layout — where does each piece live?** Three artifacts, three answers,
+   and the split is worth naming before any platform code is written.
+   *Provisional answer:*
+   - **Design & governance docs** (this page, the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md),
+     the [voice addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md),
+     [D-24341](../docs/ai/DECISIONS.md#d-24341)) — **stay in the engine repo**,
+     cross-referenced with the rest of the Legendary Arena governance corpus.
+   - **Platform code** (`docker-compose`, ingestion, the knowledge-query MCP
+     server, schema DDL, skills) — **its own `second-brain` repo, created at the
+     thin-platform stage, not the engine repo.** Two reasons: the engine repo's
+     WP/EC + reward-integrity CI would wrongly gate cross-domain infra commits, and
+     the platform is shared operator infrastructure (*only some of the knowledge is
+     Legendary Arena's* — see the Scope note up top). It does not exist during the
+     3-day navigation pilot, so the repo is premature until there is code to hold.
+   - **The corpus** — **per-domain and owned, never one mega-repo.** Each domain
+     keeps its own home (Legendary Arena's already lives in the engine repo); the
+     brain *reads across* them rather than duplicating ownership. Sensitive domains
+     (client engineering data, formulations) live in **neither the engine repo nor
+     any hosted surface** — the same publishing boundary that keeps the
+     `KNOWLEDGE_INVENTORY` on the owned host ([Pilot scope](#pilot-scope-recommended-first-vertical);
+     [Edge Cases](#edge-cases)). *Still open:* the concrete repo names/hosts for the
+     non-Legendary-Arena domains, and whether the `second-brain` platform repo is
+     public-skeleton + private-config or fully private. **Preferred / Open** —
+     nothing here touches a Locked row or needs a new `DECISIONS.md` entry.
 
 ## References
 
