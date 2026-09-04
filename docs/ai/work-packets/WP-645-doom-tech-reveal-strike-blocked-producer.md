@@ -442,6 +442,32 @@ the lightweight lane.
 
 ---
 
+## Execution Notes (2026-09-04)
+
+Landed exactly as drafted — pure reuse, one emit site, no scope drift.
+
+- **The re-pin was empirically ZERO, not the predicted "LIKELY."** The WP framed
+  a `finalStateHash` re-pin as *likely* because the sentinel `sentinel-core-doom-2p`
+  IS a Dr. Doom game — but running it showed the recorded 2p turns never reach a
+  6-card-hand-with-a-Tech-Hero at a Doom strike, so no `strikeBlocked` fired in the
+  fixture and `finalStateHash` + `PRE_WP080_HASH` stayed byte-identical. The
+  fixture is **not** touched (3 files changed, not 4). This is the
+  verify-by-running / captured-not-chased discipline working as intended — the
+  prediction was honest ("likely"), the empirical answer was zero. The unit test
+  drives the reveal-tech emit directly, so the path is proven regardless of the
+  fixture.
+- **Tests extended, not authored fresh.** The three existing `core/dr-doom` tests
+  already drove the exact branches, so the reveal-tech test gained the
+  `strikeBlocked` + terminal assertions and the two non-block tests gained
+  no-`strikeBlocked` assertions (per the pre-flight RS-2 steer).
+- **No client change / no new contract** — `mastermindHandlers.ts` now has two
+  `strikeBlocked` emit sites (Magneto + Dr. Doom); nothing else in the engine or
+  client moved. The **villain Ambush block is now the only remaining deferred
+  producer** (it needs a new `'ambush'` `threatKind`, breaking pure-reuse — its
+  own WP).
+- **Green:** game-engine 2964/0, `pnpm -r build` 0. Two-commit topology
+  (`EC-680:` + `SPEC:`). Post-deploy D-24026 live-verify pending.
+
 ## See Also
 
 - [WP-644](WP-644-strike-blocked-notable-event.md) / D-24456 — the shipped `strikeBlocked` event this extends (Magneto + reveal-or-punish producers); its Execution Notes name this Dr. Doom producer as deferred
