@@ -1201,9 +1201,15 @@ describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24
     assert.deepEqual(gameState.playerZones['0']!.hand, ['a', 'b', 'c']);
     assert.deepEqual(gameState.playerZones['0']!.deck, []);
     assert.equal(gameState.pendingPutCardsOnDeckChoices, undefined, 'no choice parked');
+    // why: WP-645 — an unaffected player (not exactly 6 cards) was never
+    // threatened, so no strikeBlocked (it is not an avoidance).
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked on the unaffected branch',
+    );
   });
 
-  it('a 6-card hand holding a Tech Hero reveals it and keeps it (no park, no deck change)', () => {
+  it('a 6-card hand holding a Tech Hero reveals it and keeps it (no park, no deck change) + emits strikeBlocked (WP-645)', () => {
     const gameState = makeCo2eState(
       'core/dr-doom',
       { '0': ['te-a', 'b', 'c', 'd', 'e', 'f'] },
@@ -1214,6 +1220,20 @@ describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24
     assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a', 'b', 'c', 'd', 'e', 'f']);
     assert.deepEqual(gameState.playerZones['0']!.deck, []);
     assert.equal(gameState.pendingPutCardsOnDeckChoices, undefined, 'no choice parked');
+    // why: WP-645 — the Tech-Hero reveal is the third strikeBlocked producer; it
+    // emits one strikeBlocked (masterStrike) for the blocking player, additive to
+    // the terminal mastermindStrikeResolved the strike still fires.
+    const blocked = gameState.notableEvents.find((notableEvent) => notableEvent.type === 'strikeBlocked');
+    assert.ok(blocked, 'strikeBlocked emitted for the Tech-Hero-revealing player');
+    if (blocked && blocked.type === 'strikeBlocked') {
+      assert.equal(blocked.playerId, '0');
+      assert.equal(blocked.threatKind, 'masterStrike');
+      assert.equal(blocked.narrative, 'The Master Strike was blocked.');
+    }
+    assert.ok(
+      gameState.notableEvents.some((notableEvent) => notableEvent.type === 'mastermindStrikeResolved'),
+      'terminal mastermindStrikeResolved still emitted',
+    );
   });
 
   it('the CURRENT player with 6 cards and no Tech Hero gets a parked choice, nothing moved yet', () => {
@@ -1232,6 +1252,11 @@ describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24
       playerID: '0',
       count: 2,
     });
+    // why: WP-645 — no Tech Hero revealed ⇒ the penalty is taken ⇒ no strikeBlocked.
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked when the player takes the put-cards penalty',
+    );
   });
 
   it('a NON-current player with 6 cards and no Tech Hero auto-puts the 2 cheapest on top', () => {
