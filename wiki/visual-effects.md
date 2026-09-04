@@ -169,7 +169,9 @@ follow-up WP): the [Surface 1](#surface-1) notable-event effects (Master
 Strike, mastermind-defeated, fight), the [Surface 1b](#surface-1b)
 fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
 [Surface 4](#endgame) endgame finales, the [faction battle
-cries](#faction-cries) (licensing-gated, D-24259), and the
+cries](#faction-cries) (licensing-gated, D-24259), the proposed
+[shield-block / effect-negation](#surface-block) beat (blocked on a new
+`strikeBlocked` / prevention event), and the
 [event-storm coalescing algorithm](#decisions-pending) (not needed until a
 second effect class ships).
 
@@ -410,7 +412,7 @@ build in this order rather than attempting twenty effects at once:
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
 | **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
-| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
+| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); the [shield-block / effect-negation](#surface-block) beat (blocked on a proposed `strikeBlocked` / prevention event); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -686,6 +688,43 @@ its own full-screen finale:
 > by its end the match is a first-class **`tie`** (`finalTurnTie`). Give it
 > its own suspended finale — don't fold it into the loss collapse. (Same
 > note as the audio layer's tie sting.)
+
+#### Proposed — the shield block (a defensive "negate" beat) {#surface-block}
+
+Every effect above celebrates something *happening* — a Strike lands, a
+villain falls, a chain detonates. This one celebrates something **not**
+happening: a hero **blocks** an incoming threat before it can hurt the
+players. Thematically it is Captain America's shield — the game's clearest
+icon of defense — spinning in to **intercept a Master Strike** (or a Scheme
+Twist, or a villain Ambush) with a metallic *clang*, throwing the threat's
+energy back off the shield face while the board underneath is left
+untouched. It is the mirror of the [`mastermindStrikeResolved`](#surface-1)
+"uh-oh" jolt: same dramatic moment, opposite outcome — relief instead of
+dread — so it earns a comparably big, one-shot flourish.
+
+The visual generalises across the three threat classes by **recolour only**
+(the render is identical): a **red** deflection for a Master Strike, a
+**purple** one for a Scheme Twist, a **green** one for an Ambush — matching
+each threat's own colour on [Surface 1](#surface-1). An optional **BLOCKED!**
+call-out (the defensive sibling of the [synergy call-out](#synergy-callout))
+pops on the intercept.
+
+> **This is blocked on a new engine signal — Tier 3, the same posture as
+> escape effects.** There is **no prevention / block event today.** The
+> notable-event vocabulary is the [locked set](#surface-1) plus the deferred
+> `escapeResolved`; none of them records "a threat was blocked / negated /
+> avoided," and `appliedEffects` carries only the keywords that *fired*, not
+> the ones a hero *stopped*. So the trigger this effect would ride — a
+> proposed **`strikeBlocked`** (or more general **`effectPrevented`**)
+> notable event — **does not exist**, and this mock is a **proposal**, not a
+> buildable surface. It is explicitly **Tier 3** and gated on that engine
+> work exactly the way escape effects are gated on `escapeResolved` (see
+> [Priority tiers](#priority-tiers) and
+> [Decisions Pending](#decisions-pending)). Until that event lands, the
+> client has no way to know a block happened, so nothing here may be wired
+> against the locked [input-surface contract](#input-surface-authority).
+
+*An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
 ### Future direction — alternate thematic presentations {#playstyle-lens}
 
@@ -968,6 +1007,11 @@ right owner.
   shared with the audio layer).
 - **`escapeResolved` event** (WP-186) — required before escape effects
   (Tier 3) are possible.
+- **`strikeBlocked` / `effectPrevented` event** — required before the
+  [shield-block / effect-negation](#surface-block) beat (Tier 3) is possible.
+  No notable event records a threat being blocked, negated, or avoided
+  today, and `appliedEffects` carries only the keywords that *fired* — so
+  the trigger this effect would ride does not exist yet.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 
@@ -1185,6 +1229,29 @@ finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
 *`tie` — **wry and suspended**: a warm orb and a cool orb hover in balance, gently see-sawing under a neutral shimmer that never resolves — neither bloom nor collapse.*
 
 *Source: [surface4-finales.py](../ewiki/visual-effects/surface4-finales.py).*
+
+### A.6 — Proposed shield block (defensive negate) {#appendix-surface-block}
+
+Proposal mock of the [shield-block beat](#surface-block) — **card-less and
+vector-only** (the shield is drawn as crisp concentric rings + a white star,
+not a photo). It is a **proposal blocked on a new engine event**
+(`strikeBlocked` / prevention), not a shipped or buildable surface — see the
+[callout above](#surface-block).
+
+![Animated mock of the shield-block effect: an incoming red Master Strike bolt drives down toward the board, Captain America's shield spins in and intercepts it with a bright metallic clang, sparks and red shards ricochet away harmlessly, and the word BLOCKED! pops on-screen. Loops.](/visual-effects/block-shield.svg "width=42%")
+
+*Proposed **shield block** — Captain America's shield spins in to intercept
+an incoming **Master Strike**: a metallic *clang* flash-ring, a spark
+ricochet, and the red strike energy shattering and deflecting harmlessly off
+the shield face, with a **BLOCKED!** call-out. Recolours to **purple** for a
+[Scheme Twist](#surface-1) block and **green** for an [Ambush](#surface-1)
+block — the render is identical, only the deflected-threat colour changes.
+Under `prefers-reduced-motion` it holds the planted shield + **BLOCKED!** as
+a single static frame. Illustrative proposal only; the trigger it would ride
+does not exist yet.*
+
+*Source: [block-shield.py](../ewiki/visual-effects/block-shield.py) —
+regenerate with `python block-shield.py`.*
 
 ## References
 
