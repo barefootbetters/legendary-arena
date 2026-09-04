@@ -18,6 +18,7 @@ related:
   - card-type-taxonomy.md
   - board-keywords.md
   - scoring.md
+  - visual-effects.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\villain-deck.md (this page — https://ewiki.legendary-arena.com/villain-deck/)
@@ -147,6 +148,11 @@ happens before triggers fire:
   henchman does **not** capture a bystander merely by entering the City
   (WP-432 removed that non-canonical attach); bystanders enter play only via
   a revealed `bystander` card or an explicit `capture-bystander` effect.
+  In the game log, an Ambush card's city-entry line is flagged `[Ambush]`
+  and coloured `threat` (villain-purple), as is its `Ambush effect:` summary
+  line — the board-adversity colour (see the
+  [game-log colour legend](visual-effects.md#game-log-legend)). A plain
+  (non-Ambush) villain entering the City logs an uncoloured `neutral` line.
 - **Step 5 — Collect rule effects.** Always emit `onCardRevealed`.
   Conditionally emit `onSchemeTwistRevealed` or
   `onMastermindStrikeRevealed`. Trigger evaluation is delegated to

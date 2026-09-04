@@ -19,6 +19,8 @@ related:
   - scheme-twist.md
   - turn-system.md
   - villain-deck.md
+  - wounds.md
+  - play-diagnostics.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\visual-effects.md (this page — https://ewiki.legendary-arena.com/visual-effects/)
@@ -40,8 +42,12 @@ source:
   - ../apps/arena-client/src/vfx/comboVfxManifest.ts
   - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
+  - ../packages/game-engine/src/log/logOutcome.types.ts
+  - ../apps/arena-client/src/components/log/logOutcomeDisplay.ts
+  - ../apps/arena-client/src/components/log/gameLogExport.ts
+  - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-16
+last-reviewed: 2026-09-04
 ---
 
 # Visual Effects Framework
@@ -317,30 +323,62 @@ inherits the control rather than re-adding it.
 ### Shipped: game-log outcome colours (static, NOT part of the VFX layer) {#game-log-outcome-colours}
 
 The HUD game log colours each line by its engine-authored
-`LogEntry.outcome` (WP-B.3, D-24253): **green** = the effect applied,
-**amber** = partial, **red** = blocked / did nothing, **unstyled** =
-neutral narration. This is deliberately **not** VFX/juice — it is a
-**static, information-carrying** colour (no motion, no trigger, no
-intensity toggle), so it lives outside this layer's contract and is
-always on. It is included here only because it is the poster-child for
-this doc's own accessibility rule:
+`LogEntry.outcome` (WP-B.3, D-24253). This is deliberately **not**
+VFX/juice — it is a **static, information-carrying** colour (no motion,
+no trigger, no intensity toggle), so it lives outside this layer's
+contract and is always on. It is included here only because it is the
+poster-child for this doc's own accessibility rule.
+
+#### Game-log colour legend {#game-log-legend}
+
+Five outcomes, each with a colour, a decorative glyph, and a
+screen-reader label. The first four describe the fate of **your own**
+effect; `threat` (added 2026-09, PR #1787) is the orthogonal case — the
+**board acting on the players** — so it never means "your effect did
+nothing", it means the villains or the Scheme just did something *to*
+you.
+
+| Outcome | Colour | Glyph | Meaning | Example log line |
+|---|---|---|---|---|
+| `neutral` | none (default text) | — | pure narration, no effect claim | `Player 0 played Iron Man (…) — +2 Attack.` |
+| `applied` | **green** (`--color-par-positive`) | `✓` | your effect fully did its thing | `[Scheme Twist] Player 0 reveals "…endless-invention" — heroClass "tech" condition met; penalty avoided.` |
+| `partial` | **amber** (`--color-par-partial`) | `⚠` | some-but-not-all / conditional-skipped | `Drew 1 of 2 cards — deck exhausted.` |
+| `blocked` | **red** (`--color-par-negative`) | `✕` | your effect tried and nothing happened | `[Scheme Twist] Player 0 has no matching heroClass "tech" hero — gained a wound.` |
+| `threat` | **villain-purple** (`--color-villain`) | `⚔` | a villain / Scheme adversity advanced on the players | `[Ambush] Frost Giant (…) revealed and entered the city!` · `Scheme Twist #3 revealed — the Scheme advances; twist count incremented (3 of 8 to Evil Wins).` |
+
+**Where each colour fires** (the emitting mechanic pages):
+
+- **red — a penalty landed on you.** The reveal-or-punish Scheme Twist
+  Wound / discard-hand penalty ([Wounds](wounds.md),
+  [Scheme Twist](scheme-twist.md)).
+- **green — you dodged a penalty.** Revealing the required Hero for a
+  reveal-or-punish twist ([Scheme Twist](scheme-twist.md)).
+- **villain-purple — the board advanced.** An [Ambush](villain-deck.md)
+  villain entering the City and its `Ambush effect:` line; every
+  [Scheme Twist](scheme-twist.md) reveal (with its doom-clock number) and
+  the scheme-loss-threshold line.
+
+The accessibility guarantees that make this the poster-child:
 
 - **Colour is never the only signal.** Each non-`neutral` line also
-  carries a decorative glyph (`✓` / `⚠` / `✕`, `aria-hidden`) and a
+  carries the decorative glyph above (`aria-hidden`) and a
   screen-reader-only outcome word, so colour-blind and screen-reader
   users get the outcome without seeing colour.
-- **Theme-aware, no hard-coded hex** — it maps to the `--color-par-*`
-  tokens (which carry light + dark values), reusing the same
-  positive / negative semantic tokens as PAR scoring plus a new
-  `--color-par-partial` (→ `--la-color-warning`).
+- **Theme-aware, no hard-coded hex** — it maps to semantic tokens
+  (which carry light + dark values): the `--color-par-*` trio reused
+  from PAR scoring (`--color-par-partial` → `--la-color-warning`), plus
+  `--color-villain` (villain-purple) for `threat`, shared with the
+  NotableEventOverlay villain accent.
 - **Static, reduced-motion-safe by construction** — no transition or
   animation; the log is information, not juice.
 
 The outcome is authored by the engine at push time (B.3a), rendered
 here (B.3b), and read back by the freeze diagnostic instead of guessing
 (B.3c) — see [Play Diagnostics → Effect provenance](play-diagnostics.md).
-The plain-text export tags non-`neutral` lines `[applied]` / `[partial]`
-/ `[blocked]`.
+The plain-text export tags every non-`neutral` line with its outcome
+verbatim — `[applied]` / `[partial]` / `[blocked]` / `[threat]` (the tag
+is derived from `entry.outcome`, so a new outcome tags itself with no
+export change).
 
 ### Determinism requirements (mandatory)
 
