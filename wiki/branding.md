@@ -13,7 +13,7 @@ related:
   - workspace-map.md
   - hugo-web-system.md
   - soul-of-legendary-arena.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\branding.md (this page — https://ewiki.legendary-arena.com/branding/)
   - C:\pcloud\LA\brand\README.txt
@@ -165,6 +165,13 @@ treat it as a code change, not a design tweak.
   surface owns which kind of work. It is where `C:\pcloud\LA\brand\` is
   established as the home for approved brand assets; this page is the
   visual index of what is filed there.
+- [Public brand system](https://www.legendary-arena.com/brand/) — the
+  customer- and press-facing brand page on `www`. As of the WP-247/248/249
+  adoption it presents this same split-emblem system (colours, typography,
+  the marks, clear-space and sizing, and a launch/social kit) and is the
+  public counterpart to this internal marks catalogue. Its logo-usage rules
+  are specified in
+  [`docs/brand/logo-usage.md`](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/brand/logo-usage.md).
 - [Design System Overview](design-system-overview.md) — the broader
   design language (colour roles, class palette, motion) the marks sit
   inside.
@@ -198,16 +205,11 @@ treat it as a code change, not a design tweak.
   committed under `ewiki/branding/`; the build projects that folder to the
   Hugo static root and serves it at `/branding/<file>`. A file dropped into
   the projected `static/` copy is git-ignored and will not ship.
-
-## Open Questions
-
-- **The formal brand book is not written yet.** Clear-space, minimum-size,
-  the light/dark background matrix, and do-and-don't examples belong in
-  `C:\pcloud\LA\brand\guidelines\` (per the brand-folder structure) and do
-  not exist at this revision. The usage notes above are practical
-  recommendations grounded in how each mark is drawn, not a ratified spec.
-  Until the guidelines are authored, treat clear-space and minimum-size as
-  operator judgement, not a locked rule.
+- **Formal usage guidelines now exist (marketing repo).** Clear-space,
+  minimum size, the light/dark pairing matrix, and do/don't are specified in
+  [`docs/brand/logo-usage.md`](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/brand/logo-usage.md)
+  and rendered on the public [brand page](https://www.legendary-arena.com/brand/).
+  An operator copy under `C:\pcloud\LA\brand\guidelines\` is optional, not required.
 - **The emblem SVG is an autotrace, not a hand-built master.** `logo-la-emblem.svg`
   is a faithful, fully scalable vtracer trace of the emblem raster — good for
   the favicon, HUD badge, and web scaling. It is not a hand-tuned vector: a
@@ -238,6 +240,12 @@ treat it as a code change, not a design tweak.
 - `C:\www\legendary-arena-com\static\brand-tokens.css` — the source of
   truth for brand colour, type, and spacing tokens consumed by the live
   sites.
+- [Public brand system page](https://www.legendary-arena.com/brand/) — the
+  customer- and press-facing brand system on `www` (source:
+  `C:\www\legendary-arena-com\content\brand\_index.md`).
+- [`docs/brand/logo-usage.md`](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/brand/logo-usage.md)
+  — the formal logo-usage guidelines: clear-space, minimum size, light/dark
+  pairing, and do/don't.
 - [Figma Logo Design](figma-logo-design.md) — the construction pipeline
   that produces the marks.
 - [Workspace Map](workspace-map.md) — establishes `C:\pcloud\LA\brand\` as
