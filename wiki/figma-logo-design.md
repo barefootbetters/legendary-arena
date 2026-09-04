@@ -7,6 +7,7 @@ tags:
   - figma
   - logo
 related:
+  - branding.md
   - hugo-web-system.md
   - wiki-viewer.md
 status: draft
@@ -31,6 +32,12 @@ reference inputs, constrained shape construction, system variants,
 and export artifacts. This is not a "draw freely and clean up later"
 approach — it mirrors the same inputs-to-outputs discipline used
 across the Legendary Arena codebase.
+
+> **Where the shipped marks live.** This page is the *how-to* for building
+> a mark from scratch. The **approved** Legendary Arena marks already in use —
+> the horizontal lockup, the hero/villain emblem, the wordmark, and their
+> vector masters — are catalogued on the [Branding](branding.md) page. Reach
+> for a logo there; use this pipeline when you need to build or rebuild one.
 
 ## Mechanics
 
@@ -235,6 +242,11 @@ inconsistent output.
 
 ## Interactions
 
+- [Branding](branding.md) — the shipped output of this pipeline: the
+  approved marks and their vector masters, rendered inline, with where the
+  `.ai` master and the exports live. A from-scratch rebuild via this page is
+  the path to a hand-tuned production vector if the current traced/extracted
+  masters are not enough.
 - [Hugo Web System](hugo-web-system.md) — the exported SVG and PNG
   assets are consumed by the marketing site's templates and brand
   tokens.
@@ -258,6 +270,8 @@ inconsistent output.
 
 ## References
 
+- [Branding](branding.md) — the approved marks catalogue and their vector
+  masters (`logo-la-lockup.svg`, `logo-la-wordmark.svg`, `logo-la-emblem.svg`).
 - [Figma](https://figma.com) — design tool
 - [Bebas Neue](https://fonts.google.com/specimen/Bebas+Neue) — display
   font used in title construction

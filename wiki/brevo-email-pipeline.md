@@ -8,6 +8,7 @@ tags:
   - brand
   - marketing
 related:
+  - branding.md
   - wiki-viewer.md
   - hugo-web-system.md
   - workspace-map.md
@@ -377,6 +378,12 @@ deployed before the newsletter send.
   weight low and avoids rendering issues).
 
 ### Brand assets
+
+The canonical marks — the horizontal lockup, the wordmark, and the emblem,
+with their vector masters and the approved-master locations — are catalogued
+on the [Branding](branding.md) page. For email, export a **PNG** from those
+masters (many email clients do not render SVG); the copy embedded below is the
+wiki preview.
 
 **Logo (PNG format)**
 

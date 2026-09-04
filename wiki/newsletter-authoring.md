@@ -8,6 +8,7 @@ tags:
   - brevo
   - designer-reference
 related:
+  - branding.md
   - blog-post-authoring.md
   - brevo-email-pipeline.md
   - ewiki-authoring.md
@@ -398,7 +399,8 @@ here", "Start playing now", generic phrases.
 - Images must be deployed before the newsletter send
 - Alt text required on all images
 - Email must remain comprehensible with images blocked
-- Logo: PNG (not SVG), max 200px wide
+- Logo: PNG (not SVG), max 200px wide — export the header wordmark from the
+  masters catalogued on the [Branding](branding.md) page
 
 ### Pre-Send QA Checklist
 
