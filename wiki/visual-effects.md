@@ -722,13 +722,14 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > the **[Surface-1](#surface-1) `NotableEventOverlay` "Blocked!" chip** today.
 > The Captain-America-shield **`VfxOverlay` burst** below (`block-shield.svg`)
 > is the **follow-on** — the same engine signal now exists to drive it whenever
-> a VFX WP wires it. **Deferred producers** (each a future WP that adds the
-> producer, like `escapeResolved`): a villain **Ambush** block (the green
-> deflection — no ambush-avoidance mechanic exists yet, so `'ambush'` is *not*
-> a `threatKind` value — a value with no producer is drift), and other
-> reveal-to-avoid Master Strikes (e.g. the **Dr. Doom** reveal-a-Tech-Hero
-> skip) which would also carry `masterStrike`. See
-> [Priority tiers](#priority-tiers) and [Decisions Pending](#decisions-pending).
+> a VFX WP wires it. The **Dr. Doom** reveal-a-Tech-Hero skip — a third
+> reveal-to-avoid Master Strike producer — now **also fires `strikeBlocked`**
+> (shipped, WP-645 / D-24457; it reuses `masterStrike`). The **one remaining
+> deferred producer** (a future WP that adds it, like `escapeResolved`) is a
+> villain **Ambush** block (the green deflection — no ambush-avoidance mechanic
+> exists yet, so `'ambush'` is *not* a `threatKind` value; a value with no
+> producer is drift). See [Priority tiers](#priority-tiers) and
+> [Decisions Pending](#decisions-pending).
 
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
@@ -1018,11 +1019,11 @@ right owner.
   silently — the Magneto Master Strike reveal-X-Men skip and the
   reveal-or-punish Scheme Twist matched-Hero dodge — so the
   [shield-block](#surface-block) beat's overlay-chip half ships; the
-  `VfxOverlay` shield burst is the follow-on. Remaining as future *producer*
-  WPs (each adds a `threatKind` value or emit site with its mechanic): a
-  villain **Ambush** block (`'ambush'`) and other reveal-to-avoid Master
-  Strikes (the **Dr. Doom** reveal-a-Tech-Hero skip, which reuses
-  `masterStrike`).
+  `VfxOverlay` shield burst is the follow-on. The **Dr. Doom** reveal-a-Tech-Hero
+  skip (a third `masterStrike` producer) also fires `strikeBlocked` as of
+  **WP-645 / D-24457**. The **one remaining** deferred producer is a villain
+  **Ambush** block, a future WP that adds an `'ambush'` `threatKind` value with
+  its emit site.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 

@@ -465,6 +465,16 @@ function resolveCoreDoomStrike(
       pushLog(gameState,
         `[Dr. Doom Master Strike] Player ${playerId} revealed a [hc:tech] Hero — no cards put on deck.`,
       );
+      // why: WP-645 / D-24457 — announce the avoided Dr. Doom strike (the third
+      // reveal-to-avoid Master Strike producer, deferred by WP-644), additive to
+      // the silent reveal-skip. One event per blocking player; the terminal
+      // mastermindStrikeResolved still fires below. The WP-644 Magneto push idiom.
+      gameState.notableEvents.push({
+        type: 'strikeBlocked',
+        playerId,
+        threatKind: 'masterStrike',
+        narrative: composeStrikeBlockedNarrative('masterStrike'),
+      });
       continue;
     }
 
