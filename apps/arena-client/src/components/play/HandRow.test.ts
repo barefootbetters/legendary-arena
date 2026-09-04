@@ -147,6 +147,50 @@ describe('HandRow (WP-129 — extends WP-100)', () => {
     }
   });
 
+  test('disables the Wound tile at play.main and leaves other tiles playable (Wounds cannot be played)', () => {
+    // why: a Wound (pile-wound) carries no play value and cannot be played
+    // (wiki/wounds.md). Before this gate the Wound rendered as a normal
+    // playCard button; clicking it moved the Wound out of hand into inPlay,
+    // which silently disabled the Heal-Wounds ability. The Wound tile must be
+    // disabled with a helpful tooltip while genuine Hero tiles stay playable.
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cap-rogers', 'pile-wound'],
+        currentStage: 'main',
+        submitMove,
+      },
+    });
+    const buttons = wrapper.findAll('[data-testid="play-hand-card"]');
+    const heroButton = buttons[0]!;
+    const woundButton = buttons[1]!;
+    assert.equal(heroButton.attributes('data-card-id'), 'cap-rogers');
+    assert.equal(heroButton.attributes('disabled'), undefined);
+    assert.equal(woundButton.attributes('data-card-id'), 'pile-wound');
+    assert.equal(woundButton.attributes('disabled'), '');
+    assert.equal(woundButton.attributes('aria-disabled'), 'true');
+    assert.match(woundButton.attributes('title')!, /Wounds cannot be played/);
+    assert.match(woundButton.attributes('title')!, /Heal Wounds/);
+  });
+
+  test('clicking the Wound tile does not submit playCard; a Hero tile still does', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['pile-wound', 'iron-man-stark'],
+        currentStage: 'main',
+        submitMove,
+      },
+    });
+    const buttons = wrapper.findAll('[data-testid="play-hand-card"]');
+    void buttons[0]!.trigger('click');
+    assert.equal(calls.length, 0, 'a Wound click must not submit playCard');
+    void buttons[1]!.trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'playCard');
+    assert.deepEqual(calls[0]!.args, { cardId: 'iron-man-stark' });
+  });
+
   test('renders empty placeholder when handCards is empty', () => {
     const { submitMove } = recorder();
     const wrapper = mount(HandRow, {

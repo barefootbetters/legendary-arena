@@ -3,6 +3,7 @@ import { defineComponent, type PropType } from 'vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
+import { WOUND_EXT_ID } from './woundIdentity';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -59,20 +60,48 @@ export default defineComponent({
     },
   },
   setup(props) {
+    // why: a Wound (WOUND_EXT_ID) carries no play value and CANNOT be played
+    // (wiki/wounds.md — "there is no 'play a Wound' path"). The engine playCard
+    // has no effect for a Wound, but before this guard the tile still rendered
+    // as a normal playCard button; clicking it moved the Wound from hand to
+    // inPlay, which silently disabled the Heal-Wounds ability (heal KOs Wounds
+    // FROM HAND, so a Wound in inPlay is unreachable). Gate the Wound tile here.
+    function isWound(cardId: string): boolean {
+      return cardId === WOUND_EXT_ID;
+    }
+
     function onPlay(cardId: string): void {
+      // why: never submit a playCard for a Wound — the tile is disabled, but a
+      // CardTile interactive click path must not slip a Wound play through.
+      if (isWound(cardId)) {
+        return;
+      }
       props.submitMove('playCard', { cardId });
     }
 
-    function buttonReason(): string | null {
+    function buttonReason(cardId: string): string | null {
       // why: per EC-132 §3 disabled-state tooltip precedence — stage →
-      // resource → structural. playCard has no resource cost (any hand
-      // card may be played); only the stage gate applies.
+      // resource → structural. playCard has no resource cost (any playable
+      // hand card may be played); the stage gate applies first, then the
+      // Wound structural gate.
       const gate = useTurnActions(props.currentStage, props.isViewerTurn).canPlayCard();
-      return gate.allowed ? null : gate.reason;
+      if (!gate.allowed) {
+        return gate.reason;
+      }
+      if (isWound(cardId)) {
+        return 'Wounds cannot be played. Use Heal Wounds to KO all Wounds from your hand.';
+      }
+      return null;
     }
 
-    function buttonDisabled(): boolean {
-      return !useTurnActions(props.currentStage, props.isViewerTurn).canPlayCard().allowed;
+    function buttonDisabled(cardId: string): boolean {
+      if (!useTurnActions(props.currentStage, props.isViewerTurn).canPlayCard().allowed) {
+        return true;
+      }
+      // why: a Wound is never playable even when the stage allows play — disable
+      // its tile so the player cannot play a Wound out of hand and lose the
+      // Heal-Wounds affordance for the turn.
+      return isWound(cardId);
     }
 
     function humanizeCardId(cardId: string): string {
@@ -159,19 +188,20 @@ export default defineComponent({
           type="button"
           data-testid="play-hand-card"
           :data-card-id="cardId"
-          :disabled="buttonDisabled()"
-          :aria-disabled="buttonDisabled() ? 'true' : undefined"
-          :title="buttonReason() ?? undefined"
+          :disabled="buttonDisabled(cardId)"
+          :aria-disabled="buttonDisabled(cardId) ? 'true' : undefined"
+          :title="buttonReason(cardId) ?? undefined"
           @click="onPlay(cardId)"
         >
           <!-- why: disabled-state tooltip precedence locked at EC-132 §3
                (stage → resource → structural). The reason text is bound
                from useTurnActions().canPlayCard() rather than composed
-               ad-hoc. -->
+               ad-hoc; the per-card structural gate additionally disables
+               the un-playable Wound tile (wounds.md). -->
           <CardTile
             :display="resolveDisplay(cardId, index)"
             size="md"
-            :interactive="!buttonDisabled()"
+            :interactive="!buttonDisabled(cardId)"
             :show-label="true"
           />
         </button>
