@@ -16,6 +16,7 @@ const EXPECTED: Record<LogOutcome, LogOutcomeDisplay> = {
   applied: { className: 'game-log__line--applied', glyph: '✓', label: 'applied' },
   partial: { className: 'game-log__line--partial', glyph: '⚠', label: 'partial' },
   blocked: { className: 'game-log__line--blocked', glyph: '✕', label: 'blocked' },
+  threat: { className: 'game-log__line--threat', glyph: '⚔', label: 'threat' },
 };
 
 test('logOutcomeDisplay returns the exact render triple for every outcome', () => {

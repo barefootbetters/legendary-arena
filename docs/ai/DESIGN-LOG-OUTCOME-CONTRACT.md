@@ -113,7 +113,7 @@ nothing happened. The log enum is therefore small and colour-shaped:
 
 ```ts
 // packages/game-engine/src/log/logOutcome.types.ts
-export const LOG_OUTCOMES = ['neutral', 'applied', 'partial', 'blocked'] as const;
+export const LOG_OUTCOMES = ['neutral', 'applied', 'partial', 'blocked', 'threat'] as const;
 export type LogOutcome = (typeof LOG_OUTCOMES)[number];
 ```
 
@@ -123,6 +123,15 @@ export type LogOutcome = (typeof LOG_OUTCOMES)[number];
 | `applied` | green | the effect fully did its thing | full draw, `+N` grant, reveal action applied |
 | `partial` | yellow | some-but-not-all / conditional-skipped | short draw (1 of 2), matched-but-partly-blocked |
 | `blocked` | red | tried and nothing happened | condition-failed, empty source, no-branch-matched, hollow |
+| `threat` | villain-purple | a villain / Scheme adversity advanced on the players | Ambush entry + effect, Scheme Twist doom-clock tick, scheme-loss threshold |
+
+> **`threat` vs `blocked` (added post-WP-B.3).** The first four outcomes describe
+> the fate of the **player's own** effect. `threat` is the orthogonal case — the
+> **board** acting against the players — and it always "happened". A `blocked` red
+> means *your* effect fizzled (good-ish for you); a `threat` purple means the
+> villains/Scheme just did something *to* you. Emitted via an optional `outcome`
+> field on the `queueMessage` rule effect (Scheme Twist / scheme-loss) and directly
+> at the villain-reveal Ambush fire site.
 
 - **Closed set, drift-detected.** `LOG_OUTCOMES` is registered as a canonical
   readonly array (§code-style: array ↔ union parity drift test, exactly like

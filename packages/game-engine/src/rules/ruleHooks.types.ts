@@ -9,6 +9,7 @@
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import type { LogOutcome } from '../log/logOutcome.types.js';
 
 // ---------------------------------------------------------------------------
 // Trigger Names
@@ -131,7 +132,13 @@ export type TriggerPayloadMap = {
  * (WP-009B) applies them to G deterministically.
  */
 export type RuleEffect =
-  | { type: 'queueMessage'; message: string }
+  // why: WP-643-follow-up — `outcome` is an OPTIONAL log colour class (defaults to
+  // `neutral` at apply time). Additive and backward-compatible: every existing
+  // queueMessage effect stays byte-identical in behaviour. Lets a Scheme-adversity
+  // message (twist advance, scheme-loss threshold) carry the `threat` colour without
+  // a second effect type. `G.messages` is hash-excluded (D-24081), so this is
+  // replay-safe and carries no determinism/par cost.
+  | { type: 'queueMessage'; message: string; outcome?: LogOutcome }
   | { type: 'modifyCounter'; counter: string; delta: number }
   | { type: 'drawCards'; playerId: string; count: number }
   | { type: 'discardHand'; playerId: string };

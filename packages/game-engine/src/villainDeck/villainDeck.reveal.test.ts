@@ -1451,6 +1451,16 @@ describe('revealVillainCard — WP-200 ambushResolved emission', () => {
     const moveContext = makeMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
+    // why: WP-643-follow-up — an Ambush card's city-entry line is flagged `[Ambush]`
+    // and coloured `threat` (villain-purple), keeping the "entered the city" substring.
+    const entryLine = gameState.messages.find(
+      (message) => message.text.includes(villainExtId) && message.text.includes('entered the city'),
+    );
+    assert.ok(entryLine, 'the ambush villain must log a city-entry line');
+    assert.ok(entryLine!.text.startsWith('[Ambush]') || entryLine!.text.includes('[Ambush]'),
+      'the ambush entry line is flagged [Ambush]');
+    assert.equal(entryLine!.outcome, 'threat', 'the ambush entry line is coloured threat');
+
     assert.equal(
       gameState.notableEvents.length,
       1,
