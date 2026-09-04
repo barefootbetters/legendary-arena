@@ -28,6 +28,8 @@ import type {
   StoredGameover,
   ResultPlayerIdentity,
 } from './matchLagn.logic.js';
+import type { BattlePlanRecord } from './battlePlan.types.js';
+import type { CompetitiveScoreRecord } from '../competition/competition.types.js';
 import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
 
 type Handler = (koaContext: FakeContext) => Promise<void> | void;
@@ -104,12 +106,21 @@ function logicSeam(options: {
   seats: { playerId: string; accountId: AccountId }[];
   gameover?: StoredGameover | null;
   identities?: Map<AccountId, ResultPlayerIdentity>;
+  battlePlan?: BattlePlanRecord | null;
+  replayHash?: string | null;
+  score?: CompetitiveScoreRecord | null;
 }): MatchLagnLogic {
   return {
     readMatchConfigurationForLagn: async () => options.configuration,
     readSeatAccounts: async () => options.seats,
     readMatchGameover: async () => options.gameover ?? null,
     readAccountPublicIdentities: async () => options.identities ?? new Map(),
+    // why: the WP-641 Battle-Plan / report-card reads default to the "no block"
+    // case (null), so every existing result-lagn case still emits no `battle_plan`
+    // / `result.score`; a case that wants them supplies the record + hash.
+    readBattlePlan: async () => options.battlePlan ?? null,
+    readReplayHashByMatchId: async () => options.replayHash ?? null,
+    findCompetitiveScore: async () => options.score ?? null,
   };
 }
 
@@ -252,7 +263,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     assert.equal(context.headers['Cache-Control'], 'no-store');
   });
 
-  test('AC-1/AC-2: 200 { lagn } — valid 1.4.0 with result + players[], handle as player_id, never AccountId', async () => {
+  test('AC-1/AC-2: 200 { lagn } — valid 1.5.0 with result + players[], handle as player_id, never AccountId', async () => {
     const router = new FakeRouter();
     registerMatchLagnRoutes(
       router,
@@ -279,7 +290,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     const body = context.body as { lagn: Record<string, unknown> };
     assert.deepEqual(Object.keys(body), ['lagn']);
     assert.equal(validate(body.lagn).valid, true);
-    assert.equal(body.lagn.lagn_version, '1.4.0');
+    assert.equal(body.lagn.lagn_version, '1.5.0');
     assert.deepEqual(body.lagn.result, { outcome: 'victory' });
     assert.equal(body.lagn.scoring_profile, 'classic');
 
@@ -379,6 +390,101 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     const body = context.body as { lagn: Record<string, unknown> };
     assert.equal(validate(body.lagn).valid, true);
     assert.equal('result' in body.lagn, false);
+  });
+
+  test('WP-641: a scored match with a plan wires battle_plan + result.score into the document', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        gameover: { outcome: 'heroes-win' },
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+        battlePlan: {
+          matchId: 'finished-match',
+          preBattle: 'Recruit Covert early.',
+          battleAdjustments: null,
+          postBattle: 'Clutch fight on turn 9.',
+          updatedByExtId: 'account-caller',
+          createdAt: '2026-09-04T00:00:00.000Z',
+          updatedAt: '2026-09-04T00:00:00.000Z',
+        } as BattlePlanRecord,
+        replayHash: 'sha256:deadbeef',
+        score: {
+          submissionId: 1,
+          accountId: CALLER,
+          replayHash: 'sha256:deadbeef',
+          scenarioKey: 'core/loki-god-of-mischief|core/the-legacy-virus|1',
+          rawScore: 3900,
+          finalScore: 100,
+          scoreBreakdown: { parScore: 3800 },
+          parVersion: 'par-v3',
+          scoringConfigVersion: 7,
+          stateHash: 'sha256:cafef00d',
+          createdAt: '2026-09-04T00:00:00.000Z',
+          outcome: 'heroes-win',
+          playerCount: 1,
+          isRankedEligible: true,
+          teamKey: null,
+          henchmanKey: null,
+        } as unknown as CompetitiveScoreRecord,
+      }),
+    );
+    const context = makeContext('finished-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown> };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal(body.lagn.lagn_version, '1.5.0');
+    // battle_plan rides — the two present phases, the null one omitted
+    assert.deepEqual(body.lagn.battle_plan, {
+      pre_battle: 'Recruit Covert early.',
+      post_battle: 'Clutch fight on turn 9.',
+    });
+    // result.score rides nested under result (outcome present)
+    assert.deepEqual(body.lagn.result, {
+      outcome: 'victory',
+      score: {
+        raw_score: 3900,
+        par_score: 3800,
+        final_score: 100,
+        grade: 'b',
+        scoring_config_version: 7,
+        par_version: 'par-v3',
+      },
+    });
+  });
+
+  test('WP-641: an unscored match (score row null) omits result.score; battle_plan omitted with no plan row', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        gameover: { outcome: 'heroes-win' },
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+        // replay artifact exists but no competitive_scores row → score omitted
+        replayHash: 'sha256:deadbeef',
+        score: null,
+        battlePlan: null,
+      }),
+    );
+    const context = makeContext('finished-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown> };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal('battle_plan' in body.lagn, false);
+    assert.deepEqual(body.lagn.result, { outcome: 'victory' });
+    assert.equal('score' in (body.lagn.result as Record<string, unknown>), false);
   });
 
   test('500 lagn_projection_failed when the projected document is invalid', async () => {

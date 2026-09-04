@@ -62,16 +62,20 @@ export const LAGN_VERSION_1_5_0 = '1.5.0'
 /**
  * The version this build stamps on documents it writes.
  *
- * why: 1.4.0 as of WP-406 — the result-LAGN producer
- * (`GET /api/match/:matchId/result-lagn`) emits `players[]`, which the WP-405
- * version gate rejects on any pre-1.4.0 document, so the writer must stamp 1.4.0
- * for the emitted result to be a legal write. Readers still accept every version
- * back to 1.0.0 (`LAGN_SUPPORTED_VERSIONS`), so no stored record migrates. This
- * moves the stamped version of the existing setup emitter too (§21 / D-11804);
- * api-endpoints.md is updated in the same change. `package.json` is bumped in
- * lockstep (the EC-422 manifest lock).
+ * why: 1.5.0 as of WP-641 — the result-LAGN producer
+ * (`GET /api/match/:matchId/result-lagn`) now emits `battle_plan` and
+ * `result.score`, which the WP-640 version gate rejects on any pre-1.5.0
+ * document, so the writer must stamp 1.5.0 for the emitted result to be a legal
+ * write. Readers still accept every version back to 1.0.0
+ * (`LAGN_SUPPORTED_VERSIONS`), so no stored record migrates; flipping the stamp
+ * makes the 1.0.0→1.5.0 migration chain reachable with no `migrate.ts` change.
+ * This moves the stamped version of the existing setup emitter too (§21 /
+ * D-11804); api-endpoints.md is updated in the same change. `package.json` is
+ * bumped in lockstep (the EC-422 manifest lock) in this same commit, so the
+ * validator constant and the manifest never briefly advertise different
+ * versions.
  */
-export const LAGN_VERSION = LAGN_VERSION_1_4_0
+export const LAGN_VERSION = LAGN_VERSION_1_5_0
 
 /**
  * Every version this build can read, oldest first.
