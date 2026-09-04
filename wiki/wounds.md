@@ -18,6 +18,7 @@ related:
   - cardextid.md
   - scoring.md
   - gameplay-strategy.md
+  - visual-effects.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\wounds.md (this page — https://ewiki.legendary-arena.com/wounds/)
@@ -166,6 +167,11 @@ always compatible with a later Heal.
   and effects (Villain attacks, `wound-all` scheme twists, Master
   Strikes) through `gainWound`; see [Board Keywords](board-keywords.md)
   and [Scheme Twist](scheme-twist.md) for the emitters.
+- **Game-log colour.** A reveal-or-punish Scheme Twist that lands a Wound
+  on a player because they held no matching Hero logs a **red** (`blocked`)
+  line ("… no matching … hero — gained a wound"); revealing the required
+  Hero instead logs a **green** (`applied`) "penalty avoided" line. See the
+  [game-log colour legend](visual-effects.md#game-log-legend).
 - **Turn System.** Healing is a main-stage action of the current player's
   turn; the acted/healed flags live in per-turn economy state and reset
   in the turn `onBegin` alongside the draw and reveal allowances (see

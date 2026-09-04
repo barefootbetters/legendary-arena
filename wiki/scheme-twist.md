@@ -20,6 +20,7 @@ related:
   - card-type-taxonomy.md
   - board-keywords.md
   - scoring.md
+  - visual-effects.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\scheme-twist.md (this page — https://ewiki.legendary-arena.com/scheme-twist/)
@@ -105,9 +106,16 @@ generic effects unconditionally, for every scheme:
 
 The message names the twist number and (unless the scheme's twist-loss is
 suppressed by a real `resourceLossCondition`, D-24315) the doom-clock progress
-`N of T`, and is coloured `threat` (villain-purple) in the game log. The literal
-substring `twist count incremented` is kept verbatim because
+`N of T`, and is coloured `threat` (villain-purple) in the game log — the
+board-adversity colour, distinct from the red a *player's* failed effect gets
+(see the [game-log colour legend](visual-effects.md#game-log-legend)). The
+scheme-loss-threshold line is `threat` too. The literal substring
+`twist count incremented` is kept verbatim because
 `scripts/extract-par-anchors.mjs` counts twists by matching it in the log text.
+
+The reveal-or-punish twist's per-player lines are coloured by player impact:
+**red** (`blocked`) when a player takes the Wound / discard-hand penalty,
+**green** (`applied`) when a player reveals the required Hero and dodges it.
 
 Then, if the predicted post-increment twist count reaches the scheme's
 **loss threshold**, it appends two more effects to the same returned
