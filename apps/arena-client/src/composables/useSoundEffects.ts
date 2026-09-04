@@ -3,7 +3,7 @@
  *
  * The notable-event SFX consumer (WP-412 Surface 1). It watches the
  * `UIState.notableEvents` stream shipped by WP-200 and plays the clip mapped to
- * each newly-appended event's `type` (the six `NotableGameEventType` variants).
+ * each newly-appended event's `type` (the eight `NotableGameEventType` variants).
  *
  * This is a SIBLING of `useNotableEventStream`, NOT a reuse of it: the overlay
  * stream surfaces one event at a time through a 2.5 s auto-dismiss queue (the
