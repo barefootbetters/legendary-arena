@@ -25,7 +25,9 @@ source:
   - C:\www\legendary-arena-com\docs\marketing\homepage-review-template.md
   - C:\www\legendary-arena-com\docs\marketing\homepage-appendix.md
   - C:\www\legendary-arena-com\static\brand-tokens.css
-last-reviewed: 2026-07-18
+  - C:\www\legendary-arena-com\layouts\_partials\footer.html
+  - C:\www\legendary-arena-com\assets\css\extended\custom.css
+last-reviewed: 2026-09-04
 ---
 
 # Blog Post Authoring
@@ -489,6 +491,65 @@ commit that touches anything outside `content/**` and
 `static/brand-tokens.css` — is **rejected**. That is why the
 `cta: "leaderboard"` fix above cannot ride along as a `FIX:`. Full
 workflow: `C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md`.
+
+### Editing the footer (and other site chrome)
+
+The footer is **site chrome, not content.** PaperMod renders a single footer
+partial on every page — the blog included — so there is no blog-only footer,
+and any change shows everywhere at once.
+
+**Where it lives (all in the marketing repo):**
+
+| Path | What it controls |
+|---|---|
+| `layouts\_partials\footer.html` | The footer markup — the brand mark, the footer nav region, the newsletter block, the copyright line. A project override of PaperMod's own `footer.html`; Hugo resolves it ahead of the theme copy. |
+| `assets\css\extended\custom.css` (§4.6 Footer) | Footer styling — `.footer`, `.footer-nav`, `.footer-newsletter`, `.footer-brand`. |
+| `hugo.toml` (`[[menu.footer]]` entries) | The footer **link menu** — each entry is one nav item (name, url, weight). Adding a link is the smallest possible footer edit. |
+| `static\brand\logo\` | Footer brand assets (e.g., `legendary-arena-emblem.webp`). |
+
+**It is outside the content lane — every footer edit needs a `WP-NNN:`
+prefix.** `layouts\`, `assets\`, `hugo.toml`, and `static\brand\` are all
+site-affecting paths, so the commit hook **rejects** a `POST:` or `FIX:`
+commit that touches them (see
+[Commit Prefixes](#commit-prefixes-marketing-repo) above). Author a short,
+self-contained WP at
+`C:\www\legendary-arena-com\docs\ai\work-packets\WP-NNN-<slug>.md` — the
+marketing WP is lightweight (a title, a "why", and a "what changed" table; no
+execution-checklist ceremony) — and commit the WP file **together with** the
+change under the `WP-NNN:` prefix. Numbering just continues from the highest
+existing `WP-` in `docs\ai\work-packets\`.
+
+**Two worked examples:**
+
+- **Add a footer link — `WP-246`.** One `[[menu.footer]]` entry in `hugo.toml`
+  pointing at `/tournaments/`. The whole change is a config block plus the WP
+  record.
+- **Add the footer logo — `WP-247`.** A `.footer-brand` `<a><img>` in
+  `footer.html`, its `.footer-brand` rule in `custom.css` §4.6, and the
+  `legendary-arena-emblem.webp` asset under `static\brand\logo\`.
+
+**The footer surface is theme-aware — a footer image must read on both
+themes.** `.footer` background is `--la-color-bg-primary`, which follows the
+light/dark toggle. That is why the footer uses the **gold emblem** rather than
+the full "LEGENDARY ARENA" wordmark lockup: the lockup's white "ARENA" text and
+horn half (and its black artboard) look right only on a dark surface and break
+on the light-theme footer. A single-colour gold mark reads on both. If a future
+footer graphic carries white or black detail, ship a **light/dark pair** and
+swap on `html[data-theme]` — don't assume one asset works everywhere. (Source
+art lives in pCloud, e.g. `C:\pcloud\LA\brand\`; only the optimized web export
+is committed — the same source-vs-derivative rule as post images.)
+
+**Do not branch the footer partial on `.Section`.** `footer.html` is rendered
+with `partialCached` keyed on `.Kind`/`.Layout` (see the note in
+`extend_footer.html`), so its markup is shared across pages of the same kind — a
+`.Section` conditional silently leaks whichever page rendered first into the
+cache. A footer that must differ by section is a template-architecture change,
+not a conditional.
+
+Deploy and preview are the same as a post: branch, PR, read the Cloudflare
+preview, squash-merge. Because a footer change touches every page, **check the
+preview on more than one page kind** (home, a blog post, a shop page) and in
+**both light and dark themes** before merging.
 
 ### Publishing
 
