@@ -21,7 +21,8 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
-last-reviewed: 2026-08-31
+  - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
+last-reviewed: 2026-09-04
 ---
 
 # AI Second Brain
@@ -159,6 +160,9 @@ are genuine choices deferred to the build (see [Open Questions](#open-questions)
 | PostgreSQL + `pgvector` (HNSW) as the single store | **Preferred** |
 | LiteLLM gateway + Open WebUI chat surface | **Preferred** |
 | `nomic-embed-text` embeddings (BGE-M3 the alternative) | **Preferred** |
+| Voice = Open WebUI conversation mode over Tailscale Serve HTTPS | **Preferred** |
+| Voice legs (STT/TTS) = local Whisper + Piper; hosted only if local fails, never sensitive domains | **Preferred** |
+| Spoken answer short with a verbal pointer; full citations render in the chat pane | **Preferred** |
 | Ingestion: retrieval framework vs pure-custom | **Open** |
 | Model roster and local/hosted mix | **Open** |
 
@@ -616,6 +620,82 @@ underneath them is not. The motto *knowledge is permanent, agents are replaceabl
 is exactly this split — "agents" is hardware + model + harness, and any of the
 three can change without moving a single fact.
 
+### Voice interface (speech in, speech out)
+
+Voice is a **replaceable agent-layer surface**, not a new part of the
+architecture. Speech-to-text and text-to-speech are two more swappable legs in
+front of the permanent knowledge base, exactly like the model (LiteLLM) and the
+chat surface (Open WebUI) — so adding voice **touches no Locked row.** It is a
+**Preferred**-row and runbook addition, not a new `DECISIONS.md` entry. And it
+changes nothing about retrieval: a spoken question is resolved by the same
+navigation-first tiers and the same
+[knowledge-query MCP surface](#knowledge-query-mcp-surface) a typed one is. The
+request said "text-to-speech," but a hands-free loop needs both legs; both are
+below.
+
+**The chat surface already does this.** Open WebUI — the Preferred chat surface
+([Proposed stack](#proposed-stack)) — has a hands-free conversation mode built
+in: the operator speaks, the model answers, the reply is read back, and the mic
+re-arms for the next turn. Two properties make it a good fit for this design:
+
+- Replies are read aloud **sentence-by-sentence as they stream**, so playback
+  starts before the full answer is generated — retrieval latency on a CPU box
+  does not read as dead air.
+- Voice mode carries its **own system prompt**, separate from the chat prompts —
+  which is the hook the citation problem below needs.
+
+**Three swappable legs, each a config row, not code.** Each leg is chosen per the
+same owned-vs-hosted tension the rest of the platform already navigates:
+
+| Leg | Local (owned host) | Hosted (quality) |
+|---|---|---|
+| Speech → text | local Whisper in Open WebUI (`faster-whisper` `base`/`small`, CPU) | any OpenAI-compatible transcription API |
+| Reasoning | the LiteLLM roster | same |
+| Text → speech | Piper or Kokoro behind an OpenAI-shaped endpoint | any OpenAI-compatible `/audio/speech` endpoint |
+
+Both audio legs speak the **same OpenAI-compatible shape** as the model calls,
+so they belong behind LiteLLM for the same reason the
+[endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch) does:
+swapping a voice or a transcriber is a gateway/config change, not a code edit.
+That is *Model Independence* extended one layer out to audio, and wiring it that
+way from the start costs nothing.
+
+**Spoken answers and citable answers are different surfaces.** This is the one
+real design problem voice introduces, and it lands squarely on *Auditability*.
+The citation shape the knowledge-query surface returns — `source_path` +
+`header_path` + `content_hash` — cannot be read aloud, and provenance is not
+optional here. So split the surfaces:
+
+- **Spoken (the "car" answer):** two or three sentences ending in a short verbal
+  pointer — *"from D-24341"* or *"from Work Packet 594."* No lists, no paths, no
+  hashes, no URLs.
+- **Pane (the desk answer):** the full `source_path` / heading / `content_hash`
+  renders in the chat pane behind the spoken reply, unchanged.
+
+Voice mode's separate system prompt is what enforces that split — it constrains
+the *spoken* answer to the short-pointer shape while the full provenance still
+renders visibly. The exact prompt and the phone-path setup are execution detail;
+they live in the
+[voice/mobile operator addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md),
+not on this descriptive page.
+
+**Captures land as Transient.** Voice gives the
+[governance lifecycle](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)
+a natural new inflow, and it inherits the same rule as every other capture: a
+spoken exchange is **Transient**, never promoted to Authoritative without the
+operator sitting down at a keyboard. Speaking to the brain is a retrieval and
+capture act, never a governance one.
+
+> **Sequencing: there is no brain to talk to yet.** The platform is still
+> `status: draft` — nothing described here is running, so voice is a step in the
+> runbook *after* the corpus census and the first navigation slice
+> ([Pilot scope](#pilot-scope-recommended-first-vertical)), not a this-weekend
+> task. In the meantime, a vendor mobile voice mode (Claude or Grok) pointed at a
+> Project holding the governance Markdown is a rough stand-in that teaches what
+> the spoken answers should sound like before the real surface exists. The spoken
+> contract can be locked now; the phone path is wired the moment the chat surface
+> is up.
+
 ### Gateway routing for the endgame coach (decision sketch)
 
 The [endgame coach](#proposed-stack) is named as the first proof point of the
@@ -922,6 +1002,15 @@ The first useful slice:
   A concrete first instance: an **MCP-mediated system-inventory or config-review**
   task, where the agent reaches the target only through least-privilege MCP servers
   (*Read-Only Connectors First*) and every finding cites the navigated source.
+- **One voice success test, once the navigation slice answers** — ask a
+  governance question by *voice* (Open WebUI conversation mode) and get a spoken
+  two-or-three-sentence answer ending in a verbal pointer, while the full citation
+  renders in the pane. It is a sharper end-to-end check than the typed version —
+  one gesture exercises retrieval, the spoken/citable split, and the
+  Transient-capture rule — and it needs no vector layer. It follows the navigation
+  slice rather than gating it; setup is in the
+  [voice/mobile addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md) (see
+  [Voice interface](#voice-interface-speech-in-speech-out)).
 
 Everything else waits until the pilot has been used for real work, failures have
 been captured (the feedback surface above), and the recovery path has been
@@ -979,6 +1068,11 @@ This is the summary index; the individual gotchas and their nuances live in
   — the executable operator runbook this page is the design record for: provision,
   `docker-compose`, schema, ingestion, first skills, and the restore drill. This
   page defines *what and why*; the runbook is *how*.
+- **[`docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md`](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md)**
+  — the voice/mobile operator addendum for the [Voice interface](#voice-interface-speech-in-speech-out)
+  section: Tailscale Serve setup for phone access, the voice-mode system prompt
+  (spoken answer + verbal pointer), and the do-this-week-vs-after-the-box checklist.
+  Executable detail this page defers.
 - **[Disaster Recovery](disaster-recovery.md)** — the recovery discipline this
   platform inherits: two backup layers, rehearsed restores, honest
   recoverability verdicts. The knowledge base is another crown-jewel store that
@@ -1084,6 +1178,34 @@ This is the summary index; the individual gotchas and their nuances live in
   but the *inference* is not. For sensitive domains (client engineering data,
   formulations) that tension is real; route those through a local CPU model, or
   scope what the knowledge-query MCP server will return to a hosted model.
+- **Microphone access requires HTTPS — a plain LAN IP fails silently.** Browsers
+  gate the microphone to secure contexts, so reaching the brain from a phone at
+  `http://192.168.x.x:3000` gets no mic prompt and no error — it simply never
+  records. Because the brain is single-operator, **Tailscale Serve** is the clean
+  fix: a private path with a real cert and no public listener solves both exposure
+  and the secure-context requirement in one move (Cloudflare Tunnel + Access is the
+  alternative, matching the ewiki's own gate). Setup is in the
+  [voice/mobile addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md).
+- **CPU-only Whisper degrades on long utterances.** `faster-whisper` `base`/`small`
+  on an 8 GB / 2 vCPU box is fine for 5–15-second turns but falls off badly on a
+  two-minute ramble. Measure it during the pilot before deciding the local-vs-hosted
+  STT row — exactly the kind of thing *Incremental Automation* wants proven, not
+  assumed.
+- **Hosted speech-to-text ships raw dictation off the box — sharper than the text
+  case above.** The hosted-inference caveat already notes that leaning on hosted
+  models sends retrieved context to a third party; audio makes it sharper, because
+  hosted STT sends **raw dictation** — unscoped, pre-retrieval — about
+  client-engineering or Barefoot Betters work to a vendor before any redaction
+  happens. Keep STT **local** for anything Engineering or Barefoot Betters; reach
+  for hosted STT only if local accuracy proves unusable, never for a sensitive
+  domain.
+- **Citations cannot be spoken — split the surfaces, do not drop them.**
+  `source_path` + `header_path` + `content_hash` is unreadable aloud, and
+  *Auditability* is not optional. The mitigation is the
+  [Voice interface](#voice-interface-speech-in-speech-out) spoken/citable split: a
+  short verbal pointer in the spoken answer, the full provenance in the chat pane.
+  A voice surface that reads only the spoken answer and drops the pane citation is
+  a governance regression, not a convenience.
 
 ## History
 
@@ -1182,6 +1304,22 @@ This is the summary index; the individual gotchas and their nuances live in
   quantization / reasoning-effort roster factors (Open Question 2), and a
   residential-hosting (Cox AUP) caution (Edge Cases). No **Locked** decision
   changed.
+- **2026-09-04 — voice interface added (Preferred / runbook, no re-lock).**
+  Recorded speech-to-text and text-to-speech as replaceable agent-layer legs in
+  front of the permanent store: Open WebUI's built-in conversation mode over
+  Tailscale Serve HTTPS, three swappable legs (local Whisper + Piper the default,
+  hosted OpenAI-compatible endpoints the quality option, both behind LiteLLM), and
+  the spoken-answer / full-citation-in-the-pane split that keeps *Auditability*
+  intact when provenance cannot be read aloud. Added at **Preferred** level only —
+  three Preferred table rows, a
+  [Voice interface](#voice-interface-speech-in-speech-out) section, a Pilot-scope
+  voice success test, four [Edge Cases](#edge-cases) (HTTPS-gated mic, CPU-Whisper
+  limits, hosted-STT leakage, unspeakable citations), and a standalone
+  [voice/mobile operator addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md)
+  (Tailscale setup, the voice-mode system prompt, do-this-week-vs-after-the-box
+  steps). Voice touches **no Locked row** and is **not** a new `DECISIONS.md`
+  entry — speech in and speech out are agent-layer pieces, replaceable like
+  LiteLLM and Open WebUI.
 
 ## Open Questions
 
@@ -1260,6 +1398,10 @@ is built.
 - [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
   — the executable operator runbook (provision, `docker-compose`, schema,
   ingestion, first skills, restore drill) this page is the design record for.
+- [`docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md`](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md)
+  — the voice/mobile operator addendum: Tailscale Serve setup, the voice-mode
+  system prompt (spoken answer + verbal pointer), and the
+  do-this-week-vs-after-the-box checklist. Executable detail this page defers.
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline
