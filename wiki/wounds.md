@@ -35,8 +35,9 @@ source:
   - ../apps/arena-client/src/components/play/TurnActionBar.vue
   - ../docs/ai/DECISIONS.md
   - ../docs/ai/work-packets/WP-379-wound-healing-ability.md
+  - ../apps/arena-client/src/components/play/HandRow.vue
   - ../docs/Marvel Legendary Universal Rules v23.txt
-last-reviewed: 2026-08-11
+last-reviewed: 2026-09-04
 ---
 
 # Wounds
@@ -246,6 +247,19 @@ always compatible with a later Heal.
   restored the five drifted pending-choice guards so it mirrors the engine
   `healWounds` block-all set exactly, ending a live-but-dead Heal click
   while a triggered-effect choice was unresolved
+- PR #1785 + WP-643 / EC-678 (2026-09-04, D-24455): **Wounds can't be
+  played** is now enforced end to end. The client `HandRow`
+  ([`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue))
+  disables the hand tile for a Wound (PR #1785), and the engine reducer
+  `playCard` rejects `WOUND_EXT_ID` with a card-specific pre-commit `void`
+  return (the D-24185 class) while the sim `getLegalMoves` skips it in
+  lockstep — so no caller (raw socket, bot) can play a Wound. This closed the
+  "Heal disabled once all my cards are in play" report: a played Wound had been
+  moving `hand → inPlay`, where the hand-only Healing ability could no longer
+  reach it. See [Edge Cases → Wounds can't be played](#edge-cases).
+- PR #1787 / #1788 (2026-09-04): the game log colours a reveal-or-punish
+  Wound **penalty** red (`blocked`) and a **penalty-avoided** reveal green
+  (`applied`); full [game-log colour legend](visual-effects.md#game-log-legend).
 
 ## References
 
@@ -253,7 +267,10 @@ always compatible with a later Heal.
   — move validation contract; non-core internally-gated moves
 - [`docs/ai/DECISIONS.md`](../docs/ai/DECISIONS.md) — D-24179 / D-24180 /
   D-24181 (Healing + acted/healed locks); D-24184 / D-24284 / D-24286 /
-  D-24291 / D-24301 (the pending-choice guards the gate mirrors)
+  D-24291 / D-24301 (the pending-choice guards the gate mirrors); D-24185
+  (card-specific pre-commit precondition class); D-24455 (Wounds can't be
+  played — reducer guard + `getLegalMoves` skip)
 - [`docs/Marvel Legendary Universal Rules v23.txt`](../docs/Marvel%20Legendary%20Universal%20Rules%20v23.txt)
   — tabletop semantics for Wounds and the Healing ability
-- WP-379, WP-380, WP-381 (Wound Healing arc); WP-530 / EC-565 (gate parity)
+- WP-379, WP-380, WP-381 (Wound Healing arc); WP-530 / EC-565 (gate parity);
+  WP-643 / EC-678 (Wounds can't be played — engine + client)
