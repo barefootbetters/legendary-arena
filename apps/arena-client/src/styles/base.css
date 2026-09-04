@@ -45,6 +45,12 @@
      never the raw --la-color-* brand token. */
   --color-par-partial: var(--la-color-warning);
   --color-active-player: var(--la-color-blue-bright);
+  /* why: WP-643-follow-up — villain accent for board-adversity surfaces (the
+     `threat` game-log line; the NotableEventOverlay villain border already used this
+     token name with an inline fallback). No brand purple exists in the --la-color-*
+     palette, so this is a direct value rather than an alias; keep it in sync with the
+     NotableEventOverlay fallback (#7b1fa2). Readable on both light and dark grounds. */
+  --color-villain: #7b1fa2;
 
   /* Play-surface fluid-desktop sizing (WP-430 / D-24251). Size tokens only —
      no color, so the "no raw hex" color rule above does not apply. Consumed by

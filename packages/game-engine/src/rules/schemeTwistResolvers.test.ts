@@ -138,6 +138,8 @@ describe('reveal-or-punish resolver', () => {
     assert.equal(gameState.piles.wounds.length, 2, 'wound supply unchanged');
     const matchMessage = gameState.messages.find((message) => message.text.includes('condition met'));
     assert.ok(matchMessage, 'must log condition-met message');
+    // why: WP-643-follow-up — dodging the penalty is a good outcome for the player → green.
+    assert.equal(matchMessage!.outcome, 'applied', 'condition-met line is coloured applied (green)');
   });
 
   it('player without matching heroClass gains wound', () => {
@@ -152,6 +154,10 @@ describe('reveal-or-punish resolver', () => {
 
     assert.equal(gameState.piles.wounds.length, 1, 'one wound consumed from supply');
     assert.equal(gameState.playerZones['0']!.discard.length, 1, 'wound in discard');
+    // why: WP-643-follow-up — taking the Wound penalty is a bad outcome for the player → red.
+    const woundMessage = gameState.messages.find((message) => message.text.includes('gained a wound'));
+    assert.ok(woundMessage, 'must log gained-a-wound message');
+    assert.equal(woundMessage!.outcome, 'blocked', 'gained-a-wound line is coloured blocked (red)');
   });
 
   it('player without matching hero discards hand when penalty is discardHand', () => {
@@ -168,6 +174,10 @@ describe('reveal-or-punish resolver', () => {
 
     assert.equal(gameState.playerZones['0']!.hand.length, 0, 'hand is empty');
     assert.equal(gameState.playerZones['0']!.discard.length, 3, 'all cards in discard');
+    // why: WP-643-follow-up — the discard-hand penalty is a bad outcome for the player → red.
+    const discardMessage = gameState.messages.find((message) => message.text.includes('discarded entire hand'));
+    assert.ok(discardMessage, 'must log discarded-entire-hand message');
+    assert.equal(discardMessage!.outcome, 'blocked', 'discarded-entire-hand line is coloured blocked (red)');
   });
 
   it('handles multiple players independently', () => {

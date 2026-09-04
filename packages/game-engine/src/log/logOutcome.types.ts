@@ -21,8 +21,13 @@
  * - `partial` — some-but-not-all / conditional-skipped (yellow).
  * - `blocked` — tried and nothing happened: condition-failed, empty source,
  *   no-branch-matched, hollow (red).
+ * - `threat` — a villain / Scheme adversity advanced against the players: an
+ *   Ambush firing, a Scheme Twist ticking the doom clock, a Scheme-loss
+ *   threshold reached (villain-purple). Distinct from `blocked` (which means
+ *   the PLAYER's own effect did nothing) — `threat` is the board acting on the
+ *   players, and it always "happened".
  */
-export type LogOutcome = 'neutral' | 'applied' | 'partial' | 'blocked';
+export type LogOutcome = 'neutral' | 'applied' | 'partial' | 'blocked' | 'threat';
 
 /**
  * All log outcomes in canonical order. Single source of truth (canonical
@@ -35,6 +40,7 @@ export const LOG_OUTCOMES: readonly LogOutcome[] = [
   'applied',
   'partial',
   'blocked',
+  'threat',
 ] as const;
 
 // why: type-only — CardExtId is a string alias; this keeps the

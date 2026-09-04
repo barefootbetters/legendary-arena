@@ -98,8 +98,16 @@ generic effects unconditionally, for every scheme:
 
 ```ts
 { type: 'modifyCounter', counter: 'schemeTwistCount', delta: 1 }
-{ type: 'queueMessage',  message: 'Scheme twist revealed — twist count incremented.' }
+{ type: 'queueMessage',
+  message: 'Scheme Twist #N revealed — the Scheme advances; twist count incremented (N of T to Evil Wins).',
+  outcome: 'threat' }
 ```
+
+The message names the twist number and (unless the scheme's twist-loss is
+suppressed by a real `resourceLossCondition`, D-24315) the doom-clock progress
+`N of T`, and is coloured `threat` (villain-purple) in the game log. The literal
+substring `twist count incremented` is kept verbatim because
+`scripts/extract-par-anchors.mjs` counts twists by matching it in the log text.
 
 Then, if the predicted post-increment twist count reaches the scheme's
 **loss threshold**, it appends two more effects to the same returned

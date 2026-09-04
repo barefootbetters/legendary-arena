@@ -419,6 +419,13 @@ export default defineComponent({
 .game-log__line--blocked {
   color: var(--color-par-negative);
 }
+/* why: WP-643-follow-up — `threat` lines (Ambush / Scheme Twist / scheme-loss) use
+   the villain accent so board-adversity reads distinctly from the player-effect
+   red/green/yellow. --color-villain is defined in base.css; the literal fallback
+   matches the NotableEventOverlay villain accent for the rare unset-token case. */
+.game-log__line--threat {
+  color: var(--color-villain, #7b1fa2);
+}
 
 /* why: the outcome glyph is decorative (aria-hidden) — it reinforces the colour for
    colour-blind readers; the sr-only word (below) carries the outcome for screen

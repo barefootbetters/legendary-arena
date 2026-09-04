@@ -9,6 +9,7 @@
  */
 
 import type { RuleEffect } from './ruleHooks.types.js';
+import type { LogOutcome } from '../log/logOutcome.types.js';
 import type { LegendaryGameState } from '../types.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
@@ -32,9 +33,11 @@ interface EffectContext {
  */
 function applyQueueMessage(
   gameState: LegendaryGameState,
-  effect: { type: 'queueMessage'; message: string },
+  effect: { type: 'queueMessage'; message: string; outcome?: LogOutcome },
 ): void {
-  pushLog(gameState, effect.message);
+  // why: default to `neutral` so the ~dozen existing queueMessage callers stay
+  // byte-identical; only Scheme-adversity messages pass `threat` (WP-643-follow-up).
+  pushLog(gameState, effect.message, effect.outcome ?? 'neutral');
 }
 
 /**

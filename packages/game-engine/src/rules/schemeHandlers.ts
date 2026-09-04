@@ -49,17 +49,28 @@ function buildGenericTwistEffects(
     delta: 1,
   });
 
-  effects.push({
-    type: 'queueMessage',
-    message: 'Scheme twist revealed — twist count incremented.',
-  });
-
   // why: scheme-loss is mediated through counters, not direct endgame
   // calls. The endgame evaluator reads G.counters to determine loss.
   // We predict the post-effect count by adding 1 to the current value
   // because applyRuleEffects has not yet applied the increment above.
   const predictedTwistCount =
     (gameState.counters.schemeTwistCount ?? 0) + 1;
+
+  // why: WP-643-follow-up — the doom-clock line now names THIS twist's number and,
+  // when the twist-threshold proxy is active, how close it is to Evil Wins, so a
+  // player reads the pressure at a glance instead of a bare "count incremented".
+  // The literal substring "twist count incremented" is PRESERVED verbatim because
+  // scripts/extract-par-anchors.mjs counts twists by matching it in the log text —
+  // changing it would silently zero the par-anchor twist count. Coloured `threat`
+  // (villain-purple): a Scheme Twist is the board advancing on the players.
+  const doomClockClause = suppressTwistLoss
+    ? ''
+    : ` (${predictedTwistCount} of ${threshold} to Evil Wins)`;
+  effects.push({
+    type: 'queueMessage',
+    message: `Scheme Twist #${predictedTwistCount} revealed — the Scheme advances; twist count incremented${doomClockClause}.`,
+    outcome: 'threat',
+  });
 
   // why: D-24315 — a scheme that declares a resourceLossCondition loses on that
   // real condition (signalled from the escape path), so the twist-count
@@ -75,6 +86,9 @@ function buildGenericTwistEffects(
     effects.push({
       type: 'queueMessage',
       message: 'Scheme loss triggered — twist threshold reached.',
+      // why: WP-643-follow-up — the villains reaching the doom-clock threshold is
+      // the strongest board-adversity signal; colour it `threat` (villain-purple).
+      outcome: 'threat',
     });
   }
 

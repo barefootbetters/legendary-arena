@@ -130,8 +130,11 @@ function revealOrPunish(
         const traitValue = condition.field === 'heroClass' ? traits.heroClass : traits.team;
         if (traitValue === condition.value) {
           matchFound = true;
-          pushLog(gameState, 
-            `[Scheme Twist] Player ${playerId} reveals "${cardId}" — ${condition.field} "${condition.value}" condition met.`,
+          // why: WP-643-follow-up — the player revealed a matching Hero and DODGED
+          // the penalty; that is a good outcome for the player → `applied` (green).
+          pushLog(gameState,
+            `[Scheme Twist] Player ${playerId} reveals "${cardId}" — ${condition.field} "${condition.value}" condition met; penalty avoided.`,
+            'applied',
           );
           break;
         }
@@ -150,8 +153,11 @@ function revealOrPunish(
             );
             gameState.piles.wounds = woundResult.woundsPile;
             gameState.playerZones[playerId]!.discard = woundResult.playerDiscard;
-            pushLog(gameState, 
+            // why: WP-643-follow-up — the player had no matching Hero and took the
+            // Wound penalty; a bad outcome for the player → `blocked` (red).
+            pushLog(gameState,
               `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — gained a wound.`,
+              'blocked',
             );
           }
         } else if (penalty === 'discardHand') {
@@ -162,8 +168,11 @@ function revealOrPunish(
           for (const cardId of [...gameState.playerZones[playerId]!.hand]) {
             discardFromHand(gameState, playerId, cardId);
           }
-          pushLog(gameState, 
+          // why: WP-643-follow-up — the discard-hand penalty is a bad outcome for the
+          // player, same colour class as the Wound penalty → `blocked` (red).
+          pushLog(gameState,
             `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — discarded entire hand.`,
+            'blocked',
           );
         }
       }

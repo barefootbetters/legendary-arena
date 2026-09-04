@@ -237,10 +237,26 @@ export function performVillainReveal(
     // step 2. Log the city entry here, before the escape/wound/ambush detail
     // lines below, so the reveal is always narrated. (G.messages is
     // hash-excluded, D-24081, so this is replay-safe.)
-    pushLog(
-      G,
-      `${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city.`,
-    );
+    // why: WP-643-follow-up — an Ambush card flags the entry line `[Ambush]` and
+    // colours it `threat` (villain-purple) so a player sees the incoming threat
+    // stand out; the printed effect targets are named on the coloured
+    // "Ambush effect:" line below (fired after the executor resolves them). The
+    // "revealed and entered the city" substring is kept in BOTH branches so the
+    // city-entry log assertions stay valid regardless of Ambush. hasAmbush is
+    // resolved once here and reused at the Ambush executor site below.
+    const cardHasAmbush = hasAmbush(cardId, G.cardKeywords ?? {});
+    if (cardHasAmbush) {
+      pushLog(
+        G,
+        `[Ambush] ${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city!`,
+        'threat',
+      );
+    } else {
+      pushLog(
+        G,
+        `${formatCardRef(G.cardDisplayData, cardId)} revealed and entered the city.`,
+      );
+    }
 
     if (pushResult.escapedCard !== null) {
       // why: ENDGAME_CONDITIONS.ESCAPED_VILLAINS is the canonical counter key
@@ -419,7 +435,7 @@ export function performVillainReveal(
     // (0..4); -1 falls back to 0 if the push collapsed the card off the
     // edge (a contract violation the move never hits in production but
     // the emission must remain defensive).
-    if (hasAmbush(cardId, G.cardKeywords ?? {})) {
+    if (cardHasAmbush) {
       // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
       // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
       // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
@@ -451,8 +467,12 @@ export function performVillainReveal(
       // effect applied. The unconditional city-entry bystander attach below is
       // NOT an Ambush effect and never appears here.
       if (appliedAmbushResults.length > 0) {
-        pushLog(G, 
+        // why: WP-643-follow-up — colour the Ambush effect line `threat`
+        // (villain-purple), matching the `[Ambush]` entry line above, so the whole
+        // Ambush reads as one board-adversity beat in the log.
+        pushLog(G,
           `Ambush effect: ${composeEffectResultLogLine(resolvedAmbushResults)}.`,
+          'threat',
         );
       }
       G.notableEvents.push({

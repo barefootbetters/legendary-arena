@@ -33,6 +33,10 @@ const DISPLAY: Record<LogOutcome, LogOutcomeDisplay> = {
   applied: { className: 'game-log__line--applied', glyph: '✓', label: 'applied' },
   partial: { className: 'game-log__line--partial', glyph: '⚠', label: 'partial' },
   blocked: { className: 'game-log__line--blocked', glyph: '✕', label: 'blocked' },
+  // why: `threat` — a villain / Scheme adversity beat (Ambush, Scheme Twist,
+  // scheme-loss threshold). Villain-purple, with a distinct glyph and a11y label
+  // so it never relies on colour alone (D-24253 §Fork E).
+  threat: { className: 'game-log__line--threat', glyph: '⚔', label: 'threat' },
 };
 
 /**

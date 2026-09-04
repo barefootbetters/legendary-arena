@@ -87,10 +87,18 @@ describe('rule execution pipeline — integration', () => {
 
     applyRuleEffects(gameState, {}, effects);
 
-    assert.ok(
-      gameState.messages.some((entry) => entry.text === 'Scheme twist revealed — twist count incremented.'),
-      'G.messages must contain scheme twist message after onSchemeTwistRevealed',
+    // why: WP-643-follow-up — the scheme-twist line now names the twist number and
+    // doom-clock progress; the "twist count incremented" substring is preserved
+    // (scripts/extract-par-anchors.mjs counts twists by matching it) and the line is
+    // coloured `threat`. Assert the stable substring + the outcome, not the exact prose.
+    const twistLine = gameState.messages.find((entry) =>
+      entry.text.includes('twist count incremented'),
     );
+    assert.ok(
+      twistLine !== undefined,
+      'G.messages must contain the scheme twist "twist count incremented" line after onSchemeTwistRevealed',
+    );
+    assert.equal(twistLine!.outcome, 'threat', 'the scheme-twist line is coloured threat');
   });
 
   it('onMastermindStrikeRevealed trigger produces mastermind strike message in G.messages', () => {
