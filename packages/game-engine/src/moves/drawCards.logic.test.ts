@@ -93,6 +93,47 @@ describe('drawCardsIntoHand', () => {
 
     assert.doesNotThrow(() => JSON.stringify(zones));
   });
+
+  // why: WP-642 — the reshuffle-count return drives the onBegin deckReshuffled
+  // notable event. It is 1 exactly when the deck was exhausted mid-draw and the
+  // discard was reshuffled in, 0 otherwise (a draw within a full deck, or an
+  // empty draw). It can never exceed 1: drawn cards go to the hand, so the
+  // discard stays empty after the first reshuffle within a call.
+  it('returns 1 when the deck is exhausted mid-draw and the discard is reshuffled', () => {
+    const zones = makeZones({
+      deck: ['card-a', 'card-b'],
+      hand: [],
+      discard: ['card-c', 'card-d', 'card-e'],
+    });
+
+    const reshuffleCount = drawCardsIntoHand(zones, 5, reverseShuffleContext);
+
+    assert.equal(reshuffleCount, 1);
+  });
+
+  it('returns 0 when the draw fits within the deck (no reshuffle)', () => {
+    const zones = makeZones({ deck: ['card-a', 'card-b', 'card-c'], hand: [] });
+
+    const reshuffleCount = drawCardsIntoHand(zones, 2, reverseShuffleContext);
+
+    assert.equal(reshuffleCount, 0);
+  });
+
+  it('returns 0 when the deck and discard are both empty (nothing to reshuffle)', () => {
+    const zones = makeZones({ deck: ['card-a'], hand: [], discard: [] });
+
+    const reshuffleCount = drawCardsIntoHand(zones, 5, reverseShuffleContext);
+
+    assert.equal(reshuffleCount, 0);
+  });
+
+  it('returns 0 when count is 0', () => {
+    const zones = makeZones({ deck: [], hand: [], discard: ['card-a', 'card-b'] });
+
+    const reshuffleCount = drawCardsIntoHand(zones, 0, reverseShuffleContext);
+
+    assert.equal(reshuffleCount, 0);
+  });
 });
 
 describe('reshuffleDiscardIntoDeck (WP-478 / D-24285)', () => {

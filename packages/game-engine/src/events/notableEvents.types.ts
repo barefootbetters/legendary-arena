@@ -3,10 +3,10 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries seven locked variants — `fightResolved`, `ambushResolved`,
+ * carries eight locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
- * `healResolved`, `bystanderRevealed` — each composed at its fire site via a
- * pure narrative helper from `notableEvents.compose.ts`.
+ * `healResolved`, `bystanderRevealed`, `deckReshuffled` — each composed at
+ * its fire site via a pure narrative helper from `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -26,13 +26,14 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Seven variants in fixed canonical order: a Fight resolution, an Ambush
+ * Eight variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
- * Strike resolution, a Mastermind defeat, a Wound heal, and a Bystander
- * reveal-and-capture. `'mastermindDefeated'` was added per D-20008 (citing
- * D-20001), `'healResolved'` per WP-381 / D-24182, and `'bystanderRevealed'`
- * per WP-602 / D-24412 so the arena-client overlay can report those outcomes
- * — G.messages is not projected to clients. Adding an eighth variant requires
+ * Strike resolution, a Mastermind defeat, a Wound heal, a Bystander
+ * reveal-and-capture, and a hero-deck reshuffle. `'mastermindDefeated'` was
+ * added per D-20008 (citing D-20001), `'healResolved'` per WP-381 / D-24182,
+ * `'bystanderRevealed'` per WP-602 / D-24412, and `'deckReshuffled'` per
+ * WP-642 / D-24454 so the arena-client overlay can report those outcomes
+ * — G.messages is not projected to clients. Adding a ninth variant requires
  * a new `DECISIONS.md` entry (e.g., WP-186's eventual `'escapeResolved'` per
  * D-20001).
  */
@@ -43,18 +44,20 @@ export type NotableGameEventType =
   | 'mastermindStrikeResolved'
   | 'mastermindDefeated'
   | 'healResolved'
-  | 'bystanderRevealed';
+  | 'bystanderRevealed'
+  | 'deckReshuffled';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The seven-entry canonical order is locked:
+// parity + length + uniqueness). The eight-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
 // `mastermindStrikeResolved` (Mastermind Strike handler terminal),
 // `mastermindDefeated` (fightMastermind vanquish fire site, D-20008),
-// `healResolved` (healWounds fire site, WP-381 / D-24182), and
+// `healResolved` (healWounds fire site, WP-381 / D-24182),
 // `bystanderRevealed` (villainDeck.reveal bystander-capture fire site,
-// WP-602 / D-24412).
+// WP-602 / D-24412), and `deckReshuffled` (the onBegin auto-draw + its
+// applyOnBeginParity mirror, on empty-deck reshuffle, WP-642 / D-24454).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -68,6 +71,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'mastermindDefeated',
   'healResolved',
   'bystanderRevealed',
+  'deckReshuffled',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -256,6 +260,27 @@ export interface BystanderRevealedEvent {
 }
 
 /**
+ * Emitted by the play-phase `onBegin` auto-draw (`game.ts`) and its
+ * observation-harness mirror (`applyOnBeginParity`) when a start-of-turn draw
+ * exhausts the drawing player's deck and reshuffles the discard back into it
+ * (WP-642 / D-24454). The empty-deck reshuffle itself is the standard rule
+ * (WP-236 / D-24051, inside `drawCardsIntoHand`); this event only *announces*
+ * it — the mechanic was previously silent (no log line, no notable event, no
+ * VFX). Minimal payload per D-20001 (no `eventId` / `seq` / `timestamp`) and
+ * carries NO card id (like `HealResolvedEvent`) — a reshuffle is not tied to a
+ * card. Emitted only when a reshuffle actually occurred (`drawCardsIntoHand`
+ * returned a count `> 0`). Presentation parity only, not a new mechanic.
+ */
+export interface DeckReshuffledEvent {
+  /** Discriminator. */
+  type: 'deckReshuffled';
+  /** boardgame.io player-index string ("0", "1", ...) of the drawing player whose deck reshuffled. */
+  playerId: string;
+  /** Engine-composed single-sentence English narrative. */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -269,4 +294,5 @@ export type NotableGameEvent =
   | MastermindStrikeResolvedEvent
   | MastermindDefeatedEvent
   | HealResolvedEvent
-  | BystanderRevealedEvent;
+  | BystanderRevealedEvent
+  | DeckReshuffledEvent;

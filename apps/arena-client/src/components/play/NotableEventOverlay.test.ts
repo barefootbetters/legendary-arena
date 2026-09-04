@@ -94,6 +94,14 @@ function bystanderRevealedEvent(
   };
 }
 
+function deckReshuffledEvent(): NotableGameEvent {
+  return {
+    type: 'deckReshuffled',
+    playerId: '0',
+    narrative: 'The hero deck was reshuffled from the discard pile.',
+  };
+}
+
 describe('NotableEventOverlay — null event renders nothing (WP-201)', () => {
   test('omits the overlay element when event prop is null', () => {
     const wrapper = mount(NotableEventOverlay, { props: { event: null } });
@@ -188,6 +196,25 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
     );
     assert.match(wrapper.text(), /was revealed and captured by/);
     // a bystander reveal carries no appliedEffects, so no badge row renders
+    assert.equal(
+      wrapper
+        .find('[data-testid="play-notable-event-overlay-effects"]')
+        .exists(),
+      false,
+    );
+  });
+
+  test('deckReshuffled → "Deck Shuffled" chip + verbatim narrative, no card-name row, no effect badges (WP-642)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: deckReshuffledEvent() },
+    });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'deckReshuffled');
+    assert.match(wrapper.text(), /Deck Shuffled/);
+    assert.match(wrapper.text(), /The hero deck was reshuffled from the discard pile\./);
+    // why: WP-642 — a reshuffle carries no card, so eventCardId → '' → cardId
+    // null and the card-name row renders empty (the healResolved posture).
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
     assert.equal(
       wrapper
         .find('[data-testid="play-notable-event-overlay-effects"]')

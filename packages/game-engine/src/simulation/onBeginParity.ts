@@ -26,6 +26,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { HAND_SIZE, drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.js';
 
 /**
  * Mirrors the play-phase onBegin hook for one turn start: resets the two
@@ -60,7 +61,19 @@ export function applyOnBeginParity(
   const activePlayerZones = gameState.playerZones[playerId];
   if (activePlayerZones) {
     const cardsToDraw = Math.max(0, HAND_SIZE - activePlayerZones.hand.length);
-    drawCardsIntoHand(activePlayerZones, cardsToDraw, shuffleProvider);
+    const reshuffleCount = drawCardsIntoHand(activePlayerZones, cardsToDraw, shuffleProvider);
+    // why: WP-642 / D-24454 — mirror the real game.ts onBegin's deckReshuffled
+    // emit so the observation harnesses (runFixture especially) produce the SAME
+    // notableEvents as live play. If only the real onBegin emitted, the
+    // runFixture finalStateHash oracle would silently diverge from what a real
+    // match records (notableEvents IS in the hash) — the injected-seam class.
+    if (reshuffleCount > 0) {
+      gameState.notableEvents.push({
+        type: 'deckReshuffled',
+        playerId,
+        narrative: composeDeckReshuffledNarrative(),
+      });
+    }
     gameState.hasDrawnThisTurn = true;
   }
 }

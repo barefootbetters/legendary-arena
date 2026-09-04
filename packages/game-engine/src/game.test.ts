@@ -249,6 +249,71 @@ describe('LegendaryGame', () => {
     assert.equal(gameState.hasDrawnThisTurn, true);
   });
 
+  it('play-phase onBegin pushes exactly one deckReshuffled notable event when its auto-draw reshuffles (WP-642 / D-24454)', () => {
+    // why: WP-642 — the real game.ts onBegin (not just the applyOnBeginParity
+    // mirror) announces the empty-deck reshuffle. Force the reshuffle path:
+    // empty the active player's deck, stock the discard with a full hand's
+    // worth, and clear notableEvents so the single push is isolated.
+    const gameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.deck = [];
+    gameState.playerZones['0']!.discard = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'];
+    gameState.notableEvents = [];
+
+    const onBegin = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onBegin?: (context: unknown) => void } }
+      >
+    ).play?.turn?.onBegin;
+    onBegin!({
+      G: gameState,
+      ctx: { currentPlayer: '0', numPlayers: 2, phase: 'play', turn: 3 },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+      events: { setPhase: (): void => {}, endTurn: (): void => {} },
+    });
+
+    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE);
+    assert.equal(gameState.notableEvents.length, 1);
+    assert.deepEqual(gameState.notableEvents[0], {
+      type: 'deckReshuffled',
+      playerId: '0',
+      narrative: 'The hero deck was reshuffled from the discard pile.',
+    });
+  });
+
+  it('play-phase onBegin pushes NO deckReshuffled when the deck feeds the draw without exhausting (WP-642)', () => {
+    // why: WP-642 — the event fires ONLY on an actual reshuffle. A full starting
+    // deck feeds the HAND_SIZE draw with cards to spare, so no event is pushed.
+    const gameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    gameState.notableEvents = [];
+    assert.ok(gameState.playerZones['0']!.deck.length > HAND_SIZE);
+
+    const onBegin = (
+      LegendaryGame.phases as Record<
+        string,
+        { turn?: { onBegin?: (context: unknown) => void } }
+      >
+    ).play?.turn?.onBegin;
+    onBegin!({
+      G: gameState,
+      ctx: { currentPlayer: '0', numPlayers: 2, phase: 'play', turn: 1 },
+      random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+      events: { setPhase: (): void => {}, endTurn: (): void => {} },
+    });
+
+    assert.equal(
+      gameState.notableEvents.filter((event) => event.type === 'deckReshuffled').length,
+      0,
+    );
+  });
+
   it('play-phase onBegin honours a handSizeOverride (fills to 8) and clears it (WP-497 / D-24300, AC-2/AC-3)', () => {
     // why: WP-497 — a defeated Doc Ock "Octet of Valence Electrons" tactic records
     // G.handSizeOverrides[player] = 8; that player's NEXT onBegin fills to 8 instead

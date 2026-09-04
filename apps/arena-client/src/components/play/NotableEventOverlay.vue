@@ -60,10 +60,11 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   captureBystander: 'Captures a Bystander',
 };
 
-// why: locked chip labels — seven entries matching `NotableGameEventType`
+// why: locked chip labels — eight entries matching `NotableGameEventType`
 // exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
-// `healResolved`; WP-602 / D-24412 added `bystanderRevealed`). The labels are
-// user-facing English (engine-side type names use camelCase suffixes).
+// `healResolved`; WP-602 / D-24412 added `bystanderRevealed`; WP-642 / D-24454
+// added `deckReshuffled`). The labels are user-facing English (engine-side type
+// names use camelCase suffixes).
 const CHIP_LABELS: Readonly<Record<string, string>> = {
   fightResolved: 'Fought',
   ambushResolved: 'Ambush!',
@@ -72,6 +73,7 @@ const CHIP_LABELS: Readonly<Record<string, string>> = {
   mastermindDefeated: 'Mastermind Defeated!',
   healResolved: 'Healed',
   bystanderRevealed: 'Bystander!',
+  deckReshuffled: 'Deck Shuffled',
 };
 
 function chipLabel(type: string): string {
@@ -248,6 +250,12 @@ export default defineComponent({
    distinct from the gold scheme-twist / red master-strike / teal heal accents. */
 .notable-event-overlay[data-event-type="bystanderRevealed"] {
   border-color: var(--color-bystander, #4a90d9);
+}
+
+/* why: WP-642 — a calm indigo for the deck-reshuffle overlay, distinct from the
+   civilian-blue bystander / gold twist / red strike / teal heal accents. */
+.notable-event-overlay[data-event-type="deckReshuffled"] {
+  border-color: var(--color-deck-shuffle, #6d78d9);
 }
 
 .notable-event-overlay__chip {
