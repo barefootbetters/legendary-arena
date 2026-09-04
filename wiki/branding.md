@@ -153,7 +153,10 @@ the CSS; the CSS is always right. The load-bearing tokens for the marks:
 | `--la-font-display` | Bebas Neue — the display face the `LEGENDARY / ARENA` wordmark is built from. |
 
 Changing a token *name* breaks downstream consumers on the live sites —
-treat it as a code change, not a design tweak.
+treat it as a code change, not a design tweak. The public
+[brand system page](https://www.legendary-arena.com/brand/) on `www` renders
+these tokens as swatches and type specimens for a customer- and press-facing
+audience; it is the public view of the same `brand-tokens.css` source.
 
 ## Interactions
 
@@ -165,6 +168,11 @@ treat it as a code change, not a design tweak.
   surface owns which kind of work. It is where `C:\pcloud\LA\brand\` is
   established as the home for approved brand assets; this page is the
   visual index of what is filed there.
+- [Public brand system](https://www.legendary-arena.com/brand/) — the
+  customer- and press-facing brand page on `www`: colours, typography, the
+  live tokens, art direction, mission/vision, and usage. That page is the
+  public counterpart to this one — it presents the brand *system*; this page
+  is the internal catalogue of the *marks* and their master files.
 - [Design System Overview](design-system-overview.md) — the broader
   design language (colour roles, class palette, motion) the marks sit
   inside.
@@ -238,6 +246,9 @@ treat it as a code change, not a design tweak.
 - `C:\www\legendary-arena-com\static\brand-tokens.css` — the source of
   truth for brand colour, type, and spacing tokens consumed by the live
   sites.
+- [Public brand system page](https://www.legendary-arena.com/brand/) — the
+  customer- and press-facing brand system on `www` (source:
+  `C:\www\legendary-arena-com\content\brand\_index.md`).
 - [Figma Logo Design](figma-logo-design.md) — the construction pipeline
   that produces the marks.
 - [Workspace Map](workspace-map.md) — establishes `C:\pcloud\LA\brand\` as
