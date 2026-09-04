@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 340" width="460" height="340" role="img" aria-label="Animated mock of the shield-block effect: an incoming red Master Strike bolt drives down toward the board, Captain America's shield spins in and intercepts it with a bright metallic clang, sparks and red shards ricochet away harmlessly, and the word BLOCKED! pops on-screen. Loops.">
+  <title>Proposed shield-block effect — Captain America's shield intercepts a Master Strike</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.bolt { opacity: 0; animation: bolt 2.8s ease-in infinite; }
+.shield { opacity: 0; animation: shield 2.8s cubic-bezier(0.4,0,0.2,1) infinite; }
+.clang { opacity: 0; animation: clang 2.8s ease-out infinite; }
+.cring { opacity: 0; fill: none; stroke: #fff4d0; animation: cring 2.8s ease-out infinite; }
+.spark { opacity: 0; transform: translate(0,0); animation: burst 2.8s ease-out infinite; }
+.rshard { opacity: 0; transform: translate(0,0); animation: burst 2.8s ease-out infinite; }
+.lbl { opacity: 0; animation: lbl 2.8s ease-out infinite; }
+@keyframes bolt {
+  0.00% { opacity: 0; transform: translate(230px,-70px); }
+  8.00% { opacity: 1; transform: translate(230px,-70px); }
+  37.00% { opacity: 1; transform: translate(230px,176px); }
+  39.00% { opacity: 0; transform: translate(230px,182px); }
+  100.00% { opacity: 0; transform: translate(230px,182px); }
+}
+@keyframes shield {
+  0.00% { opacity: 0; transform: translate(230px,176px) scale(0.15) rotate(-210deg); }
+  28.00% { opacity: 0.25; transform: translate(230px,176px) scale(0.55) rotate(-95deg); }
+  37.00% { opacity: 1; transform: translate(230px,180px) scale(1.07) rotate(0deg); }
+  41.00% { opacity: 1; transform: translate(230px,185px) scale(0.97) rotate(3deg); }
+  46.00% { opacity: 1; transform: translate(230px,176px) scale(1.0) rotate(0deg); }
+  90.00% { opacity: 1; transform: translate(230px,176px) scale(1.0) rotate(0deg); }
+  96.00% { opacity: 0; transform: translate(230px,176px) scale(1.05) rotate(6deg); }
+  100.00% { opacity: 0; transform: translate(230px,176px) scale(0.15) rotate(-210deg); }
+}
+@keyframes clang {
+  0.00% { opacity: 0; transform: translate(230px,176px) scale(0); }
+  37.00% { opacity: 0; transform: translate(230px,176px) scale(0.3); }
+  38.50% { opacity: 0.95; transform: translate(230px,176px) scale(0.7); }
+  52.00% { opacity: 0; transform: translate(230px,176px) scale(1.8); }
+  100.00% { opacity: 0; transform: translate(230px,176px) scale(1.8); }
+}
+@keyframes cring {
+  0.00% { opacity: 0; transform: translate(230px,176px) scale(0.1); stroke-width: 7; }
+  37.00% { opacity: 0; transform: translate(230px,176px) scale(0.15); stroke-width: 7; }
+  38.00% { opacity: 0.9; }
+  59.00% { opacity: 0; transform: translate(230px,176px) scale(1.9); stroke-width: 1; }
+  100.00% { opacity: 0; transform: translate(230px,176px) scale(1.9); stroke-width: 1; }
+}
+@keyframes burst {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  37.00% { opacity: 0; transform: translate(0,0); }
+  39.00% { opacity: 1; }
+  59.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(230px,296px) scale(0.4); }
+  37.00% { opacity: 0; transform: translate(230px,296px) scale(0.4); }
+  39.00% { opacity: 1; transform: translate(230px,296px) scale(1.16); }
+  41.00% { transform: translate(230px,296px) scale(1.0); }
+  86.00% { opacity: 1; transform: translate(230px,296px) scale(1.0); }
+  94.00% { opacity: 0; transform: translate(230px,296px) scale(1.2); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bolt, .clang, .spark, .rshard { animation: none; opacity: 0; }
+  .shield { animation: none; opacity: 1; transform: translate(230px,176px) scale(1) rotate(0deg); }
+  .cring { animation: none; opacity: 0.4; transform: translate(230px,176px) scale(1.3); }
+  .lbl { animation: none; opacity: 1; transform: translate(230px,296px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="46%" r="82%"><stop offset="0%" stop-color="#171320" stop-opacity="1"/><stop offset="100%" stop-color="#0b0910" stop-opacity="1"/></radialGradient><radialGradient id="sheen" cx="34%" cy="28%" r="72%"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/><stop offset="45%" stop-color="#ffffff" stop-opacity="0.08"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/></radialGradient><radialGradient id="clg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="55%" stop-color="#dfe9ff" stop-opacity="0.75"/><stop offset="100%" stop-color="#8fbcff" stop-opacity="0"/></radialGradient><linearGradient id="blt" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ff8a8a" stop-opacity="0.2"/><stop offset="60%" stop-color="#ff3b3b" stop-opacity="0.95"/><stop offset="100%" stop-color="#ffe08a" stop-opacity="1"/></linearGradient></defs>
+  <rect width="460" height="340" fill="url(#bg)"/>
+  <path class="bolt" d="M0,0 L-17,-34 L-6,-34 L-13,-104 L0,-56 L13,-104 L6,-34 L17,-34 Z" fill="url(#blt)"/><g class="shield"><circle r="84.0" fill="#c0182f"/><circle r="68.9" fill="#eeeae0"/><circle r="52.9" fill="#c0182f"/><circle r="37.0" fill="#123f8f"/><polygon points="0.0,-27.7 6.8,-9.4 26.4,-8.6 11.1,3.6 16.3,22.4 0.0,11.6 -16.3,22.4 -11.1,3.6 -26.4,-8.6 -6.8,-9.4" fill="#f4f4f4"/><circle r="84.0" fill="url(#sheen)"/><circle r="84.0" fill="none" stroke="#7a0f1e" stroke-width="2"/></g><circle class="clang" r="70" fill="url(#clg)"/><circle class="cring" r="52"/><g transform="translate(230 176)"><g class="spark" style="--tx:88px; --ty:-4px;"><rect x="-1.6" y="-13" width="3.2" height="13" rx="1.6" fill="#fff3c4" transform="rotate(87)"/></g><g class="spark" style="--tx:92px; --ty:24px;"><rect x="-1.6" y="-9" width="3.2" height="9" rx="1.6" fill="#fff3c4" transform="rotate(104)"/></g><g class="spark" style="--tx:97px; --ty:80px;"><rect x="-1.6" y="-13" width="3.2" height="13" rx="1.6" fill="#fff3c4" transform="rotate(129)"/></g><g class="spark" style="--tx:55px; --ty:129px;"><rect x="-1.6" y="-13" width="3.2" height="13" rx="1.6" fill="#fff3c4" transform="rotate(157)"/></g><g class="spark" style="--tx:2px; --ty:123px;"><rect x="-1.6" y="-11" width="3.2" height="11" rx="1.6" fill="#fff3c4" transform="rotate(179)"/></g><g class="spark" style="--tx:-71px; --ty:113px;"><rect x="-1.6" y="-13" width="3.2" height="13" rx="1.6" fill="#fff3c4" transform="rotate(212)"/></g><g class="spark" style="--tx:-113px; --ty:65px;"><rect x="-1.6" y="-14" width="3.2" height="14" rx="1.6" fill="#fff3c4" transform="rotate(240)"/></g><g class="spark" style="--tx:-111px; --ty:-23px;"><rect x="-1.6" y="-9" width="3.2" height="9" rx="1.6" fill="#fff3c4" transform="rotate(282)"/></g><g class="spark" style="--tx:-140px; --ty:-33px;"><rect x="-1.6" y="-13" width="3.2" height="13" rx="1.6" fill="#fff3c4" transform="rotate(283)"/></g><g class="spark" style="--tx:-69px; --ty:-74px;"><rect x="-1.6" y="-10" width="3.2" height="10" rx="1.6" fill="#fff3c4" transform="rotate(317)"/></g><g class="spark" style="--tx:-17px; --ty:-100px;"><rect x="-1.6" y="-15" width="3.2" height="15" rx="1.6" fill="#fff3c4" transform="rotate(351)"/></g><g class="spark" style="--tx:9px; --ty:-106px;"><rect x="-1.6" y="-14" width="3.2" height="14" rx="1.6" fill="#fff3c4" transform="rotate(365)"/></g><g class="spark" style="--tx:39px; --ty:-87px;"><rect x="-1.6" y="-11" width="3.2" height="11" rx="1.6" fill="#fff3c4" transform="rotate(384)"/></g><g class="spark" style="--tx:89px; --ty:-22px;"><rect x="-1.6" y="-9" width="3.2" height="9" rx="1.6" fill="#fff3c4" transform="rotate(436)"/></g></g><g transform="translate(230 176)"><g class="rshard" style="--tx:-96px; --ty:-51px;"><polygon points="14,0 -6,5 -6,-5" fill="#e23046" transform="rotate(-152)"/></g><g class="rshard" style="--tx:-46px; --ty:-170px;"><polygon points="14,0 -6,5 -6,-5" fill="#e23046" transform="rotate(-105)"/></g><g class="rshard" style="--tx:170px; --ty:-34px;"><polygon points="15,0 -6,5 -6,-5" fill="#e23046" transform="rotate(-11)"/></g><g class="rshard" style="--tx:-83px; --ty:-112px;"><polygon points="12,0 -5,4 -5,-4" fill="#e23046" transform="rotate(-126)"/></g><g class="rshard" style="--tx:131px; --ty:-5px;"><polygon points="10,0 -4,3 -4,-3" fill="#e23046" transform="rotate(-2)"/></g><g class="rshard" style="--tx:141px; --ty:-70px;"><polygon points="13,0 -5,4 -5,-4" fill="#e23046" transform="rotate(-26)"/></g><g class="rshard" style="--tx:-91px; --ty:-103px;"><polygon points="11,0 -5,4 -5,-4" fill="#e23046" transform="rotate(-132)"/></g><g class="rshard" style="--tx:-134px; --ty:-10px;"><polygon points="12,0 -5,4 -5,-4" fill="#e23046" transform="rotate(-176)"/></g><g class="rshard" style="--tx:-158px; --ty:-51px;"><polygon points="15,0 -6,5 -6,-5" fill="#e23046" transform="rotate(-162)"/></g></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="50" fill="#9cc4ff">BLOCKED!</text>
+</svg>
