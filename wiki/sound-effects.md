@@ -105,10 +105,12 @@ suppressed flash.
 Audio is a **client-side presentation concern**. It can only react to
 what the client actually receives — fields on the projected `UIState`
 (chiefly the `notableEvents` stream) — **not** engine-internal `G` and
-**not** the game log. `G.messages` is *not* projected to clients, so
-any audio built on the log would work in the engine and silently do
-nothing in the browser. The candidate signals, in decreasing order of
-how ready they are to drive audio:
+**not** the game log. The log's content *is* projected (as `UIState.log`,
+the typed `LogEntry[]` the HUD renders), but the raw `G.messages` array is
+engine-internal and the log is flat narration, not a structured trigger
+vocabulary — so audio rides the curated `notableEvents` stream, never the
+log. The candidate signals, in decreasing order of how ready they are to
+drive audio:
 
 #### Surface 1 — Notable events (the primary, ready-made hook)
 
@@ -805,11 +807,13 @@ unusable on a revenue-generating site.
   wound keyword with no per-player tally). A keyword is enough to fire
   a sound; anything richer needs new event fields. Hero-KO is the
   exception — the KO'd heroes are named in `narrative`.
-- **Do not drive audio off the game log.** `G.messages` is **not**
-  projected to clients (per the `notableEvents.types.ts` header and
-  D-20008). Only `notableEvents` and typed `UIState` surfaces reach the
-  browser. Building audio on the log would work in the engine and do
-  nothing in production.
+- **Do not drive audio off the game log.** The log's content *is*
+  projected — as `UIState.log`, rendered in the HUD — but audio must still
+  not ride it: the raw `G.messages` array is engine-internal, and the log is
+  flat narration rather than a structured trigger vocabulary. Audio reacts to
+  the curated `notableEvents` stream and typed `UIState` surfaces (the
+  curated-channel rule behind D-20008; the `notableEvents.types.ts` header
+  notes the raw `G.messages` field is not itself projected).
 - **The scheme twist limit is scheme-specific.** `schemeLoss >= 1` is
   the terminal flip, but the number of twists that trips it varies by
   scheme — there is no single "N twists = loss" constant. The danger
@@ -946,7 +950,8 @@ affordance so `dodgeCard` can be dispatched and sounded · vertical stem layerin
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
   — `NotableGameEventType` (6 locked variants) + payloads; header notes
-  `G.messages` is not projected and `escapeResolved` is deferred
+  the raw `G.messages` field is not itself projected (the log's content is,
+  as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — `appliedEffects` keyword labels
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts)
@@ -962,7 +967,8 @@ affordance so `dodgeCard` can be dispatched and sounded · vertical stem layerin
   consumes read-only projections; determinism invariant
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-20001 (minimal notable-event
   payload; deferred `escapeResolved`), D-20008 (`mastermindDefeated`
-  added because `G.messages` is not projected), D-24159 / WP-367 (the
+  added so a Mastermind defeat raises a curated on-screen event — the raw
+  `G.messages` field is not projected), D-24159 / WP-367 (the
   deck-exhaustion final-turn **tie** — the third `EndgameOutcome`, driving
   the tie stinger), D-24221 (`lastPlayEffectsFired` — the hero-play
   synergy-effect count that unblocked the combo cue), D-24224 (the

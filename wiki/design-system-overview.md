@@ -211,8 +211,13 @@ The only signals any feel-layer treatment may read — all already projected:
 ### Forbidden input surfaces
 
 - `G` / `ctx` — engine-internal state is never read.
-- `G.messages` — the game log is **not** projected (D-20008); anything
-  built on it works in the engine and silently does nothing in the browser.
+- `G.messages` — the **raw** engine log array is engine-internal (not a
+  `UIState` field). The log's *content* is projected — as `UIState.log`, the
+  typed `LogEntry[]` the HUD game log renders (WP-434 / D-24253) — but the
+  feel layer must still **not** build on it: it is flat narration, not a
+  structured trigger vocabulary, so treatments read the curated
+  `notableEvents` stream instead (the curated-channel rule behind
+  D-20002 / D-20008).
 - **Any server round-trip** — the feel layer derives entirely from
   already-projected `UIState`.
 
@@ -396,8 +401,10 @@ re-listing it.
 - **No hook today:** villain **escape** is log-only (deferred
   `escapeResolved`, WP-186 / D-20001) — a dramatic moment none of the
   treatments can react to until that event is added.
-- **Never usable:** `G.messages` (the game log) is **not** projected to
-  clients (D-20008). No treatment may build on it.
+- **Off-limits by design:** the game log. Its content *is* projected
+  (`UIState.log`, rendered in the HUD), but the raw `G.messages` array is
+  engine-internal and the log is flat narration, not a trigger vocabulary —
+  so no treatment may build on it; use `notableEvents` (D-20002 / D-20008).
 
 ### Story-beat mapping {#beat-mapping}
 
@@ -1253,7 +1260,8 @@ campaign), it graduates to a standalone **Playstyle Modes** page.
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
   — `NotableGameEventType` (6 locked variants) + the per-event `narrative` field;
-  header notes `G.messages` is not projected and `escapeResolved` is deferred
+  header notes the raw `G.messages` field is not itself projected (the log's
+  content is, as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts)
   — the projected signals every treatment reads (`notableEvents`,
   `game.lastPlayEffectsFired`, `progress`, `scheme`, `players`)
@@ -1267,7 +1275,7 @@ campaign), it graduates to a standalone **Playstyle Modes** page.
   the combo chain signal), D-24228 (shipped tiered combo cue), D-24224
   (client-only audio foundation), D-24246 (the apex `legendary` combo tier),
   D-24259 (faction-cry licensing reconciliation), D-20001 / D-20008
-  (notable-event payload; log not projected), D-24159 / WP-367 (the
+  (notable-event payload; raw `G.messages` field not projected), D-24159 / WP-367 (the
   deck-exhaustion tie), D-24235 (Vision §The Fantasy)
 - Peak-end rule research — Kahneman & Fredrickson (1993); Redelmeier & Kahneman
   (1996); Alaybek, B., Dalal, R. S., Fyffe, S., Aitken, J. A., Zhou, Y., Qu, X.,
