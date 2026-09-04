@@ -22,6 +22,8 @@ status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\wounds.md (this page — https://ewiki.legendary-arena.com/wounds/)
   - ../packages/game-engine/src/moves/healWounds.ts
+  - ../packages/game-engine/src/moves/coreMoves.impl.ts
+  - ../packages/game-engine/src/simulation/ai.legalMoves.ts
   - ../packages/game-engine/src/board/wounds.logic.ts
   - ../packages/game-engine/src/setup/pilesInit.ts
   - ../packages/game-engine/src/moves/fightVillain.ts
@@ -182,6 +184,18 @@ always compatible with a later Heal.
 - **Wounds can't be played.** They carry no play value and are used
   directly from hand; there is no "play a Wound" path, so no on-play
   effect and no interaction with play-time costs (e.g. discard-to-play).
+  The engine enforces this at the reducer: `playCard`
+  ([`coreMoves.impl.ts`](../packages/game-engine/src/moves/coreMoves.impl.ts))
+  carries a card-specific pre-commit precondition (the D-24185 class) that
+  rejects `WOUND_EXT_ID` with a silent `void` return — no commit, the Wound
+  stays in hand — and the simulation `getLegalMoves`
+  ([`ai.legalMoves.ts`](../packages/game-engine/src/simulation/ai.legalMoves.ts))
+  skips a Wound in its `playCard` enumeration in lockstep, so a bot never picks
+  a Wound-play (WP-643 / D-24455). This holds the rule for **every** caller — a
+  raw socket message, a bot — not only the client-disabled hand tile (PR #1785).
+  Before this guard, a played Wound moved `hand → inPlay`, where the Healing
+  ability (hand-only) could no longer reach it — the "Heal disabled once all my
+  cards are in play" report that surfaced the gap.
 - **Playing cards is not "acting".** The most common misread is that
   putting cards in play should bar Healing. It does not — `hasActedThisTurn`
   is set only by an actual fight or recruit. (Reported and confirmed

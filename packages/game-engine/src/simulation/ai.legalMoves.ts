@@ -60,6 +60,7 @@ import {
 } from '../moves/copyPowersChoice.resolve.js';
 import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
 // startMatchIfReady) are excluded because runSimulation starts the per-game
@@ -559,6 +560,15 @@ export function getLegalMoves(
   // select any, and the move dispatcher removes the first match from hand.
   if (stage === 'main') {
     for (const cardId of zones.hand) {
+      // why (WP-643 / D-24455): mirror playCard's Wound pre-commit precondition
+      // (coreMoves.impl.ts). A Wound has no "play a Wound" path — playCard silently
+      // rejects WOUND_EXT_ID with a void return — so enumerating it would wedge the
+      // turn (the bot re-picks the unplayable Wound, nothing mutates, the legal set
+      // never changes: the getLegalMoves↔move-guard divergence class). Skip it here,
+      // exactly as the discard-to-play unpayable case is skipped below.
+      if (cardId === WOUND_EXT_ID) {
+        continue;
+      }
       // why (WP-555 / D-24364): mirror playCard's card-specific PRE-COMMIT precondition
       // (WP-383 / D-24185, coreMoves.impl.ts). A card printed "you must discard a card
       // to play this" is refused when the hand cannot pay, and the refusal is a silent
