@@ -169,12 +169,11 @@ follow-up WP): the [Surface 1](#surface-1) notable-event effects (Master
 Strike, mastermind-defeated, fight), the [Surface 1b](#surface-1b)
 fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
 [Surface 4](#endgame) endgame finales, the [faction battle
-cries](#faction-cries) (licensing-gated, D-24259), the
-[shield-block](#surface-block) **`VfxOverlay` burst** (the `strikeBlocked`
-engine event + its "Blocked!" overlay chip **shipped** in WP-644; the
-Captain-America-shield particle burst is the follow-on), and the
+cries](#faction-cries) (licensing-gated, D-24259), and the
 [event-storm coalescing algorithm](#decisions-pending) (not needed until a
-second effect class ships).
+second effect class ships). The [shield-block](#surface-block) **`VfxOverlay`
+burst** — the Captain-America-shield beat driven by the `strikeBlocked` event —
+**shipped** in WP-647 (it is no longer a follow-on).
 
 ## VFX Trigger Contract
 
@@ -241,7 +240,7 @@ row by row:
 
 | Surface | Authority | VFX may read |
 |---|---|---|
-| `UIState.notableEvents` (seven locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.notableEvents` (nine locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
@@ -413,7 +412,7 @@ build in this order rather than attempting twenty effects at once:
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
 | **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
-| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); the [shield-block](#surface-block) **`VfxOverlay` burst** (the `strikeBlocked` engine event + its "Blocked!" overlay chip ship today, WP-644; the shield particle burst is the follow-on); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
+| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -446,7 +445,7 @@ stream — one effect per event type — with zero new engine work.
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 | `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
-| `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — the Magneto Master Strike reveal-an-X-Men-Hero skip, or the reveal-or-punish Scheme Twist matched-Hero dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (WP-644):** the engine event + the overlay chip; the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) is the follow-on |
+| `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, or a villain Ambush dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped:** the engine event + overlay chip (WP-644/645/646) and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`, WP-647) — a threat-coloured deflection burst (red/purple/green per `threatKind`) + the "BLOCKED!" word |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -721,8 +720,11 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > It rides the existing `UIState.notableEvents` projection, so WP-644 raises
 > the **[Surface-1](#surface-1) `NotableEventOverlay` "Blocked!" chip** today.
 > The Captain-America-shield **`VfxOverlay` burst** below (`block-shield.svg`)
-> is the **follow-on** — the same engine signal now exists to drive it whenever
-> a VFX WP wires it. The **Dr. Doom** reveal-a-Tech-Hero skip — a third
+> **shipped in WP-647 (D-24459)** — a new notable-event VFX consumer
+> (`useStrikeBlockedVfx`) drives the shield glyph + a threat-coloured deflection
+> burst (red/purple/green per `threatKind`) + the "BLOCKED!" word in the WP-556
+> `VfxOverlay`, gated by the Effect-Intensity accessibility contract. The **Dr.
+> Doom** reveal-a-Tech-Hero skip — a third
 > reveal-to-avoid Master Strike producer — now **also fires `strikeBlocked`**
 > (shipped, WP-645 / D-24457; it reuses `masterStrike`). And the **villain
 > Ambush** block — the **green** deflection — now fires too (shipped, WP-646 /
@@ -1018,19 +1020,20 @@ right owner.
   shared with the audio layer).
 - **`escapeResolved` event** (WP-186) — required before escape effects
   (Tier 3) are possible.
-- **`strikeBlocked` event — RESOLVED (shipped, WP-644 / D-24456).** The engine
-  now emits `strikeBlocked` at the two prevention sites it already modelled
-  silently — the Magneto Master Strike reveal-X-Men skip and the
-  reveal-or-punish Scheme Twist matched-Hero dodge — so the
-  [shield-block](#surface-block) beat's overlay-chip half ships; the
-  `VfxOverlay` shield burst is the follow-on. The **Dr. Doom** reveal-a-Tech-Hero
-  skip (a third `masterStrike` producer) also fires `strikeBlocked` as of
-  **WP-645 / D-24457**, and the villain **Ambush** block (the `'ambush'`
-  `threatKind`, the `reveal-or-wound` `onAmbush` reveal) as of **WP-646 /
-  D-24458** — so all three reveal-to-avoid threat classes are covered. The only
-  *unclaimed* reveal-avoidances left are the **`onFight` / `onEscape`** timings
-  of the same `reveal-or-wound` handler, each a future WP adding its own
-  `'fight'` / `'escape'` `threatKind`.
+- **`strikeBlocked` event + shield-block beat — RESOLVED (fully shipped).** The
+  engine emits `strikeBlocked` at the three reveal-to-avoid prevention sites it
+  once modelled silently — the Magneto Master Strike reveal-X-Men skip and the
+  reveal-or-punish Scheme Twist matched-Hero dodge (**WP-644 / D-24456**), the
+  **Dr. Doom** reveal-a-Tech-Hero skip (a third `masterStrike` producer, **WP-645
+  / D-24457**), and the villain **Ambush** block (the `'ambush'` `threatKind`, the
+  `reveal-or-wound` `onAmbush` reveal, **WP-646 / D-24458**) — so all three threat
+  classes are covered. The [shield-block](#surface-block) beat is now **complete
+  on both halves**: the `NotableEventOverlay` "Blocked!" chip **and** the
+  `VfxOverlay` shield burst (the Cap-shield glyph + a threat-coloured deflection
+  burst + the "BLOCKED!" word, recoloured red/purple/green per `threatKind`)
+  **shipped in WP-647 / D-24459**. The only *unclaimed* reveal-avoidances left are
+  the **`onFight` / `onEscape`** timings of the same `reveal-or-wound` handler,
+  each a future WP adding its own `'fight'` / `'escape'` `threatKind`.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 
