@@ -137,20 +137,19 @@ Three details worth knowing when adding the next mastermind:
   covers every set whose base face prints the same strike text
   (`core/red-skull` and `co2e/red-skull`). Epic faces with *different* text
   — co2e's `epic-red-skull` — are excluded from the list.
-- **⚠️ Which face is actually played is currently wrong (D-24193).** An
-  earlier revision of this page claimed Epic faces "are not
-  engine-selectable." **That is false.** `findMastermindCards` (the internal
-  helper behind `buildMastermindState`) assigns `baseCard` on *every*
-  non-tactic face with no early exit, so the **last** one wins — the
-  alternate face, for **65 masterminds across 24 sets** (56 Epic variants, 9
-  transformation faces). Strike
-  *dispatch* is unaffected (it keys on `G.selection.mastermindId`, not the
-  card id), so a co2e Red Skull strike still fires
-  `resolveRedSkullStrike` — but the card on the board is *Epic Red Skull*,
-  whose printed text differs. **WP-389 / D-24193** fixes the classifier to
-  select the first non-tactic face; until it lands, treat every "the base
-  face is played" statement here as aspirational. The same wrong premise is
-  baked into the WP-386 `// why:` comment in the source.
+- **Which face is played — fixed (WP-389 / D-24193, shipped 2026-07-18).** An
+  earlier revision of this page claimed Epic faces "are not engine-selectable"
+  (false), and a subsequent bug had `findMastermindCards` (the internal helper
+  behind `buildMastermindState`) assign `baseCard` on *every* non-tactic face
+  with no early exit, so the **last** one won — the alternate/Epic face, for
+  **65 masterminds across 24 sets** (56 Epic variants, 9 transformation faces).
+  **WP-389 fixed the classifier to select the FIRST non-tactic face**
+  (`mastermind.setup.ts`, the `else if (baseCard === null)` guard), so the
+  **base face is what plays** now. Strike *dispatch* always keyed on
+  `G.selection.mastermindId` (not the card id), so it was unaffected either way
+  — a co2e Red Skull strike fires `resolveRedSkullStrike` regardless of face.
+  (The WP-386 `// why:` comment reads correctly — the fix makes its "base face"
+  claim true as written.)
 
 `resolveRedSkullStrike` is the current precedent for adding another:
 mutate `G` directly, resolve deterministically (D-24188 picks the lowest
@@ -243,7 +242,11 @@ share the same Mastermind entity.
 
 - [`packages/game-engine/src/rules/mastermindHandlers.ts`](../packages/game-engine/src/rules/mastermindHandlers.ts)
   — `mastermindStrikeHandler` (dispatcher), `captureBystanderOntoMastermind`,
-  `resolveMagnetoStrike`, `resolveRedSkullStrike`, `selectRedSkullKoTarget`
+  the **eight** per-mastermind resolvers (`resolveMagnetoStrike`,
+  `resolveCoreDoomStrike`, `resolveRedSkullStrike`, `resolveDoctorDoomStrike`,
+  `resolveCoreLokiStrike`, `resolveLokiStrike`, `resolveCo2eMagnetoStrike`,
+  `resolveDoctorOctopusStrike`), `selectRedSkullKoTarget`, and the
+  `composeStrikeBlockedNarrative` import the three reveal-and-keep emits use
 - [`packages/game-engine/src/rules/mastermindHandlers.test.ts`](../packages/game-engine/src/rules/mastermindHandlers.test.ts)
   — handler tests
 - [`packages/game-engine/src/villainDeck/villainDeck.reveal.ts`](../packages/game-engine/src/villainDeck/villainDeck.reveal.ts)
@@ -263,7 +266,7 @@ share the same Mastermind entity.
 - Magneto: first per-mastermind branch (`resolveMagnetoStrike`), taking the punitive discard-to-four branch of the printed "or" clause
 - WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
 - co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
-- D-24193 (2026-07-18): the mastermind face classifier is found to select the LAST non-tactic face, so Epic faces are what 65 masterminds across 24 sets actually play; WP-389 corrects it to first-wins. Supersedes this page's earlier "Epic faces are not engine-selectable" claim
+- D-24193 / WP-389 (2026-07-18, shipped): the mastermind face classifier had selected the LAST non-tactic face (so the alternate/Epic face played for 65 masterminds across 24 sets); **WP-389 fixed it to select the FIRST non-tactic face**, so the base face plays now (`mastermind.setup.ts`). Supersedes this page's earlier "Epic faces are not engine-selectable" claim and the last-wins bug state
 - WP-644 / D-24456 (2026-09): the **reveal-to-avoid → `strikeBlocked` producer family**. Core Magneto's `resolveMagnetoStrike` gains a reveal-an-`[team:x-men]`-Hero branch that reveals-and-keeps (no penalty) and emits one `strikeBlocked` (`masterStrike`) per protected player, alongside the reveal-or-punish Scheme Twist matched-Hero dodge (`schemeTwist`); the arena-client raises the "Blocked!" chip. WP-645 / D-24457 adds core Dr. Doom (reveal `[hc:tech]`); WP-646 / D-24458 adds the villain Ambush (the `ambush` `threatKind`); WP-647 / D-24459 adds the Captain-America-shield `VfxOverlay` burst (red/purple/green per threat)
 - WP-649 / D-24461 (2026-09-05): `resolveCoreLokiStrike` gains the same reveal-and-keep emit for core Loki (reveal `[hc:strength]`) — the **fourth and last** reveal-and-keep Master Strike producer, surfaced by a live `core/loki` + Legacy Virus playtest. Pure reuse of the WP-644 contract (no new event type / `threatKind` / composer / client change)
 - WP-651 / D-24463 (2026-09-05): **completes the reveal-to-avoid family** (no new *Master Strike* producer). The same `reveal-or-wound` villain handler (`villainEffectRevealOrWound`, WP-646) now emits `strikeBlocked` at its `onFight` + `onEscape` timings too, adding the `fight` (amber, *"The villain's attack was blocked."*) and `escape` (teal, *"The Escape penalty was blocked."* — the villain still escapes; only the Wound is dodged) `threatKind`s. These are villain **Fight/Escape abilities**, not master strikes, so `mastermindHandlers.ts` is untouched — but the shield-block VFX now recolours across all **five** threat classes (Master Strike red / Scheme Twist purple / Ambush green / Fight amber / Escape teal). Surfaced by a live playtest where a Frost-Giant Fight reveal-block rendered no shield beside an identical Ambush block
