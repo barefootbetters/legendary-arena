@@ -352,10 +352,10 @@ you.
 | Outcome | Colour | Glyph | Meaning | Example log line |
 |---|---|---|---|---|
 | `neutral` | — none (default text colour) | — | pure narration, no effect claim | `Player 0 played Iron Man (…) — +2 Attack.` |
-| `applied` | {{< swatch "#15803d" >}} {{< swatch "#22c55e" >}} **green** · `#15803d` light / `#22c55e` dark (`--color-par-positive`) | `✓` | your effect fully did its thing | `[Scheme Twist] Player 0 reveals "…endless-invention" — heroClass "tech" condition met; penalty avoided.` |
-| `partial` | {{< swatch "#b45309" >}} {{< swatch "#f59e0b" >}} **amber** · `#b45309` light / `#f59e0b` dark (`--color-par-partial`) | `⚠` | some-but-not-all / conditional-skipped | `Drew 1 of 2 cards — deck exhausted.` |
-| `blocked` | {{< swatch "#991b1b" >}} {{< swatch "#dc2626" >}} **red** · `#991b1b` light / `#dc2626` dark (`--color-par-negative`) | `✕` | your effect tried and nothing happened | `[Scheme Twist] Player 0 has no matching heroClass "tech" hero — gained a wound.` |
-| `threat` | {{< swatch "#7b1fa2" >}} **villain-purple** · `#7b1fa2` (`--color-villain`) | `⚔` | a villain / Scheme adversity advanced on the players | `[Ambush] Frost Giant (…) revealed and entered the city!` · `Scheme Twist #3 revealed — the Scheme advances; twist count incremented (3 of 8 to Evil Wins).` |
+| `applied` | {{< swatch "#15803d" >}} {{< swatch "#22c55e" >}} **green** · light `#15803d` `rgb(21, 128, 61)` / dark `#22c55e` `rgb(34, 197, 94)` (`--color-par-positive`) | `✓` | your effect fully did its thing | `[Scheme Twist] Player 0 reveals "…endless-invention" — heroClass "tech" condition met; penalty avoided.` |
+| `partial` | {{< swatch "#b45309" >}} {{< swatch "#f59e0b" >}} **amber** · light `#b45309` `rgb(180, 83, 9)` / dark `#f59e0b` `rgb(245, 158, 11)` (`--color-par-partial`) | `⚠` | some-but-not-all / conditional-skipped | `Drew 1 of 2 cards — deck exhausted.` |
+| `blocked` | {{< swatch "#991b1b" >}} {{< swatch "#dc2626" >}} **red** · light `#991b1b` `rgb(153, 27, 27)` / dark `#dc2626` `rgb(220, 38, 38)` (`--color-par-negative`) | `✕` | your effect tried and nothing happened | `[Scheme Twist] Player 0 has no matching heroClass "tech" hero — gained a wound.` |
+| `threat` | {{< swatch "#7b1fa2" >}} **villain-purple** · `#7b1fa2` `rgb(123, 31, 162)` (`--color-villain`) | `⚔` | a villain / Scheme adversity advanced on the players | `[Ambush] Frost Giant (…) revealed and entered the city!` · `Scheme Twist #3 revealed — the Scheme advances; twist count incremented (3 of 8 to Evil Wins).` |
 
 > The two swatches on the theme-split rows are the token's **light** / **dark** resolved values (`--color-par-*` → `--la-color-*`; `villain` is a single `#7b1fa2`). They are shown here for reference only — the game log renders the **semantic token**, never a hard-coded hex (see the accessibility note below).
 
