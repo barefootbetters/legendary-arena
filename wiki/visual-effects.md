@@ -726,7 +726,10 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > `VfxOverlay`, gated by the Effect-Intensity accessibility contract. The **Dr.
 > Doom** reveal-a-Tech-Hero skip — a third
 > reveal-to-avoid Master Strike producer — now **also fires `strikeBlocked`**
-> (shipped, WP-645 / D-24457; it reuses `masterStrike`). And the **villain
+> (shipped, WP-645 / D-24457; it reuses `masterStrike`), and the core **Loki**
+> reveal-a-Strength-Hero skip — the **fourth and last** reveal-and-keep Master
+> Strike, the same red burst — fires it too (shipped, WP-649 / D-24461; also
+> `masterStrike`, no new threat class). And the **villain
 > Ambush** block — the **green** deflection — now fires too (shipped, WP-646 /
 > D-24458): the `reveal-or-wound` matched-Hero reveal on the `onAmbush` timing
 > adds the `'ambush'` `threatKind`. So **all three reveal-to-avoid threat classes
@@ -1025,7 +1028,9 @@ right owner.
   once modelled silently — the Magneto Master Strike reveal-X-Men skip and the
   reveal-or-punish Scheme Twist matched-Hero dodge (**WP-644 / D-24456**), the
   **Dr. Doom** reveal-a-Tech-Hero skip (a third `masterStrike` producer, **WP-645
-  / D-24457**), and the villain **Ambush** block (the `'ambush'` `threatKind`, the
+  / D-24457**), the core **Loki** reveal-a-Strength-Hero skip (the fourth
+  `masterStrike` producer — the last reveal-and-keep Master Strike, **WP-649 /
+  D-24461**), and the villain **Ambush** block (the `'ambush'` `threatKind`, the
   `reveal-or-wound` `onAmbush` reveal, **WP-646 / D-24458**) — so all three threat
   classes are covered. The [shield-block](#surface-block) beat is now **complete
   on both halves**: the `NotableEventOverlay` "Blocked!" chip **and** the

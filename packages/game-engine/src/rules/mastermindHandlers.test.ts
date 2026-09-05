@@ -1131,6 +1131,24 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
     assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a', 'te-a']);
     assert.deepEqual(gameState.playerZones['0']!.discard, []);
     assert.equal(gameState.piles.wounds.length, 1, 'wounds pile untouched');
+
+    // why: WP-649 / D-24461 — the Strength-Hero reveal is the fourth strikeBlocked
+    // producer; it emits exactly one strikeBlocked (masterStrike) for the blocking
+    // player, additive to the terminal mastermindStrikeResolved the strike still fires.
+    const strikeBlockedEvents = gameState.notableEvents.filter(
+      (notableEvent) => notableEvent.type === 'strikeBlocked',
+    );
+    assert.equal(strikeBlockedEvents.length, 1, 'exactly one strikeBlocked for the revealing player');
+    const blocked = strikeBlockedEvents[0];
+    if (blocked && blocked.type === 'strikeBlocked') {
+      assert.equal(blocked.playerId, '0');
+      assert.equal(blocked.threatKind, 'masterStrike');
+      assert.equal(blocked.narrative, 'The Master Strike was blocked.');
+    }
+    assert.ok(
+      gameState.notableEvents.some((notableEvent) => notableEvent.type === 'mastermindStrikeResolved'),
+      'terminal mastermindStrikeResolved still emitted',
+    );
   });
 
   it('gains a Wound when the player holds no Strength Hero', () => {
@@ -1147,6 +1165,13 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
     assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a'], 'hand unchanged');
     assert.deepEqual(gameState.playerZones['0']!.discard, ['wound-1']);
     assert.equal(gameState.piles.wounds.length, 1, 'wounds pile shrinks by exactly one');
+
+    // why: WP-649 — the strike LANDED (a Wound was taken), so the player was NOT
+    // protected: no strikeBlocked on the no-Strength wound branch.
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked on the wound branch',
+    );
   });
 
   it('degrades to a no-op when the wounds pile is empty', () => {
@@ -1162,6 +1187,13 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
       mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}),
     );
     assert.deepEqual(gameState.playerZones['0']!.discard, []);
+
+    // why: WP-649 — the empty-supply no-op is still the no-Strength branch (the
+    // strike was not avoided by a reveal), so it emits no strikeBlocked either.
+    assert.ok(
+      !gameState.notableEvents.some((notableEvent) => notableEvent.type === 'strikeBlocked'),
+      'no strikeBlocked on the empty-supply no-op',
+    );
   });
 
   it('resolves players independently in sorted id order (reveal vs Wound)', () => {

@@ -839,6 +839,16 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
       pushLog(gameState,
         `[Loki Master Strike] Player ${playerId} revealed ${formatCardRef(gameState.cardDisplayData, revealedHero)} — no Wound.`,
       );
+      // why: WP-649 / D-24461 — announce the avoided core Loki strike (the fourth
+      // and last reveal-and-keep Master Strike producer, deferred by WP-644),
+      // additive to the silent reveal-skip. One event per blocking player; the
+      // terminal mastermindStrikeResolved still fires below. The WP-644/645 push idiom.
+      gameState.notableEvents.push({
+        type: 'strikeBlocked',
+        playerId,
+        threatKind: 'masterStrike',
+        narrative: composeStrikeBlockedNarrative('masterStrike'),
+      });
       continue;
     }
 
