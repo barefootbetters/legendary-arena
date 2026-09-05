@@ -464,7 +464,7 @@ limit below).
 
 | Game moment | Client signal | Suggested visual (proposal) |
 |---|---|---|
-| **Wound gained** | `appliedEffects` contains `gainWoundEachPlayer` / `gainWoundCurrentPlayer`; also a delta on `UIState.players[id].woundCount`; scheme wounds show as `schemeTwistResolved` with `resolverKey === 'woundAll'` | A dull red **damage flash** on the afflicted player panel |
+| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it) | **Shipped (WP-650 / D-24462):** a full-bleed dull-red **damage vignette** flashing in from the screen edges when the **local** player's `woundCount` increases (`useWoundVfx` → `VfxOverlay`, gated `shouldRender('shake')`; the audio thud rides `useWoundCue`). The thematic inverse of the [shield block](#surface-block). Fires on an increase only (a heal does not flash). v1 is full-screen for the local seat; a per-panel / per-afflicted-player variant is a future WP |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | A sharp **shatter / dissolve** on the KO'd card as it slides to the KO pile |
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain, **landing on the villain's persistent "N captured" badge** (WP-505) |
 | **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505) |

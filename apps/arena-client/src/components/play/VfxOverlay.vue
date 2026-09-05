@@ -8,6 +8,7 @@ import {
   useStrikeBlockedVfxSignal,
   type StrikeBlockedVfxEvent,
 } from '../../composables/useStrikeBlockedVfx';
+import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 
 /**
  * VfxOverlay — the single full-bleed VFX layer (WP-556). It hosts ONE shared
@@ -34,7 +35,13 @@ import {
  * the same accessibility contract. The shield glyph shows whenever the word does
  * (static under low / reduced-motion; spinning only at full intensity).
  *
- * @see WP-556 §D "VFX overlay" / WP-647 §C "the render"
+ * WP-650 adds a THIRD consumer — the "wound gained" damage vignette (the inverse
+ * of the shield block: you TOOK the hit). A `useWoundVfx` signal (the local seat's
+ * `woundCount` increasing) flashes a full-bleed dull-red edge vignette, gated on
+ * `shouldRender('shake')` like the impact pulse (full intensity only, off under
+ * reduced-motion / low / off). Its audio thud rides `useWoundCue`.
+ *
+ * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
  * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst)
  */
@@ -51,6 +58,10 @@ const SHIELD_DISPLAY_MS = 1100;
 // why: WP-647 — the shield-block deflection burst's particle count; a solid
 // throw-back well under the WP-556 200-particle ceiling.
 const SHIELD_BURST_PARTICLES = 120;
+// why: WP-650 — the "wound gained" damage-vignette duration. A brief full-bleed
+// red edge-flash (opacity/transform only), matched to the impact pulse and well
+// within the 500ms screen-shake performance budget.
+const WOUND_VIGNETTE_MS = 460;
 
 /**
  * Builds the `canvas-confetti` options for one burst. Exported and pure so the
@@ -95,6 +106,7 @@ export default defineComponent({
     const { shouldRender } = useEffectIntensity();
     const signal = useComboVfxSignal();
     const strikeBlockedSignal = useStrikeBlockedVfxSignal();
+    const woundSignal = useWoundVfxSignal();
 
     const canvasEl = ref<HTMLCanvasElement | null>(null);
     const currentWord = ref<string | null>(null);
@@ -111,9 +123,15 @@ export default defineComponent({
     const shieldSpins = ref(false);
     const shieldKey = ref(0);
 
+    // why: WP-650 — the "wound gained" damage-vignette state. isWounded shows the
+    // red edge-flash; woundKey re-mounts it so a repeat wound re-runs the flash.
+    const isWounded = ref(false);
+    const woundKey = ref(0);
+
     let wordTimer: ReturnType<typeof setTimeout> | null = null;
     let impactTimer: ReturnType<typeof setTimeout> | null = null;
     let shieldTimer: ReturnType<typeof setTimeout> | null = null;
+    let woundTimer: ReturnType<typeof setTimeout> | null = null;
 
     // why: lazy-loaded canvas-confetti launcher, bound to OUR single canvas.
     // Loaded off the first-paint path (dynamic import on first burst), so the
@@ -244,10 +262,34 @@ export default defineComponent({
       renderShieldBlock(event);
     });
 
+    // why: WP-650 — flash the full-bleed red damage vignette. The monotonic key
+    // re-mounts the element so a repeat wound re-runs the CSS flash from the start.
+    function pulseWound(): void {
+      isWounded.value = true;
+      woundKey.value += 1;
+      if (woundTimer !== null) clearTimeout(woundTimer);
+      woundTimer = setTimeout(() => {
+        isWounded.value = false;
+        woundTimer = null;
+      }, WOUND_VIGNETTE_MS);
+    }
+
+    // why: WP-650 — the whole cue is a full-screen colour flash with motion, so it
+    // is gated on shouldRender('shake') (full intensity only, suppressed under
+    // reduced-motion / low / off) exactly like the impact pulse — a full-bleed red
+    // flash is the class of effect a photosensitive / reduced-motion user opts out
+    // of. The audio thud (useWoundCue) is separate and still plays at `low` (it is
+    // silenced only by the master mute the `off` setting flips).
+    watch(woundSignal, (event) => {
+      if (event === null) return;
+      if (shouldRender('shake')) pulseWound();
+    });
+
     onUnmounted(() => {
       if (wordTimer !== null) clearTimeout(wordTimer);
       if (impactTimer !== null) clearTimeout(impactTimer);
       if (shieldTimer !== null) clearTimeout(shieldTimer);
+      if (woundTimer !== null) clearTimeout(woundTimer);
     });
 
     onMounted(() => {
@@ -257,7 +299,17 @@ export default defineComponent({
       void ensureConfetti();
     });
 
-    return { canvasEl, currentWord, wordKey, isImpacting, isShielding, shieldSpins, shieldKey };
+    return {
+      canvasEl,
+      currentWord,
+      wordKey,
+      isImpacting,
+      isShielding,
+      shieldSpins,
+      shieldKey,
+      isWounded,
+      woundKey,
+    };
   },
 });
 </script>
@@ -269,6 +321,12 @@ export default defineComponent({
       v-if="isImpacting"
       class="vfx-overlay__impact"
       data-testid="play-vfx-impact"
+    ></div>
+    <div
+      v-if="isWounded"
+      :key="woundKey"
+      class="vfx-overlay__wound"
+      data-testid="play-vfx-wound"
     ></div>
     <Transition name="vfx-shield">
       <div
@@ -372,6 +430,38 @@ export default defineComponent({
   100% {
     opacity: 0;
     transform: scale(1.08);
+  }
+}
+
+/* why: WP-650 — the "wound gained" damage vignette: a dull-red flash pulling in
+   from the screen EDGES (a transparent centre so the mat stays readable), the
+   defensive-mirror opposite of the shield-block beat — you took the hit. Animates
+   opacity/transform only (GPU-composited), never a layout property, and clears
+   under WOUND_VIGNETTE_MS (within the 500ms budget). */
+.vfx-overlay__wound {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 52%,
+    rgba(150, 12, 12, 0) 48%,
+    rgba(150, 12, 12, 0.5) 100%
+  );
+  animation: vfx-wound 460ms ease-out;
+  will-change: opacity, transform;
+}
+
+@keyframes vfx-wound {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
   }
 }
 
@@ -491,6 +581,15 @@ export default defineComponent({
   }
 
   .vfx-overlay__impact {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* why: WP-650 — under reduced-motion the full-bleed red damage flash is
+     suppressed (a photosensitivity-sensitive class of effect), belt-and-braces to
+     the JS shouldRender('shake') gate that already withholds it. The wound thud
+     (audio) still plays — feedback survives without the flash. */
+  .vfx-overlay__wound {
     animation: none;
     opacity: 0;
   }
