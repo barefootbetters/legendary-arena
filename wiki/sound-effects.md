@@ -58,14 +58,15 @@ also specs three richer layers on top: **motif-driven event cues**
 cue** that escalates with the size of a synergy chain, and **endgame
 stingers** for all three real match outcomes (heroes win, scheme wins,
 tie). Most of this page is still `draft` research rather than an
-implementation contract, but four pieces have **shipped**: the client-only
+implementation contract, but five pieces have **shipped**: the client-only
 audio foundation and its [Surface-1 notable-event cues](#surface-1) (WP-412),
 the [Surface-2 player-action move cue](#surface-2)
 (WP-421 / D-24241) fired on the local move dispatch, the
 [tiered combo cue](#tiered-combo) (WP-413 / D-24228) that rides the
-`lastPlayEffectsFired` signal (D-24221), and the
+`lastPlayEffectsFired` signal (D-24221), the
 [adaptive danger-meter score](#adaptive-background-music--the-danger-meter)
-(WP-560 / D-24369) crossfading three CC0 loops on `UIState.progress.menaceTier`.
+(WP-560 / D-24369) crossfading three CC0 loops on `UIState.progress.menaceTier`,
+and the **wound-gained thud** (WP-650 / D-24462) on a local `woundCount` increase.
 The remaining sound mappings and library picks are proposals; the event
 vocabulary, the endgame outcomes, the projected `UIState` signals, and the
 architectural boundaries are sourced to code.
@@ -99,6 +100,11 @@ suppressed flash.
   — WP-560 / D-24369; three CC0 loops crossfading on
   `UIState.progress.menaceTier`. Completes the danger-meter arc
   (WP-557 signal → WP-558 meter → WP-560 score).
+- **Wound-gained thud** — WP-650 / D-24462; a dull downward damage thud
+  (`wound-gained.mp3`, ORIGINAL synthesis, live on R2) when the local seat's
+  `woundCount` increases (`useWoundCue` + `woundCueManifest`, NOT in
+  `sfxManifest` — a Wound is not a notable event). The audio half of the WP-650
+  wound vignette; the sonic inverse of the shield-block clang.
 
 **Approved design** (contracted, not yet built):
 
@@ -141,11 +147,12 @@ exhaustive [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
 CC0 clip, and [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
 — a sibling of the overlay stream with its own append-only cursor — fires
 **one clip per newly-appended notable event**, in array order, with no throttle
-(including `strikeBlocked`). The three newest variants — `bystanderRevealed`
-(WP-602), `deckReshuffled` (WP-642), and `strikeBlocked` (WP-644) — are already
-mapped in the manifest; their CC0 bytes are operator-pending on R2 (a
-not-yet-uploaded clip 404s on preload and no-ops, so the sting starts the moment
-the byte lands).
+(including `strikeBlocked`). The `strikeBlocked` (WP-644) sting is **live on R2**
+— an ORIGINAL-synthesis clip (`strike-blocked.mp3`), not a CC0-sourced one. The
+other two recent variants, `bystanderRevealed` (WP-602) and `deckReshuffled`
+(WP-642), are mapped in the manifest but their CC0 bytes are **operator-pending
+on R2** (a not-yet-uploaded clip 404s on preload and no-ops, so the sting starts
+the moment the byte lands).
 
 | Event (`NotableGameEventType`) | Fires when | Suggested sound character | Candidate CC0 source |
 |---|---|---|---|
@@ -664,22 +671,24 @@ selections; the shortcode is documented in
 [Ewiki Authoring](ewiki-authoring.md). Grouped by the four signal
 surfaces above.
 
-> **The shipped-cue previews.** Two groups here audition exactly what
+> **The shipped-cue previews.** The previews below audition exactly what
 > `play.legendary-arena.com` plays today, filename-for-filename with the runtime
 > manifests — keep them in sync, changing a filename here only when the manifest
 > changes: (1) the six Surface-1 event clips previewed below (Master Strike, Scheme
-> Twist, Villain Ambush, Villain defeated, Mastermind defeated, Heal) match six of
-> the nine entries in
-> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) — the three
-> newest variants (`bystanderRevealed`, `deckReshuffled`, `strikeBlocked`) are
-> mapped there too, but have no preview here yet and their CC0 bytes are
-> operator-pending on R2; (2) the five
+> Twist, Villain Ambush, Villain defeated, Mastermind defeated, Heal) **plus
+> `strikeBlocked`** (live, ORIGINAL synthesis — previewed further down) match
+> **seven** of the nine entries in
+> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts); the other two
+> (`bystanderRevealed`, `deckReshuffled`) are mapped there too but have no preview
+> here yet and their CC0 bytes are operator-pending on R2; (2) the five
 > Surface-2 move clips (Play a card, Recruit a hero, Attack a villain, Draw cards,
 > End turn) match
-> [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-421).
-> The remaining previews — Dodge, Your turn begins, Wound / KO / bystander, and
-> the endgame stings — are candidate picks for surfaces not yet wired (`dodgeCard`
-> is engine-only; see [Surface 2](#surface-2)).
+> [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-421);
+> and (3) the **wound-gained thud** (WP-650, previewed below) — the local-seat
+> `woundCount`-increase cue from `woundCueManifest` (not `sfxManifest`, since a
+> Wound is not a notable event). The remaining previews — Dodge, Your turn begins,
+> KO / bystander-captured, and the endgame stings — are candidate picks for
+> surfaces not yet wired (`dodgeCard` is engine-only; see [Surface 2](#surface-2)).
 
 **Master Strike** — dramatic boss stinger:
 
@@ -931,11 +940,13 @@ unusable on a revenue-generating site.
 
 - **Partially shipped; the rest is unscoped.** The client-only audio
   foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
-  (WP-421 / EC-456, five of six moves — `dodgeCard` is engine-only), and the
-  [tiered combo cue](#tiered-combo) (WP-413 / EC-448) have landed. The remaining
-  layers — Surface-3 turn-lifecycle cues, the Surface-4 endgame stings, the
-  adaptive music score, and a dodge UI affordance so `dodgeCard` can be
-  dispatched (and sounded) — still need a WP defining their contract.
+  (WP-421 / EC-456, five of six moves — `dodgeCard` is engine-only), the
+  [tiered combo cue](#tiered-combo) (WP-413 / EC-448), the
+  [adaptive danger-meter score](#adaptive-background-music--the-danger-meter)
+  (WP-560 / D-24369), and the wound-gained thud (WP-650 / D-24462) have landed.
+  The remaining layers — Surface-3 turn-lifecycle cues, the Surface-4 endgame
+  stings, and a dodge UI affordance so `dodgeCard` can be dispatched (and
+  sounded) — still need a WP defining their contract.
 - **Asset delivery — bundle vs CDN.** Ship clips/loops inside the
   arena-client bundle, or host them on R2 (the
   `images.legendary-arena.com` precedent suggests a `sounds.` / R2 path
