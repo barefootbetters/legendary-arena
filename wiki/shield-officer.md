@@ -9,7 +9,6 @@ tags:
   - phase-play
   - stage-main
 related:
-  - recruit.md
   - card-type-taxonomy.md
   - cardextid.md
   - turn-system.md
@@ -211,4 +210,4 @@ with an empty payload; the engine re-validates authoritatively.
 - [`docs/ai/DECISIONS.md`](../docs/ai/DECISIONS.md) — D-24460 (this feature),
   D-24350 (`gain-officer-current`), D-24180 (the heal-lock), D-10008
   (`client: false` move registration)
-- [Recruit](recruit.md), [Wounds](wounds.md), [Card Type Taxonomy](card-type-taxonomy.md)
+- [Wounds](wounds.md), [Card Type Taxonomy](card-type-taxonomy.md)
