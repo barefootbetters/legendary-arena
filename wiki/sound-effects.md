@@ -78,6 +78,12 @@ suppressed flash.
 **Shipped** (live on `play.legendary-arena.com`):
 
 - Client-only audio foundation — WP-412 / D-24224.
+- [Surface-1](#surface-1) notable-event
+  cues (**all nine variants**) — WP-412 / D-24224; the exhaustive
+  [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
+  (`Record<SfxEventKey, string>`) maps every `NotableGameEventType` to a clip, and
+  [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
+  fires one clip per newly-appended notable event (including `strikeBlocked`).
 - Tiered [combo cue](#tiered-combo) (`combo-small` … `combo-legendary`) —
   WP-413 / WP-425 (D-24228 / D-24246); rides `lastPlayEffectsFired` (D-24221).
 - [Surface-2](#surface-2) player-action move cues (five of six moves) —
@@ -89,7 +95,7 @@ suppressed flash.
 
 **Approved design** (contracted, not yet built):
 
-- Surface-1 notable-event cues; Surface-4 endgame stingers.
+- Surface-4 endgame stingers.
 
 **Research** (proposal-level, no WP scoped):
 
@@ -112,17 +118,27 @@ vocabulary — so audio rides the curated `notableEvents` stream, never the
 log. The candidate signals, in decreasing order of how ready they are to
 drive audio:
 
-#### Surface 1 — Notable events (the primary, ready-made hook)
+#### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Six variants are locked, and — unlike the
+player-visible outcomes. Nine variants are locked, and — unlike the
 game log — they **are** projected as `UIState.notableEvents`. The arena
 client already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
 and renders them in
 [`NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue).
-A sound layer rides this exact stream — one clip per event type — with
-zero new engine work.
+
+**The sound layer rides this exact stream and shipped with WP-412.** The
+exhaustive [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
+(`Record<SfxEventKey, string>`) maps every `NotableGameEventType` variant to a
+CC0 clip, and [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
+— a sibling of the overlay stream with its own append-only cursor — fires
+**one clip per newly-appended notable event**, in array order, with no throttle
+(including `strikeBlocked`). The three newest variants — `bystanderRevealed`
+(WP-602), `deckReshuffled` (WP-642), and `strikeBlocked` (WP-644) — are already
+mapped in the manifest; their CC0 bytes are operator-pending on R2 (a
+not-yet-uploaded clip 404s on preload and no-ops, so the sting starts the moment
+the byte lands).
 
 | Event (`NotableGameEventType`) | Fires when | Suggested sound character | Candidate CC0 source |
 |---|---|---|---|
@@ -132,6 +148,9 @@ zero new engine work.
 | `fightResolved` | A player defeats a villain or henchman in the City | Triumphant impact/hit, with a coin/bystander flourish when `bystandersRescued > 0` | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (coins/gems) |
 | `mastermindDefeated` | All tactics defeated — the Mastermind is vanquished (win) | Victory fanfare — the biggest positive cue in the game | OpenGameArt CC0 Cinematic; Kenney RPG Audio |
 | `healResolved` | A player uses the Wound Healing ability (KOs Wounds from hand) | Soft restorative chime / positive heal shimmer | Kenney Interface Sounds (positive); OpenGameArt 80 CC0 RPG SFX (heal) |
+| `bystanderRevealed` | A Bystander is revealed from the villain deck and captured — by the frontmost City villain, or the Mastermind when the City is empty (WP-602) | Short "someone's in danger" civilian sting — the beat that sets up a rescue | Kenney Interface Sounds; OpenGameArt CC0 |
+| `deckReshuffled` | A start-of-turn draw empties a player's hero deck and the discard reshuffles back into it (WP-642) | Calm shuffle / riffle — an informational "you cycled your deck", never alarming | OpenGameArt Card Game Sounds ("Shuffle") |
+| `strikeBlocked` | A player **avoids** a threat by revealing a Hero — a Master Strike skip, a reveal-or-punish Scheme Twist dodge, or a villain Ambush dodge (`threatKind: masterStrike \| schemeTwist \| ambush`) (WP-644) | Metallic **block clang** — the defensive mirror of the Master Strike sting | Kenney Impact Sounds; OpenGameArt CC0 |
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
@@ -641,9 +660,13 @@ surfaces above.
 > **The shipped-cue previews.** Two groups here audition exactly what
 > `play.legendary-arena.com` plays today, filename-for-filename with the runtime
 > manifests — keep them in sync, changing a filename here only when the manifest
-> changes: (1) the six Surface-1 event clips (Master Strike, Scheme Twist, Villain
-> Ambush, Villain defeated, Mastermind defeated, Heal) match
-> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts); (2) the five
+> changes: (1) the six Surface-1 event clips previewed below (Master Strike, Scheme
+> Twist, Villain Ambush, Villain defeated, Mastermind defeated, Heal) match six of
+> the nine entries in
+> [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts) — the three
+> newest variants (`bystanderRevealed`, `deckReshuffled`, `strikeBlocked`) are
+> mapped there too, but have no preview here yet and their CC0 bytes are
+> operator-pending on R2; (2) the five
 > Surface-2 move clips (Play a card, Recruit a hero, Attack a villain, Draw cards,
 > End turn) match
 > [`moveSfxManifest.ts`](../apps/arena-client/src/audio/moveSfxManifest.ts) (WP-421).
@@ -846,8 +869,8 @@ unusable on a revenue-generating site.
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the six `NotableGameEventType` variants and their payloads
-  (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
+  — the nine `NotableGameEventType` variants and their payloads
+  (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`, `threatKind`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are
   composed
@@ -869,6 +892,13 @@ unusable on a revenue-generating site.
   for a sound layer
 - [`apps/arena-client/src/components/play/NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
   — existing overlay driven by the same stream
+- [`apps/arena-client/src/audio/sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
+  — the **shipped** Surface-1 notable-event → clip map (WP-412); an exhaustive
+  `Record<SfxEventKey, string>` over all nine `NotableGameEventType` variants
+- [`apps/arena-client/src/composables/useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
+  — the **shipped** Surface-1 consumer; a sibling of the overlay stream that keeps
+  its own append-only cursor and fires one clip per newly-appended notable event
+  (including `strikeBlocked`)
 - [`apps/arena-client/src/composables/useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts)
   — the **shipped** tiered combo cue (WP-413 / EC-448); watches
   `lastPlayEffectsFired` and plays the tier clip on each increase
@@ -949,7 +979,7 @@ affordance so `dodgeCard` can be dispatched and sounded · vertical stem layerin
 ## References
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — `NotableGameEventType` (6 locked variants) + payloads; header notes
+  — `NotableGameEventType` (9 locked variants) + payloads; header notes
   the raw `G.messages` field is not itself projected (the log's content is,
   as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
