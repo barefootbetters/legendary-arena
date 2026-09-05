@@ -32,8 +32,12 @@ source:
   - ../apps/arena-client/src/composables/useComboCue.ts
   - ../apps/arena-client/src/components/play/AudioControls.vue
   - ../apps/arena-client/src/vfx/effectIntensity.ts
+  - ../apps/arena-client/src/audio/sfxManifest.ts
+  - ../apps/arena-client/src/composables/useSoundEffects.ts
+  - ../ewiki/sound-effects/strike-blocked.py
+  - ../scripts/upload-move-sfx-to-r2.mjs
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-16
+last-reviewed: 2026-09-05
 ---
 
 # Sound Effects
@@ -674,6 +678,11 @@ surfaces above.
 **Heal (`healResolved`)** — a soft restorative chime:
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/heal.mp3" caption="Restorative heal chime (CC0)" >}}
+
+**Strike blocked (`strikeBlocked`)** — a metallic shield-block clang, the audio
+half of the [shield-block VfxOverlay burst](visual-effects.md#surface-block):
+
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/strike-blocked.mp3" caption="Shipped strike-blocked.mp3 — LIVE on R2; the clip play.legendary-arena.com plays on a strikeBlocked event (sfxManifest.ts). ORIGINAL synthesis (no CC0/third-party obligation — the cleanest commercial posture), not a sourced sample: a bright metal-contact chk → an inharmonic struck-disc clang → an upward deflection ping (relief, mirroring the Cap-shield intercept). Regenerate: python ewiki/sound-effects/strike-blocked.py" >}}
 
 **Wound gained** — a dull, painful thud:
 

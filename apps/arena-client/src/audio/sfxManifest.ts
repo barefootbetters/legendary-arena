@@ -61,11 +61,13 @@ export const sfxManifest: Record<SfxEventKey, string> = {
   // + sting ship complete and the shuffle sound starts once the byte lands.
   // Hyphenated filename per convention.
   deckReshuffled: `${SFX_BASE_URL}deck-shuffled.mp3`,
-  // why: WP-644 — the exhaustive Record forces the 9th variant (strikeBlocked)
-  // to carry a clip. The CC0 byte is operator-pending on R2 (same posture as
-  // every clip here — WP-412/413/425/602/642 all shipped their URLs before the
-  // upload); a not-yet-uploaded clip 404s on preload and no-ops, so the overlay
-  // + sting ship complete and the metallic block clang starts once the byte
-  // lands. Hyphenated filename per convention.
+  // why: WP-644 declared the 9th variant (strikeBlocked); the byte is now LIVE
+  // on R2 — the metallic shield-block clang that plays alongside the WP-647
+  // shield-block VfxOverlay burst, on the same notableEvents frame. Unlike the
+  // CC0-sourced clips here it is ORIGINAL synthesis (no third-party/CC0
+  // obligation — the cleanest commercial posture), generated deterministically
+  // by ewiki/sound-effects/strike-blocked.py and encoded/uploaded via
+  // scripts/upload-move-sfx-to-r2.mjs. Audio bytes are never committed to git
+  // (D-24219, R2 is the sole audio surface). Hyphenated filename per convention.
   strikeBlocked: `${SFX_BASE_URL}strike-blocked.mp3`,
 };
