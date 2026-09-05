@@ -361,7 +361,17 @@ export function composeStrikeBlockedNarrative(threatKind: StrikeBlockThreatKind)
   if (threatKind === 'ambush') {
     return 'The Ambush was blocked.';
   }
-  // why: WP-646 — exhaustiveness guard. The three arms above narrow `threatKind`
+  if (threatKind === 'fight') {
+    return 'The villain\'s attack was blocked.';
+  }
+  if (threatKind === 'escape') {
+    // why: WP-651 — the villain HAS already escaped by the time its Escape
+    // reveal-or-wound fires (it is in G.escapedPile and counts toward the escape
+    // loss); revealing a Hero dodges only the Wound, never the escape. So this
+    // says "penalty was blocked" (like schemeTwist), NOT "The Escape was blocked".
+    return 'The Escape penalty was blocked.';
+  }
+  // why: WP-646 — exhaustiveness guard. The arms above narrow `threatKind`
   // to `never`, so this assignment compiles today; a future `StrikeBlockThreatKind`
   // value fails `tsc` here until it gets its own arm, so the composer can never
   // silently mislabel a new threat kind (a bare fallthrough would return the last

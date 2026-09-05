@@ -35,6 +35,7 @@ import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
 import { composeStrikeBlockedNarrative } from '../events/notableEvents.compose.js';
+import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
@@ -1544,6 +1545,18 @@ function countPlayerHeroesMatchingTrait(
  * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
  * fires). Returns `{ targets: [] }`; the log line is the user-visible surface.
  */
+// why: WP-651 / D-24463 — the shield-block `threatKind` for a reveal-or-wound
+// AVOIDED, keyed by the timing that fired. Total over the closed
+// `VillainAbilityTiming` union (a new timing would fail this `Record` at compile
+// time). onAmbush → 'ambush' (WP-646); onFight → 'fight'; onEscape → 'escape'
+// (the villain still escapes — only the Wound is dodged, hence the composer's
+// "…penalty was blocked" narrative for 'escape').
+const STRIKE_BLOCK_THREAT_KIND_BY_TIMING: Record<VillainAbilityTiming, StrikeBlockThreatKind> = {
+  onAmbush: 'ambush',
+  onFight: 'fight',
+  onEscape: 'escape',
+};
+
 function villainEffectRevealOrWound(
   G: LegendaryGameState,
   currentPlayer: string,
@@ -1580,20 +1593,19 @@ function villainEffectRevealOrWound(
     ) {
       // why: the player HAS a matching Hero in hand or in play — no Wound, no
       // mutation (D-24281 amended: in-play Heroes count, see the helper).
-      // why: WP-646 / D-24458 — on the onAmbush timing, this reveal is a villain
-      // Ambush AVOIDED — announce it with a strikeBlocked (threatKind 'ambush'),
-      // one per revealing player (the WP-644/645 push idiom; setup guarantees the
-      // array). Scoped to onAmbush: the same handler's onFight/onEscape reveals
-      // are a different threat class (their own future threatKind), so no emit
-      // there. The wound/log behaviour is otherwise unchanged.
-      if (timing === 'onAmbush') {
-        G.notableEvents.push({
-          type: 'strikeBlocked',
-          playerId,
-          threatKind: 'ambush',
-          narrative: composeStrikeBlockedNarrative('ambush'),
-        });
-      }
+      // why: WP-646 / D-24458 + WP-651 / D-24463 — this reveal AVOIDED a villain
+      // reveal-or-wound; announce it with a strikeBlocked, one per revealing
+      // player (the WP-644/645 push idiom; setup guarantees the array). The threat
+      // class depends on the timing that fired — onAmbush → 'ambush', onFight →
+      // 'fight', onEscape → 'escape' (the total map above). The wound/log
+      // behaviour is otherwise unchanged.
+      const threatKind = STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing];
+      G.notableEvents.push({
+        type: 'strikeBlocked',
+        playerId,
+        threatKind,
+        narrative: composeStrikeBlockedNarrative(threatKind),
+      });
       continue;
     }
     // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable

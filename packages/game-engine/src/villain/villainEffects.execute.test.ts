@@ -1260,7 +1260,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     );
   });
 
-  it('WP-646 an onFight reveal emits NO strikeBlocked (this producer is onAmbush-scoped)', () => {
+  it('WP-651 an onFight reveal emits one strikeBlocked{fight} for the revealing player', () => {
     const G = makeG({
       hooks: [rowHook('v-x', 'onFight', 'team', 'x-men')],
       playerZones: { '0': zone([XMEN]) },
@@ -1268,13 +1268,17 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
-    assert.ok(
-      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
-      'no strikeBlocked on the onFight timing',
-    );
+    const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
+    assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onFight timing');
+    const event = blocked[0]!;
+    if (event.type === 'strikeBlocked') {
+      assert.equal(event.playerId, '0');
+      assert.equal(event.threatKind, 'fight');
+      assert.equal(event.narrative, 'The villain\'s attack was blocked.');
+    }
   });
 
-  it('WP-646 an onEscape reveal emits NO strikeBlocked (this producer is onAmbush-scoped)', () => {
+  it('WP-651 an onEscape reveal emits one strikeBlocked{escape} — "penalty was blocked"', () => {
     const G = makeG({
       hooks: [rowHook('v-x', 'onEscape', 'team', 'x-men')],
       playerZones: { '0': zone([XMEN]) },
@@ -1282,10 +1286,15 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
-    assert.ok(
-      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
-      'no strikeBlocked on the onEscape timing',
-    );
+    const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
+    assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onEscape timing');
+    const event = blocked[0]!;
+    if (event.type === 'strikeBlocked') {
+      assert.equal(event.playerId, '0');
+      assert.equal(event.threatKind, 'escape');
+      // why: the villain still escaped — only the Wound was dodged (WP-651).
+      assert.equal(event.narrative, 'The Escape penalty was blocked.');
+    }
   });
 
   it('WP-646 an onAmbush WOUND (no matching Hero) emits NO strikeBlocked', () => {

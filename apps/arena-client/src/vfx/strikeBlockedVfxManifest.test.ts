@@ -6,17 +6,20 @@ import {
   type StrikeBlockThreatKind,
 } from './strikeBlockedVfxManifest';
 
-// why: the three threatKind values the engine ships (WP-644/645/646). This
-// literal is the runtime drift pin — if the engine adds a value, the exhaustive
-// Record fails vue-tsc AND this keyset assertion fails, both pointing here.
+// why: the five threatKind values the engine ships (WP-644/645/646/649 +
+// WP-651's fight/escape). This literal is the runtime drift pin — if the engine
+// adds a value, the exhaustive Record fails vue-tsc AND this keyset assertion
+// fails, both pointing here.
 const EXPECTED_THREAT_KINDS: readonly StrikeBlockThreatKind[] = [
   'masterStrike',
   'schemeTwist',
   'ambush',
+  'fight',
+  'escape',
 ];
 
 describe('strikeBlockedVfxManifest (WP-647)', () => {
-  test('maps exactly the three threatKind values, no more, no fewer', () => {
+  test('maps exactly the five threatKind values, no more, no fewer', () => {
     assert.deepEqual(
       Object.keys(STRIKE_BLOCKED_VFX).sort(),
       [...EXPECTED_THREAT_KINDS].sort(),
