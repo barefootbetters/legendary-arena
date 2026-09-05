@@ -129,13 +129,19 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
   `'particles'`, passing `colors` from the manifest to `fireBurst`), and the
   "BLOCKED!" word (gated `'word'`). `fireBurst` gains an optional `colors?:
   readonly string[]` param (`readonly`, to accept the manifest's `readonly
-  string[]` without a `vue-tsc` assignability error) — when it is **undefined the
-  `colors` key is OMITTED** from the
-  confetti options, so the combo path keeps canvas-confetti's **default
-  (multicolor) palette** exactly as today (it does NOT pass a gold default); the
-  shield path passes the threat colours. Add the shield glyph
-  to the template (an inline SVG shown on `isShielding`, with a CSS scale+spin
-  keyframe suppressed under `prefers-reduced-motion`).
+  string[]` without a `vue-tsc` assignability error) and delegates the options
+  build to a NEW **exported pure** `buildBurstOptions(particleCount, colors?:
+  readonly string[])` — when `colors` is **undefined the `colors` key is OMITTED**
+  from the returned confetti options, so the combo path keeps canvas-confetti's
+  **default (multicolor) palette** exactly as today (it does NOT pass a gold
+  default); the shield path passes the threat colours. **Why exported:**
+  `confettiFire` is closure-local and, under jsdom, `getContext`→`null` makes
+  `fireBurst` short-circuit **before** building any options object — so the
+  combo-unchanged / shield-colours assertions are only writable against the pure
+  `buildBurstOptions` (imported directly), NOT via a confetti spy (which would
+  force an out-of-allowlist `jsdom-setup.ts` edit — copilot Finding 1). Add the
+  shield glyph to the template (an inline SVG shown on `isShielding`, with a CSS
+  scale+spin keyframe suppressed under `prefers-reduced-motion`).
 - `apps/arena-client/src/vfx/comboVfxManifest.ts` — the manifest precedent
   (a typed `Record` of the tier → spec). `strikeBlockedVfxManifest.ts` mirrors
   it: `threatKind → { colors: string[] }` + the shared `BLOCKED_WORD`.
@@ -181,6 +187,13 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - One shield-block beat **per `strikeBlocked` event**, via the append-only
   cursor (no replay of pre-mount events on mount/reconnect — the D-20104
   re-emission gate `useNotableEventStream` already encodes).
+- **Shared-primitive last-wins (accepted v1, copilot Finding 2).** The shield
+  beat and the combo flash share the one word element + `wordTimer` + canvas +
+  impact primitive (the single-overlay design). A shield beat firing while a
+  combo word is still on-screen (within ~1.3s), or vice-versa, **replaces** the
+  word slot and resets its timer — last beat wins. This is consistent with the
+  WP-556 single-active-effect overlay; a per-effect VFX queue is deferred to the
+  same future WP as the same-frame-coalescing queue.
 - `threatKind` drives **only** the deflection-burst `colors` (and is the sole use
   of `threatKind` in the client). The shield glyph is Cap's fixed red/white/blue;
   the word is the constant **"BLOCKED!"**. No per-threat word/shield variance in
@@ -235,9 +248,13 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
   `fireBurst(count, STRIKE_BLOCKED_VFX[event.threatKind].colors)` (gated
   `'particles'`), and `showWord(BLOCKED_WORD)` (gated `'word'`).
   `fireBurst` gains an optional `colors?: readonly string[]` param (`readonly`,
-  to accept the manifest's `readonly string[]`; when undefined it
-  omits the `colors` key → the combo's default multicolor palette is unchanged).
-  Add the shield glyph to the template (inline SVG shown on
+  to accept the manifest's `readonly string[]`) and delegates its options build to
+  a NEW **exported pure** `buildBurstOptions(particleCount, colors?)` that OMITS
+  the `colors` key when `colors` is undefined (→ the combo's default multicolor
+  palette is unchanged). `buildBurstOptions` is exported so the tests assert the
+  key presence/absence on it directly — the jsdom `getContext`→`null`
+  short-circuit makes the confetti options unobservable via a spy (copilot
+  Finding 1). Add the shield glyph to the template (inline SVG shown on
   `isShielding`) + a CSS scale+spin keyframe, suppressed under
   `prefers-reduced-motion`.
 
@@ -257,14 +274,23 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - `VfxOverlay.test.ts` — **modified**: a `strikeBlocked` signal renders the
   shield glyph + the "BLOCKED!" word (and the burst is attempted) with full
   intensity; under `off` / reduced-motion the shield + burst are suppressed while
-  the word still shows; the combo path is unchanged.
+  the word still shows; the combo path is unchanged — asserted by importing the
+  exported `buildBurstOptions` and checking `buildBurstOptions(count)` omits the
+  `colors` key while `buildBurstOptions(count, [...])` includes it (no confetti
+  spy, no `jsdom-setup.ts` edit — copilot Finding 1).
 
 ### F) Docs / ewiki (`wiki/visual-effects.md`, **modified**)
-- Flip the **three** passages that call the shield-block `VfxOverlay` burst the
-  follow-on (RS-1: they are NOT a Surface-1 catalog table row): the **"not yet
-  shipped" callout** (~lines 167–175), the **`#surface-block` shipped-note**
-  (~lines 714–738, esp. the "…**VfxOverlay** burst below … is the **follow-on**"
-  sentence ~723–726), and the **Decisions-Pending RESOLVED callout** (~1021–1027).
+- Flip the **five** places that frame the shield-block `VfxOverlay` burst as the
+  follow-on — **three prose passages + two table rows** (the burst has no
+  *dedicated* Surface-1 catalog row, but its follow-on framing lives in two rows,
+  pre-flight RISK): the **"not yet shipped" callout** (~lines 167–175); the
+  **`#surface-block` shipped-note** (~lines 714–738, esp. the "…**VfxOverlay**
+  burst below … is the **follow-on**" sentence ~723–726); the **Decisions-Pending
+  RESOLVED callout** (~1021–1027); the **Future-priority table row** (~line 416,
+  the "the shield particle burst is the follow-on" sub-clause in the T3/Future
+  row); and the **Surface-1 `strikeBlocked` catalog row** (~line 449, the "the
+  shield `VfxOverlay` burst … is the follow-on" sub-clause). Flip ALL FIVE so the
+  page does not simultaneously say "shipped (WP-647)" and "follow-on".
   The shield-block **`VfxOverlay` burst** now ships (WP-647) — the shield glyph
   (spin gated by intensity) + threat-coloured deflection burst + "BLOCKED!" word,
   recoloured per `threatKind`, gated by the Effect-Intensity contract.
@@ -297,10 +323,10 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
 - `apps/arena-client/src/vfx/strikeBlockedVfxManifest.test.ts` — **new** — exhaustive + non-empty colours
 - `apps/arena-client/src/composables/useStrikeBlockedVfx.ts` — **new** — the notableEvents-stream shield consumer + signal seam
 - `apps/arena-client/src/composables/useStrikeBlockedVfx.test.ts` — **new** — cursor seed / one-beat-per-event / non-strikeBlocked / reconnect
-- `apps/arena-client/src/components/play/VfxOverlay.vue` — **modified** — the shield glyph + threat-coloured burst + word render + the new signal consumer
-- `apps/arena-client/src/components/play/VfxOverlay.test.ts` — **modified** — shield render + intensity gating + combo-path-unchanged
+- `apps/arena-client/src/components/play/VfxOverlay.vue` — **modified** — the shield glyph + threat-coloured burst + word render + the new signal consumer + the exported pure `buildBurstOptions(count, colors?)`
+- `apps/arena-client/src/components/play/VfxOverlay.test.ts` — **modified** — shield render + intensity gating + combo-path-unchanged (asserted on `buildBurstOptions`)
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified (01.5 wiring)** — mount `useStrikeBlockedVfx(audioSnapshot)`
-- `wiki/visual-effects.md` — **modified** — flip the shield-block `VfxOverlay` burst to shipped (WP-647)
+- `wiki/visual-effects.md` — **modified** — flip all five follow-on places (3 prose + 2 table rows) to shipped (WP-647) + the seven→nine count
 
 No other **feature** files may be modified. The `git diff --name-only` DoD gate
 covers the feature diff above; the governance / generated artifacts the
@@ -349,8 +375,11 @@ consumer of the boardgame.io state push.
   burst are suppressed while a **static shield + the "BLOCKED!" word still show**
   (RS-1); no loss of gameplay in any mode.
 - [ ] The combo path (`useComboVfx` / `comboVfxManifest` / the combo burst) is
-  unchanged; the combo `fireBurst` call passes **no `colors` key** (its default
-  multicolor palette) — asserted by the combo-unchanged test, NOT that it is gold.
+  unchanged; `buildBurstOptions(count)` (no `colors` arg) returns options with
+  **no `colors` key** — the default multicolor palette — while
+  `buildBurstOptions(count, [...])` includes it. Asserted directly on the exported
+  `buildBurstOptions` (NOT via a confetti spy, NOT that it is gold), so the test
+  needs no `jsdom-setup.ts` edit (copilot Finding 1).
 - [ ] No `packages/game-engine/**` change.
 - [ ] `pnpm --filter arena-client typecheck` (vue-tsc) 0; `pnpm --filter
   arena-client test` passes; `pnpm -r build` 0.
@@ -498,6 +527,45 @@ reconnect / shorter-array is safe (append-only within a match, D-20004; a
 wholesale-replaced array yields zero iterations, no re-fire); and the RS-1 gating
 matrix has no burst-without-shield / shield-without-word state.
 
+### Post-merge re-run (2026-09-05, against the committed WP+EC)
+
+The in-turn gates above ran against working-tree drafts; several edits landed
+**after** the copilot pass (the `readonly` widening, the coalescing prose, the
+gold cleanup), so a fresh pre-flight + copilot were run against the **committed**
+WP-647 / EC-682 (PR #1806, now merged to `origin/main` @ `064e8490`). Both
+verdicts and their folds are captured here; the corrections land as a follow-up
+`SPEC:` commit on top of the merged draft.
+
+- **Pre-flight (re-run): READY.** All four post-copilot edits verified internally
+  consistent and true against source; every "gold" occurrence is a correct
+  negation; the `readonly` param assigns cleanly (`VfxOverlay.vue:59` types the
+  confetti options `Record<string, unknown>`). **One non-blocking ewiki RISK:**
+  the flip scope named three prose passages but **two table rows** (~416
+  Future-priority, ~449 Surface-1 `strikeBlocked` catalog) also frame the burst as
+  "the follow-on" — flipping only the three would ship a self-contradictory page.
+  **FOLDED:** Scope F now flips all five places.
+- **Copilot (re-run): RISK, both folded.**
+  - **Finding 1 (execution-blocking → FIXED):** the mandated "combo `fireBurst`
+    passes no `colors` key" assertion is **not writable** — `confettiFire` is
+    closure-local and jsdom's `getContext`→`null` short-circuits `fireBurst`
+    before the options object is built, so an executor could only assert it by
+    editing out-of-allowlist `jsdom-setup.ts` or faking it. **FOLDED:** extract an
+    **exported pure `buildBurstOptions(count, colors?)`** in `VfxOverlay.vue` that
+    omits the `colors` key when undefined; the test imports and asserts on it
+    directly — no confetti spy, no jsdom edit, in-allowlist.
+  - **Finding 2 (accepted v1 limit → documented):** the shield beat and combo
+    flash share the one word element + `wordTimer` + canvas + impact, so a beat
+    within ~1.3s of another replaces the word slot (last wins). **FOLDED:** a
+    shared-primitive last-wins constraint added to Packet-specific + D-24459,
+    consistent with the single-overlay v1 design.
+  - Copilot-cleared (evidence in the pass): the recording-renderer test seam is
+    writable (`useComboVfx.test.ts` precedent); `seq` is redundant-but-harmless
+    (each emit is a fresh object literal, so `watch` fires on reference change);
+    two independent signal `watch`es don't clobber each other; the burst fires at
+    `low` identically to the combo (`shouldRender('particles')` is `true` at
+    `low`); and `block-shield.svg`'s `<g class="shield">` subtree is a
+    self-contained glyph with the locked colours (the EC cites the exact path).
+
 ---
 
 ## Reserved Decisions (land at execution)
@@ -516,8 +584,11 @@ matrix has no burst-without-shield / shield-without-word state.
   Every element is gated by the WP-556 `effectIntensity` `shouldRender` contract
   (shield-spin + burst suppressed under `off` / reduced-motion; the shield glyph
   itself + the word still show). Simultaneous same-frame blocks coalesce at the
-  single module signal to one visible beat (last `threatKind`) — an accepted v1
-  limitation matching `useComboVfx`; a sequential VFX queue is a future WP.
+  single module signal to one visible beat (last `threatKind`), and — because the
+  shield beat and the combo flash share the one word element / timer / canvas /
+  impact primitive — a beat firing while another is on-screen replaces the word
+  slot (last wins); both are accepted v1 limitations of the single-overlay design
+  matching `useComboVfx`, with a per-effect VFX queue deferred to a future WP.
   `threatKind` is the sole client use of that field, and its manifest
   `Record` is exhaustive over the three values (a future value fails `vue-tsc`).
   **Pure presentation** — reads `UIState` only, writes no `G`/`ctx`, and is
