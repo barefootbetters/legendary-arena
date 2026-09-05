@@ -689,7 +689,7 @@ its own full-screen finale:
 | Outcome | Triggers (counter) | Finale character (proposal) |
 |---|---|---|
 | **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's T1 notable event) | The biggest positive moment in the game — **victory bloom + confetti storm + slow-motion hero beat** |
-| **`scheme-wins`** | `escapedVillains` ≥ `ESCAPE_LIMIT` (8) — *the city is overrun*; **or** `schemeLoss` ≥ 1 — *the scheme completes* | A dark, **deflating collapse** — desaturate to ash; the two reasons can take distinct treatments (an escape stampede vs. the scheme snapping shut) |
+| **`scheme-wins`** | `schemeLossCount` ≥ 1 — a scheme-loss condition latched. **WP-509 / D-24317 retired** the generic `escapedVillains` ≥ `ESCAPE_LIMIT` (8) cap; a villain-escape loss is now a *per-scheme* `escaped-pile-count` condition that latches `SCHEME_LOSS` (so escapes and twist-count both fold into `schemeLossCount`). `ESCAPE_LIMIT = 8` still exists but only for sim / co-op heuristics, not as an endgame trigger | A dark, **deflating collapse** — desaturate to ash; the distinct loss reasons (an escape stampede vs. the scheme snapping shut) can still take distinct treatments |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and suspended** — a held, unresolved shimmer; neither bloom nor collapse |
 
 *Animated mocks of the three full-screen finales are in
@@ -803,8 +803,10 @@ above. The shipped combo layer (WP-556) wires it this way:
   [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts))
   watches `UIState.game.lastPlayEffectsFired`, mounted at the shared
   [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
-  root beside its audio sibling. A future `useNotableEventVfx` mirror of the
-  notable-event stream joins it there.
+  root beside its audio sibling — today the shipped notable-event VFX consumers
+  `useStrikeBlockedVfx` (WP-647) and the wound-delta `useWoundVfx` (WP-650) mount
+  there; a consolidated `useNotableEventVfx` dispatcher is the future
+  generalization once a third notable-event effect lands.
 - **One** full-bleed overlay —
   [`VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
   (the single overlay canvas of the
@@ -978,7 +980,7 @@ priority order is fixed and non-negotiable:
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the six `NotableGameEventType` variants and their payloads
+  — the nine `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are composed
@@ -1003,13 +1005,19 @@ priority order is fixed and non-negotiable:
   — **shipped (WP-556):** the persisted unified Effect-Intensity control +
   `prefers-reduced-motion` + `shouldRender`
 - [`apps/arena-client/src/components/play/VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
-  — **shipped (WP-556):** the single overlay canvas + call-out word layer
+  — **shipped (WP-556):** the single overlay canvas + call-out word layer; also
+  hosts the shield-block beat (WP-647) and the wound vignette (WP-650)
+- [`apps/arena-client/src/composables/useStrikeBlockedVfx.ts`](../apps/arena-client/src/composables/useStrikeBlockedVfx.ts) + [`vfx/strikeBlockedVfxManifest.ts`](../apps/arena-client/src/vfx/strikeBlockedVfxManifest.ts)
+  — **shipped (WP-647..651):** the first notable-event VFX consumer (append-only
+  cursor over `notableEvents`) + the `threatKind` → burst-colour manifest (five classes)
+- [`apps/arena-client/src/composables/useWoundVfx.ts`](../apps/arena-client/src/composables/useWoundVfx.ts) + [`useWoundCue.ts`](../apps/arena-client/src/composables/useWoundCue.ts)
+  — **shipped (WP-650):** the local-seat `woundCount`-delta vignette + audio thud
 - [`apps/arena-client/src/components/play/AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue)
   — **shipped (WP-556):** hosts the unified Effect-Intensity control (its
   `off` also mutes audio)
 - [`apps/arena-client/src/composables/useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
-  — existing client stream of notable events; the attach point for
-  event-driven effects (the next WP)
+  — client stream of notable events; the append-only-cursor pattern
+  `useStrikeBlockedVfx` (WP-647) mirrors for event-driven VFX
 - [`apps/arena-client/src/components/play/NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
   — the pre-existing overlay; the model the VFX overlay layer followed
 - [`apps/arena-client/src/pages/PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
@@ -1196,13 +1204,14 @@ regenerate with `python surface1-effects.py`.*
 
 ### A.2 — Surface 1b: fight/ambush sub-effects {#appendix-surface-1b}
 
-Proposal mocks of the [Surface 1b](#surface-1b) `appliedEffects`
-sub-effects — **Tier-3 fidelity**; the mocks show the *character*, not
-shipped behaviour.
+Mocks of the [Surface 1b](#surface-1b) `appliedEffects` sub-effects — **Tier-3
+fidelity**. The **wound-gained** beat has since **shipped** as a full-screen
+local-seat vignette (WP-650 / D-24462, see [Surface 1b](#surface-1b)); the KO /
+capture / rescue mocks below still show the *character*, not shipped behaviour.
 
 ![Animated mock of the wound-gained sub-effect: a Wound card takes a dull red damage flash with a small recoil, pulsing twice then settling. Loops.](/visual-effects/surface1b-wound-gained.svg "width=33%")
 
-*Wound gained (`gainWound*`) — a dull red **damage flash** with a small recoil. Sample card: Bindings (Wound).*
+*Wound gained (`gainWound*`) — a dull red **damage flash** with a small recoil. Sample card: Bindings (Wound). **Shipped** as the full-bleed local-seat wound vignette (WP-650); this per-card mock shows the earlier proposed character.*
 
 ![Animated mock of the hero-KO'd sub-effect: a KO'd hero card cracks with a white flash, breaks into dark shards, and slides down toward the KO pile while dissolving. Loops.](/visual-effects/surface1b-hero-ko.svg "width=33%")
 
@@ -1293,25 +1302,26 @@ finales (the `heroes-win` bloom is the finale-scale sibling of the A.1
 
 *Source: [surface4-finales.py](../ewiki/visual-effects/surface4-finales.py).*
 
-### A.6 — Proposed shield block (defensive negate) {#appendix-surface-block}
+### A.6 — Shield block (defensive negate) {#appendix-surface-block}
 
-Proposal mock of the [shield-block beat](#surface-block) — **card-less and
-vector-only** (the shield is drawn as crisp concentric rings + a white star,
-not a photo). It is a **proposal blocked on a new engine event**
-(`strikeBlocked` / prevention), not a shipped or buildable surface — see the
-[callout above](#surface-block).
+Reference mock of the **shipped** [shield-block beat](#surface-block) — **card-less
+and vector-only** (the shield is drawn as crisp concentric rings + a white star,
+not a photo). The beat ships: the `strikeBlocked` engine event + the `VfxOverlay`
+burst (WP-644..651 / D-24459), covering all five reveal-to-avoid threat classes.
+This animated SVG is the illustrative render reference — see the [shipped
+callout above](#surface-block).
 
 ![Animated mock of the shield-block effect: an incoming red Master Strike bolt drives down toward the board, Captain America's shield spins in and intercepts it with a bright metallic clang, sparks and red shards ricochet away harmlessly, and the word BLOCKED! pops on-screen. Loops.](/visual-effects/block-shield.svg "width=42%")
 
-*Proposed **shield block** — Captain America's shield spins in to intercept
+*Shipped **shield block** — Captain America's shield spins in to intercept
 an incoming **Master Strike**: a metallic *clang* flash-ring, a spark
 ricochet, and the red strike energy shattering and deflecting harmlessly off
-the shield face, with a **BLOCKED!** call-out. Recolours to **purple** for a
-[Scheme Twist](#surface-1) block and **green** for an [Ambush](#surface-1)
-block — the render is identical, only the deflected-threat colour changes.
-Under `prefers-reduced-motion` it holds the planted shield + **BLOCKED!** as
-a single static frame. Illustrative proposal only; the trigger it would ride
-does not exist yet.*
+the shield face, with a **BLOCKED!** call-out. Recolours per `threatKind`
+across all five reveal-to-avoid classes — **red** Master Strike / **purple**
+[Scheme Twist](#surface-1) / **green** [Ambush](#surface-1) / **amber** villain
+Fight / **teal** villain Escape — the render is identical, only the
+deflected-threat colour changes. Under `prefers-reduced-motion` it holds the
+planted shield + **BLOCKED!** as a single static frame.*
 
 *Source: [block-shield.py](../ewiki/visual-effects/block-shield.py) —
 regenerate with `python block-shield.py`.*
@@ -1319,7 +1329,7 @@ regenerate with `python block-shield.py`.*
 ## References
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — `NotableGameEventType` (6 locked variants) + payloads; header notes
+  — `NotableGameEventType` (9 locked variants) + payloads; header notes
   the raw `G.messages` field is not itself projected (the log's content is,
   as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts),
