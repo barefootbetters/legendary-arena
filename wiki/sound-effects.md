@@ -54,11 +54,14 @@ also specs three richer layers on top: **motif-driven event cues**
 cue** that escalates with the size of a synergy chain, and **endgame
 stingers** for all three real match outcomes (heroes win, scheme wins,
 tie). Most of this page is still `draft` research rather than an
-implementation contract, but three pieces have **shipped**: the client-only
-audio foundation (WP-412), the [Surface-2 player-action move cue](#surface-2)
-(WP-421 / D-24241) fired on the local move dispatch, and the
+implementation contract, but four pieces have **shipped**: the client-only
+audio foundation and its [Surface-1 notable-event cues](#surface-1) (WP-412),
+the [Surface-2 player-action move cue](#surface-2)
+(WP-421 / D-24241) fired on the local move dispatch, the
 [tiered combo cue](#tiered-combo) (WP-413 / D-24228) that rides the
-`lastPlayEffectsFired` signal (D-24221).
+`lastPlayEffectsFired` signal (D-24221), and the
+[adaptive danger-meter score](#adaptive-background-music--the-danger-meter)
+(WP-560 / D-24369) crossfading three CC0 loops on `UIState.progress.menaceTier`.
 The remaining sound mappings and library picks are proposals; the event
 vocabulary, the endgame outcomes, the projected `UIState` signals, and the
 architectural boundaries are sourced to code.
@@ -968,13 +971,14 @@ A 60-second read of where this page stands.
   [Event priority & coalescing contract](design-system-overview.md#event-priority).
 - Adaptive music ships **horizontal re-sequencing** for v1.
 
-**Shipped** — WP-412 foundation · WP-413 / WP-425 combo cue · WP-421 move cues.
+**Shipped** — WP-412 foundation + Surface-1 notable-event cues · WP-413 / WP-425
+combo cue · WP-421 move cues · WP-560 adaptive danger-meter score.
 
 **Deferred** — the `escapeResolved` event (WP-186) · motif playback wiring · the
 voiced Arena Announcer VO (the on-screen call-out twin shipped with WP-556; only
-the *voice* is deferred) · the adaptive-music implementation · a dodge UI
-affordance so `dodgeCard` can be dispatched and sounded · vertical stem layering
-(only if a commissioned stemmed score exists).
+the *voice* is deferred) · a dodge UI affordance so `dodgeCard` can be dispatched
+and sounded · vertical stem layering (only if a commissioned stemmed score
+exists).
 
 ## References
 
