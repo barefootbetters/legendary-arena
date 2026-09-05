@@ -47,7 +47,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-04
+last-reviewed: 2026-09-05
 ---
 
 # Visual Effects Framework
@@ -103,11 +103,17 @@ governance layer** (implemented against, and not free to drift); the
 [Mechanics](#mechanics) are **design detail** (the per-event *character* —
 which flash, which colour — is proposal-level and free to evolve); and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
-**roadmap**. **One surface has shipped** — the [combo VFX
-foundation](#shipped-combo-vfx) (flash + synergy call-out + the
-accessibility gate, WP-556); everything else here — notable-event effects,
-endgame finales, fight/ambush sub-effects, action-move cues, faction cries
-— is still `draft` design against the same contract. The event vocabulary,
+**roadmap**. **Three surfaces have shipped** — the [combo VFX
+foundation](#shipped-combo-vfx) (flash + synergy call-out + the accessibility
+gate, WP-556), the [shield-block beat](#surface-block) with the **complete
+reveal-to-avoid family** (the `strikeBlocked` event + the Cap-shield burst,
+recoloured per `threatKind` across all five threat classes — Master Strike /
+Scheme Twist / Ambush / Fight / Escape, WP-644..651), and the [wound-gained
+damage vignette](#surface-1b) (its thematic inverse, WP-650); everything else
+here — the remaining notable-event effects (Master Strike vignette,
+mastermind-defeat bloom, fight impact), endgame finales, the other fight/ambush
+sub-effects, action-move cues, faction cries — is still `draft` design against
+the same contract. The event vocabulary,
 the projected `UIState` signals, the shipped audio precedent, the shipped
 combo layer, and the architectural boundaries are sourced to code; the
 effect character of the unbuilt surfaces is proposal.
@@ -171,9 +177,12 @@ fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
 [Surface 4](#endgame) endgame finales, the [faction battle
 cries](#faction-cries) (licensing-gated, D-24259), and the
 [event-storm coalescing algorithm](#decisions-pending) (not needed until a
-second effect class ships). The [shield-block](#surface-block) **`VfxOverlay`
-burst** — the Captain-America-shield beat driven by the `strikeBlocked` event —
-**shipped** in WP-647 (it is no longer a follow-on).
+second effect class ships). **Shipped since this list was written:** the
+[shield-block](#surface-block) **`VfxOverlay` burst** — the Captain-America-shield
+beat driven by the `strikeBlocked` event, now covering all five reveal-to-avoid
+threat classes (Master Strike / Scheme Twist / Ambush / Fight / Escape,
+WP-644..651) — and the [wound-gained damage vignette](#surface-1b) (its thematic
+inverse, WP-650). Neither is a follow-on any longer.
 
 ## VFX Trigger Contract
 
@@ -412,7 +421,7 @@ build in this order rather than attempting twenty effects at once:
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
 | **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
-| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects (blocked on `escapeResolved`; see [Edge Cases](#edge-cases)); narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
+| **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects — the VFX for a villain *successfully escaping*, blocked on the deferred `escapeResolved` event (see [Edge Cases](#edge-cases)); **distinct** from the shipped Escape reveal-**block** teal shield (WP-651), which fires when a player *dodges* an escaping villain's reveal-or-wound; narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
 
@@ -445,7 +454,7 @@ stream — one effect per event type — with zero new engine work.
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
 | `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
-| `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, or a villain Ambush dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped:** the engine event + overlay chip (WP-644/645/646) and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`, WP-647) — a threat-coloured deflection burst (red/purple/green per `threatKind`) + the "BLOCKED!" word |
+| `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom/**Loki** Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, a villain **Ambush** dodge, or a villain **Fight**/**Escape** ability reveal-or-wound dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (complete):** the engine event + overlay chip and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) — a threat-coloured deflection burst (Master Strike **red** / Scheme Twist **purple** / Ambush **green** / Fight **amber** / Escape **teal** per `threatKind`) + the "BLOCKED!" word (WP-644..651; all five reveal-to-avoid classes) |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -690,16 +699,16 @@ its own full-screen finale:
 > its own suspended finale — don't fold it into the loss collapse. (Same
 > note as the audio layer's tie sting.)
 
-#### Proposed — the shield block (a defensive "negate" beat) {#surface-block}
+#### Shipped — the shield block (a defensive "negate" beat) {#surface-block}
 
 Every effect above celebrates something *happening* — a Strike lands, a
 villain falls, a chain detonates. This one celebrates something **not**
 happening: a hero **blocks** an incoming threat before it can hurt the
 players. Thematically it is Captain America's shield — the game's clearest
 icon of defense — spinning in to **intercept a Master Strike** (or a Scheme
-Twist, or a villain Ambush) with a metallic *clang*, throwing the threat's
-energy back off the shield face while the board underneath is left
-untouched. It is the mirror of the [`mastermindStrikeResolved`](#surface-1)
+Twist, a villain Ambush, or a villain Fight/Escape reveal-or-wound) with a
+metallic *clang*, throwing the threat's energy back off the shield face while
+the board underneath is left untouched. It is the mirror of the [`mastermindStrikeResolved`](#surface-1)
 "uh-oh" jolt: same dramatic moment, opposite outcome — relief instead of
 dread — so it earns a comparably big, one-shot flourish.
 
