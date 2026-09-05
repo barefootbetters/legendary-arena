@@ -351,11 +351,13 @@ you.
 
 | Outcome | Colour | Glyph | Meaning | Example log line |
 |---|---|---|---|---|
-| `neutral` | none (default text) | — | pure narration, no effect claim | `Player 0 played Iron Man (…) — +2 Attack.` |
-| `applied` | **green** (`--color-par-positive`) | `✓` | your effect fully did its thing | `[Scheme Twist] Player 0 reveals "…endless-invention" — heroClass "tech" condition met; penalty avoided.` |
-| `partial` | **amber** (`--color-par-partial`) | `⚠` | some-but-not-all / conditional-skipped | `Drew 1 of 2 cards — deck exhausted.` |
-| `blocked` | **red** (`--color-par-negative`) | `✕` | your effect tried and nothing happened | `[Scheme Twist] Player 0 has no matching heroClass "tech" hero — gained a wound.` |
-| `threat` | **villain-purple** (`--color-villain`) | `⚔` | a villain / Scheme adversity advanced on the players | `[Ambush] Frost Giant (…) revealed and entered the city!` · `Scheme Twist #3 revealed — the Scheme advances; twist count incremented (3 of 8 to Evil Wins).` |
+| `neutral` | — none (default text colour) | — | pure narration, no effect claim | `Player 0 played Iron Man (…) — +2 Attack.` |
+| `applied` | {{< swatch "#15803d" >}} {{< swatch "#22c55e" >}} **green** · `#15803d` light / `#22c55e` dark (`--color-par-positive`) | `✓` | your effect fully did its thing | `[Scheme Twist] Player 0 reveals "…endless-invention" — heroClass "tech" condition met; penalty avoided.` |
+| `partial` | {{< swatch "#b45309" >}} {{< swatch "#f59e0b" >}} **amber** · `#b45309` light / `#f59e0b` dark (`--color-par-partial`) | `⚠` | some-but-not-all / conditional-skipped | `Drew 1 of 2 cards — deck exhausted.` |
+| `blocked` | {{< swatch "#991b1b" >}} {{< swatch "#dc2626" >}} **red** · `#991b1b` light / `#dc2626` dark (`--color-par-negative`) | `✕` | your effect tried and nothing happened | `[Scheme Twist] Player 0 has no matching heroClass "tech" hero — gained a wound.` |
+| `threat` | {{< swatch "#7b1fa2" >}} **villain-purple** · `#7b1fa2` (`--color-villain`) | `⚔` | a villain / Scheme adversity advanced on the players | `[Ambush] Frost Giant (…) revealed and entered the city!` · `Scheme Twist #3 revealed — the Scheme advances; twist count incremented (3 of 8 to Evil Wins).` |
+
+> The two swatches on the theme-split rows are the token's **light** / **dark** resolved values (`--color-par-*` → `--la-color-*`; `villain` is a single `#7b1fa2`). They are shown here for reference only — the game log renders the **semantic token**, never a hard-coded hex (see the accessibility note below).
 
 **Where each colour fires** (the emitting mechanic pages):
 
