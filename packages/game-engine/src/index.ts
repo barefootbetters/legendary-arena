@@ -157,6 +157,7 @@ export { REVEALED_CARD_TYPES } from "./villainDeck/villainDeck.types.js";
 export { revealVillainCard } from "./villainDeck/villainDeck.reveal.js";
 export { fightVillain } from "./moves/fightVillain.js";
 export { recruitHero } from "./moves/recruitHero.js";
+export { recruitOfficer, OFFICER_RECRUIT_COST } from "./moves/recruitOfficer.js";
 export { buildVillainDeck } from "./villainDeck/villainDeck.setup.js";
 export type { VillainDeckRegistryReader } from "./villainDeck/villainDeck.setup.js";
 export type {

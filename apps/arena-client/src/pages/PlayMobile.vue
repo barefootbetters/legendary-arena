@@ -453,7 +453,13 @@ export default defineComponent({
             :submit-move="submitMove"
           />
         </section>
-        <SharedDecks :piles="snapshot.piles" />
+        <SharedDecks
+          :piles="snapshot.piles"
+          :current-stage="snapshot.game.currentStage"
+          :is-viewer-turn="isViewerTurn"
+          :economy="snapshot.economy"
+          :submit-move="submitMove"
+        />
         <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
         <section
           class="play-mobile__band"

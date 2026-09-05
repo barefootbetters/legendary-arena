@@ -44,6 +44,7 @@ import { drawCards, playCard, endTurn } from '../moves/coreMoves.impl.js';
 import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
+import { recruitOfficer } from '../moves/recruitOfficer.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
@@ -106,6 +107,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   revealVillainCard: (context) => revealVillainCard(context as never),
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
+  // why: WP-648 — a recorded human game that recruits an Officer replays through
+  // this dispatch map; recruitOfficer takes no args (empty payload).
+  recruitOfficer: (context) => recruitOfficer(context as never),
   fightMastermind: (context) => fightMastermind(context as never),
   setPlayerReady: (context, args) => setPlayerReady(context as never, args as never),
   startMatchIfReady: (context) => startMatchIfReady(context as never),

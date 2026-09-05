@@ -40,6 +40,7 @@ import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
+import { recruitOfficer } from './moves/recruitOfficer.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
@@ -434,6 +435,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     revealVillainCard: { move: revealVillainCard, client: false },
     fightVillain: { move: fightVillain, client: false },
     recruitHero: { move: recruitHero, client: false },
+    // why: WP-648 / D-24460 — recruitOfficer buys the top S.H.I.E.L.D. Officer
+    // supply token for 3 recruit into the current player's discard. Non-core,
+    // internally stage-gated (the recruitHero pattern). Server-only (client:
+    // false) per D-10008 — it mutates real G (G.piles.officers / playerZones /
+    // turnEconomy), absent on UIState.
+    recruitOfficer: { move: recruitOfficer, client: false },
     // why: D-24051 — dodgeCard is a non-core, internally-stage-gated move (the
     // recruitHero pattern), NOT a core move; registered here so the player can
     // discard a Dodge card from hand to draw a replacement. Server-only

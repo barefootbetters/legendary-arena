@@ -132,7 +132,7 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, resolveCopyPowersChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveScryKoChoice, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, fightMastermind, fightVillain, healWounds, playCard, playFromUndercover, recruitHero, recruitOfficer, resolveCopyPowersChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDrawOrEmpowered, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveScryKoChoice, resolveVictoryPileCardPick, revealVillainCard, and sendUndercover', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
@@ -150,8 +150,9 @@ describe('LegendaryGame', () => {
       // WP-535 / D-24345 added resolveCopyPowersChoice (28 → 29) — the interactive copy-a-Hero pick (Rogue's Copy Powers); sorts between recruitHero and resolveDefeatChoice; NOT a CORE_MOVE_NAME (mirrors resolveGiveHqHeroChoice).
       // WP-538 / D-24347 added resolvePutCardsOnDeckChoice (29 → 30) — the interactive put-2-on-top pick (core Dr. Doom Master Strike); sorts between resolvePutAnyNumberBottomHQ and resolveReorderChoice; NOT a CORE_MOVE_NAME (mirrors resolveDiscardChoice).
       // WP-603 / D-24413 added resolveMelterKoChoice (30 → 31) — the interactive Melter Fight KO/keep pick; sorts between resolveKoHeroChoice and resolveOptionalKoReward; NOT a CORE_MOVE_NAME (mirrors resolveScryKoChoice).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'resolveCopyPowersChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveScryKoChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
-      'LegendaryGame must define exactly 31 moves',
+      // WP-648 / D-24460 added recruitOfficer (31 → 32) — the player-initiated buy of a S.H.I.E.L.D. Officer from the shared supply for 3 recruit; sorts between recruitHero and resolveCopyPowersChoice; NOT a CORE_MOVE_NAME (mirrors recruitHero, internally stage-gated).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'fightMastermind', 'fightVillain', 'healWounds', 'playCard', 'playFromUndercover', 'recruitHero', 'recruitOfficer', 'resolveCopyPowersChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDrawOrEmpowered', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveScryKoChoice', 'resolveVictoryPileCardPick', 'revealVillainCard', 'sendUndercover'],
+      'LegendaryGame must define exactly 32 moves',
     );
   });
 

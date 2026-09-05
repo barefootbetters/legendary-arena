@@ -67,6 +67,7 @@ const NOT_YOUR_TURN: GatingResult = {
  *   - `canPlayCard`        → `playCard` at `play.main`
  *   - `canFightVillain`    → `fightVillain` at `play.main`
  *   - `canRecruitHero`     → `recruitHero` at `play.main`
+ *   - `canRecruitOfficer`  → `recruitOfficer` at `play.main` (WP-648)
  *   - `canFightMastermind` → `fightMastermind` at `play.main`
  *   - `canPassPriority`    → `advanceStage` at any stage (canonical
  *                             stage-advance per D-10011)
@@ -208,6 +209,7 @@ export function useTurnActions(
   canPlayCard: () => GatingResult;
   canFightVillain: () => GatingResult;
   canRecruitHero: () => GatingResult;
+  canRecruitOfficer: () => GatingResult;
   canFightMastermind: () => GatingResult;
   canPassPriority: () => GatingResult;
   canEndTurn: () => GatingResult;
@@ -234,6 +236,16 @@ export function useTurnActions(
         : { allowed: false, reason: stageGateReason(currentStage, 'main') };
     },
     canRecruitHero: () => {
+      if (!isViewerTurn) return NOT_YOUR_TURN;
+      return currentStage === 'main'
+        ? ALLOWED
+        : { allowed: false, reason: stageGateReason(currentStage, 'main') };
+    },
+    // why: WP-648 — the turn + stage gate for buying a S.H.I.E.L.D. Officer from
+    // the shared supply. The resource (≥ 3 recruit) and supply (officersCount > 0)
+    // checks layer on top at the SharedDecks call-site via useCardCostGating (the
+    // HQRow precedent) so this composable stays free of economy/pile inputs.
+    canRecruitOfficer: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
       return currentStage === 'main'
         ? ALLOWED
