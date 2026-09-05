@@ -853,6 +853,14 @@ export async function startServer() {
     koaContext.body = getVersionInfo();
   });
 
+  // why: a bare `/version` alias beside the bare `/health` route (both are
+  // unprefixed operator diagnostics), so a deploy's running gitSha is
+  // reachable at the path an operator reaches for next to /health — no need
+  // to remember the /api prefix. Same cached getVersionInfo() payload.
+  server.router.get('/version', (koaContext) => {
+    koaContext.body = getVersionInfo();
+  });
+
   registerLegendsPublisherRoutes(server.router);
 
   // why: "Watch Bot Play" feature — server-side autoplay loop using
