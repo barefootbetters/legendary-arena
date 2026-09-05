@@ -50,6 +50,10 @@ export type UiMoveName =
   | 'endTurn'
   | 'fightVillain'
   | 'recruitHero'
+  // why: WP-648 / D-24460 — buys the top S.H.I.E.L.D. Officer supply token for 3
+  // recruit into the viewer's discard. Dispatched with an empty payload; the
+  // engine move takes no arguments (all Officers are identical tokens).
+  | 'recruitOfficer'
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'

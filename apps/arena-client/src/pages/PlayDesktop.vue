@@ -607,7 +607,13 @@ export default defineComponent({
               :player="opponent"
             />
           </div>
-          <SharedDecks :piles="snapshot.piles" />
+          <SharedDecks
+            :piles="snapshot.piles"
+            :current-stage="snapshot.game.currentStage"
+            :is-viewer-turn="isViewerTurn"
+            :economy="snapshot.economy"
+            :submit-move="submitMove"
+          />
         </section>
         <section class="play-desktop__top-row">
           <div class="play-desktop__mastermind-zone">
