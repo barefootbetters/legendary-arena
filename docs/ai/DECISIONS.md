@@ -39527,4 +39527,20 @@ _Active 2026-09-04 — WP-647 / EC-682. Builds on WP-556 / D-24365 (the VFX foun
 
 _Active 2026-09-05 — WP-649 / EC-684. Extends D-24456 (the `strikeBlocked` event); mirrors D-24457 (the Dr. Doom pure-reuse producer). Related: D-24459 (the shield VFX this drives), D-24458 (the discard-to-avoid exclusion), the `strike-blocked.mp3` audio the `masterStrike` block now plays (PR #1812)._
 
+### D-24462 — Wound-Gained Damage Vignette + Thud (Active 2026-09-05 — WP-650 / EC-685)
+
+**Context.** The [Visual Effects](../../wiki/visual-effects.md) Surface-1b table proposed a "wound gained" beat — *"a dull red damage flash"* — the thematic **inverse** of the WP-647 / D-24459 shield block: where the shield celebrates a threat AVOIDED, this fires when the local player **takes** a Wound. It was a follow-up WP; this ships it.
+
+**Decision.** Two new arena-client feel-layer consumers, mirroring the shipped `useComboVfx` / `useComboCue` scalar-change pattern: **`useWoundVfx`** publishes a wound event to the WP-556 `VfxOverlay` (a full-bleed dull-red **edge vignette** — transparent centre so the mat stays readable), and **`useWoundCue`** plays a dull damage **thud** through the WP-412 engine. Both watch the LOCAL seat's `UIState.players[own].woundCount` — self-selected via the `handCards !== undefined` tell (the audience filter reveals a hand only to its owner; the same self-selection `PlayDesktop`'s `viewer` computed uses) — and fire **only on an INCREASE**: a **heal** decrements the count and must not fire, though `lastSeen` still advances on a decrease so a re-wound re-arms. Watching the one `woundCount` scalar catches every wound source (Master Strike / Scheme Twist / Ambush / fight sub-effect) uniformly, without parsing keyword-only `appliedEffects`.
+
+**Constraint.** **Pure presentation** — reads `UIState` only, writes no `G`/`ctx`, absent from the determinism hash (the `src/vfx/` D-24365 exemption); sims/replays render nothing. **No engine change and NO determinism surface** — arena-client-only, so `finalStateHash` / `PRE_WP080` / Seed-PAR / sim artifacts do not move and are not touched. The thud clip is **NOT** in `sfxManifest` (a Wound is not a `NotableGameEvent`) — it carries a single-URL `woundCueManifest.ts` constant. `wound-gained.mp3` is **ORIGINAL synthesis** (no CC0/third-party obligation — the cleanest commercial posture), generated deterministically by `ewiki/sound-effects/wound-gained.py` (byte-reproducible; live on R2), never committed to git.
+
+**Accessibility.** The vignette is gated `shouldRender('shake')` — full intensity only, suppressed under reduced-motion / low / off (a full-screen colour flash is the photosensitivity-class of effect a reduced-motion user opts out of, like the impact pulse), with a `@media (prefers-reduced-motion)` CSS backstop. The `off` master mute silences the thud too; the thud still plays at `low` (feedback survives without the flash).
+
+**Render approach (operator choice).** A **full-screen** red vignette for the local player, chosen over a per-panel targeted flash — the ewiki "on the afflicted player panel" wording is non-normative ("Illustrative Visual Concepts"). A per-panel / per-afflicted-player variant (for multiplayer) is a future WP.
+
+**Verification.** `pnpm -r build` 0; arena-client `vue-tsc` 0; arena-client suite **1590 pass / 0 fail** (the new `useWoundVfx` / `useWoundCue` consumer tests — safe-skip / seed / increase-only / heal-no-fire / re-arm / opponent-ignored / mute — and the `VfxOverlay` render tests across full / off / reduced-motion / low). No engine diff, no re-pin. `wound-gained.mp3` GET-verified on R2 (`200` / `audio/mpeg`). ewiki `visual-effects.md` + `sound-effects.md` Surface-1b "Wound gained" flipped to shipped. Post-deploy **D-24026 live-verify** (take a Wound → red vignette + thud) pending the deploy.
+
+_Active 2026-09-05 — WP-650 / EC-685. The thematic inverse of D-24459 (the shield-block beat); mirrors WP-556 / D-24365 (the VFX foundation + determinism exemption) and the `useComboVfx` / `useComboCue` scalar-change consumers. Related: `wiki/visual-effects.md §Surface-1b` (the proposed beat this ships)._
+
 Protect this file.
