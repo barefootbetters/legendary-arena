@@ -753,6 +753,24 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > reveal-to-avoid family is complete. See [Priority tiers](#priority-tiers)
 > and [Decisions Pending](#decisions-pending).
 
+**Threat-class → colour reference.** The five reveal-to-avoid classes the
+shield-block beat covers, at a glance. `threatKind` drives **only** the burst
+colour — the Cap-shield glyph, the **"BLOCKED!"** word, and the metallic clang
+SFX are constant across all five (the chip + SFX key on the event type, not the
+threat kind).
+
+| `threatKind` | Producer (the reveal-to-avoid) | Burst colour | Narrative | Ship |
+|---|---|---|---|---|
+| `masterStrike` | Magneto / Dr. Doom / Loki Master Strike reveal-a-Hero skip | **red** (`#e23046`) | "The Master Strike was blocked." | WP-644 / 645 / 649 |
+| `schemeTwist` | reveal-or-punish Scheme Twist matched-Hero dodge | **purple** (`#8a4dff`) | "The Scheme Twist penalty was blocked." | WP-644 |
+| `ambush` | villain Ambush `reveal-or-wound` (`onAmbush`) | **green** (`#3bd16f`) | "The Ambush was blocked." | WP-646 |
+| `fight` | villain Fight-ability `reveal-or-wound` (`onFight`) | **amber** (`#ff9d2e`) | "The villain's attack was blocked." | WP-651 |
+| `escape` | villain Escape-ability `reveal-or-wound` (`onEscape`) | **teal** (`#2ec5c5`) | "The Escape penalty was blocked." | WP-651 |
+
+Colours are the lead of each three-colour burst palette in
+`apps/arena-client/src/vfx/strikeBlockedVfxManifest.ts` (the exhaustive
+`STRIKE_BLOCKED_VFX` `Record`).
+
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
 ### Future direction — alternate thematic presentations {#playstyle-lens}
