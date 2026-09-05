@@ -12,6 +12,7 @@ related:
   - villain-deck.md
   - scheme-twist.md
   - scheme.md
+  - visual-effects.md
   - rule-execution-pipeline.md
   - card-effect-system.md
   - turn-system.md
@@ -34,7 +35,7 @@ source:
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
   - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-07-18
+last-reviewed: 2026-09-05
 ---
 
 # Master Strike
@@ -46,8 +47,13 @@ revealed from the villain deck. The trigger fires at stage `start` as
 part of the reveal pipeline. Every fire increments a counter, captures a
 bystander onto the Mastermind, and queues a deterministic log entry;
 the mastermind's *printed* strike text is then resolved by a
-per-mastermind branch, which currently exists for Magneto and Red
-Skull only.
+per-mastermind branch. **Eight** masterminds now have a resolver (see the
+[table below](#default-handler-behaviour)); three of them — the
+**reveal-and-keep** Master Strikes (core Magneto / core Dr. Doom / core
+Loki) — also announce an *avoided* strike by emitting a `strikeBlocked`
+notable event, which the arena-client renders as the **"Blocked!"** chip +
+the red Captain-America-shield burst (see
+[Visual Effects → shield block](visual-effects.md#surface-block)).
 
 ## Mechanics
 
@@ -85,13 +91,22 @@ been superseded. A fire now does three things in order:
    `G.selection.mastermindId` and, for the masterminds whose printed strike
    text is implemented, calls a resolver that also mutates `G` directly:
 
-   | Mastermind | Resolver | Printed effect |
-   |---|---|---|
-   | `core/magneto` | `resolveMagnetoStrike` | each player discards down to `MAGNETO_HAND_SIZE_LIMIT` (4) |
-   | Red Skull (see below) | `resolveRedSkullStrike` | each player KOs a Hero from hand (D-24188) |
+   | Mastermind | Resolver | Printed effect (paraphrased) | Emits `strikeBlocked`? |
+   |---|---|---|---|
+   | `core/magneto` | `resolveMagnetoStrike` | reveals an `[team:x-men]` Hero **or** discards down to four cards | ✅ `masterStrike` (WP-644) |
+   | `core/dr-doom` | `resolveCoreDoomStrike` | with exactly 6 cards, reveals a `[hc:tech]` Hero **or** puts 2 cards on top of deck | ✅ `masterStrike` (WP-645) |
+   | `core/loki` | `resolveCoreLokiStrike` | reveals a `[hc:strength]` Hero **or** gains a Wound | ✅ `masterStrike` (WP-649) |
+   | Red Skull (`MASTERMINDS_RED_SKULL`) | `resolveRedSkullStrike` | KOs a Hero from hand (D-24188) | — (forced KO — no avoidance) |
+   | `co2e/doctor-doom` | `resolveDoctorDoomStrike` | stacks an "Omen of Doom," then discards cards equal to the Omens **or** gains a Wound | — (discard / wound) |
+   | `co2e/loki` | `resolveLokiStrike` | discards a `[hc:strength]` Hero **or** stacks a Hypno-Thrall | — (discard-to-avoid) |
+   | `co2e/magneto` | `resolveCo2eMagnetoStrike` | discards an `[team:x-men]` Hero **or** gains a Wound | — (discard-to-avoid) |
+   | `co2e/doctor-octopus` | `resolveDoctorOctopusStrike` | may discard a `[team:spider-friends]` Hero; otherwise reveals the top 8 and discards non-grey Heroes | — (discard / reveal-deck) |
 
-   Every other mastermind takes no branch — the strike is generic
-   counter-plus-capture only, and its printed text is **not** applied.
+   A mastermind **not** in this table takes no branch — the strike is
+   generic counter-plus-capture only, and its printed text is **not**
+   applied. Of the columns, only **`strikeBlocked`** is a live engine claim
+   (source-verified against the resolvers); the printed-effect column
+   paraphrases each card's text.
 3. **Terminal emission (WP-200)** — `mastermindStrikeResolved`, after both
    the capture and the text effect, with the payload's `cardId` narrowed
    defensively (a malformed payload yields an empty `strikeCardId` rather
@@ -99,12 +114,21 @@ been superseded. A fire now does three things in order:
 
 Three details worth knowing when adding the next mastermind:
 
-- **An "or" clause resolves to its punitive branch.** Magneto's printed text
-  is *"reveals an X-Men Hero **or** discards down to four cards."* The engine
-  has no reveal-and-choose mechanic and `G.cardKeywords` carries no team
-  affiliation, so the resolver unconditionally takes the discard branch. The
-  same shape will recur — decide the branch deliberately and say so in a
-  `// why:`.
+- **The reveal-and-keep branch is now implemented — and it announces itself.**
+  The three reveal-to-avoid Master Strikes — core Magneto (`[team:x-men]`),
+  core Dr. Doom (`[hc:tech]`), core Loki (`[hc:strength]`) — read the player's
+  hand for the named Hero; a player holding one **reveals it and keeps it**,
+  taking no penalty, and the engine emits one `strikeBlocked`
+  (`threatKind: 'masterStrike'`) **per such player**, so the arena-client raises
+  the "Blocked!" chip + the red shield burst
+  ([Visual Effects → shield block](visual-effects.md#surface-block)). Only when
+  no matching Hero is held does the **punitive branch** apply (Magneto discards
+  to four, Dr. Doom puts 2 cards on deck, Loki gains a Wound). This is the
+  **reveal-and-keep vs discard-to-avoid** line: a discard-to-avoid strike (co2e
+  Loki / co2e Magneto / co2e Doctor Doom) makes the player *pay a card* instead
+  of reveal-and-keep, and Red Skull's KO is *forced* — none is a clean block, so
+  none emits `strikeBlocked` (the D-24458 exclusion). When adding the next
+  mastermind, decide reveal-vs-punitive deliberately and say so in a `// why:`.
 - **The branch key is `G.selection.mastermindId`, not `cardId`.** The
   original "does not branch on `cardId`" is still literally true and now
   misleading — dispatch is by *selected mastermind*, not by the revealed
@@ -180,13 +204,15 @@ share the same Mastermind entity.
   Drift-detection tests against `REVEALED_CARD_TYPES` exist to catch
   this. See
   [`game-engine.md` "RevealedCardType Conventions"](../.claude/skills/legendary-game-engine/SKILL.md).
-- **Most printed strike text still does not fire.** Only Magneto and
-  Red Skull have resolvers. For every other mastermind a Strike is
-  counter-plus-bystander-capture plus a log line — no wound, discard,
-  or KO derived from its own "Master Strike:" ability. co2e is the
-  scale of the gap: its five masterminds carry **ten** authored strike
-  texts (base + Epic), of which exactly one — the base Red Skull face —
-  is engine-resolved. The rest is data.
+- **Most printed strike text still does not fire — but the resolver set has
+  grown.** **Eight** masterminds now have a resolver (see the table above):
+  core Magneto / core Dr. Doom / core Loki, Red Skull, and four co2e faces
+  (co2e Doctor Doom / Loki / Magneto / Doctor Octopus). For every *other*
+  mastermind a Strike is counter-plus-bystander-capture plus a log line — no
+  wound, discard, or KO derived from its own "Master Strike:" ability. The gap
+  is still wide (most masterminds' authored strike text is data, not
+  engine-resolved), but the earlier "only Magneto and Red Skull have resolvers"
+  is retired.
 - **Implemented strikes bypass the `RuleEffect` union.** The closed
   `RuleEffectType` union (`queueMessage` / `modifyCounter` /
   `drawCards` / `discardHand`) has no per-player `gainWound`, KO, or
@@ -238,6 +264,8 @@ share the same Mastermind entity.
 - WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
 - co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
 - D-24193 (2026-07-18): the mastermind face classifier is found to select the LAST non-tactic face, so Epic faces are what 65 masterminds across 24 sets actually play; WP-389 corrects it to first-wins. Supersedes this page's earlier "Epic faces are not engine-selectable" claim
+- WP-644 / D-24456 (2026-09): the **reveal-to-avoid → `strikeBlocked` producer family**. Core Magneto's `resolveMagnetoStrike` gains a reveal-an-`[team:x-men]`-Hero branch that reveals-and-keeps (no penalty) and emits one `strikeBlocked` (`masterStrike`) per protected player, alongside the reveal-or-punish Scheme Twist matched-Hero dodge (`schemeTwist`); the arena-client raises the "Blocked!" chip. WP-645 / D-24457 adds core Dr. Doom (reveal `[hc:tech]`); WP-646 / D-24458 adds the villain Ambush (the `ambush` `threatKind`); WP-647 / D-24459 adds the Captain-America-shield `VfxOverlay` burst (red/purple/green per threat)
+- WP-649 / D-24461 (2026-09-05): `resolveCoreLokiStrike` gains the same reveal-and-keep emit for core Loki (reveal `[hc:strength]`) — the **fourth and last** reveal-and-keep Master Strike producer, surfaced by a live `core/loki` + Legacy Virus playtest. Pure reuse of the WP-644 contract (no new event type / `threatKind` / composer / client change)
 
 ## References
 
