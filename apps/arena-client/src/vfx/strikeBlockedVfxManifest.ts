@@ -24,9 +24,9 @@ import type { NotableGameEvent } from '../composables/useNotableEventStream';
 /**
  * The threat class a `strikeBlocked` event carries. Derived from the engine
  * event variant (NOT a deep engine import) so the `STRIKE_BLOCKED_VFX` Record
- * below is a compile-time exhaustiveness pin: a future `threatKind` value
- * (`'fight'` / `'escape'`, from a future producer WP) fails `vue-tsc` at the
- * Record until mapped — the same discipline as `sfxManifest`'s exhaustive key.
+ * below is a compile-time exhaustiveness pin: a future `threatKind` value fails
+ * `vue-tsc` at the Record until mapped — the same discipline as `sfxManifest`'s
+ * exhaustive key. (`'fight'` / `'escape'` shipped in WP-651.)
  */
 export type StrikeBlockThreatKind = Extract<
   NotableGameEvent,
@@ -46,11 +46,13 @@ export const BLOCKED_WORD = 'BLOCKED!';
  * `threatKind` → the deflection-burst colours. The
  * `Record<StrikeBlockThreatKind, StrikeBlockedVfxSpec>` type is the
  * exhaustiveness pin — every threat kind must map, and a new one fails
- * `vue-tsc` here until it earns a palette. Colours match the ewiki mock:
- * Master Strike red, Scheme Twist purple, Ambush green.
+ * `vue-tsc` here until it earns a palette. Colours: Master Strike red, Scheme
+ * Twist purple, Ambush green, Fight amber, Escape teal (WP-651).
  */
 export const STRIKE_BLOCKED_VFX: Record<StrikeBlockThreatKind, StrikeBlockedVfxSpec> = {
   masterStrike: { colors: ['#e23046', '#ff6b6b', '#ffffff'] },
   schemeTwist: { colors: ['#8a4dff', '#b57bff', '#ffffff'] },
   ambush: { colors: ['#3bd16f', '#7be0a0', '#ffffff'] },
+  fight: { colors: ['#ff9d2e', '#ffc061', '#ffffff'] },
+  escape: { colors: ['#2ec5c5', '#7fe3e3', '#ffffff'] },
 };

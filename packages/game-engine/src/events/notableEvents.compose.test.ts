@@ -342,6 +342,22 @@ describe('composeStrikeBlockedNarrative (WP-644)', () => {
     );
   });
 
+  it('emits the locked fight sentence (WP-651)', () => {
+    assert.equal(
+      composeStrikeBlockedNarrative('fight'),
+      'The villain\'s attack was blocked.',
+    );
+  });
+
+  it('emits the locked escape sentence — penalty, not the escape itself (WP-651)', () => {
+    // why: the villain still escapes; only the Wound is dodged, so this says
+    // "penalty was blocked" (like schemeTwist), never "The Escape was blocked".
+    assert.equal(
+      composeStrikeBlockedNarrative('escape'),
+      'The Escape penalty was blocked.',
+    );
+  });
+
   it('is byte-stable across calls per threatKind (no drift)', () => {
     assert.equal(
       composeStrikeBlockedNarrative('masterStrike'),
@@ -357,12 +373,14 @@ describe('composeStrikeBlockedNarrative (WP-644)', () => {
     );
   });
 
-  it('the three threat kinds produce distinct sentences (WP-646)', () => {
+  it('the five threat kinds produce distinct sentences (WP-651)', () => {
     const sentences = new Set([
       composeStrikeBlockedNarrative('masterStrike'),
       composeStrikeBlockedNarrative('schemeTwist'),
       composeStrikeBlockedNarrative('ambush'),
+      composeStrikeBlockedNarrative('fight'),
+      composeStrikeBlockedNarrative('escape'),
     ]);
-    assert.equal(sentences.size, 3, 'each threat kind has a distinct sentence');
+    assert.equal(sentences.size, 5, 'each threat kind has a distinct sentence');
   });
 });

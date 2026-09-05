@@ -732,12 +732,16 @@ deflection reserved for when an ambush-avoidance producer exists. An optional
 > `masterStrike`, no new threat class). And the **villain
 > Ambush** block — the **green** deflection — now fires too (shipped, WP-646 /
 > D-24458): the `reveal-or-wound` matched-Hero reveal on the `onAmbush` timing
-> adds the `'ambush'` `threatKind`. So **all three reveal-to-avoid threat classes
-> the shield-block effect targets are covered** (Master Strike red / Scheme Twist
-> purple / Ambush green). The remaining *unclaimed* reveal-avoidances are the
-> **`onFight` / `onEscape`** timings of the *same* `reveal-or-wound` handler —
-> each a different threat class that would add its own `threatKind`
-> (`'fight'` / `'escape'`) in a future WP. See [Priority tiers](#priority-tiers)
+> adds the `'ambush'` `threatKind`. And the **same `reveal-or-wound` handler's
+> other two timings now fire too** (shipped, WP-651 / D-24463): a villain
+> **Fight**-ability reveal-or-wound dodged by revealing a matching Hero adds the
+> `'fight'` `threatKind` (an **amber** burst, *"The villain's attack was
+> blocked."*), and a villain **Escape**-ability reveal-or-wound adds `'escape'`
+> (a **teal** burst, *"The Escape penalty was blocked."* — the villain still
+> escapes; only the Wound is dodged). So **all five reveal-to-avoid threat
+> classes the shield-block effect targets are covered** (Master Strike red /
+> Scheme Twist purple / Ambush green / Fight amber / Escape teal) — the
+> reveal-to-avoid family is complete. See [Priority tiers](#priority-tiers)
 > and [Decisions Pending](#decisions-pending).
 
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
@@ -1031,14 +1035,17 @@ right owner.
   / D-24457**), the core **Loki** reveal-a-Strength-Hero skip (the fourth
   `masterStrike` producer — the last reveal-and-keep Master Strike, **WP-649 /
   D-24461**), and the villain **Ambush** block (the `'ambush'` `threatKind`, the
-  `reveal-or-wound` `onAmbush` reveal, **WP-646 / D-24458**) — so all three threat
-  classes are covered. The [shield-block](#surface-block) beat is now **complete
-  on both halves**: the `NotableEventOverlay` "Blocked!" chip **and** the
-  `VfxOverlay` shield burst (the Cap-shield glyph + a threat-coloured deflection
-  burst + the "BLOCKED!" word, recoloured red/purple/green per `threatKind`)
-  **shipped in WP-647 / D-24459**. The only *unclaimed* reveal-avoidances left are
-  the **`onFight` / `onEscape`** timings of the same `reveal-or-wound` handler,
-  each a future WP adding its own `'fight'` / `'escape'` `threatKind`.
+  `reveal-or-wound` `onAmbush` reveal, **WP-646 / D-24458**), and the same
+  handler's **Fight** (`'fight'`, amber) + **Escape** (`'escape'`, teal)
+  reveal-or-wound dodges (**WP-651 / D-24463**) — so **all five** reveal-to-avoid
+  threat classes are covered and the family is **complete**. The
+  [shield-block](#surface-block) beat is now **complete on both halves**: the
+  `NotableEventOverlay` "Blocked!" chip **and** the `VfxOverlay` shield burst (the
+  Cap-shield glyph + a threat-coloured deflection burst + the "BLOCKED!" word,
+  recoloured red/purple/green/amber/teal per `threatKind`) **shipped in WP-647 /
+  D-24459** (extended per producer through WP-651). No *unclaimed* reveal-avoidance
+  remains — the discard-to-avoid strikes and forced KOs are a different mechanic,
+  out of scope by design.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
 
