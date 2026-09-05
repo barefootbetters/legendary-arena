@@ -1,0 +1,19 @@
+{{- /*
+  Colour-swatch shortcode for the engineering wiki.
+
+  why: the wiki is JS-free and `hugo.toml` sets `unsafe = false`, which strips
+  raw HTML written inline in markdown source — but NOT shortcode output (see
+  `audio.html`). So a shortcode is the sanctioned way to render an *actual*
+  colour box inline (e.g. next to a named game-log outcome), rather than only
+  spelling the colour out in words. No `<script>` (the CI zero-script gate);
+  output is fully static, so it does not break the two-build byte-identical
+  determinism lock (WP-139 Verification 2).
+
+  Params:
+    0 (required) — a CSS colour value, e.g. "#15803d".
+*/ -}}
+{{- $colour := .Get 0 -}}
+{{- if not $colour -}}
+  {{- errorf "swatch shortcode: missing required colour parameter (%s)" .Position -}}
+{{- end -}}
+{{- printf `<span class="colour-swatch" style="display:inline-block;width:0.85em;height:0.85em;background:%s;border:1px solid rgba(128,128,128,0.6);border-radius:2px;vertical-align:-0.08em" title="%s" aria-hidden="true"></span>` $colour $colour | safeHTML -}}
