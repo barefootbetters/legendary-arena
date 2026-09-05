@@ -139,10 +139,10 @@ describe('STRIKE_BLOCK_THREAT_KINDS drift detection (WP-644)', () => {
   // why: RUNTIME assertions (not a bare `satisfies`) per WP-563 / D-24372 —
   // engine test files are not typechecked in CI, so a compile-time pin would
   // be documentation only.
-  it('contains exactly two entries in canonical order', () => {
+  it('contains exactly three entries in canonical order', () => {
     assert.deepStrictEqual(
       [...STRIKE_BLOCK_THREAT_KINDS],
-      ['masterStrike', 'schemeTwist'],
+      ['masterStrike', 'schemeTwist', 'ambush'],
     );
   });
 
@@ -152,7 +152,7 @@ describe('STRIKE_BLOCK_THREAT_KINDS drift detection (WP-644)', () => {
   });
 
   it('every union member is present in the canonical array', () => {
-    const unionMembers: StrikeBlockThreatKind[] = ['masterStrike', 'schemeTwist'];
+    const unionMembers: StrikeBlockThreatKind[] = ['masterStrike', 'schemeTwist', 'ambush'];
     for (const member of unionMembers) {
       assert.ok(
         STRIKE_BLOCK_THREAT_KINDS.includes(member),
@@ -261,6 +261,12 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
       threatKind: 'schemeTwist',
       narrative: 'The Scheme Twist penalty was blocked.',
     };
+    const ambush: StrikeBlockedEvent = {
+      type: 'strikeBlocked',
+      playerId: '0',
+      threatKind: 'ambush',
+      narrative: 'The Ambush was blocked.',
+    };
     assert.deepStrictEqual(
       JSON.parse(JSON.stringify(masterStrike)) as StrikeBlockedEvent,
       masterStrike,
@@ -268,6 +274,10 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
     assert.deepStrictEqual(
       JSON.parse(JSON.stringify(schemeTwist)) as StrikeBlockedEvent,
       schemeTwist,
+    );
+    assert.deepStrictEqual(
+      JSON.parse(JSON.stringify(ambush)) as StrikeBlockedEvent,
+      ambush,
     );
   });
 

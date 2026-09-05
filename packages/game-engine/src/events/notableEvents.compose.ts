@@ -339,14 +339,14 @@ export function composeDeckReshuffledNarrative(): string {
 
 /**
  * Composes the single-sentence narrative for a `strikeBlocked` event
- * (WP-644 / D-24456).
+ * (WP-644 / D-24456; `'ambush'` added by WP-646 / D-24458).
  *
  * Pure + byte-stable: a total function of the `threatKind` returning one of
- * two constant sentences, so every emission is identical — replay-deterministic
+ * three constant sentences, so every emission is identical — replay-deterministic
  * by construction. Voiced in the third person (audience-neutral) because the
  * notable-event overlay is a public, all-audience projection; the blocking
- * seat travels on the event's `playerId`, not in the copy. Written as an
- * explicit `if/else` (no nested ternary) per the code-style rules.
+ * seat travels on the event's `playerId`, not in the copy. An explicit `if`
+ * arm per value (no nested ternary) per the code-style rules.
  *
  * @param threatKind - Which threat class the player avoided.
  * @returns A single English sentence for the notable-event overlay.
@@ -355,5 +355,19 @@ export function composeStrikeBlockedNarrative(threatKind: StrikeBlockThreatKind)
   if (threatKind === 'masterStrike') {
     return 'The Master Strike was blocked.';
   }
-  return 'The Scheme Twist penalty was blocked.';
+  if (threatKind === 'schemeTwist') {
+    return 'The Scheme Twist penalty was blocked.';
+  }
+  if (threatKind === 'ambush') {
+    return 'The Ambush was blocked.';
+  }
+  // why: WP-646 — exhaustiveness guard. The three arms above narrow `threatKind`
+  // to `never`, so this assignment compiles today; a future `StrikeBlockThreatKind`
+  // value fails `tsc` here until it gets its own arm, so the composer can never
+  // silently mislabel a new threat kind (a bare fallthrough would return the last
+  // sentence for it). Compile-time guard on production source — NOT a runtime
+  // throw (this composer is called from a villain/mastermind handler, and
+  // handlers never throw); the line is unreachable for any valid value.
+  const exhaustiveCheck: never = threatKind;
+  return exhaustiveCheck;
 }

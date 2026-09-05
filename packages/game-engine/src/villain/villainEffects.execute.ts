@@ -34,6 +34,7 @@ import {
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
+import { composeStrikeBlockedNarrative } from '../events/notableEvents.compose.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
@@ -1579,6 +1580,20 @@ function villainEffectRevealOrWound(
     ) {
       // why: the player HAS a matching Hero in hand or in play — no Wound, no
       // mutation (D-24281 amended: in-play Heroes count, see the helper).
+      // why: WP-646 / D-24458 — on the onAmbush timing, this reveal is a villain
+      // Ambush AVOIDED — announce it with a strikeBlocked (threatKind 'ambush'),
+      // one per revealing player (the WP-644/645 push idiom; setup guarantees the
+      // array). Scoped to onAmbush: the same handler's onFight/onEscape reveals
+      // are a different threat class (their own future threatKind), so no emit
+      // there. The wound/log behaviour is otherwise unchanged.
+      if (timing === 'onAmbush') {
+        G.notableEvents.push({
+          type: 'strikeBlocked',
+          playerId,
+          threatKind: 'ambush',
+          narrative: composeStrikeBlockedNarrative('ambush'),
+        });
+      }
       continue;
     }
     // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable

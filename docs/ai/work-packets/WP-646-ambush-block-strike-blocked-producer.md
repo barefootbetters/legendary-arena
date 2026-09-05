@@ -494,6 +494,36 @@ resolved. Session-prompt generation authorized.
 
 ---
 
+## Execution Notes (2026-09-04)
+
+Landed as drafted, with the copilot hardening applied.
+
+- **Composer: the `never` guard, not a bare fallthrough.** As the copilot caught
+  at draft, an "explicit three-arm with a final bare `else`" would have relocated
+  the mislabel trap to the next `threatKind` value. The shipped composer has an
+  explicit `if` arm per value + `const exhaustiveCheck: never = threatKind; return
+  exhaustiveCheck;` — a compile-time guard (`compose.ts` is production source, so
+  `tsc` gates it) that fails the build if a future value is added without an arm,
+  with no runtime throw.
+- **Drift test: both touch points.** The `STRIKE_BLOCK_THREAT_KINDS` bump edited
+  both the ordered-array `deepStrictEqual` and the `unionMembers` literal — miss
+  the literal and the suite would have stayed green while no longer asserting
+  `'ambush'`.
+- **`makeG` gained `notableEvents: []`.** This WP is the first `notableEvents.push`
+  in `villainEffects.execute.ts`, so the test factory needed the array (RS-1).
+- **Hash re-pin empirically ZERO.** `notableEvents` is hashed, but the producer is
+  a card-specific ambush `reveal-or-wound` villain; the sentinel `sentinel-core-doom-2p`
+  (Dr. Doom + Legacy Virus) has none, so `finalStateHash` + `PRE_WP080_HASH` are
+  byte-identical and the fixture is untouched (7 files changed, not 8). The unit
+  test drives the onAmbush emit directly.
+- **No client change.** The `'ambush'` value renders through the existing "Blocked!"
+  chip (`event.type`-keyed). With WP-644/645/646, all three reveal-to-avoid threat
+  classes are covered; the only unclaimed reveal-avoidances left are the
+  `onFight`/`onEscape` timings of the same handler (future `'fight'`/`'escape'`
+  threatKinds).
+- **Green:** game-engine 2970/0, `pnpm -r build` 0. Two-commit topology (`EC-681:`
+  + `SPEC:`). Post-deploy D-24026 live-verify pending.
+
 ## See Also
 
 - [WP-644](WP-644-strike-blocked-notable-event.md) / D-24456 — the `strikeBlocked` event + the `StrikeBlockThreatKind` union this extends (which deliberately excluded `'ambush'` for want of a producer)
