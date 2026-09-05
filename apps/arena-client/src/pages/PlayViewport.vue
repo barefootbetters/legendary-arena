@@ -26,6 +26,8 @@ import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
 import { useComboVfx } from '../composables/useComboVfx';
 import { useStrikeBlockedVfx } from '../composables/useStrikeBlockedVfx';
+import { useWoundVfx } from '../composables/useWoundVfx';
+import { useWoundCue } from '../composables/useWoundCue';
 import { useAdaptiveMusic } from '../composables/useAdaptiveMusic';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
@@ -160,6 +162,16 @@ export default defineComponent({
     // renders as a Cap-shield beat per strikeBlocked event. Pure presentation —
     // reads UIState only, never writes G/ctx, absent from the determinism hash.
     useStrikeBlockedVfx(audioSnapshot);
+
+    // why: WP-650 (01.5 runtime wiring) — the "wound gained" damage vignette + its
+    // audio thud, mounted at the SAME shared composable root beside the other feel
+    // consumers, reading the SAME useUiStateStore snapshot. Both watch the local
+    // seat's UIState.players[own].woundCount and fire on an INCREASE (a heal
+    // decrements it and must not fire): useWoundVfx flashes a red vignette the
+    // <VfxOverlay> renders, useWoundCue plays the thud. Pure presentation — reads
+    // UIState only, never writes G/ctx, absent from the determinism hash.
+    useWoundVfx(audioSnapshot);
+    useWoundCue(audioSnapshot);
 
     // why: WP-560 — the adaptive danger score, mounted at the SAME shared
     // composable root beside useComboCue and reading the SAME snapshot. One

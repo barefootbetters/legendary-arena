@@ -13,6 +13,7 @@ import {
   useStrikeBlockedVfxSignal,
   type StrikeBlockedVfxEvent,
 } from '../../composables/useStrikeBlockedVfx';
+import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 import {
   useEffectIntensity,
   __resetEffectIntensityForTests,
@@ -31,6 +32,12 @@ function emitShield(threatKind: StrikeBlockedVfxEvent['threatKind']): void {
   useStrikeBlockedVfxSignal().value = { threatKind, seq };
 }
 
+/** Pushes a wound-gained event onto the shared wound signal. */
+function emitWound(): void {
+  seq += 1;
+  useWoundVfxSignal().value = { seq };
+}
+
 describe('VfxOverlay (WP-556)', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -39,6 +46,7 @@ describe('VfxOverlay (WP-556)', () => {
     // this mount (the watch is not immediate, but the ref is a module singleton).
     useComboVfxSignal().value = null;
     useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
     useEffectIntensity().setIntensity('full');
     useEffectIntensity().prefersReducedMotion.value = false;
   });
@@ -109,6 +117,7 @@ describe('VfxOverlay — shield-block beat (WP-647)', () => {
     __resetEffectIntensityForTests();
     useComboVfxSignal().value = null;
     useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
     useEffectIntensity().setIntensity('full');
     useEffectIntensity().prefersReducedMotion.value = false;
   });
@@ -177,6 +186,56 @@ describe('VfxOverlay — shield-block beat (WP-647)', () => {
       false,
       'the spin is full-intensity only',
     );
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — wound-gained vignette (WP-650)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+  });
+
+  test('a wound signal flashes the red damage vignette at full intensity', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitWound();
+    await nextTick();
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-wound"]').exists(),
+      'the damage vignette shows',
+    );
+    wrapper.unmount();
+  });
+
+  test('intensity off renders no vignette (the master kill-switch)', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitWound();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-wound"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('reduced-motion suppresses the full-screen red flash (photosensitivity)', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitWound();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-wound"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('low intensity suppresses the vignette (gated on shake — full only)', async () => {
+    useEffectIntensity().setIntensity('low');
+    const wrapper = mount(VfxOverlay);
+    emitWound();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-wound"]').exists(), false);
     wrapper.unmount();
   });
 });

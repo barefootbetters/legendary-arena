@@ -171,7 +171,7 @@ keyword labels are defined in
 
 | Game moment | Client signal | Suggested sound | Candidate CC0 source |
 |---|---|---|---|
-| **Wound gained** | `appliedEffects` contains `gainWoundEachPlayer` / `gainWoundCurrentPlayer`; also a delta on `UIState.players[id].woundCount`; scheme wounds show as `schemeTwistResolved` with `resolverKey === 'woundAll'` | Dull painful thud / low impact | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (hurt) |
+| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it) | **Shipped (WP-650 / D-24462):** a dull damage **thud** (`wound-gained.mp3`) when the **local** player's `woundCount` increases (`useWoundCue`, riding the WP-412 engine; the visual half is the red vignette in `useWoundVfx`). Fires on an increase only (a heal is silent). ORIGINAL synthesis, not a sourced sample — a low downward body impact, the sonic inverse of the shield-block clang | — (original synthesis; `ewiki/sound-effects/wound-gained.py`) |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | Sharp negative "loss" cue / shatter | Kenney Interface (negative); OpenGameArt 80 CC0 RPG SFX |
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | Ominous grab / capture sting | OpenGameArt CC0 Cinematic; Kenney Impact |
 | **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | Bright rescue chime / coin | OpenGameArt 80 CC0 RPG SFX (coins); Kenney Interface (positive) |
@@ -710,9 +710,10 @@ half of the [shield-block VfxOverlay burst](visual-effects.md#surface-block):
 
 {{< audio src="https://images.legendary-arena.com/audio/sound-effects/strike-blocked.mp3" caption="Shipped strike-blocked.mp3 — LIVE on R2; the clip play.legendary-arena.com plays on a strikeBlocked event (sfxManifest.ts). ORIGINAL synthesis (no CC0/third-party obligation — the cleanest commercial posture), not a sourced sample: a bright metal-contact chk → an inharmonic struck-disc clang → an upward deflection ping (relief, mirroring the Cap-shield intercept). Regenerate: python ewiki/sound-effects/strike-blocked.py" >}}
 
-**Wound gained** — a dull, painful thud:
+**Wound gained (`woundCount` increase)** — a dull, painful thud, the audio half of
+the [damage vignette](visual-effects.md) (the inverse of the shield-block beat):
 
-{{< audio src="https://images.legendary-arena.com/audio/sound-effects/wound-gained.mp3" caption="OpenGameArt 80 CC0 RPG SFX — creature hurt" >}}
+{{< audio src="https://images.legendary-arena.com/audio/sound-effects/wound-gained.mp3" caption="Shipped wound-gained.mp3 — LIVE on R2; the clip play.legendary-arena.com plays on a local woundCount increase (useWoundCue, WP-650). ORIGINAL synthesis (no CC0/third-party obligation), not a sourced sample: a low body impact bending DOWNWARD + a muffled low-passed thwump + a dark detuned undertone — the sonic inverse of the shield clang. Regenerate: python ewiki/sound-effects/wound-gained.py" >}}
 
 **Hero KO'd** — a sharp negative cue:
 
