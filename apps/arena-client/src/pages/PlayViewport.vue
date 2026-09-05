@@ -25,6 +25,7 @@ import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
 import { useComboVfx } from '../composables/useComboVfx';
+import { useStrikeBlockedVfx } from '../composables/useStrikeBlockedVfx';
 import { useAdaptiveMusic } from '../composables/useAdaptiveMusic';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
@@ -151,6 +152,14 @@ export default defineComponent({
     // and the sting peak together. Pure presentation — reads UIState only, never
     // writes G/ctx, absent from the determinism hash.
     useComboVfx(audioSnapshot);
+
+    // why: WP-647 (01.5 runtime wiring) — the shield-block VFX consumer, mounted
+    // at the SAME shared composable root beside useComboVfx, reading the SAME
+    // useUiStateStore snapshot. It keeps an append-only cursor over
+    // UIState.notableEvents and emits a shield-block signal the <VfxOverlay> below
+    // renders as a Cap-shield beat per strikeBlocked event. Pure presentation —
+    // reads UIState only, never writes G/ctx, absent from the determinism hash.
+    useStrikeBlockedVfx(audioSnapshot);
 
     // why: WP-560 — the adaptive danger score, mounted at the SAME shared
     // composable root beside useComboCue and reading the SAME snapshot. One
