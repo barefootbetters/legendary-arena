@@ -157,7 +157,7 @@ the byte lands).
 | `healResolved` | A player uses the Wound Healing ability (KOs Wounds from hand) | Soft restorative chime / positive heal shimmer | Kenney Interface Sounds (positive); OpenGameArt 80 CC0 RPG SFX (heal) |
 | `bystanderRevealed` | A Bystander is revealed from the villain deck and captured — by the frontmost City villain, or the Mastermind when the City is empty (WP-602) | Short "someone's in danger" civilian sting — the beat that sets up a rescue | Kenney Interface Sounds; OpenGameArt CC0 |
 | `deckReshuffled` | A start-of-turn draw empties a player's hero deck and the discard reshuffles back into it (WP-642) | Calm shuffle / riffle — an informational "you cycled your deck", never alarming | OpenGameArt Card Game Sounds ("Shuffle") |
-| `strikeBlocked` | A player **avoids** a threat by revealing a Hero — a Master Strike skip, a reveal-or-punish Scheme Twist dodge, or a villain Ambush dodge (`threatKind: masterStrike \| schemeTwist \| ambush`) (WP-644) | Metallic **block clang** — the defensive mirror of the Master Strike sting | Kenney Impact Sounds; OpenGameArt CC0 |
+| `strikeBlocked` | A player **avoids** a threat by revealing a Hero — a Master Strike skip (Magneto/Dr. Doom/Loki), a reveal-or-punish Scheme Twist dodge, a villain Ambush dodge, or a villain Fight/Escape reveal-or-wound dodge (`threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) (WP-644..651) | Metallic **block clang** — the defensive mirror of the Master Strike sting. **One clip for all five threat classes** (the SFX keys on `event.type`, not `threatKind`; only the visual burst recolours) | ORIGINAL synthesis (`strike-blocked.mp3`, live on R2; WP-644 / #1812) |
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
