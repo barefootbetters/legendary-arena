@@ -464,6 +464,37 @@ describe('filterUIStateForAudience — villainDeckComposition public pass-throug
   });
 });
 
+describe('filterUIStateForAudience — piles.officerDisplay public pass-through (WP-648 follow-on)', () => {
+  it('every audience sees the Officer card face as an independent, value-identical copy', () => {
+    // why: regression guard mirroring the EC-206 whitelist-drop bug — the
+    // Officer card face is optional in UIState, so TypeScript would NOT flag
+    // the filter silently dropping it. Inject a known face so the assertion is
+    // unambiguous. It is public (fixed identity, information-safe).
+    const uiState = createTestUIState();
+    const officerFace = {
+      extId: 'pile-shield-officer',
+      name: 'S.H.I.E.L.D. Officer',
+      imageUrl: 'https://images.legendary-arena.com/core/core-so-officer.webp',
+      cost: null,
+    };
+    uiState.piles.officerDisplay = { ...officerFace };
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(
+        filtered.piles.officerDisplay,
+        officerFace,
+        'audience sees the value-identical Officer card face',
+      );
+      assert.notStrictEqual(
+        filtered.piles.officerDisplay,
+        uiState.piles.officerDisplay,
+        'it is a fresh (non-aliased) object copy',
+      );
+    }
+  });
+});
+
 describe('filterUIStateForAudience — deckCardStats redaction (WP-608)', () => {
   it('owner sees own deckCardStats; opponent + spectator do not', () => {
     const uiState = createKoChoiceUIState();

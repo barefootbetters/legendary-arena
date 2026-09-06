@@ -179,7 +179,13 @@
     "woundsCount": 24,
     "horrorsCount": 0,
     "officersCount": 22,
-    "sidekicksCount": 13
+    "sidekicksCount": 13,
+    "officerDisplay": {
+      "extId": "pile-shield-officer",
+      "name": "S.H.I.E.L.D. Officer",
+      "imageUrl": "https://images.legendary-arena.com/core/core-so-officer.webp",
+      "cost": null
+    }
   },
   "koPile": {
     "count": 0,

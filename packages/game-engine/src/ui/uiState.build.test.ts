@@ -22,6 +22,7 @@ import type { UICardDisplay } from './uiState.types.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
+import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 
 /**
  * Creates a valid test MatchSetupConfig. Same pattern used in
@@ -846,6 +847,50 @@ describe('buildUIState — piles.horrorsCount projection (WP-156)', () => {
       ui.piles.horrorsCount,
       2,
       'horrorsCount must equal piles.horrors.length',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-648 follow-on — piles.officerDisplay projection (recruitable Officer face)
+// ---------------------------------------------------------------------------
+
+describe('buildUIState — piles.officerDisplay projection (WP-648 follow-on)', () => {
+  it('always populates officerDisplay keyed to the S.H.I.E.L.D. Officer ext_id', () => {
+    // why: the field must ALWAYS be present so the client can render the card
+    // face; with a narrow mock registry (no display data) it falls back to the
+    // UNKNOWN placeholder but still carries the officer ext_id.
+    const gameState = createTestGameState();
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.ok(ui.piles.officerDisplay !== undefined, 'officerDisplay must always be projected');
+    assert.equal(ui.piles.officerDisplay!.extId, SHIELD_OFFICER_EXT_ID);
+  });
+
+  it('projects the Officer card face from cardDisplayData as a fresh (non-aliased) copy', () => {
+    // why: when the display entry exists, officerDisplay carries its name /
+    // imageUrl so the client paints the real card. resolveDisplay returns a
+    // fresh shallow copy — the projection must NOT alias G.cardDisplayData.
+    const gameState = createTestGameState();
+    const officerFace: UICardDisplay = {
+      extId: SHIELD_OFFICER_EXT_ID,
+      name: 'S.H.I.E.L.D. Officer',
+      imageUrl: 'https://images.legendary-arena.com/core/core-so-officer.webp',
+      cost: null,
+    };
+    gameState.cardDisplayData[SHIELD_OFFICER_EXT_ID] = officerFace;
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.equal(ui.piles.officerDisplay!.name, 'S.H.I.E.L.D. Officer');
+    assert.equal(
+      ui.piles.officerDisplay!.imageUrl,
+      'https://images.legendary-arena.com/core/core-so-officer.webp',
+    );
+    assert.notStrictEqual(
+      ui.piles.officerDisplay,
+      officerFace,
+      'officerDisplay must be a fresh copy, never a reference into G.cardDisplayData',
     );
   });
 });
