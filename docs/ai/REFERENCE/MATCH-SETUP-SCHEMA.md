@@ -174,6 +174,7 @@ default value identically.
 | Field | Type | Required | Default | Purpose |
 |---|---|---|---|---|
 | `heroSelectionMode` | `string` (enum) | false | `"GROUP_STANDARD"` | Declares the interpretation rule for the composition's hero selection. `"GROUP_STANDARD"` (the only v1-allowed value) means the engine expands each `heroDeckIds` entry into the canonical group card set (classic Legendary rules). `"HERO_DRAFT"` is reserved for a future WP and is **not** in the v1 allowed enum. See §Field Semantics / Hero Selection Mode below and `DECISIONS.md` D-9301. |
+| `heroAlternateIds` | `string[]` | false | absent (no bench) | The loadout **bench**: set-qualified hero ext_ids a player shortlisted but did not play. Validated for shape and identity only (unique, known-hero, disjoint from `composition.heroDeckIds`); **no count rule**. **Non-authoritative** — nothing derives a match composition from it and the engine never reads it. Lives on the envelope, never in the composition block. See `DECISIONS.md` D-24212. |
 
 ### Composition Field Alignment
 
@@ -450,6 +451,13 @@ schemaVersion-no-bump analysis, SCREAMING_SNAKE_CASE rule-mode token
 convention, and four-point naming-governance policy. Future envelope
 additions must follow the same additive + backward-compatible
 discipline and reference a dedicated DECISIONS entry.
+
+Subsequent envelope-level additive fields governed by this rule are
+`supportPools` (WP-036 / D-24194) and `heroAlternateIds` (WP-403 /
+D-24212, optional `string[]`, absent by default, `schemaVersion`
+unchanged at `"1.0"`). `heroAlternateIds` is the loadout bench —
+non-authoritative metadata the engine never consumes; see `DECISIONS.md`
+D-24212.
 
 ---
 
