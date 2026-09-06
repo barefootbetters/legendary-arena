@@ -99,6 +99,7 @@ import { resolveFightCost } from '../economy/economy.resolve.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
+import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 
@@ -901,7 +902,7 @@ export function buildUIState(
     villainDeckComposition: [...gameState.villainDeck.deck].sort(),
   };
 
-  // --- 11. Project shared piles (counts only) ---
+  // --- 11. Project shared piles (counts only, plus the Officer card face) ---
   const horrorsCount = gameState.piles.horrors.length;
   const piles: UISharedPilesState = {
     bystandersCount: gameState.piles.bystanders.length,
@@ -909,6 +910,13 @@ export function buildUIState(
     horrorsCount,
     officersCount: gameState.piles.officers.length,
     sidekicksCount: gameState.piles.sidekicks.length,
+    // why: WP-648 follow-on — the Officers cell is the one recruitable supply
+    // pile; projecting its card face lets the client render the actual
+    // S.H.I.E.L.D. Officer card instead of a bare count so players see it is a
+    // shop. resolveDisplay returns a FRESH shallow copy (never a G alias) and
+    // falls back to the UNKNOWN placeholder if the display entry is absent
+    // (narrow test mocks), matching every other display projection in this file.
+    officerDisplay: resolveDisplay(SHIELD_OFFICER_EXT_ID, gameState),
   };
 
   // --- 12. Project KO pile ---

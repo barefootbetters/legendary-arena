@@ -138,6 +138,51 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
     assert.match(button.attributes('title')!, /not your turn/i);
   });
 
+  test('renders the projected Officer card face image inside the recruit button', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({
+          officerDisplay: {
+            extId: 'pile-shield-officer',
+            name: 'S.H.I.E.L.D. Officer',
+            imageUrl: 'https://images.legendary-arena.com/core/core-so-officer.webp',
+            cost: null,
+          },
+        }),
+        currentStage: 'main',
+        economy: economy({ recruit: 5, availableRecruit: 5 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-officer"]');
+    const image = button.find('[data-testid="card-tile-image"]');
+    assert.equal(image.exists(), true, 'the Officer card face image must render');
+    assert.equal(
+      image.attributes('src'),
+      'https://images.legendary-arena.com/core/core-so-officer.webp',
+    );
+    // the count + buy cost still read alongside the card face
+    assert.match(button.text(), /\[30\]/);
+    assert.match(button.text(), /Recruit: 3/);
+  });
+
+  test('falls back to a text card face when officerDisplay is absent (older snapshots)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles(),
+        currentStage: 'main',
+        economy: economy({ recruit: 5, availableRecruit: 5 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-officer"]');
+    // no imageUrl → CardTile renders its text fallback, never a broken <img>
+    assert.equal(button.find('[data-testid="card-tile-image"]').exists(), false);
+    assert.equal(button.find('[data-testid="card-tile-fallback"]').exists(), true);
+  });
+
   test('the other four supply cells stay static counts (only the officers cell is a button)', () => {
     const { submitMove } = recorder();
     const wrapper = mount(SharedDecks, {

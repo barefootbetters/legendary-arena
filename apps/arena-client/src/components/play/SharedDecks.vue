@@ -2,11 +2,13 @@
 import { defineComponent, type PropType } from 'vue';
 import {
   OFFICER_RECRUIT_COST,
+  type UICardDisplay,
   type UISharedPilesState,
   type UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
 import type { GatingResult } from '../../composables/useCardCostGating';
+import CardTile from './CardTile.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -36,6 +38,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'SharedDecks',
+  components: { CardTile },
   props: {
     piles: {
       type: Object as PropType<UISharedPilesState>,
@@ -93,7 +96,23 @@ export default defineComponent({
       props.submitMove('recruitOfficer', {});
     }
 
-    return { officerCost, officerGate, onRecruitOfficer };
+    function officerDisplay(): UICardDisplay {
+      // why: piles.officerDisplay is the engine-projected S.H.I.E.L.D. Officer
+      // card face — rendering it (instead of a bare count) is what tells the
+      // player the deck is a shop. Older/hand-written snapshots may omit the
+      // optional field; fall back to a text-only display so the tile still
+      // names the card rather than crashing on a missing prop.
+      return (
+        props.piles.officerDisplay ?? {
+          extId: 'pile-shield-officer',
+          name: 'S.H.I.E.L.D. Officer',
+          imageUrl: '',
+          cost: null,
+        }
+      );
+    }
+
+    return { officerCost, officerGate, onRecruitOfficer, officerDisplay };
   },
 });
 </script>
@@ -131,6 +150,17 @@ export default defineComponent({
           :title="officerGate().reason ?? `Recruit a S.H.I.E.L.D. Officer for ${officerCost} recruit`"
           @click="onRecruitOfficer()"
         >
+          <!-- why: WP-648 follow-on — render the actual Officer card face so the
+               cell reads as a recruitable shop, not a face-down deck like the
+               other four. size="sm" keeps the row height even; show-cost is off
+               because the printed cost is null and the buy cost (Recruit: N) is
+               shown below as its own line. -->
+          <CardTile
+            :display="officerDisplay()"
+            size="sm"
+            :show-cost="false"
+            :interactive="officerGate().allowed"
+          />
           <span class="shared-decks__name">S.H.I.E.L.D. Officers</span>
           <span class="shared-decks__count">[{{ piles.officersCount }}]</span>
           <span class="shared-decks__cost">Recruit: {{ officerCost }}</span>

@@ -613,21 +613,32 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
-  it('UISharedPilesState pins all five count field names including horrorsCount', () => {
+  it('UISharedPilesState pins the five count field names plus the officerDisplay face', () => {
     // why: WP-128 / D-12802 — `horrorsCount` always present (required, not
     // optional). All five count fields are pinned here so a rename to
     // e.g. `bystanderCount` (singular) trips at compile time.
+    // why: WP-648 follow-on — `officerDisplay` is the projected S.H.I.E.L.D.
+    // Officer card face. It is OPTIONAL in the type (so old fixtures need no
+    // backfill), which means a `satisfies` check alone can never catch its
+    // removal; pinning it in this keyset fixture guards the field name.
     const fixture = {
       bystandersCount: 10,
       woundsCount: 15,
       horrorsCount: 0,
       officersCount: 20,
       sidekicksCount: 5,
+      officerDisplay: {
+        extId: 'pile-shield-officer',
+        name: 'S.H.I.E.L.D. Officer',
+        imageUrl: 'https://images.legendary-arena.com/core/core-so-officer.webp',
+        cost: null,
+      },
     } satisfies UISharedPilesState;
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
       'bystandersCount',
       'horrorsCount',
+      'officerDisplay',
       'officersCount',
       'sidekicksCount',
       'woundsCount',

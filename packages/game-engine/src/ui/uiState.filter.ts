@@ -525,7 +525,19 @@ export function filterUIStateForAudience(
         ? { villainDeckComposition: [...uiState.decks.villainDeckComposition] }
         : {}),
     },
-    piles: { ...uiState.piles },
+    // why: WP-648 follow-on — the piles object is public and the Officer card
+    // face (officerDisplay) rides it. A bare `{ ...uiState.piles }` would
+    // shallow-ALIAS the officerDisplay object across the full and filtered
+    // UIState, so it is fresh-copied via a conditional spread (never an
+    // `officerDisplay: undefined` literal) — exactOptionalPropertyTypes-safe,
+    // the villainDeckComposition / matchCardImageUrls precedent. The count
+    // fields spread as before; officerDisplay is public and unredacted.
+    piles: {
+      ...uiState.piles,
+      ...(uiState.piles.officerDisplay !== undefined
+        ? { officerDisplay: { ...uiState.piles.officerDisplay } }
+        : {}),
+    },
     koPile: deepCopyKoPile(uiState.koPile),
   };
 

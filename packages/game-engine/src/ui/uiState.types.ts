@@ -628,6 +628,18 @@ export interface UISharedPilesState {
   horrorsCount: number;
   officersCount: number;
   sidekicksCount: number;
+  // why: WP-648 follow-on — the Officers cell is the ONE recruitable supply
+  // pile (buy for 3 Recruit any number of times during Main), but rendered as
+  // a bare count it read as face-down like the other four decks and players
+  // did not realise they could recruit from it. This projects the
+  // S.H.I.E.L.D. Officer card face (name / imageUrl / cost, resolved from
+  // G.cardDisplayData[SHIELD_OFFICER_EXT_ID]) so the client can paint the
+  // actual card instead of a number. PUBLIC — the Officer's identity is fixed
+  // and information-safe (no face-down order, no per-player hidden state), so
+  // it passes the audience filter unredacted. Optional in the type ONLY so
+  // pre-existing hand-written UISharedPilesState fixtures need no backfill
+  // (the WP-179 pattern); `uiState.build.ts` ALWAYS populates it.
+  officerDisplay?: UICardDisplay;
 }
 
 /**
