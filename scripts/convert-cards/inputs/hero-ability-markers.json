@@ -1,12 +1,12 @@
 {
   "_notes": [
-    "WP-216 / EC-248 \u2014 curated, human-reviewed hero ability markup map. Consumed by apply-hero-ability-markers.mjs, which appends [keyword:rescue:N] / [keyword:reveal] / [keyword:reveal:N] tokens to the specified hero ability lines in data/cards/*.json.",
+    "WP-216 / EC-248 — curated, human-reviewed hero ability markup map. Consumed by apply-hero-ability-markers.mjs, which appends [keyword:rescue:N] / [keyword:reveal] / [keyword:reveal:N] tokens to the specified hero ability lines in data/cards/*.json.",
     "Keys: setAbbr -> array of { heroSlug, cardSlug, abilityIndex, markupToken }. abilityIndex is 0-based into card.abilities[]. Valid markupToken values: '[keyword:rescue:1]', '[keyword:reveal]', '[keyword:reveal:2]' (D-21601 closed set).",
-    "Curation discipline: a line is marked ONLY when it unambiguously reduces to a single-bystander rescue or a reveal-draw with an extractable cost threshold of 2. Condition-gated lines ([hc:X]:, [team:X]:) are included \u2014 the executor evaluates conditions already. Timing-gated lines (Fight:, Ambush:, Heist:, [keyword:Ambush], [keyword:Excessive Violence], [keyword:Excessive Kindness], [keyword:Focus]) are deferred per D-21602/D-21603.",
-    "Web-Shooters (core/spider-man) is NOT included \u2014 WP-215 already applied rescue:1 and reveal markup to those two lines. The idempotence guard would skip them, but we omit them from the map to keep it authoritative for WP-216 additions only.",
-    "Amendment (inline, EC-248 fold): AC #11 and EC \u00a7After Completing originally asserted grep count=1 for rescue:1 in core.json. Execution confirmed core/black-widow/mission-accomplished is an in-scope candidate (discovered by --propose). Count updated to 2 (web-shooters from WP-215 + mission-accomplished from WP-216). Corrected in WP-216 AC #11 and EC-248 \u00a7After Completing as part of Commit A.",
-    "WP-225 / EC-257 (D-22501) \u2014 draw sweep: appends [keyword:draw:N] (N \u2208 {1,2,3}) to 98 fixed-count hero draw lines across 30 sets (83 draw:1, 13 draw:2, 2 draw:3). Detector: the trimmed whole line equals 'Draw a|one|two|three card(s).', optionally one leading [hc:X]:/[team:X]: condition the executor already evaluates, excluding any line containing 'Reveal' or an existing [keyword:] token.",
-    "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes \u2265 4 are not emitted and have no _deferred entry \u2014 the grammar permits N \u2265 1 but the corpus maximum is 3, so no real \u2265 4 line exists to mark or defer (D-22501)."
+    "Curation discipline: a line is marked ONLY when it unambiguously reduces to a single-bystander rescue or a reveal-draw with an extractable cost threshold of 2. Condition-gated lines ([hc:X]:, [team:X]:) are included — the executor evaluates conditions already. Timing-gated lines (Fight:, Ambush:, Heist:, [keyword:Ambush], [keyword:Excessive Violence], [keyword:Excessive Kindness], [keyword:Focus]) are deferred per D-21602/D-21603.",
+    "Web-Shooters (core/spider-man) is NOT included — WP-215 already applied rescue:1 and reveal markup to those two lines. The idempotence guard would skip them, but we omit them from the map to keep it authoritative for WP-216 additions only.",
+    "Amendment (inline, EC-248 fold): AC #11 and EC §After Completing originally asserted grep count=1 for rescue:1 in core.json. Execution confirmed core/black-widow/mission-accomplished is an in-scope candidate (discovered by --propose). Count updated to 2 (web-shooters from WP-215 + mission-accomplished from WP-216). Corrected in WP-216 AC #11 and EC-248 §After Completing as part of Commit A.",
+    "WP-225 / EC-257 (D-22501) — draw sweep: appends [keyword:draw:N] (N ∈ {1,2,3}) to 98 fixed-count hero draw lines across 30 sets (83 draw:1, 13 draw:2, 2 draw:3). Detector: the trimmed whole line equals 'Draw a|one|two|three card(s).', optionally one leading [hc:X]:/[team:X]: condition the executor already evaluates, excluding any line containing 'Reveal' or an existing [keyword:] token.",
+    "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes ≥ 4 are not emitted and have no _deferred entry — the grammar permits N ≥ 1 but the corpus maximum is 3, so no real ≥ 4 line exists to mark or defer (D-22501)."
   ],
   "2099": [
     {
@@ -77,6 +77,12 @@
       "heroSlug": "winter-soldier",
       "cardSlug": "sniper-nest",
       "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "captain-america-1941",
+      "cardSlug": "liberate-the-prisoners",
+      "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
     }
   ],
@@ -786,6 +792,36 @@
       "cardSlug": "torrent-of-broodlings",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "amadeus-cho",
+      "cardSlug": "extrapolate",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "amadeus-cho",
+      "cardSlug": "renegade-genius",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "caiera",
+      "cardSlug": "shadow-queen",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "korg",
+      "cardSlug": "move-mountains",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "she-hulk",
+      "cardSlug": "window-of-opportunity",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
     }
   ],
   "amwp": [
@@ -798,6 +834,12 @@
     {
       "heroSlug": "janet-van-dyne",
       "cardSlug": "subatomic-size",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "ant-army",
+      "cardSlug": "anticipate",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
     }
@@ -870,6 +912,12 @@
     {
       "heroSlug": "warriors-three-the",
       "cardSlug": "fandral-the-dashing",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "beta-ray-bill",
+      "cardSlug": "hope-of-the-korbinites",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
     }
@@ -1169,7 +1217,7 @@
       "cardSlug": "anything-for-cassie",
       "abilityIndex": 1,
       "abilityText": "Heist: Rescue a Bystander.",
-      "reason": "D-21602 \u2014 onFight-timed rescue: 'Heist:' is a custom timing prefix analogous to 'Fight:'; the onFight timing is not wired to executeHeroEffects."
+      "reason": "D-21602 — onFight-timed rescue: 'Heist:' is a custom timing prefix analogous to 'Fight:'; the onFight timing is not wired to executeHeroEffects."
     },
     {
       "setAbbr": "anni",
@@ -1177,7 +1225,7 @@
       "cardSlug": "borrow-from-the-future",
       "abilityIndex": 0,
       "abilityText": "Reveal the top card of your deck. If it costs 2 or more, draw it. Otherwise, discard it or put it back.",
-      "reason": "reveal-min-or-discard-choose: Inverted cost threshold (draw if cost \u2265 N) with a player-choice fallback (discard OR put it back) on the low branch. Requires both a reveal-min-style draw AND pendingHeroChoice for the fallback \u2014 a compound not expressible with current executors."
+      "reason": "reveal-min-or-discard-choose: Inverted cost threshold (draw if cost ≥ N) with a player-choice fallback (discard OR put it back) on the low branch. Requires both a reveal-min-style draw AND pendingHeroChoice for the fallback — a compound not expressible with current executors."
     },
     {
       "setAbbr": "anni",
@@ -1185,7 +1233,7 @@
       "cardSlug": "invisible-woman",
       "abilityIndex": 1,
       "abilityText": "[keyword:Focus] 4[icon:recruit] [icon:5] Rescue a Bystander, then you may KO a card from your hand or discard pile.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects; also carries per-turn-use-count limit and compound rescue+KO effect"
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects; also carries per-turn-use-count limit and compound rescue+KO effect"
     },
     {
       "setAbbr": "bkpt",
@@ -1193,7 +1241,7 @@
       "cardSlug": "unseen-protector",
       "abilityIndex": 0,
       "abilityText": "[team:heroes-of-wakanda] [keyword:Ambush]: Rescue a Bystander.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects"
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "dead",
@@ -1201,7 +1249,7 @@
       "cardSlug": "saturday-morning-harpoons",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Rescue a Bystander.",
-      "reason": "D-21602 \u2014 onFight-timed rescue: '[keyword:Excessive Violence]:' is a card-ability keyword timing prefix analogous to '[keyword:Ambush]:'; executor dispatch for this keyword timing is not wired to executeHeroEffects."
+      "reason": "D-21602 — onFight-timed rescue: '[keyword:Excessive Violence]:' is a card-ability keyword timing prefix analogous to '[keyword:Ambush]:'; executor dispatch for this keyword timing is not wired to executeHeroEffects."
     },
     {
       "setAbbr": "dims",
@@ -1209,7 +1257,7 @@
       "cardSlug": "rebel-without-a-cause",
       "abilityIndex": 0,
       "abilityText": "Reveal the top card of your deck. If it costs 0[icon:recruit] or has no team icon, draw it.",
-      "reason": "reveal-recruit-zero-or-no-team-draw: Compound OR condition: draw if recruit-cost = 0 OR the card has no team icon. Requires evaluating recruit cost (not VP cost) and team-icon presence \u2014 neither is in the current executor design."
+      "reason": "reveal-recruit-zero-or-no-team-draw: Compound OR condition: draw if recruit-cost = 0 OR the card has no team icon. Requires evaluating recruit cost (not VP cost) and team-icon presence — neither is in the current executor design."
     },
     {
       "setAbbr": "dims",
@@ -1233,7 +1281,7 @@
       "cardSlug": "unseen-rescue",
       "abilityIndex": 0,
       "abilityText": "[keyword:Focus 2][icon:recruit]  [icon:5] Rescue a Bystander. You may only use this ability up to four times this turn.",
-      "reason": "D-21602 \u2014 [keyword:Focus 2] modifies how the ability triggers (Focus token mechanic); the Focus condition is not in the hero condition evaluation pipeline. Also carries a per-turn-use-count limit not expressible in the current executor."
+      "reason": "D-21602 — [keyword:Focus 2] modifies how the ability triggers (Focus token mechanic); the Focus condition is not in the hero condition evaluation pipeline. Also carries a per-turn-use-count limit not expressible in the current executor."
     },
     {
       "setAbbr": "mdns",
@@ -1241,7 +1289,7 @@
       "cardSlug": "hunt-high-and-low",
       "abilityIndex": 0,
       "abilityText": "[keyword:Patrol the Rooftops]: If it's empty, reveal the top card of your deck. You may KO it.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects; also 'You may KO it' is optional, unlike unconditional reveal-ko"
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects; also 'You may KO it' is optional, unlike unconditional reveal-ko"
     },
     {
       "setAbbr": "mdns",
@@ -1257,15 +1305,15 @@
       "cardSlug": "track-the-captives",
       "abilityIndex": 0,
       "abilityText": "[keyword:Moonlight]: Whenever you defeat a Vilain or Mastermind this turn, you may rescue a Bystander or gain a Hero from the HQ or Sidekick Deck whose cost is less than that Enemy's [icon:attack].",
-      "reason": "D-21602 \u2014 fight-win trigger: not wired to executeHeroEffects"
+      "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "mdns",
       "heroSlug": "wong-master-of-the-mystic-arts",
       "cardSlug": "face-your-demons",
       "abilityIndex": 0,
-      "abilityText": "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] \u201cDarkhold Demon\u201d Vilan with \u201cFight: KO up to two of your Heroes. Rescue this card as a Bystander.\u201d",
-      "reason": "D-21602 \u2014 fight-win trigger: not wired to executeHeroEffects; non-standard combat against Bystander Deck stack"
+      "abilityText": "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Vilan with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”",
+      "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects; non-standard combat against Bystander Deck stack"
     },
     {
       "setAbbr": "mgtg",
@@ -1273,7 +1321,7 @@
       "cardSlug": "baby-groot",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Kindness]: Rescue a Bystander.",
-      "reason": "D-21602 \u2014 onFight-timed rescue: '[keyword:Excessive Kindness]:' is a card-ability keyword timing prefix analogous to '[keyword:Ambush]:'; executor dispatch for this keyword timing is not wired to executeHeroEffects."
+      "reason": "D-21602 — onFight-timed rescue: '[keyword:Excessive Kindness]:' is a card-ability keyword timing prefix analogous to '[keyword:Ambush]:'; executor dispatch for this keyword timing is not wired to executeHeroEffects."
     },
     {
       "setAbbr": "noir",
@@ -1297,7 +1345,7 @@
       "cardSlug": "golden-ankh-of-khonshu",
       "abilityIndex": 0,
       "abilityText": "Whenever you defeat a Villain on the Rooftops this turn, rescue Bystanders equal to that Villain's printed [icon:piercing].",
-      "reason": "D-21602 \u2014 fight-win trigger: not wired to executeHeroEffects; also scales to defeated villain's piercing value"
+      "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects; also scales to defeated villain's piercing value"
     },
     {
       "setAbbr": "pttr",
@@ -1321,7 +1369,7 @@
       "cardSlug": "dark-strength",
       "abilityIndex": 1,
       "abilityText": "Reveal the top card of your deck. If it costs 1 [icon:vp] or 2 [icon:vp], you get +2[icon:attack].",
-      "reason": "reveal-cost-range-attack: Attack bonus if the revealed card's cost falls in a specific range (cost \u2208 {1, 2}) \u2014 not a simple \u2264 threshold. A new cost-range parameter format would be required."
+      "reason": "reveal-cost-range-attack: Attack bonus if the revealed card's cost falls in a specific range (cost ∈ {1, 2}) — not a simple ≤ threshold. A new cost-range parameter format would be required."
     },
     {
       "setAbbr": "rvlt",
@@ -1345,7 +1393,7 @@
       "cardSlug": "overwhelming-firepower",
       "abilityIndex": 0,
       "abilityText": "Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander.",
-      "reason": "D-21602 \u2014 fight-win trigger: not wired to executeHeroEffects"
+      "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vill",
@@ -1353,7 +1401,7 @@
       "cardSlug": "electroshock-therapy",
       "abilityIndex": 1,
       "abilityText": "Reveal the top card of your deck. You may KO it.",
-      "reason": "reveal-optional-ko: 'You may KO it' \u2014 the player may choose not to KO (unlike the unconditional reveal-ko)."
+      "reason": "reveal-optional-ko: 'You may KO it' — the player may choose not to KO (unlike the unconditional reveal-ko)."
     },
     {
       "setAbbr": "vill",
@@ -1377,7 +1425,7 @@
       "cardSlug": "feast-or-famine",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Reveal the top card of your deck. If it costs 0, KO it and you may repeat this process.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects; also loop mechanic requires new infrastructure even if timing resolved"
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects; also loop mechanic requires new infrastructure even if timing resolved"
     },
     {
       "setAbbr": "vnom",
@@ -1385,7 +1433,7 @@
       "cardSlug": "gruesome-feast",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects"
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vnom",
@@ -1400,24 +1448,24 @@
       "heroSlug": "venompool",
       "cardSlug": "can-i-get-a-little-gratitude",
       "abilityIndex": 1,
-      "abilityText": "[keyword:Excessive Violence]: \u201cRescue\u201c a Bystander.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects"
+      "abilityText": "[keyword:Excessive Violence]: “Rescue“ a Bystander.",
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vnom",
       "heroSlug": "venompool",
       "cardSlug": "digest-that-chimichanga",
       "abilityIndex": 1,
-      "abilityText": "[keyword:Indigestion]: \u201cRescue\u201c a Bystander.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects"
+      "abilityText": "[keyword:Indigestion]: “Rescue“ a Bystander.",
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vnom",
       "heroSlug": "venompool",
       "cardSlug": "play-to-the-crowd",
       "abilityIndex": 1,
-      "abilityText": "[keyword:Indigestion]: \u201cRescue\u201c two Bystanders.",
-      "reason": "D-21602 \u2014 keyword timing prefix: not wired to executeHeroEffects"
+      "abilityText": "[keyword:Indigestion]: “Rescue“ two Bystanders.",
+      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "wtif",
@@ -1425,7 +1473,7 @@
       "cardSlug": "to-save-christine",
       "abilityIndex": 1,
       "abilityText": "[hc:instinct][keyword:Soulbind a Bystander or Villain]: You get +2[icon:attack]. If it's Special Bystander, you may do its Rescue effect.",
-      "reason": "Soulbind keyword captures a bystander/villain face-down; \"do its Rescue effect\" requires inline execution of a Special Bystander's embedded rescue effect text \u2014 not expressible in the current executor family."
+      "reason": "Soulbind keyword captures a bystander/villain face-down; \"do its Rescue effect\" requires inline execution of a Special Bystander's embedded rescue effect text — not expressible in the current executor family."
     },
     {
       "setAbbr": "wtif",
@@ -1433,7 +1481,7 @@
       "cardSlug": "destructive-feast",
       "abilityIndex": 0,
       "abilityText": "Whenever you recruit a Hero that costs 5 or more this turn, reveal the top card of your deck and you may KO it.",
-      "reason": "D-21602 \u2014 recruit-event trigger: not wired to executeHeroEffects"
+      "reason": "D-21602 — recruit-event trigger: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "core",
@@ -1441,7 +1489,7 @@
       "cardSlug": "endless-invention",
       "abilityIndex": 1,
       "abilityText": "[hc:tech]: Draw another card.",
-      "reason": "D-22501 \u2014 cumulative 'another/more/extra' conditional draw: the count is unambiguous but 'another' reads as an additive top-up on a sibling ability line; marking it correctly requires confirming each card's intended total. Deferred for a focused follow-up."
+      "reason": "D-22501 — cumulative 'another/more/extra' conditional draw: the count is unambiguous but 'another' reads as an additive top-up on a sibling ability line; marking it correctly requires confirming each card's intended total. Deferred for a focused follow-up."
     },
     {
       "setAbbr": "2099",
@@ -1449,7 +1497,7 @@
       "cardSlug": "down-in-the-dregs",
       "abilityIndex": 0,
       "abilityText": "[hc:instinct]: Draw a card from the bottom of your deck.",
-      "reason": "D-22501 \u2014 bottom-of-deck draw: drawFromPlayerDeck draws from the top (deck[0]); bottom-of-deck is a different mechanic the executor does not model."
+      "reason": "D-22501 — bottom-of-deck draw: drawFromPlayerDeck draws from the top (deck[0]); bottom-of-deck is a different mechanic the executor does not model."
     },
     {
       "setAbbr": "amwp",
@@ -1457,7 +1505,7 @@
       "cardSlug": "take-the-high-ground",
       "abilityIndex": 1,
       "abilityText": "If there are no Villains on the Rooftops, draw a card.",
-      "reason": "D-22501 \u2014 game-state-conditional draw: the draw is gated on a board-state predicate (no Villains on the Rooftops) that is not a [hc:X]:/[team:X]: condition the parser evaluates."
+      "reason": "D-22501 — game-state-conditional draw: the draw is gated on a board-state predicate (no Villains on the Rooftops) that is not a [hc:X]:/[team:X]: condition the parser evaluates."
     },
     {
       "setAbbr": "chmp",
@@ -1465,7 +1513,7 @@
       "cardSlug": "expanding-neural-network",
       "abilityIndex": 1,
       "abilityText": "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card.",
-      "reason": "D-22501 \u2014 draw-a-new-hand replacement trigger: an end-of-turn draw-hand-replacement effect, not an onPlay draw; no timing dispatch exists for it."
+      "reason": "D-22501 — draw-a-new-hand replacement trigger: an end-of-turn draw-hand-replacement effect, not an onPlay draw; no timing dispatch exists for it."
     },
     {
       "setAbbr": "amwp",
@@ -1473,7 +1521,7 @@
       "cardSlug": "tiny-little-risk",
       "abilityIndex": 1,
       "abilityText": "[keyword:Heist]: Draw two cards.",
-      "reason": "D-22501 \u2014 timing-/keyword-gated draw: gated by a card-ability keyword timing prefix ([keyword:Heist], analogous to Fight:/[keyword:Ambush]); the keyword-timing dispatch is not wired to executeHeroEffects."
+      "reason": "D-22501 — timing-/keyword-gated draw: gated by a card-ability keyword timing prefix ([keyword:Heist], analogous to Fight:/[keyword:Ambush]); the keyword-timing dispatch is not wired to executeHeroEffects."
     },
     {
       "setAbbr": "anni",
@@ -1481,7 +1529,7 @@
       "cardSlug": "time-loop-experiments",
       "abilityIndex": 0,
       "abilityText": "Draw a card. Then put a card from your hand on top of your deck.",
-      "reason": "D-22501 \u2014 compound multi-effect line: draws AND performs a second effect (put a card from hand on top of deck) in the same line; compound-executor territory."
+      "reason": "D-22501 — compound multi-effect line: draws AND performs a second effect (put a card from hand on top of deck) in the same line; compound-executor territory."
     },
     {
       "setAbbr": "wtif",
@@ -1489,7 +1537,7 @@
       "cardSlug": "fight-or-flight",
       "abilityIndex": 1,
       "abilityText": "[hc:strength][hc:covert]: Draw a card.",
-      "reason": "D-22501 \u2014 multi-condition cost prefix: the doubled [hc:X] prefix encodes a 'pay two hero-class icons' cost the single-condition evaluator does not model; deferred."
+      "reason": "D-22501 — multi-condition cost prefix: the doubled [hc:X] prefix encodes a 'pay two hero-class icons' cost the single-condition evaluator does not model; deferred."
     },
     {
       "setAbbr": "mdns",
@@ -1497,7 +1545,7 @@
       "cardSlug": "scalded-by-sunlight",
       "abilityIndex": 1,
       "abilityText": "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack].",
-      "reason": "WP-382 / D-24183 \u2014 ko-wound-reward candidate deferred: the [keyword:Moonlight]: prefix is a night/day state condition the hero condition evaluator does not model; auto-firing it would ignore the gate. Same discipline as D-21602/D-21603 timing/condition-gated deferrals."
+      "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred: the [keyword:Moonlight]: prefix is a night/day state condition the hero condition evaluator does not model; auto-firing it would ignore the gate. Same discipline as D-21602/D-21603 timing/condition-gated deferrals."
     },
     {
       "setAbbr": "wpnx",
@@ -1505,7 +1553,7 @@
       "cardSlug": "raging-regeneration",
       "abilityIndex": 1,
       "abilityText": "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again.",
-      "reason": "WP-382 / D-24183 \u2014 ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
+      "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
     },
     {
       "setAbbr": "xmen",
@@ -1513,7 +1561,7 @@
       "cardSlug": "healing-factor-genome",
       "abilityIndex": 1,
       "abilityText": "You may KO a Wound from your hand or discard pile.",
-      "reason": "WP-382 / D-24183 \u2014 rewardless: 'KO a Wound' with no 'If you do, <reward>' clause. ko-wound-reward is a reward keyword; a bare optional heal grants nothing to dispatch, so there is no keyword to attach."
+      "reason": "WP-382 / D-24183 — rewardless: 'KO a Wound' with no 'If you do, <reward>' clause. ko-wound-reward is a reward keyword; a bare optional heal grants nothing to dispatch, so there is no keyword to attach."
     },
     {
       "setAbbr": "cvwr",
@@ -1521,7 +1569,7 @@
       "cardSlug": "hot-bowl-of-soup",
       "abilityIndex": 0,
       "abilityText": "You may KO a Wound from your hand or discard pile.",
-      "reason": "WP-382 / D-24183 \u2014 rewardless: same as x-23/healing-factor-genome; no reward clause, so no ko-wound-reward token."
+      "reason": "WP-382 / D-24183 — rewardless: same as x-23/healing-factor-genome; no reward clause, so no ko-wound-reward token."
     },
     {
       "setAbbr": "ssw2",
@@ -1529,7 +1577,7 @@
       "cardSlug": "extinction-blast",
       "abilityIndex": 0,
       "abilityText": "To play this card, you must discard three cards from your hand.",
-      "reason": "WP-383 / D-24184 \u2014 discard-to-play cost with n=3 (the only multi-discard card). The PendingDiscardToPlay `remaining` counter supports n>1 structurally, but the 3-sequential-prompt resolve UX and its tests are out of scope for the first ship; the 5 single-discard cards are the target. A future marker-only addition of [keyword:discard-to-play:3] enables it once the multi-discard flow is test-covered."
+      "reason": "WP-383 / D-24184 — discard-to-play cost with n=3 (the only multi-discard card). The PendingDiscardToPlay `remaining` counter supports n>1 structurally, but the 3-sequential-prompt resolve UX and its tests are out of scope for the first ship; the 5 single-discard cards are the target. A future marker-only addition of [keyword:discard-to-play:3] enables it once the multi-discard flow is test-covered."
     },
     {
       "setAbbr": "core",
@@ -1537,7 +1585,7 @@
       "cardSlug": "covering-fire",
       "abilityIndex": 0,
       "abilityText": "[hc:tech]: Choose one: each other player draws a card or each other player discards a card.",
-      "reason": "choose-one-each-other-player: a conditional choose-one whose BOTH branches act on every OTHER player. Requires a pendingHeroChoice two-option prompt PLUS each-other-player draw/discard executors \u2014 a compound not expressible with current executors. Surfaced by the 2026-07-16 Red Skull live-game review (match TYB2-jQuUc_, turn 18: the [hc:tech] condition was met and the effect silently no-oped; previously untracked hollow)."
+      "reason": "choose-one-each-other-player: a conditional choose-one whose BOTH branches act on every OTHER player. Requires a pendingHeroChoice two-option prompt PLUS each-other-player draw/discard executors — a compound not expressible with current executors. Surfaced by the 2026-07-16 Red Skull live-game review (match TYB2-jQuUc_, turn 18: the [hc:tech] condition was met and the effect silently no-oped; previously untracked hollow)."
     },
     {
       "setAbbr": "msp1",

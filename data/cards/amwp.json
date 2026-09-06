@@ -1161,7 +1161,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "[keyword:Antics]: Draw a card."
+            "[keyword:Antics]: Draw a card. [keyword:draw:1]"
           ]
         },
         {

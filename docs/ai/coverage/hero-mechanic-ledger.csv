@@ -21,11 +21,12 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler,designs
 3dtc/hulk,Hulk,3dtc,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
 3dtc/hulk,Hulk,3dtc,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 3dtc/man-thing,Man-Thing,3dtc,(unmarked),unmarked,,,,
-amwp/ant-army,Ant Army,amwp,antics,unsupported,,,,antagonize|anticipate|antiproton-experiments|revolutionary-anthem
+amwp/ant-army,Ant Army,amwp,antics,condition,,,,antagonize|anticipate|antiproton-experiments|revolutionary-anthem
+amwp/ant-army,Ant Army,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,anticipate
 amwp/ant-army,Ant Army,amwp,heist,unsupported,,,,revolutionary-anthem|up-the-ante
 amwp/ant-army,Ant Army,amwp,microscopic-size-changing,unsupported,,,,anti-tank-weapons|antiproton-experiments|revolutionary-anthem
 amwp/ant-army,Ant Army,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,antagonize|anticipate
-amwp/ant-man,Ant-Man,amwp,antics,unsupported,,,,bug-swarm|hitch-a-ride
+amwp/ant-man,Ant-Man,amwp,antics,condition,,,,bug-swarm|hitch-a-ride
 amwp/ant-man,Ant-Man,amwp,heist,unsupported,,,,tiny-little-risk
 amwp/ant-man,Ant-Man,amwp,microscopic-size-changing,unsupported,,,,bug-swarm|giant-man|tiny-little-risk
 amwp/ant-man,Ant-Man,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,hitch-a-ride|look-out-for-the-little-guy|shrink-away
@@ -67,11 +68,12 @@ antm/wonder-man,Wonder Man,antm,optional-put-bottom-hq,executable,,D-24130,packa
 antm/wonder-man,Wonder Man,antm,put-any-number-bottom-hq,executable,,D-24132,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq,8th-wonder-of-the-world
 antm/wonder-man,Wonder Man,antm,put-bottom-hq-icon-reward,executable,,D-24133,packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward,absorb-ambient-power
 antm/wonder-man,Wonder Man,antm,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,8th-wonder-of-the-world
+asrd/beta-ray-bill,Beta Ray Bill,asrd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,hope-of-the-korbinites
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,,stormbreaker
-asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,unsupported,,,,hope-of-the-korbinites|stormbreaker
+asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,condition,,,,hope-of-the-korbinites|stormbreaker
 asrd/lady-sif,Lady Sif,asrd,thrown-artifact,unsupported,,,,dimensional-blade|golden-apples-of-idunn|winged-helm
 asrd/thor,Thor,asrd,thrown-artifact,unsupported,,,,mjolnir
-asrd/thor,Thor,asrd,worthy,unsupported,,,,divine-lightning|mjolnir|royal-decree|test-of-virtue
+asrd/thor,Thor,asrd,worthy,condition,,,,divine-lightning|mjolnir|royal-decree|test-of-virtue
 asrd/valkyrie,Valkyrie,asrd,bridge,unsupported,,,,usher-to-valhalla
 asrd/valkyrie,Valkyrie,asrd,conqueror,unsupported,,,,dragonfang|flying-stallion|ride-of-the-valkyries|usher-to-valhalla
 asrd/valkyrie,Valkyrie,asrd,streets,unsupported,,,,flying-stallion|ride-of-the-valkyries
@@ -111,16 +113,16 @@ bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/g
 bkwd/yelena-belova,Yelena Belova,bkwd,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,destroy-the-red-room|strike-and-fade|twilight-ops|unveil-identity
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,,destroy-the-red-room|twilight-ops|unveil-identity
 ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,,sniper-squad|spy-network
-ca75/agent-x-13,Agent X-13,ca75,savior,unsupported,,,,mobilize-for-war
+ca75/agent-x-13,Agent X-13,ca75,savior,condition,,,,mobilize-for-war
 ca75/captain-america-falcon,Captain America (Falcon),ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,aerial-catch
-ca75/captain-america-falcon,Captain America (Falcon),ca75,savior,unsupported,,,,star-spangled-hero|winged-salvation
-ca75/captain-america-1941,Captain America 1941,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,devoted-patriot
+ca75/captain-america-falcon,Captain America (Falcon),ca75,savior,condition,,,,star-spangled-hero|winged-salvation
+ca75/captain-america-1941,Captain America 1941,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,devoted-patriot|liberate-the-prisoners
 ca75/captain-america-1941,Captain America 1941,ca75,out-of-time,unsupported,,,,devoted-patriot|punch-evil-in-the-face|storm-the-beachhead
 ca75/captain-america-1941,Captain America 1941,ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,liberate-the-prisoners
-ca75/captain-america-1941,Captain America 1941,ca75,savior,unsupported,,,,liberate-the-prisoners|punch-evil-in-the-face
+ca75/captain-america-1941,Captain America 1941,ca75,savior,condition,,,,liberate-the-prisoners|punch-evil-in-the-face
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,out-of-time,unsupported,,,,shadow-of-wars-past
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,save-the-world
-ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,savior,unsupported,,,,international-strike-force|save-the-world|shadow-of-wars-past
+ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,savior,condition,,,,international-strike-force|save-the-world|shadow-of-wars-past
 ca75/winter-soldier,Winter Soldier,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sniper-nest
 ca75/winter-soldier,Winter Soldier,ca75,out-of-time,unsupported,,,,2-4|bionic-arm|sniper-nest
 chmp/gwenpool,Gwenpool,chmp,cheering-crowds,unsupported,,,,i-heard-keywords-are-powerful
@@ -564,14 +566,15 @@ wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,what-if,unsupported,,,,cross-the-
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,empowered,unsupported,WP-267,D-24044,,anoint-a-champion|convoke-the-guardians
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,soulbind,unsupported,,,,history-repeats
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,what-if,unsupported,,,,another-dimension-crumbles|break-the-oath|convoke-the-guardians
-wwhk/amadeus-cho,Amadeus Cho,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gamma-draining-nanites
-wwhk/amadeus-cho,Amadeus Cho,wwhk,outwit,unsupported,,,,extrapolate|like-totally-smart-hulk|renegade-genius|visualize-the-variables
+wwhk/amadeus-cho,Amadeus Cho,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,extrapolate|gamma-draining-nanites|renegade-genius
+wwhk/amadeus-cho,Amadeus Cho,wwhk,outwit,condition,,,,extrapolate|like-totally-smart-hulk|renegade-genius|visualize-the-variables
 wwhk/amadeus-cho,Amadeus Cho,wwhk,transform,unsupported,,,,gamma-draining-nanites
-wwhk/bruce-banner,Bruce Banner,wwhk,outwit,unsupported,,,,gamma-bomb-disaster|gamma-ray-experiment|solve-the-impossible
+wwhk/bruce-banner,Bruce Banner,wwhk,outwit,condition,,,,gamma-bomb-disaster|gamma-ray-experiment|solve-the-impossible
 wwhk/bruce-banner,Bruce Banner,wwhk,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,dangerous-testing
 wwhk/bruce-banner,Bruce Banner,wwhk,smash,unsupported,,,,savage-hulk-unleashed
 wwhk/bruce-banner,Bruce Banner,wwhk,transform,unsupported,,,,gamma-bomb-disaster
-wwhk/caiera,Caiera,wwhk,outwit,unsupported,,,,focus-the-old-power|shadow-queen
+wwhk/caiera,Caiera,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shadow-queen
+wwhk/caiera,Caiera,wwhk,outwit,condition,,,,focus-the-old-power|shadow-queen
 wwhk/caiera,Caiera,wwhk,smash,unsupported,,,,shadowforged-blade
 wwhk/caiera,Caiera,wwhk,transform,unsupported,,,,dutiful-protector
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,cross-dimensional-rampage,unsupported,,,,the-green-scar
@@ -582,13 +585,13 @@ wwhk/gladiator-hulk,Gladiator Hulk,wwhk,wounded-fury,unsupported,,,,the-green-sc
 wwhk/hiroim,Hiroim,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,save-from-the-rubble
 wwhk/hiroim,Hiroim,wwhk,transform,unsupported,,,,save-from-the-rubble
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,pound-for-pound|ultra-massive-armor
-wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,outwit,unsupported,,,,attune-techtonic-transducer
+wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,outwit,condition,,,,attune-techtonic-transducer
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,smash,unsupported,,,,attune-techtonic-transducer|ultra-massive-armor
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,transform,unsupported,,,,build-the-suit
 wwhk/joe-fixit-grey-hulk,"Joe Fixit, Grey Hulk",wwhk,smash,unsupported,,,,carefully-considered-smashing
 wwhk/joe-fixit-grey-hulk,"Joe Fixit, Grey Hulk",wwhk,transform,unsupported,,,,ambitious-enforcer
-wwhk/korg,Korg,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,lord-of-granite|nothing-beats-rock
-wwhk/korg,Korg,wwhk,outwit,unsupported,,,,move-mountains
+wwhk/korg,Korg,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,lord-of-granite|move-mountains|nothing-beats-rock
+wwhk/korg,Korg,wwhk,outwit,condition,,,,move-mountains
 wwhk/korg,Korg,wwhk,smash,unsupported,,,,lord-of-granite|nothing-beats-rock
 wwhk/korg,Korg,wwhk,transform,unsupported,,,,forged-by-fire
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,feast,unsupported,,,,devouring-frenzy|hive-king-miek|metamorphosis
@@ -606,7 +609,8 @@ wwhk/rick-jones,Rick Jones,wwhk,transform,unsupported,,,,caught-in-kree-skrull-w
 wwhk/sentry,Sentry,wwhk,feast,unsupported,,,,the-void-unchained
 wwhk/sentry,Sentry,wwhk,transform,unsupported,,,,agoraphobia|golden-guardian-of-good|mournful-sentinel|the-void-unchained|vast-unstable-power
 wwhk/sentry,Sentry,wwhk,transformed,unsupported,,,,rival-personalities
-wwhk/she-hulk,She-Hulk,wwhk,outwit,unsupported,,,,window-of-opportunity
+wwhk/she-hulk,She-Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,window-of-opportunity
+wwhk/she-hulk,She-Hulk,wwhk,outwit,condition,,,,window-of-opportunity
 wwhk/she-hulk,She-Hulk,wwhk,smash,unsupported,,,,hurl-trucks
 wwhk/she-hulk,She-Hulk,wwhk,transform,unsupported,,,,hurl-legal-objections
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,unsupported,,,,anger-management

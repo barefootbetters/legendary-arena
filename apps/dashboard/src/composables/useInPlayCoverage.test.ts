@@ -67,16 +67,25 @@ test('computeInPlayCoverage takes peakObs = max(baseline, live) per mechanic', (
   assert.equal(metric.totalObs, 22);
 });
 
-test('computeInPlayCoverage credits only exactly-executable ledger statuses', () => {
+test('computeInPlayCoverage credits executable AND condition statuses, nothing else', () => {
   const metric = computeInPlayCoverage(
-    makeBaseline({ done: 5, def: 5, uns: 5, unm: 5, absent: 5 }),
+    makeBaseline({ done: 5, cnd: 5, def: 5, uns: 5, unm: 5, absent: 5 }),
     makeLive({}),
-    makeStatuses({ done: 'executable', def: 'deferred', uns: 'unsupported', unm: 'unmarked' }),
+    // why (WP-653 / D-24464): a `condition`-status mechanic (a recognized
+    // HeroCondition — Spectrum/Outwit/Worthy/Savior/Antics) is resolved, alongside
+    // `executable`; deferred/unsupported/unmarked/ledger-absent are still NOT.
+    makeStatuses({
+      done: 'executable',
+      cnd: 'condition',
+      def: 'deferred',
+      uns: 'unsupported',
+      unm: 'unmarked',
+    }),
   );
-  // only `done` (executable) resolves; deferred/unsupported/unmarked/ledger-absent do not
-  assert.equal(metric.resolvedObs, 5);
-  assert.equal(metric.totalObs, 25);
-  assert.equal(metric.percentResolved, 20);
+  // `done` (executable) + `cnd` (condition) resolve (5 + 5); the rest do not.
+  assert.equal(metric.resolvedObs, 10);
+  assert.equal(metric.totalObs, 30);
+  assert.equal(metric.percentResolved, 33.3);
 });
 
 test('computeInPlayCoverage keeps a ledger-absent observed mechanic counted, not dropped', () => {
@@ -273,9 +282,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // cards, shifting the fixed-seed sweep's game trajectories (a few more observations of
   // other mechanics). resolvedObs' jump is the honest coverage gain; totalObs' drift is a
   // sweep-trajectory artifact, not a regression.
+  // 2026-09-06 (WP-653 / D-24464, re-pin): Outwit/Worthy/Savior/Antics ship as
+  // HeroConditions; their hero-ledger rows flip unsupported -> condition, and the
+  // gauge now credits `condition` status as resolved (a recognized condition IS
+  // implemented). Their baseline-peak obs MOVE into resolvedObs. totalObs
+  // 2315 -> 2329 because the now-gated effects change the fixed-seed sweep's game
+  // trajectories (a sweep-trajectory artifact, not a regression); percentResolved
+  // rises as the four sets' obs become resolved.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2315);
-  assert.equal(view.percentResolved.value, 15.2);
+  assert.equal(view.totalObs.value, 2329);
+  assert.equal(view.percentResolved.value, 26.1);
   assert.ok(view.remaining.value.length > 0);
 });
 

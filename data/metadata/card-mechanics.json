@@ -424,15 +424,17 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 87,
+      "cardCount": 91,
       "cardIds": [
         "3dtc/black-widow",
+        "amwp/ant-army",
         "amwp/freedom-fighters",
         "amwp/janet-van-dyne",
         "anni/fantastic-four-united",
         "antm/ant-man",
         "antm/jocasta",
         "antm/wasp",
+        "asrd/beta-ray-bill",
         "asrd/warriors-three-the",
         "bkpt/princess-shuri",
         "bkwd/falcon-winter-soldier",
@@ -501,12 +503,14 @@
         "wtif/doctor-strange-supreme",
         "wtif/gamora-destroyer-of-thanos",
         "wwhk/amadeus-cho",
+        "wwhk/caiera",
         "wwhk/gladiator-hulk",
         "wwhk/hiroim",
         "wwhk/hulkbuster-iron-man",
         "wwhk/korg",
         "wwhk/namora",
         "wwhk/no-name-brood-queen",
+        "wwhk/she-hulk",
         "xmen/banshee",
         "xmen/jubilee",
         "xmen/legion",
@@ -1976,6 +1980,7 @@
     "amwp/ant-army": {
       "mechanics": [
         "antics",
+        "draw",
         "heist",
         "microscopic-size-changing",
         "size-changing"
@@ -2093,6 +2098,7 @@
     },
     "asrd/beta-ray-bill": {
       "mechanics": [
+        "draw",
         "thrown-artifact",
         "worthy"
       ]
@@ -3669,6 +3675,7 @@
     },
     "wwhk/caiera": {
       "mechanics": [
+        "draw",
         "outwit",
         "smash",
         "transform"
@@ -3748,6 +3755,7 @@
     },
     "wwhk/she-hulk": {
       "mechanics": [
+        "draw",
         "outwit",
         "smash",
         "transform"

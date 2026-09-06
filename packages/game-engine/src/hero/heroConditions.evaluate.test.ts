@@ -32,8 +32,11 @@ import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy 
  */
 function makeTestState(overrides?: {
   inPlay?: string[];
+  hand?: string[];
+  victory?: string[];
   heroAbilityHooks?: HeroAbilityHook[];
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
+  cardStatCosts?: Record<string, number>;
   cardSizeChangingClasses?: Record<string, string[]>;
   cardCopiedTeams?: Record<string, string[]>;
   turnEconomyRecruit?: number;
@@ -61,10 +64,10 @@ function makeTestState(overrides?: {
     playerZones: {
       '0': { ...makePlayerZones(),
         deck: [],
-        hand: [],
+        hand: overrides?.hand ?? [],
         discard: [],
         inPlay: overrides?.inPlay ?? [],
-        victory: [],
+        victory: overrides?.victory ?? [],
       },
     },
     piles: { ...makeGlobalPiles(),
@@ -86,7 +89,12 @@ function makeTestState(overrides?: {
       spentAttack: 0,
       spentRecruit: 0,
     },
-    cardStats: {},
+    cardStats: Object.fromEntries(
+      Object.entries(overrides?.cardStatCosts ?? {}).map(([cardId, cost]) => [
+        cardId,
+        { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 },
+      ]),
+    ),
     cardTraits: overrides?.cardTraits ?? {},
     cardSizeChangingClasses: overrides?.cardSizeChangingClasses ?? {},
     cardCopiedTeams: overrides?.cardCopiedTeams ?? {},
@@ -985,5 +993,114 @@ describe('describeFailedCondition (WP-566 / D-24375)', () => {
       assert.equal(clause.length > 0, true);
     }
     assert.equal(new Set(clauses).size, clauses.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-653 / D-24464 — the four condition-gate keywords
+// ---------------------------------------------------------------------------
+
+describe('evaluateCondition distinctHeroCostsAtLeast (Outwit)', () => {
+  it('passes when >= 3 distinct non-zero costs are in play', () => {
+    const G = makeTestState({ inPlay: ['a', 'b', 'c'], cardStatCosts: { a: 2, b: 3, c: 5 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), true);
+  });
+
+  it('fails when fewer than 3 DISTINCT costs (duplicates do not count)', () => {
+    const G = makeTestState({ inPlay: ['a', 'b', 'c'], cardStatCosts: { a: 2, b: 2, c: 3 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), false);
+  });
+
+  it('excludes 0-cost cards and cards with no stats row (safe access)', () => {
+    const G = makeTestState({ inPlay: ['a', 'zero', 'token'], cardStatCosts: { a: 4, zero: 0 } });
+    // only `a` (cost 4) counts; `zero` (0) and `token` (no row) do not.
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '2' }), false);
+  });
+
+  it('returns false for a malformed value', () => {
+    const G = makeTestState({ inPlay: ['a'], cardStatCosts: { a: 3 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: 'x' }), false);
+  });
+});
+
+describe('evaluateCondition heroCostAtLeastInHandOrPlay (Worthy)', () => {
+  it('passes when a Hero costing >= 5 is in play', () => {
+    const G = makeTestState({ inPlay: ['big'], cardStatCosts: { big: 5 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'heroCostAtLeastInHandOrPlay', value: '5' }), true);
+  });
+
+  it('passes when a Hero costing >= 5 is in HAND (hand-inclusive)', () => {
+    const G = makeTestState({ hand: ['big'], cardStatCosts: { big: 6 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'heroCostAtLeastInHandOrPlay', value: '5' }), true);
+  });
+
+  it('fails when no Hero reaches the cost, in hand or play', () => {
+    const G = makeTestState({ inPlay: ['a'], hand: ['b'], cardStatCosts: { a: 3, b: 4 } });
+    assert.equal(evaluateCondition(G, '0', { type: 'heroCostAtLeastInHandOrPlay', value: '5' }), false);
+  });
+});
+
+describe('evaluateCondition bystandersInVictoryAtLeast (Savior)', () => {
+  it('passes when >= 3 bystanders (supply + rescued villain-deck) are in the Victory Pile', () => {
+    const G = makeTestState({
+      victory: ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-0', 'some-villain'],
+    });
+    // three bystanders (two supply, stored as exact BYSTANDER_EXT_ID repeats, +
+    // one villain-deck bystander); the villain is not counted.
+    assert.equal(evaluateCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' }), true);
+  });
+
+  it('fails with fewer than 3 bystanders in the Victory Pile', () => {
+    const G = makeTestState({ victory: ['pile-bystander', 'some-villain'] });
+    assert.equal(evaluateCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' }), false);
+  });
+});
+
+describe('evaluateCondition cheapOrSizeChangingAtLeast (Antics)', () => {
+  it('passes when >= 3 cards cost 1-2 and/or are Size-Changing (hand + play)', () => {
+    const G = makeTestState({
+      inPlay: ['cheap1', 'sizer'],
+      hand: ['cheap2'],
+      cardStatCosts: { cheap1: 1, cheap2: 2, sizer: 6 },
+      cardSizeChangingClasses: { sizer: ['tech'] },
+    });
+    assert.equal(evaluateCondition(G, '0', { type: 'cheapOrSizeChangingAtLeast', value: '3' }), true);
+  });
+
+  it('counts a card that is both cheap AND Size-Changing only once', () => {
+    const G = makeTestState({
+      inPlay: ['both', 'cheap'],
+      cardStatCosts: { both: 2, cheap: 1 },
+      cardSizeChangingClasses: { both: ['ranged'] },
+    });
+    // two qualifying cards, not three — `both` is not double-counted.
+    assert.equal(evaluateCondition(G, '0', { type: 'cheapOrSizeChangingAtLeast', value: '3' }), false);
+  });
+});
+
+describe('describeFailedCondition (WP-653 conditions quote the actual count)', () => {
+  it('quotes distinct-cost, bystander, and cheap counts; Worthy states the requirement', () => {
+    const G = makeTestState({
+      inPlay: ['a', 'b'],
+      hand: ['c'],
+      victory: ['pile-bystander'],
+      cardStatCosts: { a: 2, b: 2, c: 1 },
+    });
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }),
+      /different costs.*you have 1/,
+    );
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'heroCostAtLeastInHandOrPlay', value: '5' }),
+      /costing 5 or more/,
+    );
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' }),
+      /Bystanders.*you have 1/,
+    );
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'cheapOrSizeChangingAtLeast', value: '3' }),
+      /costing 1-2 or Size-Changing.*you have 3/,
+    );
   });
 });

@@ -140,6 +140,13 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // token (what appears in card markup) to condition type.
 const KNOWN_CONDITIONS = {
   'spectrum': 'distinctHeroClassesAtLeast',  // requires ≥3 hero classes (D-24055)
+  // why: WP-653 / D-24464 — Outwit/Worthy/Savior/Antics are game-state CONDITIONS
+  // (the D-24055 Spectrum posture), so their rows read `condition`, not
+  // `unsupported`. The ledger classifies via THIS map, not the engine parser.
+  'outwit': 'distinctHeroCostsAtLeast',       // requires ≥3 distinct Hero costs
+  'worthy': 'heroCostAtLeastInHandOrPlay',    // requires a Hero costing ≥5
+  'savior': 'bystandersInVictoryAtLeast',     // requires ≥3 Bystanders in Victory
+  'antics': 'cheapOrSizeChangingAtLeast',     // requires ≥3 cheap/Size-Changing
 };
 
 /** Error type signalling a probe failure (exit code 2). */

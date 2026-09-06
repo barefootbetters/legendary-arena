@@ -55,7 +55,13 @@ export function computeInPlayCoverage(
     // iff its hero-ledger status is exactly `executable`, NOT iff its live obs
     // dropped (the sweep is a sample; a 0-obs run is not a fix). `deferred` /
     // `unsupported` / `unmarked` / ledger-absent are all unresolved.
-    const isResolved = statusByMechanic.get(mechanic) === 'executable';
+    // why (WP-653 / D-24464): a `condition`-status mechanic (Spectrum, Outwit,
+    // Worthy, Savior, Antics) is ALSO resolved — a recognized condition IS
+    // implemented; its outer `parse-unrecognized` hollow no longer fires. Without
+    // this a condition mechanic in the baseline seed would be a permanent
+    // unresolved drag on the gauge (these four are seeded; Spectrum was not).
+    const status = statusByMechanic.get(mechanic);
+    const isResolved = status === 'executable' || status === 'condition';
     if (isResolved) {
       resolvedObs += peakObs;
     } else {

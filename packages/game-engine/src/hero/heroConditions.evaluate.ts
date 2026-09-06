@@ -17,6 +17,7 @@ import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -169,6 +170,101 @@ export function evaluateCondition(
       return G.turnEconomy.recruit >= threshold;
     }
 
+    case 'distinctHeroCostsAtLeast': {
+      // why: D-24464 — Outwit gates on revealing Heroes with N different costs.
+      // A CONDITION, not a keyword (the D-24055 Spectrum posture); mirrors
+      // distinctHeroClassesAtLeast but counts distinct COSTS. Self-inclusive:
+      // the played card is already in inPlay before executeHeroEffects runs.
+      if (!G.cardStats) {
+        return false;
+      }
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+      const distinctCosts = new Set<number>();
+      for (const playedCardId of playerZones.inPlay) {
+        // why: safe access — a token in play has no cardStats row; a 0-cost card
+        // (a S.H.I.E.L.D. basic) carries no Hero cost, so `> 0` excludes both
+        // (only true Heroes contribute a distinct cost).
+        const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
+        if (cost > 0) {
+          distinctCosts.add(cost);
+        }
+      }
+      return distinctCosts.size >= threshold;
+    }
+
+    case 'heroCostAtLeastInHandOrPlay': {
+      // why: D-24464 — Worthy is true when you have a Hero costing >= N, counting
+      // Heroes in HAND and in play. The first hand-inclusive condition scan; a
+      // CONDITION per D-24055.
+      if (!G.cardStats) {
+        return false;
+      }
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+      for (const zone of [playerZones.inPlay, playerZones.hand]) {
+        for (const cardId of zone) {
+          // why: safe access (a token has no cardStats row → cost 0, never >= 5).
+          const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
+          if (cost >= threshold) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    case 'bystandersInVictoryAtLeast': {
+      // why: D-24464 — Savior gates on >= N Bystanders in the Victory Pile. The
+      // two-arm predicate (a supply Bystander OR a rescued villain-deck Bystander)
+      // is re-implemented INLINE here — the heroCountSource.resolve.ts classifier
+      // is non-exported. A CONDITION per D-24055.
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+      let bystanderCount = 0;
+      for (const cardId of playerZones.victory) {
+        const extId = cardId as string;
+        if (extId === BYSTANDER_EXT_ID || extId.startsWith('bystander-villain-deck-')) {
+          bystanderCount += 1;
+        }
+      }
+      return bystanderCount >= threshold;
+    }
+
+    case 'cheapOrSizeChangingAtLeast': {
+      // why: D-24464 — Antics gates on >= N cards (hand + in-play) that cost 1-2
+      // and/or are Size-Changing; each qualifying card counts ONCE. A CONDITION
+      // per D-24055.
+      if (!G.cardStats) {
+        return false;
+      }
+      const threshold = parseInt(condition.value, 10);
+      if (Number.isNaN(threshold)) {
+        return false;
+      }
+      let matchCount = 0;
+      for (const zone of [playerZones.inPlay, playerZones.hand]) {
+        for (const cardId of zone) {
+          const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
+          const isCheap = cost === 1 || cost === 2;
+          // why: getGrantedClasses reads G.cardSizeChangingClasses (the
+          // Size-Changing grant map), distinct from Copy-Powers' class/team maps,
+          // so a non-empty list identifies Size-Changing specifically — not a copy.
+          const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+          if (isCheap || isSizeChanging) {
+            matchCount += 1;
+          }
+        }
+      }
+      return matchCount >= threshold;
+    }
+
     default: {
       // why: unsupported condition types are safely skipped — same pattern
       // as WP-022 for unsupported keywords. Future WPs will add new
@@ -284,6 +380,82 @@ function countDistinctHeroClassesInPlay(
 }
 
 /**
+ * Counts the distinct non-zero Hero costs a player currently has in play.
+ * Mirrors the `distinctHeroCostsAtLeast` gate so the message quotes the same
+ * number the gate compared.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many distinct non-zero costs are in play for that player.
+ */
+function countDistinctHeroCostsInPlay(G: LegendaryGameState, playerID: string): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+  const distinctCosts = new Set<number>();
+  for (const cardId of playerZones.inPlay) {
+    const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
+    if (cost > 0) {
+      distinctCosts.add(cost);
+    }
+  }
+  return distinctCosts.size;
+}
+
+/**
+ * Counts the Bystanders in a player's Victory Pile — the two-arm predicate (a
+ * supply Bystander OR a rescued villain-deck Bystander), mirroring the
+ * `bystandersInVictoryAtLeast` gate.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many Bystanders are in that player's Victory Pile.
+ */
+function countBystandersInVictory(G: LegendaryGameState, playerID: string): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return 0;
+  }
+  let count = 0;
+  for (const cardId of playerZones.victory) {
+    const extId = cardId as string;
+    if (extId === BYSTANDER_EXT_ID || extId.startsWith('bystander-villain-deck-')) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Counts a player's cards (hand + in-play) that cost 1-2 and/or are
+ * Size-Changing — each qualifying card once — mirroring the
+ * `cheapOrSizeChangingAtLeast` gate.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many cheap-or-Size-Changing cards the player has.
+ */
+function countCheapOrSizeChanging(G: LegendaryGameState, playerID: string): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+  let count = 0;
+  for (const zone of [playerZones.inPlay, playerZones.hand]) {
+    for (const cardId of zone) {
+      const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
+      const isCheap = cost === 1 || cost === 2;
+      const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+      if (isCheap || isSizeChanging) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+}
+
+/**
  * Describes, in player-facing English, why a condition failed.
  *
  * why: WP-566 / D-24375 section 1 — ONE generic line ("a play condition (such as
@@ -336,6 +508,26 @@ export function describeFailedCondition(
       // value the gate compares), not the net available — spending recruit does
       // not lower the gate, and a message quoting the remainder would mislead.
       return `it needs ${condition.value} or more recruit this turn — you have made ${G.turnEconomy.recruit}`;
+
+    case 'distinctHeroCostsAtLeast': {
+      const distinct = countDistinctHeroCostsInPlay(G, playerID);
+      return `it needs ${condition.value} Heroes of different costs in play — you have ${distinct}`;
+    }
+
+    case 'heroCostAtLeastInHandOrPlay':
+      // why: a boolean existence gate (any Hero costing >= N in hand or play), so
+      // there is no meaningful running count to quote.
+      return `it needs a Hero costing ${condition.value} or more in your hand or in play`;
+
+    case 'bystandersInVictoryAtLeast': {
+      const count = countBystandersInVictory(G, playerID);
+      return `it needs ${condition.value} Bystanders in your Victory Pile — you have ${count}`;
+    }
+
+    case 'cheapOrSizeChangingAtLeast': {
+      const count = countCheapOrSizeChanging(G, playerID);
+      return `it needs ${condition.value} cards costing 1-2 or Size-Changing — you have ${count}`;
+    }
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

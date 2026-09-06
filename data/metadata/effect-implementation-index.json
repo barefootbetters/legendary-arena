@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1831,
+    "totalEntries": 1835,
     "byScope": {
-      "hero": 656,
+      "hero": 660,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 394,
+      "executable": 398,
       "deferred": 0,
-      "condition": 5,
-      "unsupported": 353,
+      "condition": 19,
+      "unsupported": 339,
       "unmarked": 1076,
       "subsystem": 3
     }
@@ -1184,7 +1184,7 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "antics",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -1204,6 +1204,23 @@
         {
           "slug": "revolutionary-anthem",
           "name": "Revolutionary Anthem"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-army",
+      "name": "Ant Army",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "anticipate",
+          "name": "Anticipate"
         }
       ]
     },
@@ -1280,7 +1297,7 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "antics",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -2785,6 +2802,23 @@
       "name": "Beta Ray Bill",
       "set": "asrd",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "hope-of-the-korbinites",
+          "name": "Hope of the Korbinites"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "name": "Beta Ray Bill",
+      "set": "asrd",
+      "scope": "hero",
       "mechanic": "thrown-artifact",
       "status": "unsupported",
       "handler": "",
@@ -2803,7 +2837,7 @@
       "set": "asrd",
       "scope": "hero",
       "mechanic": "worthy",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -2866,7 +2900,7 @@
       "set": "asrd",
       "scope": "hero",
       "mechanic": "worthy",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -4269,7 +4303,7 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -4294,6 +4328,10 @@
         {
           "slug": "devoted-patriot",
           "name": "Devoted Patriot"
+        },
+        {
+          "slug": "liberate-the-prisoners",
+          "name": "Liberate the Prisoners"
         }
       ]
     },
@@ -4345,7 +4383,7 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -4383,7 +4421,7 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -4438,7 +4476,7 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -23309,8 +23347,16 @@
       "decision": "D-2201",
       "designs": [
         {
+          "slug": "extrapolate",
+          "name": "Extrapolate"
+        },
+        {
           "slug": "gamma-draining-nanites",
           "name": "Gamma-Draining Nanites"
+        },
+        {
+          "slug": "renegade-genius",
+          "name": "Renegade Genius"
         }
       ]
     },
@@ -23320,7 +23366,7 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -23366,7 +23412,7 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -23441,8 +23487,25 @@
       "name": "Caiera",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "shadow-queen",
+          "name": "Shadow Queen"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/caiera",
+      "name": "Caiera",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -23645,7 +23708,7 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -23744,6 +23807,10 @@
           "name": "Lord of Granite"
         },
         {
+          "slug": "move-mountains",
+          "name": "Move Mountains"
+        },
+        {
           "slug": "nothing-beats-rock",
           "name": "Nothing Beats Rock"
         }
@@ -23755,7 +23822,7 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -24108,8 +24175,25 @@
       "name": "She-Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "window-of-opportunity",
+          "name": "Window of Opportunity"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "name": "She-Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -26236,6 +26320,7 @@
       "scope": "hero",
       "mechanics": [
         "antics",
+        "draw",
         "heist",
         "microscopic-size-changing",
         "size-changing"
@@ -26731,6 +26816,7 @@
     "asrd/beta-ray-bill": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "thrown-artifact",
         "worthy"
       ]
@@ -34417,6 +34503,7 @@
     "wwhk/caiera": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "outwit",
         "smash",
         "transform"
@@ -34507,6 +34594,7 @@
     "wwhk/she-hulk": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "outwit",
         "smash",
         "transform"
