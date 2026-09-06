@@ -180,7 +180,7 @@ as a single authoritative Zod schema. The schema:
 | | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 |
 |---|---|---|---|---|---|---|
 | Read | accepted | accepted | accepted | accepted | accepted | accepted |
-| Written | no | no | no | no | **yes — `LAGN_VERSION`** | no |
+| Written | no | no | no | no | no | **yes — `LAGN_VERSION`** |
 | Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` | optional `battle_plan` + `result.score` |
 
 **Readers accept all six; writers emit only `LAGN_VERSION` (now `1.4.0`).** That asymmetry
@@ -282,7 +282,8 @@ untouched rather than stamped forward.
 > converts it (and routes the new bench gate) through `isLagnVersionAtLeast`.
 
 **1.4.0 (WP-405 contract + WP-406 producer / D-24214 / D-24215 / D-24216) —
-shipped and emitted.** Adds two optional, top-level blocks so a server-emitted
+shipped; superseded as the write stamp by 1.5.0 (WP-641), whose superset carries
+these blocks on the current writer.** Adds two optional, top-level blocks so a server-emitted
 result LAGN can describe *who played* and *under what profile* — a self-describing
 scoresheet rather than an anonymous setup dump:
 
@@ -327,8 +328,8 @@ migrates**. With the writer now at 1.4.0, the `migrateToCurrent` chain
 participants** (migration is forward-only; the roster is the server producer's
 concern).
 
-**1.5.0 (WP-640 / D-24452) — shipped; readers accept it, writers do not emit it
-yet.** Adds two optional, DESCRIPTIVE blocks so a server-emitted **result LAGN**
+**1.5.0 (WP-640 contract + WP-641 producer / D-24452) — shipped and emitted (the
+current write stamp, `LAGN_VERSION`).** Adds two optional, DESCRIPTIVE blocks so a server-emitted **result LAGN**
 can carry the in-match **Battle Plan** and the end-of-match **report card** — the
 original "save the plan and the score in the LAGN" ask:
 
