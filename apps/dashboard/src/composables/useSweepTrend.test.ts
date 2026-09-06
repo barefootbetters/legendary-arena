@@ -6,7 +6,7 @@ import {
   deriveSweepTrendSeries,
   useSweepTrend,
 } from './useSweepTrend.js';
-import { SWEEP_HEALTHY_ANOMALY_KEY } from './useSweepHealth.js';
+import { SWEEP_ANOMALY_HEALTH_KEYS } from './useSweepHealth.js';
 import { mockSweepHealth } from '../services/sweepHealthMocks.js';
 import type { SweepRunSummary } from '../types/sweep.js';
 
@@ -26,13 +26,14 @@ import type { SweepRunSummary } from '../types/sweep.js';
 /**
  * Build one `SweepRunSummary`. `submittedAt` is an explicit ISO string so a test
  * controls ordering and tie cases directly; `anomalyCounts` defaults to a fully
- * healthy run (health rate 1) unless a case overrides it.
+ * healthy run (anomaly-free rate 1 — no genuine-anomaly keys) unless a case
+ * overrides it.
  */
 function run(
   runId: string,
   submittedAt: string,
   cellCount: number,
-  anomalyCounts: Readonly<Record<string, number>> = { [SWEEP_HEALTHY_ANOMALY_KEY]: cellCount },
+  anomalyCounts: Readonly<Record<string, number>> = {},
 ): SweepRunSummary {
   return {
     runId,
@@ -94,10 +95,13 @@ test('should_parse_submittedAtMs_from_the_iso_string_when_deriving_points', () =
   assert.equal(points[0]!.submittedAtMs, Date.parse(iso));
 });
 
-test('should_compute_healthRate_per_point_from_healthy_key_over_cellCount', () => {
+test('should_compute_healthRate_per_point_as_anomaly_free_rate_over_cellCount', () => {
+  // anomaly-free rate = (100 − fatal 12 − escaped-villain-cap 8) / 100 = 0.80;
+  // the opaque `soft-stall` key does not subtract.
   const points = deriveSweepTrendPoints([
     run('r0', '2026-06-09T01:00:00.000Z', 100, {
-      [SWEEP_HEALTHY_ANOMALY_KEY]: 80,
+      fatal: 12,
+      'escaped-villain-cap': 8,
       'soft-stall': 20,
     }),
   ]);
@@ -186,9 +190,10 @@ test('should_expose_points_and_series_as_computed_refs_from_useSweepTrend', () =
   assert.equal(series.value.weekly[0]!.windowIndex, 3);
 });
 
-test('should_include_both_cadences_and_the_healthy_key_in_mock_sweep_runs', () => {
-  // why: AC #8 — MOCK mode must show a daily + weekly mix and every run must
-  // carry the healthy key so the trend's health rate is meaningful and varied.
+test('should_include_both_cadences_and_the_anomaly_keys_in_mock_sweep_runs', () => {
+  // why: AC #8 (D-24141) — MOCK mode must show a daily + weekly mix and every run
+  // must carry the two genuine-anomaly keys so the trend's anomaly-free rate is
+  // meaningful and varied (below 100%).
   const fixedNowMs = Date.parse('2026-06-09T12:00:00.000Z');
   const response = mockSweepHealth('30d', fixedNowMs);
   const recentRuns = response.data.recentRuns;
@@ -196,10 +201,12 @@ test('should_include_both_cadences_and_the_healthy_key_in_mock_sweep_runs', () =
   assert.ok(series.weekly.length > 0, 'mock has at least one weekly run');
   assert.ok(series.daily.length > 0, 'mock has at least one daily run');
   for (const mockRun of recentRuns) {
-    assert.ok(
-      Object.prototype.hasOwnProperty.call(mockRun.anomalyCounts, SWEEP_HEALTHY_ANOMALY_KEY),
-      `mock run ${mockRun.runId} carries the healthy key`,
-    );
+    for (const anomalyKey of SWEEP_ANOMALY_HEALTH_KEYS) {
+      assert.ok(
+        Object.prototype.hasOwnProperty.call(mockRun.anomalyCounts, anomalyKey),
+        `mock run ${mockRun.runId} carries the '${anomalyKey}' anomaly key`,
+      );
+    }
   }
   for (const weeklyPoint of series.weekly) {
     assert.match(weeklyPoint.runId, /-weekly-w\d+$/);

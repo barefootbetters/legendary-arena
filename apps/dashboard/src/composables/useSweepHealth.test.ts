@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   useSweepHealth,
   computeSweepHealthRate,
-  SWEEP_HEALTHY_ANOMALY_KEY,
+  SWEEP_ANOMALY_HEALTH_KEYS,
   type SweepHealthFetchState,
 } from './useSweepHealth.js';
 import { mockSweepHealth } from '../services/sweepHealthMocks.js';
@@ -211,44 +211,71 @@ test('should_map_kpi_status_via_computeKpiStatus_when_age_crosses_threshold_band
   assert.equal(severe.kpiStatus.value, 'off-track');
 });
 
-test('should_compute_health_rate_as_healthy_key_over_cellCount', () => {
-  // why: AC #1 — the health rate is `endgame-reached / cellCount`. Non-healthy
-  // keys are opaque mock strings; only the healthy key drives the numerator.
+test('should_export_the_two_genuine_anomaly_keys_exactly', () => {
+  // why: AC #1 (D-24141) — the health rate names EXACTLY the two genuine-anomaly
+  // classes; the healthy-class constant is removed.
+  assert.deepEqual([...SWEEP_ANOMALY_HEALTH_KEYS], ['fatal', 'escaped-villain-cap']);
+});
+
+test('should_compute_health_rate_as_anomaly_free_fraction_over_cellCount', () => {
+  // why: AC #2 (D-24141) — the health rate is `(cellCount − fatal −
+  // escaped-villain-cap) / cellCount`. `soft-lock` is an opaque non-anomaly key
+  // and does NOT subtract; only the two genuine-anomaly keys do. 12 + 8 = 20
+  // anomalous over 100 cells → 0.80.
   const rate = computeSweepHealthRate(
-    run('r0', 0, { [SWEEP_HEALTHY_ANOMALY_KEY]: 80, 'soft-lock': 20 }, 100),
+    run('r0', 0, { fatal: 12, 'escaped-villain-cap': 8, 'soft-lock': 20 }, 100),
   );
   assert.equal(rate, 0.8);
 });
 
-test('should_treat_missing_healthy_key_as_zero_healthy_cells', () => {
-  // A run with no healthy key reads 0 healthy cells, not NaN/undefined.
-  assert.equal(computeSweepHealthRate(run('r0', 0, { 'soft-lock': 5 }, 100)), 0);
+test('should_read_one_hundred_percent_when_no_anomaly_keys_present', () => {
+  // why: AC #2 — a run free of both genuine-anomaly keys is fully healthy (1.0),
+  // even when opaque non-anomaly keys are present.
+  assert.equal(computeSweepHealthRate(run('r0', 0, { 'soft-lock': 5 }, 100)), 1);
 });
 
-test('should_treat_non_numeric_healthy_value_as_zero_without_NaN', () => {
-  // why: AC #1 — a non-numeric healthy value (only reachable via a malformed
-  // payload past the type boundary) reads 0; it must never propagate NaN.
-  const base = run('r0', 0, { 'soft-lock': 1 }, 100);
+test('should_treat_non_numeric_anomaly_value_as_zero_anomalies_without_NaN', () => {
+  // why: AC #3 — a non-numeric anomaly count (only reachable via a malformed
+  // payload past the type boundary) reads as 0 anomalies; it must never
+  // propagate NaN. `fatal` is malformed → 0; `escaped-villain-cap` (10) still
+  // subtracts → 0.90.
+  const base = run('r0', 0, { 'escaped-villain-cap': 10 }, 100);
   const malformed: SweepRunSummary = {
     ...base,
     anomalyCounts: {
       ...base.anomalyCounts,
-      [SWEEP_HEALTHY_ANOMALY_KEY]: 'oops' as unknown as number,
+      fatal: 'oops' as unknown as number,
     },
   };
-  assert.equal(computeSweepHealthRate(malformed), 0);
+  assert.equal(computeSweepHealthRate(malformed), 0.9);
+});
+
+test('should_treat_negative_anomaly_value_as_zero_anomalies', () => {
+  // why: AC #3 — a negative count reads as 0 anomalies, never adding to the
+  // anomalous total.
+  assert.equal(computeSweepHealthRate(run('r0', 0, { fatal: -5 }, 100)), 1);
+});
+
+test('should_clamp_health_rate_to_zero_when_anomalies_exceed_cellCount', () => {
+  // why: AC #2 — MOCK fixtures may seed anomaly counts past `cellCount`; the
+  // clamp keeps the rate a valid fraction (0), never a negative value.
+  assert.equal(
+    computeSweepHealthRate(run('r0', 0, { fatal: 80, 'escaped-villain-cap': 40 }, 100)),
+    0,
+  );
 });
 
 test('should_return_null_health_rate_for_a_zero_cell_run', () => {
-  // why: AC #1 — a 0-cell run yields null, never a divide-by-zero NaN.
-  assert.equal(computeSweepHealthRate(run('r0', 0, { [SWEEP_HEALTHY_ANOMALY_KEY]: 0 }, 0)), null);
+  // why: AC #2 — a 0-cell run yields null, never a divide-by-zero NaN.
+  assert.equal(computeSweepHealthRate(run('r0', 0, { fatal: 0 }, 0)), null);
 });
 
 test('should_expose_latest_health_rate_and_per_run_sparkline_when_runs_present', () => {
   const runs = [
     // index 0 = most-recent run (mirrors the totalAnomalySparkline convention).
-    run('r0', 60 * 60 * 1000, { [SWEEP_HEALTHY_ANOMALY_KEY]: 90 }, 100),
-    run('r1', 2 * 60 * 60 * 1000, { [SWEEP_HEALTHY_ANOMALY_KEY]: 40 }, 100),
+    // 10 anomalous over 100 → 0.90; 40 + 20 = 60 anomalous over 100 → 0.40.
+    run('r0', 60 * 60 * 1000, { fatal: 10 }, 100),
+    run('r1', 2 * 60 * 60 * 1000, { fatal: 40, 'escaped-villain-cap': 20 }, 100),
   ];
   const { healthRate, healthRateSparkline } = useSweepHealth(
     () => loaded(snapshotOf(runs)),
@@ -295,4 +322,22 @@ test('should_return_deep_equal_output_when_called_twice_with_identical_inputs', 
   assert.deepEqual(firstSnapshot, secondSnapshot);
   // The mock factory always produces a full 30-run window.
   assert.equal(first.recentRuns.value.length, 30);
+});
+
+test('should_produce_a_varied_mock_health_rate_strictly_between_zero_and_one', () => {
+  // why: AC #6 (D-24141) — the inverted MOCK seed populates the two anomaly keys
+  // so every mock run's anomaly-free rate is strictly below 1.0 (some anomalies)
+  // and above 0.0 (never all cells), and the rate VARIES run-to-run (a flat 1.0
+  // would mean the seed never populated `fatal`/`escaped-villain-cap`).
+  const response = mockSweepHealth('30d', FIXED_NOW_MS);
+  const rates: number[] = [];
+  for (const mockRun of response.data.recentRuns) {
+    const rate = computeSweepHealthRate(mockRun);
+    assert.notEqual(rate, null, 'every mock run has a non-zero cellCount');
+    assert.ok((rate as number) < 1, `mock run ${mockRun.runId} rate ${rate} is below 1.0`);
+    assert.ok((rate as number) > 0, `mock run ${mockRun.runId} rate ${rate} is above 0.0`);
+    rates.push(rate as number);
+  }
+  const distinctRates = new Set(rates);
+  assert.ok(distinctRates.size > 1, 'mock health rate varies across runs');
 });
