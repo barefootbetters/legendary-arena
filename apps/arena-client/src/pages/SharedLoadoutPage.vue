@@ -123,6 +123,17 @@ export default defineComponent({
               <template v-else>{{ summary.heroes.join(', ') }}</template>
             </dd>
           </div>
+          <!-- why: WP-652 — the reserve bench sits beside Heroes but is styled
+               distinctly (its own modifier class) so a viewer never mistakes a
+               reserve hero for one that is played. `—` when the loadout has no
+               bench, matching every other list fact. -->
+          <div class="shared-loadout-fact shared-loadout-fact--bench">
+            <dt>🪑 Bench (reserve)</dt>
+            <dd data-testid="shared-loadout-bench">
+              <template v-if="summary.heroAlternates.length === 0">—</template>
+              <template v-else>{{ summary.heroAlternates.join(', ') }}</template>
+            </dd>
+          </div>
           <div class="shared-loadout-fact">
             <dt>Villain groups</dt>
             <dd data-testid="shared-loadout-villains">
@@ -209,6 +220,19 @@ export default defineComponent({
   margin: 0;
   font-size: 0.875rem;
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* why: WP-652 — the reserve bench is visually set apart from the played-hero
+   facts (a warm accent + tinted ground) so a reader never conflates a reserve
+   hero with one that is on the board — mirroring the Registry Viewer treatment. */
+.shared-loadout-fact--bench {
+  border-left: 3px solid #c8a24a;
+  padding-left: 0.6rem;
+  background: rgba(200, 162, 74, 0.08);
+  border-radius: 4px;
+}
+.shared-loadout-fact--bench dt {
+  color: #8a6d1f;
 }
 
 @media (max-width: 40rem) {

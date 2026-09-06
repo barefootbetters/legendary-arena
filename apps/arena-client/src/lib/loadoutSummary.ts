@@ -35,6 +35,17 @@ export interface LoadoutSummary {
   readonly mastermind: string;
   readonly scheme: string;
   readonly heroes: string[];
+  /**
+   * The reserve-hero **bench** display names (`setup.hero_alternates`), or an
+   * empty array when the loadout carries none.
+   *
+   * why: WP-652 / D-24213 — a loadout saved from the Registry Viewer can carry a
+   * bench (WP-404). It reaches the library via the paste-save (the server stores
+   * `setup.hero_alternates` on a ≥1.3.0 body, WP-402), so the summary reads it
+   * with the SAME defensive `{ id, name }` → name path as `heroes`. The bench is
+   * read-only, non-authoritative metadata — never gameplay state (D-24210).
+   */
+  readonly heroAlternates: string[];
   readonly villainGroups: string[];
   readonly henchmanGroups: string[];
   readonly playerCount: number | null;
@@ -116,6 +127,10 @@ export function summarizeLoadout(lagn: unknown): LoadoutSummary {
     mastermind: readEntityName(setup['mastermind']),
     scheme: readEntityName(setup['scheme']),
     heroes: readEntityNames(setup['heroes']),
+    // why: WP-652 — the bench reuses the exact `heroes` reader (no parallel
+    // parser); absent or misshaped `hero_alternates` yields [], so a bench-less
+    // loadout is indistinguishable from today's output.
+    heroAlternates: readEntityNames(setup['hero_alternates']),
     villainGroups: readEntityNames(setup['villain_groups']),
     henchmanGroups: readEntityNames(setup['henchmen_groups']),
     playerCount: readCount(document['player_count']),
