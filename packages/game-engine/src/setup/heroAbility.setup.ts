@@ -14,6 +14,7 @@ import type {
   HeroAbilityHook,
   HeroCondition,
   HeroEffectDescriptor,
+  InvestigateCriterion,
 } from '../rules/heroAbility.types.js';
 import type { HeroKeyword, HeroAbilityTiming } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
@@ -402,6 +403,38 @@ const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
 // covert synergy. Non-global, stateless `.test`; case-insensitive.
 const COPY_POWERS_MARKER_PATTERN = /\[keyword:copy-powers\]/i;
 
+// why: WP-564 / D-24373 — the printed default look count for Investigate ("look at the
+// top two cards of your deck"). Carried as a descriptor field so the deferred
+// "look at three cards instead of two" modifier can set it later without reshaping the
+// effect (mirrors the reveal family's revealCount).
+const INVESTIGATE_DEFAULT_LOOK_COUNT = 2;
+
+// why: WP-564 / D-24373 — locates the `[keyword:Investigate]` marker so the criterion
+// parser reads the text AFTER it. Case-insensitive to match the `[keyword:X]` casing.
+// Non-global, stateless `.exec`.
+const INVESTIGATE_MARKER_PATTERN = /\[keyword:investigate\]/i;
+
+// why: WP-564 / D-24373 — the criterion-form whitelist, each anchored `^…$` on the
+// TRIMMED criterion text so a trailing disposition / modifier clause (Discover the
+// Bodies' "…costs 0. KO that card.", Crack the Case's "…icon. You may draw…") fails to
+// match and stays deferred (its marker records parse-unrecognized). Case-insensitive.
+/** "for a card with an [icon:attack] icon." / "…with a [icon:recruit] icon." */
+const INVESTIGATE_ICON_PATTERN = /^for a card with an? \[icon:(attack|recruit)\] icon\.$/i;
+/** "for a card that costs N." (exact) */
+const INVESTIGATE_COST_EXACT_PATTERN = /^for a card that costs (\d+)\.$/i;
+/** "for a card that costs N or less." */
+const INVESTIGATE_COST_LTE_PATTERN = /^for a card that costs (\d+) or less\.$/i;
+/** "for a card that costs N or more." */
+const INVESTIGATE_COST_GTE_PATTERN = /^for a card that costs (\d+) or more\.$/i;
+/** "for a [hc:tech] card." (leading class form) */
+const INVESTIGATE_HC_LEADING_PATTERN = /^for an? \[hc:([a-z0-9-]+)\] card\.$/i;
+/** "for a card that's <clause>." — the clause is one or more hc/team tokens joined by " and/or ". */
+const INVESTIGATE_THATS_PATTERN = /^for a card that's (.+)\.$/i;
+/** A single `[hc:X]` token — the whole trimmed clause part. */
+const INVESTIGATE_CLAUSE_HC_PATTERN = /^\[hc:([a-z0-9-]+)\]$/i;
+/** A single `[team:X]` token — the whole trimmed clause part. */
+const INVESTIGATE_CLAUSE_TEAM_PATTERN = /^\[team:([a-z0-9-]+)\]$/i;
+
 /**
  * Extracts structured hero ability metadata from a single ability text.
  *
@@ -438,6 +471,15 @@ function parseAbilityText(abilityText: string): {
   // why: WP-535 fix-forward — a copy-powers line's [hc:X] is the DESCRIPTIVE class the card
   // gains, not a play gate; suppress its heroClassMatch condition (see Step 1a).
   const lineHasCopyPowers = COPY_POWERS_MARKER_PATTERN.test(abilityText);
+  // why: WP-564 / D-24373 — resolve the static Investigate criterion up front (undefined
+  // for a deferred / non-Investigate line). On a RESOLVED investigate line the same-line
+  // `[hc:…]` / `[team:…]` / `[icon:attack|recruit]` tokens are the CRITERION, not
+  // conditions or resource grants, so Steps 1a / 1b / 3 suppress them (mirrors the
+  // size-changing / copy-powers Step 1a routing). No in-scope resolved card carries a
+  // separate gate of those token types; a gated card (Discover the Bodies' `[hc:covert]:`)
+  // does NOT resolve, so its gate is preserved (the resolution returns undefined).
+  const investigateCriteria = tryResolveInvestigateFromLine(abilityText);
+  const lineHasResolvedInvestigate = investigateCriteria !== undefined;
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
   // registry AST, kept separate from `keywords`/`effects` (the open mechanic space).
@@ -476,6 +518,11 @@ function parseAbilityText(abilityText: string): {
       // runtime by heroEffectCopyPowers → cardSizeChangingClasses; emit NO heroClassMatch
       // condition so the copy always fires (mirrors the size-changing exclusion above). Not
       // pushed to the grant list either — covert is already printed, so a grant is redundant.
+    } else if (lineHasResolvedInvestigate) {
+      // why: WP-564 / D-24373 — on a RESOLVED investigate line the [hc:X] is the CRITERION
+      // ("Investigate for a [hc:tech] card" / "…that's [hc:ranged] and/or [hc:instinct]"),
+      // NOT a play gate. The criterion is already captured in investigateCriteria; emit NO
+      // heroClassMatch condition (mirrors the size-changing / copy-powers exclusions above).
     } else {
       heroClassConditions.push({
         type: 'heroClassMatch',
@@ -489,10 +536,15 @@ function parseAbilityText(abilityText: string): {
   const teamRegex = new RegExp(TEAM_PATTERN.source, 'g');
   let teamMatch: RegExpExecArray | null = teamRegex.exec(abilityText);
   while (teamMatch !== null) {
-    teamConditions.push({
-      type: 'requiresTeam',
-      value: normalizeTraitSlug(teamMatch[1]!),
-    });
+    // why: WP-564 / D-24373 — on a RESOLVED investigate line the [team:X] is the CRITERION
+    // ("…that's [hc:strength] and/or [team:x-factor-investigations]"), not a requiresTeam
+    // gate; it is already captured in investigateCriteria, so emit no condition for it.
+    if (!lineHasResolvedInvestigate) {
+      teamConditions.push({
+        type: 'requiresTeam',
+        value: normalizeTraitSlug(teamMatch[1]!),
+      });
+    }
     teamMatch = teamRegex.exec(abilityText);
   }
 
@@ -584,7 +636,19 @@ function parseAbilityText(abilityText: string): {
   let keywordMatch: RegExpExecArray | null = keywordRegex.exec(abilityText);
   while (keywordMatch !== null) {
     const normalizedKeyword = keywordMatch[1]!.toLowerCase();
-    if (isValidHeroKeyword(normalizedKeyword)) {
+    if (normalizedKeyword === 'investigate') {
+      // why: WP-564 / D-24373 — investigate IS a HeroKeyword, but its keyword + descriptor
+      // are recorded ONLY when a static criterion resolves. A deferred form (choose-first,
+      // other-zone, name-match, disposition, modifier, compose-with-Teleport) records
+      // `investigate` as an unresolved marker so the line stays hollow (parse-unrecognized),
+      // exactly as before this WP — the Honest-Partial Invariant (mirrors the Empowered
+      // resolver). Checked BEFORE isValidHeroKeyword so the generic push does not fire for it.
+      if (investigateCriteria !== undefined) {
+        keywords.push('investigate');
+      } else {
+        unresolvedMarkers.push('investigate');
+      }
+    } else if (isValidHeroKeyword(normalizedKeyword)) {
       keywords.push(normalizedKeyword);
       // Capture optional :N magnitude suffix when present and valid integer
       const magnitudeString = keywordMatch[2];
@@ -928,15 +992,22 @@ function parseAbilityText(abilityText: string): {
   const reorderRemainder = REVEAL_REORDER_PATTERN.test(abilityText);
 
   // Step 3: Extract [icon:X] markup
-  const iconRegex = new RegExp(ICON_PATTERN.source, 'g');
-  let iconMatch: RegExpExecArray | null = iconRegex.exec(abilityText);
-  while (iconMatch !== null) {
-    const iconValue = iconMatch[1]!.toLowerCase();
-    const mappedKeyword = ICON_TO_KEYWORD[iconValue];
-    if (mappedKeyword !== undefined) {
-      keywords.push(mappedKeyword);
+  // why: WP-564 / D-24373 — on a RESOLVED investigate line the [icon:attack] / [icon:recruit]
+  // token is the CRITERION ("Investigate for a card with an [icon:attack] icon"), not a
+  // resource grant; it is already captured in investigateCriteria. Skip the icon→keyword
+  // mapping so no phantom attack/recruit effect is emitted (mirrors the count-scaled and
+  // KO-gated icon suppressions below, applied at extraction time here).
+  if (!lineHasResolvedInvestigate) {
+    const iconRegex = new RegExp(ICON_PATTERN.source, 'g');
+    let iconMatch: RegExpExecArray | null = iconRegex.exec(abilityText);
+    while (iconMatch !== null) {
+      const iconValue = iconMatch[1]!.toLowerCase();
+      const mappedKeyword = ICON_TO_KEYWORD[iconValue];
+      if (mappedKeyword !== undefined) {
+        keywords.push(mappedKeyword);
+      }
+      iconMatch = iconRegex.exec(abilityText);
     }
-    iconMatch = iconRegex.exec(abilityText);
   }
 
   // Step 4: Normalize keywords — dedup, validate against union
@@ -1108,6 +1179,18 @@ function parseAbilityText(abilityText: string): {
         // why: WP-479 / D-24286 — thread reorderRemainder onto the reveal descriptor
         // only when the marker is present, so descriptors without it stay byte-identical.
         effects.push(reorderRemainder ? { type: 'reveal', revealCount, revealRules, reorderRemainder: true } : { type: 'reveal', revealCount, revealRules });
+      } else if (keyword === 'investigate') {
+        // why: WP-564 / D-24373 — the investigate descriptor carries the static criterion
+        // (resolved up front) and the look count (default 2, the printed count — a descriptor
+        // field so the deferred look-at-three modifier sets it without reshaping the effect).
+        // The keyword is only present when investigateCriteria resolved, so the guard is defensive.
+        if (investigateCriteria !== undefined) {
+          effects.push({
+            type: 'investigate',
+            investigateLookCount: INVESTIGATE_DEFAULT_LOOK_COUNT,
+            investigateCriteria,
+          });
+        }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {
@@ -1563,6 +1646,102 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
     return undefined;
   }
   return buildDynamicEmpoweredComposition();
+}
+
+// ---------------------------------------------------------------------------
+// Investigate criterion parsing (static-criterion subset; WP-564 / D-24373)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves the static Investigate criterion from a full ability line, or undefined
+ * when the line has no `[keyword:Investigate]` marker or its criterion is a deferred
+ * variant (choose-a-criterion, other-zone, name-match, disposition, modifier,
+ * compose-with-Teleport). Reads only the text AFTER the marker.
+ *
+ * Whitelist by design (the Honest-Partial Invariant): a resolved line gets the
+ * `investigate` keyword + descriptor; an unresolved line records `investigate` as an
+ * unresolved marker so it stays hollow (parse-unrecognized), exactly as before this WP.
+ *
+ * @param abilityText - The full ability text line.
+ * @returns The parsed criteria (INCLUSIVE OR), or undefined for a deferred / non-Investigate line.
+ */
+function tryResolveInvestigateFromLine(abilityText: string): InvestigateCriterion[] | undefined {
+  const markerMatch = INVESTIGATE_MARKER_PATTERN.exec(abilityText);
+  if (markerMatch === null) {
+    return undefined;
+  }
+  const textAfterMarker = abilityText.slice(markerMatch.index + markerMatch[0]!.length).trim();
+  return tryResolveInvestigateCriteria(textAfterMarker);
+}
+
+/**
+ * Parses the trimmed criterion text (the part after `[keyword:Investigate]`) into a
+ * static criterion list, or undefined for any non-static / deferred form. Each pattern
+ * is anchored `^…$`, so a trailing disposition / modifier clause fails to match.
+ *
+ * @param criterionText - The trimmed text following the Investigate marker.
+ * @returns The parsed criteria (INCLUSIVE OR), or undefined when the form is not a static criterion.
+ */
+function tryResolveInvestigateCriteria(criterionText: string): InvestigateCriterion[] | undefined {
+  const iconMatch = INVESTIGATE_ICON_PATTERN.exec(criterionText);
+  if (iconMatch !== null) {
+    const icon = iconMatch[1]!.toLowerCase();
+    // why: the capture group is anchored to `attack|recruit`, so this narrows safely.
+    return [{ kind: 'icon', icon: icon === 'attack' ? 'attack' : 'recruit' }];
+  }
+  const costLteMatch = INVESTIGATE_COST_LTE_PATTERN.exec(criterionText);
+  if (costLteMatch !== null) {
+    return [{ kind: 'cost', comparison: 'lte', value: parseInt(costLteMatch[1]!, 10) }];
+  }
+  const costGteMatch = INVESTIGATE_COST_GTE_PATTERN.exec(criterionText);
+  if (costGteMatch !== null) {
+    return [{ kind: 'cost', comparison: 'gte', value: parseInt(costGteMatch[1]!, 10) }];
+  }
+  const costExactMatch = INVESTIGATE_COST_EXACT_PATTERN.exec(criterionText);
+  if (costExactMatch !== null) {
+    return [{ kind: 'cost', comparison: 'eq', value: parseInt(costExactMatch[1]!, 10) }];
+  }
+  const hcLeadingMatch = INVESTIGATE_HC_LEADING_PATTERN.exec(criterionText);
+  if (hcLeadingMatch !== null) {
+    return [{ kind: 'hero-class', heroClass: normalizeTraitSlug(hcLeadingMatch[1]!) }];
+  }
+  const thatsMatch = INVESTIGATE_THATS_PATTERN.exec(criterionText);
+  if (thatsMatch !== null) {
+    return parseInvestigateThatsClause(thatsMatch[1]!);
+  }
+  return undefined;
+}
+
+/**
+ * Parses the inner clause of a "for a card that's <clause>." form into a criterion
+ * list, or undefined when any part is not a lone `[hc:X]` / `[team:X]` token. Parts
+ * are split on the printed " and/or " connector and combined with INCLUSIVE OR — a
+ * card matching EITHER clause qualifies (D-24373).
+ *
+ * @param clause - The text between "that's " and the terminal period.
+ * @returns The parsed criteria (INCLUSIVE OR), or undefined for a non-token clause.
+ */
+function parseInvestigateThatsClause(clause: string): InvestigateCriterion[] | undefined {
+  const criteria: InvestigateCriterion[] = [];
+  // why: D-24373 — the printed connector is exactly " and/or "; a card satisfying
+  // either clause qualifies (inclusive OR). A single-token clause (no connector) splits
+  // to one part and is accepted too. Any non-token part (e.g. " or ", free text) voids
+  // the whole clause → the line stays deferred (unresolved marker).
+  for (const part of clause.split(' and/or ')) {
+    const trimmedPart = part.trim();
+    const hcMatch = INVESTIGATE_CLAUSE_HC_PATTERN.exec(trimmedPart);
+    if (hcMatch !== null) {
+      criteria.push({ kind: 'hero-class', heroClass: normalizeTraitSlug(hcMatch[1]!) });
+      continue;
+    }
+    const teamMatch = INVESTIGATE_CLAUSE_TEAM_PATTERN.exec(trimmedPart);
+    if (teamMatch !== null) {
+      criteria.push({ kind: 'team', team: normalizeTraitSlug(teamMatch[1]!) });
+      continue;
+    }
+    return undefined;
+  }
+  return criteria.length > 0 ? criteria : undefined;
 }
 
 // ---------------------------------------------------------------------------

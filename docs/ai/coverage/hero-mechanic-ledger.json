@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 656,
     "byStatus": {
-      "executable": 243,
+      "executable": 258,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 367,
+      "unsupported": 352,
       "unmarked": 40,
       "subsystem": 1
     },
@@ -4440,10 +4440,10 @@
       "heroName": "Jessica Jones",
       "set": "dims",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "alias-investigations",
@@ -4508,10 +4508,10 @@
       "heroName": "Ms. America",
       "set": "dims",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "search-parallel-dimensions",
@@ -4548,10 +4548,10 @@
       "heroName": "Squirrel Girl",
       "set": "dims",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "find-tiny-friends",
@@ -6323,10 +6323,10 @@
       "heroName": "M",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "uncover-family-secrets",
@@ -6415,10 +6415,10 @@
       "heroName": "Multiple Man",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "finding-myself",
@@ -6451,10 +6451,10 @@
       "heroName": "Rictor",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "trace-the-fault-lines",
@@ -6595,10 +6595,10 @@
       "heroName": "Siryn",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "echolocation",
@@ -6679,10 +6679,10 @@
       "heroName": "Stepford Cuckoos",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "find-mutants-with-cerebro",
@@ -6751,10 +6751,10 @@
       "heroName": "Strong Guy",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "treasure-hunt",
@@ -6787,10 +6787,10 @@
       "heroName": "Warpath",
       "set": "msmc",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "grim-tracker",
@@ -7172,10 +7172,10 @@
       "heroName": "Angel Noir",
       "set": "noir",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "missing-person-case",
@@ -7192,10 +7192,10 @@
       "heroName": "Daredevil Noir",
       "set": "noir",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "discover-the-bodies",
@@ -7212,10 +7212,10 @@
       "heroName": "Iron Man Noir",
       "set": "noir",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "adventurers-assemble",
@@ -7232,10 +7232,10 @@
       "heroName": "Luke Cage Noir",
       "set": "noir",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "private-investigations",
@@ -7252,10 +7252,10 @@
       "heroName": "Spider-Man Noir",
       "set": "noir",
       "mechanic": "investigate",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "designs": [
         {
           "slug": "gumshoes-revolver",

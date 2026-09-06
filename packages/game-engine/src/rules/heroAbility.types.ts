@@ -145,6 +145,124 @@ export interface HeroEffectDescriptor {
   // in any order"). Set by the `[keyword:reveal-reorder]` modifier marker; a
   // modifier like `revealCount`, not a HeroKeyword. Other keywords ignore it.
   reorderRemainder?: boolean;
+  // why: WP-564 / D-24373 — for an 'investigate' effect, `investigateLookCount` is
+  // how many deck-top cards are looked at (default 2 — the printed count). It is a
+  // descriptor field so the deferred "look at three cards instead of two" modifier can
+  // set it later without reshaping the effect. Other keywords ignore it.
+  investigateLookCount?: number;
+  // why: WP-564 / D-24373 — for an 'investigate' effect, `investigateCriteria` is the
+  // static match criterion the handler tests the looked-at cards against, read from the
+  // printed card text. Multiple entries are combined with INCLUSIVE OR (the printed
+  // "and/or"). Other keywords ignore it.
+  investigateCriteria?: InvestigateCriterion[];
+}
+
+// ---------------------------------------------------------------------------
+// InvestigateCriterion — static investigate match criterion (WP-564 / D-24373)
+// ---------------------------------------------------------------------------
+
+/**
+ * A single static match criterion for the `investigate` keyword, read from the
+ * printed card text. A card matches an `investigate` effect when it satisfies ANY
+ * of the effect's criteria (INCLUSIVE OR — the printed "and/or").
+ *
+ * Static only: `icon` (attack / recruit), `cost` (exact / or less / or more),
+ * `hero-class`, and `team`. Choose-a-criterion, other-zone, name-match, and
+ * disposition variants are out of scope for WP-564 and are not represented here.
+ */
+export type InvestigateCriterion =
+  // why: "a card with an [icon:attack]/[icon:recruit] icon" — the card provides that
+  // resource (printed attack / recruit > 0), read from CardStatEntry at match time.
+  | { kind: 'icon'; icon: 'attack' | 'recruit' }
+  // why: "a card that costs N" (eq) / "costs N or less" (lte) / "costs N or more" (gte).
+  | { kind: 'cost'; comparison: 'eq' | 'lte' | 'gte'; value: number }
+  // why: "a [hc:X] card" — the card's printed Hero Class (CardTraitEntry.heroClass).
+  | { kind: 'hero-class'; heroClass: string }
+  // why: "a [team:X] card" — the card's printed team (CardTraitEntry.team).
+  | { kind: 'team'; team: string };
+
+/**
+ * The card facts an investigate criterion is evaluated against, projected from the
+ * runtime card snapshots. Each field is optional so a card with no `G.cardStats`
+ * entry (e.g. a S.H.I.E.L.D. starter, D-21502) or no `G.cardTraits` entry cannot be
+ * evaluated for the criteria that need it — those criteria simply do not match,
+ * mirroring the reveal handler's skip-a-no-stats-card posture.
+ */
+export interface InvestigateCandidate {
+  /** Printed attack (CardStatEntry.attack); undefined when the card has no stat entry. */
+  attack: number | undefined;
+  /** Printed recruit (CardStatEntry.recruit); undefined when the card has no stat entry. */
+  recruit: number | undefined;
+  /** Printed recruit cost (CardStatEntry.cost); undefined when the card has no stat entry. */
+  cost: number | undefined;
+  /** Printed Hero Class (CardTraitEntry.heroClass); null for non-hero, undefined when no trait entry. */
+  heroClass: string | null | undefined;
+  /** Printed team (CardTraitEntry.team); null when teamless, undefined when no trait entry. */
+  team: string | null | undefined;
+}
+
+/**
+ * Returns whether a card matches an investigate criterion list. INCLUSIVE OR: the
+ * card matches when it satisfies ANY criterion. An empty list never matches.
+ *
+ * Pure, deterministic, no I/O. A criterion whose needed card fact is unavailable
+ * (undefined) does not match — the caller supplies undefined for a card with no
+ * stat / trait entry, so such a card is never drawn on a fabricated 0.
+ *
+ * @param criteria - The effect's static criteria (OR-combined).
+ * @param candidate - The card facts projected from the runtime snapshots.
+ * @returns Whether the card satisfies at least one criterion.
+ */
+export function investigateCandidateMatches(
+  criteria: InvestigateCriterion[],
+  candidate: InvestigateCandidate,
+): boolean {
+  for (const criterion of criteria) {
+    if (investigateCriterionMatches(criterion, candidate)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns whether a card satisfies a single investigate criterion. A criterion whose
+ * needed fact is undefined (no stat / trait entry) does not match.
+ *
+ * @param criterion - The single criterion to test.
+ * @param candidate - The card facts projected from the runtime snapshots.
+ * @returns Whether the card satisfies the criterion.
+ */
+function investigateCriterionMatches(
+  criterion: InvestigateCriterion,
+  candidate: InvestigateCandidate,
+): boolean {
+  if (criterion.kind === 'icon') {
+    const value = criterion.icon === 'attack' ? candidate.attack : candidate.recruit;
+    return value !== undefined && value > 0;
+  }
+  if (criterion.kind === 'cost') {
+    if (candidate.cost === undefined) {
+      return false;
+    }
+    if (criterion.comparison === 'eq') {
+      return candidate.cost === criterion.value;
+    }
+    if (criterion.comparison === 'lte') {
+      return candidate.cost <= criterion.value;
+    }
+    // why: the remaining comparison is 'gte' (the union has exactly three members).
+    return candidate.cost >= criterion.value;
+  }
+  if (criterion.kind === 'hero-class') {
+    return candidate.heroClass !== undefined
+      && candidate.heroClass !== null
+      && candidate.heroClass === criterion.heroClass;
+  }
+  // why: the remaining kind is 'team' (the union has exactly four members).
+  return candidate.team !== undefined
+    && candidate.team !== null
+    && candidate.team === criterion.team;
 }
 
 // ---------------------------------------------------------------------------

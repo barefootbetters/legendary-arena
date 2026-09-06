@@ -238,12 +238,12 @@ dead/solo,Solo,dead,excessive-violence,unsupported,,,,mercs-gotta-get-paid
 dead/stingray,Stingray,dead,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,deck-chairs-on-the-titanic|superpowered-swimsuit
 dead/stingray,Stingray,dead,excessive-violence,unsupported,,,,sting-of-the-stingrays-sting
 dims/howard-the-duck,Howard the Duck,dims,(unmarked),unmarked,,,,
-dims/jessica-jones,Jessica Jones,dims,investigate,unsupported,,,,alias-investigations|crack-the-case|uncover-hidden-evil
+dims/jessica-jones,Jessica Jones,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,alias-investigations|crack-the-case|uncover-hidden-evil
 dims/jessica-jones,Jessica Jones,dims,switcheroo,unsupported,,,,alias-investigations|alter-ego|crack-the-case
 dims/man-thing,Man-Thing,dims,teleport,unsupported,,,,form-from-ooze|travel-the-nexus-of-realities
-dims/ms-america,Ms. America,dims,investigate,unsupported,,,,search-parallel-dimensions
+dims/ms-america,Ms. America,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,search-parallel-dimensions
 dims/ms-america,Ms. America,dims,teleport,unsupported,,,,kick-a-hole-in-reality|search-parallel-dimensions|star-power
-dims/squirrel-girl,Squirrel Girl,dims,investigate,unsupported,,,,find-tiny-friends
+dims/squirrel-girl,Squirrel Girl,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,find-tiny-friends
 dims/squirrel-girl,Squirrel Girl,dims,switcheroo,unsupported,,,,find-tiny-friends|nut-punch|squirrelgility|unbeatable-squirrel-girl
 dkcy/angel,Angel,dkcy,(unmarked),unmarked,,,,
 dkcy/bishop,Bishop,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,whatever-the-cost
@@ -338,29 +338,29 @@ msis/wanda-vision,Wanda & Vision,msis,reveal-odd-draw,executable,WP-253,D-24024,
 msis/wanda-vision,Wanda & Vision,msis,sacrifice,unsupported,,,,let-go|we-have-to-destroy-it
 msmc/m,M,msmc,clone,unsupported,,,,interweaving-powers|penance-form|three-sisters-combined|uncover-family-secrets
 msmc/m,M,msmc,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,three-sisters-combined
-msmc/m,M,msmc,investigate,unsupported,,,,uncover-family-secrets
+msmc/m,M,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,uncover-family-secrets
 msmc/m,M,msmc,tactical-formation,unsupported,,,,interweaving-powers|three-sisters-combined
 msmc/m,M,msmc,when-recruited,unsupported,,,,interweaving-powers|penance-form|three-sisters-combined|uncover-family-secrets
 msmc/multiple-man,Multiple Man,msmc,clone,unsupported,,,,finding-myself|me-myself-and-i|perfect-match|reabsorb-duplicates
-msmc/multiple-man,Multiple Man,msmc,investigate,unsupported,,,,finding-myself
+msmc/multiple-man,Multiple Man,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,finding-myself
 msmc/multiple-man,Multiple Man,msmc,tactical-formation,unsupported,,,,me-myself-and-i|reabsorb-duplicates
-msmc/rictor,Rictor,msmc,investigate,unsupported,,,,trace-the-fault-lines|unearth-tectonic-power
+msmc/rictor,Rictor,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,trace-the-fault-lines|unearth-tectonic-power
 msmc/rictor,Rictor,msmc,shatter,unsupported,,,,massive-earthquake|underground-cave-in
 msmc/shatterstar,Shatterstar,msmc,clone,unsupported,,,,bioelectric-surge|gene-spliced-creation|gladiators-blades|strive-for-greatness
 msmc/shatterstar,Shatterstar,msmc,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gladiators-blades
 msmc/shatterstar,Shatterstar,msmc,shatter,unsupported,,,,gene-spliced-creation
 msmc/shatterstar,Shatterstar,msmc,tactical-formation,unsupported,,,,bioelectric-surge
 msmc/shatterstar,Shatterstar,msmc,when-recruited,unsupported,,,,bioelectric-surge|gene-spliced-creation|gladiators-blades|strive-for-greatness
-msmc/siryn,Siryn,msmc,investigate,unsupported,,,,echolocation
+msmc/siryn,Siryn,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,echolocation
 msmc/siryn,Siryn,msmc,shatter,unsupported,,,,hypnotic-call|splintering-shriek|three-octave-arpeggio
 msmc/siryn,Siryn,msmc,tactical-formation,unsupported,,,,three-octave-arpeggio
 msmc/stepford-cuckoos,Stepford Cuckoos,msmc,clone,unsupported,,,,find-mutants-with-cerebro|mind-wipe|shared-thoughts|telepathic-warning
-msmc/stepford-cuckoos,Stepford Cuckoos,msmc,investigate,unsupported,,,,find-mutants-with-cerebro|shared-thoughts
+msmc/stepford-cuckoos,Stepford Cuckoos,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,find-mutants-with-cerebro|shared-thoughts
 msmc/stepford-cuckoos,Stepford Cuckoos,msmc,tactical-formation,unsupported,,,,mind-wipe|shared-thoughts|telepathic-warning
 msmc/stepford-cuckoos,Stepford Cuckoos,msmc,when-recruited,unsupported,,,,find-mutants-with-cerebro|mind-wipe|shared-thoughts|telepathic-warning
-msmc/strong-guy,Strong Guy,msmc,investigate,unsupported,,,,treasure-hunt|x-factor-investigations
+msmc/strong-guy,Strong Guy,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,treasure-hunt|x-factor-investigations
 msmc/strong-guy,Strong Guy,msmc,tactical-formation,unsupported,,,,go-big
-msmc/warpath,Warpath,msmc,investigate,unsupported,,,,grim-tracker|superhuman-senses
+msmc/warpath,Warpath,msmc,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,grim-tracker|superhuman-senses
 msmc/warpath,Warpath,msmc,tactical-formation,unsupported,,,,dangerous-maneuver
 msp1/black-widow,Black Widow,msp1,defeat-with-bystander,executable,WP-486,D-24291,packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander,silent-sniper
 msp1/black-widow,Black Widow,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
@@ -382,11 +382,11 @@ nmut/warlock,Warlock,nmut,moonlight,unsupported,,,,analyze-planetary-rotation|na
 nmut/warlock,Warlock,nmut,sunlight,unsupported,,,,analyze-planetary-rotation|nanite-shapeshifter
 nmut/wolfsbane,Wolfsbane,nmut,moonlight,unsupported,,,,howl-at-the-moon|night-vision|nocturnal-savagery|wolf-out
 nmut/wolfsbane,Wolfsbane,nmut,sunlight,unsupported,,,,wolf-out
-noir/angel-noir,Angel Noir,noir,investigate,unsupported,,,,missing-person-case|multitalented
-noir/daredevil-noir,Daredevil Noir,noir,investigate,unsupported,,,,discover-the-bodies|listen-for-heartbeats
-noir/iron-man-noir,Iron Man Noir,noir,investigate,unsupported,,,,adventurers-assemble|mechanized-plate-mail
-noir/luke-cage-noir,Luke Cage Noir,noir,investigate,unsupported,,,,private-investigations|unbreakable-cage
-noir/spider-man-noir,Spider-Man Noir,noir,investigate,unsupported,,,,gumshoes-revolver|solve-the-crime|spider-totems-chosen
+noir/angel-noir,Angel Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,missing-person-case|multitalented
+noir/daredevil-noir,Daredevil Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,discover-the-bodies|listen-for-heartbeats
+noir/iron-man-noir,Iron Man Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,adventurers-assemble|mechanized-plate-mail
+noir/luke-cage-noir,Luke Cage Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,private-investigations|unbreakable-cage
+noir/spider-man-noir,Spider-Man Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,gumshoes-revolver|solve-the-crime|spider-totems-chosen
 pttr/black-cat,Black Cat,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,casual-bank-robbery|pickpocket
 pttr/moon-knight,Moon Knight,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,climbing-claws|lunar-communion
 pttr/scarlet-spider,Scarlet Spider,pttr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,flip-out|perfect-hunter
