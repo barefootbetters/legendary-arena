@@ -122,6 +122,7 @@ mindmap
         ["WP-367 ✅ Deck-exhaustion final turn → tie (engine; implements the rulebook end condition the engine previously ignored — the moment the Hero Deck or Villain Deck runs out, a final turn is declared and the game ends in a TIE rather than continuing. Adds finalTurn.logic + an endgame condition + a UIState projection so the client can warn; villainDeck.reveal reworked. Reserves D-24159/60/61; EC-397)"]
         ["WP-368 ✅ Final-turn warning banner (arena client; the client follow-on to WP-367 — surfaces the declared final turn in the match UI so a player is told the shared deck ran out and this is the last turn, rather than discovering it at the tie. Reads the UIState projection WP-367 added; no engine change. New pure prop-driven FinalTurnBanner.vue mounted in ArenaHud.vue, role=alert aria-live=assertive, v-if on the projected field; EC-687 / D-24162; done 2026-09-06)"]
         ["WP-654 ✅ Final-turn banner live play-surface mount (arena client; corrects the WP-368 surface miss — the banner was mounted only in ArenaHud.vue which the app renders only on the dev ?fixture= route, so a real match rendering PlayViewport→PlayDesktop/PlayMobile never showed it. Mounts FinalTurnBanner once at the PlayViewport shared root reading the store snapshot covering both surfaces, positioned by a scoped class on the child root so the pure component is unchanged; adds a committed final-turn UIState fixture so ?fixture=final-turn&play=1 renders it through the live path. EC-691 / D-24465; done 2026-09-06)"]
+        ["WP-655 ✅ Final-turn projection audience-filter pass-through (game engine; the root-cause fix behind WP-368/WP-654 — the banner never showed in a real match because UIState.finalTurn was populated in buildUIState WP-367 but never passed through filterUIStateForAudience, the field-by-field whitelist, so it was silently dropped at the audience boundary and never reached any client the D-12803 Board-Visible Field Rule failure mode. Adds the finalTurn pass-through as a public top-level field plus audience-filter tests; projection-only no finalStateHash re-pin, no client change. EC-692 / D-24466; done 2026-09-06)"]
 
       Beta-Launch Pillar
         ["WP-052 ✅ Player identity and replay ownership"]
@@ -800,7 +801,7 @@ mindmap
 | Pre-Planning System | 5/5 | — |
 | Post-Phase-6 Hygiene | 5/5 | — |
 | Phase 7 — Beta, Launch & PAR | 6/6 | — |
-| Scoring & PAR Pipeline | 8/8 | — |
+| Scoring & PAR Pipeline | 9/9 | — |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
@@ -837,7 +838,7 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **646/648 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
+| **Total** | **647/649 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 1 open |
 
 **Open / blocked WPs (derived from WORK_INDEX, 2):** WP-653 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
