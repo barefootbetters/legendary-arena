@@ -356,3 +356,81 @@ describe('buildMastermindState — base-face selection (WP-389 / D-24193)', () =
     assert.strictEqual(state.tacticsDeck.length, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-398 / D-24201 — the Hypno-Thrall zone is initialised at EVERY site
+// ---------------------------------------------------------------------------
+
+describe('buildMastermindState — hypnoThralls zone (WP-398 / D-24201)', () => {
+  // why: AC-5 — every MastermindState construction site must seed hypnoThralls
+  // to `[]`. A missed site leaves the zone undefined, and co2e Loki's strike
+  // would append to nothing. There are four sites: the computed path plus three
+  // degenerate early-returns (unreadable registry, unqualified id, unresolved
+  // slug). One test per site so a regression names the exact site that dropped it.
+
+  it('seeds `[]` on the computed path (site 1)', () => {
+    const registry = createMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/test-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.deepStrictEqual(state.hypnoThralls, [], 'computed path must seed hypnoThralls = []');
+  });
+
+  it('seeds `[]` when the registry does not satisfy the reader interface (site 2)', () => {
+    // why: a narrow mock with no listSets/getSet fails isMastermindRegistryReader,
+    // so buildMastermindState takes the first degenerate early-return.
+    const narrowRegistry = { listCards: () => [] };
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/test-mastermind' as CardExtId,
+      narrowRegistry,
+      context,
+      cardStats,
+    );
+
+    assert.deepStrictEqual(state.hypnoThralls, [], 'unreadable-registry early-return must seed hypnoThralls = []');
+  });
+
+  it('seeds `[]` when the mastermind id is not set-qualified (site 3)', () => {
+    // why: a bare slug with no "/" fails parseQualifiedId, so buildMastermindState
+    // takes the second degenerate early-return.
+    const registry = createMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'unqualified' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.deepStrictEqual(state.hypnoThralls, [], 'unqualified-id early-return must seed hypnoThralls = []');
+  });
+
+  it('seeds `[]` when the mastermind slug is absent from the set (site 4)', () => {
+    // why: a qualified id whose slug is not present in the loaded set resolves to
+    // null, so buildMastermindState takes the third degenerate early-return.
+    const registry = createMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/no-such-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    assert.deepStrictEqual(state.hypnoThralls, [], 'unresolved-slug early-return must seed hypnoThralls = []');
+  });
+});

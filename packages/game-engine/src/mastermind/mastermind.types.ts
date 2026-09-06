@@ -45,6 +45,26 @@ export interface MastermindState {
   /** Bystanders captured by mastermind strikes — append-only. */
   attachedBystanders: CardExtId[];
 
+  // why: WP-398 / D-24201 — Hypno-Thralls are the non-grey Heroes co2e Loki's
+  // Master Strike stacks next to Loki when a player cannot pay the Strength-Hero
+  // discard cost. Append-only, mirroring the D-15401 attachedBystanders
+  // precedent: no removal path, because no printed text ever returns a Thrall.
+  //
+  // why: a new G field is unavoidable here when Doom's Omens needed none. Omens
+  // are COUNTED (the strike counter already counts them, so WP-388 derived the
+  // total), whereas Thralls are SPECIFIC cards that leave a hand and must be
+  // identified individually and durably — no existing field holds them and they
+  // cannot be inferred.
+  //
+  // why: attaches to the MASTERMIND, not a player — the card stacks next to
+  // Loki — so it lives on MastermindState, not on playerZones.
+  //
+  // why: optional on the G type (the gameText precedent above) so existing test
+  // fixtures compile without modification; buildMastermindState always populates
+  // it `[]` at every construction site.
+  /** Non-grey Heroes stacked next to Loki as Hypno-Thralls — append-only. */
+  hypnoThralls?: CardExtId[];
+
   // why: setup-time snapshot of the mastermind base card's abilities text
   // from the registry. Projected through UIState so the play surface can
   // tell the player what happens on a Master Strike.

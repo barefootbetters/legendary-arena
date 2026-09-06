@@ -124,7 +124,14 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // (nothing heals, fights, or recruits in this moves:[] replay). Same
 // dependency-driven class as the WP-236 hasDrawnThisTurn / WP-282 faceDownCards
 // re-pins above. Pre-WP-379: 'be266d02'. Post-WP-379: 'ec64506a'.
-const PRE_WP080_HASH = 'ec64506a';
+// why: WP-398 hypnoThralls re-pin — MastermindState gained one field
+// (hypnoThralls, seeded [] at every construction site), which serializes into
+// this empty replay's final state and shifts the hash with NO behaviour change
+// (this moves:[] replay never fires a Loki strike; the sentinel mastermind is
+// core/dr-doom). The single, explained cause — a new G field, not a masked
+// regression. Same dependency-driven class as the re-pins above.
+// Pre-WP-398: 'ec64506a'. Post-WP-398: 'c3ee9eb4'.
+const PRE_WP080_HASH = 'c3ee9eb4';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.
