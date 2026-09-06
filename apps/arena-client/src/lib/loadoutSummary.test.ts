@@ -38,6 +38,7 @@ test('summarizeLoadout extracts names and counts from a well-formed document', (
     mastermind: 'Loki',
     scheme: 'Unleash the Power Cosmic',
     heroes: ['Spider-Man', 'Cyclops'],
+    heroAlternates: [],
     villainGroups: ['HYDRA'],
     henchmanGroups: ['Doombot'],
     playerCount: 3,
@@ -65,6 +66,7 @@ test('summarizeLoadout returns safe fallbacks for a missing setup block', () => 
     mastermind: 'Unknown',
     scheme: 'Unknown',
     heroes: [],
+    heroAlternates: [],
     villainGroups: [],
     henchmanGroups: [],
     playerCount: null,
@@ -82,6 +84,31 @@ test('summarizeLoadout does not throw on null / non-object / misshaped input', (
     assert.deepEqual(summary.heroes, []);
     assert.equal(summary.bystandersCount, null);
   }
+});
+
+test('summarizeLoadout reads setup.hero_alternates into heroAlternates (WP-652)', () => {
+  const summary = summarizeLoadout({
+    setup: {
+      ...WELL_FORMED_LAGN.setup,
+      hero_alternates: [
+        { id: 'lg/rogue', name: 'Rogue' },
+        { id: 'lg/gambit' }, // id fallback
+      ],
+    },
+  });
+  assert.deepEqual(summary.heroAlternates, ['Rogue', 'lg/gambit']);
+  // the played heroes are unaffected — bench is a sibling, not a subset
+  assert.deepEqual(summary.heroes, ['Spider-Man', 'Cyclops']);
+});
+
+test('summarizeLoadout returns an empty bench when hero_alternates is absent or misshaped', () => {
+  // absent (WELL_FORMED has none)
+  assert.deepEqual(summarizeLoadout(WELL_FORMED_LAGN).heroAlternates, []);
+  // misshaped (not an array) — safe fallback, never throws
+  assert.deepEqual(
+    summarizeLoadout({ setup: { hero_alternates: 'nope' } }).heroAlternates,
+    [],
+  );
 });
 
 test('summarizeLoadout ignores misshaped array entries and negative/non-integer counts', () => {

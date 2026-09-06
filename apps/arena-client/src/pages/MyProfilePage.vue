@@ -1503,7 +1503,14 @@ export default defineComponent({
               </span>
               <span class="profile-loadout-summary-line">
                 {{ summarizeLoadout(row.view.lagn).heroes.length }} heroes ·
-                {{ summarizeLoadout(row.view.lagn).villainGroups.length }} villain groups
+                {{ summarizeLoadout(row.view.lagn).villainGroups.length }} villain groups<!--
+                why: WP-652 — show the reserve count ONLY when the loadout has a
+                bench, in a distinct accent, so an empty bench reads exactly as
+                today and reserves are never conflated with played heroes.
+             --><template v-if="summarizeLoadout(row.view.lagn).heroAlternates.length > 0"> · <span
+                  class="profile-loadout-reserve"
+                  :data-testid="`my-profile-loadout-reserve-${row.view.id}`"
+                >{{ summarizeLoadout(row.view.lagn).heroAlternates.length }} in reserve</span></template>
               </span>
             </p>
 
@@ -2195,6 +2202,13 @@ export default defineComponent({
   gap: 0.15rem;
   font-size: 0.85rem;
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* why: WP-652 — the reserve-count indicator carries a warm accent so it reads
+   as reserves, distinct from the played-hero count beside it. */
+.profile-loadout-reserve {
+  color: #8a6d1f;
+  font-weight: 600;
 }
 
 .profile-loadout-controls {
