@@ -106,6 +106,7 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       display: { extId: 'core/dr-doom', name: 'Dr. Doom', imageUrl: '', cost: null },
       attachedBystanders: [],
       strikePile: [],
+      hypnoThralls: [],
     },
     scheme: {
       id: 'core/midtown-bank-robbery',
@@ -250,6 +251,7 @@ describe('mutation middleware integration', () => {
         display: { extId: 'core/dr-doom', name: 'Dr. Doom', imageUrl: '', cost: null },
         attachedBystanders: [],
         strikePile: [],
+        hypnoThralls: [],
       },
     });
     stub._subscribers[0]!.callback({ G: secondFrame });

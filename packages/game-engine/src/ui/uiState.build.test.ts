@@ -821,6 +821,72 @@ describe('buildUIState — mastermind.attachedBystanders projection (WP-154)', (
   });
 });
 
+describe('buildUIState — mastermind.hypnoThralls projection (WP-399 / D-24202)', () => {
+  it('projects mastermind.hypnoThralls in order with correct extId values (AC-1)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const thrallA = 'core/black-widow/strike#0' as CardExtId;
+    const thrallB = 'core/captain-america/strike#0' as CardExtId;
+    gameState.mastermind.hypnoThralls = [thrallA, thrallB];
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.equal(ui.mastermind.hypnoThralls.length, 2, 'projected length must match source');
+    assert.equal(ui.mastermind.hypnoThralls[0]!.extId, thrallA, 'entry 0 preserves source order');
+    assert.equal(ui.mastermind.hypnoThralls[1]!.extId, thrallB, 'entry 1 preserves source order');
+  });
+
+  it('empty hypnoThralls projects as an empty array (AC-2)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.mastermind.hypnoThralls = [];
+
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.mastermind.hypnoThralls.length, 0, 'empty source projects []');
+  });
+
+  it('an absent (undefined) zone projects as an empty array — never throws (AC-2)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    // why: hypnoThralls is optional on G (WP-398 gameText precedent); a legacy
+    // state may omit it. The projection's `?? []` guard must not throw.
+    delete (gameState.mastermind as { hypnoThralls?: CardExtId[] }).hypnoThralls;
+
+    const ui = buildUIState(gameState, mockCtx);
+    assert.equal(ui.mastermind.hypnoThralls.length, 0, 'absent zone projects []');
+  });
+
+  it('an id with no cardDisplayData entry degrades exactly as attachedBystanders (AC-3)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    const unresolvable = 'set/not-in-display-data/strike#0' as CardExtId;
+    gameState.mastermind.hypnoThralls = [unresolvable];
+    gameState.mastermind.attachedBystanders = [unresolvable];
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    // why: AC-3 — the Thrall projection reuses the bystander display-entry path,
+    // so an unresolvable id resolves identically (no `<unknown>` regression, no
+    // parallel resolver). Asserting the two fallbacks are equal is the
+    // non-vacuous proof that one resolver serves both.
+    assert.equal(ui.mastermind.hypnoThralls.length, 1);
+    assert.equal(ui.mastermind.hypnoThralls[0]!.extId, unresolvable, 'extId preserved on fallback');
+    assert.deepStrictEqual(
+      ui.mastermind.hypnoThralls[0]!.display,
+      ui.mastermind.attachedBystanders[0]!.display,
+      'Thrall fallback display is identical to the bystander fallback for the same id',
+    );
+  });
+
+  it('projected array is aliasing-safe (new array reference) (AC-6)', () => {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.mastermind.hypnoThralls = ['core/black-widow/strike#0' as CardExtId];
+
+    const ui = buildUIState(gameState, mockCtx);
+    assert.notStrictEqual(
+      ui.mastermind.hypnoThralls,
+      gameState.mastermind.hypnoThralls,
+      'projected array must not alias the G source',
+    );
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-156 — piles.horrorsCount projection
 // ---------------------------------------------------------------------------

@@ -59,6 +59,7 @@ function makeUIState(overrides?: Partial<UIState>): UIState {
       display: { extId: 'core/dr-doom', name: 'Dr. Doom', imageUrl: '', cost: null },
       attachedBystanders: [],
       strikePile: [],
+      hypnoThralls: [],
     },
     scheme: {
       id: 'core/midtown-bank-robbery',
@@ -221,6 +222,7 @@ describe('detectPlayerAffectingMutations', () => {
         display: { extId: 'core/dr-doom', name: 'Dr. Doom', imageUrl: '', cost: null },
         attachedBystanders: [],
         strikePile: [],
+        hypnoThralls: [],
       },
     });
 
@@ -268,6 +270,7 @@ describe('detectPlayerAffectingMutations', () => {
         display: { extId: 'core/dr-doom', name: 'Dr. Doom', imageUrl: '', cost: null },
         attachedBystanders: [],
         strikePile: [],
+        hypnoThralls: [],
       },
     });
 
@@ -342,6 +345,7 @@ describe('detectPlayerAffectingMutations', () => {
           { extId: 'core/bystander', display: { extId: 'core/bystander', name: 'Bystander', imageUrl: '', cost: null } },
         ],
         strikePile: [],
+        hypnoThralls: [],
       },
     });
 

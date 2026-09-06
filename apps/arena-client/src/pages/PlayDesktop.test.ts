@@ -94,6 +94,7 @@ function snapshot(): UIState {
       },
       attachedBystanders: [],
       strikePile: [],
+      hypnoThralls: [],
     },
     scheme: {
       id: 'core/capture-five-bystanders',

@@ -331,8 +331,38 @@ describe('filterUIStateForAudience — WP-128 redaction matrix', () => {
       assert.equal(typeof result.koPile.count, 'number');
       assert.ok(Array.isArray(result.mastermind.attachedBystanders));
       assert.ok(Array.isArray(result.mastermind.strikePile));
+      // why: WP-399 / D-24202 — Hypno-Thralls are public shared-board data and
+      // must pass through the field-by-field whitelist for every audience.
+      assert.ok(Array.isArray(result.mastermind.hypnoThralls));
       assert.ok(Array.isArray(result.scheme.twistPile));
       assert.ok(Array.isArray(result.city.escapedPile));
+    }
+  });
+
+  it('WP-399 mastermind.hypnoThralls survives the whitelist with content, de-aliased, for every audience', () => {
+    // why: the Board-Visible Field Rule failure mode is a field populated in
+    // buildUIState but dropped at the filter (EC-206 scheme.display / gameText).
+    // Seed a populated zone and assert it survives non-empty — a plain
+    // Array.isArray check would pass even if the filter emitted a fresh [].
+    const uiState = createWp128TestUIState();
+    uiState.mastermind.hypnoThralls = [
+      { extId: 'core/black-widow/strike#0', display: { extId: 'core/black-widow/strike#0', name: 'Strike', imageUrl: '', cost: null } },
+    ];
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.mastermind.hypnoThralls.length, 1, 'the Thrall survives the whitelist');
+      assert.equal(result.mastermind.hypnoThralls[0]!.extId, 'core/black-widow/strike#0');
+      assert.notStrictEqual(
+        result.mastermind.hypnoThralls,
+        uiState.mastermind.hypnoThralls,
+        'filtered array must be a fresh copy, not the source reference',
+      );
+      assert.notStrictEqual(
+        result.mastermind.hypnoThralls[0],
+        uiState.mastermind.hypnoThralls[0],
+        'each entry is deep-copied (no aliasing)',
+      );
     }
   });
 

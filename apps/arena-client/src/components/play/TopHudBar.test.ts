@@ -34,6 +34,7 @@ function fixture(overrides: Partial<UIState['game']> = {}): UIState {
       },
       attachedBystanders: [],
       strikePile: [],
+      hypnoThralls: [],
     },
     scheme: {
       id: 'core/capture-five-bystanders',
