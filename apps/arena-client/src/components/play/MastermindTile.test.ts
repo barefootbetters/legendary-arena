@@ -36,6 +36,7 @@ function mastermindLive(over: Partial<UIMastermindState> = {}): UIMastermindStat
     },
     attachedBystanders: [],
     strikePile: [],
+    hypnoThralls: [],
     ...over,
   };
 }
@@ -221,6 +222,69 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     assert.equal(
       wrapper.find('[data-testid="play-mastermind-bystanders-list"]').exists(),
       false,
+    );
+  });
+
+  test('renders NO Hypno-Thralls group when the zone is empty (WP-399 AC-2)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ hypnoThralls: [] }),
+        currentStage: 'main',
+        economy: economy({ availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    // why: AC-2 — an empty zone renders nothing, matching the bystander
+    // non-empty guard (no always-on empty group as board noise).
+    assert.equal(
+      wrapper.find('[data-testid="play-mastermind-hypno-thralls"]').exists(),
+      false,
+    );
+  });
+
+  test('renders Hypno-Thralls face-up by name/image, in append order (WP-399 AC-4)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({
+          hypnoThralls: [
+            {
+              extId: 'co2e/wolverine/strike#0',
+              display: {
+                extId: 'co2e/wolverine/strike#0',
+                name: 'Wolverine',
+                imageUrl: 'https://images.legendary-arena.com/co2e-wolverine.png',
+                cost: 3,
+              },
+            },
+            {
+              extId: 'co2e/storm/strike#0',
+              display: {
+                extId: 'co2e/storm/strike#0',
+                name: 'Storm',
+                imageUrl: 'https://images.legendary-arena.com/co2e-storm.png',
+                cost: 5,
+              },
+            },
+          ],
+        }),
+        currentStage: 'main',
+        economy: economy({ availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const group = wrapper.find('[data-testid="play-mastermind-hypno-thralls"]');
+    assert.equal(group.exists(), true, 'the group renders when the zone is non-empty');
+    const items = wrapper.findAll('[data-testid="play-mastermind-hypno-thrall"]');
+    assert.equal(items.length, 2, 'one item per stacked Thrall');
+    // why: AC-4 — Thralls are face-up Heroes, so their names ARE shown (unlike
+    // the count-only face-down bystander badge). Append order preserved.
+    assert.match(group.text(), /Wolverine/);
+    assert.match(group.text(), /Storm/);
+    assert.ok(
+      group.text().indexOf('Wolverine') < group.text().indexOf('Storm'),
+      'Thralls render in engine append order, not sorted',
     );
   });
 });

@@ -20,6 +20,11 @@ import type { SubmitMove } from './uiMoveName.types';
  * are the mastermind's own captures, never the top-level city-villain
  * `G.attachedBystanders` (which render on the city row).
  *
+ * `mastermind.hypnoThralls` (WP-399 / D-24202) is the non-grey Heroes co2e
+ * Loki's Master Strike stacks next to Loki (the D-24201 zone). Unlike the
+ * face-down bystanders, Thralls are face-up Heroes, so they render by
+ * name/image via CardTile, shown only when non-empty.
+ *
  * Cost gating: the mastermind is fightable when `economy.availableAttack
  * >= mastermind.display.cost`. Disabled-state tooltip precedence locked at
  * EC-132 §3 (stage → resource → structural; "all tactics defeated" is the
@@ -157,6 +162,31 @@ export default defineComponent({
     >
       {{ mastermind.attachedBystanders.length }} captured
     </span>
+    <!-- why: WP-399 / D-24202 — Hypno-Thralls are the non-grey Heroes co2e
+         Loki's Master Strike stacks next to Loki (the D-24201 zone made
+         visible). Unlike the face-down captured bystanders above (a count-only
+         badge), Thralls are face-up Heroes, so they render by name/image via
+         CardTile. Shown only when the mastermind holds some, matching the
+         bystander non-empty guard. Append order is preserved from the engine
+         projection — no client-side sort. -->
+    <div
+      v-if="mastermind.hypnoThralls.length > 0"
+      class="mastermind-thralls"
+      data-testid="play-mastermind-hypno-thralls"
+      :aria-label="mastermind.hypnoThralls.length + ' Hypno-Thralls stacked next to Loki'"
+    >
+      <span class="mastermind-thralls-label">Hypno-Thralls</span>
+      <ul class="mastermind-thralls-list">
+        <li
+          v-for="(thrall, index) in mastermind.hypnoThralls"
+          :key="thrall.extId + '-' + index"
+          class="mastermind-thralls-item"
+          data-testid="play-mastermind-hypno-thrall"
+        >
+          <CardTile :display="thrall.display" size="sm" :show-label="true" />
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
@@ -204,5 +234,34 @@ export default defineComponent({
   align-self: flex-start;
   padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
+}
+
+/* why: WP-399 — Hypno-Thralls are face-up Heroes stacked next to Loki, so they
+   render as a small named/imaged group (contrast the face-down bystander
+   count badge above). */
+.mastermind-thralls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-self: stretch;
+}
+
+.mastermind-thralls-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.mastermind-thralls-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mastermind-thralls-item {
+  display: flex;
 }
 </style>

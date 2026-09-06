@@ -550,6 +550,15 @@ export interface UIMastermindState {
   display: UICardDisplay;
   attachedBystanders: UIDisplayEntry[];
   strikePile: UIDisplayEntry[];
+  // why: WP-399 / D-24202 — Hypno-Thralls are the non-grey Heroes co2e Loki's
+  // Master Strike stacks next to Loki (the D-24201 `G.mastermind.hypnoThralls`
+  // zone). A sibling to `attachedBystanders` per D-12805 / D-12806: the engine
+  // owns the zone and the client only renders this projection, resolved through
+  // the same display-entry path so an unresolvable id degrades identically.
+  // Required (never optional) so `vue-tsc` catches every UIMastermindState
+  // constructor that must backfill it — the only gate that does, since
+  // vite/esbuild and tsx do not typecheck SFCs.
+  hypnoThralls: UIDisplayEntry[];
   gameText?: readonly string[];
 }
 

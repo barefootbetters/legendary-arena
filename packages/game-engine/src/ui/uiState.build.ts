@@ -791,6 +791,15 @@ export function buildUIState(
     gameState.mastermind.strikePile,
     gameState,
   );
+  // why: WP-399 / D-24202 — project the D-24201 Hypno-Thrall zone through the
+  // SAME buildDisplayEntries path as attachedBystanders / strikePile above, so
+  // an id missing from cardDisplayData degrades identically (no parallel
+  // resolver, no `<unknown>` placeholder). `?? []` because hypnoThralls is
+  // optional on G (the gameText precedent); an absent zone projects `[]`.
+  const mastermindHypnoThralls: UIDisplayEntry[] = buildDisplayEntries(
+    gameState.mastermind.hypnoThralls ?? [],
+    gameState,
+  );
   const mastermind = {
     id: gameState.mastermind.id,
     tacticsRemaining: gameState.mastermind.tacticsDeck.length,
@@ -798,6 +807,7 @@ export function buildUIState(
     display: resolveDisplay(gameState.mastermind.baseCardId, gameState),
     attachedBystanders: mastermindAttachedBystanders,
     strikePile: mastermindStrikePile,
+    hypnoThralls: mastermindHypnoThralls,
     gameText: gameState.mastermind.gameText ?? [],
   };
 

@@ -87,6 +87,10 @@ export function makeUIMastermindState(
     display: UNKNOWN_DISPLAY_PLACEHOLDER,
     attachedBystanders: [],
     strikePile: [],
+    // why: WP-399 / D-24202 — hypnoThralls is a required UIDisplayEntry[] on
+    // UIMastermindState; default empty like attachedBystanders / strikePile so
+    // every fixture built through this helper carries the field.
+    hypnoThralls: [],
     ...overrides,
   };
 }

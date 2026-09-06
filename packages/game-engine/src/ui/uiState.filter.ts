@@ -467,6 +467,14 @@ export function filterUIStateForAudience(
         uiState.mastermind.attachedBystanders,
       ),
       strikePile: deepCopyDisplayEntries(uiState.mastermind.strikePile),
+      // why: WP-399 / D-24202 — Hypno-Thralls are public shared-board
+      // information (like attachedBystanders / strikePile above), so they must
+      // survive this field-by-field whitelist. It is a REQUIRED field, but the
+      // Board-Visible Field Rule still applies: a field populated in
+      // buildUIState but not passed through here is silently dropped at the
+      // filter (the EC-206 scheme.display / gameText failure mode). Fresh
+      // deep-copied entries prevent aliasing with the input UIState.
+      hypnoThralls: deepCopyDisplayEntries(uiState.mastermind.hypnoThralls),
       // why: EC-206 — the mastermind's Master-Strike / special-rules text is
       // public shared-board information (like mastermind.display above) and
       // must survive this whitelist. It is optional in UIMastermindState, so

@@ -89,6 +89,7 @@ function sampleUiState(): UIState {
       },
       attachedBystanders: [],
       strikePile: [],
+      hypnoThralls: [],
     },
     scheme: { id: 'core/scheme', twistCount: 0, twistPile: [] },
     economy: {

@@ -560,6 +560,9 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
       },
       attachedBystanders: [],
       strikePile: [],
+      // why: WP-399 / D-24202 — hypnoThralls is a required UIDisplayEntry[]
+      // sibling of attachedBystanders / strikePile; the drift keyset below pins it.
+      hypnoThralls: [],
       gameText: ['Master Strike: Each player reveals a Hero or discards.'],
     };
 
@@ -567,6 +570,7 @@ describe('UIState type drift (WP-111 / EC-118)', () => {
       'attachedBystanders',
       'display',
       'gameText',
+      'hypnoThralls',
       'id',
       'strikePile',
       'tacticsDefeated',

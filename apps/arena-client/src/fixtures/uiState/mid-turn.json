@@ -131,7 +131,8 @@
       "cost": null
     },
     "attachedBystanders": [],
-    "strikePile": []
+    "strikePile": [],
+    "hypnoThralls": []
   },
   "scheme": {
     "id": "scheme-midtown-bank-robbery",
