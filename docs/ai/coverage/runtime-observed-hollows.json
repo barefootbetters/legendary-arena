@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 31,
-    "totalObservations": 2227,
+    "totalObservations": 2144,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2227
+      "parse-unrecognized": 2144
     }
   },
   "byMechanic": {
@@ -222,12 +222,12 @@
       ]
     },
     "clone": {
-      "hitCount": 73,
+      "hitCount": 78,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 73
+        "parse-unrecognized": 78
       },
       "examples": [
         {
@@ -237,13 +237,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/m/interweaving-powers#0",
+          "cardId": "msmc/m/interweaving-powers#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/m/interweaving-powers#0",
+          "cardId": "msmc/m/interweaving-powers#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -550,12 +550,12 @@
       ]
     },
     "investigate": {
-      "hitCount": 293,
+      "hitCount": 194,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 293
+        "parse-unrecognized": 194
       },
       "examples": [
         {
@@ -565,25 +565,25 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "dims/ms-america/search-parallel-dimensions#3",
+          "cardId": "dims/ms-america/search-parallel-dimensions#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/ms-america/search-parallel-dimensions#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/ms-america/search-parallel-dimensions#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
           "cardId": "dims/ms-america/search-parallel-dimensions#3",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "dims/ms-america/search-parallel-dimensions#4",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "dims/ms-america/search-parallel-dimensions#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -895,12 +895,12 @@
       ]
     },
     "shatter": {
-      "hitCount": 8,
+      "hitCount": 14,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 8
+        "parse-unrecognized": 14
       },
       "examples": [
         {
@@ -916,7 +916,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/rictor/underground-cave-in#2",
+          "cardId": "msmc/rictor/underground-cave-in#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1100,12 +1100,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 171,
+      "hitCount": 176,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 171
+        "parse-unrecognized": 176
       },
       "examples": [
         {

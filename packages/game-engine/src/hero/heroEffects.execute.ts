@@ -19,8 +19,8 @@ import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
-import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
-import { getHooksForCard } from '../rules/heroAbility.types.js';
+import type { HeroAbilityHook, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
+import { getHooksForCard, investigateCandidateMatches } from '../rules/heroAbility.types.js';
 import type { EffectExecutionReason, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
@@ -104,6 +104,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'recruit-as-attack',
   // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."; has a HERO_EFFECT_HANDLERS entry (heroEffectStealAbilities) that runs the deterministic discard-then-copy phases, so it belongs here.
   'steal-abilities',
+  // why: WP-564 / D-24373 — "Investigate for <criterion>" (static-criterion + draw); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectInvestigate) that looks at the top N, draws the
+  // first matching card, and bottoms the rest, so it belongs here.
+  'investigate',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -265,6 +269,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // and copies each discarded card); the target set is computed from G at play time, so the
   // magnitude pre-gate must not drop it, or the handler never fires (the silent-no-op defect).
   'steal-abilities',
+  // why: WP-564 / D-24373 — investigate carries no magnitude (the look count and criterion
+  // ride dedicated descriptor fields, not the magnitude); the magnitude pre-gate must not
+  // drop it, or the handler never fires.
+  'investigate',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2526,6 +2534,183 @@ function heroEffectRecruitAsAttack(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Investigate handler (static-criterion + draw subset; WP-564 / D-24373)
+// ---------------------------------------------------------------------------
+
+/**
+ * Investigate handler — looks at the top `investigateLookCount` (default 2) cards of the
+ * acting player's own deck, draws the FIRST card in look order that matches the static
+ * `investigateCriteria`, and puts the non-selected looked-at cards on the BOTTOM of the
+ * deck in look order. A deck shorter than the look count reshuffles the discard via the
+ * shared `reshuffleDiscardIntoDeck` helper first (D-24285). Deterministic — first-match,
+ * no `ctx.random` in selection, no pending choice. All three outcomes are narrated.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Context (narrowed to ShuffleProvider for the short-deck reshuffle).
+ * @param playerID - Active player ID.
+ * @param _cardId - The played hero card's CardExtId (unused; investigate reads the deck).
+ * @param effect - The investigate effect descriptor (criteria + look count).
+ */
+function heroEffectInvestigate(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+  const criteria = effect.investigateCriteria ?? [];
+  // why: WP-564 / D-24373 — default 2 (the printed look count); the descriptor field lets
+  // the deferred look-at-three modifier set it without reshaping the effect.
+  const lookCount = effect.investigateLookCount ?? INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT;
+  // why: defensive — the parser only emits an investigate descriptor with a resolved
+  // criterion, so an empty criteria list is unreachable in practice; no-op if it happens.
+  if (criteria.length === 0) {
+    return;
+  }
+  const criterionText = describeInvestigateCriteria(criteria);
+
+  // why: D-24285 — looking at the top of a deck shorter than the look count reshuffles the
+  // discard into the deck first (the standard Legendary rule that a look/reveal, like a
+  // draw, reshuffles an exhausted deck mid-effect), via the SHARED helper — never a second
+  // reshuffle path. ctx narrows to ShuffleProvider exactly as the draw / reveal handlers do.
+  if (playerZones.deck.length < lookCount) {
+    reshuffleDiscardIntoDeck(playerZones, ctx as ShuffleProvider);
+  }
+
+  const windowSize = Math.min(lookCount, playerZones.deck.length);
+  if (windowSize === 0) {
+    // why: an empty deck (and discard) is a legal, narrated outcome — nothing to look at.
+    pushLog(
+      G,
+      `Player ${playerID} Investigated for ${criterionText} but had no cards to look at.`,
+      'blocked',
+    );
+    return;
+  }
+
+  // why: look order is top-first; the FIRST matching card (deterministic) is drawn.
+  const lookWindow = playerZones.deck.slice(0, windowSize);
+  let drawnCardId: CardExtId | undefined;
+  for (const candidateId of lookWindow) {
+    if (investigateCardMatchesCriteria(G, candidateId, criteria)) {
+      drawnCardId = candidateId;
+      break;
+    }
+  }
+
+  if (drawnCardId !== undefined) {
+    const moveResult = moveCardFromZone(playerZones.deck, playerZones.hand, drawnCardId);
+    playerZones.deck = moveResult.from;
+    playerZones.hand = moveResult.to;
+  }
+
+  // why: WP-564 / D-24373 — put the non-selected looked-at cards on the BOTTOM in look
+  // order (look order preserved so replay is reproducible). After removing the drawn card
+  // (if any) from the deck, the top `nonDrawnCount` cards are exactly the non-drawn
+  // looked-at cards in look order; move that block to the bottom in one splice.
+  const nonDrawnCount = windowSize - (drawnCardId !== undefined ? 1 : 0);
+  const toBottom = playerZones.deck.slice(0, nonDrawnCount);
+  const rest = playerZones.deck.slice(nonDrawnCount);
+  playerZones.deck = [...rest, ...toBottom];
+
+  if (drawnCardId !== undefined) {
+    pushLog(
+      G,
+      `Player ${playerID} Investigated for ${criterionText} and drew ${formatCardRef(G.cardDisplayData, drawnCardId)}.`,
+      'applied',
+      drawnCardId, // why: WP-438 — the drawn card, so the diagnostic attributes the reveal to it.
+    );
+  } else {
+    // why: naming the criterion (not a bare "nothing happened") is the WP-550 fidelity
+    // precedent — a zero-match draw with no context reads as a broken card.
+    pushLog(
+      G,
+      `Player ${playerID} Investigated for ${criterionText} but found no matching card in the top ${windowSize}; put ${windowSize === 1 ? 'it' : 'them'} on the bottom.`,
+      'blocked',
+    );
+  }
+}
+
+// why: WP-564 / D-24373 — the printed default look count, mirrored here from the setup
+// parser's INVESTIGATE_DEFAULT_LOOK_COUNT (duplicate-first — two files, one value; a third
+// appearance would justify extracting a shared const).
+const INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT = 2;
+
+/**
+ * Returns whether a deck card matches an investigate criterion list, projecting the card's
+ * runtime facts from `G.cardStats` (icon / cost) and `G.cardTraits` (hero-class / team).
+ * A card with no stat / trait entry yields `undefined` for the missing facts, so the
+ * criteria needing them do not match (no draw on a fabricated 0) — mirroring the reveal
+ * handler's skip-a-no-stats-card posture.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The deck card to evaluate.
+ * @param criteria - The effect's static criteria (INCLUSIVE OR).
+ * @returns Whether the card satisfies at least one criterion.
+ */
+function investigateCardMatchesCriteria(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  criteria: InvestigateCriterion[],
+): boolean {
+  const stats = G.cardStats[cardId];
+  const traits = G.cardTraits ? G.cardTraits[cardId] : undefined;
+  const candidate: InvestigateCandidate = {
+    attack: stats?.attack,
+    recruit: stats?.recruit,
+    cost: stats?.cost,
+    heroClass: traits?.heroClass,
+    team: traits?.team,
+  };
+  return investigateCandidateMatches(criteria, candidate);
+}
+
+/**
+ * Builds the player-facing criterion phrase for an investigate log line (e.g. "a card with
+ * an attack icon", "a card that costs 3 or less", "a strength card or an x-factor-
+ * investigations card"). Multiple criteria are joined with " or " (the printed inclusive OR).
+ *
+ * @param criteria - The effect's static criteria.
+ * @returns The criterion phrase for the log line.
+ */
+function describeInvestigateCriteria(criteria: InvestigateCriterion[]): string {
+  const parts: string[] = [];
+  for (const criterion of criteria) {
+    parts.push(describeInvestigateCriterion(criterion));
+  }
+  return parts.join(' or ');
+}
+
+/**
+ * Describes a single investigate criterion in player-facing English.
+ *
+ * @param criterion - The criterion to describe.
+ * @returns The criterion phrase.
+ */
+function describeInvestigateCriterion(criterion: InvestigateCriterion): string {
+  if (criterion.kind === 'icon') {
+    return criterion.icon === 'attack' ? 'a card with an attack icon' : 'a card with a recruit icon';
+  }
+  if (criterion.kind === 'cost') {
+    if (criterion.comparison === 'eq') {
+      return `a card that costs ${criterion.value}`;
+    }
+    if (criterion.comparison === 'lte') {
+      return `a card that costs ${criterion.value} or less`;
+    }
+    return `a card that costs ${criterion.value} or more`;
+  }
+  if (criterion.kind === 'hero-class') {
+    return `a ${criterion.heroClass} card`;
+  }
+  return `a ${criterion.team} card`;
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -2564,6 +2749,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // then the Steal Abilities player copies each = economy + reentrant executeHeroEffects
   // re-fire; recursion guard excludes a discarded steal-abilities OR copy-powers).
   'steal-abilities': heroEffectStealAbilities,
+  // why: WP-564 / D-24373 — "Investigate for <criterion>" (static-criterion + draw): looks
+  // at the top N, draws the first matching card in look order, bottoms the rest.
+  investigate: heroEffectInvestigate,
 };
 
 // ---------------------------------------------------------------------------

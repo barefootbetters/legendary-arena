@@ -467,3 +467,149 @@ describe('buildHeroAbilityHooks — recruit-threshold marker → condition (Surg
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
+// ---------------------------------------------------------------------------
+
+/** Finds the single investigate effect on the built hooks (or undefined). */
+function findInvestigateEffect(hooks: ReturnType<typeof buildHeroAbilityHooks>) {
+  for (const hook of hooks) {
+    for (const effect of hook.effects ?? []) {
+      if (effect.type === 'investigate') {
+        return effect;
+      }
+    }
+  }
+  return undefined;
+}
+
+describe('buildHeroAbilityHooks — investigate static criterion (WP-564 / D-24373)', () => {
+  it('parses the icon:attack criterion (Alias Investigations) with look count 2', () => {
+    const registry = makeRegistry('dims', 'jessica-jones', [
+      { slug: 'alias-investigations', abilities: ['[keyword:Investigate] for a card with an [icon:attack] icon.'] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('dims/jessica-jones')));
+    assert.ok(effect !== undefined, 'an investigate effect is emitted');
+    assert.equal(effect!.investigateLookCount, 2, 'the printed default look count is 2');
+    assert.deepEqual(effect!.investigateCriteria, [{ kind: 'icon', icon: 'attack' }]);
+  });
+
+  it('does NOT emit a phantom attack keyword/effect for the icon criterion', () => {
+    const registry = makeRegistry('dims', 'jessica-jones', [
+      { slug: 'alias-investigations', abilities: ['[keyword:Investigate] for a card with an [icon:attack] icon.'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('dims/jessica-jones'))[0]!;
+    assert.ok(!hook.keywords.includes('attack'), 'the criterion [icon:attack] must not add an attack keyword');
+    assert.ok(hook.keywords.includes('investigate'), 'the investigate keyword is recorded');
+    assert.ok((hook.effects ?? []).every((effect) => effect.type !== 'attack'), 'no phantom attack effect is emitted');
+  });
+
+  it('parses the cost-or-less criterion (Find Tiny Friends)', () => {
+    const registry = makeRegistry('dims', 'squirrel-girl', [
+      { slug: 'find-tiny-friends', abilities: ['[keyword:Investigate] for a card that costs 3 or less.'] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('dims/squirrel-girl')));
+    assert.deepEqual(effect?.investigateCriteria, [{ kind: 'cost', comparison: 'lte', value: 3 }]);
+  });
+
+  it('parses the exact-cost criterion (Uncover Family Secrets)', () => {
+    const registry = makeRegistry('msmc', 'm', [
+      { slug: 'uncover-family-secrets', abilities: ['[keyword:Investigate] for a card that costs 3.'] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('msmc/m')));
+    assert.deepEqual(effect?.investigateCriteria, [{ kind: 'cost', comparison: 'eq', value: 3 }]);
+  });
+
+  it('parses the cost-or-more criterion (Private Investigations)', () => {
+    const registry = makeRegistry('noir', 'luke-cage-noir', [
+      { slug: 'private-investigations', abilities: ['[keyword:Investigate] for a card that costs 4 or more.'] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('noir/luke-cage-noir')));
+    assert.deepEqual(effect?.investigateCriteria, [{ kind: 'cost', comparison: 'gte', value: 4 }]);
+  });
+
+  it('parses the leading hero-class criterion (Mechanized Plate-Mail) with no gate condition', () => {
+    const registry = makeRegistry('noir', 'iron-man-noir', [
+      { slug: 'mechanized-plate-mail', abilities: ['[keyword:Investigate] for a [hc:tech] card.'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('noir/iron-man-noir'));
+    assert.deepEqual(findInvestigateEffect(hooks)?.investigateCriteria, [{ kind: 'hero-class', heroClass: 'tech' }]);
+    // why: the criterion [hc:tech] must NOT become a heroClassMatch play-gate.
+    assert.ok(!hooks[0]!.keywords.includes('conditional'), 'the criterion [hc:tech] must not add a conditional gate');
+    assert.equal(hooks[0]!.conditions, undefined, 'no gate conditions on a resolved investigate line');
+  });
+
+  it('parses the [hc] and/or [team] criterion as inclusive OR (X-Factor Investigations)', () => {
+    const registry = makeRegistry('msmc', 'strong-guy', [
+      { slug: 'x-factor-investigations', abilities: ["[keyword:Investigate] for a card that's [hc:strength] and/or [team:x-factor-investigations]."] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('msmc/strong-guy'));
+    assert.deepEqual(findInvestigateEffect(hooks)?.investigateCriteria, [
+      { kind: 'hero-class', heroClass: 'strength' },
+      { kind: 'team', team: 'x-factor-investigations' },
+    ]);
+    assert.equal(hooks[0]!.conditions, undefined, 'no gate conditions from the criterion tokens');
+  });
+
+  it('parses the [hc] and/or [hc] criterion as inclusive OR (Unearth Tectonic Power)', () => {
+    const registry = makeRegistry('msmc', 'rictor', [
+      { slug: 'unearth-tectonic-power', abilities: ["[keyword:Investigate] for a card that's [hc:ranged] and/or [hc:instinct]."] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('msmc/rictor')));
+    assert.deepEqual(effect?.investigateCriteria, [
+      { kind: 'hero-class', heroClass: 'ranged' },
+      { kind: 'hero-class', heroClass: 'instinct' },
+    ]);
+  });
+
+  it('resolves the criterion even behind an unrecognized prefix gate (Shared Thoughts)', () => {
+    // why: [keyword:Tactical Formation] is invisible to KEYWORD_PATTERN (a space breaks the
+    // token), so the investigate criterion still resolves; the gate is a separate unimplemented
+    // mechanic (known limitation).
+    const registry = makeRegistry('msmc', 'stepford-cuckoos', [
+      { slug: 'shared-thoughts', abilities: ['[keyword:Tactical Formation] 33: [keyword:Investigate] for a card with an [icon:attack] icon.'] },
+    ]);
+    const effect = findInvestigateEffect(buildHeroAbilityHooks(registry, makeConfig('msmc/stepford-cuckoos')));
+    assert.deepEqual(effect?.investigateCriteria, [{ kind: 'icon', icon: 'attack' }]);
+  });
+
+  it('DEFERS the choose-first form (unresolved marker, no investigate keyword)', () => {
+    const registry = makeRegistry('noir', 'daredevil-noir', [
+      { slug: 'listen-for-heartbeats', abilities: ['Choose a number 1 or more. [keyword:Investigate] for a card of that cost.'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('noir/daredevil-noir'))[0]!;
+    assert.ok(!hook.keywords.includes('investigate'), 'choose-first must not record the investigate keyword');
+    assert.ok((hook.unresolvedMarkers ?? []).includes('investigate'), 'choose-first records the investigate marker as unresolved');
+  });
+
+  it('DEFERS the disposition + covert-gate form (Discover the Bodies — KO that card)', () => {
+    // why: WP-564 defers KO-disposition investigate; the trailing "KO that card." breaks the
+    // anchored cost pattern, so the criterion does not resolve and the covert gate is preserved.
+    const registry = makeRegistry('noir', 'daredevil-noir', [
+      { slug: 'discover-the-bodies', abilities: ['[hc:covert]: [keyword:Investigate] for a card that costs 0. KO that card.'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('noir/daredevil-noir'))[0]!;
+    assert.ok(!hook.keywords.includes('investigate'), 'the KO-disposition form must not resolve');
+    assert.ok((hook.unresolvedMarkers ?? []).includes('investigate'), 'it stays unsupported via the unresolved marker');
+    assert.ok((hook.conditions ?? []).some((c) => c.type === 'heroClassMatch' && c.value === 'covert'), 'the covert gate is preserved');
+  });
+
+  it('DEFERS the other-zone form (Investigate the Villain Deck …)', () => {
+    const registry = makeRegistry('dims', 'jessica-jones', [
+      { slug: 'uncover-hidden-evil', abilities: ['[hc:covert]: [keyword:Investigate] the Villain Deck for a Villain. You may put it into your Victory Pile and do its Fight effect. Otherwise, put it back on the top or bottom of that deck.'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('dims/jessica-jones'))[0]!;
+    assert.ok(!hook.keywords.includes('investigate'), 'the other-zone form must not resolve');
+    assert.ok((hook.unresolvedMarkers ?? []).includes('investigate'), 'it stays unsupported via the unresolved marker');
+  });
+
+  it('DEFERS the draw-or-KO disposition form (Crack the Case)', () => {
+    const registry = makeRegistry('dims', 'jessica-jones', [
+      { slug: 'crack-the-case', abilities: ['[keyword:Investigate] for a card with an [icon:recruit] icon. You may draw that card or KO it.'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('dims/jessica-jones'))[0]!;
+    assert.ok(!hook.keywords.includes('investigate'), 'the draw-or-KO form must not resolve');
+    assert.ok((hook.unresolvedMarkers ?? []).includes('investigate'), 'it stays unsupported via the unresolved marker');
+  });
+});

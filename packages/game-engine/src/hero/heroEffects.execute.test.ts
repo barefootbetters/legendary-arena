@@ -54,7 +54,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 23 handlers and none for the deferred keywords', () => {
+  it('has exactly 24 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -67,8 +67,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-486 / D-24291 added the defeat-with-bystander handler (19 → 20);
     // WP-535 / D-24345 added the copy-powers handler (20 → 21);
     // WP-580 / D-24389 added the recruit-as-attack handler (21 → 22);
-    // WP-592 / D-24401 added the steal-abilities handler (22 → 23).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 23);
+    // WP-592 / D-24401 added the steal-abilities handler (22 → 23);
+    // WP-564 / D-24373 added the investigate handler (23 → 24).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 24);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -137,6 +138,8 @@ function makeTestState(overrides?: {
   turnEconomyRecruit?: number;
   ko?: string[];
   cardStats?: Record<string, { attack: number; recruit: number; cost: number; fightCost: number; fightCostMode: 'static' | 'dynamic'; fightCostBase: number }>;
+  // why: WP-564 / D-24373 — investigate's hero-class / team criteria read G.cardTraits.
+  cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
   pendingHeroChoice?: PendingHeroChoice;
 }): LegendaryGameState {
   return {
@@ -192,6 +195,8 @@ function makeTestState(overrides?: {
       woundsDrawn: 0,
     },
     cardStats: overrides?.cardStats ?? {},
+    // why: WP-564 / D-24373 — investigate's hero-class / team criteria read G.cardTraits.
+    cardTraits: overrides?.cardTraits ?? {},
     mastermind: { ...makeMastermindState(),
       id: 'test-mastermind',
       baseCardId: 'test-mastermind-base',
@@ -4727,5 +4732,217 @@ describe('executeHeroEffects — Surge of Power recruit-threshold gate', () => {
       'Surge grants NO +3 attack when only 4 recruit was made (the live turn-14 bug fixed).');
     assert.equal(gameState.turnEconomy.recruit, 4,
       'recruit is unaffected — the +2 recruit is Surge\'s printed stat, applied outside the ability hook.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Investigate handler (static-criterion + draw subset; WP-564 / EC-599 / D-24373)
+// ---------------------------------------------------------------------------
+
+/** A CardStatEntry with the given cost / attack / recruit (fight fields defaulted). */
+function investigateStat(cost: number, attack = 0, recruit = 0) {
+  return { attack, recruit, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+}
+
+describe('heroEffectInvestigate (WP-564 / D-24373)', () => {
+  const ctx = makeMockCtx();
+
+  it('AC-1 — draws the first matching card in the top two and bottoms the other', () => {
+    // deck top-first: A(cost5, no match), B(cost2, match), C, D. Look 2 = [A, B].
+    const gameState = makeTestState({
+      deck: ['a', 'b', 'c', 'd'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(5), b: investigateStat(2), c: investigateStat(1), d: investigateStat(1) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'the matching card B is drawn to hand');
+    // A (looked at, not drawn) goes to the bottom; C, D (below the window) stay on top.
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['c', 'd', 'a'], 'the non-drawn looked-at card is bottomed; below-window cards stay on top');
+  });
+
+  it('AC-1 — draws the top card when it already matches (no reshuffle of the window)', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b', 'c'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(2), b: investigateStat(5), c: investigateStat(1) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['a'], 'the top card A matches and is drawn');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['c', 'b'], 'B (non-drawn looked-at) is bottomed below C');
+  });
+
+  it('AC-2 — zero matches draws nothing, bottoms BOTH looked-at cards, logs a blocked line naming the criterion', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b', 'c', 'd'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(5), b: investigateStat(6), c: investigateStat(1), d: investigateStat(1) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, [], 'nothing is drawn on zero matches');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['c', 'd', 'a', 'b'], 'both looked-at cards go to the bottom in look order');
+    const line = gameState.messages.find((entry) => entry.text.includes('Investigated'));
+    assert.ok(line !== undefined, 'a narration line was pushed');
+    assert.equal(line!.outcome, 'blocked', 'the zero-match outcome colour is blocked');
+    assert.ok(line!.text.includes('costs 3 or less'), 'the log names the criterion, not a bare "nothing happened"');
+  });
+
+  it('AC-4 — bottom order is preserved (look order among the non-drawn cards)', () => {
+    // No match: window [a, b] both bottomed; assert the exact ORDER a-before-b at the bottom.
+    const gameState = makeTestState({
+      deck: ['a', 'b', 'c'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(9), b: investigateStat(9), c: investigateStat(9) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'eq', value: 0 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['c', 'a', 'b'], 'a stays before b at the bottom (look order preserved)');
+  });
+
+  it('AC-3 — a deck shorter than the look count reshuffles the discard via the shared helper', () => {
+    // deck has 1 card (< lookCount 2); discard has 2. Reshuffle brings them in; then look 2.
+    const gameState = makeTestState({
+      deck: ['a'],
+      discard: ['b', 'c'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(9), b: investigateStat(2), c: investigateStat(9) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [], 'the discard was reshuffled into the deck (short-deck rule)');
+    // makeMockCtx reverses on shuffle, so discard [b, c] → deck append [c, b]; deck becomes [a, c, b].
+    // Window [a, c]: a(cost9) no match, c(cost9) no match — but b is now bottom. No match in window.
+    // Assert a card matching in the reshuffled window is reachable: here the match (b, cost2) is
+    // below the window, so nothing is drawn — the reshuffle itself is the assertion.
+    assert.equal(gameState.playerZones['0']!.hand.length, 0, 'the match sat below the 2-card window after reshuffle');
+  });
+
+  it('AC-3 — reshuffle then draw a matching card that lands in the window', () => {
+    const gameState = makeTestState({
+      deck: ['a'],
+      discard: ['b'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(9), b: investigateStat(2) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [], 'the discard was reshuffled in');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'the matching reshuffled card B (in the window) is drawn');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['a'], 'A (non-drawn looked-at) stays / bottoms');
+  });
+
+  it('AC-5 — inclusive OR: a card matching only the FIRST clause qualifies', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(1), b: investigateStat(1) },
+      cardTraits: { a: { heroClass: 'ranged', team: null }, b: { heroClass: 'strength', team: null } },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [
+            { kind: 'hero-class', heroClass: 'ranged' }, { kind: 'hero-class', heroClass: 'instinct' }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['a'], 'the ranged card (first clause) qualifies');
+  });
+
+  it('AC-5 — inclusive OR: a card matching only the SECOND clause qualifies', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(1), b: investigateStat(1) },
+      cardTraits: { a: { heroClass: 'strength', team: null }, b: { heroClass: 'instinct', team: null } },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [
+            { kind: 'hero-class', heroClass: 'ranged' }, { kind: 'hero-class', heroClass: 'instinct' }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'the instinct card (second clause) qualifies; A (strength) does not');
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['a'], 'the non-matching looked-at card A is bottomed');
+  });
+
+  it('AC-5 — team criterion matches on the printed team', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(1), b: investigateStat(1) },
+      cardTraits: { a: { heroClass: 'covert', team: null }, b: { heroClass: 'strength', team: 'x-factor-investigations' } },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [
+            { kind: 'hero-class', heroClass: 'strength' }, { kind: 'team', team: 'x-factor-investigations' }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'B matches via strength (and its team also matches)');
+  });
+
+  it('icon:attack criterion matches a card with printed attack > 0 only', () => {
+    const gameState = makeTestState({
+      deck: ['a', 'b'],
+      inPlay: ['hero-x'],
+      cardStats: { a: investigateStat(3, 0, 2), b: investigateStat(3, 1, 0) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'icon', icon: 'attack' }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'only B (attack > 0) matches; A (recruit-only) is skipped');
+  });
+
+  it('does not draw a no-stats card on a fabricated 0 cost', () => {
+    // 'a' has NO cardStats entry; a cost≤3 criterion must NOT match it (no fabricated 0).
+    const gameState = makeTestState({
+      deck: ['a', 'b'],
+      inPlay: ['hero-x'],
+      cardStats: { b: investigateStat(2) },
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['b'], 'the no-stats card A is skipped; the real match B is drawn');
+  });
+
+  it('an empty deck (and discard) is a narrated no-op', () => {
+    const gameState = makeTestState({
+      deck: [],
+      discard: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['investigate'],
+          effects: [{ type: 'investigate', investigateLookCount: 2, investigateCriteria: [{ kind: 'cost', comparison: 'lte', value: 3 }] }] },
+      ],
+    });
+    executeHeroEffects(gameState, ctx, '0', 'hero-x');
+    assert.deepEqual(gameState.playerZones['0']!.hand, [], 'nothing drawn from an empty deck');
+    const line = gameState.messages.find((entry) => entry.text.includes('Investigated'));
+    assert.ok(line !== undefined && line.outcome === 'blocked', 'the empty-deck outcome is narrated as blocked');
+    assert.ok(line!.text.includes('no cards to look at'), 'the empty-deck line says there were no cards to look at');
   });
 });

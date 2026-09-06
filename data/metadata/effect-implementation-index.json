@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 379,
+      "executable": 394,
       "deferred": 0,
       "condition": 5,
-      "unsupported": 368,
+      "unsupported": 353,
       "unmarked": 1076,
       "subsystem": 3
     }
@@ -9055,8 +9055,8 @@
       "set": "dims",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9126,8 +9126,8 @@
       "set": "dims",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9168,8 +9168,8 @@
       "set": "dims",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13827,8 +13827,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13923,8 +13923,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13961,8 +13961,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -14112,8 +14112,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -14200,8 +14200,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -14275,8 +14275,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -14313,8 +14313,8 @@
       "set": "msmc",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -15509,8 +15509,8 @@
       "set": "noir",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -15530,8 +15530,8 @@
       "set": "noir",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -15551,8 +15551,8 @@
       "set": "noir",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -15572,8 +15572,8 @@
       "set": "noir",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [
@@ -15593,8 +15593,8 @@
       "set": "noir",
       "scope": "hero",
       "mechanic": "investigate",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
       "wp": "",
       "decision": "",
       "designs": [

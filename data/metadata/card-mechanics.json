@@ -740,7 +740,7 @@
       "slug": "investigate",
       "label": "Investigate",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 15,
       "cardIds": [
         "dims/jessica-jones",

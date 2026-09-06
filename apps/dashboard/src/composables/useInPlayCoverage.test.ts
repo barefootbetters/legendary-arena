@@ -265,9 +265,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // is restored v2-d24439 -> v1: totalObs 2816 -> 2306, percentResolved 2.1 -> 2.6
   // (resolvedObs unchanged at 59; the denominator shrank back). Distinct mechanics
   // 30 -> 31: the `liberate` runtime observation the re-seed dropped is recovered.
+  // 2026-09-06 (WP-564 / D-24373, re-pin): the `investigate` hero keyword shipped its
+  // static-criterion + draw subset, flipping the `investigate` mechanic's hero-ledger
+  // status unsupported -> executable. Per the WP-561 invariant below, its baseline-peak
+  // obs MOVE from unresolved into resolvedObs: resolvedObs 59 -> 352, so percentResolved
+  // 2.6 -> 15.2. totalObs 2306 -> 2315 because the now-firing investigate cards draw
+  // cards, shifting the fixed-seed sweep's game trajectories (a few more observations of
+  // other mechanics). resolvedObs' jump is the honest coverage gain; totalObs' drift is a
+  // sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2306);
-  assert.equal(view.percentResolved.value, 2.6);
+  assert.equal(view.totalObs.value, 2315);
+  assert.equal(view.percentResolved.value, 15.2);
   assert.ok(view.remaining.value.length > 0);
 });
 
