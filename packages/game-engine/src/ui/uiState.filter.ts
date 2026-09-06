@@ -566,6 +566,21 @@ export function filterUIStateForAudience(
     result.gameOver = { ...uiState.gameOver };
   }
 
+  // why: WP-655 / D-24466 — finalTurn is PUBLIC shared-board information (the
+  // deck-remaining counts + reason) and must survive this whitelist, exactly
+  // like gameOver / matchCardImageUrls above. It is optional in UIState, so
+  // TypeScript does not flag its omission — and WP-367 populated it in
+  // buildUIState but never added this pass-through, so the field was silently
+  // dropped at the audience filter and the final-turn banner (WP-368 / WP-654)
+  // never reached the client (the D-12803 / EC-206 Board-Visible Field Rule
+  // failure mode). A fresh object copy prevents aliasing with the input
+  // UIState; conditional assignment (never a `finalTurn: undefined` literal)
+  // satisfies exactOptionalPropertyTypes. buildUIState already omits the field
+  // once gameOver is set, so present-here means the match is in its final turn.
+  if (uiState.finalTurn !== undefined) {
+    result.finalTurn = { ...uiState.finalTurn };
+  }
+
   // why: D-22202 — pendingHeroChoice passes through for all audiences without
   // redaction. The revealed card is face-up at the physical table; all players
   // and spectators see it. Conditional-assignment pattern matches gameOver above

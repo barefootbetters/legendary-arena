@@ -1972,3 +1972,62 @@ describe('filterUIStateForAudience — gameOver reaches every seat', () => {
     assert.equal(result.gameOver?.endedEarly, true, 'endedEarly must reach the non-active seat');
   });
 });
+
+describe('filterUIStateForAudience — WP-655 finalTurn pass-through (D-24466)', () => {
+  // why: WP-367 populated UIState.finalTurn in buildUIState but never added it to
+  // this whitelist filter, so the field was silently dropped and the WP-368 /
+  // WP-654 final-turn banner never reached any client. These tests pin the
+  // pass-through (the D-12803 / EC-206 Board-Visible Field Rule): finalTurn is
+  // PUBLIC, so it must survive for every audience, and it must be a fresh copy.
+  it('finalTurn survives the filter for every audience', () => {
+    const uiState = createTestUIState();
+    uiState.finalTurn = {
+      reason: 'The Hero Deck is empty.',
+      heroDeckRemaining: 0,
+      villainDeckRemaining: 4,
+    };
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(
+        result.finalTurn !== undefined,
+        `finalTurn must survive the filter for ${audience.kind} ${audience.kind === 'player' ? audience.playerId : ''}`,
+      );
+      assert.equal(result.finalTurn.reason, 'The Hero Deck is empty.');
+      assert.equal(result.finalTurn.heroDeckRemaining, 0);
+      assert.equal(result.finalTurn.villainDeckRemaining, 4);
+    }
+  });
+
+  it('finalTurn is a fresh copy, not aliased to the input UIState', () => {
+    const uiState = createTestUIState();
+    uiState.finalTurn = {
+      reason: 'The Villain Deck is empty.',
+      heroDeckRemaining: 7,
+      villainDeckRemaining: 0,
+    };
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.finalTurn !== undefined);
+    assert.notEqual(
+      result.finalTurn,
+      uiState.finalTurn,
+      'finalTurn must be a fresh object, not the input reference',
+    );
+  });
+
+  it('an absent finalTurn stays absent (not in the final turn)', () => {
+    const uiState = createTestUIState();
+    // why: a fresh setup has full decks, so buildUIState omits finalTurn.
+    assert.equal(uiState.finalTurn, undefined);
+
+    for (const audience of [PLAYER_0, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.finalTurn,
+        undefined,
+        'finalTurn must remain absent when the match is not in its final turn',
+      );
+    }
+  });
+});
