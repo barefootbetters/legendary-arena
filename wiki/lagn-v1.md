@@ -237,11 +237,13 @@ endpoint payload has changed shape; `migrateToCurrent` still targets 1.1.0 and
 the 1.1.0 → 1.2.0 migration step is registered but unreachable. A follow-on
 packet flips the writer together with the producers.
 
-**1.3.0 (WP-402 / D-24210) — shipped; readers accept it, writers do not emit it
-yet.** Adds optional `setup.hero_alternates`: a bench of reserve heroes named in
-a saved loadout alongside the heroes actually played, so a seven-hero shortlist —
-five played, two held in reserve — survives a save/share/re-open round trip
-instead of losing the reserves.
+**1.3.0 (WP-402 / D-24210) — shipped; the Registry Viewer Loadout tab now emits
+it (WP-404 / D-24213).** Adds optional `setup.hero_alternates`: a bench of reserve
+heroes named in a saved loadout alongside the heroes actually played, so a
+seven-hero shortlist — five played, two held in reserve — survives a
+save/share/re-open round trip instead of losing the reserves. The producer is the
+Registry Viewer's LAGN export, which stamps the current `LAGN_VERSION` (`1.5.0`,
+`>= 1.3.0`); the empty bench omits the key entirely rather than emitting `[]`.
 
 | Block | Location | Carries |
 |---|---|---|
