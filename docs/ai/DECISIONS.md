@@ -39738,6 +39738,82 @@ _Active 2026-09-06 — WP-564 / EC-599. Reserves fulfilled: EC-599 + D-24373. Ha
 
 Protect this file.
 
+### D-24464 — Hero Condition-Gate Family: Outwit / Worthy / Savior / Antics as `HeroCondition`s (Reserved — lands at WP-653 execution)
+
+**Status:** Reserved — lands on WP-653 / EC-690 execution.
+
+**Decision.** Four printed hero abilities whose onPlay effect is gated on a
+game-state predicate — **Outwit**, **Worthy**, **Savior**, **Antics** — are
+modeled as `HeroCondition`s (the D-24055 Spectrum precedent: a `[keyword:X]`
+that pushes a CONDITION, not a keyword, so the line's printed effects gate on
+it), **not** as new `HeroKeyword`s. Each adds a `case` to `evaluateCondition`
+and a parallel arm to `describeFailedCondition` over the open
+`{ type, value }` union (no closed drift array, per D-24055), and a recognition
+arm to `setup/heroAbility.setup.ts` before the unresolved-marker fallback:
+
+1. **Outwit** → `distinctHeroCostsAtLeast(3)` — ≥ 3 distinct non-zero costs
+   among `inPlay` Heroes (self-inclusive; reads `G.cardStats[id].cost`).
+2. **Worthy** → `heroCostAtLeastInHandOrPlay(5)` — a Hero costing ≥ 5 in hand
+   OR inPlay (the first hand-inclusive condition scan).
+3. **Savior** → `bystandersInVictoryAtLeast(3)` — ≥ 3 Bystanders in the Victory
+   Pile via a two-arm predicate re-implemented inline (`extId === BYSTANDER_EXT_ID
+   || extId.startsWith('bystander-villain-deck-')`, the `heroCountSource.resolve.ts`
+   shape — that classifier is non-exported, so re-implement, do not import), so a
+   rescued named villain-deck bystander counts too, not only supply bystanders.
+4. **Antics** → `cheapOrSizeChangingAtLeast(3)` — ≥ 3 cards in hand+inPlay
+   costing 1-2 and/or Size-Changing.
+
+The gated **simple** effects (draw / fixed ±attack / fixed ±recruit) are marked
+in `data/cards/{wwhk,asrd,ca75,amwp}` — and, for the three convertible sets, the
+per-set source patch `scripts/convert-cards/inputs/patches/{setAbbr}.patch.json`
+for re-convert durability; amwp is a hand-authored outlier edited directly (NOT
+`bbcode/modern-master-strike`, a frozen mirror per CLAUDE.md §Card Data). A
+recognized condition on a bare-English line has no effect to fire (a silent
+no-op), so marking is required, not optional.
+
+**Honest-Partial (load-bearing).** A line whose gated effect is a
+still-unimplemented mechanic — scry / look-N / `[keyword:Transform]` /
+`[keyword:Smash N]` / `[keyword:Man Out of Time]` / each-player / `for each …`
+count-scaling / KO-from-hand — keeps that inner marker as an honest inner hollow;
+recognizing the outer condition without a real effect is the "silence the hollow
+without implementing it" anti-pattern and is forbidden.
+
+**Endgame deferred.** Endgame's gated effects are mostly simple `+N` attack
+grants, so the blocker is NOT the effect shapes: Endgame is a turn-STATE true
+either naturally (Villain Deck ≤ 8×players, a pure `G` read) OR when granted
+mid-turn by a card ("For the rest of this turn, it is the Endgame"), and the
+grant needs a turn-state flag that does not exist — a natural-only gate would be
+wrong when a player forces Endgame (a correctness gap). Endgame needs its own WP
+that adds the grant-Endgame-this-turn state first. cyber-mod (tiered two-param
+class-count) and heist (condition + reveal-and-compare) are likewise deferred as
+distinct shapes.
+
+**Ledger + coverage-gauge accounting.** `HeroCondition.type` stays the open
+union — no `HERO_KEYWORDS` / `MVP_KEYWORDS` / `HANDLED_KEYWORDS` change. The
+hero-mechanic ledger classifies a mechanic as `condition` via its OWN
+`KNOWN_CONDITIONS` map (`scripts/hero-mechanic-ledger.mjs`), not the engine
+parser, so the four keywords are added there and their ledger rows flip
+`unsupported → condition` (the `spectrum` precedent — `spectrum` carries
+`"status": "condition"`; they do NOT drop from the ledger). Because a
+`condition`-status mechanic is not `executable`, the `/coverage` in-play-coverage
+gauge (`computeInPlayCoverage`, D-24050) is extended to credit a recognized
+`condition`-status mechanic as **resolved** (a recognized condition IS
+implemented), alongside `executable` — so the four sets' baseline obs credit the
+honesty gauge instead of a permanent unresolved drag; the frozen
+`in-play-hollow-baseline.json` denominator is unchanged. This also correctly
+credits `spectrum` and every future condition. Layer set: engine + card-data
+(+ the per-set source patches for re-convert durability, NOT the frozen
+`bbcode/modern-master-strike` mirror, per CLAUDE.md §Card Data) + coverage
+tooling + the dashboard gauge.
+
+**Determinism.** `evaluateCondition` remains a pure read of `G` (no signature
+change). `finalStateHash` / `PRE_WP080_HASH` byte-unchanged (the sentinel replay
+board is core-only; these keywords appear only on non-core sets —
+scaffold-confirmed: engine 3028/0 with the four conditions + parser arms, no
+fixture re-pin).
+
+**Packet:** WP-653.
+**Drafted:** 2026-09-06 (number reserved in the ledger). **Status:** Reserved — lands on WP-653 execution.
 ### D-24465 — Final-turn banner mounts on the live play surface (`PlayViewport`), not only `ArenaHud` (Active 2026-09-06 — WP-654 / EC-691)
 
 **Status:** Active (post-execution) 2026-09-06 (WP-654 / EC-691).
