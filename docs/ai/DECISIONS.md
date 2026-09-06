@@ -39835,3 +39835,24 @@ This **supersedes D-24162's implicit "ArenaHud is the play HUD" premise**; D-241
 **Packet:** WP-654 / EC-691. **Executed:** 2026-09-06.
 
 Protect this file.
+
+### D-24466 — `UIState.finalTurn` passes through the audience filter (the WP-367 projection reaches the client) (Active 2026-09-06 — WP-655 / EC-692)
+
+**Status:** Active (post-execution) 2026-09-06 (WP-655 / EC-692).
+
+**User-Visible Surface:** `play.legendary-arena.com` (the final-turn warning banner during the deck-exhaustion final turn — it finally reaches the client and renders).
+
+**Context.** The engine→client `UIState` projection is two stages (`.claude/rules/architecture.md §UIState Projection Integrity`): `buildUIState` builds the full projection, then `filterUIStateForAudience` (`ui/uiState.filter.ts`) **rebuilds it field-by-field through a whitelist** that redacts private data. WP-367 added `UIState.finalTurn` and populated it in `buildUIState` (stage one) but never added it to the filter whitelist (stage two). Because `finalTurn` is optional, TypeScript did not flag the omission — the field was silently dropped at the audience boundary and **never reached any client**. This is the reason the WP-368 component and the WP-654 live-surface mount both shipped correctly yet the banner never appeared in a real match. It is the exact **Board-Visible Field Rule** failure mode already documented at D-12803 / EC-206 (the `scheme.display` / `mastermind.gameText` drop, PR #1165). Surfaced 2026-09-06 by a live Loki / Midtown Bank Robbery deck-exhaustion match (gitSha `035433a`, which included WP-654): the hero deck emptied, the game-log "final turn" line printed (a `G.messages` entry, independent of the projection), the game tied — and the operator confirmed no banner appeared. Inspection: `grep finalTurn ui/uiState.filter.ts` returned nothing.
+
+**Decision.** Pass `finalTurn` through `filterUIStateForAudience` as a **public top-level field**, beside the `gameOver` / `matchCardImageUrls` pass-throughs. Locks:
+
+1. **Public, unredacted, every audience.** `finalTurn` is `{ reason, heroDeckRemaining, villainDeckRemaining }` — all public shared-board data (deck-remaining counts), so it survives identically for player and spectator audiences (no redaction).
+2. **Fresh copy, conditional assignment.** `if (uiState.finalTurn !== undefined) { result.finalTurn = { ...uiState.finalTurn }; }` — a fresh object copy prevents aliasing with the input UIState, and the conditional assignment (never a `finalTurn: undefined` literal) satisfies `exactOptionalPropertyTypes`. Present-here means the match is in its final turn (`buildUIState` omits it once `gameOver` is set).
+3. **Projection-only, no determinism surface.** No `G`/`ctx` write, no move/phase/rule/scoring change; `buildUIState` is unchanged. `finalStateHash` / `PRE_WP080_HASH` are unaffected — a projection is not part of `G`, and the sentinel replay (a core/dr-doom game that never enters a final turn) is unmoved.
+4. **Completes the five-step contract.** WP-367 left the Board-Visible Field Rule at step 2 (populate in build); this adds step 3 (pass through the filter) + step 4 (an audience-filter survival test). Step 5 (verify in the Play Diagnostics `uiStateSnapshot`) now flows automatically — the client store receives the field.
+
+No client change is needed — WP-368 (`ArenaHud`) and WP-654 (`PlayViewport`) already consume `snapshot.finalTurn`; this packet is the missing plumbing that feeds them. Completes the deck-exhaustion warning arc (WP-367 mechanic → WP-368 component → WP-654 live mount → WP-655 projection reaches the client).
+
+**Packet:** WP-655 / EC-692. **Executed:** 2026-09-06.
+
+Protect this file.
