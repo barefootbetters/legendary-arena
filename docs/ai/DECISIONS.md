@@ -28410,7 +28410,7 @@ import, no server / registry / migration change. `GET /api/sweep/latest` (WP-209
 is consumed byte-unchanged.
 
 **Packet:** WP-349.
-**Drafted:** 2026-07-10 (number reserved in WP-349 body). **Landed:** 2026-09-06 (WP-349 / EC-688 execution close). **Status:** Active — the sweep health rate is the anomaly-free rate `(cellCount − Σ{fatal, escaped-villain-cap}) / cellCount`, clamped `[0, 1]`, `null` on 0 cells; the single `computeSweepHealthRate` helper is the sole source of truth and the three runtime consumers correct through it unedited; no engine import. Supersedes the D-23503 `endgame-reached` healthy-class metric. **D-24026 live-on-surface OPERATOR-PENDING** (the Pipeline chip reads a real rate, not 0%, after deploy).
+**Drafted:** 2026-07-10 (number reserved in WP-349 body). **Landed:** 2026-09-06 (WP-349 / EC-688 execution close). **Status:** Active — the sweep health rate is the anomaly-free rate `(cellCount − Σ{fatal, escaped-villain-cap}) / cellCount`, clamped `[0, 1]`, `null` on 0 cells; the single `computeSweepHealthRate` helper is the sole source of truth and the three runtime consumers correct through it unedited; no engine import. Supersedes the D-23503 `endgame-reached` healthy-class metric. **D-24026 live-on-surface VERIFIED 2026-09-06** (deploy `fe9e7b36`): the deployed `dashboard.legendary-arena.com/pipeline` sweep-health chip reads **100%** on a live 2120-cell weekly full-corpus run (0 `fatal`/`escaped-villain-cap` anomalies), with the trend rendering — a value the superseded `endgame-reached / cellCount` metric could never produce (it read a structural 0%), so it is dispositive proof of the deployed fix.
 
 Protect this file.
 
