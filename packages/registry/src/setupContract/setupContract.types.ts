@@ -152,6 +152,18 @@ export interface SetupEnvelope {
   expansions: string[];
   heroSelectionMode?: HeroSelectionMode;
   supportPools?: SupportPools;
+  // why: WP-403 / D-24212 — hero alternates (the "bench") name heroes a player
+  // shortlisted but did not play. They live on the ENVELOPE, never in the
+  // composition block: the nine-field composition lock (00.2 §7) describes what
+  // is ON the board, and a bench is by definition not on the board. This copies
+  // the additive-optional extensibility path heroSelectionMode (D-9301) and
+  // supportPools (D-24194) already took.
+  //
+  // why: OPTIONAL — every stored document predates this field and must keep
+  // validating byte-identically. The bench is also non-authoritative: nothing
+  // derives a match composition from it and the engine never reads it
+  // (D-24210 / D-24212), so there is deliberately no count rule attached.
+  heroAlternateIds?: string[];
 }
 
 /**
@@ -228,7 +240,11 @@ export type MatchSetupErrorCode =
   | "out_of_range"
   | "unknown_field"
   | "wrong_type"
-  | "unsupported_hero_selection_mode";
+  | "unsupported_hero_selection_mode"
+  // why: WP-403 / D-24212 — the bench and heroDeckIds must be disjoint; an id in
+  // both makes "is this hero played?" unanswerable. This is a distinct diagnostic
+  // from unknown_extid (the id IS known — it is just double-listed).
+  | "hero_alternate_overlap";
 
 /** A single validation error: field path, machine code, full-sentence message. */
 export interface MatchSetupValidationError {

@@ -249,6 +249,31 @@ export function validateMatchSetupDocument(
   checkArrayExtIds("composition.henchmanGroupIds", "henchman group", composition.henchmanGroupIds, knownHenchmanGroups, errors);
   checkArrayExtIds("composition.heroDeckIds", "hero", composition.heroDeckIds, knownHeroes, errors);
 
+  // why: WP-403 / D-24212 — the hero-alternates bench resolves against the SAME
+  // hero id-space as composition.heroDeckIds, so it reuses checkArrayExtIds. A
+  // parallel resolver would drift from the composition one; there is exactly one
+  // hero-id path. The bench is envelope-side and non-authoritative — the engine
+  // never reads it (D-24210) — so this is the only place its ids are checked.
+  const heroAlternateIds = parsed.data.heroAlternateIds;
+  if (heroAlternateIds !== undefined) {
+    checkArrayExtIds("heroAlternateIds", "hero", heroAlternateIds, knownHeroes, errors);
+    // why: a hero listed in both the bench and heroDeckIds makes "is this hero
+    // played?" unanswerable from the document, so the two lists must be disjoint.
+    // No count rule accompanies this: PLAYER_COUNT_SETUP governs PLAYED heroes
+    // (3/5/6 by seat count) and says nothing about reserves, so any bench min/max
+    // would be invented — a prohibited AI failure pattern (D-24212).
+    const playedHeroes = new Set(composition.heroDeckIds);
+    for (const benchHeroId of heroAlternateIds) {
+      if (playedHeroes.has(benchHeroId)) {
+        errors.push({
+          field: "heroAlternateIds",
+          code: "hero_alternate_overlap",
+          message: `The heroAlternateIds entry ${benchHeroId} is also listed in composition.heroDeckIds — a hero is either played or held in reserve, never both.`,
+        });
+      }
+    }
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -293,6 +318,13 @@ export function validateMatchSetupDocument(
   // — the parsed object is already a fresh structure owned by this call.
   if (parsed.data.supportPools !== undefined) {
     value.supportPools = parsed.data.supportPools;
+  }
+  // why: WP-403 — `value` is rebuilt field-by-field above, so an envelope field
+  // not echoed here parses cleanly and then silently vanishes (the exact failure
+  // the support-pool round-trip test guards against). The bench must survive the
+  // rebuild for WP-404's viewer draft to round-trip it through validation.
+  if (parsed.data.heroAlternateIds !== undefined) {
+    value.heroAlternateIds = parsed.data.heroAlternateIds;
   }
 
   return { ok: true, value };
