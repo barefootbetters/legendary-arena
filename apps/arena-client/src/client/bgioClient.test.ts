@@ -77,6 +77,24 @@ function makeStubFactory(): {
   return { factory, lastClient: () => captured };
 }
 
+// why: every createLiveClient() registers a `document` 'visibilitychange'
+// listener that is removed only by the handle's stop(). A test that creates a
+// client without stopping it leaks that listener onto the shared jsdom document
+// (from ../testing/jsdom-setup), and the leaks accumulate across the whole file
+// — the tab-focus suite below, which drives the handler by DISPATCHING a real
+// document event, then fires every leaked listener at once. Each describe that
+// creates clients tracks its handles here and drains them in afterEach, so the
+// listeners (and any armed timers) are always torn down between tests.
+const clientsToStop: Array<ReturnType<typeof createLiveClient>> = [];
+
+/** Stops and forgets every tracked live client handle. Call from afterEach. */
+function stopTrackedClients(): void {
+  for (const handle of clientsToStop) {
+    handle.stop();
+  }
+  clientsToStop.length = 0;
+}
+
 describe('createLiveClient', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -84,6 +102,7 @@ describe('createLiveClient', () => {
   });
 
   afterEach(() => {
+    stopTrackedClients();
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
   });
@@ -99,6 +118,7 @@ describe('createLiveClient', () => {
       serverUrl: 'http://localhost:8000',
       viewerPlayerId: '0',
     });
+    clientsToStop.push(handle);
 
     const keys = Object.keys(handle).sort();
     assert.deepEqual(keys, ['resync', 'start', 'stop', 'submitMove']);
@@ -118,6 +138,7 @@ describe('createLiveClient', () => {
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
 
     const stub = lastClient();
     assert.ok(stub !== null);
@@ -136,12 +157,13 @@ describe('createLiveClient', () => {
     const { factory, lastClient } = makeStubFactory();
     setClientFactoryForTesting(factory);
 
-    createLiveClient({
+    const handle = createLiveClient({
       matchID: 'match-conn',
       playerID: '0',
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
 
     const stub = lastClient();
     assert.ok(stub !== null);
@@ -172,6 +194,7 @@ describe('createLiveClient', () => {
       serverUrl: 'http://localhost:8000',
       viewerPlayerId: '0',
     });
+    clientsToStop.push(handle);
 
     handle.submitMove('drawCards', 2, { reason: 'start-of-turn' });
     handle.submitMove('unknownMove', 'ignored');
@@ -187,13 +210,14 @@ describe('createLiveClient', () => {
     const { factory, lastClient } = makeStubFactory();
     setClientFactoryForTesting(factory);
 
-    createLiveClient({
+    const handle = createLiveClient({
       matchID: 'match-3',
       playerID: '0',
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
       viewerPlayerId: '0',
     });
+    clientsToStop.push(handle);
 
     const stub = lastClient();
     assert.ok(stub !== null);
@@ -238,6 +262,7 @@ describe('createLiveClient move-ack watchdog (WP-312)', () => {
   });
 
   afterEach(() => {
+    stopTrackedClients();
     mock.timers.reset();
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
@@ -260,6 +285,7 @@ describe('createLiveClient move-ack watchdog (WP-312)', () => {
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
     const stub = lastClient();
     assert.ok(stub !== null);
     stub!._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: stateId });
@@ -347,6 +373,7 @@ describe('createLiveClient reconnect-resync', () => {
   });
 
   afterEach(() => {
+    stopTrackedClients();
     mock.timers.reset();
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
@@ -364,6 +391,7 @@ describe('createLiveClient reconnect-resync', () => {
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
     const stub = lastClient();
     assert.ok(stub !== null);
     return { handle, stub: stub! };
@@ -448,6 +476,7 @@ describe('createLiveClient spectator-staleness watchdog', () => {
   });
 
   afterEach(() => {
+    stopTrackedClients();
     mock.timers.reset();
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
@@ -481,6 +510,7 @@ describe('createLiveClient spectator-staleness watchdog', () => {
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
     const stub = lastClient();
     assert.ok(stub !== null);
     return { handle, stub: stub! };
@@ -601,34 +631,20 @@ describe('createLiveClient tab-focus resync', () => {
   // why: onVisibilityChange resyncs synchronously, but forceCooldownGatedResync
   // opens a cooldown via setTimeout; mock timers let afterEach clean that up
   // deterministically and let us cross the cooldown for the suppressed case.
-  // why: createLiveClient registers a document 'visibilitychange' listener and
-  // removes it only on stop(); sibling tests that create a client without
-  // stopping it leak listeners on the shared jsdom document. Because this is the
-  // one describe that drives the handler by DISPATCHING a real document event,
-  // those leaks would all fire and inflate the counter. Swap in a fresh
-  // same-realm document for each test here so a dispatched visibilitychange
-  // reaches ONLY this test's client; the original document is restored after.
-  let previousDocument: Document;
-
+  // why: this is the one describe that drives the visibility handler by
+  // DISPATCHING a real document event on the shared jsdom document, so a leaked
+  // 'visibilitychange' listener from any un-stopped sibling client would fire
+  // here and inflate the counter. Hermeticity is maintained by
+  // stopTrackedClients() (here and in every sibling describe), which removes
+  // each client's listener in afterEach — so no per-test document swap is needed.
   beforeEach(() => {
     setActivePinia(createPinia());
     resetLiveClientCallLog();
     mock.timers.enable({ apis: ['setTimeout'] });
-    previousDocument = globalThis.document;
-    const freshDocument = document.implementation.createHTMLDocument('tab-focus');
-    Object.defineProperty(globalThis, 'document', {
-      value: freshDocument,
-      configurable: true,
-      writable: true,
-    });
   });
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'document', {
-      value: previousDocument,
-      configurable: true,
-      writable: true,
-    });
+    stopTrackedClients();
     mock.timers.reset();
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
@@ -656,6 +672,7 @@ describe('createLiveClient tab-focus resync', () => {
       credentials: 'secret',
       serverUrl: 'http://localhost:8000',
     });
+    clientsToStop.push(handle);
     const stub = lastClient();
     assert.ok(stub !== null);
     return { handle, stub: stub! };
