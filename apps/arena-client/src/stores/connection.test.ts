@@ -17,6 +17,52 @@ test('initial state — disconnected, no stateId, never connected, no frame stam
   assert.equal(store.lastFrameAtMs, null);
 });
 
+test('initial state — all four recovery counters start at 0 (WP-429)', () => {
+  setActivePinia(createPinia());
+  const store = useConnectionStore();
+  assert.equal(store.reconnectResyncCount, 0);
+  assert.equal(store.moveAckResyncCount, 0);
+  assert.equal(store.spectatorStaleResyncCount, 0);
+  assert.equal(store.tabFocusResyncCount, 0);
+});
+
+test('each record* action increments only its own counter by one (WP-429)', () => {
+  setActivePinia(createPinia());
+  const store = useConnectionStore();
+
+  store.recordReconnectResync();
+  assert.equal(store.reconnectResyncCount, 1);
+  assert.equal(store.moveAckResyncCount, 0);
+  assert.equal(store.spectatorStaleResyncCount, 0);
+  assert.equal(store.tabFocusResyncCount, 0);
+
+  store.recordMoveAckResync();
+  assert.equal(store.reconnectResyncCount, 1);
+  assert.equal(store.moveAckResyncCount, 1);
+  assert.equal(store.spectatorStaleResyncCount, 0);
+  assert.equal(store.tabFocusResyncCount, 0);
+
+  store.recordSpectatorStaleResync();
+  assert.equal(store.reconnectResyncCount, 1);
+  assert.equal(store.moveAckResyncCount, 1);
+  assert.equal(store.spectatorStaleResyncCount, 1);
+  assert.equal(store.tabFocusResyncCount, 0);
+
+  store.recordTabFocusResync();
+  assert.equal(store.reconnectResyncCount, 1);
+  assert.equal(store.moveAckResyncCount, 1);
+  assert.equal(store.spectatorStaleResyncCount, 1);
+  assert.equal(store.tabFocusResyncCount, 1);
+});
+
+test('a record* action called twice increments its counter to 2 (WP-429)', () => {
+  setActivePinia(createPinia());
+  const store = useConnectionStore();
+  store.recordReconnectResync();
+  store.recordReconnectResync();
+  assert.equal(store.reconnectResyncCount, 2);
+});
+
 test('setConnected records lastFrameAtMs from an explicit atMs, and defaults to a number', () => {
   setActivePinia(createPinia());
   const store = useConnectionStore();

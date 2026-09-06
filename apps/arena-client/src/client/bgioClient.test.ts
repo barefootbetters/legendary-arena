@@ -283,25 +283,40 @@ describe('createLiveClient move-ack watchdog (WP-312)', () => {
     mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
     // resync re-anchors via stop() then start()
     assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — the move-ack recovery path bumps its own counter (and no
+    // other) when it fires the resync.
+    const connection = useConnectionStore();
+    assert.equal(connection.moveAckResyncCount, 1);
+    assert.equal(connection.reconnectResyncCount, 0);
+    assert.equal(connection.spectatorStaleResyncCount, 0);
+    assert.equal(connection.tabFocusResyncCount, 0);
   });
 
   test('a second stuck move within the cooldown does NOT trigger a second resync', () => {
+    const connection = useConnectionStore();
     const { handle, stub } = startClientAtStateId(5);
     handle.submitMove('drawCards', 1);
     mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1); // first resync fires
     assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — the counter tracks actual resyncs, so it is 1 after the first.
+    assert.equal(connection.moveAckResyncCount, 1);
 
     // still stuck (no new frame); a second submit within the cooldown must not
     // arm a new watchdog, so ticking again produces no second resync.
     handle.submitMove('drawCards', 1);
     mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
     assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — a cooldown-suppressed trigger fires no resync, so the counter
+    // does NOT increment (it measures recoveries, not suppressed triggers).
+    assert.equal(connection.moveAckResyncCount, 1);
 
     // after the cooldown elapses, the watchdog is available again
     mock.timers.tick(RESYNC_COOLDOWN_MS + 1);
     handle.submitMove('drawCards', 1);
     mock.timers.tick(MOVE_ACK_TIMEOUT_MS + 1);
     assert.deepEqual(stub._ops, ['stop', 'start', 'stop', 'start']);
+    // why: WP-429 — the second actual resync (past the cooldown) bumps it to 2.
+    assert.equal(connection.moveAckResyncCount, 2);
   });
 
   test('an unknown (no-op) move name does not arm the watchdog', () => {
@@ -366,6 +381,14 @@ describe('createLiveClient reconnect-resync', () => {
     assert.deepEqual(stub._ops, []);
     mock.timers.tick(1);
     assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — the reconnect path bumps its own counter (past the inline
+    // cooldown gate) and no other. The increment happens when the reconnect is
+    // detected (past the gate), not when the deferred tear-down timer fires.
+    const connection = useConnectionStore();
+    assert.equal(connection.reconnectResyncCount, 1);
+    assert.equal(connection.moveAckResyncCount, 0);
+    assert.equal(connection.spectatorStaleResyncCount, 0);
+    assert.equal(connection.tabFocusResyncCount, 0);
   });
 
   test('the FIRST connect (incl. a pre-connect disconnected frame) never resyncs', () => {
@@ -376,6 +399,8 @@ describe('createLiveClient reconnect-resync', () => {
     stub._subscribers[0]!.callback({ G: {}, isConnected: true, _stateID: 1 });
     mock.timers.tick(1);
     assert.deepEqual(stub._ops, []);
+    // why: WP-429 — no resync fired, so the reconnect counter stays 0.
+    assert.equal(useConnectionStore().reconnectResyncCount, 0);
   });
 
   test('the reconnect frames produced by the resync itself do not loop (cooldown-gated)', () => {
@@ -467,6 +492,13 @@ describe('createLiveClient spectator-staleness watchdog', () => {
     stub._subscribers[0]!.callback(frameOnTurn('1', 5));
     mock.timers.tick(SPECTATOR_STALE_TIMEOUT_MS + 1);
     assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — the spectator-staleness path bumps its own counter (past its
+    // !resyncCoolingDown gate) and no other.
+    const connection = useConnectionStore();
+    assert.equal(connection.spectatorStaleResyncCount, 1);
+    assert.equal(connection.reconnectResyncCount, 0);
+    assert.equal(connection.moveAckResyncCount, 0);
+    assert.equal(connection.tabFocusResyncCount, 0);
   });
 
   test('a frame arriving before the deadline resets the watchdog (no resync)', () => {
@@ -526,6 +558,7 @@ describe('createLiveClient spectator-staleness watchdog', () => {
     // re-armed it, because no further frame arrives. The seat sat on the
     // pre-gameover board forever. Now the swallowed fire re-arms and recovers on
     // the next window.
+    const connection = useConnectionStore();
     const { handle, stub } = startAsPlayer0();
 
     // it is seat 1's turn → spectator watchdog armed (deadline at t=15s).
@@ -537,11 +570,17 @@ describe('createLiveClient spectator-staleness watchdog', () => {
     handle.submitMove('drawCards');
     mock.timers.tick(4001); // now t=12.001s → move-ack resync fires
     assert.deepEqual(stub._ops, ['stop', 'start'], 'move-ack resync opened the cooldown');
+    // why: WP-429 — the move-ack resync counts; the spectator one has not fired.
+    assert.equal(connection.moveAckResyncCount, 1);
+    assert.equal(connection.spectatorStaleResyncCount, 0);
 
     // at t=15s the spectator watchdog fires INSIDE that cooldown → swallowed.
     // Pre-fix this was terminal (no re-arm, no future frame). Post-fix it re-arms.
     mock.timers.tick(3000); // now t=15.001s → swallowed fire
     assert.deepEqual(stub._ops, ['stop', 'start'], 'the fire was swallowed by the open cooldown');
+    // why: WP-429 — a fire swallowed by the open cooldown performs no resync, so
+    // the spectator counter stays 0 (it counts recoveries, not swallowed fires).
+    assert.equal(connection.spectatorStaleResyncCount, 0);
 
     // the re-armed watchdog fires again a full window later, past the cooldown,
     // and this time performs the recovering resync.
@@ -551,6 +590,118 @@ describe('createLiveClient spectator-staleness watchdog', () => {
       ['stop', 'start', 'stop', 'start'],
       'the swallowed fire was retried and recovered instead of freezing',
     );
+    // why: WP-429 — only now (an actual resync past the cooldown) does the
+    // spectator counter reach 1; the move-ack counter is unchanged at 1.
+    assert.equal(connection.spectatorStaleResyncCount, 1);
+    assert.equal(connection.moveAckResyncCount, 1);
+  });
+});
+
+describe('createLiveClient tab-focus resync', () => {
+  // why: onVisibilityChange resyncs synchronously, but forceCooldownGatedResync
+  // opens a cooldown via setTimeout; mock timers let afterEach clean that up
+  // deterministically and let us cross the cooldown for the suppressed case.
+  // why: createLiveClient registers a document 'visibilitychange' listener and
+  // removes it only on stop(); sibling tests that create a client without
+  // stopping it leak listeners on the shared jsdom document. Because this is the
+  // one describe that drives the handler by DISPATCHING a real document event,
+  // those leaks would all fire and inflate the counter. Swap in a fresh
+  // same-realm document for each test here so a dispatched visibilitychange
+  // reaches ONLY this test's client; the original document is restored after.
+  let previousDocument: Document;
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    resetLiveClientCallLog();
+    mock.timers.enable({ apis: ['setTimeout'] });
+    previousDocument = globalThis.document;
+    const freshDocument = document.implementation.createHTMLDocument('tab-focus');
+    Object.defineProperty(globalThis, 'document', {
+      value: freshDocument,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'document', {
+      value: previousDocument,
+      configurable: true,
+      writable: true,
+    });
+    mock.timers.reset();
+    setClientFactoryForTesting(null);
+    resetLiveClientCallLog();
+  });
+
+  /**
+   * Sets the jsdom document to visible and dispatches a `visibilitychange`
+   * event so the registered `onVisibilityChange` handler runs. jsdom's default
+   * `visibilityState` is not reliably `'visible'`, so it is forced here.
+   */
+  function fireTabForeground(): void {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new window.Event('visibilitychange'));
+  }
+
+  function startAsPlayer0(): { handle: ReturnType<typeof createLiveClient>; stub: StubClient } {
+    const { factory, lastClient } = makeStubFactory();
+    setClientFactoryForTesting(factory);
+    const handle = createLiveClient({
+      matchID: 'm-tabfocus',
+      playerID: '0',
+      credentials: 'secret',
+      serverUrl: 'http://localhost:8000',
+    });
+    const stub = lastClient();
+    assert.ok(stub !== null);
+    return { handle, stub: stub! };
+  }
+
+  test('foregrounding the tab fires exactly one resync and bumps only the tab-focus counter (WP-429)', () => {
+    const connection = useConnectionStore();
+    const { stub } = startAsPlayer0();
+
+    fireTabForeground();
+    // the tab-focus resync re-anchors synchronously via stop() then start()
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+    assert.equal(connection.tabFocusResyncCount, 1);
+    assert.equal(connection.reconnectResyncCount, 0);
+    assert.equal(connection.moveAckResyncCount, 0);
+    assert.equal(connection.spectatorStaleResyncCount, 0);
+  });
+
+  test('a second foreground within the cooldown does NOT resync or increment (WP-429)', () => {
+    const connection = useConnectionStore();
+    const { stub } = startAsPlayer0();
+
+    fireTabForeground(); // first resync, cooldown opens
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+    assert.equal(connection.tabFocusResyncCount, 1);
+
+    fireTabForeground(); // within the cooldown → suppressed
+    assert.deepEqual(stub._ops, ['stop', 'start']);
+    // why: WP-429 — a cooldown-suppressed foreground fires no resync, so the
+    // counter does not increment.
+    assert.equal(connection.tabFocusResyncCount, 1);
+
+    // past the cooldown, foregrounding resyncs and increments again
+    mock.timers.tick(RESYNC_COOLDOWN_MS + 1);
+    fireTabForeground();
+    assert.deepEqual(stub._ops, ['stop', 'start', 'stop', 'start']);
+    assert.equal(connection.tabFocusResyncCount, 2);
+  });
+
+  test('stop() removes the visibility listener so a later foreground does not resync', () => {
+    const { handle, stub } = startAsPlayer0();
+    handle.stop();
+    fireTabForeground();
+    // only the explicit stop() ran; the removed handler fired no resync
+    assert.deepEqual(stub._ops, ['stop']);
+    assert.equal(useConnectionStore().tabFocusResyncCount, 0);
   });
 });
 

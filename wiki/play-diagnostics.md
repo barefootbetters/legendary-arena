@@ -152,7 +152,8 @@ re-wording cannot break the diagnostic" needs a future structured
 assembles the typed `transport` block (WP-428 / D-24249) from the WP-311
 [`connection` store](../apps/arena-client/src/stores/connection.ts) and the
 single click-time capture clock — so a freeze report names the client's live
-connection state instead of leaving the transport layer opaque. Five fields:
+connection state instead of leaving the transport layer opaque. Nine fields —
+five connection/staleness fields plus four recovery counters (WP-429 / D-24250):
 
 - `isConnected` / `lastStateId` / `hasEverConnected` — read verbatim from the
   `connection` store: boardgame.io's `transport.isConnected`, the last observed
@@ -164,6 +165,16 @@ connection state instead of leaving the transport layer opaque. Five fields:
   (or `null` before the first frame). This is the decisive number for the
   "waiting-forever-for-a-server-frame" freeze — a large value means the client
   stopped receiving server frames while the tab still looks alive.
+- `reconnectResyncCount` / `moveAckResyncCount` / `spectatorStaleResyncCount` /
+  `tabFocusResyncCount` — read verbatim from the `connection` store: how many
+  times each of the four silent auto-recovery paths in `bgioClient.ts` has fired
+  a resync (the D-24232 transport-reconnect, the WP-312 move-ack timeout, the
+  spectator-staleness watchdog, and the tab-focus foregrounding). Paired with
+  `timeSinceLastFrameMs`, they turn the most common live freeze into a two-number
+  read: how stale the connection is, and how many times the client already
+  auto-resynced trying to fix it. All-zero counters mean the client never tried
+  to recover (a pure logical wedge); non-zero counters mean it fought to recover
+  and lost.
 
 The derivation lives in the pure `buildTransportDiagnostics(state, capturedAtMs)`
 helper (the clock is passed in), so `buildDiagnosticReport` stays clock-free and
@@ -171,8 +182,11 @@ the block rides straight through — the same pass-through posture as
 `uiStateSnapshot` / `matchSetup`, except the block is **typed**, not opaque. It
 reads only the `connection` Pinia store (framework/transport state, never `G`,
 never persisted per the WP-116 disconnect policy), so the EC-260 module boundary
-holds. The `bgioClient` reconnect/resync/watchdog **counters** are a separate,
-not-yet-surfaced follow-up (see Edge Cases).
+holds. The four recovery counters (WP-429 / D-24250) live on that same
+`connection` store: each auto-recovery path in `bgioClient.ts` bumps its counter
+the moment it commits to a resync (past its cooldown gate), so the counters ride
+the store the block already reads — no exporter change, no recovery-behavior
+change (the paths only also count).
 
 ### The export flow
 
@@ -238,10 +252,13 @@ or the stored entry is corrupt.
   `timeSinceLastFrameMs` (the capture clock minus `lastFrameAtMs`) — the
   staleness signal that separates "my browser is wedged" from "the server
   advanced past my view." The store records `lastFrameAtMs` on every
-  subscribe frame via a defaulted parameter, so
-  [`client/bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts)
-  is untouched. The `bgioClient` reconnect/resync/watchdog **counters**
-  are not yet surfaced — a deferred follow-up (see Edge Cases).
+  subscribe frame via a defaulted parameter. It also carries four **recovery
+  counters** (WP-429 / D-24250) — `reconnectResyncCount`, `moveAckResyncCount`,
+  `spectatorStaleResyncCount`, `tabFocusResyncCount` — one per silent
+  auto-recovery path in `bgioClient`, each incremented when its path commits to a
+  resync (past the cooldown gate). They count only; no recovery threshold,
+  cooldown, or behavior changes, and the exporter is unchanged (the counts ride
+  the store the block already reads).
 - **[Operational Health Checks](operational-health-checks.md).** The
   sibling operator tool. Those probes answer "is the production
   perimeter reachable" from the server side; Play Diagnostics answers
@@ -283,16 +300,17 @@ or the stored entry is corrupt.
   client's console or transport. Read `playerId` against
   `uiStateSnapshot.game.activePlayerId` to know which seat's view you
   are holding.
-- **Transport data is captured; reconnect counters and performance data
-  are not.** As of WP-428 the report carries the `transport` block —
+- **Transport data and recovery counters are captured; performance data
+  is not.** As of WP-428 the report carries the `transport` block —
   connection status, last `_stateID`, and `timeSinceLastFrameMs` (the
-  "waiting forever for a server reply" staleness signal). Still absent:
-  the `bgioClient` reconnect/resync/watchdog **counters** (they live as
-  locals in the transport wrapper — a separate follow-up), and any
-  **performance / memory** signals (long tasks, heap, frame drops — a
-  separate perf-recorder follow-up). A blocked main thread also can't be
-  captured by a click handler that never runs; a continuous recorder is
-  the future shape.
+  "waiting forever for a server reply" staleness signal) — and as of WP-429 it
+  also carries the four `bgioClient` reconnect/resync/watchdog **counters**
+  (`reconnectResyncCount` / `moveAckResyncCount` / `spectatorStaleResyncCount` /
+  `tabFocusResyncCount`), so a freeze report names how many times the client
+  auto-resynced before export. Still absent: any **performance / memory**
+  signals (long tasks, heap, frame drops — a separate perf-recorder follow-up). A
+  blocked main thread also can't be captured by a click handler that never runs;
+  a continuous recorder is the future shape.
 - **`matchSetup` is `null` for joiners.** Only the client that *created*
   the match persisted the input composition, so a report from a joined
   player carries `matchSetup: null`. Pull the setup from the creator's
@@ -328,8 +346,10 @@ or the stored entry is corrupt.
   the impure exporter: context collection, download, clipboard copy.
 - [`apps/arena-client/src/client/bgioClient.ts`](../apps/arena-client/src/client/bgioClient.ts) —
   the transport wrapper whose every-frame `setConnected` call feeds the
-  `connection` store the `transport` block reads; it also holds the
-  reconnect/resync/watchdog counters that are not yet exported.
+  `connection` store the `transport` block reads; its four auto-recovery paths
+  (`onTransportReconnect`, `onWatchdogFire`, `onSpectatorWatchdogFire`,
+  `onVisibilityChange`) each bump a `connection`-store recovery counter (WP-429)
+  when they fire a resync.
 
 ## History
 
@@ -371,6 +391,18 @@ or the stored entry is corrupt.
   activate". `DID_NOT_ACTIVATE_LINE` deleted; `awaitingPlayerInput` kept.
   Completes the log-outcome arc (B.3a → B.3b → B.3c); the outcome-guess
   regression class (WP-328, WP-417/PR #980) is closed.
+- **WP-429 / D-24250** — extended the `transport` block with **four recovery
+  counters** (`reconnectResyncCount`, `moveAckResyncCount`,
+  `spectatorStaleResyncCount`, `tabFocusResyncCount`), one per silent
+  auto-recovery path in `bgioClient` — each incremented on the `connection` store
+  when its path commits to a resync (past the cooldown gate). No
+  recovery-behavior change; the exporter is unchanged (the counts ride the store
+  the block already reads). *Execution note:* the WP was drafted (off
+  `43a5fcf8`) around a shared `forceCooldownGatedResync` helper with a `cause`
+  parameter; PR #1691 had since split the spectator path into its own
+  self-re-arming `onSpectatorWatchdogFire`, so each of the four paths now owns its
+  function body and takes a single past-gate increment directly — the `cause`
+  parameter was unnecessary and was not added (see D-24250).
 
 ## References
 
@@ -383,5 +415,7 @@ or the stored entry is corrupt.
 - [WP-314 — diagnostic effect provenance](../docs/ai/work-packets/WP-314-diagnostic-effect-provenance.md)
 - [WP-315 — card ability text in display and diagnostic](../docs/ai/work-packets/WP-315-card-ability-text-in-display-and-diagnostic.md)
 - [WP-417 — play-effect and action logging](../docs/ai/work-packets/WP-417-play-effect-and-action-logging.md)
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-22801, D-24100, D-24101, D-24237
+- [WP-428 — diagnostic transport block](../docs/ai/work-packets/WP-428-diagnostic-transport-block.md)
+- [WP-429 — transport reconnect/resync counters](../docs/ai/work-packets/WP-429-transport-reconnect-resync-counters.md)
+- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-22801, D-24100, D-24101, D-24237, D-24249, D-24250
 - [Operational Health Checks](operational-health-checks.md) — sibling operator tool

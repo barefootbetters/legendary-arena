@@ -58,6 +58,13 @@ function sampleContext(
       hasEverConnected: false,
       lastFrameAtMs: null,
       timeSinceLastFrameMs: null,
+      // why: WP-429 — the transport block now carries four recovery counters;
+      // the helper defaults them to 0 (a fresh match, no auto-recovery yet) so
+      // existing builder cases stay unchanged and counter-specific cases override.
+      reconnectResyncCount: 0,
+      moveAckResyncCount: 0,
+      spectatorStaleResyncCount: 0,
+      tabFocusResyncCount: 0,
     },
     ...overrides,
   };
@@ -364,7 +371,16 @@ describe('diagnostics — pure redaction + report builders', () => {
 describe('diagnostics — transport block (WP-428)', () => {
   test('should_derive_timeSinceLastFrameMs_from_capture_clock_minus_lastFrameAtMs', () => {
     const transport = buildTransportDiagnostics(
-      { isConnected: true, lastStateId: 42, hasEverConnected: true, lastFrameAtMs: 1000 },
+      {
+        isConnected: true,
+        lastStateId: 42,
+        hasEverConnected: true,
+        lastFrameAtMs: 1000,
+        reconnectResyncCount: 0,
+        moveAckResyncCount: 0,
+        spectatorStaleResyncCount: 0,
+        tabFocusResyncCount: 0,
+      },
       1350,
     );
     assert.equal(transport.isConnected, true);
@@ -376,11 +392,45 @@ describe('diagnostics — transport block (WP-428)', () => {
 
   test('should_derive_null_timeSinceLastFrameMs_when_no_frame_stamp_yet', () => {
     const transport = buildTransportDiagnostics(
-      { isConnected: false, lastStateId: null, hasEverConnected: false, lastFrameAtMs: null },
+      {
+        isConnected: false,
+        lastStateId: null,
+        hasEverConnected: false,
+        lastFrameAtMs: null,
+        reconnectResyncCount: 0,
+        moveAckResyncCount: 0,
+        spectatorStaleResyncCount: 0,
+        tabFocusResyncCount: 0,
+      },
       9999,
     );
     assert.equal(transport.lastFrameAtMs, null);
     assert.equal(transport.timeSinceLastFrameMs, null);
+  });
+
+  test('should_copy_the_four_recovery_counters_from_state_verbatim (WP-429)', () => {
+    // why: WP-429 / D-24250 — the builder copies each counter from the connection
+    // store with no derivation, so the block reports exactly what the wrapper
+    // tallied at the four recovery sites.
+    const transport = buildTransportDiagnostics(
+      {
+        isConnected: true,
+        lastStateId: 7,
+        hasEverConnected: true,
+        lastFrameAtMs: 2000,
+        reconnectResyncCount: 3,
+        moveAckResyncCount: 1,
+        spectatorStaleResyncCount: 4,
+        tabFocusResyncCount: 2,
+      },
+      2500,
+    );
+    assert.equal(transport.reconnectResyncCount, 3);
+    assert.equal(transport.moveAckResyncCount, 1);
+    assert.equal(transport.spectatorStaleResyncCount, 4);
+    assert.equal(transport.tabFocusResyncCount, 2);
+    // the derived staleness signal is unaffected by the counters
+    assert.equal(transport.timeSinceLastFrameMs, 500);
   });
 
   test('should_carry_transport_block_through_builder_and_round_trip', () => {
@@ -390,6 +440,12 @@ describe('diagnostics — transport block (WP-428)', () => {
       hasEverConnected: true,
       lastFrameAtMs: 2000,
       timeSinceLastFrameMs: 120,
+      // why: WP-429 — non-zero counters prove they round-trip through the report
+      // envelope alongside the connection fields.
+      reconnectResyncCount: 3,
+      moveAckResyncCount: 1,
+      spectatorStaleResyncCount: 4,
+      tabFocusResyncCount: 2,
     };
     const report = buildDiagnosticReport([], sampleContext({ transport }));
     // Straight pass-through — the builder derives nothing here (the one
