@@ -209,3 +209,40 @@ describe("parseLagnLoadout — result round-trip (WP-549 / D-24358)", () => {
     assert.deepEqual(result.composition.result, { outcome: "victory" });
   });
 });
+
+describe("parseLagnLoadout hero alternates bench (WP-404 / D-24212)", () => {
+  it("reads setup.hero_alternates into composition.heroAlternateIds (ids only)", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    // why: hero_alternates is version-gated at >= 1.3.0 (D-24211); bump the read
+    // version and add a bench disjoint from setup.heroes (validator enforces both).
+    lagn.lagn_version = "1.5.0";
+    lagn.setup.hero_alternates = [
+      { id: "core/rogue", name: "" },
+      { id: "core/cyclops", name: "" },
+    ];
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.deepEqual(result.composition.heroAlternateIds, ["core/rogue", "core/cyclops"]);
+  });
+
+  it("a document with no bench imports to an absent heroAlternateIds (never [])", () => {
+    // makeValidLagnText carries no hero_alternates.
+    const result = parseLagnLoadout(makeValidLagnText());
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(
+      "heroAlternateIds" in result.composition,
+      false,
+      "an absent bench must not materialize the key on the composition",
+    );
+  });
+
+  it("rejects a pre-1.3.0 document carrying a bench (the version gate is loud, not silent)", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    lagn.lagn_version = "1.0.0";
+    lagn.setup.hero_alternates = [{ id: "core/rogue", name: "" }];
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, false, "a bench on a 1.0.0 document must be rejected, not stripped");
+  });
+});

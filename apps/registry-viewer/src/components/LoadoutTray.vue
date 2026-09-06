@@ -18,6 +18,9 @@ interface Props {
   heroes: number;
   villains: number;
   henchmen: number;
+  // why: WP-404 — reserve-bench size (envelope heroAlternateIds), rendered as a
+  // distinct "N in reserve" part so the pill never conflates it with played heroes.
+  bench: number;
   issues: number;
 }
 
@@ -39,6 +42,11 @@ const pickParts = computed<string[]>(() => {
   }
   if (props.heroes > 0) {
     parts.push(`${props.heroes} ${props.heroes === 1 ? "hero" : "heroes"}`);
+  }
+  // why: WP-404 — the reserve bench reads "N in reserve", kept separate from the
+  // played-hero count so the summary never implies benched heroes are on the board.
+  if (props.bench > 0) {
+    parts.push(`${props.bench} in reserve`);
   }
   if (props.villains > 0) {
     parts.push(`${props.villains} ${props.villains === 1 ? "villain" : "villains"}`);

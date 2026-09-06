@@ -73,6 +73,10 @@ function makeRecordingDraft(): { api: UseLoadoutDraftApi; calls: Call[] } {
     addVillainGroup: record("addVillainGroup"),
     addHenchmanGroup: record("addHenchmanGroup"),
     addHeroGroup: record("addHeroGroup"),
+    // why: WP-404 — the apply path now calls addHeroAlternate for a LAGN that
+    // carries setup.hero_alternates. Without it here the double would throw on
+    // exactly the bench round trip AC-6 exists to support.
+    addHeroAlternate: record("addHeroAlternate"),
     setCount: record("setCount"),
     // why: EC-429 — the apply path now calls setSupportPool for a LAGN that
     // carries pools. Without it here the double would throw on exactly the
@@ -224,5 +228,41 @@ describe("useLagnFromUrl", () => {
     const { api, calls } = makeRecordingDraft();
     useLagnFromUrl(api);
     assert.equal(calls.filter((call) => call[0] === "setSupportPool").length, 0);
+  });
+
+  // ── Hero alternates bench through the share link (WP-404 / AC-6) ─────────
+
+  test("a ?lagn= carrying setup.hero_alternates applies the bench to the draft", () => {
+    const benched = {
+      ...VALID_LAGN,
+      // why: hero_alternates is version-gated at >= 1.3.0 (D-24211); the bench is
+      // disjoint from setup.heroes (validator enforces both).
+      lagn_version: "1.5.0",
+      setup: {
+        ...VALID_LAGN.setup,
+        hero_alternates: [
+          { id: "core/wolverine", name: "Wolverine" },
+          { id: "core/storm", name: "Storm" },
+        ],
+      },
+    };
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(benched))}`);
+    const { api, calls } = makeRecordingDraft();
+    const result = useLagnFromUrl(api);
+    assert.deepEqual(result.lagnUrlErrors, []);
+    const benchCalls = calls.filter((call) => call[0] === "addHeroAlternate");
+    assert.deepEqual(benchCalls, [
+      ["addHeroAlternate", "core/wolverine"],
+      ["addHeroAlternate", "core/storm"],
+    ]);
+    // why: resetDraft still fires first — the bench applies atomically with the rest.
+    assert.deepEqual(calls[0], ["resetDraft"]);
+  });
+
+  test("a ?lagn= without a bench makes no addHeroAlternate calls", () => {
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(VALID_LAGN))}`);
+    const { api, calls } = makeRecordingDraft();
+    useLagnFromUrl(api);
+    assert.equal(calls.filter((call) => call[0] === "addHeroAlternate").length, 0);
   });
 });

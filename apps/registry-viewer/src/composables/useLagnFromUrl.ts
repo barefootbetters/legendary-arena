@@ -82,6 +82,13 @@ function applyComposition(
   for (const heroDeckId of composition.heroDeckIds) {
     draftApi.addHeroGroup(heroDeckId);
   }
+  // why: WP-404 / D-24212 — apply the reserve bench to the ENVELOPE
+  // (draft.heroAlternateIds) via the public setter, the SAME sequence
+  // LoadoutBuilder.applyLagnImport uses. A bench applied here but not there (or
+  // vice versa) is the round-trip asymmetry AC-5/AC-6 exist to catch.
+  for (const heroAlternateId of composition.heroAlternateIds ?? []) {
+    draftApi.addHeroAlternate(heroAlternateId);
+  }
   draftApi.setCount("bystandersCount", composition.bystandersCount);
   draftApi.setCount("woundsCount", composition.woundsCount);
   draftApi.setCount("officersCount", composition.officersCount);

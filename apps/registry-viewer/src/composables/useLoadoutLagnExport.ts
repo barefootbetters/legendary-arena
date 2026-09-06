@@ -150,10 +150,21 @@ function supportPoolsToLagn(
 function compositionToLagnSetup(
   composition: MatchSetupDocument["composition"],
   supportPools: MatchSetupDocument["supportPools"],
+  heroAlternateIds: MatchSetupDocument["heroAlternateIds"],
 ): LAGN["setup"] {
   const pools = supportPoolsToLagn(supportPools);
+  // why: WP-404 / D-24212 — emit the reserve bench as `setup.hero_alternates`,
+  // the same `{ id, name }` shape as `setup.heroes` (the LAGN validator resolves
+  // the name). OMIT the key entirely when the bench is empty or absent — an empty
+  // array asserts "a bench exists and is empty", a different claim, and the
+  // WP-402 gate accepts the block on this 1.5.0 export (>= 1.3.0).
+  const heroAlternates =
+    heroAlternateIds !== undefined && heroAlternateIds.length > 0
+      ? heroAlternateIds.map((id) => ({ id, name: "" }))
+      : undefined;
   return {
     ...(pools === undefined ? {} : { support_pools: pools }),
+    ...(heroAlternates === undefined ? {} : { hero_alternates: heroAlternates }),
     mastermind: {
       id: composition.mastermindId,
       name: "", // LAGN requires name field; registry viewer only stores ID. Validator handles optional resolution.
@@ -196,7 +207,7 @@ function buildLagnObject(
     return null;
   }
 
-  const setup = compositionToLagnSetup(composition, draft.supportPools);
+  const setup = compositionToLagnSetup(composition, draft.supportPools, draft.heroAlternateIds);
   const lagnVariant = mapVariantToLagn(variant);
 
   const document: LAGN = {
@@ -309,6 +320,10 @@ export function useLoadoutLagnExport(draft: Ref<MatchSetupDocument>): UseLoadout
       "villain_groups",
       "henchmen_groups",
       "heroes",
+      // why: WP-404 — order the bench right after the played heroes for a
+      // readable diff. This replacer appends unlisted keys, so the block would
+      // survive without this entry, but listing it keeps the emitted order stable.
+      "hero_alternates",
       "bystanders_count",
       "wounds_count",
       "shield_officers_count",

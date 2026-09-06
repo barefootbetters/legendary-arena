@@ -1149,6 +1149,9 @@ const loadoutTraySummary = computed(() => {
       heroes: 0,
       villains: 0,
       henchmen: 0,
+      // why: WP-404 — reserve-bench count for the tray summary (envelope-level,
+      // absent on a blank draft).
+      bench: 0,
       issues: 0,
     };
   }
@@ -1159,6 +1162,9 @@ const loadoutTraySummary = computed(() => {
     heroes: composition.heroDeckIds.length,
     villains: composition.villainGroupIds.length,
     henchmen: composition.henchmanGroupIds.length,
+    // why: WP-404 — the bench lives on the envelope (draft.heroAlternateIds), not
+    // the composition; `?? []` because the key is absent until the first reserve.
+    bench: (api.draft.value.heroAlternateIds ?? []).length,
     issues: api.readinessIssueCount.value,
   };
 });
@@ -1205,6 +1211,7 @@ const loadoutTraySummary = computed(() => {
       :heroes="loadoutTraySummary.heroes"
       :villains="loadoutTraySummary.villains"
       :henchmen="loadoutTraySummary.henchmen"
+      :bench="loadoutTraySummary.bench"
       :issues="loadoutTraySummary.issues"
       @open="activeView = 'loadout'"
       @view-as-cards="navigateToLoadoutGallery"

@@ -31077,8 +31077,11 @@ every future reader that the engine does not consume it.
 
 ### D-24213 — The LAGN writer flips together with its producer, not ahead of it
 
-**Status:** Drafted 2026-07-20 (WP-404); not yet landed — flips to Active
-(post-execution) when WP-404 merges.
+**Status:** Active (2026-09-06, WP-404 executed). The rule stands as recorded and
+was exemplified by WP-405 (→1.4.0) and WP-641 (→1.5.0), which each flipped the
+writer with their own producer. WP-404 performed no flip: its Registry Viewer bench
+producer emits `setup.hero_alternates` on the already-`1.5.0` writer (`>= 1.3.0`
+gate). `packages/lagn-spec` untouched; §21 not triggered.
 
 **Decision.** `LAGN_VERSION` (the single version this build stamps on documents
 it writes) is bumped **in the same packet that wires a producer to emit the new
