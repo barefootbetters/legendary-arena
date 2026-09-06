@@ -39738,9 +39738,18 @@ _Active 2026-09-06 — WP-564 / EC-599. Reserves fulfilled: EC-599 + D-24373. Ha
 
 Protect this file.
 
-### D-24464 — Hero Condition-Gate Family: Outwit / Worthy / Savior / Antics as `HeroCondition`s (Reserved — lands at WP-653 execution)
+### D-24464 — Hero Condition-Gate Family: Outwit / Worthy / Savior / Antics as `HeroCondition`s (Active — WP-653 / EC-690)
 
-**Status:** Reserved — lands on WP-653 / EC-690 execution.
+**Status:** Active — executed 2026-09-06 via WP-653 / EC-690. Engine 3045/0,
+`finalStateHash` byte-unchanged; the four ledger rows read `status: condition`;
+the `/coverage` gauge credits `condition`-status as resolved (15.2% → 26.1%);
+all coverage `:check` gates green. **D-24026 live-on-surface OPERATOR-PENDING.**
+
+**Execution correction.** The effect-marker durability source is
+`scripts/convert-cards/inputs/hero-ability-markers.json` (applied by
+`apply-hero-ability-markers.mjs`), NOT the per-set patches this decision's draft
+named — the patches carry only hero imageUrls and were correctly untouched. The
+WP intent (durable, regen-safe markers) is realized; `cards:check` is green.
 
 **Decision.** Four printed hero abilities whose onPlay effect is gated on a
 game-state predicate — **Outwit**, **Worthy**, **Savior**, **Antics** — are
@@ -39813,7 +39822,7 @@ scaffold-confirmed: engine 3028/0 with the four conditions + parser arms, no
 fixture re-pin).
 
 **Packet:** WP-653.
-**Drafted:** 2026-09-06 (number reserved in the ledger). **Status:** Reserved — lands on WP-653 execution.
+**Drafted:** 2026-09-06 (number reserved in the ledger). **Landed:** 2026-09-06 (WP-653 / EC-690 execution). **Status:** Active.
 ### D-24465 — Final-turn banner mounts on the live play surface (`PlayViewport`), not only `ArenaHud` (Active 2026-09-06 — WP-654 / EC-691)
 
 **Status:** Active (post-execution) 2026-09-06 (WP-654 / EC-691).
