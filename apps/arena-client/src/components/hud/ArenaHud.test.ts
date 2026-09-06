@@ -100,6 +100,7 @@ const FIXTURE_VARIANTS: readonly FixtureName[] = [
   'mid-turn',
   'endgame-win',
   'endgame-loss',
+  'final-turn',
 ];
 
 for (const variant of FIXTURE_VARIANTS) {

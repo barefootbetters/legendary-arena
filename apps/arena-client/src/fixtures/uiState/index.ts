@@ -6,18 +6,20 @@
  */
 
 import type { UIState } from '@legendary-arena/game-engine';
-import { midTurn, endgameWin, endgameLoss } from './typed';
+import { midTurn, endgameWin, endgameLoss, finalTurn } from './typed';
 
 /**
- * The three committed fixture names. Inhabited by `'mid-turn'`,
- * `'endgame-win'`, `'endgame-loss'`.
+ * The committed fixture names. Inhabited by `'mid-turn'`, `'endgame-win'`,
+ * `'endgame-loss'`, and `'final-turn'` (WP-654 — an in-progress snapshot
+ * carrying the WP-367 `finalTurn` projection for the final-turn banner).
  */
-export type FixtureName = 'mid-turn' | 'endgame-win' | 'endgame-loss';
+export type FixtureName = 'mid-turn' | 'endgame-win' | 'endgame-loss' | 'final-turn';
 
 const KNOWN_FIXTURE_NAMES: readonly FixtureName[] = [
   'mid-turn',
   'endgame-win',
   'endgame-loss',
+  'final-turn',
 ];
 
 /**
@@ -45,7 +47,7 @@ export function isFixtureName(candidate: string): candidate is FixtureName {
  * this switch just dispatches by name. EC-067 forbids environment-dependent
  * fixture resolution because it would split the compile-time validation path.
  *
- * @param name One of the three committed fixture names.
+ * @param name One of the committed fixture names.
  * @returns The typed `UIState` snapshot for that fixture.
  */
 export function loadUiStateFixture(name: FixtureName): UIState {
@@ -56,5 +58,7 @@ export function loadUiStateFixture(name: FixtureName): UIState {
       return endgameWin;
     case 'endgame-loss':
       return endgameLoss;
+    case 'final-turn':
+      return finalTurn;
   }
 }

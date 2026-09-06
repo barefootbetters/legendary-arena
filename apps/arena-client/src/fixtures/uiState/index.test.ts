@@ -41,10 +41,23 @@ test('endgame-loss fixture reports gameOver.outcome === "loss"', () => {
   assert.equal(fixture.game.phase, 'end');
 });
 
-test('isFixtureName accepts the three known names', () => {
+test('final-turn fixture loads with the WP-367 finalTurn projection set', () => {
+  const fixture = loadUiStateFixture('final-turn');
+  assert.ok(fixture.finalTurn, 'final-turn fixture must include a finalTurn block');
+  assert.equal(typeof fixture.finalTurn.reason, 'string');
+  assert.equal(typeof fixture.finalTurn.heroDeckRemaining, 'number');
+  assert.equal(typeof fixture.finalTurn.villainDeckRemaining, 'number');
+  // why: the banner suppresses at game over, so the fixture is an in-progress
+  // snapshot — it must not also carry gameOver (the engine omits finalTurn once
+  // gameOver is set).
+  assert.equal('gameOver' in fixture, false);
+});
+
+test('isFixtureName accepts the known names', () => {
   assert.equal(isFixtureName('mid-turn'), true);
   assert.equal(isFixtureName('endgame-win'), true);
   assert.equal(isFixtureName('endgame-loss'), true);
+  assert.equal(isFixtureName('final-turn'), true);
 });
 
 test('isFixtureName rejects unknown and malformed names', () => {
