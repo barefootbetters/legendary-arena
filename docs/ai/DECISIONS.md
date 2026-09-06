@@ -31047,8 +31047,12 @@ required to fail against the pre-fix equality gate.
 
 ### D-24212 — The MATCH-SETUP hero-alternates field is non-authoritative
 
-**Status:** Drafted 2026-07-20 (WP-403); not yet landed — flips to Active
-(post-execution) when WP-403 merges.
+**Status:** Active (2026-09-05, WP-403 executed). Optional `heroAlternateIds`
+landed on the MATCH-SETUP envelope, validated for shape and identity only
+(reusing `checkArrayExtIds`, plus disjointness from `composition.heroDeckIds`),
+with no count rule. `CompositionSchema` untouched; registry suite 248/0 and the
+full repo green (engine 3002/0); no `packages/game-engine` file changed and
+`finalStateHash` unmoved (AC-8).
 
 **Decision.** The envelope field `heroAlternateIds` (WP-403) is validated for
 **shape and identity only** — well-formed, unique, set-qualified ext_ids that

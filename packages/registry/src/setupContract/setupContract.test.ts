@@ -737,6 +737,125 @@ describe("setupContract (WP-091)", () => {
     assert.equal(validateMatchSetupDocument(document, registry).ok, true);
   });
 
+  // ── Hero alternates bench (WP-403 / D-24212) ─────────────────────────────
+  //
+  // why: these stay inside the single wrapping describe per the file header —
+  // a second top-level describe would change the locked suite count.
+
+  test("AC-1 a document carrying a valid heroAlternateIds bench validates and survives the field-by-field rebuild", () => {
+    const registry = buildStubRegistry();
+    // heroDeckIds is ["core/hero-deck-alpha"], so beta/gamma do not overlap.
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      heroAlternateIds: ["core/hero-deck-beta", "core/hero-deck-gamma"],
+    };
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      // why: the validator rebuilds the document field-by-field, so a field it
+      // forgets to echo parses cleanly and then vanishes. Asserting the bench
+      // survives the round-trip is the only thing that catches that regression.
+      assert.deepStrictEqual(result.value.heroAlternateIds, [
+        "core/hero-deck-beta",
+        "core/hero-deck-gamma",
+      ]);
+    }
+  });
+
+  test("AC-2 a document WITHOUT heroAlternateIds validates exactly as before (regression)", () => {
+    const registry = buildStubRegistry();
+    const document = buildValidDocument();
+    assert.equal(document.heroAlternateIds, undefined);
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      // Absent in → absent out: the field is not materialized onto the value.
+      assert.equal("heroAlternateIds" in result.value, false);
+    }
+  });
+
+  test("AC-3 an unknown bench hero ext_id is rejected with a full-sentence unknown_extid error naming the field and id", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      heroAlternateIds: ["core/hero-deck-missing"],
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    const benchError = errors.find(
+      (candidate) =>
+        candidate.field === "heroAlternateIds[0]" &&
+        candidate.code === "unknown_extid",
+    );
+    assert.ok(benchError, "Expected unknown_extid on heroAlternateIds[0].");
+    assert.ok(
+      benchError.message.includes("core/hero-deck-missing") &&
+        benchError.message.includes("hero"),
+      "Expected the message to name the offending id and the hero entity type.",
+    );
+  });
+
+  test("AC-4 a duplicate within heroAlternateIds is rejected at parse", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      heroAlternateIds: ["core/hero-deck-beta", "core/hero-deck-beta"],
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => candidate.field === "heroAlternateIds"),
+      "Expected a duplicate heroAlternateIds error.",
+    );
+  });
+
+  test("AC-5 a hero listed in both heroAlternateIds and composition.heroDeckIds is rejected with the verbatim overlap message", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      // heroDeckIds is ["core/hero-deck-alpha"]; benching it too overlaps.
+      heroAlternateIds: ["core/hero-deck-alpha"],
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    const overlapError = errors.find(
+      (candidate) => candidate.code === "hero_alternate_overlap",
+    );
+    assert.ok(overlapError, "Expected a hero_alternate_overlap error.");
+    assert.strictEqual(
+      overlapError.message,
+      "The heroAlternateIds entry core/hero-deck-alpha is also listed in composition.heroDeckIds — a hero is either played or held in reserve, never both.",
+    );
+    assert.strictEqual(overlapError.field, "heroAlternateIds");
+  });
+
+  test("AC-6 a misspelled envelope key (heroAlternatIds) is still rejected — the field addition did not loosen .strict()", () => {
+    const registry = buildStubRegistry();
+    const document = {
+      ...buildValidDocument(),
+      heroAlternatIds: ["core/hero-deck-beta"],
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => candidate.code === "unknown_field"),
+      "Expected a misspelled envelope key to be rejected by .strict().",
+    );
+  });
+
+  test("AC-7 the bench is envelope-side only — heroAlternateIds inside composition is rejected (9-field lock intact)", () => {
+    const registry = buildStubRegistry();
+    const base = buildValidDocument();
+    const document = {
+      ...base,
+      composition: {
+        ...base.composition,
+        heroAlternateIds: ["core/hero-deck-beta"],
+      },
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    assert.ok(
+      errors.some((candidate) => candidate.code === "unknown_field"),
+      "Expected heroAlternateIds inside composition to be rejected as unknown_field.",
+    );
+  });
+
   // why: EC-427 — these values are duplicated from the engine rather than
   // imported (the registry package must stay browser-safe). This test reads
   // the engine source directly so the copies cannot silently drift apart.

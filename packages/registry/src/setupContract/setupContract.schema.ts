@@ -185,6 +185,14 @@ export const EnvelopeSchema = z
       .min(1, "The expansions array must contain at least one entry."),
     heroSelectionMode: HeroSelectionModeSchema,
     supportPools: SupportPoolsSchema.optional(),
+    // why: WP-403 / D-24212 — the hero-alternates bench lives on the ENVELOPE
+    // (beside heroSelectionMode / supportPools), NOT in CompositionSchema: the
+    // nine-field composition lock describes the board and a bench is not on it.
+    // `uniqueExtIdArray` enforces set-qualified, non-empty, duplicate-free
+    // ext_ids (D-10014); `.optional()` keeps every pre-existing document valid.
+    // The envelope keeps `.strict()` below, so a misspelled key (e.g.
+    // `heroAlternatIds`) is still rejected — gaining one field did not loosen it.
+    heroAlternateIds: uniqueExtIdArray("heroAlternateIds").optional(),
   })
   .strict();
 
