@@ -17,7 +17,11 @@ source:
   - ../apps/wiki-viewer/assets/css/style.css
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/layouts/shortcodes/audio.html
-last-reviewed: 2026-08-05
+  - ../apps/wiki-viewer/layouts/shortcodes/audio-inline.html
+  - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
+  - ../apps/wiki-viewer/layouts/shortcodes/swatch.html
+  - ../.github/workflows/wiki-viewer.yml
+last-reviewed: 2026-09-05
 ---
 
 # Ewiki Authoring
@@ -186,26 +190,32 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **Custom shortcodes: only `audio`.** The viewer defines exactly one
-  custom shortcode — `audio` (see *Embedding audio* below). Hugo's
-  built-in shortcodes still run, so long as their output is static and
-  JS-free — `youtube` renders an `<iframe>` and is fine
+- **Custom shortcodes: four.** The viewer defines four custom
+  shortcodes — `audio` and `audio-inline` (see *Embedding audio*),
+  `swatch` and `motif-table` (see *Colour swatches and motif tables*).
+  Hugo's built-in shortcodes still run, so long as their output is static
+  and JS-free — `youtube` renders an `<iframe>` and is fine
   ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode is
   **out**: its Chroma output is non-deterministic and fails the
   determinism gate.
-- **No JavaScript.** Production builds emit zero `<script>` tags.
+- **No content JavaScript.** Production builds emit zero `<script>` tags
+  **except** the single sanctioned Pagefind search loader
+  (`<script data-wiki-search>`, D-24293) that the layout chrome ships for
+  site search. The CI gate asserts every rendered `<script>` is that one
+  loader — any other script fails the build. You cannot add page-authored
+  JavaScript.
 - **No custom CSS classes in markdown.** Standard markdown has no
   mechanism to apply CSS classes to elements. All styling comes from
   element-level CSS rules in the theme.
 
 ### Embedding audio
 
-The wiki has one custom shortcode, `audio`, for embedding a playable
-clip (rules narration, card commentary, sound-effect previews). It emits
-a native `<audio controls>` element — the browser paints the controls,
-so **no JavaScript** is involved and the JS-free invariant holds.
-`unsafe = false` strips raw HTML from markdown *source*, but not
-shortcode *output*, so this is the sanctioned way to embed a player.
+The `audio` shortcode embeds a playable clip (rules narration, card
+commentary, sound-effect previews). It emits a native `<audio controls>`
+element — the browser paints the controls, so **no JavaScript** is
+involved and the JS-free invariant holds. `unsafe = false` strips raw
+HTML from markdown *source*, but not shortcode *output*, so this is the
+sanctioned way to embed a player.
 
 Host the audio on R2 (the `legendary-images` bucket, served at
 `images.legendary-arena.com`) rather than committing the bytes into the
@@ -224,11 +234,54 @@ wants. Implementation lives in
 `apps/wiki-viewer/layouts/shortcodes/audio.html`, styled by the
 `.wiki-audio` rule in the theme stylesheet.
 
+For a player **inside a markdown table cell**, use `audio-inline`
+instead. The `audio` shortcode wraps its player in a `<figure>` with
+newlines, which breaks goldmark's pipe-table row parsing; `audio-inline`
+emits a single compact `<audio>` element with no wrapper and no newlines,
+so it drops cleanly into a cell:
+
+```
+| Cue | Preview |
+|-----|---------|
+| Master Strike | {{</* audio-inline src="https://images.legendary-arena.com/audio/sound-effects/master-strike.mp3" */>}} |
+```
+
+- `src` (required) — absolute URL to an MP3, same as `audio`. (There is
+  no `caption` — a table cell supplies its own label.)
+
+### Colour swatches and motif tables
+
+Two more shortcodes emit static, JS-free HTML that markdown alone cannot.
+Both rely on the same rule as `audio`: `unsafe = false` strips raw HTML
+from markdown *source* but never from shortcode *output*.
+
+**`swatch`** renders an inline coloured box — use it beside a named
+colour so a reader sees the actual hue, not just its hex string (e.g. the
+game-log outcome legend on [Visual Effects](visual-effects.md)). One
+required positional parameter, a CSS colour:
+
+```
+The `applied` outcome renders green {{</* swatch "#15803d" */>}} (`rgb(21,128,61)`).
+```
+
+**`motif-table`** emits a whole `<table>` of playable team motifs from
+pipe-delimited inner content — one team per line as `Team|team-slug|Side|Key`,
+expanded to one row per class instrument, pulling the MP3s from
+`audio/motifs/<slug>_<class>.mp3` on R2 (the D-24225 outputs). Used by the
+[Music Authoring](music-authoring.md) page:
+
+```
+{{</* motif-table */>}}
+Avengers|avengers|Hero|C major
+X-Men|x-men|Hero|D major
+{{</* /motif-table */>}}
+```
+
 ### Embedding diagrams {#embedding-diagrams}
 
 Mermaid (flowcharts, pie charts, sequence diagrams) normally renders
-**client-side in the browser** — which needs JavaScript and therefore
-cannot run on the wiki (the zero-`<script>` JS-free gate, WP-139). The
+**client-side in the browser** — which needs page-authored JavaScript and
+therefore cannot run on the wiki (the JS-free gate, WP-139). The
 sanctioned pattern here is to author the diagram in Mermaid but publish a
 **rendered static SVG**: the Mermaid stays the source of truth, the SVG is
 the deployed artifact, and the output is JS-free and byte-identical across
@@ -262,9 +315,11 @@ Live examples: the auth-stack flowchart in
 [Monetization Model](monetization-model.md), and the example pie in the
 *Diagrams* section of [Hugo Web System](hugo-web-system.md).
 
-> **Why not client-side Mermaid?** It would mean shipping a `<script>` on
-> the wiki, tripping the CI zero-`<script>` gate — the same lock that keeps
-> search and syntax-highlight copy-buttons off the wiki. The marketing site
+> **Why not client-side Mermaid?** It would mean shipping a page-authored
+> `<script>` on the wiki, tripping the CI JS-free gate — the same lock that
+> keeps syntax-highlight copy-buttons and other content scripts off the
+> wiki. (The gate's *one* sanctioned exception is the chrome-level Pagefind
+> search loader, D-24293 — not something a page author can extend.) The marketing site
 > (`www`) *does* ship JS and can use the standard render-hook Mermaid
 > pattern; the ewiki cannot. See
 > [Hugo Web System → Diagrams](hugo-web-system.md#diagrams-mermaid).
@@ -306,7 +361,10 @@ The block has three automatic variants:
   canonical prose. Declare it with the `canonical-source` front-matter
   field — a single repo-root-relative path; see [SCHEMA.md](SCHEMA.md)
   §Mirror pages — and the footer automatically directs edits to that doc
-  and back. **Do not hand-write an editing blockquote;** the field drives
+  and back. For a doc that lives in a **different** repo (e.g. the
+  marketing repo), add `canonical-source-repo: owner/repo` alongside it
+  and the footer builds the edit links against that external repo
+  (D-24310). **Do not hand-write an editing blockquote;** the fields drive
   the footer for you.
 - **Changelog:** the generated page points at `docs/09-CHANGELOG.md`.
 
@@ -314,24 +372,31 @@ The block has three automatic variants:
 > `> **Editing this page**` blockquote at the top of the body (and it
 > commonly stated the wrong commit prefix — `SPEC:` where `INFRA:` is
 > canonical for ewiki page edits). That is now redundant with the
-> automatic footer. For a **same-repo** mirror, set `canonical-source` in
-> the front-matter and delete the blockquote.
+> automatic footer. Set `canonical-source` in the front-matter and delete
+> the blockquote — the footer directs edits upstream for you.
 >
-> A few pages — [Homepage Spec](homepage-spec.md),
+> Cross-repo mirrors work the same way. Pages like
+> [Homepage Spec](homepage-spec.md),
 > [Homepage Appendix](homepage-appendix.md), and
-> [Homepage Review Template](homepage-review-template.md) — mirror docs in
-> the separate **marketing repo**, which `canonical-source` does not yet
-> link (it resolves same-repo
-> `github.com/barefootbetters/legendary-arena` paths only). Those keep
-> their hand-authored blockquote until the field gains cross-repo support.
+> [Homepage Review Template](homepage-review-template.md) mirror docs in
+> the separate **marketing repo**; pair `canonical-source` with
+> `canonical-source-repo: owner/repo` (D-24310) and the footer builds the
+> GitHub edit links against that external repo. The hand-authored
+> blockquote is no longer needed there either.
 
 ### Metadata Panel (Automatic)
 
-The front-matter fields (`type`, `status`, `tags`, `related`,
-`source`, `last-reviewed`) are rendered automatically by the Hugo
-layout as a metadata panel at the top of every page. You do not
-write this panel in markdown — it's generated from the YAML
-front-matter.
+The Hugo layout renders six locked front-matter fields automatically —
+you never write them in markdown. They land in **two** places, not one:
+
+- **Top metadata panel** (`metadata-panel.html`): `type`, `status`,
+  `tags`, and `last-reviewed`.
+- **After the body**, as their own blocks: `related` (a related-pages
+  list, `related.html`) and `source` (a citations list,
+  `source-citations.html`).
+
+Adding a new rendered field requires a [SCHEMA.md](SCHEMA.md) amendment
+first — the six-field surface is locked (WP-139 / EC-142).
 
 **Rendered style:**
 
@@ -369,7 +434,7 @@ ewiki/<slug>/                               # that page's assets
 apps/wiki-viewer/
   ├── assets/css/style.css                  # theme — authoritative for style values
   ├── hugo.toml                             # unsafe = false, highlighting off
-  ├── layouts/                              # templates, partials, shortcodes/audio.html
+  ├── layouts/                              # templates, partials, shortcodes/*.html
   └── scripts/project-wiki.mjs              # the projection step itself
 ```
 
