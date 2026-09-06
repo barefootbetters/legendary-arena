@@ -39737,3 +39737,25 @@ _Active 2026-09-05 — WP-651 / EC-686. Extends D-24456 (the `strikeBlocked` eve
 _Active 2026-09-06 — WP-564 / EC-599. Reserves fulfilled: EC-599 + D-24373. Hard-dep: WP-253 / D-24024 (the `reveal` family precedent, incl. `revealCount`) + WP-561 / D-24370 (the rebuilt in-play baseline that credits the work). Related: D-24372 (engine test-typecheck gate — new drift pins are runtime assertions)._
 
 Protect this file.
+
+### D-24465 — Final-turn banner mounts on the live play surface (`PlayViewport`), not only `ArenaHud` (Active 2026-09-06 — WP-654 / EC-691)
+
+**Status:** Active (post-execution) 2026-09-06 (WP-654 / EC-691).
+
+**User-Visible Surface:** `play.legendary-arena.com` (the final-turn warning banner during the deck-exhaustion final turn — now in a real match, not only the dev fixture route).
+
+**Context.** WP-368 (EC-687 / D-24162) shipped `FinalTurnBanner.vue` and mounted it in `ArenaHud.vue`, on the stated premise that `ArenaHud` is "the play HUD / the sole `useUiStateStore` consumer." That premise was stale. `App.vue`'s route discriminator renders `<ArenaHud>` **only** for `route === 'fixture'` (the dev `?fixture=` route); a **real match** (`route === 'live'`, `?match=…&player=…`) renders `<PlayViewport>` → `<PlayDesktop>` / `<PlayMobile>`, and the mobile/desktop HUD chrome (WP-558's danger meter, etc.) lives under `PlayViewport`, not `ArenaHud`. So the banner, as WP-368 shipped it, **never rendered in a real match** — D-24162's play-HUD intent was unmet and the D-24026 live verification was unreachable. Surfaced 2026-09-06 while trying to close WP-368's live check (a Loki / Legacy Virus match ended by the scheme's wound-stack loss, a different end path; investigation found the banner is not mounted on the live surface at all).
+
+**Decision.** Mount `<FinalTurnBanner>` **once** at the `PlayViewport` shared root — the established single-host overlay precedent (WP-410/412/415/418: one `useUiStateStore` read, covering BOTH `PlayDesktop` and `PlayMobile`) — fed a `finalTurn = computed(() => snapshot.value?.finalTurn)`. Locks:
+
+1. **Single shared-root host, not per-surface.** The banner is mounted in `PlayViewport`, never separately in `PlayDesktop`/`PlayMobile` and not prop-drilled into `TopHudBar`. This matches every other cross-surface overlay (the co-op stall banner, deploy-update banner, VFX overlay, audio controls).
+2. **`FinalTurnBanner.vue` is unchanged.** It stays a pure prop-driven component and continues to render on the `?fixture=` (ArenaHud) route. Its position on the play surface is a `PlayViewport`-scoped `.final-turn-banner-overlay` class applied to the child's root element (Vue propagates the parent component's scopeId to a child root), so the pure component needs no edit.
+3. **Presence stays engine-driven.** `v-if="finalTurn"` inside the component is the whole gate; the engine omits `finalTurn` once `gameOver` is set (D-24159), so there is no client-side "is it the final turn / suppress at game over" logic. The `PlayViewport` computed simply forwards `snapshot.finalTurn`.
+4. **Verifiable dev route.** A committed `final-turn` UIState fixture (an in-progress snapshot carrying `finalTurn`, omitting `gameOver`) plus a `FixtureName` entry makes `?fixture=final-turn&play=1` render the banner through the live `PlayViewport` path for pre-deploy verification. `?fixture=final-turn` (no `play=1`) still renders it via `ArenaHud`.
+5. **No engine/persistence surface.** Pure client render of the read-only WP-367 projection; no `G`/`ctx`/`UIState` change, no `finalStateHash` re-pin, no new dependency.
+
+This **supersedes D-24162's implicit "ArenaHud is the play HUD" premise**; D-24162's component design (pure, prop-driven, assertive alert, present-only-when-projected) stands unchanged.
+
+**Packet:** WP-654 / EC-691. **Executed:** 2026-09-06.
+
+Protect this file.
