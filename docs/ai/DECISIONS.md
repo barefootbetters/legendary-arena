@@ -30358,7 +30358,7 @@ Protect this file.
 
 ### D-24162 — Final-turn warning banner is a pure, prop-driven client render of `UIState.finalTurn`
 
-**Status:** Drafted 2026-07-12; not yet landed. Flips to Active when WP-368 executes.
+**Status:** Active (post-execution) 2026-09-06 (WP-368 / EC-687).
 
 **User-Visible Surface:** `play.legendary-arena.com` (a warning banner on the play HUD during the deck-exhaustion final turn).
 
@@ -30372,7 +30372,7 @@ Protect this file.
 4. **Content.** The projection's `reason` + a deck-remaining readout (`heroDeckRemaining` / `villainDeckRemaining`) as the "how close to losing" data; theme-aware styling via `var(--color-*)` tokens with a warning accent.
 5. **Scope boundary.** A broader loss-proximity meter (escaped-villains X/8, scheme-twists X/N) is explicitly a **separate future WP** — scheme-twist proximity is not projected yet (would need a small engine `UIState.progress` add), so it is not bundled into this client-only banner. The tie result itself continues to surface through the existing `gameOver` projection / `EndgameSummary.vue`, not this banner.
 
-**Packet:** WP-368 (+ EC + session prompt at execution-prep). **Drafted:** 2026-07-12. **Executed:** —
+**Packet:** WP-368 (+ EC-687). **Drafted:** 2026-07-12. **Executed:** 2026-09-06.
 
 Protect this file.
 
