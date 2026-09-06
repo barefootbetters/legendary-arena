@@ -31091,13 +31091,25 @@ the writer flips "together with the producers." WP-394 (provenance, 1.2.0)
 deliberately declined to bump because nothing produced provenance — a bump with
 no producer would move the wire format of a catalogued endpoint
 (`GET /api/match/:matchId/lagn`, `POST /api/me/loadouts`) for zero benefit and
-force a §21 `api-endpoints.md` change with nothing behind it. WP-404 is where the
-producer (the viewer's LAGN export) and the flip land together, so the wire-format
-movement carries observable value. The read-set / write-value asymmetry is what
-keeps every stored 1.0.0–1.2.0 record readable without a migration pass.
+force a §21 `api-endpoints.md` change with nothing behind it. The read-set /
+write-value asymmetry is what keeps every stored earlier record readable without a
+migration pass.
 
-**Packet:** WP-404 (flips 1.1.0 → 1.3.0, skipping 1.2.0 since provenance stays
-optional and unpopulated). §21 TRIGGERED; two rows replaced WHOLE per D-11804.
+**How the arc actually landed (re-draft correction, 2026-09-06).** This entry was
+reserved by WP-404 when the plan was for WP-404 to flip `1.1.0 → 1.3.0` alongside
+the viewer's bench producer. Between draft and execution, two later packets
+advanced the writer first — each obeying this rule with its own server-side
+producer: **WP-405 flipped `1.3.0 → 1.4.0`** with the result-LAGN `players` /
+`scoring_profile` producer, and **WP-641 flipped `1.4.0 → 1.5.0`** with the
+`battle_plan` / `result.score` producer. So `LAGN_VERSION` is `1.5.0` before WP-404
+runs. WP-404 therefore performs **no flip**: its viewer bench producer emits
+`setup.hero_alternates` on the already-`>= 1.3.0` writer (the D-24211 ordinal gate
+accepts it). The rule this entry records is unchanged and was exemplified exactly
+by WP-405/641; the specific 1.1.0→1.3.0 flip it was drafted for became moot.
+
+**Packet:** WP-404 (viewer bench producer; **no `LAGN_VERSION` flip** — the writer
+is already `1.5.0` via WP-405/641). §21 NOT triggered — no catalogued-endpoint or
+stamped-version movement; `api-endpoints.md` already records `1.5.0`.
 
 ---
 
