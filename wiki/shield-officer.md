@@ -37,6 +37,10 @@ last-reviewed: 2026-09-05
 
 # S.H.I.E.L.D. Officer
 
+![The core-set S.H.I.E.L.D. Officer card: a generic S.H.I.E.L.D.-class Hero showing a recruit cost of 3 and a "+2 Recruit" ability.](https://images.legendary-arena.com/core/core-so-officer.webp "width=280px")
+
+*The core-set S.H.I.E.L.D. Officer (`core/officer`) — buy from the supply for 3 Recruit during Main; provides +2 Recruit when played. Card art hosted on R2 (`images.legendary-arena.com`).*
+
 ## Summary
 
 The **S.H.I.E.L.D. Officer** is a generic support card that lives in a shared
