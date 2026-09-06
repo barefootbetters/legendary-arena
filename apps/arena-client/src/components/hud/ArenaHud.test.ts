@@ -45,6 +45,40 @@ test('ArenaHud renders all four always-on subtrees when a mid-turn fixture is lo
   );
 });
 
+test('ArenaHud omits the final-turn banner when the snapshot has no finalTurn', () => {
+  setActivePinia(createPinia());
+  const store = useUiStateStore();
+  // The mid-turn fixture omits finalTurn, so the banner must not render.
+  store.setSnapshot(loadUiStateFixture('mid-turn'));
+
+  const wrapper = mount(ArenaHud);
+  assert.equal(
+    wrapper.find('[data-testid="arena-hud-final-turn"]').exists(),
+    false,
+  );
+});
+
+test('ArenaHud renders the final-turn banner when the snapshot carries finalTurn', () => {
+  setActivePinia(createPinia());
+  const store = useUiStateStore();
+  // Build a final-turn snapshot from the mid-turn fixture; finalTurn is the
+  // optional projection WP-367 emits while a shared deck is exhausted.
+  store.setSnapshot({
+    ...loadUiStateFixture('mid-turn'),
+    finalTurn: {
+      reason: 'The villain deck is empty.',
+      heroDeckRemaining: 3,
+      villainDeckRemaining: 0,
+    },
+  });
+
+  const wrapper = mount(ArenaHud);
+  const banner = wrapper.find('[data-testid="arena-hud-final-turn"]');
+  assert.equal(banner.exists(), true);
+  assert.match(banner.text(), /Hero deck: 3/);
+  assert.match(banner.text(), /Villain deck: 0/);
+});
+
 test('ArenaHud renders the endgame subtree when the fixture carries gameOver', () => {
   setActivePinia(createPinia());
   const store = useUiStateStore();

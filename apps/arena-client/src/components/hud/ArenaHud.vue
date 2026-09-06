@@ -3,6 +3,7 @@ import { defineComponent } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useUiStateStore } from '../../stores/uiState';
 import TurnPhaseBanner from './TurnPhaseBanner.vue';
+import FinalTurnBanner from './FinalTurnBanner.vue';
 import SharedScoreboard from './SharedScoreboard.vue';
 import ParDeltaReadout from './ParDeltaReadout.vue';
 import PlayerPanelList from './PlayerPanelList.vue';
@@ -30,6 +31,7 @@ export default defineComponent({
   name: 'ArenaHud',
   components: {
     TurnPhaseBanner,
+    FinalTurnBanner,
     SharedScoreboard,
     ParDeltaReadout,
     PlayerPanelList,
@@ -46,6 +48,7 @@ export default defineComponent({
 <template>
   <div v-if="snapshot !== null" class="arena-hud" data-testid="arena-hud">
     <TurnPhaseBanner :game="snapshot.game" />
+    <FinalTurnBanner :final-turn="snapshot.finalTurn" />
     <SharedScoreboard
       :scheme="snapshot.scheme"
       :mastermind="snapshot.mastermind"
