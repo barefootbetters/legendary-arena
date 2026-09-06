@@ -1046,6 +1046,11 @@ const SPIDER = { heroClass: null, team: 'spider-friends' };
 const AVENGER = { heroClass: null, team: 'avengers' };
 const STRENGTH = { heroClass: 'strength', team: null };
 const TECH = { heroClass: 'tech', team: null };
+// why: WP-398 — a grey card carries NO Hero Class (heroClass null), so it is
+// never stackable as a Hypno-Thrall. The team-only fixtures above (XMEN /
+// SPIDER / AVENGER) are also grey by this predicate — heroClass null — which is
+// why they are used as the "no non-grey Hero" material in the Loki tests.
+const GREY = { heroClass: null, team: null };
 
 describe('mastermindStrikeHandler — co2e Magneto Master Strike (WP-388)', () => {
   it('discards the lowest-cost X-Men Hero from each player (AC-3)', () => {
@@ -1314,8 +1319,8 @@ describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24
   });
 });
 
-describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388)', () => {
-  it('discards the lowest-cost Strength Hero from each player (AC-2)', () => {
+describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388 / WP-398)', () => {
+  it('discards the lowest-cost Strength Hero when the player holds one (AC-1)', () => {
     const gameState = makeCo2eState(
       'co2e/loki',
       { '0': ['st-a', 'st-b', 'te-a'] },
@@ -1325,26 +1330,150 @@ describe('mastermindStrikeHandler — co2e Loki Master Strike (WP-388)', () => {
 
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
 
+    // why: AC-1 — the discard branch is byte-identical to WP-388: the lowest-cost
+    // Strength Hero is discarded and nothing is stacked.
     assert.deepEqual(gameState.playerZones['0']!.hand, ['st-a', 'te-a']);
     assert.deepEqual(gameState.playerZones['0']!.discard, ['st-b']);
+    assert.deepEqual(
+      gameState.mastermind.hypnoThralls ?? [],
+      [],
+      'no Thrall stacked when the discard branch fires',
+    );
   });
 
-  it('is a logged no-op — never a Wound — with no Strength Hero (AC-2)', () => {
+  it('stacks the lowest-cost non-grey Hero as a Hypno-Thrall when the player holds no Strength Hero (AC-2)', () => {
     const gameState = makeCo2eState(
       'co2e/loki',
-      { '0': ['te-a'] },
-      { 'te-a': co2eStat(1) },
-      { 'te-a': TECH },
+      { '0': ['te-a', 'te-b', 'av-a'] },
+      { 'te-a': co2eStat(5), 'te-b': co2eStat(2), 'av-a': co2eStat(1) },
+      { 'te-a': TECH, 'te-b': TECH, 'av-a': AVENGER },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: AC-2 — no Strength Hero, so the Thrall branch fires. te-b (cost 2) is
+    // the lowest-cost NON-GREY Hero; av-a is cheaper (cost 1) but grey (heroClass
+    // null), so the non-grey gate excludes it. The Thrall is removed from hand
+    // and stacked next to Loki — never discarded.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a', 'av-a']);
+    assert.deepEqual(
+      gameState.playerZones['0']!.discard,
+      [],
+      'a Thrall is stacked, never discarded',
+    );
+    assert.deepEqual(gameState.mastermind.hypnoThralls, ['te-b']);
+  });
+
+  it('appends across players and strikes — the Thrall zone is append-only (AC-2, AC-5)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['te-a'], '1': ['te-b'] },
+      { 'te-a': co2eStat(2), 'te-b': co2eStat(3) },
+      { 'te-a': TECH, 'te-b': TECH },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+    // why: both players hold only a non-grey Hero → both stacked, in sorted
+    // player-id order, into the single mastermind-side zone.
+    assert.deepEqual(gameState.mastermind.hypnoThralls, ['te-a', 'te-b']);
+
+    // why: a second strike appends without clearing the first — the zone is
+    // append-only, no removal path.
+    gameState.playerZones['0']!.hand = ['te-c'];
+    gameState.cardStats['te-c'] = co2eStat(4);
+    gameState.cardTraits['te-c'] = TECH;
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-2' }, {});
+    assert.deepEqual(gameState.mastermind.hypnoThralls, ['te-a', 'te-b', 'te-c']);
+  });
+
+  it('is a logged no-op — never a Wound, nothing stacked — with neither a Strength nor a non-grey Hero (AC-3)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['av-a'] },
+      { 'av-a': co2eStat(1) },
+      { 'av-a': AVENGER },
     );
     gameState.piles.wounds = ['wound-1'];
 
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
 
-    assert.deepEqual(gameState.playerZones['0']!.hand, ['te-a'], 'hand unchanged');
-    // why: D-24192 — the Hypno-Thrall branch is out of scope, so the player
-    // escapes. Substituting a Wound here would be the wrong card text.
+    // why: AC-3 — av-a is grey (heroClass null), so neither branch can pay. The
+    // player escapes: hand unchanged, no Wound substituted, nothing stacked. This
+    // replaces WP-388's escape, which fired for any player lacking a Strength Hero.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['av-a'], 'hand unchanged');
     assert.deepEqual(gameState.playerZones['0']!.discard, []);
     assert.equal(gameState.piles.wounds.length, 1, 'Loki never gains a Wound');
+    assert.deepEqual(gameState.mastermind.hypnoThralls ?? [], [], 'nothing stacked');
+  });
+
+  it('never stacks a Wound or a grey card as a Thrall (AC-4)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': [WOUND_EXT_ID, 'grey-a'] },
+      { 'grey-a': co2eStat(0) },
+      // why: the Wound is mis-tagged Strength on purpose — the WOUND_EXT_ID
+      // filter must win over the trait — and grey-a is grey (heroClass null).
+      { [WOUND_EXT_ID]: STRENGTH, 'grey-a': GREY },
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    // why: AC-4 — neither the Wound (never a selection target) nor grey-a
+    // (heroClass null) can be stacked, so the hand is untouched and the zone
+    // stays empty.
+    assert.deepEqual(gameState.playerZones['0']!.hand, [WOUND_EXT_ID, 'grey-a']);
+    assert.deepEqual(gameState.mastermind.hypnoThralls ?? [], []);
+  });
+
+  it('conserves cards: hand + discard + thralls before ≡ after (AC-6)', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['te-a', 'av-a'] },
+      { 'te-a': co2eStat(2), 'av-a': co2eStat(1) },
+      { 'te-a': TECH, 'av-a': AVENGER },
+    );
+    const before = [
+      ...gameState.playerZones['0']!.hand,
+      ...gameState.playerZones['0']!.discard,
+      ...(gameState.mastermind.hypnoThralls ?? []),
+    ].sort();
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    const after = [
+      ...gameState.playerZones['0']!.hand,
+      ...gameState.playerZones['0']!.discard,
+      ...(gameState.mastermind.hypnoThralls ?? []),
+    ].sort();
+    // why: AC-6 — a Thrall moves between zones; no card is created or destroyed.
+    assert.deepEqual(after, before, 'no card is created or destroyed');
+    assert.deepEqual(
+      gameState.mastermind.hypnoThralls,
+      ['te-a'],
+      'te-a stacked (av-a is grey)',
+    );
+  });
+
+  it('never throws on an empty hand, an all-Wound hand, or absent cardTraits (AC-7)', () => {
+    const emptyHand = makeCo2eState('co2e/loki', { '0': [] });
+    assert.doesNotThrow(() => mastermindStrikeHandler(emptyHand, {}, { cardId: 'strike' }, {}));
+    assert.deepEqual(emptyHand.mastermind.hypnoThralls ?? [], []);
+
+    const allWound = makeCo2eState('co2e/loki', { '0': [WOUND_EXT_ID, WOUND_EXT_ID] });
+    assert.doesNotThrow(() => mastermindStrikeHandler(allWound, {}, { cardId: 'strike' }, {}));
+    assert.deepEqual(
+      allWound.playerZones['0']!.hand,
+      [WOUND_EXT_ID, WOUND_EXT_ID],
+      'Wounds are never stacked',
+    );
+    assert.deepEqual(allWound.mastermind.hypnoThralls ?? [], []);
+
+    // why: makeCo2eState defaults cardTraits to {} — a non-Wound card with no
+    // trait entry reads as grey (undefined heroClass), so the strike is a
+    // logged no-op rather than a throw (the AC-7 absent-cardTraits path).
+    const noTraits = makeCo2eState('co2e/loki', { '0': ['x-a'] }, { 'x-a': co2eStat(1) });
+    assert.doesNotThrow(() => mastermindStrikeHandler(noTraits, {}, { cardId: 'strike' }, {}));
+    assert.deepEqual(noTraits.playerZones['0']!.hand, ['x-a'], 'hand unchanged with absent cardTraits');
   });
 });
 

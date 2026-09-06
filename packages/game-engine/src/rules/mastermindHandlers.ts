@@ -561,9 +561,11 @@ export function selectRedSkullKoTarget(
  * The trait dimension a strike gates its Hero selection on.
  *
  * `'any'` matches every Hero. `'team'` and `'heroClass'` match the
- * corresponding `G.cardTraits` field against a slug.
+ * corresponding `G.cardTraits` field against a slug. `'non-grey'` matches any
+ * Hero carrying a Hero Class (an existence gate; `traitSlug` is ignored),
+ * used by co2e Loki's Hypno-Thrall branch (WP-398).
  */
-type HeroTraitKind = 'any' | 'team' | 'heroClass';
+type HeroTraitKind = 'any' | 'team' | 'heroClass' | 'non-grey';
 
 /**
  * Selects the lowest-cost Hero in a hand, optionally gated on one trait.
@@ -602,10 +604,24 @@ function selectLowestCostHero(
       // (WP-179) and leave it undefined. Production setup always builds it.
       // A missing map means nothing matches rather than a throw (AC-9).
       const traitEntry = gameState.cardTraits?.[cardExtId];
-      const traitValue =
-        traitKind === 'team' ? traitEntry?.team : traitEntry?.heroClass;
-      if (traitValue !== traitSlug) {
-        continue;
+      if (traitKind === 'non-grey') {
+        // why: WP-398 — the rulebook "Grey Heroes" are grey cards with NO Hero
+        // Class, so non-grey ⟺ heroClass != null. This is an EXISTENCE gate,
+        // not a slug match — traitSlug is ignored — used by co2e Loki's
+        // Hypno-Thrall branch to stack the lowest-cost non-grey Hero. Loose
+        // `!=` so both null and undefined read as grey; Wounds are already
+        // skipped above, so they are never stacked.
+        if (traitEntry?.heroClass == null) {
+          continue;
+        }
+      } else {
+        // why: 'team' / 'heroClass' match the corresponding G.cardTraits field
+        // against the requested slug.
+        const traitValue =
+          traitKind === 'team' ? traitEntry?.team : traitEntry?.heroClass;
+        if (traitValue !== traitSlug) {
+          continue;
+        }
       }
     }
     // why: `?? 0` — S.H.I.E.L.D. starters (Agent / Trooper) carry no
@@ -866,7 +882,12 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
  *
- * Each player (in sorted id order) discards their lowest-cost Strength Hero.
+ * Each player (in sorted id order): a player holding a Strength Hero discards
+ * their lowest-cost one (the printed first cost). A player with no Strength
+ * Hero but at least one non-grey Hero has their lowest-cost non-grey Hero
+ * stacked next to Loki as a Hypno-Thrall (WP-398, closing the WP-388 gap). A
+ * player with neither keeps a logged no-op — no Wound is substituted and
+ * nothing is stacked.
  *
  * @param gameState - The game state to mutate.
  */
@@ -875,28 +896,65 @@ function resolveLokiStrike(gameState: LegendaryGameState): void {
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
-    const targetExtId = selectLowestCostHero(
+    const strengthHeroExtId = selectLowestCostHero(
       gameState,
       playerZones.hand,
       'heroClass',
       HERO_CLASS_STRENGTH,
     );
 
-    // why: D-24192 — the Hypno-Thrall branch is deliberately NOT implemented
-    // (it needs a new mastermind-adjacent zone), so a player with no Strength
-    // Hero takes a logged no-op and escapes the strike. This is a recorded
-    // fidelity gap, not an oversight: do NOT substitute a Wound or improvise
-    // the Thrall stack.
-    if (targetExtId === null) {
+    // why: WP-388 — the printed FIRST cost is "discards a [hc:strength] Hero".
+    // A player holding one discards their lowest-cost Strength Hero. This branch
+    // is byte-identical to WP-388's (AC-1).
+    if (strengthHeroExtId !== null) {
+      discardCardFromHand(gameState, playerId, strengthHeroExtId);
       pushLog(gameState,
-        `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand — no effect.`,
+        `[Loki Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, strengthHeroExtId)}.`,
       );
       continue;
     }
 
-    discardCardFromHand(gameState, playerId, targetExtId);
+    // why: WP-398 / D-24192 — the printed SECOND branch, closing the gap WP-388
+    // left open: "or stacks a non-grey Hero from their hand next to Loki as a
+    // Hypno-Thrall." Discard-first is the tabletop "or" resolution — the second
+    // branch fires ONLY when the first cannot (the player holds no Strength
+    // Hero), because discarding a card you chose beats surrendering a Hero
+    // permanently (D-24188 deterministic auto-pick; there is no meaningful
+    // player choice to park).
+    const thrallExtId = selectLowestCostHero(
+      gameState,
+      playerZones.hand,
+      'non-grey',
+      null,
+    );
+
+    if (thrallExtId !== null) {
+      // why: stacking a Thrall is NOT a discard — the card is removed from hand
+      // and stacked next to Loki — so it uses moveCardFromZone (the WP-382 /
+      // D-24183 idiom, with BOTH returned arrays assigned back) rather than the
+      // discardFromHand chokepoint, which would wrongly fire the WP-498
+      // return-on-discard reaction.
+      //
+      // why: `?? []` guards a legacy or undefined zone — hypnoThralls is
+      // optional on the G type so existing fixtures compile; production setup
+      // always seeds it `[]`. The handler never throws (AC-7).
+      const currentThralls = gameState.mastermind.hypnoThralls ?? [];
+      const moveResult = moveCardFromZone(playerZones.hand, currentThralls, thrallExtId);
+      playerZones.hand = moveResult.from;
+      gameState.mastermind.hypnoThralls = moveResult.to;
+      pushLog(gameState,
+        `[Loki Master Strike] Player ${playerId} stacked ${formatCardRef(gameState.cardDisplayData, thrallExtId)} next to Loki as a Hypno-Thrall.`,
+      );
+      continue;
+    }
+
+    // why: WP-398 — a player with NEITHER a Strength Hero NOR any non-grey Hero
+    // (only grey cards or Wounds) keeps the logged no-op. No Wound is
+    // substituted and nothing is stacked — the faithful "or" resolution for a
+    // player who can pay neither cost (AC-3). This replaces WP-388's escape,
+    // which fired for any player lacking a Strength Hero.
     pushLog(gameState,
-      `[Loki Master Strike] Player ${playerId} discarded ${formatCardRef(gameState.cardDisplayData, targetExtId)}.`,
+      `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero and no non-grey Hero in hand — no effect.`,
     );
   }
 }

@@ -181,6 +181,10 @@ export function buildMastermindState(
       tacticsDefeated: [],
       strikePile: [],
       attachedBystanders: [],
+      // why: WP-398 / D-24201 — initialise the Hypno-Thrall zone `[]` at this
+      // degenerate early-return too. A missed construction site leaves the zone
+      // undefined, and co2e Loki's strike would append to nothing.
+      hypnoThralls: [],
       gameText: [],
     };
   }
@@ -197,6 +201,10 @@ export function buildMastermindState(
       tacticsDefeated: [],
       strikePile: [],
       attachedBystanders: [],
+      // why: WP-398 / D-24201 — initialise the Hypno-Thrall zone `[]` at this
+      // degenerate early-return too. A missed construction site leaves the zone
+      // undefined, and co2e Loki's strike would append to nothing.
+      hypnoThralls: [],
       gameText: [],
     };
   }
@@ -211,6 +219,10 @@ export function buildMastermindState(
       tacticsDefeated: [],
       strikePile: [],
       attachedBystanders: [],
+      // why: WP-398 / D-24201 — initialise the Hypno-Thrall zone `[]` at this
+      // degenerate early-return too. A missed construction site leaves the zone
+      // undefined, and co2e Loki's strike would append to nothing.
+      hypnoThralls: [],
       gameText: [],
     };
   }
@@ -268,6 +280,9 @@ export function buildMastermindState(
     tacticsDefeated: [],
     strikePile: [],
     attachedBystanders: [],
+    // why: WP-398 / D-24201 — the Hypno-Thrall zone starts empty; co2e Loki's
+    // strike appends non-grey Heroes to it during play (append-only, no removal).
+    hypnoThralls: [],
     gameText,
   };
 }
