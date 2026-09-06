@@ -124,9 +124,9 @@ closed for `supportPools`.
    `addHeroGroup` / `removeHeroGroup` pattern (lazy-create the array; uncapped in
    the composable — the two-slot cap is UI-only). `resetDraft` already clears it
    (a blank draft omits the key).
-2. **UI** — a bench section in `LoadoutBuilder.vue` (two slots) + bench display in
-   `LoadoutTray.vue`, visually distinct from played heroes so the two are never
-   confused at a glance.
+2. **UI** — a bench section in `LoadoutBuilder.vue` (two slots) + a bench count in
+   `LoadoutTray.vue` (fed by an `App.vue`-derived `loadoutTraySummary.bench`),
+   visually distinct from played heroes so the two are never confused at a glance.
 3. **Export** — `compositionToLagnSetup` emits `setup.hero_alternates` from
    `draft.heroAlternateIds` when non-empty, **omits the key entirely** when empty
    (never `[]`), and `hero_alternates` is added to the export `keyOrder` whitelist.
@@ -174,7 +174,8 @@ closed for `supportPools`.
 - `apps/registry-viewer/src/composables/useLagnFromUrl.ts` — **modified** — `applyComposition` applies the bench
 - `apps/registry-viewer/src/composables/useLagnFromUrl.test.ts` — **modified** — bench via `?lagn=`
 - `apps/registry-viewer/src/components/LoadoutBuilder.vue` — **modified** — bench slots + `applyLagnImport`
-- `apps/registry-viewer/src/components/LoadoutTray.vue` — **modified** — bench display
+- `apps/registry-viewer/src/components/LoadoutTray.vue` — **modified** — bench count in the summary
+- `apps/registry-viewer/src/App.vue` — **modified** — derive `loadoutTraySummary.bench` + pass it to `LoadoutTray`
 - `docs/ai/DECISIONS.md` — **modified** — D-24213 Active
 - `docs/ai/STATUS.md` — **modified**
 - `wiki/lagn-v1.md` — **modified** — `hero_alternates` producer note
@@ -298,7 +299,7 @@ a stale one yields both false green and false red.
 | §2 Non-negotiables | PASS — no engine edit; no lagn-spec edit; no validator/exporter fork; two-slot cap is UI-only |
 | §3 Assumes | PASS — WP-402 ✅ + WP-403 ✅ landed; WP-405/641 ✅ (writer already 1.5.0) |
 | §4 Context refs | PASS — D-24087 / D-24075 / D-24154 / D-24026 / D-24211 cited |
-| §5 Output completeness | PASS — 10 code/test files (both import consumers included) + 6 governance; lagn-spec + api-endpoints REMOVED as already-shipped |
+| §5 Output completeness | PASS — 11 code/test files (both import consumers + `App.vue` tray feed) + 6 governance; lagn-spec + api-endpoints REMOVED as already-shipped |
 | §6 Naming | PASS — `hero_alternates` (LAGN snake_case) / `heroAlternateIds` (MATCH-SETUP camelCase, envelope-level); the rename is the same non-1:1 mapping the counts carry |
 | §7 Dependency discipline | PASS — both hard-deps landed; no in-flight collision |
 | §8 Architectural boundaries | PASS — single layer, `apps/registry-viewer` only |

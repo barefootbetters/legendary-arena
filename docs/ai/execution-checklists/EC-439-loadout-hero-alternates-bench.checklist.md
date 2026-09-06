@@ -95,8 +95,9 @@
 - `apps/registry-viewer/src/composables/useLoadoutLagnExport.ts` (+ `.test.ts`) — **modified**
 - `apps/registry-viewer/src/lib/loadoutLagnImport.ts` (+ `.test.ts`) — **modified**
 - `apps/registry-viewer/src/composables/useLagnFromUrl.ts` (+ `.test.ts`) — **modified**
-- `apps/registry-viewer/src/components/LoadoutBuilder.vue` — **modified**
-- `apps/registry-viewer/src/components/LoadoutTray.vue` — **modified**
+- `apps/registry-viewer/src/components/LoadoutBuilder.vue` — **modified** — bench slots
+- `apps/registry-viewer/src/components/LoadoutTray.vue` — **modified** — bench count
+- `apps/registry-viewer/src/App.vue` — **modified** — `loadoutTraySummary.bench` feed
 - `docs/ai/DECISIONS.md` — **modified** — D-24213 Active
 - `docs/ai/STATUS.md` — **modified**
 - `wiki/lagn-v1.md` — **modified** — `hero_alternates` producer note
