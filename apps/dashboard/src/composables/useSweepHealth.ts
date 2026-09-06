@@ -18,19 +18,22 @@ const STALE_TOLERANCE_MS = 6 * 60 * 60 * 1000;
 // Recent-runs sparkline cap (mirrors the WP-204 30-day sparkline convention).
 const SPARKLINE_RUN_COUNT = 30;
 
-// why (D-23503): the dashboard names the SINGLE healthy-class anomaly key for
-// the sweep health rate. A meaningful rate is structurally impossible under
-// pure D-20703 opacity — the WP-195 classifier assigns every swept cell to
-// exactly one class, so `sum(anomalyCounts) === cellCount` and the generic
-// all-keys formula collapses to 0 on live data. Naming this one healthy key is
-// the narrowest possible exception: it does NOT import the engine's closed
-// anomaly-class union type, and every other anomaly key stays opaque and
-// renders verbatim (the engine union is never named here — only this one
-// healthy-key string literal). Engine-coupling
-// drift note: if the engine ever renames the healthy class, THIS one constant
-// is the single edit point. (If `escaped-villain-cap` should later count as
-// healthy, that is a one-line change here — see D-23503.)
-export const SWEEP_HEALTHY_ANOMALY_KEY = 'endgame-reached';
+// why (D-24141, supersedes D-23503): the dashboard names the two GENUINE-ANOMALY
+// keys for the sweep health rate, which is redefined as the anomaly-free rate
+// (see computeSweepHealthRate). D-23503 named the single healthy class
+// 'endgame-reached', but that class is empirically UNREACHABLE — no policy
+// (random or the WP-049 heuristic) reaches a terminal endgame in the sweep
+// matchups within the 200-turn cap, so `endgame-reached / cellCount` read a
+// hard 0% on every live nightly/weekly run. This inverts the same narrow,
+// documented exception to D-20703 opacity: instead of naming the healthy class,
+// it names the two anomaly classes and subtracts them. It still does NOT import
+// the engine's closed anomaly-class union type or any engine symbol — the two
+// keys are plain App-layer string literals; 'endgame-reached' and 'not-endgame'
+// stay opaque and render verbatim,
+// and the opaque all-keys `totalAnomalySparkline` (D-20703) is unchanged.
+// Engine-coupling drift note: if the engine renames or adds an anomaly class,
+// THIS one array is the single edit point.
+export const SWEEP_ANOMALY_HEALTH_KEYS = ['fatal', 'escaped-villain-cap'] as const;
 
 /**
  * The composable's single data input: the resolved fetch state for
@@ -75,10 +78,11 @@ function sumAnomalyCounts(run: SweepRunSummary): number {
 }
 
 /**
- * The sole source of truth for a sweep run's health rate: the fraction of swept
- * cells that reached a clean endgame (`endgame-reached / cellCount`). Returns a
- * value in [0, 1], or `null` for a 0-cell run. Both prior degenerate sites — the
- * Pipeline health KPI and the Architect-lane trigger — are repaired to call this
+ * The sole source of truth for a sweep run's health rate: the ANOMALY-FREE rate
+ * (`(cellCount − Σ genuine-anomaly-counts) / cellCount`), where the genuine
+ * anomalies are `'fatal'` and `'escaped-villain-cap'` (D-24141). Returns a value
+ * in [0, 1], or `null` for a 0-cell run. All three consumers — the Pipeline
+ * health KPI, the Architect-lane trigger, and the trend chart — call this
  * helper, so there is exactly one health-rate definition with no drift.
  */
 export function computeSweepHealthRate(run: SweepRunSummary): number | null {
@@ -87,16 +91,25 @@ export function computeSweepHealthRate(run: SweepRunSummary): number | null {
   if (run.cellCount <= 0) {
     return null;
   }
-  const rawHealthyCount = run.anomalyCounts[SWEEP_HEALTHY_ANOMALY_KEY];
-  // why (rate guard cont.): a missing, non-finite, or negative healthy-key count
-  // reads as 0 healthy cells — never propagate undefined/NaN into the rate. The
-  // `typeof === 'number'` test also narrows the `noUncheckedIndexedAccess`
-  // lookup (the key may be absent) before the numeric comparison.
-  const healthyCount =
-    typeof rawHealthyCount === 'number' && Number.isFinite(rawHealthyCount) && rawHealthyCount >= 0
-      ? rawHealthyCount
-      : 0;
-  return healthyCount / run.cellCount;
+  // why (Rule 8): sum the two genuine-anomaly counts with an explicit `for...of`,
+  // never a branching `.reduce()`. Each key read is guarded: a missing,
+  // non-finite, or negative count reads as 0 anomalies — never propagate
+  // undefined/NaN into the rate. The `typeof === 'number'` test also narrows the
+  // `noUncheckedIndexedAccess` lookup (the key may be absent) before comparison.
+  let anomalousCount = 0;
+  for (const anomalyKey of SWEEP_ANOMALY_HEALTH_KEYS) {
+    const rawCount = run.anomalyCounts[anomalyKey];
+    if (typeof rawCount === 'number' && Number.isFinite(rawCount) && rawCount >= 0) {
+      anomalousCount += rawCount;
+    }
+  }
+  const rate = (run.cellCount - anomalousCount) / run.cellCount;
+  // why (clamp): MOCK fixtures may seed anomaly counts that violate the
+  // closed-taxonomy `sum(anomalyCounts) === cellCount` invariant (they inject
+  // only the two anomaly keys), so `anomalousCount` can exceed `cellCount` and
+  // drive the raw rate negative. Clamping to [0, 1] keeps a valid fraction and
+  // never feeds a negative value to the trend axis.
+  return Math.min(1, Math.max(0, rate));
 }
 
 /**

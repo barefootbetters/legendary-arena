@@ -1,6 +1,6 @@
 import type { DateRange, ServiceResponse } from '../types/index.js';
 import type { SweepHealthSnapshot, SweepRunSummary } from '../types/sweep.js';
-import { SWEEP_HEALTHY_ANOMALY_KEY } from '../composables/useSweepHealth.js';
+import { SWEEP_ANOMALY_HEALTH_KEYS } from '../composables/useSweepHealth.js';
 import { hashRange } from './hashRange.js';
 import { normalizeRange } from './normalizeRange.js';
 
@@ -131,13 +131,17 @@ function buildMockRun(prng: () => number, index: number, nowMs: number): SweepRu
   for (const anomalyKey of MOCK_ANOMALY_KEYS) {
     anomalyCounts[anomalyKey] = Math.round(sampleRange(prng, 0, 50));
   }
-  // why (WP-235 / D-23503): the dashboard health rate names 'endgame-reached' as
-  // the healthy class, so every mock run carries it (keyed via the imported
-  // constant, so the literal stays declared once in useSweepHealth.ts). ~70–98%
-  // of cells reach a clean endgame, giving a meaningful, varied rate in MOCK mode.
-  anomalyCounts[SWEEP_HEALTHY_ANOMALY_KEY] = Math.round(
-    sampleRange(prng, cellCount * 0.7, cellCount * 0.98),
-  );
+  // why (WP-349 / D-24141, inverts WP-235 / D-23503): the dashboard health rate
+  // is now the ANOMALY-FREE rate, so the mock seeds the two genuine-anomaly keys
+  // ('fatal', 'escaped-villain-cap', keyed via the imported constant so the
+  // literals stay declared once in useSweepHealth.ts) to a small varied fraction
+  // — combined ~2–30% of cellCount — giving a meaningful MOCK-mode anomaly-free
+  // rate that varies across ~[0.70, 0.98], strictly below 100% and above 0%.
+  // Previously this block forced 'endgame-reached' high; the inversion names the
+  // two anomaly keys instead.
+  for (const anomalyKey of SWEEP_ANOMALY_HEALTH_KEYS) {
+    anomalyCounts[anomalyKey] = Math.round(sampleRange(prng, cellCount * 0.01, cellCount * 0.15));
+  }
 
   const paddedIndex = String(index).padStart(2, '0');
   let runId = `mock-sweep-run-${paddedIndex}`;
