@@ -29676,6 +29676,13 @@ at runtime.
 > (WP-399 adds the UIState projection + client display — observability, not
 > fidelity — and does not bear on this gap.)
 
+> **Amendment (2026-09-05, observability).** WP-399 / D-24202 now projects the
+> Loki Hypno-Thrall zone into `UIState` and renders it on the arena-client
+> mastermind tile, so a stacked Hero is visible where the card says it goes
+> (next to Loki). This is OBSERVABILITY only — the fidelity gap was already
+> closed by WP-397 + WP-398 (both deferred branches implemented); WP-399 makes
+> the existing engine state visible and adds no rule behaviour.
+
 **Deliberately NOT implemented — recorded as a bounded fidelity gap.** Loki's
 "stacks a non-grey Hero next to Loki as a Hypno-Thrall" branch and Doctor
 Octopus's "reveal the top 8 cards, discard all non-grey Heroes, put the rest
@@ -30497,7 +30504,7 @@ that behaviour while respecting the scope lock.
 
 ### D-24202 — Hypno-Thralls project through the existing mastermind display-entry path
 
-**Status:** Drafted 2026-07-19; not yet landed (lands Active at WP-399 execution).
+**Status:** **Active** (WP-399 executed 2026-09-05).
 
 **Context.** WP-398 writes Thralls into `G` without projecting them, so a
 player would see their hand shrink and a log line appear while the card itself
@@ -30525,6 +30532,25 @@ unambiguous.
 change.** `vite build` uses esbuild and `node:test` runs under tsx — neither
 typechecks Vue SFCs — so `pnpm --filter <arena-client> typecheck` is the only
 gate that catches them. This has recurred (WP-166 / WP-207 / WP-227).
+
+**Executed (2026-09-05).** `UIMastermindState.hypnoThralls` is projected in
+`uiState.build.ts` via `buildDisplayEntries` (the same path as
+`attachedBystanders`) with a `?? []` guard for the optional G field, and — per
+the Board-Visible Field Rule — passed through the `uiState.filter.ts` audience
+whitelist too (a field populated in the builder but dropped at the filter is the
+EC-206 `scheme.display` / `gameText` failure mode; the EC-432 file list named
+"the builder" but the filter is a separate module, caught by the EC's global
+`UIMastermindState`-constructor sweep). `vue-tsc` enumerated the exact fixture
+backfill: 9 arena-client test/fixture files plus the 3 committed JSON fixtures
+and the engine `makeUIMastermindState` / drift-keyset / audience-survival tests.
+**Client rendering diverges deliberately from the bystander badge:** captured
+bystanders are face-DOWN, so WP-505 renders a count-only pill; Hypno-Thralls are
+face-UP Heroes, so the tile lists each by name/image via `CardTile` (the WP's
+User-Visible Impact) — "matching the bystander treatment" governs the non-empty
+guard and the shared projection path, not the count-only display. Verified:
+`pnpm -r build` 0; game-engine 3002/0; arena-client `vue-tsc` 0 + 1594/0.
+
+**Packet:** WP-399 (+ EC-432). **Drafted:** 2026-07-19. **Executed:** 2026-09-05 (EC-432).
 
 Protect this file.
 
