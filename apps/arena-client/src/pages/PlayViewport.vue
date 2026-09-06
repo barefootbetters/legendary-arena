@@ -15,6 +15,7 @@ import VfxOverlay from '../components/play/VfxOverlay.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
+import FinalTurnBanner from '../components/hud/FinalTurnBanner.vue';
 import { useViewport } from '../composables/useViewport';
 import { useSkinApplier } from '../composables/useSkinApplier';
 import {
@@ -90,7 +91,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -241,6 +242,15 @@ export default defineComponent({
     const { snapshot: endgameSnapshot } = storeToRefs(endgameStore);
     const authStore = useAuthStore();
 
+    // why: WP-654 — the final-turn warning banner reads the SAME useUiStateStore
+    // snapshot the endgame/submit hooks read (a sibling store reader, not a prop
+    // consumer), mounted ONCE at this shared viewport root so it covers BOTH
+    // <PlayDesktop> and <PlayMobile> (the WP-410/412/415/418 single-host
+    // precedent). The engine projects finalTurn only during the deck-exhaustion
+    // final turn and omits it once gameOver is set, so this computed is the
+    // banner's whole gate — no client-side "is it the final turn" logic here.
+    const finalTurn = computed(() => endgameSnapshot.value?.finalTurn);
+
     const isGameOver = computed<boolean>(
       () => endgameSnapshot.value?.gameOver !== undefined,
     );
@@ -340,6 +350,7 @@ export default defineComponent({
       isRelaunching,
       playAgainError,
       playAgain,
+      finalTurn,
     };
   },
 });
@@ -430,6 +441,18 @@ export default defineComponent({
     -->
     <VfxOverlay />
     <!--
+      // why: WP-654 — the final-turn warning banner, mounted ONCE here at the
+      // shared viewport root (the WP-410/412/415/418 single-host precedent), so
+      // it covers BOTH the <PlayMobile> and <PlayDesktop> surfaces. WP-368
+      // mounted it in <ArenaHud>, which the app renders only on the dev
+      // ?fixture= route — never in a real match — so the banner never appeared
+      // in play (D-24465). The pure component self-hides via its own v-if on the
+      // finalTurn prop; the PlayViewport-scoped `final-turn-banner-overlay` class
+      // (applied to the child's root) positions it as a fixed top-center overlay
+      // without touching the component.
+    -->
+    <FinalTurnBanner :final-turn="finalTurn" class="final-turn-banner-overlay" />
+    <!--
       // why: WP-415 — mounted ONCE here at the shared viewport root (the 01.5
       // wiring host), so the co-op stall banner covers BOTH the <PlayMobile> and
       // <PlayDesktop> surfaces. Self-hides unless the bot ally stopped abnormally
@@ -491,6 +514,23 @@ export default defineComponent({
 <style scoped>
 .play-viewport {
   display: contents;
+}
+
+/* why: WP-654 — position the shared final-turn banner as a fixed top-center
+   overlay over the play surface (the banner-overlay precedent set by the other
+   viewport-root banners, which own their own fixed positioning). Vue applies
+   this component's scope id to the child <FinalTurnBanner>'s root element, so
+   this class styles that root without editing the pure component. z-index sits
+   above the mat but below the fixed audio/diagnostics controls. */
+.final-turn-banner-overlay {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: max-content;
+  max-width: min(92vw, 40rem);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .score-submission-status {

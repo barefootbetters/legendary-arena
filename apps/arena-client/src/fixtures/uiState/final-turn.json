@@ -1,0 +1,203 @@
+{
+  "game": {
+    "phase": "play",
+    "turn": 3,
+    "activePlayerId": "0",
+    "currentStage": "main",
+    "hasActedThisTurn": false,
+    "hasHealedThisTurn": false,
+    "lastPlayEffectsFired": 0
+  },
+  "players": [
+    {
+      "playerId": "0",
+      "deckCount": 12,
+      "handCount": 5,
+      "discardCount": 3,
+      "inPlayCount": 2,
+      "victoryCount": 4,
+      "woundCount": 0,
+      "handCards": [
+        "sm-shield-agent",
+        "sm-shield-officer",
+        "sm-shield-trooper",
+        "dp-belt-pouches",
+        "sm-amazing-friend"
+      ],
+      "inPlayCards": [
+        "sm-web-slinger",
+        "dp-chimichangas"
+      ],
+      "inPlayDisplay": [
+        {
+          "extId": "sm-web-slinger",
+          "name": "Web Slinger",
+          "imageUrl": "https://images.legendary-arena.com/sm-web-slinger.png",
+          "cost": 2
+        },
+        {
+          "extId": "dp-chimichangas",
+          "name": "Chimichangas",
+          "imageUrl": "https://images.legendary-arena.com/dp-chimichangas.png",
+          "cost": 1
+        }
+      ]
+    },
+    {
+      "playerId": "1",
+      "deckCount": 10,
+      "handCount": 5,
+      "discardCount": 4,
+      "inPlayCount": 3,
+      "victoryCount": 2,
+      "woundCount": 1
+    }
+  ],
+  "city": {
+    "spaces": [
+      {
+        "extId": "sinister-six-shocker",
+        "type": "villain",
+        "keywords": [
+          "ranged"
+        ],
+        "display": {
+          "extId": "sinister-six-shocker",
+          "name": "Shocker",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-shocker.png",
+          "cost": null
+        },
+        "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
+        "fightCost": 0
+      },
+      {
+        "extId": "sinister-six-electro",
+        "type": "villain",
+        "keywords": [
+          "ranged"
+        ],
+        "display": {
+          "extId": "sinister-six-electro",
+          "name": "Electro",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-electro.png",
+          "cost": null
+        },
+        "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
+        "fightCost": 0
+      },
+      null,
+      {
+        "extId": "sinister-six-vulture",
+        "type": "villain",
+        "keywords": [
+          "ranged"
+        ],
+        "display": {
+          "extId": "sinister-six-vulture",
+          "name": "Vulture",
+          "imageUrl": "https://images.legendary-arena.com/sinister-six-vulture.png",
+          "cost": null
+        },
+        "attachedHeroes": [],
+        "attachedHeroDisplay": [],
+        "attachedBystanderCount": 0,
+        "fightCost": 0
+      },
+      null
+    ],
+    "escapedPile": []
+  },
+  "hq": {
+    "slots": [
+      "dp-weapon-x",
+      "sm-hero-for-hire",
+      null,
+      "dp-chimichangas",
+      "sm-web-slinger"
+    ]
+  },
+  "mastermind": {
+    "id": "mastermind-doctor-octopus",
+    "tacticsRemaining": 3,
+    "tacticsDefeated": 1,
+    "display": {
+      "extId": "mastermind-doctor-octopus",
+      "name": "Doctor Octopus",
+      "imageUrl": "https://images.legendary-arena.com/mastermind-doctor-octopus.png",
+      "cost": null
+    },
+    "attachedBystanders": [],
+    "strikePile": [],
+    "hypnoThralls": []
+  },
+  "scheme": {
+    "id": "scheme-midtown-bank-robbery",
+    "twistCount": 2,
+    "twistPile": []
+  },
+  "economy": {
+    "attack": 4,
+    "recruit": 3,
+    "availableAttack": 4,
+    "availableRecruit": 3,
+    "piercing": 0,
+    "woundsDrawn": 0
+  },
+  "log": [
+    {
+      "text": "Turn 1: Player 0 recruited sm-shield-agent",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 2: Villain Electro entered the city",
+      "outcome": "neutral"
+    },
+    {
+      "text": "Turn 3: Player 1 defeated Shocker",
+      "outcome": "neutral"
+    }
+  ],
+  "progress": {
+    "bystandersRescued": 4,
+    "escapedVillains": 1,
+    "menace": 0.25,
+    "menaceTier": "calm",
+    "schemeLossProgress": 2,
+    "schemeLossThreshold": 8,
+    "schemeLossKind": "escaped-pile",
+    "schemeTwistThreshold": 8
+  },
+  "decks": {
+    "villainDeckCount": 28,
+    "heroDeckCount": 42
+  },
+  "piles": {
+    "bystandersCount": 8,
+    "woundsCount": 24,
+    "horrorsCount": 0,
+    "officersCount": 22,
+    "sidekicksCount": 13,
+    "officerDisplay": {
+      "extId": "pile-shield-officer",
+      "name": "S.H.I.E.L.D. Officer",
+      "imageUrl": "https://images.legendary-arena.com/core/core-so-officer.webp",
+      "cost": null
+    }
+  },
+  "koPile": {
+    "count": 0,
+    "topCard": null,
+    "cards": []
+  },
+  "notableEvents": [],
+  "villainAttachedHeroes": {},
+  "finalTurn": {
+    "reason": "The Villain Deck is empty.",
+    "heroDeckRemaining": 5,
+    "villainDeckRemaining": 0
+  }
+}

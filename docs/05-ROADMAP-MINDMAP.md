@@ -121,6 +121,7 @@ mindmap
         ["WP-365 ✅ final-score VP by printed card VP; flat table demoted to fallback (live capture matchId sGTM7LWSIHy 2026-07-12 — victory pile Super-Skrull vp2 + Skrull-Shapeshifters vp2 + Juggernaut vp4 = printed 8 reported as villainVP 3, total 45 vs correct 50; root cause: computeFinalScores WP-020 uses flat VP_VILLAIN=VP_HENCHMAN=1/VP_TACTIC=5 and never reads printed vp — G.cardStats carries attack/recruit/cost/fightCost but NOT vp, registry VillainCardSchema.vp/MastermindSchema.vp never plumbed into G; also feeds parScoring.logic → can crown the wrong multiplayer winner; adds immutable setup snapshot G.cardVictoryPoints sibling to cardStats built in buildInitialGameState via total/defensive normalizePrintedVictoryPoints nullable string|number null/NaN/non-int→omit, computeFinalScores reads G.cardVictoryPoints[cardId] ?? VP_<category> per villain/henchman + tacticVP = tacticsDefeated × (mastermind vp ?? VP_TACTIC), flat constants DEMOTED to fallbacks values unchanged so null-vp cards score sanely; bystander stays 1 wound stays −1, PlayerScoreBreakdown shape/field-names unchanged value-only no consumer break; determinism conditional-spread/omit-when-empty per WP-290 → EMPTY_REGISTRY fixtures byte-identical sentinel re-pin execution-measured expected none; out of scope: no retro-rescore of historical DB rows, no PAR-weight change, no registry-schema change; standard two-session lane §6 scoring/competitive exclusion; executed 2026-07-12 via a dedicated setup/buildCardVictoryPoints.ts (economy/mastermind/CardStatEntry byte-unchanged — concurrency-safe amendment of the inline draft); engine 1893/441/0, sim:coverage sentinel unchanged; EC-392; D-24157 Active)"]
         ["WP-367 ✅ Deck-exhaustion final turn → tie (engine; implements the rulebook end condition the engine previously ignored — the moment the Hero Deck or Villain Deck runs out, a final turn is declared and the game ends in a TIE rather than continuing. Adds finalTurn.logic + an endgame condition + a UIState projection so the client can warn; villainDeck.reveal reworked. Reserves D-24159/60/61; EC-397)"]
         ["WP-368 ✅ Final-turn warning banner (arena client; the client follow-on to WP-367 — surfaces the declared final turn in the match UI so a player is told the shared deck ran out and this is the last turn, rather than discovering it at the tie. Reads the UIState projection WP-367 added; no engine change. New pure prop-driven FinalTurnBanner.vue mounted in ArenaHud.vue, role=alert aria-live=assertive, v-if on the projected field; EC-687 / D-24162; done 2026-09-06)"]
+        ["WP-654 ✅ Final-turn banner live play-surface mount (arena client; corrects the WP-368 surface miss — the banner was mounted only in ArenaHud.vue which the app renders only on the dev ?fixture= route, so a real match rendering PlayViewport→PlayDesktop/PlayMobile never showed it. Mounts FinalTurnBanner once at the PlayViewport shared root reading the store snapshot covering both surfaces, positioned by a scoped class on the child root so the pure component is unchanged; adds a committed final-turn UIState fixture so ?fixture=final-turn&play=1 renders it through the live path. EC-691 / D-24465; done 2026-09-06)"]
 
       Beta-Launch Pillar
         ["WP-052 ✅ Player identity and replay ownership"]
@@ -798,7 +799,7 @@ mindmap
 | Pre-Planning System | 5/5 | — |
 | Post-Phase-6 Hygiene | 5/5 | — |
 | Phase 7 — Beta, Launch & PAR | 6/6 | — |
-| Scoring & PAR Pipeline | 7/7 | — |
+| Scoring & PAR Pipeline | 8/8 | — |
 | Beta-Launch Pillar | 5/5 | — |
 | Engine Hardening | 2/2 | — |
 | Client Integration Cluster | 21/21 | — |
@@ -835,7 +836,7 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **645/646 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
+| **Total** | **646/647 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
 **Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->

@@ -20,6 +20,7 @@ import type {
 import midTurnJson from './mid-turn.json';
 import endgameWinJson from './endgame-win.json';
 import endgameLossJson from './endgame-loss.json';
+import finalTurnJson from './final-turn.json';
 
 // why: WP-434 — a JSON import widens the `log[].outcome` string literal to `string`,
 // which no longer satisfies `LogEntry['outcome']` (the LogOutcome union). Re-narrow the
@@ -81,4 +82,13 @@ export const endgameLoss = {
   ...endgameLossJson,
   log: narrowLog(endgameLossJson.log),
   progress: narrowProgress(endgameLossJson.progress),
+} satisfies UIState;
+// why: WP-654 — an in-progress snapshot carrying the WP-367 `finalTurn`
+// projection, so the dev `?fixture=final-turn&play=1` route renders the
+// final-turn banner through the live PlayViewport path and the PlayViewport /
+// ArenaHud tests can drive the present-case from a committed fixture.
+export const finalTurn = {
+  ...finalTurnJson,
+  log: narrowLog(finalTurnJson.log),
+  progress: narrowProgress(finalTurnJson.progress),
 } satisfies UIState;
