@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 import { ref } from "vue";
 import { validate } from "@legendary-arena/lagn";
 import { useLoadoutLagnExport } from "./useLoadoutLagnExport";
+import { parseLagnLoadout } from "../lib/loadoutLagnImport";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
 
 // why: playerCount is 1 so the export's variant, which is DERIVED (read-only)
@@ -354,4 +355,68 @@ test("derived variant and player count are always consistent", () => {
   const coopApi = useLoadoutLagnExport(coopDraft);
   assert.equal(coopApi.variant.value, "custom", "2 seats derive Custom (cooperative)");
   assert(coopApi.isValid.value, "cooperative + 2 players should be a valid export");
+});
+
+// ── Hero alternates bench (WP-404 / D-24212) ─────────────────────────────────
+
+test("AC-3 a non-empty bench exports setup.hero_alternates and the document validates", () => {
+  const draft = ref(createValidDraft());
+  // why: envelope-level bench (WP-403 placement), disjoint from heroDeckIds.
+  draft.value.heroAlternateIds = ["hero-rogue", "hero-gambit"];
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for a draft carrying a bench");
+  const parsed = JSON.parse(built.file);
+  assert.equal(parsed.lagn_version, "1.5.0", "the current LAGN_VERSION stamp");
+  assert.deepEqual(
+    parsed.setup.hero_alternates,
+    [
+      { id: "hero-rogue", name: "" },
+      { id: "hero-gambit", name: "" },
+    ],
+    "the bench maps to the same { id, name } shape as setup.heroes",
+  );
+  assert(api.isValid.value, "the exported bench document should pass validate()");
+});
+
+test("AC-4 an empty/absent bench omits setup.hero_alternates entirely and still validates", () => {
+  const draft = ref(createValidDraft());
+  assert.equal(draft.value.heroAlternateIds, undefined, "the fixture carries no bench");
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file with no bench");
+  const parsed = JSON.parse(built.file);
+  assert.equal(
+    "hero_alternates" in parsed.setup,
+    false,
+    "an absent bench must omit the key entirely, never emit [] (a different claim)",
+  );
+  assert(api.isValid.value, "the no-bench document should still pass validate()");
+});
+
+test("AC-5 round trip: export a bench -> parseLagnLoadout -> the identical bench comes back", () => {
+  const draft = ref(createValidDraft());
+  draft.value.heroAlternateIds = ["hero-rogue", "hero-gambit"];
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "export should produce a file");
+  const parsed = parseLagnLoadout(built.file);
+  assert.equal(parsed.ok, true, "the exported file must re-import cleanly");
+  if (!parsed.ok) return;
+  assert.deepEqual(
+    parsed.composition.heroAlternateIds,
+    ["hero-rogue", "hero-gambit"],
+    "the bench survives export -> import unchanged (the WP-291/EC-429 asymmetry)",
+  );
+});
+
+test("AC-5 round trip: a no-bench export re-imports to an absent bench without error", () => {
+  const draft = ref(createValidDraft());
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "export should produce a file");
+  const parsed = parseLagnLoadout(built.file);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal("heroAlternateIds" in parsed.composition, false, "no bench in -> no bench out");
 });

@@ -366,6 +366,14 @@ export interface UseLoadoutDraftApi {
   removeHenchmanGroup: (groupId: string) => void;
   addHeroGroup: (groupId: string) => void;
   removeHeroGroup: (groupId: string) => void;
+  /**
+   * Adds / removes a hero on the reserve bench (envelope `heroAlternateIds`),
+   * mirroring `addHeroGroup` / `removeHeroGroup`. The bench is UNCAPPED here —
+   * the two-slot limit is a UI decision in LoadoutBuilder (WP-404 / D-24212),
+   * never a schema or setter cap.
+   */
+  addHeroAlternate: (heroId: string) => void;
+  removeHeroAlternate: (heroId: string) => void;
   setCount: (
     field: "bystandersCount" | "woundsCount" | "officersCount" | "sidekicksCount",
     value: number,
@@ -557,6 +565,33 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     removeId(draft.value.composition.heroDeckIds, groupId);
   }
 
+  // why: WP-404 / D-24212 — the reserve bench lives on the ENVELOPE
+  // (draft.heroAlternateIds), beside themeId / supportPools, NOT in the
+  // composition (the WP-403 placement; a bench is not on the board). Lazy-create
+  // the array so an untouched draft leaves the key absent, and delete it when it
+  // empties so absence stays unambiguous — the same discipline setSupportPool
+  // uses. Uncapped: the two-slot limit is a UI affordance, never a setter cap.
+  function addHeroAlternate(heroId: string): void {
+    if (heroId.trim() === "") {
+      return;
+    }
+    if (draft.value.heroAlternateIds === undefined) {
+      draft.value.heroAlternateIds = [];
+    }
+    addUniqueId(draft.value.heroAlternateIds, heroId);
+  }
+
+  function removeHeroAlternate(heroId: string): void {
+    const bench = draft.value.heroAlternateIds;
+    if (bench === undefined) {
+      return;
+    }
+    removeId(bench, heroId);
+    if (bench.length === 0) {
+      delete draft.value.heroAlternateIds;
+    }
+  }
+
   function setCount(
     field: "bystandersCount" | "woundsCount" | "officersCount" | "sidekicksCount",
     value: number,
@@ -714,6 +749,11 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
       "themeId",
       "expansions",
       "heroSelectionMode",
+      // why: WP-404 — this replacer array is a strict whitelist (any key absent
+      // is dropped from the file), so the envelope bench must be listed or a
+      // downloaded MATCH-SETUP document would silently lose it — the EC-425
+      // supportPools trap. Envelope-level, so it sits beside heroSelectionMode.
+      "heroAlternateIds",
       "composition",
       "schemeId",
       "mastermindId",
@@ -835,6 +875,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     removeHenchmanGroup,
     addHeroGroup,
     removeHeroGroup,
+    addHeroAlternate,
+    removeHeroAlternate,
     setCount,
     setSupportPool,
     setPlayerCount,

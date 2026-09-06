@@ -54,6 +54,17 @@ export interface LagnLoadoutComposition {
    */
   supportPools?: SupportPools | undefined;
   /**
+   * The reserve-bench hero ext_ids the LAGN named (`setup.hero_alternates`), or
+   * undefined when the record carries none.
+   *
+   * why: WP-404 / D-24212 — the bench round-trips through the same import path as
+   * the rest of the composition. Every id is the set-qualified ext_id LAGN stored;
+   * the caller applies it to the ENVELOPE (`draft.heroAlternateIds`), never the
+   * composition (WP-403 placement). The LAGN validator has already enforced the
+   * bench is disjoint from `setup.heroes` and internally unique, so no re-check here.
+   */
+  heroAlternateIds?: string[] | undefined;
+  /**
    * The match verdict the LAGN carried, or undefined when the record has none.
    *
    * why: D-24358 — this importer previously mapped only `setup` + `player_count`
@@ -158,9 +169,17 @@ function lagnToComposition(lagn: LAGN): LagnLoadoutComposition {
   const setup = lagn.setup;
   const supportPools = lagnToSupportPools(setup);
   const result = lagnToImportedResult(lagn);
+  // why: WP-404 / D-24212 — take only the `id` off each bench entry (LAGN stores
+  // `{ id, name }`, the loadout carries ext_id strings). Omit the key entirely
+  // when the record has no bench, so an absent bench stays distinct from an empty one.
+  const heroAlternateIds =
+    setup.hero_alternates === undefined
+      ? undefined
+      : setup.hero_alternates.map((alternate) => alternate.id);
   return {
     ...(supportPools === undefined ? {} : { supportPools }),
     ...(result === undefined ? {} : { result }),
+    ...(heroAlternateIds === undefined ? {} : { heroAlternateIds }),
     schemeId: setup.scheme.id,
     mastermindId: setup.mastermind.id,
     // why: take only the `id` off each group entry — the LAGN stores `{ id, name }`

@@ -616,3 +616,58 @@ describe("useLoadoutDraft applySupportPreset + resetDraft", () => {
     ]);
   });
 });
+
+describe("useLoadoutDraft — hero alternates bench (WP-404 / D-24212)", () => {
+  it("addHeroAlternate lazy-creates the envelope array and adds unique ids", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    // why: a blank draft leaves the key absent (envelope-level, not composition).
+    assert.equal(api.draft.value.heroAlternateIds, undefined);
+    api.addHeroAlternate("core/wolverine");
+    api.addHeroAlternate("core/storm");
+    api.addHeroAlternate("core/wolverine"); // duplicate — ignored
+    assert.deepEqual(api.draft.value.heroAlternateIds, ["core/wolverine", "core/storm"]);
+    // envelope-level, never on the composition
+    assert.equal(
+      "heroAlternateIds" in api.draft.value.composition,
+      false,
+      "the bench is envelope-level, not a composition field",
+    );
+  });
+
+  it("removeHeroAlternate removes an id and deletes the key when the bench empties", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.addHeroAlternate("core/wolverine");
+    api.addHeroAlternate("core/storm");
+    api.removeHeroAlternate("core/wolverine");
+    assert.deepEqual(api.draft.value.heroAlternateIds, ["core/storm"]);
+    api.removeHeroAlternate("core/storm");
+    // why: an empty envelope array would read as "a bench exists and is empty";
+    // deleting the key keeps absence unambiguous.
+    assert.equal(api.draft.value.heroAlternateIds, undefined);
+  });
+
+  it("the MATCH-SETUP export whitelist carries the bench (a strict-array replacer would drop it)", async () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setScheme("core/midtown-bank-robbery");
+    api.setMastermind("core/loki");
+    api.addVillainGroup("core/brotherhood");
+    api.addHenchmanGroup("core/sentinel");
+    api.addHeroGroup("core/spider-man");
+    api.addHeroAlternate("core/wolverine");
+    api.addHeroAlternate("core/storm");
+    const text = await api.exportToJsonBlob().text();
+    const parsed = JSON.parse(text);
+    assert.deepEqual(
+      parsed.heroAlternateIds,
+      ["core/wolverine", "core/storm"],
+      "the downloaded MATCH-SETUP document must carry the bench, not silently drop it (EC-425 trap)",
+    );
+  });
+
+  it("resetDraft clears the bench", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.addHeroAlternate("core/wolverine");
+    api.resetDraft();
+    assert.equal(api.draft.value.heroAlternateIds, undefined);
+  });
+});

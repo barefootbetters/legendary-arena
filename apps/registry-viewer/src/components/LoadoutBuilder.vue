@@ -121,6 +121,8 @@ const {
   removeHenchmanGroup,
   addHeroGroup,
   removeHeroGroup,
+  addHeroAlternate,
+  removeHeroAlternate,
   setCount,
   setSupportPool,
   setPlayerCount,
@@ -171,7 +173,15 @@ type PickerSlot =
   | "mastermindId"
   | "villainGroupIds"
   | "henchmanGroupIds"
-  | "heroDeckIds";
+  | "heroDeckIds"
+  | "heroAlternateIds";
+
+// why: WP-404 / D-24212 — the reserve bench offers exactly TWO slots. This cap
+// is a UI affordance and lives ONLY here: no LAGN or setupContract schema caps
+// the bench (a cap in a published open standard cannot be relaxed without a
+// major version), and the draft setter is uncapped so a `?lagn=` import of a
+// larger shared bench still applies in full.
+const HERO_BENCH_SLOT_COUNT = 2;
 
 const activeSlot = ref<PickerSlot>("schemeId");
 const pickerSearch = ref("");
@@ -184,6 +194,10 @@ const slotToCardType: Record<PickerSlot, FlatCardType> = {
   villainGroupIds: "villain",
   henchmanGroupIds: "henchman",
   heroDeckIds: "hero",
+  // why: WP-404 — the bench draws from the SAME hero card type as the played
+  // heroes; played-vs-reserve is enforced by isEntryDisabled below, not by a
+  // different card pool.
+  heroAlternateIds: "hero",
 };
 
 /**
@@ -291,6 +305,9 @@ function pickFromRegistry(entryId: string): void {
     case "heroDeckIds":
       addHeroGroup(entryId);
       return;
+    case "heroAlternateIds":
+      addHeroAlternate(entryId);
+      return;
   }
 }
 
@@ -306,7 +323,40 @@ function isEntrySelected(entryId: string): boolean {
       return draft.value.composition.henchmanGroupIds.includes(entryId);
     case "heroDeckIds":
       return draft.value.composition.heroDeckIds.includes(entryId);
+    case "heroAlternateIds":
+      return (draft.value.heroAlternateIds ?? []).includes(entryId);
   }
+}
+
+/**
+ * AC-2 — while the bench or hero-group slot is active, a hero already in the
+ * OTHER list is disabled in the picker so the UI prevents a hero being both
+ * played and benched before validation would. The bench also disables further
+ * additions once it holds HERO_BENCH_SLOT_COUNT heroes (the UI-only two-slot
+ * cap). Returns "" (enabled) for every non-hero slot.
+ */
+function entryDisabledReason(entryId: string): string {
+  if (activeSlot.value === "heroDeckIds") {
+    if ((draft.value.heroAlternateIds ?? []).includes(entryId)) {
+      return "This hero is on the reserve bench. Remove it from the bench first to play it.";
+    }
+    return "";
+  }
+  if (activeSlot.value === "heroAlternateIds") {
+    if (draft.value.composition.heroDeckIds.includes(entryId)) {
+      return "This hero is already a played hero. Remove it from the played heroes first to bench it.";
+    }
+    const bench = draft.value.heroAlternateIds ?? [];
+    if (bench.length >= HERO_BENCH_SLOT_COUNT && !bench.includes(entryId)) {
+      return `The bench holds at most ${HERO_BENCH_SLOT_COUNT} reserve heroes. Remove one to add another.`;
+    }
+    return "";
+  }
+  return "";
+}
+
+function isEntryDisabled(entryId: string): boolean {
+  return entryDisabledReason(entryId) !== "";
 }
 
 // ── Support pools (EC-425 / D-24194) ───────────────────────────────────────
@@ -811,6 +861,12 @@ function applyLagnImport(text: string): void {
   for (const heroDeckId of composition.heroDeckIds) {
     addHeroGroup(heroDeckId);
   }
+  // why: WP-404 / D-24212 — apply the reserve bench to the envelope, the SAME
+  // sequence useLagnFromUrl.applyComposition uses (both import consumers wired,
+  // or the paste/`?lagn=` round trips diverge — the AC-5/AC-6 asymmetry).
+  for (const heroAlternateId of composition.heroAlternateIds ?? []) {
+    addHeroAlternate(heroAlternateId);
+  }
   setCount("bystandersCount", composition.bystandersCount);
   setCount("woundsCount", composition.woundsCount);
   setCount("officersCount", composition.officersCount);
@@ -1190,6 +1246,8 @@ function slotLabel(slot: PickerSlot): string {
       return "Henchman groups";
     case "heroDeckIds":
       return "Hero groups";
+    case "heroAlternateIds":
+      return "Hero bench";
   }
 }
 </script>
@@ -1415,6 +1473,36 @@ function slotLabel(slot: PickerSlot): string {
             <li v-for="groupId in draft.composition.heroDeckIds" :key="groupId" class="chip">
               {{ groupId }}
               <button type="button" class="chip-close" @click="removeHeroGroup(groupId)">✕</button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Hero bench (WP-404 / D-24212): reserve heroes, envelope-level and
+             visually distinct from the played heroes above so the two are never
+             confused. Two slots; loadout metadata only — never on the board. -->
+        <div class="field bench-field">
+          <div class="field-row">
+            <span class="field-label">
+              🪑 Hero bench — reserve ({{ (draft.heroAlternateIds ?? []).length }}/{{ HERO_BENCH_SLOT_COUNT }})
+            </span>
+            <button
+              type="button"
+              class="slot-btn"
+              :class="{ active: activeSlot === 'heroAlternateIds' }"
+              @click="activeSlot = 'heroAlternateIds'"
+            >Pick…</button>
+          </div>
+          <p class="bench-hint">
+            Reserve heroes are a saved shortlist — <em>not</em> played this match. They
+            ride the loadout's LAGN export and share link, never the board.
+          </p>
+          <ul class="chip-list">
+            <li v-for="heroId in (draft.heroAlternateIds ?? [])" :key="heroId" class="chip bench-chip">
+              {{ heroId }}
+              <button type="button" class="chip-close" @click="removeHeroAlternate(heroId)">✕</button>
+            </li>
+            <li v-if="(draft.heroAlternateIds ?? []).length === 0" class="bench-empty">
+              No reserves — optional.
             </li>
           </ul>
         </div>
@@ -1785,6 +1873,8 @@ function slotLabel(slot: PickerSlot): string {
           type="button"
           class="picker-entry"
           :class="{ selected: isEntrySelected(entry.id) }"
+          :disabled="isEntryDisabled(entry.id)"
+          :title="entryDisabledReason(entry.id) || undefined"
           @click="pickFromRegistry(entry.id)"
         >
           <span class="picker-entry-name">{{ entry.label }}</span>
@@ -2063,6 +2153,23 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #6060c0
 }
 .picker-entry:hover { background: #1a1a26; border-color: #44445a; }
 .picker-entry.selected { background: #22225a; border-color: #7070e0; }
+/* why: WP-404 — a hero disabled in the picker is one already in the other hero
+   list (played vs benched) or blocked by the two-slot bench cap (AC-2). Dim it
+   and show a not-allowed cursor so the reason is legible without a click. */
+.picker-entry:disabled { opacity: 0.4; cursor: not-allowed; }
+.picker-entry:disabled:hover { background: #12121a; border-color: #2a2a3a; }
+/* why: WP-404 — the reserve bench is visually distinct from the played heroes so
+   the two are never confused at a glance (AC-1): a warm left-border accent and a
+   muted ground set it apart from the composition fields above. */
+.bench-field {
+  border-left: 3px solid #c8a24a;
+  padding-left: 0.6rem;
+  background: rgba(200, 162, 74, 0.06);
+  border-radius: 4px;
+}
+.bench-hint { font-size: 0.72rem; color: #b7a06a; margin: 0.2rem 0 0.4rem; }
+.bench-chip { background: #3a3020; border-color: #c8a24a; }
+.bench-empty { font-size: 0.75rem; color: #8888aa; font-style: italic; list-style: none; }
 .picker-entry-name { font-weight: 600; font-size: 0.85rem; }
 .picker-entry-id { font-family: ui-monospace, Consolas, monospace; font-size: 0.72rem; color: #8888aa; }
 .picker-empty { color: #6666aa; font-size: 0.8rem; }
