@@ -796,6 +796,24 @@ function parseAbilityText(abilityText: string): {
           value: recruitThreshold,
         });
       }
+    } else if (normalizedKeyword === 'outwit') {
+      // why: WP-653 / D-24464 — Outwit is a game-state CONDITION (the D-24055
+      // Spectrum marker→condition pattern), gating the line's printed effects on
+      // >= 3 distinct non-zero Hero costs. Placed before the unresolved-marker
+      // fallback so it never records a parse-unrecognized hollow.
+      conditions.push({ type: 'distinctHeroCostsAtLeast', value: '3' });
+    } else if (normalizedKeyword === 'worthy') {
+      // why: WP-653 / D-24464 — Worthy gates on a Hero costing >= 5 in hand or
+      // play (the Spectrum/recruit-threshold marker→condition precedent).
+      conditions.push({ type: 'heroCostAtLeastInHandOrPlay', value: '5' });
+    } else if (normalizedKeyword === 'savior') {
+      // why: WP-653 / D-24464 — Savior gates on >= 3 Bystanders in the Victory
+      // Pile (the Spectrum/recruit-threshold marker→condition precedent).
+      conditions.push({ type: 'bystandersInVictoryAtLeast', value: '3' });
+    } else if (normalizedKeyword === 'antics') {
+      // why: WP-653 / D-24464 — Antics gates on >= 3 cards costing 1-2 and/or
+      // Size-Changing (the Spectrum/recruit-threshold marker→condition precedent).
+      conditions.push({ type: 'cheapOrSizeChangingAtLeast', value: '3' });
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a

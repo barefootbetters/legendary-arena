@@ -613,3 +613,47 @@ describe('buildHeroAbilityHooks — investigate static criterion (WP-564 / D-243
     assert.ok((hook.unresolvedMarkers ?? []).includes('investigate'), 'it stays unsupported via the unresolved marker');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-653 / D-24464 — condition-gate keywords (Outwit / Worthy / Savior / Antics)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — condition-gate keywords (WP-653)', () => {
+  const CASES: ReadonlyArray<{ keyword: string; type: string }> = [
+    { keyword: 'Outwit', type: 'distinctHeroCostsAtLeast' },
+    { keyword: 'Worthy', type: 'heroCostAtLeastInHandOrPlay' },
+    { keyword: 'Savior', type: 'bystandersInVictoryAtLeast' },
+    { keyword: 'Antics', type: 'cheapOrSizeChangingAtLeast' },
+  ];
+
+  for (const { keyword, type } of CASES) {
+    it(`parses [keyword:${keyword}] into a ${type} condition, not an unresolved marker`, () => {
+      const registry = makeRegistry('test', 'test-hero', [
+        { slug: 'gate-card', abilities: [`[keyword:${keyword}]: Draw a card. [keyword:draw:1]`] },
+      ]);
+      const hook = buildHeroAbilityHooks(registry, makeConfig('test/test-hero'))[0]!;
+
+      const conditions = hook.conditions ?? [];
+      assert.ok(
+        conditions.some((condition) => condition.type === type),
+        `hook should carry a ${type} condition`,
+      );
+      assert.ok(
+        !(hook.unresolvedMarkers ?? []).includes(keyword.toLowerCase()),
+        `${keyword} must NOT be recorded as a parse-unrecognized hollow`,
+      );
+      // the gated draw:1 effect is present on the same hook (gated by the condition).
+      assert.ok(hook.keywords.includes('draw'), 'the gated draw effect is on the hook');
+    });
+  }
+
+  it('does NOT add the four keywords to hook.keywords (they are conditions, not keywords)', () => {
+    const registry = makeRegistry('test', 'test-hero', [
+      { slug: 'gate-card', abilities: ['[keyword:Outwit]: Draw a card. [keyword:draw:1]'] },
+    ]);
+    const hook = buildHeroAbilityHooks(registry, makeConfig('test/test-hero'))[0]!;
+    for (const keyword of ['outwit', 'worthy', 'savior', 'antics']) {
+      assert.ok(!hook.keywords.includes(keyword), `${keyword} is a condition, never a hook keyword`);
+    }
+  });
+});

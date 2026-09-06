@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 656,
+    "totalRows": 660,
     "byStatus": {
-      "executable": 258,
+      "executable": 262,
       "deferred": 0,
-      "condition": 5,
-      "unsupported": 352,
+      "condition": 19,
+      "unsupported": 338,
       "unmarked": 40,
       "subsystem": 1
     },
@@ -400,7 +400,7 @@
       "heroName": "Ant Army",
       "set": "amwp",
       "mechanic": "antics",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -420,6 +420,22 @@
         {
           "slug": "revolutionary-anthem",
           "name": "Revolutionary Anthem"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-army",
+      "heroName": "Ant Army",
+      "set": "amwp",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "anticipate",
+          "name": "Anticipate"
         }
       ]
     },
@@ -492,7 +508,7 @@
       "heroName": "Ant-Man",
       "set": "amwp",
       "mechanic": "antics",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -1297,6 +1313,22 @@
       "extId": "asrd/beta-ray-bill",
       "heroName": "Beta Ray Bill",
       "set": "asrd",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "hope-of-the-korbinites",
+          "name": "Hope of the Korbinites"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "heroName": "Beta Ray Bill",
+      "set": "asrd",
       "mechanic": "thrown-artifact",
       "status": "unsupported",
       "wp": "",
@@ -1314,7 +1346,7 @@
       "heroName": "Beta Ray Bill",
       "set": "asrd",
       "mechanic": "worthy",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -1374,7 +1406,7 @@
       "heroName": "Thor",
       "set": "asrd",
       "mechanic": "worthy",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -2198,7 +2230,7 @@
       "heroName": "Agent X-13",
       "set": "ca75",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -2230,7 +2262,7 @@
       "heroName": "Captain America (Falcon)",
       "set": "ca75",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -2258,6 +2290,10 @@
         {
           "slug": "devoted-patriot",
           "name": "Devoted Patriot"
+        },
+        {
+          "slug": "liberate-the-prisoners",
+          "name": "Liberate the Prisoners"
         }
       ]
     },
@@ -2306,7 +2342,7 @@
       "heroName": "Captain America 1941",
       "set": "ca75",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -2358,7 +2394,7 @@
       "heroName": "Steve Rogers, Director of S.H.I.E.L.D.",
       "set": "ca75",
       "mechanic": "savior",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -10513,8 +10549,16 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
+          "slug": "extrapolate",
+          "name": "Extrapolate"
+        },
+        {
           "slug": "gamma-draining-nanites",
           "name": "Gamma-Draining Nanites"
+        },
+        {
+          "slug": "renegade-genius",
+          "name": "Renegade Genius"
         }
       ]
     },
@@ -10523,7 +10567,7 @@
       "heroName": "Amadeus Cho",
       "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -10567,7 +10611,7 @@
       "heroName": "Bruce Banner",
       "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -10638,8 +10682,24 @@
       "extId": "wwhk/caiera",
       "heroName": "Caiera",
       "set": "wwhk",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "shadow-queen",
+          "name": "Shadow Queen"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/caiera",
+      "heroName": "Caiera",
+      "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -10831,7 +10891,7 @@
       "heroName": "Hulkbuster Iron Man",
       "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -10925,6 +10985,10 @@
           "name": "Lord of Granite"
         },
         {
+          "slug": "move-mountains",
+          "name": "Move Mountains"
+        },
+        {
           "slug": "nothing-beats-rock",
           "name": "Nothing Beats Rock"
         }
@@ -10935,7 +10999,7 @@
       "heroName": "Korg",
       "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
@@ -11270,8 +11334,24 @@
       "extId": "wwhk/she-hulk",
       "heroName": "She-Hulk",
       "set": "wwhk",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "window-of-opportunity",
+          "name": "Window of Opportunity"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "heroName": "She-Hulk",
+      "set": "wwhk",
       "mechanic": "outwit",
-      "status": "unsupported",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",

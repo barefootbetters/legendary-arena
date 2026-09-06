@@ -279,7 +279,7 @@
           "recruit": null,
           "abilities": [
             "[team:avengers]: Rescue a Bystander. [keyword:rescue:1]",
-            "[keyword:Savior]: Draw a Card."
+            "[keyword:Savior]: Draw a Card. [keyword:draw:1]"
           ]
         },
         {

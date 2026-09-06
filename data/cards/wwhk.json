@@ -28,7 +28,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "[keyword:Outwit]: Draw a card."
+            "[keyword:Outwit]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -78,7 +78,7 @@
           "recruit": null,
           "abilities": [
             "You get +1[icon:attack] for each different cost of Hero you have.",
-            "[keyword:Outwit]: Draw a card."
+            "[keyword:Outwit]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -301,7 +301,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: Draw a card."
+            "[keyword:Outwit]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -997,7 +997,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: Draw a card."
+            "[keyword:Outwit]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1912,7 +1912,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[keyword:Outwit]: Draw a card."
+            "[keyword:Outwit]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
