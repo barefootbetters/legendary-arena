@@ -32954,6 +32954,81 @@ suite 1099/1099 (+4); `pnpm -r build` 0; 5-file allowlist, no `bgioClient.ts` /
 
 ---
 
+### D-24250 — the play-surface `transport` diagnostics block carries four `bgioClient` auto-recovery counters (Active)
+
+**Status:** Active (landed 2026-09-06 at WP-429 / EC-464 execution).
+
+**Context.** The WP-428 / D-24249 `transport` block reports connection status,
+last `_stateID`, and `timeSinceLastFrameMs` (staleness), but a freeze report
+still could not distinguish "the client never tried to recover" (a pure logical
+wedge) from "the client fought to recover and lost" (a transport/desync wedge
+that survived the auto-recovery machinery). `bgioClient.ts` already runs four
+silent auto-recovery paths whose activity was invisible to the report.
+
+**Decision.** The `transport` block gains **four recovery counters** —
+`reconnectResyncCount`, `moveAckResyncCount`, `spectatorStaleResyncCount`,
+`tabFocusResyncCount` — all `number`.
+
+(1) **One counter per existing auto-recovery path.** Each of the four silent
+auto-recoveries in `bgioClient.ts` — the D-24232 transport-reconnect resync
+(`onTransportReconnect`), the WP-312 / D-24097 move-ack-timeout resync
+(`onWatchdogFire`), the spectator-staleness resync (`onSpectatorWatchdogFire`,
+armed in `updateSpectatorWatchdog`), and the tab-focus resync
+(`onVisibilityChange` via `forceCooldownGatedResync`) — gets a single increment
+call at the point it commits to a resync (**past its cooldown gate**), on the
+WP-311 `connection` store. A cooldown-suppressed trigger performs no resync and
+does not increment; the manual WP-311 banner `resync()` is not counted
+(operator-initiated, not a silent recovery).
+
+(2) **Counts recoveries, not behavior.** No threshold, cooldown, watchdog-arming,
+or `performResync` behavior changes — the paths behave identically and only also
+count. `MOVE_ACK_TIMEOUT_MS` / `RESYNC_COOLDOWN_MS` / `SPECTATOR_STALE_TIMEOUT_MS`
+are untouched (a `git diff` timing-constant no-diff gate proves it).
+
+(3) **Surfaced through the WP-428 block.** `buildTransportDiagnostics` copies the
+four counts from the store verbatim; the exporter (`DiagnosticExportButton.vue`)
+is unchanged — the counts ride the store it already reads. Paired with WP-428's
+`timeSinceLastFrameMs`, a freeze report now names both how stale the connection
+is and how hard the client already fought to recover.
+
+(4) **Boundary preserved.** Pure client presentation — App layer only,
+framework/transport state (never `G`, never persisted per WP-116),
+`diagnostics.ts` stays EC-260-clean via a structural `state` param, zero
+engine/determinism/replay footprint, no `finalStateHash` re-pin.
+
+**Execution note (baseline drift from the reservation).** The WP + EC-464 were
+drafted off `origin/main` @ `43a5fcf8`, where the spectator-staleness and
+tab-focus paths **shared** the gated helper `forceCooldownGatedResync`; the EC
+therefore prescribed adding a `cause: 'spectator' | 'tabFocus'` parameter to that
+helper to route the two increments distinctly. Between drafting and execution, PR
+#1691 (`e975cdc3`, the spectator-watchdog terminal-frame freeze fix) split the
+spectator path into its own self-re-arming `onSpectatorWatchdogFire` with its own
+inline resync body — so the two paths **no longer share** the helper
+(`forceCooldownGatedResync` is now tab-focus-only). Each of the four paths now
+owns its function body, so each takes a single past-gate increment directly and
+the `cause` parameter was **unnecessary and not added**. This realizes the WP's
+locked intent (one past-gate increment per auto path, distinct counters, no
+recovery-behavior change) exactly, and honors the higher-authority WP constraint
+"instrument, do not re-architect the recovery machinery" — routing the spectator
+path back through the shared helper would have regressed PR #1691. The 6-file
+allowlist is unchanged.
+
+**Layer / boundary.** App layer (`apps/arena-client`) only — reads/writes the
+`connection` Pinia store, writes no `G`/`ctx`, zero engine/determinism/replay
+footprint, no `finalStateHash` re-pin. §21 N/A (report assembled client-side,
+zero network egress). §17 internal diagnostics (counts sync recovery, changes no
+sync logic; no revenue vector). §20 N/A.
+
+**Packet:** WP-429 / EC-464 (standard two-session lane).
+`User-Visible Surface = none — internal operator tooling` (no D-24026
+rendered-surface gate; verified by the connection-store + builder counter tests
+and the exporter round-trip test — the report carries the four counts). arena-client
+typecheck 0 + suite 1601/1601 (+7 counter cases from the 1594 baseline);
+`pnpm -r build` 0; 6-file allowlist, no `DiagnosticExportButton.vue` /
+`packages/**`; timing-constant no-diff gate clean.
+
+---
+
 ### D-24251 — the desktop play surface adopts a fluid scaling model (1600px max-width cap + fluid clamp card/gutter tokens), additive to the D-12909 767px split (Active)
 
 **Status:** Active (landed 2026-07-26, EC-465 / WP-430).
