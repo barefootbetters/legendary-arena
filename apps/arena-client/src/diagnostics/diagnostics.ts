@@ -44,9 +44,12 @@ export interface DiagnosticEntry {
 /**
  * The client's live transport state at export click — read from the WP-311
  * `connection` store (boardgame.io framework/transport state, never `G`, never
- * persisted). The four store fields plus a derived `timeSinceLastFrameMs` (the
+ * persisted). The store fields plus a derived `timeSinceLastFrameMs` (the
  * capture clock minus `lastFrameAtMs`) — the decisive signal for the
- * "waiting-forever-for-a-server-frame" freeze class.
+ * "waiting-forever-for-a-server-frame" freeze class — and four recovery counters
+ * (WP-429 / D-24250), one per silent auto-recovery path in `bgioClient.ts`, so a
+ * freeze report names how many times the client already auto-resynced before the
+ * operator hit export.
  */
 export interface TransportDiagnostics {
   isConnected: boolean;
@@ -54,6 +57,14 @@ export interface TransportDiagnostics {
   hasEverConnected: boolean;
   lastFrameAtMs: number | null;
   timeSinceLastFrameMs: number | null;
+  /** Transport-reconnect resyncs fired (`bgioClient` `onTransportReconnect`). */
+  reconnectResyncCount: number;
+  /** Move-ack-timeout resyncs fired (`bgioClient` `onWatchdogFire`). */
+  moveAckResyncCount: number;
+  /** Spectator-staleness resyncs fired (`bgioClient` `onSpectatorWatchdogFire`). */
+  spectatorStaleResyncCount: number;
+  /** Tab-focus resyncs fired (`bgioClient` `onVisibilityChange`). */
+  tabFocusResyncCount: number;
 }
 
 /**
@@ -523,6 +534,10 @@ export function buildTransportDiagnostics(
     lastStateId: number | null;
     hasEverConnected: boolean;
     lastFrameAtMs: number | null;
+    reconnectResyncCount: number;
+    moveAckResyncCount: number;
+    spectatorStaleResyncCount: number;
+    tabFocusResyncCount: number;
   },
   capturedAtMs: number,
 ): TransportDiagnostics {
@@ -534,6 +549,13 @@ export function buildTransportDiagnostics(
     hasEverConnected: state.hasEverConnected,
     lastFrameAtMs: state.lastFrameAtMs,
     timeSinceLastFrameMs,
+    // why: the four recovery counters (WP-429 / D-24250) are copied from the
+    // connection store verbatim — no derivation. Each is incremented in
+    // bgioClient.ts at the moment its recovery path commits to a resync.
+    reconnectResyncCount: state.reconnectResyncCount,
+    moveAckResyncCount: state.moveAckResyncCount,
+    spectatorStaleResyncCount: state.spectatorStaleResyncCount,
+    tabFocusResyncCount: state.tabFocusResyncCount,
   };
 }
 

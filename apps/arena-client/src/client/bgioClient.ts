@@ -317,6 +317,12 @@ export function createLiveClient(
     pendingBaselineStateId = null;
     performResync();
     beginResyncCooldown();
+    // why: a client-diagnostic tally of an auto-recovery firing (WP-429 /
+    // D-24250) — the count rides the connection store into the WP-428 transport
+    // block; no recovery behavior changes. The move-ack watchdog is gated
+    // upstream in armWatchdog (it no-ops while cooling down), so reaching here
+    // always means an actual resync fired.
+    useConnectionStore().recordMoveAckResync();
   }
 
   /**
@@ -334,6 +340,12 @@ export function createLiveClient(
       return;
     }
     beginResyncCooldown();
+    // why: a client-diagnostic tally of an auto-recovery firing (WP-429 /
+    // D-24250) — the count rides the connection store into the WP-428 transport
+    // block; no recovery behavior changes. Past the inline resyncCoolingDown
+    // gate, so a cooldown-suppressed reconnect frame (the resync's own
+    // stop()/start()) does not increment.
+    useConnectionStore().recordReconnectResync();
     reconnectResyncTimer = setTimeout(() => {
       reconnectResyncTimer = null;
       // why: clear any armed move-watchdog before tearing down — the resync
@@ -373,7 +385,9 @@ export function createLiveClient(
    * Forces a resync, gated by the shared cooldown and clearing the move-ack
    * watchdog (we are re-anchoring now). Used by the tab-focus handler (a
    * one-shot, event-driven recovery). The spectator-staleness watchdog uses the
-   * self-re-arming {@link onSpectatorWatchdogFire} instead.
+   * self-re-arming {@link onSpectatorWatchdogFire} instead, so this helper serves
+   * the tab-focus path alone — its increment routes to `recordTabFocusResync`
+   * without needing a cause discriminator.
    */
   function forceCooldownGatedResync(): void {
     if (resyncCoolingDown) {
@@ -382,6 +396,11 @@ export function createLiveClient(
     clearWatchdog();
     performResync();
     beginResyncCooldown();
+    // why: a client-diagnostic tally of an auto-recovery firing (WP-429 /
+    // D-24250) — the count rides the connection store into the WP-428 transport
+    // block; no recovery behavior changes. Past the resyncCoolingDown gate, so a
+    // cooldown-suppressed tab-focus event does not increment.
+    useConnectionStore().recordTabFocusResync();
   }
 
   /**
@@ -406,6 +425,12 @@ export function createLiveClient(
       clearWatchdog();
       performResync();
       beginResyncCooldown();
+      // why: a client-diagnostic tally of an auto-recovery firing (WP-429 /
+      // D-24250) — the count rides the connection store into the WP-428
+      // transport block; no recovery behavior changes. Inside the
+      // !resyncCoolingDown branch, so a fire swallowed by an open cooldown (the
+      // re-arm-and-retry case below) does not increment — only an actual resync.
+      useConnectionStore().recordSpectatorStaleResync();
     }
     spectatorWatchdogTimer = setTimeout(
       onSpectatorWatchdogFire,
