@@ -1,11 +1,13 @@
 {{ define "main" }}
   {{- /*
   why: front-matter field surface lock per WP-139 §Locked Values / EC-142
-  §Required `// why:` Comments anchor 6. The metadata-panel partial renders
-  exactly the six locked fields: type, status, tags, last-reviewed, related,
-  source. Adding new fields silently expands the schema's rendered surface
-  and risks drifting from wiki/SCHEMA.md §Front-Matter Format. New
-  fields require a SCHEMA.md amendment first, never a template-side widening.
+  §Required `// why:` Comments anchor 6. The template renders exactly the
+  six locked fields: type, status, tags, last-reviewed (in the
+  metadata-panel partial), plus related and source (in their own partials
+  after the body, below). Adding new fields silently expands the schema's
+  rendered surface and risks drifting from wiki/SCHEMA.md §Front-Matter
+  Format. New fields require a SCHEMA.md amendment first, never a
+  template-side widening.
   */ -}}
   <article class="entity">
     <h1>{{ .Title }}</h1>
