@@ -24,11 +24,15 @@ source:
   - ../packages/game-engine/src/setup/buildCardDisplayData.ts
   - ../packages/game-engine/src/villain/villainEffects.execute.ts
   - ../packages/game-engine/src/game.ts
+  - ../packages/game-engine/src/ui/uiState.types.ts
+  - ../packages/game-engine/src/ui/uiState.build.ts
+  - ../packages/game-engine/src/ui/uiState.filter.ts
   - ../apps/arena-client/src/components/play/SharedDecks.vue
+  - ../apps/arena-client/src/components/play/CardTile.vue
   - ../apps/arena-client/src/composables/useTurnActions.ts
   - ../docs/legendary-universal-rules-v23.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-04
+last-reviewed: 2026-09-05
 ---
 
 # S.H.I.E.L.D. Officer
@@ -120,8 +124,32 @@ mutation; only `recruitOfficer` charges Recruit and gates to the Main step.
 
 In the arena client, the **S.H.I.E.L.D. Officers** cell of
 [`SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue)
-renders as a recruit **button**. Its enabled/disabled state follows the locked
-tooltip precedence:
+renders as a recruit **button** that shows the **actual Officer card face** — a
+[`CardTile`](../apps/arena-client/src/components/play/CardTile.vue) painted from
+the engine-projected `piles.officerDisplay`, above the supply count and buy cost.
+This is what tells the player the cell is a **shop**: the other four supply cells
+(Wounds / Horrors / Bystanders / Sidekicks) stay bare count text, so an Officers
+cell that also read as a bare count looked face-down and players did not realise
+they could recruit from it. When `officerDisplay` is absent (older snapshots) or
+the card image fails to load, the tile falls back to a text card face — never a
+broken image.
+
+The card face reaches the client through the standard projection contract, not a
+new client-side registry lookup:
+
+- `UISharedPilesState.officerDisplay`
+  ([`uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts)) is the
+  optional `UICardDisplay` field.
+- [`buildUIState`](../packages/game-engine/src/ui/uiState.build.ts) §11 always
+  populates it via `resolveDisplay(SHIELD_OFFICER_EXT_ID, gameState)` — a fresh,
+  non-aliased copy of `G.cardDisplayData['pile-shield-officer']` (the same
+  `name` / `imageUrl` `buildCardDisplayData.ts` resolves from the core Officer
+  art), falling back to the `<unknown>` placeholder for narrow mocks.
+- [`filterUIStateForAudience`](../packages/game-engine/src/ui/uiState.filter.ts)
+  passes it through **public** (the Officer's identity is fixed and
+  information-safe) with an aliasing-safe conditional spread.
+
+The button's enabled/disabled state follows the locked tooltip precedence:
 
 - **turn → stage** via `useTurnActions(...).canRecruitOfficer()`
   ([`useTurnActions.ts`](../apps/arena-client/src/composables/useTurnActions.ts)),
@@ -185,8 +213,16 @@ with an empty payload; the engine re-validates authoritatively.
   — `villainEffectGainOfficerCurrent` (the free `gain-officer-current` path)
 - [`packages/game-engine/src/game.ts`](../packages/game-engine/src/game.ts)
   — move registration (`client: false`)
+- [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts)
+  — the `UISharedPilesState.officerDisplay` field
+- [`packages/game-engine/src/ui/uiState.build.ts`](../packages/game-engine/src/ui/uiState.build.ts)
+  — §11 projects `officerDisplay` via `resolveDisplay`
+- [`packages/game-engine/src/ui/uiState.filter.ts`](../packages/game-engine/src/ui/uiState.filter.ts)
+  — public, aliasing-safe pass-through of `officerDisplay`
 - [`apps/arena-client/src/components/play/SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue)
-  — the recruit button + gate
+  — the recruit button + gate + Officer card face
+- [`apps/arena-client/src/components/play/CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)
+  — renders the card face (image, with text fallback)
 - [`apps/arena-client/src/composables/useTurnActions.ts`](../apps/arena-client/src/composables/useTurnActions.ts)
   — `canRecruitOfficer`
 
@@ -200,6 +236,12 @@ with an empty payload; the engine re-validates authoritatively.
   recruit button; closes the reported "can't recruit shield officers" bug.
   Deliberately kept out of the simulation move-set so no determinism oracle
   moves; the AI/PAR officer-buy heuristic is a deferred follow-up
+- INFRA (2026-09-05, [PR #1828](https://github.com/barefootbetters/legendary-arena/pull/1828)):
+  project the Officer card face onto `UISharedPilesState.officerDisplay` and
+  render it as a `CardTile` in the Officers cell, so the recruitable supply
+  reads as a card rather than a bare count. Follows the Board-Visible Field Rule
+  five-step contract (type → build → filter → filter test → build/drift tests);
+  no engine behaviour or determinism oracle moves — projection + client only
 
 ## References
 
