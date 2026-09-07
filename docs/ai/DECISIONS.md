@@ -39865,3 +39865,24 @@ No client change is needed — WP-368 (`ArenaHud`) and WP-654 (`PlayViewport`) a
 **Packet:** WP-655 / EC-692. **Executed:** 2026-09-06.
 
 Protect this file.
+
+### D-24467 — Diamond Form's "whenever you defeat a Villain or Mastermind this turn" is a deferred conditional grant gated on a new wait-and-see defeat condition (WP-656 / EC-693)
+
+**Status:** Drafted 2026-09-06; not yet landed (flips to Active at WP-656 execution).
+
+**Context.** `core/emma-frost/diamond-form` prints *"Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]."* The setup parser reads the `[icon:recruit]` magnitude but not the "Whenever you defeat …" trigger prose, so it emits a flat unconditional `onPlay recruit:3` — the card grants a free +3 Recruit on play regardless of defeats (a fidelity over-fire, and an over-powered card).
+
+**Decision (drafted).** Model the printed trigger through the existing D-24377 deferred-conditional-grant ("wait-and-see") mechanism plus a new "defeated a Villain/Mastermind this turn" condition. Locks:
+
+1. **No new resolve call.** `resolveDeferredHeroGrants` already runs from the play-phase `turn.onMove` hook (`game.ts:639`) after every move — including `fightVillain` / `fightMastermind` — so a recorded Diamond Form grant is already re-checked post-fight. Adding a resolve call at the fight sites would double-fire and is the forbidden "parallel trigger."
+2. **New wait-and-see condition, no `HeroCondition` union.** `HeroCondition` is a bare `{type,value}` struct; the evaluators (`evaluateCondition` / `describeFailedCondition`) `switch(condition.type)` with a `default → false`. The new condition is a case in both, added to `WAIT_AND_SEE_CONDITION_TYPES` in lockstep — a listed type with no evaluator case silently never fires, pinned by a **runtime** drift assertion with a negative case.
+3. **Per-turn defeat signal, kept oracle-safe.** The signal is set at the two fight sites (RS-1 semantics) and cleared at the turn boundary. An unconditional flag (the `hasActedThisTurn` pattern) would enter `G` for essentially every game and move both hash oracles; to avoid that it is **gated on a pending deferred grant existing** (written only while `G.deferredConditionalGrants` is non-empty — i.e., only while **any** deferred grant is pending, Diamond Form's or another card's; oracle-safety then holds iff the sentinel replays carry no deferred grant of any kind). If that gating is not taken, a recorded, explained re-pin via `record-game-fixture.mjs` is planned instead. The scaffold decides.
+4. **Edge-triggered per-defeat model (RS-2 doctrine-shape) — scaffold-decided; the load-bearing correctness property.** The existing wait-and-see path is one-shot (removes the grant on fire) and documented as numeric-threshold-only (a crossed threshold stays crossed). The printed "+3 **per** defeat" (`+6` for two) is a different, boolean/counting shape. **The trap:** `resolveDeferredHeroGrants` runs from `onMove` after **every** play-phase move, so a *sticky boolean* "defeated this turn" condition + a *surviving* repeatable grant would fire again on every subsequent non-defeat move (recruit/buy/play) — a worse over-fire than the bug being fixed. Therefore "per defeat" must be **consumed/counted (edge-triggered)**: exactly one +3 per defeat *event*, never a boolean the resolver re-reads. The scaffold must interleave a non-defeat move between and after two defeats (`defeat → recruit → defeat → play`) and confirm **exactly +6** (not +9) with no trailing +3; the model chosen (a per-defeat consumed counter, or a distinct edge-triggered representation) updates the `deferredConditionalGrants.ts:1-32` doctrine comment + this entry. Do not ship a sticky boolean.
+5. **RS-1 — Mastermind "defeat" semantics, pinned at execution.** `fightMastermind` success defeats a **tactic**; the whole Mastermind is vanquished only when all tactics fall (`MASTERMIND_DEFEATED`). Whether each tactic fight counts as a "defeat" (repeatable +3 per tactic) or only vanquishing counts is resolved against the Universal Rules / the physical card and recorded here at execution.
+6. **Card-data regenerated, not hand-edited.** The `diamond-form` encoding across `data/cards/{core,co2e,nmut}.json` is produced by the `scripts/convert-cards/` pass (WP-633 reproducible-regen), and the full derived-artifact chain (mechanic ledger + effect-index + coverage) is regenerated and `:check`-gated.
+
+**Gates.** Pre-flight READY (one NOT-READY round corrected the false resolve-trigger premise, the nonexistent `HeroCondition` union, and an unsound "no re-pin" determinism claim). This entry flips to Active with the execution session's confirmed choices (the repeatable model, the gating-vs-re-pin decision, and the RS-1 semantics), replacing the "drafted" placeholders above.
+
+**Packet:** WP-656 / EC-693. **Drafted:** 2026-09-06.
+
+Protect this file.
