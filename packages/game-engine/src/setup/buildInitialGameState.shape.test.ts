@@ -85,6 +85,10 @@ describe('buildInitialGameState — shape', () => {
       Array.isArray(gameState.heroDeck),
       'G must have heroDeck array (WP-135)',
     );
+    assert.ok(
+      Array.isArray(gameState.transformDeck),
+      'G must have transformDeck array (D-24468 / WP-657)',
+    );
   });
 
   it('G.heroDeck is empty when registry mock is narrow (WP-135 soft-skip)', () => {
