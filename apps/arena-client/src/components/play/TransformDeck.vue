@@ -89,16 +89,24 @@ export default defineComponent({
   font-size: 0.85rem;
 }
 
+/* why: WP-664 follow-up — a single non-wrapping row that scrolls horizontally, so
+   a large side deck stays bounded in width (to the right of the HQ) instead of
+   wrapping tall or pushing the layout. overflow-x:auto shows the scrollbar only
+   when the cards exceed the available width. */
 .transform-deck__row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0.25rem;
+  overflow-x: auto;
 }
 
+/* why: WP-664 follow-up — each cell keeps its intrinsic card width (no shrink) so
+   the row scrolls horizontally rather than squashing the tiles. */
 .transform-deck__cell {
   display: flex;
+  flex: 0 0 auto;
 }
 </style>

@@ -675,18 +675,22 @@ export default defineComponent({
           :economy="snapshot.economy"
           :submit-move="submitMove"
         />
-        <HQRow
-          :hq="snapshot.hq"
-          :decks="snapshot.decks"
-          :current-stage="snapshot.game.currentStage"
-          :is-viewer-turn="isViewerTurn"
-          :economy="snapshot.economy"
-          :submit-move="submitMove"
-        />
-        <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits beside the
-             hero row (it holds the second-forms some HQ heroes transform into). It
-             hides itself when empty, so it is inert for non-transform games. -->
-        <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
+        <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
+             RIGHT of the HQ (it holds the second-forms some HQ heroes transform
+             into). The deck bounds its own width and scrolls horizontally, so a
+             large side deck never pushes the layout. It hides itself when empty,
+             so this row reads as a plain HQ for non-transform games. -->
+        <div class="play-desktop__hq-zone">
+          <HQRow
+            :hq="snapshot.hq"
+            :decks="snapshot.decks"
+            :current-stage="snapshot.game.currentStage"
+            :is-viewer-turn="isViewerTurn"
+            :economy="snapshot.economy"
+            :submit-move="submitMove"
+          />
+          <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
+        </div>
         <!-- why: the personal zone (own hand / economy / deck / victory) and the
              turn-action bar require an identified viewer. They are hidden for a
              spectator or rewound-autoplay frame (viewer null) while the shared
@@ -972,6 +976,22 @@ export default defineComponent({
   gap: 0.5rem;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+/* why: WP-664 follow-up — HQ on the left, the Transform side deck to its right.
+   The HQ keeps its natural width; the Transform deck takes the remaining space
+   and scrolls horizontally within it (min-width:0 lets the flex child shrink
+   below its content so its own overflow-x scrollbar engages instead of widening
+   the row). */
+.play-desktop__hq-zone {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.play-desktop__hq-zone > .transform-deck {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .play-desktop__log {
