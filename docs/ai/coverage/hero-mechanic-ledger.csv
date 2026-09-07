@@ -174,7 +174,7 @@ core/captain-america,Captain America,core,(unmarked),unmarked,,,,
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast
 core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
 core/deadpool,Deadpool,core,(unmarked),unmarked,,,,
-core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,unsupported,,,,diamond-form
+core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,condition,,,,diamond-form
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
@@ -191,7 +191,7 @@ core/spider-man,Spider-Man,core,reveal-count,unsupported,,,,the-amazing-spider-m
 core/spider-man,Spider-Man,core,reveal-reorder,subsystem,WP-479,D-24286,setup:reveal-reorder-modifier,the-amazing-spider-man
 core/storm,Storm,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-stormclouds
 core/thor,Thor,core,recruit-as-attack,executable,WP-580,D-24389,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-as-attack,god-of-thunder
-core/thor,Thor,core,recruit-threshold,unsupported,,,,surge-of-power
+core/thor,Thor,core,recruit-threshold,condition,,,,surge-of-power
 core/wolverine,Wolverine,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,berserker-rage|frenzied-slashing|keen-senses
 core/wolverine,Wolverine,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,healing-factor
 cosm/adam-warlock,Adam Warlock,cosm,burn-shards,unsupported,,,,manifest-the-soul-gem|soulblast|transmute-matter
@@ -374,7 +374,7 @@ msp1/hulk,Hulk,msp1,gain-wound-each,executable,WP-364,D-24156,packages/game-engi
 msp1/hulk,Hulk,msp1,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 msp1/iron-man,Iron Man,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 msp1/nick-fury,Nick Fury,msp1,(unmarked),unmarked,,,,
-msp1/thor,Thor,msp1,recruit-threshold,unsupported,,,,surge-of-power
+msp1/thor,Thor,msp1,recruit-threshold,condition,,,,surge-of-power
 nmut/karma,Karma,nmut,(unmarked),unmarked,,,,
 nmut/mirage,Mirage,nmut,moonlight,unsupported,,,,dreams-made-real|haunted-by-the-demon-bear
 nmut/mirage,Mirage,nmut,waking-nightmare,unsupported,,,,haunted-by-the-demon-bear|nightmare-wolves
