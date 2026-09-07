@@ -40235,4 +40235,26 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Packet:** WP-664 / EC-701. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 
+---
+
+### D-24476 — Amadeus Cho's Gamma-Draining Nanites transforms only when the player has drawn ≥2 cards this turn, via a new `cardsDrawnThisTurnAtLeast` wait-and-see condition over a new per-turn `TurnEconomy.cardsDrawn` counter; gamma joins `SUPPORTED_TRANSFORM_BASES` (WP-665 / EC-702)
+
+**Context.** WP-658 shipped the `[keyword:Transform]` runtime but deliberately held Amadeus Cho behind the She-Hulk-only `SUPPORTED_TRANSFORM_BASES` allowlist, because `wwhk/amadeus-cho/gamma-draining-nanites` ("Draw a card. Then, if you drew two cards this turn, Transform this into Like Totally Smart Hulk") gates its transform on a condition the engine did not model — firing it unconditionally would be an unfaithful swap (the exact fidelity trap the allowlist exists to prevent). Live-observed every play as a `parse-unrecognized` hollow. This decision models "drew N cards this turn" and gates gamma's transform on it.
+
+**Decision.**
+
+1. **A new per-turn counter `TurnEconomy.cardsDrawn`** (always present, default 0; the sibling of `woundsDrawn`), reset by `resetTurnEconomy` and carried by the five economy rebuild helpers (`addResources` / `spendAttack` / `spendRecruit` / `enableRecruitSpendableAsAttack` / `spendFightCost`). It counts **effect draws for the current player only**, incremented in `heroEffectDraw` (the `draw:N` keyword handler — the path every "Draw a card" effect takes, always the current player). The **start-of-turn hand refill is NOT counted**: it uses a different helper (`drawCardsIntoHand`), so the threshold is never trivially met by the mandatory refill.
+
+2. **A new `cardsDrawnThisTurnAtLeast` condition** (evaluator reads `G.turnEconomy.cardsDrawn`, mirroring `recruitMadeThisTurnAtLeast`), added to `WAIT_AND_SEE_CONDITION_TYPES` (WP-568 / WP-656) with its runtime drift pin. `HeroCondition.type` is an open string, so no union change. The wait-and-see window is reused unchanged.
+
+3. **The gating rides gamma's existing two-hook shape.** The generated card data already splits the ability into `abilities[0]` = the unconditional draw (`[keyword:draw:1]`) and `abilities[1]` = the transform line — two separate `HeroAbilityHook`s. A `[keyword:draw-threshold:2]` marker on **abilities[1] only** pushes the `cardsDrawnThisTurnAtLeast:2` condition onto the transform hook, leaving the draw hook unconditional. Hooks execute in array order, so gamma's own draw (hook 0) increments the counter before the transform hook (hook 1) is evaluated — the transform fires immediately when ≥2 (a prior draw happened) or defers via the whole-turn window and re-fires **transform-only** (no re-draw) once a further draw reaches 2. `wwhk/amadeus-cho/gamma-draining-nanites` is added to `SUPPORTED_TRANSFORM_BASES`.
+
+4. **Determinism.** The counter and condition are pure functions of existing deterministic state; the new `TurnEconomy` field shifts `computeStateHash`, so both engine hash oracles (`PRE_WP080_HASH`, the sentinel `finalStateHash`) re-pin — the same sanctioned no-behaviour-change new-field class as WP-657/658 (`transformDeck`/`transformTargets`).
+
+**Scope boundary.** Exactly Gamma-Draining Nanites; the other 13 held-back transforms keep their honest `parse-unrecognized` markers (their conditions stay unmodeled). The each-player reveal-from-hand draw (`drawFromPlayerDeck` @ heroEffects ~L2757, Psychic Link) is deliberately **not** counted toward `cardsDrawn` — a different mechanic and a rare cross-set interaction. `cardsDrawn` is not projected to `UIState` (the transform's waiting/firing is already observable in the game log).
+
+**Gates.** Draft gates run at drafting. This entry flips to Active at execution with the confirmed values + the live-surface sign-off.
+
+**Packet:** WP-665 / EC-702. **Drafted:** 2026-09-07.
+
 Protect this file.
