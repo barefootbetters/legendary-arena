@@ -80,6 +80,20 @@ export const HeroCardSchema = z.object({
   // heroes. Optional + string-typed so the registry stays permissive at load
   // and any future cardType slugs require only a card-types.json change.
   cardType:    z.string().optional(),
+  // why: WP-662 / D-24473 — the Transform pairing fields (wwhk set). They live in
+  // data/cards/*.json (WP-657 / D-24468 + WP-658 / D-24469) but were NEVER added to
+  // this schema, so `z.object`'s default strip DROPPED them at registry load —
+  // `registry.getSet('wwhk').heroes[…].cards[…].isTransform` read `undefined`. That
+  // silently broke BOTH the setup partition (isTransform/transformOf → transform cards
+  // stayed in the shuffled Hero Deck / HQ, recruitable — the opposite of D-24468) AND the
+  // [keyword:Transform] runtime (buildTransformTargets reads `transform`, so G.transformTargets
+  // was empty and every swap soft-no-op'd on an empty side deck). The engine tests passed
+  // only because they use MOCK registries that keep the fields; the real loader stripped them.
+  // `transform` = the second-form slug on a BASE card; `transformOf` = the base slug on a
+  // second-form card; `isTransform` = marks a second-form (set-aside) card.
+  transform:   z.string().optional(),
+  transformOf: z.string().optional(),
+  isTransform: z.boolean().optional(),
 });
 
 // ── Physical card (deck-composition primitive — WP-138 Phase 1a) ──────────────

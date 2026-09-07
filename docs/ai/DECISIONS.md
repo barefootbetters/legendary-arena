@@ -40143,3 +40143,51 @@ co2e Thor player plays one of these cards WITHOUT enough recruit (grant does NOT
 `sim:runtime-observed` `:check` all green after the expected regen).
 
 Protect this file.
+
+### D-24473 — `HeroCardSchema` must preserve the Transform pairing fields (registry stopped stripping them) (Active 2026-09-07 — WP-662 / EC-699)
+
+**Decision.** Add `transform`, `transformOf`, and `isTransform` (all `.optional()`) to `HeroCardSchema` in
+`packages/registry/src/schema.ts`, so the registry loader preserves them instead of stripping them at parse.
+
+**Why.** These fields have lived in `data/cards/*.json` since WP-657 (D-24468) / WP-658 (D-24469), and the
+game-engine setup reads them off the registry — `heroCardInstanceExtIds` reads `isTransform`/`transformOf`
+to partition transform cards into `G.transformDeck`; `buildTransformTargets` reads `transform` to build the
+base→second-form map. But `HeroCardSchema` never declared them, and a Zod `z.object` **strips unknown keys
+by default**, so `createRegistryFromLocalFiles` dropped them: `registry.getSet('wwhk').heroes[…].cards[…].isTransform`
+read `undefined`. That silently killed BOTH shipped features in production:
+- **Partition (D-24468) dead:** with `isTransform` gone, `buildHeroDeckCards` kept the second-forms in the
+  shuffled Hero Deck / HQ — they were recruitable, the exact bug D-24468 fixed. **Live-observed** on the
+  deployed server (`7c04cb92`): the `red-skull-Midtown-Bank-Robbery` 1p log recruits **Hurl Trucks** from the
+  HQ.
+- **Transform runtime (D-24469) dead:** with `transform` gone, `G.transformTargets` was empty, so every
+  `heroEffectTransform` looked up `undefined`, found no target, and soft-no-op'd on an empty side deck.
+
+**Why the tests missed it.** Every engine setup test (`buildHeroDeck.test.ts`, the WP-658 resolution tests,
+etc.) builds a **mock** registry that keeps the fields — the mock never round-tripped through the Zod schema.
+No test loaded the transform fields through the **real** `createRegistryFromLocalFiles` path, so the strip was
+invisible. A schema that silently drops fields the consumer depends on is a contract break the mocks papered over.
+
+**How it was found.** Live-verifying WP-658 / WP-660 on the deployed server. WP-660's fix was confirmed live
+(Radioactive Riot no longer grants a phantom +6 recruit), which proved the server was on `7c04cb92` — yet Hurl
+Trucks was still recruitable. A probe of the **real** registry showed `hurl-trucks.isTransform === undefined`
+while `data/cards/wwhk.json` has `isTransform: true` → the loader was stripping it.
+
+**Verification.** With the three fields added, the real registry loads `isTransform: true` / `transformOf` /
+`transform`; `buildHeroDeckCards` puts **0** hurl-trucks copies in the hero deck and `buildTransformSideDeckCards`
+puts **5** in the side deck; `buildTransformTargets['wwhk/she-hulk/hurl-legal-objections'] === 'wwhk/she-hulk/hurl-trucks'`.
+A regression test in `registry.smoke.test.ts` asserts the fields survive the REAL loader. NO card-data change;
+NO new `G` field; NO hash re-pin; NO derived-artifact drift; registry suite 249/249, engine 3093/3093 (unchanged),
+whole-repo green; `cards:check` + `ledger:heroes:check` green.
+
+**Contract note.** `schema.ts` is a registry contract file; this change is purely ADDITIVE (three optional
+fields), aligning the schema with data + engine contracts already locked by D-24468 / D-24469. Field names
+match `00.2-data-requirements` / the engine's usage verbatim.
+
+**D-24026 live-on-surface (WP-657 + WP-658, now unblocked):** operator-pending — once this deploys, a live
+She-Hulk match must show Hurl Trucks NOT recruitable from the HQ, and Hurl Legal Objections transforming into
+Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
+
+**Packet:** WP-662 / EC-699. **Executed:** 2026-09-07 (registry 249/249 with the regression test; engine
+3093/3093; whole-repo green; no re-pin, no regen). Not yet landed (pending commit/PR).
+
+Protect this file.

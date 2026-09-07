@@ -134,6 +134,42 @@ describe("registry smoke test", async () => {
       "At least one hero across all sets must have cardCounts: null or absent (rarity-map fallback path coverage)",
     );
   });
+
+  // why: WP-662 / D-24473 — the Transform pairing fields (transform / transformOf /
+  // isTransform) were in data/cards/wwhk.json (WP-657 / WP-658) but NOT in HeroCardSchema,
+  // so `z.object`'s default strip DROPPED them at load. This test loads them through the
+  // REAL registry (not a mock) — the gap the engine's mock-based tests could never catch —
+  // and asserts they survive, so the setup partition (D-24468) and the [keyword:Transform]
+  // runtime (D-24469) actually work in production.
+  it("WP-662: the Transform pairing fields survive registry load (real wwhk/she-hulk data)", () => {
+    const wwhk = registry.getSet("wwhk") as
+      | { heroes?: Array<{ slug: string; cards?: Array<{ slug: string; transform?: string; transformOf?: string; isTransform?: boolean }> }> }
+      | undefined;
+    assert.ok(wwhk && Array.isArray(wwhk.heroes), "wwhk set must load");
+    const sheHulk = wwhk!.heroes!.find((hero) => hero.slug === "she-hulk");
+    assert.ok(sheHulk && Array.isArray(sheHulk.cards), "wwhk/she-hulk hero must be present");
+
+    const base = sheHulk!.cards!.find((card) => card.slug === "hurl-legal-objections");
+    assert.ok(base, "hurl-legal-objections base card must be present");
+    assert.equal(
+      base!.transform,
+      "hurl-trucks",
+      "the base card's `transform` second-form slug must survive load (drives buildTransformTargets)",
+    );
+
+    const secondForm = sheHulk!.cards!.find((card) => card.slug === "hurl-trucks");
+    assert.ok(secondForm, "hurl-trucks second-form card must be present");
+    assert.equal(
+      secondForm!.isTransform,
+      true,
+      "the second-form's `isTransform` flag must survive load (drives the D-24468 partition)",
+    );
+    assert.equal(
+      secondForm!.transformOf,
+      "hurl-legal-objections",
+      "the second-form's `transformOf` base slug must survive load",
+    );
+  });
 });
 
 // why: WP-138 Phase 1a — physicalCards is the new authoritative

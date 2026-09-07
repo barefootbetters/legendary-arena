@@ -289,9 +289,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 2315 -> 2329 because the now-gated effects change the fixed-seed sweep's game
   // trajectories (a sweep-trajectory artifact, not a regression); percentResolved
   // rises as the four sets' obs become resolved.
+  // 2026-09-07 (WP-662 / D-24473, re-pin): the registry now preserves the transform
+  // pairing fields, so the D-24468 partition runs in the sweep — transform second-forms
+  // leave the Hero Deck for the side deck, so the 14 held-back transform heroes' base
+  // cards (their [keyword:Transform] still an UNSUPPORTED parse-unrecognized hollow) are
+  // drawn + played more. The `transform` mechanic's peak obs rise 101 -> 195, all
+  // unresolved (unsupported), so totalObs 2329 -> 2423 and percentResolved DROPS
+  // 26.1 -> 25.1 (resolvedObs unchanged; the denominator grew). This is the honest
+  // gauge: with the partition alive, more transform work is now visible as remaining.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2329);
-  assert.equal(view.percentResolved.value, 26.1);
+  assert.equal(view.totalObs.value, 2423);
+  assert.equal(view.percentResolved.value, 25.1);
   assert.ok(view.remaining.value.length > 0);
 });
 
