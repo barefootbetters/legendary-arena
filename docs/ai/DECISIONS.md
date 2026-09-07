@@ -40076,3 +40076,60 @@ whole-repo green; all card-derived `:check` + `sim:runtime-observed:check` gates
 landed (pending commit/PR).
 
 Protect this file.
+
+### D-24472 — Gate the co2e/ssw1 "made at least N recruit" attack grants on `recruit-threshold` (Active 2026-09-07 — WP-661 / EC-698)
+
+**Decision.** Closes WP-660 / D-24471 flagged follow-up (1). Five hero cards print "Once (this turn / per
+turn), if you made at least N recruit this turn, …" — the co2e Thor cards `glory-of-asgard` and
+`spark-of-the-divine` (N=8) and the ssw1 Lady Thor cards `chosen-by-asgard`, `living-thunderstorm`, and
+`mysterious-origin` (N=6). WP-660 removed the phantom `recruit:N` these condition clauses emitted, but left
+the REAL printed grant (a `+M[icon:attack]` on four of them) firing **ungated** — a pre-existing
+condition-modeling gap. Fix is **card-data only**: add `[keyword:recruit-threshold:N]` to each card's ability
+line via `scripts/convert-cards/inputs/hero-ability-markers.json` + apply/regen. The already-shipped
+marker→condition parser arm (D-24354, the D-24055 Spectrum precedent) then pushes a
+`recruitMadeThisTurnAtLeast:N` condition onto the **same hook** that carries the printed effect, so the +M
+attack fires only when the recruit threshold is met.
+
+**Why.** After WP-660, `glory-of-asgard`, `spark-of-the-divine`, `chosen-by-asgard`, and `living-thunderstorm`
+each emitted `keywords:[attack]`, `effects:[{attack:M}]`, `conditions:[]` — a free +M attack on every play. A
+card handing out attack it never printed unconditionally is the same honest-integrity / fairness bug WP-660
+fixed for recruit. Gating on the printed "if you made at least N recruit" restores fidelity. No engine code
+was needed: the `recruit-threshold` marker, its parser arm, the `recruitMadeThisTurnAtLeast` evaluator, and
+`VALID_TOKEN_PATTERN`'s `recruit-threshold:[1-9]\d*` form all shipped earlier (WP-545, WP-656 ledger
+reclassification #1865).
+
+**Honest-Partial.** `spark-of-the-divine`'s "you may KO a card … if you do, +3 attack" models only the +3
+attack gated on recruit-threshold — the KO-choice half is unmodeled (a separate mechanic), so the grant
+over-fires relative to the printed KO requirement but is now at least recruit-gated (strictly more faithful
+than the WP-660 always-fire state). `mysterious-origin`'s "draw a card" is plain unmarked English, so it emits
+no effect at all; the marker attaches the real recruit-threshold gate to an effect-less hook — an **honest
+hollow, properly gated** (the draw is not falsely claimed as modeled; `recruitMadeThisTurnAtLeast` is a
+genuinely-shipped mechanic, so the ledger `condition` classification is truthful).
+
+**Determinism & coverage.** Card-data + tests only; NO engine code change, NO new `G` field, NO `ctx.random`.
+The sentinel `sentinel-core-doom-2p` game plays none of these cards, so both hash oracles are byte-unchanged
+(empirical — engine suite 3093/3093 with NO re-pin, +6 setup tests). Derived-artifact regen is **expected and
+was run**: the hero-mechanic ledger moves `co2e/thor` and `ssw1/lady-thor` from `(unmarked)` to
+`recruit-threshold`/`condition` (condition 23→25), with `effect-implementation-index.json` and
+`card-mechanics.json` updated in lockstep (recruit-threshold cardCount 3→5). `cards:check` reproduces `ssw1`
+(source-backed); `co2e` is hand-authored and gate-excluded, so its marker presence is enforced by
+`apply-hero-ability-markers.mjs --validate`. `ledger:heroes` / `effect-index` / `mechanics:metadata` /
+`sim:runtime-observed` `:check` all green after regen.
+
+**Out of scope — flagged follow-up (2) investigated, NO BUG.** The amwp Ghost mastermind ("You can't fight
+Ghost unless you made at least 6[icon:recruit] this turn") is on the villain/mastermind parser
+(`setup/villainAbility.setup.ts`), a different code path WP-660 did not touch. That parser reads **only**
+`[effect:<value>]` markers — the `[keyword:]` and `[icon:]` namespaces and free-text English are never read for
+effects — so the Ghost condition clause emits no phantom recruit grant there. There is nothing to port; the
+WP-660 icon-suppression fix is hero-parser-specific. No change made for Ghost.
+
+**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match where a Lady Thor or
+co2e Thor player plays one of these cards WITHOUT enough recruit (grant does NOT fire) and WITH ≥N recruit
+(grant fires). Green tests + merge do NOT satisfy this.
+
+**Packet:** WP-661 / EC-698. **Executed:** 2026-09-07 (all-package build 0; engine suite 3093/3093, no re-pin,
++6 tests; whole-repo green [game-engine 3093, registry 248, preplan 52, lagn 102, registry-viewer 281, server
+1302+202 DB-skips, arena-client 1612]; `cards` + `ledger:heroes` + `effect-index` + `mechanics:metadata` +
+`sim:runtime-observed` `:check` all green after the expected regen).
+
+Protect this file.

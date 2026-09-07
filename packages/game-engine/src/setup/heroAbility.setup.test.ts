@@ -469,6 +469,154 @@ describe('buildHeroAbilityHooks — recruit-threshold marker → condition (Surg
 });
 
 // ---------------------------------------------------------------------------
+// recruit-threshold gates the co2e/ssw1 "made at least N recruit" attack grants
+// (WP-661 / D-24472). WP-660 removed the phantom +N recruit these condition
+// clauses emitted, but left the REAL attack grant UNGATED — a pre-existing
+// condition-modeling gap. Adding [keyword:recruit-threshold:N] to each card
+// (via hero-ability-markers.json) reuses the already-shipped
+// recruitMadeThisTurnAtLeast condition (WP-545 / D-24354) to gate the grant on
+// the same hook. The ability strings below are the exact marked lines now in
+// data/cards/{co2e,ssw1}.json.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — recruit-threshold gates the co2e/ssw1 attack grants (WP-661)', () => {
+  const GATED_ATTACK_CARDS = [
+    {
+      setAbbr: 'co2e',
+      heroSlug: 'thor',
+      cardSlug: 'glory-of-asgard',
+      threshold: '8',
+      attackMagnitude: 3,
+      ability:
+        'Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack]. [keyword:recruit-threshold:8]',
+    },
+    {
+      setAbbr: 'co2e',
+      heroSlug: 'thor',
+      cardSlug: 'spark-of-the-divine',
+      threshold: '8',
+      attackMagnitude: 3,
+      ability:
+        'Once this turn, if you made at least 8[icon:recruit] this turn, you may KO a card from your hand or discard pile. If you do, you get +3[icon:attack]. [keyword:recruit-threshold:8]',
+    },
+    {
+      setAbbr: 'ssw1',
+      heroSlug: 'lady-thor',
+      cardSlug: 'chosen-by-asgard',
+      threshold: '6',
+      attackMagnitude: 2,
+      ability:
+        'Once per turn, if you made at least 6[icon:recruit] this turn, you get +2[icon:attack]. [keyword:recruit-threshold:6]',
+    },
+    {
+      setAbbr: 'ssw1',
+      heroSlug: 'lady-thor',
+      cardSlug: 'living-thunderstorm',
+      threshold: '6',
+      attackMagnitude: 6,
+      ability:
+        'Once per turn, if you made at least 6[icon:recruit] this turn, you get +6[icon:attack]. [keyword:recruit-threshold:6]',
+    },
+  ];
+
+  for (const gatedCard of GATED_ATTACK_CARDS) {
+    it(`gates ${gatedCard.cardSlug}'s +${gatedCard.attackMagnitude} attack on recruitMadeThisTurnAtLeast:${gatedCard.threshold}`, () => {
+      const registry = makeRegistry(gatedCard.setAbbr, gatedCard.heroSlug, [
+        { slug: gatedCard.cardSlug, abilities: [gatedCard.ability] },
+      ]);
+      const hooks = buildHeroAbilityHooks(
+        registry,
+        makeConfig(`${gatedCard.setAbbr}/${gatedCard.heroSlug}`),
+      );
+
+      const attackHook = hooks.find((hook) =>
+        (hook.effects ?? []).some(
+          (effect) => effect.type === 'attack' && effect.magnitude === gatedCard.attackMagnitude,
+        ),
+      );
+      assert.ok(
+        attackHook !== undefined,
+        `the ${gatedCard.cardSlug} hook carrying the +${gatedCard.attackMagnitude} attack effect is built`,
+      );
+
+      const recruitConditions = (attackHook!.conditions ?? []).filter(
+        (condition) => condition.type === 'recruitMadeThisTurnAtLeast',
+      );
+      assert.equal(
+        recruitConditions.length,
+        1,
+        `exactly one recruitMadeThisTurnAtLeast condition gates ${gatedCard.cardSlug}'s attack grant`,
+      );
+      assert.equal(
+        recruitConditions[0]!.value,
+        gatedCard.threshold,
+        `the parsed threshold is ${gatedCard.threshold}`,
+      );
+      assert.ok(
+        !(attackHook!.unresolvedMarkers ?? []).includes('recruit-threshold'),
+        'recruit-threshold is recognized before the unresolved-marker fallback (no parse-unrecognized hollow)',
+      );
+    });
+  }
+
+  it('control: WITHOUT the marker glory-of-asgard grants +3 attack UNGATED (the WP-660 baseline — proves the marker is load-bearing)', () => {
+    // why: the un-marked line is the state WP-660 left these cards in — the +3
+    // attack is emitted with NO gate. If this ever grows a recruit-threshold
+    // condition on its own, the gating test above would pass vacuously.
+    const unmarkedAbility =
+      'Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack].';
+    const registry = makeRegistry('co2e', 'thor', [
+      { slug: 'glory-of-asgard', abilities: [unmarkedAbility] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('co2e/thor'));
+
+    const attackHook = hooks.find((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'attack' && effect.magnitude === 3),
+    );
+    assert.ok(attackHook !== undefined, 'the +3 attack hook is still built without the marker');
+    const recruitConditions = (attackHook!.conditions ?? []).filter(
+      (condition) => condition.type === 'recruitMadeThisTurnAtLeast',
+    );
+    assert.equal(
+      recruitConditions.length,
+      0,
+      'without [keyword:recruit-threshold:N] there is no gate — the grant fires ungated (the follow-up bug this WP closes)',
+    );
+  });
+
+  it('mysterious-origin: the recruit-threshold gate attaches even though the "draw a card" grant is unmodeled (honest hollow, properly gated)', () => {
+    // why: mysterious-origin prints "draw a card" as plain English with no draw
+    // marker, so the parser emits no draw effect — an honest hollow. Adding the
+    // recruit-threshold marker attaches the real gate without fabricating an
+    // effect: the draw stays unmodeled, but the condition is correctly recorded.
+    const ability =
+      'Once per turn, if you made at least 6[icon:recruit] this turn, draw a card. [keyword:recruit-threshold:6]';
+    const registry = makeRegistry('ssw1', 'lady-thor', [
+      { slug: 'mysterious-origin', abilities: [ability] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('ssw1/lady-thor'));
+
+    const gatedHook = hooks.find((hook) =>
+      (hook.conditions ?? []).some((condition) => condition.type === 'recruitMadeThisTurnAtLeast'),
+    );
+    assert.ok(gatedHook !== undefined, 'the mysterious-origin hook carries the recruit-threshold gate');
+    const recruitCondition = (gatedHook!.conditions ?? []).find(
+      (condition) => condition.type === 'recruitMadeThisTurnAtLeast',
+    );
+    assert.equal(recruitCondition!.value, '6', 'the parsed threshold is 6');
+    assert.equal(
+      (gatedHook!.effects ?? []).length,
+      0,
+      'no effect is fabricated — the unmarked "draw a card" stays an honest hollow',
+    );
+    assert.ok(
+      !(gatedHook!.unresolvedMarkers ?? []).includes('recruit-threshold'),
+      'recruit-threshold is recognized, not a parse-unrecognized hollow',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 

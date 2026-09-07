@@ -130,6 +130,18 @@
       "cardSlug": "optic-blast",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "thor",
+      "cardSlug": "glory-of-asgard",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:8]"
+    },
+    {
+      "heroSlug": "thor",
+      "cardSlug": "spark-of-the-divine",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:8]"
     }
   ],
   "core": [
@@ -677,6 +689,24 @@
     }
   ],
   "ssw1": [
+    {
+      "heroSlug": "lady-thor",
+      "cardSlug": "chosen-by-asgard",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:6]"
+    },
+    {
+      "heroSlug": "lady-thor",
+      "cardSlug": "living-thunderstorm",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:6]"
+    },
+    {
+      "heroSlug": "lady-thor",
+      "cardSlug": "mysterious-origin",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:6]"
+    },
     {
       "heroSlug": "apocalyptic-kitty-pryde",
       "cardSlug": "phase-out",

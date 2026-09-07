@@ -566,7 +566,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "Once per turn, if you made at least 6[icon:recruit] this turn, draw a card."
+            "Once per turn, if you made at least 6[icon:recruit] this turn, draw a card. [keyword:recruit-threshold:6]"
           ]
         },
         {
@@ -581,7 +581,7 @@
           "attack": "0+",
           "recruit": "2",
           "abilities": [
-            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +2[icon:attack]."
+            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +2[icon:attack]. [keyword:recruit-threshold:6]"
           ]
         },
         {
@@ -611,7 +611,7 @@
           "attack": "0+",
           "recruit": "4",
           "abilities": [
-            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +6[icon:attack]."
+            "Once per turn, if you made at least 6[icon:recruit] this turn, you get +6[icon:attack]. [keyword:recruit-threshold:6]"
           ]
         }
       ],
