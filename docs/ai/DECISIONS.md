@@ -39928,7 +39928,7 @@ Protect this file.
 
 **Gates.** Pre-flight READY + copilot PASS at draft. Execution: `pnpm -r build` green; game-engine suite 3062 pass / 0 fail; `cards:check` + `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `sim:runtime-observed:check` all exit 0; scaffold-first observed +6 before the model was locked; control run confirmed non-vacuity.
 
-**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match that plays Diamond Form and defeats a Villain/Mastermind should show +3 Recruit on defeat and no free +3 on play. Green tests + merge do NOT satisfy this.
+**D-24026 live-on-surface:** CONFIRMED live 2026-09-07 — an operator `play.legendary-arena.com` Magneto / Midtown Bank Robbery match played Diamond Form across turns 10 / 12 / 15: no free +3 Recruit on play (each play logged "… is waiting …"); +3 per Villain- or Mastermind-tactic defeat; multiple defeats in a turn stacked (turn 10 = +6 over two defeats); a Copy-Powers-as-Diamond-Form second copy doubled the per-defeat grant (turn 15 = +18 over three defeats × two copies); no over-fire on non-defeat moves; and no cross-turn leak (turn 14, no Diamond Form in play, granted nothing on its defeat). The over-fire bug is gone and the edge-trigger + re-arm model holds in production.
 
 **Packet:** WP-656 / EC-693. **Drafted:** 2026-09-06. **Landed:** 2026-09-06.
 
@@ -39957,7 +39957,7 @@ Protect this file.
 
 **Verification.** `pnpm -r build` 0; game-engine suite **3092 / 0** (+5 AC tests); `cards:check` + `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `sim:runtime-observed:check` all 0. Card-data scope = `data/cards/core.json` only (cross-set grep of the upstream sources hits only `coreset.js`). The `reveal-from-hand` ledger row is `executable` (a real handler), not `unsupported`. **Control run:** reverting the handler to a no-op failed exactly the two draw ACs (AC-1, AC-3) while the parser / no-match / no-throw ACs stayed green — non-vacuous.
 
-**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match that plays Psychic Link with an X-Men Hero in hand should draw a card (and show no "needs another x-men" block). Green tests + merge do NOT satisfy it.
+**D-24026 live-on-surface:** CONFIRMED live 2026-09-07 — an operator `play.legendary-arena.com` match drew a card on Psychic Link when an X-Men Hero was in hand (turns 10 / 12 / 15) and correctly drew nothing when the hand held only S.H.I.E.L.D. starters (turns 6 / 8 — S.H.I.E.L.D. is not the X-Men criterion); the spurious "needs another x-men" play-gate is gone. Both the fix and the card's conditional nature verified in live play.
 
 **Packet:** WP-659 / EC-696. **Drafted:** 2026-09-07. **Landed:** 2026-09-07.
 
@@ -40206,6 +40206,8 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 6. **Card data regenerated, not hand-edited** (WP-633): a `[keyword:optional-play-villain-top:2]` marker on `core/emma-frost/shadowed-thoughts` (the sole in-scope card — a cross-set hero-card scan finds this form only in `coreset.js`), applied by the pipeline; a clean regen reproduces the committed bytes.
 
 **Gates.** Draft gates ran at drafting (pre-flight / copilot / lint). Landed as drafted, with the pin values current at execution: `HERO_KEYWORDS` 40→41; `HERO_EFFECT_HANDLERS` 26→27; `LegendaryGame.moves` 32→33 (`resolvePlayVillainTopChoice` sorts between `resolveOptionalPutBottomHQ` and `resolvePutAnyNumberBottomHQ`). Engine suite 3125 pass / 0 fail; arena-client suite 1625 pass / 0 fail; `cards:check` + `mechanics:metadata:check` + `effect-index:check` + `ledger:heroes:check` + `sim:runtime-observed:check` all green. Control run (Verification Step 6) confirmed non-vacuous — neutering the resolve accept branch fails the accept AC. The `getLegalMoves` short-circuit returns the single DECLINE entry while pending; both hash oracles are stable (the pending field is lazily materialized, so a no-park game is byte-unchanged — no re-pin needed). No committed seed-PAR loadout uses `core/emma-frost`, so seed PAR is unmoved.
+
+**D-24026 live-on-surface:** CONFIRMED live 2026-09-07 — an operator `play.legendary-arena.com` Magneto / Midtown Bank Robbery match played Shadowed Thoughts repeatedly (turns 6 / 9 / 11 / 14): when the Covert gate was met it offered and played the top Villain-Deck card and granted +2 Attack, with the base +2 not double-counted; on turn 6 the played card was a Magneto Master Strike that resolved fully (the "real downside" the interactive choice exists for). The Covert gate correctly blocked when no other Covert Hero preceded it. Fix verified in live play.
 
 **Packet:** WP-663 / EC-700. **Drafted:** 2026-09-07. **Landed:** 2026-09-07.
 
