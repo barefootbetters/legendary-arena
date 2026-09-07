@@ -337,6 +337,19 @@ const SHUFFLE_DISCARD_EMPTY_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = ne
 /** Regex for attack/recruit icon-adjacent magnitude, e.g. "+2[icon:attack]". */
 const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
 
+// why: WP-660 / D-24471 — an [icon:recruit|attack] token inside a THRESHOLD / RATE
+// CONDITION clause ("made at least N[icon:recruit]", "for every N[icon:recruit]",
+// "N or more [icon:recruit]") refers to a resource the player MADE this turn — it is the
+// condition's threshold, NOT a resource the card grants. The icon-magnitude (Step 2b) and
+// icon→keyword (Step 3) extractors would otherwise read it as a phantom +N grant (the live
+// bug: She-Hulk's Radioactive Riot granting a free +6 recruit every play; Hurl Legal
+// Objections granting +6 recruit alongside its Transform). This pattern locates those
+// condition icons so their character positions are EXCLUDED from both extractors. Global;
+// the icon token is the last "[icon:…]" in each match. A GRANT icon elsewhere on the line
+// ("you get +3[icon:attack]") is never preceded by these words, so it is never suppressed.
+const CONDITION_ICON_PATTERN =
+  /(?:at least|for every)\s*\d+\s*\[icon:(?:attack|recruit)\]|\d+\s+or more\s+\[icon:(?:attack|recruit)\]/gi;
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for VP-cost-threshold in reveal lines: "2[icon:vp] or less". Non-global; first match only. */
 const VP_COST_THRESHOLD_PATTERN = /(\d+)\s*\[icon:vp\]\s*or less/;
@@ -453,6 +466,55 @@ const INVESTIGATE_CLAUSE_HC_PATTERN = /^\[hc:([a-z0-9-]+)\]$/i;
 const INVESTIGATE_CLAUSE_TEAM_PATTERN = /^\[team:([a-z0-9-]+)\]$/i;
 
 /**
+ * Computes the character ranges of `[icon:recruit|attack]` tokens that sit inside a
+ * threshold/rate CONDITION clause (WP-660 / D-24471), so the icon-magnitude (Step 2b)
+ * and icon→keyword (Step 3) extractors can exclude them and not emit a phantom grant.
+ *
+ * Each `CONDITION_ICON_PATTERN` match spans the whole phrase; the icon token is its last
+ * `[icon:…]`, so the returned range is `[iconStart, matchEnd)`.
+ *
+ * @param abilityText - The raw ability line.
+ * @returns Character ranges of the condition icons (empty when the line has none).
+ */
+function computeConditionIconRanges(abilityText: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const regex = new RegExp(CONDITION_ICON_PATTERN.source, 'gi');
+  let match: RegExpExecArray | null = regex.exec(abilityText);
+  while (match !== null) {
+    // why: the icon is the LAST "[icon:" in the matched phrase; suppress from there to the
+    // phrase end so both extractors (icon-magnitude starts at the digit, icon→keyword starts
+    // at the "[") overlap the range and are skipped.
+    const iconOffset = match[0].lastIndexOf('[icon:');
+    ranges.push({ start: match.index + iconOffset, end: match.index + match[0].length });
+    match = regex.exec(abilityText);
+  }
+  return ranges;
+}
+
+/**
+ * Returns whether a match span `[matchStart, matchEnd)` overlaps any suppressed condition
+ * icon range (WP-660 / D-24471). Used to skip an icon the extractors would otherwise read
+ * as a resource grant.
+ *
+ * @param matchStart - Start index of the icon (or icon-magnitude) match.
+ * @param matchEnd - End index of the match.
+ * @param ranges - Suppressed condition-icon ranges from computeConditionIconRanges.
+ * @returns True when the match overlaps a suppressed range.
+ */
+function overlapsSuppressedRange(
+  matchStart: number,
+  matchEnd: number,
+  ranges: Array<{ start: number; end: number }>,
+): boolean {
+  for (const range of ranges) {
+    if (matchStart < range.end && matchEnd > range.start) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Extracts structured hero ability metadata from a single ability text.
  *
  * Follows the authoritative parsing order:
@@ -507,6 +569,12 @@ function parseAbilityText(
   // does NOT resolve, so its gate is preserved (the resolution returns undefined).
   const investigateCriteria = tryResolveInvestigateFromLine(abilityText);
   const lineHasResolvedInvestigate = investigateCriteria !== undefined;
+  // why: WP-660 / D-24471 — character ranges of `[icon:recruit|attack]` tokens that are
+  // the THRESHOLD/RATE of a "made at least N", "for every N", or "N or more" CONDITION
+  // clause. Steps 2b (icon-magnitude) and 3 (icon→keyword) skip any icon overlapping these
+  // ranges so a condition reference is never read as a resource grant (the spurious-recruit
+  // bug). A grant icon elsewhere on the line is unaffected (positional, not line-level).
+  const suppressedIconRanges = computeConditionIconRanges(abilityText);
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
   // registry AST, kept separate from `keywords`/`effects` (the open mechanic space).
@@ -882,10 +950,18 @@ function parseAbilityText(
   const iconMagnitudeRegex = new RegExp(ICON_MAGNITUDE_PATTERN.source, 'g');
   let iconMagnitudeMatch: RegExpExecArray | null = iconMagnitudeRegex.exec(abilityText);
   while (iconMagnitudeMatch !== null) {
-    const iconKeyword = iconMagnitudeMatch[2]!.toLowerCase();
-    const iconMagnitudeValue = parseInt(iconMagnitudeMatch[1]!, 10);
-    if (!magnitudes.has(iconKeyword)) {
-      magnitudes.set(iconKeyword, iconMagnitudeValue);
+    // why: WP-660 / D-24471 — skip an icon-magnitude that is a CONDITION threshold (e.g.
+    // the "6" in "made at least 6[icon:recruit]"), so it is not read as a +6 grant.
+    if (!overlapsSuppressedRange(
+      iconMagnitudeMatch.index,
+      iconMagnitudeMatch.index + iconMagnitudeMatch[0].length,
+      suppressedIconRanges,
+    )) {
+      const iconKeyword = iconMagnitudeMatch[2]!.toLowerCase();
+      const iconMagnitudeValue = parseInt(iconMagnitudeMatch[1]!, 10);
+      if (!magnitudes.has(iconKeyword)) {
+        magnitudes.set(iconKeyword, iconMagnitudeValue);
+      }
     }
     iconMagnitudeMatch = iconMagnitudeRegex.exec(abilityText);
   }
@@ -1073,7 +1149,13 @@ function parseAbilityText(
     while (iconMatch !== null) {
       const iconValue = iconMatch[1]!.toLowerCase();
       const mappedKeyword = ICON_TO_KEYWORD[iconValue];
-      if (mappedKeyword !== undefined) {
+      // why: WP-660 / D-24471 — skip an icon that is a CONDITION threshold (e.g. the
+      // "[icon:recruit]" in "made at least 6[icon:recruit]"), so it does not push a phantom
+      // 'recruit'/'attack' grant keyword. A grant icon elsewhere on the line is kept.
+      if (
+        mappedKeyword !== undefined
+        && !overlapsSuppressedRange(iconMatch.index, iconMatch.index + iconMatch[0].length, suppressedIconRanges)
+      ) {
         keywords.push(mappedKeyword);
       }
       iconMatch = iconRegex.exec(abilityText);

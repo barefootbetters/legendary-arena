@@ -1,26 +1,26 @@
 {
   "corpus": {
-    "executable": 2639,
-    "heroes": 309,
-    "hooks": 5944,
-    "noEffect": 3098,
-    "parsedNotExecuted": 207
+    "executable": 2803,
+    "heroes": 324,
+    "hooks": 6185,
+    "noEffect": 2754,
+    "parsedNotExecuted": 628
   },
   "perSet": {
     "2099": {
       "executable": 51,
       "hooks": 112,
-      "noEffect": 61
+      "noEffect": 38
     },
     "3dtc": {
       "executable": 41,
       "hooks": 75,
-      "noEffect": 34
+      "noEffect": 30
     },
     "amwp": {
-      "executable": 69,
+      "executable": 72,
       "hooks": 187,
-      "noEffect": 118
+      "noEffect": 91
     },
     "anni": {
       "executable": 73,
@@ -30,12 +30,12 @@
     "antm": {
       "executable": 52,
       "hooks": 109,
-      "noEffect": 57
+      "noEffect": 20
     },
     "asrd": {
-      "executable": 38,
+      "executable": 43,
       "hooks": 102,
-      "noEffect": 64
+      "noEffect": 59
     },
     "bkpt": {
       "executable": 59,
@@ -45,22 +45,27 @@
     "bkwd": {
       "executable": 22,
       "hooks": 125,
-      "noEffect": 74
+      "noEffect": 24
     },
     "ca75": {
-      "executable": 54,
+      "executable": 57,
       "hooks": 100,
-      "noEffect": 46
+      "noEffect": 43
     },
     "chmp": {
       "executable": 29,
       "hooks": 134,
-      "noEffect": 105
+      "noEffect": 67
+    },
+    "co2e": {
+      "executable": 150,
+      "hooks": 241,
+      "noEffect": 67
     },
     "core": {
-      "executable": 149,
+      "executable": 144,
       "hooks": 229,
-      "noEffect": 75
+      "noEffect": 49
     },
     "cosm": {
       "executable": 44,
@@ -70,7 +75,7 @@
     "cvwr": {
       "executable": 128,
       "hooks": 300,
-      "noEffect": 172
+      "noEffect": 122
     },
     "dead": {
       "executable": 41,
@@ -78,19 +83,19 @@
       "noEffect": 41
     },
     "dims": {
-      "executable": 41,
+      "executable": 36,
       "hooks": 105,
-      "noEffect": 64
+      "noEffect": 59
     },
     "dkcy": {
       "executable": 177,
       "hooks": 298,
-      "noEffect": 121
+      "noEffect": 116
     },
     "dstr": {
       "executable": 40,
       "hooks": 76,
-      "noEffect": 36
+      "noEffect": 31
     },
     "fear": {
       "executable": 43,
@@ -100,7 +105,7 @@
     "ff04": {
       "executable": 64,
       "hooks": 74,
-      "noEffect": 10
+      "noEffect": 5
     },
     "gotg": {
       "executable": 17,
@@ -123,24 +128,24 @@
       "noEffect": 30
     },
     "msmc": {
-      "executable": 55,
+      "executable": 51,
       "hooks": 182,
-      "noEffect": 127
+      "noEffect": 113
     },
     "msp1": {
       "executable": 82,
       "hooks": 109,
-      "noEffect": 27
+      "noEffect": 23
     },
     "nmut": {
-      "executable": 36,
+      "executable": 37,
       "hooks": 98,
-      "noEffect": 62
+      "noEffect": 61
     },
     "noir": {
       "executable": 21,
       "hooks": 71,
-      "noEffect": 50
+      "noEffect": 35
     },
     "pttr": {
       "executable": 45,
@@ -160,7 +165,7 @@
     "shld": {
       "executable": 37,
       "hooks": 107,
-      "noEffect": 70
+      "noEffect": 33
     },
     "smhc": {
       "executable": 33,
@@ -168,19 +173,19 @@
       "noEffect": 68
     },
     "ssw1": {
-      "executable": 138,
+      "executable": 123,
       "hooks": 221,
-      "noEffect": 83
+      "noEffect": 85
     },
     "ssw2": {
-      "executable": 124,
+      "executable": 134,
       "hooks": 271,
-      "noEffect": 109
+      "noEffect": 84
     },
     "vill": {
       "executable": 139,
       "hooks": 288,
-      "noEffect": 81
+      "noEffect": 78
     },
     "vnom": {
       "executable": 47,
@@ -193,25 +198,24 @@
       "noEffect": 30
     },
     "wtif": {
-      "executable": 74,
+      "executable": 81,
       "hooks": 140,
-      "noEffect": 66
+      "noEffect": 59
     },
     "wwhk": {
-      "executable": 113,
+      "executable": 128,
       "hooks": 336,
-      "noEffect": 223
+      "noEffect": 203
     },
     "xmen": {
-      "executable": 143,
+      "executable": 142,
       "hooks": 332,
-      "noEffect": 189
+      "noEffect": 185
     }
   },
   "schemaVersion": 1,
   "unsupportedMechanics": {
     "\"when-recruited\"-abilities": 15,
-    ":-cross-dimensional-wolverine-rampage.": 1,
     "abomination": 3,
     "ambush": 12,
     "antics": 6,
@@ -219,7 +223,7 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
-    "attack-per-count:victory-bystanders": 1,
+    "attack-per-count:victory-bystanders": 2,
     "blood-frenzy": 6,
     "bridge": 3,
     "bridge-conqueror": 3,
@@ -235,13 +239,15 @@
     "coordinate": 11,
     "cosmic-threat": 2,
     "cross-dimensional-colossus-rampage": 1,
-    "cross-dimensional-hulk-rampage.": 1,
+    "cross-dimensional-hulk-rampage": 1,
     "cross-dimensional-party-rampage": 1,
+    "cross-dimensional-wolverine-rampage": 1,
     "cyber-mod": 9,
     "cyber-mod-4-wounds": 1,
     "cyber-mod-wound": 2,
     "danger-sense": 18,
     "dark-memories": 10,
+    "defeated-villain-or-mastermind": 1,
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
@@ -260,7 +266,9 @@
     "hunt-for-victims": 1,
     "hyperspeed": 14,
     "indigestion": 5,
-    "investigate": 28,
+    "ko-wound-reward:attack": 5,
+    "ko-wound-reward:draw": 3,
+    "ko-wound-reward:recruit": 2,
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
@@ -268,7 +276,10 @@
     "man/woman-out-of-time": 4,
     "microscopic-size-changing": 13,
     "moonlight": 17,
-    "optional-ko-reward:rescue": 1,
+    "optional-ko-reward:attack": 1,
+    "optional-ko-reward:draw": 2,
+    "optional-ko-reward:recruit": 4,
+    "optional-ko-reward:rescue": 2,
     "outwit": 13,
     "patrol-any-city-space": 3,
     "patrol-every-city-space": 1,
@@ -283,8 +294,11 @@
     "patrol-your-victory-pile": 1,
     "phasing": 12,
     "piercing-energy": 11,
-    "reveal-count": 1,
-    "reveal:cost-lte-2:draw": 1,
+    "recruit-threshold": 3,
+    "reveal-count": 2,
+    "reveal-multi-take": 1,
+    "reveal-reorder": 1,
+    "reveal:cost-lte-2:draw": 2,
     "ritual-artifact": 8,
     "rooftops": 1,
     "rooftops-abomination": 1,
@@ -294,7 +308,8 @@
     "savior": 8,
     "sewers-conqueror": 2,
     "shatter": 7,
-    "size-changing": 45,
+    "shuffle-discard-empty-reward:attack": 1,
+    "shuffle-discard-empty-reward:recruit": 1,
     "smash": 19,
     "soaring-flight": 17,
     "soulbind": 5,
@@ -312,10 +327,8 @@
     "teleport": 21,
     "thrones-favor": 18,
     "thrown-artifact": 13,
-    "transform": 21,
     "transformed": 1,
     "triggered-artifact": 7,
-    "undercover": 45,
     "unleash": 7,
     "versatile": 13,
     "villain-or-mastermind-has-any-wounds": 2,

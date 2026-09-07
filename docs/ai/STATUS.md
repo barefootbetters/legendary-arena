@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-660 — Condition-clause `[icon:recruit|attack]` misparse fix (no more phantom grants) (EC-697 / D-24471) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** A parser fix so a card that prints a "if you made at
+least N recruit this turn" / "for every N recruit" **condition** no longer hands out a phantom **+N recruit**
+(or +N attack). Surfaced by a live `red-skull-Midtown-Bank-Robbery` diagnostics capture during WP-658's
+D-24026 check: **She-Hulk's Radioactive Riot** (printed recruit `null`) was granting a **free +6 recruit
+every play**, and **Hurl Legal Objections** (WP-658) granted +6 recruit *alongside* its Transform.
+
+**Root cause + fix.** The hero-ability parser's icon extractors — Step 2b (icon-magnitude) and Step 3
+(icon→keyword) — read any `N[icon:recruit|attack]` as a resource **grant**, with no grant-vs-condition
+distinction. A new `CONDITION_ICON_PATTERN` + `computeConditionIconRanges` (`setup/heroAbility.setup.ts`)
+record the character ranges of `[icon:…]` tokens inside a "made at least N" / "for every N" / "N or more"
+clause; both extractors skip an icon whose span overlaps a suppressed range. Suppression is **positional**,
+so a real grant icon elsewhere on the same line ("if you made 8 recruit, you get +3[icon:attack]") is kept.
+Fixes wwhk (radioactive-riot → honest hollow, hurl-legal-objections → clean transform, jade-giantess), the
+co2e/ssw1 "made N recruit" cards (phantom recruit gone, real attack grant kept), and cleans Surge of Power's
+cosmetic `recruit` keyword.
+
+**Scope + verification.** Parser-only, one file; **no card-data change, no new `G` field, no hash re-pin**
+(the sentinel game plays none of these cards), **no derived-artifact drift** (the ledger reads `[keyword:X]`
+markers, not the icon-promoted keyword). `pnpm -r build` 0; engine suite **3087/3087**; whole-repo green;
+`ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `sim:runtime-observed:check` all
+green with no regen. **D-24026 operator-pending** (a live She-Hulk match). **Flagged follow-ups:** gate the
+co2e/ssw1 recruit-threshold grants (still ungated); the amwp Ghost MASTERMIND on the villain parser.
+
+---
+
 ### WP-658 — `[keyword:Transform]` runtime: She-Hulk's transform swap consumes the side deck (EC-695 / D-24469) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** Makes the printed `[keyword:Transform]` mechanic
