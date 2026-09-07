@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 661,
+    "totalRows": 662,
     "byStatus": {
-      "executable": 262,
+      "executable": 263,
       "deferred": 0,
-      "condition": 22,
-      "unsupported": 336,
+      "condition": 23,
+      "unsupported": 335,
       "unmarked": 40,
       "subsystem": 1
     },
@@ -11382,6 +11382,22 @@
       "extId": "wwhk/she-hulk",
       "heroName": "She-Hulk",
       "set": "wwhk",
+      "mechanic": "recruit-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "hurl-legal-objections",
+          "name": "Hurl Legal Objections"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "heroName": "She-Hulk",
+      "set": "wwhk",
       "mechanic": "smash",
       "status": "unsupported",
       "wp": "",
@@ -11399,10 +11415,10 @@
       "heroName": "She-Hulk",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "hurl-legal-objections",

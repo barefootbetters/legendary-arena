@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1836,
+    "totalEntries": 1837,
     "byScope": {
-      "hero": 661,
+      "hero": 662,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 398,
+      "executable": 399,
       "deferred": 0,
-      "condition": 22,
-      "unsupported": 337,
+      "condition": 23,
+      "unsupported": 336,
       "unmarked": 1076,
       "subsystem": 3
     }
@@ -24226,6 +24226,23 @@
       "name": "She-Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "recruit-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "hurl-legal-objections",
+          "name": "Hurl Legal Objections"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "name": "She-Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "smash",
       "status": "unsupported",
       "handler": "",
@@ -24244,8 +24261,8 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "transform",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "wp": "",
       "decision": "",
       "designs": [
@@ -34614,6 +34631,7 @@
       "mechanics": [
         "draw",
         "outwit",
+        "recruit-threshold",
         "smash",
         "transform"
       ]

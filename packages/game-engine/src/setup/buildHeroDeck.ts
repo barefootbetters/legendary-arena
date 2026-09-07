@@ -79,6 +79,15 @@ interface HeroCardEntry {
    * card as a transform card for partition purposes (D-24468).
    */
   transformOf?: string;
+  /**
+   * When present, the second-form (Transform card) slug this BASE card flips
+   * to via [keyword:Transform] (e.g., 'hurl-trucks' on the
+   * 'hurl-legal-objections' card). The machine-readable base→target link
+   * buildTransformTargets captures into G.transformTargets (D-24469). Optional:
+   * absent on non-transforming cards and on the transform cards themselves
+   * (they carry `transformOf` instead).
+   */
+  transform?: string;
 }
 
 /**
@@ -742,4 +751,81 @@ export function buildTransformSideDeck(
   }
 
   return buildTransformSideDeckCards(heroDeckIds, registry);
+}
+
+// ---------------------------------------------------------------------------
+// buildTransformTargets — base→second-form card-key map (D-24469)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the per-match base→second-form card-key map (G.transformTargets).
+ *
+ * Walks the same registry path as buildTransformSideDeckCards over the SAME
+ * hero set, but instead of collecting card instances it records, for every
+ * BASE card that carries a `transform` field, a copy-agnostic card-key entry:
+ *
+ *   `{setAbbr}/{heroSlug}/{baseSlug}` → `{setAbbr}/{heroSlug}/{targetSlug}`
+ *
+ * (e.g. `wwhk/she-hulk/hurl-legal-objections` → `wwhk/she-hulk/hurl-trucks`).
+ * One entry per base card — every copy of that base shares the key, so
+ * heroEffectTransform strips the `#copy` suffix off the played base ext_id to
+ * look the target key up, then pulls the first `{targetKey}#*` instance out of
+ * G.transformDeck. The map is built for EVERY wwhk base→target pair (complete
+ * data); which base cards actually resolve a swap is gated separately at the
+ * setup parser (SUPPORTED_TRANSFORM_BASES).
+ *
+ * Returns an empty object when no hero in heroDeckIds has transform base cards
+ * (the common case today — only wwhk heroes carry them). Malformed ids /
+ * missing heroes are soft-skipped identically to buildTransformSideDeckCards.
+ * No ctx.random, no I/O — pure setup-time registry walk.
+ *
+ * @param heroDeckIds - Array of qualified hero deck IDs `<setAbbr>/<heroSlug>`.
+ * @param registry - Setup-time registry reader. Accepts unknown to support
+ *   narrow test mocks; returns {} when it does not satisfy RegistryReader.
+ * @returns Base-key → target-key map as Record<CardExtId, CardExtId>.
+ */
+export function buildTransformTargets(
+  heroDeckIds: string[],
+  registry: unknown,
+): Record<CardExtId, CardExtId> {
+  const targets: Record<CardExtId, CardExtId> = {};
+
+  if (!isRegistryReader(registry)) {
+    return targets;
+  }
+
+  for (const heroDeckId of heroDeckIds) {
+    const parsed = parseQualifiedIdForSetup(heroDeckId);
+    if (parsed === null) continue;
+
+    const setData = registry.getSet(parsed.setAbbr);
+    if (!setData || typeof setData !== 'object') continue;
+
+    const candidate = setData as { heroes?: unknown };
+    if (!Array.isArray(candidate.heroes)) continue;
+
+    let heroEntry: HeroEntry | null = null;
+    for (const hero of candidate.heroes as HeroEntry[]) {
+      if (hero && typeof hero === 'object' && hero.slug === parsed.slug) {
+        heroEntry = hero;
+        break;
+      }
+    }
+    if (heroEntry === null) continue;
+    if (!Array.isArray(heroEntry.cards)) continue;
+
+    for (const card of heroEntry.cards) {
+      // why: only BASE cards carry `transform` (the second-form slug); the
+      // second-form cards carry `transformOf` instead. A blank/malformed value
+      // is soft-skipped (no throw) — the map is defence-in-depth over data the
+      // cards:check gate already validates.
+      if (typeof card.slug !== 'string' || card.slug.length === 0) continue;
+      if (typeof card.transform !== 'string' || card.transform.length === 0) continue;
+      const baseKey = `${parsed.setAbbr}/${parsed.slug}/${card.slug}` as CardExtId;
+      const targetKey = `${parsed.setAbbr}/${parsed.slug}/${card.transform}` as CardExtId;
+      targets[baseKey] = targetKey;
+    }
+  }
+
+  return targets;
 }

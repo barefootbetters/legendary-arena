@@ -139,7 +139,15 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // cards). The single, explained cause — a new G field, not a masked regression.
 // Same dependency-driven class as the re-pins above.
 // Pre-WP-657: 'c3ee9eb4'. Post-WP-657: 'd5d807a9'.
-const PRE_WP080_HASH = 'd5d807a9';
+// why: WP-658 / D-24469 transform-targets re-pin — LegendaryGameState gained
+// one field (transformTargets, seeded {} at every construction site: the setup
+// builder captures no base→target pairs for a core/dr-doom game), which
+// serializes into this empty replay's final state and shifts the hash with NO
+// behaviour change (this moves:[] replay recruits/fights/transforms nothing).
+// The single, explained cause — a new G field, not a masked regression. Same
+// dependency-driven class as the re-pins above.
+// Pre-WP-658: 'd5d807a9'. Post-WP-658: '36a82b21'.
+const PRE_WP080_HASH = '36a82b21';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

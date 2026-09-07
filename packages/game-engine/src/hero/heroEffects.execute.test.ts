@@ -54,7 +54,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 24 handlers and none for the deferred keywords', () => {
+  it('has exactly 25 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -68,8 +68,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-535 / D-24345 added the copy-powers handler (20 → 21);
     // WP-580 / D-24389 added the recruit-as-attack handler (21 → 22);
     // WP-592 / D-24401 added the steal-abilities handler (22 → 23);
-    // WP-564 / D-24373 added the investigate handler (23 → 24).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 24);
+    // WP-564 / D-24373 added the investigate handler (23 → 24);
+    // WP-658 / D-24469 added the transform handler (24 → 25).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 25);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -141,6 +142,9 @@ function makeTestState(overrides?: {
   // why: WP-564 / D-24373 — investigate's hero-class / team criteria read G.cardTraits.
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
   pendingHeroChoice?: PendingHeroChoice;
+  // why: WP-658 / D-24469 — the transform handler reads the side deck + base→target map.
+  transformDeck?: string[];
+  transformTargets?: Record<string, string>;
 }): LegendaryGameState {
   return {
     matchConfiguration: {
@@ -207,6 +211,10 @@ function makeTestState(overrides?: {
     hq: [null, null, null, null, null],
     lobby: { requiredPlayers: 1, ready: {}, started: false },
     heroAbilityHooks: overrides?.heroAbilityHooks ?? [],
+    // why: WP-658 / D-24469 — seed the transform side deck + base→target map so the
+    // transform handler resolves; default empty so tests that ignore transform are unaffected.
+    transformDeck: overrides?.transformDeck ?? [],
+    transformTargets: overrides?.transformTargets ?? {},
     ...(overrides?.pendingHeroChoice !== undefined ? { pendingHeroChoice: overrides.pendingHeroChoice } : {}),
   };
 }
@@ -4944,5 +4952,116 @@ describe('heroEffectInvestigate (WP-564 / D-24373)', () => {
     const line = gameState.messages.find((entry) => entry.text.includes('Investigated'));
     assert.ok(line !== undefined && line.outcome === 'blocked', 'the empty-deck outcome is narrated as blocked');
     assert.ok(line!.text.includes('no cards to look at'), 'the empty-deck line says there were no cards to look at');
+  });
+});
+
+// ===========================================================================
+// transform keyword (WP-658 / D-24469)
+// ===========================================================================
+
+describe('transform keyword (WP-658 / D-24469)', () => {
+  const BASE_ID = 'wwhk/she-hulk/hurl-legal-objections#0';
+  const BASE_KEY = 'wwhk/she-hulk/hurl-legal-objections';
+  const TARGET_KEY = 'wwhk/she-hulk/hurl-trucks';
+  const TARGET_0 = 'wwhk/she-hulk/hurl-trucks#0';
+  const TARGET_1 = 'wwhk/she-hulk/hurl-trucks#1';
+
+  /**
+   * A She-Hulk-shaped transform state: the base card in play, two second-form
+   * copies in the side deck, the base→target map, the recruit-threshold-gated
+   * transform hook, and Hurl Trucks' printed +2 attack in cardStats.
+   */
+  function makeTransformState(recruitMade: number): LegendaryGameState {
+    return makeTestState({
+      inPlay: [BASE_ID],
+      turnEconomyRecruit: recruitMade,
+      transformDeck: [TARGET_0, TARGET_1],
+      transformTargets: { [BASE_KEY]: TARGET_KEY },
+      cardStats: {
+        [TARGET_0]: { attack: 2, recruit: 0, cost: 6, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        [TARGET_1]: { attack: 2, recruit: 0, cost: 6, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: BASE_ID,
+          timing: 'onPlay',
+          keywords: ['transform', 'conditional'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'transform' }],
+        },
+      ],
+    });
+  }
+
+  it('swaps the base for its second-form when the recruit-threshold condition holds (AC-3)', () => {
+    const gameState = makeTransformState(6);
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.equal(fired, 1, 'the transform effect fired');
+    const inPlay = gameState.playerZones['0']!.inPlay;
+    assert.ok(!inPlay.includes(BASE_ID), 'the base card left play');
+    assert.ok(inPlay.includes(TARGET_0), 'the second-form entered play');
+  });
+
+  it('pulls exactly one second-form copy and routes the base back to the side deck (AC-3)', () => {
+    const gameState = makeTransformState(6);
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.ok(!gameState.transformDeck.includes(TARGET_0), 'the pulled copy left the side deck');
+    assert.ok(gameState.transformDeck.includes(TARGET_1), 'the second copy stays in the side deck');
+    assert.ok(gameState.transformDeck.includes(BASE_ID), 'the base card was set aside into the side deck');
+    assert.equal(gameState.transformDeck.length, 2, 'exactly one copy pulled, base added — net length unchanged');
+  });
+
+  it('applies the second-form printed attack (the transform is not cosmetic) (AC-3)', () => {
+    const gameState = makeTransformState(6);
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.equal(gameState.turnEconomy.attack, 2, "Hurl Trucks' printed +2 attack applied on transform");
+  });
+
+  it('does NOT transform when the recruit-threshold condition fails (AC-4)', () => {
+    const gameState = makeTransformState(5);
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.equal(fired, 0, 'the gated effect did not fire');
+    const inPlay = gameState.playerZones['0']!.inPlay;
+    assert.ok(inPlay.includes(BASE_ID), 'the base card resolves normally and stays in play');
+    assert.ok(!inPlay.includes(TARGET_0), 'no second-form entered play');
+    assert.deepStrictEqual(gameState.transformDeck, [TARGET_0, TARGET_1], 'the side deck is untouched');
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted when the gate fails');
+  });
+
+  it('soft no-ops (logged, no throw) when the side deck is exhausted (AC-5)', () => {
+    const gameState = makeTestState({
+      inPlay: [BASE_ID],
+      turnEconomyRecruit: 6,
+      transformDeck: [], // exhausted — no matching second-form copy remains
+      transformTargets: { [BASE_KEY]: TARGET_KEY },
+      heroAbilityHooks: [
+        {
+          cardId: BASE_ID,
+          timing: 'onPlay',
+          keywords: ['transform', 'conditional'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'transform' }],
+        },
+      ],
+    });
+
+    assert.doesNotThrow(() => executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID));
+    assert.ok(gameState.playerZones['0']!.inPlay.includes(BASE_ID), 'the base card stays in play on exhaustion');
+    const line = gameState.messages.find((entry) => entry.text.includes('could not Transform'));
+    assert.ok(line !== undefined && line.outcome === 'blocked', 'the exhaustion outcome is narrated as blocked');
+  });
+
+  it('is JSON-serializable after a transform (no functions/Maps enter G)', () => {
+    const gameState = makeTransformState(6);
+    executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+    assert.doesNotThrow(() => JSON.stringify(gameState), 'G stays JSON-serializable after a transform');
   });
 });

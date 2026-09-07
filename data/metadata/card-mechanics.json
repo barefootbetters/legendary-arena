@@ -1025,10 +1025,11 @@
       "label": "Recruit Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
         "core/thor",
-        "msp1/thor"
+        "msp1/thor",
+        "wwhk/she-hulk"
       ],
       "hidden": true
     },
@@ -1578,7 +1579,7 @@
       "slug": "transform",
       "label": "Transform",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 15,
       "cardIds": [
         "wwhk/amadeus-cho",
@@ -3769,6 +3770,7 @@
       "mechanics": [
         "draw",
         "outwit",
+        "recruit-threshold",
         "smash",
         "transform"
       ]

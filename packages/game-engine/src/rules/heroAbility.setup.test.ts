@@ -230,10 +230,77 @@ describe('buildHeroAbilityHooks', () => {
   });
 });
 
+describe('buildHeroAbilityHooks — transform keyword resolution (WP-658 / D-24469)', () => {
+  function transformConfig(heroSlug: string): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: [`wwhk/${heroSlug}`] };
+  }
+
+  it('resolves [keyword:Transform] to a transform effect + recruit-threshold condition for the allowlisted She-Hulk base card (AC-1)', () => {
+    const registry = makeHeroRegistry('wwhk', 'she-hulk', [
+      {
+        slug: 'hurl-legal-objections',
+        rarityLabel: 'Common 1',
+        abilities: [
+          'Once this turn, if you made at least 6[icon:recruit]this turn, [keyword:Transform] this into Hurl Trucks. [keyword:recruit-threshold:6]',
+        ],
+      },
+    ]);
+
+    const hooks = buildHeroAbilityHooks(registry, transformConfig('she-hulk'));
+    const hook = hooks.find((entry) => entry.cardId === 'wwhk/she-hulk/hurl-legal-objections#0');
+
+    assert.ok(hook !== undefined, 'the she-hulk base-card hook exists');
+    assert.ok(hook!.keywords.includes('transform'), 'transform resolves to a keyword');
+    assert.ok(
+      (hook!.effects ?? []).some((effect) => effect.type === 'transform'),
+      'a transform effect descriptor is emitted',
+    );
+    assert.ok(
+      (hook!.conditions ?? []).some(
+        (condition) => condition.type === 'recruitMadeThisTurnAtLeast' && condition.value === '6',
+      ),
+      'the recruit-threshold gate is attached to the same hook',
+    );
+    assert.ok(
+      !(hook!.unresolvedMarkers ?? []).includes('transform'),
+      'transform is NOT an unresolved marker for the allowlisted card',
+    );
+  });
+
+  it('leaves [keyword:Transform] an unresolved marker for a held-back transform card (Honest-Partial) (AC-1)', () => {
+    const registry = makeHeroRegistry('wwhk', 'amadeus-cho', [
+      {
+        slug: 'gamma-draining-nanites',
+        rarityLabel: 'Common 1',
+        abilities: [
+          'Draw a card. [keyword:draw:1] Then, if you drew two cards this turn, [keyword:Transform] this into Like Totally Smart Hulk.',
+        ],
+      },
+    ]);
+
+    const hooks = buildHeroAbilityHooks(registry, transformConfig('amadeus-cho'));
+    const hook = hooks.find((entry) => entry.cardId === 'wwhk/amadeus-cho/gamma-draining-nanites#0');
+
+    assert.ok(hook !== undefined, 'the amadeus-cho base-card hook exists');
+    assert.ok(
+      !hook!.keywords.includes('transform'),
+      'transform is NOT resolved to a keyword for a held-back card',
+    );
+    assert.ok(
+      (hook!.unresolvedMarkers ?? []).includes('transform'),
+      'transform stays an honest unresolved marker (parse-unrecognized)',
+    );
+    assert.ok(
+      hook!.keywords.includes('draw'),
+      'the co-located draw effect still resolves (mixed hook stays reachable)',
+    );
+  });
+});
+
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 38 canonical keyword values', () => {
+  it('contains exactly the 39 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -273,12 +340,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'recruit-as-attack', // why: WP-580 / D-24389 — God of Thunder "You can use Recruit as Attack this turn."
       'steal-abilities', // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."
       'investigate', // why: WP-564 / D-24373 — "Investigate for <criterion>" static-criterion + draw subset (Alias Investigations + siblings)
+      'transform', // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk) — swaps a played base card for its second-form from G.transformDeck
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      38,
-      'HERO_KEYWORDS must have exactly 38 entries',
+      39,
+      'HERO_KEYWORDS must have exactly 39 entries',
     );
 
     assert.deepStrictEqual(
