@@ -744,7 +744,8 @@
           "recruit": "3",
           "abilities": [
             "[hc:tech][hc:strength]: [keyword:Transform] this into Ultra-Massive Armor."
-          ]
+          ],
+          "transform": "ultra-massive-armor"
         },
         {
           "name": "Ultra-Massive Armor",
@@ -760,7 +761,9 @@
           "abilities": [
             "Draw two cards. [keyword:draw:2]",
             "[keyword:Smash 2]"
-          ]
+          ],
+          "transformOf": "build-the-suit",
+          "isTransform": true
         },
         {
           "name": "Final Battle",

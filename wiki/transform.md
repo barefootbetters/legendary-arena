@@ -93,12 +93,12 @@ are the machine-readable link. Each card — base and transformed alike — is i
 own `physicalCard` entry (`sides: ["<slug>"]`), so the art and the counts are
 separate.
 
-> **Data gap to know about.** `hulkbuster-iron-man`'s *Build the Suit* says
-> "Transform this into Ultra-Massive Armor," but `ultra-massive-armor` carries
-> **none** of the three fields above — the relationship is in the text only. Of
-> the 15 `wwhk` Heroes, **14** are structurally marked; hulkbuster is the one
-> that is not. Any implementation or migration must fix that pairing (add
-> `transform` / `transformOf` / `isTransform`) or it will be silently skipped.
+> **All 15 pairings are structurally marked.** Every `wwhk` Hero's base card
+> carries `transform` and its Transformed card carries `transformOf` +
+> `isTransform`, so an implementation or migration can rely on the fields rather
+> than parsing ability text. (`hulkbuster-iron-man`'s *Build the Suit* →
+> *Ultra-Massive Armor* was the last text-only pairing; it was marked to match
+> the other 14.)
 
 ## The WWHK roster
 
@@ -113,7 +113,7 @@ the printed clause.
 | Caiera | Dutiful Protector (7) | Vengeful Destructor (7) | ≥ 3 Heroes per player in the KO pile | swap |
 | Gladiator Hulk | Seize the Throne (4) | Hulk Is King (5) | discarded ≥ 2 cards this turn | deck-top |
 | Hiroim | Save from the Rubble (4) | Hiroim Redeemed (5) | ≥ 2 Bystanders in your Victory Pile | swap |
-| Hulkbuster Iron Man | Build the Suit (5) | Ultra-Massive Armor | `[hc:tech][hc:strength]` | swap *(unmarked in data)* |
+| Hulkbuster Iron Man | Build the Suit (5) | Ultra-Massive Armor (6) | `[hc:tech][hc:strength]` | swap |
 | Joe Fixit / Grey Hulk | Ambitious Enforcer (6) | Underworld Boss (6) | defeat a Villain with 6+ Attack this turn | deck-top |
 | Korg | Forged by Fire (3) | Lord of Granite (5) | `[hc:strength][hc:strength]` | swap |
 | Miek the Unhived | Metamorphosis (7) | Hive King Miek (8) | Feast + an `[icon:attack]` card KO'd from your deck | swap |
@@ -233,8 +233,9 @@ zone** and a **swap primitive**:
 4. **Bidirectional support** for Sentry (a Transformed card may itself carry a
    `transform` back to its base) and a **"cards Transformed this turn" counter**
    for Rival Personalities.
-5. **The hulkbuster data fix** — mark `build-the-suit` / `ultra-massive-armor`
-   so the 15th Hero is not skipped.
+
+The card data is ready for it: all 15 pairings carry `transform` /
+`transformOf` / `isTransform`, so the engine can drive the swap off the fields.
 
 Until that lands, the honest hollow is the correct behaviour: the base card does
 what it can, and the unimplemented swap is reported, not hidden.
@@ -253,9 +254,6 @@ what it can, and the unimplemented swap is reported, not hidden.
 
 ## Edge Cases
 
-- **Unmarked pairing (hulkbuster).** Ability text says Transform; structured
-  fields do not encode it. Treat as a data defect to repair, not a design
-  choice.
 - **Conditional target (Vast Unstable Power).** Transforms only above an Attack
   threshold and does not name a fixed target in the structured data — special-case
   it.
