@@ -84,7 +84,10 @@ describe('Diamond Form over-fire fix (WP-656 / D-24467)', () => {
     resolveDeferredHeroGrants(G, mockCtx);
 
     assert.equal(G.turnEconomy.recruit, 3, 'one qualifying defeat -> +3');
-    assert.match(G.messages[G.messages.length - 1]!.text, /applied/);
+    // why: WP-656 / D-24467 log-polish — the redundant "ability applied — its condition was
+    // met later this turn" confirmation was removed; the concrete grant line runHookEffects
+    // emits is now the last (and only) line for the fire.
+    assert.match(G.messages[G.messages.length - 1]!.text, /gained \+3 recruit/);
   });
 
   it('AC-4: edge-triggered per defeat — defeat -> recruit -> defeat -> play grants EXACTLY +6', () => {

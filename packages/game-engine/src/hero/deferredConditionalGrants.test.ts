@@ -176,7 +176,10 @@ describe('deferral and firing (WP-568)', () => {
 
     assert.equal(G.turnEconomy.attack, 3, 'the +3 attack applied retroactively');
     assert.equal(G.deferredConditionalGrants, undefined, 'the entry was consumed');
-    assert.match(G.messages[G.messages.length - 1]!.text, /applied/);
+    // why: WP-656 / D-24467 log-polish — the redundant "ability applied — its condition was
+    // met later this turn" confirmation was removed; the concrete grant line runHookEffects
+    // emits is now the last line for the fire.
+    assert.match(G.messages[G.messages.length - 1]!.text, /gained \+3 attack/);
   });
 
   it('AC-2: never fires when the threshold is not reached', () => {
