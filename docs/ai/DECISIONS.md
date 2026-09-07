@@ -40192,7 +40192,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 ### D-24474 — Shadowed Thoughts' "play the top Villain-Deck card → +2 Attack" is a new optional pending-choice mechanic (the optional-ko-reward pattern), reusing `playTopVillainDeckCards`; the deterministic default is DECLINE (WP-663 / EC-700)
 
-**Status:** Drafted 2026-09-07; not yet landed (flips to Active at WP-663 execution).
+**Status:** Active (landed at WP-663 execution 2026-09-07).
 
 **Context.** `core/emma-frost/shadowed-thoughts` prints *"Covert: You may play the top card of the Villain Deck. If you do, you get +2 Attack."* The leading `[hc:covert]:` gate is FAITHFUL (upstream `{ hc: 1 }` + `:` — a genuine class-synergy gate) and works. But the body is unimplemented: on gate-pass the engine grants +2 Attack **unconditionally and immediately** and never offers the *"play the top Villain-Deck card"* choice (operator-reported). This is the third Emma Frost "cards not triggering" fix — Diamond Form (D-24467) and Psychic Link (D-24470) shipped; Shadowed Thoughts is distinct because its "may" has a real downside, so it needs a genuine interactive choice, not WP-659's pure-upside auto-reveal.
 
@@ -40205,9 +40205,9 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 5. **Deterministic default DECLINE.** Unlike WP-659's auto-reveal (pure upside, auto-taken), playing the top Villain-Deck card has a real downside, so the choice is genuine: humans are prompted; for bot/autoplay/`getLegalMoves` where no human input exists, the default is DECLINE (conservative, deterministic, never forces a risky board change). Per the established pending-choice pattern (`simulation/ai.legalMoves.ts` — return-on-discard / optional-put-bottom-HQ), `getLegalMoves` short-circuits to the SINGLE decline entry while the choice is pending (not an enumeration of both moves); both `{accept:true}` and `{accept:false}` remain valid at the resolve move itself. The accept path builds a `RevealContext` and passes `DEFAULT_IMPLEMENTATION_MAP` to `playTopVillainDeckCards` (the 4-arg signature, per `fightVillain.ts`).
 6. **Card data regenerated, not hand-edited** (WP-633): a `[keyword:optional-play-villain-top:2]` marker on `core/emma-frost/shadowed-thoughts` (the sole in-scope card — a cross-set hero-card scan finds this form only in `coreset.js`), applied by the pipeline; a clean regen reproduces the committed bytes.
 
-**Gates.** Draft gates run at drafting (pre-flight / copilot / lint). This entry flips to Active at execution with the confirmed choices + the current lockstep pin values (which drift as other keyword WPs land).
+**Gates.** Draft gates ran at drafting (pre-flight / copilot / lint). Landed as drafted, with the pin values current at execution: `HERO_KEYWORDS` 40→41; `HERO_EFFECT_HANDLERS` 26→27; `LegendaryGame.moves` 32→33 (`resolvePlayVillainTopChoice` sorts between `resolveOptionalPutBottomHQ` and `resolvePutAnyNumberBottomHQ`). Engine suite 3125 pass / 0 fail; arena-client suite 1625 pass / 0 fail; `cards:check` + `mechanics:metadata:check` + `effect-index:check` + `ledger:heroes:check` + `sim:runtime-observed:check` all green. Control run (Verification Step 6) confirmed non-vacuous — neutering the resolve accept branch fails the accept AC. The `getLegalMoves` short-circuit returns the single DECLINE entry while pending; both hash oracles are stable (the pending field is lazily materialized, so a no-park game is byte-unchanged — no re-pin needed). No committed seed-PAR loadout uses `core/emma-frost`, so seed PAR is unmoved.
 
-**Packet:** WP-663 / EC-700. **Drafted:** 2026-09-07.
+**Packet:** WP-663 / EC-700. **Drafted:** 2026-09-07. **Landed:** 2026-09-07.
 
 ---
 
