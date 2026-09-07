@@ -9,6 +9,16 @@
  * (WP-014B): registry walk → flat array → single shuffle → consumed by the
  * orchestrator to populate G.hq (first 5) and G.heroDeck (remainder).
  *
+ * Transform partition (D-24468): Transform cards (cards flagged
+ * `isTransform`/`transformOf` in a hero's cards[] — the second-form face a
+ * base card flips to via [keyword:Transform]) are held OUT of the shuffled
+ * reservoir and set aside in the transform side deck (G.transformDeck) by
+ * buildTransformSideDeck. heroCardInstanceExtIds still emits every instance
+ * (its stats/ability consumers need transform cards); buildHeroDeckCards
+ * drops the tagged instances and buildTransformSideDeckCards keeps only them.
+ * The side deck is unshuffled — no extra ctx.random call — so the single
+ * locked Shuffle envelope in shuffleHeroDeck is preserved.
+ *
  * No @legendary-arena/registry import. No boardgame.io import. Setup-time
  * only. Pure helper. The single ctx.random.Shuffle call is the only
  * randomness in this module.
@@ -55,6 +65,20 @@ interface HeroCardEntry {
   name?: string;
   /** Per-card rarity label. Must be one of the four locked values. */
   rarityLabel: string;
+  /**
+   * True when this card is a Transform card — the second-form face a base
+   * card flips to via the [keyword:Transform] ability (D-24468). Transform
+   * cards are set aside in the transform side deck (G.transformDeck), NOT
+   * shuffled into the hero-deck reservoir. Optional: absent on ordinary
+   * cards. Paired with `transformOf`.
+   */
+  isTransform?: boolean;
+  /**
+   * When present, the base-card slug this Transform card flips from (e.g.,
+   * 'hurl-legal-objections' on the 'hurl-trucks' card). Either flag marks a
+   * card as a transform card for partition purposes (D-24468).
+   */
+  transformOf?: string;
 }
 
 /**
@@ -364,6 +388,16 @@ export interface HeroCardInstance {
   cardSlug: string;
   /** Slash-format instance ext_id `{setAbbr}/{heroSlug}/{cardSlug}#{copyIndex}`. */
   extId: CardExtId;
+  /**
+   * True when this instance is a Transform card (its canonical-face slug is
+   * flagged `isTransform`/`transformOf` in the hero's cards[]). Consumers
+   * split on this flag: buildHeroDeckCards drops transform instances from the
+   * shuffled hero-deck reservoir; buildTransformSideDeckCards keeps only
+   * them; buildCardStats §1b and buildHeroAbilityHooks ignore the flag and
+   * consume every instance (transform cards still have stats + abilities).
+   * D-24468.
+   */
+  isTransform: boolean;
 }
 
 /**
@@ -404,12 +438,27 @@ export function heroCardInstanceExtIds(
   setAbbr: string,
   heroSlug: string,
   heroEntry: {
-    cards: Array<{ slug: string; name?: string; rarityLabel?: string }>;
+    cards: Array<{ slug: string; name?: string; rarityLabel?: string; isTransform?: boolean; transformOf?: string }>;
     physicalCards?: unknown;
     cardCounts?: unknown;
   },
 ): HeroCardInstance[] {
   const instances: HeroCardInstance[] = [];
+
+  // why: D-24468 — a card is a Transform card when its cards[] entry carries
+  // either flag (`isTransform:true` or a `transformOf` base slug). Build the
+  // set of transform-card canonical slugs up front so BOTH emission paths
+  // (physicalCards + rarity fallback) tag each instance without re-scanning.
+  // The tag drives the reservoir/side-deck partition in the two callers; this
+  // emitter still emits every instance (stats + ability consumers need them).
+  const transformSlugs = new Set<string>();
+  for (const card of heroEntry.cards) {
+    if (!card || typeof card !== 'object') continue;
+    if (typeof card.slug !== 'string') continue;
+    if (card.isTransform === true || typeof card.transformOf === 'string') {
+      transformSlugs.add(card.slug);
+    }
+  }
 
   // why: D-14101 / D-14102 — when physicalCards is present, emit `count` ids
   // per physical card using sides[0] as the canonical face slug. Split heroes
@@ -420,10 +469,12 @@ export function heroCardInstanceExtIds(
     for (const physicalCard of physicalCards) {
       const canonicalSlug = physicalCard.sides[0]!;
       const baseExtId = `${setAbbr}/${heroSlug}/${canonicalSlug}`;
+      const isTransform = transformSlugs.has(canonicalSlug);
       for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
         instances.push({
           cardSlug: canonicalSlug,
           extId: `${baseExtId}#${copyIndex}` as CardExtId,
+          isTransform,
         });
       }
     }
@@ -460,10 +511,12 @@ export function heroCardInstanceExtIds(
     }
 
     const baseExtId = `${setAbbr}/${heroSlug}/${card.slug}`;
+    const isTransform = transformSlugs.has(card.slug);
     for (let copyIndex = 0; copyIndex < copyCount; copyIndex++) {
       instances.push({
         cardSlug: card.slug,
         extId: `${baseExtId}#${copyIndex}` as CardExtId,
+        isTransform,
       });
     }
   }
@@ -520,6 +573,70 @@ export function buildHeroDeckCards(
 
     const instances = heroCardInstanceExtIds(parsed.setAbbr, parsed.slug, heroEntry);
     for (const instance of instances) {
+      // why: D-24468 — transform cards are set aside in G.transformDeck by
+      // buildTransformSideDeckCards; they must NOT enter the shuffled hero-deck
+      // reservoir (before this partition they were recruited/played as ordinary
+      // heroes). The base card stays; only its transform second-form is skipped.
+      if (instance.isTransform) continue;
+      cards.push(instance.extId);
+    }
+  }
+
+  return cards;
+}
+
+// ---------------------------------------------------------------------------
+// buildTransformSideDeckCards — transform side-deck reservoir (D-24468)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the unshuffled flat array of Transform card-instance ext_ids — the
+ * complement of buildHeroDeckCards over the same hero set.
+ *
+ * Walks the identical registry path as buildHeroDeckCards and keeps ONLY the
+ * instances heroCardInstanceExtIds tagged `isTransform` (cards flagged
+ * `isTransform`/`transformOf` in the hero's cards[]). Order matches the
+ * emitter's declaration/copy order; NO shuffle is applied — every copy of a
+ * transform card is identical, so the side deck needs no randomness and the
+ * single locked hero-deck Shuffle envelope (shuffleHeroDeck) is preserved.
+ *
+ * Returns an empty array when no hero in heroDeckIds has transform cards (the
+ * common case today — only wwhk heroes carry them). Malformed ids / missing
+ * heroes are soft-skipped identically to buildHeroDeckCards.
+ *
+ * @param heroDeckIds - Array of qualified hero deck IDs `<setAbbr>/<heroSlug>`.
+ * @param registry - Setup-time registry reader. Must satisfy RegistryReader.
+ * @returns Unshuffled flat array of transform card-instance CardExtIds.
+ */
+export function buildTransformSideDeckCards(
+  heroDeckIds: string[],
+  registry: RegistryReader,
+): CardExtId[] {
+  const cards: CardExtId[] = [];
+
+  for (const heroDeckId of heroDeckIds) {
+    const parsed = parseQualifiedIdForSetup(heroDeckId);
+    if (parsed === null) continue;
+
+    const setData = registry.getSet(parsed.setAbbr);
+    if (!setData || typeof setData !== 'object') continue;
+
+    const candidate = setData as { heroes?: unknown };
+    if (!Array.isArray(candidate.heroes)) continue;
+
+    let heroEntry: HeroEntry | null = null;
+    for (const hero of candidate.heroes as HeroEntry[]) {
+      if (hero && typeof hero === 'object' && hero.slug === parsed.slug) {
+        heroEntry = hero;
+        break;
+      }
+    }
+    if (heroEntry === null) continue;
+    if (!Array.isArray(heroEntry.cards)) continue;
+
+    const instances = heroCardInstanceExtIds(parsed.setAbbr, parsed.slug, heroEntry);
+    for (const instance of instances) {
+      if (!instance.isTransform) continue;
       cards.push(instance.extId);
     }
   }
@@ -592,4 +709,37 @@ export function buildHeroDeck(
 
   const unshuffled = buildHeroDeckCards(heroDeckIds, registry);
   return shuffleHeroDeck(unshuffled, context);
+}
+
+// ---------------------------------------------------------------------------
+// buildTransformSideDeck — canonical entry point for the transform side deck
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the deterministic per-match transform side deck (G.transformDeck).
+ *
+ * The setup-time sibling of buildHeroDeck: same hero set, complementary
+ * partition. buildHeroDeck returns the shuffled reservoir WITHOUT transform
+ * cards; this returns the transform cards that were held back (D-24468),
+ * unshuffled — no ctx.random call, so the single locked hero-deck Shuffle
+ * envelope is untouched. The orchestrator (buildInitialGameState) calls this
+ * exactly once per match and stores the result at G.transformDeck.
+ *
+ * Soft-skip on incomplete RegistryReader interface (mirrors buildHeroDeck —
+ * narrow test mocks return an empty side deck gracefully).
+ *
+ * @param heroDeckIds - Array of qualified hero deck IDs `<setAbbr>/<heroSlug>`.
+ * @param registry - Setup-time registry reader. Accepts unknown to support
+ *   narrow test mocks; returns [] when it does not satisfy RegistryReader.
+ * @returns The unshuffled transform side deck as CardExtId[].
+ */
+export function buildTransformSideDeck(
+  heroDeckIds: string[],
+  registry: unknown,
+): CardExtId[] {
+  if (!isRegistryReader(registry)) {
+    return [];
+  }
+
+  return buildTransformSideDeckCards(heroDeckIds, registry);
 }

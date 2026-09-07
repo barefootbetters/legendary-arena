@@ -13,6 +13,8 @@ import assert from 'node:assert/strict';
 import {
   buildHeroDeck,
   buildHeroDeckCards,
+  buildTransformSideDeck,
+  buildTransformSideDeckCards,
   heroCardInstanceExtIds,
   shuffleHeroDeck,
   buildCardCountsNameLookup,
@@ -30,6 +32,8 @@ interface MockHeroCard {
   slug: string;
   rarityLabel: string;
   name?: string;
+  isTransform?: boolean;
+  transformOf?: string;
 }
 
 interface MockPhysicalCard {
@@ -720,9 +724,9 @@ describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', 
     assert.deepStrictEqual(
       instances,
       [
-        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#0' },
-        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#1' },
-        { cardSlug: 'solo', extId: 'bkwd/falcon-winter-soldier/solo#0' },
+        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#0', isTransform: false },
+        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#1', isTransform: false },
+        { cardSlug: 'solo', extId: 'bkwd/falcon-winter-soldier/solo#0', isTransform: false },
       ],
       'canonical face = sides[0]; back-side slugs never appear; copy order ascending',
     );
@@ -741,6 +745,7 @@ describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', 
       assert.deepStrictEqual(instances[copyIndex], {
         cardSlug: 'astonishing-strength',
         extId: `core/spider-man/astonishing-strength#${copyIndex}`,
+        isTransform: false,
       });
     }
   });
@@ -773,6 +778,171 @@ describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', 
       () => heroCardInstanceExtIds('amwp', 'ant-man', heroEntry),
       /Common 3/,
       'emitter must propagate the loud-fail throw on an unresolvable copy count',
+    );
+  });
+});
+
+// ===========================================================================
+// Transform side-deck partition (D-24468 / WP-657)
+// ===========================================================================
+
+/**
+ * Builds a She-Hulk-shaped hero: a base card (5 copies) + its Transform
+ * second-form card (5 copies, flagged both ways) + one ordinary card. Mirrors
+ * the real wwhk/she-hulk hurl-legal-objections → hurl-trucks pair.
+ */
+function buildTransformHero(slug: string): MockHero {
+  return {
+    slug,
+    cards: [
+      { slug: 'hurl-legal-objections', rarityLabel: 'Common 1' },
+      {
+        slug: 'hurl-trucks',
+        rarityLabel: 'Common 2',
+        isTransform: true,
+        transformOf: 'hurl-legal-objections',
+      },
+      { slug: 'window-of-opportunity', rarityLabel: 'Uncommon' },
+    ],
+    physicalCards: [
+      { id: 'p1', count: 5, sides: ['hurl-legal-objections'] },
+      { id: 'p2', count: 5, sides: ['hurl-trucks'] },
+      { id: 'p3', count: 3, sides: ['window-of-opportunity'] },
+    ],
+  };
+}
+
+describe('heroCardInstanceExtIds — transform tag (D-24468)', () => {
+  it('tags transform-card instances isTransform=true and leaves others false (physicalCards path)', () => {
+    const hero = buildTransformHero('she-hulk');
+
+    const instances = heroCardInstanceExtIds('wwhk', 'she-hulk', hero);
+
+    const transformIds = instances.filter((i) => i.isTransform).map((i) => i.extId);
+    const ordinaryIds = instances.filter((i) => !i.isTransform).map((i) => i.extId);
+
+    assert.equal(transformIds.length, 5, 'the 5 hurl-trucks copies must be tagged isTransform');
+    assert.ok(
+      transformIds.every((id) => id.startsWith('wwhk/she-hulk/hurl-trucks#')),
+      'only hurl-trucks copies carry the transform tag',
+    );
+    assert.equal(ordinaryIds.length, 8, 'base (5) + ordinary (3) copies stay untagged');
+    assert.ok(
+      ordinaryIds.every((id) => !id.includes('/hurl-trucks#')),
+      'no hurl-trucks copy appears among the untagged instances',
+    );
+  });
+
+  it('tags via transformOf alone on the fallback (no-physicalCards) path', () => {
+    // why: either flag marks a card; a transformOf without isTransform must
+    // still partition, and the fallback path (no physicalCards) must tag too.
+    const heroEntry = {
+      slug: 'a-bomb-hero',
+      cards: [
+        { slug: 'irradiated-blood', rarityLabel: 'Common 1' },
+        { slug: 'a-bomb', rarityLabel: 'Common 2', transformOf: 'irradiated-blood' },
+      ],
+    };
+
+    const instances = heroCardInstanceExtIds('wwhk', 'a-bomb-hero', heroEntry);
+
+    const tagged = instances.filter((i) => i.isTransform);
+    assert.equal(tagged.length, 3, 'a-bomb is Common 2 → 3 copies, all tagged via transformOf');
+    assert.ok(tagged.every((i) => i.cardSlug === 'a-bomb'));
+  });
+});
+
+describe('buildHeroDeckCards / buildTransformSideDeckCards — partition (D-24468)', () => {
+  it('excludes transform cards from the hero-deck reservoir', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    const reservoir = buildHeroDeckCards(['wwhk/she-hulk'], registry);
+
+    assert.ok(
+      reservoir.every((id) => !id.includes('/hurl-trucks#')),
+      'no transform card may appear in the shuffled hero-deck reservoir',
+    );
+    // base 5 + ordinary 3 = 8; the 5 transform copies are held back.
+    assert.equal(reservoir.length, 8, 'reservoir must exclude the 5 transform copies (13 → 8)');
+  });
+
+  it('sets aside exactly the transform cards in the side deck', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    const sideDeck = buildTransformSideDeckCards(['wwhk/she-hulk'], registry);
+
+    assert.equal(sideDeck.length, 5, 'all 5 hurl-trucks copies must be in the side deck');
+    assert.ok(
+      sideDeck.every((id) => id.startsWith('wwhk/she-hulk/hurl-trucks#')),
+      'the side deck holds only transform cards',
+    );
+  });
+
+  it('partition is complete and disjoint (reservoir ⊎ sideDeck = all instances)', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    const reservoir = buildHeroDeckCards(['wwhk/she-hulk'], registry);
+    const sideDeck = buildTransformSideDeckCards(['wwhk/she-hulk'], registry);
+    const allIds = heroCardInstanceExtIds('wwhk', 'she-hulk', hero).map((i) => i.extId);
+
+    // no overlap
+    const sideSet = new Set(sideDeck);
+    assert.ok(
+      reservoir.every((id) => !sideSet.has(id)),
+      'reservoir and side deck must be disjoint',
+    );
+    // union (order-independent) equals every emitted instance
+    assert.deepStrictEqual(
+      [...reservoir, ...sideDeck].sort(),
+      [...allIds].sort(),
+      'every emitted instance lands in exactly one of the two partitions',
+    );
+  });
+
+  it('yields an empty side deck for a hero with no transform cards', () => {
+    const hero = buildCompliantHero('black-widow');
+    const registry = buildMockRegistry('core', [hero]);
+
+    assert.deepStrictEqual(
+      buildTransformSideDeckCards(['core/black-widow'], registry),
+      [],
+      'a hero without transform cards contributes nothing to the side deck',
+    );
+    assert.equal(
+      buildHeroDeckCards(['core/black-widow'], registry).length,
+      14,
+      'and its full 14-card reservoir is unchanged',
+    );
+  });
+});
+
+describe('buildTransformSideDeck — canonical entry point (D-24468)', () => {
+  it('returns the transform cards for the given hero set, unshuffled', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    // why: the entry point takes no context — the side deck is deterministic
+    // and never shuffled, so the single locked hero-deck Shuffle stays the only
+    // randomness in setup.
+    const sideDeck = buildTransformSideDeck(['wwhk/she-hulk'], registry);
+
+    assert.deepStrictEqual(
+      sideDeck,
+      buildTransformSideDeckCards(['wwhk/she-hulk'], registry),
+      'the entry point returns the unshuffled side-deck cards verbatim',
+    );
+  });
+
+  it('soft-skips a narrow registry (no getSet) with an empty side deck', () => {
+    const narrowRegistry = { listCards: () => [] };
+
+    assert.deepStrictEqual(
+      buildTransformSideDeck(['wwhk/she-hulk'], narrowRegistry),
+      [],
+      'an incomplete RegistryReader yields an empty side deck (mirrors buildHeroDeck)',
     );
   });
 });

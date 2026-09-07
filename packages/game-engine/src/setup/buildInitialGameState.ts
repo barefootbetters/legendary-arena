@@ -43,7 +43,7 @@ import {
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck } from './buildHeroDeck.js';
+import { buildHeroDeck, buildTransformSideDeck } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
@@ -478,11 +478,28 @@ export function buildInitialGameState(
   // (the 5-group deck was too big to run out). Every other scheme / player count is unchanged
   // → byte-identical. Runs BEFORE the WP-514 convertHeroesToSkrulls step (a passthrough for
   // Civil War), so the two sizing paths never overlap.
+  const effectiveHeroDeckIds = resolveEffectiveHeroDeckIds(
+    config.schemeId,
+    numPlayers,
+    [...config.heroDeckIds],
+  );
   const shuffledHeroDeck = buildHeroDeck(
-    resolveEffectiveHeroDeckIds(config.schemeId, numPlayers, [...config.heroDeckIds]),
+    effectiveHeroDeckIds,
     registry,
     context,
   );
+
+  // why: D-24468 (WP-657) — the transform side deck is the complementary
+  // partition of the SAME effective hero set: buildHeroDeck returned the
+  // shuffled reservoir WITHOUT transform cards, buildTransformSideDeck returns
+  // the transform cards held back. Unshuffled (no ctx.random) so it adds no
+  // draw and leaves the Shuffle envelope — and thus every non-transform game's
+  // state hash — byte-identical. Runs off effectiveHeroDeckIds so a Civil War
+  // 4-group override (WP-515) sets aside transform cards for exactly the heroes
+  // in play. Transform cards are absent from shuffledHeroDeck, so the WP-514
+  // Skrull conversion above never draws them (a side-deck card is not in the
+  // Hero Deck to convert — correct by the tabletop rule).
+  const transformSideDeck = buildTransformSideDeck(effectiveHeroDeckIds, registry);
 
   // why: WP-514 / D-24326 — Secret Invasion converts 12 Heroes from the reservoir
   // into Skrull Villains and shuffles them into the Villain Deck. The 12 are drawn
@@ -591,6 +608,11 @@ export function buildInitialGameState(
     // vacated HQ slots inside recruitHero (FIFO via refillHqSlot;
     // empty-deck branch leaves the slot null per D-13503).
     heroDeck: filledHqResult.remainingDeck,
+    // why: D-24468 (WP-657) — Transform second-form cards set aside out of the
+    // shuffled reservoir into a face-up side deck. Empty for hero sets without
+    // transform cards (only wwhk heroes today). Read-only in WP-657; the
+    // [keyword:Transform] runtime that consumes it is a named follow-up WP.
+    transformDeck: transformSideDeck,
     // why: mastermind state built at setup from registry; tactics deck
     // shuffled deterministically; base card fightCost in G.cardStats
     mastermind: mastermindState,

@@ -1381,6 +1381,21 @@ export interface LegendaryGameState {
   /** Shared hero deck reservoir (post-shuffle, post-HQ-fill remainder). */
   heroDeck: CardExtId[];
 
+  // why: D-24468 (WP-657) — Transform cards (data flag `isTransform`/
+  // `transformOf`; e.g. wwhk `hurl-trucks` off `hurl-legal-objections`) are the
+  // second-form face a base card flips to via [keyword:Transform]. Marvel
+  // Legendary holds them in a face-up SIDE deck, out of the hero deck. Seeded
+  // once at Game.setup() by buildTransformSideDeck (the setup sibling of
+  // buildHeroDeck) from the instances partitioned OUT of the shuffled reservoir
+  // — CardExtId-strings only, UNSHUFFLED (no ctx.random; every copy of a
+  // transform card is identical, so the single locked hero-deck Shuffle
+  // envelope is preserved). Empty for hero sets with no transform cards (the
+  // common case — only wwhk heroes carry them today). Populated at setup and
+  // read-only for now; the [keyword:Transform] runtime that pulls a matching
+  // card from here is a named follow-up WP (not WP-657).
+  /** Transform side deck — set-aside Transform second-form cards (D-24468). */
+  transformDeck: CardExtId[];
+
   // why: KO pile stores cards permanently removed from the game. Destination-only
   // zone — cards enter via koCard helper and never return in MVP. Initialized
   // empty at setup.

@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-657 — Transform cards partitioned into a setup side deck (`G.transformDeck`) (EC-694 / D-24468) (2026-09-06)
+
+**User-Visible Surface — none (setup-correctness fix).** Fixes a setup bug where **Transform cards** —
+a card's second-form face reached via `[keyword:Transform]` (e.g. She-Hulk's **Hurl Legal Objections →
+Hurl Trucks**; flagged `isTransform:true`/`transformOf:<baseSlug>`, 17 today, all in
+`data/cards/wwhk.json`) — were emitted straight into the shuffled hero-deck reservoir and dealt into the
+HQ / `G.heroDeck`, so they were recruited and played as ordinary heroes. Live evidence: the
+`red-skull-Midtown-Bank-Robbery` 1p log recruits `hurl-trucks` from the HQ, then plays it from hand,
+while the printed `[keyword:Transform]` line is inert (the coverage ledger already marked `transform`
+`unsupported` for every wwhk hero). **Root cause:** `heroCardInstanceExtIds`→`buildHeroDeckCards`
+(`buildHeroDeck.ts`) walked every `physicalCard count>=1` and never consulted the transform flags, and
+there was no side-deck zone in `G`. **Fix (setup only):** the emitter now tags each `HeroCardInstance`
+with `isTransform` (both the `physicalCards` and rarity-fallback paths) and still emits every instance
+(its `buildCardStats`/`buildHeroAbilityHooks` consumers need transform cards); `buildHeroDeckCards` drops
+the tagged instances, new `buildTransformSideDeckCards`/`buildTransformSideDeck` keep only them
+(**UNSHUFFLED** — no new `ctx.random`, so the single locked hero-deck Shuffle stays the only setup RNG),
+and the orchestrator sets a new top-level `G.transformDeck: CardExtId[]` (populated + **read-only** in
+WP-657). **Determinism:** adding a `G` field shifts `computeStateHash` for every game, so the two engine
+oracles re-pin with no behaviour change — `PRE_WP080_HASH` (`c3ee9eb4→d5d807a9`) and the
+`sentinel-core-doom-2p` `finalStateHash` (`f90e4620…→e237a0e7…`), both core/dr-doom games with no
+transform cards; **Seed-PAR is unaffected** (scheme-keyed `parValue`/`artifactHash`, hero-agnostic, never
+`finalStateHash`). **Out of scope — named follow-up WPs:** the `[keyword:Transform]` runtime (trigger
+detection, pulling the matching card from `G.transformDeck`, the base→target resolution map in `G`, and
+discard/into-play placement) and flipping the `hero-mechanic-ledger.csv` `transform` rows
+`unsupported→supported`. `game-engine` build 0; engine suite **3056/3056** after the two re-pins
+(+8 partition tests, +1 shape assert). **D-24026 N/A** (no runtime/board behaviour change in WP-657).
+Executed off `origin/main` @ `343195d3`; **green, pending commit/PR.**
+
 ### WP-656 — Diamond Form Over-Fire: Gate the +3 Recruit on a Villain/Mastermind Defeat shipped (EC-693 / D-24467) (2026-09-06)
 
 **User-Visible Surface — `play.legendary-arena.com`.** A fidelity fix + recruit-economy nerf. `core/emma-frost/diamond-form` prints *"Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]"* but the setup parser read the `+3[icon:recruit]` magnitude and not the "Whenever you defeat …" trigger prose, emitting a flat unconditional `onPlay recruit:3` — a free +3 Recruit on play regardless of defeats (an over-fire, and an over-powered card). Now the +3 fires **once per Villain/Mastermind you defeat that turn**, and **not at all** on a turn with no defeat.

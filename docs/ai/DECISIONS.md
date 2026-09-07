@@ -39866,6 +39866,50 @@ No client change is needed — WP-368 (`ArenaHud`) and WP-654 (`PlayViewport`) a
 
 Protect this file.
 
+### D-24468 — Transform cards are partitioned into a setup side deck (`G.transformDeck`), out of the shuffled hero deck (Active 2026-09-06 — WP-657 / EC-694)
+
+**Decision.** At `Game.setup()`, Transform cards — a card's second-form face reached via the
+`[keyword:Transform]` ability, flagged in the card data as `isTransform: true` and/or
+`transformOf: <baseSlug>` (17 today, all in `data/cards/wwhk.json`; e.g. `hurl-trucks` off
+`hurl-legal-objections`) — are held OUT of the shuffled hero-deck reservoir and set aside in a new
+top-level `G.transformDeck: CardExtId[]` zone. This matches the Marvel Legendary tabletop rule: transform
+cards live in a face-up side deck, not the hero deck.
+
+**Why.** Before this, the hero-deck emitter (`heroCardInstanceExtIds` → `buildHeroDeckCards`) walked every
+`physicalCard` with `count >= 1` and never checked the transform flags, so transform second-forms landed in
+`G.heroDeck`/`G.hq` and were recruited/played as ordinary heroes (live: the `red-skull-Midtown-Bank-Robbery`
+1p log recruits `hurl-trucks` from the HQ, then plays it from hand, while the printed `[keyword:Transform]`
+line is inert). The coverage ledger already marked `transform` `unsupported` for every wwhk hero.
+
+**Mechanism.** `heroCardInstanceExtIds` KEEPS emitting every instance — its other consumers
+(`buildCardStats` §1b, `buildHeroAbilityHooks`) need transform cards' stats + abilities; a new
+`isTransform` flag on `HeroCardInstance` (set from the hero's `cards[]` via either transform flag, on both
+the `physicalCards` and rarity-fallback paths) drives the split: `buildHeroDeckCards` drops the tagged
+instances, `buildTransformSideDeckCards` keeps only them. `buildTransformSideDeck` is the setup entry point
+(soft-skips a narrow registry with `[]`, mirroring `buildHeroDeck`). The side deck is UNSHUFFLED — every
+copy of a transform card is identical, so it needs no randomness and the single locked hero-deck
+`ctx.random.Shuffle` in `shuffleHeroDeck` stays the only setup RNG.
+
+**Determinism.** Adding any field to `G` shifts `computeStateHash` (the field serializes into the hashed
+state), so the two committed engine oracles re-pin with NO behaviour change — `PRE_WP080_HASH`
+(`c3ee9eb4 → d5d807a9`, empty-replay guard) and the `sentinel-core-doom-2p` fixture `finalStateHash`
+(`f90e4620… → e237a0e7…`); both are core/dr-doom games with no transform cards, the single explained cause
+being the new empty `transformDeck:[]` (the WP-236/282/398 re-pin class). Seed-PAR is UNAFFECTED —
+`data/par/seed/v1/index.json` pins hard-coded scheme-keyed `parValue` + scoring-config `artifactHash`
+(hero-agnostic), never `finalStateHash`. Previously-recorded wwhk MATCH replays diverge (the wwhk reservoir
+shuffle now has fewer cards) — expected, since the fix intentionally changes deck composition.
+
+**Scope.** Setup partition + side-deck zone + tests ONLY. The `[keyword:Transform]` RUNTIME (trigger
+detection, pulling the matching card from `G.transformDeck`, the base→target resolution map in `G` — moves
+have no registry — and discard/into-play placement) and flipping the `hero-mechanic-ledger.csv`
+`transform` rows `unsupported → supported` are NAMED FOLLOW-UP WPs, not WP-657. `G.transformDeck` is
+populated and read-only here.
+
+**Packet:** WP-657 / EC-694. **Executed:** 2026-09-06 (engine build 0; engine suite 3056/3056 after the two
+re-pins). Not yet landed (pending commit/PR).
+
+Protect this file.
+
 ### D-24467 — Diamond Form's "whenever you defeat a Villain or Mastermind this turn" is a deferred conditional grant gated on a new wait-and-see defeat condition (WP-656 / EC-693)
 
 **Status:** Active — landed 2026-09-06 (WP-656 / EC-693).
