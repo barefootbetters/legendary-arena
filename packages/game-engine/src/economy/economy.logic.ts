@@ -510,6 +510,10 @@ export function addResources(
     spentRecruit: economy.spentRecruit,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count across every
+    // economy rebuild (mirrors woundsDrawn), so a later same-turn play/spend does
+    // not silently reset the "drew N cards this turn" gate.
+    cardsDrawn: economy.cardsDrawn,
     ...carryConversionFlag(economy),
   };
 }
@@ -532,6 +536,10 @@ export function spendAttack(
     spentRecruit: economy.spentRecruit,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count across every
+    // economy rebuild (mirrors woundsDrawn), so a later same-turn play/spend does
+    // not silently reset the "drew N cards this turn" gate.
+    cardsDrawn: economy.cardsDrawn,
     ...carryConversionFlag(economy),
   };
 }
@@ -554,6 +562,10 @@ export function spendRecruit(
     spentRecruit: economy.spentRecruit + amount,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count across every
+    // economy rebuild (mirrors woundsDrawn), so a later same-turn play/spend does
+    // not silently reset the "drew N cards this turn" gate.
+    cardsDrawn: economy.cardsDrawn,
     ...carryConversionFlag(economy),
   };
 }
@@ -576,6 +588,10 @@ export function enableRecruitSpendableAsAttack(economy: TurnEconomy): TurnEconom
     spentRecruit: economy.spentRecruit,
     piercing: economy.piercing,
     woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count across every
+    // economy rebuild (mirrors woundsDrawn), so a later same-turn play/spend does
+    // not silently reset the "drew N cards this turn" gate.
+    cardsDrawn: economy.cardsDrawn,
     recruitSpendableAsAttack: true,
   };
 }
@@ -616,7 +632,9 @@ export function spendFightCost(economy: TurnEconomy, cost: number): TurnEconomy 
  * @returns TurnEconomy with all fields set to 0.
  */
 export function resetTurnEconomy(): TurnEconomy {
-  return { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 };
+  // why: WP-665 / D-24476 — cardsDrawn starts at 0 each turn (the effect-draw
+  // count the "drew N cards this turn" gate reads).
+  return { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 };
 }
 
 // ---------------------------------------------------------------------------

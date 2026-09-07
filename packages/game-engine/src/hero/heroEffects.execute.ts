@@ -937,6 +937,13 @@ function heroEffectDraw(
   // structurally — this is the established pattern from WP-005B/008B.
   const requestedCount = effect.magnitude as number;
   const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
+  // why: WP-665 / D-24476 — count the REALIZED effect-draw toward the current
+  // player's per-turn draw total, which the `cardsDrawnThisTurnAtLeast` gate reads
+  // ("if you drew two cards this turn", Gamma-Draining Nanites). heroEffectDraw is
+  // the `draw:N` keyword path and always runs for the current player, so this is the
+  // single count site; the start-of-turn hand refill (drawCardsIntoHand) is a
+  // different helper and is deliberately NOT counted (else the gate is trivially met).
+  G.turnEconomy.cardsDrawn += drawnCount;
   // why: WP-417 / D-24237 — the draw handler was silent, so "Draw a card." on the
   // play line was the ONLY evidence the ability existed and a short draw (deck and
   // discard both empty) was indistinguishable from a full one. Name the realized

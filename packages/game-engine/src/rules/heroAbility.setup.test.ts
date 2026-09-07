@@ -275,20 +275,23 @@ describe('buildHeroAbilityHooks — transform keyword resolution (WP-658 / D-244
   });
 
   it('leaves [keyword:Transform] an unresolved marker for a held-back transform card (Honest-Partial) (AC-1)', () => {
-    const registry = makeHeroRegistry('wwhk', 'amadeus-cho', [
+    // why: WP-665 — hiroim/save-from-the-rubble is a wwhk transform card NOT on the
+    // SUPPORTED_TRANSFORM_BASES allowlist (its transform condition is unmodeled), so its
+    // [keyword:Transform] must stay an honest parse-unrecognized marker.
+    const registry = makeHeroRegistry('wwhk', 'hiroim', [
       {
-        slug: 'gamma-draining-nanites',
+        slug: 'save-from-the-rubble',
         rarityLabel: 'Common 1',
         abilities: [
-          'Draw a card. [keyword:draw:1] Then, if you drew two cards this turn, [keyword:Transform] this into Like Totally Smart Hulk.',
+          'Draw a card. [keyword:draw:1] Then, if some unmodeled condition, [keyword:Transform] this into Hiroim Redeemed.',
         ],
       },
     ]);
 
-    const hooks = buildHeroAbilityHooks(registry, transformConfig('amadeus-cho'));
-    const hook = hooks.find((entry) => entry.cardId === 'wwhk/amadeus-cho/gamma-draining-nanites#0');
+    const hooks = buildHeroAbilityHooks(registry, transformConfig('hiroim'));
+    const hook = hooks.find((entry) => entry.cardId === 'wwhk/hiroim/save-from-the-rubble#0');
 
-    assert.ok(hook !== undefined, 'the amadeus-cho base-card hook exists');
+    assert.ok(hook !== undefined, 'the hiroim base-card hook exists');
     assert.ok(
       !hook!.keywords.includes('transform'),
       'transform is NOT resolved to a keyword for a held-back card',
@@ -300,6 +303,54 @@ describe('buildHeroAbilityHooks — transform keyword resolution (WP-658 / D-244
     assert.ok(
       hook!.keywords.includes('draw'),
       'the co-located draw effect still resolves (mixed hook stays reachable)',
+    );
+  });
+
+  it('resolves Amadeus Cho Gamma-Draining Nanites: draw hook unconditional, transform hook gated on cardsDrawnThisTurnAtLeast (WP-665 / AC-2)', () => {
+    // why: WP-665 / D-24476 — gamma is now allowlisted. Its ability is two lines: the
+    // draw (abilities[0], unconditional) and the transform (abilities[1], gated on
+    // "drew two cards this turn" via the [keyword:draw-threshold:2] marker). Mirror the
+    // real regenerated data so the two-hook gating is exercised.
+    const registry = makeHeroRegistry('wwhk', 'amadeus-cho', [
+      {
+        slug: 'gamma-draining-nanites',
+        rarityLabel: 'Common 1',
+        abilities: [
+          'Draw a card. [keyword:draw:1]',
+          'Then, if you drew two cards this turn, [keyword:Transform] this into Like Totally Smart Hulk. [keyword:draw-threshold:2]',
+        ],
+      },
+    ]);
+
+    const hooks = buildHeroAbilityHooks(registry, transformConfig('amadeus-cho'));
+    const cardHooks = hooks.filter((entry) => entry.cardId === 'wwhk/amadeus-cho/gamma-draining-nanites#0');
+    assert.equal(cardHooks.length, 2, 'two hooks — one per ability line');
+
+    // why: abilities[0] — the draw hook is UNCONDITIONAL (no draw-threshold gate).
+    const drawHook = cardHooks.find((h) => h.keywords.includes('draw'));
+    assert.ok(drawHook !== undefined, 'the draw hook exists');
+    assert.ok(
+      !(drawHook!.conditions ?? []).some((c) => c.type === 'cardsDrawnThisTurnAtLeast'),
+      'the draw hook is NOT gated by the draw-threshold condition',
+    );
+    assert.ok(!drawHook!.keywords.includes('transform'), 'the draw hook is not the transform hook');
+
+    // why: abilities[1] — transform RESOLVES (not a hollow marker) and is gated on
+    // cardsDrawnThisTurnAtLeast:2.
+    const transformHook = cardHooks.find((h) => h.keywords.includes('transform'));
+    assert.ok(transformHook !== undefined, 'the transform hook exists');
+    assert.ok(
+      !(transformHook!.unresolvedMarkers ?? []).includes('transform'),
+      'transform is resolved, not an unresolved marker, for the allowlisted card',
+    );
+    assert.ok(
+      (transformHook!.effects ?? []).some((effect) => effect.type === 'transform'),
+      'a transform effect descriptor is emitted',
+    );
+    assert.deepEqual(
+      transformHook!.conditions,
+      [{ type: 'cardsDrawnThisTurnAtLeast', value: '2' }],
+      'the transform hook gates on drew-two-cards-this-turn',
     );
   });
 });

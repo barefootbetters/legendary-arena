@@ -417,6 +417,11 @@ const SPECTRUM_CLASS_THRESHOLD = 3;
 // Invariant — mirrors the investigate resolver's static-criterion subset.
 const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   'wwhk/she-hulk/hurl-legal-objections',
+  // why: WP-665 / D-24476 — Amadeus Cho's Gamma-Draining Nanites. Its transform gates on
+  // "drew two cards this turn", now modeled by the cardsDrawnThisTurnAtLeast wait-and-see
+  // condition (a [keyword:draw-threshold:2] marker on its transform ability line). The
+  // card's ability is two hooks (draw / transform), so the draw stays unconditional.
+  'wwhk/amadeus-cho/gamma-draining-nanites',
 ]);
 
 // why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
@@ -947,6 +952,21 @@ function parseAbilityText(
         conditions.push({
           type: 'recruitMadeThisTurnAtLeast',
           value: recruitThreshold,
+        });
+      }
+    } else if (normalizedKeyword === 'draw-threshold') {
+      // why: WP-665 / D-24476 — mirrors the recruit-threshold marker→condition arm:
+      // a [keyword:draw-threshold:N] marker pushes a cardsDrawnThisTurnAtLeast:N
+      // game-state condition onto this line's hook, so Gamma-Draining Nanites'
+      // Transform (abilities[1]) gates on "you drew N or more cards this turn". The draw
+      // itself lives on abilities[0] (a separate hook) and stays unconditional. The
+      // threshold is KEYWORD_PATTERN's optional :N capture. Placed before the
+      // unresolved-marker fallback so it never records a parse-unrecognized hollow.
+      const drawThreshold = keywordMatch[2];
+      if (drawThreshold !== undefined) {
+        conditions.push({
+          type: 'cardsDrawnThisTurnAtLeast',
+          value: drawThreshold,
         });
       }
     } else if (normalizedKeyword === 'outwit') {

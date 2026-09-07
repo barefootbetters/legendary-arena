@@ -83,6 +83,9 @@ export function makeTurnEconomy(overrides: Partial<TurnEconomy> = {}): TurnEcono
     spentRecruit: 0,
     piercing: 0,
     woundsDrawn: 0,
+    // why: WP-665 / D-24476 — the per-turn effect-draw count (default 0), a required
+    // TurnEconomy field like woundsDrawn.
+    cardsDrawn: 0,
     ...overrides,
   };
 }

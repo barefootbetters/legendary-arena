@@ -66,7 +66,7 @@ describe('addResources', () => {
 });
 
 describe('resetTurnEconomy', () => {
-  it('returns all six fields at zero', () => {
+  it('returns all seven fields at zero', () => {
     const economy = resetTurnEconomy();
 
     assert.strictEqual(economy.attack, 0);
@@ -75,7 +75,9 @@ describe('resetTurnEconomy', () => {
     assert.strictEqual(economy.spentRecruit, 0);
     assert.strictEqual(economy.piercing, 0);
     assert.strictEqual(economy.woundsDrawn, 0);
-    assert.strictEqual(Object.keys(economy).length, 6, 'resetTurnEconomy must return exactly 6 fields');
+    // why: WP-665 / D-24476 — cardsDrawn is the seventh always-present field.
+    assert.strictEqual(economy.cardsDrawn, 0);
+    assert.strictEqual(Object.keys(economy).length, 7, 'resetTurnEconomy must return exactly 7 fields');
   });
 });
 

@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1839,
+    "totalEntries": 1840,
     "byScope": {
-      "hero": 664,
+      "hero": 665,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 401,
+      "executable": 402,
       "deferred": 0,
-      "condition": 25,
-      "unsupported": 336,
+      "condition": 26,
+      "unsupported": 335,
       "unmarked": 1074,
       "subsystem": 3
     }
@@ -23440,6 +23440,23 @@
       "name": "Amadeus Cho",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "gamma-draining-nanites",
+          "name": "Gamma-Draining Nanites"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/amadeus-cho",
+      "name": "Amadeus Cho",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
       "status": "condition",
       "handler": "",
@@ -23470,8 +23487,8 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "transform",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "wp": "",
       "decision": "",
       "designs": [
@@ -34582,6 +34599,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "draw-threshold",
         "outwit",
         "transform"
       ]

@@ -19,6 +19,9 @@ import { revealRulesForLegacyKeyword } from '../rules/revealRule.js';
 import { HERO_COMPOSITION_MARKERS, buildEmpoweredComposition } from '../rules/heroCompositions.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+// why: WP-665 / D-24476 — the start-of-turn refill helper; the drew-two-cards test asserts
+// it structurally cannot touch the effect-draw counter (it receives playerZones, not G).
+import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
 
 // why: WP-253 Amendment-A — the pre-existing reveal fixtures hand-built legacy
 // `{ type: 'reveal-ko' }` descriptors; once those keywords lose their handlers
@@ -139,6 +142,9 @@ function makeTestState(overrides?: {
   heroAbilityHooks?: HeroAbilityHook[];
   turnEconomyAttack?: number;
   turnEconomyRecruit?: number;
+  // why: WP-665 / D-24476 — the cardsDrawnThisTurnAtLeast condition reads this per-turn
+  // effect-draw count (Gamma-Draining Nanites' "drew two cards this turn" gate).
+  turnEconomyCardsDrawn?: number;
   ko?: string[];
   cardStats?: Record<string, { attack: number; recruit: number; cost: number; fightCost: number; fightCostMode: 'static' | 'dynamic'; fightCostBase: number }>;
   // why: WP-564 / D-24373 — investigate's hero-class / team criteria read G.cardTraits.
@@ -199,6 +205,8 @@ function makeTestState(overrides?: {
       // mock previously omitted; the gain-wound handler (WP-364) bumps it, matching
       // the villain gain-wound path. Initialized to 0 as resetTurnEconomy does.
       woundsDrawn: 0,
+      // why: WP-665 / D-24476 — the per-turn effect-draw count the drew-two-cards gate reads.
+      cardsDrawn: overrides?.turnEconomyCardsDrawn ?? 0,
     },
     cardStats: overrides?.cardStats ?? {},
     // why: WP-564 / D-24373 — investigate's hero-class / team criteria read G.cardTraits.
@@ -5065,5 +5073,92 @@ describe('transform keyword (WP-658 / D-24469)', () => {
     const gameState = makeTransformState(6);
     executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
     assert.doesNotThrow(() => JSON.stringify(gameState), 'G stays JSON-serializable after a transform');
+  });
+});
+
+// ===========================================================================
+// Amadeus Cho transform + the drew-two-cards counter (WP-665 / D-24476)
+// ===========================================================================
+
+describe('cardsDrawn counter + Gamma-Draining Nanites transform (WP-665 / D-24476)', () => {
+  const GAMMA_ID = 'wwhk/amadeus-cho/gamma-draining-nanites#0';
+  const GAMMA_KEY = 'wwhk/amadeus-cho/gamma-draining-nanites';
+  const SMART_KEY = 'wwhk/amadeus-cho/like-totally-smart-hulk';
+  const SMART_0 = 'wwhk/amadeus-cho/like-totally-smart-hulk#0';
+
+  it('heroEffectDraw increments turnEconomy.cardsDrawn by the realized draw (AC-4)', () => {
+    // why: WP-665 — the draw:N effect handler is the single count site for the
+    // per-turn effect-draw total. A two-card draw bumps cardsDrawn by 2.
+    const gameState = makeTestState({
+      deck: ['a', 'b', 'c'],
+      heroAbilityHooks: [
+        { cardId: GAMMA_ID, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', GAMMA_ID);
+
+    assert.equal(gameState.turnEconomy.cardsDrawn, 2, 'the effect-draw count reflects the realized draw');
+  });
+
+  it('the start-of-turn hand refill helper cannot touch cardsDrawn (AC-4)', () => {
+    // why: WP-665 — drawCardsIntoHand (the refill path) takes playerZones only — it has
+    // no G / turnEconomy in scope — so it STRUCTURALLY cannot increment cardsDrawn. Only
+    // heroEffectDraw counts, which is why the refill never trivially meets the gate.
+    const zones = makePlayerZones();
+    zones.deck = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const before = { ...makeTurnEconomy() };
+    drawCardsIntoHand(zones, 6, makeMockCtx());
+    // the refill drew a full hand, but the economy object it never received is unchanged.
+    assert.equal(before.cardsDrawn, 0, 'the refill helper has no economy to increment');
+    assert.equal(zones.hand.length, 6, 'the refill still filled the hand');
+  });
+
+  /** A gamma-shaped transform state gated on cardsDrawnThisTurnAtLeast:2. */
+  function makeGammaState(cardsDrawn: number): LegendaryGameState {
+    return makeTestState({
+      inPlay: [GAMMA_ID],
+      turnEconomyCardsDrawn: cardsDrawn,
+      transformDeck: [SMART_0],
+      transformTargets: { [GAMMA_KEY]: SMART_KEY },
+      cardStats: {
+        [SMART_0]: { attack: 0, recruit: 0, cost: 6, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: GAMMA_ID,
+          timing: 'onPlay',
+          keywords: ['transform'],
+          conditions: [{ type: 'cardsDrawnThisTurnAtLeast', value: '2' }],
+          effects: [{ type: 'transform' }],
+        },
+      ],
+    });
+  }
+
+  it('transforms into Like Totally Smart Hulk when ≥2 cards were drawn this turn (AC-2)', () => {
+    const gameState = makeGammaState(2);
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', GAMMA_ID);
+
+    assert.equal(fired, 1, 'the transform fired at the drew-2 threshold');
+    const inPlay = gameState.playerZones['0']!.inPlay;
+    assert.ok(!inPlay.includes(GAMMA_ID), 'the base card left play');
+    assert.ok(inPlay.includes(SMART_0), 'Like Totally Smart Hulk entered play');
+  });
+
+  it('does NOT transform when only one card was drawn this turn — it waits (AC-3)', () => {
+    const gameState = makeGammaState(1);
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', GAMMA_ID);
+
+    assert.equal(fired, 0, 'the gated transform did not fire below the threshold');
+    const inPlay = gameState.playerZones['0']!.inPlay;
+    assert.ok(inPlay.includes(GAMMA_ID), 'the base card stays in play');
+    assert.ok(!inPlay.includes(SMART_0), 'no second-form entered play');
+    // why: WP-568 wait-and-see — a below-threshold numeric gate records a deferred grant
+    // (it re-fires this turn if a further draw reaches 2), logged as "waiting", not blocked.
+    const waiting = gameState.messages.find((entry) => entry.text.includes('waiting'));
+    assert.ok(waiting !== undefined && waiting.outcome === 'neutral', 'the transform is waiting, not blocked');
   });
 });

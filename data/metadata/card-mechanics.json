@@ -532,6 +532,17 @@
       "hidden": false
     },
     {
+      "slug": "draw-threshold",
+      "label": "Draw Threshold",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/amadeus-cho"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "empowered",
       "label": "Empowered",
       "scope": "hero",
@@ -3698,6 +3709,7 @@
     "wwhk/amadeus-cho": {
       "mechanics": [
         "draw",
+        "draw-threshold",
         "outwit",
         "transform"
       ]

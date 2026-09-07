@@ -570,8 +570,9 @@ wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,empowered,unsupported,WP-267,D-24
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,soulbind,unsupported,,,,history-repeats
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,what-if,unsupported,,,,another-dimension-crumbles|break-the-oath|convoke-the-guardians
 wwhk/amadeus-cho,Amadeus Cho,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,extrapolate|gamma-draining-nanites|renegade-genius
+wwhk/amadeus-cho,Amadeus Cho,wwhk,draw-threshold,condition,,,,gamma-draining-nanites
 wwhk/amadeus-cho,Amadeus Cho,wwhk,outwit,condition,,,,extrapolate|like-totally-smart-hulk|renegade-genius|visualize-the-variables
-wwhk/amadeus-cho,Amadeus Cho,wwhk,transform,unsupported,,,,gamma-draining-nanites
+wwhk/amadeus-cho,Amadeus Cho,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,gamma-draining-nanites
 wwhk/bruce-banner,Bruce Banner,wwhk,outwit,condition,,,,gamma-bomb-disaster|gamma-ray-experiment|solve-the-impossible
 wwhk/bruce-banner,Bruce Banner,wwhk,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,dangerous-testing
 wwhk/bruce-banner,Bruce Banner,wwhk,smash,unsupported,,,,savage-hulk-unleashed

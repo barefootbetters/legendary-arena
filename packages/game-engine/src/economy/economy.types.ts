@@ -27,6 +27,15 @@ export interface TurnEconomy {
   /** Number of wound cards drawn by the current player this turn. */
   woundsDrawn: number;
   /**
+   * WP-665 / D-24476 — total cards the current player drew from EFFECTS this
+   * turn (the `draw:N` handler path). Used by the `cardsDrawnThisTurnAtLeast`
+   * condition ("if you drew two cards this turn", Gamma-Draining Nanites). The
+   * start-of-turn hand refill is NOT counted (it uses `drawCardsIntoHand`, not
+   * the effect-draw path), so the count reflects only effect-driven draws.
+   * Reset to 0 by `resetTurnEconomy`; carried by every rebuild helper.
+   */
+  cardsDrawn: number;
+  /**
    * WP-580 / D-24389 — whether unspent recruit may be spent as attack this turn
    * ("You can use Recruit as Attack this turn", God of Thunder).
    *

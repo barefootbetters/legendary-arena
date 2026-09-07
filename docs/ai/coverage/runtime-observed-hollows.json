@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 27,
-    "totalObservations": 1995,
+    "totalObservations": 1910,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1995
+      "parse-unrecognized": 1910
     }
   },
   "byMechanic": {
@@ -1018,40 +1018,40 @@
       ]
     },
     "transform": {
-      "hitCount": 195,
-      "lastSeenTurn": 29,
+      "hitCount": 110,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 195
+        "parse-unrecognized": 110
       },
       "examples": [
         {
-          "cardId": "wwhk/amadeus-cho/gamma-draining-nanites#0",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/amadeus-cho/gamma-draining-nanites#0",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/amadeus-cho/gamma-draining-nanites#0",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/amadeus-cho/gamma-draining-nanites#0",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/amadeus-cho/gamma-draining-nanites#0",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
