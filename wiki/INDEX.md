@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **74 / 76** entity pages.
-> Last regenerated: 2026-09-03.
+> **75 / 77** entity pages.
+> Last regenerated: 2026-09-07.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -132,6 +132,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   re-encode to WebP, and a hand-authored renamer maps each to the
   deterministic R2 name, ahead of R2 upload. Backup copies live in
   `scripts/card-image-{downloaders,converters,renamers}/`.
+- [Play Mats](play-mats.md) — *(draft)* catalogue of the physical
+  Marvel Legendary play mats: official Upper Deck layout / themed /
+  generic-art mats and the Second Edition deluxe mat, plus the fan-made
+  print layouts (BGG files, [ruler501/Marvel](https://github.com/ruler501/Marvel),
+  Inked Gaming). Maps each mat's printed zones to the engine's
+  [Play Board](play-board.md) projection; features the layout-mat scans
+  pulled from `legendarycardgame.com`.
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement
