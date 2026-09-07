@@ -39743,7 +39743,7 @@ Protect this file.
 **Status:** Active — executed 2026-09-06 via WP-653 / EC-690. Engine 3045/0,
 `finalStateHash` byte-unchanged; the four ledger rows read `status: condition`;
 the `/coverage` gauge credits `condition`-status as resolved (15.2% → 26.1%);
-all coverage `:check` gates green. **D-24026 live-on-surface OPERATOR-PENDING.**
+all coverage `:check` gates green. **D-24026 live-on-surface VERIFIED 2026-09-06** (deploy `48792bf5`): a solo red-skull / Midtown match fired Outwit (draws) + Worthy (+2 attack) when the gates held and blocked with the exact reason message when they failed.
 
 **Execution correction.** The effect-marker durability source is
 `scripts/convert-cards/inputs/hero-ability-markers.json` (applied by
