@@ -2013,6 +2013,77 @@ describe('buildUIState — matchCardImageUrls (WP-410 / D-24222)', () => {
   });
 });
 
+describe('buildUIState — transformDeck (WP-664 / D-24475)', () => {
+  it('projects the Transform side deck as UIDisplayEntry[] with real faces', () => {
+    const gameState = createTestGameState();
+    // why: WP-664 — the mock registry lists no transform cards, so inject a known
+    // G.transformDeck + its cardDisplayData to prove the projection resolves each
+    // side-deck ext-id to its real card face (name/cost), NOT the <unknown>
+    // placeholder — the D-24475 "player must SEE the second-forms" contract. A
+    // non-vacuous check against a hardcoded expected literal.
+    const displayData: Record<CardExtId, UICardDisplay> = {
+      'wwhk/she-hulk/hurl-trucks#0': {
+        extId: 'wwhk/she-hulk/hurl-trucks#0',
+        name: 'Hurl Trucks',
+        imageUrl: 'https://images.legendary-arena.com/wwhk/wwhk-hr-she-hulk-hurl-trucks.webp',
+        cost: 6,
+      },
+      'wwhk/amadeus-cho/like-totally-smart-hulk#0': {
+        extId: 'wwhk/amadeus-cho/like-totally-smart-hulk#0',
+        name: 'Like Totally Smart Hulk',
+        imageUrl: 'https://images.legendary-arena.com/wwhk/wwhk-hr-amadeus-cho-like-totally-smart-hulk.webp',
+        cost: 6,
+      },
+    };
+    (gameState as { cardDisplayData: Record<CardExtId, UICardDisplay> }).cardDisplayData = displayData;
+    (gameState as { transformDeck: CardExtId[] }).transformDeck = [
+      'wwhk/she-hulk/hurl-trucks#0',
+      'wwhk/amadeus-cho/like-totally-smart-hulk#0',
+    ];
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.transformDeck?.length, 2);
+    assert.equal(result.transformDeck?.[0].extId, 'wwhk/she-hulk/hurl-trucks#0');
+    assert.equal(result.transformDeck?.[0].display.name, 'Hurl Trucks');
+    assert.equal(result.transformDeck?.[1].display.name, 'Like Totally Smart Hulk');
+    // why: the <unknown> placeholder name is what a missing cardDisplayData entry
+    // would yield; asserting the real names proves the side-deck cards resolve.
+    assert.notEqual(result.transformDeck?.[0].display.name, UNKNOWN_DISPLAY_PLACEHOLDER.name);
+  });
+
+  it('is always present — a non-transform game yields []', () => {
+    // why: WP-664 — G.transformDeck is always seeded ([] for non-wwhk games), so
+    // the projection is always an array; the client hides the pile when empty.
+    const gameState = createTestGameState();
+    const result = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(result.transformDeck, []);
+  });
+
+  it('does not alias G.transformDeck (per-entry fresh objects)', () => {
+    // why: WP-111 / D-11105 aliasing defense — buildDisplayEntries builds fresh
+    // { extId, display } objects, so the projected array is not the G array.
+    const gameState = createTestGameState();
+    (gameState as { cardDisplayData: Record<CardExtId, UICardDisplay> }).cardDisplayData = {
+      'wwhk/she-hulk/hurl-trucks#0': {
+        extId: 'wwhk/she-hulk/hurl-trucks#0',
+        name: 'Hurl Trucks',
+        imageUrl: 'https://images.legendary-arena.com/wwhk/wwhk-hr-she-hulk-hurl-trucks.webp',
+        cost: 6,
+      },
+    };
+    (gameState as { transformDeck: CardExtId[] }).transformDeck = ['wwhk/she-hulk/hurl-trucks#0'];
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.notEqual(
+      result.transformDeck as unknown,
+      (gameState as { transformDeck: CardExtId[] }).transformDeck as unknown,
+      'projected transformDeck must not be the same array reference as G.transformDeck',
+    );
+  });
+});
+
 describe('buildUIState — city captured-card projection (WP-505)', () => {
   const villainExtId = 'core-villain-brotherhood-magneto-00' as CardExtId;
   const heroExtId = 'core/black-widow/strike#0' as CardExtId;

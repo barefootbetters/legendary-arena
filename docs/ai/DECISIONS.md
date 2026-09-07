@@ -40211,7 +40211,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 ---
 
-### D-24475 — The Transform side deck is projected to the client as a read-only, public, face-up `UIState.transformDeck` zone (the `koPile`/`strikePile` pattern), rendered by a `TransformDeck.vue` leaf (WP-664 / EC-701)
+### D-24475 — The Transform side deck is projected to the client as a read-only, public, face-up `UIState.transformDeck` zone (the `koPile`/`strikePile` pattern), rendered by a `TransformDeck.vue` leaf (Active 2026-09-07 — WP-664 / EC-701)
 
 **Context.** `G.transformDeck` — the Transform second-form side deck set aside at setup (D-24468 / WP-657) and consumed by the `[keyword:Transform]` swap (D-24469 / WP-658) — is populated and works, but is **projected nowhere**: `transformDeck` appears in neither `packages/game-engine/src/ui/` (not in the `UIState` type, `buildUIState`, or `filterUIStateForAudience`) nor `apps/arena-client/src/`. So from a player's seat the side deck is invisible — the second-forms (Hurl Trucks, Like Totally Smart Hulk) cannot be seen, which read as "the transform mechanic isn't working" even though the partition + swap are live (live-reported on `6095b87`). This decision projects the side deck to the client and renders it face-up.
 
@@ -40229,8 +40229,8 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Scope boundary.** Making the *deck* visible does **not** expand which transforms *fire*: Amadeus Cho's Gamma-Draining Nanites → Like Totally Smart Hulk remains unsupported by the WP-658 She-Hulk-only allowlist (a separate follow-on). This decision is projection + render only.
 
-**Gates.** Draft gates run at drafting (pre-flight / copilot / lint). This entry flips to Active at execution with the confirmed field disposition + the live-surface sign-off.
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** the field ships optional-but-always-populated; the filter pass-through was proven load-bearing by a control run (deleting it fails the survival test, 113/114); no hash oracle moved (`PRE_WP080_HASH` + fixture-replay byte-identical); engine suite 3102/3102, arena-client 1616/1616, `vue-tsc` 0, whole-repo build 0; diff = exactly the 9-file allowlist (no card-data, no derived-artifact). D-24026 live-on-surface (a real She-Hulk match renders the pile) is operator-pending.
 
-**Packet:** WP-664 / EC-701. **Drafted:** 2026-09-07.
+**Packet:** WP-664 / EC-701. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 
 Protect this file.

@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-664 — Project the Transform side deck to the UI + render a face-up pile (EC-701 / D-24475) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** `G.transformDeck` (the Transform second-form
+side deck, WP-657 / D-24468) was populated and the She-Hulk swap consumed it (WP-658), but it was
+projected **nowhere** — `transformDeck` appeared in neither `packages/game-engine/src/ui/` nor
+`apps/arena-client/src/` — so a player could not SEE the separate transform deck (live-reported on
+`6095b87`: the second-forms Hurl Trucks / Like Totally Smart Hulk were invisible). This WP makes the
+deck visible.
+
+**What shipped.** A read-only **public** `UIState.transformDeck?: UIDisplayEntry[]` (optional on the
+type so no fixture backfill, always populated by `buildUIState` from the always-present
+`G.transformDeck`), built via `buildDisplayEntries` and passed through `filterUIStateForAudience`
+**unredacted for every audience** via `deepCopyDisplayEntries` (face-up shared-board data, the
+`koPile` / `strikePile` pattern) — plus a `TransformDeck.vue` leaf (one non-interactive face-up
+`CardTile` per entry, header "Transform Deck [N]", hidden when empty) wired into `PlayDesktop.vue` +
+`PlayMobile.vue`.
+
+**Boundary / determinism.** Read-only projection + client render — **no** `G`/`ctx` mutation, **no**
+new `G` field, **no** move, **no** card data, **no** keyword, **no** hash re-pin (`computeStateHash`
+hashes `G`, not `UIState`; `PRE_WP080_HASH` + the fixture-replay oracles are byte-identical). The
+filter pass-through was proven load-bearing by a **control run** (deleting it fails only the WP-664
+survival test, 113/114 — the EC-206 Board-Visible Field Rule guard). Engine suite **3102/3102**;
+arena-client **1616/1616** (+4 `TransformDeck.test.ts`); `vue-tsc` 0; `pnpm -r build` 0. Diff =
+exactly the 9-file allowlist (no `data/cards/**`, no derived artifacts; a build-churned
+`lagn-v1.json` CRLF-only diff was reverted). **D-24475 flipped Drafted → Active.** **D-24026
+live-verify: operator-pending** — a real She-Hulk match on `play.legendary-arena.com` must show the
+Transform Deck pile face-up. **Out of scope:** expanding which transforms *fire* (Amadeus Cho's
+Gamma-Draining Nanites stays unsupported by the WP-658 She-Hulk-only allowlist).
+
 ### WP-662 — `HeroCardSchema` preserves the Transform pairing fields (restores WP-657 + WP-658 live) (EC-699 / D-24473) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`. Production hotfix.** A registry schema gap left the WHOLE

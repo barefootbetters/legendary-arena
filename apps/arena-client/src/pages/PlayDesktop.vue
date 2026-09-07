@@ -27,6 +27,7 @@ import SchemeTile from '../components/play/SchemeTile.vue';
 import SchemeTwistPile from '../components/play/SchemeTwistPile.vue';
 import CityRow from '../components/play/CityRow.vue';
 import HQRow from '../components/play/HQRow.vue';
+import TransformDeck from '../components/play/TransformDeck.vue';
 import SharedDecks from '../components/play/SharedDecks.vue';
 import KOPile from '../components/play/KOPile.vue';
 import HandRow from '../components/play/HandRow.vue';
@@ -102,6 +103,7 @@ export default defineComponent({
     SchemeTwistPile,
     CityRow,
     HQRow,
+    TransformDeck,
     SharedDecks,
     KOPile,
     HandRow,
@@ -670,6 +672,10 @@ export default defineComponent({
           :economy="snapshot.economy"
           :submit-move="submitMove"
         />
+        <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits beside the
+             hero row (it holds the second-forms some HQ heroes transform into). It
+             hides itself when empty, so it is inert for non-transform games. -->
+        <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
         <!-- why: the personal zone (own hand / economy / deck / victory) and the
              turn-action bar require an identified viewer. They are hidden for a
              spectator or rewound-autoplay frame (viewer null) while the shared

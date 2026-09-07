@@ -562,6 +562,21 @@ export function filterUIStateForAudience(
     result.matchCardImageUrls = [...uiState.matchCardImageUrls];
   }
 
+  // why: WP-664 / D-24475 — the Transform side deck (G.transformDeck, WP-657) is
+  // PUBLIC face-up shared-board data — the second-form cards are laid out face-up
+  // in the physical game — so it passes through value-identical for EVERY audience
+  // (owner, opponent, spectator); no redaction applies. It is optional in UIState,
+  // so TypeScript does not flag its omission — an optional field populated in
+  // buildUIState but missing this pass-through is silently dropped at the whitelist
+  // (the EC-206 / D-12803 Board-Visible Field Rule failure), so the client would
+  // never see the transform deck. deepCopyDisplayEntries does the per-entry shallow
+  // copy (no aliasing); conditional assignment (never a `transformDeck: undefined`
+  // literal) satisfies exactOptionalPropertyTypes; buildUIState always populates it,
+  // so in practice this always fires.
+  if (uiState.transformDeck !== undefined) {
+    result.transformDeck = deepCopyDisplayEntries(uiState.transformDeck);
+  }
+
   if (uiState.gameOver !== undefined) {
     result.gameOver = { ...uiState.gameOver };
   }

@@ -366,6 +366,37 @@ describe('filterUIStateForAudience — WP-128 redaction matrix', () => {
     }
   });
 
+  it('WP-664 transformDeck survives the whitelist with content, de-aliased, PUBLIC for every audience', () => {
+    // why: WP-664 / D-24475 — the Transform side deck is public face-up
+    // shared-board data (like koPile / strikePile), so it must survive the
+    // field-by-field whitelist for EVERY audience (owner, opponent, spectator) —
+    // never redacted. It is optional in UIState, so TypeScript does not flag a
+    // dropped pass-through (the EC-206 Board-Visible Field Rule failure). Seed a
+    // populated deck and assert it survives non-empty + de-aliased; a plain
+    // Array.isArray check would pass even if the filter emitted a fresh [].
+    const uiState = createWp128TestUIState();
+    uiState.transformDeck = [
+      { extId: 'wwhk/she-hulk/hurl-trucks#0', display: { extId: 'wwhk/she-hulk/hurl-trucks#0', name: 'Hurl Trucks', imageUrl: '', cost: 6 } },
+    ];
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.transformDeck?.length, 1, `the Transform card survives the whitelist for ${audience.kind}`);
+      assert.equal(result.transformDeck?.[0]!.extId, 'wwhk/she-hulk/hurl-trucks#0');
+      assert.equal(result.transformDeck?.[0]!.display.name, 'Hurl Trucks');
+      assert.notStrictEqual(
+        result.transformDeck,
+        uiState.transformDeck,
+        'filtered array must be a fresh copy, not the source reference',
+      );
+      assert.notStrictEqual(
+        result.transformDeck?.[0],
+        uiState.transformDeck[0],
+        'each entry is deep-copied (no aliasing)',
+      );
+    }
+  });
+
   it('EC-206 shared-board text/art (scheme.display, scheme.gameText, mastermind.gameText) survives the whitelist for every audience', () => {
     // why: regression guard for the production bug where the audience filter's
     // field-by-field whitelist silently dropped the EC-206 fields (they are

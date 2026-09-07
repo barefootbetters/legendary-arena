@@ -18,6 +18,7 @@ import SchemeTile from '../components/play/SchemeTile.vue';
 import SchemeTwistPile from '../components/play/SchemeTwistPile.vue';
 import CityRow from '../components/play/CityRow.vue';
 import HQRow from '../components/play/HQRow.vue';
+import TransformDeck from '../components/play/TransformDeck.vue';
 import SharedDecks from '../components/play/SharedDecks.vue';
 import KOPile from '../components/play/KOPile.vue';
 import HandRow from '../components/play/HandRow.vue';
@@ -90,6 +91,7 @@ export default defineComponent({
     SchemeTwistPile,
     CityRow,
     HQRow,
+    TransformDeck,
     SharedDecks,
     KOPile,
     HandRow,
@@ -452,6 +454,9 @@ export default defineComponent({
             :economy="snapshot.economy"
             :submit-move="submitMove"
           />
+          <!-- why: WP-664 / D-24475 — face-up Transform side deck beside the hero
+               row; hidden when empty (inert for non-transform games). -->
+          <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
         </section>
         <SharedDecks
           :piles="snapshot.piles"
