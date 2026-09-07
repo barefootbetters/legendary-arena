@@ -133,12 +133,16 @@ Cross-cutting governance, methodology, and readiness assessments.
   deterministic R2 name, ahead of R2 upload. Backup copies live in
   `scripts/card-image-{downloaders,converters,renamers}/`.
 - [Play Mats](play-mats.md) — *(draft)* catalogue of the physical
-  Marvel Legendary play mats: official Upper Deck layout / themed /
-  generic-art mats and the Second Edition deluxe mat, plus the fan-made
-  print layouts (BGG files, [ruler501/Marvel](https://github.com/ruler501/Marvel),
+  Marvel Legendary play mats, split into three kinds (labelled layout
+  mat / art-only mat / cardboard board): official Upper Deck retail
+  layout mats (Dark Phoenix 93433, Thanos 93431), boxed / in-box mats
+  (Villains, MCU Phase 1, Second Edition deluxe), organized-play kit
+  mats, and art-only mats (Thanos 93486, Wolverine 93490), plus the
+  fan-made print layouts (BGG files, [ruler501/Marvel](https://github.com/ruler501/Marvel),
   Inked Gaming). Maps each mat's printed zones to the engine's
-  [Play Board](play-board.md) projection; features the layout-mat scans
-  pulled from `legendarycardgame.com`.
+  [Play Board](play-board.md) projection. Corrects the record that Dark
+  City / Paint the Town Red shipped no official mat — those are layout
+  scans, not SKUs.
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement
