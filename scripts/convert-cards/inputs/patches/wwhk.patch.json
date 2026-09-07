@@ -257,11 +257,14 @@
         },
         {
           "slug": "build-the-suit",
-          "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-5u.webp"
+          "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-5u.webp",
+          "transform": "ultra-massive-armor"
         },
         {
           "slug": "ultra-massive-armor",
-          "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-6u2.webp"
+          "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-6u2.webp",
+          "transformOf": "build-the-suit",
+          "isTransform": true
         },
         {
           "slug": "final-battle",
