@@ -27,6 +27,7 @@ import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.j
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
@@ -93,6 +94,7 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingDefeatChoice(G)) return; // why: WP-486 / D-24291 block-all guard
   // why: D-24051 — block-all guard (D-24019): optional-KO-reward choice pending;
   // the board is frozen until resolved (beside the D-24008 KO-hero check above).
+  if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return;
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;

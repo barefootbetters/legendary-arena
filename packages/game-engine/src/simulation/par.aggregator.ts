@@ -87,6 +87,7 @@ import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resol
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolvePlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
@@ -452,6 +453,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-486 / D-24291 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolvePlayVillainTopChoice: (context, args) => resolvePlayVillainTopChoice(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveReturnZeroCostDiscard: (context, args) => resolveReturnZeroCostDiscard(context as never, args as never),

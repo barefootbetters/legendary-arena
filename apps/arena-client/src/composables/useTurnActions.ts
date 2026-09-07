@@ -203,6 +203,12 @@ export function useTurnActions(
   // True while a Melter Fight KO/keep choice is pending; blocks End Turn / Pass Priority at
   // ANY stage (the engine's full block-all guard set freezes the board).
   hasPendingMelterKoChoice: boolean = false,
+  // why: WP-663 / D-24474 — appended LAST (after hasPendingMelterKoChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while an Emma Frost Shadowed Thoughts play-top-Villain-Deck choice is pending;
+  // blocks End Turn / Pass Priority at ANY stage (the engine's full block-all guard set
+  // freezes the board). The choice is OPTIONAL — accept (play for +N Attack) OR decline.
+  hasPendingPlayVillainTop: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -427,6 +433,15 @@ export function useTurnActions(
           reason: 'Put cards on top of your deck before taking another action.',
         };
       }
+      // why: WP-663 / D-24474 — End Turn / Pass Priority blocked at any stage while a
+      // Shadowed Thoughts play-top-Villain-Deck choice is pending (the engine's full
+      // block-all guard set freezes the board). The choice is OPTIONAL — accept OR decline.
+      if (hasPendingPlayVillainTop) {
+        return {
+          allowed: false,
+          reason: 'Play the top card of the Villain Deck, or Decline, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -582,6 +597,16 @@ export function useTurnActions(
           reason: 'Put cards on top of your deck before taking another action.',
         };
       }
+      if (hasPendingPlayVillainTop) {
+        // why: WP-663 / D-24474 — the engine's block-all guards block endTurn while
+        // pendingPlayVillainTopChoices is non-empty (Emma Frost's Shadowed Thoughts); this
+        // client-side gate surfaces the reason so the player sees a tooltip instead of a
+        // silent rejection. The choice is OPTIONAL — accept OR decline.
+        return {
+          allowed: false,
+          reason: 'Play the top card of the Villain Deck, or Decline, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -625,7 +650,8 @@ export function useTurnActions(
         hasPendingReturnOnDiscard ||
         hasPendingGiveHqHeroChoice ||
         hasPendingCopyPowersChoice ||
-        hasPendingPutCardsOnDeckChoice
+        hasPendingPutCardsOnDeckChoice ||
+        hasPendingPlayVillainTop
       ) {
         return {
           allowed: false,

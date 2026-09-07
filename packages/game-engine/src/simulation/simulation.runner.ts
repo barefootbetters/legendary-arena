@@ -80,6 +80,7 @@ import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resol
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolvePlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
@@ -301,6 +302,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // Silent Sniper defeat-with-a-Bystander choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
+  resolvePlayVillainTopChoice: (context, args) => resolvePlayVillainTopChoice(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),
   // why: D-24139 — getLegalMoves short-circuits to this resolve move when its pending
   // choice is parked; a missing dispatch entry hangs the per-turn loop.

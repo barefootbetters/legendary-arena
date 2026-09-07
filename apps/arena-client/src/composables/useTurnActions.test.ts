@@ -540,3 +540,34 @@ describe('useTurnActions — hasPendingDefeatChoice gating (WP-486 / D-24291)', 
     }
   });
 });
+
+describe('useTurnActions — hasPendingPlayVillainTop gating (WP-663 / EC-700 / D-24474)', () => {
+  const PLAY_VILLAIN_TOP_REASON =
+    'Play the top card of the Villain Deck, or Decline, before taking another action.';
+  // why: hasPendingPlayVillainTop is APPENDED LAST (position 24): stage, isViewerTurn,
+  // then 21 pending/heal falses (positions 3–23), then true.
+  const withPlayVillainTop = (stage: string) =>
+    useTurnActions(
+      stage, true,
+      false, false, false, false, false, false, false, false, false, false,
+      false, false, false, false, false, false, false, false, false, false,
+      false,
+      true,
+    );
+
+  test('canEndTurn blocked at EVERY stage when hasPendingPlayVillainTop is true', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withPlayVillainTop(stage).canEndTurn();
+      assert.equal(result.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(result.reason, PLAY_VILLAIN_TOP_REASON, 'play-villain-top gate reason matches the locked value');
+    }
+  });
+
+  test('canPassPriority blocked at EVERY stage when hasPendingPlayVillainTop is true (board frozen)', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const result = withPlayVillainTop(stage).canPassPriority();
+      assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(result.reason, PLAY_VILLAIN_TOP_REASON);
+    }
+  });
+});

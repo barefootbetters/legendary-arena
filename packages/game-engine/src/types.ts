@@ -761,6 +761,30 @@ export interface PendingOptionalKoReward {
 }
 
 /**
+ * A pending "play the top card of the Villain Deck for +N Attack?" choice
+ * (WP-663 / D-24474 — Emma Frost's Shadowed Thoughts).
+ *
+ * Parked on G.pendingPlayVillainTopChoices[] (FIFO) by the optional-play-villain-top
+ * hero ability after its covert gate passed. Removed (front-popped) by
+ * resolvePlayVillainTopChoice after the player accepts (play the top Villain-Deck card
+ * via the shared reveal cascade + grant the Attack reward) or declines (nothing). Must be
+ * undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24474 — unlike a pure-upside reveal, playing the top Villain-Deck card has a
+ * real downside (a Villain enters the city, or a Master Strike / Scheme Twist fires), so it
+ * is a genuine choice, not auto-taken. The entry records the choosing player, the source
+ * card (for the log), and the Attack reward granted iff they accept.
+ */
+export interface PendingPlayVillainTopChoice {
+  /** The player who must accept or decline. */
+  playerID: string;
+  /** The hero card whose ability parked this choice (for the log). */
+  cardId: CardExtId;
+  /** The Attack granted iff the player accepts (plays the top Villain-Deck card). */
+  attackReward: number;
+}
+
+/**
  * Pending victory-pile villain-pick player choice state (WP-285 / D-24067).
  *
  * Created when a victory-villain-attack hero effect fires (`onPlay`) and the
@@ -1208,6 +1232,14 @@ export interface LegendaryGameState {
   // or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending optional-KO-then-reward choices awaiting resolution (WP-248). */
   pendingOptionalKoRewards?: PendingOptionalKoReward[] | undefined;
+
+  // why: WP-663 / D-24474 — FIFO queue of pending "play the top Villain-Deck card for +N
+  // Attack?" choices (Shadowed Thoughts). Lazily materialized (never seeded in Game.setup),
+  // so a game that never parks one carries no new field and both hash oracles stay
+  // byte-unchanged. Front-popped by resolvePlayVillainTopChoice; block-all guards keep it
+  // empty at turn-end. Read-only projection UIPendingPlayVillainTop surfaces it to the owner.
+  /** Pending play-top-Villain-Deck-card choices; absent/empty when none. */
+  pendingPlayVillainTopChoices?: PendingPlayVillainTopChoice[] | undefined;
 
   // why: WP-285 / D-24067 — FIFO queue of pending victory-pile villain-pick
   // choices (one per played victory-villain-attack hero ability with ≥1 villain

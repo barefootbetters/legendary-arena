@@ -55,6 +55,7 @@ import type {
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
+  UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
   UIPendingOptionalPutBottomHQ,
@@ -1283,6 +1284,22 @@ export function buildUIState(
     };
   }
 
+  // why: WP-663 / D-24474 — project the FRONT entry of G.pendingPlayVillainTopChoices so
+  // the chooser can render Shadowed Thoughts' "Play the top Villain-Deck card for +N Attack?"
+  // prompt. Binary choice, no eligible-card list (mirrors pendingDrawOrEmpowered). Redaction
+  // to the chooser-only audience is enforced by filterUIStateForAudience (keyed on .playerID).
+  let pendingPlayVillainTop: UIPendingPlayVillainTop | undefined;
+  if (
+    gameState.pendingPlayVillainTopChoices !== undefined &&
+    gameState.pendingPlayVillainTopChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingPlayVillainTopChoices[0]!;
+    pendingPlayVillainTop = {
+      playerID: frontChoice.playerID,
+      attackReward: frontChoice.attackReward,
+    };
+  }
+
   // --- 13c.3 Project pending victory-pile villain-pick choice (front of queue) ---
   // why: WP-313 / D-24099 — project the FRONT entry of G.pendingVictoryPileCardPick
   // with the eligible victory-pile villains recomputed fresh from current G via the
@@ -1690,6 +1707,7 @@ export function buildUIState(
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
+    ...(pendingPlayVillainTop !== undefined ? { pendingPlayVillainTop } : {}),
     // why: WP-313 — conditional spread so an absent pick omits the field (no
     // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingVictoryPileCardPick !== undefined ? { pendingVictoryPileCardPick } : {}),

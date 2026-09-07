@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 40 entries after the reveal-from-hand addition', () => {
+  it('HERO_KEYWORDS array has exactly 41 entries after the optional-play-villain-top addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      40,
-      'HERO_KEYWORDS must have exactly 40 entries (39 + reveal-from-hand, WP-659 / D-24470)',
+      41,
+      'HERO_KEYWORDS must have exactly 41 entries (40 + optional-play-villain-top, WP-663 / D-24474)',
     );
   });
 });

@@ -888,6 +888,17 @@
       "hidden": true
     },
     {
+      "slug": "optional-play-villain-top",
+      "label": "Optional Play Villain Top",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/emma-frost"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "optional-put-bottom-hq",
       "label": "Optional Put Bottom Hq",
       "scope": "hero",
@@ -2405,6 +2416,7 @@
       "mechanics": [
         "defeated-villain-or-mastermind",
         "draw",
+        "optional-play-villain-top",
         "reveal-from-hand"
       ]
     },

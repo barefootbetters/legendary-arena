@@ -860,6 +860,23 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-663 / D-24474 — the pending play-top-Villain-Deck choice (Shadowed Thoughts)
+  // is private to the chooser (only they may resolve it). Redacted for EVERY audience
+  // except the choosing player; present only when the audience is a player whose playerId
+  // equals the chooser's playerID; omitted (conditional assignment, never an `undefined`
+  // literal) for opponents AND spectators — mirroring the pendingDrawOrEmpowered posture.
+  // Binary choice, no eligible-card list; attackReward is the derived +N Attack magnitude.
+  if (
+    uiState.pendingPlayVillainTop !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingPlayVillainTop.playerID
+  ) {
+    result.pendingPlayVillainTop = {
+      playerID: uiState.pendingPlayVillainTop.playerID,
+      attackReward: uiState.pendingPlayVillainTop.attackReward,
+    };
+  }
+
   // why: D-24099 — the pending victory-pile villain-pick is scoped to the chooser (only
   // they may resolve it). Redacted for EVERY audience except the choosing player;
   // present only when the audience is a player whose playerId equals the chooser's

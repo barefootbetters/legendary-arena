@@ -31,6 +31,7 @@ import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mast
 import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import {
   hasPendingVictoryPileCardPick,
@@ -122,6 +123,10 @@ export const SIMULATION_MOVE_NAMES = [
   // within-turn move-steps — the WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveDefeatChoice',
   'resolveOptionalKoReward',
+  // why: WP-663 / D-24474 — getLegalMoves short-circuits to resolvePlayVillainTopChoice
+  // (single DECLINE default) when a Shadowed Thoughts play-top-Villain-Deck choice is parked;
+  // it MUST be dispatchable in the sim (both MOVE_MAPs) or the per-turn loop hangs.
+  'resolvePlayVillainTopChoice',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
   'resolveReturnZeroCostDiscard',
@@ -358,6 +363,16 @@ export function getLegalMoves(
     // why: defensive — if no target exists (engine-invariant violation), fail
     // closed with an empty list rather than emit an unresolvable move.
     return legalMoves;
+  }
+
+  // why: WP-663 / D-24474 — pending play-top-Villain-Deck-card short-circuit (Shadowed
+  // Thoughts). While the choice is pending the block-all guard freezes every other move, so
+  // the bot must resolve it first. The deterministic default is DECLINE (playing the top
+  // Villain-Deck card has a real downside — accept is human-only), so the SINGLE legal move
+  // is resolvePlayVillainTopChoice with { accept: false } (mirrors the return-on-discard /
+  // optional-put-bottom-HQ single-decline short-circuit). Returns a list of length EXACTLY 1.
+  if (hasPendingPlayVillainTopChoice(gameState)) {
+    return [{ name: 'resolvePlayVillainTopChoice', args: { accept: false } }];
   }
 
   // why: pending-KO short-circuit (D-24009) — when a KO-a-Hero choice is

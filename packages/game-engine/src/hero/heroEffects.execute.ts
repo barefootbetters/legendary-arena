@@ -119,6 +119,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectRevealFromHand) that draws for each player holding a
   // criterion match, so it belongs here (the bidirectional handler-completeness authority).
   'reveal-from-hand',
+  // why: WP-663 / D-24474 — Shadowed Thoughts' "play the top Villain-Deck card → +2 Attack";
+  // has a HERO_EFFECT_HANDLERS entry (heroEffectOptionalPlayVillainTop) that parks the
+  // pending choice, so it belongs here. (Carries magnitude 2 → NOT in NO_MAGNITUDE_KEYWORDS.)
+  'optional-play-villain-top',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1670,6 +1674,44 @@ function heroEffectOptionalKoReward(
 }
 
 /**
+ * Handler for the `optional-play-villain-top` hero keyword (WP-663 / D-24474).
+ *
+ * Shadowed Thoughts' "[hc:covert]: You may play the top card of the Villain Deck. If you
+ * do, +2 Attack." Parks an interactive PendingPlayVillainTopChoice; the +Attack reward is
+ * granted on resolve (resolvePlayVillainTopChoice), NOT at play time — playing the top
+ * Villain-Deck card has a real downside (a Villain enters the city, or a Master Strike /
+ * Scheme Twist fires), so the player genuinely chooses (contrast the auto-resolving
+ * reveal-from-hand). The covert gate already gated the hook, so this runs only when the
+ * Covert synergy is met.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the reward + villain-deck play happen at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param effect - The effect descriptor carrying the Attack reward magnitude.
+ */
+function heroEffectOptionalPlayVillainTop(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-663 / D-24474 — lazy-init at the park site (mirrors the optional-ko-reward
+  // park) — NEVER in Game.setup, so a game that never parks one carries no new G field. The
+  // park is SILENT (no G.messages line); the resolve move logs the accept/decline outcome.
+  if (!G.pendingPlayVillainTopChoices) { G.pendingPlayVillainTopChoices = []; }
+  G.pendingPlayVillainTopChoices.push({
+    playerID,
+    cardId,
+    // why: the parser emits magnitude 2 from the [keyword:optional-play-villain-top:2]
+    // marker (validated by the executeSingleEffect pre-gate — this keyword is NOT in
+    // NO_MAGNITUDE_KEYWORDS); the ?? 2 is a defensive default for a direct unit dispatch.
+    attackReward: effect.magnitude ?? 2,
+  });
+}
+
+/**
  * Handler for the `ko-wound-reward` hero keyword (WP-382 / D-24183).
  *
  * The auto-resolving, Wound-restricted variant of `optional-ko-reward` (the
@@ -2994,6 +3036,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // draws 1 (auto-reveal, seat order). The co-located token is captured as the reveal
   // criterion at setup, not read as a play-gate.
   'reveal-from-hand': heroEffectRevealFromHand,
+  // why: WP-663 / D-24474 — Shadowed Thoughts' "You may play the top Villain-Deck card →
+  // +2 Attack": parks a PendingPlayVillainTopChoice resolved by resolvePlayVillainTopChoice.
+  'optional-play-villain-top': heroEffectOptionalPlayVillainTop,
 };
 
 // ---------------------------------------------------------------------------
