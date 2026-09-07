@@ -40190,4 +40190,23 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 **Packet:** WP-662 / EC-699. **Executed:** 2026-09-07 (registry 249/249 with the regression test; engine
 3093/3093; whole-repo green; no re-pin, no regen). Not yet landed (pending commit/PR).
 
+### D-24474 — Shadowed Thoughts' "play the top Villain-Deck card → +2 Attack" is a new optional pending-choice mechanic (the optional-ko-reward pattern), reusing `playTopVillainDeckCards`; the deterministic default is DECLINE (WP-663 / EC-700)
+
+**Status:** Drafted 2026-09-07; not yet landed (flips to Active at WP-663 execution).
+
+**Context.** `core/emma-frost/shadowed-thoughts` prints *"Covert: You may play the top card of the Villain Deck. If you do, you get +2 Attack."* The leading `[hc:covert]:` gate is FAITHFUL (upstream `{ hc: 1 }` + `:` — a genuine class-synergy gate) and works. But the body is unimplemented: on gate-pass the engine grants +2 Attack **unconditionally and immediately** and never offers the *"play the top Villain-Deck card"* choice (operator-reported). This is the third Emma Frost "cards not triggering" fix — Diamond Form (D-24467) and Psychic Link (D-24470) shipped; Shadowed Thoughts is distinct because its "may" has a real downside, so it needs a genuine interactive choice, not WP-659's pure-upside auto-reveal.
+
+**Decision (drafted).** Mirror the optional-ko-reward mechanic (D-24019) end-to-end; reuse the existing villain-deck-play path. Locks:
+
+1. **The covert gate stays.** Untouched — it already gates the whole hook, so the pending choice is parked only when the Covert synergy is met.
+2. **New `optional-play-villain-top` HeroKeyword** (magnitude 2), joining the handler-bearing lockstep: union + `HERO_KEYWORDS` + both length pins + `HERO_EFFECT_HANDLERS` + handler-count pin + `HANDLED_KEYWORDS` + the setup parser marker arm. It carries magnitude 2, so — exactly like its model `optional-ko-reward` — it relies on the `executeSingleEffect` magnitude pre-gate and does **NOT** join `NO_MAGNITUDE_KEYWORDS` (that set only holds no-magnitude keywords). The printed `+2[icon:attack]` is suppressed from the icon passes so the reward rides the keyword, not a second unconditional grant.
+3. **`PendingPlayVillainTopChoice` park + block-all guard + resolve move.** `heroEffectOptionalPlayVillainTop` parks `G.pendingPlayVillainTopChoices` (lazily materialized — a no-park game carries no new `G` field); `hasPendingPlayVillainTopChoice` is a block-all guard at every play-phase move; `resolvePlayVillainTopChoice({ accept })` — accept calls `playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, 1)` (the 4-arg form — see §5) (the top Villain-Deck card enters the city / a Master Strike / Scheme Twist resolves — the full reveal cascade, reused, per the operator's "enters the city" ruling) then grants +2 Attack; decline clears the pending and grants nothing.
+4. **Interactive — a mandatory client prompt + UIState projection.** A pending choice with a block-all guard but no `UIState` projection freezes the human (the shipped failure mode). The new pending type gets a `UIPendingPlayVillainTop` projection built in `buildUIState`, passed through `filterUIStateForAudience` (owner-scoped), plus a bespoke `PlayVillainTopPrompt.vue` client component. This is a cross-layer WP (engine + arena-client).
+5. **Deterministic default DECLINE.** Unlike WP-659's auto-reveal (pure upside, auto-taken), playing the top Villain-Deck card has a real downside, so the choice is genuine: humans are prompted; for bot/autoplay/`getLegalMoves` where no human input exists, the default is DECLINE (conservative, deterministic, never forces a risky board change). Per the established pending-choice pattern (`simulation/ai.legalMoves.ts` — return-on-discard / optional-put-bottom-HQ), `getLegalMoves` short-circuits to the SINGLE decline entry while the choice is pending (not an enumeration of both moves); both `{accept:true}` and `{accept:false}` remain valid at the resolve move itself. The accept path builds a `RevealContext` and passes `DEFAULT_IMPLEMENTATION_MAP` to `playTopVillainDeckCards` (the 4-arg signature, per `fightVillain.ts`).
+6. **Card data regenerated, not hand-edited** (WP-633): a `[keyword:optional-play-villain-top:2]` marker on `core/emma-frost/shadowed-thoughts` (the sole in-scope card — a cross-set hero-card scan finds this form only in `coreset.js`), applied by the pipeline; a clean regen reproduces the committed bytes.
+
+**Gates.** Draft gates run at drafting (pre-flight / copilot / lint). This entry flips to Active at execution with the confirmed choices + the current lockstep pin values (which drift as other keyword WPs land).
+
+**Packet:** WP-663 / EC-700. **Drafted:** 2026-09-07.
+
 Protect this file.
