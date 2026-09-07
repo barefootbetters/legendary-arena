@@ -140,9 +140,10 @@ Cross-cutting governance, methodology, and readiness assessments.
   mats, and art-only mats (Thanos 93486, Wolverine 93490), plus the
   fan-made print layouts (BGG files, [ruler501/Marvel](https://github.com/ruler501/Marvel),
   Inked Gaming). Maps each mat's printed zones to the engine's
-  [Play Board](play-board.md) projection. Corrects the record that Dark
-  City / Paint the Town Red shipped no official mat — those are layout
-  scans, not SKUs.
+  [Play Board](play-board.md) projection, with a hero-side ↔ Villains-side
+  rename table. Establishes that the Dark City-art mat is the Organized
+  Play Kit #2 mat (the expansion box shipped none), and carries a
+  Confidence column plus an Open-Questions verification list.
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement
