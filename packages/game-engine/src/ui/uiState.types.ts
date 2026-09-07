@@ -90,6 +90,16 @@ export interface UIState {
   decks: UIDecksState;
   piles: UISharedPilesState;
   koPile: UIKoPileState;
+  // why: WP-664 / D-24475 — the Transform second-form side deck (G.transformDeck,
+  // WP-657 / D-24468): the set-aside second-form cards (e.g. She-Hulk's Hurl
+  // Trucks) a base card swaps into via [keyword:Transform] (WP-658). Public,
+  // face-up shared-board data (like koPile.cards / strikePile) — the same
+  // UIDisplayEntry[] shape, passed through filterUIStateForAudience unredacted for
+  // every audience. OPTIONAL in the type only so pre-existing hand-written UIState
+  // fixtures need no backfill (the matchCardImageUrls pattern); buildUIState ALWAYS
+  // populates it ([] for a non-transform game). Projection-only: G.transformDeck
+  // already exists, so this adds NO new G field and NO state-hash surface.
+  transformDeck?: UIDisplayEntry[];
   // why: WP-410 / D-24222 — the deduped set of every non-empty card-face image
   // URL this match can show (from G.cardDisplayData). The arena client warms these
   // into the browser image cache at match start so a card paints from cache on

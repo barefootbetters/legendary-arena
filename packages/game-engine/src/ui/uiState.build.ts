@@ -957,6 +957,17 @@ export function buildUIState(
     cards: buildDisplayEntries(gameState.ko, gameState),
   };
 
+  // why: WP-664 / D-24475 — project the Transform second-form side deck
+  // (G.transformDeck, WP-657 / D-24468) as public face-up display entries so the
+  // client can render the separate transform deck. Always built (empty for a
+  // non-transform game); passed through filterUIStateForAudience unredacted
+  // (face-up shared-board data, like koPile.cards). buildDisplayEntries does the
+  // per-entry shallow copy so the projection never aliases G's array.
+  const transformDeck: UIDisplayEntry[] = buildDisplayEntries(
+    gameState.transformDeck,
+    gameState,
+  );
+
   // --- 13. Project pending hero choice ---
   // why: D-22201 + WP-222 — resolveDisplay() produces a fresh shallow copy of
   // the card's display data so the returned UIPendingHeroChoice object does NOT
@@ -1644,6 +1655,10 @@ export function buildUIState(
     decks,
     piles,
     koPile,
+    // why: WP-664 / D-24475 — always-present public Transform side-deck
+    // projection; optional in the type only for fixture back-compat (see the
+    // type). Populated above ([] for a non-transform game).
+    transformDeck,
     // why: WP-410 / D-24222 — always-present deduped card-image manifest the
     // arena client warms at match start. Always populated ([] for an empty
     // match); optional in the type only for fixture back-compat (see the type).

@@ -40209,4 +40209,28 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Packet:** WP-663 / EC-700. **Drafted:** 2026-09-07.
 
+---
+
+### D-24475 — The Transform side deck is projected to the client as a read-only, public, face-up `UIState.transformDeck` zone (the `koPile`/`strikePile` pattern), rendered by a `TransformDeck.vue` leaf (Active 2026-09-07 — WP-664 / EC-701)
+
+**Context.** `G.transformDeck` — the Transform second-form side deck set aside at setup (D-24468 / WP-657) and consumed by the `[keyword:Transform]` swap (D-24469 / WP-658) — is populated and works, but is **projected nowhere**: `transformDeck` appears in neither `packages/game-engine/src/ui/` (not in the `UIState` type, `buildUIState`, or `filterUIStateForAudience`) nor `apps/arena-client/src/`. So from a player's seat the side deck is invisible — the second-forms (Hurl Trucks, Like Totally Smart Hulk) cannot be seen, which read as "the transform mechanic isn't working" even though the partition + swap are live (live-reported on `6095b87`). This decision projects the side deck to the client and renders it face-up.
+
+**Decision.**
+
+1. **A new read-only `UIState` field `transformDeck?: UIDisplayEntry[]`** — the same shared-board face-up pile shape as `koPile.cards` / `strikePile` / `twistPile` / `escapedPile` (D-12804 / D-12806). Built in `buildUIState` via `buildDisplayEntries(gameState.transformDeck, gameState)` (per-entry shallow copy; no aliasing).
+
+2. **Optional on the type, always populated in the build.** The field is `?`-optional so the existing hand-authored `UIState` test fixtures need no backfill (the `arena_client_uistate_backfill_recurrence` blast radius), but `buildUIState` always populates it from the always-present `G.transformDeck` (`[]` for non-transform games), so every real match carries it.
+
+3. **Public — passed through `filterUIStateForAudience` unredacted for ALL audiences** (owner, opponent, spectator), via `deepCopyDisplayEntries`, guarded `...(uiState.transformDeck !== undefined ? { transformDeck: … } : {})` (the `scheme.display` guard shape). The Transform cards are face-up public information. Per the Board-Visible Field Rule, an optional field that reaches the build but not the filter is silently dropped at the whitelist (the shipped EC-206 failure) — so the audience-filter **survival test is mandatory**, and the pass-through is proven load-bearing by a control run (delete the line → the survival test fails).
+
+4. **Client render `TransformDeck.vue`** — a face-up single-pile leaf modeled on `KOPile.vue`: one non-interactive `CardTile` per entry, header "Transform Deck", hidden (`v-if`) when the prop is absent/empty; type-only engine import (D-16502). Wired into `PlayDesktop.vue` + `PlayMobile.vue`, fed `uiState.transformDeck`. The pile is display-only — cards leave it only via the engine swap; there is no click/recruit affordance and no browse modal (the pile is small and shown inline).
+
+5. **No engine behaviour, no determinism surface, no hash re-pin.** This WP adds NO `G`/`ctx` mutation, NO new `G` field, NO move, NO card data, NO keyword. `computeStateHash` hashes `G`, not `UIState`, so neither engine hash oracle (`PRE_WP080_HASH`, the sentinel `finalStateHash`) moves; a moved oracle means `G` was touched by accident — investigate, do not re-pin.
+
+**Scope boundary.** Making the *deck* visible does **not** expand which transforms *fire*: Amadeus Cho's Gamma-Draining Nanites → Like Totally Smart Hulk remains unsupported by the WP-658 She-Hulk-only allowlist (a separate follow-on). This decision is projection + render only.
+
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** the field ships optional-but-always-populated; the filter pass-through was proven load-bearing by a control run (deleting it fails the survival test, 113/114); no hash oracle moved (`PRE_WP080_HASH` + fixture-replay byte-identical); engine suite 3102/3102, arena-client 1616/1616, `vue-tsc` 0, whole-repo build 0; diff = exactly the 9-file allowlist (no card-data, no derived-artifact). D-24026 live-on-surface (a real She-Hulk match renders the pile) is operator-pending.
+
+**Packet:** WP-664 / EC-701. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
+
 Protect this file.
