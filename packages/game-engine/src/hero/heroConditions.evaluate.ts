@@ -170,6 +170,20 @@ export function evaluateCondition(
       return G.turnEconomy.recruit >= threshold;
     }
 
+    case 'cardsDrawnThisTurnAtLeast': {
+      // why: WP-665 / D-24476 — reads G.turnEconomy.cardsDrawn, the per-turn count of
+      // cards drawn from EFFECTS this turn (the start-of-turn hand refill is excluded).
+      // Gamma-Draining Nanites' "if you drew two cards this turn" gate. A wait-and-see
+      // condition (deferredConditionalGrants) so it re-checks each move this turn.
+      const drawThreshold = parseInt(condition.value, 10);
+      // why: safe-skip malformed data (mirrors recruitMadeThisTurnAtLeast's NaN guard).
+      if (Number.isNaN(drawThreshold)) {
+        return false;
+      }
+
+      return G.turnEconomy.cardsDrawn >= drawThreshold;
+    }
+
     case 'distinctHeroCostsAtLeast': {
       // why: D-24464 — Outwit gates on revealing Heroes with N different costs.
       // A CONDITION, not a keyword (the D-24055 Spectrum posture); mirrors
@@ -519,6 +533,12 @@ export function describeFailedCondition(
       // value the gate compares), not the net available — spending recruit does
       // not lower the gate, and a message quoting the remainder would mislead.
       return `it needs ${condition.value} or more recruit this turn — you have made ${G.turnEconomy.recruit}`;
+
+    case 'cardsDrawnThisTurnAtLeast':
+      // why: WP-665 / D-24476 — quotes G.turnEconomy.cardsDrawn, the per-turn effect-draw
+      // count the gate compares (the "drew N cards this turn" wait-and-see window). The
+      // count excludes the start-of-turn refill, so it reflects cards drawn from effects.
+      return `it needs ${condition.value} or more cards drawn this turn — you have drawn ${G.turnEconomy.cardsDrawn}`;
 
     case 'distinctHeroCostsAtLeast': {
       const distinct = countDistinctHeroCostsInPlay(G, playerID);

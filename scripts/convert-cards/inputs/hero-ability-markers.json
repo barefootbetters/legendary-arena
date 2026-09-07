@@ -800,6 +800,12 @@
       "markupToken": "[keyword:draw:1]"
     },
     {
+      "heroSlug": "amadeus-cho",
+      "cardSlug": "gamma-draining-nanites",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw-threshold:2]"
+    },
+    {
       "heroSlug": "gladiator-hulk",
       "cardSlug": "dont-make-me-angry",
       "abilityIndex": 0,

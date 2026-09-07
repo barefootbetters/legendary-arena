@@ -25,7 +25,7 @@ import type { TurnEconomy } from './economy.types.js';
 
 /** A turn economy with 3 attack and 5 recruit available, nothing spent. */
 function baseEconomy(): TurnEconomy {
-  return { attack: 3, recruit: 5, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 };
+  return { attack: 3, recruit: 5, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 };
 }
 
 describe('recruit-as-attack conversion — the turn flag (WP-580 / D-24389)', () => {
@@ -47,12 +47,14 @@ describe('recruit-as-attack conversion — the turn flag (WP-580 / D-24389)', ()
     assert.ok(!('recruitSpendableAsAttack' in reset));
   });
 
-  it('a fresh economy serializes byte-identically to the pre-WP-580 six-field shape', () => {
-    // why: the state-hash oracles JSON.stringify G.turnEconomy; an absent flag is
-    // omitted, so a turn that never triggers the conversion is hash-stable.
+  it('a fresh economy serializes to the base shape with the recruit-as-attack flag absent', () => {
+    // why: the state-hash oracles JSON.stringify G.turnEconomy; the lazy
+    // recruitSpendableAsAttack flag is absent (omitted) on a fresh economy, so a
+    // turn that never triggers the conversion is hash-stable. cardsDrawn (WP-665) is
+    // an always-present field like the other six counters, so it appears here at 0.
     assert.equal(
       JSON.stringify(resetTurnEconomy()),
-      '{"attack":0,"recruit":0,"spentAttack":0,"spentRecruit":0,"piercing":0,"woundsDrawn":0}',
+      '{"attack":0,"recruit":0,"spentAttack":0,"spentRecruit":0,"piercing":0,"woundsDrawn":0,"cardsDrawn":0}',
     );
   });
 });

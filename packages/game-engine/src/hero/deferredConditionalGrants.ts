@@ -63,6 +63,12 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   'recruitMadeThisTurnAtLeast',
   'distinctHeroClassesAtLeast',
   REPEATABLE_DEFEAT_CONDITION_TYPE,
+  // why: WP-665 / D-24476 — "if you drew two cards this turn" (Gamma-Draining
+  // Nanites' Transform gate) is a whole-turn numeric threshold: the transform
+  // hook waits and re-fires once the effect-draw count reaches N later this turn.
+  // Has an evaluateCondition case (heroConditions.evaluate.ts) — the lockstep the
+  // drift pin below enforces.
+  'cardsDrawnThisTurnAtLeast',
 ];
 
 /**

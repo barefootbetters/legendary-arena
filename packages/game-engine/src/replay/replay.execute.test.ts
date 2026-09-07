@@ -147,7 +147,14 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // The single, explained cause — a new G field, not a masked regression. Same
 // dependency-driven class as the re-pins above.
 // Pre-WP-658: 'd5d807a9'. Post-WP-658: '36a82b21'.
-const PRE_WP080_HASH = '36a82b21';
+// why: WP-665 / D-24476 cardsDrawn re-pin — TurnEconomy gained one always-present
+// field (cardsDrawn, seeded 0 by resetTurnEconomy at every construction site), which
+// serializes into this empty replay's final state (G.turnEconomy) and shifts the hash
+// with NO behaviour change (this moves:[] replay draws nothing via effects, so
+// cardsDrawn stays 0). A new G field, not a masked regression — same dependency-driven
+// class as the re-pins above.
+// Pre-WP-665: '36a82b21'. Post-WP-665: '83b9b0a4'.
+const PRE_WP080_HASH = '83b9b0a4';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

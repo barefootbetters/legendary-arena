@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2803,
+    "executable": 2798,
     "heroes": 324,
     "hooks": 6185,
-    "noEffect": 2754,
-    "parsedNotExecuted": 628
+    "noEffect": 2746,
+    "parsedNotExecuted": 641
   },
   "perSet": {
     "2099": {
@@ -63,9 +63,9 @@
       "noEffect": 67
     },
     "core": {
-      "executable": 144,
+      "executable": 139,
       "hooks": 229,
-      "noEffect": 49
+      "noEffect": 46
     },
     "cosm": {
       "executable": 44,
@@ -205,7 +205,7 @@
     "wwhk": {
       "executable": 128,
       "hooks": 336,
-      "noEffect": 203
+      "noEffect": 198
     },
     "xmen": {
       "executable": 142,
@@ -253,6 +253,7 @@
     "digest": 7,
     "don't-speak": 1,
     "double-striker": 1,
+    "draw-threshold": 1,
     "endgame": 5,
     "excessive-kindness": 7,
     "excessive-violence": 21,
@@ -294,7 +295,7 @@
     "patrol-your-victory-pile": 1,
     "phasing": 12,
     "piercing-energy": 11,
-    "recruit-threshold": 3,
+    "recruit-threshold": 8,
     "reveal-count": 2,
     "reveal-multi-take": 1,
     "reveal-reorder": 1,

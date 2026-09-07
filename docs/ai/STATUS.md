@@ -18,6 +18,37 @@ Each entry's D-24026 flag flipped operator-pending → **CONFIRMED live 2026-09-
 
 **Log polish (the `INFRA:` commit):** deferred hero grants (Diamond Form / D-24467, recruit-threshold / WP-568) logged two lines per fire — the concrete grant line plus a redundant "… ability applied — its condition was met later this turn" confirmation (a +18 Diamond Form turn produced a wall of duplicates). The confirmation is dropped; the grant line is self-sufficient and the on-play "… is waiting …" line already flags the deferral. Log text is unhashed — no state-hash / replay / sim impact. Engine suite **3129/0**; two log-assertion tests repointed to the grant line.
 
+### WP-665 — Amadeus Cho's Transform fires: model "drew two cards this turn" + gate Gamma-Draining Nanites (EC-702 / D-24476) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** WP-658 shipped the `[keyword:Transform]` runtime
+but held Amadeus Cho behind the She-Hulk-only `SUPPORTED_TRANSFORM_BASES` allowlist, because
+`gamma-draining-nanites` ("Draw a card. Then, if you drew two cards this turn, Transform into Like
+Totally Smart Hulk") gates its transform on a condition the engine did not model — live-observed a
+`parse-unrecognized` hollow every play. This WP models "drew N cards this turn" and gates the transform
+on it.
+
+**What shipped.** A new per-turn `TurnEconomy.cardsDrawn` counter (sibling of `woundsDrawn`; incremented
+in `heroEffectDraw`, the current-player `draw:N` path — the start-of-turn hand refill via
+`drawCardsIntoHand` is deliberately NOT counted). A new `cardsDrawnThisTurnAtLeast` **wait-and-see**
+condition (reuses the WP-568/656 deferred-grant window unchanged — the evaluator mirrors
+`recruitMadeThisTurnAtLeast`). A `[keyword:draw-threshold:2]` marker on gamma's `abilities[1]` gates
+**only** the transform hook; `abilities[0]`'s draw stays unconditional (the card's ability was already
+two hooks). `gamma-draining-nanites` added to `SUPPORTED_TRANSFORM_BASES`. Hooks execute in array order,
+so gamma's own draw (hook 0) increments the counter before the transform hook (hook 1) checks it: it
+fires immediately at ≥2 (a prior draw this turn), else waits and re-fires transform-only once a further
+draw reaches 2.
+
+**Boundary / determinism.** Engine + card data; layer boundary respected. Both engine hash oracles
+re-pinned deliberately (`PRE_WP080_HASH` `36a82b21→83b9b0a4`, the sentinel `finalStateHash`) — a new
+`TurnEconomy` field, no behaviour change (the WP-657/658 precedent). **Control run:** removing gamma from
+the allowlist reverts its transform to a `parse-unrecognized` hollow (non-vacuous). Engine suite
+**3134/3134**; `pnpm -r build` 0; `cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`/`sim:runtime-observed`
+`:check` all green. The coverage baseline update also caught up a **pre-existing WP-661 staleness**
+(`recruit-threshold` 3→8, its 5 shipped co2e/ssw1 cards) beside the new `draw-threshold` (1). **D-24476
+flipped Drafted → Active.** **D-24026 live-verify: operator-pending** — a real Amadeus Cho match on
+`play.legendary-arena.com` must play Gamma-Draining Nanites after ≥2 draws and transform. **Out of scope:**
+the other 13 held-back transforms; the each-player reveal-from-hand draw (not counted).
+
 ### WP-664 — Project the Transform side deck to the UI + render a face-up pile (EC-701 / D-24475) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** `G.transformDeck` (the Transform second-form

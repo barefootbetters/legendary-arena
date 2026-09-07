@@ -163,6 +163,9 @@ const KNOWN_CONDITIONS = {
   // drag on two implemented mechanics.
   'recruit-threshold': 'recruitMadeThisTurnAtLeast',              // Thor "Surge of Power" (WP-545 / D-24354): ≥N Recruit this turn
   'defeated-villain-or-mastermind': 'defeatedVillainOrMastermindThisTurn', // Emma Frost "Diamond Form" (WP-656 / D-24467): a Villain/Mastermind defeated this turn
+  // why: WP-665 / D-24476 — Amadeus Cho "Gamma-Draining Nanites": the transform gates on
+  // ≥N cards drawn this turn (a shipped wait-and-see condition), so the row reads `condition`.
+  'draw-threshold': 'cardsDrawnThisTurnAtLeast',                  // ≥N cards drawn this turn
 };
 
 /** Error type signalling a probe failure (exit code 2). */

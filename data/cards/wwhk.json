@@ -44,7 +44,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "Then, if you drew two cards this turn, [keyword:Transform] this into Like Totally Smart Hulk."
+            "Then, if you drew two cards this turn, [keyword:Transform] this into Like Totally Smart Hulk. [keyword:draw-threshold:2]"
           ],
           "transform": "like-totally-smart-hulk"
         },

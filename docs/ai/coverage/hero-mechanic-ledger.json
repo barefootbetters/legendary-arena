@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 664,
+    "totalRows": 665,
     "byStatus": {
-      "executable": 265,
+      "executable": 266,
       "deferred": 0,
-      "condition": 25,
-      "unsupported": 335,
+      "condition": 26,
+      "unsupported": 334,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 127
+    "distinctMechanics": 128
   },
   "rows": [
     {
@@ -10636,6 +10636,22 @@
       "extId": "wwhk/amadeus-cho",
       "heroName": "Amadeus Cho",
       "set": "wwhk",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "gamma-draining-nanites",
+          "name": "Gamma-Draining Nanites"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/amadeus-cho",
+      "heroName": "Amadeus Cho",
+      "set": "wwhk",
       "mechanic": "outwit",
       "status": "condition",
       "wp": "",
@@ -10665,10 +10681,10 @@
       "heroName": "Amadeus Cho",
       "set": "wwhk",
       "mechanic": "transform",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "designs": [
         {
           "slug": "gamma-draining-nanites",

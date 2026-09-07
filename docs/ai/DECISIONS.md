@@ -40237,7 +40237,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 ---
 
-### D-24476 — Amadeus Cho's Gamma-Draining Nanites transforms only when the player has drawn ≥2 cards this turn, via a new `cardsDrawnThisTurnAtLeast` wait-and-see condition over a new per-turn `TurnEconomy.cardsDrawn` counter; gamma joins `SUPPORTED_TRANSFORM_BASES` (WP-665 / EC-702)
+### D-24476 — Amadeus Cho's Gamma-Draining Nanites transforms only when the player has drawn ≥2 cards this turn, via a new `cardsDrawnThisTurnAtLeast` wait-and-see condition over a new per-turn `TurnEconomy.cardsDrawn` counter; gamma joins `SUPPORTED_TRANSFORM_BASES` (Active 2026-09-07 — WP-665 / EC-702)
 
 **Context.** WP-658 shipped the `[keyword:Transform]` runtime but deliberately held Amadeus Cho behind the She-Hulk-only `SUPPORTED_TRANSFORM_BASES` allowlist, because `wwhk/amadeus-cho/gamma-draining-nanites` ("Draw a card. Then, if you drew two cards this turn, Transform this into Like Totally Smart Hulk") gates its transform on a condition the engine did not model — firing it unconditionally would be an unfaithful swap (the exact fidelity trap the allowlist exists to prevent). Live-observed every play as a `parse-unrecognized` hollow. This decision models "drew N cards this turn" and gates gamma's transform on it.
 
@@ -40253,8 +40253,8 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Scope boundary.** Exactly Gamma-Draining Nanites; the other 13 held-back transforms keep their honest `parse-unrecognized` markers (their conditions stay unmodeled). The each-player reveal-from-hand draw (`drawFromPlayerDeck` @ heroEffects ~L2757, Psychic Link) is deliberately **not** counted toward `cardsDrawn` — a different mechanic and a rare cross-set interaction. `cardsDrawn` is not projected to `UIState` (the transform's waiting/firing is already observable in the game log).
 
-**Gates.** Draft gates run at drafting. This entry flips to Active at execution with the confirmed values + the live-surface sign-off.
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3134/3134; whole-repo build 0; a control run confirmed the allowlist entry is load-bearing (removing gamma reverts the transform to a `parse-unrecognized` hollow); both hash oracles re-pinned deliberately (`PRE_WP080_HASH` `36a82b21→83b9b0a4`, the sentinel `finalStateHash`); `cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`/`sim:runtime-observed` `:check` all green; the coverage baseline update also caught up a pre-existing WP-661 `recruit-threshold` staleness (3→8) beside the new `draw-threshold` (1). D-24026 live-on-surface (a real Amadeus Cho match) is operator-pending.
 
-**Packet:** WP-665 / EC-702. **Drafted:** 2026-09-07.
+**Packet:** WP-665 / EC-702. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 
 Protect this file.

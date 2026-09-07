@@ -71,6 +71,8 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', ()
       'recruitMadeThisTurnAtLeast',
       'distinctHeroClassesAtLeast',
       'defeatedVillainOrMastermindThisTurn',
+      // why: WP-665 / D-24476 — Gamma-Draining Nanites' "drew two cards this turn" gate.
+      'cardsDrawnThisTurnAtLeast',
     ]);
     // why: the edge-triggered member is exported as a named const so the array, the
     // evaluator case, the re-arm check, and the setup marker branch share one literal.
@@ -87,6 +89,7 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', ()
     assert.equal(isWaitAndSeeCondition({ type: 'recruitMadeThisTurnAtLeast', value: '8' }), true);
     assert.equal(isWaitAndSeeCondition({ type: 'distinctHeroClassesAtLeast', value: '3' }), true);
     assert.equal(isWaitAndSeeCondition({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' }), true);
+    assert.equal(isWaitAndSeeCondition({ type: 'cardsDrawnThisTurnAtLeast', value: '2' }), true);
   });
 });
 
@@ -108,6 +111,8 @@ describe('AC-6: WAIT_AND_SEE ↔ evaluateCondition lockstep (runtime drift pin)'
       value: '1',
       mutate: (G) => { G.villainOrMastermindDefeatedSinceResolve = true; },
     },
+    // why: WP-665 / D-24476 — the per-turn effect-draw count reaching the threshold.
+    cardsDrawnThisTurnAtLeast: { value: '1', mutate: (G) => { G.turnEconomy.cardsDrawn = 1; } },
   };
 
   it('every listed type has an evaluateCondition case that can return true', () => {
