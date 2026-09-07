@@ -3247,12 +3247,13 @@ export function resolveDeferredHeroGrants(
       if (hook === undefined) {
         return;
       }
+      // why: WP-656 / D-24467 log-polish — runHookEffects already emits the concrete
+      // grant line ("… gained +N recruit from <card>"), so a separate "ability applied —
+      // its condition was met later this turn" confirmation was pure duplication (two lines
+      // per grant; a multi-copy Diamond Form turn logged a wall of them). The grant line is
+      // self-sufficient — the on-play "… is waiting …" line already told the player the
+      // ability was deferred — so the confirmation is dropped.
       runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
-      pushLog(G,
-        `Player ${entry.playerId}'s ${formatCardRef(G.cardDisplayData, entry.cardId)} ability applied — its condition was met later this turn.`,
-        'applied',
-        entry.cardId,
-      );
       // why: WP-656 / D-24467 — a defeat-gated grant (Diamond Form) is EDGE-TRIGGERED
       // per defeat, not one-shot. resolveDeferredConditionalGrants removed this entry
       // as it fired (the numeric-threshold one-shot contract, unchanged); RE-ARM it by

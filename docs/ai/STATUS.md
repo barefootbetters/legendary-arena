@@ -7,6 +7,17 @@
 
 ## Current State
 
+### Emma Frost arc — D-24026 live-verification CLOSED + a deferred-grant log polish (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** Two operator Magneto / Midtown Bank Robbery matches verified all three "Emma Frost cards not triggering" fixes in live play, closing **D-24026** for the arc:
+- **Diamond Form (WP-656 / D-24467):** no free +3 Recruit on play; +3 per Villain/Mastermind-tactic defeat; multiple defeats stack (+6 on a two-defeat turn); Copy-Powers-as-Diamond-Form doubled it (+18 over three defeats × two copies on turn 15); no over-fire on non-defeat moves; no cross-turn leak. The edge-trigger + re-arm model holds.
+- **Psychic Link (WP-659 / D-24470):** drew when an X-Men Hero was in hand, correctly drew nothing with only S.H.I.E.L.D. starters in hand — both the fix and the card's conditional nature confirmed.
+- **Shadowed Thoughts (WP-663 / D-24474):** Covert gate met → played the top Villain-Deck card + +2 Attack (base +2 not double-counted); on one turn the played card was a Magneto Master Strike that resolved fully (the real downside). Covert gate correctly blocked when no prior Covert Hero.
+
+Each entry's D-24026 flag flipped operator-pending → **CONFIRMED live 2026-09-07**.
+
+**Log polish (the `INFRA:` commit):** deferred hero grants (Diamond Form / D-24467, recruit-threshold / WP-568) logged two lines per fire — the concrete grant line plus a redundant "… ability applied — its condition was met later this turn" confirmation (a +18 Diamond Form turn produced a wall of duplicates). The confirmation is dropped; the grant line is self-sufficient and the on-play "… is waiting …" line already flags the deferral. Log text is unhashed — no state-hash / replay / sim impact. Engine suite **3129/0**; two log-assertion tests repointed to the grant line.
+
 ### WP-664 — Project the Transform side deck to the UI + render a face-up pile (EC-701 / D-24475) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** `G.transformDeck` (the Transform second-form
