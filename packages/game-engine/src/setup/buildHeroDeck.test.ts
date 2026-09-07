@@ -15,6 +15,7 @@ import {
   buildHeroDeckCards,
   buildTransformSideDeck,
   buildTransformSideDeckCards,
+  buildTransformTargets,
   heroCardInstanceExtIds,
   shuffleHeroDeck,
   buildCardCountsNameLookup,
@@ -34,6 +35,7 @@ interface MockHeroCard {
   name?: string;
   isTransform?: boolean;
   transformOf?: string;
+  transform?: string;
 }
 
 interface MockPhysicalCard {
@@ -795,7 +797,7 @@ function buildTransformHero(slug: string): MockHero {
   return {
     slug,
     cards: [
-      { slug: 'hurl-legal-objections', rarityLabel: 'Common 1' },
+      { slug: 'hurl-legal-objections', rarityLabel: 'Common 1', transform: 'hurl-trucks' },
       {
         slug: 'hurl-trucks',
         rarityLabel: 'Common 2',
@@ -943,6 +945,83 @@ describe('buildTransformSideDeck — canonical entry point (D-24468)', () => {
       buildTransformSideDeck(['wwhk/she-hulk'], narrowRegistry),
       [],
       'an incomplete RegistryReader yields an empty side deck (mirrors buildHeroDeck)',
+    );
+  });
+});
+
+// ===========================================================================
+// buildTransformTargets — base→second-form card-key map (D-24469 / WP-658)
+// ===========================================================================
+
+describe('buildTransformTargets — base→target map (D-24469)', () => {
+  it('maps a base card key to its second-form card key (AC-2)', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    const targets = buildTransformTargets(['wwhk/she-hulk'], registry);
+
+    assert.deepStrictEqual(
+      targets,
+      { 'wwhk/she-hulk/hurl-legal-objections': 'wwhk/she-hulk/hurl-trucks' },
+      'the base card key maps to its transform second-form card key',
+    );
+  });
+
+  it('keys are copy-agnostic (no #copy suffix) so every copy resolves via one entry', () => {
+    const hero = buildTransformHero('she-hulk');
+    const registry = buildMockRegistry('wwhk', [hero]);
+
+    const targets = buildTransformTargets(['wwhk/she-hulk'], registry);
+
+    for (const key of Object.keys(targets)) {
+      assert.ok(!key.includes('#'), `base key ${key} must carry no #copy suffix`);
+    }
+    for (const value of Object.values(targets)) {
+      assert.ok(!value.includes('#'), `target key ${value} must carry no #copy suffix`);
+    }
+  });
+
+  it('includes every base→target pair across multiple transform heroes', () => {
+    const sheHulk = buildTransformHero('she-hulk');
+    const rickJones: MockHero = {
+      slug: 'rick-jones',
+      cards: [
+        { slug: 'irradiated-blood', rarityLabel: 'Common 1', transform: 'a-bomb' },
+        { slug: 'a-bomb', rarityLabel: 'Common 2', isTransform: true, transformOf: 'irradiated-blood' },
+      ],
+      physicalCards: [
+        { id: 'p1', count: 3, sides: ['irradiated-blood'] },
+        { id: 'p2', count: 3, sides: ['a-bomb'] },
+      ],
+    };
+    const registry = buildMockRegistry('wwhk', [sheHulk, rickJones]);
+
+    const targets = buildTransformTargets(['wwhk/she-hulk', 'wwhk/rick-jones'], registry);
+
+    assert.deepStrictEqual(targets, {
+      'wwhk/she-hulk/hurl-legal-objections': 'wwhk/she-hulk/hurl-trucks',
+      'wwhk/rick-jones/irradiated-blood': 'wwhk/rick-jones/a-bomb',
+    });
+  });
+
+  it('returns an empty map for a hero set with no transform base cards', () => {
+    const hero = buildCompliantHero('spider-man');
+    const registry = buildMockRegistry('core', [hero]);
+
+    assert.deepStrictEqual(
+      buildTransformTargets(['core/spider-man'], registry),
+      {},
+      'a set with no `transform` fields yields an empty map',
+    );
+  });
+
+  it('soft-skips a narrow registry (no getSet) with an empty map', () => {
+    const narrowRegistry = { listCards: () => [] };
+
+    assert.deepStrictEqual(
+      buildTransformTargets(['wwhk/she-hulk'], narrowRegistry),
+      {},
+      'an incomplete RegistryReader yields an empty map (mirrors buildTransformSideDeck)',
     );
   });
 });

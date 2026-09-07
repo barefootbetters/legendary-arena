@@ -389,6 +389,23 @@ const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> =
 // why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.
 const SPECTRUM_CLASS_THRESHOLD = 3;
 
+// why: WP-658 / D-24469 — the allowlist of transform BASE cards whose full printed
+// behaviour (its transform condition AND the swap placement) is faithfully modeled, so
+// their [keyword:Transform] resolves to an EXECUTABLE transform. Keyed by the base card's
+// canonical key `{setAbbr}/{heroSlug}/{cardSlug}`. She-Hulk's `hurl-legal-objections` is
+// the first and only member: its "made ≥6 Recruit this turn" gate is the shipped
+// recruit-threshold condition (D-24354), authored on the card as `[keyword:recruit-threshold:6]`,
+// and its destination is a plain in-play swap. Every OTHER wwhk transform card carries a
+// condition the engine does NOT yet model (drew-2, discarded-≥2, KO-pile counts, combat
+// outcomes, reveal-cost, feast+KO, gain-a-Wound, …); resolving those would fire an
+// UNCONDITIONAL — and therefore unfaithful — swap, so they stay unresolved markers (an
+// honest parse-unrecognized hollow, unchanged from today). Each future WP that models a
+// card's transform condition adds that card here + its condition marker. Honest-Partial
+// Invariant — mirrors the investigate resolver's static-criterion subset.
+const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
+  'wwhk/she-hulk/hurl-legal-objections',
+]);
+
 // why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
 // keyword. On such a line the same-line `[hc:...]` tokens are the GRANTED classes (the
 // card gains them when played), not `heroClassMatch` play-conditions — so Step 1a routes
@@ -447,7 +464,16 @@ const INVESTIGATE_CLAUSE_TEAM_PATTERN = /^\[team:([a-z0-9-]+)\]$/i;
  *
  * No step depends on results of a later step.
  */
-function parseAbilityText(abilityText: string): {
+function parseAbilityText(
+  abilityText: string,
+  // why: WP-658 / D-24469 — the caller (buildHeroAbilityHooks) knows the card's
+  // canonical key and passes whether this card's transform is in
+  // SUPPORTED_TRANSFORM_BASES. parseAbilityText itself is text-only (it never sees
+  // the card id), so the support decision is threaded in. Defaults false so every
+  // other caller/test keeps the pre-WP-658 behaviour (a [keyword:Transform] on a
+  // non-supported card stays an unresolved marker).
+  options: { transformSupported?: boolean } = {},
+): {
   keywords: HeroKeyword[];
   conditions: HeroCondition[];
   effects: HeroEffectDescriptor[];
@@ -457,6 +483,7 @@ function parseAbilityText(abilityText: string): {
   sizeChangingClasses: string[];
   timing: HeroAbilityTiming;
 } {
+  const transformSupported = options.transformSupported === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -647,6 +674,22 @@ function parseAbilityText(abilityText: string): {
         keywords.push('investigate');
       } else {
         unresolvedMarkers.push('investigate');
+      }
+    } else if (normalizedKeyword === 'transform') {
+      // why: WP-658 / D-24469 — transform IS a HeroKeyword, but its keyword +
+      // effect are recorded ONLY for a card whose transform is fully modeled (the
+      // SUPPORTED_TRANSFORM_BASES allowlist the caller resolved into
+      // transformSupported). Every other wwhk transform card carries an UNMODELED
+      // printed condition, so resolving its [keyword:Transform] would fire an
+      // UNCONDITIONAL (unfaithful) swap; those record `transform` as an unresolved
+      // marker so the line stays an honest hollow (parse-unrecognized), exactly as
+      // before this WP — the Honest-Partial Invariant (mirrors the investigate
+      // resolver above). Checked BEFORE isValidHeroKeyword so the generic push
+      // does not fire for a held-back card.
+      if (transformSupported) {
+        keywords.push('transform');
+      } else {
+        unresolvedMarkers.push('transform');
       }
     } else if (isValidHeroKeyword(normalizedKeyword)) {
       keywords.push(normalizedKeyword);
@@ -2072,7 +2115,15 @@ export function buildHeroAbilityHooks(
           continue;
         }
 
-        const parsedAbility = parseAbilityText(abilityText);
+        // why: WP-658 / D-24469 — resolve whether this base card's transform is
+        // fully modeled (SUPPORTED_TRANSFORM_BASES) from its canonical key
+        // `{setAbbr}/{heroSlug}/{cardSlug}`, and pass it so parseAbilityText resolves
+        // a [keyword:Transform] to an executable transform only for allowlisted cards
+        // (all others keep an honest unresolved marker).
+        const transformSupported = SUPPORTED_TRANSFORM_BASES.has(
+          `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+        );
+        const parsedAbility = parseAbilityText(abilityText, { transformSupported });
 
         // why: freshly-constructed hook per instance — copies never alias a
         // shared object or arrays (D-13502).

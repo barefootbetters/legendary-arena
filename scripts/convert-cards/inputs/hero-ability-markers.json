@@ -734,6 +734,12 @@
   ],
   "wwhk": [
     {
+      "heroSlug": "she-hulk",
+      "cardSlug": "hurl-legal-objections",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-threshold:6]"
+    },
+    {
       "heroSlug": "bruce-banner",
       "cardSlug": "dangerous-testing",
       "abilityIndex": 0,

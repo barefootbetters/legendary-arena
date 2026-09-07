@@ -1,6 +1,6 @@
 {
   "expected": {
-    "finalStateHash": "e237a0e792530ba40f7ba816088a1d495d84b51634122bc77cde07e1d5e28ac3",
+    "finalStateHash": "e43da6ec5892f0a8b25c50b0a2e38a93c98a73a1f068fa30738e99df38dba2bd",
     "messages": [
       {
         "outcome": "applied",

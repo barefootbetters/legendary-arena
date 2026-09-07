@@ -43,7 +43,7 @@ import {
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck, buildTransformSideDeck } from './buildHeroDeck.js';
+import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
@@ -501,6 +501,16 @@ export function buildInitialGameState(
   // Hero Deck to convert — correct by the tabletop rule).
   const transformSideDeck = buildTransformSideDeck(effectiveHeroDeckIds, registry);
 
+  // why: D-24469 (WP-658) — capture the base→second-form link the
+  // [keyword:Transform] runtime needs at play time, off the SAME effective hero
+  // set as the side deck above. Moves have no registry, so heroEffectTransform
+  // reads this G-resident map (built from each base card's `transform` field)
+  // instead of the registry. A pure registry walk (no ctx.random) — like the
+  // side deck it adds no draw and leaves the Shuffle envelope untouched. Empty
+  // {} for non-transform hero sets, but ALWAYS seeded (mirrors transformDeck),
+  // so a new top-level G field re-pins the two hash oracles (D-24468 precedent).
+  const transformTargets = buildTransformTargets(effectiveHeroDeckIds, registry);
+
   // why: WP-514 / D-24326 — Secret Invasion converts 12 Heroes from the reservoir
   // into Skrull Villains and shuffles them into the Villain Deck. The 12 are drawn
   // from the top of the shuffled reservoir BEFORE fillHqFromDeck consumes it (so they
@@ -613,6 +623,11 @@ export function buildInitialGameState(
     // transform cards (only wwhk heroes today). Read-only in WP-657; the
     // [keyword:Transform] runtime that consumes it is a named follow-up WP.
     transformDeck: transformSideDeck,
+    // why: D-24469 (WP-658) — the base→second-form card-key map the
+    // [keyword:Transform] runtime reads at play time. Built from each base
+    // card's `transform` field; empty {} for non-wwhk games. Always present
+    // (mirrors transformDeck), so the two engine hash oracles re-pin.
+    transformTargets,
     // why: mastermind state built at setup from registry; tactics deck
     // shuffled deterministically; base card fightCost in G.cardStats
     mastermind: mastermindState,

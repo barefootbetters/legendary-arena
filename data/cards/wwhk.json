@@ -1881,7 +1881,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "Once this turn, if you made at least 6[icon:recruit]this turn, [keyword:Transform] this into Hurl Trucks."
+            "Once this turn, if you made at least 6[icon:recruit]this turn, [keyword:Transform] this into Hurl Trucks. [keyword:recruit-threshold:6]"
           ],
           "transform": "hurl-trucks"
         },

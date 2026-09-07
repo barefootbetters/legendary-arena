@@ -1396,6 +1396,24 @@ export interface LegendaryGameState {
   /** Transform side deck — set-aside Transform second-form cards (D-24468). */
   transformDeck: CardExtId[];
 
+  // why: D-24469 (WP-658) — the base→second-form link the [keyword:Transform]
+  // runtime needs at play time. Moves have no registry (setup resolves, moves
+  // operate on resolved data), so the base card's `transform` field is captured
+  // into G at Game.setup() by buildTransformTargets (alongside buildTransformSideDeck)
+  // as a copy-agnostic CARD-KEY map: `{setAbbr}/{heroSlug}/{baseSlug}` →
+  // `{setAbbr}/{heroSlug}/{targetSlug}` (e.g. `wwhk/she-hulk/hurl-legal-objections`
+  // → `wwhk/she-hulk/hurl-trucks`). One entry per base card (all copies share it);
+  // heroEffectTransform strips the `#copy` suffix off the played base ext_id to look
+  // up the target key, then pulls the first `{targetKey}#*` instance out of
+  // G.transformDeck. Built for EVERY wwhk base→target pair (the map is complete data);
+  // which cards actually resolve a swap is gated separately at the setup parser
+  // (SUPPORTED_TRANSFORM_BASES). Empty {} for hero sets without transform cards (the
+  // common case — only wwhk heroes carry them). ALWAYS present (mirrors transformDeck):
+  // a new top-level G field shifts computeStateHash, so the two engine hash oracles
+  // re-pin (the same sanctioned no-behaviour-change new-field class as D-24468).
+  /** Transform base→second-form card-key map (D-24469). */
+  transformTargets: Record<CardExtId, CardExtId>;
+
   // why: KO pile stores cards permanently removed from the game. Destination-only
   // zone — cards enter via koCard helper and never return in MVP. Initialized
   // empty at setup.

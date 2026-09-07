@@ -1,6 +1,6 @@
 # WP-658 — `[keyword:Transform]` Runtime (Consume the Transform Side Deck) (Game Engine)
 
-**Status:** Draft 2026-09-06 · **PROPOSED (WP-658; reserved in `NUMBER-LEDGER.md`)** · **Standard engine lane** (single layer — `packages/game-engine`: a new hero keyword + its onPlay effect + a setup-captured resolution map + tests + ledger flip). Reserves **D-24469** and **EC-695** (land at execution).
+**Status:** Draft 2026-09-06 · **EXECUTED 2026-09-07 (Ready — green, pending commit/PR)** · **Standard engine lane** (single layer — `packages/game-engine`: a new hero keyword + its onPlay effect + a setup-captured resolution map + tests + ledger flip) — **plus** a She-Hulk card marker (`hero-ability-markers.json` regen) and a coverage-ledger by-hook classifier, both required for a faithful, honest landing (see the resolution note below). **D-24469** + **EC-695** landed.
 
 **Primary Layer:** Game Engine (`packages/game-engine/src/rules` + `src/hero` + `src/setup`)
 **User-Visible Surface:** `play.legendary-arena.com` — once this lands, a base card that satisfies its Transform condition flips into its second-form (e.g. **Hurl Legal Objections → Hurl Trucks**) instead of the second-form appearing in the HQ/hand as a recruitable hero. **D-24026 REQUIRED** (play a wwhk base card, meet the condition, see it transform on the live board).
@@ -9,7 +9,34 @@
 
 ---
 
-## ⚠️ OPEN RULES QUESTIONS — RESOLVE BEFORE IMPLEMENTING
+## ✅ OPEN RULES QUESTIONS — RESOLVED (2026-09-07)
+
+The rule text was obtained from the in-repo Transform ewiki page `wiki/transform.md` (PR #1855, so no 403)
+and confirmed with Jeff for the load-bearing swap rule. Answers (recorded in full in **D-24469**):
+
+1. **Second-form placement:** for She-Hulk's `swap` destination, Hurl Trucks **replaces the base card in play**.
+2. **Base card:** goes **back to the side deck** (`G.transformDeck`) — set aside.
+3. **Permanence:** **permanent deck upgrade** — the second-form is now the played card, follows the normal
+   cleanup to discard, and cycles through the deck; the base is set aside. No net card gained.
+4. **Once-per-turn / re-transform:** the multi-copy "Once this turn" limiter is **not modeled** (deferred edge);
+   Hurl Trucks carries no `transform`, so it cannot re-transform.
+5. **Side-deck exhaustion:** **soft no-op** — logged `blocked`, base stays in play, never a throw.
+
+**Two scope expansions beyond the draft's literal file list, both required for a faithful + honest landing
+(documented in D-24469 / EC-695):**
+- **She-Hulk card marker.** The "≥6 Recruit" gate is the already-shipped `recruitMadeThisTurnAtLeast`
+  condition (D-24354 / #1865), which attaches only via a `[keyword:recruit-threshold:N]` marker — She-Hulk's
+  card carried none, so it was added (`hero-ability-markers.json` → regen `data/cards/wwhk.json`). Without it
+  the transform would fire unconditionally.
+- **Honest-Partial allowlist + by-hook ledger.** 14 of the 15 transform heroes carry conditions the engine
+  does not yet model; a blanket handler would fire unconditional (unfaithful) swaps. So the setup parser
+  resolves `[keyword:Transform]` to an executable effect ONLY for a `SUPPORTED_TRANSFORM_BASES` allowlist
+  (She-Hulk only), and the coverage ledger makes `transform` a by-hook keyword — so only She-Hulk's row flips
+  to `executable`; the other 14 stay honest `unsupported` hollows.
+
+---
+
+## ⚠️ OPEN RULES QUESTIONS (original draft — kept for the record)
 
 The exact Transform placement rule is NOT yet confirmed. The reference page
 `https://ewiki.legendary-arena.com/transform/` returned **403** from the drafting tooling (auth-gated).

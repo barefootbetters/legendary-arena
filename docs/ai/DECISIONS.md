@@ -39952,3 +39952,75 @@ Protect this file.
 **Packet:** WP-659 / EC-696. **Drafted:** 2026-09-07.
 
 Protect this file.
+
+### D-24469 — The `[keyword:Transform]` runtime: an allowlisted, condition-gated swap that consumes `G.transformDeck` (Active 2026-09-07 — WP-658 / EC-695)
+
+**Decision.** Implement the `[keyword:Transform]` runtime that WP-657 (D-24468) left inert. `transform`
+joins the `HeroKeyword` closed union + `HERO_KEYWORDS` canonical array + the drift tests. At `Game.setup()`,
+a new always-present `G.transformTargets: Record<CardExtId, CardExtId>` maps each base card's copy-agnostic
+key `{setAbbr}/{heroSlug}/{baseSlug}` → its second-form key `{setAbbr}/{heroSlug}/{targetSlug}` (built from
+the base card's `transform` field by `buildTransformTargets`, alongside `buildTransformSideDeck`). A
+`HERO_EFFECT_HANDLERS['transform']` handler (`heroEffectTransform`) performs the swap. The mechanic ships
+end-to-end for **She-Hulk only** (`wwhk/she-hulk/hurl-legal-objections → hurl-trucks`); the other 14
+transform heroes stay honest hollows (see Scope).
+
+**OPEN RULES QUESTIONS — resolved** (from the in-repo Transform ewiki page `wiki/transform.md`, landed by
+PR #1855, and Jeff's confirmation of the tabletop rule):
+1. *Where does the second-form go?* For She-Hulk's `swap` destination: it **replaces the base card in play**
+   (enters `inPlay` in the base's slot).
+2. *Where does the base card go?* **Back to the side deck** (`G.transformDeck`) — set aside.
+3. *Permanent?* **Yes, a permanent deck upgrade.** The second-form is now the card in play, so it follows the
+   normal played-card cleanup to the discard pile and cycles through the player's deck henceforth; the base
+   is set aside. No net card gained — the deck loses the base as it gains the second-form.
+4. *Once-per-turn / re-transform?* The printed "Once this turn" multi-copy limiter is **not modeled** (a
+   played base instance transforms once by construction; a rare second copy the same turn could also
+   transform — a documented deferred edge). Hurl Trucks carries no `transform`, so it cannot re-transform.
+5. *Side-deck exhaustion?* **Soft no-op** — the transform simply does not happen (logged `blocked`, base stays
+   in play), never a throw (moves never throw).
+
+**Scope gate (Honest-Partial, Jeff-confirmed).** Turning on a blanket `transform` handler is a fidelity trap:
+14 of the 15 transform heroes carry a printed condition the engine does not yet model (drew-2, discarded-≥2,
+KO-pile counts, combat outcomes, reveal-cost, feast+KO, gain-a-Wound). Their `[keyword:Transform]` lines carry
+**no** recognized condition marker, so an unconditional swap would fire when the printed condition is unmet — a
+silent gameplay bug. Instead the setup parser resolves `[keyword:Transform]` to an executable transform ONLY
+for a `SUPPORTED_TRANSFORM_BASES` allowlist (`heroAbility.setup.ts`, initially just She-Hulk's
+`hurl-legal-objections`); every other transform card keeps `transform` as an **unresolved marker** (an honest
+`parse-unrecognized` hollow, unchanged from today) — mirroring the `investigate` static-criterion subset. Each
+future WP that models a card's transform condition adds it to the allowlist + its condition marker.
+
+**Condition reuse (not re-built).** WP-658's drafted "recruit-threshold condition" already shipped:
+`recruitMadeThisTurnAtLeast` (D-24354, Thor's Surge of Power), marker-wired via `[keyword:recruit-threshold:N]`
+(#1865). She-Hulk's printed "made ≥6 Recruit this turn" gate is realized by **adding `[keyword:recruit-threshold:6]`**
+to `hurl-legal-objections` (via `hero-ability-markers.json`, regen through `apply-hero-ability-markers.mjs`),
+so the existing condition machinery gates the transform on the same hook. Without the marker the transform
+would fire unconditionally.
+
+**Second-form play semantics.** The handler applies the second-form's **printed attack/recruit** (imperatively,
+mirroring `applyCardPlay` — the swap is not cosmetic; Hurl Trucks grants +2 attack). Firing the second-form's
+OWN ability hooks is **deferred** (Honest-Partial): Hurl Trucks' only ability is `[keyword:Smash]`, unsupported
+engine-wide, so re-firing would add nothing but a hollow; a follow-up can re-fire via the copy-powers reentrant
+pattern when a transform target carries a supported onPlay ability.
+
+**Coverage honesty (by-hook).** The hero-mechanic ledger classified `executable` by-name
+(`MVP_KEYWORDS.has(mechanic)`), which would falsely mark all 15 transform heroes executable. `transform` is
+therefore made a **by-hook keyword** (`BY_HOOK_KEYWORDS` in `hero-mechanic-ledger.mjs`): executable only when
+THIS card's hook actually resolved it (the keyword is in the hook's `keywords`), else `unsupported` — mirroring
+the parameterized-composition-marker by-hook path. Net ledger change: `wwhk/she-hulk` `transform`
+`unsupported → executable` + a new `recruit-threshold` `condition` row; the other 14 stay `unsupported`.
+`effect-implementation-index.json` (derived from the ledger) and `card-mechanics.json` follow.
+
+**Determinism.** `G.transformTargets` is a new top-level G field seeded at every construction site (`{}` for
+non-wwhk games), so the two engine hash oracles re-pin with NO behaviour change (the D-24468 new-field class):
+`PRE_WP080_HASH` (`d5d807a9 → 36a82b21`, empty-replay guard) and the `sentinel-core-doom-2p` fixture
+`finalStateHash` (`e237a0e7… → e43da6ec…`), both core/dr-doom games with no transform cards. The transform
+effect mutates `G.transformDeck` at runtime — already hash-covered (the reason WP-657 hashed the zone). No new
+`ctx.random`.
+
+**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match that plays She-Hulk's
+Hurl Legal Objections after making ≥6 Recruit should show it transform into Hurl Trucks (the second-form on the
+board, +2 attack), and NOT transform when under 6 Recruit. Green tests + merge do NOT satisfy this.
+
+**Packet:** WP-658 / EC-695. **Executed:** 2026-09-07 (engine build 0; engine suite 3083/3083 after the two
+re-pins; whole-repo green; all four card-derived `:check` gates green). Not yet landed (pending commit/PR).
+
+Protect this file.

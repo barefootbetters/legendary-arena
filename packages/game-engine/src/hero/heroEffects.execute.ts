@@ -109,6 +109,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectInvestigate) that looks at the top N, draws the
   // first matching card, and bottoms the rest, so it belongs here.
   'investigate',
+  // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectTransform) that pulls the matching second-form out
+  // of G.transformDeck into play, routes the base card back to the side deck, and applies the
+  // second-form's printed attack/recruit, so it belongs here. The setup parser only emits a
+  // transform effect for SUPPORTED_TRANSFORM_BASES cards; held-back cards never reach here.
+  'transform',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -274,6 +280,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // ride dedicated descriptor fields, not the magnitude); the magnitude pre-gate must not
   // drop it, or the handler never fires.
   'investigate',
+  // why: WP-658 / D-24469 — transform carries no magnitude (the second-form target is read
+  // from G.transformTargets, and the pulled instance's printed attack/recruit come from
+  // G.cardStats); the magnitude pre-gate must not drop it, or the swap never fires.
+  'transform',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2712,6 +2722,149 @@ function describeInvestigateCriterion(criterion: InvestigateCriterion): string {
   return `a ${criterion.team} card`;
 }
 
+/**
+ * Hero handler for the `transform` keyword (WP-658 / D-24469).
+ *
+ * She-Hulk's "[keyword:Transform] this into Hurl Trucks" (the wwhk mechanic): swaps
+ * the played base card for its stronger second-form, pulled out of the G.transformDeck
+ * side deck (D-24468). The condition gate ("made ≥6 Recruit this turn") is the shipped
+ * recruit-threshold condition (D-24354), evaluated by evaluateAllConditions BEFORE this
+ * handler runs — so this handler only executes when the gate passed.
+ *
+ * Placement (Jeff-confirmed permanent-upgrade rule): the second-form leaves the side
+ * deck and enters play in the base card's slot; the base card goes BACK to the side
+ * deck (set aside). The second-form then follows the normal played-card cleanup to the
+ * discard pile, so it cycles through the player's deck henceforth — a permanent deck
+ * upgrade, with no net card gained (the base leaves the deck as the second-form joins it).
+ *
+ * Applies the second-form's printed attack/recruit (playing a card applies its printed
+ * icons imperatively — applyCardPlay — and the transform makes the second-form the card
+ * now in play). The base's already-applied recruit is NOT refunded — you keep the recruit
+ * you made to meet the gate.
+ *
+ * why (deferred, Honest-Partial): the second-form's OWN ability hooks are not re-fired
+ * here. Hurl Trucks' only ability is `[keyword:Smash]`, a keyword unsupported engine-wide,
+ * so firing it would add nothing but a hollow record; when a future transform target
+ * carries a supported onPlay ability, a follow-up can re-fire via the copy-powers
+ * reentrant executeHeroEffects pattern.
+ *
+ * Soft no-op (AC-5): if the side deck holds no matching second-form copy (multi-player
+ * contention exhausted it), the transform does not happen — logged, base stays in play,
+ * never a throw (moves never throw).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Move context (unused — the swap needs no randomness/reshuffle).
+ * @param playerID - Active player ID.
+ * @param cardId - The played base card's CardExtId (e.g. `wwhk/she-hulk/hurl-legal-objections#3`).
+ * @param _effect - The `{ type: 'transform' }` descriptor (no parameters).
+ */
+function heroEffectTransform(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+
+  // why: guard against G states that predate WP-658 (older test mocks with no
+  // transformTargets / transformDeck). A real match always seeds both at setup;
+  // an absent map/side deck is a silent no-op, never a throw (mirrors the
+  // executeHeroEffects heroAbilityHooks guard).
+  if (!G.transformTargets || !G.transformDeck) {
+    return;
+  }
+
+  // why: strip the `#copy` suffix so the played base instance ext_id
+  // (`wwhk/she-hulk/hurl-legal-objections#3`) resolves to the copy-agnostic card
+  // key (`wwhk/she-hulk/hurl-legal-objections`) buildTransformTargets stored.
+  const hashIndex = cardId.indexOf('#');
+  const baseKey = (hashIndex === -1 ? cardId : cardId.slice(0, hashIndex)) as CardExtId;
+  const targetKey = G.transformTargets[baseKey];
+  if (targetKey === undefined) {
+    // why: defensive — the setup parser only emits an executable transform for a
+    // SUPPORTED_TRANSFORM_BASES card, every one of which is in transformTargets, so a
+    // missing key is unreachable in practice. A silent no-op, never a throw.
+    return;
+  }
+
+  // why: find the FIRST matching second-form copy still in the side deck. Instance
+  // ids are `{targetKey}#{copy}`; the appended `#` stops a target key prefix-matching
+  // a longer sibling slug. Front-of-zone, deterministic — no ctx.random.
+  const targetPrefix = `${targetKey}#`;
+  let targetInstanceId: CardExtId | undefined;
+  for (const sideDeckId of G.transformDeck) {
+    if (sideDeckId.startsWith(targetPrefix)) {
+      targetInstanceId = sideDeckId;
+      break;
+    }
+  }
+  if (targetInstanceId === undefined) {
+    // why: AC-5 — the side deck ran out of this second-form copy (multi-player
+    // contention). The transform simply does not happen: log and continue. WP-434 —
+    // nothing happened, so the outcome is `blocked`.
+    pushLog(G,
+      `Player ${playerID} could not Transform ${formatCardRef(G.cardDisplayData, cardId)} — no matching second-form copy remained in the transform side deck.`,
+      'blocked',
+      cardId, // why: WP-438 — the played base card whose transform could not resolve.
+    );
+    return;
+  }
+
+  // Route the base card back to the side deck (set aside): a permanent deck upgrade —
+  // the player's deck loses the base as it gains the second-form, no net card change.
+  const baseMove = moveCardFromZone(playerZones.inPlay, G.transformDeck, cardId);
+  playerZones.inPlay = baseMove.from;
+  G.transformDeck = baseMove.to;
+
+  // Bring the second-form into play in the base card's slot.
+  const targetMove = moveCardFromZone(G.transformDeck, playerZones.inPlay, targetInstanceId);
+  G.transformDeck = targetMove.from;
+  playerZones.inPlay = targetMove.to;
+
+  // why: apply the second-form's printed attack/recruit — the transform makes it the
+  // card now in play, and printed icons are applied imperatively at play time
+  // (applyCardPlay). The base's already-applied recruit is intentionally NOT refunded.
+  const targetStats = G.cardStats[targetInstanceId];
+  const targetAttack = targetStats ? targetStats.attack : 0;
+  const targetRecruit = targetStats ? targetStats.recruit : 0;
+  G.turnEconomy = addResources(G.turnEconomy, targetAttack, targetRecruit);
+
+  // why: WP-434 — a completed transform that applied the second-form is `applied` (green).
+  pushLog(G,
+    `Player ${playerID} Transformed ${formatCardRef(G.cardDisplayData, cardId)} into ${formatCardRef(G.cardDisplayData, targetInstanceId)}${formatTransformEconomyClause(targetAttack, targetRecruit)}.`,
+    'applied',
+    targetInstanceId, // why: WP-438 — the second-form now in play is the play identity the log associates.
+  );
+}
+
+/**
+ * Builds the trailing " (+N attack, +M recruit)" clause for a transform log line,
+ * omitting either half that is zero and the whole clause when the second-form has no
+ * printed economy (WP-658 / D-24469). Mirrors the intent of formatBaseEconomyClause but
+ * is local to keep heroEffects.execute.ts free of a moves-layer import (avoids a cycle).
+ *
+ * @param attack - The second-form's printed attack (>= 0).
+ * @param recruit - The second-form's printed recruit (>= 0).
+ * @returns The clause including a leading space, or an empty string when both are zero.
+ */
+function formatTransformEconomyClause(attack: number, recruit: number): string {
+  const parts: string[] = [];
+  if (attack > 0) {
+    parts.push(`+${attack} attack`);
+  }
+  if (recruit > 0) {
+    parts.push(`+${recruit} recruit`);
+  }
+  if (parts.length === 0) {
+    return '';
+  }
+  return ` (${parts.join(', ')})`;
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -2753,6 +2906,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-564 / D-24373 — "Investigate for <criterion>" (static-criterion + draw): looks
   // at the top N, draws the first matching card in look order, bottoms the rest.
   investigate: heroEffectInvestigate,
+  // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk): pulls the
+  // matching second-form out of G.transformDeck into play, routes the base card back to the
+  // side deck (permanent upgrade), and applies the second-form's printed attack/recruit.
+  transform: heroEffectTransform,
 };
 
 // ---------------------------------------------------------------------------

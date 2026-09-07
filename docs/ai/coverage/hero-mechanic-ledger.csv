@@ -612,8 +612,9 @@ wwhk/sentry,Sentry,wwhk,transform,unsupported,,,,agoraphobia|golden-guardian-of-
 wwhk/sentry,Sentry,wwhk,transformed,unsupported,,,,rival-personalities
 wwhk/she-hulk,She-Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,window-of-opportunity
 wwhk/she-hulk,She-Hulk,wwhk,outwit,condition,,,,window-of-opportunity
+wwhk/she-hulk,She-Hulk,wwhk,recruit-threshold,condition,,,,hurl-legal-objections
 wwhk/she-hulk,She-Hulk,wwhk,smash,unsupported,,,,hurl-trucks
-wwhk/she-hulk,She-Hulk,wwhk,transform,unsupported,,,,hurl-legal-objections
+wwhk/she-hulk,She-Hulk,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,hurl-legal-objections
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,unsupported,,,,anger-management
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,transform,unsupported,,,,mood-swings
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,wounded-fury,unsupported,,,,planetary-level-revenge|raging-savage|scarred-past

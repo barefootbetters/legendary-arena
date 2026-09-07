@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-658 — `[keyword:Transform]` runtime: She-Hulk's transform swap consumes the side deck (EC-695 / D-24469) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** Makes the printed `[keyword:Transform]` mechanic
+actually resolve, consuming the WP-657 `G.transformDeck`. When She-Hulk plays **Hurl Legal Objections**
+after making **≥6 Recruit** this turn, it transforms into **Hurl Trucks** — the stronger second-form
+enters play (a permanent deck upgrade, +2 attack) and the base card is set aside. Under 6 Recruit it does
+not transform and resolves normally.
+
+**How it works.** `transform` joins the `HeroKeyword` union + array + drift tests; `heroEffectTransform`
+(`heroEffects.execute.ts`) reads a new always-present `G.transformTargets` (base-key → second-form-key,
+built at setup by `buildTransformTargets` from each base card's `transform` field), pulls the first matching
+second-form out of `G.transformDeck` into play, routes the base back to the side deck, and applies the
+second-form's printed attack/recruit. She-Hulk's "≥6 Recruit" gate reuses the already-shipped
+`recruitMadeThisTurnAtLeast` condition (D-24354) via a `[keyword:recruit-threshold:6]` marker added to her card.
+
+**Honest-Partial (scope gate).** 14 of the 15 transform heroes carry a printed condition the engine does not
+yet model (drew-2, discarded-≥2, combat outcomes, …), so a blanket handler would fire unconditional
+(unfaithful) swaps. The setup parser resolves `[keyword:Transform]` to an executable effect ONLY for a
+`SUPPORTED_TRANSFORM_BASES` allowlist (**She-Hulk only** for now); the other 14 keep an honest
+`parse-unrecognized` hollow. The coverage ledger makes `transform` a **by-hook keyword**, so only She-Hulk's
+row flips `unsupported → executable` (+ a new `recruit-threshold` `condition` row); the rest stay
+`unsupported`. Each future WP that models a card's condition adds it to the allowlist + its marker.
+
+**Determinism.** New `G.transformTargets` field → the two engine hash oracles re-pin with no behaviour change:
+`PRE_WP080_HASH` (`d5d807a9 → 36a82b21`) + the `sentinel-core-doom-2p` `finalStateHash`
+(`e237a0e7… → e43da6ec…`). The effect mutates `G.transformDeck` at runtime (already hash-covered — the reason
+WP-657 hashed the zone). No new `ctx.random`.
+
+**Verification.** `pnpm -r build` 0; engine suite **3083/3083** after the two re-pins (+13 tests); whole-repo
+green; `cards:check` + `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` +
+`effect-index:test` all green. **D-24026 operator-pending** (post-deploy live She-Hulk match).
+
+---
+
 ### WP-657 — Transform cards partitioned into a setup side deck (`G.transformDeck`) (EC-694 / D-24468) (2026-09-06)
 
 **User-Visible Surface — none (setup-correctness fix).** Fixes a setup bug where **Transform cards** —

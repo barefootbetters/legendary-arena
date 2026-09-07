@@ -134,6 +134,16 @@ const COMPOSITION_MARKERS = new Set(HERO_COMPOSITION_MARKER_NAMES);
 // printed on a transform-hero back face is a separate (out-of-scope) transform-modeling
 // concern, not a by-name over-claim, so by-name avoids under-claiming it.
 const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARKER_NAMES);
+// why: WP-658 / D-24469 — a HANDLED keyword that the parser resolves BY-HOOK (per card),
+// not by-name: every wwhk transform card bears the [keyword:Transform] text marker, but
+// only SUPPORTED_TRANSFORM_BASES cards (She-Hulk's hurl-legal-objections) resolve it to a
+// `transform` keyword+effect; the other 14 keep it an UNRESOLVED marker because their
+// printed condition is not yet modeled. So — like a PARAMETERIZED composition marker — a
+// by-hook keyword is `executable` only when THIS card's hook actually resolved it (the
+// keyword is in the hook's `keywords`), otherwise it stays `unsupported`. Without this the
+// by-name MVP_KEYWORDS check would falsely mark all 15 transform heroes executable (a
+// coverage over-claim), defeating the Honest-Partial Invariant.
+const BY_HOOK_KEYWORDS = new Set(['transform']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword
@@ -321,9 +331,10 @@ function extractMechanics(abilities) {
  *
  * @param {string} mechanic - a normalized mechanic name.
  * @param {Set<string>} cardResolvedMarkers - the composition markers THIS card's hooks resolved.
+ * @param {Set<string>} cardResolvedKeywords - the keywords THIS card's hooks resolved (for by-hook keywords).
  * @returns {'executable'|'deferred'|'condition'|'unsupported'} the status.
  */
-function statusForMechanic(mechanic, cardResolvedMarkers, subsystemEntry) {
+function statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry) {
   // why (WP-559 / D-24368): an allowlisted pair is IMPLEMENTED — by a subsystem other
   // than the [effect:X] hero pipeline — so it is done, NOT a TODO. Checked FIRST because
   // such a mechanic matches none of the buckets below (reveal-reorder is a bare modifier
@@ -336,6 +347,14 @@ function statusForMechanic(mechanic, cardResolvedMarkers, subsystemEntry) {
   // They are distinct mechanics worth tracking, but not keywords/effects themselves.
   if (KNOWN_CONDITIONS[mechanic] !== undefined) {
     return 'condition';
+  }
+  // why: WP-658 / D-24469 — a BY-HOOK keyword (transform) is classified per card: executable
+  // only when THIS card's hook actually resolved it (the keyword is in the hook's `keywords`),
+  // NOT by-name. Checked BEFORE the by-name MVP_KEYWORDS branch so a held-back transform card
+  // (its [keyword:Transform] left an unresolved marker) reads `unsupported`, not `executable` —
+  // the Honest-Partial Invariant (mirrors the parameterized-composition-marker by-hook path).
+  if (BY_HOOK_KEYWORDS.has(mechanic)) {
+    return cardResolvedKeywords.has(mechanic) ? 'executable' : 'unsupported';
   }
   if (MVP_KEYWORDS.has(mechanic)) {
     return 'executable';
@@ -527,15 +546,23 @@ function buildLedger(registry, provenance) {
     // the Set collapses duplicates, so a duplicate-marker card yields exactly one row and the
     // regen stays byte-stable (membership is order-independent; the row sort below is unchanged).
     const cardResolvedMarkers = new Set();
+    // why: WP-658 / D-24469 — aggregate the KEYWORDS this card's hooks resolved (distinct
+    // from resolvedMarkers, which carries composition markers) so a by-hook keyword
+    // (transform) is classified per-card: resolved for She-Hulk, an unresolved marker for
+    // the other transform heroes.
+    const cardResolvedKeywords = new Set();
     for (const hook of buildHeroAbilityHooks(registry, { heroDeckIds: [extId] })) {
       for (const marker of hook.resolvedMarkers ?? []) {
         cardResolvedMarkers.add(marker);
+      }
+      for (const keyword of hook.keywords ?? []) {
+        cardResolvedKeywords.add(keyword);
       }
     }
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {
       const designs = toSortedDesigns(designNamesByMechanic.get(mechanic));
       const subsystemEntry = subsystemEntryFor(extId, mechanic);
-      const status = statusForMechanic(mechanic, cardResolvedMarkers, subsystemEntry);
+      const status = statusForMechanic(mechanic, cardResolvedMarkers, cardResolvedKeywords, subsystemEntry);
       rows.push(buildRow(extId, info, mechanic, status, provenance, designs, subsystemEntry));
     }
   }
