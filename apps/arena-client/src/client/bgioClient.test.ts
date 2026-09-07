@@ -729,6 +729,16 @@ describe('createLiveClient tab-focus resync', () => {
 // each App-routing test passes the exact query string it wants to exercise.
 
 describe('App routing', () => {
+  // why: the live branch (?match=…) mounts App, which calls createLiveClient and
+  // registers a `document` 'visibilitychange' listener; App.vue removes it via
+  // onBeforeUnmount → handle.stop(). @vue/test-utils' mount() does NOT auto-
+  // unmount, so a mounted wrapper left in place leaks that listener onto the
+  // shared jsdom document (same failure mode the createLiveClient suites above
+  // guard with stopTrackedClients). This is the last describe today, so the leak
+  // reaches nothing — but a suite added after it would inherit the pollution.
+  // Track every wrapper and unmount it in afterEach so the teardown runs.
+  const mountedWrappers: Array<{ unmount: () => void }> = [];
+
   beforeEach(() => {
     setActivePinia(createPinia());
     resetLiveClientCallLog();
@@ -737,12 +747,17 @@ describe('App routing', () => {
   });
 
   afterEach(() => {
+    for (const wrapper of mountedWrappers) {
+      wrapper.unmount();
+    }
+    mountedWrappers.length = 0;
     setClientFactoryForTesting(null);
     resetLiveClientCallLog();
   });
 
   test('empty query string → <LobbyView /> renders (route="lobby")', () => {
     const wrapper = mount(App, { props: { searchOverride: '' } });
+    mountedWrappers.push(wrapper);
 
     assert.equal(
       wrapper.find('[data-testid="app-root"]').attributes('data-route'),
@@ -759,6 +774,7 @@ describe('App routing', () => {
         searchOverride: '?match=match-live&player=0&credentials=secret-live',
       },
     });
+    mountedWrappers.push(wrapper);
 
     assert.equal(
       wrapper.find('[data-testid="app-root"]').attributes('data-route'),
@@ -778,6 +794,7 @@ describe('App routing', () => {
     const wrapper = mount(App, {
       props: { searchOverride: '?fixture=mid-turn' },
     });
+    mountedWrappers.push(wrapper);
 
     assert.equal(
       wrapper.find('[data-testid="app-root"]').attributes('data-route'),
@@ -795,6 +812,7 @@ describe('App routing', () => {
           '?fixture=mid-turn&match=also-present&player=0&credentials=also-here',
       },
     });
+    mountedWrappers.push(fixtureWrapper);
     assert.equal(
       fixtureWrapper
         .find('[data-testid="app-root"]')
@@ -807,6 +825,7 @@ describe('App routing', () => {
     const partialWrapper = mount(App, {
       props: { searchOverride: '?match=match-only' },
     });
+    mountedWrappers.push(partialWrapper);
     assert.equal(
       partialWrapper
         .find('[data-testid="app-root"]')
