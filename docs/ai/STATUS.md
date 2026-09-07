@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-661 — Gate the co2e/ssw1 "made at least N recruit" attack grants on `recruit-threshold` (EC-698 / D-24472) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** Closes the flagged WP-660 follow-up (1). Five Thor /
+Lady Thor cards print *"Once (this turn / per turn), if you made at least N recruit this turn, …"*. WP-660
+removed the phantom **+N recruit** these clauses emitted, but left their **real** printed grant firing
+**ungated** — every play of co2e `glory-of-asgard` / `spark-of-the-divine` handed out a free +3 attack, and
+ssw1 `chosen-by-asgard` / `living-thunderstorm` a free +2 / +6, regardless of recruit made this turn.
+
+**Fix (card-data only).** Add `[keyword:recruit-threshold:N]` (N=8 co2e Thor, N=6 ssw1 Lady Thor) to each
+card's ability via `scripts/convert-cards/inputs/hero-ability-markers.json` + apply/regen. The already-shipped
+marker→condition parser arm (WP-545 / D-24354 — the D-24055 Spectrum precedent) pushes a
+`recruitMadeThisTurnAtLeast:N` condition onto the **same hook** carrying the printed effect, so the +M attack
+fires only after ≥N recruit. **No engine source change** — the marker, its parser arm, the evaluator, and
+`VALID_TOKEN_PATTERN`'s `recruit-threshold:[1-9]\d*` form all shipped earlier. `spark-of-the-divine`'s
+KO-choice and `mysterious-origin`'s unmarked "draw a card" stay **honest hollows** — now properly gated but
+still unmodeled (a separate mechanic).
+
+**Scope + verification.** Card-data + tests only; **no new `G` field, no hash re-pin** (the sentinel plays
+none of these cards). Derived-artifact regen was **expected and run**: the hero ledger moves `co2e/thor` and
+`ssw1/lady-thor` from `(unmarked)` to `recruit-threshold`/`condition` (condition 23→25), with the
+effect-index and card-mechanics feeds in lockstep (recruit-threshold cardCount 3→5); `cards:check` reproduces
+`ssw1` (co2e is hand-authored / gate-excluded, marker enforced by `--validate`). All-package build 0; engine
+suite **3093/3093** (+6 setup tests, no re-pin); whole-repo green (game-engine 3093, registry 248, preplan 52,
+lagn 102, registry-viewer 281, server 1302 +202 DB-skips, arena-client 1612); `cards` + `ledger:heroes` +
+`effect-index` + `mechanics:metadata` + `sim:runtime-observed` `:check` all green. **D-24026 operator-pending**
+(a live Lady Thor / co2e Thor match: grant fires only after ≥N recruit). **Flagged follow-up (2) resolved:**
+the amwp Ghost mastermind was investigated and is **not a bug** — the villain/mastermind parser reads only
+`[effect:<value>]` markers (never `[icon:]` or English), so its "made at least 6 recruit" clause emits no
+phantom grant; nothing to port.
+
+---
+
 ### WP-660 — Condition-clause `[icon:recruit|attack]` misparse fix (no more phantom grants) (EC-697 / D-24471) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** A parser fix so a card that prints a "if you made at

@@ -1025,10 +1025,12 @@
       "label": "Recruit Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 3,
+      "cardCount": 5,
       "cardIds": [
+        "co2e/thor",
         "core/thor",
         "msp1/thor",
+        "ssw1/lady-thor",
         "wwhk/she-hulk"
       ],
       "hidden": true
@@ -1668,7 +1670,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 40,
+      "cardCount": 38,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1679,7 +1681,6 @@
         "co2e/nick-fury",
         "co2e/spider-man-miles-morales",
         "co2e/storm",
-        "co2e/thor",
         "core/captain-america",
         "core/deadpool",
         "core/nick-fury",
@@ -1702,7 +1703,6 @@
         "shld/leo-fitz-and-jemma-simmons",
         "shld/melinda-may",
         "ssw1/black-bolt",
-        "ssw1/lady-thor",
         "ssw1/maximus",
         "ssw1/proxima-midnight",
         "ssw2/phoenix-force-cyclops",
@@ -2356,7 +2356,7 @@
     },
     "co2e/thor": {
       "mechanics": [
-        "unmarked"
+        "recruit-threshold"
       ]
     },
     "co2e/wolverine": {
@@ -3345,7 +3345,7 @@
     },
     "ssw1/lady-thor": {
       "mechanics": [
-        "unmarked"
+        "recruit-threshold"
       ]
     },
     "ssw1/magik": {

@@ -1337,7 +1337,7 @@
           "attack": "0+",
           "recruit": "2",
           "abilities": [
-            "Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack]."
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack]. [keyword:recruit-threshold:8]"
           ]
         },
         {
@@ -1367,7 +1367,7 @@
           "attack": "0+",
           "recruit": "3",
           "abilities": [
-            "Once this turn, if you made at least 8[icon:recruit] this turn, you may KO a card from your hand or discard pile. If you do, you get +3[icon:attack]."
+            "Once this turn, if you made at least 8[icon:recruit] this turn, you may KO a card from your hand or discard pile. If you do, you get +3[icon:attack]. [keyword:recruit-threshold:8]"
           ]
         },
         {

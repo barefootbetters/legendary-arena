@@ -6,9 +6,9 @@
     "byStatus": {
       "executable": 263,
       "deferred": 0,
-      "condition": 23,
+      "condition": 25,
       "unsupported": 335,
-      "unmarked": 40,
+      "unmarked": 38,
       "subsystem": 1
     },
     "distinctMechanics": 125
@@ -3097,12 +3097,21 @@
       "extId": "co2e/thor",
       "heroName": "Thor",
       "set": "co2e",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "glory-of-asgard",
+          "name": "Glory of Asgard"
+        },
+        {
+          "slug": "spark-of-the-divine",
+          "name": "Spark of the Divine"
+        }
+      ]
     },
     {
       "extId": "co2e/wolverine",
@@ -8770,12 +8779,25 @@
       "extId": "ssw1/lady-thor",
       "heroName": "Lady Thor",
       "set": "ssw1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "recruit-threshold",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "chosen-by-asgard",
+          "name": "Chosen by Asgard"
+        },
+        {
+          "slug": "living-thunderstorm",
+          "name": "Living Thunderstorm"
+        },
+        {
+          "slug": "mysterious-origin",
+          "name": "Mysterious Origin"
+        }
+      ]
     },
     {
       "extId": "ssw1/magik",
