@@ -39934,7 +39934,7 @@ Protect this file.
 
 ### D-24470 — Psychic Link's "each player may reveal another X-Men Hero → draw" is a new `reveal-from-hand` mechanic; the mid-sentence team token is suppressed as a gate via a marker, not a general parser rewrite (WP-659 / EC-696)
 
-**Status:** Drafted 2026-09-07; not yet landed (flips to Active at WP-659 execution).
+**Status:** Active — landed 2026-09-07 (WP-659 / EC-696).
 
 **Context.** `core/emma-frost/psychic-link` prints *"Each player may reveal another X-Men Hero. Each player who does draws a card."* The upstream source (`scripts/convert-cards/inputs/cards/coreset.js` ~L311) is `["Each player may reveal another ", { team: 4 }, " Hero. …"]` — a **mid-sentence** `{ team: 4 }` describing the reveal target, with no leading `{team}:` gate prefix. But `setup/heroAbility.setup.ts` Step 1b extracts **every** `[team:X]` token as a `requiresTeam` play-gate, so the card is wrongly gated on "another X-Men Hero played this turn" (it blocks), and the reveal-from-hand → draw mechanic is unimplemented — the card does nothing (live-observed: magneto-Midtown-Bank-Robbery 1p, blocked 9.2.2, silent 12.2.7). This is the same "Emma Frost cards not triggering" report as Diamond Form (D-24467, fixed) and Shadowed Thoughts (WP-660, separate — its covert gate is FAITHFUL, only the villain-deck-play half is unimplemented).
 
@@ -39947,9 +39947,19 @@ Protect this file.
 5. **Determinism.** No new `G` field (a stateless hand-read + draw), so both structural hash oracles are byte-unchanged; the draw reuses the engine's single shuffle envelope on reshuffle. A `sim:runtime-observed` sentinel MAY move if a recorded fixture now plays Psychic Link and draws — investigate and record an explained re-pin if so; do not assume a no-op.
 6. **Card data regenerated, not hand-edited** (WP-633): the `[keyword:reveal-from-hand]` marker is applied by `apply-hero-ability-markers.mjs` from the curated map, and a clean regen reproduces the committed `data/cards/core.json` (core is the sole in-scope set — a cross-set grep of the upstream sources hits only `coreset.js`).
 
-**Gates.** Pre-flight NOT READY → the handler-bearing lockstep triad folded into the EC; copilot RISK → the count-pin lock, the "another" no-self-exclusion semantics, and the AC-4 criterion-shape assertion folded in; a re-flight cross-checked the pin literals and caught a second `HERO_KEYWORDS`-length pin. Verdict READY / PASS (all findings scope-neutral EC/AC-completeness). This entry flips to Active at execution with the confirmed choices.
+**Gates (draft).** Pre-flight NOT READY → the handler-bearing lockstep triad folded into the EC; copilot RISK → the count-pin lock, the "another" no-self-exclusion semantics, and the AC-4 criterion-shape assertion folded in; a re-flight cross-checked the pin literals and caught a second `HERO_KEYWORDS`-length pin. Draft verdict READY / PASS.
 
-**Packet:** WP-659 / EC-696. **Drafted:** 2026-09-07.
+**Execution outcomes (2026-09-07).** Implemented as designed. Three execution findings, all handled without a scope change:
+
+1. **Stale EC baseline (D-24377 §—; the ledger-stale-baseline class).** The EC's locked counts were drafted against `HERO_KEYWORDS.length = 38` / handler count `24`; WP-658 (`transform`) landed in the interim, so at execution the real values were **39 → 40** (`HERO_KEYWORDS`, both pins: `rules/heroKeywords.test.ts` + `rules/heroAbility.setup.test.ts`) and **25 → 26** (`HERO_EFFECT_HANDLERS`, `heroEffects.execute.test.ts`). The WP *intent* (join the lockstep) governs; the deltas were applied to the real current values.
+2. **A THIRD lockstep site the draft gates did not name — `NO_MAGNITUDE_KEYWORDS`.** `executeSingleEffect`'s magnitude pre-gate drops any keyword lacking a valid magnitude unless it is `ko` or in `NO_MAGNITUDE_KEYWORDS`. `reveal-from-hand` carries no magnitude, so it must join that set (like `investigate` / `transform`) or the handler never runs. The **AC-1/AC-3 handler tests caught this** (the reward-integrity payoff — the draw silently failed until the set was updated), not a count pin.
+3. **`sim:runtime-observed:check` did NOT move** — no re-pin. No sentinel/observed-sweep game plays Psychic Link, so the observed-hollows artifact is byte-unchanged; and no `G` field was added, so both structural hash oracles are byte-unchanged as designed.
+
+**Verification.** `pnpm -r build` 0; game-engine suite **3092 / 0** (+5 AC tests); `cards:check` + `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `sim:runtime-observed:check` all 0. Card-data scope = `data/cards/core.json` only (cross-set grep of the upstream sources hits only `coreset.js`). The `reveal-from-hand` ledger row is `executable` (a real handler), not `unsupported`. **Control run:** reverting the handler to a no-op failed exactly the two draw ACs (AC-1, AC-3) while the parser / no-match / no-throw ACs stayed green — non-vacuous.
+
+**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match that plays Psychic Link with an X-Men Hero in hand should draw a card (and show no "needs another x-men" block). Green tests + merge do NOT satisfy it.
+
+**Packet:** WP-659 / EC-696. **Drafted:** 2026-09-07. **Landed:** 2026-09-07.
 
 Protect this file.
 

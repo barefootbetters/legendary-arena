@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 662,
+    "totalRows": 663,
     "byStatus": {
-      "executable": 263,
+      "executable": 264,
       "deferred": 0,
       "condition": 25,
       "unsupported": 335,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 125
+    "distinctMechanics": 126
   },
   "rows": [
     {
@@ -3320,6 +3320,22 @@
         {
           "slug": "mental-discipline",
           "name": "Mental Discipline"
+        }
+      ]
+    },
+    {
+      "extId": "core/emma-frost",
+      "heroName": "Emma Frost",
+      "set": "core",
+      "mechanic": "reveal-from-hand",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-from-hand",
+      "designs": [
+        {
+          "slug": "psychic-link",
+          "name": "Psychic Link"
         }
       ]
     },

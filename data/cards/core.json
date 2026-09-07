@@ -490,7 +490,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Each player may reveal another [team:x-men] Hero. Each player who does draws a card."
+            "Each player may reveal another [team:x-men] Hero. Each player who does draws a card. [keyword:reveal-from-hand]"
           ]
         },
         {

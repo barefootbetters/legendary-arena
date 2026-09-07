@@ -278,6 +278,12 @@
       "markupToken": "[keyword:defeated-villain-or-mastermind]"
     },
     {
+      "heroSlug": "emma-frost",
+      "cardSlug": "psychic-link",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-from-hand]"
+    },
+    {
       "heroSlug": "hawkeye",
       "cardSlug": "quick-draw",
       "abilityIndex": 0,

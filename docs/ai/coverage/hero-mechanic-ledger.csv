@@ -176,6 +176,7 @@ core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/g
 core/deadpool,Deadpool,core,(unmarked),unmarked,,,,
 core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,condition,,,,diamond-form
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
+core/emma-frost,Emma Frost,core,reveal-from-hand,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-from-hand,psychic-link
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 core/hulk,Hulk,core,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage

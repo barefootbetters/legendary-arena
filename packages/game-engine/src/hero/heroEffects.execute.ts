@@ -115,6 +115,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // second-form's printed attack/recruit, so it belongs here. The setup parser only emits a
   // transform effect for SUPPORTED_TRANSFORM_BASES cards; held-back cards never reach here.
   'transform',
+  // why: WP-659 / D-24470 — "Each player may reveal another Hero → draw" (Psychic Link); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectRevealFromHand) that draws for each player holding a
+  // criterion match, so it belongs here (the bidirectional handler-completeness authority).
+  'reveal-from-hand',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -284,6 +288,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // from G.transformTargets, and the pulled instance's printed attack/recruit come from
   // G.cardStats); the magnitude pre-gate must not drop it, or the swap never fires.
   'transform',
+  // why: WP-659 / D-24470 — reveal-from-hand carries no magnitude (each matching player draws
+  // exactly one card; the set of drawing players is computed from each hand at play time), so
+  // the magnitude pre-gate must not drop it, or the reveal-draw never fires.
+  'reveal-from-hand',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2653,6 +2661,77 @@ function heroEffectInvestigate(
 const INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT = 2;
 
 /**
+ * Reveal-from-hand → draw (WP-659 / D-24470). Psychic Link's "Each player may reveal
+ * another [team]/[hc] Hero. Each player who does draws a card."
+ *
+ * For every player in deterministic seat order (`Object.keys(G.playerZones).sort()` — the
+ * gain-wound-each / steal-abilities precedent), if that player's hand holds a card matching
+ * the reveal criterion, they draw one card. The printed "may" is auto-taken: revealing costs
+ * nothing and yields a draw, so declining is strictly dominated — no pending-choice park
+ * (D-24470). Reveal is state-neutral (the matched card STAYS in hand — the only mutation is
+ * the draw). "another" needs no self-exclusion — the played card has already left the hand.
+ *
+ * Deterministic: fixed seat order; the draw reshuffles the discard through the single
+ * `ctx.random` shuffle envelope on an empty deck (drawFromPlayerDeck). Never throws — an
+ * empty hand or a no-match player is simply skipped.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Context narrowed to ShuffleProvider for the draw reshuffle.
+ * @param _playerID - The playing player (unused — the effect touches every player).
+ * @param cardId - The played card (for the log reference).
+ * @param effect - The effect descriptor carrying the single revealCriterion.
+ */
+function heroEffectRevealFromHand(
+  G: LegendaryGameState,
+  ctx: unknown,
+  _playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const criterion = effect.revealCriterion;
+  // why: defensive — the parser only emits a reveal-from-hand effect once its criterion
+  // resolves (the Honest-Partial branch); a criterion-less effect is unreachable, no-op here.
+  if (criterion === undefined) {
+    return;
+  }
+  for (const eachPlayerId of Object.keys(G.playerZones).sort()) {
+    const playerZones = G.playerZones[eachPlayerId];
+    if (!playerZones) {
+      continue;
+    }
+    let handHasMatch = false;
+    for (const handCardId of playerZones.hand) {
+      // why: reuse investigateCardMatchesCriteria (zone-agnostic — projects the card's
+      // stats/traits and matches) with the single criterion wrapped in a 1-element list, the
+      // OR-combined form the shared matcher takes.
+      if (investigateCardMatchesCriteria(G, handCardId, [criterion])) {
+        handHasMatch = true;
+        break;
+      }
+    }
+    if (!handHasMatch) {
+      continue;
+    }
+    const drawnCount = drawFromPlayerDeck(G, eachPlayerId, 1, ctx as ShuffleProvider);
+    if (drawnCount > 0) {
+      pushLog(G,
+        `Player ${eachPlayerId} revealed a matching Hero for ${formatCardRef(G.cardDisplayData, cardId)} and drew a card.`,
+        'applied',
+        cardId, // why: WP-438 — attribute the reveal-draw to the played card.
+      );
+    } else {
+      // why: WP-434 — a match with an empty deck AND discard is `partial` (the ability fired,
+      // the source ran dry) — distinct from a no-match player, who is silently skipped.
+      pushLog(G,
+        `Player ${eachPlayerId} revealed a matching Hero for ${formatCardRef(G.cardDisplayData, cardId)} but their deck and discard pile were empty.`,
+        'partial',
+        cardId,
+      );
+    }
+  }
+}
+
+/**
  * Returns whether a deck card matches an investigate criterion list, projecting the card's
  * runtime facts from `G.cardStats` (icon / cost) and `G.cardTraits` (hero-class / team).
  * A card with no stat / trait entry yields `undefined` for the missing facts, so the
@@ -2910,6 +2989,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // matching second-form out of G.transformDeck into play, routes the base card back to the
   // side deck (permanent upgrade), and applies the second-form's printed attack/recruit.
   transform: heroEffectTransform,
+  // why: WP-659 / D-24470 — "Each player may reveal another [team]/[hc] Hero. Each player who
+  // does draws a card." (Psychic Link): each player holding a criterion-matching Hero in hand
+  // draws 1 (auto-reveal, seat order). The co-located token is captured as the reveal
+  // criterion at setup, not read as a play-gate.
+  'reveal-from-hand': heroEffectRevealFromHand,
 };
 
 // ---------------------------------------------------------------------------
