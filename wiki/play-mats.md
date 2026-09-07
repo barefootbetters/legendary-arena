@@ -169,10 +169,11 @@ usable with any game. **No City / HQ labels** — decorative only.
 | Marvel Spider-Man Playmat | — (~$20) | — |
 
 The Thanos art-only mat reuses Caio Cacau's Thanos-vs-Avengers art with no zones
-printed; the Wolverine mat is pure art:
+printed; the Wolverine and Spider-Man mats are pure art:
 
-![Marvel Thanos art-only play mat (Upper Deck SKU 93486) — Caio Cacau's Thanos-versus-Avengers illustration with the Infinity Gauntlet at centre and no game zones printed.](/play-mats/thanos-art-mat.jpg "width=49%")
-![Marvel Wolverine art-only play mat (Upper Deck SKU 93490) — a close-up of Wolverine mid-slash on a red field, with no game zones printed.](/play-mats/wolverine-art-mat.jpg "width=49%")
+![Marvel Thanos art-only play mat (Upper Deck SKU 93486) — Caio Cacau's Thanos-versus-Avengers illustration with the Infinity Gauntlet at centre and no game zones printed.](/play-mats/thanos-art-mat.jpg "width=32%")
+![Marvel Wolverine art-only play mat (Upper Deck SKU 93490) — a close-up of Wolverine mid-slash on a red field, with no game zones printed.](/play-mats/wolverine-art-mat.jpg "width=32%")
+![Marvel Spider-Man art-only play mat (Upper Deck) — Spider-Man crawling head-first down a glass skyscraper toward the viewer, a spider descending on a web at right, full-bleed art with no game zones printed.](/play-mats/spider-man-art-mat.jpg "width=32%")
 
 ### Layout scans on legendarycardgame.com
 
