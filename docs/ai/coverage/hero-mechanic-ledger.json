@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 660,
+    "totalRows": 661,
     "byStatus": {
       "executable": 262,
       "deferred": 0,
       "condition": 19,
-      "unsupported": 338,
+      "unsupported": 339,
       "unmarked": 40,
       "subsystem": 1
     },
-    "distinctMechanics": 124
+    "distinctMechanics": 125
   },
   "rows": [
     {
@@ -3281,6 +3281,22 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "core/emma-frost",
+      "heroName": "Emma Frost",
+      "set": "core",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "diamond-form",
+          "name": "Diamond Form"
+        }
+      ]
     },
     {
       "extId": "core/emma-frost",

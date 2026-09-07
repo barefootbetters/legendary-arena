@@ -260,6 +260,12 @@
       "markupToken": "[keyword:draw:1]"
     },
     {
+      "heroSlug": "emma-frost",
+      "cardSlug": "diamond-form",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:defeated-villain-or-mastermind]"
+    },
+    {
       "heroSlug": "hawkeye",
       "cardSlug": "quick-draw",
       "abilityIndex": 0,

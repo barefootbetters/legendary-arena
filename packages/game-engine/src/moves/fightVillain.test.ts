@@ -736,3 +736,51 @@ describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Dec
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-656 / D-24467 — Diamond Form defeat signal (gated, edge-triggered)
+// ---------------------------------------------------------------------------
+
+describe('WP-656 / D-24467 — villain-defeat signal', () => {
+  it('sets the defeat signal on a successful fight when a deferred grant is pending', () => {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    // why: the signal is GATED on a pending deferred grant (Diamond Form's).
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      true,
+      'a City-villain defeat signals Diamond Form when a grant is pending',
+    );
+  });
+
+  it('AC-9: does NOT set the signal when no deferred grant is pending (oracle-safe)', () => {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      undefined,
+      'the flag must never enter G for a game with no deferred grant',
+    );
+  });
+
+  it('does NOT set the signal on a rejected fight (empty city space)', () => {
+    const gameState = createMockGameState({ city: [null, null, null, null, null] });
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      undefined,
+      'a fight that defeats nothing signals nothing (the flag is on the success path)',
+    );
+  });
+});

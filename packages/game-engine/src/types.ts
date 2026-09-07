@@ -1458,6 +1458,18 @@ export interface LegendaryGameState {
   /** Numeric-threshold hero gates awaiting their threshold this turn; absent when none. */
   deferredConditionalGrants?: DeferredConditionalGrant[];
 
+  // why: WP-656 / D-24467 — the per-move EDGE signal that the current player just
+  // defeated a City Villain (fightVillain) or a Mastermind tactic (fightMastermind)
+  // this turn. Read by the `defeatedVillainOrMastermindThisTurn` wait-and-see
+  // condition (Diamond Form). Written GATED — only while a deferred grant is already
+  // pending (`deferredConditionalGrants` non-empty) — so it never enters G for a game
+  // with no such grant, keeping both hash oracles byte-unchanged (the D-24377 §6
+  // lazy-field posture). CONSUMED (deleted) by resolveDeferredHeroGrants after each
+  // move's resolution, so it is edge-triggered: a defeat grants exactly once, and a
+  // non-defeat move that follows a defeat sees no signal. Absent = no uncredited defeat.
+  /** Edge signal: a Villain/Mastermind was defeated this move, awaiting credit; absent otherwise. */
+  villainOrMastermindDefeatedSinceResolve?: boolean;
+
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.
   /** Per-turn economy tracking (attack/recruit points accumulated and spent). */

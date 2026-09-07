@@ -653,6 +653,16 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // for the wrong turn. Cleared here, beside the other per-turn resets.
           clearDeferredConditionalGrants(G);
 
+          // why: WP-656 / D-24467 — defensive turn-boundary clear of the defeat edge
+          // signal. resolveDeferredHeroGrants consumes it after every move, so it is
+          // normally already absent by the turn boundary; this guarded delete makes the
+          // per-turn reset explicit beside clearDeferredConditionalGrants and never
+          // carries a stale defeat into the next turn. Guarded so a game that never
+          // set it is byte-unchanged (a no-op when unset).
+          if (G.villainOrMastermindDefeatedSinceResolve !== undefined) {
+            delete G.villainOrMastermindDefeatedSinceResolve;
+          }
+
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
           // helper push sites have no ctx) and reset the per-step action counter, so
           // pushLog can number every log line {turn}.{step}.{action}. NOTE (WP-337):

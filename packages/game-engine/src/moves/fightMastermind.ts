@@ -141,6 +141,15 @@ export function fightMastermind(
   // why: D-24180 — this successful mastermind fight marks the player as having
   // acted this turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;
+  // why: WP-656 / D-24467 — signal this Mastermind defeat for Diamond Form's
+  // wait-and-see grant. RS-1 ruling: each successful fightMastermind defeats one
+  // Tactic into the victory pile, and per the Universal Rules a Tactic defeat is
+  // "defeating the Mastermind" for a whenever-you-defeat trigger — so EVERY tactic
+  // fight counts (repeatable +3 per tactic), not only the final vanquish. GATED and
+  // EDGE-triggered exactly as the fightVillain site; consumed by resolveDeferredHeroGrants.
+  if (G.deferredConditionalGrants !== undefined && G.deferredConditionalGrants.length > 0) {
+    G.villainOrMastermindDefeatedSinceResolve = true;
+  }
 }
 
 /**

@@ -265,6 +265,17 @@ export function evaluateCondition(
       return matchCount >= threshold;
     }
 
+    case 'defeatedVillainOrMastermindThisTurn': {
+      // why: WP-656 / D-24467 — Diamond Form's "Whenever you defeat a Villain or
+      // Mastermind this turn, you get +3 Recruit." A wait-and-see gate re-checked by
+      // the existing per-move onMove resolution (game.ts). It reads the EDGE signal
+      // G.villainOrMastermindDefeatedSinceResolve, set (gated) at the fight sites and
+      // consumed each resolution, so the gate is true only on the move immediately
+      // after a qualifying defeat — never sticky. Ignores condition.value (a boolean
+      // gate, no threshold). Safe-skip parity: an absent flag reads false, never throws.
+      return G.villainOrMastermindDefeatedSinceResolve === true;
+    }
+
     default: {
       // why: unsupported condition types are safely skipped — same pattern
       // as WP-022 for unsupported keywords. Future WPs will add new
@@ -528,6 +539,12 @@ export function describeFailedCondition(
       const count = countCheapOrSizeChanging(G, playerID);
       return `it needs ${condition.value} cards costing 1-2 or Size-Changing — you have ${count}`;
     }
+
+    case 'defeatedVillainOrMastermindThisTurn':
+      // why: WP-656 / D-24467 — a boolean defeat gate, so there is no running count
+      // to quote. The line is the wait-and-see "not yet" phrasing (the ability applies
+      // the moment a qualifying defeat lands this turn), matching the recorded log text.
+      return 'it needs you to defeat a Villain or Mastermind this turn';
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;
