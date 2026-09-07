@@ -40024,3 +40024,55 @@ board, +2 attack), and NOT transform when under 6 Recruit. Green tests + merge d
 re-pins; whole-repo green; all four card-derived `:check` gates green). Not yet landed (pending commit/PR).
 
 Protect this file.
+
+### D-24471 — A `[icon:recruit|attack]` inside a condition clause is a threshold, not a grant (Active 2026-09-07 — WP-660 / EC-697)
+
+**Decision.** The hero-ability parser (`setup/heroAbility.setup.ts`) must NOT read a `[icon:recruit]` /
+`[icon:attack]` token as a resource GRANT when it is the threshold/rate of a `made at least N` /
+`for every N` / `N or more` CONDITION clause. A new `CONDITION_ICON_PATTERN` + `computeConditionIconRanges`
+record the character ranges of such condition icons; the icon-magnitude extractor (Step 2b) and the
+icon→keyword extractor (Step 3) skip any icon whose span overlaps a suppressed range
+(`overlapsSuppressedRange`). Suppression is **positional** — a real grant icon elsewhere on the same line
+("if you made 8 recruit, you get +3[icon:attack]") is kept.
+
+**Why.** Both extractors read the integer adjacent to `[icon:recruit|attack]` as a magnitude and promote the
+icon to a `recruit`/`attack` keyword, with no grant-vs-condition distinction. So "if you made at least
+6[icon:recruit] this turn, …" emitted a phantom `{type:'recruit', magnitude:6}`. Live evidence
+(`red-skull-Midtown-Bank-Robbery` 1p diagnostics, 2026-09-07, surfaced during WP-658's D-24026 check):
+**Radioactive Riot** (printed recruit `null`, ability "…you may KO a card") granted a **free +6 recruit on
+every play** (unconditional); **Hurl Legal Objections** (WP-658) granted +6 recruit ALONGSIDE its Transform.
+A card silently handing out resources it never printed is an honest-integrity / fairness bug.
+
+**Mechanism.** Parser-only, one file. `CONDITION_ICON_PATTERN` =
+`/(?:at least|for every)\s*\d+\s*\[icon:(?:attack|recruit)\]|\d+\s+or more\s+\[icon:(?:attack|recruit)\]/gi`.
+The suppressed range runs from the icon token (the match's last `[icon:`) to the phrase end, so both the
+icon-magnitude match (which starts at the digit) and the icon→keyword match (which starts at the `[`)
+overlap and are skipped. Mirrors the existing investigate / size-changing / count-scaled icon suppressions.
+
+**Affected hero cards** (parser output corrected — NO card-data change): wwhk `radioactive-riot`
+(→ honest hollow), `hurl-legal-objections` (→ `[{transform}]` + gate), `jade-giantess` (phantom `recruit:2`
+gone); co2e `glory-of-asgard` / `spark-of-the-divine`; ssw1 `mysterious-origin` / `chosen-by-asgard` /
+`living-thunderstorm` (phantom recruit gone, real attack grant kept); core/msp1 `surge-of-power` (cosmetic
+`recruit` keyword removed; its +3 attack was already gated by the WP-545 `recruit-threshold:8` marker).
+
+**Determinism & coverage.** Parser-only; no new `G` field; no `ctx.random`. The sentinel `sentinel-core-doom-2p`
+game plays none of the affected cards, so both hash oracles are byte-unchanged (empirical — engine suite
+3087/3087 with NO re-pin). No derived-artifact drift: the hero-mechanic ledger reads `[keyword:X]` markers
+(these cards carry no `[keyword:recruit]`; the phantom came only from icon promotion), so `ledger:heroes`,
+`effect-index`, `mechanics:metadata`, and `sim:runtime-observed` all stay current.
+
+**Out of scope (flagged follow-ups).** (1) GATING the now-ungated attack grants on the co2e / ssw1
+`if you made at least N recruit, you get +M attack` cards — a pre-existing condition-modeling gap (the
+WP-653-style condition-gate family applied to `recruit-threshold` via card markers). This WP removes the
+phantom recruit, not the ungated grant. (2) The amwp Ghost MASTERMIND ("can't fight unless you made at
+least 6[icon:recruit] this turn") lives on the villain/mastermind parser — a different code path.
+
+**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` She-Hulk match: Radioactive
+Riot grants NO recruit; Hurl Legal Objections transforms with no spurious +6 recruit. Green tests + merge do
+NOT satisfy this.
+
+**Packet:** WP-660 / EC-697. **Executed:** 2026-09-07 (engine build 0; engine suite 3087/3087, no re-pin;
+whole-repo green; all card-derived `:check` + `sim:runtime-observed:check` gates green, no regen). Not yet
+landed (pending commit/PR).
+
+Protect this file.

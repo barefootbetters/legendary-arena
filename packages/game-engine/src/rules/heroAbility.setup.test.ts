@@ -265,6 +265,13 @@ describe('buildHeroAbilityHooks — transform keyword resolution (WP-658 / D-244
       !(hook!.unresolvedMarkers ?? []).includes('transform'),
       'transform is NOT an unresolved marker for the allowlisted card',
     );
+    // why: WP-660 / D-24471 — the "6[icon:recruit]" in the condition clause must NOT be read
+    // as a +6 recruit grant (the shipped WP-658 bug). The hook's only effect is the transform.
+    assert.deepStrictEqual(
+      hook!.effects,
+      [{ type: 'transform' }],
+      'no phantom +6 recruit grant from the condition clause — the only effect is the transform',
+    );
   });
 
   it('leaves [keyword:Transform] an unresolved marker for a held-back transform card (Honest-Partial) (AC-1)', () => {
@@ -294,6 +301,57 @@ describe('buildHeroAbilityHooks — transform keyword resolution (WP-658 / D-244
       hook!.keywords.includes('draw'),
       'the co-located draw effect still resolves (mixed hook stays reachable)',
     );
+  });
+});
+
+describe('buildHeroAbilityHooks — condition-clause icon is not a grant (WP-660 / D-24471)', () => {
+  function oneCard(setAbbr: string, heroSlug: string, cardSlug: string, ability: string) {
+    const registry = makeHeroRegistry(setAbbr, heroSlug, [
+      { slug: cardSlug, rarityLabel: 'Common 1', abilities: [ability] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: [`${setAbbr}/${heroSlug}`] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    return hooks.find((entry) => entry.cardId === `${setAbbr}/${heroSlug}/${cardSlug}#0`);
+  }
+
+  it('does NOT emit a recruit grant from "made at least N[icon:recruit]" (Radioactive Riot regression)', () => {
+    const hook = oneCard('wwhk', 'she-hulk', 'radioactive-riot',
+      'Once this turn, if you made at least 6[icon:recruit]this turn, you may KO a card from your hand or discard pile.');
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(!hook!.keywords.includes('recruit'), 'the condition icon must NOT add a recruit keyword');
+    const recruitEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'recruit');
+    assert.equal(recruitEffects.length, 0, 'no phantom +6 recruit grant is emitted from the condition clause');
+  });
+
+  it('does NOT emit a recruit grant from "for every N[icon:recruit]" (Jade Giantess)', () => {
+    const hook = oneCard('wwhk', 'she-hulk', 'jade-giantess',
+      "For every 2[icon:recruit]you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed[icon:attack].");
+    assert.ok(hook !== undefined, 'the hook exists');
+    const recruitEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'recruit');
+    assert.equal(recruitEffects.length, 0, 'the per-N-recruit rate is a condition, not a +2 recruit grant');
+  });
+
+  it('KEEPS a real grant icon elsewhere on a condition line ("you get +N[icon:attack]")', () => {
+    const hook = oneCard('co2e', 'thor', 'glory-of-asgard',
+      'Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack].');
+    assert.ok(hook !== undefined, 'the hook exists');
+    const recruitEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'recruit');
+    assert.equal(recruitEffects.length, 0, 'the condition recruit icon is suppressed');
+    const attackEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'attack');
+    assert.deepStrictEqual(
+      attackEffects,
+      [{ type: 'attack', magnitude: 3 }],
+      'the co-located +3 attack grant is preserved (positional, not line-level, suppression)',
+    );
+  });
+
+  it('does NOT suppress a legitimate grant that is not in a condition clause', () => {
+    const hook = oneCard('core', 'shield', 'control-grant',
+      'You get +2[icon:recruit] and +1[icon:attack].');
+    assert.ok(hook !== undefined, 'the hook exists');
+    const byType = new Map((hook!.effects ?? []).map((effect) => [effect.type, effect.magnitude]));
+    assert.equal(byType.get('recruit'), 2, 'a plain "+2 recruit" grant is still emitted');
+    assert.equal(byType.get('attack'), 1, 'a plain "+1 attack" grant is still emitted');
   });
 });
 
