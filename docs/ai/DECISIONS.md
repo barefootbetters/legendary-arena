@@ -30358,7 +30358,7 @@ Protect this file.
 
 ### D-24162 — Final-turn warning banner is a pure, prop-driven client render of `UIState.finalTurn`
 
-**Status:** Active (post-execution) 2026-09-06 (WP-368 / EC-687).
+**Status:** Active (post-execution) 2026-09-06 (WP-368 / EC-687). `D-24026` **live-verified 2026-09-07** — on `play.legendary-arena.com` (gitSha `6de22d1b`) a real Loki / Midtown deck-exhaustion match showed the banner during the final turn and it cleared at game end. (Full observability required the WP-654 live-surface mount + the WP-655 audience-filter pass-through, both since shipped — this component was correct from the start.)
 
 **User-Visible Surface:** `play.legendary-arena.com` (a warning banner on the play HUD during the deck-exhaustion final turn).
 
@@ -39825,7 +39825,7 @@ fixture re-pin).
 **Drafted:** 2026-09-06 (number reserved in the ledger). **Landed:** 2026-09-06 (WP-653 / EC-690 execution). **Status:** Active.
 ### D-24465 — Final-turn banner mounts on the live play surface (`PlayViewport`), not only `ArenaHud` (Active 2026-09-06 — WP-654 / EC-691)
 
-**Status:** Active (post-execution) 2026-09-06 (WP-654 / EC-691).
+**Status:** Active (post-execution) 2026-09-06 (WP-654 / EC-691). `D-24026` **live-verified 2026-09-07** — on `play.legendary-arena.com` (gitSha `6de22d1b`) a real deck-exhaustion match showed the banner on the PlayViewport live surface during the final turn and it cleared at game end (the mount targeted here was correct; the earlier real-match invisibility was the WP-655 filter gap).
 
 **User-Visible Surface:** `play.legendary-arena.com` (the final-turn warning banner during the deck-exhaustion final turn — now in a real match, not only the dev fixture route).
 
@@ -39847,7 +39847,7 @@ Protect this file.
 
 ### D-24466 — `UIState.finalTurn` passes through the audience filter (the WP-367 projection reaches the client) (Active 2026-09-06 — WP-655 / EC-692)
 
-**Status:** Active (post-execution) 2026-09-06 (WP-655 / EC-692).
+**Status:** Active (post-execution) 2026-09-06 (WP-655 / EC-692). `D-24026` **live-verified 2026-09-07** — with this filter fix deployed (gitSha `6de22d1b`) a real deck-exhaustion match on `play.legendary-arena.com` finally showed the "⚠ Final turn" banner during the final turn (operator-confirmed, corroborated by a DevTools check placing the banner element in the DOM on-screen) and it cleared at game end. This fix is what closed the arc's observability.
 
 **User-Visible Surface:** `play.legendary-arena.com` (the final-turn warning banner during the deck-exhaustion final turn — it finally reaches the client and renders).
 
