@@ -23,6 +23,11 @@ Discrete in-game mechanics with specific triggers and effects.
 - [Wounds](wounds.md) — Unplayable filler cards; the Healing ability KOs
   all Wounds from hand if the player doesn't recruit or fight, an
   acted/healed mutual exclusion enforced both ways (D-24179 / D-24180).
+- [Transform](transform.md) — The World War Hulk (`wwhk`) mechanic: each
+  Hero has set-aside **Transformed cards** that swap in for a base card on a
+  trigger. Currently engine-unsupported (a `parse-unrecognized` hollow);
+  transformed cards are wrongly recruitable. Includes the full roster and a
+  Sentry bidirectional-loop deep-dive.
 
 ## System
 
