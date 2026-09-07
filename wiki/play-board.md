@@ -116,6 +116,7 @@ different source.
 | Economy | `EconomyBar.vue` | `economy` | Engine — public |
 | Card reader | `CardReaderModal.vue` | the tile's `display` + `gameText` | Engine — public |
 | Event overlay | `NotableEventOverlay.vue` | `notableEvents` | Engine — public |
+| Final-turn banner | `FinalTurnBanner.vue` (mounted in `PlayViewport.vue`) | `finalTurn` (top-level optional; present only during the deck-exhaustion final turn, omitted once `gameOver` is set) | Engine — public |
 
 The **Card Reader** (`CardReaderModal`) is the single shared modal the
 Mastermind and Scheme tiles open on "Read card"; it shows the card at a
@@ -187,7 +188,8 @@ catch a missed step — the field simply never reaches the board.
 5. Verify it appears in the [Play Diagnostics](play-diagnostics.md) `uiStateSnapshot`.
 
 Skipping step 3 or 4 is the exact defect class that blanked the scheme
-tile in PR #1165; see [Edge Cases](#edge-cases).
+tile in PR #1165 and later dropped the final-turn banner's `finalTurn`
+field (WP-655); see [Edge Cases](#edge-cases).
 
 ### Ability-text markers
 
@@ -326,7 +328,21 @@ report to exactly one of the three layers.
   scheme tile and "No rules text available" for both cards. The
   `matchCardImageUrls` pass-through in the filter exists for exactly this
   reason. Prevention is the [Board-visible field rule](#board-visible-field-rule)
-  (steps 3–4).
+  (steps 3–4). **Recurrence (WP-655, 2026-09-07):** the same class struck
+  `UIState.finalTurn` — the deck-exhaustion **final-turn warning banner**'s
+  data. WP-367 populated `finalTurn` in `buildUIState` but never added it to the
+  filter, so it was dropped at the audience boundary and the banner never
+  rendered in any real match — even after WP-368 built the component and WP-654
+  mounted it on the live surface, both of which tested green because their tests
+  feed fixtures directly and bypass the filter. Two lessons this case adds:
+  (1) the drop hazard applies to **top-level optional fields**, not just the
+  nested `scheme` / `mastermind` objects — `finalTurn` needed the same
+  `if (uiState.finalTurn !== undefined) result.finalTurn = { …uiState.finalTurn }`
+  pass-through as `gameOver` / `matchCardImageUrls`; and (2) a game-log line is
+  **not** proof the projection reached the client — the "final turn" log entry
+  is a `G.messages` write, independent of the `finalTurn` projection, so it
+  printed all along while the banner stayed dark. Live-verified once the
+  pass-through shipped (gitSha `6de22d1b`).
 - **Ability markers must be rendered, not printed.** Before PR #1166 the
   Card Reader printed `gameText` lines verbatim, so players saw
   `reveals a [hc:strength] Hero`; #1166 rendered them and #1171 swapped the

@@ -112,7 +112,14 @@ happens before triggers fire:
   its discard (WP-367 / D-24160): unlike a hero deck, running the villain
   deck out is terminal — it latches the final turn (game.ts `turn.onMove`,
   D-24159) rather than being refilled. In practice `villainDeck.discard`
-  never accumulates anything to reshuffle anyway (see Step 7).
+  never accumulates anything to reshuffle anyway (see Step 7). The latch is
+  projected to the client as `UIState.finalTurn` and rendered as the play-HUD
+  **final-turn warning banner** ("⚠ Final turn — win or lose this turn, or the
+  game ends in a tie", + hero/villain deck-remaining counts); the engine omits
+  `finalTurn` once `gameOver` is set, so the banner clears at game end. See
+  [Play Board §Board zones](play-board.md#board-zones-and-their-uistate-source)
+  (WP-367 engine mechanic → WP-655 filter pass-through → WP-654 live-surface
+  mount → WP-368 component).
 - **Step 2 — Draw.** Read `deck[0]` (top of deck). Defer removal from
   the deck until placement is confirmed (see Edge Cases / WP-015A).
 - **Step 3 — Classify.** Look up `G.villainDeckCardTypes[cardId]`. If
