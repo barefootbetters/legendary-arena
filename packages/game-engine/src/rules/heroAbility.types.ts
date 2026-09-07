@@ -155,6 +155,13 @@ export interface HeroEffectDescriptor {
   // printed card text. Multiple entries are combined with INCLUSIVE OR (the printed
   // "and/or"). Other keywords ignore it.
   investigateCriteria?: InvestigateCriterion[];
+  // why: WP-659 / D-24470 — for a 'reveal-from-hand' effect, `revealCriterion` is the SINGLE
+  // static criterion (the printed "another X-Men Hero" is one criterion — distinct from
+  // investigate's OR-combined `investigateCriteria[]`) that the handler tests each player's
+  // hand against; a player holding a match draws 1. Captured from the co-located [team:X]/
+  // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions. Other
+  // keywords ignore it.
+  revealCriterion?: InvestigateCriterion;
 }
 
 // ---------------------------------------------------------------------------

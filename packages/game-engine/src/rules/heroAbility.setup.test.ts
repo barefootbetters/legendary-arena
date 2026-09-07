@@ -399,12 +399,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'steal-abilities', // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."
       'investigate', // why: WP-564 / D-24373 — "Investigate for <criterion>" static-criterion + draw subset (Alias Investigations + siblings)
       'transform', // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk) — swaps a played base card for its second-form from G.transformDeck
+      'reveal-from-hand', // why: WP-659 / D-24470 — Psychic Link "Each player may reveal another [team]/[hc] Hero. Each player who does draws a card." (reveal criterion, not a play-gate)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      39,
-      'HERO_KEYWORDS must have exactly 39 entries',
+      40,
+      'HERO_KEYWORDS must have exactly 40 entries',
     );
 
     assert.deepStrictEqual(

@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 39 entries after the transform addition', () => {
+  it('HERO_KEYWORDS array has exactly 40 entries after the reveal-from-hand addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      39,
-      'HERO_KEYWORDS must have exactly 39 entries (38 + transform, WP-658 / D-24469)',
+      40,
+      'HERO_KEYWORDS must have exactly 40 entries (39 + reveal-from-hand, WP-659 / D-24470)',
     );
   });
 });

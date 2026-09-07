@@ -1133,6 +1133,17 @@
       "hidden": true
     },
     {
+      "slug": "reveal-from-hand",
+      "label": "Reveal From Hand",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/emma-frost"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "reveal-ko",
       "label": "Reveal: KO",
       "scope": "hero",
@@ -2393,7 +2404,8 @@
     "core/emma-frost": {
       "mechanics": [
         "defeated-villain-or-mastermind",
-        "draw"
+        "draw",
+        "reveal-from-hand"
       ]
     },
     "core/gambit": {

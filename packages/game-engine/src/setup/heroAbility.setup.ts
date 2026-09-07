@@ -433,6 +433,19 @@ const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
 // covert synergy. Non-global, stateless `.test`; case-insensitive.
 const COPY_POWERS_MARKER_PATTERN = /\[keyword:copy-powers\]/i;
 
+// why: WP-659 / D-24470 — detects a reveal-from-hand line (Psychic Link: "Each player may
+// reveal another [team:x-men] Hero. Each player who does draws a card."). On such a line the
+// co-located [team:X]/[hc:X] is the reveal CRITERION, not a requiresTeam/heroClassMatch play
+// gate — Step 1a/1b suppress it exactly as they do for size-changing / copy-powers / resolved
+// investigate. Non-global, stateless `.test`; case-insensitive to match the [keyword:X] casing.
+const REVEAL_FROM_HAND_MARKER_PATTERN = /\[keyword:reveal-from-hand\]/i;
+
+// why: WP-659 / D-24470 — the first [hc:X] / [team:X] token on a reveal-from-hand line is the
+// reveal criterion. Two dedicated stateless patterns (mirroring the investigate clause
+// patterns) so the resolver reads exactly one token into an InvestigateCriterion.
+const REVEAL_FROM_HAND_HC_PATTERN = /\[hc:([a-z0-9-]+)\]/i;
+const REVEAL_FROM_HAND_TEAM_PATTERN = /\[team:([a-z0-9-]+)\]/i;
+
 // why: WP-564 / D-24373 — the printed default look count for Investigate ("look at the
 // top two cards of your deck"). Carried as a descriptor field so the deferred
 // "look at three cards instead of two" modifier can set it later without reshaping the
@@ -569,6 +582,14 @@ function parseAbilityText(
   // does NOT resolve, so its gate is preserved (the resolution returns undefined).
   const investigateCriteria = tryResolveInvestigateFromLine(abilityText);
   const lineHasResolvedInvestigate = investigateCriteria !== undefined;
+  // why: WP-659 / D-24470 — resolve the reveal-from-hand criterion up front (undefined for a
+  // non-reveal-from-hand line). On such a line the co-located `[team:X]` / `[hc:X]` is the
+  // reveal CRITERION, not a requiresTeam / heroClassMatch play-gate, so Steps 1a / 1b suppress
+  // it (mirrors the size-changing / copy-powers / investigate routing). This is the fix for
+  // Psychic Link's mid-sentence `[team:x-men]` being mis-read as a spurious "played another
+  // X-Men Hero this turn" gate.
+  const revealFromHandCriterion = tryResolveRevealFromHandCriterion(abilityText);
+  const lineHasRevealFromHand = revealFromHandCriterion !== undefined;
   // why: WP-660 / D-24471 — character ranges of `[icon:recruit|attack]` tokens that are
   // the THRESHOLD/RATE of a "made at least N", "for every N", or "N or more" CONDITION
   // clause. Steps 2b (icon-magnitude) and 3 (icon→keyword) skip any icon overlapping these
@@ -618,6 +639,11 @@ function parseAbilityText(
       // ("Investigate for a [hc:tech] card" / "…that's [hc:ranged] and/or [hc:instinct]"),
       // NOT a play gate. The criterion is already captured in investigateCriteria; emit NO
       // heroClassMatch condition (mirrors the size-changing / copy-powers exclusions above).
+    } else if (lineHasRevealFromHand) {
+      // why: WP-659 / D-24470 — on a reveal-from-hand line the [hc:X] is the reveal CRITERION
+      // ("reveal another [hc:X] Hero"), NOT a play gate. Already captured in
+      // revealFromHandCriterion; emit NO heroClassMatch condition (mirrors the investigate
+      // exclusion above — this is the mid-sentence-token-is-not-a-gate fix for Psychic Link).
     } else {
       heroClassConditions.push({
         type: 'heroClassMatch',
@@ -634,7 +660,11 @@ function parseAbilityText(
     // why: WP-564 / D-24373 — on a RESOLVED investigate line the [team:X] is the CRITERION
     // ("…that's [hc:strength] and/or [team:x-factor-investigations]"), not a requiresTeam
     // gate; it is already captured in investigateCriteria, so emit no condition for it.
-    if (!lineHasResolvedInvestigate) {
+    // why: WP-659 / D-24470 — likewise on a reveal-from-hand line the [team:X] is the reveal
+    // CRITERION ("reveal another [team:x-men] Hero"), already captured in
+    // revealFromHandCriterion — so emit NO requiresTeam gate. This is the Psychic Link fix:
+    // the mid-sentence [team:x-men] was wrongly gating the card on "another X-Men played".
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -742,6 +772,18 @@ function parseAbilityText(
         keywords.push('investigate');
       } else {
         unresolvedMarkers.push('investigate');
+      }
+    } else if (normalizedKeyword === 'reveal-from-hand') {
+      // why: WP-659 / D-24470 — reveal-from-hand IS a HeroKeyword, but its keyword +
+      // effect are recorded ONLY when the co-located [team:X]/[hc:X] criterion resolves.
+      // A marker with no class/team token records `reveal-from-hand` as an unresolved
+      // marker so the line stays an honest hollow (parse-unrecognized) — the Honest-Partial
+      // Invariant (mirrors the investigate / transform resolvers above). Checked BEFORE
+      // isValidHeroKeyword so the generic push does not fire for it.
+      if (revealFromHandCriterion !== undefined) {
+        keywords.push('reveal-from-hand');
+      } else {
+        unresolvedMarkers.push('reveal-from-hand');
       }
     } else if (normalizedKeyword === 'transform') {
       // why: WP-658 / D-24469 — transform IS a HeroKeyword, but its keyword +
@@ -1343,6 +1385,13 @@ function parseAbilityText(
             investigateCriteria,
           });
         }
+      } else if (keyword === 'reveal-from-hand') {
+        // why: WP-659 / D-24470 — the reveal-from-hand descriptor carries the SINGLE reveal
+        // criterion captured up front. The keyword is only present when the criterion
+        // resolved (Step 2 Honest-Partial), so the guard is defensive.
+        if (revealFromHandCriterion !== undefined) {
+          effects.push({ type: 'reveal-from-hand', revealCriterion: revealFromHandCriterion });
+        }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {
@@ -1803,6 +1852,38 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
 // ---------------------------------------------------------------------------
 // Investigate criterion parsing (static-criterion subset; WP-564 / D-24373)
 // ---------------------------------------------------------------------------
+
+/**
+ * Resolves the reveal-from-hand criterion from a full ability line, or undefined when the
+ * line has no `[keyword:reveal-from-hand]` marker or carries no `[hc:X]` / `[team:X]` token
+ * to read as the criterion (WP-659 / D-24470).
+ *
+ * The printed form is "Each player may reveal another [team:X]/[hc:X] Hero. …" — a SINGLE
+ * criterion (not the OR-combined investigate list), so the resolver reads the first such
+ * token into one InvestigateCriterion. `[team:X]` is tried before `[hc:X]` only to pick a
+ * deterministic winner if a line ever carried both; Psychic Link carries exactly one team
+ * token. Returns undefined (leaving the line an honest hollow) when the marker is present
+ * but no class/team token is found.
+ *
+ * @param abilityText - The full ability text line.
+ * @returns The single reveal criterion, or undefined for a non-reveal-from-hand line.
+ */
+function tryResolveRevealFromHandCriterion(abilityText: string): InvestigateCriterion | undefined {
+  if (!REVEAL_FROM_HAND_MARKER_PATTERN.test(abilityText)) {
+    return undefined;
+  }
+  const teamMatch = REVEAL_FROM_HAND_TEAM_PATTERN.exec(abilityText);
+  if (teamMatch !== null) {
+    return { kind: 'team', team: normalizeTraitSlug(teamMatch[1]!) };
+  }
+  const heroClassMatch = REVEAL_FROM_HAND_HC_PATTERN.exec(abilityText);
+  if (heroClassMatch !== null) {
+    return { kind: 'hero-class', heroClass: normalizeTraitSlug(heroClassMatch[1]!) };
+  }
+  // why: the marker is present but no [hc:X]/[team:X] token — leave the line an honest hollow
+  // (Step 2 records `reveal-from-hand` as an unresolved marker), never a criterion-less effect.
+  return undefined;
+}
 
 /**
  * Resolves the static Investigate criterion from a full ability line, or undefined
