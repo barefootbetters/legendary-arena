@@ -1014,6 +1014,55 @@ describe('filterUIStateForAudience — pendingDrawOrEmpowered redaction (D-24071
 });
 
 // ---------------------------------------------------------------------------
+// WP-663 / EC-700 — pendingPlayVillainTop redaction (D-24474, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a play-top-Villain-Deck choice (Shadowed
+ * Thoughts). The choice is private to the chooser (the D-24011 analog) — it must not
+ * appear in a non-chooser's UIState (a binary choice with no eligible-card list, so the
+ * only leak vector is the existence + derived attackReward of the choice itself).
+ */
+function createPlayVillainTopUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingPlayVillainTopChoices = [
+    { playerID: '0', cardId: 'ms-emma-frost-shadowed-thoughts', attackReward: 2 },
+  ];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingPlayVillainTop redaction (D-24474)', () => {
+  it('the chooser sees pendingPlayVillainTop with the attackReward (AC-1)', () => {
+    const uiState = createPlayVillainTopUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingPlayVillainTop !== undefined, 'chooser sees the play-villain-top choice');
+    assert.equal(result.pendingPlayVillainTop!.playerID, '0');
+    assert.equal(result.pendingPlayVillainTop!.attackReward, 2);
+  });
+
+  it('an opponent does NOT see pendingPlayVillainTop (AC-2)', () => {
+    const uiState = createPlayVillainTopUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingPlayVillainTop, undefined, 'opponent must not see the play-villain-top choice');
+  });
+
+  it('a spectator does NOT see pendingPlayVillainTop (AC-2)', () => {
+    const uiState = createPlayVillainTopUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingPlayVillainTop, undefined, 'spectator must not see the play-villain-top choice');
+  });
+
+  it('does not mutate the input UIState (pendingPlayVillainTop still present on the source)', () => {
+    const uiState = createPlayVillainTopUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingPlayVillainTop !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-313 / EC-343 — pendingVictoryPileCardPick redaction (D-24099, D-24011 analog)
 // ---------------------------------------------------------------------------
 

@@ -182,6 +182,12 @@ export interface UIState {
   // (undefined) means no pending draw-or-empowered choice; the client must not render
   // the prompt in that case.
   pendingDrawOrEmpowered?: UIPendingDrawOrEmpowered;
+  // why: WP-663 / D-24474 — projects the FRONT of G.pendingPlayVillainTopChoices so the
+  // choosing player can render Shadowed Thoughts' "Play the top card of the Villain Deck for
+  // +N Attack?" prompt. Redacted (omitted) for every audience except the chooser (the
+  // D-24011 privacy analog — keyed on .playerID), mirroring pendingDrawOrEmpowered. Absent
+  // (undefined) means no pending choice; the client must not render the prompt in that case.
+  pendingPlayVillainTop?: UIPendingPlayVillainTop;
   // why: WP-313 / D-24099 — projects the FRONT entry of G.pendingVictoryPileCardPick
   // with the eligible victory-pile villains (each carrying its printed-attack value =
   // the villain's fightCost) so the chooser can render the "Choose a Villain from your
@@ -1081,6 +1087,24 @@ export interface UIPendingDrawOrEmpowered {
   // why: D-24071 — derived once in uiState.build.ts by a single deterministic
   // empoweredClass→display mapping; never an ad-hoc or per-card string.
   empoweredLabel: string;
+}
+
+/**
+ * UI contract for resolving a pending "play the top card of the Villain Deck for +N
+ * Attack?" choice (WP-663 / D-24474 — Emma Frost's Shadowed Thoughts).
+ *
+ * Mirrors UIPendingDrawOrEmpowered — a binary choice (accept / decline) with NO eligible
+ * card list. Only visible to the choosing player; redacted for opponents and spectators.
+ *
+ * `playerID` is REQUIRED — uiState.filter.ts keys the chooser-only redaction on it.
+ */
+export interface UIPendingPlayVillainTop {
+  // why: WP-663 / D-24474 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingDrawOrEmpowered.playerID.
+  playerID: string;
+  // why: the Attack granted on accept — the prompt reads "Play the top Villain-Deck card
+  // for +N Attack?". Carries no private identity.
+  attackReward: number;
 }
 
 /**

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 663,
+    "totalRows": 664,
     "byStatus": {
-      "executable": 264,
+      "executable": 265,
       "deferred": 0,
       "condition": 25,
       "unsupported": 335,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 126
+    "distinctMechanics": 127
   },
   "rows": [
     {
@@ -3320,6 +3320,22 @@
         {
           "slug": "mental-discipline",
           "name": "Mental Discipline"
+        }
+      ]
+    },
+    {
+      "extId": "core/emma-frost",
+      "heroName": "Emma Frost",
+      "set": "core",
+      "mechanic": "optional-play-villain-top",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-play-villain-top",
+      "designs": [
+        {
+          "slug": "shadowed-thoughts",
+          "name": "Shadowed Thoughts"
         }
       ]
     },

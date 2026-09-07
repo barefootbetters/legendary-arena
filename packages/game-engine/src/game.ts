@@ -16,6 +16,7 @@ import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './m
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice, hasPendingDefeatChoice } from './moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
+import { hasPendingPlayVillainTopChoice, resolvePlayVillainTopChoice } from './moves/playVillainTop.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
@@ -145,6 +146,7 @@ function advanceStage({ G, events }: MoveContext): void {
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
+  if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) { return; }
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) { return; }
@@ -503,6 +505,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveReorderChoice).
     resolveDefeatChoice: { move: resolveDefeatChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
+    // why: WP-663 / D-24474 — resolves Shadowed Thoughts' "play the top Villain-Deck card
+    // for +2 Attack?" choice (accept plays the top card via the shared reveal cascade + grants
+    // +Attack; decline does nothing). client:false — dispatched by the PlayVillainTopPrompt.
+    resolvePlayVillainTopChoice: { move: resolvePlayVillainTopChoice, client: false },
     resolveOptionalPutBottomHQ: { move: resolveOptionalPutBottomHQ, client: false },
     // why: D-24132 — resolvePutAnyNumberBottomHQ resolves the multi-select HQ→bottom choice
     // (Wonder Man's 8th Wonder of the World et al.). Server-only (client: false) per D-10008 —

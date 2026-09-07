@@ -26,6 +26,7 @@ import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.j
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
@@ -111,6 +112,7 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
+  if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) {
     return;
   }
@@ -306,6 +308,7 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
 
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
+  if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) {
     return;
   }
@@ -467,6 +470,7 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // why: turn cannot end while an optional-KO-reward choice is pending (D-24019
   // — queue-non-empty blocks turn-end). Guard precedes the zone sweep so a
   // blocked turn does not discard the hand (beside the D-24008 KO-hero check).
+  if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) {
     return;
   }

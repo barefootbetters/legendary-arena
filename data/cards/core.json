@@ -475,7 +475,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2[icon:attack]."
+            "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2[icon:attack]. [keyword:optional-play-villain-top:2]"
           ]
         },
         {

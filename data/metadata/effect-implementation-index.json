@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1838,
+    "totalEntries": 1839,
     "byScope": {
-      "hero": 663,
+      "hero": 664,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 400,
+      "executable": 401,
       "deferred": 0,
       "condition": 25,
       "unsupported": 336,
@@ -6802,6 +6802,23 @@
         {
           "slug": "mental-discipline",
           "name": "Mental Discipline"
+        }
+      ]
+    },
+    {
+      "extId": "core/emma-frost",
+      "name": "Emma Frost",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "optional-play-villain-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-play-villain-top",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "shadowed-thoughts",
+          "name": "Shadowed Thoughts"
         }
       ]
     },
@@ -28216,6 +28233,7 @@
       "mechanics": [
         "defeated-villain-or-mastermind",
         "draw",
+        "optional-play-villain-top",
         "reveal-from-hand"
       ]
     },

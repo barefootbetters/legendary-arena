@@ -41,6 +41,7 @@ import PendingReorderChoicePrompt from '../components/play/PendingReorderChoiceP
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
+import PlayVillainTopPrompt from '../components/play/PlayVillainTopPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
 import ReturnOnDiscardPrompt from '../components/play/ReturnOnDiscardPrompt.vue';
@@ -114,6 +115,7 @@ export default defineComponent({
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
+    PlayVillainTopPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
     ReturnOnDiscardPrompt,
@@ -257,6 +259,13 @@ export default defineComponent({
       () => snapshot.value?.pendingDrawOrEmpowered !== undefined,
     );
 
+    // why: WP-663 / D-24474 — derived from UIState.pendingPlayVillainTop !== undefined;
+    // blocks end-turn / pass-priority at EVERY stage while a Shadowed Thoughts
+    // play-top-Villain-Deck choice is pending (board frozen, mirrors hasPendingDrawOrEmpowered).
+    const hasPendingPlayVillainTop = computed<boolean>(
+      () => snapshot.value?.pendingPlayVillainTop !== undefined,
+    );
+
     // why: WP-313 / D-24099 — derived from UIState.pendingVictoryPileCardPick !== undefined;
     // blocks end-turn / pass-priority at EVERY stage while a victory-pile pick is pending.
     const hasPendingVictoryPileCardPick = computed<boolean>(
@@ -367,6 +376,7 @@ export default defineComponent({
       hasPendingKoChoice,
       hasPendingOptionalKoReward,
       hasPendingDrawOrEmpowered,
+      hasPendingPlayVillainTop,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -611,6 +621,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-663 / D-24474 — the Shadowed Thoughts play-top-Villain-Deck prompt;
+               appears only for the choosing player when pendingPlayVillainTop is set. The
+               engine block-all guard guarantees at most one pending-choice type is set. -->
+          <PlayVillainTopPrompt
+            :pending-play-villain-top="snapshot.pendingPlayVillainTop"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-313 / D-24099 — victory-pile villain-pick prompt (The Ebony Blade);
                appears only for the choosing player when pendingVictoryPileCardPick is set. -->
           <VictoryPileCardPickPrompt
@@ -687,6 +705,7 @@ export default defineComponent({
             :has-pending-ko-choice="hasPendingKoChoice"
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
+            :has-pending-play-villain-top="hasPendingPlayVillainTop"
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"

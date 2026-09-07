@@ -284,6 +284,12 @@
       "markupToken": "[keyword:reveal-from-hand]"
     },
     {
+      "heroSlug": "emma-frost",
+      "cardSlug": "shadowed-thoughts",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-play-villain-top:2]"
+    },
+    {
       "heroSlug": "hawkeye",
       "cardSlug": "quick-draw",
       "abilityIndex": 0,

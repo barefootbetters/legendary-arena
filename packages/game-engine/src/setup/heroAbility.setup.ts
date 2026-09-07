@@ -1277,6 +1277,33 @@ function parseAbilityText(
     magnitudes.delete(optionalKoRewardType);
   }
 
+  // Icon-suppression (sibling): an optional-play-villain-top effect subsumes the printed
+  // attack icon on the same line. Without this, Shadowed Thoughts' "[hc:covert]: You may play
+  // the top card of the Villain Deck. If you do, +2[icon:attack]." would emit BOTH a plain
+  // 'attack' effect (from the icon, Steps 2b/3 — granted UNCONDITIONALLY once the covert gate
+  // passes) AND the pending-choice optional-play-villain-top effect — a free +2 plus the
+  // choice's reward. Drop the plain 'attack' keyword + its magnitude so only the pending
+  // choice remains (the +2 is the choice's `attackReward`, granted on accept).
+  // why: WP-663 / D-24474 — the pending-choice reward subsumes the printed attack icon
+  // (mirrors the D-24016 count-scaled + D-24398 optional-ko-reward suppression above).
+  let lineHasOptionalPlayVillainTop = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'optional-play-villain-top') {
+      lineHasOptionalPlayVillainTop = true;
+      break;
+    }
+  }
+  if (lineHasOptionalPlayVillainTop) {
+    const keywordsWithoutAttackIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutAttackIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutAttackIcon;
+    magnitudes.delete('attack');
+  }
+
   // If conditions were found, add 'conditional' keyword
   if (conditions.length > 0) {
     let hasConditional = false;

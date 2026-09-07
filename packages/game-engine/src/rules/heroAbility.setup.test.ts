@@ -400,12 +400,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'investigate', // why: WP-564 / D-24373 — "Investigate for <criterion>" static-criterion + draw subset (Alias Investigations + siblings)
       'transform', // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk) — swaps a played base card for its second-form from G.transformDeck
       'reveal-from-hand', // why: WP-659 / D-24470 — Psychic Link "Each player may reveal another [team]/[hc] Hero. Each player who does draws a card." (reveal criterion, not a play-gate)
+      'optional-play-villain-top', // why: WP-663 / D-24474 — Shadowed Thoughts "[hc:covert]: You may play the top card of the Villain Deck. If you do, +2 Attack." (optional pending choice)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      40,
-      'HERO_KEYWORDS must have exactly 40 entries',
+      41,
+      'HERO_KEYWORDS must have exactly 41 entries',
     );
 
     assert.deepStrictEqual(

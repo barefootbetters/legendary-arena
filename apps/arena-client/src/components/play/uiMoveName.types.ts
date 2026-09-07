@@ -95,6 +95,9 @@ export type UiMoveName =
   // why: WP-535 / D-24345 — unblocks the Rogue Copy Powers copy-a-Hero prompt
   // (pick which in-play Hero to copy).
   | 'resolveCopyPowersChoice'
+  // why: WP-663 / D-24474 — unblocks the Emma Frost Shadowed Thoughts prompt (accept to
+  // play the top Villain-Deck card for +N Attack, or decline).
+  | 'resolvePlayVillainTopChoice'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'
