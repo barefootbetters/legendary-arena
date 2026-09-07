@@ -47,7 +47,8 @@ This page catalogues those products so the team building the digital Play Board
 and any future merchandise ([Legendary Forge](legendary-forge.md)) has one
 reference for what the printed layouts look like and where they come from. It is
 a **product / reference page, not an engine spec** — the digital board is
-authoritative for zone behaviour; mat art is decorative.
+authoritative for zone behaviour; mat art is decorative. (Who consumes this page
+and how is covered under [Interactions](#interactions).)
 
 Marvel Legendary mats come from two supply streams: **official Upper Deck
 products** (boxed boards, rubber layout mats, organized-play mats, art-only
@@ -55,36 +56,28 @@ mats) and **fan-made printable layouts** that added spaces the official mats
 never caught up to (Sidekicks, Horrors, Infinity Shards, extra City / plot
 piles).
 
-> **Status: draft.** Product facts below mix values verified against the Upper
-> Deck store (SKUs 93433 / 93486 / 93490, confirmed by direct image lookup)
-> with figures relayed from secondary sources (some model numbers, artist
-> credits, and dimensions). Treat the secondary figures as best-available, not
-> gospel, until a primary source is attached.
+> **Status: draft.** The product tables carry a **Confidence** column.
+> *Verified* = checked against a live Upper Deck store page or a scan on this
+> page. *Secondary* = relayed from retailer listings / news coverage and not yet
+> confirmed against a primary source. The [Open Questions](#open-questions)
+> section tracks what still needs a primary source.
 
 ## Mechanics
-
-### Who this page is for
-
-| Audience | What to take from this page |
-|---|---|
-| Play Board / arena-client | The shared zone vocabulary. Do not pixel-match any one physical mat. |
-| [Legendary Forge](legendary-forge.md) | What already exists in the market, at what sizes, and what a first-party mat would need to beat. |
-| Art / IP | Which scans are official Upper Deck art vs fan files vs promo dumps. Licensing is a separate question — see [IP Licensing](ip-licensing.md). |
-| [Card Image Acquisition](card-image-acquisition.md) | The `legendarycardgame.com` scrape also pulled mat photographs; those files stay in the playmats staging folder, not the card-naming pipeline. |
 
 ### The zone layout every layout mat shares
 
 Every labelled Legendary layout mat prints the same core set of zones — the same
 vocabulary the engine projects to the [Play Board](play-board.md). The official
-**Dark Phoenix vs. The X-Men** mat is a clean example of the full label set:
+**Dark Phoenix vs. The X-Men** mat is a clean example, and confirms the full
+label set **including** the small TWISTS and STRIKES stack boxes:
 
 ![Dark Phoenix vs. The X-Men Legendary layout mat (Upper Deck SKU 93433) — Jean Grey as Dark Phoenix ablaze in the centre, with the full labelled zone layout: Twists, Scheme, Escape, Wounds, Bystanders across the top; Strikes, Mastermind, the five-space City row (Bridge, Streets, Rooftops, Bank, Sewers), and Villain Deck across the middle; Sidekicks, Officers, Hero Deck, and HQ along the bottom.](/play-mats/dark-phoenix-vs-xmen-playmat.jpg "width=100%")
 
 | Mat label | Engine zone | Notes on physical mats |
 |---|---|---|
 | SCHEME | Active [Scheme](scheme.md) | Always present. |
-| TWISTS | Scheme-twist stack | A small labelled box beside the Scheme. Not every official mat prints it. |
-| STRIKES | Master Strike discard (see [Master Strike](master-strike.md)) | Same pattern as Twists — not on every mat. |
+| TWISTS | Scheme-twist stack | A small labelled box beside the Scheme. Present on 93433; not on every mat. |
+| STRIKES | Master Strike discard (see [Master Strike](master-strike.md)) | Same pattern as Twists. Present on 93433. |
 | MASTERMIND | Mastermind + tactics | One large slot; tactics tuck under or beside. |
 | ESCAPE | Escaped villains pile | |
 | CITY — BRIDGE · STREETS · ROOFTOPS · BANK · SEWERS | The five City spaces, left → right toward Escape | This left-to-right march is the one rule nearly every mat agrees on. |
@@ -101,8 +94,7 @@ board can render every scenario.
 Physical mats disagree on **extras**. These appear on some (mostly fan) mats and
 must not be promoted into engine-required zones: Horrors / Ambitions, an
 Infinity Shards / Stones holding area, "plot" overflow stacked beside the
-Scheme, a sixth City space, a separate Mastermind-tactics row, and the
-Villains-side label set (below).
+Scheme, a sixth City space, and a separate Mastermind-tactics row.
 
 ### Official products — retail layout mats
 
@@ -110,10 +102,10 @@ Sold on their own as "Legendary Playmat: *Theme*" — rubber-backed, roughly
 32.5″ × 14.5″, with labelled zones **and** extra card spaces versus the original
 cardboard board.
 
-| Product | SKU | Artist | Status (2026-09) |
-|---|---|---|---|
-| Dark Phoenix vs. The X-Men | 93433 (verified) | Gil Martimiano da Silva Jr. | Listed ~$29.99 on the Upper Deck store and Amazon. Best currently-buyable official layout mat. |
-| Thanos vs. The Avengers | 93431 (secondary source) | Caio Cacau | Frequently out of print / Amazon "currently unavailable". A working board replacement with extra expansion slots. |
+| Product | SKU | Artist | Confidence | Status (2026-09) |
+|---|---|---|---|---|
+| Dark Phoenix vs. The X-Men | 93433 | Gil Martimiano da Silva Jr. | Verified (UD store + scan) | Listed ~$29.99 on the Upper Deck store and Amazon. Best currently-buyable official layout mat. |
+| Thanos vs. The Avengers | 93431 | Caio Cacau | Secondary (SKU unconfirmed) | Frequently out of print / Amazon "currently unavailable". A working board replacement with extra expansion slots. |
 
 The Thanos layout mat, photographed mid-set-up (Caio Cacau's signature is
 visible lower-centre). **This is the labelled layout mat**, not the 24″ art-only
@@ -123,29 +115,50 @@ Thanos mat further down:
 
 ### Official products — boxed boards and in-box mats
 
-| Product | Year | Form | Layout? | Notes |
+| Product | Year | Form | Layout? | Confidence |
 |---|---|---|---|---|
-| Core Set (1st ed.) game board | 2012 | Folding cardboard | Yes — the classic City / HQ / stacks | The layout everyone still copies. Wears out; the 2014 rubber accessory replaced it. |
-| Legendary Playmat (sold separately) | 2014 | Rubber layout mat, ~32″ × 14″ class | Yes | BGG accessory [157107](https://boardgamegeek.com/boardgameaccessory/157107/legendary-a-marvel-deck-building-game-playmat). Out of print; used copies on GeekMarket / eBay. |
-| *Villains* standalone | 2014 | Rubber in-box mat | Yes — Villains vocabulary | Same five-space City geometry, flipped/renamed factions. Players consistently prefer it over the cardboard core board. |
-| *Marvel Studios Phase 1* | 2018 | Rubber in-box mat | Yes — MCU-still art | Standalone / reskinned core (per BGG contents). |
-| *Legendary: Second Edition* core | 2026 | Rubber-backed deluxe mat in the box | Yes | Ships with the 550-card core (~$99.99 on the Upper Deck store); the 2E rulebook shows Sidekick / Officer cost reminders printed on the mat. Compatible with older expansions. |
+| Core Set (1st ed.) game board | 2012 | Folding cardboard | Yes — the classic City / HQ / stacks | Verified |
+| Legendary Playmat (sold separately) | 2014 | Rubber layout mat, ~32″ × 14″ class | Yes | Verified (BGG accessory [157107](https://boardgamegeek.com/boardgameaccessory/157107/legendary-a-marvel-deck-building-game-playmat)) |
+| *Villains* standalone | 2014 | Rubber in-box mat | Yes — Villains vocabulary | Verified (scan below) |
+| *Marvel Studios Phase 1* | 2018 | Rubber in-box mat | Yes — MCU-still art | Secondary (measured size unconfirmed) |
+| *Legendary: Second Edition* core | 2026 | Rubber-backed deluxe mat in the box | Yes | Secondary (no mat photo yet) |
 
-The **Villains** standalone renames the hero-side zones rather than changing the
-geometry — PLOT / OVERRUN / COMMANDER / ADVERSARIES / NEW RECRUITS / HYDRA and a
-LAIR where HQ sits, over the same five-space City:
+The **Villains** standalone **renames** the hero-side zones over the same
+five-space City geometry — it is a rename map, not a slogan:
+
+| Hero-side zone | Villains-side label |
+|---|---|
+| Scheme | PLOT |
+| Scheme Twists | TWISTS (Plot Twists) |
+| Mastermind | COMMANDER |
+| Master Strikes | STRIKES (Command Strikes) |
+| Escaped villains | OVERRUN |
+| Wounds | BINDINGS *(slot analog — see caveat)* |
+| Bystanders | BYSTANDERS |
+| Villain Deck | ADVERSARIES (Adversary Deck) |
+| Sidekicks | NEW RECRUITS |
+| Officers / henchmen | HYDRA (Madame HYDRA) |
+| Hero Deck | ALLIES (Ally Deck) |
+| HQ | LAIR |
 
 ![The Legendary Villains in-box play mat — a blue villain-themed layout labelled with Twists, Plot, Overrun, Bindings, Bystanders across the top; Strikes, Commander, the five-space City row (Sewers, Bank, Rooftops, Streets, Bridge), and Adversaries in the middle; New Recruits, Hydra, a central Lair strip, and Allies along the bottom, with a printed set-up table at the right.](/play-mats/villains-playmat.jpg "width=100%")
+
+> **Bindings caveat.** BINDINGS occupies the slot Wounds occupy on the hero-side
+> mat, but the two are **not the same card type** — the geometry is analogous,
+> the rules are not. A digital Villains mode must not treat Bindings as a reskin
+> of Wounds. (The Villains mat also prints the City left→right as Sewers → Bridge,
+> mirroring the hero mat's Bridge → Sewers.)
 
 ### Official products — organized-play mats
 
 Upper Deck ran retailer store-event kits in 2017; each bundled a play mat with
 promos.
 
-| Kit | Mat | Bundled with |
-|---|---|---|
-| Organized Play Kit #1 | Loki vs. The Avengers, ~32″ × 14″, art by Bob Larkin | Acetate Loki Mastermind; 5 foil Thor rares; 25 alt-art foil *Unleash the Power of the Cosmic Cube* schemes. |
-| Organized Play Kit #2 / #3 | Playmats (OPK2 / OPK3), scanned on legendarycardgame.com | Foil Daredevil (OPK2) / Symbiote Spider-Man (OPK3) promo sets. Mat themes are not well documented in secondary sources — caption from the scan, don't guess. |
+| Kit | Mat theme | Bundled with | Confidence |
+|---|---|---|---|
+| Organized Play Kit #1 | Loki vs. The Avengers (~32″ × 14″), art by Bob Larkin | Acetate Loki Mastermind; 5 foil Thor rares; 25 alt-art foil *Unleash the Power of the Cosmic Cube* schemes | Secondary (artist / size) |
+| Organized Play Kit #2 | **Daredevil vs. The Hand** — this is the **Dark City-art** layout mat (Caio Cacau) | Acetate Kingpin Mastermind; 5 foil Daredevil rares; 25 alt-art foil *Organized Crime Wave* schemes | Verified theme (kit contents + matching art) |
+| Organized Play Kit #3 | **Spider-Man vs. the Sinister Six** | Acetate Mysterio Mastermind; 5 foil Symbiote Spider-Man; 25 alt-art foil *Invade the Daily Bugle* schemes | Theme verified; **clean scan not yet located** |
 
 The OPK1 mat is the classic Loki-vs-Avengers zone diagram — the same layout as
 the 2014 rubber accessory and the original cardboard board:
@@ -157,41 +170,45 @@ kit contents:
 
 ![Legendary Organized Play Kit #1 promotional sheet — the Loki vs. The Avengers play mat surrounded by an acetate Loki Mastermind card, a foil Thor rare, and an Unleash the Power of the Cosmic Cube scheme card, with an "Order Now — coming February 2017" burst.](/play-mats/organized-play-kit-1.jpg "width=55%")
 
+The **OPK2** mat is the **Dark City-art layout mat** ("Daredevil v The Hand", by
+Caio Cacau). It circulates loose as a "Dark City playmat," but the Dark City
+*expansion box* never shipped a mat — this art reached players only through the
+organized-play kit:
+
+![The Dark City / Daredevil-v-The-Hand layout mat (Organized Play Kit #2) by Caio Cacau — Daredevil and red-clad Hand ninjas across a night city, Kingpin at right, with the full Legendary zone layout labelled around the art.](/play-mats/dark-city-playmat.jpg "width=100%")
+
 ### Official products — art-only Marvel mats
 
 Upper Deck also sells generic Marvel rubber mats, 24″ × 13.5″, marketed as
 usable with any game. **No City / HQ labels** — decorative only.
 
-| Product | SKU | Do not confuse with |
-|---|---|---|
-| Marvel Thanos Playmat | 93486 (verified) | *Legendary Playmat: Thanos vs. The Avengers* (93431), which **is** a layout mat |
-| Marvel Wolverine Playmat | 93490 (verified) | — |
-| Marvel Spider-Man Playmat | — (~$20) | — |
+| Product | SKU | Confidence | Do not confuse with |
+|---|---|---|---|
+| Marvel Thanos Playmat | 93486 | Verified (UD store) | *Legendary Playmat: Thanos vs. The Avengers* (93431), which **is** a layout mat |
+| Marvel Wolverine Playmat | 93490 | Verified (UD store) | — |
+| Marvel Spider-Man Playmat | 93488 | Verified (UD store) | — |
 
 The Thanos art-only mat reuses Caio Cacau's Thanos-vs-Avengers art with no zones
 printed; the Wolverine and Spider-Man mats are pure art:
 
 ![Marvel Thanos art-only play mat (Upper Deck SKU 93486) — Caio Cacau's Thanos-versus-Avengers illustration with the Infinity Gauntlet at centre and no game zones printed.](/play-mats/thanos-art-mat.jpg "width=32%")
 ![Marvel Wolverine art-only play mat (Upper Deck SKU 93490) — a close-up of Wolverine mid-slash on a red field, with no game zones printed.](/play-mats/wolverine-art-mat.jpg "width=32%")
-![Marvel Spider-Man art-only play mat (Upper Deck) — Spider-Man crawling head-first down a glass skyscraper toward the viewer, a spider descending on a web at right, full-bleed art with no game zones printed.](/play-mats/spider-man-art-mat.jpg "width=32%")
+![Marvel Spider-Man art-only play mat (Upper Deck SKU 93488) — Spider-Man crawling head-first down a glass skyscraper toward the viewer, a spider descending on a web at right, full-bleed art with no game zones printed.](/play-mats/spider-man-art-mat.jpg "width=32%")
 
-### Layout scans on legendarycardgame.com
+### Layout scans without a confirmed SKU
 
-Labelled layout photographs currently retrievable from the fan reference site
-[legendarycardgame.com/promo-cards](https://www.legendarycardgame.com/promo-cards),
-sitting among the promo-card scans under odd camera-roll filenames. Staged at up
-to 2500 px in
-`barefootbetters-legendary-setup/card-images-staging/original-jpeg/playmats/`;
-the copies on this page are downscaled.
+Some labelled layout photographs on
+[legendarycardgame.com/promo-cards](https://www.legendarycardgame.com/promo-cards)
+cannot be tied to a current retail SKU. **Caption rule:** cite the SKU when one
+exists (93433, 93431) or the OP kit when known (OPK2 above); otherwise call it a
+*layout scan*, not an *official product*.
 
-**Caption rule:** if a scan cannot be tied to an Upper Deck SKU, call it a
-*layout scan*, not an *official product*. Dark City and Paint the Town Red — the
-expansions — did **not** ship playmats, and the Upper Deck store lists no such
-SKU (only Dark Phoenix, Thanos, and Wolverine mats). These are layout assets we
-happen to have scans of:
+The **Paint the Town Red** mat is Spider-Man vs. the Sinister Six art (Mysterio,
+Vulture, Doctor Octopus). Its art theme resembles the OPK3 mat, but it is branded
+to the later *Paint the Town Red* expansion, so it is **not** confirmed to be the
+2017 OPK3 mat — kept here as a layout scan pending provenance:
 
-![Dark City layout scan — Daredevil and red-clad Hand ninjas across a night city, with the full Legendary zone layout labelled around the art. A layout scan, not a confirmed retail SKU.](/play-mats/dark-city-playmat.jpg "width=49%")
-![Paint the Town Red layout scan — Spider-Man battling Doctor Octopus and the Vulture on train tracks, with the full Legendary zone layout labelled around the art. A layout scan, not a confirmed retail SKU.](/play-mats/paint-the-town-red-playmat.jpg "width=49%")
+![Paint the Town Red layout scan — Spider-Man battling Mysterio, the Vulture, and Doctor Octopus over train tracks, with the full Legendary zone layout labelled around the art. A layout scan, provenance unconfirmed.](/play-mats/paint-the-town-red-playmat.jpg "width=100%")
 
 ### Fan-made / print-and-play layouts
 
@@ -212,14 +229,16 @@ neoprene / dye-sub shops from the same files.
 
 ## Interactions
 
-- **[Play Board](play-board.md)** — the digital analog. The engine projects the
-  same zone set the physical layout mats label (City / HQ / Mastermind / Scheme /
-  villain deck / Wounds / Bystanders / Sidekicks / Officers / decks) into
-  `UIState`, which the arena-client renders. Mat art is a skin; zone semantics
-  live in the engine, so the board is not bound to any one mat's layout. Useful
-  as a *composition* reference: the City reads left-to-right toward Escape, HQ is
-  a five-slot row, and Mastermind + Scheme sit as a pair with Twists / Strikes as
-  adjacent stacks rather than separate rows.
+- **[Play Board](play-board.md)** — the digital analog, and the primary consumer
+  of this page. The engine projects the same zone set the physical layout mats
+  label (City / HQ / Mastermind / Scheme / villain deck / Wounds / Bystanders /
+  Sidekicks / Officers / decks) into `UIState`, which the arena-client renders.
+  Mat art is a skin; zone semantics live in the engine, so the board is not
+  bound to any one mat's layout. Useful as a *composition* reference: the City
+  reads left-to-right toward Escape, HQ is a five-slot row, and Mastermind +
+  Scheme sit as a pair with Twists / Strikes as adjacent stacks rather than
+  separate rows. A Villains mode would reuse the geometry with the rename map
+  above — but see the Bindings caveat.
 - **[Legendary Forge](legendary-forge.md)** — the physical-product line. A
   first-party Arena mat belongs in the official catalogue above; the Second
   Edition mat is the current printed baseline (cost reminders on the face-down
@@ -242,25 +261,43 @@ neoprene / dye-sub shops from the same files.
   Playmat: Thanos vs. The Avengers* layout mat (93431, City / HQ slots printed)
   and the generic 24″ Thanos art mat (93486, no zones). Same art, different
   product.
+- **Spider-Man art-mat SKU drifts by region.** The US Upper Deck SKU is **93488**;
+  EU / UK shops list the same art mat under drifted codes (93487 / 93489). Don't
+  "correct" the page from a foreign product page — it's one mat.
 - **Generic art mats have no labels.** The 24″ × 13.5″ Thanos / Spider-Man /
   Wolverine mats do not teach or enforce any zone layout — don't mistake one for
   a layout mat.
-- **Dark City and Paint the Town Red did not ship official playmats.** The scans
-  with those themes are layout assets, not boxed SKUs, and appear in no current
-  Upper Deck listing.
-- **Villains is a standalone with its own mat**, not a sticker over the
-  hero-side board. The labels change (Plot, Overrun, Commander, Adversaries, New
-  Recruits, Hydra, Lair); the five-space City geometry does not.
-- **Official themed mats do not carry every expansion slot.** They print
-  base-game zones plus a few extras; large collections (Sidekicks, special
-  Bystanders, extra City / plot cards) outgrow them, which is why the BGG fan
-  files are usually more complete.
+- **The Dark City mat is the OPK2 mat.** The Dark City *expansion box* shipped no
+  playmat; the Dark City-art mat reached players only through Organized Play Kit
+  #2 ("Daredevil v The Hand"). Cite it as OPK2, not a retail SKU.
+- **Villains renames, it does not re-geometry.** PLOT / OVERRUN / COMMANDER /
+  ADVERSARIES / NEW RECRUITS / HYDRA / LAIR sit over the same five-space City.
+  BINDINGS shares the Wounds *slot* but not the Wounds *rules*.
 - **Setup tables printed on old mats go stale.** Player-count rows on the 2012 /
-  2014 mats predate later card types — a physical convenience, never a rules
-  source; do not scrape them into the engine.
+  2014 mats (and the Villains mat) predate later card types — a physical
+  convenience, never a rules source; do not scrape them into the engine.
 - **Availability drifts.** The 2014 accessory, the OP kits, and the Thanos
   layout mat are frequently out of print; prices quoted here were current at
   `last-reviewed` and will move.
+
+## Open Questions
+
+Verification still owed, so the page can promote items from *Secondary* to
+*Verified*:
+
+- **Thanos layout SKU 93431** — confirm against a live Upper Deck store URL (the
+  mat itself is verified by scan; the SKU is relayed).
+- **OPK3 mat scan** — theme is confirmed (Spider-Man vs. the Sinister Six), but
+  no clean scan has been located (BGG galleries are Cloudflare-gated; eBay is
+  swamped by the unrelated 2025 Gamegenic MTG Spider-Man mats). Confirm whether
+  the *Paint the Town Red* scan is the same art or a distinct product.
+- **Marvel Studios Phase 1 mat** — confirm the measured size and that the in-box
+  item is a rubber mat, not a reprinted cardboard board.
+- **Second Edition deluxe mat** — obtain a box/mat photo to caption the 2E entry.
+
+Resolved this revision (from the staged scans): the 93433 label set **does**
+print TWISTS and STRIKES; OPK2 = the Dark City-art mat; Spider-Man art mat SKU =
+93488.
 
 ## References
 
@@ -269,9 +306,9 @@ neoprene / dye-sub shops from the same files.
 - [IP Licensing](ip-licensing.md) — Marvel / Upper Deck rights posture.
 - [Card Image Acquisition](card-image-acquisition.md) — how the mat scans were staged.
 - Layout-scan source: [legendarycardgame.com — Promo Cards](https://www.legendarycardgame.com/promo-cards).
-- Upper Deck store SKUs (verified by image lookup): [Dark Phoenix vs. The X-Men (93433)](https://upperdeckstore.com/legendaryr-playmat-dark-phoenix-vs-the-x-men.html), [Marvel Thanos art mat (93486)](https://upperdeckstore.com/marvel-thanos-playmat.html), [Marvel Wolverine art mat (93490)](https://upperdeckstore.com/marvel-wolverine-playmat.html).
+- Upper Deck store SKUs (verified by image lookup): [Dark Phoenix vs. The X-Men (93433)](https://upperdeckstore.com/legendaryr-playmat-dark-phoenix-vs-the-x-men.html), [Marvel Thanos art mat (93486)](https://upperdeckstore.com/marvel-thanos-playmat.html), [Marvel Wolverine art mat (93490)](https://upperdeckstore.com/marvel-wolverine-playmat.html), and the Marvel Spider-Man art mat (93488).
 - 2014 official accessory: [BGG accessory 157107](https://boardgamegeek.com/boardgameaccessory/157107/legendary-a-marvel-deck-building-game-playmat).
-- Organized-play kits: [ICv2 — Upper Deck launching OP kits](https://icv2.com/articles/news/view/36546/upper-deck-launching-op-kits-marvel-legendary).
+- Organized-play kit contents: [ICv2 — Upper Deck launching OP kits](https://icv2.com/articles/news/view/36546/upper-deck-launching-op-kits-marvel-legendary); OPK2 (Daredevil vs. Kingpin) and OPK3 (Symbiote Spider-Man) contents from retailer / BGG listings.
 - Villains mat photo: Noble Knight Games product listing (used copy).
 - Fan files: [BoardGameGeek — Legendary Files](https://boardgamegeek.com/boardgame/129437/legendary-a-marvel-deck-building-game/files), [zeroeo mats (BGG 121186)](https://boardgamegeek.com/filepage/121186/040920-updated-marvel-legendary-play-mats-heroes-a).
 - Print-and-play collection: [ruler501/Marvel](https://github.com/ruler501/Marvel).
