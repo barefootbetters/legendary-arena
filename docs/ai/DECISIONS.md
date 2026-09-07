@@ -39932,4 +39932,23 @@ Protect this file.
 
 **Packet:** WP-656 / EC-693. **Drafted:** 2026-09-06. **Landed:** 2026-09-06.
 
+### D-24470 — Psychic Link's "each player may reveal another X-Men Hero → draw" is a new `reveal-from-hand` mechanic; the mid-sentence team token is suppressed as a gate via a marker, not a general parser rewrite (WP-659 / EC-696)
+
+**Status:** Drafted 2026-09-07; not yet landed (flips to Active at WP-659 execution).
+
+**Context.** `core/emma-frost/psychic-link` prints *"Each player may reveal another X-Men Hero. Each player who does draws a card."* The upstream source (`scripts/convert-cards/inputs/cards/coreset.js` ~L311) is `["Each player may reveal another ", { team: 4 }, " Hero. …"]` — a **mid-sentence** `{ team: 4 }` describing the reveal target, with no leading `{team}:` gate prefix. But `setup/heroAbility.setup.ts` Step 1b extracts **every** `[team:X]` token as a `requiresTeam` play-gate, so the card is wrongly gated on "another X-Men Hero played this turn" (it blocks), and the reveal-from-hand → draw mechanic is unimplemented — the card does nothing (live-observed: magneto-Midtown-Bank-Robbery 1p, blocked 9.2.2, silent 12.2.7). This is the same "Emma Frost cards not triggering" report as Diamond Form (D-24467, fixed) and Shadowed Thoughts (WP-660, separate — its covert gate is FAITHFUL, only the villain-deck-play half is unimplemented).
+
+**Decision (drafted).** Fix via the Investigate marker→criterion precedent (D-24373), NOT a general parser rewrite. Locks:
+
+1. **Marker-scoped suppression.** A new `[keyword:reveal-from-hand]` marker on Psychic Link's line tells the parser the co-located `[team:X]` / `[hc:X]` is the reveal CRITERION, not a play-gate — suppressed from Step 1a/1b conditions exactly as size-changing / copy-powers / resolved-investigate lines already suppress their tokens. The general `[team:X]`/`[hc:X]` extractor is NOT rewritten (the broad mid-sentence-token fragility — other cards may share it — is a separate WP).
+2. **New `reveal-from-hand` HeroKeyword + effect + handler.** The keyword joins the full handler-bearing lockstep triad: `HeroKeyword` union + `HERO_KEYWORDS` (with BOTH length pins — `heroKeywords.test.ts` and `heroAbility.setup.test.ts` — bumped `38→39` + order), `HANDLED_KEYWORDS` (+ its bidirectional keyset pin; `MVP_KEYWORDS` derives from it), and `HERO_EFFECT_HANDLERS` (+ the handler-count pin `24→25`). The effect descriptor carries a **singular** `revealCriterion: InvestigateCriterion` (the printed text is one criterion, distinct from the reveal-top-of-deck path's `investigateCriteria[]`).
+3. **Each-player seat-order draw.** The handler iterates `Object.keys(G.playerZones).sort()`; each player whose hand holds ≥1 criterion-matching card draws one. "another" needs no self-exclusion — the played Psychic Link has already left the hand, so any `team:x-men` card in hand qualifies.
+4. **Auto-reveal (no pending-choice park).** The printed "may reveal" is pure upside — revealing costs nothing and yields a draw, so declining is strictly dominated. The engine auto-reveals for every player who can, with no interactive park (a parked choice with no downside would only add a freeze surface for zero decision value). Consistent with the co-op posture (revealing a hand card leaks nothing strategic) and the project's auto-resolving upside handlers.
+5. **Determinism.** No new `G` field (a stateless hand-read + draw), so both structural hash oracles are byte-unchanged; the draw reuses the engine's single shuffle envelope on reshuffle. A `sim:runtime-observed` sentinel MAY move if a recorded fixture now plays Psychic Link and draws — investigate and record an explained re-pin if so; do not assume a no-op.
+6. **Card data regenerated, not hand-edited** (WP-633): the `[keyword:reveal-from-hand]` marker is applied by `apply-hero-ability-markers.mjs` from the curated map, and a clean regen reproduces the committed `data/cards/core.json` (core is the sole in-scope set — a cross-set grep of the upstream sources hits only `coreset.js`).
+
+**Gates.** Pre-flight NOT READY → the handler-bearing lockstep triad folded into the EC; copilot RISK → the count-pin lock, the "another" no-self-exclusion semantics, and the AC-4 criterion-shape assertion folded in; a re-flight cross-checked the pin literals and caught a second `HERO_KEYWORDS`-length pin. Verdict READY / PASS (all findings scope-neutral EC/AC-completeness). This entry flips to Active at execution with the confirmed choices.
+
+**Packet:** WP-659 / EC-696. **Drafted:** 2026-09-07.
+
 Protect this file.
