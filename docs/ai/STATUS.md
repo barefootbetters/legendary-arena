@@ -7,6 +7,35 @@
 
 ## Current State
 
+### WP-662 — `HeroCardSchema` preserves the Transform pairing fields (restores WP-657 + WP-658 live) (EC-699 / D-24473) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`. Production hotfix.** A registry schema gap left the WHOLE
+transform mechanic dead in production. `transform` / `transformOf` / `isTransform` live in `data/cards/*.json`
+(WP-657 / WP-658) and the engine setup reads them off the registry, but `HeroCardSchema` never declared them —
+a Zod `z.object` **strips unknown keys by default**, so `createRegistryFromLocalFiles` dropped them at load
+(`registry.getSet('wwhk')…cards…isTransform === undefined`). That silently broke BOTH shipped features:
+the D-24468 **partition** (transform second-forms stayed in the shuffled Hero Deck / HQ, recruitable — **live-observed**
+on server `7c04cb92`: the `red-skull-Midtown-Bank-Robbery` log recruits **Hurl Trucks** from the HQ) and the D-24469
+**[keyword:Transform] runtime** (`buildTransformTargets` read nothing → `G.transformTargets` empty → every swap
+soft-no-op'd on an empty side deck).
+
+**Why every test passed:** the engine setup tests build **mock** registries that keep the fields; none loaded
+the transform fields through the real Zod schema, so the strip was invisible. Found while live-verifying
+WP-658 / WP-660 — WP-660's fix was confirmed live (Radioactive Riot no phantom recruit → server on `7c04cb92`),
+yet Hurl Trucks was still recruitable; a real-registry probe showed `hurl-trucks.isTransform === undefined` vs
+`"isTransform": true` in the card data.
+
+**Fix + verification.** Add the three fields (all `.optional()`) to `HeroCardSchema` + a REAL-registry regression
+test in `registry.smoke.test.ts` (the path the mocks could never cover). Re-probe against real data: **0**
+hurl-trucks copies in the hero deck (was 5), **5** in the side deck (was 0), and
+`transformTargets['wwhk/she-hulk/hurl-legal-objections'] === 'wwhk/she-hulk/hurl-trucks'` (was empty). Registry-only:
+NO card-data change, NO new `G` field, NO hash re-pin, NO derived-artifact drift; `pnpm -r build` 0; registry
+**249/249**, engine **3093/3093**, whole-repo green; `cards:check` + `ledger:heroes:check` green. **D-24026
+operator-pending for WP-657 + WP-658** — now unblocked (a live She-Hulk match: Hurl Trucks not recruitable;
+Hurl Legal Objections transforms after ≥6 recruit).
+
+---
+
 ### WP-661 — Gate the co2e/ssw1 "made at least N recruit" attack grants on `recruit-threshold` (EC-698 / D-24472) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** Closes the flagged WP-660 follow-up (1). Five Thor /
