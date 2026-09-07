@@ -12,8 +12,8 @@
     "byStatus": {
       "executable": 398,
       "deferred": 0,
-      "condition": 19,
-      "unsupported": 340,
+      "condition": 22,
+      "unsupported": 337,
       "unmarked": 1076,
       "subsystem": 3
     }
@@ -6767,7 +6767,7 @@
       "set": "core",
       "scope": "hero",
       "mechanic": "defeated-villain-or-mastermind",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -7066,7 +7066,7 @@
       "set": "core",
       "scope": "hero",
       "mechanic": "recruit-threshold",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -14903,7 +14903,7 @@
       "set": "msp1",
       "scope": "hero",
       "mechanic": "recruit-threshold",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",

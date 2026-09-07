@@ -147,6 +147,12 @@ const KNOWN_CONDITIONS = {
   'worthy': 'heroCostAtLeastInHandOrPlay',    // requires a Hero costing ≥5
   'savior': 'bystandersInVictoryAtLeast',     // requires ≥3 Bystanders in Victory
   'antics': 'cheapOrSizeChangingAtLeast',     // requires ≥3 cheap/Size-Changing
+  // why: these two markers gate an already-SHIPPED condition (same D-24055 posture
+  // as Spectrum), so they read `condition`, not `unsupported`. They were omitted
+  // from this map when their conditions landed, leaving a permanent honesty-gauge
+  // drag on two implemented mechanics.
+  'recruit-threshold': 'recruitMadeThisTurnAtLeast',              // Thor "Surge of Power" (WP-545 / D-24354): ≥N Recruit this turn
+  'defeated-villain-or-mastermind': 'defeatedVillainOrMastermindThisTurn', // Emma Frost "Diamond Form" (WP-656 / D-24467): a Villain/Mastermind defeated this turn
 };
 
 /** Error type signalling a probe failure (exit code 2). */
