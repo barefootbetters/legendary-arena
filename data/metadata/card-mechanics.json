@@ -322,6 +322,17 @@
       "hidden": true
     },
     {
+      "slug": "defeated-villain-or-mastermind",
+      "label": "Defeated Villain Or Mastermind",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "core/emma-frost"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "demolish",
       "label": "Demolish",
       "scope": "hero",
@@ -2380,6 +2391,7 @@
     },
     "core/emma-frost": {
       "mechanics": [
+        "defeated-villain-or-mastermind",
         "draw"
       ]
     },

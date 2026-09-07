@@ -36,6 +36,7 @@ import {
   isWaitAndSeeCondition,
   recordDeferredConditionalGrant,
   resolveDeferredConditionalGrants,
+  REPEATABLE_DEFEAT_CONDITION_TYPE,
 } from './deferredConditionalGrants.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -2966,6 +2967,46 @@ export function resolveDeferredHeroGrants(
         'applied',
         entry.cardId,
       );
+      // why: WP-656 / D-24467 — a defeat-gated grant (Diamond Form) is EDGE-TRIGGERED
+      // per defeat, not one-shot. resolveDeferredConditionalGrants removed this entry
+      // as it fired (the numeric-threshold one-shot contract, unchanged); RE-ARM it by
+      // re-recording so it survives to credit the NEXT Villain/Mastermind defeat this
+      // turn. This uses the documented "a fire callback that defers a new grant appends
+      // to the surviving list" support. Over-fire on non-defeat moves is prevented not
+      // by removal but by the edge flag being consumed below — a re-armed grant reads a
+      // cleared flag and stays put. The turn boundary drops it (clearDeferredConditionalGrants).
+      if (hookHasRepeatableDefeatCondition(hook)) {
+        recordDeferredConditionalGrant(G, entry.playerId, entry.cardId, entry.hookIndex);
+      }
     },
   );
+
+  // why: WP-656 / D-24467 — consume the per-move defeat EDGE. The fight sites set
+  // G.villainOrMastermindDefeatedSinceResolve (gated on a pending grant) and the
+  // `defeatedVillainOrMastermindThisTurn` condition read it above; deleting it after
+  // this move's resolution makes the grant fire exactly once per defeat and never on a
+  // subsequent non-defeat move (the resolution runs after EVERY play-phase move). The
+  // guarded delete is a no-op when unset, so a game with no such grant is byte-unchanged.
+  if (G.villainOrMastermindDefeatedSinceResolve !== undefined) {
+    delete G.villainOrMastermindDefeatedSinceResolve;
+  }
+}
+
+/**
+ * Reports whether a hook carries the edge-triggered defeat condition (Diamond Form),
+ * so its fired grant is re-armed rather than left one-shot (WP-656 / D-24467).
+ *
+ * @param hook - The deferred grant's hook.
+ * @returns True when a condition of type REPEATABLE_DEFEAT_CONDITION_TYPE is present.
+ */
+function hookHasRepeatableDefeatCondition(hook: HeroAbilityHook): boolean {
+  if (hook.conditions === undefined) {
+    return false;
+  }
+  for (const condition of hook.conditions) {
+    if (condition.type === REPEATABLE_DEFEAT_CONDITION_TYPE) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -564,3 +564,63 @@ describe('defeatMastermindTacticCore — tactic onFight dispatch (WP-497 / D-243
       'an unimplemented tactic id fires no onFight effect (stays inert)');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-656 / D-24467 — Diamond Form defeat signal (gated; RS-1 per-tactic)
+// ---------------------------------------------------------------------------
+
+describe('WP-656 / D-24467 — mastermind-defeat signal', () => {
+  it('RS-1: each successful tactic fight sets the defeat signal when a grant is pending', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    // why: gated on a pending Diamond Form grant. RS-1 — a single tactic defeat (not
+    // only the final vanquish) counts as a Mastermind defeat, so the flag is set here.
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(
+      moveContext.G.mastermind.tacticsDefeated.length,
+      1,
+      'exactly one tactic was defeated (not a full vanquish)',
+    );
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      true,
+      'a single tactic defeat signals Diamond Form (RS-1: per-tactic counts)',
+    );
+  });
+
+  it('AC-9: does NOT set the signal when no deferred grant is pending (oracle-safe)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      undefined,
+      'the flag must never enter G for a game with no deferred grant',
+    );
+  });
+
+  it('does NOT set the signal on a rejected fight (insufficient attack)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      undefined,
+      'a fight that defeats no tactic signals nothing (the flag is on the success path)',
+    );
+  });
+});

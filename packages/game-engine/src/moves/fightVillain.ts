@@ -197,6 +197,17 @@ export function fightVillain(
   // why: D-24180 — this successful fight marks the player as having acted this
   // turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;
+  // why: WP-656 / D-24467 — signal this City Villain defeat for Diamond Form's
+  // wait-and-see grant ("Whenever you defeat a Villain or Mastermind this turn").
+  // GATED on a pending deferred grant so the flag never enters G for a game with no
+  // such grant (oracle-safety, D-24377 §6). It is EDGE-triggered: resolveDeferredHeroGrants
+  // consumes it after this move, so the grant fires once per defeat, never per later
+  // move. Placed at the fight-move tail (beside hasActedThisTurn), NOT the shared
+  // defeatCityVillainCore — matching the WP's "fightVillain success site" scope, so
+  // Silent Sniper's free defeat (which reuses the core) is deliberately out of scope.
+  if (G.deferredConditionalGrants !== undefined && G.deferredConditionalGrants.length > 0) {
+    G.villainOrMastermindDefeatedSinceResolve = true;
+  }
 }
 
 /**

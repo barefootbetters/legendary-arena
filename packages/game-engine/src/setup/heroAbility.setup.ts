@@ -814,6 +814,15 @@ function parseAbilityText(abilityText: string): {
       // why: WP-653 / D-24464 — Antics gates on >= 3 cards costing 1-2 and/or
       // Size-Changing (the Spectrum/recruit-threshold marker→condition precedent).
       conditions.push({ type: 'cheapOrSizeChangingAtLeast', value: '3' });
+    } else if (normalizedKeyword === 'defeated-villain-or-mastermind') {
+      // why: WP-656 / D-24467 — Diamond Form's "Whenever you defeat a Villain or
+      // Mastermind this turn, you get +3 Recruit." The marker→condition precedent
+      // (Spectrum / recruit-threshold / Outwit): push the wait-and-see gate
+      // `defeatedVillainOrMastermindThisTurn` onto the same hook as the line's printed
+      // +3[icon:recruit], so the recruit fires once per qualifying defeat this turn (not
+      // on play). A boolean gate — `value` is unused by the evaluator; '1' is a stable
+      // placeholder. Placed before the unresolved-marker fallback so it never flags hollow.
+      conditions.push({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' });
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a

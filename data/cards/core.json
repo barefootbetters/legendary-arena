@@ -505,7 +505,7 @@
           "attack": "5",
           "recruit": "0+",
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]."
+            "Whenever you defeat a Villain or Mastermind this turn, you get +3[icon:recruit]. [keyword:defeated-villain-or-mastermind]"
           ]
         }
       ],

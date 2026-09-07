@@ -13,11 +13,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WAIT_AND_SEE_CONDITION_TYPES,
+  REPEATABLE_DEFEAT_CONDITION_TYPE,
   isWaitAndSeeCondition,
   recordDeferredConditionalGrant,
   clearDeferredConditionalGrants,
   resolveDeferredConditionalGrants,
 } from './deferredConditionalGrants.js';
+import { evaluateCondition } from './heroConditions.evaluate.js';
 import { executeHeroEffects, resolveDeferredHeroGrants } from './heroEffects.execute.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
@@ -63,12 +65,16 @@ const RECRUIT_HOOK = [
   },
 ] as unknown as HeroAbilityHook[];
 
-describe('wait-and-see scope (WP-568 / D-24377 section 1)', () => {
-  it('covers exactly the two NUMERIC-THRESHOLD condition types', () => {
+describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', () => {
+  it('covers the two NUMERIC-THRESHOLD types plus the edge-triggered defeat type', () => {
     assert.deepEqual([...WAIT_AND_SEE_CONDITION_TYPES], [
       'recruitMadeThisTurnAtLeast',
       'distinctHeroClassesAtLeast',
+      'defeatedVillainOrMastermindThisTurn',
     ]);
+    // why: the edge-triggered member is exported as a named const so the array, the
+    // evaluator case, the re-arm check, and the setup marker branch share one literal.
+    assert.equal(REPEATABLE_DEFEAT_CONDITION_TYPE, 'defeatedVillainOrMastermindThisTurn');
   });
 
   it('AC-5: heroClassMatch and requiresTeam stay ON-PLAY', () => {
@@ -80,6 +86,59 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1)', () => {
     assert.equal(isWaitAndSeeCondition({ type: 'requiresTeam', value: 'x-men' }), false);
     assert.equal(isWaitAndSeeCondition({ type: 'recruitMadeThisTurnAtLeast', value: '8' }), true);
     assert.equal(isWaitAndSeeCondition({ type: 'distinctHeroClassesAtLeast', value: '3' }), true);
+    assert.equal(isWaitAndSeeCondition({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' }), true);
+  });
+});
+
+// why: WP-656 / D-24467 AC-6 — a RUNTIME drift pin (engine tests are not typechecked,
+// D-24372). Every WAIT_AND_SEE_CONDITION_TYPES entry must have a real evaluateCondition
+// case; a listed type with no case silently falls through the `default → false` and can
+// NEVER fire (the exact silent-failure this lockstep guards). Each fixture below sets the
+// minimal state that makes its condition TRUE, so a return of `false` means the case is
+// missing. The NEGATIVE assertion demonstrates the failure mode a missing case produces.
+describe('AC-6: WAIT_AND_SEE ↔ evaluateCondition lockstep (runtime drift pin)', () => {
+  /** For each wait-and-see type: a value + a mutation making its condition true. */
+  const TRUTHY_FIXTURE: Record<string, { value: string; mutate: (G: LegendaryGameState) => void }> = {
+    recruitMadeThisTurnAtLeast: { value: '1', mutate: (G) => { G.turnEconomy.recruit = 1; } },
+    distinctHeroClassesAtLeast: {
+      value: '1',
+      mutate: (G) => { G.cardTraits = { 'hero-x': { heroClass: 'tech' } } as unknown as LegendaryGameState['cardTraits']; },
+    },
+    defeatedVillainOrMastermindThisTurn: {
+      value: '1',
+      mutate: (G) => { G.villainOrMastermindDefeatedSinceResolve = true; },
+    },
+  };
+
+  it('every listed type has an evaluateCondition case that can return true', () => {
+    for (const conditionType of WAIT_AND_SEE_CONDITION_TYPES) {
+      const fixture = TRUTHY_FIXTURE[conditionType];
+      assert.ok(
+        fixture !== undefined,
+        `WAIT_AND_SEE_CONDITION_TYPES lists "${conditionType}" but this drift pin has no ` +
+          `truthy fixture for it — add one so the evaluator case is exercised.`,
+      );
+      const G = makeState([]);
+      fixture.mutate(G);
+      assert.equal(
+        evaluateCondition(G, '0', { type: conditionType, value: fixture.value }),
+        true,
+        `evaluateCondition returned false for "${conditionType}" against a state that should ` +
+          `satisfy it — the switch case is missing, so it silently falls through default → false.`,
+      );
+    }
+  });
+
+  it('NEGATIVE: a listed-but-unhandled type silently fails (default → false)', () => {
+    // why: proves the silent-failure mode the lockstep guards — a synthetic type with
+    // no switch case returns false no matter the state, so a real type added to the
+    // array without an evaluator case would never fire and never throw.
+    const G = makeState([]);
+    G.villainOrMastermindDefeatedSinceResolve = true;
+    assert.equal(
+      evaluateCondition(G, '0', { type: '__unhandledWaitAndSee__', value: '1' }),
+      false,
+    );
   });
 });
 

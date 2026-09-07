@@ -34,27 +34,28 @@
 - The repeatable-fire model (D-24467): why the grant survives/re-fires per defeat, and why the one-shot numeric-threshold doctrine did/didn't need extending.
 - At any re-pin site (only if an oracle moves): the single explained cause.
 
-## Files to Produce
-- `hero/heroConditions.evaluate.ts` — **modified** — evaluate + failure-reason cases.
-- `hero/deferredConditionalGrants.ts` — **modified** — add to `WAIT_AND_SEE_CONDITION_TYPES`; update the doctrine comment if the model requires it.
-- `moves/fightVillain.ts` + `moves/fightMastermind.ts` — **modified** — set the gated defeat signal (NO new resolve call).
-- the per-turn-state type + turn-boundary reset file(s) (`game.ts` reset + the `G` type) — **modified** — declare + clear the signal (resolved by the scaffold).
-- `packages/game-engine/src/**/*.test.ts` — **modified/new** — AC-1..AC-7 coverage + the runtime drift pin.
-- `data/cards/{core,co2e,nmut}.json` — **modified (regenerated)** — the conditional `diamond-form` encoding.
-- `scripts/convert-cards/**` — **modified** — emit the conditional encoding.
-- the regenerated HERO derived artifacts — **modified** — `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, the mechanics-metadata output.
-- `packages/game-engine/src/types.ts` (the `LegendaryGameState` G-field for the defeat signal) — **modified**.
+## Files to Produce (FINALISED ALLOWLIST — from the scaffold)
+- `hero/heroConditions.evaluate.ts` — **modified** — `defeatedVillainOrMastermindThisTurn` evaluate + failure-reason cases.
+- `hero/deferredConditionalGrants.ts` — **modified** — add to `WAIT_AND_SEE_CONDITION_TYPES` (via the new exported `REPEATABLE_DEFEAT_CONDITION_TYPE`); doctrine comment now documents BOTH the one-shot numeric-threshold shape and the edge-triggered re-arm shape.
+- `hero/heroEffects.execute.ts` — **modified (ADDED beyond presumptive)** — the `resolveDeferredHeroGrants` resolution seam: re-arm a fired defeat grant + consume the edge flag after each resolution.
+- `moves/fightVillain.ts` + `moves/fightMastermind.ts` — **modified** — set the gated defeat signal at the fight-move tail (NO new resolve call).
+- `game.ts` (turn-boundary defensive clear) + `types.ts` (the `villainOrMastermindDefeatedSinceResolve` G-field) — **modified**.
+- `setup/heroAbility.setup.ts` — **modified (ADDED beyond presumptive)** — the `defeated-villain-or-mastermind` marker→condition parse branch (the Spectrum / recruit-threshold / Outwit precedent).
+- `packages/game-engine/src/**/*.test.ts` — **modified/new** — `diamondForm.overfire.test.ts` (AC-1/2/4/5/7 + multi-copy) + fight-site wiring in `fightVillain.test.ts` / `fightMastermind.test.ts` + the AC-6 runtime drift pin + array update in `deferredConditionalGrants.test.ts`.
+- `data/cards/core.json` — **modified (regenerated)** — the conditional `diamond-form` encoding. **`co2e.json` / `nmut.json` are OUT of scope** — `co2e/diamond-form` is a different card (Master-Strike KO) and `nmut/assume-diamond-form` is a Mastermind tactic; only `core` carries the recruit-on-defeat text.
+- `scripts/convert-cards/apply-hero-ability-markers.mjs` (`VALID_TOKEN_PATTERN`) + `scripts/convert-cards/inputs/hero-ability-markers.json` (the marker entry) — **modified**.
+- the regenerated HERO derived artifacts — **modified** — `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json`.
 - `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24467 Active), `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — governance.
 - NOT `rules/heroAbility.types.ts` (no union member to add).
 
 ## After Completing
-- [ ] `pnpm --filter @legendary-arena/game-engine build` + `test` exit 0 (record the pass count); `pnpm -r build` exits 0.
-- [ ] Card-data regen reproduces the committed `data/cards/*.json`; the HERO `:check` gates all exit 0: `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `cards:check` (run every one even where a feed shows no diff).
-- [ ] `pnpm sim:runtime-observed:check` exits 0 with NO regeneration; both hash oracles byte-unchanged (gated signal) OR a recorded, explained re-pin with before/after values.
-- [ ] **Control run:** revert the condition/signal wiring; the AC-2..AC-4 tests fail (non-vacuous). Record the observed failure count.
-- [ ] `git diff --name-only` on STAGED changes = exactly the finalised allowlist.
-- [ ] **D-24026 live-on-surface:** a real `play.legendary-arena.com` match plays Diamond Form and defeats a Villain/Mastermind → +3 Recruit fires on defeat, no free +3 on play; recorded or operator-pending. Green tests + merge do NOT satisfy it.
-- [ ] `docs/ai/STATUS.md` updated; `docs/ai/DECISIONS.md` D-24467 Active (reuse-no-new-resolve; the gating/re-pin decision; RS-1 semantics; the scaffold-observed repeatable model + any doctrine-comment update); `WORK_INDEX.md` + `EC_INDEX.md` flipped with date; mindmap node `📝`→`✅` + `pnpm roadmap:counts:write`; `roadmap:counts:check` exits 0.
+- [x] `pnpm --filter @legendary-arena/game-engine build` + `test` exit 0 — engine suite **3062 pass / 0 fail** (+16); `pnpm -r build` exits 0.
+- [x] Card-data regen reproduces the committed `data/cards/*.json`; the HERO `:check` gates all exit 0: `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` + `cards:check` (all run; only `core.json` + its derived feeds diff).
+- [x] `pnpm sim:runtime-observed:check` exits 0 with NO regeneration; both hash oracles **byte-unchanged** (the edge flag is gated AND consumed within the same move, so it never survives to a hash point) — no re-pin.
+- [x] **Control run:** reverting the condition read failed exactly **3** grant-firing tests (AC-2, AC-4, multi-copy) while the zero/no-throw ACs still passed — non-vacuous.
+- [x] `git diff --name-only` = exactly the finalised allowlist (core.json only; the two seams recorded above).
+- [ ] **D-24026 live-on-surface:** a real `play.legendary-arena.com` match plays Diamond Form and defeats a Villain/Mastermind → +3 Recruit fires on defeat, no free +3 on play — **operator-pending** (green tests + merge do NOT satisfy it).
+- [x] `docs/ai/STATUS.md` updated; `docs/ai/DECISIONS.md` D-24467 Active; `WORK_INDEX.md` + `EC_INDEX.md` flipped 2026-09-06; mindmap node `📝`→`✅` + `roadmap:counts:write`; `roadmap:counts:check` exits 0.
 
 ## Common Failure Smells
 - Diamond Form still grants +3 on play → the flat `onPlay recruit:3` marker was not replaced, or the card-data regen was skipped.
