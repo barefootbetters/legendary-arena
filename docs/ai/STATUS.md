@@ -70,14 +70,23 @@ and `TopHudBar.test.ts` carried the pre-change three-skin set / raw-key label in
 the five-entry set / `displayLabel` — legitimate fixture updates for the intentional behavior change (the
 label source moved from the key to `displayLabel`), folded in per the 01.0b file-allowlist-omission amendment.
 
-**Verification note.** Pre-merge browser preview was **blocked by the environment** — port 5173 was held by a
-concurrent session's dev server (vite pins its config port, so the preview harness could not route around it),
-and the local-file static-snapshot sandbox blocks external SVG + screenshots. The fixed-layer positioning is
-proven by the shipped `<VfxOverlay>` sibling (same root, same `position:fixed; inset:0`), and the stacking
-(`z-index:-1` behind `.play-desktop`'s `position:relative` content, over the opaque `body` ground) is
-textbook. **D-24026 live-on-surface is operator-pending** — a real match on `play.legendary-arena.com` must
-show the board repaint on skin change (pick a non-classic mat) with cards/zones legible, and the choice
-persisting across reload.
+**Verification note.** Pre-merge browser preview was blocked by the environment (port 5173 held by a concurrent
+session; local-file sandbox), so the merge shipped on green tests + the `<VfxOverlay>` precedent. **The D-24026
+Chrome check on the deployed board then found the feature broken** — the mat did not paint. Root cause was two
+production-only bugs the unit suite could not catch (it asserts URL strings, cannot render), fixed as a
+follow-up under **D-24482** (WP-666 §D-24026 follow-up):
+1. **Assets 404'd in prod** — `skinManifest` resolved URLs through an intermediate `const moduleUrl =
+   import.meta.url`, which defeats Vite's `new URL(…, import.meta.url)` transform (it must be literal); the mat
+   SVGs + theme CSS resolved to unemitted `/assets/skins/…` paths. Fixed by inlining `import.meta.url` — Vite
+   now emits them as `data:` URIs (verified in `dist`: 3 `data:image/svg`, 5 `data:text/css`, 0 broken paths).
+   A latent WP-130 bug, surfaced by WP-666 being the first consumer.
+2. **Mat hidden by the app-shell** — the `z-index:-1` fixed layer was painted over by the opaque non-positioned
+   `.app-shell` background. Fixed by scoping it as an `absolute; z-index:0` layer inside a positioned
+   `.play-viewport` (verified live: mat paints, app header intact at y0–68, content on top).
+
+Fix branch green (`typecheck` 0, arena-client **1639/1639**). **D-24026 re-verification is pending the fix's
+deploy** — the Chrome check will be repeated on the deployed board (pick Cosmic Arena / Midtown Skyline → the
+board repaints with cards legible, persists across reload) and this note flipped to CONFIRMED.
 
 ### WP-667 — Radioactive Riot: optional "KO a card from hand or discard" (recruit-threshold-gated, no reward) (EC-704 / D-24480) (2026-09-07)
 

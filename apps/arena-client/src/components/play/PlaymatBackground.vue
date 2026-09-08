@@ -39,9 +39,17 @@ export default defineComponent({
 
 <style scoped>
 .playmat-background {
-  position: fixed;
+  /* why (D-24482): ABSOLUTE within the positioned `.play-viewport` box, NOT
+     `position: fixed; z-index: -1`. A negative-z-index fixed layer is painted
+     OVER by the opaque non-positioned `.app-shell` background (CSS paint order:
+     a non-positioned element's background paints after negative-z children),
+     so the mat was invisible. Scoping it to the `.play-viewport` stacking
+     context (position:relative; z-index:0) as an absolute z-index:0 layer puts
+     it above the app-shell ground and below the board content, and confines it
+     to the play area so it never covers the app header. */
+  position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   /* Palette ground first; the mat image (or `none`) over it. Both come from
      the skin class / applier on the <PlayViewport> root and inherit here. */

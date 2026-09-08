@@ -37,34 +37,41 @@
  */
 
 // why: the `new URL(relative, import.meta.url).href` pattern is the
-// cross-environment idiom recommended by Vite for runtime-resolvable
-// static asset URLs. Vite rewrites the call site at build time to a
-// final bundle URL string; Node resolves it to a `file://` URL with no
-// disk access. The test runner (`node --import tsx`) does not strip
-// query suffixes from import specifiers, so the static `?url` suffix
-// import is avoided in favour of this pattern.
-const moduleUrl = import.meta.url;
+// cross-environment idiom for runtime-resolvable static asset URLs —
+// Vite rewrites the call site at build time to the final hashed bundle
+// URL; Node resolves it to a `file://` URL with no disk access.
+// CRITICAL: `import.meta.url` MUST appear LITERALLY as the second
+// argument. Aliasing it through an intermediate variable
+// (`const moduleUrl = import.meta.url; new URL(path, moduleUrl)`)
+// defeats Vite's static analysis: it does NOT rewrite the call, so in
+// production the URL resolves relative to the hashed JS chunk and 404s
+// (e.g. `/assets/skins/comic/board-background.svg`, which is never
+// emitted). WP-130 shipped the aliased form; it was invisible until
+// WP-666 consumed the URLs, then every mat image + theme 404'd live.
+// See DECISIONS.md D-24482. The `?url` suffix import is still avoided
+// because the `node --import tsx` test runner does not strip query
+// suffixes from import specifiers.
 
 // Board-background art — first-party abstract SVG. Only skins whose
 // `boardBackgroundUrl` is non-null carry an image; `classic` / `minimal`
 // are palette-only grounds (their `boardBackgroundUrl` is `null`).
-const comicBoardBackgroundUrl = new URL('../assets/skins/comic/board-background.svg', moduleUrl).href;
-const midtownBoardBackgroundUrl = new URL('../assets/skins/midtown/board-background.svg', moduleUrl).href;
-const cosmicBoardBackgroundUrl = new URL('../assets/skins/cosmic/board-background.svg', moduleUrl).href;
+const comicBoardBackgroundUrl = new URL('../assets/skins/comic/board-background.svg', import.meta.url).href;
+const midtownBoardBackgroundUrl = new URL('../assets/skins/midtown/board-background.svg', import.meta.url).href;
+const cosmicBoardBackgroundUrl = new URL('../assets/skins/cosmic/board-background.svg', import.meta.url).href;
 
 // Per-skin theme stylesheets (palette + `--skin-board-scrim`).
-const classicThemeCssUrl = new URL('../assets/skins/classic/theme.css', moduleUrl).href;
-const comicThemeCssUrl = new URL('../assets/skins/comic/theme.css', moduleUrl).href;
-const minimalThemeCssUrl = new URL('../assets/skins/minimal/theme.css', moduleUrl).href;
-const midtownThemeCssUrl = new URL('../assets/skins/midtown/theme.css', moduleUrl).href;
-const cosmicThemeCssUrl = new URL('../assets/skins/cosmic/theme.css', moduleUrl).href;
+const classicThemeCssUrl = new URL('../assets/skins/classic/theme.css', import.meta.url).href;
+const comicThemeCssUrl = new URL('../assets/skins/comic/theme.css', import.meta.url).href;
+const minimalThemeCssUrl = new URL('../assets/skins/minimal/theme.css', import.meta.url).href;
+const midtownThemeCssUrl = new URL('../assets/skins/midtown/theme.css', import.meta.url).href;
+const cosmicThemeCssUrl = new URL('../assets/skins/cosmic/theme.css', import.meta.url).href;
 
 // Legacy card-frame stubs (WP-130). `cardFrameUrl` is not consumed yet
 // (card-frame rendering is a future WP); it stays optional so a new skin
 // need not fabricate an unused asset.
-const classicCardFrameUrl = new URL('../assets/skins/classic/card-frame.png', moduleUrl).href;
-const comicCardFrameUrl = new URL('../assets/skins/comic/card-frame.png', moduleUrl).href;
-const minimalCardFrameUrl = new URL('../assets/skins/minimal/card-frame.png', moduleUrl).href;
+const classicCardFrameUrl = new URL('../assets/skins/classic/card-frame.png', import.meta.url).href;
+const comicCardFrameUrl = new URL('../assets/skins/comic/card-frame.png', import.meta.url).href;
+const minimalCardFrameUrl = new URL('../assets/skins/minimal/card-frame.png', import.meta.url).href;
 
 /**
  * One bundled skin's resolved asset URLs, its human-readable selector

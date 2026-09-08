@@ -523,8 +523,20 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why (WP-666 / D-24482): the viewport root is a real positioned box — NOT the
+   former `display: contents` — so it can (a) establish a stacking context that
+   scopes the <PlaymatBackground> absolute layer beneath the board content and
+   above the opaque `.app-shell` ground, and (b) confine that layer to the play
+   area (below the app header). `min-height: 100vh` keeps the mat covering the
+   full screen even when the board is shorter than the viewport. The fixed
+   overlays (AudioControls / VfxOverlay / banners) are `position: fixed`, so they
+   stay viewport-anchored regardless of this box. PlayDesktop / PlayMobile keep
+   their own `max-width` + `margin-inline: auto` centering within this block. */
 .play-viewport {
-  display: contents;
+  display: block;
+  position: relative;
+  z-index: 0;
+  min-height: 100vh;
 }
 
 /* why: WP-654 — position the shared final-turn banner as a fixed top-center

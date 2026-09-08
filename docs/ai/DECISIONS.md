@@ -40433,4 +40433,64 @@ fields (the pre-flight RS-1 finding).
 
 **Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
 
+---
+
+### D-24482 — Playmat mat assets resolve via literal `import.meta.url` (Vite inlines them as data URIs); the background paints as an absolute layer inside a positioned `.play-viewport` (WP-666 live-verify follow-up) (Active 2026-09-08 — WP-666 / EC-703)
+
+**Type:** Client UI / Build Correctness
+**Packet:** WP-666 / EC-703 (D-24026 live-verification follow-up)
+**Date:** 2026-09-08
+
+**Decision:** The D-24026 Chrome check on the deployed board surfaced two
+production-only defects in WP-666 (both invisible to the unit suite, which only
+asserts URL strings and cannot render). Both are fixed:
+
+1. **Asset URLs must use a LITERAL `import.meta.url`.** `skinManifest.ts`
+   resolved every asset with `const moduleUrl = import.meta.url; new URL(path,
+   moduleUrl)`. Vite's build-time transform of `new URL(<literal>, import.meta.url)`
+   only fires when `import.meta.url` appears **literally** as the second
+   argument; an intermediate alias defeats it, so the call resolved at runtime
+   relative to the hashed JS chunk — yielding `/assets/skins/<name>/…` paths that
+   were never emitted and **404'd** in production (mat images blank, theme
+   palette/scrim absent — only the CSS fallbacks showed). Inlining
+   `import.meta.url` at each call site makes Vite process them: the mat SVGs and
+   the per-skin `theme.css` are now emitted as **`data:` URIs** inlined in the
+   bundle (verified in `dist`: 3 `data:image/svg`, 5 `data:text/css`, zero
+   `/assets/skins/` references), which cannot 404. This was a **latent WP-130
+   bug** — WP-130 shipped the aliased form, but nothing consumed the URLs until
+   WP-666, so it never manifested. `?url` suffix imports remain avoided (the
+   `tsx` test runner does not strip query suffixes).
+
+2. **The background is an absolute layer inside a positioned `.play-viewport`,
+   not a `z-index:-1` fixed layer.** A negative-z-index fixed layer is painted
+   **over** by the opaque, non-positioned `.app-shell` background (CSS paint
+   order: a non-positioned element's background paints after negative-z-index
+   children), so the mat was entirely hidden. `.play-viewport` changes from
+   `display: contents` to `display: block; position: relative; z-index: 0`
+   (establishing a stacking context and a positioning containing block), and
+   `PlaymatBackground` becomes `position: absolute; inset: 0; z-index: 0`. This
+   paints the mat above the app-shell ground and below the board content, and
+   **confines it to the play area** so it never covers the global app header
+   (verified live: the `brand-header` at y0–68 stays intact; the mat starts at
+   y68). `min-height: 100vh` keeps the mat covering the full screen when the
+   board is shorter than the viewport. The fixed overlays (AudioControls /
+   VfxOverlay / banners) are `position: fixed` and stay viewport-anchored;
+   PlayDesktop / PlayMobile keep their `max-width` + `margin-inline: auto`
+   centering within the new block.
+
+**Rationale:** Both are correctness fixes with no behavior change to the tests
+(node resolves `new URL` to `file://` URLs, so the manifest still returns valid
+strings; production now returns data URIs). They are the reason the D-24026 gate
+exists — green tests + a merged PR did not prove the feature rendered.
+
+**Rejected alternatives:**
+- **Make `.app-shell` background transparent** — REJECTED. Out of scope (app-wide
+  chrome) and would change every route's ground.
+- **Keep `z-index: -1` fixed and raise it to 0** — REJECTED. At `z-index: 0` the
+  viewport-fixed layer covers the app header; scoping to `.play-viewport` is the
+  correct containment.
+- **`?url` asset imports** — REJECTED. Break the `tsx` test runner.
+
+**Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
+
 Protect this file.
