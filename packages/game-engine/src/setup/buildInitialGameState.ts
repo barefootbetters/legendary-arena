@@ -70,6 +70,9 @@ import type { UICardDisplay } from '../ui/uiState.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { executeSchemeSetup } from '../scheme/schemeSetup.execute.js';
+// why: WP-670 / D-24484 — Scheme Transform. For a scheme in this allowlist, setup captures
+// its Great Old One target + that face's ability text into optional SchemeState fields.
+import { SCHEME_TRANSFORM_TARGETS } from '../scheme/schemeTransform.logic.js';
 
 // why: Pile + starting-card ext_id constants are re-exported from pilesInit.ts for
 // backward compatibility. The canonical definitions live in pilesInit.ts — importing
@@ -511,6 +514,20 @@ export function buildInitialGameState(
   // so a new top-level G field re-pins the two hash oracles (D-24468 precedent).
   const transformTargets = buildTransformTargets(effectiveHeroDeckIds, registry);
 
+  // why: WP-670 / D-24484 — Scheme Transform. For a scheme in SCHEME_TRANSFORM_TARGETS,
+  // capture its Great Old One flip target + that face's ability text (read the same way as
+  // the base scheme's gameText) so the runtime flip is a pure state read. A conditional
+  // spread below keeps the three fields ABSENT for every other scheme, so a non-transform
+  // game (incl. the sentinel core/legacy-virus-the) serializes byte-identically → no re-pin.
+  const schemeTransformTarget = SCHEME_TRANSFORM_TARGETS[config.schemeId];
+  const schemeTransformFields = schemeTransformTarget !== undefined
+    ? {
+        transformTargetSchemeId: schemeTransformTarget.targetSchemeId,
+        transformTargetGameText: buildSchemeGameText(schemeTransformTarget.targetSchemeId, registry),
+        hasTransformed: false,
+      }
+    : {};
+
   // why: WP-514 / D-24326 — Secret Invasion converts 12 Heroes from the reservoir
   // into Skrull Villains and shuffles them into the Villain Deck. The 12 are drawn
   // from the top of the shuffled reservoir BEFORE fillHqFromDeck consumes it (so they
@@ -635,7 +652,7 @@ export function buildInitialGameState(
     // scheme-twist cards. Separate from schemeSetupInstructions (D-2601).
     // gameText: abilities from the registry so UIState can tell the player
     // what the scheme does and what happens on a Scheme Twist.
-    scheme: { twistPile: [], gameText: buildSchemeGameText(config.schemeId, registry) },
+    scheme: { twistPile: [], gameText: buildSchemeGameText(config.schemeId, registry), ...schemeTransformFields },
     // why: escaped pile is top-level because CityZone is a fixed 5-tuple
     // that cannot host named fields. Append-only, chronological order.
     escapedPile: [],

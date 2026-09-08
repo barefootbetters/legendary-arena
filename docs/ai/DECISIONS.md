@@ -40520,4 +40520,26 @@ exists — green tests + a merged PR did not prove the feature rendered.
 
 **Gates.** **Executed 2026-09-08:** engine suite 3159/3159; `pnpm -r build` 0; NO card-data / derived-artifact change (the two faces already exist in `wwhk.json`); NO hash re-pin. Control: dropping `wwhk/general-thunderbolt-ross` from the allowlist makes setup skip the capture and the strike fall to the honest hollow — the allowlist is load-bearing. **D-24026 live-on-surface** (a real General Ross match flips to Red Hulk on a Master Strike) is operator-pending.
 
+### D-24484 — Scheme Transform (first slice): capture the Great Old One flip target at setup for an allowlist, and flip `G.scheme.gameText` via a pure `transformScheme` helper fired by a guarded per-move check; optional + allowlist-gated so no hash re-pin (Active 2026-09-08 — WP-670 / EC-707)
+
+**Context.** Nine double-sided Schemes across `mdns` / `msmc` / `rvlt` flip `[rule:Transforms]` into a "Great Old One" alternate win condition when a per-scheme condition is met. Chthon (Midnight Sons) is the worked example: the base scheme `mdns/ritual-sacrifice-to-summon-chthon` flips into `mdns/great-old-one-chthon` (cardType `scheme-transform`) once 5 Bystanders sit in the KO pile, then Chthon destroys players and wins if all are destroyed. Nothing in the engine handles `[rule:Transforms]` or the `scheme-transform` type, so the flip is inert. This is the third transform surface after Heroes (D-24469) and Masterminds (D-24483).
+
+**Decision.**
+
+1. **A hardcoded `SCHEME_TRANSFORM_TARGETS` map** (`scheme/schemeTransform.logic.ts`; first entry `mdns/ritual-sacrifice-to-summon-chthon` → `{ targetSchemeId: 'mdns/great-old-one-chthon', bystandersInKoToTransform: 5 }`). Unlike masterminds (two faces in one `masterminds[]` entry), a scheme's base and Great Old One faces are SEPARATE prose-linked `schemes[]` entries with no structured link, so pairing must be a hardcoded allowlist — the MASTERMIND_TRANSFORM_ALLOWLIST analog. The other eight Great Old Ones (msmc / rvlt) and their triggers are named follow-ups.
+
+2. **Setup captures the flip target for an allowlisted scheme.** `buildInitialGameState`, when `config.schemeId` is in the map, reads the target's ability text (`buildSchemeGameText(targetSchemeId, registry)` — the same reader as the base scheme's) into three NEW OPTIONAL `SchemeState` fields — `transformTargetSchemeId?`, `transformTargetGameText?`, `hasTransformed?` — following the `gameText?` optional-field precedent, emitted via a conditional spread so they are ABSENT for every other scheme.
+
+3. **A pure `transformScheme(schemeState)` helper** sets `hasTransformed = true` and swaps `gameText` to the Great Old One's lines (copy-then-override, the mastermind `transformMastermind` precedent). It is a no-op for a non-transform scheme (no captured target) or one already flipped.
+
+4. **A guarded per-move check `checkAndTransformScheme(G)`** (called from `game.ts` `turn.onMove`, alongside the existing per-move loss / final-turn / deferred-grant checks) counts Bystanders in `G.ko` (`extId.startsWith('bystander-villain-deck-')` / `BYSTANDER_EXT_ID`) for an allowlisted not-yet-transformed scheme and, at the threshold, flips the scheme and logs a `threat` line ("The Great Old One awakens"). It guards absent `scheme`/`selection`/`ko` (a hook must never throw) and early-returns for every non-transform scheme.
+
+**Why the flip does NOT change `G.selection.schemeId`.** The scheme identity drives twist dispatch (`SCHEME_TWIST_CONFIGS`) and the loss config; changing it would break them. Instead the flip swaps `G.scheme.gameText` (already projected to the client) + sets `hasTransformed`, so the flip is OBSERVABLE with NO UIState projection change. HONEST-PARTIAL this slice: the scheme name/image identity swap (display still resolves from `G.selection.schemeId`), Chthon's destroy-the-current-player effect, and the Chthon-Wins alternate win condition (all-players-destroyed → set `SCHEME_LOSS` → `scheme-wins`, a net-new player-elimination mechanic).
+
+**Determinism.** The three fields are OPTIONAL and populated ONLY for an allowlisted scheme, and the `onMove` check early-returns (no read, no mutation) for every non-transform scheme, so a game whose scheme does not transform — including the sentinel `core/legacy-virus-the` and the empty-replay `PRE_WP080_HASH` — serializes byte-identically. **NO hash re-pin** (confirmed: the full engine suite, which includes both pin tests, passes unchanged).
+
+**Scope OUT (follow-up WPs).** The scheme name/image identity swap; the destroy-player + alternate-win payoff; and the 8 other Great Old One schemes.
+
+**Gates.** **Executed 2026-09-08:** engine suite 3171/3171; `pnpm -r build` 0; NO card-data / derived-artifact change (both scheme faces already exist in `mdns.json`); NO hash re-pin. Control: dropping Chthon from `SCHEME_TRANSFORM_TARGETS` makes setup skip the capture and the per-move check a no-op — the allowlist is load-bearing. **D-24026 live-on-surface** (a real Chthon match awakens the Great Old One when 5 Bystanders are KO'd) is operator-pending.
+
 Protect this file.
