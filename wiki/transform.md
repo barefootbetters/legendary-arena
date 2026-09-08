@@ -281,9 +281,11 @@ transforming into it.
 **A distinct marker.** Scheme transform is worded **`[rule:Transforms]`** (a
 *scheme-rule* trigger), separate from the Mastermind's `[keyword:Transforms]` and
 the Hero's `[keyword:Transform]`. Chthon's flip side is its own card with
-**`cardType: "scheme-transform"`** (image prefix `sx`, vs the base scheme's `sc`);
-the other eight flip in place or into a *random* face, so they carry no separate
-transformed card.
+**`cardType: "scheme-transform"`** (image prefix `sx`, vs the base scheme's `sc`).
+The Revelations four are double-sided too — each reverse is a distinct
+**"Scheme, Transformed"** face, now with its own `sx` art (the engine models it as
+the scheme's second face, not a separate card). The Messiah Complex four flip into
+a *random* face, so they carry no fixed transformed image.
 
 ### The nine transforming schemes
 
@@ -296,8 +298,9 @@ distinct card exists:
 - The **Messiah Complex four** each flip into a **random Unveiled Scheme**, drawn
   from the shared pool of four cards pictured [below](#the-four-unveiled-schemes-the-messiah-complex-pool)
   — no single per-row image, because the target is random.
-- The **Revelations four** are **two-sided** schemes that flip between faces of
-  the *same physical card*, so there is no separate second-form art to show.
+- The **Revelations four** are **two-sided** schemes; each flips between the two
+  faces of the *same physical card*, and the reverse **"Scheme, Transformed"** face
+  is shown inline in its row.
 
 | Scheme | Set | `[rule:Transforms]` trigger | Transforms into |
 |---|---|---|---|
@@ -306,10 +309,10 @@ distinct card exists:
 | ![Drain Mutant Powers To…](https://images.legendary-arena.com/msmc/msmc-sc-drain-mutant-powers-to.webp "width=90px") Drain Mutant Powers To… | X-Men: Messiah Complex | Twist 7 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
 | ![Hire Singularity Investigations To…](https://images.legendary-arena.com/msmc/msmc-sc-hire-singularity-investigations-to.webp "width=90px") Hire Singularity Investigations To… | X-Men: Messiah Complex | Twist 5 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
 | ![Raid Gene Banks To…](https://images.legendary-arena.com/msmc/msmc-sc-raid-gene-banks-to.webp "width=90px") Raid Gene Banks To… | X-Men: Messiah Complex | Twist 4 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
-| ![Earthquake Drains the Ocean](https://images.legendary-arena.com/rvlt/rvlt-sc-earthquake-drains-the-ocean.webp "width=90px") Earthquake Drains the Ocean | Revelations | every Twist (the tide rushes in / out) | its other face — a two-sided tide that flips back and forth |
-| ![House of M](https://images.legendary-arena.com/rvlt/rvlt-sc-house-of-m.webp "width=90px") House of M | Revelations | a Twist with ≥ 2 Scarlet Witch cards in the city | its other face |
-| ![Secret HYDRA Corruption](https://images.legendary-arena.com/rvlt/rvlt-sc-secret-hydra-corruption.webp "width=90px") Secret HYDRA Corruption | Revelations | a Twist (S.H.I.E.L.D. Officers stack up as HYDRA corrupts them) | its other face |
-| ![Korvac Saga, The](https://images.legendary-arena.com/rvlt/rvlt-sc-korvac-saga-the.webp "width=90px") Korvac Saga, The | Revelations | a Twist (players search for the Korvac Entity) | its other face |
+| ![Earthquake Drains the Ocean](https://images.legendary-arena.com/rvlt/rvlt-sc-earthquake-drains-the-ocean.webp "width=90px") Earthquake Drains the Ocean | Revelations | every Twist (the tide rushes in / out) | ![Tsunami Crushes the Coast](https://images.legendary-arena.com/rvlt/rvlt-sx-tsunami-crushes-the-coast.webp "width=90px") **Tsunami Crushes the Coast** — the "Scheme, Transformed" reverse face (flips back and forth) |
+| ![House of M](https://images.legendary-arena.com/rvlt/rvlt-sc-house-of-m.webp "width=90px") House of M | Revelations | a Twist with ≥ 2 Scarlet Witch cards in the city | ![No More Mutants](https://images.legendary-arena.com/rvlt/rvlt-sx-no-more-mutants.webp "width=90px") **No More Mutants** — the "Scheme, Transformed" reverse face |
+| ![Secret HYDRA Corruption](https://images.legendary-arena.com/rvlt/rvlt-sc-secret-hydra-corruption.webp "width=90px") Secret HYDRA Corruption | Revelations | a Twist (S.H.I.E.L.D. Officers stack up as HYDRA corrupts them) | ![Open HYDRA Revolution](https://images.legendary-arena.com/rvlt/rvlt-sx-open-hydra-revolution.webp "width=90px") **Open HYDRA Revolution** — the "Scheme, Transformed" reverse face |
+| ![Korvac Saga, The](https://images.legendary-arena.com/rvlt/rvlt-sc-korvac-saga-the.webp "width=90px") Korvac Saga, The | Revelations | a Twist (players search for the Korvac Entity) | ![Korvac Revealed](https://images.legendary-arena.com/rvlt/rvlt-sx-korvac-revealed.webp "width=90px") **Korvac Revealed** — the "Scheme, Transformed" reverse face |
 
 #### The four Unveiled Schemes (the Messiah Complex pool)
 
