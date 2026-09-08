@@ -76,16 +76,52 @@ architecture drift at different rates and answer to different concerns.
 
 ## Mechanics
 
-### Non-goals
+### Goals
 
-Naming the anti-goals first, so scope is clear before the design detail. This
-platform is **not** a CRM, a project manager, a social-media scheduler, a
-replacement for Git, or a replacement for the source systems it reads — and
-never an *uncontrolled* agent swarm or a *self-promoting* knowledge vacuum (the
-anti-goal is loss of authority and provenance, not autonomy itself). Its job is
-**durable knowledge retrieval and decision support** — nothing more. Which of
-these are permanent invariants and which are merely v1 choices is drawn out in
-[Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices).
+Before the implementation choices, technologies, and boundaries below, this is
+what the platform exists to accomplish — the positive case for the investment.
+(*Goals* are the outcomes it aims for; the [Design principles](#design-principles)
+are the rules that protect them, and the [Success criteria](#success-criteria)
+are the observable marks that say it is working.)
+
+The AI Second Brain is intended to become a durable, operator-owned knowledge
+platform that turns information into organized understanding, and organized
+understanding into better decisions. Its purpose is not simply to answer
+questions but to **preserve context, maintain continuity across projects, and
+make accumulated knowledge easier to find, verify, and apply.**
+
+1. **Preserve institutional memory.** Important decisions, research, lessons
+   learned, project history, and operational knowledge stay discoverable long
+   after the original discussion, meeting, or project concludes.
+2. **Reduce rediscovery effort.** Knowledge learned once should not have to be
+   searched for, recreated, or reverse-engineered again — the brain makes prior
+   work reusable rather than disposable.
+3. **Improve retrieval and navigation.** The operator can locate relevant
+   information quickly and trace it back to authoritative sources, preserving
+   both context and provenance.
+4. **Support higher-quality thinking.** By organizing information and surfacing
+   relevant context, the platform helps the operator research, analyze, compare
+   options, identify risks, and decide with more of the picture in view.
+5. **Provide continuity across domains.** Engineering consulting, Legendary
+   Arena, Barefoot Betters, governance, and research all contribute knowledge;
+   the platform is one memory system spanning many domains without forcing them
+   into a single source repository.
+6. **Enable AI-assisted work without surrendering ownership.** Models, tools, and
+   agent frameworks may assist with retrieval, synthesis, review, drafting, and
+   analysis while authority, provenance, and long-term ownership stay under
+   operator control.
+7. **Create a durable knowledge asset.** Individual AI products, models, and
+   vendors will change; the knowledge itself survives those changes and keeps
+   accumulating value regardless of which tools sit in front of it.
+8. **Increase leverage, not replace judgement.** The desired outcome is an
+   operator who can think, learn, create, and execute more effectively because
+   relevant knowledge is organized and accessible — the platform augments human
+   judgement, it does not attempt to replace it.
+
+**The desired end state is simple:** a trusted, long-term memory system that
+helps the operator learn faster, remember more, find answers quickly, and make
+better decisions — while retaining ownership of both the knowledge and the
+process.
 
 ### Design principles
 
@@ -1030,14 +1066,12 @@ as a real pain point justifies it; none is a property the platform must keep:
 
 **Durable anti-goals (these follow from the invariants, not from sequencing).**
 However the agent layer evolves, the platform **never becomes the operational
-system of record** for the systems it reads: it is not a CRM, a project manager,
-a chat archive, a permanent email archive, a social-media scheduler, or a
-replacement for Git or the source systems themselves. These are ruled out
-permanently — not because v1 is small, but because each would make the platform
-an authoritative operational store, violating *Knowledge Ownership* and *Single
-Source of Truth*. It indexes and reasons over knowledge that lives
-authoritatively elsewhere; naming the anti-goals is what stops "could it also
-just…" creep.
+system of record** for the systems it reads. That single invariant is what rules
+out the enumerated [Non-goals](#non-goals) (CRM, project manager, chat or email
+archive, social-media scheduler, Git replacement) — permanently, not because v1
+is small, but because each would make the platform an authoritative operational
+store, violating *Knowledge Ownership* and *Single Source of Truth*. It indexes
+and reasons over knowledge that lives authoritatively elsewhere.
 
 ### Pilot scope (recommended first vertical)
 
@@ -1111,6 +1145,19 @@ doing its job. The platform is successful when the operator can:
   `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
+
+### Non-goals
+
+With the goals and the architecture established, the boundaries — stated last, on
+purpose, so the positive case above does not quietly expand into scope the
+platform was never meant to hold. It is **not** a CRM, a project manager, a
+social-media scheduler, a replacement for Git, or a replacement for the source
+systems it reads — and never an *uncontrolled* agent swarm or a *self-promoting*
+knowledge vacuum (the anti-goal is loss of authority and provenance, not autonomy
+itself). Its job is **durable knowledge retrieval and decision support** —
+nothing more. Which of these are permanent invariants and which are merely v1
+choices is drawn out in
+[Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices).
 
 ### Failure modes
 
@@ -1451,6 +1498,25 @@ This is the summary index; the individual gotchas and their nuances live in
   says so — demoting them would have moved a Locked row. Presentation and
   cross-referencing only; **no Locked / Preferred / Open decision changed**, no
   `DECISIONS.md` entry (D-24341's design record is maintained in place).
+- **2026-09-08 — lead with purpose: added Goals, moved Non-goals to the end (no
+  re-lock).** Reordered so the page opens with why the platform exists before it
+  lists what it refuses to be. Added a **Goals** section at the top of
+  [Mechanics](#goals) (eight outcome-level goals — institutional memory,
+  reduced rediscovery, retrieval/navigation, higher-quality thinking,
+  cross-domain continuity, AI assistance without surrendered ownership, a durable
+  knowledge asset, leverage over judgement-replacement — plus the desired end
+  state), framed to distinguish *Goals* (outcomes) from [Design principles](#design-principles)
+  (rules) and [Success criteria](#success-criteria) (observable marks). Moved the
+  [Non-goals](#non-goals) section from immediately under `## Mechanics` to just
+  before [Failure modes](#failure-modes), so boundaries follow the positive case
+  instead of leading it — which also stops the old opening from undercutting the
+  expansive *knowledge is permanent, agents are replaceable* motto with an
+  immediate list of denials. Trimmed the duplicate anti-goal enumeration in the
+  [Architectural invariants](#architectural-invariants-vs-implementation-choices)
+  "Durable anti-goals" paragraph to a cross-link into Non-goals (the enumerated
+  list now has one home). The `#non-goals` anchor is unchanged, so inbound links
+  still resolve. Presentation and ordering only — **no Locked / Preferred / Open
+  decision changed**, no `DECISIONS.md` entry.
 
 ## Open Questions
 
