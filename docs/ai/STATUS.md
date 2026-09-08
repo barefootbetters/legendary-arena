@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-671 — Govern-Close Consistency Guard: fail CI on an executed WORK_INDEX `[ ]` row (EC-708 / D-24485) (2026-09-08)
+
+**No user-observable change — infrastructure only.** A new CI guard,
+`scripts/check-workindex-executed-open.mjs` (`pnpm workindex:executed:check`),
+fails the build when a `WORK_INDEX.md` `- [ ]` WP row's WP has demonstrably
+executed — the recurring executed-but-row-open drift observed at WP-391,
+WP-657..665, and WP-669/670. `roadmap:counts:check` cannot catch it because
+WORK_INDEX and the mindmap go stale **together** (they agree, so the derived
+open-work count stays self-consistent). The guard is that independent oracle,
+mirroring the WP-455 row-grammar guard and wired beside `workindex:rows:check`
+in the Coverage & Ledger Gates job.
+
+**What shipped.** The detection signal was **scaffold-decided** against real
+`main` among three candidates (D-24485). **Two file-only signals were chosen** —
+both passed the acceptance test (exit 0 on clean `main`, catch a synthetic drift,
+never trip a drafted-open / reserve / template / backlog / WP-042.1 / WP-671-own
+row), and both read markdown only, so the CI job needs no `fetch-depth: 0`:
+(1) a `- [ ]` row whose **`reserves`-owned** DECISIONS entry is `Active` (a bare
+"per D-NNNNN" citation is a hard-dep, not ownership); (2) a `- [ ]` row whose
+**own status clause** (first bold marker + immediate parenthetical, not the
+prose) reads as executed, with tokens from the real WP-669/670 drift phrasing.
+The git-`EC-###`-commit candidate was scaffolded and **not chosen** (it needs
+`fetch-depth: 0`); it stays the documented fallback. Detect-only — the guard
+never edits WORK_INDEX/DECISIONS.
+
+**Gates.** Unit suite **11/11** (a non-vacuous positive per signal + the full
+negative set, incl. WP-671's own row as the sharpest self-trip fixture);
+`pnpm -r build` 0; `pnpm workindex:executed:check` exits 0 on the clean tree.
+Two **control runs** against the real docs each caught the injected drift and
+were reverted: the executed-text signal on a flipped WP-670 row, and the
+owned-D-`Active` signal on WP-671 with D-24485 temporarily Active. `node:fs`
+only; no new dependency. Three-commit topology: `EC-708:` (guard + test +
+package.json), `INFRA:` (CI wiring — kept separate so the guard is not graded by
+the commit that edits the workflow), `SPEC:` (this govern-close).
+
 ### WP-670 — Scheme Transform runtime: flip primitive + second-face capture (Chthon first slice) (EC-707 / D-24484) (2026-09-08)
 
 **User-Visible Surface — `play.legendary-arena.com`.** The **third** transform surface, after
