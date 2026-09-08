@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-670 — Scheme Transform runtime: flip primitive + second-face capture (Chthon first slice) (EC-707 / D-24484) (2026-09-08)
+
+**User-Visible Surface — `play.legendary-arena.com`.** The **third** transform surface, after
+Heroes (WP-658) and Masterminds (WP-669). Nine double-sided Schemes across `mdns`/`msmc`/`rvlt`
+flip `[rule:Transforms]` into a "Great Old One" alternate win condition (Chthon: the base scheme
+*Ritual Sacrifice to Summon Chthon* flips into *Great Old One Chthon* once **5 Bystanders** are in
+the KO pile), but the engine handles neither `[rule:Transforms]` nor `scheme-transform`, so the
+flip is inert. This is the **first slice** — the flip primitive + second-face capture for Chthon.
+
+**What shipped.** Unlike masterminds (two faces in one entry), a scheme's base and Great Old One
+faces are **separate prose-linked `schemes[]` entries**, so a hardcoded `SCHEME_TRANSFORM_TARGETS`
+map pairs them. Setup, for an allowlisted scheme, captures the Great Old One target's ability text
+(`buildSchemeGameText`) into three **optional** `SchemeState` fields — `transformTargetSchemeId?`,
+`transformTargetGameText?`, `hasTransformed?` (the `gameText?` precedent), absent for every other
+scheme. A pure `transformScheme` helper sets `hasTransformed` and swaps `gameText` to the Great Old
+One's text. A guarded per-move `checkAndTransformScheme(G)` (in `game.ts` `turn.onMove`, the
+existing per-move-check cadence) counts Bystanders in `G.ko` and flips at the threshold, logging a
+`threat` "The Great Old One awakens" line. The flip is **observable via `G.scheme.gameText`**
+(already projected — **no UIState projection change**) and deliberately does **not** change
+`G.selection.schemeId`, so twist dispatch + the loss config are untouched.
+
+**Gates.** Engine suite **3171/3171**; `pnpm -r build` 0; **NO card-data / derived-artifact
+change** (both scheme faces already exist in `mdns.json`); **NO hash re-pin** — the fields are
+optional + allowlist-gated and the `onMove` check early-returns for a non-transform scheme, so a
+normal game (incl. the sentinel `core/legacy-virus-the`) is byte-identical and both pin tests pass
+unchanged. Control: dropping Chthon from `SCHEME_TRANSFORM_TARGETS` makes setup skip the capture
+and the per-move check a no-op. **D-24026 live-on-surface** (a real Chthon match awakens the Great
+Old One at 5 Bystanders KO'd) is operator-pending. **Out of scope (follow-ups):** the scheme
+name/image identity swap, Chthon's destroy-the-current-player effect + the Chthon-Wins alternate win
+condition (a net-new player-elimination mechanic), and the 8 other Great Old One schemes.
+
 ### WP-669 — Mastermind Transform runtime: flip primitive + second-face capture (General Ross first slice) (EC-706 / D-24483) (2026-09-08)
 
 **User-Visible Surface — `play.legendary-arena.com`.** Six `wwhk` Masterminds are double-faced (General

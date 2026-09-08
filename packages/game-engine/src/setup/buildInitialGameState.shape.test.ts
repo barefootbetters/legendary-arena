@@ -553,3 +553,41 @@ describe('buildInitialGameState — shape', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Scheme Transform — setup capture (WP-670 / D-24484)
+// ---------------------------------------------------------------------------
+
+describe('buildInitialGameState — Scheme Transform capture (WP-670 / D-24484)', () => {
+  /** A registry whose mdns set holds Chthon's base + Great Old One schemes. */
+  function makeChthonRegistry(): CardRegistryReader {
+    const mdns = {
+      schemes: [
+        { slug: 'ritual-sacrifice-to-summon-chthon', cards: [{ abilities: ['Ritual Sacrifice base text.'] }] },
+        { slug: 'great-old-one-chthon', cards: [{ abilities: ['Master Strike or Twist: Destroy the current player.', 'Chthon Wins: all players destroyed.'] }] },
+      ],
+    };
+    return makeCardRegistryReader({ getSet: (abbr: string) => (abbr === 'mdns' ? mdns : undefined) });
+  }
+
+  it('captures the Great Old One target + its game text for an allowlisted scheme', () => {
+    const config: MatchSetupConfig = { ...createTestConfig(), schemeId: 'mdns/ritual-sacrifice-to-summon-chthon' };
+    const gameState = buildInitialGameState(config, makeChthonRegistry(), makeMockCtx({ numPlayers: 2 }));
+
+    assert.strictEqual(gameState.scheme.transformTargetSchemeId, 'mdns/great-old-one-chthon');
+    assert.deepStrictEqual(
+      gameState.scheme.transformTargetGameText,
+      ['Master Strike or Twist: Destroy the current player.', 'Chthon Wins: all players destroyed.'],
+      'the Great Old One face text is captured for the flip',
+    );
+    assert.strictEqual(gameState.scheme.hasTransformed, false, 'starts on the base face');
+  });
+
+  it('leaves the transform fields ABSENT for a non-allowlisted scheme (byte-identical)', () => {
+    // the default test scheme is not in SCHEME_TRANSFORM_TARGETS
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx({ numPlayers: 2 }));
+    assert.ok(!('transformTargetSchemeId' in gameState.scheme), 'transformTargetSchemeId absent');
+    assert.ok(!('transformTargetGameText' in gameState.scheme), 'transformTargetGameText absent');
+    assert.ok(!('hasTransformed' in gameState.scheme), 'hasTransformed absent');
+  });
+});

@@ -36,6 +36,9 @@ import {
 } from './endgame/finalTurn.logic.js';
 import { applyPileDepletionResourceLoss } from './rules/schemeResourceLoss.js';
 import { resolveDeferredHeroGrants } from './hero/heroEffects.execute.js';
+// why: WP-670 / D-24484 — Scheme Transform. Per-move check that flips a transforming scheme
+// to its Great Old One face when the trigger (Chthon: 5 Bystanders in the KO pile) is met.
+import { checkAndTransformScheme } from './scheme/schemeTransform.logic.js';
 import { clearDeferredConditionalGrants } from './hero/deferredConditionalGrants.js';
 import { setPlayerReady, startMatchIfReady } from './lobby/lobby.moves.js';
 import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
@@ -637,6 +640,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // via evaluateEndgame precedence (SCHEME_LOSS before FINAL_TURN_TIE) and
           // the tie-resolution guard — no finalTurn.logic change needed (D-24319).
           applyPileDepletionResourceLoss(G);
+          // why: WP-670 / D-24484 — same per-move cadence: a transforming scheme (Chthon)
+          // flips to its Great Old One face when 5 Bystanders accumulate in the KO pile,
+          // which can happen on any move. Early no-op for every non-transform scheme, so a
+          // normal game does no work here and stays byte-identical.
+          checkAndTransformScheme(G);
           // why: WP-568 / D-24377 — same per-move cadence as the two checks above,
           // and for the same reason: it observes the state the move leaves behind,
           // which is exactly when a turn's recruit total can cross a numeric
