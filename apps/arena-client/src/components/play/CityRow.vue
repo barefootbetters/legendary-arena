@@ -111,6 +111,19 @@ export default defineComponent({
           <EscapedPile :pile="cell.entries" />
         </template>
         <template v-else-if="cell.kind === 'slot'">
+          <!-- why: keep the slot name (Bridge / Streets / …) visible ABOVE the
+               villain when the slot is occupied — the card used to cover it. The
+               empty slot already shows its name inside the dashed placeholder, so
+               this label only renders for the filled case. The frosted-pill
+               backing keeps it legible over a busy playmat (the D-24482 mask). -->
+          <div
+            v-if="cell.card !== null"
+            class="city-space__label"
+            data-testid="play-city-slot-label"
+            :data-slot-name="cell.slotName"
+          >
+            {{ cell.slotName }}
+          </div>
           <button
             v-if="cell.card !== null"
             type="button"
@@ -204,6 +217,28 @@ export default defineComponent({
 
 .city-space {
   min-width: 6rem;
+  /* Stack the slot label above the villain / empty placeholder. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The persistent slot-name label shown above an occupied city slot. A frosted
+   pill so it stays legible over a busy playmat (matches the D-24482 mask). */
+.city-space__label {
+  align-self: center;
+  margin-bottom: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(248, 249, 252, 0.85);
+  border: 1px solid rgba(40, 44, 66, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  color: #1c2333;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .city-space-empty {
