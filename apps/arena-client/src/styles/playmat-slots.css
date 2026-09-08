@@ -27,7 +27,6 @@
 .play-viewport .shared-decks__cell,
 .play-viewport .master-strike-pile,
 .play-viewport .scheme-twist-pile,
-.play-viewport .city-space-deck,
 .play-viewport .play-desktop__mastermind-zone,
 .play-viewport .play-desktop__scheme-zone,
 .play-viewport .play-desktop__hq-zone,
@@ -46,14 +45,19 @@
   padding: 0.5rem 0.6rem !important;
 }
 
-/* Empty City spaces read as dashed "place a card here" slots. */
-.play-viewport .city-space-empty {
+/* Empty City spaces AND the Villain Deck / Hero Deck stacks read as the same
+   prominent, card-sized dashed placeholder slot — a bold dashed frame at card
+   height so an empty slot (or a labeled deck stack) reads as clearly as a filled
+   tile. The decks add their [count] under the label via the column layout. */
+.play-viewport .city-space-empty,
+.play-viewport .city-space-deck,
+.play-viewport .hq-slot-deck {
   background: rgba(250, 250, 253, 0.58) !important;
-  /* Prominent card-sized 'place a villain here' placeholder: a bold dashed
-     frame at card height so the empty slot reads as clearly as a filled tile. */
   border: 2.5px dashed rgba(28, 34, 54, 0.75) !important;
   border-radius: 11px !important;
   display: flex !important;
+  flex-direction: column;
+  gap: 0.15rem;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -72,8 +76,7 @@
 /* Zone labels read as printed mat labels. */
 .play-viewport .shared-decks__name,
 .play-viewport .master-strike-pile__count,
-.play-viewport .scheme-twist-pile__count,
-.play-viewport .city-space-deck header {
+.play-viewport .scheme-twist-pile__count {
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   font-size: 0.68rem !important;
@@ -81,10 +84,29 @@
   opacity: 0.72 !important;
 }
 
-/* Keep the Villain Deck / Hero Deck count boxes compact rather than stretching
-   across the row (they are narrow labeled stacks on a physical mat). */
-.play-viewport .city-space-deck {
+/* The Villain Deck / Hero Deck labels read like the City-slot placeholder
+   labels (bold uppercase); the [count] sits under the label. */
+.play-viewport .city-space-deck header,
+.play-viewport .hq-slot-deck header {
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  font-weight: 800 !important;
+  font-size: 0.72rem !important;
+  color: #141a2b !important;
+  opacity: 1 !important;
+}
+.play-viewport .city-space-deck p,
+.play-viewport .hq-slot-deck p {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  color: #1c2333 !important;
+}
+
+/* Keep the deck slots compact (card-width labeled stacks on a physical mat),
+   not stretched across the row. */
+.play-viewport .city-space-deck,
+.play-viewport .hq-slot-deck {
   width: -moz-fit-content;
   width: fit-content;
-  min-width: 4.5rem;
+  min-width: 5.5rem;
 }
