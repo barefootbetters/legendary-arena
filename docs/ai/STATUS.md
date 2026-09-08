@@ -110,9 +110,17 @@ follow-up under **D-24482** (WP-666 §D-24026 follow-up):
    `.app-shell` background. Fixed by scoping it as an `absolute; z-index:0` layer inside a positioned
    `.play-viewport` (verified live: mat paints, app header intact at y0–68, content on top).
 
-Fix branch green (`typecheck` 0, arena-client **1639/1639**). **D-24026 re-verification is pending the fix's
-deploy** — the Chrome check will be repeated on the deployed board (pick Cosmic Arena / Midtown Skyline → the
-board repaints with cards legible, persists across reload) and this note flipped to CONFIRMED.
+Fix branch green (`typecheck` 0, arena-client **1639/1639**). **D-24026 CONFIRMED live 2026-09-08** — on the
+deployed board, Comic (amber) and Cosmic Arena (purple/nebula) both render subtle + legible and the skin switch
+repaints instantly. The zoomed-in art (PR #1896) and both production bugs (PR #1894) are fixed and verified.
+
+**Follow-on — layout-mat zone-slot styling.** Jeff then asked for the mats to show labeled zone placeholders
+(Hero Deck / Villain Deck / City / HQ / …) like the physical layout mats. Chosen approach: style the REAL board
+DOM zones (a background image can't track the responsive DOM). Shipped a `.play-viewport`-scoped global layer
+`src/styles/playmat-slots.css` (imported by `PlayViewport.vue`) that renders every zone as a frosted labeled
+slot over the mat — uppercase mat-style labels, dashed "place a card here" empty City slots, compact deck boxes.
+Prototyped live in Chrome and approved before baking in; verified live on both light and dark mats. CSS-only
+(+ one import line); `typecheck` 0, arena-client **1639/1639**.
 
 ### WP-667 — Radioactive Riot: optional "KO a card from hand or discard" (recruit-threshold-gated, no reward) (EC-704 / D-24480) (2026-09-07)
 

@@ -13,6 +13,11 @@ import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
 import VfxOverlay from '../components/play/VfxOverlay.vue';
 import PlaymatBackground from '../components/play/PlaymatBackground.vue';
+// why: WP-666 follow-up — the "layout mat" zone-slot layer. A global,
+// `.play-viewport`-scoped stylesheet that styles every board zone as a labeled
+// placeholder slot over the mat (see the file header). Imported here so it ships
+// only with the board and loads alongside <PlaymatBackground>.
+import '../styles/playmat-slots.css';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
