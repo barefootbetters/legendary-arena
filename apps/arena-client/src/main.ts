@@ -5,6 +5,12 @@ import { useUiStateStore } from './stores/uiState';
 import { loadUiStateFixture, isFixtureName } from './fixtures/uiState/index';
 import { installDiagnosticCapture } from './diagnostics/diagnostics';
 import './styles/base.css';
+// why: WP-666 follow-up — the "layout mat" zone-slot layer. Imported here (the
+// global-CSS entry, alongside base.css) rather than inside PlayViewport.vue,
+// because a `.css` import in an SFC script breaks the node/tsx test runner
+// (ERR_UNKNOWN_FILE_EXTENSION) when a test loads that component. Every rule is
+// `.play-viewport`-scoped, so loading it globally is inert off the play board.
+import './styles/playmat-slots.css';
 
 installDiagnosticCapture();
 
