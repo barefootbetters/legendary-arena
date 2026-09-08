@@ -831,7 +831,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 19/19 | — |
-| Hero Ability Coverage & Markup Pipeline | 68/77 | 9 open |
+| Hero Ability Coverage & Markup Pipeline | 77/77 | — |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 54/54 | — |
@@ -851,10 +851,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **652/662 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 9 open |
+| **Total** | **661/662 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸ |
 
-**Open / blocked WPs (derived from WORK_INDEX, 10):** WP-668 open; WP-664 open; WP-665 open; WP-667 open; WP-661 open; WP-662 open; WP-660 open; WP-042.1 ⏸ blocked; WP-657 open; WP-658 open.
-**Open / blocked WPs (derived from WORK_INDEX, 9):** WP-664 open; WP-665 open; WP-667 open; WP-661 open; WP-662 open; WP-660 open; WP-042.1 ⏸ blocked; WP-657 open; WP-658 open.
+**Open / blocked WPs (derived from WORK_INDEX, 1):** WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
