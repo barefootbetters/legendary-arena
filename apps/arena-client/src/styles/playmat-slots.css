@@ -122,17 +122,18 @@
 
 /* Text-protection mask (WP-666 follow-up). The non-slot text regions — the top
    HUD bar, the turn-action (phase-step) bar, the game log, the economy readout
-   (Attack / Recruit / Pierce / Wounds drawn), the Your Hand panel, and the
-   played-this-turn row — get the same frosted backing as the zone slots, so their
-   text never sits directly on a busy mat and washes out. The mat then shows only
-   in the gaps between panels. This is what keeps a full-colour scan (e.g. the
-   licensed Marvel mats) legible without a heavier global scrim that would drown
-   the mat entirely. */
+   (Attack / Recruit / Pierce / Wounds drawn), the Your Hand panel, the
+   played-this-turn row, and the end-of-game report card — get the same frosted
+   backing as the zone slots, so their text never sits directly on a busy mat and
+   washes out. The mat then shows only in the gaps between panels. This is what
+   keeps a full-colour scan (e.g. the licensed Marvel mats) legible without a
+   heavier global scrim that would drown the mat entirely. */
 .play-viewport .top-hud-bar,
 .play-viewport .turn-action-bar,
 .play-viewport .economy-bar,
 .play-viewport .hand-row,
 .play-viewport .played-row,
+.play-viewport .endgame-summary,
 .play-viewport .play-desktop__log {
   background: rgba(248, 249, 252, 0.85) !important;
   border: 1px solid rgba(40, 44, 66, 0.25) !important;
@@ -141,6 +142,14 @@
     0 1px 6px rgba(0, 0, 0, 0.30),
     inset 0 0 0 1px rgba(255, 255, 255, 0.55) !important;
   padding: 0.45rem 0.6rem !important;
+}
+
+/* The end-of-game report card is a large, dense panel (score ledger, grade
+   table, PAR breakdown), so it gets a roomier padding than the compact HUD
+   strips share above — the frosted surface + border/shadow are inherited from
+   the mask rule; only the padding is restored here. */
+.play-viewport .endgame-summary {
+  padding: 0.85rem 1rem !important;
 }
 
 /* ── Dark theme (day/night, html[data-theme="dark"]) ────────────────────────
@@ -166,6 +175,7 @@
 :root[data-theme="dark"] .play-viewport .economy-bar,
 :root[data-theme="dark"] .play-viewport .hand-row,
 :root[data-theme="dark"] .play-viewport .played-row,
+:root[data-theme="dark"] .play-viewport .endgame-summary,
 :root[data-theme="dark"] .play-viewport .play-desktop__log {
   background: rgba(22, 24, 32, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.16) !important;
