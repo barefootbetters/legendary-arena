@@ -65,8 +65,9 @@ flipping off a [Master Strike](master-strike.md) — see
 [Mastermind Transform](#mastermind-transform). And a third surface reaches beyond
 this set entirely: double-sided **Schemes** that flip into a "Great Old One"
 (Chthon and eight siblings across three sets) — see
-[Scheme Transform](#scheme-transform). Both of those halves are **still
-unimplemented**.
+[Scheme Transform](#scheme-transform). Both now have a shipped **first slice** — the
+flip works for General Ross (Mastermind) and Chthon (Scheme); the remaining bosses
+and the payoff effects are honest-partial follow-ups.
 
 ## The rule
 
@@ -241,34 +242,23 @@ then …") and on some **tactics** ("This Mastermind `[keyword:Transforms]`."). 
 faces also carry named one-off keyword effects — `[keyword:Cross-Dimensional Hulk
 Rampage]`, `[keyword:Wounded Fury]` — that ride along with the flip.
 
-### Mastermind engine status — UNSUPPORTED (the next transform gap)
+### Mastermind engine status — IMPLEMENTED (partial)
 
-Mastermind Transform is **not implemented**, and unlike the Hero side it is a
-**data-shape gap, not just a missing handler**. At setup the engine takes only the
-**first non-tactic face** as the Mastermind and **deliberately drops every later
-face** (DECISIONS **D-24193**): a transforming Mastermind's second boss face (Red
-Hulk, the Void, Worldbreaker…) is never loaded, so `[keyword:Transforms]` has
-nothing to flip to and sits as an inert marker. The match runs against the base
-face only — the harder second boss never appears. This is the Mastermind twin of
-the pre-WP-657 Hero gap (second-forms the engine could not reach).
+Mastermind Transform's **first slice shipped (WP-669 / D-24483)** — the flip
+primitive for **General "Thunderbolt" Ross**. Historically the engine took only the
+**first non-tactic face** and **dropped every later one** (DECISIONS **D-24193**),
+so a transforming Mastermind's second boss face never loaded. Now, for a Mastermind
+in the `MASTERMIND_TRANSFORM_ALLOWLIST`, setup captures the second face (its Attack
+into `G.cardStats`, its text alongside the first), and a strike resolver **flips**
+the boss on its Master Strike: **General Ross ⇄ Red Hulk**, the play surface showing
+the new face's Attack, Master Strike, and rules text. The flip is bidirectional.
 
-A faithful implementation needs the same three moves the Hero arc made, adapted to
-the Mastermind:
-
-1. **Load both faces** — capture the second boss face at setup (the analog of the
-   Hero side-deck partition) instead of discarding it at D-24193, plus a base⇄second
-   link the runtime can read without the registry.
-2. **A `Transforms` runtime** on the Master-Strike / tactic path — swap the active
-   Mastermind face, carry over attached Helicopters / captured Bystanders, and apply
-   the new face's Attack and always-on rules.
-3. **Bidirectional + named effects** — each face can flip back (Sentry ⇄ Void is the
-   deepest loop), and the ride-along keywords (`Cross-Dimensional Hulk Rampage`,
-   `Wounded Fury`) each need their own resolution.
-
-Until that lands, playing one of these six Masterminds gives you an honest but
-**incomplete** boss: the base face fights faithfully; the transform to the second
-face is the tracked gap. It is the natural next Work Packet after the Hero transform
-arc.
+**Honest-partial (the next slices):** the other five transforming Masterminds
+(Illuminati, King Hulk, M.O.D.O.K., Red King, the Sentry ⇄ the Void) stay on the
+first-face-only path until they are added to the allowlist with their own resolver,
+and the named ride-along strike effects (`Cross-Dimensional Hulk Rampage`,
+`Wounded Fury`) plus the Helicopter carry-over are not yet modeled. Each is a named
+follow-up on the shipped foundation.
 
 ## Scheme Transform
 
@@ -288,25 +278,46 @@ the sole boss. Its flip side even prints *"[This card can only start the game as
 the Scheme on the other side.]"* — the Great Old One face is unreachable except by
 transforming into it.
 
-**A distinct marker, a distinct card type.** Scheme transform is worded
-**`[rule:Transforms]`** (a *scheme-rule* trigger), separate from the Mastermind's
-`[keyword:Transforms]` and the Hero's `[keyword:Transform]`. The flip side is its
-own card with **`cardType: "scheme-transform"`** (image prefix `sx`, vs the base
-scheme's `sc`). Nine schemes across three sets carry the mechanic — **Midnight
-Sons** (Chthon), **X-Men: Messiah Complex** (msmc — Hack Cerebro Servers, Drain
-Mutant Powers, Hire Singularity Investigations, Raid Gene Banks), and
-**Revelations** (rvlt — Earthquake Drains the Ocean, House of M, Secret HYDRA
-Corruption, The Korvac Saga).
+**A distinct marker.** Scheme transform is worded **`[rule:Transforms]`** (a
+*scheme-rule* trigger), separate from the Mastermind's `[keyword:Transforms]` and
+the Hero's `[keyword:Transform]`. Chthon's flip side is its own card with
+**`cardType: "scheme-transform"`** (image prefix `sx`, vs the base scheme's `sc`);
+the other eight flip in place or into a *random* face, so they carry no separate
+transformed card.
 
-### Scheme engine status — UNSUPPORTED
+### The nine transforming schemes
 
-Scheme Transform is **not implemented**: neither `[rule:Transforms]` nor the
-`scheme-transform` card type is handled anywhere in `packages/game-engine`, so the
-scheme never flips and its Great Old One side never enters play — the alternate
-win condition simply cannot fire. It is the third member of the transform family
-still to build, alongside [Mastermind Transform](#mastermind-transform); both flip
-a shared-board boss face and both are unbuilt, so they are natural companions in
-the next transform Work Packet.
+Nine schemes across three sets carry `[rule:Transforms]`. Chthon is the only one
+that flips into a distinct Great Old One boss card; the Messiah Complex four flip
+into a **random Unveiled Scheme**, and the Revelations four are **two-sided**
+schemes that flip between faces.
+
+| Scheme | Set | `[rule:Transforms]` trigger | Transforms into |
+|---|---|---|---|
+| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | Midnight Sons | 5 Bystanders in the KO pile | **Great Old One Chthon** — a boss with its own win condition (below) |
+| ![Hack Cerebro Servers To…](https://images.legendary-arena.com/msmc/msmc-sc-hack-cerebro-servers-to.webp "width=90px") Hack Cerebro Servers To… | X-Men: Messiah Complex | Twist 6 | a random **Unveiled Scheme** (do its Twist) |
+| ![Drain Mutant Powers To…](https://images.legendary-arena.com/msmc/msmc-sc-drain-mutant-powers-to.webp "width=90px") Drain Mutant Powers To… | X-Men: Messiah Complex | Twist 7 | a random **Unveiled Scheme** (do its Twist) |
+| ![Hire Singularity Investigations To…](https://images.legendary-arena.com/msmc/msmc-sc-hire-singularity-investigations-to.webp "width=90px") Hire Singularity Investigations To… | X-Men: Messiah Complex | Twist 5 | a random **Unveiled Scheme** (do its Twist) |
+| ![Raid Gene Banks To…](https://images.legendary-arena.com/msmc/msmc-sc-raid-gene-banks-to.webp "width=90px") Raid Gene Banks To… | X-Men: Messiah Complex | Twist 4 | a random **Unveiled Scheme** (do its Twist) |
+| ![Earthquake Drains the Ocean](https://images.legendary-arena.com/rvlt/rvlt-sc-earthquake-drains-the-ocean.webp "width=90px") Earthquake Drains the Ocean | Revelations | every Twist (the tide rushes in / out) | its other face — a two-sided tide that flips back and forth |
+| ![House of M](https://images.legendary-arena.com/rvlt/rvlt-sc-house-of-m.webp "width=90px") House of M | Revelations | a Twist with ≥ 2 Scarlet Witch cards in the city | its other face |
+| ![Secret HYDRA Corruption](https://images.legendary-arena.com/rvlt/rvlt-sc-secret-hydra-corruption.webp "width=90px") Secret HYDRA Corruption | Revelations | a Twist (S.H.I.E.L.D. Officers stack up as HYDRA corrupts them) | its other face |
+| ![Korvac Saga, The](https://images.legendary-arena.com/rvlt/rvlt-sc-korvac-saga-the.webp "width=90px") Korvac Saga, The | Revelations | a Twist (players search for the Korvac Entity) | its other face |
+
+### Scheme engine status — IMPLEMENTED (partial)
+
+Scheme Transform's **first slice shipped (WP-670 / D-24484)** — the flip primitive
+for **Chthon**. At setup, a scheme in the `SCHEME_TRANSFORM_TARGETS` allowlist
+captures its Great Old One target's rules text; a per-move check counts Bystanders
+in the KO pile, and once **5** accumulate the Scheme **flips** — its rules text
+becomes Chthon's and the game log announces *"The Great Old One awakens."*
+
+**Honest-partial (the next slices):** the scheme's name/image does not yet change
+(only the rules text), Chthon's *destroy-the-current-player* effect is not modeled,
+and the **Chthon-Wins alternate win condition** (all players destroyed → the
+villains win) is not yet wired — that is a net-new player-elimination mechanic. The
+Messiah Complex "random Unveiled Scheme" flip and the Revelations two-sided flips
+are also unbuilt; each is a named follow-up on the shipped foundation.
 
 ## Hero engine status — IMPLEMENTED (partial) {#engine-status--implemented-partial}
 
