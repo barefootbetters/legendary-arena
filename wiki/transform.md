@@ -304,7 +304,7 @@ distinct card exists:
 
 | Scheme | Set | `[rule:Transforms]` trigger | Transforms into |
 |---|---|---|---|
-| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | Midnight Sons | 5 Bystanders in the KO pile | ![Great Old One Chthon](https://images.legendary-arena.com/mdns/mdns-sx-great-old-one-chthon.webp "width=90px") **Great Old One Chthon** — a boss with its own win condition (below) |
+| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | Midnight Sons | 5 Bystanders in the KO pile | ![Great Old One Chthon](https://images.legendary-arena.com/mdns/mdns-sx-great-old-one-chthon.webp "width=90px") **Great Old One Chthon** — the transformed reverse face; a boss with its own win condition (below) |
 | ![Hack Cerebro Servers To…](https://images.legendary-arena.com/msmc/msmc-sc-hack-cerebro-servers-to.webp "width=90px") Hack Cerebro Servers To… | X-Men: Messiah Complex | Twist 6 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
 | ![Drain Mutant Powers To…](https://images.legendary-arena.com/msmc/msmc-sc-drain-mutant-powers-to.webp "width=90px") Drain Mutant Powers To… | X-Men: Messiah Complex | Twist 7 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
 | ![Hire Singularity Investigations To…](https://images.legendary-arena.com/msmc/msmc-sc-hire-singularity-investigations-to.webp "width=90px") Hire Singularity Investigations To… | X-Men: Messiah Complex | Twist 5 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
