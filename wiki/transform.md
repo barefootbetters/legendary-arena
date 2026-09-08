@@ -287,22 +287,39 @@ transformed card.
 
 ### The nine transforming schemes
 
-Nine schemes across three sets carry `[rule:Transforms]`. Chthon is the only one
-that flips into a distinct Great Old One boss card; the Messiah Complex four flip
-into a **random Unveiled Scheme**, and the Revelations four are **two-sided**
-schemes that flip between faces.
+Nine schemes across three sets carry `[rule:Transforms]`. Their **second forms**
+differ in kind, so the "Transforms into" column shows an image only where a
+distinct card exists:
+
+- **Chthon** flips into one **distinct Great Old One boss card** (`mdns-sx-…`) —
+  shown inline in its row.
+- The **Messiah Complex four** each flip into a **random Unveiled Scheme**, drawn
+  from the shared pool of four cards pictured [below](#the-four-unveiled-schemes-the-messiah-complex-pool)
+  — no single per-row image, because the target is random.
+- The **Revelations four** are **two-sided** schemes that flip between faces of
+  the *same physical card*, so there is no separate second-form art to show.
 
 | Scheme | Set | `[rule:Transforms]` trigger | Transforms into |
 |---|---|---|---|
-| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | Midnight Sons | 5 Bystanders in the KO pile | **Great Old One Chthon** — a boss with its own win condition (below) |
-| ![Hack Cerebro Servers To…](https://images.legendary-arena.com/msmc/msmc-sc-hack-cerebro-servers-to.webp "width=90px") Hack Cerebro Servers To… | X-Men: Messiah Complex | Twist 6 | a random **Unveiled Scheme** (do its Twist) |
-| ![Drain Mutant Powers To…](https://images.legendary-arena.com/msmc/msmc-sc-drain-mutant-powers-to.webp "width=90px") Drain Mutant Powers To… | X-Men: Messiah Complex | Twist 7 | a random **Unveiled Scheme** (do its Twist) |
-| ![Hire Singularity Investigations To…](https://images.legendary-arena.com/msmc/msmc-sc-hire-singularity-investigations-to.webp "width=90px") Hire Singularity Investigations To… | X-Men: Messiah Complex | Twist 5 | a random **Unveiled Scheme** (do its Twist) |
-| ![Raid Gene Banks To…](https://images.legendary-arena.com/msmc/msmc-sc-raid-gene-banks-to.webp "width=90px") Raid Gene Banks To… | X-Men: Messiah Complex | Twist 4 | a random **Unveiled Scheme** (do its Twist) |
+| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | Midnight Sons | 5 Bystanders in the KO pile | ![Great Old One Chthon](https://images.legendary-arena.com/mdns/mdns-sx-great-old-one-chthon.webp "width=90px") **Great Old One Chthon** — a boss with its own win condition (below) |
+| ![Hack Cerebro Servers To…](https://images.legendary-arena.com/msmc/msmc-sc-hack-cerebro-servers-to.webp "width=90px") Hack Cerebro Servers To… | X-Men: Messiah Complex | Twist 6 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
+| ![Drain Mutant Powers To…](https://images.legendary-arena.com/msmc/msmc-sc-drain-mutant-powers-to.webp "width=90px") Drain Mutant Powers To… | X-Men: Messiah Complex | Twist 7 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
+| ![Hire Singularity Investigations To…](https://images.legendary-arena.com/msmc/msmc-sc-hire-singularity-investigations-to.webp "width=90px") Hire Singularity Investigations To… | X-Men: Messiah Complex | Twist 5 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
+| ![Raid Gene Banks To…](https://images.legendary-arena.com/msmc/msmc-sc-raid-gene-banks-to.webp "width=90px") Raid Gene Banks To… | X-Men: Messiah Complex | Twist 4 | a random **Unveiled Scheme** — one of the four below (do its Twist) |
 | ![Earthquake Drains the Ocean](https://images.legendary-arena.com/rvlt/rvlt-sc-earthquake-drains-the-ocean.webp "width=90px") Earthquake Drains the Ocean | Revelations | every Twist (the tide rushes in / out) | its other face — a two-sided tide that flips back and forth |
 | ![House of M](https://images.legendary-arena.com/rvlt/rvlt-sc-house-of-m.webp "width=90px") House of M | Revelations | a Twist with ≥ 2 Scarlet Witch cards in the city | its other face |
 | ![Secret HYDRA Corruption](https://images.legendary-arena.com/rvlt/rvlt-sc-secret-hydra-corruption.webp "width=90px") Secret HYDRA Corruption | Revelations | a Twist (S.H.I.E.L.D. Officers stack up as HYDRA corrupts them) | its other face |
 | ![Korvac Saga, The](https://images.legendary-arena.com/rvlt/rvlt-sc-korvac-saga-the.webp "width=90px") Korvac Saga, The | Revelations | a Twist (players search for the Korvac Entity) | its other face |
+
+#### The four Unveiled Schemes (the Messiah Complex pool)
+
+The four `…To…` schemes above each `[rule:Transforms]` into a **random** one of
+these four Unveiled Schemes and then do its Twist. All four share the one pool, so
+the second form is any of the cards below — never a fixed pairing.
+
+| ![Control the Mutant Messiah](https://images.legendary-arena.com/msmc/msmc-sc-control-the-mutant-messiah.webp "width=90px") | ![Open Rifts to Future Timelines](https://images.legendary-arena.com/msmc/msmc-sc-open-rifts-to-future-timelines.webp "width=90px") | ![Reveal the Heroes' Evil Clones](https://images.legendary-arena.com/msmc/msmc-sc-reveal-the-heroes-evil-clones.webp "width=90px") | ![Unleash an Anti-Mutant Bioweapon](https://images.legendary-arena.com/msmc/msmc-sc-unleash-an-anti-mutant-bioweapon.webp "width=90px") |
+|---|---|---|---|
+| …Control the Mutant Messiah | …Open Rifts to Future Timelines | …Reveal the Heroes' Evil Clones | …Unleash an Anti-Mutant Bioweapon |
 
 ### Scheme engine status — IMPLEMENTED (partial)
 
