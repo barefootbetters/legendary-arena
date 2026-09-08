@@ -7,6 +7,52 @@
 
 ## Current State
 
+### WP-666 — Activate the playmat skin selector: paint the selected mat as the board background (EC-703 / D-24477..D-24479) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** WP-130's `🎨` skin selector shipped **live but inert**:
+the bundled skin images were 79-byte placeholder stubs, nothing consumed `boardBackgroundUrl` / the
+`--skin-board-*` CSS variables (repo-wide grep = 0 consumers), and `.play-viewport` is `display:contents`
+(no paint surface) — so picking a skin swapped a class and painted nothing. This WP makes the selector
+actually repaint the board.
+
+**What shipped.** A new fixed, full-bleed `PlaymatBackground.vue` leaf mounted once at the shared
+`<PlayViewport>` root (the `<VfxOverlay>` single-host precedent), painting back-to-front the palette ground
+(`--skin-board-background`), the mat image (`--skin-board-image`, set by `useSkinApplier` from the manifest),
+and a **mandatory** legibility scrim (`--skin-board-scrim`). The layer is `pointer-events:none`, `aria-hidden`,
+`z-index:-1` — decorative and inert (never intercepts a click, never shifts board layout). `SkinManifestEntry`
+gains `displayLabel` (the selector now shows human-readable names), the `boardBackgroundUrl` field is
+repurposed to `string | null` (bundled URL, CDN URL, or `null` palette ground), and a `licensed?` /
+`attribution?` seam is added. The bundled set expands past the D-13003 three-skin lock to a curated **five-entry
+named-mat set**: `classic` / `comic` / `minimal` / **`midtown`** ("Midtown Skyline") / **`cosmic`** ("Cosmic
+Arena"), the two new mats carrying first-party abstract art.
+
+**Art posture (D-24478).** First-party / abstract art the project owns ships now (bundled, no CDN dependency);
+a **licensed** Marvel / Upper Deck mat is a gated per-mat drop-in via the seam — **none ships here**, and no
+UD/Marvel scan is committed. NG-1 preserved (cosmetic, not pay-to-win); no purchase surface added.
+
+**Boundary / determinism.** Arena-client presentation only — no engine / registry / server / persistence, no
+`UIState` field, no `computeStateHash` surface; the D-13005 `'classic'` fallback is preserved verbatim.
+**Gates:** `pnpm -r build` 0; `pnpm --filter arena-client typecheck` 0; arena-client suite **1639/1639** (+23,
+across `PlaymatBackground` + `useSkinApplier` + `SkinSelector` + `playmatSchema`). **D-24477..D-24479 flipped
+Drafted → Active.**
+
+**Execution deviations (no scope change).** (1) **Board-image format:** the bundled art ships as first-party
+abstract **SVG** rather than the raster (`.png` / `.webp`) the WP named — a real committed `url()`-loaded image
+(not a CSS gradient, which RS-2 forbids), authorable as first-party art without a binary pipeline; honoring
+RS-2's anti-gradient intent. (2) **Inline test-file amendments (allowlist additions):** `playmatStore.test.ts`
+and `TopHudBar.test.ts` carried the pre-change three-skin set / raw-key label in fixtures and were updated to
+the five-entry set / `displayLabel` — legitimate fixture updates for the intentional behavior change (the
+label source moved from the key to `displayLabel`), folded in per the 01.0b file-allowlist-omission amendment.
+
+**Verification note.** Pre-merge browser preview was **blocked by the environment** — port 5173 was held by a
+concurrent session's dev server (vite pins its config port, so the preview harness could not route around it),
+and the local-file static-snapshot sandbox blocks external SVG + screenshots. The fixed-layer positioning is
+proven by the shipped `<VfxOverlay>` sibling (same root, same `position:fixed; inset:0`), and the stacking
+(`z-index:-1` behind `.play-desktop`'s `position:relative` content, over the opaque `body` ground) is
+textbook. **D-24026 live-on-surface is operator-pending** — a real match on `play.legendary-arena.com` must
+show the board repaint on skin change (pick a non-classic mat) with cards/zones legible, and the choice
+persisting across reload.
+
 ### WP-667 — Radioactive Riot: optional "KO a card from hand or discard" (recruit-threshold-gated, no reward) (EC-704 / D-24480) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** `wwhk/she-hulk/radioactive-riot` ("Once this turn,
