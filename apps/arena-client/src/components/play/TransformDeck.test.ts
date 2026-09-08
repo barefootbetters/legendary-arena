@@ -24,26 +24,32 @@ function makeEntry(name: string, extId: string): UIDisplayEntry {
 }
 
 describe('TransformDeck (WP-664 / D-24475)', () => {
-  test('renders one face-up CardTile per entry with a count header', () => {
+  test('collapses duplicate second-forms to one tile per unique card with a copy count', () => {
+    // why: EC-703 (Jeff feedback) — the pile holds every copy of each second-form
+    // (here 2× Hurl Trucks + 1× Like Totally Smart Hulk). The view shows ONE tile
+    // per unique card with a ×N count; the header still reports the total pile size.
     const transformDeck: UIDisplayEntry[] = [
       makeEntry('Hurl Trucks', 'wwhk/she-hulk/hurl-trucks#0'),
       makeEntry('Like Totally Smart Hulk', 'wwhk/amadeus-cho/like-totally-smart-hulk#0'),
+      makeEntry('Hurl Trucks', 'wwhk/she-hulk/hurl-trucks#1'),
     ];
     const wrapper = mount(TransformDeck, { props: { transformDeck } });
 
     const section = wrapper.find('[data-testid="play-transform-deck"]');
     assert.equal(section.exists(), true, 'the transform-deck section renders when populated');
-    assert.match(wrapper.find('.transform-deck__header').text(), /Transform Deck \[2\]/);
+    // header = total pile size (all copies), not the unique-card count.
+    assert.match(wrapper.find('.transform-deck__header').text(), /Transform Deck \[3\]/);
 
     const tiles = wrapper.findAll('[data-testid="card-tile"]');
-    assert.equal(tiles.length, 2, 'one CardTile per side-deck entry');
-    // why: face-up — each second-form is rendered by its ext-id + name (CardTile
-    // carries the name on its title attr + image alt in image mode; the D-24475
-    // "player must SEE the second-forms" contract).
+    assert.equal(tiles.length, 2, 'one CardTile per UNIQUE second-form (duplicates collapsed)');
+    // first-seen order preserved; the first copy of each group supplies the tile.
     assert.equal(tiles[0]!.attributes('data-card-ext-id'), 'wwhk/she-hulk/hurl-trucks#0');
     assert.equal(tiles[0]!.attributes('title'), 'Hurl Trucks');
     assert.equal(tiles[1]!.attributes('data-card-ext-id'), 'wwhk/amadeus-cho/like-totally-smart-hulk#0');
     assert.equal(tiles[1]!.attributes('title'), 'Like Totally Smart Hulk');
+
+    const counts = wrapper.findAll('.transform-deck__count').map((node) => node.text());
+    assert.deepEqual(counts, ['×2', '×1'], 'each unique card shows its copy count');
   });
 
   test('renders the tiles as non-interactive (display-only pile)', () => {
