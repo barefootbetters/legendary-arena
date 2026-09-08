@@ -22,7 +22,7 @@ source:
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
-last-reviewed: 2026-09-04
+last-reviewed: 2026-09-08
 ---
 
 # AI Second Brain
@@ -139,6 +139,24 @@ surface.** That is Principle 4 read from the agent's side — the store holds th
 facts, and the agent in front of it (Claude Code today, another framework
 tomorrow) navigates, cites, and improves them under operator authority. Swapping
 that surface must never move a single fact.
+
+> **Why operator-owned memory, not a vendor's hosted memory store.** A hosted
+> assistant's *own* memory feature is governed by the vendor's content policy,
+> not the operator's: it can silently decline to persist whole *categories* of
+> knowledge — an observed case is political, religious, and health topics the
+> operator wanted kept — regardless of the account's memory settings, because the
+> gate is a built-in guardrail on the *kind* of content, not a permission the
+> operator granted or can toggle. The tell is that the *same vendor's* agent
+> writing to an operator-owned store has no such gate: file-based memory in a
+> coding agent (plain Markdown in Git) keeps exactly what the operator files. So
+> the restriction is a property of *where the memory lives* — a vendor-hosted
+> store applies the vendor's policy; an operator-owned store applies the
+> operator's judgement — which is *Knowledge Ownership* (#1) and *knowledge is
+> permanent, agents are replaceable* made concrete. It is a reason distinct from
+> vendor *lock-in* ([Failure modes](#failure-modes)): lock-in is about not getting
+> your data back *out*; this is the store refusing to take certain knowledge *in*
+> at all. The operator-owned brain is where knowledge the vendor's memory won't
+> hold still lives durably.
 
 ### Locked architecture decisions
 
@@ -1352,6 +1370,18 @@ This is the summary index; the individual gotchas and their nuances live in
   estimates and per-phase gates) added as §12 of the
   [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md). Both are
   **Preferred / Open** — no Locked row moved, no `DECISIONS.md` entry.
+- **2026-09-08 — motivation added: vendor-hosted memory won't persist certain
+  content (descriptive, no re-lock).** Recorded a fresh reason for operator-owned
+  memory under [Design principles](#design-principles): a hosted assistant's
+  chat-memory feature declines to persist whole content categories (observed:
+  political, religious, health) by the vendor's content policy regardless of
+  account settings, while the *same vendor's* coding agent writing to
+  operator-owned Markdown has no such gate — so the restriction is a property of
+  *where the memory lives*, not of the vendor. Framed as *Knowledge Ownership*
+  (#1) made concrete and explicitly distinct from the vendor-lock-in
+  [failure mode](#failure-modes) (lock-in withholds data on the way *out*; this
+  withholds knowledge on the way *in*). One callout, descriptive only — no
+  **Locked**, **Preferred**, or **Open** decision changed.
 
 ## Open Questions
 
