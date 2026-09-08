@@ -5,6 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Legendary Arena — the digital deck-building arena. The arena awaits." />
     <title>Legendary Arena</title>
+    <!-- why: day/night theme init — set data-theme on <html> BEFORE the
+         stylesheets paint, so a saved "night" preference (or the OS
+         prefers-color-scheme when the user hasn't chosen) does not flash light
+         first. The brand tokens (below) switch under html[data-theme="dark"].
+         Mirrors the arena-client `useTheme` composable's storage key. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('arenaClientTheme');
+          var useDark =
+            saved === 'dark' ||
+            (saved === null &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (useDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (error) {
+          /* localStorage unavailable (private mode / disabled) — default light. */
+        }
+      })();
+    </script>
     <!-- WP-007a brand-token consumption.
          Cascade contract: both stylesheets set the same CSS custom
          properties on :root at equal specificity. Per CSS spec, equal-

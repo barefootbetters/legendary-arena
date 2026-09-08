@@ -2,12 +2,14 @@
 import { defineComponent } from 'vue';
 
 import { useAuthNav } from '../../composables/useAuthNav';
+import ThemeToggle from './ThemeToggle.vue';
 
 // why: defineComponent (NOT <script setup>) matches the established
 // arena-client convention under the @legendary-arena/vue-sfc-loader
 // separate-compile pipeline (D-6512 / P6-30).
 export default defineComponent({
   name: 'BrandHeader',
+  components: { ThemeToggle },
   setup() {
     const { isSignedIn, isBootstrapping, displayLabel, signOut } =
       useAuthNav();
@@ -37,6 +39,10 @@ export default defineComponent({
       <a class="brand-nav-link" href="https://cards.legendary-arena.com">
         Cards
       </a>
+
+      <!-- why: day/night toggle — always present regardless of auth state, so it
+           sits before the conditional sign-in / profile block. -->
+      <ThemeToggle />
 
       <template v-if="isBootstrapping">
         <span
