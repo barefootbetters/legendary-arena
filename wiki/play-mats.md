@@ -23,6 +23,8 @@ source:
   - https://boardgamegeek.com/boardgameaccessory/157107/legendary-a-marvel-deck-building-game-playmat
   - https://boardgamegeek.com/boardgame/129437/legendary-a-marvel-deck-building-game/files
   - https://icv2.com/articles/news/view/36546/upper-deck-launching-op-kits-marvel-legendary
+  - https://upperdeck.com/cdd-inquiry-distributor-locator/
+  - https://upperdeck.com/authorized-internet-retailers/
   - https://github.com/ruler501/Marvel
 last-reviewed: 2026-09-07
 ---
@@ -227,6 +229,60 @@ oversized ~14″ × 28″ or two-player ~24″ × 28″; the US community defaul
 sales), Etsy (digital JPG layouts you send to a printer), or local
 neoprene / dye-sub shops from the same files.
 
+### Distribution & availability
+
+Whether a given mat is buyable or a ghost is a **distribution** fact, not a
+demand signal. Upper Deck runs no open wholesale catalog: since a 2024 update,
+*Legendary* and its accessories sit inside the same **Certified Diamond Dealer
+(CDD)** system Upper Deck built for hobby sports cards. (Relayed from Upper
+Deck's dealer materials and 2024 games-distribution update — see References; the
+page is `draft` on these specifics.)
+
+The intended pipe:
+
+```
+Upper Deck
+    ├── Direct — upperdeckstore.com
+    ├── Amazon (a named official Legendary channel, 2024)
+    └── Authorized distributors
+            └── CDD brick-and-mortar stores
+                    └── subset: Authorized Internet Retailers (AIR)
+```
+
+A store cannot simply open a distributor account and buy *Legendary*; it applies
+to become a CDD through an authorized distributor (floor requirements: a
+brick-and-mortar storefront open ≥35 hrs/week). Only CDDs that Upper Deck also
+approves as **AIRs** may sell UD product online. The general AIR list is
+card-shop-heavy, but Upper Deck publishes a **separate "US Gaming Authorized
+Internet Retailers" list** — a small, game-native set: **Collectors Cache,
+Collector Store, Game Nerdz, Gamers Guild AZ (Phoenix), Pro-Play Games, and
+XPStore** (plus a Canadian gaming list), verified live on the AIR page
+([References](#references)). That gaming subset, not the card AIRs, is the
+online-authorized channel for a *Legendary* mat. On the wholesale side, **ACD
+Distribution** and **Universal Distribution** (the ex-Alliance Game Distributors
+warehouses, rebranded after the 2025 Alliance bankruptcy) are the two
+game-shaped doors; **GTS Distribution** is the door for shops already carrying
+UD sports cards.
+
+Where a customer actually finds a mat:
+
+| Channel | What shows up |
+|---|---|
+| [upperdeckstore.com](https://upperdeckstore.com/) | Live SKUs — 2E core, expansions, 93433 Dark Phoenix layout mat, 93486 Thanos art, 93488 Spider-Man art, 93490 Wolverine. The cleanest primary source for what UD still considers in print. |
+| Amazon | The same accessories when allocated; the 93431 Thanos *layout* mat is often "unavailable". A named official *Legendary* channel (2024). |
+| CDD / FLGS | Core boxes and whatever the distributor still has — shop-by-shop; many game stores never applied for CDD. |
+| AIRs | Online storefronts of approved CDDs — card-shop-heavy. |
+| Secondary (eBay, BGG GeekMarket, Noble Knight) | Out-of-print mats: the 2014 accessory, the OP kits, 93431. |
+
+**Why 93433 is buyable and 93431 is a ghost.** Print-run, not demand, sets "in
+print." Upper Deck can keep the Dark Phoenix mat (93433) on the store while the
+Thanos *layout* mat (93431) quietly sells out, with no public discontinuation —
+and a layout mat can vanish from Amazon while its matching art-only mat stays in
+the store. The Phase 1 and Villains in-box mats never became restockable
+accessories for the same reason, and the 2017 OP-kit mats (OPK1–OPK3 above) were
+a **distributor → store-event** product, never a consumer shelf SKU. Catalogue
+the SKU and its live URL; do not infer a line plan from Amazon stock.
+
 ## Interactions
 
 - **[Play Board](play-board.md)** — the digital analog, and the primary consumer
@@ -244,7 +300,11 @@ neoprene / dye-sub shops from the same files.
   Edition mat is the current printed baseline (cost reminders on the face-down
   decks). Whether such a mat is a *layout* mat or an *art-only* mat is a product
   decision worth making before briefing an artist — a layout mat teaches the
-  game, an art mat does not.
+  game, an art mat does not. Note the distribution reality above: a first-party
+  mat would not automatically ride Upper Deck's CDD pipe — FLGS shelves mean a
+  CDD-eligible distributor (ACD or Universal) plus an allocated SKU, whereas
+  direct-to-consumer (a UD-store analog, Inked Gaming) is how fan mats already
+  move with the least friction.
 - **[IP Licensing](ip-licensing.md)** — every official mat here is a Marvel /
   Upper Deck product, and the fan-site scans of those mats are still UD / Marvel
   art. Fan print files sit in a grey area their authors mark "personal use."
@@ -276,9 +336,12 @@ neoprene / dye-sub shops from the same files.
 - **Setup tables printed on old mats go stale.** Player-count rows on the 2012 /
   2014 mats (and the Villains mat) predate later card types — a physical
   convenience, never a rules source; do not scrape them into the engine.
-- **Availability drifts.** The 2014 accessory, the OP kits, and the Thanos
-  layout mat are frequently out of print; prices quoted here were current at
-  `last-reviewed` and will move.
+- **Availability drifts, and it is a print-run fact, not a demand signal.** The
+  2014 accessory, the OP kits, and the Thanos layout mat are frequently out of
+  print; prices quoted here were current at `last-reviewed` and will move. Why a
+  SKU is buyable or a ghost is governed by Upper Deck's CDD distribution system —
+  see [Distribution & availability](#distribution--availability). Do not infer a
+  line plan from Amazon stock.
 
 ## Open Questions
 
@@ -313,4 +376,6 @@ print TWISTS and STRIKES; OPK2 = the Dark City-art mat; Spider-Man art mat SKU =
 - Fan files: [BoardGameGeek — Legendary Files](https://boardgamegeek.com/boardgame/129437/legendary-a-marvel-deck-building-game/files), [zeroeo mats (BGG 121186)](https://boardgamegeek.com/filepage/121186/040920-updated-marvel-legendary-play-mats-heroes-a).
 - Print-and-play collection: [ruler501/Marvel](https://github.com/ruler501/Marvel).
 - Print shop: [Inked Gaming](https://www.inkedgaming.com/).
+- Distribution — CDD rules and distributor roster: [upperdeck.com — CDD inquiry / distributor locator](https://upperdeck.com/cdd-inquiry-distributor-locator/); games pulled under CDD (2024): [BGG thread](https://boardgamegeek.com/thread/3274509/update-to-upper-decks-distribution-model); GTS dealer policy on games: [gtsdistribution.com](https://gtsdistribution.com/page.asp).
+- Authorized Internet Retailers (incl. the US Gaming AIR list): [upperdeck.com/authorized-internet-retailers](https://upperdeck.com/authorized-internet-retailers/).
 - Staged source scans (full resolution): `barefootbetters-legendary-setup/card-images-staging/original-jpeg/playmats/`.

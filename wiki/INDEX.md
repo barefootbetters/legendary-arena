@@ -143,7 +143,9 @@ Cross-cutting governance, methodology, and readiness assessments.
   [Play Board](play-board.md) projection, with a hero-side ↔ Villains-side
   rename table. Establishes that the Dark City-art mat is the Organized
   Play Kit #2 mat (the expansion box shipped none), and carries a
-  Confidence column plus an Open-Questions verification list.
+  Confidence column plus an Open-Questions verification list, and a
+  Distribution & availability section (Upper Deck's CDD / gaming-AIR
+  pipe, and why 93433 is buyable while 93431 is a ghost).
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement
