@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1841,
+    "totalEntries": 1842,
     "byScope": {
-      "hero": 666,
+      "hero": 667,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 403,
+      "executable": 404,
       "deferred": 0,
       "condition": 26,
       "unsupported": 335,
@@ -24339,6 +24339,23 @@
       "name": "She-Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "reveal-herodeck-attack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "jade-giantess",
+          "name": "Jade Giantess"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "name": "She-Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "smash",
       "status": "unsupported",
       "handler": "",
@@ -34732,6 +34749,7 @@
         "optional-ko-hand-discard",
         "outwit",
         "recruit-threshold",
+        "reveal-herodeck-attack",
         "smash",
         "transform"
       ]

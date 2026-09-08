@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 666,
+    "totalRows": 667,
     "byStatus": {
-      "executable": 267,
+      "executable": 268,
       "deferred": 0,
       "condition": 26,
       "unsupported": 334,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 129
+    "distinctMechanics": 130
   },
   "rows": [
     {
@@ -11481,6 +11481,22 @@
         {
           "slug": "radioactive-riot",
           "name": "Radioactive Riot"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "heroName": "She-Hulk",
+      "set": "wwhk",
+      "mechanic": "reveal-herodeck-attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack",
+      "designs": [
+        {
+          "slug": "jade-giantess",
+          "name": "Jade Giantess"
         }
       ]
     },

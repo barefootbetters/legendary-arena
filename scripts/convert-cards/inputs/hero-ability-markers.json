@@ -794,6 +794,12 @@
       "markupToken": "[keyword:optional-ko-hand-discard]"
     },
     {
+      "heroSlug": "she-hulk",
+      "cardSlug": "jade-giantess",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-herodeck-attack:2]"
+    },
+    {
       "heroSlug": "bruce-banner",
       "cardSlug": "dangerous-testing",
       "abilityIndex": 0,

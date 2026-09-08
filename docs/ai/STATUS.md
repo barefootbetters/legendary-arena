@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-668 — Jade Giantess: "For every 2 Recruit, reveal the top Hero-Deck card and gain its printed Attack" (EC-705 / D-24481) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** `wwhk/she-hulk/jade-giantess` ("For every 2 Recruit
+you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get
+that card's printed Attack") was an unmodeled hollow that granted **nothing**: WP-660 suppressed the "for
+every 2[icon:recruit]" condition icon, but the trailing bare "printed[icon:attack]" promoted to a
+magnitude-less `attack` keyword the pre-gate drops — so no Attack fired, and the phantom keyword even masked
+the card from the hollow detector. This WP models it.
+
+**What shipped.** A new `reveal-herodeck-attack` keyword whose **magnitude carries the "for every N Recruit"
+divisor** (2). Handler `heroEffectRevealHeroDeckAttack` is a deterministic **synchronous** onPlay effect
+(no pending choice, no new `G` field): `iterations = floor(G.turnEconomy.recruit / divisor)` **snapshotted at
+play time** (faithful tabletop timing, NOT the WP-568 wait-and-see — a scaling factor cannot re-fire cleanly),
+then per iteration reveals `G.heroDeck[0]`, grants its printed Attack (`G.cardStats[id].attack`) to
+`G.turnEconomy.attack`, and rotates it to the **bottom** of `G.heroDeck` (bottoming keeps the shared deck
+non-depleting; a short deck re-reveals cycled cards, an empty deck reveals nothing). The parser subsumes the
+co-located printed `[icon:attack]` (the D-24016 attack-per-count precedent) so no phantom flat attack. Full
+handler-bearing keyword lockstep (42→43, handlers 28→29); **not** in `NO_MAGNITUDE_KEYWORDS` (magnitude 2 is a
+real divisor). Marker `[keyword:reveal-herodeck-attack:2]` on `jade-giantess`; card-data regen flipped the
+card to `executable` in the hero ledger.
+
+**Gates.** Engine suite **3150/3150**; `pnpm -r build` 0; `cards`/`ledger:heroes`/`effect-index`/
+`mechanics:metadata`/`sim:runtime-observed` `:check` all green; **NO hash re-pin** (the sentinel plays no
+wwhk cards). Control: the marked/unmarked Jade Giantess parser tests through the real `buildHeroAbilityHooks`
+prove the `[keyword:reveal-herodeck-attack:2]` marker is load-bearing (unmarked → no effect). **D-24026
+live-on-surface** (a real match plays Jade Giantess and gains the scaled Attack) is operator-pending.
 ### WP-666 — Activate the playmat skin selector: paint the selected mat as the board background (EC-703 / D-24477..D-24479) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** WP-130's `🎨` skin selector shipped **live but inert**:

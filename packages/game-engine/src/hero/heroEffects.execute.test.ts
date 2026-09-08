@@ -57,7 +57,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 28 handlers and none for the deferred keywords', () => {
+  it('has exactly 29 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -76,7 +76,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-659 / D-24470 added the reveal-from-hand handler (25 → 26);
     // WP-663 / D-24474 added the optional-play-villain-top handler (26 → 27);
     // WP-667 / D-24480 added the optional-ko-hand-discard handler (27 → 28).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 28);
+    // WP-668 / D-24481 added the reveal-herodeck-attack handler (28 → 29).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 29);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -154,6 +155,10 @@ function makeTestState(overrides?: {
   // why: WP-658 / D-24469 — the transform handler reads the side deck + base→target map.
   transformDeck?: string[];
   transformTargets?: Record<string, string>;
+  // why: WP-668 / D-24481 — the reveal-herodeck-attack handler reveals the top of the
+  // shared Hero Deck; the fixture must seed it (default empty — makeTestState previously
+  // omitted the field entirely, so tests that ignore it are unaffected).
+  heroDeck?: string[];
 }): LegendaryGameState {
   return {
     matchConfiguration: {
@@ -220,6 +225,9 @@ function makeTestState(overrides?: {
     },
     city: [null, null, null, null, null],
     hq: [null, null, null, null, null],
+    // why: WP-668 / D-24481 — the shared Hero Deck (front = top) the reveal-herodeck-attack
+    // handler reveals from; default empty for tests that ignore it.
+    heroDeck: overrides?.heroDeck ?? [],
     lobby: { requiredPlayers: 1, ready: {}, started: false },
     heroAbilityHooks: overrides?.heroAbilityHooks ?? [],
     // why: WP-658 / D-24469 — seed the transform side deck + base→target map so the
@@ -5242,5 +5250,108 @@ describe('cardsDrawn counter + Gamma-Draining Nanites transform (WP-665 / D-2447
     // (it re-fires this turn if a further draw reaches 2), logged as "waiting", not blocked.
     const waiting = gameState.messages.find((entry) => entry.text.includes('waiting'));
     assert.ok(waiting !== undefined && waiting.outcome === 'neutral', 'the transform is waiting, not blocked');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reveal-herodeck-attack (WP-668 / D-24481 — Jade Giantess)
+// ---------------------------------------------------------------------------
+
+describe('heroEffectRevealHeroDeckAttack (WP-668 / D-24481 — Jade Giantess)', () => {
+  const JADE_ID = 'wwhk/she-hulk/jade-giantess#1';
+  // Hero-Deck cards with distinct printed attack, so the summed grant is unambiguous.
+  const heroStat = (attack: number) => ({
+    attack, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0,
+  });
+
+  /** A Jade Giantess hook: the synchronous reveal-herodeck-attack effect, divisor 2. */
+  const jadeHook = (): HeroAbilityHook => ({
+    cardId: JADE_ID as string,
+    timing: 'onPlay',
+    keywords: ['reveal-herodeck-attack'],
+    effects: [{ type: 'reveal-herodeck-attack', magnitude: 2 }],
+  });
+
+  it('reveals floor(recruit / 2) Hero-Deck cards, grants the summed printed attack, rotates them to the bottom (AC-1)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6, // floor(6 / 2) = 3 reveals
+      heroDeck: ['h-a', 'h-b', 'h-c', 'h-d'],
+      cardStats: { 'h-a': heroStat(2), 'h-b': heroStat(3), 'h-c': heroStat(4), 'h-d': heroStat(5) },
+      heroAbilityHooks: [jadeHook()],
+    });
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(fired, 1, 'the single reveal-herodeck-attack effect fired');
+    // 2 + 3 + 4 = 9 (the top three cards' printed attack)
+    assert.equal(gameState.turnEconomy.attack, 9, 'gained the summed printed attack of the top 3 cards');
+    // deck length unchanged; the top 3 rotated to the bottom in order
+    assert.deepStrictEqual(gameState.heroDeck, ['h-d', 'h-a', 'h-b', 'h-c'],
+      'the revealed top cards rotated to the bottom in look order, deck length unchanged');
+  });
+
+  it('reveals nothing and grants nothing below the divisor, with a neutral log line (AC-2)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 1, // floor(1 / 2) = 0
+      heroDeck: ['h-a', 'h-b'],
+      cardStats: { 'h-a': heroStat(2), 'h-b': heroStat(3) },
+      heroAbilityHooks: [jadeHook()],
+    });
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(fired, 1, 'the effect reached its handler (a resolved 0-scale is not a miss)');
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted below the divisor');
+    assert.deepStrictEqual(gameState.heroDeck, ['h-a', 'h-b'], 'the Hero Deck is unchanged');
+    const neutral = gameState.messages.find((entry) => entry.text.includes('fewer than 2 Recruit'));
+    assert.ok(neutral !== undefined && neutral.outcome === 'neutral', 'a neutral "fewer than N Recruit" line explains the no-op');
+  });
+
+  it('re-reveals cycled cards when the Hero Deck is shorter than the reveal count (AC-3)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6, // 3 reveals
+      heroDeck: ['h-a'], // only one card — bottoming re-reveals it each time
+      cardStats: { 'h-a': heroStat(4) },
+      heroAbilityHooks: [jadeHook()],
+    });
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(fired, 1, 'the effect fired');
+    assert.equal(gameState.turnEconomy.attack, 12, 'the single card is re-revealed 3 times (4 × 3)');
+    assert.deepStrictEqual(gameState.heroDeck, ['h-a'], 'the one-card deck is unchanged after cycling');
+  });
+
+  it('reveals nothing on an empty Hero Deck with a blocked log line (AC-3)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6,
+      heroDeck: [],
+      heroAbilityHooks: [jadeHook()],
+    });
+
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted from an empty Hero Deck');
+    const blocked = gameState.messages.find((entry) => entry.text.includes('Hero Deck is empty'));
+    assert.ok(blocked !== undefined && blocked.outcome === 'blocked', 'a blocked line explains the empty deck');
+    assert.equal(fired, 1, 'the effect still reached its handler');
+  });
+
+  it('contributes 0 for a revealed card with no cardStats entry, never fabricating attack (AC-1)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 4, // 2 reveals
+      heroDeck: ['h-a', 'h-nostat'],
+      cardStats: { 'h-a': heroStat(3) }, // h-nostat has no entry
+      heroAbilityHooks: [jadeHook()],
+    });
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.turnEconomy.attack, 3, 'the stat-less card contributes 0, the other contributes its printed attack');
   });
 });

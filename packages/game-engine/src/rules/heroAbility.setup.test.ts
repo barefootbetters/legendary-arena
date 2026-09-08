@@ -380,6 +380,28 @@ describe('buildHeroAbilityHooks — condition-clause icon is not a grant (WP-660
     assert.ok(hook !== undefined, 'the hook exists');
     const recruitEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'recruit');
     assert.equal(recruitEffects.length, 0, 'the per-N-recruit rate is a condition, not a +2 recruit grant');
+    // why: WP-668 / D-24481 — negative control: WITHOUT the marker the reveal-herodeck-attack
+    // effect must NOT be emitted, so the marker (not the English text) is what makes the
+    // ability fire. Pairs with the marked test below to prove non-vacuity.
+    const revealEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'reveal-herodeck-attack');
+    assert.equal(revealEffects.length, 0, 'the unmarked line emits no reveal-herodeck-attack effect (the marker is load-bearing)');
+  });
+
+  it('WP-668: Jade Giantess (marked) parses to a single reveal-herodeck-attack effect, no phantom recruit OR attack', () => {
+    // why: WP-668 / D-24481 — the regenerated ability carries [keyword:reveal-herodeck-attack:2].
+    // The hook must carry exactly that one effect (magnitude 2 = the "for every 2 Recruit"
+    // divisor); the trailing printed [icon:attack] is SUBSUMED (no phantom flat attack), and
+    // the "for every 2[icon:recruit]" condition icon stays suppressed (no phantom recruit).
+    const hook = oneCard('wwhk', 'she-hulk', 'jade-giantess',
+      "For every 2[icon:recruit]you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed[icon:attack]. [keyword:reveal-herodeck-attack:2]");
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(hook!.keywords.includes('reveal-herodeck-attack'), 'the reveal-herodeck-attack keyword resolves');
+    assert.deepStrictEqual(
+      hook!.effects,
+      [{ type: 'reveal-herodeck-attack', magnitude: 2 }],
+      'the only effect is the reveal-herodeck-attack (divisor 2) — no phantom flat attack, no phantom recruit',
+    );
+    assert.ok(!hook!.keywords.includes('attack'), 'the printed [icon:attack] is subsumed by the reveal-herodeck-attack keyword');
   });
 
   it('KEEPS a real grant icon elsewhere on a condition line ("you get +N[icon:attack]")', () => {
@@ -473,12 +495,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'transform', // why: WP-658 / D-24469 — "[keyword:Transform] this into <second-form>" (wwhk) — swaps a played base card for its second-form from G.transformDeck
       'reveal-from-hand', // why: WP-659 / D-24470 — Psychic Link "Each player may reveal another [team]/[hc] Hero. Each player who does draws a card." (reveal criterion, not a play-gate)
       'optional-play-villain-top', // why: WP-663 / D-24474 — Shadowed Thoughts "[hc:covert]: You may play the top card of the Villain Deck. If you do, +2 Attack." (optional pending choice)
+      'reveal-herodeck-attack', // why: WP-668 / D-24481 — Jade Giantess "For every 2 Recruit you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed Attack." (synchronous count-scaled reveal)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      42,
-      'HERO_KEYWORDS must have exactly 42 entries',
+      43,
+      'HERO_KEYWORDS must have exactly 43 entries',
     );
 
     assert.deepStrictEqual(

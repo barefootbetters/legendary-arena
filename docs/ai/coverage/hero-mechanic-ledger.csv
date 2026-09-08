@@ -617,6 +617,7 @@ wwhk/she-hulk,She-Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/s
 wwhk/she-hulk,She-Hulk,wwhk,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,radioactive-riot
 wwhk/she-hulk,She-Hulk,wwhk,outwit,condition,,,,window-of-opportunity
 wwhk/she-hulk,She-Hulk,wwhk,recruit-threshold,condition,,,,hurl-legal-objections|radioactive-riot
+wwhk/she-hulk,She-Hulk,wwhk,reveal-herodeck-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack,jade-giantess
 wwhk/she-hulk,She-Hulk,wwhk,smash,unsupported,,,,hurl-trucks
 wwhk/she-hulk,She-Hulk,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,hurl-legal-objections
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,unsupported,,,,anger-management
