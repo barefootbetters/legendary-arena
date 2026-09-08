@@ -137,3 +137,56 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.55) !important;
   padding: 0.45rem 0.6rem !important;
 }
+
+/* ── Dark theme (day/night, html[data-theme="dark"]) ────────────────────────
+   The frosted panels above are hardcoded light (to mask the mat) and rely on
+   the app's dark text. Under the dark brand-token palette the text flips light,
+   so light-on-light washes out. These overrides flip the panels to a dark
+   frosted surface so the (now light) text stays legible. Same .play-viewport
+   scoping + !important discipline as the light rules. */
+:root[data-theme="dark"] .play-viewport .shared-decks__cell,
+:root[data-theme="dark"] .play-viewport .master-strike-pile,
+:root[data-theme="dark"] .play-viewport .scheme-twist-pile,
+:root[data-theme="dark"] .play-viewport .play-desktop__mastermind-zone,
+:root[data-theme="dark"] .play-viewport .play-desktop__scheme-zone,
+:root[data-theme="dark"] .play-viewport .play-desktop__hq-zone,
+:root[data-theme="dark"] .play-viewport .ko-pile,
+:root[data-theme="dark"] .play-viewport [class*="victory"],
+:root[data-theme="dark"] .play-viewport [class*="your-deck"],
+:root[data-theme="dark"] .play-viewport [class*="your-discard"],
+:root[data-theme="dark"] .play-viewport [class*="player-deck"],
+:root[data-theme="dark"] .play-viewport [class*="player-discard"],
+:root[data-theme="dark"] .play-viewport .top-hud-bar,
+:root[data-theme="dark"] .play-viewport .turn-action-bar,
+:root[data-theme="dark"] .play-viewport .play-desktop__log {
+  background: rgba(22, 24, 32, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow:
+    0 1px 6px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+:root[data-theme="dark"] .play-viewport .city-space-empty,
+:root[data-theme="dark"] .play-viewport .city-space-deck,
+:root[data-theme="dark"] .play-viewport .hq-slot-deck,
+:root[data-theme="dark"] .play-viewport .hq-slot-empty {
+  background: rgba(22, 24, 32, 0.60) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  color: #e8eaf2 !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+:root[data-theme="dark"] .play-viewport .city-space-deck header,
+:root[data-theme="dark"] .play-viewport .hq-slot-deck header,
+:root[data-theme="dark"] .play-viewport .city-space-deck p,
+:root[data-theme="dark"] .play-viewport .hq-slot-deck p {
+  color: #e8eaf2 !important;
+}
+
+:root[data-theme="dark"] .play-viewport .city-space__label {
+  background: rgba(22, 24, 32, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #e8eaf2 !important;
+}
