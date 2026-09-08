@@ -78,13 +78,14 @@ architecture drift at different rates and answer to different concerns.
 
 ### Non-goals
 
-Naming the boundaries first, so scope is clear before the design detail. This
-platform is **not** a CRM, a project manager, a social-media scheduler, an
-autonomous agent swarm, a replacement for Git, a replacement for the source
-systems it reads, or an automatic knowledge vacuum. Its job is **durable
-knowledge retrieval and decision support** — nothing more. The reasoning behind
-each boundary is in
-[Scope boundaries](#scope-boundaries-what-this-deliberately-is-not).
+Naming the anti-goals first, so scope is clear before the design detail. This
+platform is **not** a CRM, a project manager, a social-media scheduler, a
+replacement for Git, or a replacement for the source systems it reads — and
+never an *uncontrolled* agent swarm or a *self-promoting* knowledge vacuum (the
+anti-goal is loss of authority and provenance, not autonomy itself). Its job is
+**durable knowledge retrieval and decision support** — nothing more. Which of
+these are permanent invariants and which are merely v1 choices is drawn out in
+[Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices).
 
 ### Design principles
 
@@ -387,12 +388,15 @@ layer in bulk, this loop produces *authored* notes one source at a time:
    deliberate human act (see
    [Promotion](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)).
 
-It is never an always-on daemon: it runs only when invoked, and its output is
-subject to the same quality gates and promotion rules as any other artifact. This
-is the sanctioned *manual* way knowledge enters — the mirror image of
-[No always-on autonomous ingestion](#scope-boundaries-what-this-deliberately-is-not),
-which rules out the *automatic* way for exactly the same reason: the operator,
-not a background process, decides what earns a place in the corpus.
+It runs only when invoked in v1, and its output is subject to the same quality
+gates and promotion rules as any other artifact. This is the sanctioned way
+knowledge is *authored* — the counterpart to
+[operator-triggered ingestion](#architectural-invariants-vs-implementation-choices),
+the v1 choice to ingest only on demand. The durable rule is not "manual only" but
+the **promotion boundary**: the operator, not a background process, decides what
+earns *authority* in the corpus — so any future autonomous ingester is allowed
+only where it lands captures as Transient/Reference with provenance and cannot
+self-promote.
 
 ### Knowledge-query MCP surface
 
@@ -961,41 +965,79 @@ the engine's data-recovery posture in [Disaster Recovery](disaster-recovery.md):
   instinct the engine applies to `G`. Only the source corpus and the knowledge
   DB's non-derived tables are true backup targets.
 
-### Scope boundaries (what this deliberately is not)
+### Architectural invariants vs. implementation choices
 
-The organizing discipline is *build the simplest thing that answers the actual
-question* — organized Markdown plus routing plus a small vector layer gets most
-of the value at a fraction of the complexity. Several capabilities are
-deliberately out of scope until a real pain point justifies them:
+The platform's non-negotiables are already stated as the
+[Design principles](#design-principles) and the
+[Locked architecture decisions](#locked-architecture-decisions) table — those
+*are* the architecture, and they change only through a new `DECISIONS.md` entry.
+This section draws the line the rest of the page needs drawn: an **invariant** (a
+property the platform must keep however the implementation evolves) is not the
+same as a **current implementation choice** (how v1 happens to start). Mixing the
+two lets today's conservative agent model read as architecture — and it produced
+a real contradiction, where an early "no multi-agent orchestration" boundary
+fought the later [supervisor / judge / planner harness](#operating-discipline)
+the page endorses as the likely evolution. The motto settles it: *knowledge is
+permanent, agents are replaceable* — so the knowledge corpus and its ownership,
+provenance, authority, portability, and recovery are invariant; the agent layer
+is not.
 
-- **No always-on autonomous ingestion.** The platform is not a daemon that
-  perpetually vacuums Teams chats, email, and scratch notes into the knowledge
-  base. Continuous unsupervised ingestion is the opposite of *deterministic,
-  auditable, grepable* — it invites drift and pollutes the governed corpus with
-  noise. Ingestion is an operator-run, reviewable step.
-- **No general knowledge graph.** A sprawling entity graph
-  (`Usona → culvert → survey monument → …`) is complexity without matching
-  payoff. The one graph shape worth considering later is the **governance chain**
-  the repo already implies — Work Packet → Execution Contract → Decision → Change
-  → Release — because those links are real and queryable. Even that is a possible
-  future, not a v1 goal (see [Open Questions](#open-questions)).
-- **No full multi-agent orchestration yet.** Autonomous harnesses (self-driving
-  agent loops, agent teams that act without review) come *after* the base — the
-  Markdown/wiki store, skills, verification checks, and conservative hooks — is
-  proven reliable, searchable, and recoverable. Building the orchestrator first
-  adds risk and complexity before the foundation earns it.
-- **Single-operator by design.** This is one operator's brain — not a
-  multi-tenant service, a shared team knowledge base, or a public-facing product.
-  Multi-user collaboration, tenancy isolation, and public sharing are out of
-  scope; naming that here keeps them from creeping in as implicit requirements.
+**The agent layer may evolve freely (the invariant the motto implies).** Manual
+vs autonomous ingestion, single- vs multi-agent operation, orchestration style,
+and agent count are **replaceable implementation choices**, not architectural
+boundaries. Any of them is allowed on one condition: it must preserve the
+invariants — operator ownership, durable provenance, explicit
+promotion-to-authority, open-format portability, and vendor-independent recovery.
+So autonomous ingestion is *not* excluded; the real rule is that **no ingestion
+path — autonomous or manual — may become the authoritative source of truth or
+self-promote a capture to Authoritative** (see
+[Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)).
+A multi-agent harness (the Turnstone-style example under
+[Operating discipline](#operating-discipline)) is the sanctioned *later* evolution
+of this same replaceable layer, never an architectural exception.
 
-**It is also not a category of product it will be mistaken for.** The platform is
-**not** a CRM, a project-management tool, a chat archive, a social-media
-scheduler, a permanent email archive, a replacement for the source systems it
-reads, or a replacement for Git. It indexes and reasons over knowledge that lives
-authoritatively elsewhere; it never becomes the operational system of record for
-any of those. Naming the anti-goals explicitly is what stops "could it also just…"
-requirement creep.
+**Current implementation decisions (v1 — changeable without touching the
+architecture).** These are tactics under *build the simplest thing that answers
+the actual question*, chosen to make the first build tractable. Each may change
+as a real pain point justifies it; none is a property the platform must keep:
+
+- **Operator-triggered ingestion.** v1 ingests only when invoked, rather than
+  running an always-on daemon over Teams chats, email, and scratch notes. The
+  *invariant* it protects is authority and provenance, not the trigger: an
+  autonomous ingester that lands captures as Transient/Reference with provenance,
+  and cannot self-promote, satisfies the architecture equally.
+- **Minimal orchestration.** v1 runs few agents and adds layers conservatively
+  (skills → checks → hooks → subagents → orchestration). A supervisor/judge/
+  planner harness is a later step, not a forbidden one.
+- **Single-operator operation.** v1 is one operator's brain, not multi-tenant or
+  public-facing. Multi-user collaboration and tenancy isolation are a scaling
+  decision, not an architectural bar.
+- **Incremental automation.** Automation earns criticality by proving value first
+  (*Incremental Automation*, principle #9); the *pace* is a choice, the principle
+  is not.
+- **No general knowledge graph in v1.** A sprawling entity graph
+  (`Usona → culvert → survey monument → …`) is complexity without matching payoff
+  today. The one graph worth considering later is the **governance chain** the
+  repo already implies (Work Packet → Execution Contract → Decision → Change →
+  Release), because those links are real and queryable (see
+  [Open Questions](#open-questions)).
+
+> **Not everything conservative is a free choice.** Navigation-first retrieval and
+> *never vectorizing governance* look like they belong on the list above, but they
+> are **Locked** decisions ([table](#locked-architecture-decisions)), not v1
+> tactics — they protect the determinism and auditability of the governed corpus,
+> which is an invariant. Do not demote them to "changeable implementation."
+
+**Durable anti-goals (these follow from the invariants, not from sequencing).**
+However the agent layer evolves, the platform **never becomes the operational
+system of record** for the systems it reads: it is not a CRM, a project manager,
+a chat archive, a permanent email archive, a social-media scheduler, or a
+replacement for Git or the source systems themselves. These are ruled out
+permanently — not because v1 is small, but because each would make the platform
+an authoritative operational store, violating *Knowledge Ownership* and *Single
+Source of Truth*. It indexes and reasons over knowledge that lives
+authoritatively elsewhere; naming the anti-goals is what stops "could it also
+just…" creep.
 
 ### Pilot scope (recommended first vertical)
 
@@ -1086,7 +1128,7 @@ a finding: add the row and the mitigation.
 | **Hallucinated authority** — a temporary finding is treated as policy | Promotion workflow ([Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)) |
 | **Vendor lock-in** — a proprietary format quietly makes the store unportable | *Open Standards First* ([Design principles](#design-principles) #3; open-formats-only store) |
 | **Backup drift** — backups exist but have never been proven to restore | Rehearsed restore drills ([Backup and recovery](#backup-and-recovery)) |
-| **Autonomous pollution** — an unattended process floods the corpus with noise | Operator-triggered ingestion only ([Knowledge extraction](#knowledge-extraction-operator-triggered); [no always-on ingestion](#scope-boundaries-what-this-deliberately-is-not)) |
+| **Autonomous pollution** — an ingestion process floods the corpus with unaudited noise, or lets a capture self-promote to Authoritative | The promotion/authority boundary + provenance ([Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)); operator-triggered ingestion is the v1 tactic, not the invariant ([Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices)) |
 
 This is the summary index; the individual gotchas and their nuances live in
 [Edge Cases](#edge-cases).
@@ -1382,6 +1424,33 @@ This is the summary index; the individual gotchas and their nuances live in
   [failure mode](#failure-modes) (lock-in withholds data on the way *out*; this
   withholds knowledge on the way *in*). One callout, descriptive only — no
   **Locked**, **Preferred**, or **Open** decision changed.
+- **2026-09-08 — invariants / implementation split (audit-grade tightening, no
+  re-lock).** Replaced the "Scope boundaries (what this deliberately is not)"
+  section with
+  [Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices),
+  separating three buckets the old section conflated: (1) **invariants** — already
+  the [Design principles](#design-principles) and [Locked](#locked-architecture-decisions)
+  table, restated here as the property that the *agent layer* (ingestion autonomy,
+  orchestration style, single- vs multi-agent, agent count) is a replaceable
+  implementation detail so long as ownership, provenance, authority, portability,
+  and recovery hold; (2) **current v1 implementation decisions** (operator-triggered
+  ingestion, minimal orchestration, single-operator, incremental automation, no
+  general knowledge graph) — changeable without touching the architecture; and
+  (3) **durable anti-goals** (never the operational system of record: CRM / PM /
+  chat- or email-archive / scheduler / Git-replacement). Resolves the internal
+  contradiction the old wording carried — "no multi-agent orchestration" fought the
+  [supervisor/judge/planner harness](#operating-discipline) the page endorses — by
+  reframing autonomous ingestion and multi-agent orchestration as sanctioned later
+  evolutions whose only bar is *no path may become authoritative or self-promote a
+  capture*. Reconciled the [Non-goals](#non-goals), [Knowledge extraction](#knowledge-extraction-operator-triggered),
+  [Failure modes](#failure-modes) "Autonomous pollution" row, and Open-Question 4
+  cross-references to match. **Deviation from the source audit note:** its proposed
+  "Current Implementation Decisions" list included navigation-first retrieval and
+  limited vectorization, but on this page those are **Locked** (they protect the
+  governed corpus's auditability), so they are kept as invariants and a callout
+  says so — demoting them would have moved a Locked row. Presentation and
+  cross-referencing only; **no Locked / Preferred / Open decision changed**, no
+  `DECISIONS.md` entry (D-24341's design record is maintained in place).
 
 ## Open Questions
 
@@ -1437,8 +1506,9 @@ is built.
    model, concurrent load, or a larger vector corpus.
 4. **A governance-chain graph — later, if ever.** The Work Packet → Execution
    Contract → Decision → Change → Release chain is the one relationship graph with
-   real payoff; a general knowledge graph is ruled out (see
-   [Scope boundaries](#scope-boundaries-what-this-deliberately-is-not)). *Gate:*
+   real payoff; a general knowledge graph is a v1 non-goal, deferred as an
+   implementation choice (see
+   [Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices)). *Gate:*
    do not consider it until the navigation + vector base has been used for real
    work and the recovery path has been rehearsed.
 5. **A real gateway for the coach — when, if ever? (near-term route RESOLVED —
