@@ -108,3 +108,21 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* why: day/night — native form controls don't read the token palette, so under
+   the dark theme they stay white with dark text. Set color-scheme:dark so the
+   browser renders native affordances (select dropdowns, number spinners,
+   scrollbars) dark, and theme the fields themselves with the brand tokens so
+   they match the dark chrome (lobby setup form, login, feedback, etc.). Day
+   mode is unchanged (native appearance). Tokens only — no raw hex (WP-009). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background-color: var(--la-color-surface);
+  color: var(--la-color-text-primary);
+  border: 1px solid var(--la-color-border-strong);
+}
