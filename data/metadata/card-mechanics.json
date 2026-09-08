@@ -880,6 +880,17 @@
       "hidden": true
     },
     {
+      "slug": "optional-ko-hand-discard",
+      "label": "Optional Ko Hand Discard",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/she-hulk"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "optional-ko-reward",
       "label": "Optional Ko Reward",
       "scope": "hero",
@@ -3805,6 +3816,7 @@
     "wwhk/she-hulk": {
       "mechanics": [
         "draw",
+        "optional-ko-hand-discard",
         "outwit",
         "recruit-threshold",
         "smash",

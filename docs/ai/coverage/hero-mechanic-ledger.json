@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 665,
+    "totalRows": 666,
     "byStatus": {
-      "executable": 266,
+      "executable": 267,
       "deferred": 0,
       "condition": 26,
       "unsupported": 334,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 128
+    "distinctMechanics": 129
   },
   "rows": [
     {
@@ -11436,6 +11436,22 @@
       "extId": "wwhk/she-hulk",
       "heroName": "She-Hulk",
       "set": "wwhk",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "radioactive-riot",
+          "name": "Radioactive Riot"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "heroName": "She-Hulk",
+      "set": "wwhk",
       "mechanic": "outwit",
       "status": "condition",
       "wp": "",
@@ -11461,6 +11477,10 @@
         {
           "slug": "hurl-legal-objections",
           "name": "Hurl Legal Objections"
+        },
+        {
+          "slug": "radioactive-riot",
+          "name": "Radioactive Riot"
         }
       ]
     },

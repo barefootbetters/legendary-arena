@@ -404,6 +404,26 @@ describe('buildHeroAbilityHooks — condition-clause icon is not a grant (WP-660
     assert.equal(byType.get('recruit'), 2, 'a plain "+2 recruit" grant is still emitted');
     assert.equal(byType.get('attack'), 1, 'a plain "+1 attack" grant is still emitted');
   });
+
+  it('WP-667: Radioactive Riot (marked) parses to a recruit-threshold condition + an optional-ko-hand-discard effect, no phantom recruit', () => {
+    // why: WP-667 / D-24480 — the regenerated ability carries BOTH markers. The hook must
+    // gate on recruitMadeThisTurnAtLeast:6 (wait-and-see) and carry the optional-ko-hand-discard
+    // effect (the KO park) — and still NO phantom recruit grant from the condition icon.
+    const hook = oneCard('wwhk', 'she-hulk', 'radioactive-riot',
+      'Once this turn, if you made at least 6[icon:recruit]this turn, you may KO a card from your hand or discard pile. [keyword:recruit-threshold:6] [keyword:optional-ko-hand-discard]');
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.deepStrictEqual(
+      hook!.conditions,
+      [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+      'the recruit-threshold:6 marker gates the hook (wait-and-see)',
+    );
+    assert.ok(hook!.keywords.includes('optional-ko-hand-discard'), 'the KO keyword resolves');
+    assert.deepStrictEqual(
+      hook!.effects,
+      [{ type: 'optional-ko-hand-discard' }],
+      'the only effect is the optional-KO park — no phantom recruit grant from the condition icon',
+    );
+  });
 });
 
 describe('HERO_KEYWORDS drift-detection', () => {
@@ -427,6 +447,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'reveal-ko-attack',
       'attack-per-count',
       'optional-ko-reward',
+      'optional-ko-hand-discard', // why: WP-667 / D-24480 — "you may KO a card from your hand or discard pile" (no reward, Radioactive Riot)
       'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted auto-resolving variant of optional-ko-reward
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
@@ -456,8 +477,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      41,
-      'HERO_KEYWORDS must have exactly 41 entries',
+      42,
+      'HERO_KEYWORDS must have exactly 42 entries',
     );
 
     assert.deepStrictEqual(

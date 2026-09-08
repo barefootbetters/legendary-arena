@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-667 — Radioactive Riot: optional "KO a card from hand or discard" (recruit-threshold-gated, no reward) (EC-704 / D-24480) (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** `wwhk/she-hulk/radioactive-riot` ("Once this turn,
+if you made at least 6 Recruit this turn, you may KO a card from your hand or discard pile") had its
+optional KO left an unmodeled hollow by WP-660 — only the printed +3 Attack fired, no prompt
+(live-reported: played at 7 Recruit, never offered the KO). This WP models it.
+
+**What shipped.** A new `optional-ko-hand-discard` keyword (no magnitude, no reward) parks a **no-reward**
+entry into the **shipped** `optional-ko-reward` pending queue (D-24019) — so the block-all guard (~25
+sites), `getLegalMoves` short-circuit, resolve move, projection, and `OptionalKoRewardPrompt.vue` are all
+**reused** (no parallel queue). A new per-entry `koZones` scope (`['hand','discard']`) makes
+`resolveOptionalKoReward` reject an in-play KO and the projection list an empty `eligibleInPlay` — Radioactive
+Riot cannot KO a played card, unlike the D-24442 wide set (whose default is preserved byte-for-byte). The
+resolve skips the reward dispatch for `rewardType: 'none'`; the client heading drops the "for a reward (…)"
+clause for the empty label. The gate reuses the shipped `recruit-threshold:6` **wait-and-see** (the +3 Attack
+is the card's printed stat, so the hook's only effect is the KO park): below 6 Recruit it waits, and parks the
+choice once Recruit reaches 6.
+
+**Boundary / determinism.** Engine + a client prompt + card data. **NO hash re-pin** (no sentinel parks a
+no-reward KO). **Control run:** removing the `optional-ko-hand-discard` marker drops the KO keyword from
+Radioactive Riot (non-vacuous). Engine suite **3144/3144**; arena-client **1630/1630** (+ the no-reward prompt
+test); `vue-tsc` 0; `pnpm -r build` 0; all card-derived, `sim:runtime-observed`, hero-effect-coverage, and
+dashboard `test:coverage` `:check` gates green. **Execution deviations (no scope change):** the setup parser
+needed **no** new arm (the generic `isValidHeroKeyword` path handles the no-magnitude keyword — one fewer file
+than drafted), and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's
+one line carries both markers). **D-24480 flipped Drafted → Active.** **D-24026 live-verify: operator-pending**
+— a real match on `play.legendary-arena.com` must offer the KO after ≥6 Recruit. **Out of scope:**
+`co2e/spark-of-the-divine` (the rewarded recruit-threshold sibling, a noted follow-up) and the 90+ other
+"KO a card from hand or discard" cards (gated differently).
+
 ### Emma Frost arc — D-24026 live-verification CLOSED + a deferred-grant log polish (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** Two operator Magneto / Midtown Bank Robbery matches verified all three "Emma Frost cards not triggering" fixes in live play, closing **D-24026** for the arc:

@@ -123,6 +123,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // has a HERO_EFFECT_HANDLERS entry (heroEffectOptionalPlayVillainTop) that parks the
   // pending choice, so it belongs here. (Carries magnitude 2 → NOT in NO_MAGNITUDE_KEYWORDS.)
   'optional-play-villain-top',
+  // why: WP-667 / D-24480 — Radioactive Riot's "you may KO a card from your hand or discard
+  // pile" (no reward); has a HERO_EFFECT_HANDLERS entry (heroEffectOptionalKoHandDiscard) that
+  // parks a no-reward entry into the shared optional-ko-reward pending queue, so it belongs
+  // here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'optional-ko-hand-discard',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -296,6 +301,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // exactly one card; the set of drawing players is computed from each hand at play time), so
   // the magnitude pre-gate must not drop it, or the reveal-draw never fires.
   'reveal-from-hand',
+  // why: WP-667 / D-24480 — optional-ko-hand-discard carries NO magnitude (no reward — it parks
+  // an optional KO of one hand/discard card); the eligible set is computed from G at play time,
+  // so the magnitude pre-gate must not drop it, or the KO choice never parks.
+  'optional-ko-hand-discard',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1681,6 +1690,61 @@ function heroEffectOptionalKoReward(
 }
 
 /**
+ * Park handler for the `optional-ko-hand-discard` hero keyword (WP-667 / D-24480).
+ *
+ * Radioactive Riot's "you may KO a card from your hand or discard pile" — the
+ * NO-REWARD, hand+discard-only variant of optional-ko-reward. It parks a no-reward
+ * entry (`rewardType: 'none'`, `koZones: ['hand','discard']`) into the SAME
+ * `G.pendingOptionalKoRewards` queue, so the block-all guard, getLegalMoves
+ * short-circuit, resolve move, projection, and client prompt are all reused. The
+ * recruit-threshold:6 gate is evaluated on the hook BEFORE this handler runs (the
+ * wait-and-see window), so this runs only when the player has made ≥6 Recruit.
+ *
+ * KO source = hand ∪ discard ONLY (the printed text; NOT inPlay — unlike the
+ * D-24442 wide set the rewarded variant uses). 0 eligible (both empty) → a logged
+ * no-op that parks nothing (never a throw), so the player can see why nothing
+ * happened.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KO happens at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param _effect - The `{ type: 'optional-ko-hand-discard' }` descriptor (no magnitude).
+ */
+function heroEffectOptionalKoHandDiscard(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: WP-667 — eligible = hand ∪ discard ONLY (Radioactive Riot excludes in-play
+  // cards, unlike the D-24442 wide set). 0 eligible → skipped no-op + a log line so the
+  // player sees why the ability did nothing (mirrors the optional-ko-reward empty branch).
+  const eligibleCount = playerZones.hand.length + playerZones.discard.length;
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a card for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — their hand and discard pile are both empty.`,
+    );
+    return;
+  }
+  // why: WP-667 / D-24480 — park a NO-REWARD entry into the shared optional-ko-reward
+  // queue; rewardType 'none' makes the resolve skip the reward dispatch, koZones
+  // ['hand','discard'] makes the resolve reject an in-play KO + the projection list an
+  // empty inPlay set. Lazy-init the queue (mirrors the reward park); the park is SILENT.
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  G.pendingOptionalKoRewards.push({
+    playerID,
+    rewardType: 'none',
+    rewardMagnitude: 0,
+    sourceCardId: cardId,
+    koZones: ['hand', 'discard'],
+  });
+}
+
+/**
  * Handler for the `optional-play-villain-top` hero keyword (WP-663 / D-24474).
  *
  * Shadowed Thoughts' "[hc:covert]: You may play the top card of the Villain Deck. If you
@@ -3002,6 +3066,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
+  'optional-ko-hand-discard': heroEffectOptionalKoHandDiscard,
   'ko-wound-reward': heroEffectKoWoundReward,
   'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
   'put-any-number-bottom-hq': heroEffectPutAnyNumberBottomHq,

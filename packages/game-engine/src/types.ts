@@ -752,12 +752,21 @@ export interface PendingCopyPowersChoice {
 export interface PendingOptionalKoReward {
   /** The player who must decline or choose a card to KO. */
   playerID: string;
-  /** The reward granted iff the player KOs a card (dispatched to the existing executor). */
-  rewardType: HeroKeyword;
+  // why: WP-667 / D-24480 — `'none'` is the NO-REWARD variant (Radioactive Riot's
+  // "you may KO a card from your hand or discard pile" — the KO is deck-thinning, no
+  // follow-up reward). resolveOptionalKoReward skips the Step-6 reward dispatch for it.
+  /** The reward granted iff the player KOs a card (dispatched to the existing executor); `'none'` = no reward. */
+  rewardType: HeroKeyword | 'none';
   /** The reward magnitude passed to the reward executor. */
   rewardMagnitude: number;
   /** The hero card whose ability parked this choice (passed to the reward executor). */
   sourceCardId: CardExtId;
+  // why: WP-667 / D-24480 — the KO source zones this entry permits. ABSENT = the
+  // D-24442 wide set (`['hand','discard','inPlay']`), so existing rewarded entries are
+  // byte-unchanged. Radioactive Riot sets `['hand','discard']` (no in-play KO): the
+  // resolve rejects a zone not in this list and the projection lists an empty inPlay set.
+  /** Optional KO-source-zone scope; absent = hand ∪ discard ∪ inPlay (D-24442). */
+  koZones?: ('hand' | 'discard' | 'inPlay')[];
 }
 
 /**

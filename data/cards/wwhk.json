@@ -1930,7 +1930,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Once this turn, if you made at least 6[icon:recruit]this turn, you may KO a card from your hand or discard pile."
+            "Once this turn, if you made at least 6[icon:recruit]this turn, you may KO a card from your hand or discard pile. [keyword:recruit-threshold:6] [keyword:optional-ko-hand-discard]"
           ]
         },
         {

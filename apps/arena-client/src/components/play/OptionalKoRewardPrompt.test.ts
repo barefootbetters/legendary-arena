@@ -225,4 +225,34 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
     assert.equal(calls.length, 2, 'the next queued choice is resolvable (panel not frozen)');
     assert.deepEqual(calls[1]!.args, { zone: 'discard', cardId: 'disc-card-2' });
   });
+
+  test('WP-667: the no-reward variant renders a plain "KO a card" heading and NO in-play option', () => {
+    // why: WP-667 / D-24480 — Radioactive Riot's entry has an empty rewardLabel and an empty
+    // eligibleInPlay (koZones hand/discard). The heading omits the "for a reward (…)" clause,
+    // and no in-play card button renders; hand + discard KO + Decline still work.
+    const { submitMove } = recorder();
+    const noReward: UIPendingOptionalKoReward = {
+      playerID: 'player-0',
+      rewardLabel: '',
+      eligibleHand: [
+        { zone: 'hand', cardId: 'hand-card-1', display: { extId: 'hand-card-1', name: 'Hand Card 1', imageUrl: '', cost: 2 } },
+      ],
+      eligibleDiscard: [
+        { zone: 'discard', cardId: 'disc-card-1', display: { extId: 'disc-card-1', name: 'Discard Card 1', imageUrl: '', cost: 1 } },
+      ],
+      eligibleInPlay: [],
+    };
+    const wrapper = mount(OptionalKoRewardPrompt, {
+      props: { pendingOptionalKoReward: noReward, viewerPlayerId: 'player-0', submitMove },
+    });
+
+    const heading = wrapper.find('.optional-ko-reward-prompt__heading').text();
+    assert.match(heading, /You may KO a card from your hand or discard pile/);
+    assert.ok(!heading.includes('()'), 'no empty reward parentheses');
+    assert.equal(wrapper.find('.optional-ko-reward-prompt__reward').exists(), false, 'no reward label span');
+    assert.ok(wrapper.find('[data-testid="optional-ko-reward-card-hand-hand-card-1"]').exists(), 'hand KO offered');
+    assert.ok(wrapper.find('[data-testid="optional-ko-reward-card-discard-disc-card-1"]').exists(), 'discard KO offered');
+    assert.equal(wrapper.findAll('[data-testid^="optional-ko-reward-card-inPlay-"]').length, 0, 'NO in-play KO offered');
+    assert.ok(wrapper.find('[data-testid="optional-ko-reward-decline"]').exists(), 'Decline available');
+  });
 });

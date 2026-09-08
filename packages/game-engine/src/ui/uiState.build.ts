@@ -218,6 +218,12 @@ function deriveOptionalKoRewardLabel(
   rewardType: string,
   rewardMagnitude: number,
 ): string {
+  // why: WP-667 / D-24480 — the NO-REWARD variant (Radioactive Riot) carries no reward,
+  // so the label is empty; the client omits the reward clause and shows only "You may KO a
+  // card from your hand or discard pile".
+  if (rewardType === 'none') {
+    return '';
+  }
   if (rewardType === 'rescue') {
     return 'Rescue a Bystander';
   }
@@ -1244,13 +1250,22 @@ export function buildUIState(
       // source; project them in zone+index order with a fresh display spread,
       // exactly like the hand/discard lists above (round-trip rule + aliasing
       // defense). Redacted to the chooser only by filterUIStateForAudience.
+      // why: WP-667 / D-24480 — but ONLY when the entry's koZones permits inPlay.
+      // Radioactive Riot's no-reward entry sets koZones ['hand','discard'] (the card
+      // says "hand or discard pile", not "played this turn"), so its inPlay list is
+      // empty — the chooser is never offered an in-play card. Absent koZones = the
+      // wide set, so existing rewarded entries project inPlay exactly as before.
+      const inPlayPermitted =
+        frontReward.koZones === undefined || frontReward.koZones.includes('inPlay');
       const eligibleInPlay: UIEligibleKoHeroCard[] = [];
-      for (const cardId of chooserZones.inPlay) {
-        eligibleInPlay.push({
-          zone: 'inPlay',
-          cardId,
-          display: { ...resolveDisplay(cardId, gameState) },
-        });
+      if (inPlayPermitted) {
+        for (const cardId of chooserZones.inPlay) {
+          eligibleInPlay.push({
+            zone: 'inPlay',
+            cardId,
+            display: { ...resolveDisplay(cardId, gameState) },
+          });
+        }
       }
       pendingOptionalKoReward = {
         playerID: frontReward.playerID,
