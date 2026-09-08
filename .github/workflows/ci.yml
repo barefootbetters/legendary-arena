@@ -254,6 +254,19 @@ jobs:
       - name: WORK_INDEX row-pattern check
         run: pnpm workindex:rows:check
 
+      # why (WP-671 / D-24485): the govern-close consistency guard — the sibling
+      # of the row-pattern check above. It fails when a WORK_INDEX `- [ ]` WP row
+      # has demonstrably executed (its `reserves`-owned DECISIONS entry is Active,
+      # or its own status clause reads as executed). This is the recurring
+      # executed-but-row-open drift (WP-391; WP-657..665; WP-669/670) that
+      # `roadmap:counts:check` cannot catch because WORK_INDEX and the mindmap go
+      # stale TOGETHER (they agree, so the derived count stays self-consistent).
+      # Detect-only; two file-only signals, so it reads markdown only — no build
+      # dependency and no `fetch-depth: 0` (the git-commit signal that would have
+      # needed full history was scaffolded and not chosen — see D-24485).
+      - name: WORK_INDEX govern-close consistency check
+        run: pnpm workindex:executed:check
+
   # ── 3c. Dashboard gates ──────────────────────────────────────────────────────
   # why: wires the apps/dashboard checks from
   # apps/dashboard/docs/code-checks-and-balances.md §11 into CI. The dashboard is
