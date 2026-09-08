@@ -1843,3 +1843,64 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
     assert.deepEqual(loki.playerZones['0']!.discard, ['st-a']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// General Ross Master Strike — the transform flip (WP-669 / D-24483)
+// ---------------------------------------------------------------------------
+
+describe('mastermindStrikeHandler — General Ross Transform (WP-669 / D-24483)', () => {
+  const generalRoss = 'wwhk-mastermind-general-thunderbolt-ross-general-thunderbolt-ross';
+  const redHulk = 'wwhk-mastermind-general-thunderbolt-ross-red-hulk';
+
+  function makeRossState() {
+    const gameState = makeTestState();
+    gameState.selection.mastermindId = 'wwhk/general-thunderbolt-ross' as LegendaryGameState['selection']['mastermindId'];
+    gameState.mastermind = { ...makeMastermindState(),
+      id: 'wwhk/general-thunderbolt-ross',
+      baseCardId: generalRoss as LegendaryGameState['mastermind']['baseCardId'],
+      alternateFaceId: redHulk as LegendaryGameState['mastermind']['baseCardId'],
+      gameText: ['General Ross text'],
+      faceGameText: { [generalRoss]: ['General Ross text'], [redHulk]: ['Red Hulk text'] },
+      tacticsDeck: [],
+      tacticsDefeated: [],
+      strikePile: [],
+      attachedBystanders: [],
+    };
+    gameState.cardDisplayData = {
+      [generalRoss]: { extId: generalRoss, name: 'General Ross', imageUrl: '', cost: 0 },
+      [redHulk]: { extId: redHulk, name: 'Red Hulk', imageUrl: '', cost: 0 },
+    } as LegendaryGameState['cardDisplayData'];
+    return gameState;
+  }
+
+  it('flips the boss face and updates gameText when the Master Strike fires', () => {
+    const gameState = makeRossState();
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+
+    assert.strictEqual(gameState.mastermind.baseCardId, redHulk, 'the strike flipped General Ross → Red Hulk');
+    assert.strictEqual(gameState.mastermind.alternateFaceId, generalRoss, 'General Ross is now the inactive face');
+    assert.deepStrictEqual(gameState.mastermind.gameText, ['Red Hulk text'], 'gameText follows the new face');
+    const flipLine = gameState.messages.find((entry) => entry.text.includes('transformed into Red Hulk'));
+    assert.ok(flipLine !== undefined && flipLine.outcome === 'applied', 'an applied flip log line is emitted');
+  });
+
+  it('flips back on a second strike (bidirectional)', () => {
+    const gameState = makeRossState();
+    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+    assert.strictEqual(gameState.mastermind.baseCardId, generalRoss, 'a second strike flips Red Hulk → General Ross');
+  });
+
+  it('logs an honest hollow (no flip) when the second face was not captured', () => {
+    const gameState = makeRossState();
+    // why: simulate a not-allowlisted mastermind — no alternateFaceId was captured.
+    delete (gameState.mastermind as { alternateFaceId?: unknown }).alternateFaceId;
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+
+    assert.strictEqual(gameState.mastermind.baseCardId, generalRoss, 'no second face → no flip');
+    const hollow = gameState.messages.find((entry) => entry.text.includes('transform is unmodeled'));
+    assert.ok(hollow !== undefined && hollow.outcome === 'blocked', 'a blocked hollow line explains the unmodeled transform');
+  });
+});

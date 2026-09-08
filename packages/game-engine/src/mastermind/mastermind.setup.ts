@@ -143,6 +143,23 @@ function parseQualifiedId(input: string): { setAbbr: string; slug: string } | nu
 }
 
 // ---------------------------------------------------------------------------
+// Mastermind Transform allowlist (WP-669 / D-24483)
+// ---------------------------------------------------------------------------
+
+// why: WP-669 / D-24483 — a mastermind's SECOND non-tactic face is dropped by
+// findMastermindCards (D-24193), because for the 56 Epic masterminds it is a harder
+// alternate that must not be auto-selected. For a TRANSFORMING mastermind the second
+// face is instead the flip target (General Ross ⇄ Red Hulk). This allowlist is the opt-in
+// (the SUPPORTED_TRANSFORM_BASES hero precedent): only these masterminds capture their
+// second face + populate the transform fields. The other five transforming wwhk
+// masterminds (illuminati-secret-society, king-hulk-sakaarson, m-o-d-o-k, red-king-the,
+// sentry-the) and every Epic mastermind stay on the D-24193 first-face-only path until
+// they are added here with a matching strike resolver.
+const MASTERMIND_TRANSFORM_ALLOWLIST: ReadonlySet<string> = new Set<string>([
+  'wwhk/general-thunderbolt-ross',
+]);
+
+// ---------------------------------------------------------------------------
 // buildMastermindState
 // ---------------------------------------------------------------------------
 
@@ -227,7 +244,7 @@ export function buildMastermindState(
     };
   }
 
-  const { setAbbr, mastermindSlug, baseCard, tacticCards } = resolved;
+  const { setAbbr, mastermindSlug, baseCard, tacticCards, secondFaceCard } = resolved;
 
   // Build base card ext_id
   const baseCardId = `${setAbbr}-mastermind-${mastermindSlug}-${baseCard.slug}` as CardExtId;
@@ -273,6 +290,38 @@ export function buildMastermindState(
     }
   }
 
+  // why: WP-669 / D-24483 — Mastermind Transform. For a mastermind in the transform
+  // allowlist that ships a second non-tactic face, set that face aside as the flip
+  // target: add its fightCost to G.cardStats (so fightMastermind reads the active face's
+  // cost after a flip) and record the two OPTIONAL transform fields. Every other
+  // mastermind skips this block, so alternateFaceId / faceGameText stay ABSENT and the
+  // second face never touches cardStats — a non-transform game (incl. the sentinel)
+  // serializes byte-identically and no state-hash oracle re-pins.
+  let alternateFaceId: CardExtId | undefined;
+  let faceGameText: Record<CardExtId, readonly string[]> | undefined;
+  if (MASTERMIND_TRANSFORM_ALLOWLIST.has(mastermindId) && secondFaceCard !== null) {
+    const secondFaceId =
+      `${setAbbr}-mastermind-${mastermindSlug}-${secondFaceCard.slug}` as CardExtId;
+    cardStats[secondFaceId] = {
+      attack: 0,
+      recruit: 0,
+      cost: 0,
+      fightCost: parseCardStatValue(secondFaceCard.vAttack),
+      fightCostMode: 'static',
+      fightCostBase: 0,
+    };
+    const secondFaceGameText: string[] = [];
+    if (Array.isArray(secondFaceCard.abilities)) {
+      for (const line of secondFaceCard.abilities) {
+        if (typeof line === 'string' && line.length > 0) {
+          secondFaceGameText.push(line);
+        }
+      }
+    }
+    alternateFaceId = secondFaceId;
+    faceGameText = { [baseCardId]: gameText, [secondFaceId]: secondFaceGameText };
+  }
+
   return {
     id: mastermindId,
     baseCardId,
@@ -284,6 +333,11 @@ export function buildMastermindState(
     // strike appends non-grey Heroes to it during play (append-only, no removal).
     hypnoThralls: [],
     gameText,
+    // why: WP-669 / D-24483 — conditional spread so the transform fields are ABSENT (not
+    // `undefined`) for a non-transform mastermind, keeping its serialized state
+    // byte-identical to the pre-WP-669 shape (no hash re-pin).
+    ...(alternateFaceId !== undefined ? { alternateFaceId } : {}),
+    ...(faceGameText !== undefined ? { faceGameText } : {}),
   };
 }
 
@@ -307,6 +361,12 @@ function findMastermindCards(
   mastermindSlug: string;
   baseCard: MastermindCardEntry;
   tacticCards: MastermindCardEntry[];
+  // why: WP-669 / D-24483 — the SECOND non-tactic face, captured but not selected as
+  // the base. null when the mastermind ships only one non-tactic face. buildMastermindState
+  // uses it ONLY for a mastermind in the MASTERMIND_TRANSFORM allowlist (a transforming
+  // mastermind's second boss face); for every other mastermind it is ignored, preserving
+  // the D-24193 first-face-wins behaviour (an Epic variant is still dropped).
+  secondFaceCard: MastermindCardEntry | null;
 } | null {
   const setData = registry.getSet(setAbbr) as MastermindSetData | undefined;
   if (!setData || !Array.isArray(setData.masterminds)) return null;
@@ -317,6 +377,10 @@ function findMastermindCards(
     if (!Array.isArray(mastermind.cards)) continue;
 
     let baseCard: MastermindCardEntry | null = null;
+    // why: WP-669 / D-24483 — the first non-tactic face AFTER the base (the second boss
+    // face of a transforming mastermind). Captured here so buildMastermindState can set it
+    // aside for the flip; still only USED for an allowlisted transforming mastermind.
+    let secondFaceCard: MastermindCardEntry | null = null;
     const tacticCards: MastermindCardEntry[] = [];
 
     for (const card of mastermind.cards) {
@@ -343,6 +407,12 @@ function findMastermindCards(
         // face in registry order, so the loop must keep running to collect
         // them all.
         baseCard = card;
+      } else if (secondFaceCard === null) {
+        // why: WP-669 / D-24483 — the second non-tactic face (a transforming
+        // mastermind's second boss form). Captured, not selected. D-24193 keeps
+        // baseCard as the FIRST face; this only records the runner-up so the
+        // transform flip has a target when the mastermind is allowlisted.
+        secondFaceCard = card;
       }
     }
 
@@ -379,6 +449,7 @@ function findMastermindCards(
       mastermindSlug: mastermind.slug,
       baseCard,
       tacticCards,
+      secondFaceCard,
     };
   }
 

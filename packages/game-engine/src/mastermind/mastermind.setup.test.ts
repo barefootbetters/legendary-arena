@@ -434,3 +434,81 @@ describe('buildMastermindState — hypnoThralls zone (WP-398 / D-24201)', () => 
     assert.deepStrictEqual(state.hypnoThralls, [], 'unresolved-slug early-return must seed hypnoThralls = []');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mastermind Transform — second-face capture (WP-669 / D-24483)
+// ---------------------------------------------------------------------------
+
+/**
+ * A registry whose `wwhk` set holds the transforming General "Thunderbolt" Ross
+ * mastermind — TWO non-tactic faces (General Ross ⇄ Red Hulk) plus two tactics.
+ * `general-thunderbolt-ross` is the one entry in MASTERMIND_TRANSFORM_ALLOWLIST.
+ */
+function createTransformMockRegistry() {
+  const setData = {
+    abbr: 'wwhk',
+    masterminds: [
+      {
+        slug: 'general-thunderbolt-ross',
+        cards: [
+          { slug: 'general-thunderbolt-ross', tactic: false, vAttack: '6*', abilities: ['Master Strike: General Ross Transforms.'] },
+          { slug: 'red-hulk', tactic: false, vAttack: '6*', abilities: ['Master Strike: Red Hulk Transforms.'] },
+          { slug: 'bust-you-down-to-private', tactic: true, vAttack: 6 },
+          { slug: 'call-out-the-army', tactic: true, vAttack: 6 },
+        ],
+      },
+    ],
+  };
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'wwhk' }],
+    getSet: (abbr: string) => (abbr === 'wwhk' ? setData : undefined),
+  };
+}
+
+describe('buildMastermindState — Mastermind Transform (WP-669 / D-24483)', () => {
+  it('captures the second face for an allowlisted mastermind: alternateFaceId + faceGameText + both cardStats', () => {
+    const registry = createTransformMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'wwhk/general-thunderbolt-ross' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    const baseId = 'wwhk-mastermind-general-thunderbolt-ross-general-thunderbolt-ross';
+    const secondId = 'wwhk-mastermind-general-thunderbolt-ross-red-hulk';
+
+    assert.strictEqual(state.baseCardId, baseId, 'the FIRST non-tactic face is the active base (D-24193)');
+    assert.strictEqual(state.alternateFaceId, secondId, 'the SECOND non-tactic face is captured as the flip target');
+    // both faces have a fight cost so fightMastermind reads the active one after a flip
+    assert.ok(cardStats[baseId as CardExtId] !== undefined, 'base face fightCost present');
+    assert.ok(cardStats[secondId as CardExtId] !== undefined, 'second face fightCost present');
+    // faceGameText carries each face's ability lines
+    assert.deepStrictEqual(state.faceGameText?.[baseId as CardExtId], ['Master Strike: General Ross Transforms.']);
+    assert.deepStrictEqual(state.faceGameText?.[secondId as CardExtId], ['Master Strike: Red Hulk Transforms.']);
+    assert.equal(state.tacticsDeck.length, 2, 'the two tactics are the deck; the second face is NOT a tactic');
+  });
+
+  it('does NOT capture a second face for a non-allowlisted mastermind (fields absent, byte-identical)', () => {
+    // core/test-mastermind has a single non-tactic face and is not in the allowlist.
+    const registry = createMockRegistry();
+    const context = makeMockCtx({ numPlayers: 2 });
+    const cardStats: Record<CardExtId, CardStatEntry> = {};
+
+    const state = buildMastermindState(
+      'core/test-mastermind' as CardExtId,
+      registry,
+      context,
+      cardStats,
+    );
+
+    // why: absent (not undefined-valued) — the conditional spread omits them, so the
+    // serialized state is byte-identical to the pre-WP-669 shape (no hash re-pin).
+    assert.ok(!('alternateFaceId' in state), 'alternateFaceId key absent for a non-transform mastermind');
+    assert.ok(!('faceGameText' in state), 'faceGameText key absent for a non-transform mastermind');
+  });
+});

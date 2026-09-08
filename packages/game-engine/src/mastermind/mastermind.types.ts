@@ -72,4 +72,28 @@ export interface MastermindState {
   // modification; the builder always populates it.
   /** Mastermind base card ability text lines. Built at setup, read-only at runtime. */
   readonly gameText?: readonly string[];
+
+  // why: WP-669 / D-24483 — Mastermind Transform. Six wwhk masterminds ship two boss
+  // faces flipped by a Master Strike's [keyword:Transforms] (General Ross ⇄ Red Hulk).
+  // findMastermindCards keeps only the FIRST non-tactic face and drops the rest
+  // (D-24193); for a mastermind in the MASTERMIND_TRANSFORM allowlist, setup instead
+  // ALSO captures the second face here so the flip has a target.
+  //
+  // why: OPTIONAL and populated ONLY for an allowlisted transforming mastermind (the
+  // hypnoThralls?/gameText? optional-field precedent), so a game without a transforming
+  // mastermind — including the sentinel core/dr-doom and the empty-replay guard —
+  // serializes byte-identically and NO state-hash oracle re-pins.
+  //
+  // why: `alternateFaceId` is the currently-INACTIVE face's card ext_id — the flip swaps
+  // it with baseCardId. Both faces' fightCost live in G.cardStats (added at setup), so
+  // fightMastermind reads the new face's cost after a flip with no extra work.
+  /** The inactive second boss face's ext_id (transform masterminds only). Swapped with baseCardId on flip. */
+  alternateFaceId?: CardExtId;
+
+  // why: WP-669 / D-24483 — each face's ability-text lines, keyed by face ext_id, so the
+  // flip can set `gameText` to the newly-active face's text (and the UIState projection
+  // shows the right Master Strike text). Populated only for an allowlisted transforming
+  // mastermind, alongside alternateFaceId.
+  /** Ability text per face ext_id (transform masterminds only) — the source for gameText on flip. */
+  faceGameText?: Record<CardExtId, readonly string[]>;
 }

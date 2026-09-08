@@ -27,6 +27,9 @@ import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWound } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+// why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
+// swaps the boss face on a Master Strike.
+import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // why: WP-577 / D-24386 — Red Skull's strike parks a hand-scoped interactive
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
@@ -100,6 +103,11 @@ const MASTERMIND_CORE_DR_DOOM = 'core/dr-doom';
 // why: core Dr. Doom's Strike affects only players holding EXACTLY this many
 // cards; a player with any other hand size is unaffected.
 const DOOM_STRIKE_HAND_GATE = 6;
+// why: WP-669 / D-24483 — General "Thunderbolt" Ross is the first transforming
+// mastermind. Its Master Strike prints "General Ross [keyword:Transforms], then
+// [Cross-Dimensional Hulk Rampage]" and Red Hulk's flips back — resolveGeneralRossStrike
+// flips the boss face. The named ride-along effect is honest-partial (logged) this slice.
+const MASTERMIND_GENERAL_ROSS = 'wwhk/general-thunderbolt-ross';
 // why: the printed penalty puts exactly this many cards on top of the deck.
 const DOOM_PUT_ON_DECK_COUNT = 2;
 
@@ -1143,6 +1151,56 @@ function resolveDoctorOctopusReveal(
  * @param _implementationMap - Handler map (unused; reserved for future cascading strikes).
  * @returns Array of RuleEffect descriptions to apply.
  */
+/**
+ * Resolves General "Thunderbolt" Ross's Master Strike — the flip (WP-669 / D-24483).
+ *
+ * The printed text is "General Ross [keyword:Transforms], then [Cross-Dimensional Hulk
+ * Rampage]" on the General Ross face and "Red Hulk [keyword:Transforms], then …" on the
+ * Red Hulk face. This flips the boss to its other face via transformMastermind (which
+ * swaps baseCardId ↔ alternateFaceId and updates gameText); the new face's fightCost is
+ * already in G.cardStats and its display in G.cardDisplayData, so fightMastermind and the
+ * UIState projection follow with no extra work.
+ *
+ * The named ride-along effect ([keyword:Cross-Dimensional Hulk Rampage] / [keyword:Wounded
+ * Fury]) is HONEST-PARTIAL this slice — logged as unmodeled, not resolved.
+ *
+ * If the mastermind was not captured with a second face (not in the setup allowlist),
+ * `alternateFaceId` is absent and the flip is a no-op — logged as an honest hollow so the
+ * unmodeled transform is observable rather than silent. Never throws.
+ *
+ * @param gameState - The game state; `gameState.mastermind` is rebound to the flipped face.
+ */
+function resolveGeneralRossStrike(gameState: LegendaryGameState): void {
+  const mastermind = gameState.mastermind;
+  if (mastermind.alternateFaceId === undefined) {
+    // why: reached only if General Ross is not in the MASTERMIND_TRANSFORM allowlist, so
+    // its second face was dropped at setup and it cannot flip. Log a `blocked` hollow so
+    // the unmodeled transform is visible rather than a silent no-op.
+    pushLog(gameState,
+      `[Master Strike] ${resolveCardName(gameState.cardDisplayData, mastermind.baseCardId)} would transform, but its second boss face was not loaded — the transform is unmodeled.`,
+      'blocked',
+    );
+    return;
+  }
+  const fromName = resolveCardName(gameState.cardDisplayData, mastermind.baseCardId);
+  // why: the flip returns a new MastermindState (copy-then-override); rebind it so every
+  // unrelated field (tactics, strikePile, attachedBystanders) survives.
+  gameState.mastermind = transformMastermind(mastermind);
+  const toName = resolveCardName(gameState.cardDisplayData, gameState.mastermind.baseCardId);
+  // why: WP-434 — a realized flip is `applied` (green): the boss swapped faces.
+  pushLog(gameState,
+    `[Master Strike] ${fromName} transformed into ${toName}.`,
+    'applied',
+  );
+  // why: WP-669 honest-partial — the named ride-along effect ([Cross-Dimensional Hulk
+  // Rampage] / [Wounded Fury]) is not modeled this slice; log it `neutral` so the gap is
+  // observable without claiming the whole strike is blocked.
+  pushLog(gameState,
+    `[Master Strike] ${toName}'s follow-on effect is not yet modeled.`,
+    'neutral',
+  );
+}
+
 export function mastermindStrikeHandler(
   gameState: LegendaryGameState,
   strikeContext: unknown,
@@ -1180,6 +1238,10 @@ export function mastermindStrikeHandler(
     resolveCo2eMagnetoStrike(gameState);
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_OCTOPUS) {
     resolveDoctorOctopusStrike(gameState, resolveShuffleFunction(strikeContext));
+  } else if (mastermindId === MASTERMIND_GENERAL_ROSS) {
+    // why: WP-669 / D-24483 — General Ross's Master Strike flips the Mastermind
+    // to its other boss face (General Ross ⇄ Red Hulk).
+    resolveGeneralRossStrike(gameState);
   }
 
   // why: WP-200 — terminal emission AFTER both the generic bystander
