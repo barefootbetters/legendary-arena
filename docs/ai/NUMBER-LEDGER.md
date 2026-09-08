@@ -298,6 +298,7 @@ high-water: 422
 - WP-663 — shadowed-thoughts-play-villain-top (reserved 2026-09-07, claude/wp-shadowed-thoughts)
 - WP-664 — transform-deck-ui-projection (reserved 2026-09-07, worktree-wp-transform-deck-ui)
 - WP-665 — amadeus-cho-transform (reserved 2026-09-07, worktree-wp-amadeus-cho-transform)
+- WP-666 — playmat-mat-backgrounds (reserved 2026-09-07, claude/playmat-mat-backgrounds)
 
 ## EC
 
@@ -556,6 +557,7 @@ high-water: 457
 - EC-700 — shadowed-thoughts-play-villain-top (WP-663; game-engine + arena-client: Emma Frost "Shadowed Thoughts" — "[hc:covert]: You may play the top card of the Villain Deck. If you do, you get +2 Attack." A new OPTIONAL pending-choice mechanic — park a yes/no choice after the covert gate passes; on accept, play the top villain-deck card as a normal city reveal via the villainDeck.reveal path + grant +2 attack — modeled on optional-ko-reward [WP-249], with a client prompt) (reserved 2026-09-07, claude/wp-shadowed-thoughts)
 - EC-701 — transform-deck-ui-projection (WP-664; game-engine UIState projection + arena-client render: the Transform second-form side deck G.transformDeck [WP-657/D-24468] exists in engine state and the She-Hulk swap consumes it [WP-658], but it is projected NOWHERE — so the player cannot see the separate transform deck. Add a read-only public UIState.transformDeck?: UIDisplayEntry[] zone [the koPile/strikePile shared-board pattern: buildDisplayEntries in the build, deepCopyDisplayEntries unredacted through filterUIStateForAudience, survival-tested per the Board-Visible Field Rule] + a face-up TransformDeck.vue leaf wired into PlayDesktop/PlayMobile. NO G change, NO move, NO card data, NO hash re-pin) (reserved 2026-09-07, worktree-wp-transform-deck-ui)
 - EC-702 — amadeus-cho-transform (WP-665; game-engine + card-data: expand the [keyword:Transform] runtime to Amadeus Cho's Gamma-Draining Nanites [WP-658 held it behind the She-Hulk-only allowlist]. It prints "Draw a card. Then, if you drew two cards this turn, Transform into Like Totally Smart Hulk" — the transform is gated on an unmodeled "drew-2" condition. Add a per-turn TurnEconomy.cardsDrawn counter [effect draws only, incremented in heroEffectDraw, NOT the start-of-turn refill], a new cardsDrawnThisTurnAtLeast wait-and-see condition, a [keyword:draw-threshold:2] marker on gamma abilities[1] gating only the transform hook, and gamma into SUPPORTED_TRANSFORM_BASES; reuses the WP-568/656 deferred-grant window unchanged. Hash re-pin [new TurnEconomy field]; ledger flip; card-data regen) (reserved 2026-09-07, worktree-wp-amadeus-cho-transform)
+- EC-703 — playmat-mat-backgrounds (WP-666; arena-client only: make the shipped-but-inert playmat skin selector actually paint a board-background image behind the play surface with a legibility scrim, host mat art by CDN URL, and expand the closed skin set to a curated named-mat set) (reserved 2026-09-07, claude/playmat-mat-backgrounds)
 
 ## D
 
@@ -804,3 +806,6 @@ section below) and the allocation protocol in
 - D-24474 — shadowed-thoughts-play-villain-top (reserved 2026-09-07, claude/wp-shadowed-thoughts)
 - D-24475 — transform-deck-ui-projection (reserved 2026-09-07, worktree-wp-transform-deck-ui)
 - D-24476 — amadeus-cho-transform (reserved 2026-09-07, worktree-wp-amadeus-cho-transform)
+- D-24477 — playmat-background-paint-layer (WP-666. Activates the D-13002 "board background image" element that shipped inert: a real paint surface behind the play board driven by --skin-board-image + a legibility scrim. reserved 2026-09-07, claude/playmat-mat-backgrounds)
+- D-24478 — playmat-named-mat-set (WP-666. Unlocks the D-13003 three-skin lock: replaces the fixed classic/comic/minimal set with a curated named-mat set; safe first-party/abstract art ships now, licensed Marvel/UD mat art is a gated drop-in. reserved 2026-09-07, claude/playmat-mat-backgrounds)
+- D-24479 — playmat-cdn-asset-hosting (WP-666. Unlocks the D-13001 bundled-at-MVP discovery mechanism: mat background art is loaded by URL from images.legendary-arena.com with a bundled fallback, so heavy mat JPGs stay out of the client bundle. reserved 2026-09-07, claude/playmat-mat-backgrounds)
