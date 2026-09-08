@@ -235,7 +235,7 @@ lock-in point:
 ```
 Ubuntu 24.04 LTS  (dedicated host is the end-state; co-located w/ prod OK to bootstrap)
 │
-├── PostgreSQL + pgvector        # system of record — knowledge + embeddings (HNSW)
+├── PostgreSQL + pgvector        # derived retrieval store — chunks + embeddings + FTS + provenance (HNSW)
 │
 ├── Ingestion pipeline           # deterministic, agent-independent; vector layer only
 │     reference corpora → structure-aware chunk → embed → upsert (+ provenance)
@@ -360,7 +360,31 @@ Web search                                         (5. last resort)
 ```
 
 Escalating past a tier is a signal the earlier tier is thin (a missing index
-entry, an unrecorded decision) — worth fixing, not just routing around.
+entry, an unrecorded decision) — worth fixing, not just routing around. **For a
+*governed* question, web search (tier 5) is not the fallback:** a missing Decision
+or Work Packet is a gap to admit and log as a missing-index finding (see
+[Success criteria](#success-criteria)), never a hole to paper over with an outside
+source. Tier 5 is for genuinely external research only.
+
+### Retrieval control plane
+
+The five-tier waterfall is only real if **one component owns it** — otherwise a
+model skips straight to semantic search or greps the whole tree, and
+navigation-first quietly dies. So the waterfall is not advice to the agent; it is
+enforced at a single retrieval entry point (**Preferred**):
+
+- **One `retrieve` tool, or a mandatory router skill that must run before any
+  other retrieval tool.** It walks tiers 1→5 in order, stops at the first tier
+  that answers, and returns sources with provenance. The
+  [knowledge-query MCP surface](#knowledge-query-mcp-surface) implements **tier 4
+  only** (semantic recall); the control plane is what wires tiers 1–3 — direct
+  reference, `INDEX.md` navigation, grep / Postgres FTS — *ahead* of it, so vector
+  search is reached last, not first.
+- **The agent does not choose the tier.** Handing a model raw Filesystem / Git /
+  Postgres tools and *hoping* it navigates first is exactly the failure this
+  prevents — *Permissions Beat Prompts* applied to retrieval. This is a
+  higher-leverage component than the ingestion-framework choice: it is what makes
+  the ~90/10 navigation-vs-vector split hold at query time.
 
 ### Ingestion and retrieval
 
@@ -434,6 +458,17 @@ earns *authority* in the corpus — so any future autonomous ingester is allowed
 only where it lands captures as Transient/Reference with provenance and cannot
 self-promote.
 
+**Write scope is an enforced jail, not a prompt.** The extraction skill's
+filesystem MCP write access is confined to a capture inbox (a `captures/` or
+per-domain `inbox/` directory) — never the Authoritative tree. Each capture lands
+as Markdown with frontmatter carrying `source`, `date`, `domain`, `class`
+(Transient/Reference only), and `content_hash`; a check rejects any note written
+outside the inbox or marked Authoritative. Adding the `INDEX.md` link (step 4
+above) is a **separate, reviewed step**, never something the model does in the same
+turn that authored the note. This is *Permissions Beat Prompts* at the write layer:
+the promotion boundary holds because the credential cannot cross it, not because
+the prompt asked nicely.
+
 ### Knowledge-query MCP surface
 
 Every agent reaches the vector layer through **one shared MCP server**, not by
@@ -454,10 +489,13 @@ retrieved. The contract is deliberately narrow:
   governance documents that were deliberately kept out of the vector layer** —
   those are reached by exact/navigational retrieval, not this surface.
 
-Open WebUI retrieves from the *same* knowledge store — either by calling this
-knowledge-query server or via its own RAG features against the identical Postgres
-table. Either way the data and provenance are the same; the chat surface stays a
-replaceable front-end, not a second source of truth.
+Open WebUI retrieves from the *same* knowledge store by calling this
+knowledge-query server (or a thin HTTP wrapper over the identical SQL) — **never
+through its own built-in RAG or document-upload collections.** Left enabled, Open
+WebUI grows a second, private index and provenance store, violating *Single Source
+of Truth* on day one (an explicit [anti-goal](#edge-cases)). v1 rule: disable Open
+WebUI's document upload and built-in RAG; the chat surface stays a replaceable
+front-end over the one retrieval surface, not a second source of truth.
 
 ### Vector and embedding strategy
 
@@ -468,9 +506,11 @@ see [Retrieval strategy](#retrieval-strategy-navigation-first-vector-where-it-ea
   embeddings inside the same Postgres instance as the knowledge — one store, one
   backup, one restore — rather than adding a separate vector database to own.
 - **`nomic-embed-text`** (768-dimension, Apache-2.0, strong CPU performance,
-  long context) is a sound default embedding model for a CPU-only host.
-  **BGE-M3** is the alternative when higher-quality or multilingual retrieval is
-  wanted.
+  long context) is a sound default embedding model for a CPU-only host. A
+  same-dimension higher-quality/multilingual alternative is
+  **`nomic-embed-text-v2-moe`** (also 768-d). **BGE-M3** is *not* a drop-in — it is
+  **1024-d**, so choosing it means a wider `embedding` column and a full re-embed,
+  not a config flip (see [Embedding and schema invariants](#embedding-and-schema-invariants)).
 - **Open formats only in the store.** Never persist a proprietary,
   single-vendor-readable embedding format into the knowledge base — that would
   quietly break *Model Independence* (see Edge Cases).
@@ -489,19 +529,63 @@ the actual DDL lives in the future runbook, not here:
 
 | Column | Purpose |
 |---|---|
-| `id` | Stable node identifier |
-| `embedding` | `vector(768)` (nomic-embed-text) |
-| `content` | Chunk text |
+| `id` | Content-addressed primary key (see invariants below) — never a random UUID, so re-ingest upserts instead of duplicating |
+| `embedding` | `vector(D)` where D is the embedder's native dimension (768 for nomic-embed-text, 1024 for BGE-M3) — D is a stored property |
+| `content` | Chunk text — a *derived copy* of the source, like the index |
 | `source_path` | Repo-relative (or absolute) path to the source |
 | `domain` | Engineering / Legendary Arena / … |
+| `sensitivity` | owner-only vs hosted-OK — separate axis from authority class |
 | `header_path` | Markdown header trail (`# A → ## B → …`) |
 | `content_hash` | SHA-256 of the source chunk at ingest time |
 | `git_commit` | Commit that produced the source (when Git-backed) |
+| `source_mtime` | Checksum / mtime / origin URI for non-Git sources (PDFs, mail) |
 | `ingested_at` | Timestamp of the upsert |
 
 An HNSW index rides the `embedding` column; `domain` and `source_path` carry
 plain indexes for fast metadata filtering; full-text search uses Postgres's
 existing `tsvector` facilities.
+
+### Embedding and schema invariants
+
+Short contracts the eventual DDL and ingestion script must honour (the DDL itself
+lives in the runbook). These are **Preferred** — they can change, but each is a
+schema decision, not a config flip, and getting any of them wrong silently
+corrupts recall or the store:
+
+- **Postgres holds only *derived* retrieval artifacts.** Chunks, embeddings, FTS
+  vectors, and provenance are all rebuildable from the authoritative corpus
+  (Git / ewiki / domain repos). The `content` column is a *derived copy*, exactly
+  like the vector index — a restore that brings back Postgres but not the source
+  corpus is **not** a recovered brain (see [Backup and recovery](#backup-and-recovery)).
+- **Chunk primary key is content-addressed**, so incremental re-ingest upserts
+  rather than duplicates:
+  `id = sha256(source_path + "\n" + header_path + "\n" + chunk_ordinal + "\n" + content_hash)`.
+- **Delete and rename need tombstones.** Incremental-by-content-hash ingest must
+  remove chunks whose source is gone or whose heading moved, or a deleted PDF /
+  renamed section leaves zombie chunks that still get cited. Rebuild-from-source is
+  the backstop; day-to-day ingest still reconciles removals.
+- **Embedder change = full rebuild.** The embedding dimension is a stored property
+  of the column (`vector(768)` for `nomic-embed-text`, **1024** for BGE-M3), so
+  switching embedders means an `ALTER` + a full re-embed, never an in-place swap.
+  Pin the **embedder backend build/tag** (e.g. the Ollama image): the *same* model
+  name on a different backend produces different vectors.
+- **`nomic-embed-text` needs task prefixes** — `search_document:` at ingest,
+  `search_query:` at query; omitting them measurably drops recall. Embeddings are
+  **L2-normalized** and indexed for **cosine** (`vector_cosine_ops` / `<=>`).
+- **Provenance for non-Git sources.** `git_commit` is empty for PDFs, transcripts,
+  and mail — the only material actually vectorized — so every chunk also carries a
+  `source_mtime` / checksum / origin URI, or citations on the reference corpus are
+  incomplete.
+- **FTS language is not the default.** A plain `english` `tsvector` handles
+  Barefoot Betters / mixed-domain research poorly; use a per-domain text-search
+  config, or `simple` + a trigram index for the pilot.
+- **Filtered ANN needs iterative scan.** Domain / `source_path` filters combined
+  with HNSW is a known recall-miss mode; enable pgvector iterative scans
+  (`hnsw.iterative_scan`) so a narrow filter does not make the knowledge-query
+  server look broken.
+- **`sensitivity` is stored, separate from authority class** (see
+  [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)),
+  so the query surface can withhold owner-only domains from a hosted model.
 
 ### Hosting and security posture
 
@@ -521,15 +605,21 @@ existing `tsvector` facilities.
   posture, weight **reliability and your own rehearsed backups over the cheapest
   promo price** — several budget VPS lines bundle no backups and show clusters of
   short outages, so the recovery story stays the operator's to own (which this
-  architecture already requires). A roughly **8 GB RAM / 2 vCPU** box comfortably
-  runs Postgres + LiteLLM + Open WebUI + CPU embeddings; step up to the 16 GB
-  class if a small local model is kept resident or more agents run concurrently.
+  architecture already requires). A roughly **8 GB RAM / 2 vCPU** box runs
+  Postgres + LiteLLM + Open WebUI + CPU embeddings, but the budget is tight once
+  voice is added: local Whisper (STT) and a **separate TTS sidecar** — Piper or
+  Kokoro behind an OpenAI-shaped audio service (Speaches / Wyoming-style), *not*
+  built into Open WebUI — are additional containers, so **16 GB is the honest
+  bootstrap floor when embeddings and voice run concurrently**, and the 16 GB
+  class is also where a small resident local model or more concurrent agents
+  belong.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
   end-state need not be a plain VPS: a **unified-memory accelerated box** — the
-  2026 NVIDIA DGX Spark / GB10 class, ~128–256 GB of LPDDR5 shared between CPU and
-  GPU over a fast interconnect — now runs large quantized mixture-of-experts models
+  2026 NVIDIA DGX Spark / GB10 class, ~128 GB of LPDDR5X per unit (~273 GB/s; two
+  units ≈256 GB linked over ConnectX-7) shared between CPU and
+  GPU — now runs large quantized mixture-of-experts models
   (DeepSeek-class) *locally* at usable speed (order tens of tokens/second, still
   usable at 100k-plus context) for a fraction of a discrete multi-GPU cluster's
   cost. That is what makes the "route sensitive queries to a local model"
@@ -618,6 +708,16 @@ property of the *content* rather than the query:
 | **Authoritative** | Decisions, Work Packets, ECs, runbooks, indexes | Navigation / exact only — **never vectorized** |
 | **Reference** | Research PDFs, transcripts, long-form notes | Vectorized (the minority layer) |
 | **Transient** | Inbox captures, scratch files, session outputs | Not ingested at all |
+
+**Sensitivity is a separate axis from authority class.** Authority class decides
+*how a thing is retrieved*; **sensitivity** (owner-only vs hosted-OK) decides
+*which model may see it*. They are orthogonal — a Reference research PDF can be
+highly sensitive (client engineering data, formulations) while an Authoritative
+Decision is not. Sensitivity rides as its own stored column (see
+[Embedding and schema invariants](#embedding-and-schema-invariants)) so the
+[knowledge-query surface](#knowledge-query-mcp-surface) can withhold owner-only
+domains from a hosted model, and hosted STT / inference never receives them (see
+[Edge Cases](#edge-cases)).
 
 **Lifecycle.** `Capture → Normalize → Store → Reference → Review → Archive`. The
 rules that keep it honest: a **raw capture is not authoritative**; a normalized
@@ -1157,6 +1257,16 @@ doing its job. The platform is successful when the operator can:
   source file and heading.
 - **Onboard a new domain without an architecture change** — a new folder, its
   `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
+- **Pass a small eval set on every meaningful change** — a fixture of ~20
+  questions: ~10 governance lookups that must resolve to a named Decision / Work
+  Packet / `INDEX.md` with a matching `content_hash`; ~5 "should say *I don't know*
+  / file a missing-index finding" questions (deliberately absent entries); and ~5
+  reference-corpus semantic questions. A **citation verifier** confirms every cited
+  `content_hash` actually exists and matches.
+- **Capture every failure in a durable log** — query log, citation-miss log (a
+  cited chunk that was wrong or missing), and verification outcomes — so *Every
+  Failure Upgrades the System* has somewhere to land (the feedback surface under
+  [Operating discipline](#operating-discipline)).
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
 
@@ -1330,6 +1440,32 @@ This is the summary index; the individual gotchas and their nuances live in
   short verbal pointer in the spoken answer, the full provenance in the chat pane.
   A voice surface that reads only the spoken answer and drops the pane citation is
   a governance regression, not a convenience.
+- **Open WebUI collections are not a knowledge base (anti-goal).** Open WebUI's
+  built-in document upload / RAG builds its *own* private index and provenance
+  store, which is a second source of truth the moment it is used. v1 disables
+  WebUI document upload and built-in RAG; the chat surface talks only to the
+  [knowledge-query surface](#knowledge-query-mcp-surface) (or a thin HTTP wrapper
+  over the same SQL). *Single Source of Truth* has to hold on day one, not after a
+  cleanup.
+- **Retrieved Reference chunks are an injection surface.** Navigation-first
+  protects governance docs, but the moment a vectorized PDF / transcript / mail
+  chunk enters context it can carry prompt-injection text. Treat retrieved content
+  as data, never instructions; keep write actions behind the separate permission
+  boundary (*Read-Only Connectors First*, the write-jail under
+  [Knowledge extraction](#knowledge-extraction-operator-triggered)), so a poisoned
+  chunk cannot cause a write, a send, or a promotion.
+- **Hosted inference must not see owner-only domains.** The knowledge-query surface
+  enforces the `sensitivity` column: a hosted model (or hosted STT) never receives
+  Engineering or Barefoot Betters material flagged owner-only — those route to a
+  local CPU model, or the surface returns nothing rather than leak. Sensitivity is
+  a stored property, not a prompt instruction.
+- **Single-operator tenancy still needs hardening.** Disable Open WebUI signup and
+  run one user; **pin `WEBUI_SECRET_KEY`** (it regenerates on restart and logs you
+  out otherwise); jail the filesystem MCP to explicit allowed roots (no `~`, no
+  `/`, no game-server secrets); and give co-location real isolation — a separate
+  Unix user, its own Docker network, memory caps, and an independent backup
+  destination — not just a shared box (the isolation the
+  [bootstrap callout](#proposed-stack) names, made concrete).
 
 ## History
 
@@ -1530,6 +1666,37 @@ This is the summary index; the individual gotchas and their nuances live in
   boundaries" (the section's pre-rename name) now reads "the current
   implementation choices." Presentation and wording only — **no Locked /
   Preferred / Open decision changed**, no `DECISIONS.md` entry.
+- **2026-09-08 — implementation contracts added (external review, Preferred, no
+  re-lock).** Acted on a technical design review. **Correctness:** resolved the
+  Postgres-vs-Git "system of record" contradiction — the stack diagram and the
+  new invariants now state that Postgres holds only *derived* retrieval artifacts
+  (chunks / embeddings / FTS / provenance; `content` is a derived copy) while
+  authoritative knowledge stays in Git / ewiki / domain repos; corrected BGE-M3 to
+  **1024-d** (not a drop-in for a `vector(768)` column) and added
+  `nomic-embed-text-v2-moe` as the same-dimension alternative; made web search a
+  non-fallback for governed questions (admit the gap, file a missing-index
+  finding); corrected the Spark/GB10 memory spec (~128 GB LPDDR5X per unit,
+  ConnectX-7 link). **New Preferred contracts (short; DDL stays in the runbook):**
+  a [Retrieval control plane](#retrieval-control-plane) (one `retrieve` tool / a
+  mandatory router owns the waterfall — tiers 1–3 ahead of tier-4 vector);
+  [Embedding and schema invariants](#embedding-and-schema-invariants) (content-
+  addressed chunk PK, tombstones for delete/rename, embedder-change = full rebuild,
+  dimension-as-stored-property, nomic task-prefixes + cosine + L2-normalize +
+  pinned backend, non-Git provenance, non-default FTS language, filtered-HNSW
+  iterative scan); **sensitivity as an axis distinct from authority class**; an
+  enforced **write-jail** for the extraction skill (inbox-only, capture
+  frontmatter, INDEX.md patch a separate reviewed step); an
+  eval-set + citation-verifier + failure-log added to [Success criteria](#success-criteria);
+  and Edge Cases for **Open WebUI collections are not a knowledge base**, retrieved-
+  chunk prompt injection, hosted-inference sensitivity enforcement, and
+  single-operator tenancy hardening (`WEBUI_SECRET_KEY`, signup off, MCP filesystem
+  jail, co-location isolation). Local TTS named as a separate sidecar with an honest
+  16 GB bootstrap floor when voice + embeddings run concurrently. Everything new is
+  **Preferred** (finalized in the runbook / a Work Packet) — **no Locked decision
+  changed**, no `DECISIONS.md` entry; navigation-first and never-vectorize-governance
+  stay Locked. Editorial trims (move the coach section off-page, collapse History,
+  a v1 build checklist) and the build artifacts (census, INDEX.md, router spec,
+  DDL) are deliberately **not** in this pass.
 
 ## Open Questions
 
