@@ -1,0 +1,23 @@
+/* Shared theme for the licensed Marvel / Upper Deck play-mat skins (WP-666
+   follow-up — the ewiki play-mats catalogue, brought into the game per Jeff).
+   These are full-colour photographic mat scans, so they carry a strong scrim:
+   dimmed to atmosphere so the labeled placeholder slots + cards stay legible on
+   top, and so a LAYOUT mat's own printed zones recede behind the live board's
+   slots rather than fighting them. All nine mat skins share this one class list
+   (each entry's themeCssUrl points here); their images load from
+   images.legendary-arena.com/play-mats/ (D-24479 CDN discovery). */
+.skin-loki,
+.skin-darkcity,
+.skin-darkphoenix,
+.skin-painttown,
+.skin-thanos,
+.skin-villains,
+.skin-spidermanart,
+.skin-thanosart,
+.skin-wolverine {
+  --skin-board-background: #14161f;
+  --skin-board-foreground: #f4f5fb;
+  --skin-card-frame: #c9a24b;
+  --skin-accent: #b23b3b;
+  --skin-board-scrim: rgba(8, 10, 18, 0.66);
+}

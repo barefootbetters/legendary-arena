@@ -38,10 +38,17 @@ describe('WP-130 prefs/playmatStore', () => {
   });
 
   test('availableSkins exposes the closed set in manifest insertion order', () => {
-    // WP-666 / D-24478: the curated named-mat set (five entries) in manifest
-    // insertion order — the three originals followed by the two named mats.
+    // WP-666 / D-24478: the curated set in manifest insertion order — the five
+    // first-party skins followed by the nine licensed Marvel / Upper Deck mats.
     const store = usePlaymat();
-    assert.deepEqual([...store.availableSkins], ['classic', 'comic', 'minimal', 'midtown', 'cosmic']);
+    assert.deepEqual(
+      [...store.availableSkins],
+      [
+        'classic', 'comic', 'minimal', 'midtown', 'cosmic',
+        'darkphoenix', 'thanos', 'villains', 'loki', 'darkcity', 'painttown',
+        'thanosart', 'wolverine', 'spidermanart',
+      ],
+    );
   });
 
   test('availableSkins is the same closed set across repeated store accesses', () => {
