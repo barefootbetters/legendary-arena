@@ -1,0 +1,82 @@
+/*
+ * playmat-slots.css — the "layout mat" zone-slot layer (WP-666 follow-up).
+ *
+ * Turns the play board's zones into labeled placeholder SLOTS over the playmat
+ * background: each zone reads as a frosted panel with a soft border + rounded
+ * corners and an uppercase mat-style label, and empty City spaces read as
+ * dashed "place a card here" slots. The mat shows in the gaps, giving the
+ * physical layout-mat feel (Hero Deck / Villain Deck / City / HQ / Mastermind /
+ * Scheme / Wounds / Bystanders / …) that the ewiki `play-mats` page catalogues.
+ *
+ * why (global, not scoped, + !important): this is a deliberate CROSS-COMPONENT
+ * visual layer. The zone boxes live in ~10 different play child components
+ * (SharedDecks, CityRow, KOPile, MasterStrikePile, SchemeTwistPile,
+ * MastermindTile, SchemeTile, the deck/discard/victory panels…), each with its
+ * own Vue-scoped box styling. A `.play-viewport`-prefixed global rule reaches
+ * all of them from one place; `!important` reliably wins the specificity tie
+ * against the per-component scoped `[data-v-*]` box rules regardless of style
+ * injection order. Every selector is prefixed with `.play-viewport` so the
+ * treatment is confined to the play board and never bleeds to other routes.
+ *
+ * Loaded by `PlayViewport.vue` so it ships only with the board.
+ *
+ * @see WP-666 / EC-703 (playmat backgrounds); Jeff's layout-mat placeholder ask.
+ */
+
+/* The frosted labeled slot — the common treatment for every zone box. */
+.play-viewport .shared-decks__cell,
+.play-viewport .master-strike-pile,
+.play-viewport .scheme-twist-pile,
+.play-viewport .city-space-deck,
+.play-viewport .play-desktop__mastermind-zone,
+.play-viewport .play-desktop__scheme-zone,
+.play-viewport .play-desktop__hq-zone,
+.play-viewport .ko-pile,
+.play-viewport [class*="victory"],
+.play-viewport [class*="your-deck"],
+.play-viewport [class*="your-discard"],
+.play-viewport [class*="player-deck"],
+.play-viewport [class*="player-discard"] {
+  background: rgba(248, 249, 252, 0.82) !important;
+  border: 1px solid rgba(40, 44, 66, 0.30) !important;
+  border-radius: 9px !important;
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+  padding: 0.5rem 0.6rem !important;
+}
+
+/* Empty City spaces read as dashed "place a card here" slots. */
+.play-viewport .city-space-empty {
+  background: rgba(248, 249, 252, 0.42) !important;
+  border: 1.5px dashed rgba(40, 44, 66, 0.55) !important;
+  border-radius: 9px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 5.5rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  opacity: 0.92 !important;
+  color: #1c2333 !important;
+}
+
+/* Zone labels read as printed mat labels. */
+.play-viewport .shared-decks__name,
+.play-viewport .master-strike-pile__count,
+.play-viewport .scheme-twist-pile__count,
+.play-viewport .city-space-deck header {
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  opacity: 0.72 !important;
+}
+
+/* Keep the Villain Deck / Hero Deck count boxes compact rather than stretching
+   across the row (they are narrow labeled stacks on a physical mat). */
+.play-viewport .city-space-deck {
+  width: -moz-fit-content;
+  width: fit-content;
+  min-width: 4.5rem;
+}
