@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-669 — Mastermind Transform runtime: flip primitive + second-face capture (General Ross first slice) (EC-706 / D-24483) (2026-09-08)
+
+**User-Visible Surface — `play.legendary-arena.com`.** Six `wwhk` Masterminds are double-faced (General
+Ross ⇄ Red Hulk, Illuminati, King Hulk, M.O.D.O.K., Red King, the Sentry ⇄ the Void) and flip between boss
+faces off a Master Strike's `[keyword:Transforms]`, but `mastermind.setup.ts` keeps only the **first**
+non-tactic face and drops the rest (D-24193), so the second boss never loads and the flip is inert. This is
+the **first slice** of the Mastermind Transform arc — the mastermind analog of WP-658.
+
+**What shipped.** A `MASTERMIND_TRANSFORM_ALLOWLIST` (starting `wwhk/general-thunderbolt-ross`) gates
+second-face capture; the other five stay honest-partial. Setup, for an allowlisted mastermind, captures the
+second non-tactic face — adds its `fightCost` to `G.cardStats` and stores two **optional** `MastermindState`
+fields, `alternateFaceId?` (the inactive face) + `faceGameText?` (per-face ability lines), the `hypnoThralls?`
+precedent, emitted via a conditional spread so they are **absent** for every other mastermind. A pure
+`transformMastermind` helper swaps `baseCardId ↔ alternateFaceId` and re-points `gameText` (copy-then-override,
+bidirectional, no-op without a captured face). A `resolveGeneralRossStrike` branch (dispatched on
+`G.selection.mastermindId`) flips the boss on its Master Strike, logs the flip `applied`, and logs the named
+ride-along effect (Cross-Dimensional Hulk Rampage / Wounded Fury) `neutral` as honest-partial; a mastermind
+whose second face was not captured logs a `blocked` hollow instead of a silent no-op. The second face's
+`cardDisplayData` is already built and UIState resolves `display` from `baseCardId`, so the play surface shows
+the flipped face with **no projection change**.
+
+**Gates.** Engine suite **3159/3159**; `pnpm -r build` 0; **NO card-data / derived-artifact change** (both
+faces already exist in `wwhk.json`); **NO hash re-pin** — the new fields are optional + allowlist-gated, so a
+non-transform game (incl. the sentinel `core/dr-doom`) is byte-identical and both pin tests (`PRE_WP080_HASH`,
+sentinel `finalStateHash`) pass unchanged. Control: dropping `wwhk/general-thunderbolt-ross` from the allowlist
+makes setup skip the capture and the strike fall to the honest hollow — the allowlist is load-bearing. **D-24026
+live-on-surface** (a real General Ross match flips to Red Hulk on a Master Strike) is operator-pending. **Out of
+scope (follow-ups):** the other 5 masterminds, the named strike effects, and the whole Scheme Transform mechanic
+(`[rule:Transforms]` / Chthon — WP-670).
+
 ### wwhk hero arc — D-24026 live-verification CLOSED for WP-658 / WP-662 / WP-665 / WP-667 / WP-668 (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** One operator solo `core/red-skull` / Midtown Bank

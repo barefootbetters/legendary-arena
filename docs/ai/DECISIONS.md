@@ -40500,4 +40500,24 @@ exists — green tests + a merged PR did not prove the feature rendered.
 
 **Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
 
+### D-24483 — Mastermind Transform (first slice): capture the second boss face at setup for an allowlist, and flip it via a pure `transformMastermind` helper fired by a per-mastermind strike resolver; optional + allowlist-gated so no hash re-pin (Active 2026-09-08 — WP-669 / EC-706)
+
+**Context.** Six `wwhk` Masterminds are double-faced (General Ross ⇄ Red Hulk, Illuminati Secret Society ⇄ Open Warfare, King Hulk Sakaarson ⇄ Worldbreaker, M.O.D.O.K. ⇄ Network Nightmare, Red King ⇄ Power Armored, the Sentry ⇄ the Void) and flip between faces off a Master Strike's printed `[keyword:Transforms]`. But `mastermind.setup.ts` `findMastermindCards` keeps only the FIRST non-tactic face and drops the rest (D-24193 — because for the 56 Epic masterminds the later face is a harder alternate that must not be auto-selected), so the second boss never loads, `[keyword:Transforms]` is inert, and the match runs against the base face only. This is the mastermind twin of the pre-WP-657 hero gap. This decision is the **first slice** of the Mastermind Transform arc — the analog of the D-24469 hero Transform runtime.
+
+**Decision.**
+
+1. **A `MASTERMIND_TRANSFORM_ALLOWLIST`** (in `mastermind.setup.ts`; first entry `wwhk/general-thunderbolt-ross`) gates which masterminds capture their second face — the SUPPORTED_TRANSFORM_BASES hero precedent. Every other mastermind (the other five transforming ones, and all 56 Epic ones) keeps the D-24193 first-face-only path, so this WP changes nothing for them (honest-partial).
+
+2. **Setup captures the second face for an allowlisted mastermind.** `findMastermindCards` now also returns `secondFaceCard` (the second non-tactic face, or null). `buildMastermindState`, when the mastermind is allowlisted AND a second face exists, adds that face's `fightCost` to `G.cardStats` (so `fightMastermind` reads the active face's cost after a flip) and records two NEW OPTIONAL `MastermindState` fields — `alternateFaceId?: CardExtId` (the currently-inactive face) and `faceGameText?: Record<CardExtId, readonly string[]>` (each face's ability lines) — following the `hypnoThralls?` / `gameText?` optional-field precedent. They are emitted via a CONDITIONAL SPREAD, so for a non-transform mastermind they are ABSENT (not undefined-valued) and the serialized state is byte-identical to the pre-WP-669 shape. The second face's `cardDisplayData` is already built (buildCardDisplayData walks every `mastermind.cards`), so no display change is needed.
+
+3. **A pure flip helper `transformMastermind(mastermindState)`** (`mastermind.logic.ts`) swaps `baseCardId ↔ alternateFaceId` and sets `gameText = faceGameText[nextFace]`, copy-then-override (the `defeatTopTactic` precedent) so every unrelated field survives, bidirectional (works from either face — the Red Hulk → General Ross flip-back, the Sentry ↔ Void loop), and a no-op returning the input when `alternateFaceId` is absent (every non-transform mastermind).
+
+4. **A per-mastermind strike resolver fires the flip.** `resolveGeneralRossStrike` (`mastermindHandlers.ts`), dispatched on `G.selection.mastermindId` (the existing bespoke-resolver dispatch), rebinds `G.mastermind = transformMastermind(...)` when the Master Strike fires, logs the flip `applied`, and logs the named ride-along effect (`[keyword:Cross-Dimensional Hulk Rampage]` / `[keyword:Wounded Fury]`) `neutral` as unmodeled (HONEST-PARTIAL this slice). When the second face was not captured it logs a `blocked` honest hollow rather than a silent no-op.
+
+**Determinism.** The new fields are OPTIONAL and populated ONLY for an allowlisted mastermind, and the second face's `cardStats` entry is added ONLY then, so a game without a transforming mastermind — including the sentinel `core/dr-doom` and the empty-replay `PRE_WP080_HASH` — serializes byte-identically. **NO hash re-pin** (confirmed: the full engine suite, which includes both pin tests, passes unchanged).
+
+**Scope OUT (named follow-up WPs).** The other five transforming masterminds (each an allowlist entry + a strike resolver, + the Void's own boss identity for the Sentry); the named ride-along strike effects + the Helicopter carryover; and the entire Scheme Transform mechanic (`[rule:Transforms]` / `scheme-transform` / the Chthon alternate win condition — WP-670).
+
+**Gates.** **Executed 2026-09-08:** engine suite 3159/3159; `pnpm -r build` 0; NO card-data / derived-artifact change (the two faces already exist in `wwhk.json`); NO hash re-pin. Control: dropping `wwhk/general-thunderbolt-ross` from the allowlist makes setup skip the capture and the strike fall to the honest hollow — the allowlist is load-bearing. **D-24026 live-on-surface** (a real General Ross match flips to Red Hulk on a Master Strike) is operator-pending.
+
 Protect this file.

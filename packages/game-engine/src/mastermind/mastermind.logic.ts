@@ -59,3 +59,45 @@ export function areAllTacticsDefeated(
     mastermindState.tacticsDefeated.length > 0
   );
 }
+
+/**
+ * Flips a transforming mastermind to its other boss face (WP-669 / D-24483).
+ *
+ * The active face is `baseCardId`; the inactive one is `alternateFaceId`. This
+ * swaps them and sets `gameText` to the newly-active face's ability lines (from
+ * `faceGameText`). Both faces' fight costs already live in `G.cardStats` (added at
+ * setup), so `fightMastermind` reads the new face's cost with no further work, and
+ * the UIState mastermind `display` resolves from the new `baseCardId` automatically.
+ *
+ * Bidirectional: the swap works from either face, so a later flip (Red Hulk →
+ * General Ross, the Sentry ↔ Void loop) restores the original.
+ *
+ * A mastermind with no `alternateFaceId` — every non-transform mastermind, and any
+ * transforming one not yet in the setup allowlist — cannot flip, so this is a no-op
+ * that returns the input unchanged. Never mutates the input; never throws.
+ *
+ * @param mastermindState - Current mastermind state.
+ * @returns New MastermindState showing the other face, or the input if it cannot flip.
+ */
+export function transformMastermind(
+  mastermindState: MastermindState,
+): MastermindState {
+  const currentFace = mastermindState.baseCardId;
+  const nextFace = mastermindState.alternateFaceId;
+  // why: no alternateFaceId → not a captured transforming mastermind → cannot flip.
+  if (nextFace === undefined) {
+    return mastermindState;
+  }
+  // why: fall back to the current text if the map somehow lacks the next face — never
+  // leave gameText undefined mid-flip (defensive; setup always populates both faces).
+  const nextGameText = mastermindState.faceGameText?.[nextFace] ?? mastermindState.gameText ?? [];
+  // why: copy-then-override (the defeatTopTactic precedent) so every unrelated field
+  // (tactics, strikePile, attachedBystanders, faceGameText) survives the flip. Swap the
+  // two faces so the flip is bidirectional; point gameText at the new active face.
+  return {
+    ...mastermindState,
+    baseCardId: nextFace,
+    alternateFaceId: currentFace,
+    gameText: nextGameText,
+  };
+}

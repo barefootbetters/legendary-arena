@@ -7,7 +7,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { defeatTopTactic, areAllTacticsDefeated } from './mastermind.logic.js';
+import { defeatTopTactic, areAllTacticsDefeated, transformMastermind } from './mastermind.logic.js';
 import type { MastermindState } from './mastermind.types.js';
 import { makeMastermindState } from '../test/fixtureBuilders.js';
 
@@ -116,5 +116,55 @@ describe('areAllTacticsDefeated', () => {
     };
 
     assert.strictEqual(areAllTacticsDefeated(state), false);
+  });
+});
+
+describe('transformMastermind (WP-669 / D-24483)', () => {
+  const generalRoss = 'wwhk-mastermind-general-thunderbolt-ross-general-thunderbolt-ross';
+  const redHulk = 'wwhk-mastermind-general-thunderbolt-ross-red-hulk';
+
+  /** A captured transforming mastermind, active on the General Ross face. */
+  const rossState = (): MastermindState => ({ ...makeMastermindState(),
+    id: 'wwhk/general-thunderbolt-ross',
+    baseCardId: generalRoss,
+    alternateFaceId: redHulk,
+    tacticsDeck: ['t1', 't2'],
+    tacticsDefeated: ['t0'],
+    strikePile: ['s1'],
+    gameText: ['General Ross text'],
+    faceGameText: { [generalRoss]: ['General Ross text'], [redHulk]: ['Red Hulk text'] },
+  });
+
+  it('swaps baseCardId ↔ alternateFaceId and updates gameText to the new face', () => {
+    const flipped = transformMastermind(rossState());
+    assert.strictEqual(flipped.baseCardId, redHulk, 'the new active face is Red Hulk');
+    assert.strictEqual(flipped.alternateFaceId, generalRoss, 'the now-inactive face is General Ross');
+    assert.deepStrictEqual(flipped.gameText, ['Red Hulk text'], 'gameText follows the new active face');
+  });
+
+  it('preserves every unrelated field across the flip (copy-then-override)', () => {
+    const flipped = transformMastermind(rossState());
+    assert.deepStrictEqual(flipped.tacticsDeck, ['t1', 't2'], 'tactics survive the flip');
+    assert.deepStrictEqual(flipped.tacticsDefeated, ['t0'], 'defeated tactics survive');
+    assert.deepStrictEqual(flipped.strikePile, ['s1'], 'strikePile survives');
+    assert.deepStrictEqual(flipped.faceGameText?.[redHulk], ['Red Hulk text'], 'faceGameText survives');
+  });
+
+  it('is bidirectional — flipping twice returns to the original face', () => {
+    const there = transformMastermind(rossState());
+    const back = transformMastermind(there);
+    assert.strictEqual(back.baseCardId, generalRoss, 'flipping back restores General Ross');
+    assert.strictEqual(back.alternateFaceId, redHulk);
+    assert.deepStrictEqual(back.gameText, ['General Ross text']);
+  });
+
+  it('is a no-op for a mastermind with no alternateFaceId (non-transform)', () => {
+    const plain: MastermindState = { ...makeMastermindState(),
+      id: 'core/dr-doom',
+      baseCardId: 'core-mastermind-dr-doom-dr-doom',
+      gameText: ['Doom text'],
+    };
+    const result = transformMastermind(plain);
+    assert.strictEqual(result, plain, 'no alternateFaceId → returns the input unchanged');
   });
 });
