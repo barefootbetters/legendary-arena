@@ -177,6 +177,93 @@ const rescuePending = (playerID = '0'): PendingOptionalKoReward => ({
   sourceCardId: 'hero-x' as CardExtId,
 });
 
+// why: WP-667 / D-24480 — the NO-REWARD, hand+discard-only variant (Radioactive Riot):
+// rewardType 'none' (the resolve grants nothing) + koZones ['hand','discard'] (in-play KO rejected).
+const noRewardPending = (playerID = '0'): PendingOptionalKoReward => ({
+  playerID,
+  rewardType: 'none',
+  rewardMagnitude: 0,
+  sourceCardId: 'hero-x' as CardExtId,
+  koZones: ['hand', 'discard'],
+});
+
+describe('resolveOptionalKoReward — no-reward hand/discard variant (WP-667 / D-24480)', () => {
+  it('KOs the chosen hand card and grants NOTHING (no reward)', () => {
+    const gameState = makeTestGameState({
+      hand: ['real-card' as CardExtId, 'other' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [noRewardPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'hand', cardId: 'real-card' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['real-card'], 'chosen card KOd');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['other'], 'KO removed from hand');
+    // why: no reward — the bystander supply is UNTOUCHED (contrast the rescuePending tests).
+    assert.deepStrictEqual(gameState.piles.bystanders, ['by-0'], 'no reward dispatched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, [], 'nothing rescued');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0, 'queue front-popped');
+  });
+
+  it('KOs the chosen discard card and grants nothing', () => {
+    const gameState = makeTestGameState({
+      discard: ['disc-card' as CardExtId],
+      pendingOptionalKoRewards: [noRewardPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'discard', cardId: 'disc-card' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['disc-card']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, []);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it('REJECTS a submitted inPlay zone (koZones excludes it) — no-op, queue intact', () => {
+    const gameState = makeTestGameState({
+      inPlay: ['played-agent' as CardExtId],
+      pendingOptionalKoRewards: [noRewardPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'inPlay', cardId: 'played-agent' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, [], 'no KO — the card does not permit an in-play KO');
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, ['played-agent'], 'in-play card untouched');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'queue intact (resubmit)');
+  });
+
+  it('decline pops with no KO and no reward', () => {
+    const gameState = makeTestGameState({
+      hand: ['real-card' as CardExtId],
+      pendingOptionalKoRewards: [noRewardPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { decline: true });
+
+    assert.deepStrictEqual(gameState.ko, []);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['real-card']);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it('a rewarded entry (absent koZones) STILL accepts an inPlay KO (the wide set is preserved)', () => {
+    // why: WP-667 — the koZones default must not regress the D-24442 wide-set behaviour.
+    const gameState = makeTestGameState({
+      inPlay: ['played-agent' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [rescuePending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'inPlay', cardId: 'played-agent' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['played-agent'], 'the in-play KO still works for a rewarded entry');
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, ['by-0'], 'the reward still fired');
+  });
+});
+
 describe('resolveOptionalKoReward — KO then reward', () => {
   it('KOs the chosen hand card and grants the reward (rescue → bystander to victory)', () => {
     const gameState = makeTestGameState({

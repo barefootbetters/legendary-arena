@@ -1493,6 +1493,28 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
     assert.equal(ui.pendingOptionalKoReward!.rewardLabel, 'Rescue a Bystander', 'front entry projected, not the second');
   });
 
+  it('WP-667: a no-reward koZones hand/discard entry projects an EMPTY inPlay list + empty rewardLabel', () => {
+    // why: WP-667 / D-24480 — Radioactive Riot's entry sets rewardType 'none' + koZones
+    // ['hand','discard'], so the chooser is offered hand + discard but NOT the in-play cards
+    // (the card does not permit an in-play KO), and the reward label is empty.
+    const gameState = withOptionalReward('rescue', 1);
+    gameState.pendingOptionalKoRewards = [
+      {
+        playerID: '0',
+        rewardType: 'none',
+        rewardMagnitude: 0,
+        sourceCardId: 'core/black-widow/strike#0' as CardExtId,
+        koZones: ['hand', 'discard'],
+      },
+    ];
+    const ui = buildUIState(gameState, mockCtx);
+    assert.ok(ui.pendingOptionalKoReward !== undefined, 'the no-reward choice is projected');
+    assert.equal(ui.pendingOptionalKoReward!.eligibleHand.length, 2, 'hand cards are still offered');
+    assert.equal(ui.pendingOptionalKoReward!.eligibleDiscard.length, 3, 'discard cards are still offered');
+    assert.deepStrictEqual(ui.pendingOptionalKoReward!.eligibleInPlay, [], 'in-play cards are NOT offered (koZones excludes inPlay)');
+    assert.equal(ui.pendingOptionalKoReward!.rewardLabel, '', 'no reward label for the no-reward variant');
+  });
+
   it('eligible order follows array index, not Object.keys (reversed-array pin)', () => {
     const gameState = withOptionalReward('draw', 1);
     gameState.playerZones['0']!.discard = [...gameState.playerZones['0']!.discard].reverse();

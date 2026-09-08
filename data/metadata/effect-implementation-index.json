@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1840,
+    "totalEntries": 1841,
     "byScope": {
-      "hero": 665,
+      "hero": 666,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 402,
+      "executable": 403,
       "deferred": 0,
       "condition": 26,
       "unsupported": 335,
@@ -24284,6 +24284,23 @@
       "name": "She-Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "radioactive-riot",
+          "name": "Radioactive Riot"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/she-hulk",
+      "name": "She-Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
       "status": "condition",
       "handler": "",
@@ -24310,6 +24327,10 @@
         {
           "slug": "hurl-legal-objections",
           "name": "Hurl Legal Objections"
+        },
+        {
+          "slug": "radioactive-riot",
+          "name": "Radioactive Riot"
         }
       ]
     },
@@ -34708,6 +34729,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "optional-ko-hand-discard",
         "outwit",
         "recruit-threshold",
         "smash",

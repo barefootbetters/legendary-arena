@@ -40257,4 +40257,28 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Packet:** WP-665 / EC-702. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 
+---
+
+### D-24480 — Radioactive Riot's optional "KO a card from hand or discard" (recruit-threshold-gated, no reward) is a new `optional-ko-hand-discard` keyword that REUSES the optional-ko-reward pending queue (a no-reward entry + a `koZones` scope) (Active 2026-09-07 — WP-667 / EC-704)
+
+**Context.** `wwhk/she-hulk/radioactive-riot` prints "Once this turn, if you made at least 6 Recruit this turn, you may KO a card from your hand or discard pile." WP-660 removed its phantom recruit but left the optional KO an unmodeled hollow — only the printed +3 Attack fires, no prompt (live-observed: played at 7 Recruit, no KO option). This decision models the ability.
+
+**Decision.**
+
+1. **A new `optional-ko-hand-discard` HeroKeyword** (no magnitude, no reward — joins `NO_MAGNITUDE_KEYWORDS`) with a park handler `heroEffectOptionalKoHandDiscard` that parks a **no-reward** entry into the **shipped** `G.pendingOptionalKoRewards` queue (D-24019): `{ playerID, rewardType: 'none', rewardMagnitude: 0, sourceCardId, koZones: ['hand','discard'] }`. Reusing that queue means the block-all guard (`hasPendingOptionalKoReward`, ~25 sites), the `getLegalMoves` short-circuit, the resolve move, the audience-filtered UIState projection, and `OptionalKoRewardPrompt.vue` are all reused — no parallel queue, no re-threading.
+
+2. **A per-entry `koZones` scope on `PendingOptionalKoReward`** (`('hand'|'discard'|'inPlay')[]`, additive-optional). Absent = the D-24442 wide set (`['hand','discard','inPlay']`), so existing rewarded entries are byte-unchanged. Radioactive Riot sets `['hand','discard']`: `resolveOptionalKoReward` rejects a submitted `inPlay` zone, and the projection lists `eligibleInPlay: []` — the card does not permit KOing an in-play card.
+
+3. **The resolve skips the reward** (Step-6 `executeSingleEffect` dispatch) when `rewardType === 'none'` — the KO is the whole effect (deck-thinning). Decline / FIFO front-pop / atomic KO-before-reward are unchanged. `deriveOptionalKoRewardLabel` returns a no-reward label for `'none'`.
+
+4. **The gate reuses the shipped `recruit-threshold:6` wait-and-see** (D-24354 / D-24377): a `[keyword:recruit-threshold:6]` marker gates the hook; the KO park is the hook's **only** effect (the +3 Attack is the card's printed Attack stat), so deferring the whole hook defers exactly the KO offer — below 6 Recruit it waits, and re-fires (parking the choice) when Recruit reaches 6 (the Hurl Legal Objections / Gamma-Draining Nanites precedent).
+
+**Scope boundary.** Exactly Radioactive Riot. The rewarded recruit-threshold sibling `co2e/spark-of-the-divine` ("if ≥8 Recruit … KO a card … +3 Attack") is a noted follow-up — it is `optional-ko-reward:attack:3` gated on the shipped `recruit-threshold:8` plus the same `koZones`. The 90+ other "KO a card from hand or discard" cards are gated differently (covert/class/team) — each its own marker on this shared machinery. `optional-ko-reward`'s existing wide-zone behaviour is untouched.
+
+**Determinism.** The park + resolve are deterministic; `koZones` is additive-optional and lazily present. Expected NO hash re-pin (no sentinel parks a no-reward KO); confirm at execution and re-pin deliberately if one does.
+
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3144/3144; arena-client 1630/1630; `vue-tsc` 0; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`), `sim:runtime-observed`, hero-effect-coverage, and dashboard `test:coverage` `:check` gates green; NO hash re-pin (no sentinel parks a no-reward KO). Control run: removing the `optional-ko-hand-discard` marker drops the KO keyword from Radioactive Riot (non-vacuous). **Execution deviation:** the setup parser needed NO new arm — the generic `isValidHeroKeyword` path turns `[keyword:optional-ko-hand-discard]` into a `{type}` effect for a no-magnitude keyword, one fewer file than the WP drafted; and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's one line carries both `recruit-threshold:6` and `optional-ko-hand-discard`). D-24026 live-on-surface (a real match offers the KO after ≥6 Recruit) is operator-pending.
+
+**Packet:** WP-667 / EC-704. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
+
 Protect this file.

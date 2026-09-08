@@ -57,7 +57,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 26 handlers and none for the deferred keywords', () => {
+  it('has exactly 28 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -74,8 +74,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-564 / D-24373 added the investigate handler (23 → 24);
     // WP-658 / D-24469 added the transform handler (24 → 25);
     // WP-659 / D-24470 added the reveal-from-hand handler (25 → 26);
-    // WP-663 / D-24474 added the optional-play-villain-top handler (26 → 27).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 27);
+    // WP-663 / D-24474 added the optional-play-villain-top handler (26 → 27);
+    // WP-667 / D-24480 added the optional-ko-hand-discard handler (27 → 28).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 28);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3233,6 +3234,87 @@ describe('executeHeroEffects steal-abilities cascade (Fork A FIFO, WP-592 / D-24
     // safe: the existing guard protects the only single-slot pending type from a two-copy park.
     assert.notEqual(gameState.pendingHeroChoice, undefined, 'the first copied reveal-attack-choose parked a choice');
     assert.equal(gameState.pendingHeroChoice?.cardId, 'target-a', 'the single slot holds the FIRST park, not corrupted/overwritten by the second');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-667 — optional-ko-hand-discard park (no reward, hand+discard) (D-24480)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects optional-ko-hand-discard park (WP-667 / D-24480)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('parks a NO-REWARD, koZones hand/discard entry when the recruit-threshold gate is met', () => {
+    const gameState = makeTestState({
+      hand: ['card-h'],
+      discard: ['card-d'],
+      inPlay: ['radioactive-riot'],
+      turnEconomyRecruit: 6,
+      heroAbilityHooks: [
+        {
+          cardId: 'radioactive-riot' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-hand-discard'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'optional-ko-hand-discard' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'radioactive-riot' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'exactly one choice parked');
+    assert.deepStrictEqual(
+      gameState.pendingOptionalKoRewards![0],
+      { playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'radioactive-riot', koZones: ['hand', 'discard'] },
+      'parked a no-reward entry scoped to hand+discard',
+    );
+    assert.deepStrictEqual(gameState.ko, [], 'no KO at play time (the choice is interactive)');
+  });
+
+  it('WAITS (parks nothing yet) when the recruit-threshold gate is NOT met', () => {
+    const gameState = makeTestState({
+      hand: ['card-h'],
+      inPlay: ['radioactive-riot'],
+      turnEconomyRecruit: 2,
+      heroAbilityHooks: [
+        {
+          cardId: 'radioactive-riot' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-hand-discard'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'optional-ko-hand-discard' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'radioactive-riot' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'no choice parked below the threshold (wait-and-see)');
+    const waiting = gameState.messages.find((entry) => entry.text.includes('waiting'));
+    assert.ok(waiting !== undefined, 'the ability is waiting for the recruit threshold');
+  });
+
+  it('parks nothing (logged no-op) when hand AND discard are both empty', () => {
+    const gameState = makeTestState({
+      hand: [],
+      discard: [],
+      inPlay: ['radioactive-riot'],
+      turnEconomyRecruit: 6,
+      heroAbilityHooks: [
+        {
+          cardId: 'radioactive-riot' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-hand-discard'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'optional-ko-hand-discard' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'radioactive-riot' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'nothing parked — hand+discard empty (inPlay is NOT a KO source here)');
   });
 });
 

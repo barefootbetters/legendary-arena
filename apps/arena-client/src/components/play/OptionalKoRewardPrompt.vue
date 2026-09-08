@@ -102,11 +102,17 @@ export default defineComponent({
     role="region"
     aria-label="Optional KO for reward choice"
   >
+    <!-- why: WP-667 / D-24480 — the no-reward variant (Radioactive Riot) projects an
+         empty rewardLabel; show a plain "KO a card" heading (no "for a reward (…)"
+         clause) so the empty parentheses never render. -->
     <h3 class="optional-ko-reward-prompt__heading">
-      KO a card for a reward
-      <span class="optional-ko-reward-prompt__reward">
-        ({{ pendingOptionalKoReward!.rewardLabel }})
-      </span>
+      <template v-if="pendingOptionalKoReward!.rewardLabel">
+        KO a card for a reward
+        <span class="optional-ko-reward-prompt__reward">
+          ({{ pendingOptionalKoReward!.rewardLabel }})
+        </span>
+      </template>
+      <template v-else>You may KO a card from your hand or discard pile</template>
     </h3>
     <div
       v-if="pendingOptionalKoReward!.eligibleHand.length > 0"

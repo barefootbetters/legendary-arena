@@ -115,6 +115,16 @@ export function resolveOptionalKoReward(
     return;
   }
 
+  // why: WP-667 / D-24480 — enforce the entry's koZones scope. Absent = the D-24442
+  // wide set (hand ∪ discard ∪ inPlay), so existing rewarded entries are unchanged; a
+  // no-reward Radioactive Riot entry sets ['hand','discard'], so a submitted 'inPlay'
+  // zone (which the card does not permit) is rejected as a silent no-op (queue intact,
+  // resubmit). The projection lists an empty inPlay set, so a well-behaved client never
+  // submits it; this guards a hand-built / malformed payload.
+  if (front.koZones !== undefined && !front.koZones.includes(zone as 'hand' | 'discard' | 'inPlay')) {
+    return;
+  }
+
   // Step 4: KO request — the chosen card must be present in the named zone right
   // now (no eligible snapshot is stored; eligibility is recomputed fresh).
   const playerZones = G.playerZones[playerID];
@@ -157,10 +167,15 @@ export function resolveOptionalKoReward(
   // re-implementation. The reward's own logging (e.g. D-24017 for rescue) is the
   // only reward log; this move adds no duplicate. `context` carries ctx.random
   // for the draw reward's reshuffle.
-  executeSingleEffect(G, context, playerID, front.sourceCardId, {
-    type: front.rewardType,
-    magnitude: front.rewardMagnitude,
-  });
+  // why: WP-667 / D-24480 — the NO-REWARD variant (Radioactive Riot) parks
+  // `rewardType: 'none'`; the KO itself is the whole effect (deck-thinning), so skip
+  // the dispatch. 'none' is not a HeroKeyword, so it must never reach executeSingleEffect.
+  if (front.rewardType !== 'none') {
+    executeSingleEffect(G, context, playerID, front.sourceCardId, {
+      type: front.rewardType,
+      magnitude: front.rewardMagnitude,
+    });
+  }
 
   // Step 7: Front-pop LAST (front-pop = Array.shift), mirroring WP-242.
   queue.shift();
