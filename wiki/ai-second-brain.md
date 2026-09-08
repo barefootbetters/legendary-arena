@@ -1067,11 +1067,23 @@ as a real pain point justifies it; none is a property the platform must keep:
 **Durable anti-goals (these follow from the invariants, not from sequencing).**
 However the agent layer evolves, the platform **never becomes the operational
 system of record** for the systems it reads. That single invariant is what rules
-out the enumerated [Non-goals](#non-goals) (CRM, project manager, chat or email
-archive, social-media scheduler, Git replacement) — permanently, not because v1
-is small, but because each would make the platform an authoritative operational
+out the [Non-goals](#non-goals) that follow — permanently, not because v1 is
+small, but because each would make the platform an authoritative operational
 store, violating *Knowledge Ownership* and *Single Source of Truth*. It indexes
 and reasons over knowledge that lives authoritatively elsewhere.
+
+### Non-goals
+
+With the goals and the architecture established, these are the boundaries — what
+the platform is deliberately **not**, so the positive case above does not quietly
+expand into scope it was never meant to hold. It is **not** a CRM, a project
+manager, a social-media scheduler, a replacement for Git, or a replacement for
+the source systems it reads — and never an *uncontrolled* agent swarm or a
+*self-promoting* knowledge vacuum (the anti-goal is loss of authority and
+provenance, not autonomy itself). Its job is **durable knowledge retrieval and
+decision support** — nothing more. Which of these are permanent invariants and
+which are merely v1 implementation choices is the distinction the section above
+draws.
 
 ### Pilot scope (recommended first vertical)
 
@@ -1126,7 +1138,9 @@ Everything else waits until the pilot has been used for real work, failures have
 been captured (the feedback surface above), and the recovery path has been
 rehearsed. Expanding domains or adding vector corpora is an explicit later
 decision, not an automatic next step — the same *build the simplest thing that
-answers the question* discipline as the scope boundaries.
+answers the question* discipline the
+[current implementation choices](#architectural-invariants-vs-implementation-choices)
+follow.
 
 ### Success criteria
 
@@ -1145,19 +1159,6 @@ doing its job. The platform is successful when the operator can:
   `INDEX.md`, and (if it has a reference corpus) an ingestion run; nothing else.
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
-
-### Non-goals
-
-With the goals and the architecture established, the boundaries — stated last, on
-purpose, so the positive case above does not quietly expand into scope the
-platform was never meant to hold. It is **not** a CRM, a project manager, a
-social-media scheduler, a replacement for Git, or a replacement for the source
-systems it reads — and never an *uncontrolled* agent swarm or a *self-promoting*
-knowledge vacuum (the anti-goal is loss of authority and provenance, not autonomy
-itself). Its job is **durable knowledge retrieval and decision support** —
-nothing more. Which of these are permanent invariants and which are merely v1
-choices is drawn out in
-[Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices).
 
 ### Failure modes
 
@@ -1517,6 +1518,18 @@ This is the summary index; the individual gotchas and their nuances live in
   list now has one home). The `#non-goals` anchor is unchanged, so inbound links
   still resolve. Presentation and ordering only — **no Locked / Preferred / Open
   decision changed**, no `DECISIONS.md` entry.
+- **2026-09-08 — flow pass: Non-goals clustered with the invariants; stale
+  reference fixed (no re-lock).** Top-to-bottom read. Moved [Non-goals](#non-goals)
+  up to sit **immediately after [Architectural invariants vs. implementation
+  choices](#architectural-invariants-vs-implementation-choices)** (it had landed
+  after Success criteria), so all boundary/scope material is contiguous and the
+  tail reads cleanly as pilot → success criteria → failure modes; trimmed the
+  now-adjacent duplicate anti-goal enumeration in the "Durable anti-goals"
+  paragraph to point at the Non-goals list right below it. Fixed a stale reference
+  in [Pilot scope](#pilot-scope-recommended-first-vertical) — "the scope
+  boundaries" (the section's pre-rename name) now reads "the current
+  implementation choices." Presentation and wording only — **no Locked /
+  Preferred / Open decision changed**, no `DECISIONS.md` entry.
 
 ## Open Questions
 
