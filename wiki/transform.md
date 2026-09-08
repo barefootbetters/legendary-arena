@@ -59,10 +59,14 @@ rather than firing an unconditional (unfaithful) swap. This page is both the
 design reference and the field guide for reading the cards. The hardest card in
 the set — **Sentry** — has its own section below.
 
-Transform is **not only a Hero mechanic**: six of the set's **Masterminds** also
+Transform is **not only a Hero mechanic**. Six of the set's **Masterminds** also
 transform between two boss faces (General Ross ⇄ Red Hulk, the Sentry ⇄ the Void),
-flipping off a [Master Strike](master-strike.md). That half is **still
-unimplemented** — see [Mastermind Transform](#mastermind-transform) below.
+flipping off a [Master Strike](master-strike.md) — see
+[Mastermind Transform](#mastermind-transform). And a third surface reaches beyond
+this set entirely: double-sided **Schemes** that flip into a "Great Old One"
+(Chthon and eight siblings across three sets) — see
+[Scheme Transform](#scheme-transform). Both of those halves are **still
+unimplemented**.
 
 ## The rule
 
@@ -266,6 +270,44 @@ Until that lands, playing one of these six Masterminds gives you an honest but
 face is the tracked gap. It is the natural next Work Packet after the Hero transform
 arc.
 
+## Scheme Transform
+
+There is a **third** transform surface, and it is the strangest: a handful of
+**Schemes** are double-sided and **flip into a "Great Old One"** — an alternate
+villain win condition that takes over the game. The clearest example is Midnight
+Sons' **Chthon**:
+
+| Scheme side | ⇄ Great Old One side | Flip trigger | Win condition |
+|---|---|---|---|
+| ![Ritual Sacrifice to Summon Chthon](https://images.legendary-arena.com/mdns/mdns-sc-ritual-sacrifice-to-summon-chthon.webp "width=90px") Ritual Sacrifice to Summon Chthon | ![Great Old One Chthon](https://images.legendary-arena.com/mdns/mdns-sx-great-old-one-chthon.webp "width=90px") Great Old One Chthon | 5 Bystanders in the KO pile → the Scheme `[rule:Transforms]` (flip it over) and KOs all other Masterminds | **Chthon Wins** when all players are destroyed |
+
+The Scheme starts on its "Ritual Sacrifice" face and plays like a normal Scheme.
+Once 5 Bystanders are KO'd it **flips** — the Twists reshuffle, every other
+Mastermind and its Tactics are KO'd, and **Great Old One Chthon** takes over as
+the sole boss. Its flip side even prints *"[This card can only start the game as
+the Scheme on the other side.]"* — the Great Old One face is unreachable except by
+transforming into it.
+
+**A distinct marker, a distinct card type.** Scheme transform is worded
+**`[rule:Transforms]`** (a *scheme-rule* trigger), separate from the Mastermind's
+`[keyword:Transforms]` and the Hero's `[keyword:Transform]`. The flip side is its
+own card with **`cardType: "scheme-transform"`** (image prefix `sx`, vs the base
+scheme's `sc`). Nine schemes across three sets carry the mechanic — **Midnight
+Sons** (Chthon), **X-Men: Messiah Complex** (msmc — Hack Cerebro Servers, Drain
+Mutant Powers, Hire Singularity Investigations, Raid Gene Banks), and
+**Revelations** (rvlt — Earthquake Drains the Ocean, House of M, Secret HYDRA
+Corruption, The Korvac Saga).
+
+### Scheme engine status — UNSUPPORTED
+
+Scheme Transform is **not implemented**: neither `[rule:Transforms]` nor the
+`scheme-transform` card type is handled anywhere in `packages/game-engine`, so the
+scheme never flips and its Great Old One side never enters play — the alternate
+win condition simply cannot fire. It is the third member of the transform family
+still to build, alongside [Mastermind Transform](#mastermind-transform); both flip
+a shared-board boss face and both are unbuilt, so they are natural companions in
+the next transform Work Packet.
+
 ## Hero engine status — IMPLEMENTED (partial) {#engine-status--implemented-partial}
 
 Hero Transform **is implemented**, in layers that shipped across one arc:
@@ -390,3 +432,6 @@ distinct piece of state, not just another trigger.
   `packages/game-engine/src/mastermind/mastermind.setup.ts` (the base-face selection
   that drops the second face); DECISIONS **D-24193** (first-non-tactic-face rule, the
   gap the Mastermind transform must close).
+- **Scheme Transform:** `data/cards/mdns.json` / `msmc.json` / `rvlt.json` (the nine
+  `[rule:Transforms]` schemes; `cardType: "scheme-transform"`, image prefix `sx`);
+  no engine handler exists yet.
