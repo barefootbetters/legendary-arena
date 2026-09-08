@@ -7,7 +7,7 @@ tags:
   - card-effect
   - wwhk
   - keyword
-  - status-unsupported
+  - status-partial
 related:
   - card-effect-system.md
   - card-type-taxonomy.md
@@ -22,7 +22,11 @@ source:
   - ../data/metadata/keywords-full.json
   - ../docs/ai/coverage/hero-mechanic-ledger.json
   - ../packages/game-engine/src/setup/heroAbility.setup.ts
-  - ../docs/ai/work-packets/WP-653-hero-condition-gate-family.md
+  - ../packages/game-engine/src/hero/heroEffects.execute.ts
+  - ../packages/game-engine/src/setup/buildTransformSideDeck.ts
+  - ../docs/ai/work-packets/WP-657-transform-side-deck-partition.md
+  - ../docs/ai/work-packets/WP-658-transform-keyword-runtime.md
+  - ../docs/ai/work-packets/WP-665-amadeus-cho-transform.md
   - ../docs/ai/DECISIONS.md
 last-reviewed: 2026-09-07
 ---
@@ -44,12 +48,15 @@ The crucial rule, and the thing this page exists to make unambiguous:
 > Transform. You never recruit a Transformed card, and it is never shuffled into
 > your deck.
 
-Transform is currently **not implemented in the engine** — it is the largest
-unresolved hero mechanic by in-play frequency (`transform`, ~101 observed
-hollows across 15 cards on the [coverage worklist](dashboard.md)). This page is
-the design reference for the future implementation, and the field guide for
-reading the cards today. The hardest card in the set — **Sentry** — has its own
-section below.
+Transform is **implemented in the engine** — as of the WP-657 → WP-658 → WP-662
+arc, plus WP-664 (the visible side deck) and WP-665 (Amadeus Cho). The set-aside
+zone, the swap runtime, and the read-only UI projection all ship. Coverage is
+**partial by design**: only cards whose printed **trigger condition** is modeled
+actually Transform today (the [`SUPPORTED_TRANSFORM_BASES` allowlist](#engine-status--implemented-partial));
+every other Transform card keeps its printed swap as a **loud, honest hollow**
+rather than firing an unconditional (unfaithful) swap. This page is both the
+design reference and the field guide for reading the cards. The hardest card in
+the set — **Sentry** — has its own section below.
 
 ## The rule
 
@@ -104,28 +111,30 @@ separate.
 
 Every Transform pairing in the set. **Destination** is where the Transformed
 card goes: *swap* = it stays in play as the new card; *deck-top* / *discard* per
-the printed clause.
+the printed clause. **Modeled** is whether the engine actually fires the swap
+today (✅) or holds it as an honest hollow until its trigger condition is modeled
+(⏳) — see [Engine status](#engine-status--implemented-partial).
 
-| Hero | Base card (cost) | Transformed card (cost) | Trigger | Destination |
-|---|---|---|---|---|
-| Amadeus Cho | Gamma-Draining Nanites (3) | Like Totally Smart Hulk (5) | drew 2 cards this turn | swap |
-| Bruce Banner | Gamma-Bomb Disaster (4) | Savage Hulk Unleashed (5) | Outwit (3 different Hero costs) | swap |
-| Caiera | Dutiful Protector (7) | Vengeful Destructor (7) | ≥ 3 Heroes per player in the KO pile | swap |
-| Gladiator Hulk | Seize the Throne (4) | Hulk Is King (5) | discarded ≥ 2 cards this turn | deck-top |
-| Hiroim | Save from the Rubble (4) | Hiroim Redeemed (5) | ≥ 2 Bystanders in your Victory Pile | swap |
-| Hulkbuster Iron Man | Build the Suit (5) | Ultra-Massive Armor (6) | `[hc:tech][hc:strength]` | swap |
-| Joe Fixit / Grey Hulk | Ambitious Enforcer (6) | Underworld Boss (6) | defeat a Villain with 6+ Attack this turn | deck-top |
-| Korg | Forged by Fire (3) | Lord of Granite (5) | `[hc:strength][hc:strength]` | swap |
-| Miek the Unhived | Metamorphosis (7) | Hive King Miek (8) | Feast + an `[icon:attack]` card KO'd from your deck | swap |
-| Namora | Herculean Effort (5) | Master of Depths (6) | defeat a Villain in the Sewers or Bridge | deck-top |
-| No-Name Brood Queen | Bursting with Life (3) | Torrent of Broodlings (5) | Feast + a non-grey Hero KO'd from your deck | swap |
-| Rick Jones | Seek the Nega-Bands (4) | Captain Marvel (5) | reveal top of deck, cost ≥ 3 | swap |
-| Rick Jones | Irradiated Blood (5) | A-Bomb (6) | ≥ 5 Villains in your Victory Pile | deck-top |
-| Rick Jones | Caught in the Kree-Skrull War (7) | The Destiny Force (9) | defeat two Villains this turn | deck-top |
-| Sentry | Agoraphobia (2) | Golden Guardian of Good (6) | always (on play) | discard — **and back** (see below) |
-| Sentry | Mournful Sentinel (3) | The Void Unchained (5) | reveal top of deck, cost ≥ 1 | deck-top — **and back** |
-| She-Hulk | Hurl Legal Objections (3) | Hurl Trucks (6) | made ≥ 6 Recruit this turn | swap |
-| Skaar, Son of Hulk | Mood Swings (5) | Raging Savage (6) | `[hc:instinct]` + you gain a Wound | swap |
+| Hero | Base card (cost) | Transformed card (cost) | Trigger | Destination | Modeled |
+|---|---|---|---|---|---|
+| Amadeus Cho | Gamma-Draining Nanites (3) | Like Totally Smart Hulk (5) | drew 2 cards this turn | swap | ✅ WP-665 |
+| Bruce Banner | Gamma-Bomb Disaster (4) | Savage Hulk Unleashed (5) | Outwit (3 different Hero costs) | swap | ⏳ |
+| Caiera | Dutiful Protector (7) | Vengeful Destructor (7) | ≥ 3 Heroes per player in the KO pile | swap | ⏳ |
+| Gladiator Hulk | Seize the Throne (4) | Hulk Is King (5) | discarded ≥ 2 cards this turn | deck-top | ⏳ |
+| Hiroim | Save from the Rubble (4) | Hiroim Redeemed (5) | ≥ 2 Bystanders in your Victory Pile | swap | ⏳ |
+| Hulkbuster Iron Man | Build the Suit (5) | Ultra-Massive Armor (6) | `[hc:tech][hc:strength]` | swap | ⏳ |
+| Joe Fixit / Grey Hulk | Ambitious Enforcer (6) | Underworld Boss (6) | defeat a Villain with 6+ Attack this turn | deck-top | ⏳ |
+| Korg | Forged by Fire (3) | Lord of Granite (5) | `[hc:strength][hc:strength]` | swap | ⏳ |
+| Miek the Unhived | Metamorphosis (7) | Hive King Miek (8) | Feast + an `[icon:attack]` card KO'd from your deck | swap | ⏳ |
+| Namora | Herculean Effort (5) | Master of Depths (6) | defeat a Villain in the Sewers or Bridge | deck-top | ⏳ |
+| No-Name Brood Queen | Bursting with Life (3) | Torrent of Broodlings (5) | Feast + a non-grey Hero KO'd from your deck | swap | ⏳ |
+| Rick Jones | Seek the Nega-Bands (4) | Captain Marvel (5) | reveal top of deck, cost ≥ 3 | swap | ⏳ |
+| Rick Jones | Irradiated Blood (5) | A-Bomb (6) | ≥ 5 Villains in your Victory Pile | deck-top | ⏳ |
+| Rick Jones | Caught in the Kree-Skrull War (7) | The Destiny Force (9) | defeat two Villains this turn | deck-top | ⏳ |
+| Sentry | Agoraphobia (2) | Golden Guardian of Good (6) | always (on play) | discard — **and back** (see below) | ⏳ |
+| Sentry | Mournful Sentinel (3) | The Void Unchained (5) | reveal top of deck, cost ≥ 1 | deck-top — **and back** | ⏳ |
+| She-Hulk | Hurl Legal Objections (3) | Hurl Trucks (6) | made ≥ 6 Recruit this turn | swap | ✅ WP-658 |
+| Skaar, Son of Hulk | Mood Swings (5) | Raging Savage (6) | `[hc:instinct]` + you gain a Wound | swap | ⏳ |
 
 Rick Jones is the widest (three independent base→transformed pairs); Sentry is
 the deepest (two **bidirectional** pairs).
@@ -191,66 +200,94 @@ detail:
 | **deck-top** | "…and put it on top of your deck" | X is drawn again next turn (a delayed, guaranteed replay) |
 | **discard** | "…and put it in your discard pile" | X re-enters via the normal deck cycle (and enables the return loops) |
 
-## Engine status — UNSUPPORTED
+## Engine status — IMPLEMENTED (partial) {#engine-status--implemented-partial}
 
-Transform is **not implemented**. There is **no** `transform` / `isTransform`
-handling anywhere in `packages/game-engine` or `packages/registry`. Two
-concrete consequences you can see today:
+Transform **is implemented**, in layers that shipped across one arc:
 
-1. **The Transform clause is an honest hollow.** `[keyword:Transform]` reaches
-   the parser's unresolved-marker fallback, so at play time the engine logs a
-   `parse-unrecognized` breadcrumb — e.g. *"card
-   `wwhk/amadeus-cho/gamma-draining-nanites#1` declared a `transform` mechanic at
-   onPlay, but no executable handler was reached."* The **base card's other
-   effects still fire** (Gamma-Draining Nanites' `[keyword:draw:1]` draws); only
-   the swap is skipped. This is deliberate [honest-partial](dashboard.md)
-   behaviour — the hollow stays loud so the mechanic is never silently faked.
-2. **Transformed cards are in the wrong place.** Because nothing sets them
-   aside, `isTransform` cards are treated as ordinary Hero-deck cards: they sit
-   in the HQ and are **recruitable**. In a real match today you can recruit *Like
-   Totally Smart Hulk* directly, which the printed rules never allow.
+1. **The set-aside zone (WP-657 / D-24468).** At setup, `buildTransformSideDeck`
+   partitions every `isTransform` instance **out** of the shuffled Hero-deck
+   reservoir into a new top-level `G.transformDeck` zone — built deterministically
+   with no extra `ctx.random` call (the side deck is unshuffled; all copies of a
+   Transformed card are identical). So Transformed cards are **no longer
+   recruitable from the HQ**; they only ever enter play through a Transform.
+2. **The swap runtime (WP-658 / D-24469).** `[keyword:Transform]` is a real
+   `HeroKeyword`. Its handler `heroEffectTransform` reads the base→target link
+   from a G-resident `G.transformTargets` map (built at setup from the base card's
+   `transform` field), pulls the matching second-form out of `G.transformDeck`
+   into play, routes the base card **back** to the side deck (a permanent deck
+   upgrade), and applies the second-form's printed Attack / Recruit.
+3. **The registry fix (WP-662 / D-24473).** `HeroCardSchema` now declares
+   `transform` / `transformOf` / `isTransform`, so the real
+   `createRegistryFromLocalFiles` loader stops stripping them — the fix that made
+   both the partition and the swap actually live (they had been silently no-ops
+   because Zod dropped the fields).
+4. **The visible side deck (WP-664 / D-24475).** `G.transformDeck` projects to a
+   read-only public `UIState.transformDeck` (the koPile / strikePile shared-board
+   pattern, survived through `filterUIStateForAudience`), rendered as a face-up
+   `TransformDeck.vue` pile beside the HQ — so a player can **see** each Hero's
+   set-aside second-forms.
 
-On the [coverage worklist](dashboard.md), `transform` is `Unsupported` with the
-second-highest observed-in-play count of any mechanic (~101), behind only
-`moonlight`. It is a **Bucket-D** target — a new zone/state model, not a data
-row — so it warrants its own Work Packet (or a small arc of them), designed
-before implementation.
+**Coverage is gated by trigger fidelity, not left half-done.** The setup parser
+only resolves `[keyword:Transform]` into an executable effect for a card in the
+**`SUPPORTED_TRANSFORM_BASES`** allowlist
+(`packages/game-engine/src/setup/heroAbility.setup.ts`). Today that is two cards:
 
-## What a real implementation needs
+- **She-Hulk — Hurl Legal Objections → Hurl Trucks** (WP-658), gated on the
+  shipped `recruit-threshold:6` wait-and-see condition ("made ≥ 6 Recruit this
+  turn").
+- **Amadeus Cho — Gamma-Draining Nanites → Like Totally Smart Hulk** (WP-665),
+  gated on a new `cardsDrawnThisTurnAtLeast` wait-and-see condition ("drew two
+  cards this turn"); the card's own "Draw a card" stays unconditional.
 
-A faithful Transform needs more than a new keyword handler — it needs a **new
-zone** and a **swap primitive**:
+Every **other** Transform card carries a printed trigger the engine does not yet
+model (an Outwit-style distinct-cost gate, a KO-pile count, a combat-outcome, a
+reveal-and-check…), so resolving its `[keyword:Transform]` unconditionally would
+be an **unfaithful** swap. Those cards keep the marker as an **honest hollow**:
+`[keyword:Transform]` reaches the parser's unresolved-marker fallback and logs a
+`parse-unrecognized` breadcrumb at play time, while the base card's **other
+effects still fire** (Gamma-Draining Nanites' `[keyword:draw:1]` always draws).
+This is the deliberate [honest-partial](dashboard.md) posture — the swap is
+reported as unmodeled, never silently faked.
 
-1. **A set-aside Transformed-cards zone**, per Hero, seeded at setup from the
-   `isTransform` cards and **excluded from the Hero deck / HQ** so they are never
-   recruited. (This is the piece that does not exist today.)
-2. **A `Transform` effect primitive**: given a base card in play and its
-   `transform` target, move the base card out, bring the target in, and route
-   the target to its destination (in play / deck-top / discard).
-3. **Trigger evaluation** reusing the existing hero-condition and combat-outcome
-   reads — most triggers map to predicates the engine already has (the WP-653
-   `HeroCondition` seam is the closest precedent for the class/count gates).
-4. **Bidirectional support** for Sentry (a Transformed card may itself carry a
-   `transform` back to its base) and a **"cards Transformed this turn" counter**
-   for Rival Personalities.
+## Adding the next Hero
 
-The card data is ready for it: all 15 pairings carry `transform` /
-`transformOf` / `isTransform`, so the engine can drive the swap off the fields.
+Each held-back pairing (⏳ in the roster) needs exactly one thing before it can
+join the allowlist: its **trigger condition modeled**. The swap primitive, the
+side-deck zone, the base→target map, and the UI are all done and shared, so a new
+Hero is a small, repeatable WP:
 
-Until that lands, the honest hollow is the correct behaviour: the base card does
-what it can, and the unimplemented swap is reported, not hidden.
+1. **Model the trigger** as a `HeroCondition` (the WP-653 condition-gate-family
+   seam is the closest precedent for the class / count / board-read gates) or a
+   wait-and-see condition (the WP-568 window, as Amadeus Cho's "drew two cards"
+   reuses).
+2. **Mark the card** with the condition marker on its Transform ability line, and
+   add its base ext_id to `SUPPORTED_TRANSFORM_BASES`.
+3. **Regenerate** the card data + the hero ledger (the row flips
+   `unsupported → executable`).
+
+Still outstanding as their own follow-ups: **Sentry's bidirectional loops** (a
+Transformed card that carries a `transform` back to its base) and the **"cards
+Transformed this turn" counter** that Sentry's *Rival Personalities* scores — a
+distinct piece of state, not just another trigger.
 
 ## Interactions
 
 - **Recruiting the base card** works normally — base cards are ordinary Hero-deck
-  cards. Only the *swap* is unimplemented.
+  cards. **Transformed cards are not recruitable** — they live in `G.transformDeck`,
+  out of the HQ (WP-657).
+- **Playing a supported base card** performs the swap: the second-form comes in
+  from the side deck, the base card is routed back to the side deck, and the
+  second-form's printed Attack / Recruit apply (WP-658 / WP-665).
 - **Draw / Recruit / Attack** printed on a base card fire independently of the
-  Transform clause (see the engine-status note); a Transform sitting on the same
-  line does not block the rest of the card.
-- **[Coverage](dashboard.md)** counts `transform` under its own mechanic row; it
-  is distinct from the base cards' other mechanics (draw, smash, outwit, feast).
-- **Sentry's Rival Personalities** depends on a per-turn Transform count that
-  does not exist yet, so it reads 0 today.
+  Transform clause; a Transform sitting on the same line does not block the rest of
+  the card, and a held-back card's other effects still fire while the swap stays a
+  loud hollow.
+- **[Coverage](dashboard.md)** counts `transform` under its own mechanic row; the
+  supported bases read `executable`, the held-back ones `unsupported` (parse-
+  unrecognized). It is distinct from the base cards' other mechanics (draw, smash,
+  outwit, feast).
+- **Sentry's Rival Personalities** depends on a per-turn Transform count that does
+  not exist yet, so it reads 0 today (a named follow-up).
 
 ## Edge Cases
 
@@ -270,7 +307,16 @@ what it can, and the unimplemented swap is reported, not hidden.
 - Keyword glossary: `data/metadata/keywords-full.json` (the printed *Transform*
   rule — note the glossary text is a summary; the **card text is authoritative**).
 - Coverage worklist: [dashboard.md](dashboard.md) → /coverage — `transform` mechanic row.
-- Parser: `packages/game-engine/src/setup/heroAbility.setup.ts` (the
-  unresolved-marker fallback that records the `transform` hollow).
+- Side deck partition: `packages/game-engine/src/setup/buildTransformSideDeck.ts`
+  (`G.transformDeck`, WP-657 / D-24468).
+- Swap runtime: `packages/game-engine/src/hero/heroEffects.execute.ts`
+  (`heroEffectTransform`, WP-658 / D-24469).
+- Parser + allowlist: `packages/game-engine/src/setup/heroAbility.setup.ts`
+  (`SUPPORTED_TRANSFORM_BASES`; the unresolved-marker fallback that keeps a
+  held-back card's `transform` an honest hollow).
+- Registry fields: `packages/registry/src/schema.ts` (`transform` / `transformOf`
+  / `isTransform` on `HeroCardSchema`, WP-662 / D-24473).
+- UI projection: `packages/game-engine/src/ui/uiState.build.ts` +
+  `apps/arena-client/src/components/play/TransformDeck.vue` (WP-664 / D-24475).
 - Honest-partial precedent: `docs/ai/work-packets/WP-653-hero-condition-gate-family.md`
-  (why an unimplemented gated effect stays a loud hollow rather than a silent no-op).
+  (why an unmodeled gated effect stays a loud hollow rather than a silent no-op).
