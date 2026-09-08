@@ -1,7 +1,16 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { computed, defineComponent, type PropType } from 'vue';
 import type { UIDisplayEntry } from '@legendary-arena/game-engine';
 import CardTile from './CardTile.vue';
+
+/**
+ * One unique second-form card in the collapsed side-deck view, plus how many
+ * copies of it the pile holds (EC-703 Jeff feedback — see `groupedDeck` below).
+ */
+interface TransformDeckGroup {
+  readonly entry: UIDisplayEntry;
+  readonly count: number;
+}
 
 /**
  * Transform Deck leaf — the face-up side deck of Transform second-form cards
@@ -17,6 +26,11 @@ import CardTile from './CardTile.vue';
  *
  * Hidden entirely when the deck is empty or absent, so it only appears for a
  * match with Transform heroes (today: the `wwhk` set).
+ *
+ * EC-703 (Jeff feedback): the pile holds every copy of each second-form, so the
+ * view COLLAPSES to one tile per unique card with a copy count (`×N`); the header
+ * still reports the total pile size. Showing the base "transformer" card each one
+ * comes from is a deferred follow-up.
  *
  * Type-only engine import (D-16502). Renders `CardTile`, so per the EC-132 SFC
  * authoring whitelist it is a `defineComponent` composer.
@@ -37,8 +51,26 @@ export default defineComponent({
       default: () => [],
     },
   },
-  setup() {
-    return {};
+  setup(props) {
+    // why: EC-703 (Jeff feedback) — the side deck holds every copy of each
+    // second-form (e.g. 5× Like Totally Smart Hulk), which rendered as a long row
+    // of identical tiles. Collapse to ONE tile per unique card with a copy count.
+    // Strip the "#n" copy suffix from the ext-id so every copy shares one group
+    // key; preserve first-seen order via the Map's insertion order.
+    const groupedDeck = computed<TransformDeckGroup[]>(() => {
+      const groupsByBaseId = new Map<string, { entry: UIDisplayEntry; count: number }>();
+      for (const entry of props.transformDeck) {
+        const baseId = entry.extId.replace(/#\d+$/, '');
+        const existingGroup = groupsByBaseId.get(baseId);
+        if (existingGroup === undefined) {
+          groupsByBaseId.set(baseId, { entry, count: 1 });
+        } else {
+          existingGroup.count += 1;
+        }
+      }
+      return [...groupsByBaseId.values()];
+    });
+    return { groupedDeck };
   },
 });
 </script>
@@ -57,19 +89,25 @@ export default defineComponent({
     </header>
     <ol class="transform-deck__row">
       <li
-        v-for="entry in transformDeck"
-        :key="entry.extId"
+        v-for="group in groupedDeck"
+        :key="group.entry.extId"
         class="transform-deck__cell"
       >
         <!-- why: face-up + non-interactive — the transform cards are visible so
              the player can see what each base becomes, but they are never
              recruited directly (they arrive only via the engine swap). -->
         <CardTile
-          :display="entry.display"
+          :display="group.entry.display"
           size="sm"
           :show-cost="true"
           :interactive="false"
         />
+        <!-- why: EC-703 (Jeff feedback) — one tile per unique second-form, with a
+             copy count so the collapsed pile still shows how many of each remain. -->
+        <span
+          class="transform-deck__count"
+          :aria-label="`${group.count} copies`"
+        >×{{ group.count }}</span>
       </li>
     </ol>
   </section>
@@ -104,9 +142,21 @@ export default defineComponent({
 }
 
 /* why: WP-664 follow-up — each cell keeps its intrinsic card width (no shrink) so
-   the row scrolls horizontally rather than squashing the tiles. */
+   the row scrolls horizontally rather than squashing the tiles. EC-703: stack the
+   count badge under the tile. */
 .transform-deck__cell {
   display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+/* why: EC-703 (Jeff feedback) — copy count for a collapsed unique second-form. */
+.transform-deck__count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground, #333);
 }
 </style>
