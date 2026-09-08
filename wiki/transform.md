@@ -14,6 +14,7 @@ related:
   - cardextid.md
   - dashboard.md
   - data-file-locations.md
+  - master-strike.md
   - play-board.md
 status: canonical
 source:
@@ -57,6 +58,11 @@ every other Transform card keeps its printed swap as a **loud, honest hollow**
 rather than firing an unconditional (unfaithful) swap. This page is both the
 design reference and the field guide for reading the cards. The hardest card in
 the set — **Sentry** — has its own section below.
+
+Transform is **not only a Hero mechanic**: six of the set's **Masterminds** also
+transform between two boss faces (General Ross ⇄ Red Hulk, the Sentry ⇄ the Void),
+flipping off a [Master Strike](master-strike.md). That half is **still
+unimplemented** — see [Mastermind Transform](#mastermind-transform) below.
 
 ## The rule
 
@@ -117,24 +123,24 @@ today (✅) or holds it as an honest hollow until its trigger condition is model
 
 | Hero | Base card (cost) | Transformed card (cost) | Trigger | Destination | Modeled |
 |---|---|---|---|---|---|
-| Amadeus Cho | Gamma-Draining Nanites (3) | Like Totally Smart Hulk (5) | drew 2 cards this turn | swap | ✅ WP-665 |
-| Bruce Banner | Gamma-Bomb Disaster (4) | Savage Hulk Unleashed (5) | Outwit (3 different Hero costs) | swap | ⏳ |
-| Caiera | Dutiful Protector (7) | Vengeful Destructor (7) | ≥ 3 Heroes per player in the KO pile | swap | ⏳ |
-| Gladiator Hulk | Seize the Throne (4) | Hulk Is King (5) | discarded ≥ 2 cards this turn | deck-top | ⏳ |
-| Hiroim | Save from the Rubble (4) | Hiroim Redeemed (5) | ≥ 2 Bystanders in your Victory Pile | swap | ⏳ |
-| Hulkbuster Iron Man | Build the Suit (5) | Ultra-Massive Armor (6) | `[hc:tech][hc:strength]` | swap | ⏳ |
-| Joe Fixit / Grey Hulk | Ambitious Enforcer (6) | Underworld Boss (6) | defeat a Villain with 6+ Attack this turn | deck-top | ⏳ |
-| Korg | Forged by Fire (3) | Lord of Granite (5) | `[hc:strength][hc:strength]` | swap | ⏳ |
-| Miek the Unhived | Metamorphosis (7) | Hive King Miek (8) | Feast + an `[icon:attack]` card KO'd from your deck | swap | ⏳ |
-| Namora | Herculean Effort (5) | Master of Depths (6) | defeat a Villain in the Sewers or Bridge | deck-top | ⏳ |
-| No-Name Brood Queen | Bursting with Life (3) | Torrent of Broodlings (5) | Feast + a non-grey Hero KO'd from your deck | swap | ⏳ |
-| Rick Jones | Seek the Nega-Bands (4) | Captain Marvel (5) | reveal top of deck, cost ≥ 3 | swap | ⏳ |
-| Rick Jones | Irradiated Blood (5) | A-Bomb (6) | ≥ 5 Villains in your Victory Pile | deck-top | ⏳ |
-| Rick Jones | Caught in the Kree-Skrull War (7) | The Destiny Force (9) | defeat two Villains this turn | deck-top | ⏳ |
-| Sentry | Agoraphobia (2) | Golden Guardian of Good (6) | always (on play) | discard — **and back** (see below) | ⏳ |
-| Sentry | Mournful Sentinel (3) | The Void Unchained (5) | reveal top of deck, cost ≥ 1 | deck-top — **and back** | ⏳ |
-| She-Hulk | Hurl Legal Objections (3) | Hurl Trucks (6) | made ≥ 6 Recruit this turn | swap | ✅ WP-658 |
-| Skaar, Son of Hulk | Mood Swings (5) | Raging Savage (6) | `[hc:instinct]` + you gain a Wound | swap | ⏳ |
+| Amadeus Cho | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-amadeus-cho-gamma-draining-nanites.webp" height="64" alt="Gamma-Draining Nanites (3)" loading="lazy"><br>Gamma-Draining Nanites (3) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-amadeus-cho-like-totally-smart-hulk.webp" height="64" alt="Like Totally Smart Hulk (5)" loading="lazy"><br>Like Totally Smart Hulk (5) | drew 2 cards this turn | swap | ✅ WP-665 |
+| Bruce Banner | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-bruce-banner-gamma-bomb-disaster.webp" height="64" alt="Gamma-Bomb Disaster (4)" loading="lazy"><br>Gamma-Bomb Disaster (4) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-bruce-banner-savage-hulk-unleashed.webp" height="64" alt="Savage Hulk Unleashed (5)" loading="lazy"><br>Savage Hulk Unleashed (5) | Outwit (3 different Hero costs) | swap | ⏳ |
+| Caiera | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-caiera-dutiful-protector.webp" height="64" alt="Dutiful Protector (7)" loading="lazy"><br>Dutiful Protector (7) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-caiera-vengeful-destructor.webp" height="64" alt="Vengeful Destructor (7)" loading="lazy"><br>Vengeful Destructor (7) | ≥ 3 Heroes per player in the KO pile | swap | ⏳ |
+| Gladiator Hulk | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-gladiator-hulk-seize-the-throne.webp" height="64" alt="Seize the Throne (4)" loading="lazy"><br>Seize the Throne (4) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-gladiator-hulk-hulk-is-king.webp" height="64" alt="Hulk Is King (5)" loading="lazy"><br>Hulk Is King (5) | discarded ≥ 2 cards this turn | deck-top | ⏳ |
+| Hiroim | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-hiroim-save-from-the-rubble.webp" height="64" alt="Save from the Rubble (4)" loading="lazy"><br>Save from the Rubble (4) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-hiroim-hiroim-redeemed.webp" height="64" alt="Hiroim Redeemed (5)" loading="lazy"><br>Hiroim Redeemed (5) | ≥ 2 Bystanders in your Victory Pile | swap | ⏳ |
+| Hulkbuster Iron Man | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-build-the-suit.webp" height="64" alt="Build the Suit (5)" loading="lazy"><br>Build the Suit (5) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-hulkbuster-iron-man-ultra-massive-armor.webp" height="64" alt="Ultra-Massive Armor (6)" loading="lazy"><br>Ultra-Massive Armor (6) | `[hc:tech][hc:strength]` | swap | ⏳ |
+| Joe Fixit / Grey Hulk | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-joe-fixit-grey-hulk-ambitious-enforcer.webp" height="64" alt="Ambitious Enforcer (6)" loading="lazy"><br>Ambitious Enforcer (6) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-joe-fixit-grey-hulk-underworld-boss.webp" height="64" alt="Underworld Boss (6)" loading="lazy"><br>Underworld Boss (6) | defeat a Villain with 6+ Attack this turn | deck-top | ⏳ |
+| Korg | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-korg-forged-by-fire.webp" height="64" alt="Forged by Fire (3)" loading="lazy"><br>Forged by Fire (3) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-korg-lord-of-granite.webp" height="64" alt="Lord of Granite (5)" loading="lazy"><br>Lord of Granite (5) | `[hc:strength][hc:strength]` | swap | ⏳ |
+| Miek the Unhived | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-miek-the-unhived-metamorphosis.webp" height="64" alt="Metamorphosis (7)" loading="lazy"><br>Metamorphosis (7) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-miek-the-unhived-hive-king-miek.webp" height="64" alt="Hive King Miek (8)" loading="lazy"><br>Hive King Miek (8) | Feast + an `[icon:attack]` card KO&#39;d from your deck | swap | ⏳ |
+| Namora | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-namora-herculean-effort.webp" height="64" alt="Herculean Effort (5)" loading="lazy"><br>Herculean Effort (5) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-namora-master-of-depths.webp" height="64" alt="Master of Depths (6)" loading="lazy"><br>Master of Depths (6) | defeat a Villain in the Sewers or Bridge | deck-top | ⏳ |
+| No-Name Brood Queen | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-no-name-brood-queen-bursting-with-life.webp" height="64" alt="Bursting with Life (3)" loading="lazy"><br>Bursting with Life (3) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-no-name-brood-queen-torrent-of-broodlings.webp" height="64" alt="Torrent of Broodlings (5)" loading="lazy"><br>Torrent of Broodlings (5) | Feast + a non-grey Hero KO&#39;d from your deck | swap | ⏳ |
+| Rick Jones | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-seek-the-nega-bands.webp" height="64" alt="Seek the Nega-Bands (4)" loading="lazy"><br>Seek the Nega-Bands (4) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-captain-marvel.webp" height="64" alt="Captain Marvel (5)" loading="lazy"><br>Captain Marvel (5) | reveal top of deck, cost ≥ 3 | swap | ⏳ |
+| Rick Jones | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-irradiated-blood.webp" height="64" alt="Irradiated Blood (5)" loading="lazy"><br>Irradiated Blood (5) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-a-bomb.webp" height="64" alt="A-Bomb (6)" loading="lazy"><br>A-Bomb (6) | ≥ 5 Villains in your Victory Pile | deck-top | ⏳ |
+| Rick Jones | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-caught-in-kree-skrull-war.webp" height="64" alt="Caught in the Kree-Skrull War (7)" loading="lazy"><br>Caught in the Kree-Skrull War (7) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-rick-jones-the-destiny-force.webp" height="64" alt="The Destiny Force (9)" loading="lazy"><br>The Destiny Force (9) | defeat two Villains this turn | deck-top | ⏳ |
+| Sentry | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-sentry-agoraphobia.webp" height="64" alt="Agoraphobia (2)" loading="lazy"><br>Agoraphobia (2) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-sentry-golden-guardian-of-good.webp" height="64" alt="Golden Guardian of Good (6)" loading="lazy"><br>Golden Guardian of Good (6) | always (on play) | discard — **and back** (see below) | ⏳ |
+| Sentry | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-sentry-mournful-sentinel.webp" height="64" alt="Mournful Sentinel (3)" loading="lazy"><br>Mournful Sentinel (3) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-sentry-the-void-unchained.webp" height="64" alt="The Void Unchained (5)" loading="lazy"><br>The Void Unchained (5) | reveal top of deck, cost ≥ 1 | deck-top — **and back** | ⏳ |
+| She-Hulk | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-she-hulk-hurl-legal-objections.webp" height="64" alt="Hurl Legal Objections (3)" loading="lazy"><br>Hurl Legal Objections (3) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-she-hulk-hurl-trucks.webp" height="64" alt="Hurl Trucks (6)" loading="lazy"><br>Hurl Trucks (6) | made ≥ 6 Recruit this turn | swap | ✅ WP-658 |
+| Skaar, Son of Hulk | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-skaar-son-of-hulk-mood-swings.webp" height="64" alt="Mood Swings (5)" loading="lazy"><br>Mood Swings (5) | <img src="https://images.legendary-arena.com/wwhk/wwhk-hr-skaar-son-of-hulk-raging-savage.webp" height="64" alt="Raging Savage (6)" loading="lazy"><br>Raging Savage (6) | `[hc:instinct]` + you gain a Wound | swap | ⏳ |
 
 Rick Jones is the widest (three independent base→transformed pairs); Sentry is
 the deepest (two **bidirectional** pairs).
@@ -200,9 +206,69 @@ detail:
 | **deck-top** | "…and put it on top of your deck" | X is drawn again next turn (a delayed, guaranteed replay) |
 | **discard** | "…and put it in your discard pile" | X re-enters via the normal deck cycle (and enables the return loops) |
 
-## Engine status — IMPLEMENTED (partial) {#engine-status--implemented-partial}
+## Mastermind Transform
 
-Transform **is implemented**, in layers that shipped across one arc:
+Transform is not only a Hero mechanic — **six of the set's Masterminds transform
+too**, and they are why this page needs a second half. A transforming Mastermind
+ships **two boss faces** in one Mastermind and flips between them mid-game, almost
+always off a **Master Strike** (see the [Master Strike](master-strike.md) mechanic
+for how strikes fire and stack).
+
+| Mastermind (leads) | Base form | ⇄ Second form | Transform trigger |
+|---|---|---|---|
+| **General “Thunderbolt” Ross** (Code Red) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-general-thunderbolt-ross.webp" height="72" alt="General Ross" loading="lazy"><br>General Ross | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-general-thunderbolt-ross.webp" height="72" alt="Red Hulk" loading="lazy"><br>Red Hulk | Master Strike (either form flips to the other) |
+| **Illuminati** (Illuminati) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-illuminati-secret-society.webp" height="72" alt="Secret Society" loading="lazy"><br>Secret Society | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-illuminati-secret-society.webp" height="72" alt="Open Warfare" loading="lazy"><br>Open Warfare | Master Strike (each player discards two cards in a cost band) |
+| **King Hulk** (Warbound) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-king-hulk-sakaarson.webp" height="72" alt="Sakaarson" loading="lazy"><br>Sakaarson | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-king-hulk-sakaarson.webp" height="72" alt="Worldbreaker" loading="lazy"><br>Worldbreaker | Master Strike |
+| **M.O.D.O.K.** (Intelligencia) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-m-o-d-o-k.webp" height="72" alt="M.O.D.O.K." loading="lazy"><br>M.O.D.O.K. | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-m-o-d-o-k.webp" height="72" alt="Network Nightmare" loading="lazy"><br>Network Nightmare | Master Strike (players who can&#39;t Outwit take the hit) |
+| **The Red King** (Sakaar Imperial Guard) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-red-king-the.webp" height="72" alt="The Red King" loading="lazy"><br>The Red King | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-red-king-the.webp" height="72" alt="Power Armored" loading="lazy"><br>Power Armored | Master Strike |
+| **The Sentry** (Aspects of the Void) | <img src="https://images.legendary-arena.com/wwhk/wwhk-mm-sentry-the.webp" height="72" alt="The Sentry" loading="lazy"><br>The Sentry | <img src="https://images.legendary-arena.com/wwhk/wwhk-me-sentry-the.webp" height="72" alt="The Void" loading="lazy"><br>The Void | Master Strike (the deepest loop — the Void side is its own boss) |
+
+Read them as bidirectional, the way you read Sentry's Hero pair: each face carries
+its own Master Strike, and firing it flips the Mastermind to the *other* face —
+General Ross ⇄ Red Hulk, the timid Sentry ⇄ the Void. The two faces have different
+Attack, different Master Strikes, and different always-on rules (Red Hulk's
+Helicopters, the Void being its own boss), so *which face is showing* is real board
+state, not flavour.
+
+**How the flip is worded.** The trigger is the printed **`[keyword:Transforms]`**
+(plural — the Mastermind analog of a Hero's `[keyword:Transform]`). It appears in
+two places: on a face's **Master Strike** ("General Ross `[keyword:Transforms]`,
+then …") and on some **tactics** ("This Mastermind `[keyword:Transforms]`."). A few
+faces also carry named one-off keyword effects — `[keyword:Cross-Dimensional Hulk
+Rampage]`, `[keyword:Wounded Fury]` — that ride along with the flip.
+
+### Mastermind engine status — UNSUPPORTED (the next transform gap)
+
+Mastermind Transform is **not implemented**, and unlike the Hero side it is a
+**data-shape gap, not just a missing handler**. At setup the engine takes only the
+**first non-tactic face** as the Mastermind and **deliberately drops every later
+face** (DECISIONS **D-24193**): a transforming Mastermind's second boss face (Red
+Hulk, the Void, Worldbreaker…) is never loaded, so `[keyword:Transforms]` has
+nothing to flip to and sits as an inert marker. The match runs against the base
+face only — the harder second boss never appears. This is the Mastermind twin of
+the pre-WP-657 Hero gap (second-forms the engine could not reach).
+
+A faithful implementation needs the same three moves the Hero arc made, adapted to
+the Mastermind:
+
+1. **Load both faces** — capture the second boss face at setup (the analog of the
+   Hero side-deck partition) instead of discarding it at D-24193, plus a base⇄second
+   link the runtime can read without the registry.
+2. **A `Transforms` runtime** on the Master-Strike / tactic path — swap the active
+   Mastermind face, carry over attached Helicopters / captured Bystanders, and apply
+   the new face's Attack and always-on rules.
+3. **Bidirectional + named effects** — each face can flip back (Sentry ⇄ Void is the
+   deepest loop), and the ride-along keywords (`Cross-Dimensional Hulk Rampage`,
+   `Wounded Fury`) each need their own resolution.
+
+Until that lands, playing one of these six Masterminds gives you an honest but
+**incomplete** boss: the base face fights faithfully; the transform to the second
+face is the tracked gap. It is the natural next Work Packet after the Hero transform
+arc.
+
+## Hero engine status — IMPLEMENTED (partial) {#engine-status--implemented-partial}
+
+Hero Transform **is implemented**, in layers that shipped across one arc:
 
 1. **The set-aside zone (WP-657 / D-24468).** At setup, `buildTransformSideDeck`
    partitions every `isTransform` instance **out** of the shuffled Hero-deck
@@ -320,3 +386,7 @@ distinct piece of state, not just another trigger.
   `apps/arena-client/src/components/play/TransformDeck.vue` (WP-664 / D-24475).
 - Honest-partial precedent: `docs/ai/work-packets/WP-653-hero-condition-gate-family.md`
   (why an unmodeled gated effect stays a loud hollow rather than a silent no-op).
+- **Mastermind Transform:** [Master Strike](master-strike.md) (the trigger surface);
+  `packages/game-engine/src/mastermind/mastermind.setup.ts` (the base-face selection
+  that drops the second face); DECISIONS **D-24193** (first-non-tactic-face rule, the
+  gap the Mastermind transform must close).
