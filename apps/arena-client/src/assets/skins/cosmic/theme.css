@@ -7,5 +7,5 @@
   --skin-card-frame: #a78bfa;
   --skin-accent: #db2777;
   /* A deep scrim so cards/zones stay legible over the nebula + starfield. */
-  --skin-board-scrim: rgba(6, 4, 15, 0.58);
+  --skin-board-scrim: rgba(6, 4, 15, 0.62);
 }

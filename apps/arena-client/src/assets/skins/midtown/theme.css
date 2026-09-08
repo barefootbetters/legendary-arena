@@ -7,5 +7,5 @@
   --skin-card-frame: #7aa2d6;
   --skin-accent: #ffd98a;
   /* A darker scrim so cards/zones stay legible over the lit-window skyline. */
-  --skin-board-scrim: rgba(6, 12, 28, 0.55);
+  --skin-board-scrim: rgba(6, 12, 28, 0.60);
 }

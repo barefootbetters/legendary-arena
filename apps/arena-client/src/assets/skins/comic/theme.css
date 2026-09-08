@@ -8,5 +8,5 @@
   --skin-accent: #1d4ed8;
   /* WP-666 (D-24477): a moderate warm-dark scrim keeps cards legible over the
      bright halftone mat without killing the pop-art tone. */
-  --skin-board-scrim: rgba(20, 14, 4, 0.42);
+  --skin-board-scrim: rgba(20, 14, 4, 0.55);
 }
