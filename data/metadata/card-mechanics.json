@@ -1177,6 +1177,17 @@
       "hidden": true
     },
     {
+      "slug": "reveal-herodeck-attack",
+      "label": "Reveal Herodeck Attack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/she-hulk"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "reveal-ko",
       "label": "Reveal: KO",
       "scope": "hero",
@@ -3819,6 +3830,7 @@
         "optional-ko-hand-discard",
         "outwit",
         "recruit-threshold",
+        "reveal-herodeck-attack",
         "smash",
         "transform"
       ]

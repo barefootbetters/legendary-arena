@@ -1252,6 +1252,34 @@ function parseAbilityText(
     magnitudes.delete('attack');
   }
 
+  // Icon-suppression (sibling): a reveal-herodeck-attack effect subsumes the
+  // printed attack icon on the same line. Jade Giantess reads "…and you get that
+  // card's printed[icon:attack]" — that bare icon is the effect's OWN grant (the
+  // revealed Hero-Deck card's printed attack), NOT a separate flat attack. Without
+  // this the icon promotes to a magnitude-less 'attack' keyword (Step 3), which the
+  // executeSingleEffect magnitude pre-gate drops to a no-op but which still
+  // mis-classifies the hook. Drop the plain 'attack' keyword (and any magnitude) so
+  // only the reveal-herodeck-attack effect remains.
+  // why: WP-668 / D-24481 — the reveal-Hero-Deck-attack keyword subsumes the printed
+  // attack icon (mirrors the D-24016 attack-per-count suppression above).
+  let lineHasRevealHeroDeckAttack = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'reveal-herodeck-attack') {
+      lineHasRevealHeroDeckAttack = true;
+      break;
+    }
+  }
+  if (lineHasRevealHeroDeckAttack) {
+    const keywordsWithoutAttackIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutAttackIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutAttackIcon;
+    magnitudes.delete('attack');
+  }
+
   // Icon-suppression (sibling): a shuffle-discard-empty-reward effect subsumes
   // the printed reward icon on the same line. Without this, "If your discard
   // pile is empty, you get +2[icon:recruit]..." would emit BOTH a flat

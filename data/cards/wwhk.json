@@ -1945,7 +1945,7 @@
           "attack": "0+",
           "recruit": "4",
           "abilities": [
-            "For every 2[icon:recruit]you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed[icon:attack]."
+            "For every 2[icon:recruit]you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed[icon:attack]. [keyword:reveal-herodeck-attack:2]"
           ]
         }
       ],
