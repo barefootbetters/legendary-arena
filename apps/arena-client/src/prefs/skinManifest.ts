@@ -65,6 +65,15 @@ const comicThemeCssUrl = new URL('../assets/skins/comic/theme.css', import.meta.
 const minimalThemeCssUrl = new URL('../assets/skins/minimal/theme.css', import.meta.url).href;
 const midtownThemeCssUrl = new URL('../assets/skins/midtown/theme.css', import.meta.url).href;
 const cosmicThemeCssUrl = new URL('../assets/skins/cosmic/theme.css', import.meta.url).href;
+// The nine licensed Marvel / Upper Deck mat skins share one theme (strong scrim).
+const matsThemeCssUrl = new URL('../assets/skins/mats/theme.css', import.meta.url).href;
+
+// why (D-24479): the licensed mat images are NOT bundled — they are copyrighted
+// Marvel / Upper Deck scans, kept out of git (like all card art) and served from
+// the R2-backed images CDN, the same host the game already loads card art from.
+// `boardBackgroundUrl` carries the absolute CDN URL directly (no `new URL` — it
+// is already fully-qualified). Files live at r2:legendary-images/play-mats/.
+const MAT_CDN = 'https://images.legendary-arena.com/play-mats';
 
 // Legacy card-frame stubs (WP-130). `cardFrameUrl` is not consumed yet
 // (card-frame rendering is a future WP); it stays optional so a new skin
@@ -96,12 +105,13 @@ export interface SkinManifestEntry {
   readonly themeCssUrl: string;
   readonly cssClassName: string;
   /**
-   * Forward seam (WP-666): marks an entry whose art is licensed
-   * (e.g. an official Marvel / Upper Deck mat). No entry ships with
-   * this set in WP-666; a licensed mat is a gated per-mat drop-in.
+   * Marks an entry whose art is licensed (an official Marvel / Upper Deck
+   * mat scan). The nine `play-mats` skins set this `true` with an
+   * `attribution`; the first-party skins (classic/comic/minimal/midtown/
+   * cosmic) leave it unset.
    */
   readonly licensed?: boolean;
-  /** Optional attribution string for a licensed or credited mat. */
+  /** Attribution string for a licensed mat (shown/recorded as credit). */
   readonly attribution?: string;
 }
 
@@ -111,8 +121,10 @@ export interface SkinManifestEntry {
  * selector display order.
  *
  * The curated named-mat set (D-24478, superseding the D-13003 three-skin
- * lock): `classic` (default, palette ground) + `comic` + `minimal`
- * (a11y ground) + the two named first-party mats `midtown` + `cosmic`.
+ * lock): the five first-party skins — `classic` (default, palette ground) +
+ * `comic` + `minimal` (a11y ground) + `midtown` + `cosmic` — followed by the
+ * nine licensed Marvel / Upper Deck mats from the ewiki play-mats catalogue
+ * (images served from the CDN, see `MAT_CDN`).
  */
 export const skinManifest = {
   classic: {
@@ -147,6 +159,78 @@ export const skinManifest = {
     boardBackgroundUrl: cosmicBoardBackgroundUrl,
     themeCssUrl: cosmicThemeCssUrl,
     cssClassName: 'skin-cosmic',
+  },
+  darkphoenix: {
+    displayLabel: 'Dark Phoenix',
+    boardBackgroundUrl: `${MAT_CDN}/dark-phoenix-vs-xmen-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-darkphoenix',
+    licensed: true,
+    attribution: 'Upper Deck Legendary Playmat: Dark Phoenix vs. The X-Men',
+  },
+  thanos: {
+    displayLabel: 'Thanos vs. Avengers',
+    boardBackgroundUrl: `${MAT_CDN}/thanos-infinity-saga-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-thanos',
+    licensed: true,
+    attribution: 'Upper Deck Legendary Playmat: Thanos vs. The Avengers',
+  },
+  villains: {
+    displayLabel: 'Villains',
+    boardBackgroundUrl: `${MAT_CDN}/villains-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-villains',
+    licensed: true,
+    attribution: 'Upper Deck Legendary Villains in-box mat',
+  },
+  loki: {
+    displayLabel: 'Loki vs. Avengers',
+    boardBackgroundUrl: `${MAT_CDN}/avengers-core-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-loki',
+    licensed: true,
+    attribution: 'Upper Deck Loki vs. The Avengers layout mat (OPK1)',
+  },
+  darkcity: {
+    displayLabel: 'Dark City',
+    boardBackgroundUrl: `${MAT_CDN}/dark-city-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-darkcity',
+    licensed: true,
+    attribution: 'Upper Deck Daredevil vs. The Hand / Dark City mat (OPK2)',
+  },
+  painttown: {
+    displayLabel: 'Paint the Town Red',
+    boardBackgroundUrl: `${MAT_CDN}/paint-the-town-red-playmat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-painttown',
+    licensed: true,
+    attribution: 'Upper Deck Spider-Man vs. the Sinister Six layout scan',
+  },
+  thanosart: {
+    displayLabel: 'Thanos (Art)',
+    boardBackgroundUrl: `${MAT_CDN}/thanos-art-mat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-thanosart',
+    licensed: true,
+    attribution: 'Upper Deck Marvel Thanos art playmat (SKU 93486)',
+  },
+  wolverine: {
+    displayLabel: 'Wolverine',
+    boardBackgroundUrl: `${MAT_CDN}/wolverine-art-mat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-wolverine',
+    licensed: true,
+    attribution: 'Upper Deck Marvel Wolverine art playmat (SKU 93490)',
+  },
+  spidermanart: {
+    displayLabel: 'Spider-Man',
+    boardBackgroundUrl: `${MAT_CDN}/spider-man-art-mat.jpg`,
+    themeCssUrl: matsThemeCssUrl,
+    cssClassName: 'skin-spidermanart',
+    licensed: true,
+    attribution: 'Upper Deck Marvel Spider-Man art playmat (SKU 93488)',
   },
 } as const satisfies Record<string, SkinManifestEntry>;
 

@@ -15,15 +15,18 @@ describe('WP-130 prefs/playmatSchema', () => {
     );
   });
 
-  test('SKIN_NAMES equals the D-24478 curated named-mat set (five entries)', () => {
-    // WP-666 / D-24478 superseded the D-13003 three-skin lock with a curated
-    // five-entry named-mat set. The classic/comic/minimal originals plus the
-    // two first-party named mats midtown + cosmic.
+  test('SKIN_NAMES equals the curated named-mat set (5 first-party + 9 licensed mats)', () => {
+    // WP-666 / D-24478 superseded the D-13003 three-skin lock. The set is the
+    // five first-party skins (classic/comic/minimal/midtown/cosmic) plus the nine
+    // licensed Marvel / Upper Deck mats from the ewiki play-mats catalogue.
     const sorted = SKIN_NAMES.slice().sort();
-    assert.deepEqual(sorted, ['classic', 'comic', 'cosmic', 'midtown', 'minimal']);
+    assert.deepEqual(sorted, [
+      'classic', 'comic', 'cosmic', 'darkcity', 'darkphoenix', 'loki', 'midtown',
+      'minimal', 'painttown', 'spidermanart', 'thanos', 'thanosart', 'villains', 'wolverine',
+    ]);
   });
 
-  test('every manifest entry carries displayLabel and boardBackgroundUrl (WP-666)', () => {
+  test('every manifest entry carries displayLabel + boardBackgroundUrl, and licensed mats carry attribution', () => {
     for (const name of SKIN_NAMES) {
       // Widen to the interface so the optional `licensed` seam is reachable
       // (the `as const satisfies` narrows each entry's literal type without it).
@@ -36,8 +39,14 @@ describe('WP-130 prefs/playmatSchema', () => {
         url === null || (typeof url === 'string' && url.length > 0),
         `${name} boardBackgroundUrl must be a non-empty string or null`,
       );
-      // WP-666 ships no licensed art — the seam is unused in this set.
-      assert.notEqual(entry.licensed, true, `${name} must not be marked licensed in WP-666`);
+      // A licensed mat must credit its source AND actually carry an image.
+      if (entry.licensed === true) {
+        assert.ok(
+          typeof entry.attribution === 'string' && entry.attribution.length > 0,
+          `${name} is licensed and must carry an attribution string`,
+        );
+        assert.ok(url !== null, `${name} is licensed and must carry a board image`);
+      }
     }
   });
 
