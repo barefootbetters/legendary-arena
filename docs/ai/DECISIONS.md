@@ -40544,22 +40544,21 @@ exists — green tests + a merged PR did not prove the feature rendered.
 
 Protect this file.
 
-### D-24485 — A WORK_INDEX `[ ]` row whose WP has executed is a govern-close inconsistency, CI-enforced (WP-671 / EC-708)
-
-**Status:** Drafted 2026-09-08; not yet landed (flips to Active at WP-671 execution).
+### D-24485 — A WORK_INDEX `[ ]` row whose WP has executed is a govern-close inconsistency, CI-enforced (Active 2026-09-08 — WP-671 / EC-708)
 
 **Context.** Bursts of WP execution sessions land the `EC-###:` implementation commit (and often the D-entry → Active and the STATUS close-out) but leave the index rows stale: WORK_INDEX `- [ ]`, mindmap `📝`/`🚧`, EC_INDEX `Ready`. `roadmap:counts:check` cannot catch it because WORK_INDEX and the mindmap go stale TOGETHER (they agree, so the derived count is self-consistent but overstates open work). Observed at WP-391, WP-657/658/660/661/662/664/665, and WP-669/670.
 
-**Decision (drafted — the WP body is authoritative; this entry is rewritten to match the scaffold-chosen signal at flip-to-Active).** A CI guard fails the build on a `WORK_INDEX.md` `- [ ]` WP row that has demonstrably executed. The detection signal is **scaffold-decided** among three candidates, none free — the executor prototypes all three against real `main` and picks the one(s) that pass a hard acceptance test (exit 0 on clean `main`, catch a synthetic drift, never trip drafted-open / reserve / template / backlog / WP-042.1):
+**Decision.** A CI guard (`scripts/check-workindex-executed-open.mjs`, wired as the `workindex:executed:check` step beside `workindex:rows:check`) fails the build on a `WORK_INDEX.md` `- [ ]` WP row that has demonstrably executed. The detection signal was **scaffold-decided** at execution among three candidates (each prototyped against real `main` under a hard acceptance test: exit 0 on clean `main`, catch a synthetic drift, never trip drafted-open / reserve / template / backlog / WP-042.1 / WP-671's own row). **Two file-only signals were chosen** — both passed, both read markdown only, so the CI job needs no `fetch-depth: 0`:
 
-1. **`[ ]` row + owned D-entry `Active`.** Fast, file-only. Sound ONLY if the `Drafted`→`Active` convention holds (a WP drafted with a premature `Active` D would false-positive). Owned = keyed on the `reserves **D-NNNNN**` phrase, not a bare citation.
-2. **`[ ]` row + own-clause executed-text.** Tokens derived from REAL phrasing (`executed`, `shipped`, `pending commit/PR` — NOT a hardcoded `pending PR`); scanned in the row's OWN status clause so a cross-WP `WP-NNN …` reference in the row does not trip.
-3. **`[ ]` row + merged `EC-### / WP-NNN:` execution commit.** The convention-independent ground truth; needs `fetch-depth: 0` on the CI job. The valid **fallback primary** if the file signals cannot meet the acceptance test on real `main`.
+1. **`[ ]` row + owned D-entry `Active`.** Owned = keyed on the literal `reserves **D-NNNNN**` phrase, NOT a bare `**D-NNNNN**` / "per D-NNNNN" citation (WP-042.1's "per D-4201" is a hard-dep, not ownership). Sound because the scaffold confirmed the only drafted-open row with a `reserves`-owned D on `main` (WP-671 → D-24485) carried a `Drafted` D — no premature `Active`.
+2. **`[ ]` row + own-clause executed-text.** The scanned clause is the row's first bold status marker plus its immediately-following parenthetical — NOT the descriptive prose, so a cross-WP `WP-NNN shipped …` reference in the row does not trip, and WP-671's own prose (which carries `executed`/`shipped`/`pending-PR`) passes because its status clause reads `Draft … drafted off`. Tokens are derived from the REAL drift phrasing observed at WP-669/670 (`**Executed 2026-09-08, pending PR**`): `executed`, `shipped`, `done`, `pending pr`, `pending commit`, each matched word-bounded.
 
-**Detect-only.** The guard never edits WORK_INDEX/DECISIONS; reconciliation stays a manual `INFRA:` catch-up, sequenced as a prerequisite if the scaffold finds real drift on `main` (never suppress the signal to pass). Mirrors the WP-455 row-grammar guard (`check-workindex-rows.mjs`), wired beside `workindex:rows:check` in `ci.yml`; skips non-WP rows (template placeholder, backlog).
+The **third candidate — a merged `EC-### / WP-NNN:` execution commit** — is the convention-independent ground truth but needs `fetch-depth: 0` on the CI job; it was scaffolded and **not chosen** because the two file signals already met the acceptance test. It remains the documented fallback primary if a future drafted-open WP ever carries a premature `Active` owned D (which would make signal 1 false-positive).
 
-Legitimately-open states pass: a drafted `[ ]`+`Drafted` row, a reserve-only ledger line, and the genuinely-blocked WP-042.1 (`[ ]`, `per D-4201` not `reserves`, no Active owned D-entry). This entry flips to Active at execution with the confirmed signal choice + real-phrasing tokens.
+**Detect-only.** The guard never edits WORK_INDEX/DECISIONS; reconciliation stays a manual `INFRA:` catch-up, sequenced as a prerequisite if the scaffold finds real drift on `main` (never suppress the signal to pass). Mirrors the WP-455 row-grammar guard (`check-workindex-rows.mjs`); skips non-WP rows (template placeholder, backlog). `node:fs` only, no new dependency.
 
-**Packet:** WP-671 / EC-708. **Drafted:** 2026-09-08.
+Legitimately-open states pass: a drafted `[ ]`+`Drafted` row, a reserve-only ledger line, and the genuinely-blocked WP-042.1 (`[ ]`, `per D-4201` not `reserves`, no Active owned D-entry). Verified at execution by the unit suite (positive per each signal + the full negative set) and two control runs against the real docs (executed-text and owned-D-Active drift each caught, then reverted).
+
+**Packet:** WP-671 / EC-708. **Active:** 2026-09-08.
 
 Protect this file.
