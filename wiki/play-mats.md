@@ -283,6 +283,14 @@ accessories for the same reason, and the 2017 OP-kit mats (OPK1–OPK3 above) we
 a **distributor → store-event** product, never a consumer shelf SKU. Catalogue
 the SKU and its live URL; do not infer a line plan from Amazon stock.
 
+**Consumer availability ≠ dealer policy.** Enforcement is looser than the dealer
+notices read: individual game shops list the current product online well beyond
+the six-name gaming-AIR list — e.g. [The Awesome Card Shop](https://theawesomecardshop.com/products/legendary-a-marvel-deck-building-game-second-edition)
+carries the Second Edition core — even as UD's dealer materials tell shops not to
+sell games online. For a *customer*, the practical map is: UD store and Amazon
+first, then whichever FLGS / CDD happens to stock it; the CDD/AIR machinery
+governs how *dealers* are allocated, not where a buyer can find a box.
+
 ## Interactions
 
 - **[Play Board](play-board.md)** — the digital analog, and the primary consumer
