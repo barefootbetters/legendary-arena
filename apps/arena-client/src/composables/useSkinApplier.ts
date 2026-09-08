@@ -135,6 +135,16 @@ export function applySkinToElement(root: HTMLElement, skin: SkinName): void {
       }
     }
     root.classList.add(entry.cssClassName);
+    // why: WP-666 (D-24477) — set the mat-image variable from the resolved
+    // manifest entry so the fixed PlaymatBackground layer paints it. The value
+    // is either `url("<resolved>")` or the keyword `none` for a palette-only
+    // ground. Setting it here — on the success branch, after the class swap —
+    // leaves the D-13005 fallback path untouched: a missing entry recurses into
+    // the default skin above and never reaches this line. The resolved URL may
+    // be a bundled asset or a CDN address (D-24479); one code path covers both.
+    const boardImageValue =
+      entry.boardBackgroundUrl === null ? 'none' : `url("${entry.boardBackgroundUrl}")`;
+    root.style.setProperty('--skin-board-image', boardImageValue);
   } catch (error) {
     // why: D-13005 unconditional fallback — class manipulation can
     // throw in obscure situations (the supplied element is detached

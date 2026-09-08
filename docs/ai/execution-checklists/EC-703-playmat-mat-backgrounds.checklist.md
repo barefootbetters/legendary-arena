@@ -86,6 +86,10 @@
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified** — mount `<PlaymatBackground>`.
 - `apps/arena-client/src/assets/skins/{classic,comic,minimal}/theme.css` — **modified** — add `--skin-board-scrim`.
 
+**Inline allowlist amendments (execution — set-coupled fixtures):**
+- `apps/arena-client/src/prefs/playmatStore.test.ts` — three-skin `availableSkins` fixture → five-entry set.
+- `apps/arena-client/src/components/play/TopHudBar.test.ts` — raw-key label assertion → `displayLabel`.
+
 **Governance (required by After Completing — inside the allowlist):**
 - `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
   `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`.

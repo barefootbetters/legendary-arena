@@ -17,11 +17,25 @@ describe('WP-130 components/play/SkinSelector', () => {
     );
   });
 
-  test('renders the trigger button with the active skin name and chevron', () => {
+  test('renders the trigger button with the active skin displayLabel and chevron (WP-666)', () => {
     const wrapper = mount(SkinSelector, { attachTo: document.body });
     const button = wrapper.find('[data-testid="play-hud-skin-selector-button"]');
     assert.equal(button.exists(), true);
-    assert.match(button.text(), /Skin: classic ▼/);
+    // WP-666: the button shows the human-readable displayLabel ("Classic"), not the raw key.
+    assert.match(button.text(), /Skin: Classic ▼/);
+    wrapper.unmount();
+  });
+
+  test('overlay options render the manifest displayLabel, not the raw key (WP-666)', async () => {
+    const wrapper = mount(SkinSelector, { attachTo: document.body });
+    await wrapper.find('[data-testid="play-hud-skin-selector-button"]').trigger('click');
+    await wrapper.vm.$nextTick();
+    const midtownOption = document.querySelector(
+      '[data-testid="play-hud-skin-option-midtown"]',
+    ) as HTMLElement;
+    assert.ok(midtownOption !== null, 'the midtown named-mat option should render');
+    assert.equal(midtownOption.textContent?.trim(), skinManifest.midtown.displayLabel);
+    assert.equal(midtownOption.textContent?.trim(), 'Midtown Skyline');
     wrapper.unmount();
   });
 

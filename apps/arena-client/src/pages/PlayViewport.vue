@@ -12,6 +12,7 @@ import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
 import VfxOverlay from '../components/play/VfxOverlay.vue';
+import PlaymatBackground from '../components/play/PlaymatBackground.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
@@ -91,7 +92,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -358,6 +359,16 @@ export default defineComponent({
 
 <template>
   <div ref="viewportRoot" class="play-viewport">
+    <!--
+      // why: WP-666 — the fixed full-bleed playmat background layer, mounted
+      // ONCE here at the shared viewport root (the <VfxOverlay> single-host
+      // precedent) so the selected skin's mat art paints behind BOTH the
+      // <PlayMobile> and <PlayDesktop> surfaces. useSkinApplier (invoked above
+      // on this same root) sets the --skin-board-image variable the layer reads;
+      // the layer is fixed + pointer-events:none + z-index:-1, so it never
+      // disturbs the display:contents root or intercepts a click.
+    -->
+    <PlaymatBackground />
     <PlayMobile
       v-if="isMobile"
       :submit-move="submitMove"

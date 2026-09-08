@@ -1,0 +1,11 @@
+/* Midtown Skyline skin theme — WP-666 (D-24478 named-mat set).
+   First-party abstract night-city mat. Variables are scoped to the
+   .skin-midtown class so they apply only inside <PlayViewport>'s root. */
+.skin-midtown {
+  --skin-board-background: #0d1c3a;
+  --skin-board-foreground: #e6eefb;
+  --skin-card-frame: #7aa2d6;
+  --skin-accent: #ffd98a;
+  /* A darker scrim so cards/zones stay legible over the lit-window skyline. */
+  --skin-board-scrim: rgba(6, 12, 28, 0.55);
+}

@@ -6,4 +6,7 @@
   --skin-board-foreground: #0f172a;
   --skin-card-frame: #0f172a;
   --skin-accent: #1f2937;
+  /* WP-666 (D-24477): minimal is an image-less light ground; the scrim stays
+     light and near-transparent to preserve the high-contrast a11y baseline. */
+  --skin-board-scrim: rgba(248, 250, 252, 0.15);
 }

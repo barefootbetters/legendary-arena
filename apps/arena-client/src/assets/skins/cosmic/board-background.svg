@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="First-party abstract cosmic nebula starfield background">
+  <!-- WP-666 first-party abstract art (project-owned, not a Marvel/UD scan).
+       Deep-space arena: dark ground, a nebula wash, and scattered stars. -->
+  <defs>
+    <radialGradient id="cosGround" cx="60%" cy="40%" r="95%">
+      <stop offset="0%" stop-color="#211747"/>
+      <stop offset="55%" stop-color="#120b2c"/>
+      <stop offset="100%" stop-color="#06040f"/>
+    </radialGradient>
+    <radialGradient id="cosNebulaA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cosNebulaB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#db2777" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#db2777" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cosNebulaC" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#cosGround)"/>
+  <ellipse cx="1040" cy="330" rx="620" ry="440" fill="url(#cosNebulaA)"/>
+  <ellipse cx="430" cy="600" rx="520" ry="360" fill="url(#cosNebulaB)"/>
+  <ellipse cx="900" cy="640" rx="440" ry="300" fill="url(#cosNebulaC)"/>
+  <g fill="#ffffff">
+    <circle cx="140" cy="120" r="2.4" fill-opacity="0.9"/>
+    <circle cx="300" cy="220" r="1.6" fill-opacity="0.7"/>
+    <circle cx="520" cy="90" r="2.0" fill-opacity="0.8"/>
+    <circle cx="720" cy="180" r="1.4" fill-opacity="0.6"/>
+    <circle cx="960" cy="120" r="2.6" fill-opacity="0.95"/>
+    <circle cx="1180" cy="90" r="1.6" fill-opacity="0.7"/>
+    <circle cx="1360" cy="210" r="2.2" fill-opacity="0.85"/>
+    <circle cx="1500" cy="120" r="1.5" fill-opacity="0.6"/>
+    <circle cx="220" cy="420" r="1.8" fill-opacity="0.75"/>
+    <circle cx="470" cy="500" r="2.4" fill-opacity="0.9"/>
+    <circle cx="80" cy="640" r="1.6" fill-opacity="0.7"/>
+    <circle cx="360" cy="760" r="2.0" fill-opacity="0.8"/>
+    <circle cx="640" cy="700" r="1.4" fill-opacity="0.6"/>
+    <circle cx="880" cy="810" r="2.2" fill-opacity="0.85"/>
+    <circle cx="1120" cy="720" r="1.6" fill-opacity="0.7"/>
+    <circle cx="1300" cy="640" r="2.6" fill-opacity="0.95"/>
+    <circle cx="1480" cy="760" r="1.8" fill-opacity="0.75"/>
+    <circle cx="1040" cy="470" r="1.5" fill-opacity="0.6"/>
+    <circle cx="1240" cy="430" r="2.0" fill-opacity="0.8"/>
+  </g>
+  <g stroke="#ffffff" stroke-opacity="0.7" stroke-width="1.5">
+    <path d="M955 112 l10 0 M960 107 l0 10"/>
+    <path d="M1295 635 l12 0 M1301 629 l0 12"/>
+  </g>
+</svg>

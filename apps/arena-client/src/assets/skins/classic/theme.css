@@ -6,4 +6,7 @@
   --skin-board-foreground: #f5f5f4;
   --skin-card-frame: #d4af37;
   --skin-accent: #c2410c;
+  /* WP-666 (D-24477): classic is an image-less navy board ground (the physical
+     Legendary board evokes deep blue). A light scrim adds depth without art. */
+  --skin-board-scrim: rgba(2, 6, 23, 0.25);
 }

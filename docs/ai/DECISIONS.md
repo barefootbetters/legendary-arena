@@ -14089,7 +14089,9 @@ client at MVP**. Skin assets ship inside the arena-client Vite bundle from
   ships fine offline. Future WP if community-skin or premium-skin pipeline
   emerges.
 
-**Status:** Immutable.
+**Status:** Immutable. **Superseded by D-24479** (WP-666, 2026-09-07) — mat art
+now loads by CDN URL (`images.legendary-arena.com`) with a bundled fallback; the
+bundled-only discovery this entry locked no longer holds.
 **Citation:** WP-130 §F default-acceptance; EC-133 §2 locked values; pre-flight
 2026-05-04.
 
@@ -14120,7 +14122,10 @@ is NOT in this packet.
 - **Per-card-rarity overrides included in MVP** — REJECTED. Reserved as
   the `customizations?` future seam; not implemented.
 
-**Status:** Immutable.
+**Status:** Immutable. **Activated by D-24477** (WP-666, 2026-09-07) — the board
+background image this entry scoped shipped inert in WP-130; WP-666 realizes it
+with a real `PlaymatBackground` paint layer + mandatory scrim. This is an
+activation, NOT a supersession — the scope this entry locked is unchanged.
 **Citation:** WP-130 §F default-acceptance; EC-133 §2 locked values.
 
 ---
@@ -14154,7 +14159,11 @@ fails (per D-13005). Three skins exactly — no more, no fewer at MVP.
   facing payoff is sub-linear once three options exist. Future WP if curated
   set expansion is needed.
 
-**Status:** Immutable.
+**Status:** Immutable. **Superseded by D-24478** (WP-666, 2026-09-07) — the
+"three skins exactly" lock is lifted; the bundled set is now a curated five-entry
+named-mat set (`classic` / `comic` / `minimal` / `midtown` / `cosmic`). The
+"Four+ skins" rejected-alternative reasoning above is the case D-24478 revisits
+now that the mats carry real board art.
 **Citation:** WP-130 §F default-acceptance; EC-133 §2 locked values.
 
 ---
@@ -40280,5 +40289,126 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 **Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3144/3144; arena-client 1630/1630; `vue-tsc` 0; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`), `sim:runtime-observed`, hero-effect-coverage, and dashboard `test:coverage` `:check` gates green; NO hash re-pin (no sentinel parks a no-reward KO). Control run: removing the `optional-ko-hand-discard` marker drops the KO keyword from Radioactive Riot (non-vacuous). **Execution deviation:** the setup parser needed NO new arm — the generic `isValidHeroKeyword` path turns `[keyword:optional-ko-hand-discard]` into a `{type}` effect for a no-magnitude keyword, one fewer file than the WP drafted; and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's one line carries both `recruit-threshold:6` and `optional-ko-hand-discard`). D-24026 live-on-surface (a real match offers the KO after ≥6 Recruit) is operator-pending.
 
 **Packet:** WP-667 / EC-704. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
+
+---
+
+### D-24477 — The playmat skin paints a real board background via a fixed `PlaymatBackground` layer with a mandatory scrim (activates D-13002) (Active 2026-09-07 — WP-666 / EC-703)
+
+**Type:** Client UI Lock
+**Packet:** WP-666 / EC-703
+**Date:** 2026-09-07
+
+**Decision:** WP-130's skin selector shipped inert — the board-background image
+D-13002 scoped was never painted (placeholder assets, no consumer of the CSS
+variables, `.play-viewport` is `display:contents`). WP-666 activates it: a new
+`apps/arena-client/src/components/play/PlaymatBackground.vue` leaf, mounted once
+at the shared `<PlayViewport>` root (the `<VfxOverlay>` single-host precedent),
+paints back-to-front the palette ground (`--skin-board-background`), the mat
+image (`--skin-board-image`, set by `useSkinApplier` from the manifest entry),
+and a **mandatory** legibility scrim (`--skin-board-scrim`). The layer is
+`position: fixed`, full-bleed, `z-index: -1`, `pointer-events: none`,
+`aria-hidden` — decorative and inert; it never disturbs the `display:contents`
+root, never intercepts a click, never shifts board layout.
+
+**Rationale:** D-13002 already scoped the background image; only the paint
+surface + real assets were missing. A fixed behind-board layer needs no change to
+the board's flow layout, and CSS custom properties inherit to the fixed
+descendant. The scrim is mandatory because mat art is busy — without it, cards
+and zones over the art lose legibility.
+
+**Rejected alternatives:**
+- **Paint the background on `.play-viewport` directly** — REJECTED. It is
+  `display:contents` (not a paint box); a fixed sibling layer is the correct home.
+- **Optional scrim** — REJECTED. Legibility over busy art is the whole point; a
+  scrim-less mat is a FAIL.
+
+**Determinism / layer boundary:** N/A at the engine layer — arena-client
+presentation only; no `UIState` field, no `G`/`ctx` read, no hash surface. The
+D-13005 fallback (`'classic'` + one `console.warn`) is preserved verbatim.
+
+**Gates (executed 2026-09-07):** `pnpm -r build` 0; `pnpm --filter arena-client
+typecheck` 0; arena-client suite **1639/1639** (+23). Pre-merge browser preview
+was blocked by a shared port-5173 conflict + local-file sandbox; the fixed-layer
+positioning is proven by the shipped `<VfxOverlay>` sibling (same root, same
+`position:fixed; inset:0`). **D-24026 live-on-surface is operator-pending** — a
+real match on play.legendary-arena.com must show the board repaint on skin change
+with cards legible.
+
+**Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
+
+---
+
+### D-24478 — The bundled skin set is a curated five-entry named-mat set; licensed mats are a gated per-mat drop-in (supersedes the D-13003 three-skin lock) (Active 2026-09-07 — WP-666 / EC-703)
+
+**Type:** Client UI Lock
+**Packet:** WP-666 / EC-703
+**Date:** 2026-09-07
+
+**Decision:** The D-13003 "three skins exactly" lock is lifted. The bundled set
+is a curated **five-entry** named-mat set: `classic` (default, palette ground) /
+`comic` / `minimal` (a11y ground) / `midtown` ("Midtown Skyline") / `cosmic`
+("Cosmic Arena"). Each `SkinManifestEntry` gains `displayLabel` (the selector
+shows this, never the raw key) and the forward seam `licensed?` / `attribution?`.
+**Art posture:** first-party / abstract art the project owns outright ships now;
+a **licensed** Marvel / Upper Deck mat is a gated per-mat drop-in added only once
+the IP sign-off clears — no entry ships `licensed: true` in this packet, and no
+UD/Marvel scan is committed or referenced.
+
+**Rationale:** Once the mats carry real board art (D-24477), a three-option
+selector under-delivers; a small curated set is the payoff. Keeping the licensed
+mats behind a seam separates the (safe, shippable-now) mechanism from the
+(sign-off-gated) IP. The set is pinned (not "decided later") so the file
+allowlist and the manifest↔schema drift test are deterministic.
+
+**NG-1 (no pay-to-win):** not crossed — mats are cosmetic; even a future premium
+mat cannot buy a game outcome. This packet adds no purchase surface; a premium-mat
+WP would trigger the §20 funding-surface gate explicitly.
+
+**Execution deviation (board-image format):** the bundled art ships as
+first-party abstract **SVG** rather than the raster (`.png` / `.webp`) the WP
+named. SVG is a real committed image asset resolved to a `url()` (not a CSS
+gradient painted on the element, which RS-2 forbids), and is project-authorable
+without a binary image pipeline — a superset choice honoring RS-2's anti-gradient
+intent. Recorded here as a deliberate, honest deviation.
+
+**Rejected alternatives:**
+- **Decide the set at execution** — REJECTED. Leaves the allowlist + drift-test
+  count non-deterministic (the copilot-gate finding).
+- **Ship a licensed UD mat now** — REJECTED. IP sign-off is not this packet's; the
+  seam defers it safely.
+
+**Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
+
+---
+
+### D-24479 — Mat art loads by CDN URL with a bundled fallback via the repurposed `boardBackgroundUrl` (supersedes the D-13001 bundled-only discovery) (Active 2026-09-07 — WP-666 / EC-703)
+
+**Type:** Client UI Lock
+**Packet:** WP-666 / EC-703
+**Date:** 2026-09-07
+
+**Decision:** The D-13001 bundled-only discovery is superseded. The existing
+`SkinManifestEntry.boardBackgroundUrl` is **repurposed** (widened `string` →
+`string | null`) to carry a bundled URL, a CDN URL
+(`images.legendary-arena.com`), or `null` for a palette-only ground — no parallel
+image field is added. `useSkinApplier` maps it to `--skin-board-image` (`url("…")`
+or `none`) on one code path, so a bundled asset and a CDN asset flow identically.
+Publishing a CDN mat is an operator asset-drop (the notable-event SFX precedent),
+not part of the code packet; WP-666's own set is entirely bundled, so nothing in
+this packet depends on a CDN publish.
+
+**Rationale:** Full-size mat art (especially future licensed mats) should not
+bloat the client bundle; a CDN URL keeps heavy art out of the download while the
+bundled fallback keeps the shipped set offline-safe. Repurposing the existing
+field (rather than adding a parallel one) avoids two near-identical board-image
+fields (the pre-flight RS-1 finding).
+
+**Rejected alternatives:**
+- **Add a parallel `boardImageUrl` field** — REJECTED. Two near-identical fields
+  (one unused) is a readability trap (Rule 4).
+- **CDN-only (no bundled fallback)** — REJECTED. Reintroduces the D-13001
+  offline-load and latency concern for the shipped set.
+
+**Status:** Active (post-execution). **Packet:** WP-666 / EC-703.
 
 Protect this file.

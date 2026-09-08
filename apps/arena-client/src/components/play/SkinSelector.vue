@@ -2,7 +2,7 @@
 import { defineComponent, nextTick, ref } from 'vue';
 import { usePlaymat } from '../../prefs/playmatStore';
 import { useViewport } from '../../composables/useViewport';
-import type { SkinName } from '../../prefs/skinManifest';
+import { skinManifest, type SkinName } from '../../prefs/skinManifest';
 
 /**
  * HUD-bar mounted skin selector for the WP-130 re-skin / playmat
@@ -61,8 +61,15 @@ export default defineComponent({
       closeOverlay();
     }
 
+    // why: WP-666 — the selector shows the manifest's human-readable
+    // `displayLabel` (e.g. "Midtown Skyline"), never the raw `SkinName` key.
+    function labelFor(skin: SkinName): string {
+      return skinManifest[skin].displayLabel;
+    }
+
     function buttonLabel(skin: SkinName): string {
-      return isMobile.value ? `🎨 ${skin} ▼` : `🎨 Skin: ${skin} ▼`;
+      const label = labelFor(skin);
+      return isMobile.value ? `🎨 ${label} ▼` : `🎨 Skin: ${label} ▼`;
     }
 
     function isActive(skin: SkinName): boolean {
@@ -83,6 +90,7 @@ export default defineComponent({
       closeOverlay,
       selectSkin,
       buttonLabel,
+      labelFor,
       isActive,
       backdropClicked,
     };
@@ -163,7 +171,7 @@ export default defineComponent({
               :aria-current="isActive(skin) ? 'true' : 'false'"
               @click="selectSkin(skin)"
             >
-              {{ skin }}
+              {{ labelFor(skin) }}
             </button>
           </li>
         </ul>

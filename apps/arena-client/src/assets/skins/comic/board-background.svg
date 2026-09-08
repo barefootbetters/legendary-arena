@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="First-party abstract comic halftone background">
+  <!-- WP-666 first-party abstract art (project-owned, not a Marvel/UD scan).
+       Pop-art halftone field: warm ground, dot texture, and a bold action burst. -->
+  <defs>
+    <radialGradient id="comicGround" cx="32%" cy="28%" r="90%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="55%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </radialGradient>
+    <pattern id="comicDots" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+      <circle cx="6" cy="6" r="4.2" fill="#b45309" fill-opacity="0.35"/>
+    </pattern>
+    <radialGradient id="comicBurst" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fef3c7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#comicGround)"/>
+  <rect width="1600" height="900" fill="url(#comicDots)"/>
+  <g transform="translate(1120 250)">
+    <circle r="360" fill="url(#comicBurst)"/>
+    <g fill="#7c2d12" fill-opacity="0.18">
+      <path d="M0 0 L360 -70 L360 -20 Z"/>
+      <path d="M0 0 L370 40 L340 90 Z"/>
+      <path d="M0 0 L250 300 L200 270 Z"/>
+      <path d="M0 0 L-60 360 L-110 320 Z"/>
+      <path d="M0 0 L-330 120 L-320 60 Z"/>
+      <path d="M0 0 L-300 -180 L-250 -210 Z"/>
+      <path d="M0 0 L-40 -350 L20 -340 Z"/>
+    </g>
+  </g>
+  <g stroke="#7c2d12" stroke-opacity="0.22" stroke-width="10" fill="none">
+    <path d="M-40 760 Q 500 640 1640 820"/>
+    <path d="M-40 840 Q 620 720 1640 900"/>
+  </g>
+</svg>

@@ -335,6 +335,11 @@ the first-party art (`.png` or `.webp`), consistent across the bundled entries.
 - `apps/arena-client/src/pages/PlayViewport.vue` — mount `<PlaymatBackground>`
 - `apps/arena-client/src/assets/skins/{classic,comic,minimal}/theme.css` — add `--skin-board-scrim`
 
+**Inline allowlist amendments (execution, 2026-09-07 — set-coupled fixtures):**
+- `apps/arena-client/src/prefs/playmatStore.test.ts` — `availableSkins` fixture updated from the three-skin set to the five-entry set.
+- `apps/arena-client/src/components/play/TopHudBar.test.ts` — selector-label assertion updated from the raw key (`classic`) to the `displayLabel` (`Classic`).
+  Both are legitimate fixture updates for the intentional behavior change (set size + label source), folded in per the 01.0b file-allowlist-omission amendment.
+
 **Governance:**
 - `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24477..D-24479 + the three
   forward-pointer lines), `docs/ai/work-packets/WORK_INDEX.md`,

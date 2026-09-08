@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseSkinName, isSkinName, SKIN_NAMES, DEFAULT_SKIN_NAME } from './playmatSchema';
-import { skinManifest, type SkinName } from './skinManifest';
+import { skinManifest, type SkinName, type SkinManifestEntry } from './skinManifest';
 
 describe('WP-130 prefs/playmatSchema', () => {
   test('SKIN_NAMES exactly equals Object.keys(skinManifest) (drift detection)', () => {
@@ -15,9 +15,30 @@ describe('WP-130 prefs/playmatSchema', () => {
     );
   });
 
-  test('SKIN_NAMES contains the D-13003 locked bundled set', () => {
+  test('SKIN_NAMES equals the D-24478 curated named-mat set (five entries)', () => {
+    // WP-666 / D-24478 superseded the D-13003 three-skin lock with a curated
+    // five-entry named-mat set. The classic/comic/minimal originals plus the
+    // two first-party named mats midtown + cosmic.
     const sorted = SKIN_NAMES.slice().sort();
-    assert.deepEqual(sorted, ['classic', 'comic', 'minimal']);
+    assert.deepEqual(sorted, ['classic', 'comic', 'cosmic', 'midtown', 'minimal']);
+  });
+
+  test('every manifest entry carries displayLabel and boardBackgroundUrl (WP-666)', () => {
+    for (const name of SKIN_NAMES) {
+      // Widen to the interface so the optional `licensed` seam is reachable
+      // (the `as const satisfies` narrows each entry's literal type without it).
+      const entry: SkinManifestEntry = skinManifest[name];
+      assert.equal(typeof entry.displayLabel, 'string', `${name} must have a displayLabel`);
+      assert.ok(entry.displayLabel.length > 0, `${name} displayLabel must be non-empty`);
+      // boardBackgroundUrl is a URL string (bundled/CDN) or null (palette ground).
+      const url = entry.boardBackgroundUrl;
+      assert.ok(
+        url === null || (typeof url === 'string' && url.length > 0),
+        `${name} boardBackgroundUrl must be a non-empty string or null`,
+      );
+      // WP-666 ships no licensed art — the seam is unused in this set.
+      assert.notEqual(entry.licensed, true, `${name} must not be marked licensed in WP-666`);
+    }
   });
 
   test('DEFAULT_SKIN_NAME equals the WP-130 locked default value', () => {
