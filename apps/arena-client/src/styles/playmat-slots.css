@@ -51,7 +51,8 @@
    tile. The decks add their [count] under the label via the column layout. */
 .play-viewport .city-space-empty,
 .play-viewport .city-space-deck,
-.play-viewport .hq-slot-deck {
+.play-viewport .hq-slot-deck,
+.play-viewport .hq-slot-empty {
   background: rgba(250, 250, 253, 0.58) !important;
   border: 2.5px dashed rgba(28, 34, 54, 0.75) !important;
   border-radius: 11px !important;
@@ -109,4 +110,12 @@
   width: -moz-fit-content;
   width: fit-content;
   min-width: 5.5rem;
+}
+
+/* HQ hero cards render at `md` size (taller than the `sm` City villains), so the
+   empty HQ 'place a hero here' slot is taller and fills its cell to match the
+   filled hero tiles beside it. */
+.play-viewport .hq-slot-empty {
+  min-height: 9.5rem !important;
+  height: 100% !important;
 }
