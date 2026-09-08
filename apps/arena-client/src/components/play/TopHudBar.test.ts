@@ -120,7 +120,10 @@ describe('TopHudBar (WP-129)', () => {
     });
     const selectorButton = wrapper.find('[data-testid="play-hud-skin-selector-button"]');
     assert.equal(selectorButton.exists(), true);
-    assert.match(selectorButton.text(), /Skin: classic/);
+    // WP-666: the selector renders the human-readable displayLabel ("Classic"),
+    // not the raw skin key — the label source changed from the key to
+    // SkinManifestEntry.displayLabel.
+    assert.match(selectorButton.text(), /Skin: Classic/);
   });
 });
 

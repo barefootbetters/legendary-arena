@@ -72,6 +72,41 @@ describe('WP-130 composables/useSkinApplier', () => {
     assert.ok(warnCount >= 1, 'expected at least one console.warn for the unknown skin name');
   });
 
+  test('sets --skin-board-image to none for the image-less default skin (WP-666)', async () => {
+    const wrapper = mount(HostComponent);
+    await wrapper.vm.$nextTick();
+    const host = wrapper.find('[data-testid="skin-applier-host"]').element as HTMLElement;
+    // classic has boardBackgroundUrl === null, so the variable is the keyword `none`.
+    assert.equal(host.style.getPropertyValue('--skin-board-image'), 'none');
+    wrapper.unmount();
+  });
+
+  test('sets --skin-board-image to a url(...) when the active skin carries an image (WP-666)', async () => {
+    const wrapper = mount(HostComponent);
+    await wrapper.vm.$nextTick();
+    const host = wrapper.find('[data-testid="skin-applier-host"]').element as HTMLElement;
+    const playmat = usePlaymat();
+    playmat.setActiveSkin('comic');
+    await wrapper.vm.$nextTick();
+    const value = host.style.getPropertyValue('--skin-board-image');
+    assert.ok(value.startsWith('url('), `expected a url(...) value, got: ${value}`);
+    assert.ok(value.includes(skinManifest.comic.boardBackgroundUrl ?? ''), 'url should reference the comic mat asset');
+    wrapper.unmount();
+  });
+
+  test('applySkinToElement sets --skin-board-image to the fallback default on a missing entry (WP-666)', () => {
+    const host = document.createElement('div');
+    const originalWarn = console.warn;
+    console.warn = () => {};
+    try {
+      applySkinToElement(host, 'not-a-real-skin' as never);
+    } finally {
+      console.warn = originalWarn;
+    }
+    // Fallback is classic (boardBackgroundUrl null) → the image variable is `none`.
+    assert.equal(host.style.getPropertyValue('--skin-board-image'), 'none');
+  });
+
   test('applies skin class exclusively to the supplied root, never to document.body', async () => {
     const wrapper = mount(HostComponent);
     await wrapper.vm.$nextTick();
