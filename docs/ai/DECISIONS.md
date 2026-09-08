@@ -40035,9 +40035,13 @@ non-wwhk games), so the two engine hash oracles re-pin with NO behaviour change 
 effect mutates `G.transformDeck` at runtime — already hash-covered (the reason WP-657 hashed the zone). No new
 `ctx.random`.
 
-**D-24026 live-on-surface:** operator-pending — a real `play.legendary-arena.com` match that plays She-Hulk's
-Hurl Legal Objections after making ≥6 Recruit should show it transform into Hurl Trucks (the second-form on the
-board, +2 attack), and NOT transform when under 6 Recruit. Green tests + merge do NOT satisfy this.
+**D-24026 live-on-surface:** CONFIRMED live 2026-09-07 — an operator `play.legendary-arena.com` solo
+red-skull / Midtown Bank Robbery match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`, She-Hulk + Amadeus Cho
++ Thor, won) played She-Hulk's Hurl Legal Objections and it **waited** below the threshold (turn 18: "made
+2", turn 26: "made 4", both "will apply if you reach it this turn"), then **transformed into Hurl Trucks
+(+2 attack)** once Recruit reached ≥6 that same turn (18.2.6, and 26.2.16 — pushed over the line by Jade
+Giantess's +4 Recruit). Hurl Trucks then played from the board (23.2.5, 27.2.6). The wait-and-see gate and
+the swap both hold in production.
 
 **Packet:** WP-658 / EC-695. **Executed:** 2026-09-07 (engine build 0; engine suite 3083/3083 after the two
 re-pins; whole-repo green; all four card-derived `:check` gates green). Not yet landed (pending commit/PR).
@@ -40192,9 +40196,12 @@ whole-repo green; `cards:check` + `ledger:heroes:check` green.
 fields), aligning the schema with data + engine contracts already locked by D-24468 / D-24469. Field names
 match `00.2-data-requirements` / the engine's usage verbatim.
 
-**D-24026 live-on-surface (WP-657 + WP-658, now unblocked):** operator-pending — once this deploys, a live
-She-Hulk match must show Hurl Trucks NOT recruitable from the HQ, and Hurl Legal Objections transforming into
-Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
+**D-24026 live-on-surface (WP-657 + WP-658, now unblocked):** CONFIRMED live 2026-09-07 — the operator
+red-skull / Midtown match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`) showed **Hurl Trucks never
+recruitable from the HQ** (only Hurl Legal Objections was ever recruited — 15.2.8, 19.2.14, 26.2.20; every
+Hurl Trucks reached the board via Transform, never the HQ), and Hurl Legal Objections transforming into Hurl
+Trucks after ≥6 Recruit (18.2.6, 26.2.16). The registry-schema fix, the side-deck partition, and the swap
+all verified together in one live game.
 
 **Packet:** WP-662 / EC-699. **Executed:** 2026-09-07 (registry 249/249 with the regression test; engine
 3093/3093; whole-repo green; no re-pin, no regen). Not yet landed (pending commit/PR).
@@ -40262,7 +40269,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Scope boundary.** Exactly Gamma-Draining Nanites; the other 13 held-back transforms keep their honest `parse-unrecognized` markers (their conditions stay unmodeled). The each-player reveal-from-hand draw (`drawFromPlayerDeck` @ heroEffects ~L2757, Psychic Link) is deliberately **not** counted toward `cardsDrawn` — a different mechanic and a rare cross-set interaction. `cardsDrawn` is not projected to `UIState` (the transform's waiting/firing is already observable in the game log).
 
-**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3134/3134; whole-repo build 0; a control run confirmed the allowlist entry is load-bearing (removing gamma reverts the transform to a `parse-unrecognized` hollow); both hash oracles re-pinned deliberately (`PRE_WP080_HASH` `36a82b21→83b9b0a4`, the sentinel `finalStateHash`); `cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`/`sim:runtime-observed` `:check` all green; the coverage baseline update also caught up a pre-existing WP-661 `recruit-threshold` staleness (3→8) beside the new `draw-threshold` (1). D-24026 live-on-surface (a real Amadeus Cho match) is operator-pending.
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3134/3134; whole-repo build 0; a control run confirmed the allowlist entry is load-bearing (removing gamma reverts the transform to a `parse-unrecognized` hollow); both hash oracles re-pinned deliberately (`PRE_WP080_HASH` `36a82b21→83b9b0a4`, the sentinel `finalStateHash`); `cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`/`sim:runtime-observed` `:check` all green; the coverage baseline update also caught up a pre-existing WP-661 `recruit-threshold` staleness (3→8) beside the new `draw-threshold` (1). **D-24026 live-on-surface: CONFIRMED live 2026-09-07** — the operator red-skull / Midtown match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`) played Gamma-Draining Nanites, which **waited** after its own single draw ("drawn 1 … will apply if you reach it this turn" — 7.2.3, 11.2.3, 14.2.5, 16.2.7) and **Transformed into Like Totally Smart Hulk (+2 attack)** the moment a second draw landed that turn (11.2.6/7, 14.2.9, 28.2.8/9). The card's own "Draw a card" always fired unconditionally; the transform gated exactly on the drew-two-cards window.
 
 **Packet:** WP-665 / EC-702. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 
@@ -40286,7 +40293,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Determinism.** The park + resolve are deterministic; `koZones` is additive-optional and lazily present. Expected NO hash re-pin (no sentinel parks a no-reward KO); confirm at execution and re-pin deliberately if one does.
 
-**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3144/3144; arena-client 1630/1630; `vue-tsc` 0; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`), `sim:runtime-observed`, hero-effect-coverage, and dashboard `test:coverage` `:check` gates green; NO hash re-pin (no sentinel parks a no-reward KO). Control run: removing the `optional-ko-hand-discard` marker drops the KO keyword from Radioactive Riot (non-vacuous). **Execution deviation:** the setup parser needed NO new arm — the generic `isValidHeroKeyword` path turns `[keyword:optional-ko-hand-discard]` into a `{type}` effect for a no-magnitude keyword, one fewer file than the WP drafted; and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's one line carries both `recruit-threshold:6` and `optional-ko-hand-discard`). D-24026 live-on-surface (a real match offers the KO after ≥6 Recruit) is operator-pending.
+**Gates.** Draft gates ran at drafting. **Executed 2026-09-07:** engine suite 3144/3144; arena-client 1630/1630; `vue-tsc` 0; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`), `sim:runtime-observed`, hero-effect-coverage, and dashboard `test:coverage` `:check` gates green; NO hash re-pin (no sentinel parks a no-reward KO). Control run: removing the `optional-ko-hand-discard` marker drops the KO keyword from Radioactive Riot (non-vacuous). **Execution deviation:** the setup parser needed NO new arm — the generic `isValidHeroKeyword` path turns `[keyword:optional-ko-hand-discard]` into a `{type}` effect for a no-magnitude keyword, one fewer file than the WP drafted; and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's one line carries both `recruit-threshold:6` and `optional-ko-hand-discard`). **D-24026 live-on-surface: CONFIRMED live 2026-09-07** — the operator red-skull / Midtown match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`) played Radioactive Riot and it **waited** below the threshold ("made 0 / 2 / 5 … will apply if you reach it this turn" — 19.2.8, 21.2.6, 24.2.6, 29.2.14), then at ≥6 Recruit that turn **offered and resolved the optional KO** ("KO'd S.H.I.E.L.D. Agent from their discard pile for Radioactive Riot's ability", 28.2.13–14). The wait-and-see gate and the no-reward hand/discard KO both hold in production.
 
 ### D-24481 — Jade Giantess's "For every 2 Recruit, reveal the top Hero-Deck card, bottom it, and gain its printed Attack" is a new `reveal-herodeck-attack` keyword whose magnitude carries the "for every N Recruit" divisor (Active 2026-09-07 — WP-668 / EC-705)
 
@@ -40308,7 +40315,7 @@ Hurl Trucks after ≥6 recruit. Green tests + merge do NOT satisfy this.
 
 **Determinism.** The handler is pure over `G` (no RNG — a top-of-deck read + reorder). **NO hash re-pin** — the `sentinel-core-doom-2p` fixture and the empty-replay `PRE_WP080_HASH` play no wwhk cards, so neither oracle moves.
 
-**Gates.** **Executed 2026-09-07:** engine suite 3150/3150; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`) + `sim:runtime-observed` `:check` gates green; NO hash re-pin. Control: the marked/unmarked Jade Giantess parser tests through the real `buildHeroAbilityHooks` prove the `[keyword:reveal-herodeck-attack:2]` marker is load-bearing (unmarked → no effect; marked → the effect); the hero ledger flips `jade-giantess` to `executable`. D-24026 live-on-surface (a real match plays Jade Giantess and gains the scaled Attack) is operator-pending.
+**Gates.** **Executed 2026-09-07:** engine suite 3150/3150; `pnpm -r build` 0; all card-derived (`cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`) + `sim:runtime-observed` `:check` gates green; NO hash re-pin. Control: the marked/unmarked Jade Giantess parser tests through the real `buildHeroAbilityHooks` prove the `[keyword:reveal-herodeck-attack:2]` marker is load-bearing (unmarked → no effect; marked → the effect); the hero ledger flips `jade-giantess` to `executable`. **D-24026 live-on-surface: CONFIRMED live 2026-09-07** — the operator red-skull / Midtown match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`) played Jade Giantess at 8 Recruit made that turn (4 from S.H.I.E.L.D./Hurl Legal Objections + its own printed +4, applied before the effect) and it **revealed `floor(8 / 2) = 4` cards from the Hero Deck and granted +3 Attack** (the summed printed Attack of those four) — "revealed 4 card(s) from the Hero Deck via Jade Giantess … and gained +3 attack" (26.2.15). The snapshot-at-play scaling is exactly right, and the diagnostics record the effect dispatching to its handler (no hollow). Its +4 Recruit is what tipped Hurl Legal Objections over the ≥6 threshold to transform on the same turn (26.2.16).
 
 **Packet:** WP-667 / EC-704. **Drafted:** 2026-09-07. **Executed:** 2026-09-07 (pending PR).
 

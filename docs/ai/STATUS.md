@@ -7,6 +7,31 @@
 
 ## Current State
 
+### wwhk hero arc — D-24026 live-verification CLOSED for WP-658 / WP-662 / WP-665 / WP-667 / WP-668 (2026-09-07)
+
+**User-Visible Surface — `play.legendary-arena.com`.** One operator solo `core/red-skull` / Midtown Bank
+Robbery match (game `ac1efff4-435f-4089-84cc-0b0ab88e2cdd`; heroes She-Hulk + Amadeus Cho + Thor; **won** —
+Red Skull vanquished at 29.2.19) verified five wwhk-arc packets live in a single run. Each entry's D-24026
+flag flips operator-pending → **CONFIRMED live 2026-09-07**:
+
+- **WP-668 (Jade Giantess, D-24481)** — played at 8 Recruit made that turn (4 board + its own printed +4),
+  **revealed `floor(8/2)=4` Hero-Deck cards and gained +3 Attack** (26.2.15); diagnostics show the effect
+  dispatching to its handler (no hollow). Its +4 Recruit tipped Hurl Legal Objections over the ≥6 gate to
+  transform the same turn (26.2.16).
+- **WP-658 (She-Hulk Transform, D-24469)** — Hurl Legal Objections **waited** below 6 Recruit (18/26) then
+  **transformed into Hurl Trucks (+2 attack)** on reaching ≥6 (18.2.6, 26.2.16); Hurl Trucks then played
+  (23.2.5, 27.2.6).
+- **WP-662 (registry fix, D-24473)** — **Hurl Trucks was never recruitable from the HQ** (only base cards
+  recruited; every Hurl Trucks reached play via Transform).
+- **WP-665 (Amadeus Cho, D-24476)** — Gamma-Draining Nanites **waited** after one draw then **transformed
+  into Like Totally Smart Hulk (+2 attack)** on the second draw (11.2.6/7, 14.2.9, 28.2.8/9); its own "Draw
+  a card" always fired.
+- **WP-667 (Radioactive Riot, D-24480)** — **waited** below 6 Recruit (19/21/24/29) then **offered and
+  resolved the optional KO** at ≥6 ("KO'd S.H.I.E.L.D. Agent from their discard pile", 28.2.13–14).
+
+Every wait-and-see gate held (no early fire, correct fire on reaching the threshold). The DECISIONS entries
+for D-24469 / D-24473 / D-24476 / D-24480 / D-24481 carry the per-turn citations.
+
 ### WP-668 — Jade Giantess: "For every 2 Recruit, reveal the top Hero-Deck card and gain its printed Attack" (EC-705 / D-24481) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** `wwhk/she-hulk/jade-giantess` ("For every 2 Recruit
@@ -32,7 +57,8 @@ card to `executable` in the hero ledger.
 `mechanics:metadata`/`sim:runtime-observed` `:check` all green; **NO hash re-pin** (the sentinel plays no
 wwhk cards). Control: the marked/unmarked Jade Giantess parser tests through the real `buildHeroAbilityHooks`
 prove the `[keyword:reveal-herodeck-attack:2]` marker is load-bearing (unmarked → no effect). **D-24026
-live-on-surface** (a real match plays Jade Giantess and gains the scaled Attack) is operator-pending.
+live-on-surface: CONFIRMED live 2026-09-07** (game `ac1efff4…`) — Jade Giantess revealed 4 Hero-Deck cards
+and gained +3 Attack at 8 Recruit made (26.2.15); see the top-of-file arc sign-off.
 ### WP-666 — Activate the playmat skin selector: paint the selected mat as the board background (EC-703 / D-24477..D-24479) (2026-09-07)
 
 **User-Visible Surface — `play.legendary-arena.com`.** WP-130's `🎨` skin selector shipped **live but inert**:
@@ -113,8 +139,9 @@ test); `vue-tsc` 0; `pnpm -r build` 0; all card-derived, `sim:runtime-observed`,
 dashboard `test:coverage` `:check` gates green. **Execution deviations (no scope change):** the setup parser
 needed **no** new arm (the generic `isValidHeroKeyword` path handles the no-magnitude keyword — one fewer file
 than drafted), and `apply-hero-ability-markers.mjs` gained multi-marker-per-line support (Radioactive Riot's
-one line carries both markers). **D-24480 flipped Drafted → Active.** **D-24026 live-verify: operator-pending**
-— a real match on `play.legendary-arena.com` must offer the KO after ≥6 Recruit. **Out of scope:**
+one line carries both markers). **D-24480 flipped Drafted → Active.** **D-24026 live-verify: CONFIRMED live
+2026-09-07** (game `ac1efff4…`) — Radioactive Riot waited below 6 Recruit then offered and resolved the KO
+from discard at ≥6 (28.2.13–14); see the top-of-file arc sign-off. **Out of scope:**
 `co2e/spark-of-the-divine` (the rewarded recruit-threshold sibling, a noted follow-up) and the 90+ other
 "KO a card from hand or discard" cards (gated differently).
 
@@ -156,8 +183,9 @@ the allowlist reverts its transform to a `parse-unrecognized` hollow (non-vacuou
 **3134/3134**; `pnpm -r build` 0; `cards`/`ledger:heroes`/`effect-index`/`mechanics:metadata`/`sim:runtime-observed`
 `:check` all green. The coverage baseline update also caught up a **pre-existing WP-661 staleness**
 (`recruit-threshold` 3→8, its 5 shipped co2e/ssw1 cards) beside the new `draw-threshold` (1). **D-24476
-flipped Drafted → Active.** **D-24026 live-verify: operator-pending** — a real Amadeus Cho match on
-`play.legendary-arena.com` must play Gamma-Draining Nanites after ≥2 draws and transform. **Out of scope:**
+flipped Drafted → Active.** **D-24026 live-verify: CONFIRMED live 2026-09-07** (game `ac1efff4…`) —
+Gamma-Draining Nanites waited after one draw and transformed into Like Totally Smart Hulk on the second
+(11.2.6/7, 14.2.9, 28.2.8/9); see the top-of-file arc sign-off. **Out of scope:**
 the other 13 held-back transforms; the each-player reveal-from-hand draw (not counted).
 
 ### WP-664 — Project the Transform side deck to the UI + render a face-up pile (EC-701 / D-24475) (2026-09-07)
@@ -220,8 +248,9 @@ hurl-trucks copies in the hero deck (was 5), **5** in the side deck (was 0), and
 `transformTargets['wwhk/she-hulk/hurl-legal-objections'] === 'wwhk/she-hulk/hurl-trucks'` (was empty). Registry-only:
 NO card-data change, NO new `G` field, NO hash re-pin, NO derived-artifact drift; `pnpm -r build` 0; registry
 **249/249**, engine **3093/3093**, whole-repo green; `cards:check` + `ledger:heroes:check` green. **D-24026
-operator-pending for WP-657 + WP-658** — now unblocked (a live She-Hulk match: Hurl Trucks not recruitable;
-Hurl Legal Objections transforms after ≥6 recruit).
+for WP-657 + WP-658: CONFIRMED live 2026-09-07** (game `ac1efff4…`) — Hurl Trucks was never recruitable from
+the HQ (only base cards recruited; every Hurl Trucks reached play via Transform) and Hurl Legal Objections
+transformed after ≥6 Recruit (18.2.6, 26.2.16); see the top-of-file arc sign-off.
 
 ---
 
@@ -323,7 +352,9 @@ WP-657 hashed the zone). No new `ctx.random`.
 
 **Verification.** `pnpm -r build` 0; engine suite **3083/3083** after the two re-pins (+13 tests); whole-repo
 green; `cards:check` + `ledger:heroes:check` + `effect-index:check` + `mechanics:metadata:check` +
-`effect-index:test` all green. **D-24026 operator-pending** (post-deploy live She-Hulk match).
+`effect-index:test` all green. **D-24026: CONFIRMED live 2026-09-07** (game `ac1efff4…`) — Hurl Legal
+Objections waited below 6 Recruit then transformed into Hurl Trucks (+2 attack) at ≥6 (18.2.6, 26.2.16); see
+the top-of-file arc sign-off.
 
 ---
 
