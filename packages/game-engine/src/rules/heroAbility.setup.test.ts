@@ -474,7 +474,9 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted auto-resolving variant of optional-ko-reward
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
-      'undercover', // why: D-24060 / WP-282 — face-down-send-and-play keyword
+      'undercover', // why: WP-678 / D-24494 (supersedes D-24060) — Undercover descriptive token; bare form is an honest hollow (no source zone → no handler)
+      'undercover-hand-shield-hero', // why: WP-678 / D-24494 — "send a [team:shield] Hero from your hand Undercover" → Victory Pile (1 VP)
+      'undercover-officer-stack', // why: WP-678 / D-24494 — "send a card from the S.H.I.E.L.D. Officer Stack Undercover" → Victory Pile (1 VP)
       'conditional',
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
@@ -503,8 +505,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      46,
-      'HERO_KEYWORDS must have exactly 46 entries',
+      48,
+      'HERO_KEYWORDS must have exactly 48 entries',
     );
 
     assert.deepStrictEqual(

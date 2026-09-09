@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -80,7 +80,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-674 / D-24489 added the recruit-per-count handler (29 → 30).
     // WP-675 / D-24490 added the count-scaled-choose park handler (30 → 31).
     // WP-676 / D-24492 added the smash park handler (31 → 32).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 32);
+    // WP-678 / D-24494 added the two Undercover source-shape handlers
+    // (undercover-hand-shield-hero + undercover-officer-stack) (32 → 34).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 34);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -93,16 +95,16 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
   // reveal keyword and ignored by the no-magnitude ones), OR it executes at recruit
   // time (wall-crawl — D-24049 — whose executor is the recruitHero deck-top
   // placement), OR it executes via a hand-action move (dodge — D-24051 — whose
-  // executor is the dodgeCard hand-discard-to-draw move), OR it executes via the
-  // face-down send/play moves (undercover — D-24060 — sendUndercover +
-  // playFromUndercover) — none of the last three an onPlay handler nor a reveal
-  // translation. A keyword with none of the five fails here, so the reveal collapse
-  // cannot silently drop an executable keyword AND the move-executed categories
-  // cannot silently masquerade as a missing handler.
-  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, or as a class-grant (D-24024 / D-24049 / D-24051 / D-24060 / D-24074)', () => {
+  // executor is the dodgeCard hand-discard-to-draw move), OR it is a class-grant
+  // (size-changing — D-24074), OR it executes at discard time (return-on-discard —
+  // D-24301). A keyword with none fails here, so the reveal collapse cannot silently
+  // drop an executable keyword AND the move-executed categories cannot silently
+  // masquerade as a missing handler. (WP-678 / D-24494 retired the face-down category:
+  // Undercover's real forms are the two handler-bearing source-shape keywords; the bare
+  // 'undercover' token is now an honest hollow, intentionally NOT in MVP_KEYWORDS.)
+  it('every MVP_KEYWORD is handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, or at discard time (D-24024 / D-24049 / D-24051 / D-24074 / D-24301)', () => {
     const recruitTimeExecuted = new Set<string>(RECRUIT_TIME_EXECUTED_KEYWORDS);
     const handActionExecuted = new Set<string>(HAND_ACTION_EXECUTED_KEYWORDS);
-    const faceDownExecuted = new Set<string>(FACE_DOWN_EXECUTED_KEYWORDS);
     // why: D-24074 — size-changing executes as a class-grant realized at class-read time
     // (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
     // so it has no handler / reveal translation / move executor — its own reachability category.
@@ -116,12 +118,11 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
       const executesAtRecruit = recruitTimeExecuted.has(keyword);
       const executesAtHandAction = handActionExecuted.has(keyword);
-      const executesAtFaceDown = faceDownExecuted.has(keyword);
       const executesAsClassGrant = classGrantExecuted.has(keyword);
       const executesAtDiscardTime = discardTimeExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAtFaceDown || executesAsClassGrant || executesAtDiscardTime,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, via the face-down moves, as a class-grant, or at discard time`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, or at discard time`,
       );
     }
   });

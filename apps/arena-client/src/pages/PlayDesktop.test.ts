@@ -295,6 +295,7 @@ describe('PlayDesktop (WP-129)', () => {
             henchmanVP: 0,
             bystanderVP: 2,
             tacticVP: 5,
+            undercoverVP: 0,
             woundVP: 0,
             totalVP: 13,
           },

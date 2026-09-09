@@ -28,6 +28,7 @@ import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/cop
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
+import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -50,8 +51,6 @@ import { recruitOfficer } from './moves/recruitOfficer.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
-import { sendUndercover } from './moves/sendUndercover.js';
-import { playFromUndercover } from './moves/playFromUndercover.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
@@ -164,6 +163,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingDrawOrEmpowered(G)) { return; }
   // why: block-all — pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) { return; }
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) { return; }
   // why: block-all — pendingOptionalPutBottomHQ must be resolved before any other action
   if (hasPendingOptionalPutBottomHQ(G)) { return; }
   // why: D-24132 — block-all — pendingPutAnyNumberBottomHQ (multi-select HQ→bottom) must be resolved before any other action
@@ -460,12 +461,6 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // discard a Dodge card from hand to draw a replacement. Server-only
     // (client: false) per D-10008 — it mutates real G (playerZones), absent on UIState.
     dodgeCard: { move: dodgeCard, client: false },
-    // why: WP-282 / EC-313 — sendUndercover sends a card face-down from hand to the
-    // player's face-down store. playFromUndercover retrieves a face-down card and
-    // plays it through the identical pathway as hand play. Both are server-only
-    // (client: false) per D-10008 — they mutate playerZones fields.
-    sendUndercover: { move: sendUndercover, client: false },
-    playFromUndercover: { move: playFromUndercover, client: false },
     fightMastermind: { move: fightMastermind, client: false },
     // why: WP-379 / D-24179 — healWounds uses the printed Wound "Healing" ability,
     // KO'ing all Wounds from the current player's hand to G.ko. Server-only
@@ -533,6 +528,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     resolveVictoryPileCardPick: { move: resolveVictoryPileCardPick, client: false },
     resolveDrawOrEmpowered: { move: resolveDrawOrEmpowered, client: false },
     resolveCountScaledChoice: { move: resolveCountScaledChoice, client: false },
+    // why: WP-678 / D-24494 — resolveUndercoverChoice resolves the pending Undercover
+    // target pick (send a chosen [team:shield] Hero from hand to the Victory Pile).
+    // Server-only (client: false) — it mutates real G (victory + undercover tracker).
+    resolveUndercoverChoice: { move: resolveUndercoverChoice, client: false },
     // why: D-24139 — resolveReturnZeroCostDiscard resolves the mandatory 0-cost
     // discard-to-hand return (Black Knight's Defend the Weak). Server-only
     // (client: false) per D-10008 — it mutates playerZones fields.

@@ -18,6 +18,7 @@ import {
   VP_HENCHMAN,
   VP_BYSTANDER,
   VP_TACTIC,
+  VP_UNDERCOVER,
   VP_WOUND,
 } from './scoring.types.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/buildInitialGameState.js';
@@ -191,10 +192,23 @@ export function computeFinalScores(
     // their victory pile above) × the mastermind's printed vp (D-24157). Zero for a
     // player who defeated no tactics (D-24176).
     const tacticVP = tacticCount * mastermindPrintedVp;
+    // why: WP-678 / D-24494 — each card sent Undercover is worth 1 VP. Counted from the
+    // per-player `zones.undercover` tracker (a list — duplicates each score 1), NEVER
+    // inferred from card type: the Undercover targets include classless S.H.I.E.L.D.
+    // Agents and Officers (no cardTraits entry), which a heroClass/type test would
+    // mis-score 0. The tracked cards are also in `zones.victory`, but they fall through
+    // the victory-pile loop above to 0 (not villain/henchman/bystander/tactic), so this
+    // is the sole place they earn VP — no double-count.
+    // why: `?? 0` guards a reconstructed state that predates the tracker (a pre-WP-678
+    // match blob replayed through the D-24119 carve-out has no `undercover` field); a
+    // live match always has it (playerInit). No such old state has undercover'd cards,
+    // so 0 is the faithful count there.
+    const undercoverVP = (zones.undercover?.length ?? 0) * VP_UNDERCOVER;
     // why: 0 * -1 produces -0 in JavaScript; coerce to +0 for clean
     // JSON serialization and strict equality comparisons
     const woundVP = woundCount === 0 ? 0 : woundCount * VP_WOUND;
-    const totalVP = villainVP + henchmanVP + bystanderVP + tacticVP + woundVP;
+    const totalVP =
+      villainVP + henchmanVP + bystanderVP + tacticVP + undercoverVP + woundVP;
 
     players.push({
       playerId,
@@ -202,6 +216,7 @@ export function computeFinalScores(
       henchmanVP,
       bystanderVP,
       tacticVP,
+      undercoverVP,
       woundVP,
       totalVP,
     });

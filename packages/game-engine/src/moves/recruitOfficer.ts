@@ -36,6 +36,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
+import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -114,7 +115,9 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
   if (hasPendingVictoryPileCardPick(G)) return; // D-24067
   if (hasPendingDrawOrEmpowered(G)) return;
-  if (hasPendingCountScaledChoice(G)) return; // D-24069
+  if (hasPendingCountScaledChoice(G)) return;
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) return; // D-24069
   if (hasPendingReturnZeroCostDiscard(G)) return; // D-24139
   if (hasPendingDiscardToPlay(G)) return; // WP-383 / D-24184
   if (hasPendingReturnOnDiscard(G)) return; // WP-498 / D-24301

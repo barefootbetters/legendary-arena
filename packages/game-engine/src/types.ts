@@ -896,6 +896,33 @@ export interface PendingCountScaledChoice {
 }
 
 /**
+ * Pending Undercover target-pick player choice state (WP-678 / D-24494,
+ * supersedes D-24060).
+ *
+ * Created when an `undercover-hand-shield-hero` effect fires (`onPlay`) — "send a
+ * [team:shield] Hero from your hand Undercover" — and TWO OR MORE eligible hand
+ * Heroes qualify (0 → no-op, 1 → auto-send, both resolved inline without a pending
+ * entry). Appended to G.pendingUndercoverChoice[] (FIFO queue). Removed
+ * (front-popped) by resolveUndercoverChoice after the player (or bot) picks a target.
+ * Must be undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24494 — the deterministic officer-stack source never parks (it always
+ * sends the top Officer); only the hand source with ≥2 eligible targets is an
+ * interactive choice. The eligible set is snapshotted at park time; resolve validates
+ * the chosen target against it.
+ */
+export interface PendingUndercoverChoice {
+  /** The player who must pick which eligible hand Hero to send Undercover. */
+  playerID: string;
+  /** The triggering (played) card's ext_id — recorded for logging/attribution. */
+  cardId: string;
+  /** The source shape (only the hand shape parks; kept for extensibility). */
+  source: 'hand-shield-hero';
+  /** The eligible hand-Hero ext_ids the player may choose from (snapshot at park time). */
+  eligibleTargets: CardExtId[];
+}
+
+/**
  * Pending mandatory return-zero-cost-discard player choice state (D-24139).
  *
  * Created when a return-zero-cost-discard hero effect fires (`onPlay`) — the
@@ -1344,6 +1371,9 @@ export interface LegendaryGameState {
 
   /** FIFO queue of pending count-scaled choose-one choices awaiting resolution (WP-675 / D-24490). */
   pendingCountScaledChoice?: PendingCountScaledChoice[] | undefined;
+
+  /** FIFO queue of pending Undercover target picks awaiting resolution (WP-678 / D-24494). */
+  pendingUndercoverChoice?: PendingUndercoverChoice[] | undefined;
 
   // why: FIFO queue of pending optional-put-bottom-hq choices (one per played
   // optional-put-bottom-hq hero ability — the "You may put a card from the HQ on

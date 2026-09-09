@@ -194,6 +194,11 @@ export interface UIState {
   // Attack" prompt. Redacted (omitted) for every audience except the chooser (keyed on .playerID).
   // Absent (undefined) means no pending count-scaled choice; the client must not render the prompt.
   pendingCountScaledChoice?: UIPendingCountScaledChoice;
+  // why: WP-678 / D-24494 — projects the FRONT of G.pendingUndercoverChoice (its eligible
+  // hand-Hero ext_ids) so the choosing player can render the "send a S.H.I.E.L.D. Hero
+  // Undercover" pick. Redacted (omitted) for every audience except the chooser (keyed on
+  // .playerID). Absent (undefined) means no pending Undercover pick; the client must not render it.
+  pendingUndercoverChoice?: UIPendingUndercoverChoice;
   // why: WP-663 / D-24474 — projects the FRONT of G.pendingPlayVillainTopChoices so the
   // choosing player can render Shadowed Thoughts' "Play the top card of the Villain Deck for
   // +N Attack?" prompt. Redacted (omitted) for every audience except the chooser (the
@@ -1159,6 +1164,23 @@ export interface UIPendingCountScaledChoice {
   playerID: string;
   /** The two options, in printed order, each with its resolved count + total. */
   options: UIPendingCountScaledChoiceOption[];
+}
+
+/**
+ * UI contract for resolving a pending Undercover target pick (WP-678 / D-24494 —
+ * "send a [team:shield] Hero from your hand Undercover" with ≥2 eligible Heroes). Only
+ * visible to the choosing player, redacted for opponents and spectators.
+ *
+ * `playerID` is REQUIRED — uiState.filter.ts keys the chooser-only redaction on it. The
+ * client renders the eligible hand-Hero ext_ids as pickable cards and resolves by
+ * passing the chosen ext_id (resolveUndercoverChoice).
+ */
+export interface UIPendingUndercoverChoice {
+  // why: WP-678 / D-24494 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingCountScaledChoice.playerID.
+  playerID: string;
+  /** The eligible hand-Hero ext_ids the player may send Undercover. */
+  eligibleTargets: string[];
 }
 
 /**

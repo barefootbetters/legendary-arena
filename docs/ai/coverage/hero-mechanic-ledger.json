@@ -4,8 +4,8 @@
   "summary": {
     "totalRows": 674,
     "byStatus": {
-      "executable": 286,
-      "deferred": 0,
+      "executable": 270,
+      "deferred": 16,
       "condition": 26,
       "unsupported": 323,
       "unmarked": 38,
@@ -55,10 +55,10 @@
       "heroName": "Doctor Doom 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "flesh-grafted-doombots",
@@ -119,10 +119,10 @@
       "heroName": "Ghost Rider 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "hell-ride",
@@ -175,10 +175,10 @@
       "heroName": "Hulk 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "cataclysmic-frenzy",
@@ -267,10 +267,10 @@
       "heroName": "Spider-Man 2099",
       "set": "2099",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "retractable-talons",
@@ -1946,10 +1946,10 @@
       "heroName": "Black Widow",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "infiltrate-the-conspiracy",
@@ -2038,10 +2038,10 @@
       "heroName": "Red Guardian",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "champion-of-the-winter-guard",
@@ -2174,10 +2174,10 @@
       "heroName": "Yelena Belova",
       "set": "bkwd",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "destroy-the-red-room",
@@ -8148,10 +8148,10 @@
       "heroName": "Agent Phil Coulson",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "approve-orbital-strike",
@@ -8212,10 +8212,10 @@
       "heroName": "Deathlok",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "behind-enemy-lines",
@@ -8236,10 +8236,10 @@
       "heroName": "Dum Dum Dugan",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "dum-dum-dugan",
@@ -8263,10 +8263,10 @@
       "heroName": "Grant Ward",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "grant-ward",
@@ -8353,10 +8353,10 @@
       "heroName": "Mockingbird",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "infinity-formula",
@@ -8401,10 +8401,10 @@
       "heroName": "Quake",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "going-underground",
@@ -8425,10 +8425,10 @@
       "heroName": "Sharon Carter",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "sharon-carter",
@@ -8441,10 +8441,10 @@
       "heroName": "Victoria Hand",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "victoria-hand",
@@ -8457,10 +8457,10 @@
       "heroName": "Yo-Yo Rodriguez",
       "set": "shld",
       "mechanic": "undercover",
-      "status": "executable",
+      "status": "deferred",
       "wp": "WP-282",
       "decision": "D-24060",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover",
+      "handler": "",
       "designs": [
         {
           "slug": "yo-yo-rodriguez",

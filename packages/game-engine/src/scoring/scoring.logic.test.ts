@@ -36,6 +36,9 @@ function createMockGameState(options: {
     discard: string[];
     inPlay: string[];
     victory: string[];
+    // why: WP-678 / D-24494 — the Undercover VP tracker; optional so existing fixtures
+    // (which omit it) still compile and exercise the 0-undercover path.
+    undercover?: string[];
   }>;
   villainDeckCardTypes?: Record<string, string>;
   tacticsDefeated?: string[];
@@ -616,5 +619,44 @@ describe('computeFinalScores — Ultron dynamic VP (D-24362)', () => {
 
     const result = computeFinalScores(gameState);
     assert.equal(result.players[0]!.villainVP, 7);
+  });
+});
+
+describe('computeFinalScores — Undercover VP (WP-678 / D-24494)', () => {
+  it('each undercover-tracked card scores 1 VP, counted from the tracker not the card type', () => {
+    // why: PS-1 correctness — a classless [team:shield] Agent (heroClass:null) and an Officer
+    // (NO cardTraits entry at all) must BOTH score 1; a heroClass/type test would score them 0.
+    const gameState = createMockGameState({
+      playerZones: {
+        '0': {
+          deck: [], hand: [], discard: [], inPlay: [],
+          // all three undercover'd cards live in victory AND the tracker
+          victory: ['nick-fury#0', 'agent#0', 'pile-shield-officer'],
+          undercover: ['nick-fury#0', 'agent#0', 'pile-shield-officer'],
+        },
+      },
+      cardTraits: {
+        'nick-fury#0': { heroClass: 'tech', team: 'shield' },
+        'agent#0': { heroClass: null, team: 'shield' }, // classless
+        // pile-shield-officer intentionally absent from cardTraits (as in production)
+      },
+    });
+    const result = computeFinalScores(gameState);
+    assert.equal(result.players[0]!.undercoverVP, 3, 'three tracked cards → 3 VP (classless + no-traits included)');
+    // no double-count: the same cards sit in victory but score 0 there (not villain/henchman/etc.)
+    assert.equal(result.players[0]!.villainVP, 0);
+    assert.equal(result.players[0]!.totalVP, 3, 'totalVP = undercoverVP only');
+  });
+
+  it('no tracker (or empty) scores 0 undercover VP', () => {
+    const withEmpty = createMockGameState({
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [], undercover: [] } },
+    });
+    assert.equal(computeFinalScores(withEmpty).players[0]!.undercoverVP, 0);
+    // absent tracker (legacy/reconstructed state) is guarded to 0, never a crash
+    const withoutField = createMockGameState({
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] } },
+    });
+    assert.equal(computeFinalScores(withoutField).players[0]!.undercoverVP, 0);
   });
 });

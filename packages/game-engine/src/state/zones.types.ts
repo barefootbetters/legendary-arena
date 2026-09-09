@@ -33,23 +33,6 @@ export type CardExtId = string;
 export type Zone = CardExtId[];
 
 /**
- * A face-down card stored in a player's face-down zone (WP-282 / D-24059).
- *
- * Face-down cards hide their identity until explicitly revealed or played.
- * The instanceId is the zone reference (used for moves), and cardId stores
- * the card template identity for effect resolution. Both are CardExtId strings;
- * cardId is stored redundantly as a validation field (IC-282-01).
- */
-export interface FaceDownCard {
-  /** Unique per-card instance identifier (zone reference for moves). */
-  instanceId: CardExtId;
-  /** Template identity for effect resolution (same as instanceId, stored redundantly). */
-  cardId: CardExtId;
-  /** The player who owns this face-down card (for ownership validation). */
-  ownerPlayerId: string;
-}
-
-/**
  * Per-player card zones. All arrays contain CardExtId strings only.
  *
  * After setup, only `deck` is non-empty. Cards enter other zones
@@ -66,8 +49,15 @@ export interface PlayerZones {
   inPlay: Zone;
   /** Defeated villains and rescued bystanders. Empty at setup. */
   victory: Zone;
-  /** Cards sent face-down (hidden identity until played). Empty at setup (WP-282). */
-  faceDownCards: readonly FaceDownCard[];
+  // why: WP-678 / D-24494 (supersedes D-24060) — cards sent Undercover go into the
+  // Victory Pile (universal-rules-v23 §Undercover) and each is worth 1 VP. They are
+  // ALSO appended to `victory` (so S.H.I.E.L.D. Level and presence count them); this
+  // parallel list records WHICH victory-pile cards arrived via Undercover so scoring
+  // can award them 1 VP each without inferring from card type (a classless S.H.I.E.L.D.
+  // Agent or an Officer with no cardTraits entry must still score 1). A list, not a set:
+  // two identical Undercover cards each score 1.
+  /** Card ext_ids sent Undercover this match (also present in `victory`). Empty at setup. */
+  undercover: Zone;
 }
 
 /**

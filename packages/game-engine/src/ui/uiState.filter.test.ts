@@ -1016,6 +1016,51 @@ describe('filterUIStateForAudience — pendingCountScaledChoice redaction (D-244
 });
 
 // ---------------------------------------------------------------------------
+// WP-678 / D-24494 — pendingUndercoverChoice redaction (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes an Undercover target pick (≥2 eligible
+ * [team:shield] Heroes). The eligible ext_ids are the chooser's own hand — private to
+ * the chooser; they must not leak into a non-chooser's UIState.
+ */
+function createUndercoverChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingUndercoverChoice = [{
+    playerID: '0',
+    cardId: 'coulson#0',
+    source: 'hand-shield-hero',
+    eligibleTargets: ['nick-fury#0', 'maria-hill#0'],
+  }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingUndercoverChoice redaction (D-24494)', () => {
+  it('the chooser sees pendingUndercoverChoice with its eligible targets', () => {
+    const uiState = createUndercoverChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingUndercoverChoice !== undefined, 'chooser sees the Undercover pick');
+    assert.equal(result.pendingUndercoverChoice!.playerID, '0');
+    assert.deepEqual(result.pendingUndercoverChoice!.eligibleTargets, ['nick-fury#0', 'maria-hill#0']);
+  });
+
+  it('an opponent does NOT see pendingUndercoverChoice', () => {
+    const uiState = createUndercoverChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingUndercoverChoice, undefined, 'opponent must not see the Undercover pick');
+  });
+
+  it('a spectator does NOT see pendingUndercoverChoice', () => {
+    const uiState = createUndercoverChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingUndercoverChoice, undefined, 'spectator must not see the Undercover pick');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-676 / D-24492 — pendingSmashDiscard redaction (chooser-only)
 // ---------------------------------------------------------------------------
 
