@@ -431,9 +431,11 @@ rvlt/ronin,Ronin,rvlt,hyperspeed,unsupported,,,,storm-of-arrows
 rvlt/scarlet-witch,Scarlet Witch,rvlt,dark-memories,unsupported,,,,alter-reality|warp-time-and-space
 rvlt/speed,Speed,rvlt,hyperspeed,unsupported,,,,accelerate|break-the-sound-barrier
 rvlt/war-machine,War Machine,rvlt,hyperspeed,unsupported,,,,hypersonic-cannon
+shld/agent-phil-coulson,Agent Phil Coulson,shld,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,approve-orbital-strike
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-level,unsupported,,,,fake-but-inspiring-death|impeccable-planning
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-levels,unsupported,,,,approve-orbital-strike
 shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover,deferred,WP-282,D-24060,,approve-orbital-strike|build-the-strike-team|fake-but-inspiring-death
+shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover-hand-shield-hero,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover-hand-shield-hero,approve-orbital-strike
 shld/deathlok,Deathlok,shld,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,authorize-lethal-force
 shld/deathlok,Deathlok,shld,s.h.i.e.l.d.-level,unsupported,,,,authorize-lethal-force|behind-enemy-lines|headlok
 shld/deathlok,Deathlok,shld,undercover,deferred,WP-282,D-24060,,behind-enemy-lines|headlok|reanimate-into-service
@@ -442,10 +444,12 @@ shld/gw-bridge,G.W. Bridge,shld,(unmarked),unmarked,,,,
 shld/grant-ward,Grant Ward,shld,undercover,deferred,WP-282,D-24060,,grant-ward
 shld/leo-fitz-and-jemma-simmons,Leo Fitz and Jemma Simmons,shld,(unmarked),unmarked,,,,
 shld/melinda-may,Melinda May,shld,(unmarked),unmarked,,,,
+shld/mockingbird,Mockingbird,shld,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,spymaster
 shld/mockingbird,Mockingbird,shld,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,infinity-formula
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-level,unsupported,,,,battle-staves
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-levels,unsupported,,,,infinity-formula|spymaster
 shld/mockingbird,Mockingbird,shld,undercover,deferred,WP-282,D-24060,,infinity-formula|spymaster|take-cover
+shld/mockingbird,Mockingbird,shld,undercover-officer-stack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#undercover-officer-stack,spymaster
 shld/quake,Quake,shld,s.h.i.e.l.d.-level,unsupported,,,,aftershock|roil-the-earth|tectonic-wave
 shld/quake,Quake,shld,undercover,deferred,WP-282,D-24060,,going-underground|roil-the-earth|tectonic-wave
 shld/sharon-carter,Sharon Carter,shld,undercover,deferred,WP-282,D-24060,,sharon-carter

@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1849,
+    "totalEntries": 1853,
     "byScope": {
-      "hero": 674,
+      "hero": 678,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 406,
+      "executable": 410,
       "deferred": 16,
       "condition": 26,
       "unsupported": 324,
@@ -17465,6 +17465,23 @@
       "name": "Agent Phil Coulson",
       "set": "shld",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "approve-orbital-strike",
+          "name": "Approve Orbital Strike"
+        }
+      ]
+    },
+    {
+      "extId": "shld/agent-phil-coulson",
+      "name": "Agent Phil Coulson",
+      "set": "shld",
+      "scope": "hero",
       "mechanic": "s.h.i.e.l.d.-level",
       "status": "unsupported",
       "handler": "",
@@ -17520,6 +17537,23 @@
         {
           "slug": "fake-but-inspiring-death",
           "name": "Fake But Inspiring Death"
+        }
+      ]
+    },
+    {
+      "extId": "shld/agent-phil-coulson",
+      "name": "Agent Phil Coulson",
+      "set": "shld",
+      "scope": "hero",
+      "mechanic": "undercover-hand-shield-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-hand-shield-hero",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "approve-orbital-strike",
+          "name": "Approve Orbital Strike"
         }
       ]
     },
@@ -17662,6 +17696,23 @@
       "name": "Mockingbird",
       "set": "shld",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "spymaster",
+          "name": "Spymaster"
+        }
+      ]
+    },
+    {
+      "extId": "shld/mockingbird",
+      "name": "Mockingbird",
+      "set": "shld",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -17734,6 +17785,23 @@
         {
           "slug": "take-cover",
           "name": "Take Cover"
+        }
+      ]
+    },
+    {
+      "extId": "shld/mockingbird",
+      "name": "Mockingbird",
+      "set": "shld",
+      "scope": "hero",
+      "mechanic": "undercover-officer-stack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#undercover-officer-stack",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "spymaster",
+          "name": "Spymaster"
         }
       ]
     },
@@ -32415,9 +32483,11 @@
     "shld/agent-phil-coulson": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "s.h.i.e.l.d.-level",
         "s.h.i.e.l.d.-levels",
-        "undercover"
+        "undercover",
+        "undercover-hand-shield-hero"
       ]
     },
     "shld/deathlok": {
@@ -32461,10 +32531,12 @@
     "shld/mockingbird": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "s.h.i.e.l.d.-level",
         "s.h.i.e.l.d.-levels",
-        "undercover"
+        "undercover",
+        "undercover-officer-stack"
       ]
     },
     "shld/quake": {

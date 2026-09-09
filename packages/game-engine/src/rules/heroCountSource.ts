@@ -74,10 +74,40 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
  * pattern of carrying the descriptor, not the outcome).
  */
 export interface CountScaledChoiceOption {
+  /** Discriminant — this option grants a count-scaled resource (WP-679). */
+  kind: 'count-scaled';
   /** Which resource this option grants. */
   resource: 'attack' | 'recruit';
   /** The count source whose count scales the per-unit magnitude. */
   countSource: HeroCountSource;
   /** The per-unit rate (attack/recruit granted per counted card). */
   magnitude: number;
+  // why: WP-677/679 / D-24493/D-24495 — the "for each N" divisor (absent ≡ 1); the grant
+  // is magnitude × floor(count / perEach). "+1 attack for each 2 S.H.I.E.L.D. Levels" =
+  // magnitude 1, perEach 2, countSource shield-levels.
+  /** The "for each N" divisor (absent ≡ 1). */
+  perEach?: number;
 }
+
+/**
+ * One Undercover option of a mixed multi-line choose-one (WP-679 / D-24495).
+ *
+ * "Choose one: send a [team:shield] Hero Undercover / Or +N attack …" — the send-half.
+ * Dispatched at resolve time to WP-678's `undercover-hand-shield-hero` /
+ * `undercover-officer-stack` executor (which may itself park a nested target pick).
+ */
+export interface UndercoverChoiceOption {
+  /** Discriminant — this option sends a card Undercover (WP-679). */
+  kind: 'undercover';
+  /** Which Undercover source-shape executor to dispatch (WP-678). */
+  source: 'hand-shield-hero' | 'officer-stack';
+}
+
+/**
+ * One option of a multi-line "Choose one:" hero ability (WP-679 / D-24495).
+ *
+ * A tagged union so a single choose-one can mix a count-scaled resource grant with an
+ * Undercover send (the two shld cards) — not only the two-count-scaled shape (vnom).
+ * The resolve move (`resolveCountScaledChoice`) dispatches by `kind`.
+ */
+export type ChooseOneOption = CountScaledChoiceOption | UndercoverChoiceOption;

@@ -18,7 +18,7 @@ import type {
 } from '../rules/heroAbility.types.js';
 import type { HeroKeyword, HeroAbilityTiming } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
-import type { HeroCountSource, CountScaledChoiceOption } from '../rules/heroCountSource.js';
+import type { HeroCountSource, ChooseOneOption } from '../rules/heroCountSource.js';
 import { HERO_COUNT_SOURCES } from '../rules/heroCountSource.js';
 import type { RevealRule, RevealPredicate, RevealAction } from '../rules/revealRule.js';
 import { revealRulesForLegacyKeyword, REVEAL_KEYWORDS } from '../rules/revealRule.js';
@@ -800,7 +800,7 @@ function parseAbilityText(
   // independent grants, and sets a flag that suppresses the per-count keyword extraction and
   // the printed grant/criterion icons on the line.
   let processedAsCountScaledChoose = false;
-  let countScaledChoiceOptions: CountScaledChoiceOption[] | undefined;
+  let countScaledChoiceOptions: ChooseOneOption[] | undefined;
   if (!processedAsChooseOne && !processedAsDrawOrEmpowered) {
     const countScaledChoiceResult = tryResolveCountScaledChooseOneLine(abilityText);
     if (countScaledChoiceResult !== undefined) {
@@ -895,6 +895,15 @@ function parseAbilityText(
       } else {
         unresolvedMarkers.push('transform');
       }
+    } else if (
+      (normalizedKeyword === 'undercover-hand-shield-hero' ||
+        normalizedKeyword === 'undercover-officer-stack') &&
+      processedAsCountScaledChoose
+    ) {
+      // why: WP-679 / D-24495 — this Undercover source-shape marker is being consumed as a
+      // choose-one option (the parked count-scaled-choose dispatches it at resolve time). Do
+      // NOT also push it as a standalone onPlay keyword, or the send would fire twice — once
+      // unconditionally at play time and once via the resolved choice. (Intentional no push.)
     } else if (isValidHeroKeyword(normalizedKeyword)) {
       keywords.push(normalizedKeyword);
       // Capture optional :N magnitude suffix when present and valid integer
@@ -2014,36 +2023,43 @@ function tryResolveEmpoweredChooseOneLine(
  * @param abilityText - The full ability text line.
  * @returns The normalized empowered hero class, or undefined for any non-canonical shape.
  */
-// why: WP-675 / D-24490 — non-global marker extractors for the count-scaled choose-one
-// options. Each option carries a per-count marker; the resource is the marker family
-// (recruit-per-count → recruit, attack-per-count → attack), the source + per-unit rate its segments.
-const RECRUIT_PER_COUNT_MARKER_PATTERN = /\[keyword:recruit-per-count:([a-z][a-z-]*):(\d+)\]/;
-const ATTACK_PER_COUNT_MARKER_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/;
+// why: WP-675 / D-24490 + WP-679 / D-24495 — non-global marker extractors for choose-one
+// options. Each per-count option carries `[keyword:(attack|recruit)-per-count:<source>:<magnitude>[:<perEach>]]`;
+// the optional 4th segment is the "for each N" divisor (WP-679; absent ≡ 1). The resource is
+// the marker family; the source + per-unit rate + optional divisor are the segments.
+const RECRUIT_PER_COUNT_MARKER_PATTERN = /\[keyword:recruit-per-count:([a-z][a-z-]*):(\d+)(?::(\d+))?\]/;
+const ATTACK_PER_COUNT_MARKER_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)(?::(\d+))?\]/;
+
+// why: WP-679 / D-24495 — the two Undercover source-shape option markers (WP-678 keywords).
+const UNDERCOVER_HAND_MARKER_PATTERN = /\[keyword:undercover-hand-shield-hero\]/;
+const UNDERCOVER_OFFICER_MARKER_PATTERN = /\[keyword:undercover-officer-stack\]/;
 
 // why: WP-675 / D-24490 — a standalone "Choose one:" header entry (the multi-line choose-one form).
 const STANDALONE_CHOOSE_ONE_HEADER_PATTERN = /^\s*Choose one\s*:\s*$/i;
 // why: WP-675 / D-24490 — an option bullet line under a standalone "Choose one:" header.
 const CHOOSE_ONE_OPTION_BULLET_PATTERN = /^\s*-\s/;
-// why: WP-675 / D-24490 — the count-scaled marker family that GATES coalescing.
-const COUNT_SCALED_OPTION_MARKER_PATTERN = /\[keyword:(?:attack|recruit)-per-count:/;
+// why: WP-679 / D-24495 — the RECOGNIZED option-marker families that GATE coalescing: a
+// per-count marker OR an Undercover source-shape marker. An option bullet with a recognized
+// marker is one this pipeline can fold into a heterogeneous choice.
+const RECOGNIZED_CHOOSE_ONE_OPTION_MARKER_PATTERN =
+  /\[keyword:(?:attack|recruit)-per-count:|\[keyword:undercover-(?:hand-shield-hero|officer-stack)\]/;
 
 /**
- * Coalesces a multi-line count-scaled "Choose one:" group into ONE synthetic ability line
- * (WP-675 / D-24490).
+ * Coalesces a multi-line "Choose one:" group into ONE synthetic ability line (WP-675 /
+ * D-24490; generalized to heterogeneous options WP-679 / D-24495).
  *
- * A standalone "Choose one:" entry followed by "- " option bullets is three separate
- * `abilities[]` entries; parsed independently they would emit the options as independent
- * hooks (two grants, not a choice). This joins the header + its option bullets into one
- * string so the single-line count-scaled-choose pre-pass folds them into one choice.
+ * A standalone "Choose one:" entry followed by "- " option bullets is separate `abilities[]`
+ * entries; parsed independently they would emit the options as independent hooks (N grants,
+ * not a choice). This joins the header + its option bullets into one string so the single-line
+ * choose-one pre-pass folds them into one choice.
  *
- * GATED: coalesces ONLY when the option bullets carry a count-scaled marker
- * (`[keyword:(attack|recruit)-per-count:…]`). Multi-line choose-ones WITHOUT such markers
- * (e.g. the S.H.I.E.L.D. undercover / levels cards) are left untouched — they parse exactly
- * as before, so this adds no behaviour to them (and does not regress them). Other abilities
- * on the card are preserved in place.
+ * GATED (strict superset — zero regression): coalesces ONLY when there are ≥2 option bullets
+ * and EVERY bullet carries a RECOGNIZED option marker (a per-count marker OR an Undercover
+ * source-shape marker). A multi-line choose-one with any unrecognized bullet is left untouched
+ * — it parses exactly as before. Other abilities on the card are preserved in place.
  *
  * @param abilities - The card's raw ability lines (with markers already applied).
- * @returns The ability lines with any gated count-scaled choose-one group joined into one.
+ * @returns The ability lines with any recognized choose-one group joined into one.
  */
 function coalesceCountScaledChooseOne(abilities: string[]): string[] {
   const headerIndex = abilities.findIndex((line) => STANDALONE_CHOOSE_ONE_HEADER_PATTERN.test(line));
@@ -2056,10 +2072,14 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
     optionLines.push(abilities[nextIndex]!);
     nextIndex++;
   }
-  // why: a choose-one needs at least two options; and the gate — only coalesce a count-scaled
-  // choose-one (leaves non-count-scaled multi-line choose-ones parsing as today, no regression).
-  const isCountScaled = optionLines.some((line) => COUNT_SCALED_OPTION_MARKER_PATTERN.test(line));
-  if (optionLines.length < 2 || !isCountScaled) {
+  // why: a choose-one needs ≥2 options; the gate requires EVERY bullet to carry a recognized
+  // option marker (per-count or Undercover). A choose-one with an unrecognized bullet passes
+  // through untouched — the strict-superset guarantee (WP-679): only vnom + the two shld cards
+  // newly coalesce; every other multi-line choose-one parses exactly as before.
+  const allRecognized = optionLines.every((line) =>
+    RECOGNIZED_CHOOSE_ONE_OPTION_MARKER_PATTERN.test(line),
+  );
+  if (optionLines.length < 2 || !allRecognized) {
     return abilities;
   }
   const joined = [abilities[headerIndex]!, ...optionLines].join(' ');
@@ -2067,50 +2087,93 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
 }
 
 /**
- * Resolves the count-scaled choose-one form (WP-675 / D-24490).
+ * Resolves the multi-line "Choose one:" form to a heterogeneous option list (WP-675 /
+ * D-24490; generalized WP-679 / D-24495).
  *
- * vnom's Symbiotic Adaptation, coalesced (buildHeroAbilityHooks) into one line:
- * "Choose one: - You get +1[icon:recruit] … [keyword:recruit-per-count:recruit-icon-played-this-turn:1]
- *  - Or you get +1[icon:attack] … [keyword:attack-per-count:attack-icon-played-this-turn:1]".
+ * Handles both the homogeneous count-scaled shape (vnom Symbiotic Adaptation — two per-count
+ * options) and the MIXED shape (shld approve-orbital-strike / spymaster — an Undercover send
+ * + a count-scaled attack). Coalesced (buildHeroAbilityHooks) into one line first.
  *
  * Gated strictly so it never claims the Empowered / draw-or-empowered choose-ones: (1) a
- * "Choose one:" prefix, (2) BOTH a recruit-per-count AND an attack-per-count marker with a
- * source in HERO_COUNT_SOURCES. Options are returned in PRINTED order (by marker position),
- * so the client shows them as printed. Any miss → undefined. Reads `abilityText` only.
+ * "Choose one:" prefix, (2) ≥2 RECOGNIZED option markers (per-count with a valid source, or
+ * an Undercover source-shape). Options are returned in PRINTED order (by marker position).
+ * Any miss → undefined. Reads `abilityText` only.
  *
  * @param abilityText - The (coalesced) full ability text line.
- * @returns The two options, or undefined for any non-count-scaled-choose shape.
+ * @returns The options (≥2, in printed order), or undefined for any non-choose-one shape.
  */
 function tryResolveCountScaledChooseOneLine(
   abilityText: string,
-): { options: CountScaledChoiceOption[] } | undefined {
+): { options: ChooseOneOption[] } | undefined {
   // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const).
   if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
     return undefined;
   }
+  const candidates: Array<{ index: number; option: ChooseOneOption }> = [];
   const recruitMatch = RECRUIT_PER_COUNT_MARKER_PATTERN.exec(abilityText);
-  const attackMatch = ATTACK_PER_COUNT_MARKER_PATTERN.exec(abilityText);
-  const candidates: Array<{ index: number; option: CountScaledChoiceOption }> = [];
   if (recruitMatch !== null && isValidHeroCountSource(recruitMatch[1]!)) {
     candidates.push({
       index: recruitMatch.index,
-      option: { resource: 'recruit', countSource: recruitMatch[1]! as HeroCountSource, magnitude: parseInt(recruitMatch[2]!, 10) },
+      option: buildCountScaledOption('recruit', recruitMatch),
     });
   }
+  const attackMatch = ATTACK_PER_COUNT_MARKER_PATTERN.exec(abilityText);
   if (attackMatch !== null && isValidHeroCountSource(attackMatch[1]!)) {
     candidates.push({
       index: attackMatch.index,
-      option: { resource: 'attack', countSource: attackMatch[1]! as HeroCountSource, magnitude: parseInt(attackMatch[2]!, 10) },
+      option: buildCountScaledOption('attack', attackMatch),
     });
   }
-  // why: require BOTH options — a single marker is a plain per-count line, not a choose-one.
+  const undercoverHandMatch = UNDERCOVER_HAND_MARKER_PATTERN.exec(abilityText);
+  if (undercoverHandMatch !== null) {
+    candidates.push({
+      index: undercoverHandMatch.index,
+      option: { kind: 'undercover', source: 'hand-shield-hero' },
+    });
+  }
+  const undercoverOfficerMatch = UNDERCOVER_OFFICER_MARKER_PATTERN.exec(abilityText);
+  if (undercoverOfficerMatch !== null) {
+    candidates.push({
+      index: undercoverOfficerMatch.index,
+      option: { kind: 'undercover', source: 'officer-stack' },
+    });
+  }
+  // why: require ≥2 options — a single recognized marker is a plain effect line, not a choose-one.
   if (candidates.length < 2) {
     return undefined;
   }
-  // why: printed order — sort by the marker's position in the line so the UI shows the
-  // options as printed (vnom prints recruit first, then attack).
+  // why: printed order — sort by the marker's position so the UI shows the options as printed.
   candidates.sort((first, second) => first.index - second.index);
   return { options: candidates.map((candidate) => candidate.option) };
+}
+
+/**
+ * Builds a count-scaled choose-one option from a per-count marker match (WP-679 / D-24495).
+ *
+ * The 3rd segment is the per-unit magnitude; the optional 4th is the `perEach` divisor
+ * ("for each N"; absent ≡ 1).
+ *
+ * @param resource - The resource family ('attack' / 'recruit').
+ * @param match - The per-count marker regex match (groups: source, magnitude, perEach?).
+ * @returns The count-scaled option descriptor.
+ */
+function buildCountScaledOption(
+  resource: 'attack' | 'recruit',
+  match: RegExpExecArray,
+): ChooseOneOption {
+  const perEachRaw = match[3];
+  const option: ChooseOneOption = {
+    kind: 'count-scaled',
+    resource,
+    countSource: match[1]! as HeroCountSource,
+    magnitude: parseInt(match[2]!, 10),
+  };
+  // why: only attach perEach when the marker carries the 4th segment — keeps vnom's 3-segment
+  // markers producing an option with no perEach (≡ divisor 1), byte-identical to WP-675.
+  if (perEachRaw !== undefined) {
+    option.perEach = parseInt(perEachRaw, 10);
+  }
+  return option;
 }
 
 function tryResolveDrawOrEmpoweredLine(abilityText: string): { empoweredClass: string } | undefined {

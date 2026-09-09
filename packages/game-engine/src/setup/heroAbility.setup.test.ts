@@ -913,6 +913,73 @@ describe('buildHeroAbilityHooks — count-scaled choose-one (WP-675 / D-24490)',
 });
 
 // ---------------------------------------------------------------------------
+// Mixed heterogeneous choose-one — shld cards (WP-679 / EC-716 / D-24495)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — mixed heterogeneous choose-one (WP-679 / D-24495)', () => {
+  // approve-orbital-strike's generated data: an Undercover-send option + a count-scaled
+  // attack option ("for each 2 S.H.I.E.L.D. Levels" → perEach 2). Coalesced + folded into ONE
+  // choice with two options OF DIFFERENT KINDS.
+  const APPROVE_ORBITAL_STRIKE_ABILITIES = [
+    'Choose one:',
+    '- Send a [team:shield] Hero from your hand [keyword:Undercover]. [keyword:undercover-hand-shield-hero]',
+    '- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have. [keyword:attack-per-count:shield-levels:1:2]',
+  ];
+
+  function buildMixedHooks(abilities: string[]) {
+    const registry = makeRegistry('shld', 'agent-phil-coulson', [
+      { slug: 'approve-orbital-strike', abilities },
+    ]);
+    return buildHeroAbilityHooks(registry, makeConfig('shld/agent-phil-coulson'));
+  }
+
+  it('folds a mixed undercover + count-scaled choose-one into ONE effect with two heterogeneous options', () => {
+    const hooks = buildMixedHooks(APPROVE_ORBITAL_STRIKE_ABILITIES);
+    const chooseEffects = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .filter((effect) => effect.type === 'count-scaled-choose');
+    assert.equal(chooseEffects.length, 1, 'exactly one choose-one effect');
+    const options = chooseEffects[0]!.countScaledChoiceOptions;
+    assert.ok(options !== undefined && options.length === 2, 'two options');
+    // printed order: the Undercover send first, then the count-scaled attack.
+    const [first, second] = options!;
+    assert.equal(first!.kind, 'undercover', 'first option is the Undercover send');
+    assert.equal(first!.kind === 'undercover' ? first!.source : undefined, 'hand-shield-hero');
+    assert.equal(second!.kind, 'count-scaled', 'second option is the count-scaled attack');
+    if (second!.kind === 'count-scaled') {
+      assert.equal(second!.resource, 'attack');
+      assert.equal(second!.countSource, 'shield-levels');
+      assert.equal(second!.magnitude, 1);
+      assert.equal(second!.perEach, 2, 'the "for each 2" divisor is parsed onto the option');
+    }
+  });
+
+  it('suppresses the standalone undercover keyword (it is a choice option, not an onPlay send)', () => {
+    const hooks = buildMixedHooks(APPROVE_ORBITAL_STRIKE_ABILITIES);
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('undercover-hand-shield-hero'),
+        'undercover-hand-shield-hero must not fire standalone (it is a choose-one option)');
+      assert.ok(!hook.keywords.includes('attack-per-count'),
+        'the count-scaled marker is a choice option, not a standalone grant');
+    }
+  });
+
+  it('strict superset: a multi-line choose-one with an UNRECOGNIZED option bullet is NOT coalesced', () => {
+    // why: WP-679 zero-regression — a choose-one whose bullets carry no recognized option
+    // marker must parse exactly as before (no count-scaled-choose effect, options stay separate).
+    const hooks = buildMixedHooks([
+      'Choose one:',
+      '- You get +2[icon:attack].',
+      '- Or draw a card.',
+    ]);
+    const chooseEffects = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .filter((effect) => effect.type === 'count-scaled-choose');
+    assert.equal(chooseEffects.length, 0, 'an unrecognized-bullet choose-one is left uncoalesced');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 

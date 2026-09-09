@@ -1140,14 +1140,20 @@ export interface UIPendingDrawOrEmpowered {
  * with its concrete grant ("+2 Recruit" / "+3 Attack") without re-deriving the count.
  */
 export interface UIPendingCountScaledChoiceOption {
-  /** Which resource this option grants. */
-  resource: 'attack' | 'recruit';
-  /** The per-unit rate (attack/recruit per counted card). */
-  perUnit: number;
-  /** The resolved count of qualifying OTHER cards played this turn. */
-  count: number;
-  /** The grant this option would apply now (perUnit × count). */
-  total: number;
+  // why: WP-679 / D-24495 — a choose-one may mix a count-scaled grant with an Undercover
+  // send; `kind` tells the client which fields to read / how to label the button.
+  /** Discriminant — a count-scaled resource grant, or an Undercover send. */
+  kind: 'count-scaled' | 'undercover';
+  /** count-scaled: which resource this option grants. */
+  resource?: 'attack' | 'recruit';
+  /** count-scaled: the per-unit rate (attack/recruit per counted card). */
+  perUnit?: number;
+  /** count-scaled: the resolved count (of qualifying cards / S.H.I.E.L.D. Level). */
+  count?: number;
+  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)). */
+  total?: number;
+  /** A display label for the button (always present; e.g. "+3 attack" or "Send a S.H.I.E.L.D. Hero Undercover"). */
+  label: string;
 }
 
 /**

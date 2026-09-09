@@ -902,11 +902,15 @@ export function filterUIStateForAudience(
   ) {
     result.pendingCountScaledChoice = {
       playerID: uiState.pendingCountScaledChoice.playerID,
+      // why: WP-679 / D-24495 — rebuild each option field-by-field (whitelist), carrying the
+      // new `kind` + `label` and the (optional) count-scaled fields for both option variants.
       options: uiState.pendingCountScaledChoice.options.map((option) => ({
-        resource: option.resource,
-        perUnit: option.perUnit,
-        count: option.count,
-        total: option.total,
+        kind: option.kind,
+        label: option.label,
+        ...(option.resource !== undefined ? { resource: option.resource } : {}),
+        ...(option.perUnit !== undefined ? { perUnit: option.perUnit } : {}),
+        ...(option.count !== undefined ? { count: option.count } : {}),
+        ...(option.total !== undefined ? { total: option.total } : {}),
       })),
     };
   }
