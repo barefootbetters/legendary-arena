@@ -1160,11 +1160,26 @@ segregation* into a con — tactics and justice are different questions; a
 professionally-run test case is how *Brown* itself was built, not evidence of
 fraud; and estate greed is not proof that 1963 was scripted in Minsk. The FBI
 memos are a primary source **and** J. Edgar Hoover's hostile brief against a man
-he wanted destroyed — leads, not verdicts. Individual agency stays intact, too:
+he wanted destroyed — leads, not verdicts.
+
+The count of conspirators, though, is the wrong axis — and it is worth saying so,
+because it cuts against the sanitized story as hard as the conspiratorial one.
+Operations like this are *never* one person; they are coalitions of coordinating
+people — organizers, advisers, money, media. So "there was no lone mastermind"
+is a dodge, not a rebuttal, and this page does not lean on it: the coordination
+here is real and provable. The honest question is never *how many hands* but
+*toward what end, and behind how much concealment* — a matter of aims and
+evidence, not headcount. The packaging was concealed, and a communist-formed
+adviser really was in the room; whether the coalition's end was ending statutory
+segregation or the broader legal restructuring Caldwell describes is the actual
+argument, and it is weighed on aims, not settled by proving that more than one
+person took part. Proving a group proves *organizing*; it does not by itself
+prove the *motive*. Individual agency survives inside the coalition, too:
 **Rev. Joseph H. Jackson**, who led the largest Black denomination in the
-country, opposed King's civil disobedience and preached self-help instead — a
-Black leader who chose the other road, which is proof the movement was an
-argument among moral agents, not the product of a single hand.
+country, opposed King's civil disobedience and preached self-help instead — and
+a movement whose own factions fought each other (NAACP lawyers, the SCLC, SNCC's
+students, Malcolm X, later Black Power) is a coalition of moral agents, not one
+disciplined command.
 
 So the filter holds on the hardest case it has. Refuse the saint-story that
 sands off Levison; refuse the con-story that sands off Jim Crow. The hidden hand
