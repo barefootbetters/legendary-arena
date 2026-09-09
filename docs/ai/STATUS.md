@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-676 — Smash: the optional discard-for-attack hero keyword (EC-713 / D-24492) (2026-09-09)
+
+**User-visible (play.legendary-arena.com, D-24026 operator-pending).** Playing a
+World War Hulk **Smash** card now presents a "discard a card for +N attack, or
+Decline" prompt, and the chosen discard grants the attack — a printed ability that
+until now did nothing (`[keyword:Smash N]`, capital-S + space, never parsed). She-Hulk's
+Hurl Trucks (two "Smash 2") offers two independent choices for +0 / +2 / +4. Reuses the
+shipped pending-choice UI framework (`OptionalKoRewardPrompt.vue` model).
+
+**What shipped (cross-layer, one PR).** A new handler-bearing `smash` `HeroKeyword`
+carrying a magnitude (union + `HERO_KEYWORDS` 45→46 + `HANDLED_KEYWORDS` +
+`HERO_EFFECT_HANDLERS` 31→32; NOT in `NO_MAGNITUDE_KEYWORDS`), plus its optional-discard
+pending choice:
+
+- **Engine:** `heroEffectSmash` parks one `PendingSmashDiscard { playerID, magnitude }`
+  per Smash hook onto the FIFO `G.pendingSmashDiscards?` queue (empty hand = logged no-op);
+  server-only `resolveSmashDiscard({ cardId })` discards the hand card through the
+  `discardFromHand` chokepoint and grants +magnitude Attack, `{ decline: true }` pops with
+  no grant; a `hasPendingSmashDiscard` block-all guard across every action move + turn-end;
+  `selectDefaultSmashDiscardTarget` bot default + `resolveSmashDiscard` in
+  `SIMULATION_MOVE_NAMES` + both sim `MOVE_MAP`s (LegendaryGame moves 34→35). A bare
+  magnitude-less `[keyword:Smash]` verb (co-printed conditional-KO clauses) safe-skips at
+  the magnitude pre-gate — no park, no freeze, honest partial.
+- **Client:** a five-step `UIPendingSmashDiscard` projection (chooser-scoped, redacted from
+  opponents/spectators) + `SmashDiscardPrompt.vue` wired into PlayDesktop / PlayMobile /
+  useTurnActions / TurnActionBar / uiMoveName / effectProvenance.
+- **Card data (GENERATED):** a `smash:N` arm in `apply-hero-ability-markers.mjs` +
+  17 markers across 15 wwhk cards in `hero-ability-markers.json` (Hurl Trucks' two
+  `abilities[]` entries preserved) → `wwhk.json` regen (`cards:check` reproducible).
+  `ledger:heroes` / `effect-index` / `mechanics:metadata` / `sim:runtime-observed`
+  regenerated (`smash` → `executable`) + a `mechanic-provenance.json` row; the dashboard
+  in-play-coverage snapshot re-pinned (totalObs 2391→2355, %resolved 32.4→31.3).
+
+**Determinism.** `pendingSmashDiscards?` is optional/absent-by-default and Smash is
+wwhk-only → **no `finalStateHash` re-pin** (core sentinels byte-identical; engine
+3247/3247, arena-client 1675/1675, whole-repo build 0). Drift-pin values were corrected
+against HEAD (WP-675 had already bumped 44→45 / 30→31); the block-all guard + move-registration
++ tooltip cascade expanded beyond EC-713's literal file list, matching the WP-675 precedent
+(see D-24492).
+
 ### WP-672 — Transform VFX: the `transformResolved` notable event + the gamma-green power-surge beat (EC-709 / D-24487) (2026-09-08)
 
 **User-visible (post-deploy, D-24026 operator-pending).** When a Hero base card
