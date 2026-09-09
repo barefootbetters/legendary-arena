@@ -1134,10 +1134,16 @@ misuse: **concealment by sympathetic simplification** — a story true in its
 particulars but *incomplete by design*, the machinery kept behind the curtain so
 the audience never asks who arranged what.
 
-It is a deception — concealment meant to shape belief — and therefore a wrong,
-not a neutral tool. It is worth naming precisely *because every faction reaches
-for it*, the powerless as readily as any aristocrat; its being common is no
-defense. The Montgomery bus boycott is the honest
+It is a deception — concealment meant to shape belief — so it is never
+*neutral*; it always carries a charge. But that charge is not fixed by the act
+alone: a deception takes its color from what it serves. Concealment that buries
+the truth to hold power is the Scheme itself; a smaller deceit that drags a
+bigger lie into the light and ends in more truth is its opposite — Nathan
+setting a parable before David to convict the king of his own sin is the
+pattern, and the tradition has never judged the two the same. It is still worth
+naming as a tactic *because every faction reaches for it*, the powerless as
+readily as any aristocrat — and because a claim of good purpose is the first
+thing a liar offers. The Montgomery bus boycott is the honest
 example: Rosa Parks was a trained NAACP secretary and her test case was chosen
 deliberately over an earlier candidate, yet the public was handed the
 "tired seamstress acting alone" version because it was more sympathetic than
@@ -1145,11 +1151,16 @@ deliberately over an earlier candidate, yet the public was handed the
 real, the consequences to her family were real — nothing was *fabricated*. What
 was withheld was the *strategy*. That case cuts **against** the
 Mastermind-seeking-a-throne frame, not for it: the concealment served a boycott
-by people *without* power. Which is exactly why the standard that condemns it
-has to reach everyone, regardless of how sympathetic the cause — a rule that only
-fires on the villain is a partisan weapon, not a standard. Condemn the
-concealment wherever it appears; whether the cause it served was just is the
-separate question, which the concealment neither proves nor excuses.
+by people *without* power. Which is why the purpose cannot be self-certified —
+*"I lied only to catch a worse liar"* is the propagandist's favorite cover too.
+The test is the page's own *who benefits*, turned on the deception itself: did it
+end in more truth and a freer people, or in a buried record and an enthroned
+deceiver? By that test the Montgomery simplification and a Mastermind's
+manufactured narrative part ways — one served the breaking of a real and greater
+evil and left people freer; the other exists to keep the throne. A sympathetic
+cause does not launder a self-serving lie, and a lie does not prove the cause
+evil; what separates a justified ruse from a Scheme is where the deception
+*ends*, not what the deceiver says it was for.
 
 #### Two tells for naming the Mastermind
 
@@ -1234,11 +1245,15 @@ tired commuter; she had studied at Highlander; **Claudette Colvin** was passed
 over as the test case; the "tired-seamstress-acting-alone" story was handed to
 the public in place of the truth. Choosing the test case was *organizing* —
 neutral enough. Letting a false picture stand to move opinion was a
-**deception**, and deception is a wrong, not a neutral tool. That is the
+**deception** — never neutral, but not the Mastermind's kind: a deception takes
+its color from its end, and this one served the breaking of a real and greater
+evil (statutory Jim Crow) and left people freer, the opposite of concealment
+that buries the truth to take a throne. That is the
 [withhold-the-machinery
-tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation) — a wrong
-the page condemns wherever it appears, used as readily by a coalition without
-power as by any aristocrat, its being common no defense at all. Birmingham's children in front of Bull Connor's hoses (James
+tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation), judged — as
+that section argues — by where it *ends* rather than by the deceiver's say-so:
+used by the powerless and the aristocrat alike, its charge set by who is left
+better off. Birmingham's children in front of Bull Connor's hoses (James
 Bevel's tactic) is *control the picture*; the King estate's copyright lock on
 the footage is *control the picture*, in the present tense. But a manufactured
 *legend* and a manufactured *cause* are different objects, and the page keeps
@@ -1413,9 +1428,10 @@ claim at a safe distance — it stands on it.
   Mastermind is authored through the card-data pipeline and its WPs, never on
   this page. The Montgomery-bus-boycott example is used deliberately as the
   counterexample that cuts against the throne-seeking frame — not as a
-  "Mastermind." The concealment there is named as a wrong (a deception is not
-  excused by a sympathetic cause); what the case shows is that the *standard*
-  condemning it must reach every side, the powerless included.
+  "Mastermind." The concealment there is named as a deception (never neutral; a
+  sympathetic cause does not launder a self-serving lie), but judged — like every
+  such deception — by where it *ends*: the who-benefits test reaches every side,
+  the powerless included, and by it this case parts ways with the Scheme.
 - **The civil-rights case study is even-handed by construction — it refuses
   both myths.** [Contested memory](#contested-memory-the-hidden-hand-and-the-manufactured-icon)
   presents Matt Walsh's *Real History* claims **attributed**, with the
@@ -1425,11 +1441,12 @@ claim at a safe distance — it stands on it.
   adviser or staged icons make ending statutory Jim Crow "a con" — the page does
   not adjudicate Caldwell's constitutional thesis, and it does **not** cast Rosa
   Parks or the movement as an evil Mastermind's operatives. The staged legend is
-  named as a **deception** (a wrong in its own right, not a neutral tool), and
-  the standard condemning *manufacture-the-icon / withhold-the-machinery* reaches
-  **every** side; the woman's real arrest against real segregation is kept
-  distinct from the staged legend. A filter that only fired against one side
-  would be the partisan weapon the page warns against.
+  named as a **deception** (never neutral), but *manufacture-the-icon /
+  withhold-the-machinery* takes its charge from its end — tested by who-benefits,
+  not the deceiver's say-so — and the test reaches **every** side; the woman's
+  real arrest against real segregation is kept distinct from the staged legend. A
+  test that only fired against one side would be the partisan weapon the page
+  warns against.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
