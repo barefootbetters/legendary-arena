@@ -37,7 +37,7 @@ source:
   - ../ewiki/sound-effects/strike-blocked.py
   - ../scripts/upload-move-sfx-to-r2.mjs
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-05
+last-reviewed: 2026-09-08
 ---
 
 # Sound Effects
@@ -87,7 +87,7 @@ suppressed flash.
 
 - Client-only audio foundation — WP-412 / D-24224.
 - [Surface-1](#surface-1) notable-event
-  cues (**all nine variants**) — WP-412 / D-24224; the exhaustive
+  cues (**all ten variants**) — WP-412 / D-24224; the exhaustive
   [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
   (`Record<SfxEventKey, string>`) maps every `NotableGameEventType` to a clip, and
   [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
@@ -105,6 +105,13 @@ suppressed flash.
   `woundCount` increases (`useWoundCue` + `woundCueManifest`, NOT in
   `sfxManifest` — a Wound is not a notable event). The audio half of the WP-650
   wound vignette; the sonic inverse of the shield-block clang.
+- **Transform power-surge** — WP-672 / D-24486; the audio half of the transform
+  VFX beat (`transformResolved`, the tenth notable event): a gamma "power-up"
+  charge sweeping upward into a bright harmonic major-triad bloom
+  (`transform.mp3`, ORIGINAL synthesis, live on R2) when a Hero base card swaps
+  into its stronger second form. In `sfxManifest` like every notable-event cue,
+  so it plays on the same `notableEvents` frame as the surge bloom + "TRANSFORMED!"
+  word ([Visual Effects](visual-effects.md#surface-transform)).
 
 **Approved design** (contracted, not yet built):
 
@@ -134,7 +141,7 @@ drive audio:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Nine variants are locked, and — unlike the
+player-visible outcomes. Ten variants are locked, and — unlike the
 game log — they **are** projected as `UIState.notableEvents`. The arena
 client already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -147,12 +154,14 @@ exhaustive [`sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
 CC0 clip, and [`useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
 — a sibling of the overlay stream with its own append-only cursor — fires
 **one clip per newly-appended notable event**, in array order, with no throttle
-(including `strikeBlocked`). The `strikeBlocked` (WP-644) sting is **live on R2**
-— an ORIGINAL-synthesis clip (`strike-blocked.mp3`), not a CC0-sourced one. The
-other two recent variants, `bystanderRevealed` (WP-602) and `deckReshuffled`
-(WP-642), are mapped in the manifest but their CC0 bytes are **operator-pending
-on R2** (a not-yet-uploaded clip 404s on preload and no-ops, so the sting starts
-the moment the byte lands).
+(including `strikeBlocked` and `transformResolved`). Two variants play
+**ORIGINAL-synthesis** clips **live on R2** (no CC0 obligation — the cleanest
+commercial posture): `strikeBlocked` (WP-644, `strike-blocked.mp3`) and
+`transformResolved` (WP-672, `transform.mp3` — a gamma power-surge). The other two
+recent variants, `bystanderRevealed` (WP-602) and `deckReshuffled` (WP-642), are
+mapped in the manifest but their CC0 bytes are **operator-pending on R2** (a
+not-yet-uploaded clip 404s on preload and no-ops, so the sting starts the moment
+the byte lands).
 
 | Event (`NotableGameEventType`) | Fires when | Suggested sound character | Candidate CC0 source |
 |---|---|---|---|
@@ -165,6 +174,7 @@ the moment the byte lands).
 | `bystanderRevealed` | A Bystander is revealed from the villain deck and captured — by the frontmost City villain, or the Mastermind when the City is empty (WP-602) | Short "someone's in danger" civilian sting — the beat that sets up a rescue | Kenney Interface Sounds; OpenGameArt CC0 |
 | `deckReshuffled` | A start-of-turn draw empties a player's hero deck and the discard reshuffles back into it (WP-642) | Calm shuffle / riffle — an informational "you cycled your deck", never alarming | OpenGameArt Card Game Sounds ("Shuffle") |
 | `strikeBlocked` | A player **avoids** a threat by revealing a Hero — a Master Strike skip (Magneto/Dr. Doom/Loki), a reveal-or-punish Scheme Twist dodge, a villain Ambush dodge, or a villain Fight/Escape reveal-or-wound dodge (`threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) (WP-644..651) | Metallic **block clang** — the defensive mirror of the Master Strike sting. **One clip for all five threat classes** (the SFX keys on `event.type`, not `threatKind`; only the visual burst recolours) | ORIGINAL synthesis (`strike-blocked.mp3`, live on R2; WP-644 / #1812) |
+| `transformResolved` | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form — the World War Hulk signature mechanic (She-Hulk / Amadeus Cho are the supported bases today) (WP-672) | Gamma **power-surge** — a rising energy charge into a bright harmonic major-triad bloom, the *positive* twin of the Master Strike sting (a hero powering up, not deflecting). One clip; plays on the same frame as the surge bloom + "TRANSFORMED!" word | ORIGINAL synthesis (`transform.mp3`, live on R2; WP-672 / #1937) |
 
 #### Surface 1b — Sub-effects inside a fight or ambush (`appliedEffects`)
 
@@ -891,7 +901,7 @@ unusable on a revenue-generating site.
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the nine `NotableGameEventType` variants and their payloads
+  — the ten `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`, `threatKind`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are
@@ -916,7 +926,7 @@ unusable on a revenue-generating site.
   — existing overlay driven by the same stream
 - [`apps/arena-client/src/audio/sfxManifest.ts`](../apps/arena-client/src/audio/sfxManifest.ts)
   — the **shipped** Surface-1 notable-event → clip map (WP-412); an exhaustive
-  `Record<SfxEventKey, string>` over all nine `NotableGameEventType` variants
+  `Record<SfxEventKey, string>` over all ten `NotableGameEventType` variants
 - [`apps/arena-client/src/composables/useSoundEffects.ts`](../apps/arena-client/src/composables/useSoundEffects.ts)
   — the **shipped** Surface-1 consumer; a sibling of the overlay stream that keeps
   its own append-only cursor and fires one clip per newly-appended notable event

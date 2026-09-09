@@ -40,6 +40,8 @@ source:
   - ../apps/arena-client/src/components/play/VfxOverlay.vue
   - ../apps/arena-client/src/components/play/AudioControls.vue
   - ../apps/arena-client/src/vfx/comboVfxManifest.ts
+  - ../apps/arena-client/src/vfx/transformVfxManifest.ts
+  - ../apps/arena-client/src/composables/useTransformVfx.ts
   - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../packages/game-engine/src/log/logOutcome.types.ts
@@ -47,7 +49,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-05
+last-reviewed: 2026-09-08
 ---
 
 # Visual Effects Framework
@@ -103,13 +105,15 @@ governance layer** (implemented against, and not free to drift); the
 [Mechanics](#mechanics) are **design detail** (the per-event *character* —
 which flash, which colour — is proposal-level and free to evolve); and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
-**roadmap**. **Three surfaces have shipped** — the [combo VFX
+**roadmap**. **Four surfaces have shipped** — the [combo VFX
 foundation](#shipped-combo-vfx) (flash + synergy call-out + the accessibility
 gate, WP-556), the [shield-block beat](#surface-block) with the **complete
 reveal-to-avoid family** (the `strikeBlocked` event + the Cap-shield burst,
 recoloured per `threatKind` across all five threat classes — Master Strike /
-Scheme Twist / Ambush / Fight / Escape, WP-644..651), and the [wound-gained
-damage vignette](#surface-1b) (its thematic inverse, WP-650); everything else
+Scheme Twist / Ambush / Fight / Escape, WP-644..651), the [wound-gained
+damage vignette](#surface-1b) (its thematic inverse, WP-650), and the
+[transform power-surge beat](#surface-transform) (the `transformResolved` event
++ the gamma-green surge + "TRANSFORMED!" word, WP-672); everything else
 here — the remaining notable-event effects (Master Strike vignette,
 mastermind-defeat bloom, fight impact), endgame finales, the other fight/ambush
 sub-effects, action-move cues, faction cries — is still `draft` design against
@@ -249,7 +253,7 @@ row by row:
 
 | Surface | Authority | VFX may read |
 |---|---|---|
-| `UIState.notableEvents` (nine locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.notableEvents` (ten locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
@@ -436,7 +440,7 @@ candidate signals, in decreasing order of readiness:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Nine variants are locked, and — unlike the game
+player-visible outcomes. Ten variants are locked, and — unlike the game
 log — they **are** projected as `UIState.notableEvents`. The arena client
 already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -457,6 +461,7 @@ stream — one effect per event type — with zero new engine work.
 | `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
 | `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom/**Loki** Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, a villain **Ambush** dodge, or a villain **Fight**/**Escape** ability reveal-or-wound dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (complete):** the engine event + overlay chip and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) — a threat-coloured deflection burst (Master Strike **red** / Scheme Twist **purple** / Ambush **green** / Fight **amber** / Escape **teal** per `threatKind`) + the "BLOCKED!" word (WP-644..651; all five reveal-to-avoid classes) |
+| `transformResolved` | T2 | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form (the World War Hulk signature mechanic; She-Hulk / Amadeus Cho are the supported bases today) — one per completed swap, `{ playerId, narrative }` | A gamma-green **power surge** — a centre-out radial bloom + a gamma particle burst + a **"TRANSFORMED!"** word, plus a **"Transformed!"** chip. The *positive* counterpart to the shield block: the hero powering up, not deflecting. **Shipped:** the engine event + overlay chip + the `VfxOverlay` transform beat ([`#surface-transform`](#surface-transform)) — the surge bloom (gated `'shake'`), the gamma burst (gated `'particles'`), the "TRANSFORMED!" word (gated `'word'`) (WP-672). Hero surface only; the Mastermind (General Ross) + Scheme (Chthon) transforms do not yet emit the event — named follow-ups |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -775,6 +780,46 @@ Colours are the lead of each three-colour burst palette in
 
 *An animated mock is in [Appendix A.6](#appendix-surface-block).*
 
+#### Shipped — the transform power-surge (a "power-up" beat) {#surface-transform}
+
+Where the shield block celebrates a threat *deflected*, this one celebrates a
+hero *ascending*: a Hero base card meeting its printed [Transform](transform.md)
+condition and swapping into its stronger second form — the signature mechanic of
+the **World War Hulk** set (She-Hulk's *Hurl Legal Objections → Hurl Trucks*,
+Amadeus Cho's *Gamma-Draining Nanites → Like Totally Smart Hulk* are the supported
+bases today). Thematically it is a gamma surge: the board flushes radioactive
+green as the hero swells with power. It reads as the positive twin of the
+[`mastermindStrikeResolved`](#surface-1) "uh-oh" jolt — triumph, not dread — so it
+earns a comparably big one-shot flourish.
+
+> **Shipped — the `transformResolved` engine event lands in WP-672 (D-24486).**
+> Adding the tenth `NotableGameEventType` `transformResolved`, emitted by
+> `heroEffectTransform` at the completed-swap fire site (a minimal
+> `{ playerId, narrative }` payload, NOT emitted on the AC-5 exhaustion no-op),
+> gave the client the signal a transform VFX had to ride (Invariant #6 — VFX never
+> invents an event). It rides the existing `UIState.notableEvents` projection, so
+> WP-672 raises the [Surface-1](#surface-1) `NotableEventOverlay` **"Transformed!"**
+> chip *and* the `VfxOverlay` **transform beat**: a gamma-green **power-surge
+> bloom** swelling from the centre (a `useTransformVfx` consumer — an append-only
+> `notableEvents` cursor, the WP-647 shield-block consumer pattern) + a
+> **gamma-green particle burst** (`transformVfxManifest.ts`'s
+> `TRANSFORM_VFX.colors = ['#5ee66b', '#a6ff7a', '#eaffd0']`) + the constant
+> **"TRANSFORMED!"** word. Every element is gated by the WP-556 `effectIntensity`
+> `shouldRender` contract: the surge bloom is the full-screen `'shake'` class (full
+> intensity only, off under reduced-motion — the [wound vignette](#surface-1b)
+> precedent), the burst is `'particles'`, and the word survives at `low` /
+> reduced-motion (`'word'`). A transform has **no sub-kind** (unlike the shield
+> block's `threatKind`), so the VFX event is a plain `{ seq }` and the manifest is
+> a single spec, not a `Record`. **Pure presentation** — reads `UIState` only, no
+> `G`/`ctx`, absent from the determinism hash (the `src/vfx/` D-24365 exemption).
+> The audio half — an ORIGINAL-synthesis gamma power-surge (`transform.mp3`, live
+> on R2) — plays on the same `notableEvents` frame ([Sound Effects](sound-effects.md#surface-1)).
+> **Hero surface only:** the [Mastermind](transform.md#mastermind-transform)
+> (General Ross, WP-669) and [Scheme](transform.md#scheme-transform) (Chthon,
+> WP-670) transform surfaces do not yet emit `transformResolved` — each is a named
+> follow-up that adds an emit at its own fire site; the event, the manifest, and
+> the consumer are already shared.
+
 ### Future direction — alternate thematic presentations {#playstyle-lens}
 
 The VFX trigger spine is **compatible with alternate thematic
@@ -980,7 +1025,7 @@ priority order is fixed and non-negotiable:
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the nine `NotableGameEventType` variants and their payloads
+  — the ten `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are composed
