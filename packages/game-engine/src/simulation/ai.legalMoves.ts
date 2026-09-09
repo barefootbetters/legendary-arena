@@ -31,8 +31,9 @@ import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mast
 import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
-import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
+import { selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget } from '../hero/heroEffects.execute.js';
 import {
   hasPendingVictoryPileCardPick,
   getEligibleVictoryVillains,
@@ -131,6 +132,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
   'resolveCountScaledChoice',
+  'resolveSmashDiscard',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
   // why: WP-498 / D-24301 — getLegalMoves short-circuits to resolveReturnOnDiscard when the
@@ -329,6 +331,19 @@ export function getLegalMoves(
   // mirroring the draw-or-empowered default above). Returns a list of length EXACTLY 1.
   if (hasPendingCountScaledChoice(gameState)) {
     return [{ name: 'resolveCountScaledChoice', args: { optionIndex: 0 } }];
+  }
+  // why: WP-676 / D-24492 — a Smash discard-for-attack choice blocks every other move; the
+  // bot resolves it first, discarding the deterministic default target
+  // (selectDefaultSmashDiscardTarget: lowest cost, CardExtId asc tie-break) for +N Attack —
+  // it NEVER declines while the hand is non-empty (+N Attack is strictly beneficial). When the
+  // hand is empty the target is null, so it declines (the block-all guard still requires the
+  // move). Returns a list of length EXACTLY 1.
+  if (hasPendingSmashDiscard(gameState)) {
+    const smashTarget = selectDefaultSmashDiscardTarget(gameState, activePlayer);
+    if (smashTarget !== null) {
+      return [{ name: 'resolveSmashDiscard', args: { cardId: smashTarget } }];
+    }
+    return [{ name: 'resolveSmashDiscard', args: { decline: true } }];
   }
 
   // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must

@@ -1430,7 +1430,7 @@
       "slug": "smash",
       "label": "Smash",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 11,
       "cardIds": [
         "wwhk/bruce-banner",

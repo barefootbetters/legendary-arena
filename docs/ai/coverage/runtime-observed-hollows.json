@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 27,
-    "totalObservations": 1961,
+    "totalObservations": 1925,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1961
+      "parse-unrecognized": 1925
     }
   },
   "byMechanic": {
@@ -1018,12 +1018,12 @@
       ]
     },
     "transform": {
-      "hitCount": 165,
+      "hitCount": 129,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 165
+        "parse-unrecognized": 129
       },
       "examples": [
         {

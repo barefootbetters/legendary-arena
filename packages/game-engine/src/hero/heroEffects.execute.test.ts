@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, FACE_DOWN_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -79,7 +79,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-668 / D-24481 added the reveal-herodeck-attack handler (28 → 29).
     // WP-674 / D-24489 added the recruit-per-count handler (29 → 30).
     // WP-675 / D-24490 added the count-scaled-choose park handler (30 → 31).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 31);
+    // WP-676 / D-24492 added the smash park handler (31 → 32).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 32);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3110,6 +3111,120 @@ describe('executeHeroEffects optional-ko-reward park (WP-248)', () => {
 
     assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'a choice parks because inPlay is non-empty');
     assert.equal(gameState.messages.length, 0, 'the park is silent (no no-op log line)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-676 / D-24492 — smash park case (the Smash hero keyword)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects smash park (WP-676 / D-24492)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('playing a Smash hook with ≥1 hand card parks a choice carrying the magnitude (silent, no play-time Attack)', () => {
+    const gameState = makeTestState({
+      hand: ['card-h'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['smash'], effects: [{ type: 'smash', magnitude: 4 }] },
+      ],
+    });
+    const attackBefore = gameState.turnEconomy.attack;
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingSmashDiscards?.length, 1, 'exactly one Smash choice parked');
+    assert.deepStrictEqual(
+      gameState.pendingSmashDiscards![0],
+      { playerID: '0', magnitude: 4 },
+      'parked entry records the chooser and the +N Attack magnitude',
+    );
+    assert.equal(gameState.turnEconomy.attack, attackBefore, 'no Attack granted at play time (granted at resolve)');
+    assert.equal(gameState.messages.length, 0, 'the park is silent (no game-log line)');
+  });
+
+  it('with an empty hand it is a no-op plus a game-log line (nothing to discard)', () => {
+    const gameState = makeTestState({
+      hand: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['smash'], effects: [{ type: 'smash', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingSmashDiscards?.length ?? 0, 0, 'no choice parked when the hand is empty');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('no other card to discard')),
+      'an empty-hand Smash appends a game-log line explaining the no-op',
+    );
+  });
+
+  it('two Smash hooks on one card (Hurl Trucks) park TWO independent choices', () => {
+    const gameState = makeTestState({
+      hand: ['card-h', 'card-i'],
+      inPlay: ['hurl-trucks'],
+      heroAbilityHooks: [
+        { cardId: 'hurl-trucks', timing: 'onPlay', keywords: ['smash'], effects: [{ type: 'smash', magnitude: 2 }] },
+        { cardId: 'hurl-trucks', timing: 'onPlay', keywords: ['smash'], effects: [{ type: 'smash', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hurl-trucks' as string);
+
+    assert.equal(gameState.pendingSmashDiscards?.length, 2, 'two Smash instances park two choices');
+    assert.deepStrictEqual(
+      gameState.pendingSmashDiscards!.map((entry) => entry.magnitude),
+      [2, 2],
+      'both entries carry magnitude 2',
+    );
+  });
+
+  it('a bare no-magnitude smash effect (the co-printed [keyword:Smash] verb) safe-skips at the magnitude pre-gate — no park, no freeze', () => {
+    // why: WP-676 §Out of Scope — the conditional-KO verb `[keyword:Smash]` (no magnitude)
+    // reaches executeSingleEffect but fails its magnitude pre-gate (smash ∉
+    // NO_MAGNITUDE_KEYWORDS), so it parks nothing and grants nothing.
+    const gameState = makeTestState({
+      hand: ['card-h'],
+      inPlay: ['korg-card'],
+      heroAbilityHooks: [
+        { cardId: 'korg-card', timing: 'onPlay', keywords: ['smash'], effects: [{ type: 'smash' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'korg-card' as string);
+
+    assert.equal(gameState.pendingSmashDiscards?.length ?? 0, 0, 'a magnitude-less smash parks nothing');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-676 / D-24492 — selectDefaultSmashDiscardTarget (bot/sim default)
+// ---------------------------------------------------------------------------
+
+describe('selectDefaultSmashDiscardTarget (WP-676 / D-24492)', () => {
+  it('picks the lowest-cost hand card', () => {
+    const gameState = makeTestState({ hand: ['expensive', 'cheap'] });
+    gameState.cardStats = {
+      expensive: { cost: 5 } as never,
+      cheap: { cost: 1 } as never,
+    };
+    assert.equal(selectDefaultSmashDiscardTarget(gameState, '0'), 'cheap');
+  });
+
+  it('breaks a cost tie by ascending CardExtId', () => {
+    const gameState = makeTestState({ hand: ['zeta', 'alpha'] });
+    gameState.cardStats = {
+      zeta: { cost: 2 } as never,
+      alpha: { cost: 2 } as never,
+    };
+    assert.equal(selectDefaultSmashDiscardTarget(gameState, '0'), 'alpha', 'ties break to the lowest CardExtId');
+  });
+
+  it('returns null when the hand is empty (caller declines)', () => {
+    const gameState = makeTestState({ hand: [] });
+    assert.equal(selectDefaultSmashDiscardTarget(gameState, '0'), null);
   });
 });
 

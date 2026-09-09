@@ -197,7 +197,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 4]"
+            "[keyword:Smash 4] [keyword:smash:4]"
           ],
           "transformOf": "gamma-bomb-disaster",
           "isTransform": true
@@ -316,7 +316,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: [keyword:Smash 2]"
+            "[hc:covert]: [keyword:Smash 2] [keyword:smash:2]"
           ]
         },
         {
@@ -438,7 +438,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[keyword:Smash 2]"
+            "[keyword:Smash 2] [keyword:smash:2]"
           ]
         },
         {
@@ -453,7 +453,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 3]",
+            "[keyword:Smash 3] [keyword:smash:3]",
             "Then, if you discarded at least two cards this turn, [keyword:Transform] this into Hulk Is King and put it on top of your deck."
           ],
           "transform": "hulk-is-king"
@@ -504,7 +504,7 @@
           "recruit": null,
           "abilities": [
             "You get double[icon:attack] from each Smash this turn.",
-            "[keyword:Smash 3]"
+            "[keyword:Smash 3] [keyword:smash:3]"
           ]
         }
       ],
@@ -728,7 +728,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: [keyword:Smash 2]"
+            "[keyword:Outwit]: [keyword:Smash 2] [keyword:smash:2]"
           ]
         },
         {
@@ -760,7 +760,7 @@
           "recruit": null,
           "abilities": [
             "Draw two cards. [keyword:draw:2]",
-            "[keyword:Smash 2]"
+            "[keyword:Smash 2] [keyword:smash:2]"
           ],
           "transformOf": "build-the-suit",
           "isTransform": true
@@ -849,7 +849,7 @@
           "attack": "0+",
           "recruit": "2",
           "abilities": [
-            "[hc:strength]: [keyword:Smash 2]"
+            "[hc:strength]: [keyword:Smash 2] [keyword:smash:2]"
           ]
         },
         {
@@ -985,7 +985,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:strength]: [keyword:Smash 2]. If you [keyword:Smash] a Wound this way, KO it."
+            "[hc:strength]: [keyword:Smash 2]. If you [keyword:Smash] a Wound this way, KO it. [keyword:smash:2]"
           ]
         },
         {
@@ -1032,7 +1032,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[keyword:Smash 3]"
+            "[keyword:Smash 3] [keyword:smash:3]"
           ],
           "transformOf": "forged-by-fire",
           "isTransform": true
@@ -1121,7 +1121,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 1]"
+            "[keyword:Smash 1] [keyword:smash:1]"
           ]
         },
         {
@@ -1258,7 +1258,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:ranged]: [keyword:Smash 3]"
+            "[hc:ranged]: [keyword:Smash 3] [keyword:smash:3]"
           ]
         },
         {
@@ -1304,7 +1304,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 3]",
+            "[keyword:Smash 3] [keyword:smash:3]",
             "If you [keyword:Smash] a 0-cost Hero this way, KO it."
           ],
           "transformOf": "herculean-effort",
@@ -1596,7 +1596,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 5]"
+            "[keyword:Smash 5] [keyword:smash:5]"
           ],
           "transformOf": "irradiated-blood",
           "isTransform": true
@@ -1897,8 +1897,8 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[keyword:Smash 2]",
-            "[keyword:Smash 2]"
+            "[keyword:Smash 2] [keyword:smash:2]",
+            "[keyword:Smash 2] [keyword:smash:2]"
           ],
           "transformOf": "hurl-legal-objections",
           "isTransform": true
@@ -2017,7 +2017,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: [keyword:Smash 3]"
+            "[hc:strength]: [keyword:Smash 3] [keyword:smash:3]"
           ]
         },
         {

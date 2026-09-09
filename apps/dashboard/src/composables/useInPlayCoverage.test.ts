@@ -309,9 +309,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // is a resolved condition) and more downstream observations. Net: totalObs 2336 -> 2391;
   // percentResolved rises 30.8 -> 32.4 (the extra Outwit resolutions lift the resolved
   // share). Honest gauge, deterministic — CI computes the same.
+  // 2026-09-09 (WP-676 / D-24492, re-pin): the Smash keyword ships executable, so the wwhk
+  // Smash cards now park a discard-for-attack pending choice (a resolved mechanic) instead
+  // of the inert/hollow marker, and the fixed-seed sweep's bot discards a card for +N attack —
+  // both credit Smash obs as resolved and shift downstream game trajectories. Net: totalObs
+  // 2391 -> 2355 (a sweep-trajectory artifact + resolved-obs move, not a regression);
+  // percentResolved edges 32.4 -> 31.3 (the shorter, Smash-diverted sweep surfaces slightly
+  // more downstream unresolved obs from still-unimplemented mechanics than Smash resolves).
+  // Honest gauge, deterministic — CI computes the same.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2391);
-  assert.equal(view.percentResolved.value, 32.4);
+  assert.equal(view.totalObs.value, 2355);
+  assert.equal(view.percentResolved.value, 31.3);
   assert.ok(view.remaining.value.length > 0);
 });
 

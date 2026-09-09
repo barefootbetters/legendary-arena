@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 674,
     "byStatus": {
-      "executable": 275,
+      "executable": 286,
       "deferred": 0,
       "condition": 26,
-      "unsupported": 334,
+      "unsupported": 323,
       "unmarked": 38,
       "subsystem": 1
     },
@@ -10849,10 +10849,10 @@
       "heroName": "Bruce Banner",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "savage-hulk-unleashed",
@@ -10917,10 +10917,10 @@
       "heroName": "Caiera",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "shadowforged-blade",
@@ -10981,10 +10981,10 @@
       "heroName": "Gladiator Hulk",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "dont-make-me-angry",
@@ -11105,10 +11105,10 @@
       "heroName": "Hulkbuster Iron Man",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "attune-techtonic-transducer",
@@ -11141,10 +11141,10 @@
       "heroName": "Joe Fixit, Grey Hulk",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "carefully-considered-smashing",
@@ -11213,10 +11213,10 @@
       "heroName": "Korg",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "lord-of-granite",
@@ -11273,10 +11273,10 @@
       "heroName": "Miek, The Unhived",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "this-bug-smashes-you",
@@ -11321,10 +11321,10 @@
       "heroName": "Namora",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "crushing-tsunami",
@@ -11429,10 +11429,10 @@
       "heroName": "Rick Jones",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "a-bomb",
@@ -11617,10 +11617,10 @@
       "heroName": "She-Hulk",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "hurl-trucks",
@@ -11649,10 +11649,10 @@
       "heroName": "Skaar, Son of Hulk",
       "set": "wwhk",
       "mechanic": "smash",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-676",
+      "decision": "D-24492",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
       "designs": [
         {
           "slug": "anger-management",

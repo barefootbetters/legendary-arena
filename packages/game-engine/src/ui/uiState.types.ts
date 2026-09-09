@@ -175,6 +175,13 @@ export interface UIState {
   // hand-privacy analog). Absent (undefined) means no pending optional-KO-reward
   // choice.
   pendingOptionalKoReward?: UIPendingOptionalKoReward;
+  // why: WP-676 / D-24492 — projects the FRONT of G.pendingSmashDiscards with the eligible
+  // hand cards + the +N Attack magnitude so the choosing player can render the Smash "discard
+  // a card for +N attack, or Decline" prompt. Redacted (omitted) for every audience except
+  // the chooser — eligibleHand carries the chooser's private hand identities (D-24011
+  // hand-privacy analog — keyed on .playerID). Absent (undefined) means no pending Smash
+  // choice; the client must not render the prompt in that case.
+  pendingSmashDiscard?: UIPendingSmashDiscard;
   // why: D-24071 + WP-287 — projects the FRONT of G.pendingDrawOrEmpowered with the
   // derived empoweredLabel so the choosing player can render the "Choose one: Draw a
   // card / Empowered by {class}" prompt. Redacted (omitted) for every audience except
@@ -1070,6 +1077,32 @@ export interface UIPendingOptionalKoReward {
   eligibleDiscard: UIEligibleKoHeroCard[];
   // why: D-24442 — cards the chooser played this turn (inPlay); a valid KO source.
   eligibleInPlay: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending Smash discard-for-attack choice (WP-676 /
+ * D-24492 — the `smash` hero keyword, the wwhk set).
+ *
+ * `eligibleHand` REUSES `UIEligibleKoHeroCard` (zone is always 'hand' here) — the
+ * chooser's whole current hand, in hand order (the same list the resolve move
+ * validates against, the round-trip rule). The choice is OPTIONAL ("you may
+ * discard another card"): the client renders one Discard button per eligible hand
+ * card AND a Decline button (`resolveSmashDiscard({ decline: true })`). `magnitude`
+ * is the +N Attack a discard grants, so the client can label the prompt ("Discard a
+ * card for +N attack") without re-deriving it. Only visible to the chooser; redacted
+ * for opponents and spectators (keyed on .playerID).
+ *
+ * @see WP-676 §Scope (In) — projection + prompt
+ * @see EC-713 Locked Values
+ * @see DECISIONS.md D-24492
+ */
+export interface UIPendingSmashDiscard {
+  // why: D-24492 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingDiscardToPlay.playerID.
+  playerID: string;
+  /** The Attack a discard grants (+N), for the prompt label. */
+  magnitude: number;
+  eligibleHand: UIEligibleKoHeroCard[];
 }
 
 /**

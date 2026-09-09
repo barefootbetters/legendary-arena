@@ -771,6 +771,31 @@ export interface PendingOptionalKoReward {
 }
 
 /**
+ * A pending "discard another card from your hand for +N Attack?" choice
+ * (WP-676 / D-24492 — the Smash hero keyword; the wwhk set).
+ *
+ * Parked on G.pendingSmashDiscards[] (FIFO) by the `smash` hero ability — one
+ * entry per printed "Smash N" instance, so She-Hulk's Hurl Trucks (two "Smash 2"
+ * entries) parks two independent choices. Removed (front-popped) by
+ * resolveSmashDiscard after the player discards a hand card (→ +magnitude Attack)
+ * or declines (→ nothing). Must be undefined or empty at every turn-end (enforced
+ * by the block-all guards).
+ *
+ * // why: D-24492 — per universal-rules-v23 §Smash the choice is "you may discard
+ * another card from your hand; if you do, +N attack". The entry records the
+ * choosing player and the Attack magnitude granted iff they discard; the eligible
+ * hand cards are recomputed fresh from current G by the move validation, the
+ * projection, and the bot auto-resolver (no snapshot — the hand may change between
+ * park and resolve), mirroring PendingOptionalKoReward.
+ */
+export interface PendingSmashDiscard {
+  /** The player who must discard a hand card or decline. */
+  playerID: string;
+  /** The Attack granted iff the player discards a hand card. */
+  magnitude: number;
+}
+
+/**
  * A pending "play the top card of the Villain Deck for +N Attack?" choice
  * (WP-663 / D-24474 — Emma Frost's Shadowed Thoughts).
  *
@@ -1274,6 +1299,18 @@ export interface LegendaryGameState {
   // or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending optional-KO-then-reward choices awaiting resolution (WP-248). */
   pendingOptionalKoRewards?: PendingOptionalKoReward[] | undefined;
+
+  // why: WP-676 / D-24492 — FIFO queue of pending Smash discard-for-attack choices (one
+  // per played "Smash N" hook — the "you may discard another card from your hand; if you
+  // do, +N attack" form). Entries are appended by the heroEffectSmash park case;
+  // front-popped by resolveSmashDiscard after the player discards a hand card or declines.
+  // Must be undefined or empty at every turn-end. Optional so existing test state literals
+  // do not need updating; **lazily initialized at the park site, never in Game.setup** —
+  // so a game that never plays a Smash card carries no new field and serializes
+  // byte-identically (no finalStateHash re-pin). Absent (undefined) or empty [] both mean
+  // "no pending choice" (guards test `.length`). Smash is a wwhk-only hero keyword.
+  /** FIFO queue of pending Smash discard-for-attack choices awaiting resolution (WP-676). */
+  pendingSmashDiscards?: PendingSmashDiscard[] | undefined;
 
   // why: WP-663 / D-24474 — FIFO queue of pending "play the top Villain-Deck card for +N
   // Attack?" choices (Shadowed Thoughts). Lazily materialized (never seeded in Game.setup),

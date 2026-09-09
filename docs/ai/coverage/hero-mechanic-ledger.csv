@@ -582,40 +582,40 @@ wwhk/amadeus-cho,Amadeus Cho,wwhk,outwit,condition,,,,extrapolate|like-totally-s
 wwhk/amadeus-cho,Amadeus Cho,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,gamma-draining-nanites
 wwhk/bruce-banner,Bruce Banner,wwhk,outwit,condition,,,,gamma-bomb-disaster|gamma-ray-experiment|solve-the-impossible
 wwhk/bruce-banner,Bruce Banner,wwhk,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,dangerous-testing
-wwhk/bruce-banner,Bruce Banner,wwhk,smash,unsupported,,,,savage-hulk-unleashed
+wwhk/bruce-banner,Bruce Banner,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,savage-hulk-unleashed
 wwhk/bruce-banner,Bruce Banner,wwhk,transform,unsupported,,,,gamma-bomb-disaster
 wwhk/caiera,Caiera,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shadow-queen
 wwhk/caiera,Caiera,wwhk,outwit,condition,,,,focus-the-old-power|shadow-queen
-wwhk/caiera,Caiera,wwhk,smash,unsupported,,,,shadowforged-blade
+wwhk/caiera,Caiera,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,shadowforged-blade
 wwhk/caiera,Caiera,wwhk,transform,unsupported,,,,dutiful-protector
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,cross-dimensional-rampage,unsupported,,,,the-green-scar
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,dont-make-me-angry
-wwhk/gladiator-hulk,Gladiator Hulk,wwhk,smash,unsupported,,,,dont-make-me-angry|double-fisted-smashing|seize-the-throne
+wwhk/gladiator-hulk,Gladiator Hulk,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,dont-make-me-angry|double-fisted-smashing|seize-the-throne
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,transform,unsupported,,,,seize-the-throne
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,wounded-fury,unsupported,,,,the-green-scar
 wwhk/hiroim,Hiroim,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,save-from-the-rubble
 wwhk/hiroim,Hiroim,wwhk,transform,unsupported,,,,save-from-the-rubble
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,pound-for-pound|ultra-massive-armor
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,outwit,condition,,,,attune-techtonic-transducer
-wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,smash,unsupported,,,,attune-techtonic-transducer|ultra-massive-armor
+wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,attune-techtonic-transducer|ultra-massive-armor
 wwhk/hulkbuster-iron-man,Hulkbuster Iron Man,wwhk,transform,unsupported,,,,build-the-suit
-wwhk/joe-fixit-grey-hulk,"Joe Fixit, Grey Hulk",wwhk,smash,unsupported,,,,carefully-considered-smashing
+wwhk/joe-fixit-grey-hulk,"Joe Fixit, Grey Hulk",wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,carefully-considered-smashing
 wwhk/joe-fixit-grey-hulk,"Joe Fixit, Grey Hulk",wwhk,transform,unsupported,,,,ambitious-enforcer
 wwhk/korg,Korg,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,lord-of-granite|move-mountains|nothing-beats-rock
 wwhk/korg,Korg,wwhk,outwit,condition,,,,move-mountains
-wwhk/korg,Korg,wwhk,smash,unsupported,,,,lord-of-granite|nothing-beats-rock
+wwhk/korg,Korg,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,lord-of-granite|nothing-beats-rock
 wwhk/korg,Korg,wwhk,transform,unsupported,,,,forged-by-fire
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,feast,unsupported,,,,devouring-frenzy|hive-king-miek|metamorphosis
-wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,smash,unsupported,,,,this-bug-smashes-you
+wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,this-bug-smashes-you
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,transform,unsupported,,,,metamorphosis
 wwhk/namora,Namora,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crushing-tsunami
-wwhk/namora,Namora,wwhk,smash,unsupported,,,,crushing-tsunami|master-of-depths
+wwhk/namora,Namora,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,crushing-tsunami|master-of-depths
 wwhk/namora,Namora,wwhk,transform,unsupported,,,,herculean-effort
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,torrent-of-broodlings
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,feast,unsupported,,,,appetite-for-destruction|bursting-with-life|world-spanning-hunger
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,transform,unsupported,,,,bursting-with-life
 wwhk/rick-jones,Rick Jones,wwhk,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,captain-marvel
-wwhk/rick-jones,Rick Jones,wwhk,smash,unsupported,,,,a-bomb
+wwhk/rick-jones,Rick Jones,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,a-bomb
 wwhk/rick-jones,Rick Jones,wwhk,transform,unsupported,,,,caught-in-kree-skrull-war|irradiated-blood|seek-the-nega-bands
 wwhk/sentry,Sentry,wwhk,feast,unsupported,,,,the-void-unchained
 wwhk/sentry,Sentry,wwhk,transform,unsupported,,,,agoraphobia|golden-guardian-of-good|mournful-sentinel|the-void-unchained|vast-unstable-power
@@ -625,9 +625,9 @@ wwhk/she-hulk,She-Hulk,wwhk,optional-ko-hand-discard,executable,,,packages/game-
 wwhk/she-hulk,She-Hulk,wwhk,outwit,condition,,,,window-of-opportunity
 wwhk/she-hulk,She-Hulk,wwhk,recruit-threshold,condition,,,,hurl-legal-objections|radioactive-riot
 wwhk/she-hulk,She-Hulk,wwhk,reveal-herodeck-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack,jade-giantess
-wwhk/she-hulk,She-Hulk,wwhk,smash,unsupported,,,,hurl-trucks
+wwhk/she-hulk,She-Hulk,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,hurl-trucks
 wwhk/she-hulk,She-Hulk,wwhk,transform,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#transform,hurl-legal-objections
-wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,unsupported,,,,anger-management
+wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,anger-management
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,transform,unsupported,,,,mood-swings
 wwhk/skaar-son-of-hulk,"Skaar, Son of Hulk",wwhk,wounded-fury,unsupported,,,,planetary-level-revenge|raging-savage|scarred-past
 xmen/aurora-northstar,Aurora & Northstar,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,blazing-fists

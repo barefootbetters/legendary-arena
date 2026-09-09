@@ -843,6 +843,35 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-676 / D-24492 — the pending Smash discard-for-attack choice is private to the
+  // chooser. Its eligibleHand list carries the chooser's PRIVATE hand identities, so it is
+  // redacted for EVERY audience except the choosing player (the D-24011 hand-privacy analog).
+  // Present only when the audience is a player whose playerId equals the chooser's playerID;
+  // omitted (conditional assignment, never an `undefined` literal) for opponents AND
+  // spectators. The assignment rebuilds each hand entry field-by-field (the audience-filter
+  // whitelist pattern) with a per-entry display spread to prevent aliasing with the input
+  // UIState. Missing this pass-through drops the field at the whitelist and the game freezes
+  // with no prompt (the recurring filter-drop failure mode).
+  if (
+    uiState.pendingSmashDiscard !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingSmashDiscard.playerID
+  ) {
+    const eligibleHandCopy = [];
+    for (const entry of uiState.pendingSmashDiscard.eligibleHand) {
+      eligibleHandCopy.push({
+        zone: entry.zone,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingSmashDiscard = {
+      playerID: uiState.pendingSmashDiscard.playerID,
+      magnitude: uiState.pendingSmashDiscard.magnitude,
+      eligibleHand: eligibleHandCopy,
+    };
+  }
+
   // why: D-24071 / D-24011 analog — the pending draw-or-empowered choice is private to
   // the chooser. Redacted for EVERY audience except the choosing player; present only
   // when the audience is a player whose playerId equals the chooser's playerID; omitted

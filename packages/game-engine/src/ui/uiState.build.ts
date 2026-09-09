@@ -54,6 +54,7 @@ import type {
   UIPendingDefeatChoice,
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
+  UIPendingSmashDiscard,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingPlayVillainTop,
@@ -84,6 +85,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // helper (the chooser's whole hand) so the projected list is byte-identical to what
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
+import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
 import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard.js';
 // why: WP-532 / D-24343 — reuse the engine's authoritative give-HQ-Hero eligibility helper
 // so the projected list is byte-identical to what resolveGiveHqHeroChoice validates against
@@ -1500,6 +1502,34 @@ export function buildUIState(
     };
   }
 
+  // why: WP-676 / D-24492 — project the FRONT entry of G.pendingSmashDiscards with the
+  // eligible hand cards recomputed fresh via getEligibleSmashDiscardCards — the SAME
+  // predicate the resolve move validates with, so the client's { cardId } selection always
+  // round-trips. Each card lives in the chooser's hand (zone 'hand'); each display is spread
+  // fresh (aliasing defense, WP-111 D-11105). `magnitude` carries the +N Attack a discard
+  // grants (for the prompt label). Chooser-only redaction is enforced by
+  // filterUIStateForAudience (keyed on .playerID), mirroring pendingDiscardToPlay.
+  let pendingSmashDiscard: UIPendingSmashDiscard | undefined;
+  if (
+    gameState.pendingSmashDiscards !== undefined &&
+    gameState.pendingSmashDiscards.length > 0
+  ) {
+    const frontChoice = gameState.pendingSmashDiscards[0]!;
+    const eligibleHand: UIEligibleKoHeroCard[] = [];
+    for (const cardId of getEligibleSmashDiscardCards(gameState, frontChoice.playerID)) {
+      eligibleHand.push({
+        zone: 'hand',
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingSmashDiscard = {
+      playerID: frontChoice.playerID,
+      magnitude: frontChoice.magnitude,
+      eligibleHand,
+    };
+  }
+
   // why: WP-498 / D-24301 — project the FRONT entry of G.pendingReturnOnDiscard with the
   // single returnable card recomputed fresh via getEligibleReturnOnDiscardCards — the SAME
   // predicate the resolve move validates with, so the client's { cardId } selection always
@@ -1750,6 +1780,9 @@ export function buildUIState(
     // (no `pendingDefeatChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDefeatChoice !== undefined ? { pendingDefeatChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
+    // why: WP-676 / D-24492 — conditional spread so an absent choice omits the field (no
+    // `pendingSmashDiscard: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingSmashDiscard !== undefined ? { pendingSmashDiscard } : {}),
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),

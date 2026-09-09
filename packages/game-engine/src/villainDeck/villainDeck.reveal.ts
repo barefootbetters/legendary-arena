@@ -44,6 +44,7 @@ import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.re
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
@@ -131,6 +132,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return;
+  if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
