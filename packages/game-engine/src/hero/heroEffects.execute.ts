@@ -1647,11 +1647,15 @@ function heroEffectAttackPerCount(
   // count. Sources reading a zone this card is never in (victory-bystanders)
   // ignore it.
   const count = resolveCountSource(G, playerID, effect.countSource, cardId);
-  const grant = (effect.magnitude as number) * count;
+  // why: WP-677 / D-24493 — perEach is the "for each N" divisor (absent ≡ 1). The grant
+  // is magnitude × floor(count / perEach), so "+1 attack for each 2 S.H.I.E.L.D. Levels"
+  // grants floor(level / 2). A perEach of 0/undefined defaults to 1 (no divisor).
+  const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+  const grant = (effect.magnitude as number) * Math.floor(count / perEach);
   G.turnEconomy = addResources(G.turnEconomy, grant, 0);
   // why: record the source, count, and grant so the count-scaled attack is
   // observable in replay inspection (no implicit side effects).
-  pushLog(G, `Count-scaled attack: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled attack: +${grant} (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
 }
 
 /**
@@ -1687,11 +1691,14 @@ function heroEffectRecruitPerCount(
   // why: WP-674 / D-24489 — pass the triggering card so an "each OTHER card"
   // source (cost-four-plus-played-this-turn) can exclude this card from its own count.
   const count = resolveCountSource(G, playerID, effect.countSource, cardId);
-  const grant = (effect.magnitude as number) * count;
+  // why: WP-677 / D-24493 — perEach is the "for each N" divisor (absent ≡ 1); grant is
+  // magnitude × floor(count / perEach). See heroEffectAttackPerCount.
+  const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+  const grant = (effect.magnitude as number) * Math.floor(count / perEach);
   G.turnEconomy = addResources(G.turnEconomy, 0, grant);
   // why: record the source, count, and grant so the count-scaled recruit is
   // observable in replay inspection (no implicit side effects).
-  pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
 }
 
 /**

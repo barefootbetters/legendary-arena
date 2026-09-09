@@ -47,19 +47,20 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 5 canonical count-source values', () => {
+  it('contains exactly the 6 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
       'cost-four-plus-played-this-turn',
       'attack-icon-played-this-turn',
       'recruit-icon-played-this-turn',
+      'shield-levels',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      5,
-      'HERO_COUNT_SOURCES must have exactly 5 entries',
+      6,
+      'HERO_COUNT_SOURCES must have exactly 6 entries',
     );
 
     assert.deepStrictEqual(
@@ -349,6 +350,60 @@ describe('resolveCountSource attack-icon / recruit-icon-played-this-turn', () =>
 // ---------------------------------------------------------------------------
 // victory-bystanders resolver
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// shield-levels resolver (WP-677 / D-24493)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a state with player "0"'s victory pile + a cardStats isShieldOrHydra map.
+ * The shield-levels source reads only victory + G.cardStats[id].isShieldOrHydra.
+ */
+function makeVictoryState(
+  victory: string[],
+  membership: Record<string, boolean>,
+): LegendaryGameState {
+  const cardStats: Record<string, { isShieldOrHydra: boolean }> = {};
+  for (const id of Object.keys(membership)) {
+    cardStats[id] = { isShieldOrHydra: membership[id]! };
+  }
+  return {
+    playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [], victory } },
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveCountSource shield-levels', () => {
+  it('counts S.H.I.E.L.D./HYDRA cards in the victory pile; NO self-exclusion (whole pile)', () => {
+    const gameState = makeVictoryState(
+      ['nick-fury#0', 'agent#0', 'hydra-kidnappers-00', 'spider-man#0'],
+      {
+        'nick-fury#0': true, // team shield
+        'agent#0': true, // classless [team:shield] basic — still qualifies
+        'hydra-kidnappers-00': true, // HYDRA group name
+        'spider-man#0': false, // not shield/hydra
+      },
+    );
+    // triggeringCardId is passed but MUST be ignored (S.H.I.E.L.D. Level counts the whole pile)
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-levels', 'nick-fury#0'),
+      3,
+      'all three S.H.I.E.L.D./HYDRA cards count; the non-member does not; no self-exclusion',
+    );
+  });
+
+  it('a victory-pile card with no cardStats row does not qualify; empty pile → 0', () => {
+    const withUnknown = makeVictoryState(['mystery-card#0'], {}); // no cardStats entry
+    assert.equal(resolveCountSource(withUnknown, '0', 'shield-levels'), 0, 'no cardStats row → not counted');
+    const empty = makeVictoryState([], {});
+    assert.equal(resolveCountSource(empty, '0', 'shield-levels'), 0, 'empty victory pile → 0');
+  });
+
+  it('a player with no zones resolves to 0 (no throw)', () => {
+    const gameState = makeVictoryState(['nick-fury#0'], { 'nick-fury#0': true });
+    assert.equal(resolveCountSource(gameState, '99', 'shield-levels'), 0);
+  });
+});
 
 describe('resolveCountSource victory-bystanders', () => {
   it('counts N victory-pile bystanders across both ext_id forms', () => {

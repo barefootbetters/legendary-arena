@@ -114,6 +114,9 @@ export function makeCardStatEntry(overrides: Partial<CardStatEntry> = {}): CardS
     // card to show an attack/recruit icon sets these explicitly via `overrides`.
     hasAttackIcon: false,
     hasRecruitIcon: false,
+    // why: WP-677 / D-24493 — S.H.I.E.L.D. Level membership defaults false; a fixture
+    // that needs a S.H.I.E.L.D./HYDRA card sets it explicitly via `overrides`.
+    isShieldOrHydra: false,
     ...overrides,
   };
 }

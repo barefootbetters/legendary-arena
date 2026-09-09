@@ -113,6 +113,12 @@ export interface HeroEffectDescriptor {
   // Other keywords ignore it; an 'attack-per-count' effect with no/invalid
   // countSource is a skipped no-op.
   countSource?: HeroCountSource;
+  // why: WP-677 / D-24493 — for an 'attack-per-count' / 'recruit-per-count' effect, perEach
+  // is the divisor for "for each N <count>" printed shapes: the grant is
+  // magnitude × floor(resolveCountSource / perEach). Absent ≡ 1 (the "for each 1" default),
+  // so every existing per-unit effect is unchanged. e.g. "+1 attack for each 2 S.H.I.E.L.D.
+  // Levels" = magnitude 1, perEach 2, source shield-levels. Other keywords ignore it.
+  perEach?: number;
   // why: WP-675 / D-24490 — for a 'count-scaled-choose' effect, countScaledChoiceOptions
   // carries the two printed options (each a {resource, countSource, magnitude}) parsed from
   // the "Choose one:" count-scaled form. Carried from parse time to the park site, which

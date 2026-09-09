@@ -19,6 +19,7 @@ import type { SetupContext } from '../types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { MastermindState } from './mastermind.types.js';
 import { parseCardStatValue } from '../economy/economy.logic.js';
+import { matchesShieldOrHydra } from '../economy/shieldMembership.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,8 @@ interface MastermindCardEntry {
   tactic?: boolean;
   vAttack?: string | number | null;
   abilities?: string[];
+  /** Mastermind card name (WP-677; MastermindCardSchema.name is required — present at runtime). */
+  name?: string;
 }
 
 /**
@@ -264,6 +267,10 @@ export function buildMastermindState(
     // why: WP-675 / D-24490 — masterminds carry no hero attack/recruit power icon.
     hasAttackIcon: false,
     hasRecruitIcon: false,
+    // why: WP-677 / D-24493 — no team icon; membership is the "S.H.I.E.L.D."/"HYDRA"
+    // substring in the mastermind name (the slug is checked too — it is derived from
+    // the name, so "HYDRA High Council" → "hydra-high-council" still matches).
+    isShieldOrHydra: matchesShieldOrHydra(undefined, [baseCard.name, mastermindSlug]),
   };
 
   // Build tactic ext_ids
@@ -315,6 +322,8 @@ export function buildMastermindState(
       // why: WP-675 / D-24490 — masterminds carry no hero attack/recruit power icon.
       hasAttackIcon: false,
       hasRecruitIcon: false,
+      // why: WP-677 / D-24493 — S.H.I.E.L.D./HYDRA membership by second-face name + slug.
+      isShieldOrHydra: matchesShieldOrHydra(undefined, [secondFaceCard.name, mastermindSlug]),
     };
     const secondFaceGameText: string[] = [];
     if (Array.isArray(secondFaceCard.abilities)) {

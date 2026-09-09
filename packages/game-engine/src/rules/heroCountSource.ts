@@ -38,7 +38,8 @@ export type HeroCountSource =
   | 'worthy-cards-played-this-turn' // why: WP-673 / D-24488 — counts the OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464); Divine Lightning's "+1 attack for each other card you played this turn that makes you Worthy"
   | 'cost-four-plus-played-this-turn' // why: WP-674 / D-24489 — counts the OTHER cards played this turn that cost 4 or more; drives the "+N attack/recruit for each other card you played this turn that costs 4 or more" siblings (cvwr Being Big Is Best, noir Follow Big Leads + Weight of the World, vill Size Matters)
   | 'attack-icon-played-this-turn' // why: WP-675 / D-24490 — counts the OTHER cards played this turn that show an attack icon (hasAttackIcon); the attack branch of vnom Symbiotic Adaptation's count-scaled choose-one
-  | 'recruit-icon-played-this-turn'; // why: WP-675 / D-24490 — counts the OTHER cards played this turn that show a recruit icon (hasRecruitIcon); the recruit branch of vnom Symbiotic Adaptation's count-scaled choose-one
+  | 'recruit-icon-played-this-turn' // why: WP-675 / D-24490 — counts the OTHER cards played this turn that show a recruit icon (hasRecruitIcon); the recruit branch of vnom Symbiotic Adaptation's count-scaled choose-one
+  | 'shield-levels'; // why: WP-677 / D-24493 — your S.H.I.E.L.D. Level = the count of S.H.I.E.L.D./HYDRA cards in your Victory Pile (isShieldOrHydra); the whole pile, NO self-exclusion (it checks, never consumes). Marker-safe slug (NOT the dotted ledger name s.h.i.e.l.d.-levels)
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -53,6 +54,7 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'cost-four-plus-played-this-turn', // why: WP-674 / D-24489 — counts OTHER cards played this turn that cost 4 or more
   'attack-icon-played-this-turn', // why: WP-675 / D-24490 — counts OTHER cards played this turn that show an attack icon (hasAttackIcon)
   'recruit-icon-played-this-turn', // why: WP-675 / D-24490 — counts OTHER cards played this turn that show a recruit icon (hasRecruitIcon)
+  'shield-levels', // why: WP-677 / D-24493 — the count of S.H.I.E.L.D./HYDRA cards in the player's Victory Pile (isShieldOrHydra); no self-exclusion
 ] as const;
 
 // ---------------------------------------------------------------------------
