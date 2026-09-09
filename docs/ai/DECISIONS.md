@@ -25777,7 +25777,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24060 — Face-Down Card Identity Is Stored Deterministically; Display Is Randomized Per Render
 
-**Status:** Active (EC-313, 2026-06-23)
+**Status:** SUPERSEDED by D-24494 (2026-09-09, WP-678). The face-down store this decision governed (`G.playerZones[pid].faceDownCards`) was retired: it modelled Undercover as a replayable face-down store, which contradicts universal-rules-v23 §Undercover (Undercover puts a card into the Victory Pile, worth 1 VP), and the infra was dead code (server-only `sendUndercover`/`playFromUndercover` moves with no caller/hook; the `undercover` keyword had no handler). See D-24494. (D-24059 ownership + D-24061 no-UI-session-split are moot with the same retirement.)
 
 **Decision:** Face-down cards store their `cardId` (template identity) deterministically in the game state `G.playerZones[pid].faceDownCards[i].cardId`. The UI layer displays face-down cards using a randomized per-render naming scheme (e.g., "Undercover Card A", "Undercover Card B", ...) seeded from the same deterministic path as the rest of the game.
 
@@ -40889,5 +40889,85 @@ clean.
 shown to a player), `.claude/CLAUDE.md` §Reward Integrity (faithful UX).
 
 **Packet:** none (bug fix). **Active:** 2026-09-09.
+
+---
+
+### D-24494 — Undercover is the rules-faithful Victory-Pile mechanic (supersedes D-24060) (Active 2026-09-09 — WP-678 / EC-715)
+
+**Context.** `undercover` was shipped by WP-282 / D-24060 as a *replayable face-down store*
+(`G.playerZones[pid].faceDownCards` + server-only `sendUndercover` / `playFromUndercover`
+moves). That contradicts `docs/legendary-universal-rules-v23.md` §Undercover — "You may
+send one of your other Heroes Undercover" = "Put that Hero into your **Victory Pile**. It's
+worth **1 Victory Point**." And the infra was **dead code**: both moves are `client:false`
+with no UI caller and no onPlay hook, and the `undercover` keyword had no
+`HERO_EFFECT_HANDLERS` entry — it was classified `executable` only via a
+`FACE_DOWN_EXECUTED_KEYWORDS` membership. In real play Undercover fired nothing.
+
+**Decision.**
+
+1. **Destination = the Victory Pile, worth 1 VP.** The Undercover effect moves its target
+   `CardExtId` into the acting player's `zones.victory` and records it in a new per-player
+   **`zones.undercover`** tracker (a `Zone`). Undercover'd cards live in `victory` (so
+   S.H.I.E.L.D. Level and presence count them) AND in the tracker (so scoring awards 1 VP).
+
+2. **Scoring by explicit tracking, NOT type inference.** `PlayerScoreBreakdown` gains
+   **`undercoverVP`** (a locked-contract change to `scoring.types.ts`); `computeFinalScores`
+   sums 1 VP per `zones.undercover` entry. It must NOT infer from `cardTraits.heroClass` —
+   the Undercover targets include classless `[team:shield]` basics (Agent/Trooper) and
+   Officers (no `cardTraits` entry), which a type test would mis-score 0. No double-count:
+   the tracked cards fall through the victory-pile loop to 0 and earn their VP only here.
+
+3. **Two source-shape handler keywords, NOT a bare-keyword handler (Option A).** The engine
+   never infers effect parameters from prose. Undercover's source is carried by a dedicated
+   keyword: **`undercover-hand-shield-hero`** ("send a `[team:shield]` Hero from your hand";
+   0 eligible = no-op, 1 = auto-send, ≥2 = a `PendingUndercoverChoice` resolved by the
+   server-only `resolveUndercoverChoice({ targetExtId })`, block-all guarded, projected as
+   `UIPendingUndercoverChoice` active-player-scoped) and **`undercover-officer-stack`** ("send
+   a card from the S.H.I.E.L.D. Officer Stack (`G.piles.officers`)"; deterministic — sends the
+   top Officer). Both are handler-bearing (HANDLED + `NO_MAGNITUDE_KEYWORDS` + handler-count
+   pin 32→34) and fit the digit-free token grammar (no gate widening). The bare `undercover`
+   token becomes an **honest hollow** (no source zone → no handler; removed from
+   `FACE_DOWN_EXECUTED_KEYWORDS` / MVP), and the ~16 bare-token cards reclassify
+   `executable`→`deferred` in the hero-mechanic ledger (the honest state — WP-282's
+   `executable` was a dead-code classification; the coverage probe already counted these
+   PARSED_NOT_EXECUTED, so no floor regressed). Per-card source-marker wiring of the bare-token
+   lines across 2099/bkwd/shld is a Bucket-A follow-up.
+
+4. **Retire the dead face-down infra + combined re-pin.** `sendUndercover`,
+   `playFromUndercover`, `helpers/lookAtUndercover.ts`, the `FaceDownCard` type, the empty
+   `FACE_DOWN_EXECUTED_KEYWORDS` category, and the `faceDownCards` zone are removed (with
+   their four test files). Because the tracker is a new hashed field and `faceDownCards` a
+   removed one, the empty-replay + sentinel oracles re-pin in ONE combined step (net
+   canonical-JSON delta = `−faceDownCards +undercover`, both empty for every player in the
+   no-undercover fixtures): `PRE_WP080_HASH` `bc71424b`→`abd8c4fd`; sentinel `finalStateHash`
+   `a10350b2…`→`dccea2f6…`. No gameplay changed (the replays send nothing Undercover); scoring
+   is derived, not hashed.
+
+**Deviations from EC-715 (documented).** EC-715 framed the keyword lockstep as "make
+`undercover` handler-bearing" (one keyword); the faithful design is **two** source-shape
+keywords with the bare token honest-hollow (Option A — the engine's source-parameterized-effect
+norm; NL-source inference is foreclosed everywhere else). The **arena-client renderer** for the
+pending pick is **deferred to WP-679**: WP-678 wires no card, so nothing parks a
+`PendingUndercoverChoice` in its shipped state (no freeze risk); the renderer is exercisable
+only once WP-679 wires `approve-orbital-strike` / `spymaster`, so it ships with those cards.
+
+**Reuse.** The pending choice mirrors the draw-or-empowered (D-24069) / count-scaled-choice
+(D-24490) pattern; `resolveVictoryPileCardPick` (WP-285) is the closest structural precedent.
+
+**Scope OUT.** The two shld mixed choose-one cards (WP-679 composes this); "Unleash from
+Undercover" (no corpus consumer); the bare-token per-card source markers + the discard/KO-pile/
+self-send source shapes (Bucket-A). S.H.I.E.L.D. Level (WP-677).
+
+**Gates.** engine 3240/3240; arena-client 1682/1682 + vue-tsc 0; `pnpm -r build` 0;
+`cards:check` reproducible; `ledger:heroes` / `mechanics:metadata` / `effect-index` /
+`sim:runtime-observed` regenerated + `--check` green; `sim:coverage --check` OK (no floor
+regression; the bare-token cards reclassified `executable`→`deferred`). Combined dual re-pin
+landed (sole delta = `−faceDownCards +undercover`). **Live-on-surface** (a real Undercover
+play) is operator-pending (D-24026) and arrives with WP-679's card wiring.
+
+**Supersedes.** D-24060 (face-down identity storage); D-24059 (ownership) + D-24061
+(no-UI-session-split) are moot with the same retirement.
+
+**Packet:** WP-678 / EC-715. **Active:** 2026-09-09.
 
 Protect this file.
