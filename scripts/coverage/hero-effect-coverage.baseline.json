@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2798,
+    "executable": 2743,
     "heroes": 324,
     "hooks": 6185,
-    "noEffect": 2746,
-    "parsedNotExecuted": 641
+    "noEffect": 2797,
+    "parsedNotExecuted": 645
   },
   "perSet": {
     "2099": {
@@ -13,14 +13,14 @@
       "noEffect": 38
     },
     "3dtc": {
-      "executable": 41,
+      "executable": 36,
       "hooks": 75,
-      "noEffect": 30
+      "noEffect": 35
     },
     "amwp": {
-      "executable": 72,
+      "executable": 69,
       "hooks": 187,
-      "noEffect": 91
+      "noEffect": 94
     },
     "anni": {
       "executable": 73,
@@ -33,9 +33,9 @@
       "noEffect": 20
     },
     "asrd": {
-      "executable": 43,
+      "executable": 42,
       "hooks": 102,
-      "noEffect": 59
+      "noEffect": 60
     },
     "bkpt": {
       "executable": 59,
@@ -63,9 +63,9 @@
       "noEffect": 67
     },
     "core": {
-      "executable": 139,
+      "executable": 132,
       "hooks": 229,
-      "noEffect": 46
+      "noEffect": 53
     },
     "cosm": {
       "executable": 44,
@@ -73,9 +73,9 @@
       "noEffect": 149
     },
     "cvwr": {
-      "executable": 128,
+      "executable": 123,
       "hooks": 300,
-      "noEffect": 122
+      "noEffect": 127
     },
     "dead": {
       "executable": 41,
@@ -83,14 +83,14 @@
       "noEffect": 41
     },
     "dims": {
-      "executable": 36,
+      "executable": 31,
       "hooks": 105,
-      "noEffect": 59
+      "noEffect": 64
     },
     "dkcy": {
-      "executable": 177,
+      "executable": 172,
       "hooks": 298,
-      "noEffect": 116
+      "noEffect": 121
     },
     "dstr": {
       "executable": 40,
@@ -168,9 +168,9 @@
       "noEffect": 33
     },
     "smhc": {
-      "executable": 33,
+      "executable": 26,
       "hooks": 119,
-      "noEffect": 68
+      "noEffect": 75
     },
     "ssw1": {
       "executable": 123,
@@ -178,14 +178,14 @@
       "noEffect": 85
     },
     "ssw2": {
-      "executable": 134,
+      "executable": 128,
       "hooks": 271,
-      "noEffect": 84
+      "noEffect": 90
     },
     "vill": {
-      "executable": 139,
+      "executable": 130,
       "hooks": 288,
-      "noEffect": 78
+      "noEffect": 87
     },
     "vnom": {
       "executable": 47,
@@ -203,9 +203,9 @@
       "noEffect": 59
     },
     "wwhk": {
-      "executable": 128,
+      "executable": 126,
       "hooks": 336,
-      "noEffect": 198
+      "noEffect": 196
     },
     "xmen": {
       "executable": 142,
@@ -295,7 +295,7 @@
     "patrol-your-victory-pile": 1,
     "phasing": 12,
     "piercing-energy": 11,
-    "recruit-threshold": 8,
+    "recruit-threshold": 9,
     "reveal-count": 2,
     "reveal-multi-take": 1,
     "reveal-reorder": 1,
