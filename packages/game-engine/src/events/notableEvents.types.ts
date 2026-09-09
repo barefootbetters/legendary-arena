@@ -3,11 +3,11 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries nine locked variants — `fightResolved`, `ambushResolved`,
+ * carries ten locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
- * `healResolved`, `bystanderRevealed`, `deckReshuffled`, `strikeBlocked` —
- * each composed at its fire site via a pure narrative helper from
- * `notableEvents.compose.ts`.
+ * `healResolved`, `bystanderRevealed`, `deckReshuffled`, `strikeBlocked`,
+ * `transformResolved` — each composed at its fire site via a pure narrative
+ * helper from `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -27,17 +27,17 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Nine variants in fixed canonical order: a Fight resolution, an Ambush
+ * Ten variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
  * Strike resolution, a Mastermind defeat, a Wound heal, a Bystander
- * reveal-and-capture, a hero-deck reshuffle, and a blocked/avoided threat.
- * `'mastermindDefeated'` was added per D-20008 (citing D-20001),
- * `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per WP-602 /
- * D-24412, `'deckReshuffled'` per WP-642 / D-24454, and `'strikeBlocked'` per
- * WP-644 / D-24456 so the arena-client overlay can report those outcomes
- * — G.messages is not projected to clients. Adding a tenth variant requires
- * a new `DECISIONS.md` entry (e.g., WP-186's eventual `'escapeResolved'` per
- * D-20001).
+ * reveal-and-capture, a hero-deck reshuffle, a blocked/avoided threat, and
+ * a Hero-card Transform. `'mastermindDefeated'` was added per D-20008 (citing
+ * D-20001), `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per
+ * WP-602 / D-24412, `'deckReshuffled'` per WP-642 / D-24454, `'strikeBlocked'`
+ * per WP-644 / D-24456, and `'transformResolved'` per WP-672 / D-24487 so the
+ * arena-client overlay can report those outcomes — G.messages is not projected
+ * to clients. Adding an eleventh variant requires a new `DECISIONS.md` entry
+ * (e.g., WP-186's eventual `'escapeResolved'` per D-20001).
  */
 export type NotableGameEventType =
   | 'fightResolved'
@@ -48,11 +48,12 @@ export type NotableGameEventType =
   | 'healResolved'
   | 'bystanderRevealed'
   | 'deckReshuffled'
-  | 'strikeBlocked';
+  | 'strikeBlocked'
+  | 'transformResolved';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The nine-entry canonical order is locked:
+// parity + length + uniqueness). The ten-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
 // `mastermindStrikeResolved` (Mastermind Strike handler terminal),
@@ -61,8 +62,10 @@ export type NotableGameEventType =
 // `bystanderRevealed` (villainDeck.reveal bystander-capture fire site,
 // WP-602 / D-24412), `deckReshuffled` (the onBegin auto-draw + its
 // applyOnBeginParity mirror, on empty-deck reshuffle, WP-642 / D-24454),
-// and `strikeBlocked` (the Magneto reveal-X-Men strike skip + the
-// reveal-or-punish twist dodge, per blocking player, WP-644 / D-24456).
+// `strikeBlocked` (the Magneto reveal-X-Men strike skip + the
+// reveal-or-punish twist dodge, per blocking player, WP-644 / D-24456), and
+// `transformResolved` (the heroEffectTransform swap fire site — a Hero base
+// card powering up into its second form, WP-672 / D-24487).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -78,6 +81,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'bystanderRevealed',
   'deckReshuffled',
   'strikeBlocked',
+  'transformResolved',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -366,6 +370,30 @@ export interface StrikeBlockedEvent {
 }
 
 /**
+ * Emitted by `heroEffectTransform` (`hero/heroEffects.execute.ts`) when a Hero
+ * base card meets its printed Transform condition and swaps into its stronger
+ * second form (WP-672 / D-24487). Fires as the LAST step of a completed swap
+ * (after the second-form is in play, the base card is routed back to the side
+ * deck, and the `applied` log line is pushed), observing settled state — the
+ * `healWounds` emission precedent. NOT emitted on the AC-5 soft no-op (the side
+ * deck ran out of the second-form copy — that path logs `blocked` and returns
+ * without a swap). Minimal payload per D-20001 (no `eventId` / `seq` /
+ * `timestamp` / card id — like `healResolved` / `deckReshuffled`): the base and
+ * second-form names travel inside the composed `narrative`. Public and rendered
+ * verbatim by the client (D-20002); presentation parity only, not a new mechanic
+ * or reward — the swap already happens (WP-658 / WP-665), this announces it so
+ * the arena-client can raise a "Transformed!" overlay + the transform VFX beat.
+ */
+export interface TransformResolvedEvent {
+  /** Discriminator. */
+  type: 'transformResolved';
+  /** boardgame.io player-index string ("0", "1", ...) of the transforming player. */
+  playerId: string;
+  /** Engine-composed single-sentence English narrative (names the base + second form). */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -381,4 +409,5 @@ export type NotableGameEvent =
   | HealResolvedEvent
   | BystanderRevealedEvent
   | DeckReshuffledEvent
-  | StrikeBlockedEvent;
+  | StrikeBlockedEvent
+  | TransformResolvedEvent;

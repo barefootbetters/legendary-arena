@@ -1,7 +1,7 @@
 /**
  * sfxManifest.ts
  *
- * Maps each of the nine notable game event types to the CC0 sound-effect clip
+ * Maps each of the ten notable game event types to the CC0 sound-effect clip
  * played when that event resolves (WP-412 Surface 1 coverage). The keys are
  * the `NotableGameEventType` discriminators the center-screen overlay already
  * keys on (`NotableEventOverlay.vue`); the values are absolute clip URLs.
@@ -17,7 +17,7 @@
 import type { NotableGameEvent } from '../composables/useNotableEventStream';
 
 /**
- * The nine notable-event discriminators, derived type-only from the engine
+ * The ten notable-event discriminators, derived type-only from the engine
  * union (via the `NotableGameEvent` alias) so this module never names the
  * engine union directly — the same runtime-safe-surface discipline
  * `useNotableEventStream` follows.
@@ -31,9 +31,9 @@ const SFX_BASE_URL = 'https://images.legendary-arena.com/audio/sound-effects/';
 
 /**
  * Exhaustive map of every `NotableGameEventType` variant to its CC0 clip URL.
- * The `Record<SfxEventKey, string>` type is the load-bearing drift pin: adding a
- * tenth engine event variant fails `vue-tsc` here until it is mapped, and the
- * `sfxManifest.test.ts` drift test fails if any of the nine is unmapped or empty.
+ * The `Record<SfxEventKey, string>` type is the load-bearing drift pin: adding an
+ * eleventh engine event variant fails `vue-tsc` here until it is mapped, and the
+ * `sfxManifest.test.ts` drift test fails if any of the ten is unmapped or empty.
  */
 export const sfxManifest: Record<SfxEventKey, string> = {
   fightResolved: `${SFX_BASE_URL}villain-defeated.mp3`,
@@ -70,4 +70,12 @@ export const sfxManifest: Record<SfxEventKey, string> = {
   // scripts/upload-move-sfx-to-r2.mjs. Audio bytes are never committed to git
   // (D-24219, R2 is the sole audio surface). Hyphenated filename per convention.
   strikeBlocked: `${SFX_BASE_URL}strike-blocked.mp3`,
+  // why: WP-672 — the exhaustive Record forces the 10th variant (transformResolved)
+  // to carry a clip: the gamma "power-up" surge that plays alongside the transform
+  // VfxOverlay beat, on the same notableEvents frame. The byte is operator-pending
+  // on R2 (same posture as bystanderRevealed / deckReshuffled — WP-412/413/425/602/642
+  // all shipped their URLs before the upload); a not-yet-uploaded clip 404s on preload
+  // and no-ops, so the overlay + VFX ship complete and the surge sound starts once the
+  // byte lands. Hyphenated filename per convention.
+  transformResolved: `${SFX_BASE_URL}transform.mp3`,
 };

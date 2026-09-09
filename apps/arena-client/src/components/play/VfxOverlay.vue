@@ -2,6 +2,7 @@
 import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { comboVfxManifest } from '../../vfx/comboVfxManifest';
 import { STRIKE_BLOCKED_VFX, BLOCKED_WORD } from '../../vfx/strikeBlockedVfxManifest';
+import { TRANSFORM_VFX, TRANSFORM_WORD } from '../../vfx/transformVfxManifest';
 import { useEffectIntensity } from '../../vfx/effectIntensity';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
@@ -9,6 +10,7 @@ import {
   type StrikeBlockedVfxEvent,
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
+import { useTransformVfxSignal } from '../../composables/useTransformVfx';
 
 /**
  * VfxOverlay — the single full-bleed VFX layer (WP-556). It hosts ONE shared
@@ -41,7 +43,15 @@ import { useWoundVfxSignal } from '../../composables/useWoundVfx';
  * `shouldRender('shake')` like the impact pulse (full intensity only, off under
  * reduced-motion / low / off). Its audio thud rides `useWoundCue`.
  *
- * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette"
+ * WP-672 adds a FOURTH consumer — the transform beat (a Hero base card powering up
+ * into its stronger second form). A `useTransformVfx` signal (a `transformResolved`
+ * notable event) fires a gamma-green "power surge" bloom + a green particle burst +
+ * the "TRANSFORMED!" word, gated by the same accessibility contract: the word shows
+ * unless intensity is `off`, the burst at `low`/`full` (not reduced-motion), the
+ * surge bloom only at `full` (like the impact pulse). Public — it fires for every
+ * viewer when any player transforms, mirroring the shield-block consumer.
+ *
+ * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
  * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst)
  */
@@ -62,6 +72,13 @@ const SHIELD_BURST_PARTICLES = 120;
 // red edge-flash (opacity/transform only), matched to the impact pulse and well
 // within the 500ms screen-shake performance budget.
 const WOUND_VIGNETTE_MS = 460;
+// why: WP-672 — the transform "power surge" bloom duration. A brief centre-out
+// gamma-green radial bloom (opacity/transform only), matched to the impact pulse
+// and within the 500ms screen-shake performance budget.
+const SURGE_MS = 480;
+// why: WP-672 — the transform burst's particle count; a lively gamma throw, in the
+// same band as the shield burst and under the WP-556 200-particle ceiling.
+const TRANSFORM_BURST_PARTICLES = 130;
 
 /**
  * Builds the `canvas-confetti` options for one burst. Exported and pure so the
@@ -107,6 +124,7 @@ export default defineComponent({
     const signal = useComboVfxSignal();
     const strikeBlockedSignal = useStrikeBlockedVfxSignal();
     const woundSignal = useWoundVfxSignal();
+    const transformSignal = useTransformVfxSignal();
 
     const canvasEl = ref<HTMLCanvasElement | null>(null);
     const currentWord = ref<string | null>(null);
@@ -128,10 +146,16 @@ export default defineComponent({
     const isWounded = ref(false);
     const woundKey = ref(0);
 
+    // why: WP-672 — the transform "power surge" bloom state. isSurging shows the
+    // gamma-green bloom; surgeKey re-mounts it so a repeat transform re-runs it.
+    const isSurging = ref(false);
+    const surgeKey = ref(0);
+
     let wordTimer: ReturnType<typeof setTimeout> | null = null;
     let impactTimer: ReturnType<typeof setTimeout> | null = null;
     let shieldTimer: ReturnType<typeof setTimeout> | null = null;
     let woundTimer: ReturnType<typeof setTimeout> | null = null;
+    let surgeTimer: ReturnType<typeof setTimeout> | null = null;
 
     // why: lazy-loaded canvas-confetti launcher, bound to OUR single canvas.
     // Loaded off the first-paint path (dynamic import on first burst), so the
@@ -285,11 +309,46 @@ export default defineComponent({
       if (shouldRender('shake')) pulseWound();
     });
 
+    // why: WP-672 — flash the gamma-green "power surge" bloom. The monotonic key
+    // re-mounts the element so a repeat transform re-runs the CSS bloom from the start.
+    function pulseSurge(): void {
+      isSurging.value = true;
+      surgeKey.value += 1;
+      if (surgeTimer !== null) clearTimeout(surgeTimer);
+      surgeTimer = setTimeout(() => {
+        isSurging.value = false;
+        surgeTimer = null;
+      }, SURGE_MS);
+    }
+
+    // why: WP-672 — the transform beat. The WORD shows whenever the word shows
+    // (shouldRender('word'), i.e. unless intensity is off), the gamma burst renders
+    // at low/full (shouldRender('particles'), not reduced-motion), and the surge
+    // bloom — the heaviest, full-screen colour flash — only at full intensity
+    // (shouldRender('shake'), like the impact pulse / wound vignette).
+    function renderTransform(): void {
+      if (shouldRender('word')) {
+        showWord(TRANSFORM_WORD);
+      }
+      if (shouldRender('particles')) {
+        fireBurst(TRANSFORM_BURST_PARTICLES, TRANSFORM_VFX.colors);
+      }
+      if (shouldRender('shake')) {
+        pulseSurge();
+      }
+    }
+
+    watch(transformSignal, (event) => {
+      if (event === null) return;
+      renderTransform();
+    });
+
     onUnmounted(() => {
       if (wordTimer !== null) clearTimeout(wordTimer);
       if (impactTimer !== null) clearTimeout(impactTimer);
       if (shieldTimer !== null) clearTimeout(shieldTimer);
       if (woundTimer !== null) clearTimeout(woundTimer);
+      if (surgeTimer !== null) clearTimeout(surgeTimer);
     });
 
     onMounted(() => {
@@ -309,6 +368,8 @@ export default defineComponent({
       shieldKey,
       isWounded,
       woundKey,
+      isSurging,
+      surgeKey,
     };
   },
 });
@@ -327,6 +388,12 @@ export default defineComponent({
       :key="woundKey"
       class="vfx-overlay__wound"
       data-testid="play-vfx-wound"
+    ></div>
+    <div
+      v-if="isSurging"
+      :key="surgeKey"
+      class="vfx-overlay__surge"
+      data-testid="play-vfx-surge"
     ></div>
     <Transition name="vfx-shield">
       <div
@@ -465,6 +532,38 @@ export default defineComponent({
   }
 }
 
+/* why: WP-672 — the transform "power surge": a gamma-green radial bloom swelling
+   from the centre outward (the hero powering up), the thematic opposite of the
+   edge-in red wound vignette. Animates opacity/transform only (GPU-composited),
+   never a layout property, and clears under SURGE_MS (within the 500ms budget). */
+.vfx-overlay__surge {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 56%,
+    rgba(94, 230, 107, 0.5),
+    rgba(166, 255, 122, 0.22) 40%,
+    rgba(94, 230, 107, 0) 68%
+  );
+  animation: vfx-surge 480ms ease-out;
+  will-change: opacity, transform;
+}
+
+@keyframes vfx-surge {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  32% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+}
+
 /* why: the synergy call-out word, centred over the mat. Bold and legible; the
    entrance scale-punch is transform/opacity only. */
 .vfx-overlay__word {
@@ -590,6 +689,15 @@ export default defineComponent({
      the JS shouldRender('shake') gate that already withholds it. The wound thud
      (audio) still plays — feedback survives without the flash. */
   .vfx-overlay__wound {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* why: WP-672 — under reduced-motion the full-screen gamma-green surge bloom is
+     suppressed (same photosensitivity class as the wound flash), belt-and-braces to
+     the JS shouldRender('shake') gate that already withholds it. The "TRANSFORMED!"
+     word still shows (a plain fade) — the reward survives without the bloom. */
+  .vfx-overlay__surge {
     animation: none;
     opacity: 0;
   }

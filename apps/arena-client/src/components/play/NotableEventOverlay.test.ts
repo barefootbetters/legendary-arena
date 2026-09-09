@@ -111,6 +111,14 @@ function strikeBlockedEvent(): NotableGameEvent {
   };
 }
 
+function transformResolvedEvent(): NotableGameEvent {
+  return {
+    type: 'transformResolved',
+    playerId: '0',
+    narrative: '"Hurl Legal Objections" transformed into "Hurl Trucks".',
+  };
+}
+
 describe('NotableEventOverlay — null event renders nothing (WP-201)', () => {
   test('omits the overlay element when event prop is null', () => {
     const wrapper = mount(NotableEventOverlay, { props: { event: null } });
@@ -249,6 +257,19 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
         .exists(),
       false,
     );
+  });
+
+  test('transformResolved → "Transformed!" chip + verbatim narrative, no card-name row (WP-672)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: transformResolvedEvent() },
+    });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'transformResolved');
+    assert.match(wrapper.text(), /Transformed!/);
+    assert.match(wrapper.text(), /"Hurl Legal Objections" transformed into "Hurl Trucks"\./);
+    // why: WP-672 — a transform carries no card id (names travel in the narrative),
+    // so eventCardId → '' → cardId null and the card-name row renders empty.
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
   });
 });
 

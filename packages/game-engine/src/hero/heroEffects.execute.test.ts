@@ -5164,6 +5164,50 @@ describe('transform keyword (WP-658 / D-24469)', () => {
     executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
     assert.doesNotThrow(() => JSON.stringify(gameState), 'G stays JSON-serializable after a transform');
   });
+
+  it('emits a transformResolved notable event on a completed swap (WP-672 / D-24487)', () => {
+    const gameState = makeTransformState(6);
+    // why: WP-672 — the minimal transform builder omits notableEvents (a real match
+    // seeds [] at setup); set it so the emit is observable, mirroring the state a
+    // live playerView projects to the arena-client overlay.
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one notable event was emitted');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'transformResolved', 'the event is a transformResolved');
+    assert.equal(event.type === 'transformResolved' && event.playerId, '0', 'it carries the transforming seat');
+    // why: cardDisplayData is empty in the mock, so names fall back to the raw ext_ids
+    // (resolveTransformCardName's defensive fallback) — the narrative still names both cards.
+    assert.ok(
+      event.narrative.includes(BASE_ID) && event.narrative.includes(TARGET_0),
+      'the narrative names the base card and the second form',
+    );
+  });
+
+  it('does NOT emit a transformResolved event on the AC-5 exhaustion no-op (WP-672)', () => {
+    const gameState = makeTestState({
+      inPlay: [BASE_ID],
+      turnEconomyRecruit: 6,
+      transformDeck: [], // exhausted — no matching second-form copy remains
+      transformTargets: { [BASE_KEY]: TARGET_KEY },
+      heroAbilityHooks: [
+        {
+          cardId: BASE_ID,
+          timing: 'onPlay',
+          keywords: ['transform', 'conditional'],
+          conditions: [{ type: 'recruitMadeThisTurnAtLeast', value: '6' }],
+          effects: [{ type: 'transform' }],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', BASE_ID);
+
+    assert.equal(gameState.notableEvents.length, 0, 'a blocked (no-swap) transform emits no notable event');
+  });
 });
 
 // ===========================================================================

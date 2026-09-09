@@ -1,7 +1,7 @@
 /**
  * Drift-detection + JSON-serialisability tests for notable game event types.
  *
- * Pins the nine-variant `NOTABLE_EVENT_TYPES` array against the
+ * Pins the ten-variant `NOTABLE_EVENT_TYPES` array against the
  * `NotableGameEventType` union, the eight-entry `SCHEME_TWIST_RESOLVER_KEYS`
  * array against the `SchemeTwistResolverKey` union, and the two-entry
  * `STRIKE_BLOCK_THREAT_KINDS` array against the `StrikeBlockThreatKind` union
@@ -31,11 +31,12 @@ import type {
   BystanderRevealedEvent,
   DeckReshuffledEvent,
   StrikeBlockedEvent,
+  TransformResolvedEvent,
   NotableGameEvent,
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly nine entries in canonical order', () => {
+  it('contains exactly ten entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -48,6 +49,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'bystanderRevealed',
         'deckReshuffled',
         'strikeBlocked',
+        'transformResolved',
       ],
     );
   });
@@ -71,6 +73,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'bystanderRevealed',
       'deckReshuffled',
       'strikeBlocked',
+      'transformResolved',
     ];
     for (const member of unionMembers) {
       assert.ok(
@@ -279,6 +282,16 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
       JSON.parse(JSON.stringify(ambush)) as StrikeBlockedEvent,
       ambush,
     );
+  });
+
+  it('TransformResolvedEvent round-trips through JSON.stringify/parse', () => {
+    const original: TransformResolvedEvent = {
+      type: 'transformResolved',
+      playerId: '0',
+      narrative: '"Hurl Legal Objections" transformed into "Hurl Trucks".',
+    };
+    const cloned = JSON.parse(JSON.stringify(original)) as TransformResolvedEvent;
+    assert.deepStrictEqual(cloned, original);
   });
 
   it('NotableGameEvent[] round-trips with mixed variants', () => {
