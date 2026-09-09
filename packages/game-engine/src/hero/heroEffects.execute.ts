@@ -133,6 +133,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // attack; has a HERO_EFFECT_HANDLERS entry (heroEffectRevealHeroDeckAttack), so it belongs
   // here. Carries magnitude (the divisor) → NOT in NO_MAGNITUDE_KEYWORDS.
   'reveal-herodeck-attack',
+  // why: WP-676 / D-24492 — the Smash keyword ("you may discard another card from your hand;
+  // if you do, +N attack"); has a HERO_EFFECT_HANDLERS entry (heroEffectSmash) that parks a
+  // PendingSmashDiscard, so it belongs here. Carries a magnitude (the +N Attack) → NOT in
+  // NO_MAGNITUDE_KEYWORDS.
+  'smash',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1903,6 +1908,66 @@ function heroEffectOptionalKoHandDiscard(
 }
 
 /**
+ * Park handler for the `smash` hero keyword (WP-676 / D-24492).
+ *
+ * Per universal-rules-v23 §Smash, "Smash N" = "You may discard another card from
+ * your hand. If you do, you get +N attack." — an interactive OPTIONAL per-instance
+ * choice. This parks ONE `PendingSmashDiscard { playerID, magnitude }` per Smash
+ * hook onto the FIFO `G.pendingSmashDiscards` queue; the +N Attack is granted at
+ * resolve time (resolveSmashDiscard), never at play time. She-Hulk's Hurl Trucks
+ * prints two "Smash 2" as two separate abilities[] entries → two hooks → two parks,
+ * resolved independently (+0 / +2 / +4).
+ *
+ * // why: D-24492 — `smash` is NOT in NO_MAGNITUDE_KEYWORDS, so executeSingleEffect's
+ * magnitude pre-gate has already confirmed a valid +N magnitude before this runs
+ * (the +N Attack rides the effect magnitude). A bare magnitude-less `[keyword:Smash]`
+ * verb token (the co-printed conditional-KO clauses on Korg / Namora) never reaches
+ * here — it fails that pre-gate and safe-skips (no park, no freeze).
+ *
+ * // why: an empty hand parks NOTHING (nothing to discard → the "you may discard
+ * another card" has no legal target), logged as a neutral no-op so the player can
+ * see why the ability granted no Attack. The played Smash card is already in inPlay,
+ * so the hand holds only "another card"; an empty hand means no eligible discard.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the discard + Attack grant happen at resolve time).
+ * @param playerID - The player who played the Smash card.
+ * @param cardId - The played card (recorded for the no-op log line).
+ * @param effect - The effect descriptor carrying the Attack magnitude.
+ */
+function heroEffectSmash(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: D-24492 — "discard ANOTHER card from your hand": the eligible set is the
+  // whole current hand (the played Smash card is already in inPlay). An empty hand
+  // means nothing to discard, so park nothing and log the no-op (mirrors the
+  // optional-ko-reward empty branch), so the player sees why the ability did nothing.
+  if (playerZones.hand.length === 0) {
+    pushLog(G,
+      `Player ${playerID} could not Smash for ${formatCardRef(G.cardDisplayData, cardId)} — their hand had no other card to discard, so no Attack was granted.`,
+    );
+    return;
+  }
+  // why: D-24492 — lazy-init at the park site (mirrors the optional-ko-reward park) —
+  // NEVER in Game.setup, so a game that never plays a Smash card carries no new field and
+  // both hash oracles stay byte-unchanged. The park is SILENT (no G.messages line); the
+  // resolve move logs the discard/decline outcome. The magnitude is the +N Attack granted
+  // iff the player discards; effect.magnitude is pre-gate-validated (smash NOT in
+  // NO_MAGNITUDE_KEYWORDS), the ?? 1 is a defensive default for a direct unit dispatch.
+  if (!G.pendingSmashDiscards) { G.pendingSmashDiscards = []; }
+  G.pendingSmashDiscards.push({
+    playerID,
+    magnitude: effect.magnitude ?? 1,
+  });
+}
+
+/**
  * Handler for the `optional-play-villain-top` hero keyword (WP-663 / D-24474).
  *
  * Shadowed Thoughts' "[hc:covert]: You may play the top card of the Villain Deck. If you
@@ -3351,6 +3416,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // / divisor) reveals of G.heroDeck[0], each granting its printed attack and rotating
   // to the bottom. No pending choice; magnitude carries the divisor.
   'reveal-herodeck-attack': heroEffectRevealHeroDeckAttack,
+  // why: WP-676 / D-24492 — the Smash keyword ("you may discard another card from your
+  // hand; if you do, +N attack"): parks a PendingSmashDiscard resolved by
+  // resolveSmashDiscard (discard a hand card for +magnitude Attack, or decline).
+  smash: heroEffectSmash,
 };
 
 // ---------------------------------------------------------------------------
@@ -3513,6 +3582,46 @@ export function selectDefaultOptionalKoTarget(
     return { zone: 'inPlay', cardId: fallbackCardId };
   }
   return null;
+}
+
+/**
+ * Selects the hand card the deterministic bot/sim discards when a Smash choice is
+ * pending (WP-676 / D-24492).
+ *
+ * Tie-break ORDER: (1) lowest `cost`; then (2) lowest `CardExtId` (ascending
+ * string compare). Only the HAND is eligible ("discard another card from your
+ * hand"), so — unlike selectDefaultOptionalKoTarget — there is no discard/inPlay
+ * scan. The bot ALWAYS discards when the hand is non-empty and NEVER declines
+ * (decline is a human-only option; +N Attack is strictly beneficial to a bot with
+ * cards to spare), returning null ONLY when the hand is empty — in which case the
+ * caller declines. This is deterministic and replay-faithful (no RNG).
+ *
+ * @param G - The game state to read (not mutated).
+ * @param playerID - The choosing player whose hand is scanned.
+ * @returns The CardExtId to discard, or null when the hand is empty (→ decline).
+ */
+export function selectDefaultSmashDiscardTarget(
+  G: LegendaryGameState,
+  playerID: string,
+): CardExtId | null {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return null; }
+  // why: scan the hand once, replacing the candidate on a strictly lower cost, or on
+  // an equal cost with a strictly lower CardExtId (the ascending-string tie-break). An
+  // explicit for loop, never .reduce() (effect/selection code, code-style §Patterns).
+  let bestCardId: CardExtId | null = null;
+  let bestCost = Number.POSITIVE_INFINITY;
+  for (const cardId of playerZones.hand) {
+    const cost = G.cardStats[cardId]?.cost ?? 0;
+    if (
+      cost < bestCost ||
+      (cost === bestCost && bestCardId !== null && cardId < bestCardId)
+    ) {
+      bestCost = cost;
+      bestCardId = cardId;
+    }
+  }
+  return bestCardId;
 }
 
 /**

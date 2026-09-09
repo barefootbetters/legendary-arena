@@ -469,6 +469,67 @@ describe('buildHeroAbilityHooks — recruit-threshold marker → condition (Surg
 });
 
 // ---------------------------------------------------------------------------
+// smash marker → smash keyword + magnitude (WP-676 / D-24492). The [keyword:smash:N]
+// token parses to a smash effect carrying the +N Attack magnitude; two separate
+// abilities[] entries yield two hooks (Hurl Trucks); a bare magnitude-less
+// [keyword:Smash] verb parses to a magnitude-less smash effect (safe-skips downstream).
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — smash marker (WP-676 / D-24492)', () => {
+  it('parses [keyword:smash:4] into a smash effect carrying magnitude 4', () => {
+    const registry = makeRegistry('wwhk', 'bruce-banner', [
+      { slug: 'savage-hulk-unleashed', abilities: ['[keyword:Smash 4] [keyword:smash:4]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wwhk/bruce-banner'));
+    const smashHook = hooks.find((hook) => (hook.keywords ?? []).includes('smash'));
+    assert.ok(smashHook !== undefined, 'a smash hook is built');
+    const smashEffects = (smashHook!.effects ?? []).filter((effect) => effect.type === 'smash');
+    assert.equal(smashEffects.length, 1, 'exactly one smash effect');
+    assert.equal(smashEffects[0]!.magnitude, 4, 'the +4 Attack magnitude rides the effect');
+  });
+
+  it('two separate abilities[] entries yield two smash hooks (Hurl Trucks, +0/+2/+4)', () => {
+    const registry = makeRegistry('wwhk', 'she-hulk', [
+      { slug: 'hurl-trucks', abilities: ['[keyword:Smash 2] [keyword:smash:2]', '[keyword:Smash 2] [keyword:smash:2]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wwhk/she-hulk'));
+    const smashHooks = hooks.filter((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'smash' && effect.magnitude === 2),
+    );
+    assert.equal(smashHooks.length, 2, 'two independent Smash-2 hooks (one per abilities[] entry)');
+  });
+
+  it('two smash tokens on ONE line collapse to a single smash effect (uniqueKeywords dedup)', () => {
+    // why: EC-713 — a single ability line carrying two identical smash tokens is COLLAPSED
+    // to one by the parser's per-keyword magnitude Map; multi-Smash cards must use separate
+    // abilities[] entries (above), not one doubled line.
+    const registry = makeRegistry('wwhk', 'she-hulk', [
+      { slug: 'one-line-double', abilities: ['[keyword:smash:2] [keyword:smash:2]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wwhk/she-hulk'));
+    const smashHook = hooks.find((hook) => (hook.keywords ?? []).includes('smash'));
+    assert.ok(smashHook !== undefined, 'a smash hook is built');
+    const smashEffects = (smashHook!.effects ?? []).filter((effect) => effect.type === 'smash');
+    assert.equal(smashEffects.length, 1, 'the two same-line tokens collapse to one smash effect');
+  });
+
+  it('a bare magnitude-less [keyword:Smash] verb parses to a smash effect with NO magnitude', () => {
+    // why: WP-676 §Out of Scope — the co-printed conditional-KO verb `[keyword:Smash]`
+    // (no magnitude) lowercases to a smash effect with undefined magnitude, which safe-skips
+    // at the executeSingleEffect magnitude pre-gate (no park, no freeze) downstream.
+    const registry = makeRegistry('wwhk', 'namora', [
+      { slug: 'master-of-depths', abilities: ['If you [keyword:Smash] a 0-cost Hero this way, KO it.'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('wwhk/namora'));
+    const smashHook = hooks.find((hook) => (hook.keywords ?? []).includes('smash'));
+    assert.ok(smashHook !== undefined, 'the bare verb still lowercases to a recognized smash keyword');
+    const smashEffects = (smashHook!.effects ?? []).filter((effect) => effect.type === 'smash');
+    assert.equal(smashEffects.length, 1, 'one smash effect');
+    assert.equal(smashEffects[0]!.magnitude, undefined, 'no magnitude (the bare verb grants nothing → safe-skip)');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // recruit-threshold gates the co2e/ssw1 "made at least N recruit" attack grants
 // (WP-661 / D-24472). WP-660 removed the phantom +N recruit these condition
 // clauses emitted, but left the REAL attack grant UNGATED — a pre-existing

@@ -498,12 +498,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'reveal-from-hand', // why: WP-659 / D-24470 — Psychic Link "Each player may reveal another [team]/[hc] Hero. Each player who does draws a card." (reveal criterion, not a play-gate)
       'optional-play-villain-top', // why: WP-663 / D-24474 — Shadowed Thoughts "[hc:covert]: You may play the top card of the Villain Deck. If you do, +2 Attack." (optional pending choice)
       'reveal-herodeck-attack', // why: WP-668 / D-24481 — Jade Giantess "For every 2 Recruit you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed Attack." (synchronous count-scaled reveal)
+      'smash', // why: WP-676 / D-24492 — "Smash N" ("You may discard another card from your hand. If you do, you get +N attack.") (wwhk) — optional per-instance discard-for-attack pending choice
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      45,
-      'HERO_KEYWORDS must have exactly 45 entries',
+      46,
+      'HERO_KEYWORDS must have exactly 46 entries',
     );
 
     assert.deepStrictEqual(

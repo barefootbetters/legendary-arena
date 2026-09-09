@@ -16,6 +16,7 @@ import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './m
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice, hasPendingDefeatChoice } from './moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
+import { resolveSmashDiscard, hasPendingSmashDiscard } from './moves/smashDiscard.resolve.js';
 import { hasPendingPlayVillainTopChoice, resolvePlayVillainTopChoice } from './moves/playVillainTop.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
@@ -152,6 +153,11 @@ function advanceStage({ G, events }: MoveContext): void {
   // auto-transition below, mirroring the D-24008 KO-hero check above).
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) { return; }
+  // why: WP-676 / D-24492 — block-all guard: while a Smash discard-for-attack choice is
+  // pending the board is frozen (turn-end included), so no other move proceeds until the
+  // player discards a hand card or declines. Without this a player could fight/recruit/draw
+  // — or end the turn — with a parked Smash choice dangling (freeze / lost choice).
+  if (hasPendingSmashDiscard(G)) { return; }
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) { return; }
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
@@ -511,6 +517,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveReorderChoice).
     resolveDefeatChoice: { move: resolveDefeatChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
+    // why: WP-676 / D-24492 — resolves a Smash "discard another card from your hand for +N
+    // Attack?" choice (discard grants +N to G.turnEconomy.attack; decline does nothing).
+    // client:false — the engine computes the Attack grant; dispatched by SmashDiscardPrompt.
+    resolveSmashDiscard: { move: resolveSmashDiscard, client: false },
     // why: WP-663 / D-24474 — resolves Shadowed Thoughts' "play the top Villain-Deck card
     // for +2 Attack?" choice (accept plays the top card via the shared reveal cascade + grants
     // +Attack; decline does nothing). client:false — dispatched by the PlayVillainTopPrompt.

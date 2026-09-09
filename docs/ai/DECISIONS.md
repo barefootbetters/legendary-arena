@@ -40762,4 +40762,83 @@ clauses and the CONDITION-not-keyword posture stand. Cites
 
 **Packet:** none (bug fix). **Active:** 2026-09-08.
 
+### D-24492 — the Smash hero keyword: an optional per-instance discard-for-attack pending choice (Active 2026-09-09 — WP-676 / EC-713)
+
+**Context.** `docs/legendary-universal-rules-v23.md` §Smash: *"Smash N" means "You may
+discard another card from your hand. If you do, you get +N attack."* — an interactive
+OPTIONAL per-instance choice. The wwhk set prints it on 15 hero cards; She-Hulk's Hurl
+Trucks prints two "Smash 2" (two independent optional discards, +0 / +2 / +4). It was
+fully inert: the card text ships as `[keyword:Smash N]` (capital-S + space), which the
+parser `KEYWORD_PATTERN` (`\[keyword:([a-zA-Z][a-zA-Z-]*)(?::(\d+))?\]`) cannot capture
+(the space before `N` means no closing `]` follows the slug). Named an honest inner
+hollow in D-24464.
+
+**Decision.** `smash` is a new handler-bearing `HeroKeyword` **carrying a magnitude** (the
++N Attack), resolved through a per-instance optional-discard pending choice — the
+optional-ko-reward / draw-or-empowered pending-choice precedent (D-24019 / D-24069).
+
+- **Parse.** A `smash:N` marker is APPENDED alongside the inert display token via
+  `apply-hero-ability-markers.mjs` (the marker script appends, never rewrites): the wwhk
+  line `[keyword:Smash 4]` becomes `[keyword:Smash 4] [keyword:smash:4]`, and the appended
+  lowercase token parses to a `smash` effect at magnitude 4 while the display text is
+  unchanged. Two "Smash 2" instances are authored as **two separate `abilities[]` entries**
+  → two hooks → two `PendingSmashDiscard` entries (Hurl Trucks); two identical
+  `[keyword:smash:2]` tokens on ONE line would collapse to one via the parser's per-keyword
+  magnitude `Map`, so that form is forbidden for multi-Smash cards.
+- **Runtime.** `heroEffectSmash` parks one `PendingSmashDiscard { playerID, magnitude }`
+  per Smash hook onto the FIFO `G.pendingSmashDiscards?` queue (empty hand = logged no-op,
+  no park). `smash` is **NOT** in `NO_MAGNITUDE_KEYWORDS` — the +N rides the
+  `executeSingleEffect` magnitude pre-gate. A **bare magnitude-less `[keyword:Smash]` verb**
+  (the co-printed conditional-KO clauses on Korg / Namora) lowercases to a `smash` effect
+  with no magnitude that **safe-skips at that pre-gate — no park, no freeze** (and the
+  co-printed KO-disposition stays unmodeled prose, an honest partial per D-24464). These
+  verb lines are deliberately NOT marked.
+- **Resolve (server-only, `client: false`).** `resolveSmashDiscard({ cardId })` moves the
+  chosen hand card to discard through the `discardFromHand` chokepoint (WP-498 / D-24301 —
+  the enforced hand→discard path, which also fires the return-on-discard reaction) and adds
+  `magnitude` to `G.turnEconomy.attack`; `{ decline: true }` pops with no grant (the rule's
+  "you MAY"). Illegal without a parked choice or with a `cardId` not in hand (silent `void`).
+  A `hasPendingSmashDiscard(G)` block-all guard freezes every action move + turn-end until it
+  resolves.
+- **Projection + client.** A five-step `UIPendingSmashDiscard` projection (chooser-scoped,
+  redacted from opponents/spectators) + a `SmashDiscardPrompt.vue` renderer (modelled on
+  `OptionalKoRewardPrompt.vue`), wired into both play pages, `useTurnActions`,
+  `uiMoveName.types`, and `effectProvenance`. The client submits intent; the engine computes
+  the grant.
+- **Bot / sim.** `selectDefaultSmashDiscardTarget(G, playerID)` discards the lowest-`cost`
+  hand card (CardExtId ascending tie-break; decline only when the hand is empty), and
+  `resolveSmashDiscard` is registered in `SIMULATION_MOVE_NAMES` + both simulation `MOVE_MAP`s
+  (the WP-286 / D-24073 dual-dispatch invariant).
+
+**Scope / file-list deviations (documented per the WP-intent-governs rule).** EC-713's
+literal file list was drafted against the pre-WP-675 baseline and is corrected here; every
+deviation matches the immediately-preceding WP-675 / EC-712 precedent (PR #1947):
+- **Stale drift pins.** WP-675 already bumped `HERO_KEYWORDS` 44→**45** and the
+  `HERO_EFFECT_HANDLERS` count 30→**31** on main, so EC-713's "44→45 / 30→31" were obsolete;
+  the correct bumps against HEAD are **45→46** and **31→32** (plus `LegendaryGame` moves
+  34→**35** and the ordered keyword-array literal).
+- **Block-all guard expansion.** The guard is replicated per action-move, so
+  `hasPendingSmashDiscard` was added to `coreMoves.impl.ts` (×3), `fightVillain`,
+  `fightMastermind`, `recruitHero`, `recruitOfficer`, `dodgeCard`, `healWounds`,
+  `playFromUndercover`, and `villainDeck.reveal.ts` (beyond the EC's `game.ts`), and the
+  new move registered in `game.test.ts` — exactly the set WP-675 touched for its choice.
+- **useTurnActions tooltip cascade.** Wiring the tooltip functionally required
+  `TurnActionBar.vue` (unlisted) + both pages' prop threading; done in full (no dead param).
+
+**Determinism.** `pendingSmashDiscards?` is optional and absent-by-default, and `smash` is
+wwhk-only, so a non-Smash game (including the `core/dr-doom` / `core/legacy-virus-the` +
+`PRE_WP080_HASH` sentinels) serializes byte-identically → **no `finalStateHash` re-pin**
+(confirmed: full engine suite 3247/3247 green with the sentinels unchanged). The wwhk
+card-data regen changes wwhk matches' parsed abilities (intended). The dashboard in-play
+coverage snapshot re-pins (totalObs 2391→2355, percentResolved 32.4→31.3) — a deterministic
+fixed-seed sweep-trajectory shift, the sanctioned coverage re-pin.
+
+**Cites** `docs/legendary-universal-rules-v23.md` §Smash (faithful game definition),
+`.claude/CLAUDE.md` §Reward Integrity, `.claude/rules/architecture.md` §UIState Projection
+Integrity (the five-step Board-Visible Field contract). **Supersedes** D-24464's Smash
+"Honest-Partial" note (the Smash grant is now implemented; the co-printed conditional-KO
+disposition remains deferred).
+
+**Packet:** WP-676 / EC-713. **Active:** 2026-09-09.
+
 Protect this file.

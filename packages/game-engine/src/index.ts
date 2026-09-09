@@ -371,6 +371,7 @@ export type {
   UIDefeatChoiceTarget,
   UIReorderChoiceCard,
   UIPendingOptionalKoReward,
+  UIPendingSmashDiscard,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingCountScaledChoiceOption,

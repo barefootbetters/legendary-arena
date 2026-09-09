@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 411,
+      "executable": 422,
       "deferred": 0,
       "condition": 26,
-      "unsupported": 335,
+      "unsupported": 324,
       "unmarked": 1074,
       "subsystem": 3
     }
@@ -23665,10 +23665,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "savage-hulk-unleashed",
@@ -23737,10 +23737,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "shadowforged-blade",
@@ -23805,10 +23805,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "dont-make-me-angry",
@@ -23936,10 +23936,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "attune-techtonic-transducer",
@@ -23974,10 +23974,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "carefully-considered-smashing",
@@ -24050,10 +24050,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "lord-of-granite",
@@ -24113,10 +24113,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "this-bug-smashes-you",
@@ -24164,10 +24164,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "crushing-tsunami",
@@ -24278,10 +24278,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "a-bomb",
@@ -24476,10 +24476,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "hurl-trucks",
@@ -24510,10 +24510,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "smash",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
+      "wp": "WP-676",
+      "decision": "D-24492",
       "designs": [
         {
           "slug": "anger-management",

@@ -31,6 +31,7 @@ import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.j
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -110,6 +111,7 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingDefeatChoice(G)) return; // WP-486 / D-24291
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return; // D-24019
+  if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
   if (hasPendingVictoryPileCardPick(G)) return; // D-24067
   if (hasPendingDrawOrEmpowered(G)) return;
   if (hasPendingCountScaledChoice(G)) return; // D-24069

@@ -26,6 +26,7 @@ import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.j
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
+import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -115,6 +116,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) {
+    return;
+  }
+  // why: WP-676 / D-24492 — block-all guard: a parked Smash discard-for-attack choice
+  // freezes the board until the player discards a hand card or declines.
+  if (hasPendingSmashDiscard(G)) {
     return;
   }
 
@@ -317,6 +323,11 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingOptionalKoReward(G)) {
     return;
   }
+  // why: WP-676 / D-24492 — block-all guard: a parked Smash discard-for-attack choice
+  // freezes the board until the player discards a hand card or declines.
+  if (hasPendingSmashDiscard(G)) {
+    return;
+  }
 
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) {
@@ -481,6 +492,11 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // blocked turn does not discard the hand (beside the D-24008 KO-hero check).
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) {
+    return;
+  }
+  // why: WP-676 / D-24492 — block-all guard: a parked Smash discard-for-attack choice
+  // freezes the board until the player discards a hand card or declines.
+  if (hasPendingSmashDiscard(G)) {
     return;
   }
 

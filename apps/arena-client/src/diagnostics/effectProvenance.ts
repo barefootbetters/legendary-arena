@@ -31,6 +31,10 @@
 export type AwaitingInputKind =
   | 'victoryPileCardPick'
   | 'optionalKoReward'
+  // why: WP-676 / D-24492 — a parked Smash discard-for-attack choice is a block-all
+  // freeze class; surface it in the diagnostic so a "froze after I played a Smash card"
+  // report names its own cause.
+  | 'smashDiscard'
   | 'drawOrEmpowered'
   | 'koHeroChoice';
 
@@ -75,6 +79,7 @@ export const RECENTLY_PLAYED_CARDS_CAP = 5;
 const PENDING_FIELD_TO_KIND: ReadonlyArray<readonly [string, AwaitingInputKind]> = [
   ['pendingVictoryPileCardPick', 'victoryPileCardPick'],
   ['pendingOptionalKoReward', 'optionalKoReward'],
+  ['pendingSmashDiscard', 'smashDiscard'],
   ['pendingDrawOrEmpowered', 'drawOrEmpowered'],
   ['pendingKoHeroChoice', 'koHeroChoice'],
 ];

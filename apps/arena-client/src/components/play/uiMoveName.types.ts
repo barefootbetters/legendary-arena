@@ -79,6 +79,8 @@ export type UiMoveName =
   | 'resolveDrawOrEmpowered'
   // why: WP-675 / D-24490 — unblocks the count-scaled choose-one prompt (vnom Symbiotic Adaptation).
   | 'resolveCountScaledChoice'
+  // why: WP-676 / D-24492 — unblocks the Smash discard-for-attack prompt (the wwhk Smash cards).
+  | 'resolveSmashDiscard'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).
   | 'resolveVictoryPileCardPick'
   // why: unblocks the optional-put-bottom-hq prompt (Wonder Man's Ionic Energy).

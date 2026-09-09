@@ -51,6 +51,7 @@ import PendingPutCardsOnDeckChoicePrompt from '../components/play/PendingPutCard
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
+import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import PlayVillainTopPrompt from '../components/play/PlayVillainTopPrompt.vue';
@@ -128,6 +129,7 @@ export default defineComponent({
     PendingReorderChoicePrompt,
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
+    SmashDiscardPrompt,
     DrawOrEmpoweredPrompt,
     CountScaledChoicePrompt,
     PlayVillainTopPrompt,
@@ -422,6 +424,13 @@ export default defineComponent({
       () => snapshot.value?.pendingPlayVillainTop !== undefined,
     );
 
+    // why: WP-676 / D-24492 — derived from UIState.pendingSmashDiscard !== undefined.
+    // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
+    // Smash discard-for-attack choice is pending (board frozen, mirrors hasPendingPlayVillainTop).
+    const hasPendingSmashDiscard = computed<boolean>(
+      () => snapshot.value?.pendingSmashDiscard !== undefined,
+    );
+
     // why: WP-313 / D-24099 — derived from UIState.pendingVictoryPileCardPick !== undefined.
     // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
     // victory-pile villain pick is pending (board frozen, mirrors hasPendingDrawOrEmpowered).
@@ -541,6 +550,7 @@ export default defineComponent({
       hasPendingOptionalKoReward,
       hasPendingDrawOrEmpowered,
       hasPendingPlayVillainTop,
+      hasPendingSmashDiscard,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -791,6 +801,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-676 / D-24492 — the Smash discard-for-attack prompt; appears only for
+               the choosing player when pendingSmashDiscard is set. Same block-all posture as
+               the optional-KO-reward prompt above. NOT a modal; normal document flow. -->
+          <SmashDiscardPrompt
+            :pending-smash-discard="snapshot.pendingSmashDiscard"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24071 + WP-287 — the draw-or-empowered prompt renders above
                TurnActionBar in DOM order; appears only for the choosing player when
                pendingDrawOrEmpowered is set. NOT a modal; normal document flow. WP-286's
@@ -901,6 +919,7 @@ export default defineComponent({
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
             :has-pending-play-villain-top="hasPendingPlayVillainTop"
+            :has-pending-smash-discard="hasPendingSmashDiscard"
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"

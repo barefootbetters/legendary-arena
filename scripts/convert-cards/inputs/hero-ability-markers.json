@@ -906,6 +906,108 @@
       "cardSlug": "window-of-opportunity",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "bruce-banner",
+      "cardSlug": "savage-hulk-unleashed",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:4]"
+    },
+    {
+      "heroSlug": "caiera",
+      "cardSlug": "shadowforged-blade",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "gladiator-hulk",
+      "cardSlug": "dont-make-me-angry",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "gladiator-hulk",
+      "cardSlug": "seize-the-throne",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "gladiator-hulk",
+      "cardSlug": "double-fisted-smashing",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "hulkbuster-iron-man",
+      "cardSlug": "attune-techtonic-transducer",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "hulkbuster-iron-man",
+      "cardSlug": "ultra-massive-armor",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "joe-fixit-grey-hulk",
+      "cardSlug": "carefully-considered-smashing",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "korg",
+      "cardSlug": "nothing-beats-rock",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "korg",
+      "cardSlug": "lord-of-granite",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "miek-the-unhived",
+      "cardSlug": "this-bug-smashes-you",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:1]"
+    },
+    {
+      "heroSlug": "namora",
+      "cardSlug": "crushing-tsunami",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "namora",
+      "cardSlug": "master-of-depths",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "rick-jones",
+      "cardSlug": "a-bomb",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:5]"
+    },
+    {
+      "heroSlug": "she-hulk",
+      "cardSlug": "hurl-trucks",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "she-hulk",
+      "cardSlug": "hurl-trucks",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:smash:2]"
+    },
+    {
+      "heroSlug": "skaar-son-of-hulk",
+      "cardSlug": "anger-management",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:smash:3]"
     }
   ],
   "amwp": [

@@ -1016,6 +1016,56 @@ describe('filterUIStateForAudience — pendingCountScaledChoice redaction (D-244
 });
 
 // ---------------------------------------------------------------------------
+// WP-676 / D-24492 — pendingSmashDiscard redaction (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Smash discard-for-attack choice. The
+ * choice is private to the chooser — its eligibleHand carries the chooser's private
+ * hand identities, so it must not appear in a non-chooser's UIState.
+ */
+function createSmashDiscardUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  // why: give the chooser a known hand so eligibleHand is non-empty and the leak
+  // vector (private hand identities) is actually present to test the redaction.
+  gameState.playerZones['0']!.hand = ['smash-hand-a', 'smash-hand-b'];
+  gameState.pendingSmashDiscards = [{ playerID: '0', magnitude: 2 }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingSmashDiscard redaction (D-24492)', () => {
+  it('the chooser sees pendingSmashDiscard with the magnitude and eligible hand', () => {
+    const uiState = createSmashDiscardUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingSmashDiscard !== undefined, 'chooser sees the Smash choice');
+    assert.equal(result.pendingSmashDiscard!.playerID, '0');
+    assert.equal(result.pendingSmashDiscard!.magnitude, 2);
+    assert.equal(result.pendingSmashDiscard!.eligibleHand.length, 2, 'both hand cards are discard options');
+  });
+
+  it('an opponent does NOT see pendingSmashDiscard', () => {
+    const uiState = createSmashDiscardUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingSmashDiscard, undefined, 'opponent must not see the Smash choice');
+  });
+
+  it('a spectator does NOT see pendingSmashDiscard', () => {
+    const uiState = createSmashDiscardUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingSmashDiscard, undefined, 'spectator must not see the Smash choice');
+  });
+
+  it('does not mutate the input UIState (pendingSmashDiscard still present on the source)', () => {
+    const uiState = createSmashDiscardUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingSmashDiscard !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-287 / EC-319 — pendingDrawOrEmpowered redaction (D-24071, D-24011 analog)
 // ---------------------------------------------------------------------------
 
