@@ -918,9 +918,9 @@ move means first being able to *see* it — and the Mastermind's move has a
 grammar, the same one whether it wears a toga, a pulpit, a lab coat, or a card
 frame.
 [The next section](#the-masterminds-common-tactics-the-grammar-of-manipulation)
-sets that grammar down; [the one after it](#the-pattern-in-the-mirror-ais-secular-default)
-catches the same impulse inside the very tool that helped write this page. This
-one caught it inside a civilization.
+sets that grammar down; [the ones after it](#the-pattern-in-the-mirror-ais-secular-default)
+catch the same impulse in a manufactured national memory and inside the very
+tool that helped write this page. This one caught it inside a civilization.
 
 ### The Mastermind's common tactics: the grammar of manipulation
 
@@ -1098,6 +1098,100 @@ antagonist's side: render the evil faithfully — cunning, not cartoon — and g
 the heroes the real tools to *see* the move and answer it. A good-versus-evil
 game earns its stakes only if the evil is genuinely worth beating.
 
+### Contested memory: the hidden hand and the manufactured icon
+
+The hardest test of this page's discipline is a case where the *same source*
+hands you a documented truth the sanitized story omits — and an overclaim the
+page has to refuse. Matt Walsh's *Real History* series (Daily Wire, 2026;
+Episode 4 is subtitled *A New Constitution*) is that case. It is set down here
+attributed to Walsh, with its load-bearing facts cited *beyond* him, because
+this is exactly where "attributed, not adjudicated" earns its keep: the
+temptation to sand down the record runs in **both** directions, and the page's
+method — render faithfully, let it carry its own weight — is the answer to both.
+
+**The hidden hand is real, and the saint-story omits it.** The strongest
+documented "hidden hand" near Martin Luther King Jr. is **Stanley Levison** —
+and the anchor is not Walsh but **David Garrow**, whose Pulitzer-winning
+*Bearing the Cross* documents Levison as a former top financier of the American
+Communist Party who became one of King's closest advisers: money, speech drafts,
+March on Washington logistics. President Kennedy and Robert Kennedy warned King
+to his face to drop Levison and Jack O'Dell; RFK authorized the FBI wiretap;
+King cooled publicly but kept a back channel through Clarence Jones. King himself
+moved left after 1965 — Vietnam ("the greatest purveyor of violence in the world
+today," of his own government, Riverside Church, 1967), the Poor People's
+Campaign, an openly democratic-socialist economics. The 1963 "content of their
+character" line is not the whole corpus. A page built on *rendering the source
+faithfully* has no business hiding any of that; it is the un-taught half of a
+real history, and it should be named.
+
+**The icons were manufactured — which is a neutral tactic, not proof of an evil
+end.** Walsh files **Rosa Parks** under *icon manufacture*, and on the narrow
+point he is right: she was a trained NAACP officer, not a random tired
+commuter; she had studied at Highlander; **Claudette Colvin** was passed over as
+the test case; the "tired-seamstress-acting-alone" story was a simplification
+for public consumption. That is the [withhold-the-machinery
+tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation) the page
+already named as **neutral** — used as readily by a coalition without power as
+by any aristocrat. Birmingham's children in front of Bull Connor's hoses (James
+Bevel's tactic) is *control the picture*; the King estate's copyright lock on
+the footage is *control the picture*, in the present tense. But a manufactured
+*legend* and a manufactured *cause* are different objects, and the page keeps
+them apart: the tired-seamstress image was staged, while the **woman** took a
+real arrest against real, statutory Jim Crow — she lost her job, her husband
+lost his, and they left Alabama under threat. Staging the icon does not make the
+segregation ordinance imaginary or the arrest fake.
+
+**The "new constitution" claim has a serious version.** Walsh's subtitle is
+lifted from a real argument: **Christopher Caldwell**'s *The Age of Entitlement*
+holds that the 1964 Civil Rights Act, sold as color-blind procedure, was later
+enforced through disparate-impact and affirmative-action regimes as racial
+*outcomes* — becoming, in effect, a rival constitution the electorate never
+ratified as such. That is a contestable legal-political thesis, filmed; the page
+attributes it and does not adjudicate it.
+
+**What the page refuses is the leap.** From "a real hidden hand plus staged
+icons" to "the movement was an evil con and the cause a scam" is a jump the
+files do not carry, and Walsh's own strongest sources say so. Garrow's line is
+*influence, not command*: no document shows King taking orders from Moscow. A
+communist-formed adviser is a fact about an **adviser**, not a confession that
+the Party wrote the Act. Prosperity in Detroit does not cancel Alabama's legal
+code; rock-throwers at some campaigns do not turn *ending state-mandated
+segregation* into a con — tactics and justice are different questions; a
+professionally-run test case is how *Brown* itself was built, not evidence of
+fraud; and estate greed is not proof that 1963 was scripted in Minsk. The FBI
+memos are a primary source **and** J. Edgar Hoover's hostile brief against a man
+he wanted destroyed — leads, not verdicts.
+
+The count of conspirators, though, is the wrong axis — and it is worth saying so,
+because it cuts against the sanitized story as hard as the conspiratorial one.
+Operations like this are *never* one person; they are coalitions of coordinating
+people — organizers, advisers, money, media. So "there was no lone mastermind"
+is a dodge, not a rebuttal, and this page does not lean on it: the coordination
+here is real and provable. The honest question is never *how many hands* but
+*toward what end, and behind how much concealment* — a matter of aims and
+evidence, not headcount. The packaging was concealed, and a communist-formed
+adviser really was in the room; whether the coalition's end was ending statutory
+segregation or the broader legal restructuring Caldwell describes is the actual
+argument, and it is weighed on aims, not settled by proving that more than one
+person took part. Proving a group proves *organizing*; it does not by itself
+prove the *motive*. Individual agency survives inside the coalition, too:
+**Rev. Joseph H. Jackson**, who led the largest Black denomination in the
+country, opposed King's civil disobedience and preached self-help instead — and
+a movement whose own factions fought each other (NAACP lawyers, the SCLC, SNCC's
+students, Malcolm X, later Black Power) is a coalition of moral agents, not one
+disciplined command.
+
+So the filter holds on the hardest case it has. Refuse the saint-story that
+sands off Levison; refuse the con-story that sands off Jim Crow. The hidden hand
+is real and nameable **and** the cause was still just — both are true, and a
+filter that can only hold one of them is the partisan weapon this page keeps
+warning against. That is the whole method, run on material that will not resolve
+into a clean hero or a clean villain: name the machinery, keep the record at
+full strength, and let it carry its own weight without a costume forced over it.
+[The section that follows](#the-pattern-in-the-mirror-ais-secular-default) finds
+that same refusal — to sand the source down on the way in — inside the very tool
+that helped write this page.
+
 ### The pattern in the mirror: AI's secular default
 
 This page has a live case study, and it is left in on purpose because it
@@ -1214,6 +1308,19 @@ claim at a safe distance — it stands on it.
   *neutral-tool counterexample* — a case that cuts against the throne-seeking
   frame — not as a "Mastermind"; the concealment tactic is judged by its shape,
   its user judged separately.
+- **The civil-rights case study is even-handed by construction — it refuses
+  both myths.** [Contested memory](#contested-memory-the-hidden-hand-and-the-manufactured-icon)
+  presents Matt Walsh's *Real History* claims **attributed**, with the
+  load-bearing facts cited beyond him (David Garrow on Levison; Christopher
+  Caldwell on the 1964 Act). It affirms the documented **hidden hand** the
+  sanitized story omits *and* refuses the overclaim that a real, communist-formed
+  adviser or staged icons make ending statutory Jim Crow "a con" — the page does
+  not adjudicate Caldwell's constitutional thesis, and it does **not** cast Rosa
+  Parks or the movement as an evil Mastermind's operatives. Per the page's own
+  neutral-tool rule, *manufacture-the-icon / withhold-the-machinery* is caught as
+  a tactic on **every** side; the woman's real arrest against real segregation is
+  kept distinct from the staged legend. A filter that only fired against one side
+  would be the partisan weapon the page warns against.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
@@ -1349,3 +1456,13 @@ claim at a safe distance — it stands on it.
   [the Mastermind's-tactics section](#the-masterminds-common-tactics-the-grammar-of-manipulation).
   Attributed as Hughes's framework and used as a design lens for antagonist
   design; not adjudicated by this page, and never mentions the game.
+- Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
+  (and the related monologue *Everything That You Were Told About The Civil
+  Rights Movement Was A Lie*) — the attributed source behind
+  [Contested memory](#contested-memory-the-hidden-hand-and-the-manufactured-icon).
+  Its documented core is cited beyond Walsh: **David Garrow**, *Bearing the
+  Cross* (1986, Pulitzer 1987), on Stanley Levison's Communist-Party-financier
+  past and central role advising King; **Christopher Caldwell**, *The Age of
+  Entitlement* (2020), for the "1964 Act as a second constitution" thesis. Walsh
+  is attributed and contested, not adjudicated; the historical record is kept at
+  full strength beside his gloss.
