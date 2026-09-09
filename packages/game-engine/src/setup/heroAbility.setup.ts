@@ -350,6 +350,17 @@ const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
 const CONDITION_ICON_PATTERN =
   /(?:at least|for every)\s*\d+\s*\[icon:(?:attack|recruit)\]|\d+\s+or more\s+\[icon:(?:attack|recruit)\]/gi;
 
+// why: D-24486 — a NEGATIVE-magnitude attack/recruit icon ("gets -2[icon:attack]",
+// "cost -1[icon:recruit]") is a debuff applied to an Adversary or a cost reduction — NEVER a
+// resource the player gains. Its leading "-" is the discriminator: Legendary's vocabulary has
+// no "you get -N attack" self-grant. The icon-magnitude (Step 2b) and icon→keyword (Step 3)
+// extractors drop the sign and read it as a phantom +N SELF-grant (the live bug: Royal Decree's
+// "Each Villain that isn't worth at least 5VP gets -1[icon:attack]" granting Player 0 a real +1
+// attack every team-ability activation). This pattern locates those negative icons so both
+// extractors EXCLUDE their character positions (mirrors CONDITION_ICON_PATTERN). A GRANT icon
+// elsewhere on the line ("you get +3[icon:attack]") carries no "-", so it is never suppressed.
+const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/gi;
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for VP-cost-threshold in reveal lines: "2[icon:vp] or less". Non-global; first match only. */
 const VP_COST_THRESHOLD_PATTERN = /(\d+)\s*\[icon:vp\]\s*or less/;
@@ -510,6 +521,33 @@ function computeConditionIconRanges(abilityText: string): Array<{ start: number;
 }
 
 /**
+ * Computes the character ranges of NEGATIVE-magnitude `[icon:attack|recruit]` tokens
+ * ("gets -2[icon:attack]", "cost -1[icon:recruit]") so the icon-magnitude (Step 2b) and
+ * icon→keyword (Step 3) extractors can exclude them and not emit a phantom player grant
+ * (D-24486). A negative attack/recruit icon is always an Adversary debuff or a cost
+ * reduction — never a resource the player gains — so the leading "-" alone identifies it.
+ *
+ * Each match runs from the "-" through the icon's closing "]"; the returned range starts at
+ * the icon token (`[icon:`) and ends at the match end, matching the CONDITION_ICON_PATTERN
+ * range convention: the icon→keyword match (starts at "[") overlaps directly, and the
+ * icon-magnitude match (starts at the digit, ends at "]") overlaps by its tail.
+ *
+ * @param abilityText - The raw ability line.
+ * @returns Character ranges of the negative-magnitude icons (empty when the line has none).
+ */
+function computeNegativeMagnitudeIconRanges(abilityText: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const regex = new RegExp(NEGATIVE_MAGNITUDE_ICON_PATTERN.source, 'gi');
+  let match: RegExpExecArray | null = regex.exec(abilityText);
+  while (match !== null) {
+    const iconOffset = match[0].lastIndexOf('[icon:');
+    ranges.push({ start: match.index + iconOffset, end: match.index + match[0].length });
+    match = regex.exec(abilityText);
+  }
+  return ranges;
+}
+
+/**
  * Returns whether a match span `[matchStart, matchEnd)` overlaps any suppressed condition
  * icon range (WP-660 / D-24471). Used to skip an icon the extractors would otherwise read
  * as a resource grant.
@@ -601,6 +639,13 @@ function parseAbilityText(
   // ranges so a condition reference is never read as a resource grant (the spurious-recruit
   // bug). A grant icon elsewhere on the line is unaffected (positional, not line-level).
   const suppressedIconRanges = computeConditionIconRanges(abilityText);
+  // why: D-24486 — also suppress NEGATIVE-magnitude attack/recruit icons (Adversary
+  // debuffs / cost reductions, "gets -2[icon:attack]"), so the sign-dropping Step 2b/3
+  // extractors never read one as a phantom player grant (the Royal Decree +1 bug). Same
+  // positional range machinery as the condition-icon suppression above.
+  for (const negativeIconRange of computeNegativeMagnitudeIconRanges(abilityText)) {
+    suppressedIconRanges.push(negativeIconRange);
+  }
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
   // registry AST, kept separate from `keywords`/`effects` (the open mechanic space).

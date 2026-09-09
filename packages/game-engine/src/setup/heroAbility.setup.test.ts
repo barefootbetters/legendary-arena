@@ -617,6 +617,63 @@ describe('buildHeroAbilityHooks — recruit-threshold gates the co2e/ssw1 attack
 });
 
 // ---------------------------------------------------------------------------
+// Negative-magnitude icon suppression (D-24486)
+//
+// A negative attack/recruit icon ("gets -N[icon:attack]", "cost -N[icon:recruit]") is an
+// Adversary debuff or a cost reduction — never a player grant. The sign-dropping Step 2b/3
+// extractors used to promote it to a phantom +N SELF-grant. Live bug: Royal Decree's team
+// ability granted Player 0 a real +1 attack every activation.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — negative-magnitude icon suppression (D-24486)', () => {
+  // why: the exact printed text from data/cards/asrd.json → thor → royal-decree.
+  const ROYAL_DECREE_ABILITY =
+    "[team:heroes-of-asgard]: Each player who is [keyword:Worthy] draws a card. "
+    + "Each Villain that isn't worth at least 5VP gets -1[icon:attack] this turn.";
+
+  it('Royal Decree: the "-1[icon:attack]" villain debuff emits NO player attack keyword or effect', () => {
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'royal-decree', abilities: [ROYAL_DECREE_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+    assert.ok(hooks.length > 0, 'a hook is built for Royal Decree');
+    assert.ok(
+      hooks.every((hook) => !hook.keywords.includes('attack')),
+      'the -1[icon:attack] villain debuff must not promote to an attack keyword',
+    );
+    assert.ok(
+      hooks.every((hook) => (hook.effects ?? []).every((effect) => effect.type !== 'attack')),
+      'the -1[icon:attack] villain debuff must not emit a phantom player attack effect',
+    );
+  });
+
+  it('positional guard: a real +3[icon:attack] self-grant is KEPT while the same-line -2[icon:attack] debuff is suppressed', () => {
+    // why: proves the suppression is POSITIONAL (keyed on the "-"), not line-level — a genuine
+    // grant on the same line as a negative debuff survives, so only one attack effect (the +3)
+    // is emitted, not two and not zero.
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'test-grant-and-debuff', abilities: [
+        'You get +3[icon:attack]. Each Villain gets -2[icon:attack] this turn.',
+      ] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+    const attackEffects: number[] = [];
+    for (const hook of hooks) {
+      for (const effect of hook.effects ?? []) {
+        if (effect.type === 'attack') {
+          attackEffects.push(effect.magnitude ?? 0);
+        }
+      }
+    }
+    assert.deepEqual(
+      attackEffects,
+      [3],
+      'exactly one attack effect (the +3 self-grant) survives; the -2 debuff emits none',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 
