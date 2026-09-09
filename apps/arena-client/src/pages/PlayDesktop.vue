@@ -54,6 +54,7 @@ import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vu
 import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
+import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
 import PlayVillainTopPrompt from '../components/play/PlayVillainTopPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
@@ -132,6 +133,7 @@ export default defineComponent({
     SmashDiscardPrompt,
     DrawOrEmpoweredPrompt,
     CountScaledChoicePrompt,
+    UndercoverChoicePrompt,
     PlayVillainTopPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
@@ -824,6 +826,15 @@ export default defineComponent({
                is set. Same block-all posture as the draw-or-empowered prompt above. -->
           <CountScaledChoicePrompt
             :pending-count-scaled-choice="snapshot.pendingCountScaledChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-678/679 / D-24494/D-24495 — the Undercover target pick (send which
+               [team:shield] Hero); appears only for the choosing player when
+               pendingUndercoverChoice is set (≥2 eligible), incl. the nested pick from the
+               shld mixed choose-one's Undercover option. Same block-all posture. -->
+          <UndercoverChoicePrompt
+            :pending-undercover-choice="snapshot.pendingUndercoverChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />

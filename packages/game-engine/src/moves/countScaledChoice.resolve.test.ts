@@ -99,3 +99,53 @@ describe('resolveCountScaledChoice', () => {
     assert.equal(gameState.turnEconomy.recruit, 0);
   });
 });
+
+describe('resolveCountScaledChoice — mixed heterogeneous options (WP-679 / D-24495)', () => {
+  it('an undercover option (officer-stack) sends an Officer to the Victory Pile + tracker', () => {
+    const gameState = {
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['coulson#0'], victory: [], undercover: [] } },
+      piles: { bystanders: [], wounds: [], officers: ['pile-shield-officer', 'pile-shield-officer'], sidekicks: [], horrors: [] },
+      cardStats: {},
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 },
+      messages: [],
+      pendingCountScaledChoice: [{
+        playerID: '0',
+        cardId: 'coulson#0',
+        options: [
+          { kind: 'undercover', source: 'officer-stack' },
+          { kind: 'count-scaled', resource: 'attack', countSource: 'shield-levels', magnitude: 1, perEach: 2 },
+        ],
+      }],
+    } as unknown as LegendaryGameState;
+    resolveCountScaledChoice(makeContext(gameState, '0'), { optionIndex: 0 });
+    const zones = gameState.playerZones['0']!;
+    assert.deepEqual(zones.victory, ['pile-shield-officer'], 'one officer sent to victory');
+    assert.deepEqual(zones.undercover, ['pile-shield-officer'], 'recorded in the undercover tracker');
+    assert.equal(gameState.piles.officers.length, 1, 'one officer removed from the stack');
+    assert.equal(gameState.pendingCountScaledChoice!.length, 0, 'front entry popped');
+  });
+
+  it('a count-scaled option with perEach=2 grants floor(shieldLevels / 2) attack', () => {
+    const gameState = {
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['coulson#0'], victory: ['a', 'b', 'c'], undercover: [] } },
+      piles: { bystanders: [], wounds: [], officers: [], sidekicks: [], horrors: [] },
+      cardStats: {
+        a: { isShieldOrHydra: true }, b: { isShieldOrHydra: true }, c: { isShieldOrHydra: true },
+      },
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 },
+      messages: [],
+      pendingCountScaledChoice: [{
+        playerID: '0',
+        cardId: 'coulson#0',
+        options: [
+          { kind: 'undercover', source: 'hand-shield-hero' },
+          { kind: 'count-scaled', resource: 'attack', countSource: 'shield-levels', magnitude: 1, perEach: 2 },
+        ],
+      }],
+    } as unknown as LegendaryGameState;
+    resolveCountScaledChoice(makeContext(gameState, '0'), { optionIndex: 1 });
+    // 3 S.H.I.E.L.D. cards in victory → floor(3 / 2) = 1 attack.
+    assert.equal(gameState.turnEconomy.attack, 1, 'grant is 1 × floor(3 / 2) = 1');
+    assert.equal(gameState.pendingCountScaledChoice!.length, 0, 'front entry popped');
+  });
+});

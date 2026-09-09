@@ -59,8 +59,8 @@
           "recruit": null,
           "abilities": [
             "Choose one:",
-            "- Send a [team:shield] Hero from your hand [keyword:Undercover].",
-            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have."
+            "- Send a [team:shield] Hero from your hand [keyword:Undercover]. [keyword:undercover-hand-shield-hero]",
+            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have. [keyword:attack-per-count:shield-levels:1:2]"
           ]
         },
         {
@@ -282,8 +282,8 @@
           "recruit": null,
           "abilities": [
             "Choose one:",
-            "- Send a card from the S.H.I.E.L.D. Officer Stack  [keyword:Undercover].",
-            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have."
+            "- Send a card from the S.H.I.E.L.D. Officer Stack  [keyword:Undercover]. [keyword:undercover-officer-stack]",
+            "- Or you get +1[icon:attack] for each 2 [keyword:S.H.I.E.L.D. Levels] you have. [keyword:attack-per-count:shield-levels:1:2]"
           ]
         },
         {

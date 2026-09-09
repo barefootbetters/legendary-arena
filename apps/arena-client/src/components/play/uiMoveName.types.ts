@@ -79,6 +79,9 @@ export type UiMoveName =
   | 'resolveDrawOrEmpowered'
   // why: WP-675 / D-24490 — unblocks the count-scaled choose-one prompt (vnom Symbiotic Adaptation).
   | 'resolveCountScaledChoice'
+  // why: WP-678/679 / D-24494/D-24495 — unblocks the Undercover target pick (the nested pick
+  // when the shld mixed choose-one's "send a shield Hero Undercover" option has ≥2 eligible).
+  | 'resolveUndercoverChoice'
   // why: WP-676 / D-24492 — unblocks the Smash discard-for-attack prompt (the wwhk Smash cards).
   | 'resolveSmashDiscard'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).

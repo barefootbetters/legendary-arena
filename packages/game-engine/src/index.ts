@@ -375,6 +375,7 @@ export type {
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingCountScaledChoiceOption,
+  UIPendingUndercoverChoice,
   UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,

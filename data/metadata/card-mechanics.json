@@ -87,13 +87,15 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 7,
+      "cardCount": 9,
       "cardIds": [
         "asrd/thor",
         "co2e/black-widow",
         "core/black-widow",
         "cvwr/goliath",
         "noir/luke-cage-noir",
+        "shld/agent-phil-coulson",
+        "shld/mockingbird",
         "vill/juggernaut",
         "vnom/venom"
       ],
@@ -1726,6 +1728,28 @@
       "hidden": true
     },
     {
+      "slug": "undercover-hand-shield-hero",
+      "label": "Undercover Hand Shield Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "shld/agent-phil-coulson"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "undercover-officer-stack",
+      "label": "Undercover Officer Stack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "shld/mockingbird"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "unleash",
       "label": "Unleash",
       "scope": "hero",
@@ -3293,9 +3317,11 @@
     },
     "shld/agent-phil-coulson": {
       "mechanics": [
+        "attack-per-count",
         "s-h-i-e-l-d-level",
         "s-h-i-e-l-d-levels",
-        "undercover"
+        "undercover",
+        "undercover-hand-shield-hero"
       ]
     },
     "shld/deathlok": {
@@ -3332,10 +3358,12 @@
     },
     "shld/mockingbird": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "s-h-i-e-l-d-level",
         "s-h-i-e-l-d-levels",
-        "undercover"
+        "undercover",
+        "undercover-officer-stack"
       ]
     },
     "shld/quake": {

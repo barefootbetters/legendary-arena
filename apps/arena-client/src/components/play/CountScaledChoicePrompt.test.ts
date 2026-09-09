@@ -34,8 +34,8 @@ function recorder(): { calls: RecordedCall[]; submitMove: SubmitMove } {
 const mockPending: UIPendingCountScaledChoice = {
   playerID: 'player-0',
   options: [
-    { resource: 'recruit', perUnit: 1, count: 2, total: 2 },
-    { resource: 'attack', perUnit: 1, count: 3, total: 3 },
+    { kind: 'count-scaled', resource: 'recruit', perUnit: 1, count: 2, total: 2, label: '+2 Recruit' },
+    { kind: 'count-scaled', resource: 'attack', perUnit: 1, count: 3, total: 3, label: '+3 Attack' },
   ],
 };
 
@@ -99,5 +99,26 @@ describe('CountScaledChoicePrompt (WP-675 / EC-712)', () => {
     await button.trigger('click');
     await button.trigger('click');
     assert.equal(calls.length, 1, 'the second click is guarded');
+  });
+
+  // why: WP-679 / D-24495 — the mixed heterogeneous choose-one (shld cards): an Undercover
+  // send option renders its label alongside a count-scaled attack option, both from `label`.
+  test('renders a mixed undercover + count-scaled choose-one, each from its label', () => {
+    const { submitMove } = recorder();
+    const mixed: UIPendingCountScaledChoice = {
+      playerID: 'player-0',
+      options: [
+        { kind: 'undercover', label: 'Send a S.H.I.E.L.D. Hero from your hand Undercover' },
+        { kind: 'count-scaled', resource: 'attack', perUnit: 1, count: 5, total: 2, label: '+2 Attack' },
+      ],
+    };
+    const wrapper = mount(CountScaledChoicePrompt, {
+      props: { pendingCountScaledChoice: mixed, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="count-scaled-choice-option-0"]').text(),
+      'Send a S.H.I.E.L.D. Hero from your hand Undercover',
+    );
+    assert.equal(wrapper.find('[data-testid="count-scaled-choice-option-1"]').text(), '+2 Attack');
   });
 });

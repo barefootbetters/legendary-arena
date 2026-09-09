@@ -1286,6 +1286,30 @@
       "cardSlug": "infinity-formula",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "agent-phil-coulson",
+      "cardSlug": "approve-orbital-strike",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:undercover-hand-shield-hero]"
+    },
+    {
+      "heroSlug": "agent-phil-coulson",
+      "cardSlug": "approve-orbital-strike",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:attack-per-count:shield-levels:1:2]"
+    },
+    {
+      "heroSlug": "mockingbird",
+      "cardSlug": "spymaster",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:undercover-officer-stack]"
+    },
+    {
+      "heroSlug": "mockingbird",
+      "cardSlug": "spymaster",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:attack-per-count:shield-levels:1:2]"
     }
   ],
   "noir": [

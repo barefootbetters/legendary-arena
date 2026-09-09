@@ -12,7 +12,7 @@ import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { LogEntry } from './log/logOutcome.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
 import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
-import type { CountScaledChoiceOption } from './rules/heroCountSource.js';
+import type { ChooseOneOption } from './rules/heroCountSource.js';
 
 // why: Persistence boundary types (PERSISTENCE_CLASSES, MatchSnapshot,
 // PersistableMatchConfig) are defined canonically in
@@ -892,7 +892,7 @@ export interface PendingCountScaledChoice {
    */
   cardId: string;
   /** The two printed options (resource + count source + per-unit magnitude). */
-  options: CountScaledChoiceOption[];
+  options: ChooseOneOption[];
 }
 
 /**

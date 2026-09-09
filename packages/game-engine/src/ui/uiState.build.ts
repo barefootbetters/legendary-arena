@@ -1316,18 +1316,35 @@ export function buildUIState(
     const frontChoice = gameState.pendingCountScaledChoice[0]!;
     pendingCountScaledChoice = {
       playerID: frontChoice.playerID,
+      // why: WP-679 / D-24495 — project each option by kind. A count-scaled option resolves its
+      // count live (perEach floor-division, matching the executor); an Undercover option carries
+      // only a display label (its target is picked at resolve time, possibly via a nested choice).
       options: frontChoice.options.map((option) => {
+        if (option.kind === 'undercover') {
+          return {
+            kind: 'undercover' as const,
+            label:
+              option.source === 'hand-shield-hero'
+                ? 'Send a S.H.I.E.L.D. Hero from your hand Undercover'
+                : 'Send a card from the S.H.I.E.L.D. Officer Stack Undercover',
+          };
+        }
         const count = resolveCountSource(
           gameState,
           frontChoice.playerID,
           option.countSource,
           frontChoice.cardId as CardExtId,
         );
+        // why: WP-677/679 — perEach ("for each N") floor-divides the count, matching the grant.
+        const perEach = option.perEach && option.perEach > 0 ? option.perEach : 1;
+        const total = option.magnitude * Math.floor(count / perEach);
         return {
+          kind: 'count-scaled' as const,
           resource: option.resource,
           perUnit: option.magnitude,
           count,
-          total: option.magnitude * count,
+          total,
+          label: `+${total} ${option.resource === 'attack' ? 'Attack' : 'Recruit'}`,
         };
       }),
     };

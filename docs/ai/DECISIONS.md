@@ -41035,4 +41035,80 @@ test literals — the same class WP-675's `hasAttackIcon` added; the runtime sui
 
 **Packet:** WP-677 / EC-714. **Active:** 2026-09-09.
 
+---
+
+### D-24495 — mixed heterogeneous multi-line choose-one (Undercover / S.H.I.E.L.D.-Levels attack) (Active 2026-09-09 — WP-679 / EC-716)
+
+**Context.** `shld/agent-phil-coulson/approve-orbital-strike` + `shld/mockingbird/spymaster`
+print a MIXED "Choose one:" — "send a `[team:shield]` Hero Undercover / OR +1 attack for each
+2 S.H.I.E.L.D. Levels." WP-675's coalescing gate accepted only both-count-scaled options, so
+these never coalesced (both halves would have fired). WP-677 (S.H.I.E.L.D. Level count +
+`perEach`) and WP-678 (Undercover → Victory Pile) supplied the two option executors; this WP
+composes them. Third/final of the narrow shld arc (WP-677/678/679).
+
+**Decision.**
+
+1. **Tagged `ChooseOneOption` union.** `CountScaledChoiceOption` gains a `kind: 'count-scaled'`
+   discriminant + the `perEach` divisor; a new `UndercoverChoiceOption { kind: 'undercover';
+   source: 'hand-shield-hero' | 'officer-stack' }` is the second variant; `ChooseOneOption` is
+   the union. The pending choice, effect descriptor, and UI projection carry `ChooseOneOption[]`.
+   vnom's two-count-scaled choice is unchanged (its options are the count-scaled variant with no
+   `perEach`).
+
+2. **Relaxed coalescing — a strict superset.** `coalesceCountScaledChooseOne` now coalesces a
+   standalone `Choose one:` + ≥2 bullets when EVERY bullet carries a RECOGNIZED option marker
+   (per-count OR an Undercover source-shape). A choose-one with any unrecognized bullet passes
+   through untouched — zero regression (verified: only 3 standalone `Choose one:` headers exist
+   in the corpus — vnom + these 2). `tryResolveCountScaledChooseOneLine` builds the heterogeneous
+   option list (per-count with an optional 4th `perEach` segment; undercover from the two source
+   markers) in printed order. The bare undercover source-shape keyword is suppressed from the
+   generic keyword push when the line is a choose-one (no double-fire).
+
+3. **Resolve dispatch by `kind`; move name KEPT.** `resolveCountScaledChoice` is retained (not
+   renamed — avoids the game.test.ts / sim-dispatch rename churn) and dispatches by `kind`:
+   count-scaled → WP-674/677 `attack-per-count` / `recruit-per-count` (threading `perEach`);
+   undercover → WP-678's `undercover-hand-shield-hero` / `undercover-officer-stack` executor
+   (which may park a nested `PendingUndercoverChoice` for the hand shape with ≥2 eligible). No
+   new executor.
+
+4. **`perEach` wired end-to-end.** WP-677 left `perEach` descriptor/executor-only (no parser
+   path). This WP threads it: the 4-segment marker (`attack-per-count:shield-levels:1:2`) →
+   the count-scaled option → the resolve dispatch → the UI-build `total` (magnitude × floor(count
+   / perEach)). Absent ≡ 1 (vnom byte-identical).
+
+5. **UI + client.** `UIPendingCountScaledChoiceOption` gains `kind` + a `label` (both variants);
+   the build projects a count-scaled option's live count/total (perEach floor) and an undercover
+   option's descriptive label; the filter whitelist rebuilds per kind. `CountScaledChoicePrompt`
+   renders each option from `label`. The DEFERRED WP-678 client renderer ships here: a new
+   `UndercoverChoicePrompt` (the nested hand-target pick) + `resolveUndercoverChoice` registered
+   in `UiMoveName` + both mounted in PlayDesktop/PlayMobile.
+
+6. **Card data.** Markers via `hero-ability-markers.json` + `shld.json` regen:
+   `[keyword:undercover-hand-shield-hero]` / `[keyword:undercover-officer-stack]` +
+   `[keyword:attack-per-count:shield-levels:1:2]`. `VALID_TOKEN_PATTERN` gains the optional 4th
+   `perEach` segment + the two undercover slugs (no free-form widening). The inert dotted display
+   token `[keyword:S.H.I.E.L.D. Levels]` is left in place (flavor); the functional scaling is the
+   appended `attack-per-count:shield-levels` marker.
+
+**No re-pin.** The choose-one generalization changes only shld cards' heroAbilityHooks; the
+sentinel (core/dr-doom) has no shld cards, so `finalStateHash` / `PRE_WP080_HASH` are
+byte-identical (verified — engine 3250/3250 with no re-pin).
+
+**Deviations from EC-716 (minor).** `perEach` needed full end-to-end wiring (WP-677 shipped it
+descriptor-only) — done here. The `s.h.i.e.l.d.-levels` (dotted display-token) mechanic reads
+`unsupported` in the hero-mechanic ledger — a cosmetic naming artifact of the inert display
+token; the card's scaling IS delivered (attack-per-count:shield-levels `executable`), the WP-675
+display-token precedent. The two cards now classify Executable (undercover source-shapes +
+attack-per-count executable; bare `undercover` stays `deferred`).
+
+**Scope OUT.** Any card beyond the two; >2-option or other option kinds; the `s.h.i.e.l.d.-level`
+singular gate/comparison shapes + the standalone Undercover consumers (Bucket-A).
+
+**Gates.** engine 3250/3250; arena-client 1688/1688 + vue-tsc 0; `pnpm -r build` 0; `cards:check`
+reproducible; ledger/mechanics/effect-index/runtime-observed regenerated + `--check` green;
+`sim:coverage --check` OK (both cards now observed/executable). Composes WP-677 + WP-678; closes
+the narrow shld mixed-choose-one arc.
+
+**Packet:** WP-679 / EC-716. **Active:** 2026-09-09.
+
 Protect this file.

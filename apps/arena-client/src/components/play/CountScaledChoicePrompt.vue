@@ -59,10 +59,13 @@ export default defineComponent({
       );
     }
 
-    /** "+2 Recruit" / "+3 Attack" — the resolved grant this option would apply now. */
-    function optionLabel(option: { resource: "attack" | "recruit"; total: number }): string {
-      const resourceLabel = option.resource === "attack" ? "Attack" : "Recruit";
-      return `+${option.total} ${resourceLabel}`;
+    /**
+     * The option's display label, supplied by the engine projection (WP-679): a count-scaled
+     * option reads "+3 attack" (its resolved grant), an Undercover option reads "Send a
+     * S.H.I.E.L.D. Hero Undercover". Heterogeneous options render uniformly from `label`.
+     */
+    function optionLabel(option: { label: string }): string {
+      return option.label;
     }
 
     function onChoose(optionIndex: number): void {

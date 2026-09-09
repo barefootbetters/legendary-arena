@@ -103,16 +103,29 @@ export function resolveCountScaledChoice(
   }
   const chosen = front.options[optionIndex]!;
 
-  // Step 3: Dispatch the chosen option by REUSING the existing per-count executor.
-  // why: WP-675 / D-24490 — the chosen resource maps to the shipped count-scaled effect
-  // type; front.cardId is threaded as the effect's card so the "each OTHER card" icon
-  // source excludes the played vnom card. No re-implementation of the count-scaled grant.
-  const effectType = chosen.resource === 'attack' ? 'attack-per-count' : 'recruit-per-count';
-  executeSingleEffect(G, context, playerID, front.cardId as CardExtId, {
-    type: effectType,
-    magnitude: chosen.magnitude,
-    countSource: chosen.countSource,
-  });
+  // Step 3: Dispatch the chosen option by REUSING the existing executor, dispatched by kind
+  // (WP-679 / D-24495 — heterogeneous options; no re-implementation of any grant).
+  if (chosen.kind === 'undercover') {
+    // why: WP-679 — the Undercover option dispatches WP-678's source-shape executor, which
+    // sends a card to the Victory Pile (and, for the hand shape with ≥2 eligible, parks its
+    // OWN nested PendingUndercoverChoice — a legal nested pick resolved by resolveUndercoverChoice).
+    const undercoverType = chosen.source === 'hand-shield-hero'
+      ? 'undercover-hand-shield-hero'
+      : 'undercover-officer-stack';
+    executeSingleEffect(G, context, playerID, front.cardId as CardExtId, { type: undercoverType });
+  } else {
+    // why: WP-675 / D-24490 — the count-scaled option maps to the shipped per-count effect
+    // type; front.cardId is threaded so an "each OTHER card" source excludes the played card.
+    // why: WP-677/679 — perEach (the "for each N" divisor) is threaded so the grant is
+    // magnitude × floor(count / perEach) ("+1 attack for each 2 S.H.I.E.L.D. Levels").
+    const effectType = chosen.resource === 'attack' ? 'attack-per-count' : 'recruit-per-count';
+    executeSingleEffect(G, context, playerID, front.cardId as CardExtId, {
+      type: effectType,
+      magnitude: chosen.magnitude,
+      countSource: chosen.countSource,
+      ...(chosen.perEach !== undefined ? { perEach: chosen.perEach } : {}),
+    });
+  }
 
   // Step 4: Front-pop LAST (front-pop = Array.shift), mirroring WP-286.
   queue.shift();

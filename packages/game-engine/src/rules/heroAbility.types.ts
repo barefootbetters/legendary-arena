@@ -13,7 +13,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroKeyword, HeroAbilityTiming } from './heroKeywords.js';
-import type { HeroCountSource, CountScaledChoiceOption } from './heroCountSource.js';
+import type { HeroCountSource, ChooseOneOption } from './heroCountSource.js';
 import type { RevealRule } from './revealRule.js';
 import type { EffectNode } from './effectPrimitive.types.js';
 
@@ -125,7 +125,7 @@ export interface HeroEffectDescriptor {
   // records them on the PendingCountScaledChoice; the resolve move applies the chosen
   // option's per-count grant via the attack-per-count / recruit-per-count executor. Other
   // keywords ignore it.
-  countScaledChoiceOptions?: CountScaledChoiceOption[];
+  countScaledChoiceOptions?: ChooseOneOption[];
   // why: D-24019 — for an 'optional-ko-reward' effect, rewardType is the reward
   // granted iff the player KOs a card (dispatched to the existing reward
   // executor: rescue / draw / attack / recruit). The existing magnitude field
