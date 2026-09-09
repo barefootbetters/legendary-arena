@@ -261,8 +261,46 @@ wall, and never once the thing the wall was built to keep out.
 
 Every inheritance is a fence of some kind — a wall someone who loved you built
 against a danger you have not yet met. The lie teaches you to resent the wall
-and forget the wolves. The next image is the answer to it: the tree that grows
-tall not by tearing down what came before, but by receiving it.
+and forget the wolves. But it has a second door, and it does not always come
+for the wall. Sometimes it comes for the harvest.
+
+### The harvest
+
+A woman longed for children, for she felt the years turning in her the way a
+field feels the spring, and she said to her husband, *"Let us fill the house
+while we are young."*
+
+But her husband said, *"Not yet. We have not enough. A child is a cost, and I
+will not raise one in want — when the storehouse is full, then."* And he was not
+wrong that children are dear, nor wrong that he meant to provide. So he worked,
+and the storehouse filled, and the seasons passed — and each full barn seemed to
+prove him wise: **what is a child but another mouth, when the harvest is not yet
+safe?**
+
+She asked him again at thirty, and again at forty, and each time he said, *"Soon
+— when there is more."* Until one spring she stopped asking, for the field in her
+had gone to frost, and the house stayed as quiet as he had kept it.
+
+They grew old among full barns. And when they were weak, the grain could not
+lift them, and the silver could not sit at their bedside, and the great house
+held no small feet and no one came — and they died as they had lived, with much,
+and alone. The storehouse passed to strangers who never learned their names.
+
+> *He guarded the harvest so well he forgot to plant it. A fortune with no one
+> to leave it to is only a slower way to die alone.*
+
+Set the two side by side and the shape is one. A man's strength is to protect
+and to provide; a woman's is to bring love and new life — the future itself —
+into being. **The fence is a man's strength refused:** she tore down the
+protection he built and called it a cage. **The harvest is a woman's strength
+refused:** he would not let her make the future, and called it prudence. Each is
+a strength turned away at the other's door, and each buries the same child — the
+one who was meant to receive the inheritance and carry it on. It is the whole
+motion of this page failing in both directions:
+[receive, become, pass on](#the-upward-pull--what-the-game-is-for), broken once
+at the keeping and once at the handing. The next image is the answer to both —
+the tree that grows tall not by tearing down what came before, but by receiving
+it, and by leaving seed for the generation that follows.
 
 ### The Redwood Principle
 
@@ -1311,8 +1349,8 @@ claim at a safe distance — it stands on it.
   constraint, the fix is to move that constraint into the vision and cite
   it, or delete the sentence — per [SCHEMA.md](SCHEMA.md) Scope Exclusion.
 - **The Upward Pull creed, the creed, four virtues, "soul promise,"
-  motto, and [the fence parable](#the-fence) are authored identity, not new
-  commitments.** They name feelings and
+  motto, and the paired [fence](#the-fence) and [harvest](#the-harvest)
+  parables are authored identity, not new commitments.** They name feelings and
   values the essay already carries; the promise in particular restates
   existing [Vision](vision.md) commitments and adds none. The
   [Upward Pull test](#the-upward-pull--what-the-game-is-for) ("does this
