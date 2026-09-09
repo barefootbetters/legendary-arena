@@ -169,8 +169,8 @@
           "recruit": "0+",
           "abilities": [
             "Choose one:",
-            "- You get +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon.",
-            "- Or you get +1[icon:attack] for each other card you played this turn with an [icon:attack] icon."
+            "- You get +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon. [keyword:recruit-per-count:recruit-icon-played-this-turn:1]",
+            "- Or you get +1[icon:attack] for each other card you played this turn with an [icon:attack] icon. [keyword:attack-per-count:attack-icon-played-this-turn:1]"
           ]
         },
         {

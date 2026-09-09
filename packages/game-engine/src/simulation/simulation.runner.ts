@@ -61,6 +61,9 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 // resolveDrawOrEmpowered (block-all guard), so this MUST be dispatchable here or the per-turn
 // loop spins forever — maxTurns bounds TURNS, not within-turn move-steps.
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+// why: WP-675 / D-24490 — resolveCountScaledChoice is a getLegalMoves short-circuit (block-all
+// guard), so it MUST be dispatchable here or a parked count-scaled choice hangs the per-turn loop.
+import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 // why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to.
 // Like resolveDrawOrEmpowered above, each MUST be dispatchable here or a parked pending choice
 // hangs the per-turn loop. Their pending choices need preconditions a sweep rarely meets (so the
@@ -274,6 +277,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice when a
   // reveal-attack-choose hero ability parks pendingHeroChoice; a missing dispatch
   // entry spun the per-turn loop until the move-step budget flagged the game stuck

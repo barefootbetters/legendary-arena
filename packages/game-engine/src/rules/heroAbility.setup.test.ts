@@ -478,6 +478,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'conditional',
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
+      'count-scaled-choose', // why: WP-675 / D-24490 — count-scaled choose-one (vnom Symbiotic Adaptation)
       'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
@@ -501,8 +502,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      44,
-      'HERO_KEYWORDS must have exactly 44 entries',
+      45,
+      'HERO_KEYWORDS must have exactly 45 entries',
     );
 
     assert.deepStrictEqual(

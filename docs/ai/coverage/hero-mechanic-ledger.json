@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 672,
+    "totalRows": 674,
     "byStatus": {
-      "executable": 273,
+      "executable": 275,
       "deferred": 0,
       "condition": 26,
       "unsupported": 334,
@@ -9984,6 +9984,22 @@
       "extId": "vnom/venom",
       "heroName": "Venom",
       "set": "vnom",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "symbiotic-adaptation",
+          "name": "Symbiotic Adaptation"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom",
+      "heroName": "Venom",
+      "set": "vnom",
       "mechanic": "digest",
       "status": "unsupported",
       "wp": "",
@@ -10033,6 +10049,22 @@
         {
           "slug": "insatiable-hunger",
           "name": "Insatiable Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom",
+      "heroName": "Venom",
+      "set": "vnom",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "designs": [
+        {
+          "slug": "symbiotic-adaptation",
+          "name": "Symbiotic Adaptation"
         }
       ]
     },

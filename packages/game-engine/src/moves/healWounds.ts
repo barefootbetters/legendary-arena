@@ -31,6 +31,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -95,6 +96,7 @@ export function healWounds({ G, ctx }: MoveContext): void {
   if (hasPendingVictoryPileCardPick(G)) return;
   // why: block-all — pendingDrawOrEmpowered must be resolved first (D-24069)
   if (hasPendingDrawOrEmpowered(G)) return;
+  if (hasPendingCountScaledChoice(G)) return;
   // why: block-all — pendingReturnZeroCostDiscard must be resolved first (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
   // why: block-all — pendingDiscardToPlay must be resolved first (WP-383 / D-24184)

@@ -259,6 +259,10 @@ export function buildCardStats(
         fightCost: 0,
         fightCostMode: 'static',
         fightCostBase: 0,
+        // why: WP-675 / D-24490 — icon presence is the RAW value being non-null,
+        // not `attack > 0` (a "0+" card shows the icon but parses to 0).
+        hasAttackIcon: card.attack != null,
+        hasRecruitIcon: card.recruit != null,
       };
     }
   }
@@ -287,6 +291,11 @@ export function buildCardStats(
       const attack = cardEntry !== null ? parseCardStatValue(cardEntry.attack) : 0;
       const recruit = cardEntry !== null ? parseCardStatValue(cardEntry.recruit) : 0;
       const cost = cardEntry !== null ? parseCardStatValue(cardEntry.cost) : 0;
+      // why: WP-675 / D-24490 — icon presence is the RAW value being non-null,
+      // not `attack > 0` (a "0+" card shows the icon but parses to 0). This §1b
+      // instance path is the one the runtime zone lookup reads (copy-suffixed ext_ids).
+      const hasAttackIcon = cardEntry !== null && cardEntry.attack != null;
+      const hasRecruitIcon = cardEntry !== null && cardEntry.recruit != null;
       // why: per-copy fresh object literal — no aliasing across keys
       // (WP-028 D-2802 aliasing prevention extended to setup-time
       // sibling-snapshot fan-out).
@@ -298,6 +307,8 @@ export function buildCardStats(
         fightCost: 0,
         fightCostMode: 'static',
         fightCostBase: 0,
+        hasAttackIcon,
+        hasRecruitIcon,
       };
     }
   }
@@ -364,6 +375,9 @@ export function buildCardStats(
           fightCost,
           fightCostMode,
           fightCostBase,
+          // why: WP-675 / D-24490 — villains carry no hero attack/recruit power icon.
+          hasAttackIcon: false,
+          hasRecruitIcon: false,
         };
       }
     }
@@ -396,6 +410,9 @@ export function buildCardStats(
           fightCost: parsedFightCost,
           fightCostMode: 'static',
           fightCostBase: 0,
+          // why: WP-675 / D-24490 — henchmen carry no hero attack/recruit power icon.
+          hasAttackIcon: false,
+          hasRecruitIcon: false,
         };
       }
     }

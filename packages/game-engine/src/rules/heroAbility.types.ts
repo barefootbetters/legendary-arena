@@ -13,7 +13,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroKeyword, HeroAbilityTiming } from './heroKeywords.js';
-import type { HeroCountSource } from './heroCountSource.js';
+import type { HeroCountSource, CountScaledChoiceOption } from './heroCountSource.js';
 import type { RevealRule } from './revealRule.js';
 import type { EffectNode } from './effectPrimitive.types.js';
 
@@ -113,6 +113,13 @@ export interface HeroEffectDescriptor {
   // Other keywords ignore it; an 'attack-per-count' effect with no/invalid
   // countSource is a skipped no-op.
   countSource?: HeroCountSource;
+  // why: WP-675 / D-24490 — for a 'count-scaled-choose' effect, countScaledChoiceOptions
+  // carries the two printed options (each a {resource, countSource, magnitude}) parsed from
+  // the "Choose one:" count-scaled form. Carried from parse time to the park site, which
+  // records them on the PendingCountScaledChoice; the resolve move applies the chosen
+  // option's per-count grant via the attack-per-count / recruit-per-count executor. Other
+  // keywords ignore it.
+  countScaledChoiceOptions?: CountScaledChoiceOption[];
   // why: D-24019 — for an 'optional-ko-reward' effect, rewardType is the reward
   // granted iff the player KOs a card (dispatched to the existing reward
   // executor: rescue / draw / attack / recruit). The existing magnitude field

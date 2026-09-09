@@ -47,17 +47,19 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 3 canonical count-source values', () => {
+  it('contains exactly the 5 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
       'cost-four-plus-played-this-turn',
+      'attack-icon-played-this-turn',
+      'recruit-icon-played-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      3,
-      'HERO_COUNT_SOURCES must have exactly 3 entries',
+      5,
+      'HERO_COUNT_SOURCES must have exactly 5 entries',
     );
 
     assert.deepStrictEqual(
@@ -256,6 +258,88 @@ describe('resolveCountSource cost-four-plus-played-this-turn', () => {
 
     assert.equal(
       resolveCountSource(gameState, '99', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
+      0,
+      'a player with no zones must resolve to 0 (no throw)',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// attack-icon / recruit-icon-played-this-turn resolver (WP-675 / D-24490)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a state with player "0"'s in-play zone and a cardStats icon-presence map.
+ * The icon sources read only inPlay + G.cardStats[id].hasAttackIcon/hasRecruitIcon.
+ */
+function makeStateWithIcons(
+  inPlay: string[],
+  icons: Record<string, { hasAttackIcon: boolean; hasRecruitIcon: boolean }>,
+): LegendaryGameState {
+  const cardStats: Record<string, { hasAttackIcon: boolean; hasRecruitIcon: boolean }> = {};
+  for (const id of Object.keys(icons)) {
+    cardStats[id] = { hasAttackIcon: icons[id]!.hasAttackIcon, hasRecruitIcon: icons[id]!.hasRecruitIcon };
+  }
+  return {
+    playerZones: { '0': { deck: [], hand: [], discard: [], inPlay, victory: [] } },
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveCountSource attack-icon / recruit-icon-played-this-turn', () => {
+  it('counts OTHER cards showing an attack icon, excluding the triggering card', () => {
+    const gameState = makeStateWithIcons(
+      ['ally-a#0', 'ally-b#0', 'symbiotic-adaptation#0'],
+      {
+        'ally-a#0': { hasAttackIcon: true, hasRecruitIcon: false },
+        'ally-b#0': { hasAttackIcon: true, hasRecruitIcon: true },
+        'symbiotic-adaptation#0': { hasAttackIcon: true, hasRecruitIcon: true },
+      },
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'attack-icon-played-this-turn', 'symbiotic-adaptation#0'),
+      2,
+      'both other attack-icon cards count; the triggering card (also attack-icon) is excluded',
+    );
+  });
+
+  it('counts OTHER cards showing a recruit icon independently of attack icons', () => {
+    const gameState = makeStateWithIcons(
+      ['ally-a#0', 'ally-b#0', 'symbiotic-adaptation#0'],
+      {
+        'ally-a#0': { hasAttackIcon: true, hasRecruitIcon: false },
+        'ally-b#0': { hasAttackIcon: false, hasRecruitIcon: true },
+        'symbiotic-adaptation#0': { hasAttackIcon: true, hasRecruitIcon: true },
+      },
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'recruit-icon-played-this-turn', 'symbiotic-adaptation#0'),
+      1,
+      'only ally-b shows a recruit icon; ally-a (attack only) does not count',
+    );
+  });
+
+  it('counts a "0+" card as showing its icon (faithful presence, NOT a >0 proxy)', () => {
+    // A "0+" printed card parses to attack/recruit 0 but hasAttackIcon/hasRecruitIcon true.
+    // A >0 proxy would wrongly drop it; the faithful boolean counts it.
+    const gameState = makeStateWithIcons(
+      ['zero-plus-attacker#0', 'symbiotic-adaptation#0'],
+      {
+        'zero-plus-attacker#0': { hasAttackIcon: true, hasRecruitIcon: false },
+        'symbiotic-adaptation#0': { hasAttackIcon: true, hasRecruitIcon: true },
+      },
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'attack-icon-played-this-turn', 'symbiotic-adaptation#0'),
+      1,
+      'the "0+" attack-icon card counts even though its parsed attack is 0',
+    );
+  });
+
+  it('returns 0 when the player has no zones (defensive)', () => {
+    const gameState = makeStateWithIcons([], {});
+    assert.equal(
+      resolveCountSource(gameState, '99', 'attack-icon-played-this-turn', 'symbiotic-adaptation#0'),
       0,
       'a player with no zones must resolve to 0 (no throw)',
     );

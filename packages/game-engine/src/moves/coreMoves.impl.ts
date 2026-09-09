@@ -29,6 +29,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -124,6 +125,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) {
+    return;
+  }
+  // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
+  if (hasPendingCountScaledChoice(G)) {
     return;
   }
 
@@ -322,6 +327,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingDrawOrEmpowered(G)) {
     return;
   }
+  // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
+  if (hasPendingCountScaledChoice(G)) {
+    return;
+  }
 
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) {
@@ -482,6 +491,10 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
 
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) {
+    return;
+  }
+  // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
+  if (hasPendingCountScaledChoice(G)) {
     return;
   }
 

@@ -450,8 +450,10 @@ export function buildInitialGameState(
   // Per tabletop rules: Agents give 1 recruit, Troopers give 1 attack.
   // Placed after the completeness audit so the audit only checks
   // registry-derived cards (starting cards have no cardDisplayData entry).
-  cardStats[SHIELD_AGENT_EXT_ID] = { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
-  cardStats[SHIELD_TROOPER_EXT_ID] = { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
+  // why: WP-675 / D-24490 — synthesized token icon presence is set from the real
+  // value (no raw "0+" ambiguity): the Agent shows a recruit icon, the Trooper an attack icon.
+  cardStats[SHIELD_AGENT_EXT_ID] = { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true };
+  cardStats[SHIELD_TROOPER_EXT_ID] = { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: true, hasRecruitIcon: false };
 
   // why: supply-pile tokens (Officer, Sidekick) are likewise well-known
   // components absent from the registry walk. Per the tabletop rulebook,
@@ -463,8 +465,10 @@ export function buildInitialGameState(
   // recruitHero and the 0-cost eligibility predicates), which would make
   // both tokens free recruits and false 0-cost matches the moment a
   // gain/recruit-from-pile effect ships.
-  cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
-  cardStats[SIDEKICK_EXT_ID] = { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
+  // why: WP-675 / D-24490 — the Officer shows a +2 recruit icon; the Sidekick's printed
+  // value is a draw-two ability, not a face attack/recruit icon (both false).
+  cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true };
+  cardStats[SIDEKICK_EXT_ID] = { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: false };
 
   // why: WP-135 — build the per-match hero deck reservoir from
   // MatchSetupConfig.heroDeckIds via the locked rarity → copy-count map

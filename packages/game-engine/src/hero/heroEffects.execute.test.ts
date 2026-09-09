@@ -78,7 +78,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-667 / D-24480 added the optional-ko-hand-discard handler (27 → 28).
     // WP-668 / D-24481 added the reveal-herodeck-attack handler (28 → 29).
     // WP-674 / D-24489 added the recruit-per-count handler (29 → 30).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 30);
+    // WP-675 / D-24490 added the count-scaled-choose park handler (30 → 31).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 31);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);

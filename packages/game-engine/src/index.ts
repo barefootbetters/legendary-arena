@@ -372,6 +372,8 @@ export type {
   UIReorderChoiceCard,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
+  UIPendingCountScaledChoice,
+  UIPendingCountScaledChoiceOption,
   UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,

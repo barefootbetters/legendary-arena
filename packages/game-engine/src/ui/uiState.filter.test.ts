@@ -967,6 +967,55 @@ describe('filterUIStateForAudience — pendingOptionalKoReward redaction (D-2402
 });
 
 // ---------------------------------------------------------------------------
+// WP-675 / D-24490 — pendingCountScaledChoice redaction (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a count-scaled choose-one (vnom Symbiotic
+ * Adaptation). The choice is private to the chooser — it must not appear in a
+ * non-chooser's UIState (the option labels/counts are the only leak vector).
+ */
+function createCountScaledChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingCountScaledChoice = [{
+    playerID: '0',
+    cardId: 'symbiotic-adaptation#0',
+    options: [
+      { resource: 'recruit', countSource: 'recruit-icon-played-this-turn', magnitude: 1 },
+      { resource: 'attack', countSource: 'attack-icon-played-this-turn', magnitude: 1 },
+    ],
+  }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingCountScaledChoice redaction (D-24490)', () => {
+  it('the chooser sees pendingCountScaledChoice with both options', () => {
+    const uiState = createCountScaledChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingCountScaledChoice !== undefined, 'chooser sees the count-scaled choice');
+    assert.equal(result.pendingCountScaledChoice!.playerID, '0');
+    assert.equal(result.pendingCountScaledChoice!.options.length, 2);
+    assert.equal(result.pendingCountScaledChoice!.options[0]!.resource, 'recruit');
+    assert.equal(result.pendingCountScaledChoice!.options[1]!.resource, 'attack');
+  });
+
+  it('an opponent does NOT see pendingCountScaledChoice', () => {
+    const uiState = createCountScaledChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingCountScaledChoice, undefined, 'opponent must not see the count-scaled choice');
+  });
+
+  it('a spectator does NOT see pendingCountScaledChoice', () => {
+    const uiState = createCountScaledChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingCountScaledChoice, undefined, 'spectator must not see the count-scaled choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-287 / EC-319 — pendingDrawOrEmpowered redaction (D-24071, D-24011 analog)
 // ---------------------------------------------------------------------------
 

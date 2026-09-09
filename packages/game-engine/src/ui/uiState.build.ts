@@ -55,6 +55,7 @@ import type {
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingDrawOrEmpowered,
+  UIPendingCountScaledChoice,
   UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
@@ -97,6 +98,7 @@ import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js
 import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
+import { resolveCountSource } from '../hero/heroCountSource.resolve.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
@@ -1299,6 +1301,35 @@ export function buildUIState(
     };
   }
 
+  // why: WP-675 / D-24490 — project the FRONT entry of G.pendingCountScaledChoice, resolving
+  // each option's count/total from the live G (resolveCountSource, excluding the triggering
+  // card) so the chooser sees each button's concrete grant. Recomputed fresh from current G
+  // (no snapshot). Redaction to the chooser-only audience is enforced by filterUIStateForAudience.
+  let pendingCountScaledChoice: UIPendingCountScaledChoice | undefined;
+  if (
+    gameState.pendingCountScaledChoice !== undefined &&
+    gameState.pendingCountScaledChoice.length > 0
+  ) {
+    const frontChoice = gameState.pendingCountScaledChoice[0]!;
+    pendingCountScaledChoice = {
+      playerID: frontChoice.playerID,
+      options: frontChoice.options.map((option) => {
+        const count = resolveCountSource(
+          gameState,
+          frontChoice.playerID,
+          option.countSource,
+          frontChoice.cardId as CardExtId,
+        );
+        return {
+          resource: option.resource,
+          perUnit: option.magnitude,
+          count,
+          total: option.magnitude * count,
+        };
+      }),
+    };
+  }
+
   // why: WP-663 / D-24474 — project the FRONT entry of G.pendingPlayVillainTopChoices so
   // the chooser can render Shadowed Thoughts' "Play the top Villain-Deck card for +N Attack?"
   // prompt. Binary choice, no eligible-card list (mirrors pendingDrawOrEmpowered). Redaction
@@ -1722,6 +1753,8 @@ export function buildUIState(
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
+    // why: WP-675 / D-24490 — conditional spread so an absent choice omits the field.
+    ...(pendingCountScaledChoice !== undefined ? { pendingCountScaledChoice } : {}),
     ...(pendingPlayVillainTop !== undefined ? { pendingPlayVillainTop } : {}),
     // why: WP-313 — conditional spread so an absent pick omits the field (no
     // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).

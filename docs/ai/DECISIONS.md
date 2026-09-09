@@ -40679,11 +40679,11 @@ Protect this file.
 
 **Packet:** WP-674 / EC-711. **Active:** 2026-09-08.
 
-### D-24490 — icon-presence `CardStatEntry` fields + two icon count sources + a count-scaled choose-one (Symbiotic Adaptation) (RESERVED: locks WP-675 / EC-712)
+### D-24490 — icon-presence `CardStatEntry` fields + two icon count sources + a count-scaled choose-one (Symbiotic Adaptation) (Active 2026-09-08 — WP-675 / EC-712)
 
 **Context.** `vnom/venom/symbiotic-adaptation` (the last WP-673/WP-674 sibling) prints a **choose-one**: "Choose one: +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon. / Or +1[icon:attack] for each other card you played this turn with an [icon:attack] icon." It grants nothing today. WP-674 deferred it because it is a materially different, cross-layer mechanism (icon-based counting + an interactive choice), not the uniform cost-≥4 shape.
 
-**Decision (RESERVED — lands at WP-675 execution).**
+**Decision.**
 
 1. **Faithful icon presence, NOT a `>0` proxy.** "A card with a recruit/attack icon" = the card's printed power shows that icon. `parseCardStatValue` collapses BOTH `null` (no icon) and `"0+"`/`"0"` (icon present, base 0) to the integer `0`, so `G.cardStats[id].recruit > 0` is lossy — it would misclassify ~168 attack-`"0+"` + 80 recruit-`"0+"` corpus cards (Symbiotic Adaptation itself prints `"0+"`/`"0+"`). Add two setup-derived booleans `hasAttackIcon` / `hasRecruitIcon` to `CardStatEntry`, populated from the RAW registry value being non-null, at the same site that builds `cost`. The resolver reads them from `G.cardStats` (no runtime registry).
 
@@ -40699,8 +40699,10 @@ Protect this file.
 
 **Scope OUT.** Any card beyond Symbiotic Adaptation (it is the sole icon-based count-scaled choose-one); generalising the choice beyond two options.
 
-**Open execution detail.** The three printed lines are three `abilities[]` array entries; confirm at execution whether the pre-pass reads the option markers as separate entries or joined (resolve against the Empowered choose-one pre-pass). Entry lands at WP-675 execution.
+**Resolved execution detail (the joining question).** The three printed lines ARE three `abilities[]` entries, and `buildHeroAbilityHooks` parses each entry as its own hook — so parsed independently the options would fire as two grants, not a choice. This is unmodeled multi-line-choose-one infrastructure: the two other cards with the shape (`shld/agent-phil-coulson/approve-orbital-strike`, `shld/mockingbird/spymaster`) are latently broken the same way (both halves fire; their second option is a hollow S.H.I.E.L.D.-Levels grant, which masks it). Fix: a **gated coalescing** step in `buildHeroAbilityHooks` (`coalesceCountScaledChooseOne`) joins a standalone `Choose one:` header + its option bullets into one synthetic line ONLY when the bullets carry a count-scaled marker (`[keyword:(attack|recruit)-per-count:…]`); the `shld` cards (no such markers) pass through unchanged — zero regression. The coalesced line hits the pre-pass `tryResolveCountScaledChooseOneLine`, which folds both markers into the two-option descriptor, suppresses the per-count keyword extraction (Steps 2d/2d′) and both printed icons. The `shld` latent multi-line-choose-one bug is a **noted follow-up** (out of scope — fixing it needs the S.H.I.E.L.D.-Levels mechanic too).
 
-**Packet:** WP-675 / EC-712. **Reserved:** 2026-09-08.
+**Gates.** engine suite 3215/3215; arena-client vue-tsc 0 + 1668/1668; `pnpm -r build` 0; `cards:check` reproducible; `ledger:heroes` regenerated (Symbiotic Adaptation now Executable under attack-per-count + recruit-per-count — the marker-based classification; count-scaled-choose is the parse-derived wrapper); `mechanics:metadata` / `effect-index` / `sim:runtime-observed` regenerated + `--check` green; `sim:coverage --check` OK (five new-mechanic warnings — the icon/cost sources registered but not yet sim-observed; floor not regressed). **Dual hash re-pin landed** (`PRE_WP080_HASH` `83b9b0a4`→`bc71424b`; sentinel `finalStateHash` `7bdbcc79…`→`a10350b2…`) — the sole canonical-JSON delta is the two new `CardStatEntry` booleans on every card entry; no gameplay changed (the sentinel/PRE_WP080 replays play no vnom card). **Live-on-surface** (a real vnom Venom match presenting + resolving the choice) is operator-pending (D-24026).
+
+**Packet:** WP-675 / EC-712. **Active:** 2026-09-08.
 
 Protect this file.

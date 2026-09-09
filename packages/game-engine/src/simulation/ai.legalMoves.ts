@@ -38,6 +38,7 @@ import {
   getEligibleVictoryVillains,
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import {
   hasPendingReturnZeroCostDiscard,
   getEligibleZeroCostDiscardCards,
@@ -129,6 +130,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolvePlayVillainTopChoice',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
+  'resolveCountScaledChoice',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
   // why: WP-498 / D-24301 — getLegalMoves short-circuits to resolveReturnOnDiscard when the
@@ -321,6 +323,12 @@ export function getLegalMoves(
   if (hasPendingDrawOrEmpowered(gameState)) {
     // why: deterministic bot default — always empowered; an expected-value default is deferred (D-24069)
     return [{ name: 'resolveDrawOrEmpowered', args: { choice: 'empowered' } }];
+  }
+  // why: WP-675 / D-24490 — a count-scaled choose-one blocks every other move; the bot resolves
+  // it first with a deterministic default of option 0 (an expected-value default is deferred,
+  // mirroring the draw-or-empowered default above). Returns a list of length EXACTLY 1.
+  if (hasPendingCountScaledChoice(gameState)) {
+    return [{ name: 'resolveCountScaledChoice', args: { optionIndex: 0 } }];
   }
 
   // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must

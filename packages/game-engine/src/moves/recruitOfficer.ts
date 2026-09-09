@@ -34,6 +34,7 @@ import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -110,7 +111,8 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return; // D-24019
   if (hasPendingVictoryPileCardPick(G)) return; // D-24067
-  if (hasPendingDrawOrEmpowered(G)) return; // D-24069
+  if (hasPendingDrawOrEmpowered(G)) return;
+  if (hasPendingCountScaledChoice(G)) return; // D-24069
   if (hasPendingReturnZeroCostDiscard(G)) return; // D-24139
   if (hasPendingDiscardToPlay(G)) return; // WP-383 / D-24184
   if (hasPendingReturnOnDiscard(G)) return; // WP-498 / D-24301

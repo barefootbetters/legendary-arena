@@ -798,6 +798,60 @@ describe('buildHeroAbilityHooks — cost-four-plus count-scaled siblings (WP-674
 });
 
 // ---------------------------------------------------------------------------
+// Count-scaled choose-one — Symbiotic Adaptation (WP-675 / EC-712 / D-24490)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — count-scaled choose-one (WP-675 / D-24490)', () => {
+  // The generated card data: a standalone "Choose one:" header + two option lines, each
+  // carrying the count-scaled marker the markers pass appends. buildHeroAbilityHooks coalesces
+  // these three entries into one line and the pre-pass folds them into one choice.
+  const SYMBIOTIC_ADAPTATION_ABILITIES = [
+    'Choose one:',
+    '- You get +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon. [keyword:recruit-per-count:recruit-icon-played-this-turn:1]',
+    '- Or you get +1[icon:attack] for each other card you played this turn with an [icon:attack] icon. [keyword:attack-per-count:attack-icon-played-this-turn:1]',
+  ];
+
+  function buildSymbioticHooks() {
+    const registry = makeRegistry('vnom', 'venom', [
+      { slug: 'symbiotic-adaptation', abilities: SYMBIOTIC_ADAPTATION_ABILITIES },
+    ]);
+    return buildHeroAbilityHooks(registry, makeConfig('vnom/venom'));
+  }
+
+  it('emits ONE count-scaled-choose effect with two options in printed order (recruit, attack)', () => {
+    const hooks = buildSymbioticHooks();
+    const chooseEffects = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .filter((effect) => effect.type === 'count-scaled-choose');
+
+    assert.equal(chooseEffects.length, 1, 'exactly one count-scaled-choose effect is emitted');
+    const options = chooseEffects[0]!.countScaledChoiceOptions;
+    assert.ok(options !== undefined && options.length === 2, 'the effect carries two options');
+    assert.equal(options![0]!.resource, 'recruit', 'the first printed option is the recruit branch');
+    assert.equal(options![0]!.countSource, 'recruit-icon-played-this-turn');
+    assert.equal(options![1]!.resource, 'attack', 'the second printed option is the attack branch');
+    assert.equal(options![1]!.countSource, 'attack-icon-played-this-turn');
+  });
+
+  it('suppresses the printed icons and the per-count keywords (no independent grants)', () => {
+    const hooks = buildSymbioticHooks();
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword');
+      assert.ok(!hook.keywords.includes('recruit'), 'no flat recruit keyword');
+      assert.ok(!hook.keywords.includes('attack-per-count'), 'no standalone attack-per-count (it is a choice option)');
+      assert.ok(!hook.keywords.includes('recruit-per-count'), 'no standalone recruit-per-count (it is a choice option)');
+      for (const effect of hook.effects ?? []) {
+        assert.ok(
+          effect.type !== 'attack' && effect.type !== 'recruit'
+            && effect.type !== 'attack-per-count' && effect.type !== 'recruit-per-count',
+          `no phantom grant effect (${effect.type}) alongside the choice`,
+        );
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 
