@@ -1127,15 +1127,17 @@ player bury a card to shuffle this Tactic back under the Mastermind — a mercy
 that undoes the fight), and *Name the Heretic* (choose a Hero name in HQ and KO
 every copy — frame control by deletion).
 
-#### A neutral tool: withhold the machinery
+#### Withhold the machinery — a deception every side uses
 
 One tactic deserves separate naming because it is easy to miss and easy to
 misuse: **concealment by sympathetic simplification** — a story true in its
 particulars but *incomplete by design*, the machinery kept behind the curtain so
 the audience never asks who arranged what.
 
-It is worth naming precisely *because it is a neutral tool*, used as readily by
-the powerless as by any aristocrat. The Montgomery bus boycott is the honest
+It is a deception — concealment meant to shape belief — and therefore a wrong,
+not a neutral tool. It is worth naming precisely *because every faction reaches
+for it*, the powerless as readily as any aristocrat; its being common is no
+defense. The Montgomery bus boycott is the honest
 example: Rosa Parks was a trained NAACP secretary and her test case was chosen
 deliberately over an earlier candidate, yet the public was handed the
 "tired seamstress acting alone" version because it was more sympathetic than
@@ -1143,16 +1145,17 @@ deliberately over an earlier candidate, yet the public was handed the
 real, the consequences to her family were real — nothing was *fabricated*. What
 was withheld was the *strategy*. That case cuts **against** the
 Mastermind-seeking-a-throne frame, not for it: the concealment served a boycott
-by people *without* power. Which is exactly why the filter has to catch the
-tactic regardless of who benefits or how sympathetic the cause — a filter that
-only fires on the villain is a partisan weapon, not a tool. Name the move; judge
-the user separately.
+by people *without* power. Which is exactly why the standard that condemns it
+has to reach everyone, regardless of how sympathetic the cause — a rule that only
+fires on the villain is a partisan weapon, not a standard. Condemn the
+concealment wherever it appears; whether the cause it served was just is the
+separate question, which the concealment neither proves nor excuses.
 
 #### Two tells for naming the Mastermind
 
 A Scheme hides behind two things: process and sympathy. Two tells cut through
-each — and, like the withheld machinery above, they are **neutral**, catching
-the move no matter which faction makes it. Each is built as a symmetric test, so
+each — and, like the withheld machinery above, they are **faction-blind**,
+catching the move no matter which side makes it. Each is built as a symmetric test, so
 it indicts by *conduct*, never by *side*.
 
 **Law applied unevenly by faction.** Selective prosecution is judging by
@@ -1203,9 +1206,11 @@ hands you a documented truth the sanitized story omits — and an overclaim the
 page has to refuse. Matt Walsh's *Real History* series (Daily Wire, 2026;
 Episode 4 is subtitled *A New Constitution*) is that case. It is set down here
 attributed to Walsh, with its load-bearing facts cited *beyond* him, because
-this is exactly where "attributed, not adjudicated" earns its keep: the
-temptation to sand down the record runs in **both** directions, and the page's
-method — render faithfully, let it carry its own weight — is the answer to both.
+this is exactly where "attributed, not adjudicated" earns its keep: the page
+renders the source faithfully and lets the record carry its own weight, refusing
+to sand it down to fit a conclusion — including a conclusion this page would find
+congenial. The discipline is self-binding, not a license to wave at someone
+else's distortions.
 
 **The hidden hand is real, and the saint-story omits it.** The strongest
 documented "hidden hand" near Martin Luther King Jr. is **Stanley Levison** —
@@ -1222,15 +1227,18 @@ character" line is not the whole corpus. A page built on *rendering the source
 faithfully* has no business hiding any of that; it is the un-taught half of a
 real history, and it should be named.
 
-**The icons were manufactured — which is a neutral tactic, not proof of an evil
-end.** Walsh files **Rosa Parks** under *icon manufacture*, and on the narrow
-point he is right: she was a trained NAACP officer, not a random tired
-commuter; she had studied at Highlander; **Claudette Colvin** was passed over as
-the test case; the "tired-seamstress-acting-alone" story was a simplification
-for public consumption. That is the [withhold-the-machinery
-tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation) the page
-already named as **neutral** — used as readily by a coalition without power as
-by any aristocrat. Birmingham's children in front of Bull Connor's hoses (James
+**The icons were manufactured — a deception in the packaging, which is not the
+same as an evil cause.** Walsh files **Rosa Parks** under *icon manufacture*, and
+on the narrow point he is right: she was a trained NAACP officer, not a random
+tired commuter; she had studied at Highlander; **Claudette Colvin** was passed
+over as the test case; the "tired-seamstress-acting-alone" story was handed to
+the public in place of the truth. Choosing the test case was *organizing* —
+neutral enough. Letting a false picture stand to move opinion was a
+**deception**, and deception is a wrong, not a neutral tool. That is the
+[withhold-the-machinery
+tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation) — a wrong
+the page condemns wherever it appears, used as readily by a coalition without
+power as by any aristocrat, its being common no defense at all. Birmingham's children in front of Bull Connor's hoses (James
 Bevel's tactic) is *control the picture*; the King estate's copyright lock on
 the footage is *control the picture*, in the present tense. But a manufactured
 *legend* and a manufactured *cause* are different objects, and the page keeps
@@ -1404,9 +1412,10 @@ claim at a safe distance — it stands on it.
   `data/cards/*.json` registry data, or a Work Packet decision; a real
   Mastermind is authored through the card-data pipeline and its WPs, never on
   this page. The Montgomery-bus-boycott example is used deliberately as the
-  *neutral-tool counterexample* — a case that cuts against the throne-seeking
-  frame — not as a "Mastermind"; the concealment tactic is judged by its shape,
-  its user judged separately.
+  counterexample that cuts against the throne-seeking frame — not as a
+  "Mastermind." The concealment there is named as a wrong (a deception is not
+  excused by a sympathetic cause); what the case shows is that the *standard*
+  condemning it must reach every side, the powerless included.
 - **The civil-rights case study is even-handed by construction — it refuses
   both myths.** [Contested memory](#contested-memory-the-hidden-hand-and-the-manufactured-icon)
   presents Matt Walsh's *Real History* claims **attributed**, with the
@@ -1415,10 +1424,11 @@ claim at a safe distance — it stands on it.
   sanitized story omits *and* refuses the overclaim that a real, communist-formed
   adviser or staged icons make ending statutory Jim Crow "a con" — the page does
   not adjudicate Caldwell's constitutional thesis, and it does **not** cast Rosa
-  Parks or the movement as an evil Mastermind's operatives. Per the page's own
-  neutral-tool rule, *manufacture-the-icon / withhold-the-machinery* is caught as
-  a tactic on **every** side; the woman's real arrest against real segregation is
-  kept distinct from the staged legend. A filter that only fired against one side
+  Parks or the movement as an evil Mastermind's operatives. The staged legend is
+  named as a **deception** (a wrong in its own right, not a neutral tool), and
+  the standard condemning *manufacture-the-icon / withhold-the-machinery* reaches
+  **every** side; the woman's real arrest against real segregation is kept
+  distinct from the staged legend. A filter that only fired against one side
   would be the partisan weapon the page warns against.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
