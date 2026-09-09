@@ -11,6 +11,7 @@
 import type { CardExtId } from '../state/zones.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { TurnEconomy, CardStatEntry } from './economy.types.js';
+import { matchesShieldOrHydra } from './shieldMembership.js';
 // why: D-13702 / D-18706 fan-out — economy.logic.ts must resolve hero AND
 // villain card-instance ext_ids identically to the deck builders so
 // G.cardStats keys equal the zone-instance grammar (a superset of the hero
@@ -67,6 +68,8 @@ interface HeroCardInstanceEntry {
 interface HeroInstanceEntry {
   /** Hero-level slug within the set (e.g., 'black-widow'). */
   slug: string;
+  /** Hero team icon (WP-677; HeroSchema.team is required — always present at runtime). */
+  team?: string;
   /** Per-card data. */
   cards: HeroCardInstanceEntry[];
   /**
@@ -100,6 +103,10 @@ export interface CardStatsFlatCard {
   recruit?: string | number | null | undefined;
   /** Hero recruit cost. Undefined for non-hero cards. */
   cost?: string | number | undefined;
+  /** Card display name (WP-677; FlatCard.name — always present at runtime). */
+  name?: string | null | undefined;
+  /** Hero team icon (WP-677; FlatCard.team — present for hero cards at runtime). */
+  team?: string | null | undefined;
 }
 
 /**
@@ -113,6 +120,8 @@ interface VillainCardEntry {
   slug: string;
   vAttack: string | number | null;
   copies?: number;
+  /** Villain card name (WP-677; VillainCardSchema.name is required — present at runtime). */
+  name?: string;
 }
 
 /**
@@ -121,6 +130,8 @@ interface VillainCardEntry {
 interface VillainGroupEntry {
   slug: string;
   cards: VillainCardEntry[];
+  /** Villain group name (WP-677; VillainGroupSchema.name is required — present at runtime). */
+  name?: string;
 }
 
 /**
@@ -139,6 +150,8 @@ interface CardStatsSetData {
 interface HenchmanGroupEntry {
   slug: string;
   vAttack?: string | number | null;
+  /** Henchman group name (WP-677; present at runtime — read at buildCardDisplayData.ts:539). */
+  name?: string;
 }
 
 /**
@@ -263,6 +276,9 @@ export function buildCardStats(
         // not `attack > 0` (a "0+" card shows the icon but parses to 0).
         hasAttackIcon: card.attack != null,
         hasRecruitIcon: card.recruit != null,
+        // why: WP-677 / D-24493 — S.H.I.E.L.D. Level membership: team icon shield/hydra
+        // OR "S.H.I.E.L.D."/"HYDRA" in the card name.
+        isShieldOrHydra: matchesShieldOrHydra(card.team, [card.name]),
       };
     }
   }
@@ -309,6 +325,9 @@ export function buildCardStats(
         fightCostBase: 0,
         hasAttackIcon,
         hasRecruitIcon,
+        // why: WP-677 / D-24493 — hero team icon (heroEntry.team) OR "S.H.I.E.L.D."/"HYDRA"
+        // in the card name. This §1b instance path is the runtime-read key.
+        isShieldOrHydra: matchesShieldOrHydra(heroEntry.team, [cardEntry?.name]),
       };
     }
   }
@@ -329,6 +348,9 @@ export function buildCardStats(
     const parsed = parseQualifiedIdForSetup(villainGroupId);
     if (parsed === null) continue;
     const villainCards = findVillainGroupCards(registry, parsed.setAbbr, parsed.slug);
+    // why: WP-677 / D-24493 — the group name for S.H.I.E.L.D. Level membership (e.g. a
+    // "HYDRA Kidnappers" group makes each card count, even if the card name omits "HYDRA").
+    const villainGroupName = findVillainGroupName(registry, parsed.setAbbr, parsed.slug);
 
     for (const villainCard of villainCards) {
       if (typeof villainCard.slug !== 'string') continue;
@@ -378,6 +400,9 @@ export function buildCardStats(
           // why: WP-675 / D-24490 — villains carry no hero attack/recruit power icon.
           hasAttackIcon: false,
           hasRecruitIcon: false,
+          // why: WP-677 / D-24493 — no team icon; membership is the "S.H.I.E.L.D."/"HYDRA"
+          // substring in the villain card name OR its group name.
+          isShieldOrHydra: matchesShieldOrHydra(undefined, [villainCard.name, villainGroupName]),
         };
       }
     }
@@ -413,6 +438,9 @@ export function buildCardStats(
           // why: WP-675 / D-24490 — henchmen carry no hero attack/recruit power icon.
           hasAttackIcon: false,
           hasRecruitIcon: false,
+          // why: WP-677 / D-24493 — no team icon; membership is the "S.H.I.E.L.D."/"HYDRA"
+          // substring in the henchman group name (e.g. "HYDRA Kidnappers").
+          isShieldOrHydra: matchesShieldOrHydra(undefined, [henchmanResult.groupName]),
         };
       }
     }
@@ -813,6 +841,32 @@ function findVillainGroupCards(
 }
 
 /**
+ * Finds a villain group's display name (WP-677 — for S.H.I.E.L.D. Level membership).
+ *
+ * Separate from findVillainGroupCards (which has many callers and returns only the
+ * cards) so this can read the group `name` without changing that shared signature.
+ *
+ * @param registry - Setup-time registry reader.
+ * @param setAbbr - The set abbreviation.
+ * @param villainGroupSlug - The group slug.
+ * @returns The group's display name, or undefined if not found.
+ */
+function findVillainGroupName(
+  registry: CardStatsRegistryReader,
+  setAbbr: string,
+  villainGroupSlug: string,
+): string | undefined {
+  const setData = registry.getSet(setAbbr) as CardStatsSetData | undefined;
+  if (!setData || !Array.isArray(setData.villains)) return undefined;
+  for (const group of setData.villains) {
+    if (group.slug === villainGroupSlug) {
+      return group.name;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Finds henchman group vAttack within the named set's henchmen[].
  *
  * No cross-set fallback exists — returns null if the named set is not
@@ -824,7 +878,7 @@ function findHenchmanGroupVAttack(
   registry: CardStatsRegistryReader,
   setAbbr: string,
   henchmanGroupSlug: string,
-): { groupSlug: string; vAttack: string | number | null } | null {
+): { groupSlug: string; vAttack: string | number | null; groupName?: string | undefined } | null {
   const setData = registry.getSet(setAbbr);
   if (!setData || typeof setData !== 'object') return null;
 
@@ -839,6 +893,8 @@ function findHenchmanGroupVAttack(
       return {
         groupSlug: henchmanEntry.slug,
         vAttack: henchmanEntry.vAttack ?? null,
+        // why: WP-677 — the group name for S.H.I.E.L.D. Level membership (e.g. "HYDRA …").
+        groupName: henchmanEntry.name,
       };
     }
   }

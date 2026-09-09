@@ -2715,6 +2715,47 @@ describe('executeHeroEffects attack-per-count (WP-247)', () => {
       'attack should increase by magnitude (2) × bystander count (3) = 6.');
   });
 
+  it('perEach divides the count with floor: m=1, perEach=2, N=5 → floor(5/2)=2 → +2 (WP-677)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander', 'pile-bystander', 'pile-bystander', 'pile-bystander', 'pile-bystander'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, perEach: 2, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 2,
+      'perEach=2 divides the count: 1 × floor(5 / 2) = 2 ("for each 2 …").');
+  });
+
+  it('perEach absent ≡ 1 (no divisor): m=2, N=3 → +6 (existing per-unit behavior unchanged)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander', 'pile-bystander', 'pile-bystander'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 2, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 6, 'no perEach ⇒ divisor 1: 2 × 3 = 6.');
+  });
+
   it('grants 0 attack when the victory pile holds no bystanders', () => {
     const gameState = makeTestState({
       inPlay: ['hero-x'],

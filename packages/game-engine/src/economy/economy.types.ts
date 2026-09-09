@@ -102,4 +102,17 @@ export interface CardStatEntry {
    * `recruit-icon-played-this-turn` count source.
    */
   hasRecruitIcon: boolean;
+  /**
+   * Whether the card counts toward S.H.I.E.L.D. Level (WP-677 / D-24493).
+   *
+   * why: per universal-rules-v23 §S.H.I.E.L.D. Level, your Level is the number of
+   * S.H.I.E.L.D. and/or HYDRA cards in your Victory Pile — "any card with the
+   * S.H.I.E.L.D. or HYDRA team icon, as well as any card with 'S.H.I.E.L.D.' or 'HYDRA'
+   * in its card name, Villain Group name, or Mastermind name." Derived once at setup
+   * from the RAW registry entry (team ∈ {shield,hydra} OR the name/group/mastermind
+   * substring), because it needs `team`/`name`, which the runtime does not read from
+   * the registry. The `shield-levels` count source (heroCountSource.resolve.ts) reads
+   * this over `zones.victory`. NOT inferred from card type at score time.
+   */
+  isShieldOrHydra: boolean;
 }

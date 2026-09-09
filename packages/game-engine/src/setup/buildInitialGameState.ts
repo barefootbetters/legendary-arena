@@ -452,8 +452,11 @@ export function buildInitialGameState(
   // registry-derived cards (starting cards have no cardDisplayData entry).
   // why: WP-675 / D-24490 — synthesized token icon presence is set from the real
   // value (no raw "0+" ambiguity): the Agent shows a recruit icon, the Trooper an attack icon.
-  cardStats[SHIELD_AGENT_EXT_ID] = { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true };
-  cardStats[SHIELD_TROOPER_EXT_ID] = { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: true, hasRecruitIcon: false };
+  // why: WP-677 / D-24493 — the three basic S.H.I.E.L.D. cards (Agent/Trooper/Officer)
+  // are S.H.I.E.L.D. cards by name, so they count toward S.H.I.E.L.D. Level; the Sidekick
+  // is not.
+  cardStats[SHIELD_AGENT_EXT_ID] = { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true, isShieldOrHydra: true };
+  cardStats[SHIELD_TROOPER_EXT_ID] = { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: true, hasRecruitIcon: false, isShieldOrHydra: true };
 
   // why: supply-pile tokens (Officer, Sidekick) are likewise well-known
   // components absent from the registry walk. Per the tabletop rulebook,
@@ -467,8 +470,8 @@ export function buildInitialGameState(
   // gain/recruit-from-pile effect ships.
   // why: WP-675 / D-24490 — the Officer shows a +2 recruit icon; the Sidekick's printed
   // value is a draw-two ability, not a face attack/recruit icon (both false).
-  cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true };
-  cardStats[SIDEKICK_EXT_ID] = { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: false };
+  cardStats[SHIELD_OFFICER_EXT_ID] = { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true, isShieldOrHydra: true };
+  cardStats[SIDEKICK_EXT_ID] = { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: false, isShieldOrHydra: false };
 
   // why: WP-135 — build the per-match hero deck reservoir from
   // MatchSetupConfig.heroDeckIds via the locked rarity → copy-count map

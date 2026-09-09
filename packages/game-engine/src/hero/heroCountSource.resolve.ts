@@ -192,6 +192,35 @@ function countIconCardsPlayedThisTurn(
 }
 
 /**
+ * Counts the player's S.H.I.E.L.D. Level: the S.H.I.E.L.D./HYDRA cards in their
+ * Victory Pile (WP-677 / D-24493).
+ *
+ * why: per universal-rules-v23 §S.H.I.E.L.D. Level, your Level is "the number of
+ * S.H.I.E.L.D. and/or HYDRA cards in your Victory Pile" — counted via the
+ * setup-derived `isShieldOrHydra` flag (team icon OR name/group/mastermind substring).
+ * Unlike the "each OTHER card" sources this takes NO `triggeringCardId` and does NOT
+ * self-exclude — it counts the WHOLE pile and "never consumes the cards — it just
+ * checks." A victory-pile card with no cardStats row does not qualify.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose Victory Pile to count.
+ * @returns The number of S.H.I.E.L.D./HYDRA cards in that player's Victory Pile.
+ */
+function countShieldLevels(G: LegendaryGameState, playerID: string): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+  let shieldCount = 0;
+  for (const extId of playerZones.victory) {
+    if (G.cardStats[extId as CardExtId]?.isShieldOrHydra === true) {
+      shieldCount++;
+    }
+  }
+  return shieldCount;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -228,6 +257,11 @@ export function resolveCountSource(
     }
     case 'recruit-icon-played-this-turn': {
       return countIconCardsPlayedThisTurn(G, playerID, triggeringCardId, 'recruit');
+    }
+    case 'shield-levels': {
+      // why: WP-677 / D-24493 — counts the whole Victory Pile (no self-exclusion);
+      // triggeringCardId is intentionally ignored (S.H.I.E.L.D. Level "just checks").
+      return countShieldLevels(G, playerID);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
