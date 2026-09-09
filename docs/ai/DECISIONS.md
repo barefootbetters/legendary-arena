@@ -40679,4 +40679,28 @@ Protect this file.
 
 **Packet:** WP-674 / EC-711. **Active:** 2026-09-08.
 
+### D-24490 — icon-presence `CardStatEntry` fields + two icon count sources + a count-scaled choose-one (Symbiotic Adaptation) (RESERVED: locks WP-675 / EC-712)
+
+**Context.** `vnom/venom/symbiotic-adaptation` (the last WP-673/WP-674 sibling) prints a **choose-one**: "Choose one: +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon. / Or +1[icon:attack] for each other card you played this turn with an [icon:attack] icon." It grants nothing today. WP-674 deferred it because it is a materially different, cross-layer mechanism (icon-based counting + an interactive choice), not the uniform cost-≥4 shape.
+
+**Decision (RESERVED — lands at WP-675 execution).**
+
+1. **Faithful icon presence, NOT a `>0` proxy.** "A card with a recruit/attack icon" = the card's printed power shows that icon. `parseCardStatValue` collapses BOTH `null` (no icon) and `"0+"`/`"0"` (icon present, base 0) to the integer `0`, so `G.cardStats[id].recruit > 0` is lossy — it would misclassify ~168 attack-`"0+"` + 80 recruit-`"0+"` corpus cards (Symbiotic Adaptation itself prints `"0+"`/`"0+"`). Add two setup-derived booleans `hasAttackIcon` / `hasRecruitIcon` to `CardStatEntry`, populated from the RAW registry value being non-null, at the same site that builds `cost`. The resolver reads them from `G.cardStats` (no runtime registry).
+
+2. **Dual hash re-pin (sanctioned).** `computeStateHash` serializes all of `G` except `diagnostics`, so `cardStats` is hashed; adding a `CardStatEntry` field changes the canonical JSON for every game → BOTH oracles (`PRE_WP080_HASH` + the sentinel `finalStateHash`) re-pin. This is the sanctioned new-hashed-field class (the D-24468 / D-24469 transform-field precedent): populate identically at every construction site, re-pin from a clean run, and confirm the SOLE delta is the new field before pinning.
+
+3. **Two icon-presence `HeroCountSource` values** `attack-icon-played-this-turn` + `recruit-icon-played-this-turn` (union + array lockstep; drift pin N=3→5 RUNTIME per D-24372). Each counts the OTHER `inPlay` cards bearing the icon, excluding the triggering card (reuses the WP-673 `triggeringCardId`). Digit-free slugs fit the locked token form (no gate widening).
+
+4. **The choose-one — a thin pending choice (the draw-or-empowered precedent, D-24069), NOT a bespoke subsystem.** A parse pre-pass recognises the `Choose one:` header + two count-scaled option lines and emits ONE descriptor with two options `{ resource: 'recruit'|'attack', countSource, magnitude }` (the counts resolved at RESOLVE time from `G`, not stored). An onPlay handler parks a `PendingCountScaledChoice`; a `hasPendingCountScaledChoice(G)` block-all guard is added to every move site that already guards `hasPendingDrawOrEmpowered`; a server-only `resolveCountScaledChoice({ optionIndex })` dispatches the chosen option through WP-674's `recruit-per-count` / `attack-per-count` executor and clears the entry. A `UIPendingCountScaledChoice` projection goes through BOTH `buildUIState` AND `filterUIStateForAudience` (the five-step Board-Visible Field contract — a block-all pending choice without a projection freezes the game, [[project_pending_choice_no_ux_freeze]]), active-player-scoped. The arena-client renders it on the shipped draw-or-empowered choice-UI model.
+
+5. **Card data + tooling.** Markers `[keyword:recruit-per-count:recruit-icon-played-this-turn:1]` and `[keyword:attack-per-count:attack-icon-played-this-turn:1]` on the two option lines of `vnom/venom/symbiotic-adaptation`; `vnom.json` regenerates (GENERATED — marker source + reproducible regen). `mechanic-provenance.json` seeds the two source rows. The co-located printed icons are subsumed by WP-674's existing icon-suppression blocks.
+
+**Reuse, not new families.** No new grant executor — the recruit and attack branches reuse WP-674's `recruit-per-count` and `attack-per-count`. The choose-one is the new surface.
+
+**Scope OUT.** Any card beyond Symbiotic Adaptation (it is the sole icon-based count-scaled choose-one); generalising the choice beyond two options.
+
+**Open execution detail.** The three printed lines are three `abilities[]` array entries; confirm at execution whether the pre-pass reads the option markers as separate entries or joined (resolve against the Empowered choose-one pre-pass). Entry lands at WP-675 execution.
+
+**Packet:** WP-675 / EC-712. **Reserved:** 2026-09-08.
+
 Protect this file.
