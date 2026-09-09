@@ -461,7 +461,7 @@ stream — one effect per event type — with zero new engine work.
 | `bystanderRevealed` | T2 | A Bystander card is revealed from the villain deck and captured (by the frontmost City villain, or the Mastermind when the City is empty) | A brief **civilian-blue glint** on the captured bystander as it lands on the captor's stack — the "someone's in danger" beat |
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
 | `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom/**Loki** Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, a villain **Ambush** dodge, or a villain **Fight**/**Escape** ability reveal-or-wound dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (complete):** the engine event + overlay chip and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) — a threat-coloured deflection burst (Master Strike **red** / Scheme Twist **purple** / Ambush **green** / Fight **amber** / Escape **teal** per `threatKind`) + the "BLOCKED!" word (WP-644..651; all five reveal-to-avoid classes) |
-| `transformResolved` | T2 | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form (the World War Hulk signature mechanic; She-Hulk / Amadeus Cho are the supported bases today) — one per completed swap, `{ playerId, narrative }` | A gamma-green **power surge** — a centre-out radial bloom + a gamma particle burst + a **"TRANSFORMED!"** word, plus a **"Transformed!"** chip. The *positive* counterpart to the shield block: the hero powering up, not deflecting. **Shipped:** the engine event + overlay chip + the `VfxOverlay` transform beat ([`#surface-transform`](#surface-transform)) — the surge bloom (gated `'shake'`), the gamma burst (gated `'particles'`), the "TRANSFORMED!" word (gated `'word'`) (WP-672). Hero surface only; the Mastermind (General Ross) + Scheme (Chthon) transforms do not yet emit the event — named follow-ups |
+| `transformResolved` | T2 | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form (the World War Hulk signature mechanic; She-Hulk / Amadeus Cho are the supported bases today) — one per completed swap, `{ playerId, narrative }` | A gamma-green **power surge** — a centre-out radial bloom + a gamma particle burst + a **"TRANSFORMED!"** word, plus a **"Transformed!"** chip. The *positive* counterpart to the shield block: the hero powering up, not deflecting. **Shipped:** the engine event + overlay chip + the `VfxOverlay` transform beat ([`#surface-transform`](#surface-transform), `transform-surge.svg`) — the surge bloom (gated `'shake'`), the gamma burst (gated `'particles'`), the "TRANSFORMED!" word (gated `'word'`) (WP-672). Hero surface only; the Mastermind (General Ross) + Scheme (Chthon) transforms do not yet emit the event — named follow-ups |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -819,6 +819,17 @@ earns a comparably big one-shot flourish.
 > WP-670) transform surfaces do not yet emit `transformResolved` — each is a named
 > follow-up that adds an emit at its own fire site; the event, the manifest, and
 > the consumer are already shared.
+
+![Animated mock of the transform power-surge effect: a Hero base card charges with gamma energy, a green surge blooms, the card powers up into a brighter transformed card with an upward "powered-up" chevron, green sparks ricochet upward, and the word TRANSFORMED! pops on-screen. Loops.](/visual-effects/transform-surge.svg "width=58%")
+
+*Illustrative mock of the shipped transform beat — a CSS-only animated SVG (no
+JavaScript, so it animates on the JS-free wiki) that loops and holds the
+transformed card + **TRANSFORMED!** as a static frame under
+`prefers-reduced-motion`. The gamma palette is the shipped one
+(`transformVfxManifest.ts`'s `TRANSFORM_VFX.colors`); the card art is a stylised
+stand-in (the live beat plays over the real played card). Animation source:
+[transform-surge.py](../ewiki/visual-effects/transform-surge.py)
+— regenerate with `python transform-surge.py`.*
 
 ### Future direction — alternate thematic presentations {#playstyle-lens}
 

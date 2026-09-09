@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 340" width="460" height="340" role="img" aria-label="Animated mock of the transform power-surge effect: a Hero base card charges with gamma energy, a green surge blooms, the card powers up into a brighter transformed card, green sparks ricochet upward, and the word TRANSFORMED! pops on-screen. Loops.">
+  <title>Shipped transform power-surge effect — a Hero card swaps into its stronger second form</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.aura { opacity: 0; animation: aura 3.0s ease-out infinite; }
+.cbase { opacity: 0; animation: cbase 3.0s ease-in infinite; }
+.cxform { opacity: 0; animation: cxform 3.0s cubic-bezier(0.3,0,0.2,1) infinite; }
+.flash { opacity: 0; animation: flash 3.0s ease-out infinite; }
+.fring { opacity: 0; fill: none; stroke: #eaffd0; animation: fring 3.0s ease-out infinite; }
+.spark { opacity: 0; transform: translate(0,0); animation: burst 3.0s ease-out infinite; }
+.lbl { opacity: 0; animation: lbl 3.0s ease-out infinite; }
+@keyframes aura {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+  30.00% { opacity: 0.28; transform: translate(230px,164px) scale(0.9); }
+  36.00% { opacity: 0.85; transform: translate(230px,164px) scale(1.25); }
+  46.00% { opacity: 0.4; transform: translate(230px,164px) scale(1.05); }
+  88.00% { opacity: 0.4; transform: translate(230px,164px) scale(1.05); }
+  96.00% { opacity: 0; transform: translate(230px,164px) scale(0.7); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+}
+@keyframes cbase {
+  0.00% { opacity: 1; transform: translate(230px,164px) scale(0.92); }
+  32.00% { opacity: 1; transform: translate(230px,164px) scale(0.98); }
+  36.00% { opacity: 0.6; transform: translate(230px,164px) scale(0.86); }
+  41.00% { opacity: 0; transform: translate(230px,164px) scale(0.72); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(0.72); }
+}
+@keyframes cxform {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+  34.00% { opacity: 0; transform: translate(230px,164px) scale(0.6); }
+  36.00% { opacity: 1; transform: translate(230px,164px) scale(1.14); }
+  40.00% { opacity: 1; transform: translate(230px,164px) scale(0.98); }
+  44.00% { opacity: 1; transform: translate(230px,164px) scale(1.0); }
+  90.00% { opacity: 1; transform: translate(230px,164px) scale(1.0); }
+  97.00% { opacity: 0; transform: translate(230px,164px) scale(1.06); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+}
+@keyframes flash {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0); }
+  36.00% { opacity: 0; transform: translate(230px,164px) scale(0.3); }
+  37.50% { opacity: 0.9; transform: translate(230px,164px) scale(0.8); }
+  52.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); }
+}
+@keyframes fring {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.15); stroke-width: 7; }
+  36.00% { opacity: 0; transform: translate(230px,164px) scale(0.2); stroke-width: 7; }
+  37.00% { opacity: 0.85; }
+  60.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); stroke-width: 1; }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); stroke-width: 1; }
+}
+@keyframes burst {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  36.00% { opacity: 0; transform: translate(0,0); }
+  38.00% { opacity: 1; }
+  60.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(230px,300px) scale(0.4); }
+  36.00% { opacity: 0; transform: translate(230px,300px) scale(0.4); }
+  38.00% { opacity: 1; transform: translate(230px,300px) scale(1.16); }
+  40.00% { transform: translate(230px,300px) scale(1.0); }
+  88.00% { opacity: 1; transform: translate(230px,300px) scale(1.0); }
+  95.00% { opacity: 0; transform: translate(230px,300px) scale(1.2); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cbase, .flash, .spark { animation: none; opacity: 0; }
+  .aura { animation: none; opacity: 0.4; transform: translate(230px,164px) scale(1.05); }
+  .cxform { animation: none; opacity: 1; transform: translate(230px,164px) scale(1); }
+  .fring { animation: none; opacity: 0.35; transform: translate(230px,164px) scale(1.4); }
+  .lbl { animation: none; opacity: 1; transform: translate(230px,300px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="44%" r="82%"><stop offset="0%" stop-color="#131a12" stop-opacity="1"/><stop offset="100%" stop-color="#0a0d09" stop-opacity="1"/></radialGradient><radialGradient id="aur" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#a6ff7a" stop-opacity="0.9"/><stop offset="55%" stop-color="#5ee66b" stop-opacity="0.35"/><stop offset="100%" stop-color="#5ee66b" stop-opacity="0"/></radialGradient><radialGradient id="fla" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="45%" stop-color="#a6ff7a" stop-opacity="0.8"/><stop offset="100%" stop-color="#5ee66b" stop-opacity="0"/></radialGradient></defs>
+  <rect width="460" height="340" fill="url(#bg)"/>
+  <ellipse class="aura" rx="153" ry="140" fill="url(#aur)"/><g class="cbase"><rect x="-58.0" y="-81.0" width="116.0" height="162.0" rx="12" fill="#33414f" stroke="#5a6b7b" stroke-width="3"/><rect x="-50.0" y="-73.0" width="100.0" height="26" rx="6" fill="#485a6b"/><g transform="translate(0 10.0)"><polygon points="0.0,-20.0 22.0,-7.0 22.0,-1.3 0.0,-14.3 -22.0,-1.3 -22.0,-7.0" fill="#8ea3b6"/><polygon points="0.0,-3.9 22.0,9.1 22.0,14.8 0.0,1.8 -22.0,14.8 -22.0,9.1" fill="#8ea3b6"/></g></g><circle class="flash" r="88" fill="url(#fla)"/><circle class="fring" r="60"/><g class="cxform"><rect x="-64.0" y="-87.0" width="128.0" height="174.0" rx="16" fill="none" stroke="#a6ff7a" stroke-width="6" opacity="0.55"/><rect x="-58.0" y="-81.0" width="116.0" height="162.0" rx="12" fill="#1f3a24" stroke="#5ee66b" stroke-width="3"/><rect x="-50.0" y="-73.0" width="100.0" height="26" rx="6" fill="#2c5a34"/><g transform="translate(0 10.0)"><polygon points="0.0,-20.0 22.0,-7.0 22.0,-1.3 0.0,-14.3 -22.0,-1.3 -22.0,-7.0" fill="#a6ff7a"/><polygon points="0.0,-3.9 22.0,9.1 22.0,14.8 0.0,1.8 -22.0,14.8 -22.0,9.1" fill="#a6ff7a"/></g></g><g transform="translate(230 164)"><g class="spark" style="--tx:-84px; --ty:-1px;"><rect x="-1.7" y="-15" width="3.4" height="15" rx="1.7" fill="#eaffd0" transform="rotate(-89)"/></g><g class="spark" style="--tx:-140px; --ty:32px;"><rect x="-1.7" y="-16" width="3.4" height="16" rx="1.7" fill="#a6ff7a" transform="rotate(-103)"/></g><g class="spark" style="--tx:30px; --ty:-136px;"><rect x="-1.7" y="-10" width="3.4" height="10" rx="1.7" fill="#a6ff7a" transform="rotate(13)"/></g><g class="spark" style="--tx:-85px; --ty:-113px;"><rect x="-1.7" y="-12" width="3.4" height="12" rx="1.7" fill="#eaffd0" transform="rotate(-37)"/></g><g class="spark" style="--tx:-91px; --ty:-6px;"><rect x="-1.7" y="-12" width="3.4" height="12" rx="1.7" fill="#a6ff7a" transform="rotate(-86)"/></g><g class="spark" style="--tx:70px; --ty:61px;"><rect x="-1.7" y="-12" width="3.4" height="12" rx="1.7" fill="#a6ff7a" transform="rotate(131)"/></g><g class="spark" style="--tx:129px; --ty:-59px;"><rect x="-1.7" y="-8" width="3.4" height="8" rx="1.7" fill="#eaffd0" transform="rotate(65)"/></g><g class="spark" style="--tx:137px; --ty:42px;"><rect x="-1.7" y="-14" width="3.4" height="14" rx="1.7" fill="#a6ff7a" transform="rotate(107)"/></g><g class="spark" style="--tx:105px; --ty:-8px;"><rect x="-1.7" y="-10" width="3.4" height="10" rx="1.7" fill="#a6ff7a" transform="rotate(86)"/></g><g class="spark" style="--tx:106px; --ty:53px;"><rect x="-1.7" y="-9" width="3.4" height="9" rx="1.7" fill="#eaffd0" transform="rotate(117)"/></g><g class="spark" style="--tx:89px; --ty:24px;"><rect x="-1.7" y="-11" width="3.4" height="11" rx="1.7" fill="#a6ff7a" transform="rotate(105)"/></g><g class="spark" style="--tx:91px; --ty:21px;"><rect x="-1.7" y="-12" width="3.4" height="12" rx="1.7" fill="#a6ff7a" transform="rotate(103)"/></g><g class="spark" style="--tx:-72px; --ty:-79px;"><rect x="-1.7" y="-14" width="3.4" height="14" rx="1.7" fill="#eaffd0" transform="rotate(-42)"/></g><g class="spark" style="--tx:127px; --ty:-66px;"><rect x="-1.7" y="-12" width="3.4" height="12" rx="1.7" fill="#a6ff7a" transform="rotate(63)"/></g><g class="spark" style="--tx:-84px; --ty:86px;"><rect x="-1.7" y="-10" width="3.4" height="10" rx="1.7" fill="#a6ff7a" transform="rotate(-136)"/></g><g class="spark" style="--tx:-135px; --ty:-18px;"><rect x="-1.7" y="-14" width="3.4" height="14" rx="1.7" fill="#eaffd0" transform="rotate(-83)"/></g></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="38" fill="#a6ff7a">TRANSFORMED!</text>
+</svg>
