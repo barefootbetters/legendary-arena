@@ -1001,7 +1001,7 @@ describe('describeFailedCondition (WP-566 / D-24375)', () => {
 // ---------------------------------------------------------------------------
 
 describe('evaluateCondition distinctHeroCostsAtLeast (Outwit)', () => {
-  it('passes when >= 3 distinct non-zero costs are in play', () => {
+  it('passes when >= 3 distinct costs are in play', () => {
     const G = makeTestState({ inPlay: ['a', 'b', 'c'], cardStatCosts: { a: 2, b: 3, c: 5 } });
     assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), true);
   });
@@ -1011,9 +1011,35 @@ describe('evaluateCondition distinctHeroCostsAtLeast (Outwit)', () => {
     assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), false);
   });
 
-  it('excludes 0-cost cards and cards with no stats row (safe access)', () => {
-    const G = makeTestState({ inPlay: ['a', 'zero', 'token'], cardStatCosts: { a: 4, zero: 0 } });
-    // only `a` (cost 4) counts; `zero` (0) and `token` (no row) do not.
+  it('counts a 0-cost Hero (S.H.I.E.L.D. Agent) as the distinct cost 0 (rules v23 §Outwit)', () => {
+    // why: the rulebook's worked example — a 2-cost hand Hero + a 6-cost Outwit
+    // card + a 0-cost S.H.I.E.L.D. Agent already played = the 3 different costs.
+    const G = makeTestState({
+      inPlay: ['outwit-card', 'starting-shield-agent'],
+      hand: ['hand-hero'],
+      cardStatCosts: { 'outwit-card': 6, 'starting-shield-agent': 0, 'hand-hero': 2 },
+    });
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), true);
+  });
+
+  it('counts Heroes revealed from HAND, not just cards already in play', () => {
+    // why: Outwit is checkable at play-instant because "reveal" spans the hand —
+    // the Outwit card can be played first with its cost-mates still unplayed.
+    const G = makeTestState({
+      inPlay: ['outwit-card'],
+      hand: ['hero-b', 'hero-c'],
+      cardStatCosts: { 'outwit-card': 4, 'hero-b': 6, 'hero-c': 0 },
+    });
+    assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }), true);
+  });
+
+  it('excludes Wounds (a Wound is not a Hero) even though it reads as cost 0', () => {
+    const G = makeTestState({
+      inPlay: ['a', 'pile-wound'],
+      hand: ['pile-wound'],
+      cardStatCosts: { a: 4 },
+    });
+    // only `a` (cost 4) counts; the Wounds are excluded, so distinct costs = 1.
     assert.equal(evaluateCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '2' }), false);
   });
 
@@ -1088,7 +1114,7 @@ describe('describeFailedCondition (WP-653 conditions quote the actual count)', (
     });
     assert.match(
       describeFailedCondition(G, '0', { type: 'distinctHeroCostsAtLeast', value: '3' }),
-      /different costs.*you have 1/,
+      /different costs in hand or play.*you have 2/,
     );
     assert.match(
       describeFailedCondition(G, '0', { type: 'heroCostAtLeastInHandOrPlay', value: '5' }),

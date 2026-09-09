@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 27,
-    "totalObservations": 1906,
+    "totalObservations": 1961,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1906
+      "parse-unrecognized": 1961
     }
   },
   "byMechanic": {
@@ -1018,12 +1018,12 @@
       ]
     },
     "transform": {
-      "hitCount": 110,
+      "hitCount": 165,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 110
+        "parse-unrecognized": 165
       },
       "examples": [
         {
@@ -1039,19 +1039,19 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#3",
+          "cardId": "wwhk/bruce-banner/gamma-bomb-disaster#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

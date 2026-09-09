@@ -17,7 +17,7 @@ import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
-import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -185,10 +185,17 @@ export function evaluateCondition(
     }
 
     case 'distinctHeroCostsAtLeast': {
-      // why: D-24464 — Outwit gates on revealing Heroes with N different costs.
-      // A CONDITION, not a keyword (the D-24055 Spectrum posture); mirrors
-      // distinctHeroClassesAtLeast but counts distinct COSTS. Self-inclusive:
-      // the played card is already in inPlay before executeHeroEffects runs.
+      // why: D-24491 (corrects D-24464) — Outwit gates on REVEALING Heroes with N
+      // different costs. Per universal-rules-v23 §Outwit, "reveal" spans the cards
+      // you already played AND Heroes in your hand, and a 0-cost S.H.I.E.L.D. Agent
+      // Hero counts: the rulebook's own worked example is a 2-cost Hero in hand +
+      // a 6-cost Outwit card + a 0-cost S.H.I.E.L.D. Agent already played = the 3
+      // different costs. So the scan is hand + inPlay, distinct costs INCLUDING 0;
+      // only Wounds/Bystanders are excluded (they are not Heroes and carry no
+      // cardStats row → cost 0). Self-inclusive: the Outwit card is already in
+      // inPlay before executeHeroEffects runs. A CONDITION, not a keyword (the
+      // D-24055 Spectrum posture); the earlier inPlay-only, non-zero-only reading
+      // wrongly blocked Outwit whenever the qualifying Heroes were still in hand.
       if (!G.cardStats) {
         return false;
       }
@@ -196,17 +203,7 @@ export function evaluateCondition(
       if (Number.isNaN(threshold)) {
         return false;
       }
-      const distinctCosts = new Set<number>();
-      for (const playedCardId of playerZones.inPlay) {
-        // why: safe access — a token in play has no cardStats row; a 0-cost card
-        // (a S.H.I.E.L.D. basic) carries no Hero cost, so `> 0` excludes both
-        // (only true Heroes contribute a distinct cost).
-        const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
-        if (cost > 0) {
-          distinctCosts.add(cost);
-        }
-      }
-      return distinctCosts.size >= threshold;
+      return countDistinctHeroCostsInHandOrPlay(G, playerID) >= threshold;
     }
 
     case 'heroCostAtLeastInHandOrPlay': {
@@ -405,23 +402,31 @@ function countDistinctHeroClassesInPlay(
 }
 
 /**
- * Counts the distinct non-zero Hero costs a player currently has in play.
- * Mirrors the `distinctHeroCostsAtLeast` gate so the message quotes the same
- * number the gate compared.
+ * Counts the distinct Hero costs a player can reveal — across HAND and in-play,
+ * counting a 0-cost Hero (e.g. a S.H.I.E.L.D. Agent) as the distinct cost 0, and
+ * excluding only Wounds/Bystanders (not Heroes). Mirrors the
+ * `distinctHeroCostsAtLeast` gate so the failure message quotes the same number
+ * the gate compared.
  *
  * @param G - Current game state (read-only).
  * @param playerID - Active player ID.
- * @returns How many distinct non-zero costs are in play for that player.
+ * @returns How many distinct Hero costs are revealable (hand + play).
  */
-function countDistinctHeroCostsInPlay(G: LegendaryGameState, playerID: string): number {
+function countDistinctHeroCostsInHandOrPlay(G: LegendaryGameState, playerID: string): number {
   const playerZones = G.playerZones[playerID];
   if (!playerZones || !G.cardStats) {
     return 0;
   }
   const distinctCosts = new Set<number>();
-  for (const cardId of playerZones.inPlay) {
-    const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
-    if (cost > 0) {
+  for (const zone of [playerZones.inPlay, playerZones.hand]) {
+    for (const cardId of zone) {
+      // why: Wounds and Bystanders are not Heroes (and carry no cardStats row, so
+      // would otherwise read as a phantom cost 0); every real Hero, including a
+      // 0-cost S.H.I.E.L.D. basic, has a row and contributes its cost — 0 included.
+      if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+        continue;
+      }
+      const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
       distinctCosts.add(cost);
     }
   }
@@ -541,8 +546,8 @@ export function describeFailedCondition(
       return `it needs ${condition.value} or more cards drawn this turn — you have drawn ${G.turnEconomy.cardsDrawn}`;
 
     case 'distinctHeroCostsAtLeast': {
-      const distinct = countDistinctHeroCostsInPlay(G, playerID);
-      return `it needs ${condition.value} Heroes of different costs in play — you have ${distinct}`;
+      const distinct = countDistinctHeroCostsInHandOrPlay(G, playerID);
+      return `it needs ${condition.value} Heroes of different costs in hand or play — you have ${distinct}`;
     }
 
     case 'heroCostAtLeastInHandOrPlay':
