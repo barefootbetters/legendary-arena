@@ -72,6 +72,7 @@ asrd/beta-ray-bill,Beta Ray Bill,asrd,draw,executable,WP-022,D-2201,packages/gam
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,,stormbreaker
 asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,condition,,,,hope-of-the-korbinites|stormbreaker
 asrd/lady-sif,Lady Sif,asrd,thrown-artifact,unsupported,,,,dimensional-blade|golden-apples-of-idunn|winged-helm
+asrd/thor,Thor,asrd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,divine-lightning
 asrd/thor,Thor,asrd,thrown-artifact,unsupported,,,,mjolnir
 asrd/thor,Thor,asrd,worthy,condition,,,,divine-lightning|mjolnir|royal-decree|test-of-virtue
 asrd/valkyrie,Valkyrie,asrd,bridge,unsupported,,,,usher-to-valhalla

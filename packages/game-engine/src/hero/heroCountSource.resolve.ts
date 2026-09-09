@@ -5,9 +5,9 @@
  * an `attack-per-count` effect scales by. It is pure and total: it reads only
  * `G`, never mutates, never throws, and returns 0 for any source it does not
  * recognize (the union is closed, so this is defensive). No randomness, no
- * clock, no I/O. Classification is by ext_id string and `G` reads only — no
- * registry access (counts are resolved from card ext_ids already present in
- * the zones, not from card definitions).
+ * clock, no I/O. Counts are resolved from `G` alone — card ext_ids in the
+ * zones (victory-bystanders) and the per-card cost in `G.cardStats`
+ * (worthy-cards-played-this-turn) — never from registry lookups at runtime.
  *
  * No boardgame.io imports. No .reduce(). No throws.
  */
@@ -22,6 +22,12 @@ import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 // form (BYSTANDER_EXT_ID). The victory pile may hold both, so the count must
 // span both ext_id forms.
 const VILLAIN_DECK_BYSTANDER_PREFIX = 'bystander-villain-deck-';
+
+// why: WP-673 / D-24488 — a card "makes you Worthy" when it is a Hero costing
+// >= 5 (the Worthy definition, D-24464). Mirrors the threshold the parser writes
+// into the Worthy condition in setup/heroAbility.setup.ts; kept as a local
+// constant per the duplicate-first rule (two uses today, no shared owner).
+const WORTHY_HERO_COST_THRESHOLD = 5;
 
 /**
  * Returns true when an ext_id names a bystander in either ext_id form.
@@ -59,6 +65,46 @@ function countVictoryBystanders(G: LegendaryGameState, playerID: string): number
 }
 
 /**
+ * Counts the OTHER cards a player has played this turn that make them Worthy.
+ *
+ * A card "makes you Worthy" when it is a Hero costing >= 5 (D-24464). "Other"
+ * excludes the triggering card itself — Divine Lightning's text is "+1 attack
+ * for each OTHER card you played this turn that makes you Worthy", and Divine
+ * Lightning (cost 5) would otherwise count itself. Cards played this turn live
+ * in the in-play zone; a token or basic with no cardStats row (cost 0) never
+ * meets the threshold.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @returns The number of other Worthy-making cards played this turn.
+ */
+function countWorthyCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+
+  let worthyCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    // why: safe access — a token in play has no cardStats row (cost 0), so it
+    // never meets the >= 5 threshold; only true Heroes contribute.
+    const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
+    if (cost >= WORTHY_HERO_COST_THRESHOLD) {
+      worthyCount++;
+    }
+  }
+  return worthyCount;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -68,16 +114,24 @@ function countVictoryBystanders(G: LegendaryGameState, playerID: string): number
  * @param G - Game state (read-only).
  * @param playerID - The active player whose state to read.
  * @param source - The count source to resolve.
+ * @param triggeringCardId - The card whose effect is resolving, if any. Used by
+ *   sources that must exclude the triggering card ("each OTHER card …");
+ *   sources that read a zone the triggering card is never in (victory-bystanders)
+ *   ignore it.
  * @returns A non-negative integer count (0 for an unknown source).
  */
 export function resolveCountSource(
   G: LegendaryGameState,
   playerID: string,
   source: HeroCountSource,
+  triggeringCardId?: CardExtId,
 ): number {
   switch (source) {
     case 'victory-bystanders': {
       return countVictoryBystanders(G, playerID);
+    }
+    case 'worthy-cards-played-this-turn': {
+      return countWorthyCardsPlayedThisTurn(G, playerID, triggeringCardId);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must

@@ -2782,6 +2782,93 @@ describe('executeHeroEffects attack-per-count (WP-247)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// WP-673 — attack-per-count worthy-cards-played-this-turn (D-24488)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects attack-per-count worthy-cards-played-this-turn (WP-673)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: cardStats needs the full shape makeTestState declares; only `cost`
+  // matters to the worthy count, so attack/recruit/fight fields are inert 0s.
+  function statOfCost(cost: number) {
+    return { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+  }
+
+  it('scales +1 per OTHER cost>=5 card played, excluding the triggering card (N=2 → +2)', () => {
+    // Two cost-5 cards in play before Divine Lightning (also cost 5) → +2, not +3.
+    const gameState = makeTestState({
+      inPlay: ['smart-hulk-a', 'smart-hulk-b', 'divine-lightning'],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'smart-hulk-a': statOfCost(5),
+        'smart-hulk-b': statOfCost(5),
+        'divine-lightning': statOfCost(5),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'divine-lightning' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'worthy-cards-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'divine-lightning' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 2,
+      'grant is 1 × 2 = 2: both other cost>=5 cards count, the triggering card is excluded.');
+  });
+
+  it('grants 0 when only the triggering Worthy card is in play (the flat-+1 bug case)', () => {
+    // Before the fix this line granted a flat +1; the correct scaled result is 0.
+    const gameState = makeTestState({
+      inPlay: ['divine-lightning'],
+      turnEconomyAttack: 0,
+      cardStats: { 'divine-lightning': statOfCost(5) },
+      heroAbilityHooks: [
+        {
+          cardId: 'divine-lightning' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'worthy-cards-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'divine-lightning' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 0,
+      'a lone Worthy trigger grants 0 — it does not count itself.');
+  });
+
+  it('excludes cards costing less than 5 (N=1 → +1)', () => {
+    const gameState = makeTestState({
+      inPlay: ['cheap', 'smart-hulk', 'divine-lightning'],
+      turnEconomyAttack: 0,
+      cardStats: {
+        cheap: statOfCost(4),
+        'smart-hulk': statOfCost(5),
+        'divine-lightning': statOfCost(5),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'divine-lightning' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'worthy-cards-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'divine-lightning' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 1,
+      'only the cost>=5 card counts; the cost-4 card does not make you Worthy.');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24017 — hero-ability rescue observability (game-log feedback)
 // ---------------------------------------------------------------------------
 

@@ -40626,3 +40626,31 @@ Protect this file.
 **Packet:** WP-672 / EC-709. **Active:** 2026-09-08.
 
 Protect this file.
+
+### D-24488 — `worthy-cards-played-this-turn` count source: Divine Lightning's variable attack scales instead of granting a flat +1 (Active 2026-09-08 — WP-673 / EC-710)
+
+**Context.** Found in live solo verification (Red Skull / Midtown Bank Robbery). Thor's `asrd/thor/divine-lightning` reads "You get +1[icon:attack] for each other card you played this turn that makes you [keyword:Worthy]." (printed `attack: "3+"`; the `+1 for each` is the variable bonus). Across five plays the bonus was always exactly +1 — even on a turn with two cost-5 Worthy-making cards already in play (expected +2). `attack-per-count` (D-24016) scales an attack grant by a `HeroCountSource`, but only `victory-bystanders` was registered. "Other cards played this turn that make you Worthy" was no count source, so no `[keyword:attack-per-count:…]` marker existed on the card; the `+1[icon:attack]` parsed as a plain flat +1 attack (Steps 2b/3) gated by the co-located `[keyword:Worthy]` — a tautology, since Divine Lightning itself (cost 5) always satisfies `heroCostAtLeastInHandOrPlay` when played. Net: a flat +1, the "for each" scaling silently dropped.
+
+**Decision.** A first slice: register the count source and drive Divine Lightning through the SHIPPED `attack-per-count` mechanism (the `victory-bystanders` precedent), not a new NL-parser path.
+
+1. **New `HeroCountSource` `'worthy-cards-played-this-turn'`** (`rules/heroCountSource.ts`) — union + `HERO_COUNT_SOURCES` array updated in lockstep (the canonical-array drift contract; the drift test is a RUNTIME keyset assertion per D-24372, bumped N=1→2).
+
+2. **Resolver (`hero/heroCountSource.resolve.ts`)** counts the OTHER cards in `playerZones.inPlay` (cards played this turn) whose `G.cardStats[id].cost >= 5` — the Worthy definition (D-24464), a local constant per duplicate-first (two uses: this resolver + the parser's Worthy gate). "Other" excludes the triggering card, so `resolveCountSource` gained an optional 4th `triggeringCardId` param; `victory-bystanders` (reads the victory pile, which never holds the just-played Hero) ignores it. Pure/total, no registry read (cost comes from `G.cardStats`, built at setup).
+
+3. **Executor (`hero/heroEffects.execute.ts`)** passes the played card id (was `_cardId`) into `resolveCountSource`, so the OTHER-exclusion actually applies.
+
+4. **Card data marker.** `scripts/convert-cards/inputs/hero-ability-markers.json` gains `asrd/thor/divine-lightning → [keyword:attack-per-count:worthy-cards-played-this-turn:1]`; `apply-hero-ability-markers.mjs` appends it to the printed line, and `data/cards/asrd.json` is regenerated (card data is GENERATED — the fix is the marker SOURCE + a reproducible regen, never a hand-edit; `cards:check` confirms byte-reproducibility). The existing generic `COUNT_SCALED_PATTERN` handling then emits the `attack-per-count` effect and the existing D-24016 icon-suppression drops the flat `+1` so it does not double-count.
+
+5. **Parser (`setup/heroAbility.setup.ts`) suppresses the Worthy gate on this line.** On a line carrying `[keyword:attack-per-count:worthy-cards-played-this-turn:N]`, the co-located `[keyword:Worthy]` is the COUNT CRITERION, not a `heroCostAtLeastInHandOrPlay` play-gate — so no condition is emitted for it (mirrors the size-changing / investigate descriptive-token suppression). A plain `[keyword:Worthy]` line without the marker still gates (verified).
+
+**Why the marker, not an NL parser branch.** The prompt framed the fix as "wire the parser to recognize the clause." The parser's contract is structured-markers-only (no NL parsing), and `attack-per-count` is already driven end-to-end by a data marker (the `victory-bystanders` card carries `[keyword:attack-per-count:victory-bystanders:1]`). Following that precedent keeps one mechanism; "not asrd.json" is honoured by editing the marker SOURCE and regenerating, never hand-editing the generated file. This is the sole deviation from the prompt's literal wording; intent (Divine Lightning scales) is preserved.
+
+**Determinism.** Adding a count source and the asrd marker changes only asrd Divine Lightning's parsed effect. The determinism pins replay core-set fixtures (`PRE_WP080_HASH`, the dr-doom / `core/legacy-virus-the` sentinels), none of which play an asrd card, so the full engine suite (3185/3185, both pin tests included) passes unchanged — **NO hash re-pin**.
+
+**Scope OUT (noted, not expanded).** Several siblings share the exact "+N attack/recruit for each other card you played this turn that …" shape and are still under-scaling: `cvwr` / `noir` (×2) / `vill` ("costs 4 or more") and `vnom` (an icon-based choose-one). They need a cost-≥4 count source and a recruit-per-count variant (a new effect family) — separate follow-ups.
+
+**Gates.** engine suite 3185/3185; `pnpm -r build` 0; `cards:check` reproducible; `ledger:heroes` regenerated (Divine Lightning now Executable); `sim:coverage --check` OK (one new-mechanic warning — the source is registered but not yet sim-observed; the observed floor is not regressed, so the baseline is unchanged). Cites: `.claude/rules/architecture.md` (canonical-array drift; count source is engine-layer), D-24016 (attack-per-count + icon-suppression), D-24464 (Worthy = a Hero costing ≥5). **Live-on-surface** (a real asrd Thor match granting +N per Worthy card) is operator-pending.
+
+**Packet:** WP-673 / EC-710. **Active:** 2026-09-08.
+
+Protect this file.

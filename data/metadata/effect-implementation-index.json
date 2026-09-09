@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1842,
+    "totalEntries": 1843,
     "byScope": {
-      "hero": 667,
+      "hero": 668,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 404,
+      "executable": 405,
       "deferred": 0,
       "condition": 26,
       "unsupported": 335,
@@ -2874,6 +2874,23 @@
         {
           "slug": "winged-helm",
           "name": "Winged Helm"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/thor",
+      "name": "Thor",
+      "set": "asrd",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "divine-lightning",
+          "name": "Divine Lightning"
         }
       ]
     },
@@ -26977,6 +26994,7 @@
     "asrd/thor": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "thrown-artifact",
         "worthy"
       ]

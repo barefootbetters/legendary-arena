@@ -297,8 +297,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // WP-664). Net: totalObs 2423 -> 2338 (fewer hollow obs) and percentResolved RISES
   // 25.1 -> 30.8 (more work credited resolved). The prior WP-662 re-pin note is in git
   // history. This is the honest gauge reflecting current truth.
+  // 2026-09-08 (WP-673 / D-24488, re-pin): asrd/thor/divine-lightning's
+  // `attack-per-count:worthy-cards-played-this-turn` mechanic ships executable, and
+  // the regenerated hero ledger + runtime-observed feeds shift the fixed-seed sweep's
+  // trajectories slightly. Net: totalObs 2338 -> 2336 (a sweep-trajectory artifact, not
+  // a regression); percentResolved holds at 30.8. This is the honest gauge reflecting
+  // current truth (deterministic — CI computes the same 2336).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2338);
+  assert.equal(view.totalObs.value, 2336);
   assert.equal(view.percentResolved.value, 30.8);
   assert.ok(view.remaining.value.length > 0);
 });

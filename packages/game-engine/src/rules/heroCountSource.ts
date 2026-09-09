@@ -34,7 +34,8 @@
  * dispatches on it.
  */
 export type HeroCountSource =
-  | 'victory-bystanders'; // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
+  | 'victory-bystanders' // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
+  | 'worthy-cards-played-this-turn'; // why: WP-673 / D-24488 — counts the OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464); Divine Lightning's "+1 attack for each other card you played this turn that makes you Worthy"
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -45,4 +46,5 @@ export type HeroCountSource =
  */
 export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'victory-bystanders', // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
+  'worthy-cards-played-this-turn', // why: WP-673 / D-24488 — counts OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464)
 ] as const;

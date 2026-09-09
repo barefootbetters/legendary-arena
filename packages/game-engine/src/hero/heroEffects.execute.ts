@@ -1617,7 +1617,7 @@ function heroEffectAttackPerCount(
   G: LegendaryGameState,
   _ctx: unknown,
   playerID: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
   // why: D-24016 — magnitude is the per-unit rate; resolveCountSource resolves
@@ -1629,7 +1629,11 @@ function heroEffectAttackPerCount(
   // why: a count-scaled attack effect with no count source is a skipped no-op
   // (mirrors the magnitude gate) — there is nothing to scale by.
   if (effect.countSource === undefined) { return; }
-  const count = resolveCountSource(G, playerID, effect.countSource);
+  // why: WP-673 / D-24488 — pass the triggering card so an "each OTHER card"
+  // source (worthy-cards-played-this-turn) can exclude this card from its own
+  // count. Sources reading a zone this card is never in (victory-bystanders)
+  // ignore it.
+  const count = resolveCountSource(G, playerID, effect.countSource, cardId);
   const grant = (effect.magnitude as number) * count;
   G.turnEconomy = addResources(G.turnEconomy, grant, 0);
   // why: record the source, count, and grant so the count-scaled attack is

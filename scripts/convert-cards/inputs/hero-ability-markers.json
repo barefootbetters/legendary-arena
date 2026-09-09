@@ -998,6 +998,12 @@
       "cardSlug": "hope-of-the-korbinites",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "thor",
+      "cardSlug": "divine-lightning",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:worthy-cards-played-this-turn:1]"
     }
   ],
   "bkpt": [
