@@ -7,6 +7,48 @@
 
 ## Current State
 
+### WP-672 — Transform VFX: the `transformResolved` notable event + the gamma-green power-surge beat (EC-709 / D-24487) (2026-09-08)
+
+**User-visible (post-deploy, D-24026 operator-pending).** When a Hero base card
+transforms in a real match — the World War Hulk signature mechanic, a card
+powering up into its stronger second form (She-Hulk *Hurl Legal Objections →
+Hurl Trucks*, Amadeus Cho *Gamma-Draining Nanites → Like Totally Smart Hulk*) —
+the play surface now fires a **transform beat**: a gamma-green "power surge"
+bloom swelling from the centre, a gamma particle burst, and a **"TRANSFORMED!"**
+call-out word, plus a **"Transformed!"** centre-screen chip. Until now the swap
+landed silently (a game-log line only). Fully gated by the WP-556 Effect-Intensity
+accessibility contract (the full-screen surge is suppressed under `low` /
+reduced-motion; the word survives; `off` silences everything).
+
+**What shipped (cross-layer, one PR).** The juice rides a new engine signal —
+the VFX contract forbids the client inventing events (Invariant #6) — so, exactly
+like the WP-644 → WP-647 shield-block arc, this adds the **tenth**
+`NotableGameEventType` `transformResolved` and a matching VFX consumer.
+
+- **Engine:** `transformResolved` (union + `NOTABLE_EVENT_TYPES` ten-entry array +
+  the drift test) + `TransformResolvedEvent { type, playerId, narrative }` (minimal
+  payload, no card id — the `healResolved` shape) + `composeTransformNarrative` +
+  a **guarded** `G.notableEvents.push` at the `heroEffectTransform` completed-swap
+  fire site (NOT on the AC-5 exhaustion no-op).
+- **Client:** `transformVfxManifest` (a gamma palette + the `TRANSFORMED!` word),
+  `useTransformVfx` (an append-only `notableEvents` cursor, the D-20104 gate — a
+  `useStrikeBlockedVfx` mirror), a fourth `VfxOverlay` consumer (the surge bloom +
+  burst + word), `PlayViewport` wiring, the `NotableEventOverlay` chip + gamma
+  accent, and the `sfxManifest` `transform.mp3` entry (byte operator-pending on R2).
+
+**Determinism — NO hash re-pin.** `G.notableEvents` **is** serialized by
+`computeStateHash`, but no committed replay/sentinel fixture performs a transform
+(the sentinel predates the `wwhk` set), so the pins are byte-identical — verified
+empirically (23 replay/sentinel/determinism tests unchanged). The VFX layer stays
+absent from the hash (the `src/vfx/` D-24365 exemption).
+
+**Gates.** `pnpm -r build` 0; game-engine **3176/0** (replay/sentinel pins
+unchanged, no re-pin); arena-client `vue-tsc` 0 + **1662/0**. Honest-partial: the
+Mastermind (General Ross, WP-669) + Scheme (Chthon, WP-670) transform surfaces do
+not yet emit the event — each a named follow-up on this shared foundation.
+
+---
+
 ### WP-671 — Govern-Close Consistency Guard: fail CI on an executed WORK_INDEX `[ ]` row (EC-708 / D-24485) (2026-09-08)
 
 **No user-observable change — infrastructure only.** A new CI guard,

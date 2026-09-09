@@ -14,6 +14,7 @@ import {
   type StrikeBlockedVfxEvent,
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
+import { useTransformVfxSignal } from '../../composables/useTransformVfx';
 import {
   useEffectIntensity,
   __resetEffectIntensityForTests,
@@ -36,6 +37,12 @@ function emitShield(threatKind: StrikeBlockedVfxEvent['threatKind']): void {
 function emitWound(): void {
   seq += 1;
   useWoundVfxSignal().value = { seq };
+}
+
+/** Pushes a transform event onto the shared transform signal. */
+function emitTransform(): void {
+  seq += 1;
+  useTransformVfxSignal().value = { seq };
 }
 
 describe('VfxOverlay (WP-556)', () => {
@@ -236,6 +243,71 @@ describe('VfxOverlay — wound-gained vignette (WP-650)', () => {
     emitWound();
     await nextTick();
     assert.equal(wrapper.find('[data-testid="play-vfx-wound"]').exists(), false);
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — transform beat (WP-672)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
+    useTransformVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+  });
+
+  test('a transform signal flashes the gamma-green surge + the "TRANSFORMED!" word at full intensity', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitTransform();
+    await nextTick();
+
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-surge"]').exists(),
+      'the power-surge bloom shows',
+    );
+    const callout = wrapper.find('[data-testid="play-vfx-callout"]');
+    assert.ok(callout.exists(), 'the call-out word shows');
+    assert.equal(callout.text(), 'TRANSFORMED!');
+    wrapper.unmount();
+  });
+
+  test('intensity off renders nothing (the master kill-switch)', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitTransform();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-surge"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('low intensity keeps the word but suppresses the surge (gated on shake — full only)', async () => {
+    useEffectIntensity().setIntensity('low');
+    const wrapper = mount(VfxOverlay);
+    emitTransform();
+    await nextTick();
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-callout"]').exists(),
+      'the word survives at low intensity',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-vfx-surge"]').exists(),
+      false,
+      'the full-screen surge is full-intensity only',
+    );
+    wrapper.unmount();
+  });
+
+  test('reduced-motion keeps the word but suppresses the full-screen surge (photosensitivity)', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitTransform();
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-callout"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-surge"]').exists(), false);
     wrapper.unmount();
   });
 });

@@ -60,11 +60,12 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   captureBystander: 'Captures a Bystander',
 };
 
-// why: locked chip labels — nine entries matching `NotableGameEventType`
+// why: locked chip labels — ten entries matching `NotableGameEventType`
 // exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
 // `healResolved`; WP-602 / D-24412 added `bystanderRevealed`; WP-642 / D-24454
-// added `deckReshuffled`; WP-644 / D-24456 added `strikeBlocked`). The labels
-// are user-facing English (engine-side type names use camelCase suffixes).
+// added `deckReshuffled`; WP-644 / D-24456 added `strikeBlocked`; WP-672 /
+// D-24487 added `transformResolved`). The labels are user-facing English
+// (engine-side type names use camelCase suffixes).
 const CHIP_LABELS: Readonly<Record<string, string>> = {
   fightResolved: 'Fought',
   ambushResolved: 'Ambush!',
@@ -75,6 +76,7 @@ const CHIP_LABELS: Readonly<Record<string, string>> = {
   bystanderRevealed: 'Bystander!',
   deckReshuffled: 'Deck Shuffled',
   strikeBlocked: 'Blocked!',
+  transformResolved: 'Transformed!',
 };
 
 function chipLabel(type: string): string {
@@ -264,6 +266,13 @@ export default defineComponent({
    / teal heal accents. */
 .notable-event-overlay[data-event-type="strikeBlocked"] {
   border-color: var(--color-strike-blocked, #3f7fe0);
+}
+
+/* why: WP-672 — a gamma green for the transform overlay (the hero powering up),
+   distinct from the Cap-blue block / indigo reshuffle / civilian-blue bystander /
+   gold twist / red strike / teal heal accents. Matches the transform VFX surge. */
+.notable-event-overlay[data-event-type="transformResolved"] {
+  border-color: var(--color-transform, #5ee66b);
 }
 
 .notable-event-overlay__chip {

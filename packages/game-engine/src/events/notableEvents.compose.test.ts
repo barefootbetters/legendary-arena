@@ -23,6 +23,7 @@ import {
   composeBystanderRevealedNarrative,
   composeDeckReshuffledNarrative,
   composeStrikeBlockedNarrative,
+  composeTransformNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -382,5 +383,21 @@ describe('composeStrikeBlockedNarrative (WP-644)', () => {
       composeStrikeBlockedNarrative('escape'),
     ]);
     assert.equal(sentences.size, 5, 'each threat kind has a distinct sentence');
+  });
+});
+
+describe('composeTransformNarrative (WP-672)', () => {
+  it('names the base card and the second form', () => {
+    assert.equal(
+      composeTransformNarrative('Hurl Legal Objections', 'Hurl Trucks'),
+      '"Hurl Legal Objections" transformed into "Hurl Trucks".',
+    );
+  });
+
+  it('is pure — identical inputs produce identical output', () => {
+    assert.equal(
+      composeTransformNarrative('Gamma-Draining Nanites', 'Like Totally Smart Hulk'),
+      composeTransformNarrative('Gamma-Draining Nanites', 'Like Totally Smart Hulk'),
+    );
   });
 });

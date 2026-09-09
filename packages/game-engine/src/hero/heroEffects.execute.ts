@@ -65,6 +65,7 @@ import {
 } from './revealLog.js';
 import { pushLog } from '../log/logPush.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
+import { composeTransformNarrative } from '../events/notableEvents.compose.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -3140,6 +3141,43 @@ function heroEffectTransform(
     'applied',
     targetInstanceId, // why: WP-438 — the second-form now in play is the play identity the log associates.
   );
+
+  // why: WP-672 / D-24487 — emit the transformResolved notable event LAST (after the
+  // swap settled and the applied log pushed), observing final state — the healWounds /
+  // bystanderRevealed emission precedent. G.messages is not projected to clients, so this
+  // event is what drives the arena-client "Transformed!" overlay + the transform VFX beat.
+  // Names resolve HERE via G.cardDisplayData (the composer stays pure), with a defensive
+  // raw-ext_id fallback when display data is absent (legacy test states may omit it).
+  // Guarded push: the minimal heroEffects test builder omits G.notableEvents; a real match
+  // always seeds it at setup ([] in buildInitialGameState). Handlers never throw, so an
+  // absent array is a silent skip, mirroring the transformTargets / transformDeck guards.
+  if (Array.isArray(G.notableEvents)) {
+    const baseName = resolveTransformCardName(G, cardId);
+    const secondFormName = resolveTransformCardName(G, targetInstanceId);
+    G.notableEvents.push({
+      type: 'transformResolved',
+      playerId: playerID,
+      narrative: composeTransformNarrative(baseName, secondFormName),
+    });
+  }
+}
+
+/**
+ * Resolves a card's display name from `G.cardDisplayData` for the transform
+ * narrative, falling back to the raw ext_id when no display entry exists (WP-672).
+ * Mirrors the `villainDeck.reveal.ts` bystanderRevealed name-resolution so the
+ * `composeTransformNarrative` composer keeps its no-`G` purity.
+ *
+ * @param G - Game state (read-only here).
+ * @param cardId - The card ext_id to resolve to a display name.
+ * @returns The card's display name, or the raw ext_id when display data is absent.
+ */
+function resolveTransformCardName(G: LegendaryGameState, cardId: CardExtId): string {
+  const display = G.cardDisplayData?.[cardId];
+  if (display && typeof display.name === 'string' && display.name.length > 0) {
+    return display.name;
+  }
+  return cardId;
 }
 
 /**

@@ -381,3 +381,29 @@ export function composeStrikeBlockedNarrative(threatKind: StrikeBlockThreatKind)
   const exhaustiveCheck: never = threatKind;
   return exhaustiveCheck;
 }
+
+// ---------------------------------------------------------------------------
+// Transform narrative
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for a `transformResolved` event
+ * (WP-672 / D-24487).
+ *
+ * Pure + byte-stable: given the same two names, returns identical output. Both
+ * inputs are resolved display names (or the raw ext_id when `cardDisplayData`
+ * had no entry) supplied by the fire site, so the composer keeps its no-`G`
+ * purity — mirroring `composeBystanderRevealedNarrative`. Voiced in the third
+ * person because the notable-event overlay is a public, all-audience projection;
+ * the transforming seat travels on the event's `playerId`, not in the copy.
+ *
+ * @param baseName - Human-facing name of the base card that was played.
+ * @param secondFormName - Human-facing name of the second form it became.
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeTransformNarrative(
+  baseName: string,
+  secondFormName: string,
+): string {
+  return `"${baseName}" transformed into "${secondFormName}".`;
+}
