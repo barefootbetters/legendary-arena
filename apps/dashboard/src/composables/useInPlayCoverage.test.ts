@@ -303,9 +303,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // trajectories slightly. Net: totalObs 2338 -> 2336 (a sweep-trajectory artifact, not
   // a regression); percentResolved holds at 30.8. This is the honest gauge reflecting
   // current truth (deterministic — CI computes the same 2336).
+  // 2026-09-09 (D-24491, re-pin): the Outwit fix (distinctHeroCostsAtLeast now counts
+  // hand + 0-cost Heroes) makes Outwit resolve where it previously blocked, so the
+  // fixed-seed sweep draws and plays more cards — both more Outwit resolutions (Outwit
+  // is a resolved condition) and more downstream observations. Net: totalObs 2336 -> 2391;
+  // percentResolved rises 30.8 -> 32.4 (the extra Outwit resolutions lift the resolved
+  // share). Honest gauge, deterministic — CI computes the same.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2336);
-  assert.equal(view.percentResolved.value, 30.8);
+  assert.equal(view.totalObs.value, 2391);
+  assert.equal(view.percentResolved.value, 32.4);
   assert.ok(view.remaining.value.length > 0);
 });
 
