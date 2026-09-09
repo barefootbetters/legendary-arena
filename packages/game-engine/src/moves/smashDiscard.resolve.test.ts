@@ -217,6 +217,10 @@ describe('resolveSmashDiscard — decline arm (WP-676 / D-24492)', () => {
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'nothing discarded');
     assert.equal(gameState.turnEconomy.attack, 3, 'no Attack granted (the rule is "you MAY discard")');
     assert.equal(gameState.pendingSmashDiscards!.length, 0, 'queue front-popped');
+    assert.ok(
+      gameState.messages.some((line) => /declined Smash/.test(line.text)),
+      'the voluntary decline is logged (parity with the empty-hand "could not Smash" no-op)',
+    );
   });
 });
 
