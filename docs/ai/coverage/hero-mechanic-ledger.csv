@@ -537,9 +537,11 @@ vill/venom,Venom,vill,(unmarked),unmarked,,,,
 vnom/carnage,Carnage,vnom,digest,unsupported,,,,carnivore
 vnom/carnage,Carnage,vnom,excessive-violence,unsupported,,,,feast-or-famine|gruesome-feast|rending-claws
 vnom/carnage,Carnage,vnom,indigestion,unsupported,,,,carnivore
+vnom/venom,Venom,vnom,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,symbiotic-adaptation
 vnom/venom,Venom,vnom,digest,unsupported,,,,devouring-drool|insatiable-hunger
 vnom/venom,Venom,vnom,excessive-violence,unsupported,,,,razor-teeth
 vnom/venom,Venom,vnom,indigestion,unsupported,,,,devouring-drool|insatiable-hunger
+vnom/venom,Venom,vnom,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,symbiotic-adaptation
 vnom/venom-rocket,Venom Rocket,vnom,digest,unsupported,,,,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,unsupported,,,,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos

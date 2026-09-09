@@ -52,6 +52,7 @@ import PendingReorderChoicePrompt from '../components/play/PendingReorderChoiceP
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
+import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import PlayVillainTopPrompt from '../components/play/PlayVillainTopPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
@@ -128,6 +129,7 @@ export default defineComponent({
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
     DrawOrEmpoweredPrompt,
+    CountScaledChoicePrompt,
     PlayVillainTopPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
@@ -796,6 +798,14 @@ export default defineComponent({
                client-side precedence is needed. -->
           <DrawOrEmpoweredPrompt
             :pending-draw-or-empowered="snapshot.pendingDrawOrEmpowered"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-675 / D-24490 — the count-scaled choose-one prompt (vnom Symbiotic
+               Adaptation); appears only for the choosing player when pendingCountScaledChoice
+               is set. Same block-all posture as the draw-or-empowered prompt above. -->
+          <CountScaledChoicePrompt
+            :pending-count-scaled-choice="snapshot.pendingCountScaledChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />

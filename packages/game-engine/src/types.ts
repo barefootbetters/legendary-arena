@@ -12,6 +12,7 @@ import type { MatchSetupConfig } from './matchSetup.types.js';
 import type { LogEntry } from './log/logOutcome.types.js';
 import type { BoardKeyword } from './board/boardKeywords.types.js';
 import type { SchemeSetupInstruction } from './scheme/schemeSetup.types.js';
+import type { CountScaledChoiceOption } from './rules/heroCountSource.js';
 
 // why: Persistence boundary types (PERSISTENCE_CLASSES, MatchSnapshot,
 // PersistableMatchConfig) are defined canonically in
@@ -838,6 +839,38 @@ export interface PendingDrawOrEmpowered {
 }
 
 /**
+ * Pending count-scaled choose-one player choice state (WP-675 / D-24490).
+ *
+ * Created when a `count-scaled-choose` hero effect is played (`onPlay`) — the
+ * printed "Choose one: +N recruit for each other card with a recruit icon / Or
+ * +N attack for each other card with an attack icon" form (vnom's Symbiotic
+ * Adaptation). Appended to G.pendingCountScaledChoice[] (FIFO queue). Removed
+ * (front-popped) by resolveCountScaledChoice after the player (or bot) picks an
+ * option index. Must be undefined or empty at every turn-end (enforced by the
+ * block-all guards).
+ *
+ * // why: D-24490 — the choice is between two count-scaled resource grants that
+ * differ in resource AND count, so it is an interactive pending choice (the
+ * draw-or-empowered pattern), NOT an oracle-max. The pending entry records the
+ * choosing player and the two options; the counts are resolved from G at resolve
+ * time (not stored), and the chosen option's grant reuses the attack-per-count /
+ * recruit-per-count executor (no re-implementation).
+ */
+export interface PendingCountScaledChoice {
+  /** The player who must pick an option index. */
+  playerID: string;
+  /**
+   * The triggering card's ext_id (the played vnom card). Passed to
+   * resolveCountSource at resolve time so an "each OTHER card" icon source
+   * excludes this card from its own count — vnom's Symbiotic Adaptation prints
+   * "0+"/"0+", so it shows BOTH icons and would otherwise count itself.
+   */
+  cardId: string;
+  /** The two printed options (resource + count source + per-unit magnitude). */
+  options: CountScaledChoiceOption[];
+}
+
+/**
  * Pending mandatory return-zero-cost-discard player choice state (D-24139).
  *
  * Created when a return-zero-cost-discard hero effect fires (`onPlay`) — the
@@ -1271,6 +1304,9 @@ export interface LegendaryGameState {
   // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending draw-or-empowered choices awaiting resolution (WP-286). */
   pendingDrawOrEmpowered?: PendingDrawOrEmpowered[] | undefined;
+
+  /** FIFO queue of pending count-scaled choose-one choices awaiting resolution (WP-675 / D-24490). */
+  pendingCountScaledChoice?: PendingCountScaledChoice[] | undefined;
 
   // why: FIFO queue of pending optional-put-bottom-hq choices (one per played
   // optional-put-bottom-hq hero ability — the "You may put a card from the HQ on

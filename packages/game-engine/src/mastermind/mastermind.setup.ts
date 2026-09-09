@@ -261,6 +261,9 @@ export function buildMastermindState(
     fightCost: parseCardStatValue(baseCard.vAttack),
     fightCostMode: 'static',
     fightCostBase: 0,
+    // why: WP-675 / D-24490 — masterminds carry no hero attack/recruit power icon.
+    hasAttackIcon: false,
+    hasRecruitIcon: false,
   };
 
   // Build tactic ext_ids
@@ -309,6 +312,9 @@ export function buildMastermindState(
       fightCost: parseCardStatValue(secondFaceCard.vAttack),
       fightCostMode: 'static',
       fightCostBase: 0,
+      // why: WP-675 / D-24490 — masterminds carry no hero attack/recruit power icon.
+      hasAttackIcon: false,
+      hasRecruitIcon: false,
     };
     const secondFaceGameText: string[] = [];
     if (Array.isArray(secondFaceCard.abilities)) {

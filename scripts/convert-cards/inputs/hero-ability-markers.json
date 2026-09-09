@@ -1232,6 +1232,20 @@
       "markupToken": "[keyword:attack-per-count:cost-four-plus-played-this-turn:1]"
     }
   ],
+  "vnom": [
+    {
+      "heroSlug": "venom",
+      "cardSlug": "symbiotic-adaptation",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:recruit-per-count:recruit-icon-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "venom",
+      "cardSlug": "symbiotic-adaptation",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:attack-per-count:attack-icon-played-this-turn:1]"
+    }
+  ],
   "wtif": [
     {
       "heroSlug": "apocalyptic-black-widow",

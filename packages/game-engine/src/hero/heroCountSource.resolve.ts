@@ -149,6 +149,49 @@ function countCost4PlusCardsPlayedThisTurn(
 }
 
 /**
+ * Counts the OTHER cards a player has played this turn that show a given power icon.
+ *
+ * "Show an attack/recruit icon" is the FAITHFUL presence test — `hasAttackIcon` /
+ * `hasRecruitIcon` on `G.cardStats`, set at setup from the RAW registry value being
+ * non-null (WP-675 / D-24490). A `"0+"` card shows the icon but parses to cost/attack 0,
+ * so this must NOT test `attack > 0`. "Other" excludes the triggering card itself —
+ * vnom's text is "for each OTHER card you played this turn with a … icon". Cards played
+ * this turn live in the in-play zone; a card with no cardStats row never counts.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @param icon - Which printed icon to count: 'attack' or 'recruit'.
+ * @returns The number of other cards played this turn that show the given icon.
+ */
+function countIconCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+  icon: 'attack' | 'recruit',
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+
+  let iconCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    // why: faithful icon presence from the setup-derived boolean, not a >0 proxy;
+    // a card with no cardStats row (missing entry) never shows the icon.
+    const stat = G.cardStats[playedCardId as CardExtId];
+    const showsIcon = icon === 'attack' ? stat?.hasAttackIcon === true : stat?.hasRecruitIcon === true;
+    if (showsIcon) {
+      iconCount++;
+    }
+  }
+  return iconCount;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -179,6 +222,12 @@ export function resolveCountSource(
     }
     case 'cost-four-plus-played-this-turn': {
       return countCost4PlusCardsPlayedThisTurn(G, playerID, triggeringCardId);
+    }
+    case 'attack-icon-played-this-turn': {
+      return countIconCardsPlayedThisTurn(G, playerID, triggeringCardId, 'attack');
+    }
+    case 'recruit-icon-played-this-turn': {
+      return countIconCardsPlayedThisTurn(G, playerID, triggeringCardId, 'recruit');
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must

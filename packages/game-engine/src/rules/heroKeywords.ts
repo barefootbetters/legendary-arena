@@ -49,6 +49,7 @@ export type HeroKeyword =
   | 'undercover' // why: D-24060 / WP-282 — "send a card face-down, play it later from face-down state"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
   | 'victory-villain-attack' // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
   | 'draw-or-empowered' // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
+  | 'count-scaled-choose' // why: WP-675 / D-24490 — "Choose one: +N recruit per other recruit-icon card / Or +N attack per other attack-icon card" (vnom Symbiotic Adaptation); parks a PendingCountScaledChoice (two count-scaled options) resolved by resolveCountScaledChoice, which dispatches the chosen option through the attack-per-count / recruit-per-count executor. Carries options (each with its own magnitude), no top-level magnitude → in NO_MAGNITUDE_KEYWORDS
   | 'size-changing' // why: D-24074 / WP-290 — printed "Size-Changing: [Class]" ("when you play this card, it has the [Class] class"); a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
   | 'optional-put-bottom-hq' // why: "You may put a card from the HQ on the bottom of the Hero Deck"; parks a PendingOptionalPutBottomHQ resolved by resolveOptionalPutBottomHQ
   | 'put-any-number-bottom-hq' // why: D-24132 — "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (multi-select variant); parks a PendingPutAnyNumberBottomHQ resolved by resolvePutAnyNumberBottomHQ, then applies any trailing "Empowered by [classes]"
@@ -102,6 +103,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'conditional',
   'victory-villain-attack', // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
   'draw-or-empowered', // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
+  'count-scaled-choose', // why: WP-675 / D-24490 — "Choose one: +N recruit/attack per other icon-bearing card" (vnom Symbiotic Adaptation); parks a PendingCountScaledChoice resolved by resolveCountScaledChoice
   'size-changing', // why: D-24074 / WP-290 — printed "Size-Changing: [Class]"; a class-grant realized at class-read time, no onPlay handler (the wall-crawl class)
   'optional-put-bottom-hq', // why: "You may put a card from the HQ on the bottom of the Hero Deck"; parks a pending choice resolved by resolveOptionalPutBottomHQ
   'put-any-number-bottom-hq', // why: D-24132 — "Choose any number of cards/Heroes from the HQ. Put them on the bottom of the Hero Deck" (multi-select); parks a pending choice resolved by resolvePutAnyNumberBottomHQ

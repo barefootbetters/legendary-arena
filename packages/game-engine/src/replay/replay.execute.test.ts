@@ -153,8 +153,12 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // with NO behaviour change (this moves:[] replay draws nothing via effects, so
 // cardsDrawn stays 0). A new G field, not a masked regression — same dependency-driven
 // class as the re-pins above.
-// Pre-WP-665: '36a82b21'. Post-WP-665: '83b9b0a4'.
-const PRE_WP080_HASH = '83b9b0a4';
+// Pre-WP-665: '36a82b21'. Post-WP-665: '83b9b0a4'. Post-WP-675: 'bc71424b'.
+// why: WP-675 / D-24490 re-pin — CardStatEntry gained hasAttackIcon/hasRecruitIcon (set at
+// setup for every card); cardStats is serialized by computeStateHash, so the empty-replay
+// initial-state hash shifts uniformly. The sole delta is the two new boolean fields (the
+// sanctioned new-hashed-field re-pin class, D-24468/D-24469 precedent); no gameplay changed.
+const PRE_WP080_HASH = 'bc71424b';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

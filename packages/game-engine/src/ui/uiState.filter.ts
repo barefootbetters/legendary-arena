@@ -860,6 +860,28 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-675 / D-24490 — the pending count-scaled choose-one (vnom Symbiotic Adaptation)
+  // is private to the chooser (only they may resolve it). Present only when the audience is a
+  // player whose playerId equals the chooser's playerID; omitted (conditional assignment, never
+  // an `undefined` literal) for opponents AND spectators — mirroring the pendingDrawOrEmpowered
+  // posture. The options carry only resolved counts + resource labels — no private identity — so
+  // the assignment rebuilds each option field-by-field (the audience-filter whitelist pattern).
+  if (
+    uiState.pendingCountScaledChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingCountScaledChoice.playerID
+  ) {
+    result.pendingCountScaledChoice = {
+      playerID: uiState.pendingCountScaledChoice.playerID,
+      options: uiState.pendingCountScaledChoice.options.map((option) => ({
+        resource: option.resource,
+        perUnit: option.perUnit,
+        count: option.count,
+        total: option.total,
+      })),
+    };
+  }
+
   // why: WP-663 / D-24474 — the pending play-top-Villain-Deck choice (Shadowed Thoughts)
   // is private to the chooser (only they may resolve it). Redacted for EVERY audience
   // except the choosing player; present only when the audience is a player whose playerId

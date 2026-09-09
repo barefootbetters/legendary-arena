@@ -182,6 +182,11 @@ export interface UIState {
   // (undefined) means no pending draw-or-empowered choice; the client must not render
   // the prompt in that case.
   pendingDrawOrEmpowered?: UIPendingDrawOrEmpowered;
+  // why: WP-675 / D-24490 — projects the FRONT of G.pendingCountScaledChoice with each option's
+  // RESOLVED count/total so the choosing player can render vnom's "Choose one: +N Recruit / +N
+  // Attack" prompt. Redacted (omitted) for every audience except the chooser (keyed on .playerID).
+  // Absent (undefined) means no pending count-scaled choice; the client must not render the prompt.
+  pendingCountScaledChoice?: UIPendingCountScaledChoice;
   // why: WP-663 / D-24474 — projects the FRONT of G.pendingPlayVillainTopChoices so the
   // choosing player can render Shadowed Thoughts' "Play the top card of the Villain Deck for
   // +N Attack?" prompt. Redacted (omitted) for every audience except the chooser (the
@@ -1087,6 +1092,40 @@ export interface UIPendingDrawOrEmpowered {
   // why: D-24071 — derived once in uiState.build.ts by a single deterministic
   // empoweredClass→display mapping; never an ad-hoc or per-card string.
   empoweredLabel: string;
+}
+
+/**
+ * One rendered option of a count-scaled choose-one choice (WP-675 / D-24490).
+ *
+ * The resolved `count` and `total` are computed in uiState.build.ts at projection
+ * time (via resolveCountSource on the live G), so the client can label each button
+ * with its concrete grant ("+2 Recruit" / "+3 Attack") without re-deriving the count.
+ */
+export interface UIPendingCountScaledChoiceOption {
+  /** Which resource this option grants. */
+  resource: 'attack' | 'recruit';
+  /** The per-unit rate (attack/recruit per counted card). */
+  perUnit: number;
+  /** The resolved count of qualifying OTHER cards played this turn. */
+  count: number;
+  /** The grant this option would apply now (perUnit × count). */
+  total: number;
+}
+
+/**
+ * UI contract for resolving a pending count-scaled choose-one (WP-675 / D-24490 — vnom's
+ * Symbiotic Adaptation). A choice between two count-scaled resource grants; only visible to
+ * the choosing player, redacted for opponents and spectators.
+ *
+ * `playerID` is REQUIRED — uiState.filter.ts keys the chooser-only redaction on it. The two
+ * options appear in printed order; the client resolves by option index (resolveCountScaledChoice).
+ */
+export interface UIPendingCountScaledChoice {
+  // why: WP-675 / D-24490 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingDrawOrEmpowered.playerID.
+  playerID: string;
+  /** The two options, in printed order, each with its resolved count + total. */
+  options: UIPendingCountScaledChoiceOption[];
 }
 
 /**

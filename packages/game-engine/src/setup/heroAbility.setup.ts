@@ -18,7 +18,7 @@ import type {
 } from '../rules/heroAbility.types.js';
 import type { HeroKeyword, HeroAbilityTiming } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
-import type { HeroCountSource } from '../rules/heroCountSource.js';
+import type { HeroCountSource, CountScaledChoiceOption } from '../rules/heroCountSource.js';
 import { HERO_COUNT_SOURCES } from '../rules/heroCountSource.js';
 import type { RevealRule, RevealPredicate, RevealAction } from '../rules/revealRule.js';
 import { revealRulesForLegacyKeyword, REVEAL_KEYWORDS } from '../rules/revealRule.js';
@@ -791,6 +791,28 @@ function parseAbilityText(
     }
   }
 
+  // Pre-pass: resolve the count-scaled choose-one form before the KEYWORD_PATTERN loop and
+  // before Steps 2d / 2d' (the per-count marker extractors).
+  // why: WP-675 / D-24490 — vnom's "Choose one: +N recruit per other recruit-icon card / Or
+  // +N attack per other attack-icon card" is coalesced (buildHeroAbilityHooks) into one line
+  // carrying BOTH per-count markers. This pre-pass folds the two markers into ONE
+  // count-scaled-choose effect (two options) so the two grants become a CHOICE, not two
+  // independent grants, and sets a flag that suppresses the per-count keyword extraction and
+  // the printed grant/criterion icons on the line.
+  let processedAsCountScaledChoose = false;
+  let countScaledChoiceOptions: CountScaledChoiceOption[] | undefined;
+  if (!processedAsChooseOne && !processedAsDrawOrEmpowered) {
+    const countScaledChoiceResult = tryResolveCountScaledChooseOneLine(abilityText);
+    if (countScaledChoiceResult !== undefined) {
+      keywords.push('count-scaled-choose');
+      countScaledChoiceOptions = countScaledChoiceResult.options;
+      processedAsCountScaledChoose = true;
+      // why: the per-count "with a [icon] icon" criteria are count PARAMETERS, not play-gates;
+      // clear conditions so the hook adds no 'conditional' keyword (mirrors the pre-passes above).
+      conditions.splice(0, conditions.length);
+    }
+  }
+
   // Pre-pass: capture a put-any-number-bottom-hq line's trailing Empowered grant before the
   // KEYWORD_PATTERN loop (D-24132). When the line carries the put-any-number marker AND a
   // same-line "[keyword:Empowered] by [hc:…]" tail (Wonder Man's 8th Wonder of the World), the
@@ -1123,7 +1145,10 @@ function parseAbilityText(
   while (countScaledMatch !== null) {
     const countSourceCandidate = countScaledMatch[1]!;
     const perUnitString = countScaledMatch[2]!;
-    if (isValidHeroCountSource(countSourceCandidate)) {
+    // why: WP-675 / D-24490 — on a count-scaled-choose line the per-count markers are the
+    // two CHOICE options (folded by the pre-pass), NOT two independent grants; skip the
+    // standalone per-count keyword so only the count-scaled-choose effect is emitted.
+    if (isValidHeroCountSource(countSourceCandidate) && !processedAsCountScaledChoose) {
       keywords.push('attack-per-count');
       magnitudes.set('attack-per-count', parseInt(perUnitString, 10));
       countSources.set('attack-per-count', countSourceCandidate);
@@ -1143,7 +1168,8 @@ function parseAbilityText(
   while (recruitCountScaledMatch !== null) {
     const recruitCountSourceCandidate = recruitCountScaledMatch[1]!;
     const recruitPerUnitString = recruitCountScaledMatch[2]!;
-    if (isValidHeroCountSource(recruitCountSourceCandidate)) {
+    // why: WP-675 / D-24490 — same choice-fold suppression as the attack Step 2d above.
+    if (isValidHeroCountSource(recruitCountSourceCandidate) && !processedAsCountScaledChoose) {
       keywords.push('recruit-per-count');
       magnitudes.set('recruit-per-count', parseInt(recruitPerUnitString, 10));
       countSources.set('recruit-per-count', recruitCountSourceCandidate);
@@ -1371,6 +1397,26 @@ function parseAbilityText(
     magnitudes.delete('recruit');
   }
 
+  // Icon-suppression (count-scaled choose-one): a count-scaled-choose line carries BOTH a
+  // printed grant icon per option (`+1[icon:recruit]`, `+1[icon:attack]`) and the criterion
+  // icons ("with a [icon:recruit] icon"). Steps 2b/3 would promote them to flat 'recruit' /
+  // 'attack' keywords that fire UNCONDITIONALLY alongside the parked choice — a double-grant.
+  // Drop both plain keywords so only the count-scaled-choose park remains (the grant is applied
+  // at resolve time by the chosen option's per-count executor).
+  // why: WP-675 / D-24490 — the count-scaled-choose keyword subsumes both printed icons
+  // (mirrors the D-24016 / D-24489 per-count icon suppression above).
+  if (processedAsCountScaledChoose) {
+    const keywordsWithoutResourceIcons: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack' && keyword !== 'recruit') {
+        keywordsWithoutResourceIcons.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutResourceIcons;
+    magnitudes.delete('attack');
+    magnitudes.delete('recruit');
+  }
+
   // Icon-suppression (sibling): a reveal-herodeck-attack effect subsumes the
   // printed attack icon on the same line. Jade Giantess reads "…and you get that
   // card's printed[icon:attack]" — that bare icon is the effect's OWN grant (the
@@ -1508,6 +1554,13 @@ function parseAbilityText(
         const recruitCountSource = countSources.get('recruit-per-count');
         if (magnitude !== undefined && recruitCountSource !== undefined) {
           effects.push({ type: keyword, magnitude, countSource: recruitCountSource });
+        }
+      } else if (keyword === 'count-scaled-choose') {
+        // why: WP-675 / D-24490 — the count-scaled-choose effect carries the two options
+        // (each a {resource, countSource, magnitude}) the pre-pass folded from the printed
+        // "Choose one:" form; the park handler records them on the PendingCountScaledChoice.
+        if (countScaledChoiceOptions !== undefined && countScaledChoiceOptions.length >= 2) {
+          effects.push({ type: keyword, countScaledChoiceOptions });
         }
       } else if (keyword === 'optional-ko-reward') {
         // why: D-24019 — the optional-KO-reward effect carries its rewardType so
@@ -1961,6 +2014,105 @@ function tryResolveEmpoweredChooseOneLine(
  * @param abilityText - The full ability text line.
  * @returns The normalized empowered hero class, or undefined for any non-canonical shape.
  */
+// why: WP-675 / D-24490 — non-global marker extractors for the count-scaled choose-one
+// options. Each option carries a per-count marker; the resource is the marker family
+// (recruit-per-count → recruit, attack-per-count → attack), the source + per-unit rate its segments.
+const RECRUIT_PER_COUNT_MARKER_PATTERN = /\[keyword:recruit-per-count:([a-z][a-z-]*):(\d+)\]/;
+const ATTACK_PER_COUNT_MARKER_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/;
+
+// why: WP-675 / D-24490 — a standalone "Choose one:" header entry (the multi-line choose-one form).
+const STANDALONE_CHOOSE_ONE_HEADER_PATTERN = /^\s*Choose one\s*:\s*$/i;
+// why: WP-675 / D-24490 — an option bullet line under a standalone "Choose one:" header.
+const CHOOSE_ONE_OPTION_BULLET_PATTERN = /^\s*-\s/;
+// why: WP-675 / D-24490 — the count-scaled marker family that GATES coalescing.
+const COUNT_SCALED_OPTION_MARKER_PATTERN = /\[keyword:(?:attack|recruit)-per-count:/;
+
+/**
+ * Coalesces a multi-line count-scaled "Choose one:" group into ONE synthetic ability line
+ * (WP-675 / D-24490).
+ *
+ * A standalone "Choose one:" entry followed by "- " option bullets is three separate
+ * `abilities[]` entries; parsed independently they would emit the options as independent
+ * hooks (two grants, not a choice). This joins the header + its option bullets into one
+ * string so the single-line count-scaled-choose pre-pass folds them into one choice.
+ *
+ * GATED: coalesces ONLY when the option bullets carry a count-scaled marker
+ * (`[keyword:(attack|recruit)-per-count:…]`). Multi-line choose-ones WITHOUT such markers
+ * (e.g. the S.H.I.E.L.D. undercover / levels cards) are left untouched — they parse exactly
+ * as before, so this adds no behaviour to them (and does not regress them). Other abilities
+ * on the card are preserved in place.
+ *
+ * @param abilities - The card's raw ability lines (with markers already applied).
+ * @returns The ability lines with any gated count-scaled choose-one group joined into one.
+ */
+function coalesceCountScaledChooseOne(abilities: string[]): string[] {
+  const headerIndex = abilities.findIndex((line) => STANDALONE_CHOOSE_ONE_HEADER_PATTERN.test(line));
+  if (headerIndex === -1) {
+    return abilities;
+  }
+  const optionLines: string[] = [];
+  let nextIndex = headerIndex + 1;
+  while (nextIndex < abilities.length && CHOOSE_ONE_OPTION_BULLET_PATTERN.test(abilities[nextIndex]!)) {
+    optionLines.push(abilities[nextIndex]!);
+    nextIndex++;
+  }
+  // why: a choose-one needs at least two options; and the gate — only coalesce a count-scaled
+  // choose-one (leaves non-count-scaled multi-line choose-ones parsing as today, no regression).
+  const isCountScaled = optionLines.some((line) => COUNT_SCALED_OPTION_MARKER_PATTERN.test(line));
+  if (optionLines.length < 2 || !isCountScaled) {
+    return abilities;
+  }
+  const joined = [abilities[headerIndex]!, ...optionLines].join(' ');
+  return [...abilities.slice(0, headerIndex), joined, ...abilities.slice(nextIndex)];
+}
+
+/**
+ * Resolves the count-scaled choose-one form (WP-675 / D-24490).
+ *
+ * vnom's Symbiotic Adaptation, coalesced (buildHeroAbilityHooks) into one line:
+ * "Choose one: - You get +1[icon:recruit] … [keyword:recruit-per-count:recruit-icon-played-this-turn:1]
+ *  - Or you get +1[icon:attack] … [keyword:attack-per-count:attack-icon-played-this-turn:1]".
+ *
+ * Gated strictly so it never claims the Empowered / draw-or-empowered choose-ones: (1) a
+ * "Choose one:" prefix, (2) BOTH a recruit-per-count AND an attack-per-count marker with a
+ * source in HERO_COUNT_SOURCES. Options are returned in PRINTED order (by marker position),
+ * so the client shows them as printed. Any miss → undefined. Reads `abilityText` only.
+ *
+ * @param abilityText - The (coalesced) full ability text line.
+ * @returns The two options, or undefined for any non-count-scaled-choose shape.
+ */
+function tryResolveCountScaledChooseOneLine(
+  abilityText: string,
+): { options: CountScaledChoiceOption[] } | undefined {
+  // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const).
+  if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
+    return undefined;
+  }
+  const recruitMatch = RECRUIT_PER_COUNT_MARKER_PATTERN.exec(abilityText);
+  const attackMatch = ATTACK_PER_COUNT_MARKER_PATTERN.exec(abilityText);
+  const candidates: Array<{ index: number; option: CountScaledChoiceOption }> = [];
+  if (recruitMatch !== null && isValidHeroCountSource(recruitMatch[1]!)) {
+    candidates.push({
+      index: recruitMatch.index,
+      option: { resource: 'recruit', countSource: recruitMatch[1]! as HeroCountSource, magnitude: parseInt(recruitMatch[2]!, 10) },
+    });
+  }
+  if (attackMatch !== null && isValidHeroCountSource(attackMatch[1]!)) {
+    candidates.push({
+      index: attackMatch.index,
+      option: { resource: 'attack', countSource: attackMatch[1]! as HeroCountSource, magnitude: parseInt(attackMatch[2]!, 10) },
+    });
+  }
+  // why: require BOTH options — a single marker is a plain per-count line, not a choose-one.
+  if (candidates.length < 2) {
+    return undefined;
+  }
+  // why: printed order — sort by the marker's position in the line so the UI shows the
+  // options as printed (vnom prints recruit first, then attack).
+  candidates.sort((first, second) => first.index - second.index);
+  return { options: candidates.map((candidate) => candidate.option) };
+}
+
 function tryResolveDrawOrEmpoweredLine(abilityText: string): { empoweredClass: string } | undefined {
   // why: D-24069 gate #1 — the "Choose one:" prefix (reuses the WP-283 prefix const); limits this
   // path to choose-one lines, leaving every other card text's empowered dispatch unaffected.
@@ -2477,7 +2629,12 @@ export function buildHeroAbilityHooks(
         continue;
       }
 
-      for (const abilityText of cardEntry.abilities) {
+      // why: WP-675 / D-24490 — join any multi-line count-scaled "Choose one:" group into one
+      // synthetic line BEFORE the per-line parse, so the count-scaled-choose pre-pass folds the
+      // two option markers into a single choice. Gated on count-scaled markers → non-count-scaled
+      // multi-line choose-ones (S.H.I.E.L.D. undercover/levels) pass through unchanged.
+      const abilityLines = coalesceCountScaledChooseOne(cardEntry.abilities);
+      for (const abilityText of abilityLines) {
         if (typeof abilityText !== 'string' || abilityText.trim() === '') {
           continue;
         }

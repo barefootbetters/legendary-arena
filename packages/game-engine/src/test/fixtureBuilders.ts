@@ -110,6 +110,10 @@ export function makeCardStatEntry(overrides: Partial<CardStatEntry> = {}): CardS
     fightCost: 0,
     fightCostMode: 'static',
     fightCostBase: 0,
+    // why: WP-675 / D-24490 — icon-presence defaults false; a fixture that needs a
+    // card to show an attack/recruit icon sets these explicitly via `overrides`.
+    hasAttackIcon: false,
+    hasRecruitIcon: false,
     ...overrides,
   };
 }

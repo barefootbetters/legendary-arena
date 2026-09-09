@@ -26,6 +26,7 @@ import { resolveGiveHqHeroChoice, hasPendingGiveHqHeroChoice } from './moves/giv
 import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/copyPowersChoice.resolve.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
+import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -155,6 +156,8 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingVictoryPileCardPick(G)) { return; }
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) { return; }
+  // why: block-all — pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
+  if (hasPendingCountScaledChoice(G)) { return; }
   // why: block-all — pendingOptionalPutBottomHQ must be resolved before any other action
   if (hasPendingOptionalPutBottomHQ(G)) { return; }
   // why: D-24132 — block-all — pendingPutAnyNumberBottomHQ (multi-select HQ→bottom) must be resolved before any other action
@@ -519,6 +522,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     resolvePutAnyNumberBottomHQ: { move: resolvePutAnyNumberBottomHQ, client: false },
     resolveVictoryPileCardPick: { move: resolveVictoryPileCardPick, client: false },
     resolveDrawOrEmpowered: { move: resolveDrawOrEmpowered, client: false },
+    resolveCountScaledChoice: { move: resolveCountScaledChoice, client: false },
     // why: D-24139 — resolveReturnZeroCostDiscard resolves the mandatory 0-cost
     // discard-to-hand return (Black Knight's Defend the Weak). Server-only
     // (client: false) per D-10008 — it mutates playerZones fields.

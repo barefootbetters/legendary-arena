@@ -87,14 +87,15 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 6,
+      "cardCount": 7,
       "cardIds": [
         "asrd/thor",
         "co2e/black-widow",
         "core/black-widow",
         "cvwr/goliath",
         "noir/luke-cage-noir",
-        "vill/juggernaut"
+        "vill/juggernaut",
+        "vnom/venom"
       ],
       "hidden": true
     },
@@ -1062,9 +1063,10 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
-        "noir/luke-cage-noir"
+        "noir/luke-cage-noir",
+        "vnom/venom"
       ],
       "hidden": true
     },
@@ -3649,9 +3651,11 @@
     },
     "vnom/venom": {
       "mechanics": [
+        "attack-per-count",
         "digest",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "recruit-per-count"
       ]
     },
     "vnom/venom-rocket": {

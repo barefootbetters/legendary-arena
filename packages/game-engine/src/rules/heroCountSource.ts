@@ -36,7 +36,9 @@
 export type HeroCountSource =
   | 'victory-bystanders' // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
   | 'worthy-cards-played-this-turn' // why: WP-673 / D-24488 — counts the OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464); Divine Lightning's "+1 attack for each other card you played this turn that makes you Worthy"
-  | 'cost-four-plus-played-this-turn'; // why: WP-674 / D-24489 — counts the OTHER cards played this turn that cost 4 or more; drives the "+N attack/recruit for each other card you played this turn that costs 4 or more" siblings (cvwr Being Big Is Best, noir Follow Big Leads + Weight of the World, vill Size Matters)
+  | 'cost-four-plus-played-this-turn' // why: WP-674 / D-24489 — counts the OTHER cards played this turn that cost 4 or more; drives the "+N attack/recruit for each other card you played this turn that costs 4 or more" siblings (cvwr Being Big Is Best, noir Follow Big Leads + Weight of the World, vill Size Matters)
+  | 'attack-icon-played-this-turn' // why: WP-675 / D-24490 — counts the OTHER cards played this turn that show an attack icon (hasAttackIcon); the attack branch of vnom Symbiotic Adaptation's count-scaled choose-one
+  | 'recruit-icon-played-this-turn'; // why: WP-675 / D-24490 — counts the OTHER cards played this turn that show a recruit icon (hasRecruitIcon); the recruit branch of vnom Symbiotic Adaptation's count-scaled choose-one
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -49,4 +51,31 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'victory-bystanders', // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
   'worthy-cards-played-this-turn', // why: WP-673 / D-24488 — counts OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464)
   'cost-four-plus-played-this-turn', // why: WP-674 / D-24489 — counts OTHER cards played this turn that cost 4 or more
+  'attack-icon-played-this-turn', // why: WP-675 / D-24490 — counts OTHER cards played this turn that show an attack icon (hasAttackIcon)
+  'recruit-icon-played-this-turn', // why: WP-675 / D-24490 — counts OTHER cards played this turn that show a recruit icon (hasRecruitIcon)
 ] as const;
+
+// ---------------------------------------------------------------------------
+// CountScaledChoiceOption (WP-675 / D-24490)
+// ---------------------------------------------------------------------------
+
+/**
+ * One option of a count-scaled choose-one hero ability (WP-675 / D-24490).
+ *
+ * vnom's Symbiotic Adaptation prints "Choose one: +1 recruit for each other card
+ * with a recruit icon / Or +1 attack for each other card with an attack icon."
+ * Each option grants `magnitude × resolveCountSource(G, playerID, countSource, cardId)`
+ * of `resource`, reusing the shipped attack-per-count / recruit-per-count executors —
+ * the choice only selects WHICH option's grant is applied. Carried on the effect
+ * descriptor at parse time and copied onto the PendingCountScaledChoice at park time;
+ * the counts are resolved at RESOLVE time from `G`, not stored (the draw-or-empowered
+ * pattern of carrying the descriptor, not the outcome).
+ */
+export interface CountScaledChoiceOption {
+  /** Which resource this option grants. */
+  resource: 'attack' | 'recruit';
+  /** The count source whose count scales the per-unit magnitude. */
+  countSource: HeroCountSource;
+  /** The per-unit rate (attack/recruit granted per counted card). */
+  magnitude: number;
+}

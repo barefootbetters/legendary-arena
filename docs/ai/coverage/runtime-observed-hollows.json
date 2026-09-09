@@ -483,7 +483,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "vnom/venompool/digest-that-chimichanga#0",
+          "cardId": "vnom/venompool/digest-that-chimichanga#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

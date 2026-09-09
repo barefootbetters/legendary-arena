@@ -85,4 +85,21 @@ export interface CardStatEntry {
    * Zero for "*" villains; N for "N+" villains. Always 0 for static.
    */
   fightCostBase: number;
+  /**
+   * Whether the card's printed power shows an attack icon (WP-675 / D-24490).
+   *
+   * why: this is the FAITHFUL "has an attack icon" signal — the RAW registry
+   * value being non-null. `parseCardStatValue` collapses BOTH `null` (no icon)
+   * and `"0+"`/`"0"` (icon present, base 0) to the integer `0`, so `attack > 0`
+   * is a lossy test. The `attack-icon-played-this-turn` count source
+   * (heroCountSource.resolve.ts) reads this, not `attack`. Synthesized token
+   * entries (no raw "0+" ambiguity) set it from their real value.
+   */
+  hasAttackIcon: boolean;
+  /**
+   * Whether the card's printed power shows a recruit icon (WP-675 / D-24490).
+   * The recruit analog of `hasAttackIcon`; read by the
+   * `recruit-icon-played-this-turn` count source.
+   */
+  hasRecruitIcon: boolean;
 }

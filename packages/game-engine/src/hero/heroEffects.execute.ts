@@ -89,7 +89,7 @@ import { composeTransformNarrative } from '../events/notableEvents.compose.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'recruit-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'recruit-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'count-scaled-choose', 'return-zero-cost-discard',
   // why: D-24156 — the plain "gain a Wound" family; each has a HERO_EFFECT_HANDLERS entry (heroEffectGainWound), so it belongs in HANDLED_KEYWORDS (the bidirectional handler-completeness authority).
   'gain-wound-self', 'gain-wound-each',
   // why: D-24148 — mandatory immediate empty-discard-reward-or-shuffle (Jocasta's Reprocess / Electromagnetic Eyebeams); has a HERO_EFFECT_HANDLERS entry, so it belongs here.
@@ -278,6 +278,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: draw-or-empowered parks a pending choice carrying empoweredClass (not a magnitude);
   // the draw or the empowered grant is applied at resolve time, not at play time (D-24069)
   'draw-or-empowered',
+  // why: WP-675 / D-24490 — count-scaled-choose parks a pending choice carrying two options
+  // (each with its own per-unit magnitude), not a top-level magnitude; the chosen grant is
+  // applied at resolve time, so the pre-gate must not drop it.
+  'count-scaled-choose',
   // why: WP-486 / D-24291 — defeat-with-bystander carries no magnitude (it defeats one
   // eligible target); the target set is computed from G at play time, so the magnitude
   // pre-gate must not drop it.
@@ -2285,6 +2289,43 @@ function heroEffectDrawOrEmpowered(
 }
 
 /**
+ * Park handler for the `count-scaled-choose` hero keyword (WP-675 / D-24490).
+ *
+ * Parks a `PendingCountScaledChoice` on `G.pendingCountScaledChoice[]` (lazy-init,
+ * FIFO) carrying the two printed options. The grant happens at resolve time
+ * (resolveCountScaledChoice), NOT here — the counts are resolved from `G` when the
+ * player picks, so a card played after this one but before the choice resolves is
+ * counted correctly (the draw-or-empowered pattern of carrying the descriptor).
+ *
+ * A missing/short options list (should never happen post-parse — the pre-pass emits
+ * exactly two options) is a logged no-op that parks nothing.
+ */
+function heroEffectCountScaledChoose(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const options = effect.countScaledChoiceOptions;
+  if (options === undefined || options.length < 2) {
+    // why: defensive — the parser always emits count-scaled-choose with two options; a
+    // missing/short list here parks nothing (mirrors the draw-or-empowered guard). Never throw.
+    pushLog(G,
+      `Player ${playerID} played a count-scaled-choose hero ability with no options, so the choice was skipped.`,
+    );
+    return;
+  }
+  // why: parks an interactive count-scaled choice resolved by resolveCountScaledChoice (D-24490)
+  // why: lazy-init at the park site (never in Game.setup); absent field = no pending choice.
+  if (!G.pendingCountScaledChoice) { G.pendingCountScaledChoice = []; }
+  // why: record the triggering card so the icon count sources exclude it at resolve time
+  // (vnom's card shows both icons and would otherwise count itself). Fresh copy of the
+  // options array — no aliasing of the parsed descriptor into G.
+  G.pendingCountScaledChoice.push({ playerID, cardId, options: options.map((option) => ({ ...option })) });
+}
+
+/**
  * Executor for the `shuffle-discard-empty-reward` hero keyword (D-24148).
  *
  * The printed "If your discard pile is empty, you get +N[recruit|attack].
@@ -3265,6 +3306,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'put-bottom-hq-icon-reward': heroEffectPutBottomHqIconReward,
   'victory-villain-attack': heroEffectVictoryVillainAttack,
   'draw-or-empowered': heroEffectDrawOrEmpowered,
+  'count-scaled-choose': heroEffectCountScaledChoose,
   'return-zero-cost-discard': heroEffectReturnZeroCostDiscard,
   'discard-to-play': heroEffectDiscardToPlay,
   // why: D-24156 — one shared handler under both keys; it branches on effect.type

@@ -378,23 +378,23 @@ describe('buildInitialGameState — shape', () => {
 
     assert.deepStrictEqual(
       gameState.cardStats[SHIELD_AGENT_EXT_ID],
-      { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
-      'S.H.I.E.L.D. Agent entry must give 1 recruit at cost 0',
+      { attack: 0, recruit: 1, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true },
+      'S.H.I.E.L.D. Agent entry must give 1 recruit at cost 0 (shows a recruit icon)',
     );
     assert.deepStrictEqual(
       gameState.cardStats[SHIELD_TROOPER_EXT_ID],
-      { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
-      'S.H.I.E.L.D. Trooper entry must give 1 attack at cost 0',
+      { attack: 1, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: true, hasRecruitIcon: false },
+      'S.H.I.E.L.D. Trooper entry must give 1 attack at cost 0 (shows an attack icon)',
     );
     assert.deepStrictEqual(
       gameState.cardStats[SHIELD_OFFICER_EXT_ID],
-      { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
-      'S.H.I.E.L.D. Officer entry must give 2 recruit at recruit cost 3',
+      { attack: 0, recruit: 2, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: true },
+      'S.H.I.E.L.D. Officer entry must give 2 recruit at recruit cost 3 (shows a recruit icon)',
     );
     assert.deepStrictEqual(
       gameState.cardStats[SIDEKICK_EXT_ID],
-      { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
-      'Sidekick entry must carry recruit cost 2 with no face stats (its value is a printed draw-two ability)',
+      { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0, hasAttackIcon: false, hasRecruitIcon: false },
+      'Sidekick entry must carry recruit cost 2 with no face stats/icons (its value is a printed draw-two ability)',
     );
   });
 

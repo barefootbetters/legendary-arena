@@ -47,6 +47,7 @@ import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import {
   composeAmbushNarrative,
@@ -134,6 +135,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingVictoryPileCardPick(G)) return;
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) return;
+  if (hasPendingCountScaledChoice(G)) return;
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
 

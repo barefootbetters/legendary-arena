@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1847,
+    "totalEntries": 1849,
     "byScope": {
-      "hero": 672,
+      "hero": 674,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 409,
+      "executable": 411,
       "deferred": 0,
       "condition": 26,
       "unsupported": 335,
@@ -21303,6 +21303,23 @@
       "name": "Venom",
       "set": "vnom",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "symbiotic-adaptation",
+          "name": "Symbiotic Adaptation"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom",
+      "name": "Venom",
+      "set": "vnom",
+      "scope": "hero",
       "mechanic": "digest",
       "status": "unsupported",
       "handler": "",
@@ -21354,6 +21371,23 @@
         {
           "slug": "insatiable-hunger",
           "name": "Insatiable Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom",
+      "name": "Venom",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "symbiotic-adaptation",
+          "name": "Symbiotic Adaptation"
         }
       ]
     },
@@ -33822,9 +33856,11 @@
     "vnom/venom": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "digest",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "recruit-per-count"
       ]
     },
     "vnom/venom-rocket": {
