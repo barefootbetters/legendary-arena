@@ -77,7 +77,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-663 / D-24474 added the optional-play-villain-top handler (26 → 27);
     // WP-667 / D-24480 added the optional-ko-hand-discard handler (27 → 28).
     // WP-668 / D-24481 added the reveal-herodeck-attack handler (28 → 29).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 29);
+    // WP-674 / D-24489 added the recruit-per-count handler (29 → 30).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 30);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -2865,6 +2866,96 @@ describe('executeHeroEffects attack-per-count worthy-cards-played-this-turn (WP-
 
     assert.equal(gameState.turnEconomy.attack, 1,
       'only the cost>=5 card counts; the cost-4 card does not make you Worthy.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-674 — recruit-per-count + cost-four-plus-played-this-turn (D-24489)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects recruit-per-count cost-four-plus-played-this-turn (WP-674)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: cardStats needs the full shape makeTestState declares; only `cost`
+  // matters to the cost-four-plus count, so attack/recruit/fight fields are inert 0s.
+  function statOfCost(cost: number) {
+    return { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+  }
+
+  it('grants RECRUIT scaled +1 per OTHER cost>=4 card played, excluding the triggering card (N=2 → +2 recruit)', () => {
+    // noir Follow Big Leads: two cost>=4 cards in play before it → +2 recruit, not +3.
+    const gameState = makeTestState({
+      inPlay: ['ally-a', 'ally-b', 'follow-big-leads'],
+      turnEconomyAttack: 0,
+      turnEconomyRecruit: 0,
+      cardStats: {
+        'ally-a': statOfCost(4),
+        'ally-b': statOfCost(6),
+        'follow-big-leads': statOfCost(4),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'follow-big-leads' as string,
+          timing: 'onPlay',
+          keywords: ['recruit-per-count'],
+          effects: [{ type: 'recruit-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'follow-big-leads' as string);
+
+    assert.equal(gameState.turnEconomy.recruit, 2,
+      'grant is 1 × 2 = 2 RECRUIT: both other cost>=4 cards count, the triggering card is excluded.');
+    assert.equal(gameState.turnEconomy.attack, 0,
+      'a recruit-per-count grant must not touch attack.');
+  });
+
+  it('grants 0 when only the triggering cost>=4 card is in play (the flat/dropped-bonus bug case)', () => {
+    const gameState = makeTestState({
+      inPlay: ['follow-big-leads'],
+      turnEconomyRecruit: 0,
+      cardStats: { 'follow-big-leads': statOfCost(4) },
+      heroAbilityHooks: [
+        {
+          cardId: 'follow-big-leads' as string,
+          timing: 'onPlay',
+          keywords: ['recruit-per-count'],
+          effects: [{ type: 'recruit-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'follow-big-leads' as string);
+
+    assert.equal(gameState.turnEconomy.recruit, 0,
+      'a lone trigger grants 0 — it does not count itself.');
+  });
+
+  it('drives an attack grant at magnitude 2 for the cost-four-plus attack sibling (Weight of the World, N=2 → +4 attack)', () => {
+    // noir Weight of the World: +2 attack per other cost>=4 card.
+    const gameState = makeTestState({
+      inPlay: ['ally-a', 'ally-b', 'weight-of-the-world'],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'ally-a': statOfCost(4),
+        'ally-b': statOfCost(5),
+        'weight-of-the-world': statOfCost(8),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'weight-of-the-world' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 2, countSource: 'cost-four-plus-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'weight-of-the-world' as string);
+
+    assert.equal(gameState.turnEconomy.attack, 4,
+      'grant is 2 × 2 = 4 attack: both other cost>=4 cards count, the triggering card is excluded.');
   });
 });
 

@@ -191,6 +191,12 @@ const EMPOWERED_REVEALED_CLASSES_PATTERN = /by the Hero Classes of the card you 
 /** Regex for [keyword:attack-per-count:<source>:<perUnit>] count-scaled markup. */
 const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-674 / D-24489 — the recruit sibling of COUNT_SCALED_PATTERN. Same
+// three-segment shape, but the marker drives a `recruit-per-count` effect that
+// grants recruit rather than attack (noir's Follow Big Leads).
+/** Regex for [keyword:recruit-per-count:<source>:<perUnit>] count-scaled markup. */
+const RECRUIT_COUNT_SCALED_PATTERN = /\[keyword:recruit-per-count:([a-z][a-z-]*):(\d+)\]/g;
+
 // why: WP-673 / D-24488 — Divine Lightning's line carries BOTH `[keyword:Worthy]`
 // (in the phrase "each other card … that makes you Worthy") AND the count-scaled
 // marker `[keyword:attack-per-count:worthy-cards-played-this-turn:N]`. On such a
@@ -1125,6 +1131,26 @@ function parseAbilityText(
     countScaledMatch = countScaledRegex.exec(abilityText);
   }
 
+  // Step 2d': Extract [keyword:recruit-per-count:<source>:<perUnit>] count-scaled
+  // markup — the recruit sibling of Step 2d. Same contract: the per-unit rate is
+  // the magnitude, the source resolves the count, and only sources in
+  // HERO_COUNT_SOURCES are accepted. Emits a 'recruit-per-count' effect that
+  // grants recruit; the recruit-icon-suppression below then drops the co-located
+  // printed [icon:recruit] so it does not double-count.
+  // why: WP-674 / D-24489 — a "+N recruit for each X" grant (noir Follow Big Leads).
+  const recruitCountScaledRegex = new RegExp(RECRUIT_COUNT_SCALED_PATTERN.source, 'g');
+  let recruitCountScaledMatch: RegExpExecArray | null = recruitCountScaledRegex.exec(abilityText);
+  while (recruitCountScaledMatch !== null) {
+    const recruitCountSourceCandidate = recruitCountScaledMatch[1]!;
+    const recruitPerUnitString = recruitCountScaledMatch[2]!;
+    if (isValidHeroCountSource(recruitCountSourceCandidate)) {
+      keywords.push('recruit-per-count');
+      magnitudes.set('recruit-per-count', parseInt(recruitPerUnitString, 10));
+      countSources.set('recruit-per-count', recruitCountSourceCandidate);
+    }
+    recruitCountScaledMatch = recruitCountScaledRegex.exec(abilityText);
+  }
+
   // Step 2e: Extract [keyword:optional-ko-reward:<reward>:<n>] markup. The
   // reward is stored in rewardTypes; the reward magnitude is stored in
   // magnitudes so the effect builder can attach both. A descriptor is emitted
@@ -1318,6 +1344,33 @@ function parseAbilityText(
     magnitudes.delete('attack');
   }
 
+  // Icon-suppression (sibling): a count-scaled RECRUIT effect subsumes the
+  // printed recruit icon on the same line — the recruit analog of the
+  // attack-per-count suppression above. Without this, "+N[icon:recruit] for each
+  // X" would emit BOTH a flat 'recruit' effect (from the icon, Steps 2b/3) AND
+  // the 'recruit-per-count' effect — a double-count (N flat + N×count). Drop the
+  // plain 'recruit' keyword and its magnitude so only the count-scaled effect
+  // remains.
+  // why: WP-674 / D-24489 — the count-scaled recruit keyword subsumes the printed
+  // recruit icon (mirrors the D-24016 attack-per-count suppression above).
+  let lineHasCountScaledRecruit = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'recruit-per-count') {
+      lineHasCountScaledRecruit = true;
+      break;
+    }
+  }
+  if (lineHasCountScaledRecruit) {
+    const keywordsWithoutRecruitIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'recruit') {
+        keywordsWithoutRecruitIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutRecruitIcon;
+    magnitudes.delete('recruit');
+  }
+
   // Icon-suppression (sibling): a reveal-herodeck-attack effect subsumes the
   // printed attack icon on the same line. Jade Giantess reads "…and you get that
   // card's printed[icon:attack]" — that bare icon is the effect's OWN grant (the
@@ -1445,6 +1498,16 @@ function parseAbilityText(
         const countSource = countSources.get('attack-per-count');
         if (magnitude !== undefined && countSource !== undefined) {
           effects.push({ type: keyword, magnitude, countSource });
+        }
+      } else if (keyword === 'recruit-per-count') {
+        // why: WP-674 / D-24489 — the count-scaled recruit effect carries its
+        // count source (the attack-per-count precedent) so the executor can
+        // resolve the count to scale the per-unit magnitude by. Step 2d' records
+        // both together, so the guard both narrows the optional Map reads and is
+        // defensive.
+        const recruitCountSource = countSources.get('recruit-per-count');
+        if (magnitude !== undefined && recruitCountSource !== undefined) {
+          effects.push({ type: keyword, magnitude, countSource: recruitCountSource });
         }
       } else if (keyword === 'optional-ko-reward') {
         // why: D-24019 — the optional-KO-reward effect carries its rewardType so

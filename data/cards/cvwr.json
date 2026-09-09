@@ -608,7 +608,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength]",
-            "You get +1[icon:attack] for each other card you played this turn that costs 4 or more."
+            "You get +1[icon:attack] for each other card you played this turn that costs 4 or more. [keyword:attack-per-count:cost-four-plus-played-this-turn:1]"
           ]
         },
         {

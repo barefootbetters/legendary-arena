@@ -39,6 +39,7 @@ export type HeroKeyword =
   | 'reveal-attack-choose' // why: D-22003
   | 'reveal-ko-attack' // why: D-22301 — compound executor; magnitude encodes fixed attack grant (not a cost ceiling)
   | 'attack-per-count' // why: D-24016 — count-scaled attack; magnitude is the per-unit rate, countSource resolves the count
+  | 'recruit-per-count' // why: WP-674 / D-24489 — count-scaled RECRUIT (the attack-per-count sibling for a "+N recruit for each X" grant); magnitude is the per-unit rate, countSource resolves the count. Handler heroEffectRecruitPerCount grants magnitude × count to G.turnEconomy.recruit; the parser subsumes the co-located printed [icon:recruit] exactly as attack-per-count subsumes [icon:attack]. Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS. Drives noir Follow Big Leads ("+1 recruit for each other card you played this turn that costs 4 or more").
   | 'optional-ko-reward' // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
   | 'optional-ko-hand-discard' // why: WP-667 / D-24480 — "you may KO a card from your hand or discard pile" with NO reward (Radioactive Riot; the KO is deck-thinning). Parks a no-reward entry into the shipped optional-ko-reward pending queue with koZones ['hand','discard'] (no in-play KO); carries no magnitude (NO_MAGNITUDE_KEYWORDS)
   | 'ko-wound-reward' // why: WP-382 / D-24183 — "you may KO a Wound from hand/discard; if you do, <reward>"; Wound-restricted, auto-resolving variant of optional-ko-reward (Healing Factor family); rewardType carries the reward
@@ -91,6 +92,7 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'reveal-attack-choose', // why: D-22003
   'reveal-ko-attack', // why: D-22301 — compound executor; magnitude encodes fixed attack grant (not a cost ceiling)
   'attack-per-count', // why: D-24016 — count-scaled attack; magnitude is the per-unit rate, countSource resolves the count
+  'recruit-per-count', // why: WP-674 / D-24489 — count-scaled recruit (the attack-per-count sibling); magnitude is the per-unit rate, countSource resolves the count; handler heroEffectRecruitPerCount grants to G.turnEconomy.recruit
   'optional-ko-reward', // why: D-24019 — "you may KO a card from hand/discard; if you do, <reward>"; rewardType carries the reward
   'optional-ko-hand-discard', // why: WP-667 / D-24480 — "you may KO a card from your hand or discard pile" (no reward, Radioactive Riot); parks a no-reward entry into the optional-ko-reward pending queue (koZones hand/discard); no magnitude
   'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted, auto-resolving variant of optional-ko-reward (Healing Factor family); rewardType carries the reward

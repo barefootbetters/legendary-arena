@@ -89,7 +89,7 @@ import { composeTransformNarrative } from '../events/notableEvents.compose.js';
 // the 7 legacy reveal-* keywords lost their dedicated handlers (folded into the one
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
+  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'recruit-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'return-zero-cost-discard',
   // why: D-24156 — the plain "gain a Wound" family; each has a HERO_EFFECT_HANDLERS entry (heroEffectGainWound), so it belongs in HANDLED_KEYWORDS (the bidirectional handler-completeness authority).
   'gain-wound-self', 'gain-wound-each',
   // why: D-24148 — mandatory immediate empty-discard-reward-or-shuffle (Jocasta's Reprocess / Electromagnetic Eyebeams); has a HERO_EFFECT_HANDLERS entry, so it belongs here.
@@ -1639,6 +1639,46 @@ function heroEffectAttackPerCount(
   // why: record the source, count, and grant so the count-scaled attack is
   // observable in replay inspection (no implicit side effects).
   pushLog(G, `Count-scaled attack: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
+}
+
+/**
+ * Count-scaled recruit (WP-674 / D-24489). The recruit sibling of
+ * heroEffectAttackPerCount: "+N recruit for each other card you played this turn
+ * that costs 4 or more" (noir's Follow Big Leads). The grant is
+ * `magnitude × resolveCountSource(...)`, added to G.turnEconomy.recruit instead
+ * of attack. Same pure/total contract as the attack variant.
+ *
+ * @param G - Game state (mutated: recruit added to the turn economy).
+ * @param _ctx - Unused (framework parity).
+ * @param playerID - The active player.
+ * @param cardId - The triggering card, passed to resolveCountSource so an "each
+ *   OTHER card" source can exclude this card from its own count.
+ * @param effect - The recruit-per-count effect descriptor (magnitude + countSource).
+ */
+function heroEffectRecruitPerCount(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-674 / D-24489 — magnitude is the per-unit rate; resolveCountSource
+  // resolves the count it scales by, so the grant is magnitude × count. Mirrors
+  // heroEffectAttackPerCount exactly, granting recruit rather than attack.
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  if (!G.turnEconomy) { return; }
+  // why: a count-scaled recruit effect with no count source is a skipped no-op
+  // (mirrors the magnitude gate) — there is nothing to scale by.
+  if (effect.countSource === undefined) { return; }
+  // why: WP-674 / D-24489 — pass the triggering card so an "each OTHER card"
+  // source (cost-four-plus-played-this-turn) can exclude this card from its own count.
+  const count = resolveCountSource(G, playerID, effect.countSource, cardId);
+  const grant = (effect.magnitude as number) * count;
+  G.turnEconomy = addResources(G.turnEconomy, 0, grant);
+  // why: record the source, count, and grant so the count-scaled recruit is
+  // observable in replay inspection (no implicit side effects).
+  pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
 }
 
 /**
@@ -3216,6 +3256,7 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   rescue: heroEffectRescue,
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
+  'recruit-per-count': heroEffectRecruitPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
   'optional-ko-hand-discard': heroEffectOptionalKoHandDiscard,
   'ko-wound-reward': heroEffectKoWoundReward,

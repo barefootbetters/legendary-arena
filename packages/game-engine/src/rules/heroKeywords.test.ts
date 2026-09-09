@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 43 entries after the reveal-herodeck-attack addition', () => {
+  it('HERO_KEYWORDS array has exactly 44 entries after the recruit-per-count addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      43,
-      'HERO_KEYWORDS must have exactly 43 entries (42 + reveal-herodeck-attack, WP-668 / D-24481)',
+      44,
+      'HERO_KEYWORDS must have exactly 44 entries (43 + recruit-per-count, WP-674 / D-24489)',
     );
   });
 });

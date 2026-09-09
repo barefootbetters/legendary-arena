@@ -216,6 +216,7 @@ cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-ko,executable,WP-253,D-24024,packag
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,light
 cvwr/daredevil,Daredevil,cvwr,(unmarked),unmarked,,,,
 cvwr/falcon,Falcon,cvwr,(unmarked),unmarked,,,,
+cvwr/goliath,Goliath,cvwr,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,being-big-is-best
 cvwr/goliath,Goliath,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,growth-industry
 cvwr/goliath,Goliath,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,being-big-is-best|brilliant-biochemist|enormous-implications|growth-industry|massive-warrior
 cvwr/hercules,Hercules,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,boy-genius
@@ -391,7 +392,9 @@ nmut/wolfsbane,Wolfsbane,nmut,sunlight,unsupported,,,,wolf-out
 noir/angel-noir,Angel Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,missing-person-case|multitalented
 noir/daredevil-noir,Daredevil Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,discover-the-bodies|listen-for-heartbeats
 noir/iron-man-noir,Iron Man Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,adventurers-assemble|mechanized-plate-mail
+noir/luke-cage-noir,Luke Cage Noir,noir,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,weight-of-the-world
 noir/luke-cage-noir,Luke Cage Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,private-investigations|unbreakable-cage
+noir/luke-cage-noir,Luke Cage Noir,noir,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,follow-big-leads
 noir/spider-man-noir,Spider-Man Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,gumshoes-revolver|solve-the-crime|spider-totems-chosen
 pttr/black-cat,Black Cat,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,casual-bank-robbery|pickpocket
 pttr/moon-knight,Moon Knight,pttr,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,climbing-claws|lunar-communion
@@ -520,6 +523,7 @@ vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-eng
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,electroshock-therapy|shocking-robbery
 vill/enchantress,Enchantress,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,unending-anguish
 vill/green-goblin,Green Goblin,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,goblin-glider|pumpkin-bombs|unstable-kidnapper
+vill/juggernaut,Juggernaut,vill,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,size-matters
 vill/juggernaut,Juggernaut,vill,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,runaway-train
 vill/kingpin,Kingpin,vill,(unmarked),unmarked,,,,
 vill/kraven,Kraven,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,ceaseless-tracker

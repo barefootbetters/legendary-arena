@@ -352,7 +352,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "You get +1[icon:recruit] for each other card you played this turn that costs 4 or more."
+            "You get +1[icon:recruit] for each other card you played this turn that costs 4 or more. [keyword:recruit-per-count:cost-four-plus-played-this-turn:1]"
           ]
         },
         {
@@ -397,7 +397,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "You get +2[icon:attack] for each other card you played this turn that costs 4 or more."
+            "You get +2[icon:attack] for each other card you played this turn that costs 4 or more. [keyword:attack-per-count:cost-four-plus-played-this-turn:2]"
           ]
         }
       ],
