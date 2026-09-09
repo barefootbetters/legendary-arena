@@ -1154,10 +1154,12 @@ Mastermind-seeking-a-throne frame, not for it: the concealment served a boycott
 by people *without* power. Which is why the purpose cannot be self-certified —
 *"I lied only to catch a worse liar"* is the propagandist's favorite cover too.
 The test is the page's own *who benefits*, turned on the deception itself: did it
-end in more truth and a freer people, or in a buried record and an enthroned
-deceiver? By that test the Montgomery simplification and a Mastermind's
-manufactured narrative part ways — one served the breaking of a real and greater
-evil and left people freer; the other exists to keep the throne. A sympathetic
+drag a truth into the light and loosen a grip, or bury a record and tighten one?
+It weighs what the deceit *broke* and whom it *crowned* — not whether the society
+that followed flourished, which is a larger and separate question. By that test
+the Montgomery simplification and a Mastermind's manufactured narrative part
+ways: one was aimed at pulling down a real legal cage — the Jim Crow statutes —
+and left its authors with no throne; the other exists to build one. A sympathetic
 cause does not launder a self-serving lie, and a lie does not prove the cause
 evil; what separates a justified ruse from a Scheme is where the deception
 *ends*, not what the deceiver says it was for.
@@ -1246,14 +1248,24 @@ over as the test case; the "tired-seamstress-acting-alone" story was handed to
 the public in place of the truth. Choosing the test case was *organizing* —
 neutral enough. Letting a false picture stand to move opinion was a
 **deception** — never neutral, but not the Mastermind's kind: a deception takes
-its color from its end, and this one served the breaking of a real and greater
-evil (statutory Jim Crow) and left people freer, the opposite of concealment
-that buries the truth to take a throne. That is the
+its color from its end, and this one was aimed at pulling down a real legal
+cage — the Jim Crow statutes and voting barriers — not at enthroning its authors,
+the opposite of concealment that buries the truth to take a throne. That is the
 [withhold-the-machinery
 tactic](#the-masterminds-common-tactics-the-grammar-of-manipulation), judged — as
-that section argues — by where it *ends* rather than by the deceiver's say-so:
-used by the powerless and the aristocrat alike, its charge set by who is left
-better off. Birmingham's children in front of Bull Connor's hoses (James
+that section argues — by where it *ends* rather than by the deceiver's say-so.
+
+But that is a bounded claim about the *legal* cage it targeted, not a verdict
+that the decades since were a flourishing — and conflating the two would be its
+own distortion, the institutional-triumph narrative this page is built to
+distrust. By hard measures they were not a flourishing: the Black family is far
+weaker than in 1960 — non-marital births roughly a quarter then and near
+three-quarters now, a collapse mirrored across every race and sharpest here — and
+the welfare state that followed is, on the serious view of Moynihan, Sowell, and
+Murray, a new dependency the fall of Jim Crow never healed. Desegregation and
+the Great Society were *different* interventions; crediting the first is not
+crediting the second, and collapsing the two is the same 1955-to-now move the
+page refuses everywhere else. A struck-down law is not yet a freed people. Birmingham's children in front of Bull Connor's hoses (James
 Bevel's tactic) is *control the picture*; the King estate's copyright lock on
 the footage is *control the picture*, in the present tense. But a manufactured
 *legend* and a manufactured *cause* are different objects, and the page keeps
@@ -1592,3 +1604,12 @@ claim at a safe distance — it stands on it.
   Entitlement* (2020), for the "1964 Act as a second constitution" thesis. Walsh
   is attributed and contested, not adjudicated; the historical record is kept at
   full strength beside his gloss.
+- The family-structure and welfare-dependency record cited in *Contested memory*
+  (to bound the "legal cage fell" claim short of any flourishing verdict) —
+  Daniel Patrick Moynihan, *The Negro Family: The Case for National Action*
+  (1965); Charles Murray, *Losing Ground* (1984); Thomas Sowell (e.g.,
+  *Civil Rights: Rhetoric or Reality?*, 1984). The non-marital-birth reversal
+  (~24% in the mid-1960s to roughly 70% today, with a parallel rise across every
+  racial group) is a documented demographic fact; the welfare-state *causation*
+  is the serious, contested thesis these authors argue, attributed and not
+  adjudicated by this page.
