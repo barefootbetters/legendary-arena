@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-08-26
+last-reviewed: 2026-09-08
 ---
 
 # Soul of Legendary Arena
@@ -848,6 +848,76 @@ licensing deck:
 
 > **The heroes we inherit shape the heroes we become.**
 
+### The Mastermind's scheme: a nation that forgot its own story
+
+Everything above treats the downward pull as a *pattern* — impersonal, a habit
+of storytelling. But this game has a word for a pattern that has a will behind
+it and a plan to win: a **Mastermind**, running a **Scheme**. Read the essay's
+antagonist that way and it stops being a mood in the culture and becomes a
+Mastermind whose Scheme is the oldest one on this page — *erase the
+inheritance* — advanced one Scheme Twist at a time. A retcon flattens a single
+hero. Run the identical move on a whole civilization's memory of itself, one
+classroom at a time, and you get a nation that can no longer name what it was
+handed.
+
+A field report on that Scheme, at national scale, landed while this page was
+being maintained. On **September 8, 2026** — the day his book *The
+Counterrevolution* was published — the historian **Victor Davis Hanson** gave
+the erasure a mechanism on his Daily Signal program *In His Own Words*, hosted
+by **Jack Fowler**. It is set down here as *his* argument, attributed and not
+adjudicated by this page, because it is the
+[pattern this page names](#the-pattern-tearing-down-the-one-who-paved-the-way)
+told about a country instead of a comic.
+
+Answering David Mamet's line that the young now treat "the American century
+[as] a disgrace and the American dream a shuck," Hanson says the forgetting was
+engineered, not accidental. His account has two moves:
+
+1. **Omission.** Schools dropped the Constitution, civics, classical
+   literature, and American history. "They took the last 40 years of people
+   and erased their brains," he says — leaving empty vessels.
+2. **Commission.** Into the emptied vessels went the opposite program: you are
+   defined by your category, your inheritance is shameful, your country's
+   founding was a crime.
+
+A generation left without rhetoric, logic, or history, in his telling, has no
+defense — so slogans stand in for knowledge: a chant about a river with no idea
+which river, a label for a people with no idea who lived there first. That is
+[the great lie](#the-great-lie-underneath-it) at civilizational scale — a
+people taught it owes nothing to what came before, and therefore unable to see
+what it has lost.
+
+Hanson's counter-image is the same one this page keeps. He points to the
+grandparents born in the 1880s and '90s, raised without electricity — "hard
+people," he grants, who nonetheless *built the country* and handed it on — and
+to Hillsdale College, whose "19th-century mindset" of duty and competence he
+offers as proof the transmission can still be run. His remedy is not mystical
+but institutional, and it is precisely
+[receive, become, pass on](#the-upward-pull--what-the-game-is-for): teach the
+history again, and stop treating the dead as moral inferiors of a generation
+that cannot name them. (The hour ranges wider — he reads the modern left's
+coalition as one whose parts cannot finally cohere, and frames Trump not as a
+revolutionary but a *counter*revolutionary aiming at causes rather than
+symptoms — but the part that bears on *this* page is the erasure of a shared
+past.)
+
+Strip the partisan surface and the structure is the retcon exactly: *the past
+is an obstacle to be sanded down, not an inheritance to be received at full
+strength.* The line Hanson draws is the one this page draws as
+[addition versus overwrite](#honoring-is-not-ossifying--the-real-distinction),
+and its endpoint is a country split in two:
+
+> Some still believe the American story is worth keeping. Others have been
+> taught it is a scam. That split is the Scheme, working.
+
+Legendary Arena cannot settle a nation's argument, and it does not try. What it
+can do, on its own small surface, is refuse to run the Mastermind's move — by
+rendering what it inherited faithfully, growing only by addition, and building
+a player's love on real knowledge of where a hero came from.
+[The section that follows](#the-pattern-in-the-mirror-ais-secular-default)
+catches that same impulse inside the very tool that helped write this page;
+this one catches it inside a civilization.
+
 ### The pattern in the mirror: AI's secular default
 
 This page has a live case study, and it is left in on purpose because it
@@ -943,6 +1013,16 @@ claim at a safe distance — it stands on it.
   language (candidates for cross-surface use), not as governance the
   Vision does not already hold. These lines are the page's settled authored
   identity — suitable for cross-surface use as they stand.
+- **The Hanson episode is an attributed contemporary point of view, not a
+  claim this page adjudicates.** Like the *Star Wars* / retcon touchstones,
+  [the Mastermind's-scheme section](#the-masterminds-scheme-a-nation-that-forgot-its-own-story)
+  reports Victor Davis Hanson's diagnosis of American education as *his*
+  argument, cited to its source, to illustrate the page's
+  addition-versus-overwrite pattern at civilizational scale. The page does not
+  ratify the episode's partisan claims; it borrows the *shape*. Per "do not
+  overstate the cultural claim" below, the load-bearing assertion stays the
+  structural one — erase-the-inheritance is the same move whether the target
+  is a hero, a sacred text, or a nation's memory of itself.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
@@ -1062,3 +1142,13 @@ claim at a safe distance — it stands on it.
   and the [#5 issue page (back-cover passage)](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
   on Marvel.com, and [Pak's own blog on the series](https://gregpak.com/category/comics/red-skull/).
   Attributed editorial references for the Red Skull reading section.
+- [Victor Davis Hanson: The Generation That Built America Was the Last of Its Kind](https://www.dailysignal.com/2026/09/08/hanson-generation-built-america/)
+  — The Daily Signal's Sept. 8, 2026 transcript of the *Victor Davis Hanson:
+  In His Own Words* episode (host Jack Fowler; ~74 min; also titled *America's
+  Education Crisis, the Left's Victimhood Culture, and Trump's Political
+  Comeback*), released the day Hanson's book *The Counterrevolution* was
+  published. Source for the omission / commission diagnosis and the Mamet
+  "shuck" and "erased their brains" quotes behind
+  [the Mastermind's-scheme section](#the-masterminds-scheme-a-nation-that-forgot-its-own-story).
+  An attributed contemporary point of view illustrating the pattern, not
+  adjudicated by this page.
