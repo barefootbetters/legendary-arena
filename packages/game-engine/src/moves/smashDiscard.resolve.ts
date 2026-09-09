@@ -90,7 +90,7 @@ export function hasPendingSmashDiscard(G: LegendaryGameState): boolean {
  *   1. Validate args — exactly { decline: true } XOR { cardId }; an invalid shape
  *      is a silent no-op (queue intact).
  *   2. Validate the front pending entry — non-empty queue, front.playerID match.
- *   3. { decline } → front-pop ONLY, no discard, no Attack (silent).
+ *   3. { decline } → log the no-op, then front-pop. No discard, no Attack.
  *   4. { cardId } → discard the card through the single forced-discard chokepoint
  *      (discardFromHand); its `found` return doubles as the fresh in-hand check
  *      (no snapshot). Absent/stale → silent no-op, queue intact (resubmit).
@@ -125,8 +125,17 @@ export function resolveSmashDiscard(
   const front = queue[0]!;
   if (front.playerID !== playerID) { return; }
 
-  // Step 3: Decline → front-pop only, no discard, no Attack (silent).
+  // Step 3: Decline → log the no-op, then front-pop. No discard, no Attack.
+  // why: a VOLUNTARY decline (the player has cards but chooses not to discard) must
+  // be logged for parity with the empty-hand forced no-op ("could not Smash …");
+  // without it a decline is invisible in the game log and looks like the effect was
+  // silently dropped (Jeff, red-skull Midtown match). The pending entry carries no
+  // source-card id, so the line names no specific card — same neutral, untagged
+  // outcome the forced no-op uses.
   if (isDecline) {
+    pushLog(G,
+      `Player ${playerID} declined Smash — chose not to discard a card, so no Attack was granted.`,
+    );
     queue.shift();
     return;
   }
