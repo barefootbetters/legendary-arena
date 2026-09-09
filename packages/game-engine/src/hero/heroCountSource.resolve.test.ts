@@ -44,13 +44,16 @@ function makeStateWithVictory(victory: string[]): LegendaryGameState {
 describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: prevents union/array divergence — same pattern as HERO_KEYWORDS drift
   // detection. A new HeroCountSource must update BOTH the union and this array.
-  it('contains exactly the 1 canonical count-source value', () => {
-    const expectedSources = ['victory-bystanders'];
+  // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
+  // test files are transpiled by tsx (not typechecked in CI), so a compile-time
+  // pin would be documentation only. This keyset check gates on every run.
+  it('contains exactly the 2 canonical count-source values', () => {
+    const expectedSources = ['victory-bystanders', 'worthy-cards-played-this-turn'];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      1,
-      'HERO_COUNT_SOURCES must have exactly 1 entry',
+      2,
+      'HERO_COUNT_SOURCES must have exactly 2 entries',
     );
 
     assert.deepStrictEqual(
@@ -64,6 +67,125 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       uniqueSources.size,
       HERO_COUNT_SOURCES.length,
       'HERO_COUNT_SOURCES must have no duplicates',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// worthy-cards-played-this-turn resolver (WP-673 / D-24488)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a minimal LegendaryGameState with player "0"'s in-play zone and a
+ * cardStats cost map. resolveCountSource('worthy-cards-played-this-turn') reads
+ * only G.playerZones[playerID].inPlay and G.cardStats[id].cost.
+ *
+ * @param inPlay - The in-play ext_id entries for player "0".
+ * @param costs - Map of ext_id → printed cost.
+ * @returns A minimal game state cast to LegendaryGameState.
+ */
+function makeStateWithInPlay(
+  inPlay: string[],
+  costs: Record<string, number>,
+): LegendaryGameState {
+  const cardStats: Record<string, { cost: number }> = {};
+  for (const id of Object.keys(costs)) {
+    cardStats[id] = { cost: costs[id]! };
+  }
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay, victory: [] },
+    },
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveCountSource worthy-cards-played-this-turn', () => {
+  it('returns 0 when no other Worthy-making cards were played', () => {
+    // Only the triggering card (cost 5) is in play → no OTHER Worthy cards.
+    const gameState = makeStateWithInPlay(['divine-lightning#0'], {
+      'divine-lightning#0': 5,
+    });
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      0,
+      'the triggering card is excluded and no other cost>=5 cards are in play',
+    );
+  });
+
+  it('counts one other cost>=5 card played this turn', () => {
+    const gameState = makeStateWithInPlay(
+      ['smart-hulk#0', 'divine-lightning#0'],
+      { 'smart-hulk#0': 5, 'divine-lightning#0': 5 },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      1,
+      'the one other cost>=5 card counts; the triggering card is excluded',
+    );
+  });
+
+  it('counts two other cost>=5 cards played this turn (the reported case)', () => {
+    // Two cost-5 Smart Hulk in play before Divine Lightning → expected +2.
+    const gameState = makeStateWithInPlay(
+      ['smart-hulk#0', 'smart-hulk#1', 'divine-lightning#0'],
+      { 'smart-hulk#0': 5, 'smart-hulk#1': 5, 'divine-lightning#0': 5 },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      2,
+      'both other cost>=5 cards count; the triggering card is excluded',
+    );
+  });
+
+  it('excludes cards costing less than 5 (they do not make you Worthy)', () => {
+    const gameState = makeStateWithInPlay(
+      ['cheap#0', 'smart-hulk#0', 'divine-lightning#0'],
+      { 'cheap#0': 4, 'smart-hulk#0': 5, 'divine-lightning#0': 5 },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      1,
+      'only the cost>=5 card counts; the cost-4 card does not make you Worthy',
+    );
+  });
+
+  it('excludes the triggering card even when it is cost>=5', () => {
+    // Without the triggering-card exclusion this would over-count by 1.
+    const gameState = makeStateWithInPlay(['divine-lightning#0'], {
+      'divine-lightning#0': 9,
+    });
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      0,
+      'a lone triggering card never counts itself, whatever its cost',
+    );
+  });
+
+  it('counts the triggering card when no id is passed (defensive totality)', () => {
+    // With no triggeringCardId the source counts every cost>=5 card. Documents
+    // that the OTHER-exclusion depends on the executor passing the card id.
+    const gameState = makeStateWithInPlay(['smart-hulk#0'], { 'smart-hulk#0': 5 });
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn'),
+      1,
+      'without a triggering card id, every cost>=5 in-play card counts',
+    );
+  });
+
+  it('returns 0 when the player has no zones (defensive)', () => {
+    const gameState = makeStateWithInPlay([], {});
+
+    assert.equal(
+      resolveCountSource(gameState, '99', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      0,
+      'a player with no zones must resolve to 0 (no throw)',
     );
   });
 });

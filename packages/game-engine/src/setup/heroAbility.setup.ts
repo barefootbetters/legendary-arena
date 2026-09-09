@@ -191,6 +191,16 @@ const EMPOWERED_REVEALED_CLASSES_PATTERN = /by the Hero Classes of the card you 
 /** Regex for [keyword:attack-per-count:<source>:<perUnit>] count-scaled markup. */
 const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-673 / D-24488 — Divine Lightning's line carries BOTH `[keyword:Worthy]`
+// (in the phrase "each other card … that makes you Worthy") AND the count-scaled
+// marker `[keyword:attack-per-count:worthy-cards-played-this-turn:N]`. On such a
+// line the Worthy token is the COUNT CRITERION, not a play gate, so its
+// heroCostAtLeastInHandOrPlay condition must be suppressed (mirrors the
+// size-changing / investigate descriptive-token suppression). Non-global,
+// stateless `.test`; matches the appended marker regardless of the per-unit rate.
+const WORTHY_COUNT_SCALED_MARKER_PATTERN =
+  /\[keyword:attack-per-count:worthy-cards-played-this-turn:\d+\]/;
+
 // why: D-24019 — the optional-KO-reward token has three segments
 // ([keyword:optional-ko-reward:<reward>:<n>]); KEYWORD_PATTERN cannot match it
 // (it stops at the second colon), so the reward and magnitude need a dedicated
@@ -633,6 +643,12 @@ function parseAbilityText(
   // X-Men Hero this turn" gate.
   const revealFromHandCriterion = tryResolveRevealFromHandCriterion(abilityText);
   const lineHasRevealFromHand = revealFromHandCriterion !== undefined;
+  // why: WP-673 / D-24488 — when the line carries the worthy count-scaled marker,
+  // its `[keyword:Worthy]` token is the COUNT CRITERION ("each other card … that
+  // makes you Worthy"), not a heroCostAtLeastInHandOrPlay play-gate — so Step 2
+  // suppresses the Worthy condition it would otherwise push (mirrors the
+  // size-changing / investigate descriptive-token suppression above).
+  const lineHasWorthyCountScaledAttack = WORTHY_COUNT_SCALED_MARKER_PATTERN.test(abilityText);
   // why: WP-660 / D-24471 — character ranges of `[icon:recruit|attack]` tokens that are
   // the THRESHOLD/RATE of a "made at least N", "for every N", or "N or more" CONDITION
   // clause. Steps 2b (icon-magnitude) and 3 (icon→keyword) skip any icon overlapping these
@@ -1023,7 +1039,12 @@ function parseAbilityText(
     } else if (normalizedKeyword === 'worthy') {
       // why: WP-653 / D-24464 — Worthy gates on a Hero costing >= 5 in hand or
       // play (the Spectrum/recruit-threshold marker→condition precedent).
-      conditions.push({ type: 'heroCostAtLeastInHandOrPlay', value: '5' });
+      // why: WP-673 / D-24488 — but on a worthy count-scaled line the Worthy token
+      // is the COUNT CRITERION ("each other card … that makes you Worthy"), not a
+      // play gate, so emit NO condition for it (the count source does the counting).
+      if (!lineHasWorthyCountScaledAttack) {
+        conditions.push({ type: 'heroCostAtLeastInHandOrPlay', value: '5' });
+      }
     } else if (normalizedKeyword === 'savior') {
       // why: WP-653 / D-24464 — Savior gates on >= 3 Bystanders in the Victory
       // Pile (the Spectrum/recruit-threshold marker→condition precedent).

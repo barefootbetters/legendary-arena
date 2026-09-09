@@ -261,7 +261,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other card you played this turn that makes you [keyword:Worthy]."
+            "You get +1[icon:attack] for each other card you played this turn that makes you [keyword:Worthy]. [keyword:attack-per-count:worthy-cards-played-this-turn:1]"
           ]
         },
         {

@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 667,
+    "totalRows": 668,
     "byStatus": {
-      "executable": 268,
+      "executable": 269,
       "deferred": 0,
       "condition": 26,
       "unsupported": 334,
@@ -1382,6 +1382,22 @@
         {
           "slug": "winged-helm",
           "name": "Winged Helm"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/thor",
+      "heroName": "Thor",
+      "set": "asrd",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "divine-lightning",
+          "name": "Divine Lightning"
         }
       ]
     },

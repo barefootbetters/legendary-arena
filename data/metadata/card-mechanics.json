@@ -87,8 +87,9 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
+        "asrd/thor",
         "co2e/black-widow",
         "core/black-widow"
       ],
@@ -2177,6 +2178,7 @@
     },
     "asrd/thor": {
       "mechanics": [
+        "attack-per-count",
         "thrown-artifact",
         "worthy"
       ]

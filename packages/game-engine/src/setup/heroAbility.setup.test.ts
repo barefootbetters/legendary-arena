@@ -674,6 +674,71 @@ describe('buildHeroAbilityHooks — negative-magnitude icon suppression (D-24486
 });
 
 // ---------------------------------------------------------------------------
+// Worthy count-scaled attack — Divine Lightning (WP-673 / EC-710 / D-24488)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — worthy count-scaled attack (WP-673 / D-24488)', () => {
+  // The generated line: the printed text plus the marker the markers pass appends.
+  const DIVINE_LIGHTNING_ABILITY =
+    'You get +1[icon:attack] for each other card you played this turn that makes you [keyword:Worthy]. [keyword:attack-per-count:worthy-cards-played-this-turn:1]';
+
+  it('emits an attack-per-count effect with the worthy count source (per-unit 1)', () => {
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'divine-lightning', abilities: [DIVINE_LIGHTNING_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+    const effect = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .find((entry) => entry.type === 'attack-per-count');
+
+    assert.ok(effect !== undefined, 'an attack-per-count effect is emitted');
+    assert.equal(effect!.magnitude, 1, 'the per-unit rate is 1');
+    assert.equal(effect!.countSource, 'worthy-cards-played-this-turn',
+      'the count source is worthy-cards-played-this-turn');
+  });
+
+  it('suppresses the printed +1[icon:attack] so it does not double-count as a flat grant', () => {
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'divine-lightning', abilities: [DIVINE_LIGHTNING_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('attack'),
+        'the printed attack icon must be subsumed by attack-per-count (no flat attack keyword)');
+      assert.ok((hook.effects ?? []).every((effect) => effect.type !== 'attack'),
+        'no phantom flat attack effect is emitted alongside the count-scaled one');
+    }
+  });
+
+  it('suppresses the Worthy gate — the [keyword:Worthy] token is the count criterion, not a play condition', () => {
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'divine-lightning', abilities: [DIVINE_LIGHTNING_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+    const conditions = hooks.flatMap((hook) => hook.conditions ?? []);
+
+    assert.ok(
+      conditions.every((condition) => condition.type !== 'heroCostAtLeastInHandOrPlay'),
+      'no heroCostAtLeastInHandOrPlay (Worthy) gate is emitted on the count-scaled line',
+    );
+  });
+
+  it('still gates a plain Worthy line with no count-scaled marker (no over-suppression)', () => {
+    const registry = makeRegistry('asrd', 'thor', [
+      { slug: 'plain-worthy', abilities: ['[keyword:Worthy]: Draw a card.'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('asrd/thor'));
+    const conditions = hooks.flatMap((hook) => hook.conditions ?? []);
+
+    assert.ok(
+      conditions.some((condition) => condition.type === 'heroCostAtLeastInHandOrPlay'),
+      'a Worthy line without the worthy count-scaled marker keeps its gate',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 
