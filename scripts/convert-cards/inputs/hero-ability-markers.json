@@ -466,6 +466,12 @@
       "cardSlug": "reckless",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-wound-self]"
+    },
+    {
+      "heroSlug": "goliath",
+      "cardSlug": "being-big-is-best",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:cost-four-plus-played-this-turn:1]"
     }
   ],
   "dkcy": [
@@ -1180,6 +1186,20 @@
       "markupToken": "[keyword:draw:1]"
     }
   ],
+  "noir": [
+    {
+      "heroSlug": "luke-cage-noir",
+      "cardSlug": "follow-big-leads",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:cost-four-plus-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "luke-cage-noir",
+      "cardSlug": "weight-of-the-world",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:cost-four-plus-played-this-turn:2]"
+    }
+  ],
   "vill": [
     {
       "heroSlug": "juggernaut",
@@ -1204,6 +1224,12 @@
       "cardSlug": "unending-anguish",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:3]"
+    },
+    {
+      "heroSlug": "juggernaut",
+      "cardSlug": "size-matters",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:cost-four-plus-played-this-turn:1]"
     }
   ],
   "wtif": [

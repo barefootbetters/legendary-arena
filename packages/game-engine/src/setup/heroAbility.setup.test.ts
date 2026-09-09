@@ -739,6 +739,65 @@ describe('buildHeroAbilityHooks — worthy count-scaled attack (WP-673 / D-24488
 });
 
 // ---------------------------------------------------------------------------
+// cost-four-plus count-scaled attack/recruit siblings (WP-674 / EC-711 / D-24489)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — cost-four-plus count-scaled siblings (WP-674 / D-24489)', () => {
+  // The generated lines: the printed text plus the marker the markers pass appends.
+  const FOLLOW_BIG_LEADS_ABILITY =
+    'You get +1[icon:recruit] for each other card you played this turn that costs 4 or more. [keyword:recruit-per-count:cost-four-plus-played-this-turn:1]';
+  const BEING_BIG_IS_BEST_ABILITY =
+    'You get +1[icon:attack] for each other card you played this turn that costs 4 or more. [keyword:attack-per-count:cost-four-plus-played-this-turn:1]';
+
+  it('emits a recruit-per-count effect with the cost-four-plus count source (per-unit 1)', () => {
+    const registry = makeRegistry('noir', 'luke-cage-noir', [
+      { slug: 'follow-big-leads', abilities: [FOLLOW_BIG_LEADS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('noir/luke-cage-noir'));
+    const effect = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .find((entry) => entry.type === 'recruit-per-count');
+
+    assert.ok(effect !== undefined, 'a recruit-per-count effect is emitted');
+    assert.equal(effect!.magnitude, 1, 'the per-unit rate is 1');
+    assert.equal(effect!.countSource, 'cost-four-plus-played-this-turn',
+      'the count source is cost-four-plus-played-this-turn');
+  });
+
+  it('suppresses the printed +1[icon:recruit] so it does not double-count as a flat grant', () => {
+    const registry = makeRegistry('noir', 'luke-cage-noir', [
+      { slug: 'follow-big-leads', abilities: [FOLLOW_BIG_LEADS_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('noir/luke-cage-noir'));
+
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('recruit'),
+        'the printed recruit icon must be subsumed by recruit-per-count (no flat recruit keyword)');
+      assert.ok((hook.effects ?? []).every((effect) => effect.type !== 'recruit'),
+        'no phantom flat recruit effect is emitted alongside the count-scaled one');
+    }
+  });
+
+  it('emits an attack-per-count effect with the cost-four-plus source and suppresses the attack icon', () => {
+    const registry = makeRegistry('cvwr', 'goliath', [
+      { slug: 'being-big-is-best', abilities: [BEING_BIG_IS_BEST_ABILITY] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('cvwr/goliath'));
+    const effect = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .find((entry) => entry.type === 'attack-per-count');
+
+    assert.ok(effect !== undefined, 'an attack-per-count effect is emitted');
+    assert.equal(effect!.countSource, 'cost-four-plus-played-this-turn',
+      'the count source is cost-four-plus-played-this-turn');
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('attack'),
+        'the printed attack icon must be subsumed by attack-per-count (no flat attack keyword)');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 

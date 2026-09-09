@@ -47,13 +47,17 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 2 canonical count-source values', () => {
-    const expectedSources = ['victory-bystanders', 'worthy-cards-played-this-turn'];
+  it('contains exactly the 3 canonical count-source values', () => {
+    const expectedSources = [
+      'victory-bystanders',
+      'worthy-cards-played-this-turn',
+      'cost-four-plus-played-this-turn',
+    ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      2,
-      'HERO_COUNT_SOURCES must have exactly 2 entries',
+      3,
+      'HERO_COUNT_SOURCES must have exactly 3 entries',
     );
 
     assert.deepStrictEqual(
@@ -184,6 +188,74 @@ describe('resolveCountSource worthy-cards-played-this-turn', () => {
 
     assert.equal(
       resolveCountSource(gameState, '99', 'worthy-cards-played-this-turn', 'divine-lightning#0'),
+      0,
+      'a player with no zones must resolve to 0 (no throw)',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cost-four-plus-played-this-turn resolver (WP-674 / D-24489)
+// ---------------------------------------------------------------------------
+
+describe('resolveCountSource cost-four-plus-played-this-turn', () => {
+  it('returns 0 when no other cost>=4 cards were played', () => {
+    // Only the triggering card (cost 6) is in play → no OTHER cost>=4 cards.
+    const gameState = makeStateWithInPlay(['being-big-is-best#0'], {
+      'being-big-is-best#0': 6,
+    });
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
+      0,
+      'the triggering card is excluded and no other cost>=4 cards are in play',
+    );
+  });
+
+  it('counts two other cost>=4 cards played this turn', () => {
+    const gameState = makeStateWithInPlay(
+      ['ally-a#0', 'ally-b#0', 'being-big-is-best#0'],
+      { 'ally-a#0': 4, 'ally-b#0': 7, 'being-big-is-best#0': 6 },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
+      2,
+      'both other cost>=4 cards count; the triggering card is excluded',
+    );
+  });
+
+  it('excludes cards costing less than 4', () => {
+    const gameState = makeStateWithInPlay(
+      ['cheap#0', 'ally-a#0', 'being-big-is-best#0'],
+      { 'cheap#0': 3, 'ally-a#0': 4, 'being-big-is-best#0': 6 },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
+      1,
+      'only the cost>=4 card counts; the cost-3 card is below the threshold',
+    );
+  });
+
+  it('excludes the triggering card even when it is cost>=4', () => {
+    // Without the triggering-card exclusion this would over-count by 1.
+    const gameState = makeStateWithInPlay(['being-big-is-best#0'], {
+      'being-big-is-best#0': 8,
+    });
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
+      0,
+      'a lone triggering card never counts itself, whatever its cost',
+    );
+  });
+
+  it('returns 0 when the player has no zones (defensive)', () => {
+    const gameState = makeStateWithInPlay([], {});
+
+    assert.equal(
+      resolveCountSource(gameState, '99', 'cost-four-plus-played-this-turn', 'being-big-is-best#0'),
       0,
       'a player with no zones must resolve to 0 (no throw)',
     );

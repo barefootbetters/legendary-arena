@@ -87,11 +87,14 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 6,
       "cardIds": [
         "asrd/thor",
         "co2e/black-widow",
-        "core/black-widow"
+        "core/black-widow",
+        "cvwr/goliath",
+        "noir/luke-cage-noir",
+        "vill/juggernaut"
       ],
       "hidden": true
     },
@@ -1051,6 +1054,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/thor"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "recruit-per-count",
+      "label": "Recruit Per Count",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "noir/luke-cage-noir"
       ],
       "hidden": true
     },
@@ -2586,6 +2600,7 @@
     },
     "cvwr/goliath": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "size-changing"
       ]
@@ -3153,7 +3168,9 @@
     },
     "noir/luke-cage-noir": {
       "mechanics": [
-        "investigate"
+        "attack-per-count",
+        "investigate",
+        "recruit-per-count"
       ]
     },
     "noir/spider-man-noir": {
@@ -3574,6 +3591,7 @@
     },
     "vill/juggernaut": {
       "mechanics": [
+        "attack-per-count",
         "discard-to-play"
       ]
     },

@@ -29,6 +29,11 @@ const VILLAIN_DECK_BYSTANDER_PREFIX = 'bystander-villain-deck-';
 // constant per the duplicate-first rule (two uses today, no shared owner).
 const WORTHY_HERO_COST_THRESHOLD = 5;
 
+// why: WP-674 / D-24489 — the "costs 4 or more" sibling family counts OTHER
+// cards played this turn whose printed cost is >= 4. Local constant per the
+// duplicate-first rule (one use, distinct from the Worthy threshold above).
+const COST_4_PLUS_THRESHOLD = 4;
+
 /**
  * Returns true when an ext_id names a bystander in either ext_id form.
  *
@@ -105,6 +110,45 @@ function countWorthyCardsPlayedThisTurn(
 }
 
 /**
+ * Counts the OTHER cards a player has played this turn that cost 4 or more.
+ *
+ * "Other" excludes the triggering card itself — the sibling cards' text is
+ * "+N attack/recruit for each OTHER card you played this turn that costs 4 or
+ * more", and a triggering card that itself costs >= 4 would otherwise count
+ * itself. Cards played this turn live in the in-play zone; a token or basic
+ * with no cardStats row (cost 0) never meets the threshold.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @returns The number of other cost-4-plus cards played this turn.
+ */
+function countCost4PlusCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+
+  let cost4PlusCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    // why: safe access — a token in play has no cardStats row (cost 0), so it
+    // never meets the >= 4 threshold; only true Heroes contribute.
+    const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
+    if (cost >= COST_4_PLUS_THRESHOLD) {
+      cost4PlusCount++;
+    }
+  }
+  return cost4PlusCount;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -132,6 +176,9 @@ export function resolveCountSource(
     }
     case 'worthy-cards-played-this-turn': {
       return countWorthyCardsPlayedThisTurn(G, playerID, triggeringCardId);
+    }
+    case 'cost-four-plus-played-this-turn': {
+      return countCost4PlusCardsPlayedThisTurn(G, playerID, triggeringCardId);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must

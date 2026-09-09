@@ -40653,4 +40653,30 @@ Protect this file.
 
 **Packet:** WP-673 / EC-710. **Active:** 2026-09-08.
 
+### D-24489 — `cost-four-plus-played-this-turn` count source + `recruit-per-count` effect family: four "costs 4 or more" sibling cards scale their printed bonus (Active 2026-09-08 — WP-674 / EC-711)
+
+**Context.** WP-673 fixed Divine Lightning and recorded (Scope OUT + `reference_attack_per_count_marker_mechanism`) that four siblings share the exact "+N attack/recruit for each other card you played this turn that costs 4 or more" shape and were still under-scaling: `cvwr/goliath/being-big-is-best` (+1 attack), `noir/luke-cage-noir/follow-big-leads` (+1 **recruit**), `noir/luke-cage-noir/weight-of-the-world` (+2 attack), `vill/juggernaut/size-matters` (+1 attack). No `cost-≥4` count source existed, and `attack-per-count` (D-24016) is attack-only, so the recruit sibling had no effect family. Each line's printed `+N[icon]` parsed as a flat/dropped grant, the "for each" scaling silently lost.
+
+**Decision.** Extend the shipped `attack-per-count` mechanism (the WP-673 `worthy-cards-played-this-turn` precedent) with one new count source and one new effect family:
+
+1. **New `HeroCountSource` `'cost-four-plus-played-this-turn'`** (`rules/heroCountSource.ts`) — union + `HERO_COUNT_SOURCES` array in lockstep (drift pin a RUNTIME keyset assertion per D-24372, bumped N=2→3). The slug is **digit-free** (the `4` written as `four`) so it matches the existing locked `attack-per-count:<source>:N` / `recruit-per-count:<source>:N` token form and the engine's `[a-z][a-z-]*` capture — **no gate widening** (the WP-673 norm; a `4` would have forced widening `[a-z][a-z-]*`→`[a-z][a-z0-9-]*` across the locked `VALID_TOKEN_PATTERN` and both engine patterns).
+
+2. **Resolver (`hero/heroCountSource.resolve.ts`)** counts the OTHER cards in `playerZones.inPlay` whose `G.cardStats[id].cost >= 4`, excluding the triggering card (reuses the WP-673 `triggeringCardId` param). Local threshold constant per duplicate-first. Pure/total, no registry read.
+
+3. **New `recruit-per-count` HeroKeyword** (`rules/heroKeywords.ts`) — the recruit sibling of `attack-per-count`. Full handler-bearing lockstep: union + `HERO_KEYWORDS` array + both length pins 43→44 + `HERO_EFFECT_HANDLERS` + handler-count pin 29→30 + `HANDLED_KEYWORDS`. Carries a magnitude (the per-unit rate) → NOT in `NO_MAGNITUDE_KEYWORDS`. Handler `heroEffectRecruitPerCount` grants `magnitude × resolveCountSource(...)` to `G.turnEconomy.recruit` (`addResources(economy, 0, grant)`), threading the played card id for the OTHER-exclusion.
+
+4. **Parser (`setup/heroAbility.setup.ts`)** — a `RECRUIT_COUNT_SCALED_PATTERN` + Step 2d′ extraction (mirrors the attack Step 2d), a recruit-icon-suppression block (drops the co-located printed `[icon:recruit]` exactly as the D-24016 attack suppression drops `[icon:attack]`), and a `recruit-per-count` effect-builder branch carrying the count source.
+
+5. **Card data + tooling.** `apply-hero-ability-markers.mjs` `VALID_TOKEN_PATTERN` gains the `recruit-per-count:<source>:N` alternative; four markers land in `inputs/hero-ability-markers.json`; `cvwr`/`noir`/`vill` regenerate (GENERATED — marker SOURCE + reproducible regen, never a hand-edit; `cards:check` confirms byte-reproducibility). `scripts/coverage/mechanic-provenance.json` gains `recruit-per-count → WP-674 / D-24489`.
+
+**Why the marker + existing family, not an NL parser branch.** Same rationale as D-24488: the parser is structured-markers-only and `attack-per-count` is already data-marker-driven end-to-end. The recruit variant is a genuine new effect family (attack-per-count cannot grant recruit), but it is built as the minimal mirror of the attack path, not a bespoke NL arm.
+
+**Scope OUT (deferred).** `vnom/symbiote/symbiotic-adaptation` — an icon-based count-scaled **choose-one** ("Choose one: +1 recruit for each other card with a recruit icon / Or +1 attack for each other card with an attack icon"). It needs icon-presence count sources AND a count-scaled choose-one parse form + choice-resolution model (no precedent — existing choose-ones are Empowered/draw-specific), a distinct subsystem from the uniform cost-≥4 shape — its own follow-up WP.
+
+**Determinism.** Adding the source, the keyword, and the cvwr/noir/vill markers changes only those three sets' parsed effects. The determinism pins replay CORE-set fixtures (`PRE_WP080_HASH`, the dr-doom / `core/legacy-virus-the` sentinels), none of which play a cvwr/noir/vill card, so the full engine suite (3203/3203, both pin tests included) passes unchanged — **NO hash re-pin**.
+
+**Gates.** engine suite 3203/3203; `pnpm -r build` 0; `cards:check` reproducible; `ledger:heroes` regenerated (the four cards now Executable); `mechanics:metadata` / `effect-index` / `sim:runtime-observed` regenerated and `--check` green; `sim:coverage --check` OK (three new-mechanic warnings — the sources are registered but not yet sim-observed on these decks; the observed floor is not regressed, so the baseline is unchanged). The dashboard in-play peak (`in-play-hollow-baseline.json`) is a manual D-24370/D-24440 rebuild trigger, not this WP's — left untouched; its committed pin (2306) still passes. Cites: `.claude/rules/architecture.md` (canonical-array drift; count source + keyword are engine-layer), D-24016 (attack-per-count + icon-suppression), D-24488 (the count-source recipe + `triggeringCardId`). **Live-on-surface** (a real cvwr/noir/vill match granting the scaled bonus) is operator-pending.
+
+**Packet:** WP-674 / EC-711. **Active:** 2026-09-08.
+
 Protect this file.

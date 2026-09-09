@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1843,
+    "totalEntries": 1847,
     "byScope": {
-      "hero": 668,
+      "hero": 672,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 405,
+      "executable": 409,
       "deferred": 0,
       "condition": 26,
       "unsupported": 335,
@@ -8386,6 +8386,23 @@
       "name": "Goliath",
       "set": "cvwr",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "being-big-is-best",
+          "name": "Being Big is Best"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/goliath",
+      "name": "Goliath",
+      "set": "cvwr",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -15687,6 +15704,23 @@
       "name": "Luke Cage Noir",
       "set": "noir",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "weight-of-the-world",
+          "name": "Weight of the World"
+        }
+      ]
+    },
+    {
+      "extId": "noir/luke-cage-noir",
+      "name": "Luke Cage Noir",
+      "set": "noir",
+      "scope": "hero",
       "mechanic": "investigate",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#investigate",
@@ -15700,6 +15734,23 @@
         {
           "slug": "unbreakable-cage",
           "name": "Unbreakable Cage"
+        }
+      ]
+    },
+    {
+      "extId": "noir/luke-cage-noir",
+      "name": "Luke Cage Noir",
+      "set": "noir",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "follow-big-leads",
+          "name": "Follow Big Leads"
         }
       ]
     },
@@ -20772,6 +20823,23 @@
         {
           "slug": "unstable-kidnapper",
           "name": "Unstable Kidnapper"
+        }
+      ]
+    },
+    {
+      "extId": "vill/juggernaut",
+      "name": "Juggernaut",
+      "set": "vill",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "size-matters",
+          "name": "Size Matters"
         }
       ]
     },
@@ -28933,6 +29001,7 @@
     "cvwr/goliath": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "size-changing"
       ]
@@ -31640,7 +31709,9 @@
     "noir/luke-cage-noir": {
       "scope": "hero",
       "mechanics": [
-        "investigate"
+        "attack-per-count",
+        "investigate",
+        "recruit-per-count"
       ]
     },
     "noir/spider-man-noir": {
@@ -33550,6 +33621,7 @@
     "vill/juggernaut": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "discard-to-play"
       ]
     },

@@ -35,7 +35,8 @@
  */
 export type HeroCountSource =
   | 'victory-bystanders' // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
-  | 'worthy-cards-played-this-turn'; // why: WP-673 / D-24488 — counts the OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464); Divine Lightning's "+1 attack for each other card you played this turn that makes you Worthy"
+  | 'worthy-cards-played-this-turn' // why: WP-673 / D-24488 — counts the OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464); Divine Lightning's "+1 attack for each other card you played this turn that makes you Worthy"
+  | 'cost-four-plus-played-this-turn'; // why: WP-674 / D-24489 — counts the OTHER cards played this turn that cost 4 or more; drives the "+N attack/recruit for each other card you played this turn that costs 4 or more" siblings (cvwr Being Big Is Best, noir Follow Big Leads + Weight of the World, vill Size Matters)
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -47,4 +48,5 @@ export type HeroCountSource =
 export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'victory-bystanders', // why: D-24016 — counts the player's victory-pile bystanders (both ext_id forms)
   'worthy-cards-played-this-turn', // why: WP-673 / D-24488 — counts OTHER cards played this turn that make you Worthy (a Hero costing >= 5, per D-24464)
+  'cost-four-plus-played-this-turn', // why: WP-674 / D-24489 — counts OTHER cards played this turn that cost 4 or more
 ] as const;

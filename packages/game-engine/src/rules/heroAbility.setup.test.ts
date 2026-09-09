@@ -468,6 +468,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'reveal-attack-choose',
       'reveal-ko-attack',
       'attack-per-count',
+      'recruit-per-count', // why: WP-674 / D-24489 — count-scaled recruit sibling of attack-per-count
       'optional-ko-reward',
       'optional-ko-hand-discard', // why: WP-667 / D-24480 — "you may KO a card from your hand or discard pile" (no reward, Radioactive Riot)
       'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted auto-resolving variant of optional-ko-reward
@@ -500,8 +501,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      43,
-      'HERO_KEYWORDS must have exactly 43 entries',
+      44,
+      'HERO_KEYWORDS must have exactly 44 entries',
     );
 
     assert.deepStrictEqual(

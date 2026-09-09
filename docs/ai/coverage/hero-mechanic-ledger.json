@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 668,
+    "totalRows": 672,
     "byStatus": {
-      "executable": 269,
+      "executable": 273,
       "deferred": 0,
       "condition": 26,
       "unsupported": 334,
       "unmarked": 38,
       "subsystem": 1
     },
-    "distinctMechanics": 130
+    "distinctMechanics": 131
   },
   "rows": [
     {
@@ -4010,6 +4010,22 @@
       "extId": "cvwr/goliath",
       "heroName": "Goliath",
       "set": "cvwr",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "being-big-is-best",
+          "name": "Being Big is Best"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/goliath",
+      "heroName": "Goliath",
+      "set": "cvwr",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -7340,6 +7356,22 @@
       "extId": "noir/luke-cage-noir",
       "heroName": "Luke Cage Noir",
       "set": "noir",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "weight-of-the-world",
+          "name": "Weight of the World"
+        }
+      ]
+    },
+    {
+      "extId": "noir/luke-cage-noir",
+      "heroName": "Luke Cage Noir",
+      "set": "noir",
       "mechanic": "investigate",
       "status": "executable",
       "wp": "",
@@ -7353,6 +7385,22 @@
         {
           "slug": "unbreakable-cage",
           "name": "Unbreakable Cage"
+        }
+      ]
+    },
+    {
+      "extId": "noir/luke-cage-noir",
+      "heroName": "Luke Cage Noir",
+      "set": "noir",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "designs": [
+        {
+          "slug": "follow-big-leads",
+          "name": "Follow Big Leads"
         }
       ]
     },
@@ -9709,6 +9757,22 @@
         {
           "slug": "unstable-kidnapper",
           "name": "Unstable Kidnapper"
+        }
+      ]
+    },
+    {
+      "extId": "vill/juggernaut",
+      "heroName": "Juggernaut",
+      "set": "vill",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "size-matters",
+          "name": "Size Matters"
         }
       ]
     },
