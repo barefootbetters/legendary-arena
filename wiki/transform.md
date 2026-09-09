@@ -29,7 +29,7 @@ source:
   - ../docs/ai/work-packets/WP-658-transform-keyword-runtime.md
   - ../docs/ai/work-packets/WP-665-amadeus-cho-transform.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-07
+last-reviewed: 2026-09-08
 ---
 
 # Transform
@@ -408,6 +408,29 @@ Still outstanding as their own follow-ups: **Sentry's bidirectional loops** (a
 Transformed card that carries a `transform` back to its base) and the **"cards
 Transformed this turn" counter** that Sentry's *Rival Personalities* scores — a
 distinct piece of state, not just another trigger.
+
+## Presentation — the transform beat (VFX + SFX, WP-672)
+
+A completed Hero transform is no longer silent on the play surface. The engine
+emits a **`transformResolved`** notable event (the tenth `NotableGameEventType`,
+D-24486) at the `heroEffectTransform` completed-swap fire site — a minimal
+`{ playerId, narrative }` payload, **not** emitted on the AC-5 exhaustion no-op —
+and the arena client renders a **transform beat** off it:
+
+- a centre-screen **"Transformed!"** chip (`NotableEventOverlay`);
+- a gamma-green **power-surge** bloom + a gamma particle burst + a
+  **"TRANSFORMED!"** call-out word (`VfxOverlay`, gated by the Effect-Intensity
+  accessibility contract) — see [Visual Effects → the transform beat](visual-effects.md#surface-transform);
+- an ORIGINAL-synthesis gamma **power-up** sound (`transform.mp3`, live on R2) on
+  the same frame — see [Sound Effects](sound-effects.md#surface-1).
+
+This is the **Hero** transform surface only. The
+[Mastermind](#mastermind-transform) (General Ross) and [Scheme](#scheme-transform)
+(Chthon) flips do not yet emit `transformResolved` — each is a named follow-up
+that adds an emit at its own fire site; the event, the manifest, and the VFX/SFX
+consumers are already shared. The beat is **pure presentation** — it reads the
+projected `UIState` only and is absent from the determinism hash, so a replay or
+a bot-vs-bot sim renders none of it.
 
 ## Interactions
 
