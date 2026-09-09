@@ -231,6 +231,39 @@ game's own terms, because Legendary Arena's soul is built on the opposite:
   become great by admitting you started small and were helped. The lie
   sells the finished pose and hides the debt that made it possible.
 
+### The fence
+
+The lie is not only false; it is lethal — and it is worth telling as a parable,
+because it never arrives as an argument. It arrives as a feeling: that the thing
+protecting you is the thing caging you.
+
+A farmer built a fence around his land, for he had heard the wolves in the hills
+at night and found their tracks at the tree line by morning.
+
+His wife came to hate it. *"You built this to keep me,"* she said. *"You call it
+love, but a fence is a fence, and a fence is a cage. I did not marry a warden,
+and I will not be kept."* And as the seasons turned she grew only surer, for the
+wolves never came to the rails, and the long quiet seemed to prove her point:
+**what is a wall for, if nothing ever comes?**
+
+So one night she tore it down, rail by rail, and in the morning she stood in the
+open field and breathed the wide air — and she was not wrong that it was
+beautiful, and not wrong that it was hers.
+
+The wolves came on the third night. They had been waiting all along for the gap.
+
+They found them both in the open field she loved, and there was nothing left
+between her and the teeth — for she had been taught, all her life, to fear the
+wall, and never once the thing the wall was built to keep out.
+
+> *The fence was never her cage. It was the last thing standing between her and
+> the wild — and she pulled it down with her own hands, and called it freedom.*
+
+Every inheritance is a fence of some kind — a wall someone who loved you built
+against a danger you have not yet met. The lie teaches you to resent the wall
+and forget the wolves. The next image is the answer to it: the tree that grows
+tall not by tearing down what came before, but by receiving it.
+
 ### The Redwood Principle
 
 The tallest redwood in the forest is not the most independent thing in the
@@ -1277,8 +1310,9 @@ claim at a safe distance — it stands on it.
   that *interprets* sourced principles. If it ever reads as inventing a
   constraint, the fix is to move that constraint into the vision and cite
   it, or delete the sentence — per [SCHEMA.md](SCHEMA.md) Scope Exclusion.
-- **The Upward Pull creed, the creed, four virtues, "soul promise," and
-  motto are authored identity, not new commitments.** They name feelings and
+- **The Upward Pull creed, the creed, four virtues, "soul promise,"
+  motto, and [the fence parable](#the-fence) are authored identity, not new
+  commitments.** They name feelings and
   values the essay already carries; the promise in particular restates
   existing [Vision](vision.md) commitments and adds none. The
   [Upward Pull test](#the-upward-pull--what-the-game-is-for) ("does this
