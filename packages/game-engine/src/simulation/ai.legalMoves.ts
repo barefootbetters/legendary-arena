@@ -40,6 +40,7 @@ import {
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
+import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import {
   hasPendingReturnZeroCostDiscard,
   getEligibleZeroCostDiscardCards,
@@ -132,6 +133,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
   'resolveCountScaledChoice',
+  'resolveUndercoverChoice',
   'resolveSmashDiscard',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
@@ -331,6 +333,13 @@ export function getLegalMoves(
   // mirroring the draw-or-empowered default above). Returns a list of length EXACTLY 1.
   if (hasPendingCountScaledChoice(gameState)) {
     return [{ name: 'resolveCountScaledChoice', args: { optionIndex: 0 } }];
+  }
+  // why: WP-678 / D-24494 — an Undercover target pick blocks every other move; the bot resolves
+  // it first with a deterministic default of the FIRST eligible target (the eligibleTargets
+  // snapshot is deterministic). Returns a list of length EXACTLY 1.
+  if (hasPendingUndercoverChoice(gameState)) {
+    const front = gameState.pendingUndercoverChoice![0]!;
+    return [{ name: 'resolveUndercoverChoice', args: { targetExtId: front.eligibleTargets[0]! } }];
   }
   // why: WP-676 / D-24492 — a Smash discard-for-attack choice blocks every other move; the
   // bot resolves it first, discarding the deterministic default target

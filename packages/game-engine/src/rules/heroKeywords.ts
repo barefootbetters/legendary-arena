@@ -46,7 +46,9 @@ export type HeroKeyword =
   | 'wall-crawl' // why: D-24049 — printed "Wall-Crawl" ("when you recruit this Hero, you may put it on top of your deck"); executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'dodge' // why: D-24051 — printed "Dodge" ("during your turn, you may discard this card from your hand to draw another card"); executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
   | 'conditional'
-  | 'undercover' // why: D-24060 / WP-282 — "send a card face-down, play it later from face-down state"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
+  | 'undercover' // why: WP-678 / D-24494 (supersedes D-24060) — the printed "Undercover" descriptive token. Undercover puts a card into the Victory Pile worth 1 VP (universal-rules-v23 §Undercover) — NOT the retired WP-282 replayable face-down store. The BARE token carries no source zone, so it is an honest hollow (no handler); a card's actual Undercover effect is emitted by a source-shape marker (below). Per-card wiring of the ~56 bare-token lines is Bucket-A.
+  | 'undercover-hand-shield-hero' // why: WP-678 / D-24494 — "send a [team:shield] Hero from your HAND Undercover" → Victory Pile (1 VP). Handler-bearing; parks a PendingUndercoverChoice when ≥2 eligible hand Heroes, auto-sends 1, no-ops 0. NO_MAGNITUDE_KEYWORDS.
+  | 'undercover-officer-stack' // why: WP-678 / D-24494 — "send a card from the S.H.I.E.L.D. Officer Stack (G.piles.officers) Undercover" → Victory Pile (1 VP). Handler-bearing; deterministic (sends the top Officer). NO_MAGNITUDE_KEYWORDS.
   | 'victory-villain-attack' // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
   | 'draw-or-empowered' // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered
   | 'count-scaled-choose' // why: WP-675 / D-24490 — "Choose one: +N recruit per other recruit-icon card / Or +N attack per other attack-icon card" (vnom Symbiotic Adaptation); parks a PendingCountScaledChoice (two count-scaled options) resolved by resolveCountScaledChoice, which dispatches the chosen option through the attack-per-count / recruit-per-count executor. Carries options (each with its own magnitude), no top-level magnitude → in NO_MAGNITUDE_KEYWORDS
@@ -100,7 +102,9 @@ export const HERO_KEYWORDS: readonly HeroKeyword[] = [
   'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted, auto-resolving variant of optional-ko-reward (Healing Factor family); rewardType carries the reward
   'wall-crawl', // why: D-24049 — printed "Wall-Crawl"; executable via the recruitHero deck-top placement, not an onPlay HERO_EFFECT_HANDLERS entry
   'dodge', // why: D-24051 — printed "Dodge"; executable via the dodgeCard hand-discard-to-draw move, not an onPlay HERO_EFFECT_HANDLERS entry
-  'undercover', // why: D-24060 / WP-282 — "send a card face-down, play it later"; executable via sendUndercover + playFromUndercover moves on onPlay trigger
+  'undercover', // why: WP-678 / D-24494 (supersedes D-24060) — printed "Undercover" descriptive token; bare form is an honest hollow (no source zone → no handler); source-shape markers below carry the effect
+  'undercover-hand-shield-hero', // why: WP-678 / D-24494 — "send a [team:shield] Hero from your HAND Undercover" → Victory Pile (1 VP); handler-bearing (NO_MAGNITUDE_KEYWORDS)
+  'undercover-officer-stack', // why: WP-678 / D-24494 — "send a card from the S.H.I.E.L.D. Officer Stack Undercover" → Victory Pile (1 VP); handler-bearing (NO_MAGNITUDE_KEYWORDS)
   'conditional',
   'victory-villain-attack', // why: D-24068 / WP-285 — "gain +attack equal to the printed attack of a villain in your victory pile"; parks a pending pick resolved by resolveVictoryPileCardPick
   'draw-or-empowered', // why: D-24069 / WP-286 — "Choose one: Draw a card, or you get Empowered by [class]"; parks a PendingDrawOrEmpowered resolved by resolveDrawOrEmpowered

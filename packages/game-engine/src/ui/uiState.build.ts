@@ -57,6 +57,7 @@ import type {
   UIPendingSmashDiscard,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
+  UIPendingUndercoverChoice,
   UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
@@ -1332,6 +1333,21 @@ export function buildUIState(
     };
   }
 
+  // why: WP-678 / D-24494 — project the FRONT entry of G.pendingUndercoverChoice (its eligible
+  // hand-Hero ext_ids) so the chooser can pick which Hero to send Undercover. Redaction to the
+  // chooser-only audience is enforced by filterUIStateForAudience.
+  let pendingUndercoverChoice: UIPendingUndercoverChoice | undefined;
+  if (
+    gameState.pendingUndercoverChoice !== undefined &&
+    gameState.pendingUndercoverChoice.length > 0
+  ) {
+    const frontUndercover = gameState.pendingUndercoverChoice[0]!;
+    pendingUndercoverChoice = {
+      playerID: frontUndercover.playerID,
+      eligibleTargets: [...frontUndercover.eligibleTargets],
+    };
+  }
+
   // why: WP-663 / D-24474 — project the FRONT entry of G.pendingPlayVillainTopChoices so
   // the chooser can render Shadowed Thoughts' "Play the top Villain-Deck card for +N Attack?"
   // prompt. Binary choice, no eligible-card list (mirrors pendingDrawOrEmpowered). Redaction
@@ -1788,6 +1804,8 @@ export function buildUIState(
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
     // why: WP-675 / D-24490 — conditional spread so an absent choice omits the field.
     ...(pendingCountScaledChoice !== undefined ? { pendingCountScaledChoice } : {}),
+    // why: WP-678 / D-24494 — conditional spread so an absent choice omits the field.
+    ...(pendingUndercoverChoice !== undefined ? { pendingUndercoverChoice } : {}),
     ...(pendingPlayVillainTop !== undefined ? { pendingPlayVillainTop } : {}),
     // why: WP-313 — conditional spread so an absent pick omits the field (no
     // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).

@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 46 entries after the smash addition', () => {
+  it('HERO_KEYWORDS array has exactly 48 entries after the Undercover source-shape additions', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      46,
-      'HERO_KEYWORDS must have exactly 46 entries (45 + smash, WP-676 / D-24492)',
+      48,
+      'HERO_KEYWORDS must have exactly 48 entries (46 + undercover-hand-shield-hero + undercover-officer-stack, WP-678 / D-24494)',
     );
   });
 });

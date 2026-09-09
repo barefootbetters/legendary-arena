@@ -64,6 +64,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // why: WP-675 / D-24490 — resolveCountScaledChoice is a getLegalMoves short-circuit (block-all
 // guard), so it MUST be dispatchable here or a parked count-scaled choice hangs the per-turn loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
+import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard is a getLegalMoves short-circuit (block-all
 // guard), so it MUST be dispatchable here or a parked Smash choice hangs the per-turn loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -281,6 +282,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
+  resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice when a
   // reveal-attack-choose hero ability parks pendingHeroChoice; a missing dispatch

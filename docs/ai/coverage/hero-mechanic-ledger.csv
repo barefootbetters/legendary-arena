@@ -1,18 +1,18 @@
 ext_id,hero_name,set,mechanic,status,wp,decision,handler,designs
 2099/doctor-doom-2099,Doctor Doom 2099,2099,cyber-mod,unsupported,,,,doomblast|tear-through-time-itself
 2099/doctor-doom-2099,Doctor Doom 2099,2099,fated-future,unsupported,,,,tear-through-time-itself
-2099/doctor-doom-2099,Doctor Doom 2099,2099,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,flesh-grafted-doombots|subvert-this-new-future|tear-through-time-itself
+2099/doctor-doom-2099,Doctor Doom 2099,2099,undercover,deferred,WP-282,D-24060,,flesh-grafted-doombots|subvert-this-new-future|tear-through-time-itself
 2099/ghost-rider-2099,Ghost Rider 2099,2099,cyber-mod,unsupported,,,,cyber-specter|hell-ride|infernal-chainsaw
 2099/ghost-rider-2099,Ghost Rider 2099,2099,fated-future,unsupported,,,,infernal-chainsaw
-2099/ghost-rider-2099,Ghost Rider 2099,2099,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,hell-ride|infernal-chainsaw
+2099/ghost-rider-2099,Ghost Rider 2099,2099,undercover,deferred,WP-282,D-24060,,hell-ride|infernal-chainsaw
 2099/hulk-2099,Hulk 2099,2099,cyber-mod,unsupported,,,,cataclysmic-frenzy|rage-incarnate
 2099/hulk-2099,Hulk 2099,2099,fated-future,unsupported,,,,massive-gamma-detonation
-2099/hulk-2099,Hulk 2099,2099,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,cataclysmic-frenzy|push-pain-under-the-surface
+2099/hulk-2099,Hulk 2099,2099,undercover,deferred,WP-282,D-24060,,cataclysmic-frenzy|push-pain-under-the-surface
 2099/ravage-2099,Ravage 2099,2099,fated-future,unsupported,,,,detect-vibrations|toxic-mutations
 2099/ravage-2099,Ravage 2099,2099,reveal-attack-choose,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-attack-choose,overhorns-and-underhorns
 2099/spider-man-2099,Spider-Man 2099,2099,cyber-mod,unsupported,,,,retractable-talons|venomous-fangs
 2099/spider-man-2099,Spider-Man 2099,2099,fated-future,unsupported,,,,spider-silk-webbing
-2099/spider-man-2099,Spider-Man 2099,2099,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,retractable-talons|spider-sense-telepathy
+2099/spider-man-2099,Spider-Man 2099,2099,undercover,deferred,WP-282,D-24060,,retractable-talons|spider-sense-telepathy
 3dtc/black-widow,Black Widow,3dtc,defeat-with-bystander,executable,WP-486,D-24291,packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander,silent-sniper
 3dtc/black-widow,Black Widow,3dtc,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
 3dtc/black-widow,Black Widow,3dtc,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
@@ -100,18 +100,18 @@ bkpt/white-wolf,White Wolf,bkpt,wound-each-villain-and-the-mastermind,unsupporte
 bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,,reflective-vibranium-armor|secret-assignment
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,,widows-bite
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,evasive-acrobatics|weave-a-web-of-spies|widows-bite
-bkwd/black-widow,Black Widow,bkwd,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,infiltrate-the-conspiracy|weave-a-web-of-spies
+bkwd/black-widow,Black Widow,bkwd,undercover,deferred,WP-282,D-24060,,infiltrate-the-conspiracy|weave-a-web-of-spies
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,,atone|captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,relocate
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,new-plan|reload
 bkwd/red-guardian,Red Guardian,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sleeper-agent
-bkwd/red-guardian,Red Guardian,bkwd,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
+bkwd/red-guardian,Red Guardian,bkwd,undercover,deferred,WP-282,D-24060,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,unleash,unsupported,,,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,when-recruited,unsupported,,,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/white-tiger,White Tiger,bkwd,dark-memories,unsupported,,,,dark-influence-of-the-hand|shadowed-resurrection
 bkwd/white-tiger,White Tiger,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,dark-influence-of-the-hand
 bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,twilight-ops
-bkwd/yelena-belova,Yelena Belova,bkwd,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,destroy-the-red-room|strike-and-fade|twilight-ops|unveil-identity
+bkwd/yelena-belova,Yelena Belova,bkwd,undercover,deferred,WP-282,D-24060,,destroy-the-red-room|strike-and-fade|twilight-ops|unveil-identity
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,,destroy-the-red-room|twilight-ops|unveil-identity
 ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,,sniper-squad|spy-network
 ca75/agent-x-13,Agent X-13,ca75,savior,condition,,,,mobilize-for-war
@@ -433,24 +433,24 @@ rvlt/speed,Speed,rvlt,hyperspeed,unsupported,,,,accelerate|break-the-sound-barri
 rvlt/war-machine,War Machine,rvlt,hyperspeed,unsupported,,,,hypersonic-cannon
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-level,unsupported,,,,fake-but-inspiring-death|impeccable-planning
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-levels,unsupported,,,,approve-orbital-strike
-shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,approve-orbital-strike|build-the-strike-team|fake-but-inspiring-death
+shld/agent-phil-coulson,Agent Phil Coulson,shld,undercover,deferred,WP-282,D-24060,,approve-orbital-strike|build-the-strike-team|fake-but-inspiring-death
 shld/deathlok,Deathlok,shld,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,authorize-lethal-force
 shld/deathlok,Deathlok,shld,s.h.i.e.l.d.-level,unsupported,,,,authorize-lethal-force|behind-enemy-lines|headlok
-shld/deathlok,Deathlok,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,behind-enemy-lines|headlok|reanimate-into-service
-shld/dum-dum-dugan,Dum Dum Dugan,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,dum-dum-dugan
+shld/deathlok,Deathlok,shld,undercover,deferred,WP-282,D-24060,,behind-enemy-lines|headlok|reanimate-into-service
+shld/dum-dum-dugan,Dum Dum Dugan,shld,undercover,deferred,WP-282,D-24060,,dum-dum-dugan
 shld/gw-bridge,G.W. Bridge,shld,(unmarked),unmarked,,,,
-shld/grant-ward,Grant Ward,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,grant-ward
+shld/grant-ward,Grant Ward,shld,undercover,deferred,WP-282,D-24060,,grant-ward
 shld/leo-fitz-and-jemma-simmons,Leo Fitz and Jemma Simmons,shld,(unmarked),unmarked,,,,
 shld/melinda-may,Melinda May,shld,(unmarked),unmarked,,,,
 shld/mockingbird,Mockingbird,shld,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,infinity-formula
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-level,unsupported,,,,battle-staves
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-levels,unsupported,,,,infinity-formula|spymaster
-shld/mockingbird,Mockingbird,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,infinity-formula|spymaster|take-cover
+shld/mockingbird,Mockingbird,shld,undercover,deferred,WP-282,D-24060,,infinity-formula|spymaster|take-cover
 shld/quake,Quake,shld,s.h.i.e.l.d.-level,unsupported,,,,aftershock|roil-the-earth|tectonic-wave
-shld/quake,Quake,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,going-underground|roil-the-earth|tectonic-wave
-shld/sharon-carter,Sharon Carter,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,sharon-carter
-shld/victoria-hand,Victoria Hand,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,victoria-hand
-shld/yo-yo-rodriguez,Yo-Yo Rodriguez,shld,undercover,executable,WP-282,D-24060,packages/game-engine/src/hero/heroEffects.execute.ts#undercover,yo-yo-rodriguez
+shld/quake,Quake,shld,undercover,deferred,WP-282,D-24060,,going-underground|roil-the-earth|tectonic-wave
+shld/sharon-carter,Sharon Carter,shld,undercover,deferred,WP-282,D-24060,,sharon-carter
+shld/victoria-hand,Victoria Hand,shld,undercover,deferred,WP-282,D-24060,,victoria-hand
+shld/yo-yo-rodriguez,Yo-Yo Rodriguez,shld,undercover,deferred,WP-282,D-24060,,yo-yo-rodriguez
 smhc/happy-hogan,Happy Hogan,smhc,coordinate,unsupported,,,,head-of-security|loyal-friend
 smhc/happy-hogan,Happy Hogan,smhc,danger-sense,unsupported,,,,watchful-eye
 smhc/happy-hogan,Happy Hogan,smhc,double-striker,unsupported,,,,asset-management

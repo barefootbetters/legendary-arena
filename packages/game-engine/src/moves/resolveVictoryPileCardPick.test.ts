@@ -30,7 +30,6 @@ import { fightVillain } from './fightVillain.js';
 import { recruitHero } from './recruitHero.js';
 import { fightMastermind } from './fightMastermind.js';
 import { dodgeCard } from './dodgeCard.js';
-import { playFromUndercover } from './playFromUndercover.js';
 import { resolveOptionalKoReward } from './optionalKoReward.resolve.js';
 import { resolveKoHeroChoice } from './koHeroChoice.resolve.js';
 import { resolveHeroChoice } from './heroChoice.resolve.js';
@@ -643,23 +642,6 @@ describe('block-all guard — pendingVictoryPileCardPick freezes all action move
       !gameState.playerZones['0']!.hand.includes('replacement' as CardExtId),
       'dodgeCard blocked — no replacement drawn',
     );
-  });
-
-  it('playFromUndercover is a no-op while pick is pending (block-all)', () => {
-    const gameState = makeBlockAllState();
-    // Seed a face-down card the move would otherwise play.
-    gameState.playerZones['0']!.faceDownCards = [
-      { instanceId: 'fd-1' as CardExtId, cardId: 'fd-1' as CardExtId, ownerPlayerId: '0' },
-    ];
-    const ctx = makeBlockAllContext(gameState);
-
-    playFromUndercover(
-      ctx as unknown as Parameters<typeof playFromUndercover>[0],
-      { instanceId: 'fd-1' as CardExtId },
-    );
-
-    assert.equal(gameState.playerZones['0']!.faceDownCards.length, 1, 'playFromUndercover blocked — face-down store intact');
-    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [], 'playFromUndercover blocked — nothing played');
   });
 
   it('advanceStage is a no-op (no events.endTurn()) while pick is pending (block-all)', () => {

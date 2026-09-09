@@ -207,6 +207,7 @@
           "henchmanVP": 0,
           "bystanderVP": 1,
           "tacticVP": 0,
+          "undercoverVP": 0,
           "woundVP": -6,
           "totalVP": -3
         },
@@ -216,6 +217,7 @@
           "henchmanVP": 1,
           "bystanderVP": 0,
           "tacticVP": 0,
+          "undercoverVP": 0,
           "woundVP": -5,
           "totalVP": -3
         }

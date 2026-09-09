@@ -911,6 +911,21 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-678 / D-24494 — the pending Undercover target pick is private to the chooser (only
+  // they may send a Hero Undercover). Present only when the audience is the chooser; omitted
+  // (conditional assignment, never an `undefined` literal) for opponents AND spectators. The
+  // eligible ext_ids are the chooser's own hand Heroes — rebuilt field-by-field (whitelist pattern).
+  if (
+    uiState.pendingUndercoverChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingUndercoverChoice.playerID
+  ) {
+    result.pendingUndercoverChoice = {
+      playerID: uiState.pendingUndercoverChoice.playerID,
+      eligibleTargets: [...uiState.pendingUndercoverChoice.eligibleTargets],
+    };
+  }
+
   // why: WP-663 / D-24474 — the pending play-top-Villain-Deck choice (Shadowed Thoughts)
   // is private to the chooser (only they may resolve it). Redacted for EVERY audience
   // except the choosing player; present only when the audience is a player whose playerId

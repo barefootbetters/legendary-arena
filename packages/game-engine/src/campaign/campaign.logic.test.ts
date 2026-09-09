@@ -65,6 +65,7 @@ const BASE_SCORES: FinalScoreSummary = {
       henchmanVP: 2,
       bystanderVP: 1,
       tacticVP: 5,
+      undercoverVP: 0,
       woundVP: 0,
       totalVP: 11,
     },

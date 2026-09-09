@@ -55,8 +55,8 @@ const STARTING_TROOPERS_COUNT = 4;
 function countAcquiredCards(zones: LegendaryGameState['playerZones'][string]): Map<string, number> {
   const counts = new Map<string, number>();
   // why: the deck-building zones only — NOT `victory` (KO'd enemies + rescued
-  // bystanders are not purchases). faceDownCards are hidden-identity plays already
-  // resolved into these zones by end of match, so they are not double-counted here.
+  // bystanders are not purchases, and Undercover'd cards there are not acquisitions
+  // either).
   const deckBuildingZones = [zones.deck, zones.hand, zones.discard, zones.inPlay];
   for (const zone of deckBuildingZones) {
     for (const extId of zone) {

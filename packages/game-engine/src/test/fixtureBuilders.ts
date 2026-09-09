@@ -26,8 +26,8 @@ import type { CardRegistryReader } from '../matchSetup.validate.js';
 /**
  * Builds a complete PlayerZones, defaulting every zone to empty.
  *
- * why: `faceDownCards` defaults to `[]` — it is `readonly FaceDownCard[]` and a
- * player owns no face-down cards until `sendUndercover` runs (WP-282).
+ * why: `undercover` defaults to `[]` — it is a `Zone` and a player has sent no cards
+ * Undercover until the undercover effect runs (WP-678 / D-24494, supersedes WP-282).
  *
  * @param overrides - Zones to set explicitly; the rest default to empty.
  * @returns A structurally complete PlayerZones.
@@ -39,7 +39,7 @@ export function makePlayerZones(overrides: Partial<PlayerZones> = {}): PlayerZon
     discard: [],
     inPlay: [],
     victory: [],
-    faceDownCards: [],
+    undercover: [],
     ...overrides,
   };
 }

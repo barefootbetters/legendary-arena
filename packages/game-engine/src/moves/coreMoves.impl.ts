@@ -31,6 +31,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
+import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -137,6 +138,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   if (hasPendingCountScaledChoice(G)) {
     return;
   }
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) {
+    return;
+  }
 
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) {
@@ -196,13 +201,13 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
  * Shared card-play core: appends an already-resolved card to the player's
  * inPlay zone, adds its base attack/recruit economy, and fires its onPlay hero
  * effects. The caller is responsible for removing the card from its source zone
- * first (hand for playCard, faceDownCards for playFromUndercover).
+ * first (hand, for playCard).
  *
- * // why: WP-282 IC-282-02 — playFromUndercover must produce identical state
- * // transitions as playing the same instance from hand. Extracting the
- * // post-removal play steps into one shared function guarantees the two paths
- * // cannot drift (no behavioral fork). Both callers append to inPlay in the
- * // same order, add the same economy, and fire the same executeHeroEffects.
+ * // why: extracting the post-removal play steps into one shared function keeps any
+ * // future alternate play path (e.g. play-from-a-zone) byte-identical to hand play
+ * // — same inPlay append order, same base economy, same executeHeroEffects. (The
+ * // WP-282 playFromUndercover caller was retired with the face-down model in
+ * // WP-678 / D-24494; applyCardPlay now has the single hand caller.)
  *
  * @param G - The game state to mutate.
  * @param context - boardgame.io move context rest (carries random for effects).
@@ -340,6 +345,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) {
     return;
   }
 
@@ -511,6 +520,10 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) {
     return;
   }
 

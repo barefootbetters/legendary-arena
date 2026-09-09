@@ -35,6 +35,13 @@ export const VP_TACTIC = 5;
 /** VP penalty per wound in a player's zones (negative value). */
 export const VP_WOUND = -1;
 
+// why: WP-678 / D-24494 — a Hero (or any card) sent Undercover is worth 1 VP by rule
+// (universal-rules-v23 §Undercover). Counted from the per-player `zones.undercover`
+// tracker, one VP per entry — never inferred from card type (a classless S.H.I.E.L.D.
+// Agent or an Officer with no cardTraits entry must still score 1).
+/** VP awarded per card sent Undercover (1 VP by rule). */
+export const VP_UNDERCOVER = 1;
+
 // ---------------------------------------------------------------------------
 // Score result types
 // ---------------------------------------------------------------------------
@@ -53,6 +60,8 @@ export interface PlayerScoreBreakdown {
   bystanderVP: number;
   /** VP from defeated mastermind tactics (shared across all players). */
   tacticVP: number;
+  /** VP from cards sent Undercover (1 each; WP-678 / D-24494). */
+  undercoverVP: number;
   /** VP penalty from wounds (negative). */
   woundVP: number;
   /** Sum of all VP categories. */

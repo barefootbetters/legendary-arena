@@ -38,6 +38,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
+import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
@@ -118,6 +119,8 @@ export function fightMastermind(
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) return;
   if (hasPendingCountScaledChoice(G)) return;
+  // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
+  if (hasPendingUndercoverChoice(G)) return;
   // why: block-all — pendingReturnZeroCostDiscard must be resolved before any other action (D-24139)
   if (hasPendingReturnZeroCostDiscard(G)) return;
   // why: block-all — pendingDiscardToPlay must be resolved before any other action (WP-383 / D-24184)

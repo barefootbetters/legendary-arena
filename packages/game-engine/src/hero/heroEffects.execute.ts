@@ -14,7 +14,8 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
+import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice } from '../types.js';
+import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
@@ -138,6 +139,14 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // PendingSmashDiscard, so it belongs here. Carries a magnitude (the +N Attack) → NOT in
   // NO_MAGNITUDE_KEYWORDS.
   'smash',
+  // why: WP-678 / D-24494 (supersedes D-24060) — the two Undercover source-shape keywords.
+  // Each has a HERO_EFFECT_HANDLERS entry that sends the sourced card to the Victory Pile
+  // (worth 1 VP, tracked in G.playerZones[pid].undercover). 'undercover-hand-shield-hero' parks
+  // a PendingUndercoverChoice when ≥2 hand Heroes qualify; 'undercover-officer-stack' is
+  // deterministic. Both carry NO magnitude → also in NO_MAGNITUDE_KEYWORDS. (The BARE
+  // 'undercover' token is NOT here — it is an honest hollow, no source zone → no handler.)
+  'undercover-hand-shield-hero',
+  'undercover-officer-stack',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -174,21 +183,12 @@ export const RECRUIT_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['wall-cra
 // bidirectional test).
 export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['dodge'];
 
-// why: D-24060 / WP-282 — undercover executes from the sendUndercover + playFromUndercover
-// MOVES (the player sends a card face-down, then later plays it from face-down state), so —
-// like wall-crawl and dodge — it has NO HERO_EFFECT_HANDLERS entry and is NOT in
-// HANDLED_KEYWORDS. It still joins MVP_KEYWORDS via this face-down-action category for two
-// load-bearing reasons: (a) the hero mechanic ledger classifies an MVP_KEYWORDS member
-// `executable`; (b) classifyHeroEffectReason returns `applied` for it, so the onPlay hook
-// that executeHeroEffects visits at PLAY time (it does not filter by timing) classifies
-// not-hollow instead of firing a `no-handler` hollow — without this membership the
-// now-recognized keyword would trade the old parse-unrecognized hollow for a fresh
-// no-handler one (a regression). Kept a SEPARATE set from RECRUIT_TIME_EXECUTED_KEYWORDS /
-// HAND_ACTION_EXECUTED_KEYWORDS (duplicate-first per §16.1 — the three categories execute
-// at different times and a premature merge would blur that); NOT added to HANDLED_KEYWORDS
-// (that demands a handler and would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS
-// bidirectional test).
-export const FACE_DOWN_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['undercover'];
+// why: WP-678 / D-24494 (supersedes D-24060) — the WP-282 face-down-execution category is
+// retired. Undercover no longer executes via a face-down store (that model was dead code —
+// removed with the sendUndercover/playFromUndercover moves + the faceDownCards zone). Its two
+// real, handler-bearing source-shape keywords (undercover-hand-shield-hero /
+// undercover-officer-stack) are in HANDLED_KEYWORDS; the bare 'undercover' token is now an
+// honest hollow (no source zone → no handler), so it is intentionally NOT in MVP_KEYWORDS.
 
 // why: D-24074 — size-changing's effect is a class-grant realized at class-read time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
 // Size-Changing ("when you play this card, it has the [Class] class") has NO
@@ -235,7 +235,6 @@ export const MVP_KEYWORDS = new Set<string>([
   ...FROZEN_REVEAL_TRANSLATED,
   ...RECRUIT_TIME_EXECUTED_KEYWORDS,
   ...HAND_ACTION_EXECUTED_KEYWORDS,
-  ...FACE_DOWN_EXECUTED_KEYWORDS,
   ...CLASS_GRANT_KEYWORDS,
   ...DISCARD_TIME_EXECUTED_KEYWORDS,
 ]);
@@ -319,6 +318,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // an optional KO of one hand/discard card); the eligible set is computed from G at play time,
   // so the magnitude pre-gate must not drop it, or the KO choice never parks.
   'optional-ko-hand-discard',
+  // why: WP-678 / D-24494 — the two Undercover source-shape keywords carry NO magnitude ("send
+  // a Hero/Officer Undercover" — always one card); the eligible source is read from G at play
+  // time, so the magnitude pre-gate must not drop them, or the send never fires / the pick never parks.
+  'undercover-hand-shield-hero',
+  'undercover-officer-stack',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1688,6 +1692,120 @@ function heroEffectRecruitPerCount(
   // why: record the source, count, and grant so the count-scaled recruit is
   // observable in replay inspection (no implicit side effects).
   pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${effect.countSource}, count ${count}).`);
+}
+
+/**
+ * Sends one card Undercover (WP-678 / D-24494, supersedes D-24060).
+ *
+ * Moves `cardId` from `fromZone` into the acting player's Victory Pile and records
+ * it in the per-player `undercover` tracker (worth 1 VP each; universal-rules-v23
+ * §Undercover). Undercover'd cards live in `victory` (so S.H.I.E.L.D. Level and
+ * presence count them) AND in `undercover` (so scoring awards 1 VP per entry without
+ * inferring from card type). Returns the new `fromZone` array (the caller assigns it);
+ * a no-op (card not found) returns `fromZone` unchanged.
+ *
+ * @param G - Game state (mutates the player's `victory` + `undercover`).
+ * @param playerID - The acting player.
+ * @param cardId - The card to send Undercover.
+ * @param fromZone - The source array the card is removed from (hand, or G.piles.officers).
+ * @returns The new source array with `cardId` removed.
+ */
+export function sendCardUndercover(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  fromZone: CardExtId[],
+): CardExtId[] {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return fromZone; }
+  const moveResult = moveCardFromZone(fromZone, zones.victory, cardId);
+  if (!moveResult.found) { return fromZone; }
+  zones.victory = moveResult.to;
+  // why: `?? []` guards a reconstructed/legacy state that predates the tracker (see the
+  // scoring guard); a live match always has it (playerInit).
+  zones.undercover = [...(zones.undercover ?? []), cardId];
+  pushLog(G, `Player ${playerID} sent ${cardId} Undercover (into the Victory Pile, +1 VP).`);
+  return moveResult.from;
+}
+
+/**
+ * Undercover from the hand: "send a [team:shield] Hero from your hand Undercover"
+ * (WP-678 / D-24494). Eligible targets are hand cards counting as team `shield`.
+ * 0 eligible → legal no-op; 1 → auto-send; ≥2 → park a PendingUndercoverChoice
+ * resolved by resolveUndercoverChoice. Carries no magnitude.
+ *
+ * @param G - Game state (mutated).
+ * @param _ctx - Unused (framework parity).
+ * @param playerID - The acting player.
+ * @param cardId - The triggering (played) card, recorded on the pending entry.
+ * @param _effect - Unused (the source shape is fixed by the keyword).
+ */
+function heroEffectUndercoverHandShieldHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return; }
+  // why: eligible = hand cards counting as team `shield` (the printed team; copied teams
+  // are an in-play concept and never apply to a hand card). The triggering card is in
+  // inPlay when its onPlay fires, so it is not in hand — no self-exclusion needed.
+  const eligible = zones.hand.filter((handCardId) =>
+    cardHasTeamWhenPlayed(G, handCardId, 'shield'),
+  );
+  if (eligible.length === 0) {
+    // why: a legal no-op — the option was taken but no [team:shield] Hero is in hand.
+    return;
+  }
+  if (eligible.length === 1) {
+    // why: exactly one eligible target — auto-send (no prompt), mirroring the shipped
+    // single-candidate auto-resolve pattern (optional-ko-reward / copy-powers).
+    zones.hand = sendCardUndercover(G, playerID, eligible[0]!, zones.hand);
+    return;
+  }
+  // why: ≥2 eligible — park an interactive pick resolved by resolveUndercoverChoice
+  // (D-24494). Lazy-init at the park site (never in Game.setup); absent = no pending choice.
+  if (!G.pendingUndercoverChoice) { G.pendingUndercoverChoice = []; }
+  const pending: PendingUndercoverChoice = {
+    playerID,
+    cardId,
+    source: 'hand-shield-hero',
+    eligibleTargets: [...eligible],
+  };
+  G.pendingUndercoverChoice.push(pending);
+}
+
+/**
+ * Undercover from the S.H.I.E.L.D. Officer Stack: "send a card from the S.H.I.E.L.D.
+ * Officer Stack Undercover" (WP-678 / D-24494). Deterministic — the Officer Stack is
+ * homogeneous, so this sends the top Officer (no player choice). Empty stack → no-op.
+ * Carries no magnitude.
+ *
+ * @param G - Game state (mutated).
+ * @param _ctx - Unused (framework parity).
+ * @param playerID - The acting player.
+ * @param _cardId - Unused (the sent card comes from the Officer Stack, not the played card).
+ * @param _effect - Unused (the source shape is fixed by the keyword).
+ */
+function heroEffectUndercoverOfficerStack(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const zones = G.playerZones[playerID];
+  if (!zones) { return; }
+  const officers = G.piles?.officers;
+  if (!officers || officers.length === 0) {
+    // why: a legal no-op — the Officer Stack is empty.
+    return;
+  }
+  // why: the Officer Stack is homogeneous (identical S.H.I.E.L.D. Officers), so "a card"
+  // is deterministically the top one — no interactive choice.
+  G.piles.officers = sendCardUndercover(G, playerID, officers[0]!, officers);
 }
 
 /**
@@ -3420,6 +3538,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // hand; if you do, +N attack"): parks a PendingSmashDiscard resolved by
   // resolveSmashDiscard (discard a hand card for +magnitude Attack, or decline).
   smash: heroEffectSmash,
+  // why: WP-678 / D-24494 (supersedes D-24060) — the two Undercover source-shape effects
+  // send a card to the Victory Pile (worth 1 VP). 'undercover-hand-shield-hero' auto-sends /
+  // parks a PendingUndercoverChoice (≥2 eligible); 'undercover-officer-stack' is deterministic.
+  'undercover-hand-shield-hero': heroEffectUndercoverHandShieldHero,
+  'undercover-officer-stack': heroEffectUndercoverOfficerStack,
 };
 
 // ---------------------------------------------------------------------------

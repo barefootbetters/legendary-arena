@@ -275,7 +275,7 @@ describe('block-all guards: every action move is a no-op while a play-top-Villai
       pendingPlayVillainTopChoices: [shadowedThoughtsPending()],
       currentStage: 'cleanup',
     });
-    gameState.playerZones['0'] = { deck: [], hand: ['a' as CardExtId], discard: [], inPlay: ['c' as CardExtId], victory: [] };
+    gameState.playerZones['0'] = { deck: [], hand: ['a' as CardExtId], discard: [], inPlay: ['c' as CardExtId], victory: [], undercover: [] };
     const { context, endTurnSpy } = makeMoveContext(gameState);
 
     endTurn(context);
@@ -287,7 +287,7 @@ describe('block-all guards: every action move is a no-op while a play-top-Villai
 
   it('playCard does not move a card or change economy while pending', () => {
     const gameState = makeTestGameState({ pendingPlayVillainTopChoices: [shadowedThoughtsPending()] });
-    gameState.playerZones['0'] = { deck: [], hand: ['a' as CardExtId, 'b' as CardExtId], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { deck: [], hand: ['a' as CardExtId, 'b' as CardExtId], discard: [], inPlay: [], victory: [], undercover: [] };
     gameState.cardStats = { a: { attack: 3, recruit: 0, cost: 0, fightCost: 0 } } as unknown as LegendaryGameState['cardStats'];
     const { context } = makeMoveContext(gameState);
 
@@ -300,7 +300,7 @@ describe('block-all guards: every action move is a no-op while a play-top-Villai
 
   it('drawCards is a no-op while pending', () => {
     const gameState = makeTestGameState({ pendingPlayVillainTopChoices: [shadowedThoughtsPending()], currentStage: 'start' });
-    gameState.playerZones['0'] = { deck: ['c0' as CardExtId, 'c1' as CardExtId], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['0'] = { deck: ['c0' as CardExtId, 'c1' as CardExtId], hand: [], discard: [], inPlay: [], victory: [], undercover: [] };
     const { context } = makeMoveContext(gameState);
     drawCards(context, { count: 5 });
     assert.deepStrictEqual(gameState.playerZones['0']!.hand, [], 'no cards drawn');

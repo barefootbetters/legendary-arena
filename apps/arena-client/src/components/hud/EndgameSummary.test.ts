@@ -547,8 +547,8 @@ describe('EndgameSummary (WP-636 co-op VP recap for guests / non-scored)', () =>
     return gameOver({
       scores: {
         players: [
-          { playerId: '0', villainVP: 0, henchmanVP: 1, bystanderVP: 5, tacticVP: 5, woundVP: 0, totalVP: 11 },
-          { playerId: '1', villainVP: 8, henchmanVP: 8, bystanderVP: 5, tacticVP: 15, woundVP: 0, totalVP: 36 },
+          { playerId: '0', villainVP: 0, henchmanVP: 1, bystanderVP: 5, tacticVP: 5, undercoverVP: 0, woundVP: 0, totalVP: 11 },
+          { playerId: '1', villainVP: 8, henchmanVP: 8, bystanderVP: 5, tacticVP: 15, undercoverVP: 0, woundVP: 0, totalVP: 36 },
         ],
         winner: '1',
       },

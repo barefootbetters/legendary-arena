@@ -77,6 +77,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // why: WP-675 / D-24490 — resolveCountScaledChoice can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked count-scaled choice hangs the PAR loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
+import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked Smash choice hangs the PAR loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -440,6 +441,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
+  resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   // why: D-24440 — same dispatch-completeness rule as the runner MOVE_MAP: getLegalMoves
   // short-circuits to resolveHeroChoice when a reveal-attack-choose hero ability parks
