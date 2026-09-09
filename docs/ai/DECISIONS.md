@@ -40679,6 +40679,8 @@ Protect this file.
 
 **Packet:** WP-674 / EC-711. **Active:** 2026-09-08.
 
+---
+
 ### D-24490 — icon-presence `CardStatEntry` fields + two icon count sources + a count-scaled choose-one (Symbiotic Adaptation) (Active 2026-09-08 — WP-675 / EC-712)
 
 **Context.** `vnom/venom/symbiotic-adaptation` (the last WP-673/WP-674 sibling) prints a **choose-one**: "Choose one: +1[icon:recruit] for each other card you played this turn with a [icon:recruit] icon. / Or +1[icon:attack] for each other card you played this turn with an [icon:attack] icon." It grants nothing today. WP-674 deferred it because it is a materially different, cross-layer mechanism (icon-based counting + an interactive choice), not the uniform cost-≥4 shape.
@@ -40704,5 +40706,60 @@ Protect this file.
 **Gates.** engine suite 3215/3215; arena-client vue-tsc 0 + 1668/1668; `pnpm -r build` 0; `cards:check` reproducible; `ledger:heroes` regenerated (Symbiotic Adaptation now Executable under attack-per-count + recruit-per-count — the marker-based classification; count-scaled-choose is the parse-derived wrapper); `mechanics:metadata` / `effect-index` / `sim:runtime-observed` regenerated + `--check` green; `sim:coverage --check` OK (five new-mechanic warnings — the icon/cost sources registered but not yet sim-observed; floor not regressed). **Dual hash re-pin landed** (`PRE_WP080_HASH` `83b9b0a4`→`bc71424b`; sentinel `finalStateHash` `7bdbcc79…`→`a10350b2…`) — the sole canonical-JSON delta is the two new `CardStatEntry` booleans on every card entry; no gameplay changed (the sentinel/PRE_WP080 replays play no vnom card). **Live-on-surface** (a real vnom Venom match presenting + resolving the choice) is operator-pending (D-24026).
 
 **Packet:** WP-675 / EC-712. **Active:** 2026-09-08.
+
+---
+
+### D-24491 — Outwit counts revealable Heroes across HAND and play, and a 0-cost Hero counts (corrects D-24464) (Active 2026-09-08 — bug fix, no WP)
+
+**Context.** D-24464 modeled Outwit as `distinctHeroCostsAtLeast(3)` and specified
+"≥ 3 distinct **non-zero** costs among `inPlay` Heroes." Both qualifiers are
+unfaithful to `docs/legendary-universal-rules-v23.md` §Outwit, which reads:
+"You can use this Outwit ability only if you **reveal** Heroes with 3 different
+costs. You can count the Outwit card itself. So you can reveal a **2-cost Hero in
+your hand**, plus a 6-cost Outwit card and **0-cost S.H.I.E.L.D. Agent Hero** you
+already played." The rulebook's own worked example makes the three different costs
+`{0, 2, 6}` — one of them a 0-cost Hero, and one of them revealed from **hand**.
+
+The `inPlay`-only, non-zero-only reading produced two visible defects, both seen in
+a live solo red-skull / Midtown-Bank-Robbery match:
+
+1. **Ordering / hand blindness.** Window of Opportunity (an Outwit card) was played
+   first, so `inPlay` held only itself → the gate reported "you have 1" and blocked
+   the draw, even though the player held Heroes of other costs revealable from hand.
+   Because Outwit is checked at play-instant (not a wait-and-see gate), a player who
+   plays the Outwit card before its cost-mates could never satisfy it.
+2. **0-cost exclusion.** A 0-cost S.H.I.E.L.D. Agent Hero — which the rulebook
+   explicitly counts — was dropped by the `cost > 0` filter.
+
+**Decision.** `distinctHeroCostsAtLeast` (and its `describeFailedCondition` mirror)
+now count distinct costs across **`hand` + `inPlay`**, **including cost 0**, excluding
+only `WOUND_EXT_ID` / `BYSTANDER_EXT_ID` (a Wound/Bystander is not a Hero, and carries
+no `cardStats` row so would otherwise read as a phantom cost 0). Every real Hero,
+including a 0-cost S.H.I.E.L.D. basic, has a `cardStats` row and contributes its cost.
+Scanning hand+play resolves the ordering problem structurally — the same hand-inclusive
+posture Worthy (`heroCostAtLeastInHandOrPlay`, D-24464 #2) already uses — so no
+wait-and-see deferral is needed. Self-inclusive is preserved (the Outwit card is already
+in `inPlay` before `executeHeroEffects` runs). The failure message changes from
+"…in play — you have N" to "…in hand or play — you have N".
+
+**Scope.** Engine-only: `packages/game-engine/src/hero/heroConditions.evaluate.ts`
++ its test file. Outwit keeps `condition` status in the hero-mechanic ledger — no
+card-data, keyword, `KNOWN_CONDITIONS`, coverage-gauge, or provenance change. The
+`[keyword:Smash N]` gap on Hurl Trucks (an unimplemented discard-for-attack mechanic,
+D-24464 "Honest-Partial") is **untouched** and remains a separate deferred item — it
+was reported alongside this bug but is a net-new interactive mechanic, not this fix.
+
+**Determinism.** This changes a runtime condition outcome (Outwit now resolves in
+situations it previously blocked), so any *future* replay of a match that exercises
+Outwit differs — but there is no stored oracle to re-pin: the committed hash pins
+(`PRE_WP080_HASH`; the `core/dr-doom` / `core/legacy-virus-the` sentinels) play no
+Outwit card, so both are byte-unchanged. Full engine suite 3205/3205 green.
+
+**Supersedes:** D-24464 items §1 (the Outwit clause) only — the Worthy/Savior/Antics
+clauses and the CONDITION-not-keyword posture stand. Cites
+`docs/legendary-universal-rules-v23.md` §Outwit (faithful game definition),
+`.claude/CLAUDE.md` §Reward Integrity (faithfulness to the printed card).
+
+**Packet:** none (bug fix). **Active:** 2026-09-08.
 
 Protect this file.
