@@ -40970,4 +40970,69 @@ play) is operator-pending (D-24026) and arrives with WP-679's card wiring.
 
 **Packet:** WP-678 / EC-715. **Active:** 2026-09-09.
 
+---
+
+### D-24493 — `shield-levels` count source + `isShieldOrHydra` `CardStatEntry` field (Active 2026-09-09 — WP-677 / EC-714)
+
+**Context.** The two shld mixed choose-one cards (WP-679) read "+1 attack for each 2
+**S.H.I.E.L.D. Levels**." Your S.H.I.E.L.D. Level (universal-rules-v23 §S.H.I.E.L.D.
+Level) is "the number of S.H.I.E.L.D. and/or HYDRA cards in your Victory Pile" —
+counting "any card with the S.H.I.E.L.D./HYDRA team icon, as well as any card with
+'S.H.I.E.L.D.' or 'HYDRA' in its card name, Villain Group name, or Mastermind name."
+No engine signal expressed this. First of the narrow shld arc (WP-677/678/679).
+
+**Decision.**
+
+1. **Membership is a setup-derived `CardStatEntry.isShieldOrHydra` boolean.** Computed
+   once at setup from the RAW registry entry (the runtime never reads team/name), by a
+   single shared predicate `matchesShieldOrHydra(team, names)`
+   (`economy/shieldMembership.ts`): team ∈ {shield, hydra} OR the case-insensitive
+   substring "S.H.I.E.L.D."(dotted)/"HYDRA" in any supplied name. Populated at ALL ten
+   `CardStatEntry` build sites — heroes (§1 FlatCard team+name; §1b heroEntry.team +
+   card name), villains (card name OR **villain-group name**, via a new
+   `findVillainGroupName`), henchmen (group name, threaded out of
+   `findHenchmanGroupVAttack`), masterminds (base/second-face card name + the slug as a
+   robust fallback), and the synthesized basics (Agent/Trooper/Officer `true`, Sidekick
+   `false`; Wound/Bystander get no cardStats entry). The reader structural types
+   (`CardStatsFlatCard`, `HeroInstanceEntry`, `VillainCardEntry`, `VillainGroupEntry`,
+   `HenchmanGroupEntry`, `MastermindCardEntry`) were widened with `team?`/`name?` — the
+   fields are present at runtime (the registry schemas make them required), so this is a
+   type widening, not a lie. It is **not** a `hasAttackIcon`-style same-value copy.
+
+2. **`shield-levels` `HeroCountSource`** (union + `HERO_COUNT_SOURCES` array; drift pin
+   N=5→6 RUNTIME per D-24372). The resolver counts the player's `zones.victory` cards
+   with `isShieldOrHydra === true` — the WHOLE pile, NO triggering-card self-exclusion
+   (S.H.I.E.L.D. Level "just checks, never consumes"). Marker-safe slug `shield-levels`
+   (NOT the dotted hero-mechanic-ledger name `s.h.i.e.l.d.-levels`; different namespaces,
+   the WP-675 `attack-icon-played-this-turn` precedent).
+
+3. **`perEach` divisor on the count-scaled grant.** `HeroEffectDescriptor.perEach`
+   (optional, absent ≡ 1) makes `heroEffectAttackPerCount` / `heroEffectRecruitPerCount`
+   grant `magnitude × floor(count / perEach)` — so "+1 attack for each 2 S.H.I.E.L.D.
+   Levels" = `floor(level / 2)`. Additive: every existing per-unit grant (no `perEach`)
+   is byte-identical.
+
+4. **Dual hash re-pin (sanctioned).** `isShieldOrHydra` is a new hashed `cardStats`
+   field, so `computeStateHash` shifts for every game (the D-24468/D-24469/D-24490 class):
+   `PRE_WP080_HASH` `abd8c4fd`→`29e41e8`; sentinel `finalStateHash` `dccea2f6…`→`deba0f43…`.
+   The SOLE canonical-JSON delta is the one new boolean per cardStats entry (the snapshot
+   oracles — counts — are byte-identical); the flag alters no move outcome.
+
+**Source-only.** No card is wired (WP-679 authors the `attack-per-count:shield-levels:…:2`
+markers). No card-data / derived-feed change (`ledger:heroes` / `mechanics:metadata` /
+`effect-index` / `sim:runtime-observed` regenerate to no diff — the card-driven feeds are
+untouched). **No `mechanic-provenance.json` row** — that file records mechanic keys, not
+count-source slugs (no existing source appears there).
+
+**Scope OUT.** The `s.h.i.e.l.d.-level` SINGULAR gate shape ("S.H.I.E.L.D. Level N:
+<effect>"), the comparison shape, and the capped ("up to 5") count — all Bucket-A.
+
+**Gates.** engine 3245/3245; arena-client 1682/1682 + vue-tsc 0; `pnpm -r build` 0;
+`cards:check` reproducible; derived-feed `--check`s green (no diff); `sim:coverage
+--check` OK. Dual re-pin landed (sole delta = the new cardStats boolean). typecheck:tests
+gains isShieldOrHydra to the pre-existing (non-gating, D-24372) backlog for incomplete
+test literals — the same class WP-675's `hasAttackIcon` added; the runtime suite is green.
+
+**Packet:** WP-677 / EC-714. **Active:** 2026-09-09.
+
 Protect this file.
