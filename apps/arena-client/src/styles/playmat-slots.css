@@ -121,18 +121,29 @@
 }
 
 /* Text-protection mask (WP-666 follow-up). The non-slot text regions — the top
-   HUD bar, the turn-action (phase-step) bar, the game log, the economy readout
-   (Attack / Recruit / Pierce / Wounds drawn), the Your Hand panel, the
-   played-this-turn row, and the end-of-game report card — get the same frosted
-   backing as the zone slots, so their text never sits directly on a busy mat and
-   washes out. The mat then shows only in the gaps between panels. This is what
-   keeps a full-colour scan (e.g. the licensed Marvel mats) legible without a
-   heavier global scrim that would drown the mat entirely. */
+   HUD bar, the turn-action (phase-step) bar, the game log (desktop + mobile), the
+   economy readout (Attack / Recruit / Pierce / Wounds drawn), the Your Hand panel,
+   the played-this-turn row, the villain-escape pile, the mobile scheme tile, and
+   the end-of-game report card — get the same frosted backing as the zone slots, so
+   their text never sits directly on a busy mat and washes out. The mat then shows
+   only in the gaps between panels. This is what keeps a full-colour scan (e.g. the
+   licensed Marvel mats) legible without a heavier global scrim that would drown
+   the mat entirely.
+
+   why the two mobile-only selectors: the desktop layout wraps the log and scheme
+   tile in frosted zone containers (`.play-desktop__log`, `.play-desktop__scheme-
+   zone`) that this mask already covers; the mobile layout (`.play-mobile`) renders
+   them bare, so `.play-mobile__log` and `.play-mobile .scheme-tile` restore parity
+   without double-frosting the desktop wrappers. `.escaped-pile` is layout-agnostic
+   (a pile panel like `.ko-pile`), so it is not mobile-scoped. */
 .play-viewport .top-hud-bar,
 .play-viewport .turn-action-bar,
 .play-viewport .economy-bar,
 .play-viewport .hand-row,
 .play-viewport .played-row,
+.play-viewport .escaped-pile,
+.play-viewport .play-mobile__log,
+.play-viewport .play-mobile .scheme-tile,
 .play-viewport .endgame-summary,
 .play-viewport .play-desktop__log {
   background: rgba(248, 249, 252, 0.85) !important;
@@ -175,6 +186,9 @@
 :root[data-theme="dark"] .play-viewport .economy-bar,
 :root[data-theme="dark"] .play-viewport .hand-row,
 :root[data-theme="dark"] .play-viewport .played-row,
+:root[data-theme="dark"] .play-viewport .escaped-pile,
+:root[data-theme="dark"] .play-viewport .play-mobile__log,
+:root[data-theme="dark"] .play-viewport .play-mobile .scheme-tile,
 :root[data-theme="dark"] .play-viewport .endgame-summary,
 :root[data-theme="dark"] .play-viewport .play-desktop__log {
   background: rgba(22, 24, 32, 0.82) !important;
