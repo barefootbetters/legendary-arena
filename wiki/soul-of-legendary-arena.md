@@ -913,10 +913,190 @@ and its endpoint is a country split in two:
 Legendary Arena cannot settle a nation's argument, and it does not try. What it
 can do, on its own small surface, is refuse to run the Mastermind's move — by
 rendering what it inherited faithfully, growing only by addition, and building
-a player's love on real knowledge of where a hero came from.
-[The section that follows](#the-pattern-in-the-mirror-ais-secular-default)
-catches that same impulse inside the very tool that helped write this page;
-this one catches it inside a civilization.
+a player's love on real knowledge of where a hero came from. But refusing a
+move means first being able to *see* it — and the Mastermind's move has a
+grammar, the same one whether it wears a toga, a pulpit, a lab coat, or a card
+frame.
+[The next section](#the-masterminds-common-tactics-the-grammar-of-manipulation)
+sets that grammar down; [the one after it](#the-pattern-in-the-mirror-ais-secular-default)
+catches the same impulse inside the very tool that helped write this page. This
+one caught it inside a civilization.
+
+### The Mastermind's common tactics: the grammar of manipulation
+
+The [good-versus-evil fantasy](vision.md#vision-at-a-glance) the game leans into
+(D-24235) needs an evil that is genuinely *cunning*, not merely a big punchable
+stack. A Mastermind who only hits hard is a stat block; a Mastermind who wins by
+*scheme* — by steering what the heroes notice, believe, and do — is an
+antagonist. This section names the antagonist's common tactics, because the
+[downward pull](#the-upward-pull--what-the-game-is-for) is not a mood that
+happens *to* a story; it is a set of moves someone *makes*, and they have a
+recognizable grammar.
+
+The clearest recent catalog of that grammar is a behavioral one: Chase Hughes's
+video *Every PSYOP Will Become Obvious* (January 2025). It never mentions this
+game, and it is set down here as *his* framework, attributed and not adjudicated
+by this page — the same posture the page takes toward its other cultural
+sources. Hughes's claim is that manipulation does not argue; it hijacks the
+older brain and walks a target into compliance before they notice choosing
+anything. His engine is **F.A.T.E.** — four levers every other trick exists to
+pull:
+
+| Lever | What the operator does | What the target feels |
+|---|---|---|
+| **Focus** | Repeat, shock, flood the channel, call it "unprecedented" | "I can't look away" |
+| **Authority** | Borrow a trusted coat — expert, office, uniform — outside its real expertise | "Someone who knows already decided" |
+| **Tribe** | Split the room: patriots / traitors, science / deniers | "My people versus theirs" |
+| **Emotion** | Fear, hope, outrage on thin evidence | Thinking shuts off |
+
+On top of the four levers the playbook stacks: manufactured **novelty** (a
+sudden crisis, so the old rules feel obsolete); **one story in many mouths**
+(a single approved narrative, dissent reduced to noise); **micro-agreements**
+(small "good citizen" pledges that trap identity); **ancestral scripts**
+(scarcity, exile, contamination); **follow the money** (who profits is the
+motive); the **context shift** (an emergency *now* used to justify a *permanent*
+rule); flat **archetypes** (hero / villain / savior, no gray); **frame control**
+(define what may even be asked, then label the ones who ask); **urgency plus
+false consensus** (act now, everyone already has); **timing** (drop the
+spectacle exactly when a worse fact would otherwise land); and the classical
+**fallacies as weapons** — false dilemma, straw man, bandwagon, *ad hominem*,
+appeal to authority, slippery slope, red herring, false equivalence.
+
+Hughes's defense is the inverse of all of it: pause, ask *why this, why now, who
+benefits*, seek the silenced source, refuse the two-box choice. For a Mastermind
+designer that inverted defense is the target — the heroes should feel those
+questions and still not have the time or the cards to answer them.
+
+#### Same toolkit, older costumes
+
+This is the [pattern this page keeps naming](#the-pattern-tearing-down-the-one-who-paved-the-way),
+seen from the manipulator's side rather than the historian's. These are
+*patterns*, not a how-to, and the page's own
+[soul-not-candy discipline](#soul-not-candy--content-that-carries-its-weight)
+applies: the point is the recognizable shape, not a partisan roster.
+
+- **Seize the channel (Focus).** One approved paper, one radio hour, one tempo —
+  and the coalition never forms a second plan.
+- **Wear a borrowed seal (Authority).** Priest, scientist, general, "the
+  people." The claim rides a robe the speaker never earned.
+- **Split the coalition (Tribe).** Rome's *divide et impera*, court factions,
+  class against class. A table that spends its Attack on itself cannot spend it
+  on the throne.
+- **Make fear the evidence (Emotion).** A grain riot, a plague rumor, an
+  "imminent" invasion — so that extraordinary powers feel like ordinary hygiene.
+- **Stage the novelty, then shrink the menu.** A sudden "plot" makes yesterday's
+  law look naive; a false dilemma ("order or chaos") deletes the third option.
+- **Time the circus, move the frame, demand a small yes.** Run the parade the
+  week the ledger would be read; redefine "security" and "unity" until the old
+  objection is off-vocabulary; extract a loyalty oath, because after the small
+  yes the large yes is cheaper.
+- **Punish the witness, not the argument (*ad hominem*).** The critic becomes a
+  traitor and the claim is never tested.
+
+Historical masterminds rarely out-fight a united table. They make the table stop
+being united, stop watching the clock, and accept a bad bargain as the only
+adult choice.
+
+#### In Legendary grammar — a design lens
+
+> **This is a design lens, not a rulebook.** The card sketches below are
+> *illustrative* — they show how the tactics translate into Strike / Twist /
+> Ambush / Tactic space. None is a shipped card, registry data, or a governance
+> decision; an actual Mastermind is authored through the card-data pipeline and
+> its Work Packets, never here.
+
+The lesson for the designer is one line: aim each Strike, Twist, Ambush, and
+Tactic at the *players' planning*, not merely their Attack total. The four levers
+become four families of pressure.
+
+- **Steal Focus — the villain deck is the camera.** Extra reveals are stolen
+  turns (the *HYDRA Endless Armies* pattern: "play the top card of the Villain
+  Deck"); a second city push makes the table stare at the street, not the
+  throne.
+- **Fake Authority.** "If you can't reveal a [Tech / Ranged / S.H.I.E.L.D.]
+  Hero, KO the top of the Hero Deck" — the Mastermind speaks in the
+  institution's voice. Turning captured S.H.I.E.L.D. Officers into Wounds puts
+  the badge to work for evil.
+- **Break the Tribe — anti-synergy.** Different team icons wound or discard each
+  other; "choose a class, KO the rest from HQ" is a false dilemma in cardboard.
+  The coalition is made *illegal* for a turn.
+- **Emotion over math.** Attach Bystanders and make their escape a loss (the
+  *Midtown Bank Robbery* pattern) so rescue feels mandatory while the throne
+  lives; Wounds that heal only if the table *ignores the Mastermind this turn*
+  make guilt the tax.
+- **Novelty / rewrite the board.** Destroy a city space (the *Galactus*
+  pattern); flip a standing rule mid-game; reveal an Epic side that only appears
+  after the second Tactic — the boss they finish is not the boss they drafted
+  against.
+- **One narrative + micro-agreements.** A Scheme whose clock is the *only* clock
+  that matters punishes side-quests; a Twist that offers "+1 Recruit — if you
+  take it, stack this as a Pledge, and evil wins at four Pledges" sells the table
+  the rope.
+- **Context shift + frame control.** A printed "Martial Law" token after three
+  Strikes changes who may legally fight; an ongoing "you may not fight the
+  Mastermind unless a Villain escaped this turn" moves the legal question from
+  *can we burst?* to *must we let one through?*
+- **Urgency, timing, resurrection.** A late Strike ("if the Villain Deck has
+  fewer cards than players, evil wins unless someone fights the Mastermind
+  *now*") forces a panic burst; a spectacular Ambush distracts from the quiet
+  Escape that actually scores the loss; a *Fountain of Eternal Life*–style
+  "Fateful Resurrection" reminds the table that the "defeated" story was only a
+  frame.
+
+**An illustrative kit — "The Engineer of Consent"** *(a design sketch, not a
+card).* Attack 9 (Epic 11), gaining +1 Attack per Twist stacked on the Scheme.
+Master Strike: each player discards unless they reveal a Hero of the class the
+*previous* player revealed — Tribe fracture wearing the authority of sequence.
+Scheme "Flood the Channel" (8 Twists): each Twist plays the top Villain card and
+stacks itself; at 3+ stacked, every Villain gets +1 Attack; evil wins at seven
+stacked Twists *or* four escaped Bystanders — two clocks behind one camera.
+Tactics run the levers in miniature: *Borrowed Seal* (KO an Officer from each
+deck, Wound anyone who has none), *Small Yes* (rescue a Bystander, then let each
+player bury a card to shuffle this Tactic back under the Mastermind — a mercy
+that undoes the fight), and *Name the Heretic* (choose a Hero name in HQ and KO
+every copy — frame control by deletion).
+
+#### A neutral tool: withhold the machinery
+
+One tactic deserves separate naming because it is easy to miss and easy to
+misuse: **concealment by sympathetic simplification** — a story true in its
+particulars but *incomplete by design*, the machinery kept behind the curtain so
+the audience never asks who arranged what.
+
+It is worth naming precisely *because it is a neutral tool*, used as readily by
+the powerless as by any aristocrat. The Montgomery bus boycott is the honest
+example: Rosa Parks was a trained NAACP secretary and her test case was chosen
+deliberately over an earlier candidate, yet the public was handed the
+"tired seamstress acting alone" version because it was more sympathetic than
+"our organization selected a plaintiff." The organizing was real, the arrest was
+real, the consequences to her family were real — nothing was *fabricated*. What
+was withheld was the *strategy*. That case cuts **against** the
+Mastermind-seeking-a-throne frame, not for it: the concealment served a boycott
+by people *without* power. Which is exactly why the filter has to catch the
+tactic regardless of who benefits or how sympathetic the cause — a filter that
+only fires on the villain is a partisan weapon, not a tool. Name the move; judge
+the user separately.
+
+#### How heroes beat it — the difficulty knobs
+
+Hughes's countermeasures are the balance dials. A Mastermind is *fair* when the
+answers exist but cost something; it is a *puzzle* when they are too cheap; and
+it is an un-nameable PSYOP — exactly the thing Hughes says works in the wild —
+when they do not exist at all.
+
+- **Pause / more information** — Investigate, reveal the Villain Deck, look at
+  the next Twist.
+- **A second source** — an ability that lets another player spend Attack on your
+  fight, restoring the coalition the Tribe-lever tried to break.
+- **Refuse the two-box** — cards that fight the Mastermind *and* a Villain, or
+  rescue *without* skipping the throne.
+- **Who benefits** — victory scoring that punishes ignoring the Scheme *and*
+  ignoring the Mastermind, so the table cannot be herded onto a single panic.
+
+This is the same instinct as the rest of the page, arrived at from the
+antagonist's side: render the evil faithfully — cunning, not cartoon — and give
+the heroes the real tools to *see* the move and answer it. A good-versus-evil
+game earns its stakes only if the evil is genuinely worth beating.
 
 ### The pattern in the mirror: AI's secular default
 
@@ -1023,6 +1203,17 @@ claim at a safe distance — it stands on it.
   overstate the cultural claim" below, the load-bearing assertion stays the
   structural one — erase-the-inheritance is the same move whether the target
   is a hero, a sacred text, or a nation's memory of itself.
+- **The Mastermind-tactics section is a design *lens*, not cards, data, or
+  governance.** [The tactics catalog](#the-masterminds-common-tactics-the-grammar-of-manipulation)
+  attributes Chase Hughes's F.A.T.E. framework as *his* argument (cited, not
+  adjudicated), and its Strike / Twist / kit sketches — including
+  "The Engineer of Consent" — are **illustrative only**. None is a shipped card,
+  `data/cards/*.json` registry data, or a Work Packet decision; a real
+  Mastermind is authored through the card-data pipeline and its WPs, never on
+  this page. The Montgomery-bus-boycott example is used deliberately as the
+  *neutral-tool counterexample* — a case that cuts against the throne-seeking
+  frame — not as a "Mastermind"; the concealment tactic is judged by its shape,
+  its user judged separately.
 - **Do not overstate the cultural claim.** "Every subversion is bad" is the
   weak version and is wrong; the honest position is *addition versus
   overwrite* (see the table above). Faithful preservation is not the same
@@ -1152,3 +1343,9 @@ claim at a safe distance — it stands on it.
   [the Mastermind's-scheme section](#the-masterminds-scheme-a-nation-that-forgot-its-own-story).
   An attributed contemporary point of view illustrating the pattern, not
   adjudicated by this page.
+- [Chase Hughes, *Every PSYOP Will Become Obvious*](https://www.youtube.com/watch?v=b3AN2wY4qAM)
+  (January 2025) — the behavioral-manipulation catalog (the **F.A.T.E.** model —
+  Focus, Authority, Tribe, Emotion — and the stacked playbook) behind
+  [the Mastermind's-tactics section](#the-masterminds-common-tactics-the-grammar-of-manipulation).
+  Attributed as Hughes's framework and used as a design lens for antagonist
+  design; not adjudicated by this page, and never mentions the game.
