@@ -140,6 +140,37 @@ export interface AbilityToken {
  *   { type: "text",    value: ".",       raw: "" },
  * ]
  */
+/**
+ * Whether a `[keyword:VALUE]` marker is an ENGINE-ONLY token that must never be
+ * shown to a player (D-24496).
+ *
+ * The card-data pipeline APPENDS engine-only marker tokens to a card's printed
+ * text so the game engine can execute the ability — `[keyword:draw:1]`,
+ * `[keyword:smash:2]`, `[keyword:recruit-threshold:6]`,
+ * `[keyword:optional-ko-hand-discard]`, `[keyword:reveal]`, and so on. This
+ * DISPLAY tokenizer (loose `[^\]]+` capture) would otherwise render each verbatim
+ * as a "smash:2" / "draw:1" chip — a raw-marker leak. The discriminator is the
+ * appended-token SHAPE: a lowercase slug with a `:` segment, OR a lowercase
+ * hyphenated slug, OR the bare word `reveal` — disjoint from the Title-Case rules
+ * keywords the player must read (Smash 2, Outwit, Worthy) and from the lowercase
+ * display verbs (charges, feasts, demolish), which are kept.
+ *
+ * Kept behaviourally identical to arena-client's `isEngineOnlyKeyword`
+ * (the two ability tokenizers are duplicated verbatim across the two surfaces).
+ */
+export function isEngineOnlyKeyword(value: string): boolean {
+  if (value.includes(":")) {
+    return true;
+  }
+  if (/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(value)) {
+    return true;
+  }
+  if (value === "reveal") {
+    return true;
+  }
+  return false;
+}
+
 export function parseAbilityText(text: string): AbilityToken[] {
   const tokens: AbilityToken[] = [];
   // Matches [keyword:X], [icon:X], [hc:X], [team:X], [rule:X]
@@ -159,6 +190,21 @@ export function parseAbilityText(text: string): AbilityToken[] {
 
     const tokenType = match[1] as TokenType;
     const tokenValue = match[2] ?? "";
+
+    // why: D-24496 — drop engine-only appended keyword markers so the player never
+    // sees a raw "smash:2" / "draw:1" chip. Trim a trailing space from the preceding
+    // text (the separator before the appended token); drop that text token if emptied.
+    if (tokenType === "keyword" && isEngineOnlyKeyword(tokenValue)) {
+      const previousToken = tokens[tokens.length - 1];
+      if (previousToken !== undefined && previousToken.type === "text") {
+        previousToken.value = previousToken.value.replace(/\s+$/, "");
+        if (previousToken.value === "") {
+          tokens.pop();
+        }
+      }
+      lastIndex = match.index + match[0].length;
+      continue;
+    }
 
     tokens.push({
       type:  tokenType,

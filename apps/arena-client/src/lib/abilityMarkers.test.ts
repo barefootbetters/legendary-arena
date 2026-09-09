@@ -2,6 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseAbilityMarkers,
+  isEngineOnlyKeyword,
   abilityTokenDisplay,
   abilityTokenLabel,
   abilityTokenIconUrl,
@@ -51,6 +52,63 @@ describe('parseAbilityMarkers', () => {
       { type: 'team', value: 'X-Men' },
       { type: 'text', value: '.' },
     ]);
+  });
+
+  // D-24496 — engine-only appended keyword markers must never reach the player.
+  test('drops an appended [keyword:smash:N] engine token, keeping the display keyword', () => {
+    // Hurl Trucks ships each Smash line as "[keyword:Smash 2] [keyword:smash:2]".
+    const tokens = parseAbilityMarkers('[keyword:Smash 2] [keyword:smash:2]');
+    assert.deepEqual(tokens, [{ type: 'keyword', value: 'Smash 2' }]);
+  });
+
+  test('drops an appended [keyword:draw:N] engine token, keeping the sentence', () => {
+    const tokens = parseAbilityMarkers('[keyword:Outwit]: Draw a card. [keyword:draw:1]');
+    assert.deepEqual(tokens, [
+      { type: 'keyword', value: 'Outwit' },
+      { type: 'text', value: ': Draw a card.' },
+    ]);
+  });
+
+  test('drops hyphenated-slug engine tokens (recruit-threshold, optional-ko-hand-discard)', () => {
+    const tokens = parseAbilityMarkers(
+      'Once this turn, if you made at least 6[icon:recruit]this turn, you may KO a card from your hand or discard pile. [keyword:recruit-threshold:6] [keyword:optional-ko-hand-discard]',
+    );
+    assert.deepEqual(tokens, [
+      { type: 'text', value: 'Once this turn, if you made at least 6' },
+      { type: 'icon', value: 'recruit' },
+      { type: 'text', value: 'this turn, you may KO a card from your hand or discard pile.' },
+    ]);
+  });
+
+  test('keeps lowercase DISPLAY verbs (charges / feasts / demolish) — not engine tokens', () => {
+    const tokens = parseAbilityMarkers('This Villain [keyword:charges] and [keyword:feasts].');
+    assert.deepEqual(tokens, [
+      { type: 'text', value: 'This Villain ' },
+      { type: 'keyword', value: 'charges' },
+      { type: 'text', value: ' and ' },
+      { type: 'keyword', value: 'feasts' },
+      { type: 'text', value: '.' },
+    ]);
+  });
+});
+
+describe('isEngineOnlyKeyword (D-24496)', () => {
+  test('colon-segment tokens are engine-only', () => {
+    for (const value of ['smash:2', 'draw:1', 'recruit-threshold:6', 'attack-per-count:worthy-cards-played-this-turn:1', 'optional-ko-reward:rescue:1']) {
+      assert.equal(isEngineOnlyKeyword(value), true, value);
+    }
+  });
+
+  test('lowercase hyphenated slugs and bare "reveal" are engine-only', () => {
+    for (const value of ['copy-powers', 'gain-wound-each', 'optional-ko-hand-discard', 'defeat-with-bystander', 'reveal']) {
+      assert.equal(isEngineOnlyKeyword(value), true, value);
+    }
+  });
+
+  test('Title-Case display keywords and lowercase display verbs are kept', () => {
+    for (const value of ['Smash 2', 'Outwit', 'Worthy', 'Transform', 'Wall-Crawl', 'charges', 'feasts', 'fortifies', 'demolish']) {
+      assert.equal(isEngineOnlyKeyword(value), false, value);
+    }
   });
 });
 
