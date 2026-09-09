@@ -40841,4 +40841,53 @@ disposition remains deferred).
 
 **Packet:** WP-676 / EC-713. **Active:** 2026-09-09.
 
+### D-24496 — the card ability-text tokenizers drop engine-only appended keyword markers (Active 2026-09-09 — bug fix, no WP)
+
+**Context.** The card-data pipeline (`apply-hero-ability-markers.mjs` and the other
+marker passes) APPENDS engine-only marker tokens into a card's printed ability text so
+the STRICT engine parser (`heroAbility.setup.ts` `KEYWORD_PATTERN`) can execute the
+ability — `[keyword:draw:1]`, `[keyword:smash:2]`, `[keyword:recruit-threshold:6]`,
+`[keyword:optional-ko-hand-discard]`, `[keyword:copy-powers]`, `[keyword:reveal]`, and
+so on. Both player-facing surfaces then render that same text through a DISPLAY
+tokenizer whose value capture is deliberately loose (`[keyword:([^\]]+)]`), so every
+appended engine token was rendered verbatim as an italic keyword chip. A live
+red-skull / Midtown-Bank-Robbery match (matchId `7xZ-n69hoS4`) surfaced it: the Hurl
+Trucks tooltip read **"Smash 2 smash:2"**, Extrapolate **"Outwit: Draw a card.
+draw:1"**, Radioactive Riot leaked **"recruit-threshold:6 optional-ko-hand-discard"**.
+This is the exact raw-marker leak the architecture forbids — `.claude/rules/architecture.md`
+§UIState Projection Integrity: *"raw marker syntax (`[hc:…]`, `[icon:…]`) is never shown
+to a player."* A **pre-existing class defect** on ~dozens of live cards (the appended
+`draw:N` markers ship since the WP-216 era); WP-676's `smash:N` merely joined it.
+
+**Decision.** Both display tokenizers now DROP a `[keyword:VALUE]` token when VALUE is an
+engine-only appended token, via a shared-by-shape predicate `isEngineOnlyKeyword(value)`:
+VALUE contains a `:` segment (magnitude / sub-type: `smash:2`, `draw:1`,
+`recruit-threshold:6`, `attack-per-count:worthy-cards-played-this-turn:1`), OR VALUE is a
+lowercase hyphenated slug (`copy-powers`, `gain-wound-each`, `optional-ko-hand-discard`),
+OR VALUE is the bare word `reveal`. The preceding separator space is trimmed so the drop
+leaves no gap. The discriminator keys on the appended-token SHAPE, never on a handler
+(the client layer cannot know handlers), and is provably disjoint from every player-facing
+keyword: verified against all **348 distinct `[keyword:…]` values** in `data/cards` — 72
+engine tokens (all dropped) and 276 display keywords (all kept). The Title-Case rules
+keywords the player must read (`Smash 2`, `Outwit`, `Worthy`, `Transform`, `Wall-Crawl`)
+start uppercase and the lowercase display verbs (`charges`, `feasts`, `fortifies`,
+`demolish`) are bare single words with no `:` and no hyphen — all kept.
+
+**Scope.** Client display only, BOTH player surfaces (the two tokenizers are duplicated
+verbatim by design and kept in sync): `apps/arena-client/src/lib/abilityMarkers.ts`
+(`parseAbilityMarkers`, feeding `AbilityText.vue`) and
+`apps/registry-viewer/src/composables/useRules.ts` (`parseAbilityText`, feeding
+`CardDetail.vue` on cards.legendary-arena.com), each with paired tests. No engine,
+card-data, projection, or scoring change — the raw abilityText the engine consumes is
+untouched; only the DISPLAY drops the tokens.
+
+**Determinism.** None touched — a pure client rendering change, no `G`, no hash, no card
+data. Engine unaffected; arena-client 1682/1682, registry-viewer 287/287, both `vue-tsc`
+clean.
+
+**Cites** `.claude/rules/architecture.md` §UIState Projection Integrity (raw markers never
+shown to a player), `.claude/CLAUDE.md` §Reward Integrity (faithful UX).
+
+**Packet:** none (bug fix). **Active:** 2026-09-09.
+
 Protect this file.

@@ -60,11 +60,65 @@ const HERO_CLASS_LABEL: Record<string, string> = {
 };
 
 /**
+ * Whether a `[keyword:VALUE]` marker is an ENGINE-ONLY token that must never be
+ * shown to a player (D-24496).
+ *
+ * why: the card-data pipeline (`apply-hero-ability-markers.mjs` and the other
+ * marker passes) APPENDS engine-only marker tokens to a card's printed text so
+ * the engine parser can execute the ability — `[keyword:draw:1]`,
+ * `[keyword:smash:2]`, `[keyword:recruit-threshold:6]`,
+ * `[keyword:optional-ko-hand-discard]`, `[keyword:copy-powers]`,
+ * `[keyword:reveal]`, and so on. The strict engine parser ignores everything but
+ * these; this DISPLAY parser, whose value capture is deliberately loose
+ * (`[^\]]+`), would otherwise render each one verbatim as an italic chip
+ * ("smash:2", "draw:1") — the exact raw-marker leak the architecture forbids
+ * (`raw marker syntax is never shown to a player`).
+ *
+ * The discriminator is the appended-token SHAPE, never the presence of a handler
+ * (which this layer cannot know): an engine token is a lowercase slug carrying a
+ * `:` magnitude / sub-type segment, OR a lowercase hyphenated slug, OR the single
+ * bare word `reveal`. That set is disjoint from every player-facing keyword — the
+ * Title-Case rules keywords the player must read (`Smash 2`, `Outwit`, `Worthy`,
+ * `Transform`, `Wall-Crawl`) all start uppercase, and the handful of lowercase
+ * display verbs (`charges`, `feasts`, `fortifies`, `demolish`) are bare single
+ * words with no `:` and no hyphen, so they are kept.
+ *
+ * @param value - The captured `[keyword:VALUE]` value.
+ * @returns true when the token is engine-only and must be dropped from display.
+ */
+export function isEngineOnlyKeyword(value: string): boolean {
+  // why: any `:` segment is a magnitude / sub-type engine token (draw:1, smash:2,
+  // recruit-threshold:6, attack-per-count:worthy-cards-played-this-turn:1); no
+  // player-facing keyword ever carries a colon.
+  if (value.includes(':')) {
+    return true;
+  }
+  // why: a lowercase hyphenated slug is an engine keyword (copy-powers,
+  // gain-wound-each, optional-ko-hand-discard, defeat-with-bystander); Title-Case
+  // display keywords (Wall-Crawl, Cross-Dimensional …) start uppercase, and the
+  // lowercase display verbs are single words with no hyphen.
+  if (/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(value)) {
+    return true;
+  }
+  // why: the one bare single-word engine token (the appended `[keyword:reveal]`);
+  // the lowercase display verbs (charges / feasts / fortifies / demolish) are not
+  // engine keywords and stay visible.
+  if (value === 'reveal') {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Parses one ability-text line into an ordered list of typed tokens.
  *
  * Splits on `[type:value]` markup, yielding interleaved `text` and marker
  * segments. Text with no markers returns a single `text` token. Mirrors
  * registry-viewer's `parseAbilityText`.
+ *
+ * Engine-only appended keyword markers (see {@link isEngineOnlyKeyword}) are
+ * DROPPED — they exist for the engine parser, never for the player — so a card
+ * tooltip never shows raw "smash:2" / "draw:1" chips (D-24496).
  *
  * @param text - A single ability / rules-text line from the engine projection.
  * @returns The line broken into ordered text and marker tokens.
@@ -84,6 +138,21 @@ export function parseAbilityMarkers(text: string): AbilityToken[] {
     }
     const tokenType = match[1] as AbilityTokenType;
     const tokenValue = match[2] ?? '';
+    // why: D-24496 — drop engine-only appended keyword markers so the player never
+    // sees a raw "smash:2" / "draw:1" chip. Trim a single trailing space from the
+    // preceding text (the separator before the appended token) so the drop leaves no
+    // dangling gap; if that empties the text token, remove it.
+    if (tokenType === 'keyword' && isEngineOnlyKeyword(tokenValue)) {
+      const previousToken = tokens[tokens.length - 1];
+      if (previousToken !== undefined && previousToken.type === 'text') {
+        previousToken.value = previousToken.value.replace(/\s+$/, '');
+        if (previousToken.value === '') {
+          tokens.pop();
+        }
+      }
+      lastIndex = match.index + match[0].length;
+      continue;
+    }
     tokens.push({ type: tokenType, value: tokenValue });
     lastIndex = match.index + match[0].length;
   }
