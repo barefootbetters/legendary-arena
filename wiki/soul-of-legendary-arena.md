@@ -1148,6 +1148,33 @@ tactic regardless of who benefits or how sympathetic the cause — a filter that
 only fires on the villain is a partisan weapon, not a tool. Name the move; judge
 the user separately.
 
+#### Two tells for naming the Mastermind
+
+A Scheme hides behind two things: process and sympathy. Two tells cut through
+each — and, like the withheld machinery above, they are **neutral**, catching
+the move no matter which faction makes it. Each is built as a symmetric test, so
+it indicts by *conduct*, never by *side*.
+
+**Law applied unevenly by faction.** Selective prosecution is judging by
+category wearing legal clothes: the charge is the pretext, and the real offense
+is *who you are*. The tell is never whether someone broke a rule — it is whether
+the same rule reaches everyone. The test: **would this charge have been brought
+against an ordinary person for the same conduct?** If not, the law has stopped
+being a standard and become a weapon — frame control with a courthouse behind
+it, and a close relative of the page's oldest warning, that the real evil is
+[concentrated, unaccountable power turned against the people it claims to
+serve](#the-real-evil-behind-the-red-skull).
+
+**The false champion.** The Mastermind rarely arrives as the enemy of the
+people; he arrives as their advocate. A real grievance is the most useful thing
+a schemer can hold, because it lends him a moral authority he never earned — the
+[borrowed seal](#the-masterminds-common-tactics-the-grammar-of-manipulation)
+again, this time stitched from someone else's suffering. So the question is not
+whether he speaks *for* the poor but what becomes of them once he has power:
+lifted, or spent? Watch what the campaign is *for*, not what it is *against* — if
+the poor are named constantly and are never actually better off, they were the
+lever, not the purpose. This is *who benefits* turned on the benefactor himself.
+
 #### How heroes beat it — the difficulty knobs
 
 Hughes's countermeasures are the balance dials. A Mastermind is *fair* when the
