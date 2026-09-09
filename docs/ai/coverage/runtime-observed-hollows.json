@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 27,
-    "totalObservations": 1910,
+    "totalObservations": 1902,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 0,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1910
+      "parse-unrecognized": 1902
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "coordinate": {
-      "hitCount": 226,
+      "hitCount": 218,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 226
+        "parse-unrecognized": 218
       },
       "examples": [
         {

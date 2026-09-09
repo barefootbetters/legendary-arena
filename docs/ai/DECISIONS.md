@@ -40561,4 +40561,50 @@ Legitimately-open states pass: a drafted `[ ]`+`Drafted` row, a reserve-only led
 
 **Packet:** WP-671 / EC-708. **Active:** 2026-09-08.
 
+### D-24486 — A negative-magnitude `[icon:attack|recruit]` is an Adversary debuff / cost reduction, never a player grant — suppress it in the hero-ability parser (Active 2026-09-08 — INFRA parser bug fix, no WP)
+
+**Decision.** The hero-ability parser (`setup/heroAbility.setup.ts`) must NOT read a `[icon:attack]` /
+`[icon:recruit]` token as a player resource GRANT when it carries a leading negative sign
+("gets -2[icon:attack]", "cost -1[icon:recruit]"). A new `NEGATIVE_MAGNITUDE_ICON_PATTERN`
+(`/-\s*\d+\s*\[icon:(?:attack|recruit)\]/gi`) + `computeNegativeMagnitudeIconRanges` record the character
+ranges of such negative icons; those ranges are merged into `suppressedIconRanges`, so the icon-magnitude
+extractor (Step 2b) and the icon→keyword extractor (Step 3) skip any icon whose span overlaps them via the
+existing `overlapsSuppressedRange`. Suppression is **positional** — a real grant icon elsewhere on the same
+line ("you get +3[icon:attack]. Each Villain gets -2[icon:attack]") is kept.
+
+**Why.** Both extractors drop the sign: they read the integer adjacent to `[icon:attack|recruit]` as a bare
+magnitude and promote the icon to an `attack`/`recruit` keyword with no debuff-vs-grant distinction. Live
+evidence (Red Skull / Midtown Bank Robbery 1p verification, gitSha 295caa5): **Royal Decree** (asrd/thor,
+"Each Villain that isn't worth at least 5VP gets -1[icon:attack] this turn") granted **Player 0 a real +1
+attack** on every `[team:heroes-of-asgard]` activation (game log `asrd/thor/royal-decree#0`). A card handing
+the player resources its text applies AGAINST the enemy is an honest-integrity / fairness bug. The negative
+sign is the reliable discriminator: Legendary's vocabulary has no "you get -N attack/recruit" player
+self-grant, so a scan of all card data confirms **every** negative attack/recruit icon (~20 hero lines —
+core Bridge/Rooftops debuffs, `[team:spider-friends]` "Each Villain gets -2", HQ recruit-cost reductions,
+etc.) is an Adversary debuff or a cost reduction. The fix therefore corrects the whole phantom-grant class,
+of which Royal Decree is the reported instance.
+
+**Mechanism.** Parser-only, one file. Mirrors the shipped icon-suppression precedents that share the same
+`suppressedIconRanges` / `overlapsSuppressedRange` machinery: the condition-threshold icon (D-24471), the
+investigate-criterion icon (D-24373), the count-scaled-attack subsumption (D-24016), and the
+reveal-Hero-Deck-attack subsumption (D-24481). The suppressed range runs from the icon token (the match's
+last `[icon:`) to the match end, so both the icon-magnitude match (starts at the digit, ends at `]`) and the
+icon→keyword match (starts at `[`) overlap it and are skipped.
+
+**Determinism / boundary.** Engine-only change under `packages/game-engine/**`; no server/registry edge
+touched (ARCHITECTURE.md §Layer Boundary, Determinism, Engine Owns Truth). NO card-data change (`asrd.json` is
+generated; the fix is in the parser), NO new `G` field, NO hash re-pin — the full engine suite is 3173/3173
+green with every determinism pin (`PRE_WP080_HASH`, the `sentinel-core-doom-2p` `finalStateHash`, the replay
+hash tests) unchanged, because the core/dr-doom and legacy-virus sentinels play none of the affected cards.
+NO derived-artifact drift (the hero-mechanic ledger reads `[keyword:X]` markers, not icon-promoted keywords —
+same as D-24471). Parser regression test added to `heroAbility.setup.test.ts` (runtime assertions, per the
+engine tests-not-typechecked posture): the Royal Decree line emits no attack keyword/effect, and a same-line
+positional guard proves a real `+3[icon:attack]` grant survives.
+
+**Honest hollows (out of scope).** Royal Decree's villain debuff itself ("villains get -1 attack this turn")
+and "Each player who is Worthy draws a card" remain unmodeled hollows — correctly emitting nothing now that
+the phantom grant is gone. Modeling either is a separate, larger follow-up.
+
+**Packet:** none (standalone INFRA bug fix). **Active:** 2026-09-08.
+
 Protect this file.
