@@ -317,9 +317,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // percentResolved edges 32.4 -> 31.3 (the shorter, Smash-diverted sweep surfaces slightly
   // more downstream unresolved obs from still-unimplemented mechanics than Smash resolves).
   // Honest gauge, deterministic — CI computes the same.
+  // 2026-09-09 (WP-677/678/679 shld arc re-pin catch-up): the arc merged (D-24493/24494/24495)
+  // without re-pinning this snapshot, leaving main's Dashboard Gates RED. WP-678's Undercover
+  // now sends Heroes to the Victory Pile (a rules-faithful mechanic replacing the dead face-down
+  // store) — that reshapes the fixed-seed sweep substantially: more cards leave play into the
+  // Victory Pile, so the sweep surfaces many more downstream observations from still-unimplemented
+  // mechanics. Net: totalObs 2355 -> 2833; percentResolved 31.3 -> 25.3 (the larger denominator
+  // dilutes the resolved share — a sweep-trajectory artifact, not a regression). Honest gauge,
+  // deterministic — CI computes the same 2833 / 25.3.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2355);
-  assert.equal(view.percentResolved.value, 31.3);
+  assert.equal(view.totalObs.value, 2833);
+  assert.equal(view.percentResolved.value, 25.3);
   assert.ok(view.remaining.value.length > 0);
 });
 
