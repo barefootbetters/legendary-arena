@@ -132,4 +132,32 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     });
     assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Your choice');
   });
+
+  // why: WP-694 / D-24511 — the two multi-seat core mastermind tactics render distinct
+  // headings for each of their three kinds (Monarch's Decree mode + discard, Vanishing
+  // Illusions KO); the viewer still sees only its own redacted prompt.
+  test('renders a distinct heading for each of the three WP-694 kinds (Monarch\'s Decree / Vanishing Illusions)', () => {
+    const { submitMove } = recorder();
+    const cases: { kind: string; pattern: RegExp }[] = [
+      { kind: 'monarchs-decree-mode', pattern: /Monarch’s Decree/ },
+      { kind: 'monarchs-discard', pattern: /discard/ },
+      { kind: 'vanishing-illusions-ko', pattern: /Vanishing Illusions/ },
+    ];
+    for (const { kind, pattern } of cases) {
+      const choice: UIPendingSeatChoice = {
+        kind,
+        addressedSeats: ['player-1'],
+        outstandingSeats: ['player-1'],
+        seatPrompts: { 'player-1': { options: [{ label: 'Option A' }, { label: 'Option B' }] } },
+      };
+      const wrapper = mount(PendingSeatChoicePrompt, {
+        props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+      });
+      assert.match(
+        wrapper.find('.pending-seat-choice-prompt__heading').text(),
+        pattern,
+        `heading for kind ${kind}`,
+      );
+    }
+  });
 });

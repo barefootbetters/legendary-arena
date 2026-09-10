@@ -35,6 +35,20 @@ import { defeatMastermindTacticCore } from './fightMastermind.js';
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
 /**
+ * The minimal boardgame.io events surface forwarded to defeatMastermindTacticCore so a
+ * mastermind tactic Fight can park a WP-684 multi-seat seat choice (WP-694 / D-24511).
+ *
+ * // why: narrowed via a structural type so this move forwards events without depending on
+ * the concrete boardgame.io EventsAPI shape. Optional/guarded.
+ */
+interface TacticSeatChoiceEvents {
+  setActivePlayers?: (arg: {
+    value: Record<string, { stage: string; moveLimit: number }>;
+    revert?: boolean;
+  }) => void;
+}
+
+/**
  * Payload for the resolveDefeatChoice move.
  *
  * targetKind — which store the chosen target lives in. When `'villain'`,
@@ -120,15 +134,21 @@ export function buildDefeatWithBystanderTargets(
  *   avoid a framework import; forwarded to the shared cores.
  * @param target - The eligible target to defeat.
  * @param shuffleContext - ShuffleProvider ({ random }) for a villain Fight scry reshuffle.
+ * @param events - The move's boardgame.io events (WP-694 / D-24511), forwarded to the
+ *   mastermind tactic core so a parked multi-seat seat choice admits the non-active seats.
+ *   Optional/guarded.
  */
 export function dispatchDefeatWithBystanderTarget(
   G: LegendaryGameState,
   ctx: unknown,
   target: DefeatWithBystanderTarget,
   shuffleContext: ShuffleProvider,
+  events?: TacticSeatChoiceEvents,
 ): void {
   if (target.kind === 'mastermind') {
-    defeatMastermindTacticCore(G, ctx, shuffleContext);
+    // why: WP-694 / D-24511 — forward events so a Silent Sniper / Pure Fury free defeat of a
+    // Monarch's Decree / Vanishing Illusions tactic can park a WP-684 multi-seat seat choice.
+    defeatMastermindTacticCore(G, ctx, shuffleContext, events);
     return;
   }
   // why: a villain target always carries its City space index; guard defensively
@@ -179,7 +199,7 @@ function findChosenTarget(
  * @param args - the chosen { targetKind, cityIndex }.
  */
 export function resolveDefeatChoice(
-  { G, ctx, playerID, random }: MoveContext,
+  { G, ctx, playerID, random, events }: MoveContext,
   args: ResolveDefeatChoiceArgs,
 ): void {
   // Step 1: Validate args
@@ -228,5 +248,7 @@ export function resolveDefeatChoice(
 
   // Step 5: Dispatch the free defeat via the shared core (no attack spend). `ctx`
   // is the bare bgio ctx (currentPlayer); { random } supplies a villain Fight scry.
-  dispatchDefeatWithBystanderTarget(G, ctx, chosenTarget, { random });
+  // why: WP-694 / D-24511 — thread events so a free defeat of a multi-seat tactic parks its
+  // WP-684 seat choice (setActivePlayers admits the non-active seats).
+  dispatchDefeatWithBystanderTarget(G, ctx, chosenTarget, { random }, events);
 }

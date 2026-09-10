@@ -42027,4 +42027,55 @@ no hash re-pin**. This is a false-red correction backed by empirical proof, not 
 
 **Reserved by:** D-24514 (NUMBER-LEDGER, bug-fix-no-WP).
 
+### D-24511 — Multi-seat "each other player chooses" core mastermind tactics, reusing the WP-684 pending seat choice (Active 2026-09-10 — WP-694 / EC-731)
+
+**Decision.** The two remaining "each other player chooses" core mastermind tactics —
+Dr. Doom **Monarch's Decree** (`core-mastermind-dr-doom-monarchs-decree`) and Loki
+**Vanishing Illusions** (`core-mastermind-loki-vanishing-illusions`) — resolve faithfully on
+tactic defeat as per-tactic resolvers in `rules/tacticHandlers.ts` that **park a WP-684
+multi-seat `pendingSeatChoice`** (D-24501), NOT new pending infrastructure. New behavior
+enters ONLY as `PendingSeatChoice.kind` discriminants + `applySeatChoiceByKind` branches +
+pure builders/appliers in the new `moves/seatChoiceTactics.ts` (no `boardgame.io` /
+`parkSeatChoice` import — no cycle with `seatChoice.resolve.ts`). The kinds:
+`monarchs-decree-mode` (active single-seat draw-vs-discard), `monarchs-discard` (multi-seat),
+`vanishing-illusions-ko` (multi-seat).
+
+**Monarch's Decree** = an ACTIVE single-seat mode choice (option 0 = each other player draws
+a card; option 1 = each other player discards a card). The **draw** branch resolves
+DETERMINISTICALLY inside the mode apply (each other player draws 1, reshuffle-aware); the
+**discard** branch CHAINS a simultaneous multi-seat discard from the live move context
+(`resolveSeatChoice` → `chainMonarchsDiscard`, mirroring `chainRandomActsPassLeft` — admitting
+the non-active seats needs the move's `events.setActivePlayers`). **Vanishing Illusions** = a
+simultaneous multi-seat KO-a-Victory-Pile-Villain choice; each seat's chosen Villain moves from
+its Victory Pile to the top-level `G.ko` via `koCard`. Both skip `ctx.currentPlayer`, no-op a
+seat with no eligible target, park nothing when no other seat qualifies, and apply atomically in
+ascending seat order (byte-identical regardless of submission order — the WP-684 guarantee).
+Hand→discard goes through the `discardFromHand` chokepoint; a Victory-Pile Villain is identified
+by the ext_id `-villain-` infix (the `countVictoryPileGroupVillains` id-grammar precedent, NOT a
+new hashed villain-group map), excluding the `bystander-villain-deck-NN` rescued-Bystander form.
+
+**Why reuse over new infra.** `resolveSeatChoice` is already sim-enrolled
+(`SIMULATION_MOVE_NAMES` + both sim `MOVE_MAP`s) and block-all-guarded, and
+`SeatChoiceOption.cardId` already carries the exact zone instance — reused for the discard and
+KO targets. So: no new bgio move, no new sim-dispatch enrollment, no `game.test.ts`
+move-registration edit, no new `PendingSeatChoice` / `SeatChoiceOption` / `UIState` field. Per-seat
+UIState redaction is the WP-684 projection unchanged (option `cardId` never projected — the
+client submits by `optionIndex`). `events` threads through BOTH `defeatMastermindTacticCore`
+callers (`fightMastermind`, `defeatChoice.resolve`), optional/guarded so a unit/replay context
+parks on `G` and resolves directly. Disconnect/timeout posture inherits D-24501 unchanged.
+
+**Determinism / re-pin.** Resolver-only (no card-data edit); `cards:check` reproducible. No
+**new** hashed `G` field — reuses `G.pendingSeatChoice` (hashed since WP-684) and stays undefined
+for untriggered matches; no committed replay/sentinel fixture defeats these two tactics, so both
+hash oracles (`finalStateHash` + `PRE_WP080_HASH`) stay byte-identical (**no re-pin**), verified
+empirically (engine suite green: 3424/0; arena-client 1771/0; dashboard 482/0). The two tactics
+are not sim-observed, so `runtime-observed-hollows.json` is byte-identical and the dashboard
+in-play-coverage pin is unchanged; `effect-index` + `tactic-provenance` regenerated (the two
+tactics → `executable`). Moves never throw; an unknown tactic id stays a silent no-op.
+
+**Status:** Active. **Builds on:** D-24501 (multi-seat pending seat choice / WP-684), D-24500
+(the chain-from-live-context precedent), D-24300 (tactic-onFight framework), D-24291
+(defeat-with-bystander free-defeat callers threading events). **Reserved by:** WP-694 draft
+(NUMBER-LEDGER).
+
 Protect this file.

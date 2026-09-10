@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 430,
+      "executable": 432,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
-      "unmarked": 1062,
+      "unmarked": 1060,
       "subsystem": 4
     }
   },
@@ -6132,10 +6132,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "monarchs-decree",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveMonarchsDecree",
+      "wp": "WP-694",
+      "decision": "D-24511"
     },
     {
       "extId": "core-mastermind-dr-doom-secrets-of-time-travel",
@@ -6187,10 +6187,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "vanishing-illusions",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveVanishingIllusions",
+      "wp": "WP-694",
+      "decision": "D-24511"
     },
     {
       "extId": "core-mastermind-loki-whispers-and-lies",

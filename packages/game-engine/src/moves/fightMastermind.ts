@@ -59,6 +59,21 @@ import { pushLog } from '../log/logPush.js';
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
 /**
+ * The minimal boardgame.io events surface threaded into dispatchTacticOnFight so a
+ * tactic Fight can park a WP-684 multi-seat seat choice (WP-694 / D-24511).
+ *
+ * // why: narrowed via a structural type (mirroring seatChoice.resolve.ts's SeatChoiceEvents
+ * and tacticHandlers.ts's TacticSeatChoiceEvents) so this core forwards events without a
+ * boardgame.io-specific dependency. Optional so a unit/replay caller omits it.
+ */
+interface TacticSeatChoiceEvents {
+  setActivePlayers?: (arg: {
+    value: Record<string, { stage: string; moveLimit: number }>;
+    revert?: boolean;
+  }) => void;
+}
+
+/**
  * Fights the mastermind by defeating the top tactic card.
  *
  * Validates available attack against the mastermind's fight requirement,
@@ -73,7 +88,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 // text effects are WP-024" note was stale (WP-024 did scheme + mastermind STRIKE
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
-  { G, ctx, random }: MoveContext,
+  { G, ctx, random, events }: MoveContext,
 ): void {
   // why: WP-687 / D-24504 — the optional Final Blow rule. When available, the
   // Mastermind (with no Tactics left) is fightable a 5th, final time; that fight is
@@ -173,7 +188,10 @@ export function fightMastermind(
   if (isFinalBlow) {
     awardMastermindOnFinalBlow(G, ctx);
   } else {
-    defeatMastermindTacticCore(G, ctx, { random });
+    // why: WP-694 / D-24511 — thread the move's events so a tactic Fight that parks a
+    // WP-684 multi-seat seat choice (Monarch's Decree / Vanishing Illusions) can admit the
+    // non-active seats via setActivePlayers.
+    defeatMastermindTacticCore(G, ctx, { random }, events);
   }
   // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
   // recruit when the conversion is active; identical to spendAttack when unset.
@@ -212,11 +230,17 @@ export function fightMastermind(
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - The bare boardgame.io ctx (currentPlayer), typed unknown to avoid
  *   a framework import.
+ * @param shuffleContext - ShuffleProvider ({ random }) for a tactic Fight that draws.
+ * @param events - The move's boardgame.io events (WP-694 / D-24511), forwarded to
+ *   dispatchTacticOnFight so a tactic that parks a WP-684 multi-seat seat choice can admit
+ *   the non-active seats. Optional/guarded — a unit/replay context without a live framework
+ *   omits it and the parked choice resolves directly against G.
  */
 export function defeatMastermindTacticCore(
   G: LegendaryGameState,
   ctx: unknown,
   shuffleContext: ShuffleProvider,
+  events?: TacticSeatChoiceEvents,
 ): void {
   // why: narrow the unknown ctx to the one field this core reads (the defeating
   // player), mirroring executeVillainAbilities — no framework import.
@@ -352,7 +376,9 @@ export function defeatMastermindTacticCore(
   // and the bare boardgame.io ctx carries no random (the D-24051 hazard recorded
   // in dodgeCard.ts), so the reshuffle path needs random.Shuffle threaded from
   // the move context or an empty-deck draw would silently stop short.
-  dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext);
+  // why: WP-694 / D-24511 - forward events so Monarch's Decree / Vanishing Illusions can
+  // park a WP-684 multi-seat seat choice (setActivePlayers admits the non-active seats).
+  dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext, events);
 }
 
 /**

@@ -67,6 +67,18 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveBitterCaptor",
       "wp": "WP-692",
       "decision": "D-24509"
+    },
+    "core-mastermind-dr-doom-monarchs-decree": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveMonarchsDecree",
+      "wp": "WP-694",
+      "decision": "D-24511"
+    },
+    "core-mastermind-loki-vanishing-illusions": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveVanishingIllusions",
+      "wp": "WP-694",
+      "decision": "D-24511"
     }
   }
 }
