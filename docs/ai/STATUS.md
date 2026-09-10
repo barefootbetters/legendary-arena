@@ -7,6 +7,54 @@
 
 ## Current State
 
+### WP-694 — Multi-seat "each other player chooses" core mastermind tactics (EC-731 / D-24511) (2026-09-10)
+
+Implemented the two remaining **"each other player chooses"** core mastermind
+tactics as per-tactic resolvers in `packages/game-engine/src/rules/tacticHandlers.ts`
+that **park a WP-684 multi-seat `pendingSeatChoice`** (D-24501) — reuse, not new
+pending infrastructure. Before this both fired nothing on defeat.
+
+**Resolvers.** (1) **Monarch's Decree** (Dr. Doom) — "Choose one: each other player
+draws a card OR each other player discards a card": parks an ACTIVE single-seat mode
+choice for the defeating player; the **draw** branch resolves deterministically (each
+other player draws 1, reshuffle-aware) inside the mode apply; the **discard** branch
+CHAINS a simultaneous multi-seat discard (each other seat with ≥1 card picks one to
+discard) from the live move context (`resolveSeatChoice` → `chainMonarchsDiscard`,
+mirroring `chainRandomActsPassLeft`). (2) **Vanishing Illusions** (Loki) — "Each other
+player KOs a Villain from their Victory Pile": a simultaneous multi-seat KO choice;
+each addressed seat's chosen Villain moves from its Victory Pile to the top-level
+`G.ko` via `koCard`. Both skip `ctx.currentPlayer`, no-op a seat with no eligible
+target, park nothing when no other seat qualifies, and apply atomically in ascending
+seat order (byte-identical regardless of submission order).
+
+**Reuse.** New behavior enters ONLY as three `PendingSeatChoice.kind` discriminants
+(`monarchs-decree-mode` / `monarchs-discard` / `vanishing-illusions-ko`) +
+`applySeatChoiceByKind` branches + pure builders/appliers in the new
+`packages/game-engine/src/moves/seatChoiceTactics.ts` (no `boardgame.io` /
+`parkSeatChoice` import — no cycle). `resolveSeatChoice` is already sim-enrolled +
+block-all-guarded and `SeatChoiceOption.cardId` already exists, so **no new bgio move,
+no sim-dispatch enrollment, no `game.test.ts` move-registration edit, no new
+`PendingSeatChoice` / `UIState` field**. `events` threads through both
+`defeatMastermindTacticCore` callers (`fightMastermind`, `defeatChoice.resolve`),
+optional/guarded. Per-seat UIState redaction is the WP-684 projection unchanged; the
+arena-client `PendingSeatChoicePrompt.vue` gains three headings.
+
+**Determinism / re-pin.** No `Math.random`, no I/O, no `.reduce()` in the apply/count
+loops; moves never throw; unknown tactic id stays a silent no-op. No new hashed `G`
+field (reuses `G.pendingSeatChoice`); no committed fixture defeats these two tactics →
+`finalStateHash` + `PRE_WP080_HASH` byte-identical (**no re-pin**). The two tactics are
+not sim-observed, so `runtime-observed-hollows.json` is byte-identical and the dashboard
+in-play-coverage pin is unchanged.
+
+**Scope.** Two resolvers + two dispatch cases + tactic-id consts + threaded `events` in
+`tacticHandlers.ts`; the new `seatChoiceTactics.ts` (builders/appliers/kinds) + its
+unit tests; `applySeatChoiceByKind` three kinds + the Monarch's-discard chain in
+`seatChoice.resolve.ts`; `events` threaded in `fightMastermind.ts` +
+`defeatChoice.resolve.ts`; three headings + tests in `PendingSeatChoicePrompt.vue`;
+two `executable` rows in `scripts/coverage/tactic-provenance.json`; regenerated
+`effect-implementation-index.json`. Suites green: engine 3424/0, arena-client 1771/0,
+dashboard 482/0. D-24026 live-verify operator-pending (post-deploy, 2+-seat match).
+
 ### WP-691 — Deterministic core mastermind tactics (EC-728 / D-24508) (2026-09-10)
 
 Implemented the three **no-choice** remaining core mastermind tactics as

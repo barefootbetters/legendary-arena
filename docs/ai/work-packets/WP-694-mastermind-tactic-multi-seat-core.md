@@ -1,6 +1,6 @@
 # WP-694 — Multi-seat "each other player chooses" core mastermind tactics (Game Engine + Arena Client)
 
-**Status:** Draft 2026-09-10 (EC-731; D-24511 reserved)
+**Status:** Done 2026-09-10 (EC-731; D-24511 Active)
 **Layer:** Game Engine + Arena Client
 **Lane:** Standard two-session (mutates the determinism surface — engine game-state effect; parks a hashed pending-choice field)
 **Baseline:** `origin/main` (WP-684 / D-24501 landed 2026-09-10)
@@ -308,16 +308,18 @@ N/A — no `apps/server` HTTP endpoint or `Library-only` export change (reuses t
 
 ## Definition of Done
 
-- [ ] All Acceptance Criteria met; engine + arena-client suites green (pass delta recorded).
-- [ ] Sentinel + `PRE_WP080` hashes byte-identical (or drift diagnosed + a deliberate,
-      documented re-pin — not expected).
-- [ ] `pnpm -r build` 0; `effect-index:check` + `sim:runtime-observed:check` current after
-      regenerating tactic-provenance.
-- [ ] `git diff --name-only` matches the allowlist.
-- [ ] D-24511 flipped Active; WORK_INDEX row → `[x]`; EC_INDEX → `Done`; mindmap `📝`→`✅`;
+- [x] All Acceptance Criteria met; engine + arena-client suites green (pass delta recorded).
+- [x] Sentinel + `PRE_WP080` hashes byte-identical (or drift diagnosed + a deliberate,
+      documented re-pin — not expected). No new hashed field (reuses `G.pendingSeatChoice`);
+      full engine suite green (the sentinel `finalStateHash` + `PRE_WP080_HASH` oracles included).
+- [x] `pnpm -r build` 0; `effect-index:check` + `sim:runtime-observed:check` current after
+      regenerating tactic-provenance (runtime-observed content byte-identical — the two tactics
+      are not sim-observed, so no dashboard in-play-coverage re-pin).
+- [x] `git diff --name-only` matches the allowlist.
+- [x] D-24511 flipped Active; WORK_INDEX row → `[x]`; EC_INDEX → `Done`; mindmap `📝`→`✅`;
       `roadmap:counts:check` 0; `docs/ai/STATUS.md` close-out entry added.
-- [ ] Two-commit topology (EC-731 impl + SPEC close).
-- [ ] D-24026 live-verify performed or explicitly operator-pending.
+- [x] Two-commit topology (EC-731 impl + SPEC close).
+- [x] D-24026 live-verify operator-pending (post-deploy, multiplayer 2+-seat match).
 
 ## Reserved Decision (lands at execution)
 
