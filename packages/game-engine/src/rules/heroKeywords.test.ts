@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 52 entries after the WP-682 reactive/conditional additions', () => {
+  it('HERO_KEYWORDS array has exactly 54 entries after the WP-682 + WP-683 additions', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      52,
-      'HERO_KEYWORDS must have exactly 52 entries (50 + diving-block + pure-fury, WP-682 / D-24499)',
+      54,
+      'HERO_KEYWORDS must have exactly 54 entries (50 + diving-block + pure-fury (WP-682 / D-24499) + here-hold-this + random-acts (WP-683 / D-24500))',
     );
   });
 });

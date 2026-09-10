@@ -6873,6 +6873,40 @@
       ]
     },
     {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "here-hold-this",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#here-hold-this",
+      "wp": "WP-683",
+      "decision": "D-24500",
+      "designs": [
+        {
+          "slug": "here-hold-this-for-a-second",
+          "name": "Here, Hold This for a Second"
+        }
+      ]
+    },
+    {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "random-acts",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#random-acts",
+      "wp": "WP-683",
+      "decision": "D-24500",
+      "designs": [
+        {
+          "slug": "random-acts-of-unkindness",
+          "name": "Random Acts of Unkindness"
+        }
+      ]
+    },
+    {
       "extId": "core/emma-frost",
       "name": "Emma Frost",
       "set": "core",
@@ -28613,7 +28647,9 @@
       "mechanics": [
         "attack-per-count",
         "do-over",
-        "first-hero-condition"
+        "first-hero-condition",
+        "here-hold-this",
+        "random-acts"
       ]
     },
     "core/emma-frost": {

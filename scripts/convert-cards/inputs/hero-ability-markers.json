@@ -153,6 +153,18 @@
     },
     {
       "heroSlug": "deadpool",
+      "cardSlug": "here-hold-this-for-a-second",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:here-hold-this]"
+    },
+    {
+      "heroSlug": "deadpool",
+      "cardSlug": "random-acts-of-unkindness",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:random-acts]"
+    },
+    {
+      "heroSlug": "deadpool",
       "cardSlug": "hey-can-i-get-a-do-over",
       "abilityIndex": 0,
       "markupToken": "[keyword:first-hero-condition]"

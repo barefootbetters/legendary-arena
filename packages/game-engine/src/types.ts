@@ -975,6 +975,17 @@ export interface PendingUndercoverChoice {
 export interface SeatChoiceOption {
   /** Human-readable label the client renders on the option control. */
   label: string;
+  // why: WP-683 / D-24500 — for a 'here-hold-this' villain-pick option, cityIndex names
+  // the City space of the Villain that captures the Bystander (the block-all-frozen
+  // selector, mirroring DefeatWithBystanderTarget); the atomic apply reads it to attach.
+  // Absent for every other kind. NOT projected to the client (the client submits by
+  // optionIndex; only `label` is redacted through the audience filter).
+  cityIndex?: number;
+  // why: WP-683 / D-24500 — for a 'random-acts-pass-left' option, cardId is the exact hand
+  // instance the seat passes to the seat on its left. Hand instances are copy-suffixed and
+  // unique, so the atomic apply moves this exact card. Absent for every other kind. NOT
+  // projected to the client.
+  cardId?: CardExtId;
 }
 
 /**
@@ -1033,6 +1044,12 @@ export interface PendingSeatChoice {
    * (or cannot) submit — the disconnect/timeout default. No RNG, no wall-clock.
    */
   defaultOptionIndex: number;
+  // why: WP-683 / D-24500 — for the 'random-acts-pass-left' kind, maps each addressed seat
+  // to the seat on its LEFT (the next seat in ctx.playOrder). Precomputed at PARK time so the
+  // atomic multi-seat apply is ctx-free and replay-identical (the apply has only G + choice).
+  // Absent for every other kind. A left neighbour need not be an addressed seat (a seat with
+  // no cards to pass still RECEIVES).
+  leftNeighborBySeat?: Record<string, string>;
 }
 
 /**

@@ -87,7 +87,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-682 / D-24499 added the pure-fury handler (Nick Fury's free conditional defeat)
     // (36 → 37). Diving Block adds NO handler — it is reactive at the gainWoundForPlayer
     // chokepoint (WOUND_TIME_EXECUTED_KEYWORDS), mirroring return-on-discard.
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 37);
+    // WP-683 / D-24500 added the here-hold-this handler and the random-acts handler
+    // (Deadpool's directed capture + multiplayer pass-left) (37 → 39).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 39);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);

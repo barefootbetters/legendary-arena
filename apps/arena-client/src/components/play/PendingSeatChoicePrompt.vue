@@ -7,9 +7,12 @@ import type { SubmitMove } from "./uiMoveName.types";
  * Foundational inline prompt for a non-active / multi-seat pending choice
  * (WP-684 / D-24501).
  *
- * This is the SCAFFOLD the capability WP ships; the concrete, card-specific
- * renderers ship with the consuming cards (WP-682 Diving Block, WP-683 Random
- * Acts). It renders one button per option from the VIEWER'S OWN prompt only
+ * This is the SCAFFOLD the capability WP shipped; the concrete, card-specific
+ * headings ship with the consuming cards. WP-683 (D-24500) adds the Deadpool
+ * headings: 'here-hold-this' (pick a Villain to capture a Bystander),
+ * 'random-acts-wound' (optional gain-a-Wound-to-hand), and 'random-acts-pass-left'
+ * (pass a card to the player on your left). It renders one button per option from
+ * the VIEWER'S OWN prompt only
  * (`pendingSeatChoice.seatPrompts[viewerPlayerId]`) — the engine's per-seat
  * audience filter has already redacted the projection to the viewing seat, so a
  * seat never sees another seat's options.
@@ -76,15 +79,23 @@ export default defineComponent({
     }
 
     /**
-     * The prompt heading, keyed on the choice kind so each consuming card reads
-     * naturally. Diving Block (WP-682 / D-24499) is the first concrete consumer;
-     * the generic "Your choice" is the foundational fallback for any other kind.
+     * The card-specific heading for this choice, keyed by the projection's `kind`.
+     * Diving Block (WP-682 / D-24499) and the Deadpool kinds (WP-683 / D-24500) are the
+     * concrete consumers; "Your choice" is the foundational fallback for any other kind.
      */
     function heading(): string {
-      if (props.pendingSeatChoice?.kind === "diving-block") {
-        return "You would gain a Wound — Diving Block?";
+      switch (props.pendingSeatChoice?.kind) {
+        case 'diving-block':
+          return 'You would gain a Wound — Diving Block?';
+        case 'here-hold-this':
+          return 'Choose a Villain to capture a Bystander';
+        case 'random-acts-wound':
+          return 'Gain a Wound to your hand?';
+        case 'random-acts-pass-left':
+          return 'Choose a card to pass to the player on your left';
+        default:
+          return 'Your choice';
       }
-      return "Your choice";
     }
 
     function onChoose(optionIndex: number): void {
@@ -110,9 +121,9 @@ export default defineComponent({
     class="pending-seat-choice-prompt"
     data-testid="pending-seat-choice-prompt"
     role="region"
-    aria-label="Your choice"
+    :aria-label="heading()"
   >
-    <h3 class="pending-seat-choice-prompt__heading">{{ heading() }}</h3>
+    <h3 class="pending-seat-choice-prompt__heading" data-testid="pending-seat-choice-heading">{{ heading() }}</h3>
     <div class="pending-seat-choice-prompt__buttons">
       <button
         v-for="(option, index) in ownOptions()"
