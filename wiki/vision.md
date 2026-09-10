@@ -23,7 +23,8 @@ source:
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-23
+canonical-source: docs/01-VISION.md
+last-reviewed: 2026-09-09
 ---
 
 # Vision
@@ -37,19 +38,13 @@ summarizes and links; the vision document itself is authoritative and
 sits at tier 3 of the authority hierarchy, above `.claude/rules/*.md`
 and every Work Packet.
 
-> **Editing this page**
->
-> This ewiki page mirrors `docs/01-VISION.md` in this same repo.
->
-> - **To edit the vision:** edit `docs/01-VISION.md`. Vision-tier edits
->   are authority-doc edits — present the change for explicit approval
->   before writing, per the authority hierarchy in
->   [`.claude/CLAUDE.md`](../.claude/CLAUDE.md).
-> - **To edit this page:** edit `wiki/vision.md`, commit with a `SPEC:`
->   prefix, push to `main`.
-> - **Keep both in sync.** If the vision changes, update this page in
->   the same cycle. Where the two disagree, the vision wins and this
->   page is wrong.
+> **Vision-tier edits need approval.** This page mirrors
+> `docs/01-VISION.md`, which sits at tier 3 of the authority hierarchy —
+> present any change to the vision for explicit approval before writing,
+> per [`.claude/CLAUDE.md`](../.claude/CLAUDE.md). Where this page and the
+> vision disagree, the vision wins and this page is wrong; update this page
+> in the same cycle as any vision change. (Edit mechanics for both files
+> are in the **Editing this page** panel at the foot of the page.)
 
 **Audience:** contributors, reviewers, operators, and designers who
 need the vision's shape without reading all 1,053 lines of it. Players
