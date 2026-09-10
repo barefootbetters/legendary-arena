@@ -29,6 +29,7 @@ define new architectural boundaries.
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, gated |
+| `legendary-arena-dashboard.pages.dev` | Internal admin dashboard (CF Pages alias) | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, **UNGATED — gate pending** (see [dashboard](#dashboard)) |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
 `state` legend: `live` = deployed and probed for health; `planned` = not yet
@@ -259,6 +260,47 @@ Configuration steps (completed 2026-06-02 under WP-197 / EC-223):
 7. Verify `pnpm check:domains` reports `READY` for the `dashboard`
    entry, then flip `state: "planned"` → `"live"` in
    [domains.json](./domains.json). Re-run; expect `OK`.
+
+#### pages.dev alias — gate the Cloudflare Pages production URL
+
+**`legendary-arena-dashboard.pages.dev`** — the CF Pages project's built-in
+production alias. **Gate pending.**
+
+The WP-197 Access application above gates **only** the custom domain
+`dashboard.legendary-arena.com`. Cloudflare Pages **always** also serves the
+project at `legendary-arena-dashboard.pages.dev` (and every preview deployment
+at `<hash>.legendary-arena-dashboard.pages.dev`), and those hostnames are **not**
+covered by a custom-domain Access application. So this alias has served the
+operator SPA bundle **ungated on the public internet since 2026-06-02** (observed
+`200` on 2026-09-10). The bundle ships in mock mode with no live API base, so no
+live customer/business data leaks through it — but the same **gate-before-expose**
+concern applies as for the custom domain: the in-app mock
+[`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue) accepts any
+email, and the bundle carries the governance snapshot, mock figures, and internal
+routes/logic.
+
+**Close it (operator action — CF Zero Trust / Pages dashboard):**
+
+1. Cloudflare dashboard → **Workers & Pages** → `legendary-arena-dashboard` →
+   **Settings** → **Enable access policy**. This is the purpose-built path: it
+   auto-creates Access policies covering **both** the `*.pages.dev` production
+   alias **and** preview deployments, so preview builds of PRs stop being public
+   too. Set the policy identity provider to **Email One-time PIN** with the same
+   single-operator allow rule `Include: Emails = jeff@barefootbetters.com` (reuse
+   the existing WP-197 policy/group so the two stay in lock-step).
+   - *Manual alternative:* Zero Trust → Access → Applications → Add a
+     **Self-hosted** application with domain `legendary-arena-dashboard.pages.dev`
+     and the same allow rule. This covers only the production alias, **not**
+     preview deployments — prefer the Pages toggle above.
+2. From an incognito browser, visit `https://legendary-arena-dashboard.pages.dev`.
+   Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...` (or `401`/`403`).
+   **A `200` unauthenticated means the alias is still public.**
+3. Verify `pnpm check:domains` reports `READY` for the
+   `Internal admin dashboard (pages.dev alias)` entry, then flip its
+   `state: "planned"` → `"live"` in [domains.json](./domains.json). Re-run;
+   expect `OK`. (Until the gate is enabled the probe sees `200` and the row
+   reports `FAIL` — that is the intended "not yet gated" signal, not a
+   regression.)
 
 **Real-data wiring is explicitly deferred** (D-19702). Every widget
 on `/overview` renders its four-state shell against in-bundle mock
