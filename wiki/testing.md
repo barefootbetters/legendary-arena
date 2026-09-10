@@ -260,7 +260,7 @@ slip through again.
 npx playwright install chromium                              # one-time browser fetch
 pnpm --filter @legendary-arena/arena-client test:visual      # spawns the dev server + checks
 # or, against an already-running server:
-PLAY_URL="http://localhost:4318/?fixture=mid-turn&play=1" \
+PLAY_URL="http://localhost:5173/?fixture=mid-turn&play=1" \
   pnpm --filter @legendary-arena/arena-client test:visual:run
 ```
 
