@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 427,
+      "executable": 430,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
-      "unmarked": 1065,
+      "unmarked": 1062,
       "subsystem": 3
     }
   },
@@ -6253,10 +6253,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "endless-resources",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveEndlessResources",
+      "wp": "WP-567",
+      "decision": "D-24376"
     },
     {
       "extId": "core-mastermind-red-skull-hydra-conspiracy",
@@ -6264,10 +6264,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "hydra-conspiracy",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHydraConspiracy",
+      "wp": "WP-567",
+      "decision": "D-24376"
     },
     {
       "extId": "core-mastermind-red-skull-negablast-grenades",
@@ -6275,10 +6275,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "negablast-grenades",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNegablastGrenades",
+      "wp": "WP-567",
+      "decision": "D-24376"
     },
     {
       "extId": "core-mastermind-red-skull-ruthless-dictator",
