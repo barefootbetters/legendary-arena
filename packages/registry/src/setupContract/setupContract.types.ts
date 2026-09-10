@@ -164,6 +164,17 @@ export interface SetupEnvelope {
   // derives a match composition from it and the engine never reads it
   // (D-24210 / D-24212), so there is deliberately no count rule attached.
   heroAlternateIds?: string[];
+
+  // why: WP-686 / D-24503 — the Final Blow optional-rule flag (rulebook "Final
+  // Blow (Optional)"): with it on, after the Mastermind's four Tactics are gone
+  // the player must still fight the Mastermind card itself a fifth, final time
+  // to win. It lives on the ENVELOPE, never in the composition block, following
+  // the additive-optional path heroSelectionMode (D-9301) / supportPools
+  // (D-24194) / heroAlternateIds (D-24212) already took (schemaVersion stays
+  // "1.0"). UNLIKE those three, the ENGINE consumes this field: it rides inside
+  // the setup payload to Game.setup(), which stores it on G for the WP-687
+  // endgame gate. Absence means false.
+  finalBlow?: boolean;
 }
 
 /**

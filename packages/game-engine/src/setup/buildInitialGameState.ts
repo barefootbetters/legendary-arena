@@ -11,6 +11,7 @@
 
 import type {
   LegendaryGameState,
+  MatchConfiguration,
   SetupContext,
   PlayerZones,
   MatchSelection,
@@ -244,8 +245,13 @@ function buildSchemeGameText(
 // why: 4th positional optional parameter per D-6703; narrowest additive change
 // that keeps the 9-field MatchSetupConfig lock (D-1244) and D-4805
 // scenario-config separation intact.
+// why: WP-686 / D-24503 — the config param is MatchConfiguration (the payload
+// alias = MatchSetupConfig & { finalBlow? }) so this constructor can read the
+// optional Final Blow flag. The 9-field composition lock is unchanged;
+// MatchConfiguration is assignable to MatchSetupConfig, so buildMatchSelection
+// and every other composition reader below are untouched.
 export function buildInitialGameState(
-  config: MatchSetupConfig,
+  config: MatchConfiguration,
   registry: CardRegistryReader,
   context: SetupContext,
   scoringConfig?: ScenarioScoringConfig,
@@ -579,6 +585,14 @@ export function buildInitialGameState(
   // At MVP, schemeSetupInstructions is always [], so this is a no-op passthrough.
   const baseState: LegendaryGameState = {
     matchConfiguration: config,
+    // why: WP-686 / D-24503 — seed the Final Blow flag ONLY when the payload
+    // sets it true; omit it otherwise. An unconditional `finalBlow: config.finalBlow`
+    // would write `finalBlow: false`/`undefined` into every match's state and,
+    // because both whole-G hash oracles serialize the entire G, move
+    // PRE_WP080_HASH + finalStateHash for every match. Omit-when-off keeps a
+    // non–Final-Blow match byte-identical (the schemeLossPileSetupSize /
+    // activeScoringConfig precedent below). Read by WP-687 as `finalBlow === true`.
+    ...(config.finalBlow === true ? { finalBlow: true } : {}),
     selection,
     // why: currentStage is initialized to the first canonical turn stage.
     // The play phase onBegin hook resets it on each new turn. During setup

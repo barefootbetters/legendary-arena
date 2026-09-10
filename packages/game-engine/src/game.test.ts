@@ -108,6 +108,52 @@ describe('LegendaryGame', () => {
     assert.equal(gameState.matchConfiguration.sidekicksCount, 0);
   });
 
+  it('WP-686: setup() with finalBlow: true stores G.finalBlow === true', () => {
+    // why: WP-686 / D-24503 — a match created with the Final Blow flag on carries
+    // it on G for the WP-687 endgame gate to read.
+    const mockConfiguration: MatchConfiguration = {
+      ...createMockMatchConfiguration(),
+      finalBlow: true,
+    };
+    const mockContext = makeMockCtx({ numPlayers: 2 });
+    const gameState = LegendaryGame.setup!(
+      mockContext as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      mockConfiguration,
+    );
+    assert.equal(gameState.finalBlow, true);
+  });
+
+  it('WP-686: setup() omits the top-level G.finalBlow when the flag is false or absent', () => {
+    // why: WP-686 / D-24503 — the top-level G.finalBlow is the normalized read
+    // surface WP-687 consumes; it is seeded ONLY when the payload sets true, so a
+    // false or absent flag leaves G.finalBlow === undefined (no top-level key).
+    // (matchConfiguration faithfully echoes whatever setupData carried, which is a
+    // separate record of the input — see the absent-flag byte-identity check below.)
+    const falseFlagState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      { ...createMockMatchConfiguration(), finalBlow: false },
+    );
+    assert.equal(falseFlagState.finalBlow, undefined);
+  });
+
+  it('WP-686: a match whose setupData omits finalBlow serializes with no finalBlow key (byte-identical off, no re-pin)', () => {
+    // why: WP-686 / D-24503 — every committed replay/sentinel fixture omits finalBlow
+    // from setupData, so its config carries no finalBlow key and neither does G
+    // (matchConfiguration = config, and the top-level field is omit-when-off). Both
+    // whole-G hash oracles serialize the entire state and JSON.stringify drops absent
+    // keys, so such a match is byte-identical to pre-WP-686 — no oracle moves, no
+    // re-pin. This is the case that governs the sentinel finalStateHash.
+    const absentFlagState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    assert.equal(absentFlagState.finalBlow, undefined);
+    assert.ok(
+      !JSON.stringify(absentFlagState).includes('"finalBlow"'),
+      'A match with no finalBlow in setupData must not serialize a finalBlow key anywhere in G',
+    );
+  });
+
   it('setup() throws when matchConfiguration is not provided', () => {
     const mockContext = makeMockCtx({ numPlayers: 2 });
     assert.throws(

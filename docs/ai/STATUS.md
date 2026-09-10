@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-686 — Final Blow Mastermind setup flag (EC-723 / D-24503) (2026-09-10)
+
+**No user-observable change — infrastructure only.** This WP adds the *flag*, not
+the behavior. The payoff lands with WP-687, which reads it to implement the rulebook
+"Final Blow (Optional)" endgame gate; on its own WP-686 changes nothing a player can
+see.
+
+**What shipped (Registry + Game Engine, one PR).** An additive **optional** match-
+setup **envelope** field `finalBlow?: boolean` (default `false`) marking a match as
+Final Blow mode:
+
+- **Registry:** `SetupEnvelope.finalBlow?: boolean` + `finalBlow: z.boolean().optional()`
+  on the `.strict()` envelope schema (a non-boolean is rejected `wrong_type`; absent is
+  valid); the validator echoes it in its rebuilt `value` (the `heroAlternateIds`
+  silent-vanish precedent).
+- **Engine:** `MatchConfiguration = MatchSetupConfig & { readonly finalBlow?: boolean }`
+  (the 9-field `MatchSetupConfig` composition lock untouched); `buildInitialGameState`
+  (the real `G` constructor — `game.ts setup()` only delegates) seeds `G.finalBlow?`
+  **omit-when-off** (only when `config.finalBlow === true`). The server needs no change
+  (`setupData` is forwarded verbatim), so the flag rides through to `Game.setup()`.
+- **Determinism:** omit-when-off means a non–Final-Blow match serializes byte-identically,
+  so **no state-hash oracle moves** — the sentinel `finalStateHash` `deba0f43…` is
+  unchanged (verified; three new setup tests). No re-pin.
+
+**Verification.** registry 253/253, engine 3305/3305 (+3), `pnpm -r build` 0, JSON schema
+parses, `roadmap:counts:check` 0. Governance docs updated (MATCH-SETUP-SCHEMA / JSON-SCHEMA
+/ VALIDATION / 00.2 §8.1 / api-endpoints `POST /api/match/create` row). **Inline EC
+amendment:** `setupContract.validate.ts` added to the EC-723 allowlist to echo the field
+(a file-allowlist omission surfaced at execution; no scope-category change).
+
 ### WP-676 — Smash: the optional discard-for-attack hero keyword (EC-713 / D-24492) (2026-09-09)
 
 **User-visible (play.legendary-arena.com, D-24026 operator-pending).** Playing a

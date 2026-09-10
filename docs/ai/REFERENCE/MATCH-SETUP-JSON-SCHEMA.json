@@ -80,6 +80,11 @@
       "enum": ["GROUP_STANDARD"]
     },
 
+    "finalBlow": {
+      "type": "boolean",
+      "description": "Optional Final Blow rule flag (rulebook 'Final Blow (Optional)'). When true, the Mastermind must be fought a fifth, final time after its four Tactics are gone. Backward compatible (absent means false). Not in the required array. Unlike other envelope fields the engine consumes this one (WP-686 / D-24503)."
+    },
+
     "composition": {
       "type": "object",
       "description": "Authoritative component selection for this match. Maps 1:1 to MatchSetupConfig (the engine's 9-field contract). Frozen once the match begins. Passed as boardgame.io setupData.",

@@ -175,6 +175,7 @@ default value identically.
 |---|---|---|---|---|
 | `heroSelectionMode` | `string` (enum) | false | `"GROUP_STANDARD"` | Declares the interpretation rule for the composition's hero selection. `"GROUP_STANDARD"` (the only v1-allowed value) means the engine expands each `heroDeckIds` entry into the canonical group card set (classic Legendary rules). `"HERO_DRAFT"` is reserved for a future WP and is **not** in the v1 allowed enum. See §Field Semantics / Hero Selection Mode below and `DECISIONS.md` D-9301. |
 | `heroAlternateIds` | `string[]` | false | absent (no bench) | The loadout **bench**: set-qualified hero ext_ids a player shortlisted but did not play. Validated for shape and identity only (unique, known-hero, disjoint from `composition.heroDeckIds`); **no count rule**. **Non-authoritative** — nothing derives a match composition from it and the engine never reads it. Lives on the envelope, never in the composition block. See `DECISIONS.md` D-24212. |
+| `finalBlow` | `boolean` | false | `false` (off) | The **Final Blow** optional rule (rulebook "Final Blow (Optional)"): with it on, after the Mastermind's four Tactics are gone the player must still fight the Mastermind card itself a fifth, final time to put it into their Victory Pile and win. Shape-validated only (a boolean). **Unlike every other envelope field, the engine consumes this one**: it rides inside the setup payload to `Game.setup()`, which stores it on `G` (seeded only when true; omitted when off, so an off match is byte-identical). Lives on the envelope, never in the composition block. See `DECISIONS.md` D-24503 (WP-686 stores the flag; WP-687 implements the endgame gate). |
 
 ### Composition Field Alignment
 
@@ -457,7 +458,14 @@ Subsequent envelope-level additive fields governed by this rule are
 D-24212, optional `string[]`, absent by default, `schemaVersion`
 unchanged at `"1.0"`). `heroAlternateIds` is the loadout bench —
 non-authoritative metadata the engine never consumes; see `DECISIONS.md`
-D-24212.
+D-24212. The next such field is `finalBlow` (WP-686 / D-24503, optional
+`boolean`, default `false`, `schemaVersion` unchanged at `"1.0"`) — the
+first envelope field the **engine consumes**: it rides in the setup
+payload to `Game.setup()`, which stores it on `G` (omitted when off, so
+off matches stay byte-identical). This does not weaken the additive rule
+— an engine-read envelope field is still additive and backward
+compatible; it simply means the payload alias `MatchConfiguration`
+(never the 9-field `MatchSetupConfig` composition) carries the flag.
 
 ---
 
