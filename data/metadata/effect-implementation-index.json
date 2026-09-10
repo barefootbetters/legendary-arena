@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 421,
+      "executable": 424,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
-      "unmarked": 1071,
+      "unmarked": 1068,
       "subsystem": 3
     }
   },
@@ -6154,10 +6154,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "treasures-of-latveria",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
+      "wp": "WP-691",
+      "decision": "D-24508"
     },
     {
       "extId": "core-mastermind-loki-cruel-ruler",
@@ -6198,10 +6198,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "whispers-and-lies",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveWhispersAndLies",
+      "wp": "WP-691",
+      "decision": "D-24508"
     },
     {
       "extId": "core-mastermind-magneto-bitter-captor",
@@ -6242,10 +6242,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "xaviers-nemesis",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveXaviersNemesis",
+      "wp": "WP-691",
+      "decision": "D-24508"
     },
     {
       "extId": "core-mastermind-red-skull-endless-resources",

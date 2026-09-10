@@ -27,7 +27,10 @@ import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { addResources } from '../economy/economy.logic.js';
-import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
+import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
+import { moveCardFromZone } from '../moves/zoneOps.js';
+import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
@@ -90,6 +93,36 @@ export const HYDRA_CONSPIRACY_BASE_DRAW = 2;
 // counts the hydra villain group. Normalized lowercase-kebab, matching the group
 // segment inside a villain ext_id (`${setAbbr}-villain-${group}-${cardSlug}`).
 const HYDRA_VILLAIN_GROUP = 'hydra';
+
+// why: WP-691 / D-24508 — the three no-choice core mastermind tactic ext_ids, same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as the constants
+// above. Each names the PRINTED Fight text (data/cards/core.json) the resolver
+// below implements:
+//   Treasures of Latveria "Fight: When you draw a new hand of cards at the end of
+//                          this turn, draw three extra cards."
+//   Xavier's Nemesis      "Fight: For each of your [team:x-men] Heroes, rescue a
+//                          Bystander."
+//   Whispers and Lies     "Fight: Each other player KOs two Bystanders from their
+//                          Victory Pile."
+const DR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID: CardExtId =
+  'core-mastermind-dr-doom-treasures-of-latveria';
+const MAGNETO_XAVIERS_NEMESIS_TACTIC_ID: CardExtId =
+  'core-mastermind-magneto-xaviers-nemesis';
+const LOKI_WHISPERS_AND_LIES_TACTIC_ID: CardExtId =
+  'core-mastermind-loki-whispers-and-lies';
+
+// why: WP-691 / D-24508 — Treasures of Latveria draws THREE EXTRA cards, so the
+// next-hand override is ADDITIVE (base fill + 3), not a set-to-N like Octet's
+// OCTET_HAND_SIZE. It reuses the WP-497 shared `G.handSizeOverrides` field via the
+// `(override ?? HAND_SIZE) + delta` writer (the villainEffectAddNextHandSize /
+// Savage Land Mutates D-24352 precedent), so two next-hand bonuses in one turn
+// stack rather than clobber. Named, not inlined, so an audit can grep the number.
+export const TREASURES_EXTRA_CARDS = 3;
+
+// why: WP-691 / D-24508 — Whispers and Lies makes each OTHER player KO exactly two
+// Bystanders from their Victory Pile; a player with fewer than two KOs all they
+// have (clamped by the count present). The max per other player.
+export const WHISPERS_BYSTANDER_KO = 2;
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -349,6 +382,190 @@ export function resolveHydraConspiracy(
   );
 }
 
+/**
+ * Resolves Dr. Doom's "Treasures of Latveria" tactic Fight effect: the defeating
+ * player draws THREE EXTRA cards in their next hand.
+ *
+ * ADDITIVE (base fill + 3), not a set-to-N: it reuses the WP-497-owned shared
+ * `G.handSizeOverrides[currentPlayer]` via the `(override ?? HAND_SIZE) + delta`
+ * writer (the villainEffectAddNextHandSize / Savage Land Mutates D-24352
+ * precedent), so a second next-hand bonus in the same turn accumulates on the
+ * absolute base rather than clobbering it. Adds NO new `G` field and NO second
+ * consumption site — game.ts's play-phase `onBegin` fill consumes and clears it.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolveTreasuresOfLatveria(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  // why: "draw a new hand of cards at the end of this turn" ≡ this player's NEXT
+  // play-phase `onBegin` fill (this engine has no end-of-turn cleanup draw). Lazy-
+  // create the WP-497 container before the first per-player write — it is absent by
+  // default (never seeded in Game.setup), and index-assigning undefined would throw.
+  if (G.handSizeOverrides === undefined) {
+    G.handSizeOverrides = {};
+  }
+  const nextHandSize =
+    (G.handSizeOverrides[currentPlayer] ?? HAND_SIZE) + TREASURES_EXTRA_CARDS;
+  G.handSizeOverrides[currentPlayer] = nextHandSize;
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} will draw ${String(nextHandSize)} cards on their next hand (+${String(TREASURES_EXTRA_CARDS)} extra, Treasures of Latveria).`,
+    'applied',
+  );
+}
+
+/**
+ * Counts the acting player's in-play Heroes on the X-Men team — Xavier's Nemesis's
+ * "for each of your [team:x-men] Heroes" scan.
+ *
+ * Reads effective team membership via `cardHasTeamWhenPlayed` (printed
+ * `G.cardTraits.team` OR a Copy-Powers granted team), so a Rogue Copy Powers card
+ * that copied an X-Men Hero counts, matching the printed team faithfully rather
+ * than reading `cardTraits.team` directly.
+ *
+ * @param G - The game state (read-only here).
+ * @param inPlay - The acting player's in-play zone, in order.
+ * @returns How many in-play cards count as team `x-men`.
+ */
+function countInPlayXMenHeroes(
+  G: LegendaryGameState,
+  inPlay: readonly CardExtId[],
+): number {
+  // why: explicit loop, not .reduce() — effect application counts as rule work
+  // (.claude/rules/code-style.md Patterns to Avoid).
+  let total = 0;
+  for (const cardExtId of inPlay) {
+    if (cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
+      total = total + 1;
+    }
+  }
+  return total;
+}
+
+/**
+ * Resolves core Magneto's "Xavier's Nemesis" tactic Fight effect: "For each of
+ * your [team:x-men] Heroes, rescue a Bystander."
+ *
+ * Rescues one Bystander from the shared supply (`G.piles.bystanders`, top-of-pile
+ * per D-21501) into the defeating player's Victory Pile, once per in-play X-Men
+ * Hero. Zero X-Men Heroes rescues nothing; an empty supply stops early. Mutates
+ * `G.piles.bystanders` and the player's victory zone via `moveCardFromZone`; never
+ * throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolveXaviersNemesis(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  const xMenCount = countInPlayXMenHeroes(G, playerZones.inPlay);
+  let rescuedCount = 0;
+  for (let rescueIndex = 0; rescueIndex < xMenCount; rescueIndex++) {
+    // why: top-of-pile convention — bystanders[0] is the next available supply
+    // Bystander (D-21501), mirroring the hero-ability rescue in heroEffects.
+    const topBystander = G.piles.bystanders[0];
+    if (topBystander === undefined) {
+      // why: empty supply is a legitimate no-op — stop early, never throw.
+      break;
+    }
+    const moveResult = moveCardFromZone(
+      G.piles.bystanders,
+      playerZones.victory,
+      topBystander,
+    );
+    G.piles.bystanders = moveResult.from;
+    playerZones.victory = moveResult.to;
+    rescuedCount += 1;
+  }
+
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per in-play X-Men Hero (Xavier's Nemesis).`,
+    'applied',
+  );
+}
+
+/**
+ * Whether a Victory-Pile card is a Bystander — the two-arm predicate (a supply
+ * Bystander OR a rescued villain-deck Bystander), mirroring
+ * `countBystandersInVictory` in heroConditions.evaluate.ts.
+ *
+ * @param cardExtId - A card ext_id from a player's Victory Pile.
+ * @returns Whether the card is a Bystander.
+ */
+function isVictoryPileBystander(cardExtId: CardExtId): boolean {
+  return (
+    cardExtId === BYSTANDER_EXT_ID ||
+    cardExtId.startsWith('bystander-villain-deck-')
+  );
+}
+
+/**
+ * Resolves Loki's "Whispers and Lies" tactic Fight effect: "Each other player KOs
+ * two Bystanders from their Victory Pile."
+ *
+ * For every player EXCEPT the defeating player (sorted id order), removes up to
+ * `WHISPERS_BYSTANDER_KO` (2) Bystanders from their Victory Pile to the global KO
+ * pile (`G.ko`); a player with fewer than two KOs all they have. Mutates each
+ * penalized player's victory zone and `G.ko`; never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic. Skipped — the effect
+ *   targets the OTHER players ("each other player").
+ */
+export function resolveWhispersAndLies(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerIds = Object.keys(G.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    // why: "each OTHER player" — a tactic Fight penalizes the defeater's opponents,
+    // not the defeater. Skip currentPlayer entirely (the most common Whispers bug).
+    if (playerId === currentPlayer) {
+      continue;
+    }
+
+    const playerZones = G.playerZones[playerId]!;
+    let koedCount = 0;
+    for (let koIndex = 0; koIndex < WHISPERS_BYSTANDER_KO; koIndex++) {
+      // why: rescan each pass — the pile shrinks as bystanders leave; find the
+      // first remaining Bystander (supply or rescued villain-deck) to KO.
+      let bystanderToKo: CardExtId | undefined = undefined;
+      for (const cardExtId of playerZones.victory) {
+        if (isVictoryPileBystander(cardExtId)) {
+          bystanderToKo = cardExtId;
+          break;
+        }
+      }
+      if (bystanderToKo === undefined) {
+        // why: fewer than two Bystanders present → KO what they have and stop.
+        break;
+      }
+      const moveResult = moveCardFromZone(
+        playerZones.victory,
+        G.ko,
+        bystanderToKo,
+      );
+      playerZones.victory = moveResult.from;
+      G.ko = moveResult.to;
+      koedCount += 1;
+    }
+
+    pushLog(G,
+      `Fight effect: Player ${playerId} KO'd ${String(koedCount)} Bystander(s) from their Victory Pile (Whispers and Lies).`,
+      'applied',
+    );
+  }
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
@@ -380,6 +597,24 @@ export function dispatchTacticOnFight(
   }
   if (defeatedTacticId === RED_SKULL_HYDRA_CONSPIRACY_TACTIC_ID) {
     resolveHydraConspiracy(G, currentPlayer, defeatedTacticId, shuffleContext);
+    return;
+  }
+  // why: WP-691 / D-24508 — Dr. Doom's Treasures of Latveria: +3 additive to the
+  // defeating player's next-hand fill (no player choice).
+  if (defeatedTacticId === DR_DOOM_TREASURES_OF_LATVERIA_TACTIC_ID) {
+    resolveTreasuresOfLatveria(G, currentPlayer);
+    return;
+  }
+  // why: WP-691 / D-24508 — Magneto's Xavier's Nemesis: rescue one Bystander per
+  // in-play X-Men Hero of the defeating player (no player choice).
+  if (defeatedTacticId === MAGNETO_XAVIERS_NEMESIS_TACTIC_ID) {
+    resolveXaviersNemesis(G, currentPlayer);
+    return;
+  }
+  // why: WP-691 / D-24508 — Loki's Whispers and Lies: each OTHER player KOs two
+  // Victory-Pile Bystanders (no player choice; skips currentPlayer).
+  if (defeatedTacticId === LOKI_WHISPERS_AND_LIES_TACTIC_ID) {
+    resolveWhispersAndLies(G, currentPlayer);
     return;
   }
 }

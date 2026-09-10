@@ -13,6 +13,24 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushingShockwave",
       "wp": "WP-506",
       "decision": "D-24312"
+    },
+    "core-mastermind-dr-doom-treasures-of-latveria": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
+      "wp": "WP-691",
+      "decision": "D-24508"
+    },
+    "core-mastermind-magneto-xaviers-nemesis": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveXaviersNemesis",
+      "wp": "WP-691",
+      "decision": "D-24508"
+    },
+    "core-mastermind-loki-whispers-and-lies": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveWhispersAndLies",
+      "wp": "WP-691",
+      "decision": "D-24508"
     }
   }
 }

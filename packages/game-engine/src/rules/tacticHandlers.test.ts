@@ -14,11 +14,16 @@ import {
   resolveNegablastGrenades,
   resolveEndlessResources,
   resolveHydraConspiracy,
+  resolveTreasuresOfLatveria,
+  resolveXaviersNemesis,
+  resolveWhispersAndLies,
   OCTET_HAND_SIZE,
   SHOCKWAVE_WOUND_COUNT,
   NEGABLAST_GRENADES_ATTACK,
   ENDLESS_RESOURCES_RECRUIT,
   HYDRA_CONSPIRACY_BASE_DRAW,
+  TREASURES_EXTRA_CARDS,
+  WHISPERS_BYSTANDER_KO,
 } from './tacticHandlers.js';
 
 const OCTET_TACTIC_ID =
@@ -309,5 +314,207 @@ describe('dispatchTacticOnFight - Red Skull routing + the deliberate omission (W
     dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-loki-some-unimplemented-tactic', SHUFFLE);
     assert.equal(G.messages.length, 0);
     assert.equal(G.turnEconomy.attack, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-691 / D-24508 — three no-choice core mastermind tactics
+// ---------------------------------------------------------------------------
+
+const TREASURES_TACTIC_ID = 'core-mastermind-dr-doom-treasures-of-latveria';
+const XAVIERS_TACTIC_ID = 'core-mastermind-magneto-xaviers-nemesis';
+const WHISPERS_TACTIC_ID = 'core-mastermind-loki-whispers-and-lies';
+
+// why: the default HAND_SIZE (6) is duplicated here rather than imported — the test
+// asserts the additive result (6 + 3 = 9) against the printed +3, so a drift in the
+// engine base would surface as a failed assertion, not a silently-tracked constant.
+const DEFAULT_HAND_SIZE = 6;
+
+describe('resolveTreasuresOfLatveria (WP-691 / D-24508)', () => {
+  it('adds exactly +3 to the base fill when no override is set (6 → 9) and logs', () => {
+    const G = makeState();
+    resolveTreasuresOfLatveria(G, '0');
+    assert.equal(TREASURES_EXTRA_CARDS, 3);
+    assert.deepEqual(G.handSizeOverrides, { '0': DEFAULT_HAND_SIZE + TREASURES_EXTRA_CARDS });
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'applied');
+    assert.match(G.messages[0]!.text, /Treasures of Latveria/);
+  });
+
+  it('is ADDITIVE (stacks on an existing override), not set-to-N (8 → 11)', () => {
+    // why: a prior next-hand bonus this turn (e.g. Octet set-to-8) must accumulate,
+    // not be clobbered — the +3 is a delta on the absolute base.
+    const G = makeState();
+    G.handSizeOverrides = { '0': 8 };
+    resolveTreasuresOfLatveria(G, '0');
+    assert.deepEqual(G.handSizeOverrides, { '0': 11 });
+  });
+
+  it('applies to the DEFEATING player only, not globally', () => {
+    const G = makeState();
+    G.handSizeOverrides = { '1': 6 };
+    resolveTreasuresOfLatveria(G, '0');
+    assert.deepEqual(G.handSizeOverrides, { '1': 6, '0': DEFAULT_HAND_SIZE + TREASURES_EXTRA_CARDS });
+  });
+
+  it('routes through dispatchTacticOnFight for ctx.currentPlayer', () => {
+    const G = makeState();
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, TREASURES_TACTIC_ID, SHUFFLE);
+    assert.deepEqual(G.handSizeOverrides, { '1': DEFAULT_HAND_SIZE + TREASURES_EXTRA_CARDS });
+  });
+});
+
+const XAVIERS_X_MEN_HERO: CardExtId = 'core-hero-cyclops-optic-blast';
+const XAVIERS_NON_X_MEN: CardExtId = 'core-hero-spider-man-web-shooter';
+const XAVIERS_COPY_CARD: CardExtId = 'core-hero-rogue-copy-powers';
+
+/**
+ * Builds a state for Xavier's Nemesis: the acting player's in-play zone, a supply
+ * of `supplySize` bystanders, and a cardTraits map marking only the X-Men Hero.
+ *
+ * @param inPlay - The acting player's in-play cards.
+ * @param supplySize - Number of Bystanders in the supply pile.
+ * @returns A LegendaryGameState carrying only the fields the resolver reads.
+ */
+function makeXaviersState(inPlay: CardExtId[], supplySize: number): LegendaryGameState {
+  const bystanders: CardExtId[] = [];
+  for (let index = 0; index < supplySize; index++) {
+    bystanders.push('pile-bystander');
+  }
+  return {
+    messages: [],
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay: [...inPlay], victory: [] },
+      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    },
+    piles: { bystanders },
+    cardTraits: { [XAVIERS_X_MEN_HERO]: { heroClass: null, team: 'x-men' } },
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveXaviersNemesis (WP-691 / D-24508)', () => {
+  it('rescues one Bystander per in-play X-Men Hero (2 X-Men → 2 rescued)', () => {
+    const G = makeXaviersState([XAVIERS_X_MEN_HERO, XAVIERS_X_MEN_HERO, XAVIERS_NON_X_MEN], 5);
+    resolveXaviersNemesis(G, '0');
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.equal(G.piles.bystanders.length, 3); // 5 − 2 rescued
+    assert.match(G.messages[0]!.text, /rescued 2 Bystander/);
+  });
+
+  it('rescues ZERO with no in-play X-Men Hero (supply untouched)', () => {
+    const G = makeXaviersState([XAVIERS_NON_X_MEN], 5);
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 0);
+    assert.equal(G.piles.bystanders.length, 5);
+    assert.match(G.messages[0]!.text, /rescued 0 Bystander/);
+  });
+
+  it('stops early when the supply runs short (3 X-Men, 1 Bystander → 1 rescued)', () => {
+    const G = makeXaviersState([XAVIERS_X_MEN_HERO, XAVIERS_X_MEN_HERO, XAVIERS_X_MEN_HERO], 1);
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 1);
+    assert.equal(G.piles.bystanders.length, 0);
+    assert.match(G.messages[0]!.text, /rescued 1 Bystander/);
+  });
+
+  it('counts a Copy-Powers granted X-Men team (not only the printed trait)', () => {
+    // why: the common failure smell — reading cardTraits.team directly misses a
+    // Rogue Copy Powers card that copied an X-Men Hero. cardHasTeamWhenPlayed sees it.
+    const G = makeXaviersState([XAVIERS_COPY_CARD], 5);
+    G.cardCopiedTeams = { [XAVIERS_COPY_CARD]: ['x-men'] };
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 1);
+  });
+
+  it('routes through dispatchTacticOnFight for ctx.currentPlayer', () => {
+    const G = makeXaviersState([XAVIERS_X_MEN_HERO], 5);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, XAVIERS_TACTIC_ID, SHUFFLE);
+    assert.equal(G.playerZones['0']!.victory.length, 1);
+  });
+});
+
+/**
+ * Builds a state for Whispers and Lies: per-player victory piles and a KO pile.
+ *
+ * @param victories - Map of player id → that player's victory pile.
+ * @returns A LegendaryGameState carrying only the fields the resolver reads.
+ */
+function makeWhispersState(victories: Record<string, CardExtId[]>): LegendaryGameState {
+  const playerZones: Record<string, { victory: CardExtId[] }> = {};
+  for (const playerId of Object.keys(victories)) {
+    playerZones[playerId] = { victory: [...victories[playerId]!] };
+  }
+  return {
+    messages: [],
+    playerZones,
+    ko: [],
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveWhispersAndLies (WP-691 / D-24508)', () => {
+  it('each OTHER player KOs two Victory-Pile Bystanders to the KO pile', () => {
+    const G = makeWhispersState({
+      '0': ['pile-bystander', 'pile-bystander'], // defeater — untouched
+      '1': ['pile-bystander', 'pile-bystander', 'core-villain-brotherhood-blob-00'],
+    });
+    resolveWhispersAndLies(G, '0');
+    assert.equal(WHISPERS_BYSTANDER_KO, 2);
+    // why: the defeater keeps both Bystanders (skip-self).
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    // why: player 1 loses two Bystanders; the non-Bystander villain stays.
+    assert.deepEqual(G.playerZones['1']!.victory, ['core-villain-brotherhood-blob-00']);
+    assert.deepEqual(G.ko, ['pile-bystander', 'pile-bystander']);
+  });
+
+  it('a player with fewer than two Bystanders KOs all they have', () => {
+    const G = makeWhispersState({
+      '0': [],
+      '1': ['pile-bystander', 'some-villain'],
+    });
+    resolveWhispersAndLies(G, '0');
+    assert.deepEqual(G.playerZones['1']!.victory, ['some-villain']);
+    assert.deepEqual(G.ko, ['pile-bystander']);
+    assert.ok(G.messages.some((entry) => entry.text.includes("KO'd 1 Bystander")));
+  });
+
+  it('counts rescued villain-deck Bystanders as Bystanders (two-arm predicate)', () => {
+    const G = makeWhispersState({
+      '0': [],
+      '1': ['bystander-villain-deck-01', 'bystander-villain-deck-02', 'a-villain'],
+    });
+    resolveWhispersAndLies(G, '0');
+    assert.deepEqual(G.playerZones['1']!.victory, ['a-villain']);
+    assert.deepEqual(G.ko, ['bystander-villain-deck-01', 'bystander-villain-deck-02']);
+  });
+
+  it('never touches the DEFEATING player, even with Bystanders in their pile', () => {
+    const G = makeWhispersState({
+      '0': ['pile-bystander', 'pile-bystander'],
+      '1': [],
+    });
+    resolveWhispersAndLies(G, '0');
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.equal(G.ko.length, 0);
+  });
+
+  it('emits exactly one Fight-effect log line per OTHER player (defeater excluded)', () => {
+    const G = makeWhispersState({
+      '0': ['pile-bystander'],
+      '1': ['pile-bystander', 'pile-bystander'],
+      '2': [],
+    });
+    resolveWhispersAndLies(G, '0');
+    assert.equal(G.messages.length, 2);
+  });
+
+  it('routes through dispatchTacticOnFight and skips ctx.currentPlayer', () => {
+    const G = makeWhispersState({
+      '0': ['pile-bystander', 'pile-bystander'],
+      '1': ['pile-bystander', 'pile-bystander'],
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, WHISPERS_TACTIC_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.equal(G.playerZones['1']!.victory.length, 0);
+    assert.equal(G.ko.length, 2);
   });
 });
