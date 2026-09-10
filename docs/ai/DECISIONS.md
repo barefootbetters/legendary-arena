@@ -41111,4 +41111,36 @@ the narrow shld mixed-choose-one arc.
 
 **Packet:** WP-679 / EC-716. **Active:** 2026-09-09.
 
+### D-24497 — Per-count sources for five unmarked core heroes (Active 2026-09-10 — WP-680 / EC-717)
+
+Four new `HeroCountSource` values extend the shipped `attack-per-count` / `recruit-per-count`
+grant family (D-24016 / D-24489) so five previously-inert core-hero cards resolve faithfully.
+No new grant mechanism, no new hashed `G` field, no hash re-pin — every source reads state
+already in `G` (`cardTraits.heroClass`/`.team`, `cardStats.cost`), all already hashed.
+
+1. **`distinct-hero-classes-played-this-turn`** — the count of distinct hero colors among the
+   cards you played this turn, **self-inclusive** ("for each color of Hero **you have**" counts
+   this card). Reuses the D-24055 counting (`countDistinctHeroClassesInPlay`, now exported from
+   `heroConditions.evaluate.ts`, incl. `getGrantedClasses` for Size-Changing) rather than
+   re-deriving it. Drives Captain America's Perfect Teamwork (attack) and Avengers Assemble! (recruit).
+2. **`avengers-played-this-turn`** / **`shield-heroes-played-this-turn`** — the count of OTHER
+   cards played this turn on that team, **self-exclusive**, membership via `cardHasTeamWhenPlayed`
+   (printed team OR a Copy-Powers-granted team, D-24391 — the `requiresTeam` gate's own test).
+   Per-team slugs (not a parameterized team source), matching the WP-675 two-slug icon precedent;
+   they also unblock the unimplemented X-Men United (out of scope here). Drive Cap's A Day Unlike
+   Any Other (+3) and Nick Fury's Legendary Commander (+1).
+3. **`odd-cost-heroes-played-this-turn`** — the count of OTHER cards played this turn with odd
+   printed cost, **self-exclusive** (reads `cardStats.cost`). Drives Deadpool's Oddball. The
+   generated card text printed an `[icon:vp]`, but hero cards carry **no** victory-point value in
+   the data model; the physical card scales by odd **cost**. The upstream `coreset.js` text was
+   corrected `[icon:vp]`→"odd-numbered cost" (Jeff-confirmed 2026-09-10). See
+   [[reference_hero_cards_no_vp_field]].
+
+`HERO_COUNT_SOURCES` union + array bumped 6→10 with the drift pin a RUNTIME assertion (D-24372).
+Markers authored via `inputs/hero-ability-markers.json` + the 5-stage regen; only
+`data/cards/core.json` changes semantically. The five cards flip to `executable`; `sim:coverage`
+emits new-source warnings (registered, not yet observed in the sentinel sweep) with no regression.
+
+**Packet:** WP-680 / EC-717. **Active:** 2026-09-10.
+
 Protect this file.
