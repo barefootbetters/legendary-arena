@@ -35,15 +35,28 @@
 
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREENSHOT_DIR = join(HERE, '__screenshots__');
-// why: a fixed, uncommon port so an already-running dev server (5173/5174) never
-// collides with the guard's own dev server.
-const DEV_SERVER_PORT = 4318;
+// why: a FRESH ephemeral port per run (not a fixed one) — a `shell:true` spawn on
+// Windows leaks the vite process when the wrapper is killed, and a fixed port let
+// that orphan keep answering the next run (a stale `vite preview` prod server
+// masked every dev-mode fix until the port was hand-killed). A per-run free port
+// makes an orphaned server irrelevant: the next run simply binds a different port.
+async function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
 const FIXTURE_PATH = '/?fixture=mid-turn&play=1';
 
 // The three supported desktop widths from D-24502 / D-24505. deviceScaleFactor:2
@@ -55,25 +68,42 @@ const VIEWPORTS = [
 ];
 
 /**
- * Start the `vite` dev server on the fixed port and resolve once it serves 200,
- * unless PLAY_URL is already provided (then reuse that running server). Returns the
- * base URL plus a teardown function.
+ * Kill the spawned server's whole process tree. A `shell:true` spawn on Windows
+ * makes `child` the cmd.exe wrapper, not vite — a plain `child.kill()` leaves vite
+ * orphaned; `taskkill /t` kills the tree. Best-effort: with a fresh port per run, a
+ * surviving orphan is harmless anyway.
+ */
+async function stopServer(child) {
+  if (child.pid === undefined) return;
+  try {
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore' });
+    } else {
+      child.kill();
+    }
+  } catch {
+    // best effort
+  }
+}
+
+/**
+ * Start the `vite` dev server on a FRESH ephemeral port and resolve once it serves
+ * 200, unless PLAY_URL is already provided (then reuse that running server). Returns
+ * the base URL plus a tree-killing teardown.
  */
 async function startServer() {
   if (process.env.PLAY_URL) {
     return { baseUrl: process.env.PLAY_URL, stop: async () => {} };
   }
+  const port = await findFreePort();
   // why: spawn the DEV server (not `vite preview`) through the shell so the local
   // `vite` bin resolves from node_modules/.bin on both Windows (vite.CMD) and POSIX
-  // when run under `node`. Dev mode sets import.meta.env.DEV, which is what gates
-  // the `?fixture=` snapshot load in main.ts.
-  // why --mode development + NODE_ENV=development: if the caller's environment has
-  // NODE_ENV=production (some shells/CI set it), a bare `vite` serve resolves
-  // import.meta.env.DEV to FALSE, so main.ts's DEV-only fixture block is skipped and
-  // the board renders "No match loaded" (no .play-desktop__stage). Forcing dev mode
-  // here makes the guard independent of the ambient NODE_ENV.
+  // when run under `node`. Dev mode sets import.meta.env.DEV, which gates the
+  // `?fixture=` snapshot load in main.ts — a production build (preview) renders an
+  // empty "No match loaded" board. `--mode development` + `NODE_ENV=development` pin
+  // dev mode regardless of the caller's ambient NODE_ENV.
   const child = spawn(
-    `npx vite --port ${DEV_SERVER_PORT} --strictPort --mode development`,
+    `npx vite --port ${port} --strictPort --mode development`,
     {
       cwd: join(HERE, '..'),
       shell: true,
@@ -81,7 +111,8 @@ async function startServer() {
       env: { ...process.env, NODE_ENV: 'development' },
     },
   );
-  const baseUrl = `http://localhost:${DEV_SERVER_PORT}`;
+  const stop = () => stopServer(child);
+  const baseUrl = `http://localhost:${port}`;
   const deadline = Date.now() + 30_000;
   // why: poll the port rather than sleeping a fixed time — dev-server readiness
   // varies by machine; fail loudly if it never comes up.
@@ -93,14 +124,14 @@ async function startServer() {
       // not up yet
     }
     if (Date.now() > deadline) {
-      child.kill();
+      await stop();
       throw new Error(
-        `vite dev did not serve ${baseUrl} within 30s (is the port free? is arena-client installed?).`,
+        `vite dev did not serve ${baseUrl} within 30s (is arena-client installed?).`,
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 400));
   }
-  return { baseUrl, stop: async () => child.kill() };
+  return { baseUrl, stop };
 }
 
 /**
