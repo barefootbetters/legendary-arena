@@ -352,11 +352,22 @@ one-click GitHub edit link for this exact page, the commit prefix
 (`INFRA:` for ewiki page edits), the strict-build rules, and how the page
 deploys (Render, via the `wiki-viewer` workflow's deploy hook).
 
+Each file reference shows **both** forms: the full local drafting path —
+e.g. `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`, the directory to
+`cd` into for a local clone — as plain text, **and** a GitHub link for the
+browser / no-clone path. The full path is deliberately hardcoded to the
+drafting location (matching [SCHEMA.md](SCHEMA.md) §Self-reference); the
+GitHub link stays repo-relative because a `C:\…` path cannot be a
+hyperlink. (Cross-repo mirror pages are the one exception — their upstream
+doc lives in a different repo whose local checkout path is unknowable, so
+that reference stays GitHub-only.)
+
 The block has three automatic variants:
 
 - **Native page** (most pages): the wiki page itself is the editable
-  source (`wiki/<slug>.md`); the Sources list are files it *documents*,
-  not edit targets.
+  source — full path `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`,
+  linked to `wiki/<slug>.md` on GitHub; the Sources list are files it
+  *documents*, not edit targets.
 - **Mirror page:** the page synthesizes one upstream doc that owns the
   canonical prose. Declare it with the `canonical-source` front-matter
   field — a single repo-root-relative path; see [SCHEMA.md](SCHEMA.md)
@@ -406,16 +417,46 @@ first — the six-field surface is locked (WP-139 / EC-142).
   `#eef2ff`)
 - Status renders as a colored badge (green/amber/red)
 
+### Adding an image to a page
+
+Save the image in the repo at
+`C:\pcloud\BB\DEV\legendary-arena\ewiki\<slug>\<name>.png` — where `<slug>`
+is the page's filename without `.md` (for `wiki/legendary-forge.md`, that
+directory is `…\ewiki\legendary-forge\`). **Commit it.** Then reference it
+in the page markdown as an absolute *site* path:
+
+```
+![Descriptive alt text — say what the image shows.](/legendary-forge/exploded-view.png)
+```
+
+The build copies `ewiki\<slug>\` → `apps\wiki-viewer\static\<slug>\`, so
+Hugo serves the file at `/<slug>/<name>.png`. Shipped examples:
+`ewiki\legendary-forge\exploded-view.png`,
+`ewiki\branding\logo-la-hero-gold.png`.
+
+**Do not save the image into either of these** — both look correct locally
+and fail in production:
+
+- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+  gitignored, so it is never committed and 404s once deployed.
+- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\` — wiped
+  (`rmSync`) on every build.
+
+The rule in one line: **page content goes in `wiki\`, image and diagram
+assets go in `ewiki\<slug>\`, and both get committed.**
+
 ### Where ewiki files are saved
 
 The wiki is the one surface where the [Workspace Map](workspace-map.md)
 three-surface rule needs a fourth category: **projected copies**. Every
-page exists three times, and only one of them may be edited.
+page exists three times, and only one of them may be edited. (Full paths
+below are the local drafting checkout; the same files sit at their
+repo-relative paths on GitHub.)
 
 | Copy | Path | Editable? |
 |---|---|---|
-| Source | `wiki/<slug>.md` | **Yes — this is the only one** |
-| Projection | `apps/wiki-viewer/content/<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
+| Source | `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md` | **Yes — this is the only one** |
+| Projection | `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
 | Rendered | `https://ewiki.legendary-arena.com/<slug>/` | No — the published output |
 
 This is exactly why [SCHEMA.md](SCHEMA.md) requires the first
@@ -423,28 +464,31 @@ This is exactly why [SCHEMA.md](SCHEMA.md) requires the first
 reader looking at one of three near-identical copies cannot tell which
 one to edit.
 
-**Committed, in this repo:**
+**Committed, in this repo** (rooted at
+`C:\pcloud\BB\DEV\legendary-arena\` — the directory to `cd` into):
 
 ```
-wiki/<slug>.md                              # the page source
-ewiki/<slug>/                               # that page's assets
-  ├── diagram.mmd                           #   Mermaid source (editable)
-  ├── diagram.svg                           #   rendered artifact (published)
-  └── screenshot.png
-apps/wiki-viewer/
-  ├── assets/css/style.css                  # theme — authoritative for style values
-  ├── hugo.toml                             # unsafe = false, highlighting off
-  ├── layouts/                              # templates, partials, shortcodes/*.html
-  └── scripts/project-wiki.mjs              # the projection step itself
+C:\pcloud\BB\DEV\legendary-arena\
+  wiki\<slug>.md                            # the page source
+  ewiki\<slug>\                             # that page's assets
+    ├── diagram.mmd                         #   Mermaid source (editable)
+    ├── diagram.svg                         #   rendered artifact (published)
+    └── screenshot.png
+  apps\wiki-viewer\
+    ├── assets\css\style.css                # theme — authoritative for style values
+    ├── hugo.toml                           # unsafe = false, highlighting off
+    ├── layouts\                            # templates, partials, shortcodes\*.html
+    └── scripts\project-wiki.mjs            # the projection step itself
 ```
 
 **Generated, never committed** — `apps/wiki-viewer/.gitignore` excludes
 `content/`, `public/`, `resources/`, and `static/*/`:
 
 ```
-apps/wiki-viewer/content/          # ← wiki/*.md projected here
-apps/wiki-viewer/static/<slug>/    # ← ewiki/<slug>/ projected here
-apps/wiki-viewer/public/           # Hugo build output
+C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\
+  content\             # ← wiki\*.md projected here
+  static\<slug>\       # ← ewiki\<slug>\ projected here
+  public\              # Hugo build output
 ```
 
 > **A file committed into a projection target is deleted, not
