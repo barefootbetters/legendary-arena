@@ -423,7 +423,7 @@ export default defineComponent({
       <header class="play-mobile__sticky-top" data-testid="play-mobile-sticky-top">
         <TopHudBar
           :snapshot="snapshot"
-          :mastermind-tactics-total="4"
+          :mastermind-tactics-total="snapshot.mastermind.tacticsRemaining + snapshot.mastermind.tacticsDefeated"
           :villain-group-ids="villainGroupIds"
           :henchman-group-ids="henchmanGroupIds"
           :hero-deck-ids="heroDeckIds"
@@ -452,7 +452,7 @@ export default defineComponent({
           />
         </section>
         <section class="play-mobile__band">
-          <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" @read="onCardRead" />
+          <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
           <SchemeTwistPile
             :pile="snapshot.scheme.twistPile"
             @open="onPileOpen"

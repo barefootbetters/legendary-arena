@@ -595,7 +595,7 @@ export default defineComponent({
     <template v-else>
       <TopHudBar
         :snapshot="snapshot"
-        :mastermind-tactics-total="4"
+        :mastermind-tactics-total="snapshot.mastermind.tacticsRemaining + snapshot.mastermind.tacticsDefeated"
         :villain-group-ids="villainGroupIds"
         :henchman-group-ids="henchmanGroupIds"
         :hero-deck-ids="heroDeckIds"
@@ -659,7 +659,7 @@ export default defineComponent({
             />
           </div>
           <div class="play-desktop__scheme-zone">
-            <SchemeTile :scheme="snapshot.scheme" :twist-threshold="8" @read="onCardRead" />
+            <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
             <SchemeTwistPile
               :pile="snapshot.scheme.twistPile"
               @open="onPileOpen"
