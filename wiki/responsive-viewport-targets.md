@@ -21,7 +21,7 @@ source:
   - ../apps/arena-client/src/pages/PlayDesktop.vue
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-07-26
+last-reviewed: 2026-09-09
 ---
 
 # Responsive Viewport Targets
@@ -109,10 +109,32 @@ not measured audience data:
   |------------|------------|----------|
   | 1920×1080 | The single most common desktop resolution | Primary baseline |
   | 1440×900 | Typical laptops | Must hold |
+  | 1280×720 | 1920×1080 at 150% browser zoom (a common readability/accessibility setting) | Must hold — but **currently below the 1366px floor** (see *Browser zoom* below) |
   | 2560×1440 | Larger / higher-end monitors | Should look good, not stretched |
 
 Treat these as anchors to resize-test against, and revisit the whole
 section once live analytics exist.
+
+#### Browser zoom shrinks the *effective* viewport below the floor
+
+The numbers above are **native** resolutions. Browser zoom divides the
+CSS viewport the layout actually sees: at **150% zoom**, a native
+**1920×1080** monitor reports an effective **1280×720** to CSS. So a
+player on a standard 1080p screen who bumps zoom to 150% for readability
+lands at **1280 wide — 86px under the shipped 1366px fluid-scaling
+floor** (see *Fluid desktop scaling — shipped* below). Below the floor
+the desktop layout is not designed to hold, so the board overflows and
+horizontal-scrolls.
+
+This is not hypothetical: it is the observed cause of a real player
+(Tex) having difficulty with `play.legendary-arena.com` on a home
+1920×1080 machine set to 150% zoom. The layout fix — lowering the
+`clamp()` floor from 1366 to accommodate 1280-wide effective viewports —
+is a **code + `DECISIONS.md`** change (it would revise the D-24251 floor
+anchor), not something this descriptive page can make on its own; per
+[SCHEMA.md](SCHEMA.md) the wiki cites decisions, it does not make them.
+1280×720 is recorded here as a **must-hold target the layout does not
+yet meet**.
 
 ### Fluid desktop scaling — shipped (WP-430 / D-24251)
 
@@ -170,6 +192,13 @@ checkpoints, floor-preserving card widths).
   1600px with `margin-inline: auto` (WP-430 / D-24251), so very large
   monitors gain margin rather than oversized cards — see *Fluid desktop
   scaling — shipped* above.
+- **Browser zoom pushes 1080p under the floor.** The split and the fluid
+  floor both key off the *effective* CSS viewport, not the native
+  resolution. A native 1920×1080 monitor at 150% zoom reports 1280×720 —
+  86px under the 1366px floor — so the desktop board overflows and
+  horizontal-scrolls. Observed with a real player (Tex). See *Browser
+  zoom shrinks the effective viewport below the floor* above; the fix is
+  a floor change (code + `DECISIONS.md`), not a doc edit.
 - **The mobile range is draft and secondary.** 375×667–414×896 is design
   intent from a draft wireframe; mobile is a nice-to-have for launch, not
   the primary target, and its numbers may move when a board-layout WP
