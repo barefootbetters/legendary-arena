@@ -1300,6 +1300,25 @@ So the model is two-tier, and cleanly so:
   Villain; you cannot bargain with a Mastermind whose whole object is that you be
   ruined.
 
+At a glance (top of the pyramid down):
+
+| Tier | Role in the Scheme | Motive | Negotiable? |
+|---|---|---|---|
+| **Satan** *(above the board)* | supplies the *idea*, not the funding | *hatred* — the ruin of what the good love | **No** — covets nothing it could hold |
+| **Mastermind** | sets the objective | *spite* — not to gain, but that the other *lose* | **No** — can only be defeated |
+| **The Funder** *(invisible)* | bankrolls the Scheme and quietly banks the take | *gain* — the profit, kept out of sight | In principle yes — but hidden; the top of the money trail |
+| **Villain** | does the visible damage | gain and standing; the cut it collects | **Yes** — bribed, recruited, turned |
+| **Henchman** | takes the risk | a nameable price; a real grievance | **Yes** — paid, bought off, recruited |
+
+Three of these rungs are the game's own slots — **Henchman**, **Villain**,
+**Mastermind**; the **Funder** and the tempter sit off the board. The line falls
+between the Funder and the Mastermind: the three lower tiers want *gain*, so the
+[money trail](#five-tells-for-naming-the-mastermind) reaches them and they can be
+turned; the two above want the other side to *lose*, so nothing satisfies them
+and negotiation only ever works downward. Follow the money past the visible
+collectors and it ends at the Funder — past him it is no longer about money at
+all.
+
 For the cards that is the sharpest characterisation on offer, and it carries a
 design implication — a *lens*, not a shipped rule; an actual Mastermind is
 authored through the [pipeline](#in-legendary-grammar--a-design-lens), never
