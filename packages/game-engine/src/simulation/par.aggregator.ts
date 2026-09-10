@@ -93,6 +93,8 @@ import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
+import { resolveRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
@@ -477,6 +479,10 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveScryKoChoice: (context, args) => resolveScryKoChoice(context as never, args as never),
   // why: WP-603 / D-24413 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveMelterKoChoice: (context, args) => resolveMelterKoChoice(context as never, args as never),
+  // why: WP-695 / D-24512 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
+  resolveRuthlessDictatorChoice: (context, args) => resolveRuthlessDictatorChoice(context as never, args as never),
+  // why: WP-695 / D-24512 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
+  resolveElectromagneticBubbleChoice: (context, args) => resolveElectromagneticBubbleChoice(context as never, args as never),
   // why: WP-476 / D-24284 — same dispatch-completeness rule as the runner MOVE_MAP (pinned by the drift guard).
   resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),
   resolvePutCardsOnDeckChoice: (context, args) => resolvePutCardsOnDeckChoice(context as never, args as never),

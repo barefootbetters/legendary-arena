@@ -2521,3 +2521,58 @@ describe('filterUIStateForAudience — mastermind.finalBlowPending (WP-687)', ()
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-695 / EC-732 — pendingRuthlessDictatorChoice + pendingElectromagneticBubbleChoice
+// audience-filter survival (D-24512)
+// ---------------------------------------------------------------------------
+
+/** Builds a UIState carrying both WP-695 pending choices parked for player '0'. */
+function createWp695UIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  const RD_CARD = 'core/spider-man/spider-man#0' as CardExtId;
+  const XMEN = 'core/wolverine/wolverine#0' as CardExtId;
+  gameState.cardDisplayData[RD_CARD] = { name: 'Spider-Man', imageUrl: '', cardType: 'hero' } as never;
+  gameState.cardDisplayData[XMEN] = { name: 'Wolverine', imageUrl: '', cardType: 'hero' } as never;
+  gameState.playerZones['0']!.deck = [RD_CARD];
+  gameState.playerZones['0']!.inPlay = [XMEN];
+  gameState.pendingRuthlessDictatorChoices = [
+    { choiceType: 'ruthless-dictator', playerID: '0', revealedCardIds: [RD_CARD], availableDispositions: ['ko'] },
+  ];
+  gameState.pendingElectromagneticBubbleChoices = [
+    { choiceType: 'electromagnetic-bubble', playerID: '0', eligibleCardIds: [XMEN] },
+  ];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — WP-695 pending choices (D-24512)', () => {
+  it('buildUIState projects both pending choices for the front entry', () => {
+    const uiState = createWp695UIState();
+    assert.ok(uiState.pendingRuthlessDictatorChoice !== undefined, 'RD projected');
+    assert.equal(uiState.pendingRuthlessDictatorChoice!.playerID, '0');
+    assert.deepStrictEqual(uiState.pendingRuthlessDictatorChoice!.availableDispositions, ['ko']);
+    assert.ok(uiState.pendingElectromagneticBubbleChoice !== undefined, 'EMB projected');
+    assert.equal(uiState.pendingElectromagneticBubbleChoice!.eligibleCards.length, 1);
+  });
+
+  it('both choices survive for the owning player', () => {
+    const result = filterUIStateForAudience(createWp695UIState(), PLAYER_0);
+    assert.ok(result.pendingRuthlessDictatorChoice !== undefined, 'RD survives for owner');
+    assert.equal(result.pendingRuthlessDictatorChoice!.revealedCards[0]!.display.name, 'Spider-Man');
+    assert.ok(result.pendingElectromagneticBubbleChoice !== undefined, 'EMB survives for owner');
+    assert.equal(result.pendingElectromagneticBubbleChoice!.eligibleCards[0]!.display.name, 'Wolverine');
+  });
+
+  it('both choices are redacted for opponents and spectators', () => {
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(createWp695UIState(), audience);
+      assert.equal(result.pendingRuthlessDictatorChoice, undefined, `RD redacted for ${audience.kind}`);
+      assert.equal(result.pendingElectromagneticBubbleChoice, undefined, `EMB redacted for ${audience.kind}`);
+      const json = JSON.stringify(result);
+      assert.ok(!json.includes('Spider-Man'), 'RD revealed card name must not leak');
+    }
+  });
+});

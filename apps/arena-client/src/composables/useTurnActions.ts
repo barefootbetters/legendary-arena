@@ -227,6 +227,16 @@ export function useTurnActions(
   // at ANY stage (the engine's full block-all guard set freezes the board). OPTIONAL — the
   // player may KO 0..4, so "KO None" is the decline path.
   hasPendingKoDiscardChoice: boolean = false,
+  // why: WP-695 / D-24512 — appended LAST (after hasPendingKoDiscardChoice) so existing positional
+  // callers stay valid without edits; degrades gracefully (no gate) when omitted. True while
+  // a Red Skull Ruthless Dictator scry-3 disposition choice is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board). Mandatory.
+  hasPendingRuthlessDictatorChoice: boolean = false,
+  // why: WP-695 / D-24512 — appended LAST (after hasPendingRuthlessDictatorChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Magneto Electromagnetic Bubble X-Men pick is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board). Mandatory.
+  hasPendingElectromagneticBubbleChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -401,6 +411,24 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Resolve Melter — KO or keep each revealed deck top before taking another action.',
+        };
+      }
+      // why: WP-695 / D-24512 — End Turn / Pass Priority blocked at any stage while a Ruthless
+      // Dictator scry-3 choice is pending (the engine's full block-all guard set freezes the
+      // board, mirroring hasPendingMelterKoChoice). The choice is mandatory — no decline exit.
+      if (hasPendingRuthlessDictatorChoice) {
+        return {
+          allowed: false,
+          reason: 'Ruthless Dictator — KO / discard / keep each revealed card before taking another action.',
+        };
+      }
+      // why: WP-695 / D-24512 — End Turn / Pass Priority blocked at any stage while an
+      // Electromagnetic Bubble X-Men pick is pending (the engine's full block-all guard set
+      // freezes the board). The choice is mandatory — no decline exit to name.
+      if (hasPendingElectromagneticBubbleChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose an X-Men Hero to add to your next hand before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -606,6 +634,22 @@ export function useTurnActions(
           reason: 'Resolve Melter — KO or keep each revealed deck top before taking another action.',
         };
       }
+      if (hasPendingRuthlessDictatorChoice) {
+        // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
+        // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Ruthless Dictator — KO / discard / keep each revealed card before taking another action.',
+        };
+      }
+      if (hasPendingElectromagneticBubbleChoice) {
+        // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
+        // pendingElectromagneticBubbleChoices is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Choose an X-Men Hero to add to your next hand before taking another action.',
+        };
+      }
       if (hasPendingDiscardChoice) {
         // why: WP-476 / D-24284 — the engine's block-all guards block endTurn while
         // pendingDiscardChoices is non-empty; this client-side gate surfaces the reason
@@ -733,7 +777,11 @@ export function useTurnActions(
         hasPendingDoOver ||
         // why: WP-693 / D-24510 — mirror the engine healWounds block-all guard, which returns
         // early while a Loki Maniacal Tyrant KO-from-discard choice is pending.
-        hasPendingKoDiscardChoice
+        hasPendingKoDiscardChoice ||
+        // why: WP-695 / D-24512 — mirror the engine healWounds block-all guards, which return
+        // early while a Ruthless Dictator scry-3 or Electromagnetic Bubble pick is pending.
+        hasPendingRuthlessDictatorChoice ||
+        hasPendingElectromagneticBubbleChoice
       ) {
         return {
           allowed: false,

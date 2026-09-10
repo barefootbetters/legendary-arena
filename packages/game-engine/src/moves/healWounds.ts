@@ -23,6 +23,8 @@ import { koCard } from '../board/ko.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
+import { hasPendingRuthlessDictatorChoice } from './ruthlessDictatorChoice.resolve.js';
+import { hasPendingElectromagneticBubbleChoice } from './electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
 import { hasPendingKoDiscardChoice } from './koDiscardChoice.resolve.js';
@@ -88,6 +90,10 @@ export function healWounds({ G, ctx }: MoveContext): void {
   // why: WP-603 / D-24413 — block-all guard: a pending Melter Fight KO/keep choice
   // freezes the board until the fighting player resolves every revealed deck top.
   if (hasPendingMelterKoChoice(G)) return;
+  // why: WP-695 / D-24512 — block-all guards for the two interactive core mastermind
+  // tactics (Ruthless Dictator scry-3 / Electromagnetic Bubble X-Men pick).
+  if (hasPendingRuthlessDictatorChoice(G)) return;
+  if (hasPendingElectromagneticBubbleChoice(G)) return;
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // freezes the board until the current player picks which cards to discard.
   if (hasPendingDiscardChoice(G)) return;

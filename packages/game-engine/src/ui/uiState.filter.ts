@@ -701,6 +701,58 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-695 / D-24512 — the pending Ruthless Dictator scry-3 choice is redacted for
+  // EVERY audience except the choosing (defeating) player. Its revealedCards are the top
+  // of the chooser's OWN deck (their next draws) — leaking them to opponents/spectators
+  // would reveal deck-order. Present only when the audience is a player whose playerId
+  // equals the chooser's playerID; omitted (conditional assignment, never an `undefined`
+  // literal) for opponents AND spectators. Rebuilt field-by-field; per-entry display
+  // spread prevents aliasing with the input UIState.
+  if (
+    uiState.pendingRuthlessDictatorChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingRuthlessDictatorChoice.playerID
+  ) {
+    const revealedCopy = [];
+    for (const entry of uiState.pendingRuthlessDictatorChoice.revealedCards) {
+      revealedCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingRuthlessDictatorChoice = {
+      choiceType: uiState.pendingRuthlessDictatorChoice.choiceType,
+      playerID: uiState.pendingRuthlessDictatorChoice.playerID,
+      revealedCards: revealedCopy,
+      availableDispositions: [...uiState.pendingRuthlessDictatorChoice.availableDispositions],
+    };
+  }
+
+  // why: WP-695 / D-24512 — the pending Electromagnetic Bubble X-Men pick is redacted for
+  // EVERY audience except the choosing (defeating) player (kept owner-only for consistency
+  // with the other pending picks — the decision is the chooser's alone). Present only when
+  // the audience is a player whose playerId equals the chooser's playerID; omitted for
+  // opponents AND spectators. Rebuilt field-by-field; per-entry display spread prevents
+  // aliasing with the input UIState.
+  if (
+    uiState.pendingElectromagneticBubbleChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingElectromagneticBubbleChoice.playerID
+  ) {
+    const eligibleCopy = [];
+    for (const entry of uiState.pendingElectromagneticBubbleChoice.eligibleCards) {
+      eligibleCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingElectromagneticBubbleChoice = {
+      choiceType: uiState.pendingElectromagneticBubbleChoice.choiceType,
+      playerID: uiState.pendingElectromagneticBubbleChoice.playerID,
+      eligibleCards: eligibleCopy,
+    };
+  }
+
   // why: WP-476 / D-24284 — the pending discard-to-limit choice is redacted for EVERY
   // audience except the choosing player. Its `hand` carries the chooser's PRIVATE hand
   // identities — the very cards they must choose among — so passing it through to

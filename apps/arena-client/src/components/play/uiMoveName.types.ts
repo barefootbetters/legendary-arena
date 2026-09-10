@@ -63,6 +63,12 @@ export type UiMoveName =
   // why: WP-603 / D-24413 — unblocks the Melter Fight KO/keep prompt (KO or keep each
   // player's revealed deck top).
   | 'resolveMelterKoChoice'
+  // why: WP-695 / D-24512 — unblocks the Ruthless Dictator scry-3 prompt (assign each
+  // revealed deck-top card a disposition: KO / discard / top).
+  | 'resolveRuthlessDictatorChoice'
+  // why: WP-695 / D-24512 — unblocks the Electromagnetic Bubble prompt (choose an in-play
+  // X-Men Hero to add to your next hand as a seventh card).
+  | 'resolveElectromagneticBubbleChoice'
   // why: WP-476 / D-24284 — unblocks the Magneto discard-to-limit prompt (pick which
   // cards to discard down to four).
   | 'resolveDiscardChoice'

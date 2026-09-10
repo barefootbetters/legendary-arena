@@ -39,6 +39,8 @@ import {
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
+import { hasPendingRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
@@ -125,6 +127,10 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   // blocks advanceStage, so no next-turn reveal fires mid-choice), but guarded
   // alongside scry-ko so the "every site or none" invariant holds.
   if (hasPendingMelterKoChoice(G)) return;
+  // why: WP-695 / D-24512 — block-all guards for the two interactive core mastermind
+  // tactics (Ruthless Dictator scry-3 / Electromagnetic Bubble X-Men pick).
+  if (hasPendingRuthlessDictatorChoice(G)) return;
+  if (hasPendingElectromagneticBubbleChoice(G)) return;
   // why: block-all guard (WP-476 / D-24284) — a pending discard-to-limit choice
   // (parked by a Magneto strike at THIS start stage) freezes the board until the
   // current player picks which cards to discard; blocks re-reveal until resolved.

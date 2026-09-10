@@ -105,6 +105,42 @@ describe('simulation move-dispatch drift guard (WP-289 / D-24073)', () => {
     );
   });
 
+  it('resolveRuthlessDictatorChoice is dispatchable in BOTH maps (WP-695 / D-24512 — else the sim hangs)', () => {
+    // why: WP-695 — Red Skull's Ruthless Dictator Fight now parks an interactive scry-3
+    // choice; getLegalMoves short-circuits to resolveRuthlessDictatorChoice, so it MUST
+    // have a MOVE_MAP entry in both loops or a bot game defeating Ruthless Dictator hangs.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('resolveRuthlessDictatorChoice'),
+      'resolveRuthlessDictatorChoice must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('resolveRuthlessDictatorChoice'),
+      'resolveRuthlessDictatorChoice must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('resolveRuthlessDictatorChoice'),
+      'resolveRuthlessDictatorChoice must be a par.aggregator MOVE_MAP key',
+    );
+  });
+
+  it('resolveElectromagneticBubbleChoice is dispatchable in BOTH maps (WP-695 / D-24512 — else the sim hangs)', () => {
+    // why: WP-695 — Magneto's Electromagnetic Bubble Fight now parks an interactive X-Men
+    // pick; getLegalMoves short-circuits to resolveElectromagneticBubbleChoice, so it MUST
+    // have a MOVE_MAP entry in both loops or a bot game defeating it (≥2 X-Men) hangs.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('resolveElectromagneticBubbleChoice'),
+      'resolveElectromagneticBubbleChoice must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('resolveElectromagneticBubbleChoice'),
+      'resolveElectromagneticBubbleChoice must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('resolveElectromagneticBubbleChoice'),
+      'resolveElectromagneticBubbleChoice must be a par.aggregator MOVE_MAP key',
+    );
+  });
+
   it('NEGATIVE: the guard would FAIL if an emittable move lacked a dispatch entry (non-vacuous)', () => {
     const phantom = '__not_a_move__';
     // The real maps do not contain the phantom...

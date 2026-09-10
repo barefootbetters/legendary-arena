@@ -86,6 +86,8 @@ import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
+import { resolveRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
@@ -323,6 +325,12 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-603 / D-24413 — getLegalMoves short-circuits to resolveMelterKoChoice when a
   // Melter Fight KO/keep choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveMelterKoChoice: (context, args) => resolveMelterKoChoice(context as never, args as never),
+  // why: WP-695 / D-24512 — getLegalMoves short-circuits to resolveRuthlessDictatorChoice when
+  // a Ruthless Dictator scry-3 choice is parked; it MUST have a MOVE_MAP entry or the sim hangs.
+  resolveRuthlessDictatorChoice: (context, args) => resolveRuthlessDictatorChoice(context as never, args as never),
+  // why: WP-695 / D-24512 — getLegalMoves short-circuits to resolveElectromagneticBubbleChoice
+  // when an Electromagnetic Bubble X-Men pick is parked; it MUST have a MOVE_MAP entry or the sim hangs.
+  resolveElectromagneticBubbleChoice: (context, args) => resolveElectromagneticBubbleChoice(context as never, args as never),
   // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
   // Magneto discard-to-limit choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveDiscardChoice: (context, args) => resolveDiscardChoice(context as never, args as never),

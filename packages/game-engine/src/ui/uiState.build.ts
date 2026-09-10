@@ -45,6 +45,10 @@ import type {
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
   UIPendingMelterKoChoice,
+  UIPendingRuthlessDictatorChoice,
+  UIRuthlessDictatorRevealedCard,
+  UIPendingElectromagneticBubbleChoice,
+  UIElectromagneticBubbleEligibleCard,
   UIMelterRevealedTop,
   UIPendingDiscardChoice,
   UIPendingPutCardsOnDeckChoice,
@@ -1117,6 +1121,65 @@ export function buildUIState(
     };
   }
 
+  // --- 13b.3b Project pending Ruthless Dictator scry-3 choice (front of queue) ---
+  // why: WP-695 / D-24512 — project the FRONT entry of G.pendingRuthlessDictatorChoices
+  // with its remaining revealed deck-top cards (the snapshot captured at park time,
+  // shrinking as each is resolved) resolved to display data, plus the still-available
+  // dispositions. Reads the SNAPSHOT, not the live zone: the block-all guard freezes the
+  // deck top while pending, and it is exactly what resolveRuthlessDictatorChoice validates
+  // the client's { cardId, disposition } against (the round-trip rule). resolveDisplay is
+  // spread fresh per entry so the projection holds no reference into G.cardDisplayData
+  // (aliasing defense, WP-111 D-11105). Redaction to the chooser-only audience is enforced
+  // by filterUIStateForAudience (the revealed cards are the top of the chooser's own deck).
+  let pendingRuthlessDictatorChoice: UIPendingRuthlessDictatorChoice | undefined;
+  if (
+    gameState.pendingRuthlessDictatorChoices !== undefined &&
+    gameState.pendingRuthlessDictatorChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingRuthlessDictatorChoices[0]!;
+    const revealedCards: UIRuthlessDictatorRevealedCard[] = [];
+    for (const cardId of frontChoice.revealedCardIds) {
+      revealedCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingRuthlessDictatorChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      revealedCards,
+      availableDispositions: [...frontChoice.availableDispositions],
+    };
+  }
+
+  // --- 13b.3c Project pending Electromagnetic Bubble X-Men pick (front of queue) ---
+  // why: WP-695 / D-24512 — project the FRONT entry of G.pendingElectromagneticBubbleChoices
+  // with its eligible in-play X-Men Heroes (the snapshot captured at park time) resolved to
+  // display data, in in-play order. Reads the SNAPSHOT, not the live zone: the block-all
+  // guard freezes the board while pending, and it is exactly what
+  // resolveElectromagneticBubbleChoice validates the client's { cardId } against (the
+  // round-trip rule). resolveDisplay is spread fresh per entry (aliasing defense). Redaction
+  // to the chooser-only audience is enforced by filterUIStateForAudience.
+  let pendingElectromagneticBubbleChoice: UIPendingElectromagneticBubbleChoice | undefined;
+  if (
+    gameState.pendingElectromagneticBubbleChoices !== undefined &&
+    gameState.pendingElectromagneticBubbleChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingElectromagneticBubbleChoices[0]!;
+    const eligibleCards: UIElectromagneticBubbleEligibleCard[] = [];
+    for (const cardId of frontChoice.eligibleCardIds) {
+      eligibleCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingElectromagneticBubbleChoice = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      eligibleCards,
+    };
+  }
+
   // --- 13b.3 Project pending discard-to-limit choice (front of queue) ---
   // why: WP-476 / D-24284 — project the FRONT entry of G.pendingDiscardChoices with
   // the chooser's CURRENT hand (recomputed fresh from G — the pending entry stores no
@@ -1904,6 +1967,10 @@ export function buildUIState(
     // why: WP-603 / D-24413 — conditional spread so an absent choice omits the field
     // (no `pendingMelterKoChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingMelterKoChoice !== undefined ? { pendingMelterKoChoice } : {}),
+    // why: WP-695 / D-24512 — spread-in only when present (no `undefined` literal under
+    // exactOptionalPropertyTypes).
+    ...(pendingRuthlessDictatorChoice !== undefined ? { pendingRuthlessDictatorChoice } : {}),
+    ...(pendingElectromagneticBubbleChoice !== undefined ? { pendingElectromagneticBubbleChoice } : {}),
     // why: WP-476 / D-24284 — conditional spread so an absent choice omits the field
     // (no `pendingDiscardChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDiscardChoice !== undefined ? { pendingDiscardChoice } : {}),

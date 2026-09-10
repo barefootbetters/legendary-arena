@@ -21,6 +21,8 @@ import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
+import { hasPendingRuthlessDictatorChoice } from './ruthlessDictatorChoice.resolve.js';
+import { hasPendingElectromagneticBubbleChoice } from './electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
 import { hasPendingKoDiscardChoice } from './koDiscardChoice.resolve.js';
@@ -93,6 +95,17 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // why: WP-603 / D-24413 — block-all guard: a pending Melter Fight KO/keep choice
   // freezes the board until the fighting player resolves every revealed deck top.
   if (hasPendingMelterKoChoice(G)) {
+    return;
+  }
+  // why: WP-695 / D-24512 — block-all guard: a pending Ruthless Dictator scry-3
+  // disposition choice freezes the board until the defeating player dispositions
+  // every revealed card.
+  if (hasPendingRuthlessDictatorChoice(G)) {
+    return;
+  }
+  // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
+  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  if (hasPendingElectromagneticBubbleChoice(G)) {
     return;
   }
 
@@ -321,6 +334,17 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingMelterKoChoice(G)) {
     return;
   }
+  // why: WP-695 / D-24512 — block-all guard: a pending Ruthless Dictator scry-3
+  // disposition choice freezes the board until the defeating player dispositions
+  // every revealed card.
+  if (hasPendingRuthlessDictatorChoice(G)) {
+    return;
+  }
+  // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
+  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  if (hasPendingElectromagneticBubbleChoice(G)) {
+    return;
+  }
 
   // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
   // pending the board is frozen; this move returns with no side effects so the
@@ -510,6 +534,17 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // why: WP-603 / D-24413 — block-all guard: a pending Melter Fight KO/keep choice
   // freezes the board until the fighting player resolves every revealed deck top.
   if (hasPendingMelterKoChoice(G)) {
+    return;
+  }
+  // why: WP-695 / D-24512 — block-all guard: a pending Ruthless Dictator scry-3
+  // disposition choice freezes the board until the defeating player dispositions
+  // every revealed card.
+  if (hasPendingRuthlessDictatorChoice(G)) {
+    return;
+  }
+  // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
+  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  if (hasPendingElectromagneticBubbleChoice(G)) {
     return;
   }
 
