@@ -15,7 +15,7 @@
  */
 
 import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice } from '../types.js';
-import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
+import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
@@ -147,6 +147,17 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // 'undercover' token is NOT here — it is an honest hollow, no source zone → no handler.)
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-681 / D-24498 — Deadpool's Do-Over ("discard the rest of your hand and draw
+  // four cards", first-Hero-gated); has a HERO_EFFECT_HANDLERS entry (heroEffectDoOver)
+  // that parks the accept/decline PendingDoOver. Carries NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'do-over',
+  // why: WP-681 / D-24498 — Nick Fury's Battlefield Promotion ("KO a [team:shield] Hero
+  // from hand/discard; if you do, gain a S.H.I.E.L.D. Officer to your hand"); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectOptionalKoShieldOfficer) that parks a
+  // PendingOptionalKoReward with koTeamFilter 'shield' + rewardType 'gain-officer-hand'.
+  // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'optional-ko-shield-officer',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -323,6 +334,15 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // time, so the magnitude pre-gate must not drop them, or the send never fires / the pick never parks.
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-681 / D-24498 — do-over carries NO magnitude (the draw amount is the fixed
+  // printed 4, applied at resolve time, not a play-time grant); the magnitude pre-gate must
+  // not drop it, or the accept/decline choice never parks.
+  'do-over',
+  // why: WP-681 / D-24498 — optional-ko-shield-officer carries NO magnitude (the reward is a
+  // fixed single S.H.I.E.L.D. Officer to hand, dispatched at resolve time); the eligible KO set
+  // is computed from G at play time, so the magnitude pre-gate must not drop it, or the KO
+  // choice never parks.
+  'optional-ko-shield-officer',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2093,6 +2113,107 @@ function heroEffectSmash(
 }
 
 /**
+ * Park handler for the `do-over` hero keyword (WP-681 / D-24498).
+ *
+ * Deadpool's "Hey, Can I Get a Do-Over?" — "If this is the first Hero you played this
+ * turn, you may discard the rest of your hand and draw four cards." The
+ * first-hero-played-this-turn condition already gated this hook (so it runs only when no
+ * other Hero has been played this turn); discarding your whole hand is a real cost, so
+ * this is a genuine OPTIONAL accept/decline choice, not an auto-resolve. This parks a
+ * PendingDoOver onto the FIFO G.pendingDoOverChoices queue; resolveDoOver either discards
+ * the entire current hand (through the discardFromHand chokepoint) and draws a FIXED 4, or
+ * declines (nothing).
+ *
+ * // why: D-24498 — the "you may discard the rest of your hand" has a legal empty-hand
+ * choice too (decline), but with only the Do-Over card played and nothing else in hand the
+ * accept simply discards nothing and draws 4 — still a real choice, so we always park. The
+ * park is SILENT (no G.messages line); the resolve move logs the accept/decline outcome.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the discard + draw happen at resolve time).
+ * @param playerID - The player who played the Do-Over card.
+ * @param _cardId - The played card (unused; the choice carries only the player).
+ * @param _effect - The `{ type: 'do-over' }` descriptor (no magnitude).
+ */
+function heroEffectDoOver(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: D-24498 — lazy-init at the park site (mirrors the Smash park) — NEVER in
+  // Game.setup, so a game that never plays Do-Over carries no new field and both hash
+  // oracles stay byte-unchanged. The park is SILENT; resolveDoOver logs the outcome.
+  if (!G.pendingDoOverChoices) { G.pendingDoOverChoices = []; }
+  G.pendingDoOverChoices.push({ playerID });
+}
+
+/**
+ * Park handler for the `optional-ko-shield-officer` hero keyword (WP-681 / D-24498).
+ *
+ * Nick Fury's "Battlefield Promotion" — "You may KO a [team:shield] Hero from your hand
+ * or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand." Reuses the
+ * shipped optional-ko-reward pending queue: it parks a PendingOptionalKoReward with
+ * koZones ['hand','discard'] (no in-play KO), koTeamFilter 'shield' (the KO target must be
+ * a S.H.I.E.L.D. Hero — the Officer token itself counts), and rewardType 'gain-officer-hand'
+ * (a new reward variant dispatched by resolveOptionalKoReward). The officer reward is pure
+ * upside (a free Officer in hand), so it auto-resolves on KO (the reveal-from-hand
+ * precedent) rather than parking a second choice; an empty Officer supply no-ops the reward.
+ *
+ * KO source = the hand ∪ discard S.H.I.E.L.D. Heroes ONLY. 0 eligible → a logged no-op that
+ * parks nothing (never a throw), so the player sees why the ability did nothing.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KO + reward happen at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param _effect - The `{ type: 'optional-ko-shield-officer' }` descriptor (no magnitude).
+ */
+function heroEffectOptionalKoShieldOfficer(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: D-24498 — eligible = hand ∪ discard S.H.I.E.L.D. Heroes ONLY (the printed
+  // "[team:shield] Hero from your hand or discard pile"). 0 eligible → skipped no-op + a log
+  // line so the player sees why the ability did nothing (mirrors the optional-ko-hand-discard
+  // empty branch). The reward still requires a KO, so no eligible target means no reward.
+  let eligibleCount = 0;
+  for (const zone of [playerZones.hand, playerZones.discard]) {
+    for (const zoneCardId of zone) {
+      if (cardCountsAsShieldHero(G, zoneCardId as CardExtId)) {
+        eligibleCount += 1;
+      }
+    }
+  }
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a S.H.I.E.L.D. Hero for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — their hand and discard pile hold no S.H.I.E.L.D. Hero.`,
+    );
+    return;
+  }
+  // why: D-24498 — park into the SHARED optional-ko-reward queue with the S.H.I.E.L.D.
+  // team filter + the gain-officer-hand reward; the KO source is hand ∪ discard only.
+  // Lazy-init the queue (mirrors the reward park); the park is SILENT.
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  G.pendingOptionalKoRewards.push({
+    playerID,
+    rewardType: 'gain-officer-hand',
+    rewardMagnitude: 0,
+    sourceCardId: cardId,
+    koZones: ['hand', 'discard'],
+    koTeamFilter: 'shield',
+  });
+}
+
+/**
  * Handler for the `optional-play-villain-top` hero keyword (WP-663 / D-24474).
  *
  * Shadowed Thoughts' "[hc:covert]: You may play the top card of the Villain Deck. If you
@@ -3550,6 +3671,15 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // parks a PendingUndercoverChoice (≥2 eligible); 'undercover-officer-stack' is deterministic.
   'undercover-hand-shield-hero': heroEffectUndercoverHandShieldHero,
   'undercover-officer-stack': heroEffectUndercoverOfficerStack,
+  // why: WP-681 / D-24498 — Deadpool's Do-Over ("discard the rest of your hand and draw
+  // four cards", first-Hero-gated): parks a PendingDoOver resolved by resolveDoOver
+  // (accept = discard hand + draw 4, or decline).
+  'do-over': heroEffectDoOver,
+  // why: WP-681 / D-24498 — Nick Fury's Battlefield Promotion ("KO a [team:shield] Hero
+  // from hand/discard; if you do, gain a S.H.I.E.L.D. Officer to your hand"): parks a
+  // PendingOptionalKoReward (koTeamFilter 'shield', rewardType 'gain-officer-hand')
+  // resolved by resolveOptionalKoReward.
+  'optional-ko-shield-officer': heroEffectOptionalKoShieldOfficer,
 };
 
 // ---------------------------------------------------------------------------
@@ -3668,13 +3798,21 @@ export interface OptionalKoTarget {
 export function selectDefaultOptionalKoTarget(
   zones: PlayerZones,
   cardStats: Record<CardExtId, CardStatEntry>,
+  isEligible: (cardId: CardExtId) => boolean = () => true,
+  allowInPlay: boolean = true,
 ): OptionalKoTarget | null {
   // why: iterate discard fully (index ascending) then hand (index ascending),
   // replacing the candidate ONLY on a STRICTLY lower cost. Because the scan
   // order is discard-before-hand and lowest-index-first, the retained candidate
   // for the minimum cost is automatically the discard-before-hand, lowest-index
   // one — exactly the locked tie-break, without an explicit rank comparison.
-  // This block is byte-identical to the pre-D-24442 scan (pick preservation).
+  // This block is byte-identical to the pre-D-24442 scan (pick preservation) —
+  // isEligible defaults to accept-all, so every existing caller is unchanged.
+  // why: WP-681 / D-24498 — isEligible restricts the default target to the entry's
+  // koTeamFilter (Battlefield Promotion's S.H.I.E.L.D.-only KO); passing a non-shield
+  // target would be rejected by the resolve and hang the sim, so the bot must pick a
+  // valid one. allowInPlay respects koZones so the inPlay fallback is not returned for a
+  // hand∪discard-only entry.
   let bestZone: 'discard' | 'hand' | null = null;
   let bestCardId: CardExtId | null = null;
   let bestCost = Number.POSITIVE_INFINITY;
@@ -3683,6 +3821,9 @@ export function selectDefaultOptionalKoTarget(
     const zoneArray = zones[zoneName];
     for (let cardIndex = 0; cardIndex < zoneArray.length; cardIndex++) {
       const cardId = zoneArray[cardIndex]!;
+      if (!isEligible(cardId)) {
+        continue;
+      }
       const cost = cardStats[cardId]?.cost ?? 0;
       if (cost < bestCost) {
         bestCost = cost;
@@ -3697,11 +3838,18 @@ export function selectDefaultOptionalKoTarget(
 
   // why: D-24442 fallback — hand AND discard are both empty, so scan inPlay
   // (lowest cost, then lowest index). Reached only in the new empty-hand+discard
-  // park, so it never perturbs a pre-D-24442 recorded pick.
+  // park, so it never perturbs a pre-D-24442 recorded pick. Skipped when the entry
+  // disallows an in-play KO (allowInPlay false — WP-681 koZones respect).
+  if (!allowInPlay) {
+    return null;
+  }
   let fallbackCardId: CardExtId | null = null;
   let fallbackCost = Number.POSITIVE_INFINITY;
   for (let cardIndex = 0; cardIndex < zones.inPlay.length; cardIndex++) {
     const cardId = zones.inPlay[cardIndex]!;
+    if (!isEligible(cardId)) {
+      continue;
+    }
     const cost = cardStats[cardId]?.cost ?? 0;
     if (cost < fallbackCost) {
       fallbackCost = cost;

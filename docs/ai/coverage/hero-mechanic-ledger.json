@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 679,
+    "totalRows": 683,
     "byStatus": {
-      "executable": 278,
+      "executable": 281,
       "deferred": 16,
-      "condition": 26,
+      "condition": 27,
       "unsupported": 323,
       "unmarked": 35,
       "subsystem": 1
     },
-    "distinctMechanics": 133
+    "distinctMechanics": 137
   },
   "rows": [
     {
@@ -3338,6 +3338,38 @@
       ]
     },
     {
+      "extId": "core/deadpool",
+      "heroName": "Deadpool",
+      "set": "core",
+      "mechanic": "do-over",
+      "status": "executable",
+      "wp": "WP-681",
+      "decision": "D-24498",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#do-over",
+      "designs": [
+        {
+          "slug": "hey-can-i-get-a-do-over",
+          "name": "Hey, Can I Get a Do-Over?"
+        }
+      ]
+    },
+    {
+      "extId": "core/deadpool",
+      "heroName": "Deadpool",
+      "set": "core",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "hey-can-i-get-a-do-over",
+          "name": "Hey, Can I Get a Do-Over?"
+        }
+      ]
+    },
+    {
       "extId": "core/emma-frost",
       "heroName": "Emma Frost",
       "set": "core",
@@ -3489,6 +3521,22 @@
       "extId": "core/nick-fury",
       "heroName": "Nick Fury",
       "set": "core",
+      "mechanic": "attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "designs": [
+        {
+          "slug": "high-tech-weaponry",
+          "name": "High-Tech Weaponry"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "heroName": "Nick Fury",
+      "set": "core",
       "mechanic": "attack-per-count",
       "status": "executable",
       "wp": "WP-247",
@@ -3498,6 +3546,22 @@
         {
           "slug": "legendary-commander",
           "name": "Legendary Commander"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "heroName": "Nick Fury",
+      "set": "core",
+      "mechanic": "optional-ko-shield-officer",
+      "status": "executable",
+      "wp": "WP-681",
+      "decision": "D-24498",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-officer",
+      "designs": [
+        {
+          "slug": "battlefield-promotion",
+          "name": "Battlefield Promotion"
         }
       ]
     },

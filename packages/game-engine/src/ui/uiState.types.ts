@@ -182,6 +182,12 @@ export interface UIState {
   // hand-privacy analog — keyed on .playerID). Absent (undefined) means no pending Smash
   // choice; the client must not render the prompt in that case.
   pendingSmashDiscard?: UIPendingSmashDiscard;
+  // why: WP-681 / D-24498 — projects the FRONT of G.pendingDoOverChoices as a binary
+  // accept/decline prompt (Deadpool's Do-Over) with the current hand size + fixed draw count
+  // so the choosing player can render "Discard N cards and draw 4, or Decline". Redacted
+  // (omitted) for every audience except the chooser (keyed on .playerID). Absent (undefined)
+  // means no pending Do-Over choice; the client must not render the prompt in that case.
+  pendingDoOver?: UIPendingDoOver;
   // why: D-24071 + WP-287 — projects the FRONT of G.pendingDrawOrEmpowered with the
   // derived empoweredLabel so the choosing player can render the "Choose one: Draw a
   // card / Empowered by {class}" prompt. Redacted (omitted) for every audience except
@@ -1115,6 +1121,31 @@ export interface UIPendingSmashDiscard {
   /** The Attack a discard grants (+N), for the prompt label. */
   magnitude: number;
   eligibleHand: UIEligibleKoHeroCard[];
+}
+
+/**
+ * UI contract for resolving a pending Do-Over accept/decline choice (WP-681 / D-24498 —
+ * Deadpool's "Hey, Can I Get a Do-Over?").
+ *
+ * A binary choice with NO eligible-card list — Do-Over discards the ENTIRE hand, so there
+ * is nothing to pick. The client renders an Accept button ("Discard N cards and draw 4",
+ * `resolveDoOver({ accept: true })`) and a Decline button (`resolveDoOver({ decline: true })`).
+ * `handSize` is the chooser's current hand count and `drawCount` the fixed 4, both for the
+ * prompt label. Only visible to the chooser; redacted for opponents and spectators (keyed on
+ * .playerID).
+ *
+ * @see WP-681 §Scope (In) — projection + prompt
+ * @see EC-718 Locked Values
+ * @see DECISIONS.md D-24498
+ */
+export interface UIPendingDoOver {
+  // why: D-24498 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingSmashDiscard.playerID.
+  playerID: string;
+  /** The chooser's current hand size (cards that would be discarded on accept), for the label. */
+  handSize: number;
+  /** The fixed number of cards drawn on accept (4), for the label. */
+  drawCount: number;
 }
 
 /**

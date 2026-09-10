@@ -372,6 +372,7 @@ export type {
   UIReorderChoiceCard,
   UIPendingOptionalKoReward,
   UIPendingSmashDiscard,
+  UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingCountScaledChoiceOption,

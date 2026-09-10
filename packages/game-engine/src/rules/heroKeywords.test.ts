@@ -62,11 +62,29 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 48 entries after the Undercover source-shape additions', () => {
+  it('HERO_KEYWORDS array has exactly 50 entries after the WP-681 optional/interactive additions', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      48,
-      'HERO_KEYWORDS must have exactly 48 entries (46 + undercover-hand-shield-hero + undercover-officer-stack, WP-678 / D-24494)',
+      50,
+      'HERO_KEYWORDS must have exactly 50 entries (48 + do-over + optional-ko-shield-officer, WP-681 / D-24498)',
+    );
+  });
+});
+
+describe('do-over keyword (WP-681 / EC-718 / D-24498)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('do-over'),
+      'do-over must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('optional-ko-shield-officer keyword (WP-681 / EC-718 / D-24498)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('optional-ko-shield-officer'),
+      'optional-ko-shield-officer must be in HERO_KEYWORDS array',
     );
   });
 });

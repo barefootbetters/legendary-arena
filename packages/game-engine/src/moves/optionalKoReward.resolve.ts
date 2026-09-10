@@ -27,6 +27,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
+import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
+import { gainOfficerToHand } from './recruitOfficer.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
 
@@ -125,6 +127,16 @@ export function resolveOptionalKoReward(
     return;
   }
 
+  // why: WP-681 / D-24498 — enforce the entry's koTeamFilter. ABSENT = no team
+  // restriction (every existing entry is unchanged); 'shield' (Battlefield Promotion)
+  // rejects a KO target that is not a S.H.I.E.L.D. Hero (the Officer token itself counts,
+  // via cardCountsAsShieldHero) as a silent no-op (queue intact, resubmit). The projection
+  // lists only S.H.I.E.L.D. Heroes, so a well-behaved client never submits a non-shield
+  // target; this guards a hand-built / malformed payload.
+  if (front.koTeamFilter === 'shield' && !cardCountsAsShieldHero(G, cardId as CardExtId)) {
+    return;
+  }
+
   // Step 4: KO request — the chosen card must be present in the named zone right
   // now (no eligible snapshot is stored; eligibility is recomputed fresh).
   const playerZones = G.playerZones[playerID];
@@ -167,10 +179,30 @@ export function resolveOptionalKoReward(
   // re-implementation. The reward's own logging (e.g. D-24017 for rescue) is the
   // only reward log; this move adds no duplicate. `context` carries ctx.random
   // for the draw reward's reshuffle.
-  // why: WP-667 / D-24480 — the NO-REWARD variant (Radioactive Riot) parks
-  // `rewardType: 'none'`; the KO itself is the whole effect (deck-thinning), so skip
-  // the dispatch. 'none' is not a HeroKeyword, so it must never reach executeSingleEffect.
-  if (front.rewardType !== 'none') {
+  // why: WP-681 / D-24498 — the gain-officer-hand variant (Battlefield Promotion) gains a
+  // S.H.I.E.L.D. Officer from supply to the player's HAND. It is NOT a HeroKeyword, so it
+  // must never reach executeSingleEffect; dispatch it via the dedicated gainOfficerToHand
+  // helper. The reward is pure upside, so it auto-resolves on KO (no second choice, the
+  // reveal-from-hand precedent); an empty Officer supply no-ops (gainOfficerToHand returns
+  // false) with a log line so the player sees why no Officer arrived.
+  if (front.rewardType === 'gain-officer-hand') {
+    if (gainOfficerToHand(G, playerID)) {
+      pushLog(G,
+        `Player ${playerID} gained a S.H.I.E.L.D. Officer to their hand from ${formatCardRef(G.cardDisplayData, front.sourceCardId)}'s ability.`,
+        'applied',
+        front.sourceCardId,
+      );
+    } else {
+      pushLog(G,
+        `Player ${playerID} KO'd a S.H.I.E.L.D. Hero for ${formatCardRef(G.cardDisplayData, front.sourceCardId)}, but the S.H.I.E.L.D. Officer supply was empty, so no Officer was gained.`,
+        'neutral',
+        front.sourceCardId,
+      );
+    }
+  } else if (front.rewardType !== 'none') {
+    // why: WP-667 / D-24480 — the NO-REWARD variant (Radioactive Riot) parks
+    // `rewardType: 'none'`; the KO itself is the whole effect (deck-thinning), so skip
+    // the dispatch. 'none' is not a HeroKeyword, so it must never reach executeSingleEffect.
     executeSingleEffect(G, context, playerID, front.sourceCardId, {
       type: front.rewardType,
       magnitude: front.rewardMagnitude,

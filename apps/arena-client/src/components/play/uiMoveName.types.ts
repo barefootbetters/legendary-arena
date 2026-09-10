@@ -84,6 +84,8 @@ export type UiMoveName =
   | 'resolveUndercoverChoice'
   // why: WP-676 / D-24492 — unblocks the Smash discard-for-attack prompt (the wwhk Smash cards).
   | 'resolveSmashDiscard'
+  // why: WP-681 / D-24498 — unblocks the Do-Over accept/decline prompt (Deadpool's "Hey, Can I Get a Do-Over?").
+  | 'resolveDoOver'
   // why: WP-313 / D-24099 — unblocks the victory-pile villain-pick prompt (The Ebony Blade).
   | 'resolveVictoryPileCardPick'
   // why: unblocks the optional-put-bottom-hq prompt (Wonder Man's Ionic Energy).

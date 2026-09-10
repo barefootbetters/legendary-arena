@@ -448,6 +448,75 @@ describe('buildHeroAbilityHooks — condition-clause icon is not a grant (WP-660
   });
 });
 
+describe('buildHeroAbilityHooks WP-681 optional/interactive core heroes (D-24498)', () => {
+  it('High-Tech Weaponry: [hc:tech]: + [keyword:attack:1] yields a conditional attack hook', () => {
+    const registry = makeHeroRegistry('core', 'nick-fury', [
+      {
+        slug: 'high-tech-weaponry',
+        rarityLabel: 'Common 1',
+        abilities: ['[hc:tech]: You get +1[icon:attack]. [keyword:attack:1]'],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['core/nick-fury'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(hook!.keywords.includes('attack'), 'the attack keyword is present');
+    assert.deepStrictEqual(
+      hook!.conditions,
+      [{ type: 'heroClassMatch', value: 'tech' }],
+      'the [hc:tech] prefix is the class-synergy gate',
+    );
+  });
+
+  it('Do-Over: [keyword:first-hero-condition] + [keyword:do-over] yields a do-over hook gated on firstHeroPlayedThisTurn', () => {
+    const registry = makeHeroRegistry('core', 'deadpool', [
+      {
+        slug: 'hey-can-i-get-a-do-over',
+        rarityLabel: 'Common 2',
+        abilities: [
+          'If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards. [keyword:first-hero-condition] [keyword:do-over]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['core/deadpool'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(hook!.keywords.includes('do-over'), 'the do-over keyword is present');
+    assert.deepStrictEqual(
+      hook!.conditions,
+      [{ type: 'firstHeroPlayedThisTurn', value: '1' }],
+      'the first-hero-condition marker gates the hook',
+    );
+  });
+
+  it('Battlefield Promotion: [keyword:optional-ko-shield-officer] yields that keyword hook', () => {
+    const registry = makeHeroRegistry('core', 'nick-fury', [
+      {
+        slug: 'battlefield-promotion',
+        rarityLabel: 'Common 2',
+        abilities: [
+          'You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand. [keyword:optional-ko-shield-officer]',
+        ],
+      },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['core/nick-fury'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks[0];
+    assert.ok(hook !== undefined, 'hook must be built');
+    assert.ok(
+      hook!.keywords.includes('optional-ko-shield-officer'),
+      'the optional-ko-shield-officer keyword is present',
+    );
+    // why: WP-681 / D-24498 — the co-located [team:shield] describes the KO TARGET
+    // ("KO a [team:shield] Hero"), NOT a play-gate. It must NOT become a requiresTeam
+    // condition, or Battlefield Promotion would wrongly require another shield Hero in play.
+    const teamConditions = (hook!.conditions ?? []).filter((c) => c.type === 'requiresTeam');
+    assert.equal(teamConditions.length, 0, 'the [team:shield] KO-target token must not gate the hook');
+  });
+});
+
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
@@ -501,12 +570,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'optional-play-villain-top', // why: WP-663 / D-24474 — Shadowed Thoughts "[hc:covert]: You may play the top card of the Villain Deck. If you do, +2 Attack." (optional pending choice)
       'reveal-herodeck-attack', // why: WP-668 / D-24481 — Jade Giantess "For every 2 Recruit you made this turn, Reveal the top card of the Hero Deck, put it on the bottom of that deck, and you get that card's printed Attack." (synchronous count-scaled reveal)
       'smash', // why: WP-676 / D-24492 — "Smash N" ("You may discard another card from your hand. If you do, you get +N attack.") (wwhk) — optional per-instance discard-for-attack pending choice
+    'do-over', // why: WP-681 / D-24498 — Deadpool "Hey, Can I Get a Do-Over?" ("If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards.") — first-hero-gated optional discard-hand-and-draw-4 pending choice
+    'optional-ko-shield-officer', // why: WP-681 / D-24498 — Nick Fury "Battlefield Promotion" ("You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand.") — reuses the optional-ko-reward queue with a shield team filter + gain-officer-hand reward
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      48,
-      'HERO_KEYWORDS must have exactly 48 entries',
+      50,
+      'HERO_KEYWORDS must have exactly 50 entries',
     );
 
     assert.deepStrictEqual(

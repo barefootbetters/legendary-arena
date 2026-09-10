@@ -82,6 +82,9 @@ import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked Smash choice hangs the PAR loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
+// why: WP-681 / D-24498 — resolveDoOver can be the only legal move (block-all); it must be
+// dispatchable in the aggregator MOVE_MAP or the per-turn loop hangs.
+import { resolveDoOver } from '../moves/doOver.resolve.js';
 // why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to;
 // each must be dispatchable in this duplicated MOVE_MAP or a parked pending choice hangs the PAR
 // per-turn loop (same class as the WP-286 resolveDrawOrEmpowered fix). Pinned by the drift guard.
@@ -448,6 +451,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // choice is open; a missing dispatch entry hangs the loop (pinned by the drift guard).
   resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
+  // why: WP-681 / D-24498 — getLegalMoves short-circuits to resolveDoOver when a Do-Over
+  // accept/decline choice is parked; a missing dispatch entry stalls the loop.
+  resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),
   // why: D-24440 — same dispatch-completeness rule as the runner MOVE_MAP: getLegalMoves
   // short-circuits to resolveHeroChoice when a reveal-attack-choose hero ability parks
   // pendingHeroChoice; a missing dispatch entry stalls the loop (pinned by the drift guard).

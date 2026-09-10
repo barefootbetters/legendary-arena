@@ -176,6 +176,8 @@ core/captain-america,Captain America,core,recruit-per-count,executable,WP-674,D-
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast
 core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
 core/deadpool,Deadpool,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,oddball
+core/deadpool,Deadpool,core,do-over,executable,WP-681,D-24498,packages/game-engine/src/hero/heroEffects.execute.ts#do-over,hey-can-i-get-a-do-over
+core/deadpool,Deadpool,core,first-hero-condition,condition,,,,hey-can-i-get-a-do-over
 core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,condition,,,,diamond-form
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 core/emma-frost,Emma Frost,core,optional-play-villain-top,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-play-villain-top,shadowed-thoughts
@@ -185,7 +187,9 @@ core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src
 core/hulk,Hulk,core,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
 core/hulk,Hulk,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 core/iron-man,Iron Man,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
+core/nick-fury,Nick Fury,core,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,high-tech-weaponry
 core/nick-fury,Nick Fury,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,legendary-commander
+core/nick-fury,Nick Fury,core,optional-ko-shield-officer,executable,WP-681,D-24498,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-officer,battlefield-promotion
 core/rogue,Rogue,core,copy-powers,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#copy-powers,copy-powers
 core/rogue,Rogue,core,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
 core/rogue,Rogue,core,steal-abilities,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#steal-abilities,steal-abilities

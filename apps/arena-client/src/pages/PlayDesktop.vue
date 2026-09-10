@@ -52,6 +52,7 @@ import PendingReorderChoicePrompt from '../components/play/PendingReorderChoiceP
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
+import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
@@ -132,6 +133,7 @@ export default defineComponent({
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
     SmashDiscardPrompt,
+    DoOverPrompt,
     DrawOrEmpoweredPrompt,
     CountScaledChoicePrompt,
     UndercoverChoicePrompt,
@@ -431,6 +433,10 @@ export default defineComponent({
     // why: WP-676 / D-24492 — derived from UIState.pendingSmashDiscard !== undefined.
     // Passed to TurnActionBar to block end-turn and pass-priority at EVERY stage while a
     // Smash discard-for-attack choice is pending (board frozen, mirrors hasPendingPlayVillainTop).
+    // why: WP-681 / D-24498 — derived from UIState.pendingDoOver !== undefined.
+    const hasPendingDoOver = computed<boolean>(
+      () => snapshot.value?.pendingDoOver !== undefined,
+    );
     const hasPendingSmashDiscard = computed<boolean>(
       () => snapshot.value?.pendingSmashDiscard !== undefined,
     );
@@ -555,6 +561,7 @@ export default defineComponent({
       hasPendingDrawOrEmpowered,
       hasPendingPlayVillainTop,
       hasPendingSmashDiscard,
+      hasPendingDoOver,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -813,6 +820,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-681 / D-24498 — the Do-Over accept/decline prompt; appears only for
+               the choosing player when pendingDoOver is set. Same block-all posture as the
+               Smash prompt above. NOT a modal; normal document flow. -->
+          <DoOverPrompt
+            :pending-do-over="snapshot.pendingDoOver"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24071 + WP-287 — the draw-or-empowered prompt renders above
                TurnActionBar in DOM order; appears only for the choosing player when
                pendingDrawOrEmpowered is set. NOT a modal; normal document flow. WP-286's
@@ -943,6 +958,7 @@ export default defineComponent({
             :has-pending-draw-or-empowered="hasPendingDrawOrEmpowered"
             :has-pending-play-villain-top="hasPendingPlayVillainTop"
             :has-pending-smash-discard="hasPendingSmashDiscard"
+            :has-pending-do-over="hasPendingDoOver"
             :has-pending-victory-pile-card-pick="hasPendingVictoryPileCardPick"
             :has-pending-optional-put-bottom-h-q="hasPendingOptionalPutBottomHQ"
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"

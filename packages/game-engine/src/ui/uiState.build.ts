@@ -55,6 +55,7 @@ import type {
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingSmashDiscard,
+  UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingUndercoverChoice,
@@ -88,6 +89,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
+import { DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
 import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard.js';
 // why: WP-532 / D-24343 — reuse the engine's authoritative give-HQ-Hero eligibility helper
 // so the projected list is byte-identical to what resolveGiveHqHeroChoice validates against
@@ -103,6 +105,7 @@ import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffec
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { resolveCountSource } from '../hero/heroCountSource.resolve.js';
+import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
@@ -244,6 +247,11 @@ function deriveOptionalKoRewardLabel(
   }
   if (rewardType === 'recruit') {
     return `+${rewardMagnitude} Recruit`;
+  }
+  // why: WP-681 / D-24498 — Battlefield Promotion's reward gains a S.H.I.E.L.D. Officer
+  // from supply to the acting player's HAND (auto-taken on KO, pure upside).
+  if (rewardType === 'gain-officer-hand') {
+    return 'Gain a S.H.I.E.L.D. Officer to your hand';
   }
   // why: D-24020 — an unseeded rewardType cannot occur (WP-248 filters at
   // parse); the generic fallback keeps the projection total rather than
@@ -1236,8 +1244,15 @@ export function buildUIState(
     const frontReward = gameState.pendingOptionalKoRewards[0]!;
     const chooserZones = gameState.playerZones[frontReward.playerID];
     if (chooserZones !== undefined) {
+      // why: WP-681 / D-24498 — Battlefield Promotion (koTeamFilter 'shield') restricts the
+      // KO target to S.H.I.E.L.D. Heroes, so the eligible lists must list ONLY S.H.I.E.L.D.
+      // Heroes (the client submits only what it sees; the resolve rejects a non-shield target
+      // too, but a filtered projection is what a well-behaved client offers). Absent
+      // koTeamFilter = no restriction, so every existing entry lists every card unchanged.
+      const shieldOnly = frontReward.koTeamFilter === 'shield';
       const eligibleHand: UIEligibleKoHeroCard[] = [];
       for (const cardId of chooserZones.hand) {
+        if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
         eligibleHand.push({
           zone: 'hand',
           cardId,
@@ -1246,6 +1261,7 @@ export function buildUIState(
       }
       const eligibleDiscard: UIEligibleKoHeroCard[] = [];
       for (const cardId of chooserZones.discard) {
+        if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
         eligibleDiscard.push({
           zone: 'discard',
           cardId,
@@ -1590,6 +1606,25 @@ export function buildUIState(
     };
   }
 
+  // why: WP-681 / D-24498 — project the FRONT entry of G.pendingDoOverChoices as a binary
+  // accept/decline prompt (no eligible-card list — Do-Over discards the WHOLE hand, so there
+  // is nothing to pick). handSize is the current hand count so the client can label the cost
+  // ("Discard N cards and draw 4"). Chooser-only redaction is enforced by
+  // filterUIStateForAudience (keyed on .playerID), mirroring pendingSmashDiscard.
+  let pendingDoOver: UIPendingDoOver | undefined;
+  if (
+    gameState.pendingDoOverChoices !== undefined &&
+    gameState.pendingDoOverChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingDoOverChoices[0]!;
+    const chooserZones = gameState.playerZones[frontChoice.playerID];
+    pendingDoOver = {
+      playerID: frontChoice.playerID,
+      handSize: chooserZones !== undefined ? chooserZones.hand.length : 0,
+      drawCount: DO_OVER_DRAW_COUNT,
+    };
+  }
+
   // why: WP-498 / D-24301 — project the FRONT entry of G.pendingReturnOnDiscard with the
   // single returnable card recomputed fresh via getEligibleReturnOnDiscardCards — the SAME
   // predicate the resolve move validates with, so the client's { cardId } selection always
@@ -1843,6 +1878,9 @@ export function buildUIState(
     // why: WP-676 / D-24492 — conditional spread so an absent choice omits the field (no
     // `pendingSmashDiscard: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingSmashDiscard !== undefined ? { pendingSmashDiscard } : {}),
+    // why: WP-681 / D-24498 — conditional spread so an absent choice omits the field (no
+    // `pendingDoOver: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingDoOver !== undefined ? { pendingDoOver } : {}),
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),

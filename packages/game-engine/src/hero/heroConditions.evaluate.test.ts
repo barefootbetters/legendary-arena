@@ -1104,6 +1104,40 @@ describe('evaluateCondition cheapOrSizeChangingAtLeast (Antics)', () => {
   });
 });
 
+describe('evaluateCondition firstHeroPlayedThisTurn (WP-681 / D-24498 — Do-Over)', () => {
+  it('true when the triggering card is the only card in inPlay (first Hero)', () => {
+    const G = makeTestState({ inPlay: ['do-over-card'] });
+    assert.equal(
+      evaluateCondition(G, '0', { type: 'firstHeroPlayedThisTurn', value: '1' }, 'do-over-card'),
+      true,
+    );
+  });
+
+  it('false when another Hero is already in inPlay (not the first)', () => {
+    const G = makeTestState({ inPlay: ['other-hero', 'do-over-card'] });
+    assert.equal(
+      evaluateCondition(G, '0', { type: 'firstHeroPlayedThisTurn', value: '1' }, 'do-over-card'),
+      false,
+    );
+  });
+
+  it('true when inPlay is empty (defensive — no triggering card yet)', () => {
+    const G = makeTestState({ inPlay: [] });
+    assert.equal(
+      evaluateCondition(G, '0', { type: 'firstHeroPlayedThisTurn', value: '1' }),
+      true,
+    );
+  });
+
+  it('describeFailedCondition names the first-Hero requirement', () => {
+    const G = makeTestState({ inPlay: ['other-hero', 'do-over-card'] });
+    assert.match(
+      describeFailedCondition(G, '0', { type: 'firstHeroPlayedThisTurn', value: '1' }),
+      /first Hero you played this turn/,
+    );
+  });
+});
+
 describe('describeFailedCondition (WP-653 conditions quote the actual count)', () => {
   it('quotes distinct-cost, bystander, and cheap counts; Worthy states the requirement', () => {
     const G = makeTestState({

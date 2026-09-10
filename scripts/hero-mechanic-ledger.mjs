@@ -166,6 +166,11 @@ const KNOWN_CONDITIONS = {
   // why: WP-665 / D-24476 — Amadeus Cho "Gamma-Draining Nanites": the transform gates on
   // ≥N cards drawn this turn (a shipped wait-and-see condition), so the row reads `condition`.
   'draw-threshold': 'cardsDrawnThisTurnAtLeast',                  // ≥N cards drawn this turn
+  // why: WP-681 / D-24498 — Deadpool "Hey, Can I Get a Do-Over?": the discard-and-redraw gates
+  // on this being the FIRST Hero played this turn (a shipped condition, the D-24055 posture),
+  // so the row reads `condition`, not `unsupported`. Registered here at landing to avoid the
+  // false-`unsupported` drag on an implemented condition (PR #1865 pattern).
+  'first-hero-condition': 'firstHeroPlayedThisTurn',             // Deadpool "Do-Over": the first Hero played this turn
 };
 
 /** Error type signalling a probe failure (exit code 2). */

@@ -126,6 +126,23 @@ export function evaluateCondition(
       return playerZones.inPlay.length >= threshold;
     }
 
+    case 'firstHeroPlayedThisTurn': {
+      // why: WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?" gates on
+      // "if this is the FIRST Hero you played this turn". "First Hero" means no OTHER
+      // Hero is in the acting player's inPlay when this ability resolves. The played
+      // Do-Over card is already in inPlay when executeHeroEffects runs, so it is
+      // self-excluded via triggeringCardId (the heroClassMatch self-exclusion rule); if
+      // any OTHER card remains in inPlay, a prior Hero was played this turn, so this is
+      // NOT the first Hero and the gate fails. A boolean gate — condition.value is unused.
+      for (const playedCardId of playerZones.inPlay) {
+        if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+          continue;
+        }
+        return false;
+      }
+      return true;
+    }
+
     case 'distinctHeroClassesAtLeast': {
       // why: D-24055 — self-INCLUSIVE count (you *have* the classes; inverts
       // heroClassMatch's self-exclusion). S.H.I.E.L.D./Sidekick carry
@@ -527,6 +544,11 @@ export function describeFailedCondition(
       const played = playerZones ? playerZones.inPlay.length : 0;
       return `it needs ${condition.value} cards played this turn — you have played ${played}`;
     }
+
+    case 'firstHeroPlayedThisTurn':
+      // why: WP-681 / D-24498 — a boolean "first Hero this turn" gate; there is no
+      // running count to quote. The line fires only when no other Hero has been played.
+      return 'it needs to be the first Hero you played this turn';
 
     case 'distinctHeroClassesAtLeast': {
       const distinct = countDistinctHeroClassesInPlay(G, playerID);
