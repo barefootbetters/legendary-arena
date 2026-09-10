@@ -1260,14 +1260,15 @@ three questions, *who are the henchmen, who are the villains, who is the
 mastermind*, and the tiers sort themselves.
 
 And there is a rung above the Mastermind. The Mastermind supplies the
-*objective*; someone supplies the *idea* — the whisper that the throne is worth
-taking. Above the funding sits the tempter, and in the frame this page works in
-that rung has a name the page does not hedge (the reflex to quarantine sacred
-material is [the very default it
-refuses](#the-pattern-in-the-mirror-ais-secular-default)): it is Satan, whose
-motive is not acquisition but *hatred* — of God the Father and of Christ — and
-whose object is the ruin of what they love. He supplies the idea and covets
-nothing he could hold.
+*objective*; above the funding sits the one who supplies the *lie* — not an idea
+to build on but a deception that confuses and divides, that dresses the reaching
+in righteousness and sets neighbour against neighbour. In the frame this page
+works in that rung has a name the page does not hedge (the reflex to quarantine
+sacred material is [the very default it
+refuses](#the-pattern-in-the-mirror-ais-secular-default)): it is Satan, the
+father of lies, whose motive is not acquisition but *hatred* — of God the Father
+and of His Son Jesus Christ — and whose object is the ruin of the children they
+love. He deceives and divides, and covets nothing he could hold.
 
 That top rung explains something the
 [money trail](#five-tells-for-naming-the-mastermind) cannot, because **the motive
@@ -1302,13 +1303,13 @@ So the model is two-tier, and cleanly so:
 
 At a glance (top of the pyramid down):
 
-| Tier | Role in the Scheme | Motive | Negotiable? |
-|---|---|---|---|
-| **Satan** *(above the board)* | supplies the *idea*, not the funding | *hatred* — the ruin of what the good love | **No** — covets nothing it could hold |
-| **Mastermind** | sets the objective | *spite* — not to gain, but that the other *lose* | **No** — can only be defeated |
-| **The Funder** *(invisible)* | bankrolls the Scheme and quietly banks the take | *gain* — the profit, kept out of sight | In principle yes — but hidden; the top of the money trail |
-| **Villain** | does the visible damage | gain and standing; the cut it collects | **Yes** — bribed, recruited, turned |
-| **Henchman** | takes the risk | a nameable price; a real grievance | **Yes** — paid, bought off, recruited |
+| Tier | Role in the Scheme | Motive | Negotiable? | Example |
+|---|---|---|---|---|
+| **Satan** *(above the board)* | the father of lies — deceives, confuses, divides | *hatred* of God the Father and of Jesus Christ; to ruin the children they love | **No** — covets nothing he could hold | the lie that the Church is the people's enemy, whispered until neighbours turn on neighbours |
+| **Mastermind** | sets the objective | *spite* — not to gain, but that the other *lose* | **No** — can only be defeated | the revolutionary leadership that orders the Church *erased*, not taxed |
+| **The Funder** *(invisible)* | bankrolls the Scheme, banks the take | *gain*, kept out of sight | Hidden — the top of the money trail | the party paymasters and arms suppliers behind the militias |
+| **Villain** | does the visible damage | gain and standing; the cut it collects | **Yes** — bribed, recruited, turned | the column commander who leads the church-burning for rank |
+| **Henchman** | takes the risk | a nameable price; a real grievance | **Yes** — paid, bought off, recruited | the street militiaman paid in bread and a grievance |
 
 Three of these rungs are the game's own slots — **Henchman**, **Villain**,
 **Mastermind**; the **Funder** and the tempter sit off the board. The line falls
@@ -1318,6 +1319,28 @@ turned; the two above want the other side to *lose*, so nothing satisfies them
 and negotiation only ever works downward. Follow the money past the visible
 collectors and it ends at the Funder — past him it is no longer about money at
 all.
+
+**What it looks like whole — the Spanish Red Terror.** In the Republican zone in
+the summer of 1936, anticlerical militias and mobs killed on the order of
+**seven thousand Catholic clergy** — thirteen bishops, thousands of priests and
+friars, and hundreds of nuns — burned churches, and desecrated the sacred
+(Antonio Montero Moreno's count; the episode is treated in Antony Beevor's *The
+Battle for Spain*). Contemporary accounts also carry the killing and defilement
+of nuns; the most lurid stories were amplified as wartime propaganda, but the
+mass killing of clergy and the burning and desecration of churches are not in
+doubt. Now put the page's own question to it — *who benefits?* The Church held
+little the killers materially needed, so this was not the Funder's ledger; the
+priests and nuns threatened no one on a battlefield, so killing them won no
+ground. So what was it *about*? Strip the tiers away and the object at the very
+top was not gain at all but the **desecration of the holy itself** — the
+humiliation of consecrated men and women *precisely because* they were
+consecrated. That is spite toward God worked through men who had been handed the
+lie that the Church was their oppressor: the Henchman took the bread and the
+grievance, the Villain took the rank, but the aim at the summit was that God's
+house be defiled. It is the whole table in one atrocity — transactional at the
+bottom, hatred at the top — and it is faction-blind: the signature is always the
+same wherever the target is the *sacred as such*, whatever flag flies over the
+men doing it.
 
 For the cards that is the sharpest characterisation on offer, and it carries a
 design implication — a *lens*, not a shipped rule; an actual Mastermind is
