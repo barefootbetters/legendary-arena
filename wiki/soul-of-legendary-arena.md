@@ -1213,8 +1213,12 @@ tax collector, the enforcer, the officer who takes the cut in the open — is
 rarely the one it is all for. He is the Henchman: the hand the extraction wears,
 positioned to draw the resentment while the real gain flows past him. Trace the
 take past the visible collector to whoever quietly banks it and answers to no
-one, and it becomes clear who the Mastermind is. The Scheme depends on the crowd
-stopping its gaze at the Henchman; naming the Mastermind is refusing to.
+one, and you have reached the
+[**Funder**](#the-tiers-of-a-scheme--and-why-negotiation-only-works-downward) —
+the invisible top of the money; and behind the Funder, the **Mastermind** he
+serves, whose object was never the money at all. The Scheme depends on the crowd
+stopping its gaze at the Henchman; naming the Funder, and the Mastermind above
+him, is refusing to.
 
 **The marker is not the cause.** The Tribe lever
 ([split the coalition](#the-masterminds-common-tactics-the-grammar-of-manipulation))
