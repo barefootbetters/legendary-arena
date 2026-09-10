@@ -1681,6 +1681,10 @@ export function buildUIState(
       choiceType: 'give-hq-hero',
       playerID: frontGive.playerID,
       eligible: eligibleGiveCards,
+      // why: WP-692 / D-24509 — carry the optional ("may") flag so the chooser-only
+      // renderer shows a Decline button for Dark Technology; absent for the mandatory
+      // forms (Paibok, Bitter Captor).
+      ...(frontGive.optional === true ? { optional: true } : {}),
     };
   }
 

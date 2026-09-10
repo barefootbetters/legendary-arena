@@ -1180,6 +1180,10 @@ export function filterUIStateForAudience(
       choiceType: uiState.pendingGiveHqHeroChoice.choiceType,
       playerID: uiState.pendingGiveHqHeroChoice.playerID,
       eligible: eligibleGiveCardsCopy,
+      // why: WP-692 / D-24509 — pass through the optional ("may") flag so the chooser
+      // keeps the Decline control (Dark Technology). Five-step field: type + build +
+      // THIS filter pass-through + audience test + diagnostics snapshot.
+      ...(uiState.pendingGiveHqHeroChoice.optional === true ? { optional: true } : {}),
     };
   }
 

@@ -162,4 +162,40 @@ describe('PendingGiveHqHeroChoicePrompt (WP-532 / EC-567)', () => {
     assert.equal(buttons.length, 0, 'no actionable entry rendered for an empty eligible set');
     assert.equal(calls.length, 0, 'no move fired');
   });
+
+  // -------------------------------------------------------------------------
+  // WP-692 / D-24509 — the OPTIONAL free-recruit tactic (Dark Technology) adds a
+  // Decline button gated on the projected `optional` flag.
+  // -------------------------------------------------------------------------
+
+  const optionalChoice: UIPendingGiveHqHeroChoice = {
+    choiceType: 'give-hq-hero',
+    playerID: 'player-0',
+    eligible: mockPendingChoice.eligible,
+    optional: true,
+  };
+
+  test('renders a Decline button only when the choice is optional', () => {
+    const { submitMove } = recorder();
+    const mandatory = mount(PendingGiveHqHeroChoicePrompt, {
+      props: { pendingGiveHqHeroChoice: mockPendingChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!mandatory.find('[data-testid="pending-give-hq-hero-choice-decline"]').exists(), 'mandatory: no Decline');
+    const optional = mount(PendingGiveHqHeroChoicePrompt, {
+      props: { pendingGiveHqHeroChoice: optionalChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(optional.find('[data-testid="pending-give-hq-hero-choice-decline"]').exists(), 'optional: Decline shown');
+  });
+
+  test('clicking Decline dispatches resolveGiveHqHeroChoice with { decline: true }', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(PendingGiveHqHeroChoicePrompt, {
+      props: { pendingGiveHqHeroChoice: optionalChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    await wrapper.find('[data-testid="pending-give-hq-hero-choice-decline"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'resolveGiveHqHeroChoice');
+    assert.deepEqual(calls[0]!.args, { decline: true });
+  });
+
 });
