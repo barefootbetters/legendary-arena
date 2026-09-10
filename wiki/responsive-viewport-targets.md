@@ -148,35 +148,38 @@ yet meet**.
 
 ***Rev 4 — the lock mock, ratified as [`DECISIONS.md` D-24502](../docs/ai/DECISIONS.md).** The geometry is now a **locked design decision** (D-24502), prospectively superseding D-24251: the fixed 1280×720 authoring grid, the right rail, the locked City order, full-array hand/in-play binding, click-to-play into the in-play well, HQ-adjacent Transform Deck, and projection-bound denominators. D-24251's fluid stack **remains the shipped behavior until the implementation WP lands** — this entry ratifies the direction and governs that WP; it is not yet built. The two turn-bar controls are **scoped out of the geometry lock** and tracked separately: **Heal Wound** surfaces the shipped effect-driven `healWounds` mechanic (WP-379..382) as a conditional, stage-gated control (shown only when a heal is legal), and **Undo** is a genuinely new cross-layer feature — decided scope is **pre-commit, non-revealing** (undo your own actions this turn, never across a hidden-information reveal), pending its own decision + WP. (Rev 3 was a transient state — same board with the City labels still swapped and stale poster chrome — and is not archived here.)*
 
-### Implementation status — WP-685 (structural slice shipped; the fit is still open)
+### Implementation status — D-24502 fully shipped (structure WP-685 + fit WP-688)
 
-The D-24502 rebuild is **partially built**, and the split matters because the
-board a player sees today is **not yet the one that fits Tex's screen**.
+The D-24502 rebuild is **fully built**: the board a player sees today **fits
+Tex's screen** (an effective 1280×720) with no page scroll.
 
-**Shipped (WP-685, the structural slice).** `<PlayDesktop>` was rebuilt from the
-D-24251 fluid vertical stack into the spatial layout: a **two-column grid** with
-the shared board + cockpit in the main column and the **opponent panels + game
-log in a right rail**; the adversary-band and cockpit regroup; the hand and
-in-play as **horizontally-scrolling wells** bound to the full arrays (never
-sliced); and the empty in-play "play here" landing target. The occupied City
-place-names and the projection-bound twist/tactics denominators were already in
-place. This is live on the play surface.
+**Structure (WP-685).** `<PlayDesktop>` was rebuilt from the D-24251 fluid
+vertical stack into the spatial layout: a **two-column grid** with the shared
+board + cockpit in the main column and the **opponent panels + game log in a
+right rail**; the adversary-band and cockpit regroup; the hand and in-play as
+**horizontally-scrolling wells** bound to the full arrays (never sliced); and the
+empty in-play "play here" landing target. The occupied City place-names and the
+projection-bound twist/tactics denominators were already in place.
 
-**Not shipped — the 1280×720 fit (D-24502 lock 1).** The live check found the
-rebuilt board is still **~1360px tall and vertically scrolls at 1280×720** — so
-the sub-1366 failure this whole page documents is **not yet fixed**. The rail
-reclaimed real height (it measures ~366px), but the **actual `CardTile` and
-per-zone sizes are roughly twice the compact tiles the Rev-4 mock was drawn
-with**, so the grid + rail alone cannot reach the 720px floor. The mock hit
-720px by authoring small tiles; the real components are larger.
+**Fit to floor (WP-688 / D-24505).** The structural slice alone did not fit —
+the live check found the board still ~1360px tall and **vertically scrolling at
+1280×720**. The root cause was **structural, not just tile size**: `.app-shell`
+is a flex column (brand header + `flex:1` content + footer), but `.play-viewport`
+forced `min-height: 100vh`, so below a ~68px header + ~55px footer the page was
+always `68 + 100vh + 55` and page-scrolled no matter how short the board. WP-688
+fixes it, **at ≥768px only** (the D-12909 `<PlayMobile>` column is untouched):
+`<main>` (on the play routes) and `.play-viewport` fill the flex gap instead of
+forcing 100vh, and `<PlayDesktop>` is authored inside a fixed-width stage and
+**scaled to fit** by `useScaleToFit` (a DOM-geometry composable), with a
+`.play-desktop`-scoped card/spacing compaction keeping the scale readable.
 
-**The remaining work is component compaction.** Closing the gap needs the play
-components themselves made denser — smaller `CardTile` widths and tighter
-per-zone spacing so the board's *natural* height drops to roughly 750–900px and
-fits 1280×720 readably — optionally combined with a scale-to-fit stage (a pure
-scale of the 1360px board renders ~0.53× at 1280, too small to read). This is a
-**future Work Packet**; until it lands, D-24502 is realized only structurally and
-the effective floor behavior at 1280×720 is still the D-24251 scroll.
+**Realized behavior (D-24026 live-verified 2026-09-10).** 1280×720 fits with no
+page scroll (~0.61×, readable), 1366×768 (~0.66×), 1920×1080 (~0.98× — the same
+layout scaled up, no rewrap); ≤767px still renders `<PlayMobile>`. The sub-1366
+failure this page documents is **fixed**. (The D-24502 illustrative ladder of
+1.00/1.07/1.50 was drawn against the ~720px-natural Rev-4 mock; the real content
+is denser, so the fit is height-bound first — the binding intent, "fit the floor
+and scale up, never rewrap", holds.)
 
 ### Fluid desktop scaling — shipped (WP-430 / D-24251)
 

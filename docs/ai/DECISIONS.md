@@ -33041,9 +33041,17 @@ typecheck 0 + suite 1601/1601 (+7 counter cases from the 1594 baseline);
 
 ---
 
-### D-24251 — the desktop play surface adopts a fluid scaling model (1600px max-width cap + fluid clamp card/gutter tokens), additive to the D-12909 767px split (Active)
+### D-24251 — the desktop play surface adopts a fluid scaling model (1600px max-width cap + fluid clamp card/gutter tokens), additive to the D-12909 767px split (Superseded on the desktop side by D-24502/D-24505)
 
-**Status:** Active (landed 2026-07-26, EC-465 / WP-430).
+**Status:** **Superseded on the desktop side** by the D-24502 spatial board
+(structure WP-685; fit WP-688 / D-24505, 2026-09-10). The desktop board is no
+longer a fluid `max-width` column — it is authored at the 1280×720 floor and
+scaled to fit (D-24505). The `--play-max-width` cap survives only as an upper
+bound inside the scale stage, and the fluid `--card-width-*` / `--play-gutter`
+`clamp()` tokens survive as the **shared `:root` values** still consumed by
+`<PlayMobile>` and non-board CardTile surfaces — so this entry remains the
+authority for those tokens' values, not for the desktop board's layout model.
+(Originally landed 2026-07-26, EC-465 / WP-430.)
 
 **Decision.** `<PlayDesktop>` adopts a **fluid desktop scaling model, additive to
 the D-12909 `max-width: 767px` mobile/desktop split** (which is unchanged —
@@ -41302,8 +41310,9 @@ controls are their own follow-ons per *Out of scope*. Design record: the
 `play-mat-redesign01..04` mockups on the responsive-viewport-targets ewiki page
 and this session's review thread.
 
-**Status:** Active (direction ratified; implementation pending). **Supersedes
-(prospective):** D-24251.
+**Status:** Active — **fully implemented** (structure: WP-685 / EC-722, #1985;
+fit-to-floor lock 1: WP-688 / EC-725, D-24505, 2026-09-10). **Supersedes
+(realized):** D-24251 (desktop side).
 
 Protect this file.
 
@@ -41435,5 +41444,71 @@ server change). `G` stays JSON-serializable. No pay-to-win (NG-1 uncrossed — a
 difficulty variant chosen by the group, never a paid advantage).
 
 **Status:** Active.
+
+Protect this file.
+
+---
+
+### D-24505 — the desktop play surface fits the 1280×720 floor via an app-shell flex fill + a scale-to-fit stage (realizes D-24502 lock 1) (Active 2026-09-10 — WP-688 / EC-725)
+
+**Type:** Client UI Lock (play-surface geometry) — realizes D-24502 lock 1
+**Packet:** WP-688 / EC-725
+**Date:** 2026-09-10
+
+**Decision.** `<PlayDesktop>` **fits the 1280×720 authoring floor with no page
+scroll** and scales up (never rewraps) on wider screens. WP-685 shipped the
+D-24502 spatial STRUCTURE (grid + right rail + full-array wells + regroup) but
+the live D-24026 check found the board still ~1360px tall and **vertically
+scrolling at an effective 1280×720** (a 1080p monitor at 150% zoom — Tex's
+viewport). The fit is realized by two mechanisms:
+
+1. **App-shell flex fill (the structural root cause).** `.app-shell` is a flex
+   column (brand header + `flex:1` content + brand footer), but `.play-viewport`
+   forced `min-height: 100vh`, so below a ~68px header + ~55px footer the page
+   was always `68 + 100vh + 55` — it page-scrolled no matter how short the board.
+   On the play routes at `≥768px`, `<main>` (App.vue, scoped to
+   `[data-route='play-fixture']` / `[data-route='live']`) and `.play-viewport`
+   now fill the flex gap (`flex:1 1 auto; min-height:0`) instead of forcing
+   100vh, so the play area is exactly `100vh − header − footer` and the page
+   never scrolls. **Scoped to `≥768px`** so the D-12909 `<PlayMobile>` surface
+   keeps its own `min-height:100vh` scrolling-column behavior **byte-unchanged**
+   (verified live at 375px: `<PlayMobile>` renders, `.play-viewport` stays
+   `display:block; min-height:100vh`).
+2. **Scale-to-fit stage + board-scoped compaction.** The board is authored inside
+   a fixed-width stage (`--play-authoring-width`, currently `1500px`) and scaled
+   by `useScaleToFit` (a DOM-geometry composable — measures the flex-sized
+   container's client box vs. the absolutely-positioned stage's layout size,
+   clamps the fit into a `[0.5, 1.5]` band, recomputes on resize + a stage
+   `ResizeObserver`). A `.play-desktop`-scoped `--card-width-*` / gutter override
+   plus desktop-board-scoped playmat-slot compaction (empty-slot `min-height`s,
+   panel paddings) bring the board's natural height down and stop the adversary
+   band from wrapping, so the live scale is readable.
+
+**Realized scale ladder.** D-24502 lock 1's illustrative ladder (1.00× at 1280,
+~1.07× at 1366, 1.50× at 1920) was authored against the ~720px-natural Rev-4
+mock; the real content is denser, so the fit is **height-bound first**. Measured
+live: **1280×720 → ~0.61×** (readable, no page scroll), **1366×768 → ~0.66×**,
+**1920×1080 → ~0.98×** (scales up, same layout, no rewrap). The binding intent —
+fit the 1280 floor with no page scroll, and scale up (never rewrap) toward the
+~1.5× cap — holds; the exact per-width numbers are fit-driven, not the contract.
+
+**Supersession realized.** With WP-685 (structure) + WP-688 (fit) both shipped,
+the D-24502 rebuild is fully implemented and **D-24251 (the fluid `max-width`
+stack) is superseded on the desktop side** (the `--play-max-width` cap is retained
+only as an upper bound inside the scale stage; the fluid `clamp()` card tokens
+remain the shared `:root` values that `<PlayMobile>` and non-board CardTile
+consumers still use).
+
+**Layer / boundary.** App layer (`apps/arena-client`) only — presentation (CSS +
+a DOM-geometry composable), consuming the existing read-only `UIState`. No
+`G`/`ctx`, no new `UIState` field, no persistence, no `finalStateHash` re-pin, no
+HTTP surface. The `App.vue` `<main>` and `PlayViewport.vue` `.play-viewport`
+edits are the flex-chain amendment beyond WP-688's original allowlist (recorded in
+WP-688 / EC-725); both are `≥768px`-scoped and, for `<main>`, play-route-scoped,
+so no other route or the mobile surface changes. Vision NG-1..7 uncrossed (a
+readability/layout change; no monetization / pay-to-win).
+
+**Status:** Active. **Realizes:** D-24502 lock 1. **Supersedes (realized,
+desktop side):** D-24251.
 
 Protect this file.
