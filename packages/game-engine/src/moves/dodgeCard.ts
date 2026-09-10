@@ -38,6 +38,7 @@ import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
+import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -117,6 +118,7 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingGiveHqHeroChoice(G)) return;
   // why: block-all — pendingCopyPowersChoice (Rogue's Copy Powers) must be resolved first (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) return;
+  if (hasPendingSeatChoice(G)) return; // why: WP-684 / D-24501 — block-all (non-active/multi-seat pending choice)
 
   // Step 3: Eligibility — the card must be in the current player's hand AND carry
   // a dodge hook (read-only, timing-agnostic). pid = ctx.currentPlayer matches the

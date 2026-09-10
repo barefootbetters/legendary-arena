@@ -930,6 +930,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-684 / D-24501 — PER-SEAT redaction of the non-active/multi-seat pending choice.
+  // Emitted ONLY to an audience that is an addressed, still-outstanding seat (the
+  // outstandingSeats membership test covers both "addressed" and "not yet submitted"), and
+  // rebuilt to carry ONLY that seat's OWN prompt in seatPrompts — never another seat's
+  // options (the per-seat redaction contract). Opponents, spectators, and already-submitted
+  // seats get it omitted (conditional assignment, never an `undefined` literal).
+  // addressedSeats / outstandingSeats are seat-id liveness info (no private data), copied as-is.
+  if (
+    uiState.pendingSeatChoice !== undefined &&
+    audience.kind === 'player' &&
+    uiState.pendingSeatChoice.outstandingSeats.includes(audience.playerId)
+  ) {
+    const seatChoice = uiState.pendingSeatChoice;
+    const ownPrompt = seatChoice.seatPrompts[audience.playerId];
+    result.pendingSeatChoice = {
+      kind: seatChoice.kind,
+      addressedSeats: [...seatChoice.addressedSeats],
+      outstandingSeats: [...seatChoice.outstandingSeats],
+      seatPrompts: {
+        [audience.playerId]: {
+          options: (ownPrompt?.options ?? []).map((option) => ({ label: option.label })),
+        },
+      },
+    };
+  }
+
   // why: WP-663 / D-24474 — the pending play-top-Villain-Deck choice (Shadowed Thoughts)
   // is private to the chooser (only they may resolve it). Redacted for EVERY audience
   // except the choosing player; present only when the audience is a player whose playerId

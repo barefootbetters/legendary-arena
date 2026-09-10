@@ -64,6 +64,11 @@ import {
 } from '../moves/copyPowersChoice.resolve.js';
 import { hasPendingOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { hasPendingPutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
+import {
+  hasPendingSeatChoice,
+  isSeatAddressed,
+  hasSeatSubmitted,
+} from '../moves/seatChoice.resolve.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // why: simulation covers the play-phase only; lobby moves (setPlayerReady,
@@ -151,6 +156,12 @@ export const SIMULATION_MOVE_NAMES = [
   // within-turn move-steps — the exact hang WP-289 / D-24073 documents).
   'resolveOptionalPutBottomHQ',
   'resolvePutAnyNumberBottomHQ',
+  // why: WP-684 / D-24501 — getLegalMoves short-circuits to resolveSeatChoice when a
+  // non-active/multi-seat pending choice is open for the enumerated (addressed) seat; it MUST
+  // be dispatchable in the sim (both MOVE_MAPs) or a parked seat choice would hang the per-turn
+  // loop (the WP-289 / D-24073 within-turn hang). No card parks one yet, so it is latent until
+  // WP-682 / WP-683 wire a consumer. Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveSeatChoice',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -233,6 +244,24 @@ export function getLegalMoves(
     // why: fail-closed — active player has no zones (malformed state).
     // Return empty list; the runner's zero-legal-moves fallback handles
     // the degenerate case.
+    return legalMoves;
+  }
+
+  // why: WP-684 / D-24501 — non-active/multi-seat seat-choice short-circuit. While a seat
+  // choice is open the block-all guard freezes every action move, so nothing else is legal for
+  // ANY seat. For the enumerated seat (context.currentPlayer) that is addressed and has not yet
+  // submitted, the ONLY legal move is resolveSeatChoice at the deterministic default option
+  // index (choice.defaultOptionIndex — the same default the disconnect/timeout path applies, so
+  // an all-bot resolution is replay-identical). Any other enumerated seat — the blocked active
+  // player, a non-addressed seat, or a seat that already submitted — has NO legal move (empty
+  // list). Placed first among the pending short-circuits; never fires for existing games (no
+  // card parks a seat choice yet). Returns a list of length EXACTLY 1 for an outstanding
+  // addressed seat, else empty.
+  if (hasPendingSeatChoice(gameState)) {
+    const seatChoice = gameState.pendingSeatChoice!;
+    if (isSeatAddressed(seatChoice, activePlayer) && !hasSeatSubmitted(seatChoice, activePlayer)) {
+      return [{ name: 'resolveSeatChoice', args: { optionIndex: seatChoice.defaultOptionIndex } }];
+    }
     return legalMoves;
   }
 

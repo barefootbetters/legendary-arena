@@ -1061,6 +1061,76 @@ describe('filterUIStateForAudience — pendingUndercoverChoice redaction (D-2449
 });
 
 // ---------------------------------------------------------------------------
+// WP-684 / D-24501 — pendingSeatChoice per-seat redaction (non-active / multi-seat)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where a simultaneous multi-seat choice is addressed to seats '0'
+ * and '1', each with its OWN two-option prompt. Per-seat redaction: each addressed
+ * outstanding seat sees ONLY its own prompt; an opponent/spectator sees nothing.
+ */
+function createSeatChoiceUIState(submittedSeats: string[] = []): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  const submissions: Record<string, { optionIndex: number }> = {};
+  for (const seat of submittedSeats) {
+    submissions[seat] = { optionIndex: 0 };
+  }
+  gameState.pendingSeatChoice = {
+    kind: 'generic',
+    addressedSeats: ['0', '1'],
+    seatPrompts: {
+      '0': { options: [{ label: '0-A' }, { label: '0-B' }] },
+      '1': { options: [{ label: '1-A' }, { label: '1-B' }] },
+    },
+    submissions,
+    defaultOptionIndex: 0,
+  };
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingSeatChoice per-seat redaction (D-24501)', () => {
+  it('an addressed seat sees ONLY its own prompt (not another seat\'s options)', () => {
+    const uiState = createSeatChoiceUIState();
+    const forSeat0 = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(forSeat0.pendingSeatChoice !== undefined, 'addressed seat 0 sees the choice');
+    assert.deepEqual(Object.keys(forSeat0.pendingSeatChoice!.seatPrompts), ['0'], 'only seat 0 prompt');
+    assert.deepEqual(
+      forSeat0.pendingSeatChoice!.seatPrompts['0']!.options.map((option) => option.label),
+      ['0-A', '0-B'],
+    );
+
+    const forSeat1 = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(forSeat1.pendingSeatChoice !== undefined, 'addressed seat 1 sees the choice');
+    assert.deepEqual(Object.keys(forSeat1.pendingSeatChoice!.seatPrompts), ['1'], 'only seat 1 prompt');
+  });
+
+  it('exposes public liveness (addressedSeats / outstandingSeats) to an addressed seat', () => {
+    const uiState = createSeatChoiceUIState();
+    const forSeat0 = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepEqual(forSeat0.pendingSeatChoice!.addressedSeats, ['0', '1']);
+    assert.deepEqual(forSeat0.pendingSeatChoice!.outstandingSeats, ['0', '1']);
+  });
+
+  it('a spectator does NOT see pendingSeatChoice', () => {
+    const uiState = createSeatChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingSeatChoice, undefined, 'spectator must not see any seat prompt');
+  });
+
+  it('an addressed seat that ALREADY submitted no longer sees the prompt', () => {
+    const uiState = createSeatChoiceUIState(['0']); // seat 0 has submitted
+    const forSeat0 = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(forSeat0.pendingSeatChoice, undefined, 'a resolved seat no longer sees the prompt');
+    const forSeat1 = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(forSeat1.pendingSeatChoice !== undefined, 'the still-outstanding seat 1 still sees it');
+    assert.deepEqual(forSeat1.pendingSeatChoice!.outstandingSeats, ['1']);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-676 / D-24492 — pendingSmashDiscard redaction (chooser-only)
 // ---------------------------------------------------------------------------
 

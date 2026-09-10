@@ -58,6 +58,7 @@ import type {
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
   UIPendingUndercoverChoice,
+  UIPendingSeatChoice,
   UIPendingPlayVillainTop,
   UIPendingVictoryPileCardPick,
   UIVictoryPileVillainChoice,
@@ -1365,6 +1366,32 @@ export function buildUIState(
     };
   }
 
+  // why: WP-684 / D-24501 — project G.pendingSeatChoice (the single open non-active/multi-seat
+  // choice). The FULL projection carries every addressed seat's own prompt in seatPrompts;
+  // filterUIStateForAudience redacts it to only the viewing seat's own entry (the per-seat
+  // redaction contract). addressedSeats / outstandingSeats are seat-id liveness info (no private
+  // data). Absent (undefined) means no pending seat choice. Never set by an existing game.
+  let pendingSeatChoice: UIPendingSeatChoice | undefined;
+  if (gameState.pendingSeatChoice !== undefined) {
+    const seatChoice = gameState.pendingSeatChoice;
+    const outstandingSeats = seatChoice.addressedSeats.filter(
+      (seat) => !Object.prototype.hasOwnProperty.call(seatChoice.submissions, seat),
+    );
+    const seatPrompts: Record<string, { options: { label: string }[] }> = {};
+    for (const seat of seatChoice.addressedSeats) {
+      const prompt = seatChoice.seatPrompts[seat];
+      seatPrompts[seat] = {
+        options: (prompt?.options ?? []).map((option) => ({ label: option.label })),
+      };
+    }
+    pendingSeatChoice = {
+      kind: seatChoice.kind,
+      addressedSeats: [...seatChoice.addressedSeats],
+      outstandingSeats,
+      seatPrompts,
+    };
+  }
+
   // why: WP-663 / D-24474 — project the FRONT entry of G.pendingPlayVillainTopChoices so
   // the chooser can render Shadowed Thoughts' "Play the top Villain-Deck card for +N Attack?"
   // prompt. Binary choice, no eligible-card list (mirrors pendingDrawOrEmpowered). Redaction
@@ -1823,6 +1850,7 @@ export function buildUIState(
     ...(pendingCountScaledChoice !== undefined ? { pendingCountScaledChoice } : {}),
     // why: WP-678 / D-24494 — conditional spread so an absent choice omits the field.
     ...(pendingUndercoverChoice !== undefined ? { pendingUndercoverChoice } : {}),
+    ...(pendingSeatChoice !== undefined ? { pendingSeatChoice } : {}),
     ...(pendingPlayVillainTop !== undefined ? { pendingPlayVillainTop } : {}),
     // why: WP-313 — conditional spread so an absent pick omits the field (no
     // `pendingVictoryPileCardPick: undefined` literal under exactOptionalPropertyTypes).

@@ -78,6 +78,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // MUST be dispatchable here or a parked count-scaled choice hangs the PAR loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked Smash choice hangs the PAR loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -442,6 +443,10 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
+  // why: WP-684 / D-24501 — dispatch-completeness parity with the runner MOVE_MAP:
+  // getLegalMoves short-circuits to resolveSeatChoice when a non-active/multi-seat pending
+  // choice is open; a missing dispatch entry hangs the loop (pinned by the drift guard).
+  resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   // why: D-24440 — same dispatch-completeness rule as the runner MOVE_MAP: getLegalMoves
   // short-circuits to resolveHeroChoice when a reveal-attack-choose hero ability parks

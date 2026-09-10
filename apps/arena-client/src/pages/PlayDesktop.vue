@@ -55,6 +55,7 @@ import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
+import PendingSeatChoicePrompt from '../components/play/PendingSeatChoicePrompt.vue';
 import PlayVillainTopPrompt from '../components/play/PlayVillainTopPrompt.vue';
 import VictoryPileCardPickPrompt from '../components/play/VictoryPileCardPickPrompt.vue';
 import OptionalPutBottomHQPrompt from '../components/play/OptionalPutBottomHQPrompt.vue';
@@ -134,6 +135,7 @@ export default defineComponent({
     DrawOrEmpoweredPrompt,
     CountScaledChoicePrompt,
     UndercoverChoicePrompt,
+    PendingSeatChoicePrompt,
     PlayVillainTopPrompt,
     VictoryPileCardPickPrompt,
     OptionalPutBottomHQPrompt,
@@ -835,6 +837,16 @@ export default defineComponent({
                shld mixed choose-one's Undercover option. Same block-all posture. -->
           <UndercoverChoicePrompt
             :pending-undercover-choice="snapshot.pendingUndercoverChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-684 / D-24501 — the non-active/multi-seat pending-choice prompt
+               (foundational scaffold; the concrete card renderers ship with WP-682 / WP-683).
+               Appears for an addressed, still-outstanding seat — INCLUDING a NON-ACTIVE seat —
+               because the engine per-seat audience filter redacts the projection to only this
+               seat's own prompt. Same block-all posture as the prompts above. -->
+          <PendingSeatChoicePrompt
+            :pending-seat-choice="snapshot.pendingSeatChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
