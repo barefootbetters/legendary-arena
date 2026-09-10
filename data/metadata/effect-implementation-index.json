@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1858,
+    "totalEntries": 1860,
     "byScope": {
-      "hero": 683,
+      "hero": 685,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 417,
+      "executable": 419,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
@@ -6754,6 +6754,23 @@
       "name": "Captain America",
       "set": "core",
       "scope": "hero",
+      "mechanic": "diving-block",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#diving-block",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "designs": [
+        {
+          "slug": "diving-block",
+          "name": "Diving Block"
+        }
+      ]
+    },
+    {
+      "extId": "core/captain-america",
+      "name": "Captain America",
+      "set": "core",
+      "scope": "hero",
       "mechanic": "recruit-per-count",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
@@ -7060,6 +7077,23 @@
         {
           "slug": "battlefield-promotion",
           "name": "Battlefield Promotion"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "name": "Nick Fury",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "pure-fury",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "designs": [
+        {
+          "slug": "pure-fury",
+          "name": "Pure Fury"
         }
       ]
     },
@@ -28563,6 +28597,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "diving-block",
         "recruit-per-count"
       ]
     },
@@ -28620,7 +28655,8 @@
       "mechanics": [
         "attack",
         "attack-per-count",
-        "optional-ko-shield-officer"
+        "optional-ko-shield-officer",
+        "pure-fury"
       ]
     },
     "core/rogue": {

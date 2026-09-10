@@ -166,7 +166,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "If you would gain a Wound, you may reveal this card and draw a card instead."
+            "If you would gain a Wound, you may reveal this card and draw a card instead. [keyword:diving-block]"
           ]
         },
         {
@@ -1048,7 +1048,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
+            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile. [keyword:pure-fury]"
           ]
         }
       ],

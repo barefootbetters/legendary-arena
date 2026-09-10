@@ -19,7 +19,7 @@ import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { performVillainReveal } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
@@ -160,12 +160,9 @@ function revealOrPunish(
               `[Scheme Twist] Player ${playerId} has no matching hero — wound supply empty, no wound gained.`,
             );
           } else {
-            const woundResult = gainWound(
-              gameState.piles.wounds,
-              gameState.playerZones[playerId]!.discard,
-            );
-            gameState.piles.wounds = woundResult.woundsPile;
-            gameState.playerZones[playerId]!.discard = woundResult.playerDiscard;
+            // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Scheme-Twist
+            // Wound to a Diving-Block holder (a NON-active seat) gets the reveal window (WP-684).
+            gainWoundForPlayer(gameState, playerId);
             // why: WP-643-follow-up — the player had no matching Hero and took the
             // Wound penalty; a bad outcome for the player → `blocked` (red).
             pushLog(gameState,
@@ -361,12 +358,9 @@ function woundAll(
           );
           break;
         }
-        const woundResult = gainWound(
-          gameState.piles.wounds,
-          gameState.playerZones[playerId]!.discard,
-        );
-        gameState.piles.wounds = woundResult.woundsPile;
-        gameState.playerZones[playerId]!.discard = woundResult.playerDiscard;
+        // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so this multi-wound
+        // "each player" Scheme Twist reaches Diving-Block holders on NON-active seats (WP-684).
+        gainWoundForPlayer(gameState, playerId);
         woundsGained = woundsGained + 1;
       }
 

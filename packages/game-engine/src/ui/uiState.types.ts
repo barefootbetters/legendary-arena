@@ -1058,7 +1058,10 @@ export interface UIDefeatChoiceTarget {
  * @see DECISIONS.md D-24291
  */
 export interface UIPendingDefeatChoice {
-  choiceType: "defeat-with-bystander";
+  // why: WP-682 / D-24499 — Pure Fury reuses the defeat-with-bystander pending shape
+  // + client prompt with its own predicate; the discriminant lets the client label
+  // the free-defeat source correctly (both dispatch through the same resolve move).
+  choiceType: "defeat-with-bystander" | "pure-fury";
   playerID: string;
   targets: UIDefeatChoiceTarget[];
 }

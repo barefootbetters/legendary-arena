@@ -520,7 +520,7 @@ describe('buildHeroAbilityHooks WP-681 optional/interactive core heroes (D-24498
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 39 canonical keyword values', () => {
+  it('contains exactly the 52 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -572,12 +572,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'smash', // why: WP-676 / D-24492 — "Smash N" ("You may discard another card from your hand. If you do, you get +N attack.") (wwhk) — optional per-instance discard-for-attack pending choice
     'do-over', // why: WP-681 / D-24498 — Deadpool "Hey, Can I Get a Do-Over?" ("If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards.") — first-hero-gated optional discard-hand-and-draw-4 pending choice
     'optional-ko-shield-officer', // why: WP-681 / D-24498 — Nick Fury "Battlefield Promotion" ("You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand.") — reuses the optional-ko-reward queue with a shield team filter + gain-officer-hand reward
+    'diving-block', // why: WP-682 / D-24499 — Captain America "Diving Block" ("If you would gain a Wound, you may reveal this card and draw a card instead.") — reactive wound interception at the gainWoundForPlayer chokepoint (WOUND_TIME_EXECUTED_KEYWORDS; no onPlay handler)
+    'pure-fury', // why: WP-682 / D-24499 — Nick Fury "Pure Fury" ("Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile.") — free conditional defeat reusing the defeat-with-bystander shared path
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      50,
-      'HERO_KEYWORDS must have exactly 50 entries',
+      52,
+      'HERO_KEYWORDS must have exactly 52 entries',
     );
 
     assert.deepStrictEqual(

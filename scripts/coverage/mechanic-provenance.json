@@ -16,6 +16,8 @@
     "smash": { "wp": "WP-676", "decision": "D-24492" },
     "do-over": { "wp": "WP-681", "decision": "D-24498" },
     "optional-ko-shield-officer": { "wp": "WP-681", "decision": "D-24498" },
+    "diving-block": { "wp": "WP-682", "decision": "D-24499" },
+    "pure-fury": { "wp": "WP-682", "decision": "D-24499" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "D-24019" },
     "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },

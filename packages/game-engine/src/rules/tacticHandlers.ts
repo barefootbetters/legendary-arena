@@ -25,7 +25,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -198,14 +198,13 @@ export function resolveCrushingShockwave(
     // woundsPile length not dropping (mirrors gainWoundToDiscard).
     let woundsTaken = 0;
     for (let woundIndex = 0; woundIndex < SHOCKWAVE_WOUND_COUNT; woundIndex++) {
-      const woundResult = gainWound(G.piles.wounds, playerZones.discard);
-      if (woundResult.woundsPile.length === G.piles.wounds.length) {
-        // why: supply empty this iteration — no Wound moved; stop early rather
-        // than substitute or throw (moves never throw).
+      // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a tactic-Fight Wound
+      // reaches a Diving-Block holder (possibly a NON-active seat) via the WP-684 wave.
+      // undefined return = supply empty this iteration → stop early (moves never throw).
+      const gainedWoundId = gainWoundForPlayer(G, playerId);
+      if (gainedWoundId === undefined) {
         break;
       }
-      G.piles.wounds = woundResult.woundsPile;
-      playerZones.discard = woundResult.playerDiscard;
       woundsTaken += 1;
     }
 

@@ -205,7 +205,11 @@ export function resolveDefeatChoice(
   if (front.playerID !== playerID) {
     return;
   }
-  if (front.choiceType !== 'defeat-with-bystander') {
+  // why: WP-682 / D-24499 — resolveDefeatChoice serves BOTH conditional free-defeat
+  // families: Silent Sniper (defeat-with-bystander) and Nick Fury's Pure Fury
+  // (pure-fury). Both park the same target-snapshot shape and dispatch through the same
+  // shared free-defeat core, so either discriminant is a valid front entry here.
+  if (front.choiceType !== 'defeat-with-bystander' && front.choiceType !== 'pure-fury') {
     return;
   }
 

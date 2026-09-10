@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 683,
+    "totalRows": 685,
     "byStatus": {
-      "executable": 281,
+      "executable": 283,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
       "unmarked": 35,
       "subsystem": 1
     },
-    "distinctMechanics": 137
+    "distinctMechanics": 139
   },
   "rows": [
     {
@@ -3273,6 +3273,22 @@
       "extId": "core/captain-america",
       "heroName": "Captain America",
       "set": "core",
+      "mechanic": "diving-block",
+      "status": "executable",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#diving-block",
+      "designs": [
+        {
+          "slug": "diving-block",
+          "name": "Diving Block"
+        }
+      ]
+    },
+    {
+      "extId": "core/captain-america",
+      "heroName": "Captain America",
+      "set": "core",
       "mechanic": "recruit-per-count",
       "status": "executable",
       "wp": "WP-674",
@@ -3562,6 +3578,22 @@
         {
           "slug": "battlefield-promotion",
           "name": "Battlefield Promotion"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "heroName": "Nick Fury",
+      "set": "core",
+      "mechanic": "pure-fury",
+      "status": "executable",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury",
+      "designs": [
+        {
+          "slug": "pure-fury",
+          "name": "Pure Fury"
         }
       ]
     },

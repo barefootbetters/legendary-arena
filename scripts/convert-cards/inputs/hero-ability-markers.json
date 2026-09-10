@@ -171,6 +171,18 @@
     },
     {
       "heroSlug": "captain-america",
+      "cardSlug": "diving-block",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:diving-block]"
+    },
+    {
+      "heroSlug": "nick-fury",
+      "cardSlug": "pure-fury",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:pure-fury]"
+    },
+    {
+      "heroSlug": "captain-america",
       "cardSlug": "perfect-teamwork",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
