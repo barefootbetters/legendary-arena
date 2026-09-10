@@ -41147,6 +41147,69 @@ Protect this file.
 
 ---
 
+### D-24498 — three optional/interactive core-hero abilities (High-Tech Weaponry marker; Do-Over first-Hero discard-redraw; Battlefield Promotion optional-KO + gain-Officer-to-hand) (Active 2026-09-10 — WP-681 / EC-718)
+
+Makes three inert core-hero abilities faithful. Two are genuine active-player pending
+choices (reusing the shipped active-only pending-choice model — no WP-684 non-active
+dependency); the third is a data-only marker. No new hashed `G` field, no hash re-pin —
+the two new pending queues are lazily materialized (never in `Game.setup`) and the
+block-all guards keep them empty at every turn-end.
+
+1. **High-Tech Weaponry** (Nick Fury) is a **card-data marker only**: the printed
+   `[hc:tech]:` prefix is the existing `heroClassMatch` class-synergy gate and
+   `[keyword:attack:1]` is the existing flat-attack grant — a conditional +1 attack with
+   no engine change.
+2. **Hey, Can I Get a Do-Over?** (Deadpool) adds a new **`firstHeroPlayedThisTurn`**
+   `heroCondition` (true iff no OTHER Hero is in the acting player's `inPlay` when it
+   resolves — the triggering card is self-excluded, mirroring `heroClassMatch`) plus a new
+   handler-bearing **`do-over`** keyword (NO magnitude → enrolled in
+   `NO_MAGNITUDE_KEYWORDS`). It parks a `PendingDoOver` accept/decline choice; on accept it
+   discards the ENTIRE current hand through the `discardFromHand` chokepoint then draws a
+   FIXED **4** (not one-per-discard); decline is a clean no-op. New `resolveDoOver` move
+   (block-all guard across every action-move site + `game.test.ts` registration + sim
+   dispatch: `SIMULATION_MOVE_NAMES` + both MOVE_MAPs, bot default DECLINE), the five-step
+   `pendingDoOver` UIState projection, and a `DoOverPrompt.vue` renderer (desktop + mobile +
+   `useTurnActions` gate). Marker: `[keyword:first-hero-condition]` + `[keyword:do-over]`.
+3. **Battlefield Promotion** (Nick Fury) adds a new **`optional-ko-shield-officer`** keyword
+   (NO magnitude) that REUSES the shipped optional-ko-reward pending queue with two new
+   dimensions on `PendingOptionalKoReward`: `koTeamFilter: 'shield'` (the KO target must be a
+   S.H.I.E.L.D. Hero — the S.H.I.E.L.D. Officer token itself counts, via the new
+   `cardCountsAsShieldHero` predicate) and `rewardType: 'gain-officer-hand'` (a new reward
+   variant that gains a S.H.I.E.L.D. Officer from supply to the acting player's HAND, via the
+   new `gainOfficerToHand` helper — the discard-bound `gain-officer-current` is unchanged).
+   The officer reward is pure upside, so it AUTO-resolves on KO (the reveal-from-hand
+   precedent — no second pending choice); an empty Officer supply no-ops the reward. The
+   printed co-located `[team:shield]` is the KO-TARGET criterion, so it is suppressed from
+   the Step-1b `requiresTeam` extraction (mirroring the reveal-from-hand criterion
+   suppression) — the card fires unconditionally; the filter is enforced at resolve time.
+   Reuses `OptionalKoRewardPrompt.vue` (the projection filters the eligible lists to
+   S.H.I.E.L.D. Heroes and derives the reward label).
+
+`HERO_KEYWORDS` union+array bumped 48→50 with the drift pins updated;
+`HERO_EFFECT_HANDLERS` 34→36. Markers authored via `inputs/hero-ability-markers.json` +
+`VALID_TOKEN_PATTERN`, then the 5-stage regen (only `data/cards/core.json` changes
+semantically). Derived feeds regenerated (hero ledger + card-mechanics + effect-index);
+`first-hero-condition` registered in the ledger's `KNOWN_CONDITIONS` so it reads
+`condition`, not a false `unsupported`; `mechanic-provenance` rows added for `do-over` and
+`optional-ko-shield-officer`. All three cards flip to `executable` / `condition`;
+`sim:coverage` emits a `first-hero-condition` new-mechanic warning (registered, not a
+regression).
+
+**Deviation from EC-718.** The EC named the Battlefield Promotion KO half as reusing the
+existing `optional-ko-hand-discard` keyword. To avoid overloading Radioactive Riot's
+param-less no-reward contract, this ships a dedicated sibling keyword
+`optional-ko-shield-officer` that parks into the SAME shared queue (the reuse the EC
+intended) — the pending-choice infra, resolve move, block-all guards, projection, and
+renderer are all reused; only a new keyword + the two additive pending-entry fields are
+added. The officer-take second "you may" is modeled as pure-upside auto-take rather than a
+second pending choice (the reveal-from-hand precedent), keeping the flow single-step.
+
+**Packet:** WP-681 / EC-718. **Active:** 2026-09-10.
+
+Protect this file.
+
+---
+
 ### D-24502 — the desktop play surface adopts a fixed 1280×720 authoring-grid spatial board (prospectively supersedes the D-24251 fluid stack) (Active 2026-09-09 — play-mat spatial rebuild; implementation WP TBD)
 
 **Type:** Client UI Lock (play-surface geometry) — design ruling ahead of implementation
