@@ -42078,4 +42078,61 @@ tactics → `executable`). Moves never throw; an unknown tactic id stays a silen
 (defeat-with-bystander free-defeat callers threading events). **Reserved by:** WP-694 draft
 (NUMBER-LEDGER).
 
+### D-24510 — Two core Loki tactic Fight resolvers: Cruel Ruler (free City-Villain defeat) + Maniacal Tyrant (KO-from-discard) (Active 2026-09-10 — WP-693 / EC-730)
+
+Loki's **Cruel Ruler** ("Fight: Defeat a Villain in the City for free") and **Maniacal
+Tyrant** ("Fight: KO up to four cards from your discard pile") were inert — like every
+tactic `dispatchTacticOnFight` (D-24300) does not key, their printed Fight ability fired
+nothing. This WP adds both as per-tactic resolvers in `rules/tacticHandlers.ts`, each an
+**active-player** (`ctx.currentPlayer`) pending choice the arena client renders.
+
+**1. Cruel Ruler reuses the shipped free-defeat family (D-24291 / D-24499).** The printed
+text is villain-only with no Bystander requirement, so it adds a **third** `choiceType`
+discriminant `'cruel-ruler'` to `PendingDefeatChoice` (the WP-682 add-a-discriminant
+move) + a new all-City-Villain target builder `buildCityVillainDefeatTargets(G)` (every
+occupied City space, ascending index, `kind: 'villain'`, **no** Mastermind entry, **no**
+`isGuardBlocking` filter — faithful to "for free", matching the shipped free-defeat which
+also ignores Guard). Cardinality: **0** City Villains → silent no-op; **1** → auto-defeat
+directly via the shared `dispatchDefeatWithBystanderTarget`; **≥2** → park a
+`PendingDefeatChoice` for the active player. The defeat routes through the shared
+`defeatCityVillainCore` (no attack spent, no acted-this-turn flag, Bystanders + captured
+Heroes + `onFight` fire); `resolveDefeatChoice` accepts the new discriminant. No new
+resolve move.
+
+**2. Maniacal Tyrant is a new bounded-optional 0..N multi-select pending choice.** No
+existing pending pattern is a **0..N-cap optional** multi-select (`resolvePutCardsOnDeckChoice`
+/ `resolveReorderChoice` enforce an EXACT count), so this adds a new family: a new `G`
+field `G.pendingKoDiscardChoices?` of `PendingKoDiscardChoice { choiceType:
+'ko-from-discard', playerID, maxCount }` (lazily created, undefined by default), a new
+move `resolveKoDiscardChoice({ cardIds })` (`client: false`), and a resolver
+`resolveManiacalTyrant` (empty discard → no-op; otherwise park). `MANIACAL_TYRANT_KO_MAX
+= 4`. The payload is a **distinct set** of 0..maxCount ids present in the active player's
+OWN discard (recomputed fresh, no snapshot); each is removed from discard **before**
+`koCard(G.ko, id)` (destination-only append). KO-from-discard fires **no** return-on-discard
+reaction (that chokepoint is hand→discard). 0 is legal; over-cap / duplicate / absent-id /
+wrong-player / empty-queue payloads are silent no-ops with the queue intact.
+
+**3. Cross-layer projection (five-step).** Cruel Ruler rides the existing
+`pendingDefeatChoice` projection (only the `choiceType` union + a prompt heading gain the
+`'cruel-ruler'` case). Maniacal Tyrant needs a **new** `pendingKoDiscardChoice` UIState
+field carried through all five steps (type → build → owner-only filter pass-through →
+audience-filter test → diagnostics) + a new `PendingKoDiscardChoicePrompt.vue` wired into
+the pending-choice cascade. The block-all guard `hasPendingKoDiscardChoice(G)` sits at
+every action-move site; `resolveKoDiscardChoice` is enrolled in `SIMULATION_MOVE_NAMES` +
+both sim `MOVE_MAP`s + `game.test.ts` (37 → 38 moves).
+
+**Determinism / re-pin.** Resolver-only (no card-data edit); `cards:check` reproducible.
+The only new hashed `G` field is `pendingKoDiscardChoices`, undefined by default and
+populated only mid-choice; both new pending states are unreachable by any committed
+replay/sentinel fixture (no committed fixture defeats a Loki tactic — the sim's runtime-
+observed artifact is byte-identical after the coverage regen). Verified empirically:
+`PRE_WP080_HASH` and the sentinel `finalStateHash` are byte-identical, **no re-pin**;
+engine suite green (3435/0), arena-client green (1776/0), dashboard green (482/0). Moves
+never throw; unknown tactic id stays a silent no-op; both choices are active-scoped.
+
+**Status:** Active. **Builds on:** D-24291 (defeat-choice free-defeat family), D-24499
+(`pure-fury` add-a-discriminant precedent), D-24300 (tactic-onFight framework), D-24069
+(active-player pending-choice / block-all model), D-24347 (exact-count multi-select
+sibling). **Reserved by:** WP-693 draft (NUMBER-LEDGER).
+
 Protect this file.
