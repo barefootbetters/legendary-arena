@@ -2,7 +2,7 @@
 
 **Source:** docs/ai/work-packets/WP-684-non-active-and-multi-seat-pending-choice.md
 **Layer:** Game Engine + Arena Client (foundational)
-**Status:** Pending
+**Status:** Done 2026-09-10
 
 ## Before Starting
 - [ ] Read the active-player pending-choice / block-all model (`game.ts`, `moves/*Choice.resolve.ts`, `ai.legalMoves.ts`) + the invariant [[reference_interactive_choice_active_player_only]]

@@ -37,6 +37,7 @@ import { hasPendingDiscardToPlay, getDiscardToPlayCost } from './resolveDiscardT
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
+import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
@@ -163,6 +164,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   }
   // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) {
+    return;
+  }
+  // why: block-all — a non-active/multi-seat pending seat choice freezes every action move
+  // until all addressed seats resolve (only resolveSeatChoice proceeds) (WP-684 / D-24501)
+  if (hasPendingSeatChoice(G)) {
     return;
   }
 
@@ -374,6 +380,11 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingCopyPowersChoice(G)) {
     return;
   }
+  // why: block-all — a non-active/multi-seat pending seat choice freezes every action move
+  // until all addressed seats resolve (only resolveSeatChoice proceeds) (WP-684 / D-24501)
+  if (hasPendingSeatChoice(G)) {
+    return;
+  }
 
   // Step 3: Mutate G
   const playerZones = G.playerZones[playerID];
@@ -547,6 +558,11 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   }
   // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) {
+    return;
+  }
+  // why: block-all — a non-active/multi-seat pending seat choice freezes every action move
+  // until all addressed seats resolve (only resolveSeatChoice proceeds) (WP-684 / D-24501)
+  if (hasPendingSeatChoice(G)) {
     return;
   }
 

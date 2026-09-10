@@ -199,6 +199,13 @@ export interface UIState {
   // Undercover" pick. Redacted (omitted) for every audience except the chooser (keyed on
   // .playerID). Absent (undefined) means no pending Undercover pick; the client must not render it.
   pendingUndercoverChoice?: UIPendingUndercoverChoice;
+  // why: WP-684 / D-24501 — projects G.pendingSeatChoice (the single open non-active/multi-seat
+  // pending choice). PER-SEAT REDACTED by the audience filter: emitted ONLY to an audience that
+  // is an addressed, still-outstanding seat, and carrying ONLY that seat's own prompt in
+  // seatPrompts (never another seat's options). Opponents, spectators, and already-submitted
+  // seats get it omitted. The public addressedSeats / outstandingSeats are seat-id liveness info
+  // (no private data). Absent (undefined) means no pending seat choice for this viewer.
+  pendingSeatChoice?: UIPendingSeatChoice;
   // why: WP-663 / D-24474 — projects the FRONT of G.pendingPlayVillainTopChoices so the
   // choosing player can render Shadowed Thoughts' "Play the top card of the Villain Deck for
   // +N Attack?" prompt. Redacted (omitted) for every audience except the chooser (the
@@ -1187,6 +1194,50 @@ export interface UIPendingUndercoverChoice {
   playerID: string;
   /** The eligible hand-Hero ext_ids the player may send Undercover. */
   eligibleTargets: string[];
+}
+
+/**
+ * One rendered option of a non-active/multi-seat seat choice (WP-684 / D-24501).
+ * Foundational: a display label only; card-specific option payloads arrive with
+ * the consuming cards (WP-682 / WP-683).
+ */
+export interface UIPendingSeatChoiceOption {
+  /** A display label for the option button (client resolves by index). */
+  label: string;
+}
+
+/**
+ * One addressed seat's own prompt inside a UIPendingSeatChoice (WP-684 / D-24501).
+ */
+export interface UIPendingSeatChoicePrompt {
+  /** The options this seat may choose from (client resolves by index). */
+  options: UIPendingSeatChoiceOption[];
+}
+
+/**
+ * UI contract for a non-active/multi-seat pending choice (WP-684 / D-24501).
+ *
+ * PER-SEAT REDACTED: the audience filter emits this only to an audience that is
+ * an addressed, still-outstanding seat, and rebuilds `seatPrompts` to carry ONLY
+ * that seat's own prompt (never another seat's options) — the per-seat redaction
+ * contract. `addressedSeats` / `outstandingSeats` are seat-id liveness info (who
+ * the choice is waiting on) and carry no private data. The client renders its
+ * prompt from `seatPrompts[viewerPlayerId]` and resolves by option index
+ * (resolveSeatChoice).
+ */
+export interface UIPendingSeatChoice {
+  /** The discriminant kind (foundational value 'generic'). */
+  kind: string;
+  /** The seats the choice is addressed to (public liveness info; no private data). */
+  addressedSeats: string[];
+  /** The addressed seats that have not yet submitted (public liveness info). */
+  outstandingSeats: string[];
+  /**
+   * Per-seat prompt, keyed by seat id. In the full pre-filter projection this
+   * holds every addressed seat; the audience filter redacts it to only the
+   * viewing seat's own entry.
+   */
+  seatPrompts: Record<string, UIPendingSeatChoicePrompt>;
 }
 
 /**

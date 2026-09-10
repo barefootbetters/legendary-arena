@@ -105,6 +105,10 @@ export type UiMoveName =
   // why: WP-663 / D-24474 — unblocks the Emma Frost Shadowed Thoughts prompt (accept to
   // play the top Villain-Deck card for +N Attack, or decline).
   | 'resolvePlayVillainTopChoice'
+  // why: WP-684 / D-24501 — unblocks the non-active/multi-seat pending-choice prompt
+  // (foundational; the concrete card renderers ship with WP-682 / WP-683). Each addressed
+  // seat resolves its own option index.
+  | 'resolveSeatChoice'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'

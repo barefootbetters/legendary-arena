@@ -29,6 +29,7 @@ import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './mov
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
+import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -179,6 +180,10 @@ function advanceStage({ G, events }: MoveContext): void {
   if (hasPendingGiveHqHeroChoice(G)) { return; }
   // why: block-all — pendingCopyPowersChoice (interactive copy-a-Hero pick, Rogue's Copy Powers) must be resolved before any other action (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) { return; }
+  // why: WP-684 / D-24501 — block-all: a non-active/multi-seat seat choice freezes turn
+  // progress (turn-end included) until EVERY addressed seat has resolved. Only the addressed
+  // seats' resolveSeatChoice move proceeds; every action move (this one included) returns.
+  if (hasPendingSeatChoice(G)) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
@@ -551,6 +556,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // D-10008 — it re-fires the copied Hero's ability (mutating G) and grants the
     // copied class. NOT in CORE_MOVE_NAMES (mirrors resolveGiveHqHeroChoice).
     resolveCopyPowersChoice: { move: resolveCopyPowersChoice, client: false },
+    // why: WP-684 / D-24501 — resolveSeatChoice resolves one addressed seat's selection for
+    // a non-active/multi-seat pending choice (foundational; no card wired yet). Server-only
+    // (client: false) per D-10008 — it mutates real G (G.pendingSeatChoice / G.messages),
+    // absent on UIState. NOT in CORE_MOVE_NAMES (mirrors the other resolve* moves). A
+    // non-active seat is admitted to submit it via the resolvingSeatChoice stage ride.
+    resolveSeatChoice: { move: resolveSeatChoice, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression
@@ -636,6 +647,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         activePlayers: { currentPlayer: 'playTurn' },
         stages: {
           playTurn: {},
+          // why: WP-684 / D-24501 — an empty stage a NON-ACTIVE addressed seat is placed
+          // into (via events.setActivePlayers, revert:true, moveLimit:1) while a
+          // non-active/multi-seat pending choice is open, so boardgame.io accepts that seat's
+          // resolveSeatChoice move without forking the { currentPlayer: 'playTurn' } turn
+          // model. Empty: the seat resolves via the global moves bag (stage → phase → global
+          // precedence). Never entered when no seat choice is open, so existing games are
+          // byte-identical (an unused stage adds no runtime behavior and is not in G).
+          [SEAT_CHOICE_STAGE]: {},
         },
         // why: WP-367 / D-24159 — deck-exhaustion "final turn" latch. Fires after
         // EVERY successful play-phase move, so it observes the deck state that the

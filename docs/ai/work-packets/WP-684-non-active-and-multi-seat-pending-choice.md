@@ -1,6 +1,6 @@
 # WP-684 — Non-active-player & multi-seat pending-choice capability (Game Engine + Arena Client)
 
-**Status:** Draft 2026-09-09 (EC-721; D-24501 reserved)
+**Status:** Done 2026-09-10 (EC-721; D-24501 Active)
 **Layer:** Game Engine + Arena Client — **foundational** (extends a core invariant)
 **Hard-deps:** the shipped active-player pending-choice / block-all model (D-24069, WP-286) ✅
 **Blocks:** WP-682 (Diving Block, non-active reactive window), WP-683 (Random Acts, multi-seat pass)

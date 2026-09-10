@@ -44,6 +44,7 @@ import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
+import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
@@ -131,6 +132,7 @@ export function fightMastermind(
   if (hasPendingGiveHqHeroChoice(G)) return;
   // why: block-all — pendingCopyPowersChoice (Rogue's Copy Powers) must be resolved first (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) return;
+  if (hasPendingSeatChoice(G)) return; // why: WP-684 / D-24501 — block-all (non-active/multi-seat pending choice)
 
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).

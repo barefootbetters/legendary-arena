@@ -65,6 +65,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // guard), so it MUST be dispatchable here or a parked count-scaled choice hangs the per-turn loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard is a getLegalMoves short-circuit (block-all
 // guard), so it MUST be dispatchable here or a parked Smash choice hangs the per-turn loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -283,6 +284,10 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
+  // why: WP-684 / D-24501 — getLegalMoves short-circuits to resolveSeatChoice when a
+  // non-active/multi-seat pending choice is open; a missing dispatch entry hangs the per-turn
+  // loop. Reuse the existing move fn, no re-implementation.
+  resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice when a
   // reveal-attack-choose hero ability parks pendingHeroChoice; a missing dispatch

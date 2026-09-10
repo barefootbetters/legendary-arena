@@ -39,6 +39,7 @@ import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { hasPendingReturnOnDiscard } from './resolveReturnOnDiscard.js';
 import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
+import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { pushLog } from '../log/logPush.js';
 import { composeHealNarrative } from '../events/notableEvents.compose.js';
 
@@ -112,6 +113,7 @@ export function healWounds({ G, ctx }: MoveContext): void {
   if (hasPendingGiveHqHeroChoice(G)) return;
   // why: block-all — pendingCopyPowersChoice (Rogue's Copy Powers) must be resolved first (WP-535 / D-24345)
   if (hasPendingCopyPowersChoice(G)) return;
+  if (hasPendingSeatChoice(G)) return; // why: WP-684 / D-24501 — block-all (non-active/multi-seat pending choice)
 
   // why: D-24179 — Healing is barred once the player has recruited or fought this
   // turn ("If you don't recruit or fight anything on your turn, you may KO all the

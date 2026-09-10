@@ -923,6 +923,76 @@ export interface PendingUndercoverChoice {
 }
 
 /**
+ * A single selectable option in a seat-choice prompt (WP-684 / D-24501).
+ *
+ * Foundational: carries a display label only. Card-specific option payloads (an
+ * effect to apply on resolution) are added by the consuming cards (WP-682 /
+ * WP-683) — this WP wires no card.
+ */
+export interface SeatChoiceOption {
+  /** Human-readable label the client renders on the option control. */
+  label: string;
+}
+
+/**
+ * The per-seat prompt inside a PendingSeatChoice — the options one addressed
+ * seat may choose from. Held per seat so each seat sees ONLY its own prompt (the
+ * per-seat UIState redaction contract, WP-684 / D-24501).
+ */
+export interface PendingSeatChoicePrompt {
+  /** The options this seat may choose from (the client resolves by index). */
+  options: SeatChoiceOption[];
+}
+
+/**
+ * One addressed seat's recorded submission for a PendingSeatChoice.
+ */
+export interface SeatChoiceSubmission {
+  /** The option index the seat selected (validated against its own prompt). */
+  optionIndex: number;
+}
+
+/**
+ * Pending non-active / multi-seat player choice state (WP-684 / D-24501).
+ *
+ * The FOUNDATIONAL generalization of the active-player-only pending-choice
+ * model: a single pending choice addressed to one or more seats — which may
+ * include a NON-ACTIVE seat — where every addressed seat selects concurrently.
+ * Turn progress is blocked (the block-all guard set) until EVERY addressed seat
+ * has submitted (or a governing policy applies the deterministic default), then
+ * all selections apply ATOMICALLY and DETERMINISTICALLY (addressedSeats sorted
+ * ascending). Unlike the active-player FIFO queues, at most ONE PendingSeatChoice
+ * is open at a time (`G.pendingSeatChoice`, absent = none).
+ *
+ * // why: STRICT SUPERSET — this lives ALONGSIDE the shipped active-only queues
+ * and is never set by an existing choice, so existing pending choices stay
+ * byte-identical. No card parks one yet (WP-682 / WP-683 wire the consumers).
+ */
+export interface PendingSeatChoice {
+  /**
+   * Discriminant for future seat-choice kinds. The foundational value is
+   * 'generic'; a consuming card may introduce its own kind without changing this
+   * contract.
+   */
+  kind: string;
+  /**
+   * The seats the choice is addressed to. Exactly one entry = a single
+   * (possibly non-active) seat choice; two or more = a simultaneous multi-seat
+   * choice. This is also the deterministic apply order (re-sorted at apply time).
+   */
+  addressedSeats: string[];
+  /** Per-seat prompt, keyed by seat id — each seat sees only its own (redaction). */
+  seatPrompts: Record<string, PendingSeatChoicePrompt>;
+  /** Recorded submissions, keyed by seat id. A seat is resolved once present. */
+  submissions: Record<string, SeatChoiceSubmission>;
+  /**
+   * The deterministic option index applied for an addressed seat that does not
+   * (or cannot) submit — the disconnect/timeout default. No RNG, no wall-clock.
+   */
+  defaultOptionIndex: number;
+}
+
+/**
  * Pending mandatory return-zero-cost-discard player choice state (D-24139).
  *
  * Created when a return-zero-cost-discard hero effect fires (`onPlay`) — the
@@ -1374,6 +1444,16 @@ export interface LegendaryGameState {
 
   /** FIFO queue of pending Undercover target picks awaiting resolution (WP-678 / D-24494). */
   pendingUndercoverChoice?: PendingUndercoverChoice[] | undefined;
+
+  // why: WP-684 / D-24501 — the single open non-active/multi-seat pending choice
+  // (absent = none). Distinct from the active-player FIFO queues above: at most ONE
+  // is open at a time and it may be addressed to a NON-ACTIVE seat, or to many seats
+  // at once (a simultaneous multi-seat choice). STRICT SUPERSET — never set by any
+  // existing choice, so existing games are byte-identical (an always-absent optional
+  // field is omitted by JSON.stringify, so the state hash is unchanged). Lazily set at
+  // the park site, never in Game.setup; must be absent at every turn-end (block-all set).
+  /** The single open non-active/multi-seat pending choice, if any (WP-684 / D-24501). */
+  pendingSeatChoice?: PendingSeatChoice | undefined;
 
   // why: FIFO queue of pending optional-put-bottom-hq choices (one per played
   // optional-put-bottom-hq hero ability — the "You may put a card from the HQ on
