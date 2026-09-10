@@ -1490,6 +1490,51 @@ describe('filterUIStateForAudience — pendingGiveHqHeroChoice redaction', () =>
 });
 
 // ---------------------------------------------------------------------------
+// WP-692 / D-24509 — the OPTIONAL free-recruit tactic (Dark Technology) parks a
+// FILTERED give-hq-hero choice; the `optional` flag is a five-step board-visible field
+// that must survive the audience filter for the chooser (else the Decline button drops).
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes an OPTIONAL, hero-class-filtered give-HQ-Hero
+ * choice (Dr. Doom's Dark Technology). Both seeded HQ Heroes are tagged tech/ranged so
+ * the trait filter surfaces them; the entry carries `optional: true`.
+ */
+function createOptionalGiveHqHeroUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  const heroA = gameState.playerZones['0']!.deck[0]!;
+  const heroB = gameState.playerZones['0']!.deck[1]!;
+  gameState.hq = [heroA, heroB, null, null, null] as LegendaryGameState['hq'];
+  // why: tag the seeded HQ Heroes so the tech/ranged filter yields eligible Heroes.
+  gameState.cardTraits[heroA] = { heroClass: 'tech', team: null };
+  gameState.cardTraits[heroB] = { heroClass: 'ranged', team: null };
+  gameState.pendingGiveHqHeroChoices = [{
+    choiceType: 'give-hq-hero',
+    playerID: '0',
+    filter: { kind: 'hero-class', values: ['tech', 'ranged'] },
+    optional: true,
+  }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingGiveHqHeroChoice optional flag (WP-692)', () => {
+  it('the chooser sees optional: true survive the filter (Decline button preserved)', () => {
+    const result = filterUIStateForAudience(createOptionalGiveHqHeroUIState(), PLAYER_0);
+    assert.ok(result.pendingGiveHqHeroChoice !== undefined, 'chooser sees the choice');
+    assert.equal(result.pendingGiveHqHeroChoice!.optional, true, 'optional survives the pass-through');
+    assert.ok(result.pendingGiveHqHeroChoice!.eligible.length > 0, 'filtered eligible Heroes projected');
+  });
+
+  it('a mandatory (unfiltered) choice omits optional', () => {
+    const result = filterUIStateForAudience(createGiveHqHeroUIState(), PLAYER_0);
+    assert.equal(result.pendingGiveHqHeroChoice!.optional, undefined, 'mandatory → no decline flag');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-535 / D-24345 — pendingCopyPowersChoice redaction (chooser-scoped, Rogue Copy Powers)
 // ---------------------------------------------------------------------------
 

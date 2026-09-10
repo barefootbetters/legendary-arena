@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 425,
+      "executable": 427,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
-      "unmarked": 1067,
+      "unmarked": 1065,
       "subsystem": 3
     }
   },
@@ -6121,10 +6121,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "dark-technology",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDarkTechnology",
+      "wp": "WP-692",
+      "decision": "D-24509"
     },
     {
       "extId": "core-mastermind-dr-doom-monarchs-decree",
@@ -6209,10 +6209,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "bitter-captor",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveBitterCaptor",
+      "wp": "WP-692",
+      "decision": "D-24509"
     },
     {
       "extId": "core-mastermind-magneto-crushing-shockwave",

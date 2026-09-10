@@ -37,6 +37,18 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveSecretsOfTimeTravel",
       "wp": "WP-696",
       "decision": "D-24513"
+    },
+    "core-mastermind-dr-doom-dark-technology": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDarkTechnology",
+      "wp": "WP-692",
+      "decision": "D-24509"
+    },
+    "core-mastermind-magneto-bitter-captor": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveBitterCaptor",
+      "wp": "WP-692",
+      "decision": "D-24509"
     }
   }
 }

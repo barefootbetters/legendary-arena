@@ -87,10 +87,21 @@ export default defineComponent({
       props.submitMove("resolveGiveHqHeroChoice", { cardId });
     }
 
+    // why: WP-692 / D-24509 — the decline arm for the OPTIONAL free-recruit tactic
+    // (Dr. Doom's Dark Technology "may recruit"). Only rendered when the projected
+    // choice carries `optional: true`; the engine resolve honors { decline: true }
+    // only for an optional front entry (a mandatory pick ignores it).
+    function onDecline(): void {
+      if (isSubmitting.value) return;
+      isSubmitting.value = true;
+      props.submitMove("resolveGiveHqHeroChoice", { decline: true });
+    }
+
     return {
       isSubmitting,
       shouldRender,
       onSelectCard,
+      onDecline,
     };
   },
 });
@@ -108,7 +119,7 @@ export default defineComponent({
       Choose a Hero to gain
     </h3>
     <p class="pending-give-hq-hero-choice-prompt__hint">
-      Each player gains the Hero you choose from the HQ.
+      Gain the Hero you choose from the HQ.
     </p>
     <div class="pending-give-hq-hero-choice-prompt__cards">
       <button
@@ -139,6 +150,17 @@ export default defineComponent({
         />
       </button>
     </div>
+    <button
+      v-if="pendingGiveHqHeroChoice!.optional"
+      type="button"
+      class="pending-give-hq-hero-choice-prompt__decline-btn"
+      data-testid="pending-give-hq-hero-choice-decline"
+      :disabled="isSubmitting"
+      :aria-disabled="isSubmitting ? 'true' : undefined"
+      @click="onDecline()"
+    >
+      Decline
+    </button>
   </div>
 </template>
 
@@ -201,5 +223,19 @@ export default defineComponent({
   max-width: 60px;
   max-height: 60px;
   object-fit: contain;
+}
+
+.pending-give-hq-hero-choice-prompt__decline-btn {
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--color-border, #ddd);
+  background: var(--color-button-bg, #f5f5f5);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.pending-give-hq-hero-choice-prompt__decline-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

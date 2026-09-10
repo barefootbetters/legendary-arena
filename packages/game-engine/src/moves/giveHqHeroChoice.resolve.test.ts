@@ -31,6 +31,7 @@ function makeG(options: {
   pending?: PendingGiveHqHeroChoice[];
   discard0?: CardExtId[];
   cardStats?: Record<string, { cost: number }>;
+  cardTraits?: Record<string, { team?: string | null; heroClass?: string | null }>;
 }): LegendaryGameState {
   return {
     hq: (options.hq ?? [null, null, null, null, null]) as LegendaryGameState['hq'],
@@ -41,6 +42,7 @@ function makeG(options: {
       '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     },
     cardStats: options.cardStats ?? {},
+    ...(options.cardTraits !== undefined ? { cardTraits: options.cardTraits } : {}),
     cardDisplayData: {},
     messages: [],
   } as unknown as LegendaryGameState;
@@ -132,5 +134,134 @@ describe('resolveGiveHqHeroChoice', () => {
     const G = makeG({ hq: ['h0', null, null, null, null] as CardExtId[], pending: [CHOICE] });
     resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: '' as CardExtId });
     assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'empty cardId → no-op, queue intact');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-692 / D-24509 — filtered free-recruit reuse of the give-hq-hero queue
+// (Dark Technology tech/ranged optional; Bitter Captor x-men). The tactic parks a
+// give-hq-hero entry carrying a trait `filter` and (Dark Technology) `optional: true`.
+// ---------------------------------------------------------------------------
+
+const TRAITS = {
+  hTech: { heroClass: 'tech', team: 'avengers' },
+  hRanged: { heroClass: 'ranged', team: 'x-men' },
+  hStrength: { heroClass: 'strength', team: 'avengers' },
+  hXmen: { heroClass: 'covert', team: 'x-men' },
+} as Record<string, { team?: string | null; heroClass?: string | null }>;
+
+const HERO_CLASS_FILTER: PendingGiveHqHeroChoice = {
+  choiceType: 'give-hq-hero',
+  playerID: '0',
+  filter: { kind: 'hero-class', values: ['tech', 'ranged'] },
+  optional: true,
+};
+
+const TEAM_FILTER: PendingGiveHqHeroChoice = {
+  choiceType: 'give-hq-hero',
+  playerID: '0',
+  filter: { kind: 'team', values: ['x-men'] },
+};
+
+describe('getEligibleGiveHqHeroCards with a trait filter (WP-692)', () => {
+  it('hero-class filter keeps only tech/ranged HQ Heroes', () => {
+    const G = makeG({
+      hq: ['hTech', 'hStrength', 'hRanged', null, 'hXmen'] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+    });
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), ['hTech', 'hRanged']);
+  });
+
+  it('team filter keeps only x-men HQ Heroes', () => {
+    const G = makeG({
+      hq: ['hTech', 'hXmen', 'hStrength', 'hRanged', null] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+    });
+    // hRanged has team x-men too (TRAITS above), so both hXmen and hRanged qualify.
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), ['hXmen', 'hRanged']);
+  });
+
+  it('filter matches nothing when cardTraits is absent (no throw, empty list)', () => {
+    const G = makeG({ hq: ['hTech', 'hRanged'] as CardExtId[], pending: [HERO_CLASS_FILTER] });
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), []);
+  });
+});
+
+describe('selectDefaultGiveHqHeroCard with a trait filter (WP-692)', () => {
+  it('picks the highest-cost ELIGIBLE Hero, never an ineligible higher-cost one', () => {
+    const G = makeG({
+      hq: ['hStrength', 'hTech', 'hRanged'] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+      cardStats: { hStrength: { cost: 9 }, hTech: { cost: 4 }, hRanged: { cost: 6 } },
+    });
+    // hStrength (cost 9) is ineligible; among eligible hTech(4)/hRanged(6) → hRanged.
+    assert.equal(selectDefaultGiveHqHeroCard(G, '0'), 'hRanged');
+  });
+});
+
+describe('resolveGiveHqHeroChoice filtered gain + decline arm (WP-692)', () => {
+  it('gains an eligible filtered Hero for free (no recruit field touched) + refill', () => {
+    const G = makeG({
+      hq: ['hTech', 'hStrength', null, null, null] as CardExtId[],
+      heroDeck: ['refill'] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+    });
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: 'hTech' as CardExtId });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['hTech'], 'gained to discard');
+    assert.equal(G.hq[0], 'refill', 'HQ slot refilled from heroDeck');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 0, 'front-popped');
+  });
+
+  it('rejects an INELIGIBLE HQ Hero (present but off-filter) — no-op, queue intact', () => {
+    const G = makeG({
+      hq: ['hTech', 'hStrength', null, null, null] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+    });
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: 'hStrength' as CardExtId });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'no gain of the ineligible Hero');
+    assert.equal(G.hq[1], 'hStrength', 'HQ unchanged');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'queue intact for a valid resubmit');
+  });
+
+  it('decline front-pops with no gain when the entry is optional (Dark Technology)', () => {
+    const G = makeG({
+      hq: ['hTech', null, null, null, null] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+    });
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { decline: true });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'declined → no gain');
+    assert.equal(G.hq[0], 'hTech', 'HQ unchanged');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 0, 'declined entry front-popped');
+  });
+
+  it('decline is a no-op (queue intact) when the entry is MANDATORY (Bitter Captor / Paibok)', () => {
+    const G = makeG({
+      hq: ['hXmen', null, null, null, null] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+    });
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { decline: true });
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'mandatory choice cannot be declined');
+    assert.equal(G.hq[0], 'hXmen', 'HQ unchanged');
+  });
+
+  it('malformed payload (both cardId and decline) is a no-op', () => {
+    const G = makeG({
+      hq: ['hTech', null, null, null, null] as CardExtId[],
+      pending: [HERO_CLASS_FILTER],
+      cardTraits: TRAITS,
+    });
+    resolveGiveHqHeroChoice(
+      { G, playerID: '0' } as never,
+      { cardId: 'hTech' as CardExtId, decline: true } as never,
+    );
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'ambiguous payload → no-op');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, []);
   });
 });

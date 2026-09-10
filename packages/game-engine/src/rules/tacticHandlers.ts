@@ -22,15 +22,17 @@
  * shuffles).
  */
 
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, PendingGiveHqHeroChoice, GiveHqHeroFilter } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
+import { formatCardRef } from '../log/logDisplay.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import { refillHqSlot } from '../board/city.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
@@ -131,6 +133,31 @@ export const WHISPERS_BYSTANDER_KO = 2;
 // arc's only novel mechanic — the extra-turn primitive.
 const SECRETS_OF_TIME_TRAVEL_TACTIC_ID: CardExtId =
   'core-mastermind-dr-doom-secrets-of-time-travel';
+
+// why: WP-692 / D-24509 — Dr. Doom's "Dark Technology" tactic ext_id, same grammar
+// as the constants above. Printed Fight: "You may recruit a [hc:tech] or [hc:ranged]
+// Hero from the HQ for free." (data/cards/core.json).
+const DARK_TECHNOLOGY_TACTIC_ID: CardExtId =
+  'core-mastermind-dr-doom-dark-technology';
+
+// why: WP-692 / D-24509 — Magneto's "Bitter Captor" tactic ext_id. Printed Fight:
+// "Recruit a [team:x-men] Hero from the HQ for free." (data/cards/core.json).
+const BITTER_CAPTOR_TACTIC_ID: CardExtId =
+  'core-mastermind-magneto-bitter-captor';
+
+// why: WP-692 / D-24509 — Dark Technology's filter reads the HQ Heroes' heroClass
+// trait; the printed text lists BOTH tech and ranged (OR semantics on the value list).
+const DARK_TECHNOLOGY_FILTER: GiveHqHeroFilter = {
+  kind: 'hero-class',
+  values: ['tech', 'ranged'],
+};
+
+// why: WP-692 / D-24509 — Bitter Captor's filter reads the HQ Heroes' team trait for
+// the single x-men value. Same normalized slug as TEAM_X_MEN above.
+const BITTER_CAPTOR_FILTER: GiveHqHeroFilter = {
+  kind: 'team',
+  values: [TEAM_X_MEN],
+};
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -610,6 +637,206 @@ export function resolveWhispersAndLies(
   }
 }
 
+
+/**
+ * Whether an HQ Hero satisfies a free-recruit trait filter (WP-692 / D-24509).
+ *
+ * OR semantics over `filter.values`, read from the setup-time `G.cardTraits` snapshot
+ * (Dark Technology: `hero-class` ∈ {tech, ranged}; Bitter Captor: `team` === x-men). A
+ * missing traits map / entry matches nothing rather than throwing. This mirrors the
+ * `hqHeroMatchesFilter` predicate in giveHqHeroChoice.resolve.ts — duplicated at the
+ * park site so this module can count eligible HQ Heroes without importing a move
+ * internal (duplicate-first: the two live in different modules and read the same
+ * `cardTraits`; a shared predicate is extracted if a third copy appears).
+ *
+ * @param G - The game state (read-only; supplies `cardTraits`).
+ * @param cardId - The HQ Hero ext_id to test.
+ * @param filter - The eligibility predicate.
+ * @returns true when the Hero is eligible under the filter.
+ */
+function hqHeroMatchesFreeRecruitFilter(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  filter: GiveHqHeroFilter,
+): boolean {
+  const trait = G.cardTraits?.[cardId];
+  if (trait === undefined) {
+    return false;
+  }
+  for (const value of filter.values) {
+    if (filter.kind === 'team') {
+      if (trait.team === value) {
+        return true;
+      }
+    } else {
+      // why: the kind union is closed to 'team' | 'hero-class', so the else branch is
+      // 'hero-class' — total without a default (mirrors cardTraitMatches).
+      if (trait.heroClass === value) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Collects the HQ slot indices whose occupant satisfies the free-recruit filter,
+ * in ascending slot order (WP-692 / D-24509).
+ *
+ * @param G - The game state (read-only; supplies `G.hq` + `cardTraits`).
+ * @param filter - The eligibility predicate.
+ * @returns The eligible HQ slot indices in ascending order.
+ */
+function collectEligibleHqIndices(
+  G: LegendaryGameState,
+  filter: GiveHqHeroFilter,
+): number[] {
+  const indices: number[] = [];
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const slot = G.hq[hqIndex];
+    if (slot !== null && slot !== undefined && hqHeroMatchesFreeRecruitFilter(G, slot, filter)) {
+      indices.push(hqIndex);
+    }
+  }
+  return indices;
+}
+
+/**
+ * Gains the HQ Hero at `hqIndex` to `playerId`'s discard for FREE — the forced
+ * single-eligible free-recruit path (WP-692 / D-24509).
+ *
+ * @param G - Game state (mutated: `G.hq`, `G.heroDeck`, the recipient's discard).
+ * @param playerId - The recipient whose discard the Hero enters.
+ * @param hqIndex - The HQ slot to take (expected to hold a non-null Hero).
+ * @returns The gained Hero ext_id, or null when the slot was empty.
+ */
+function gainHqHeroFree(
+  G: LegendaryGameState,
+  playerId: string,
+  hqIndex: number,
+): CardExtId | null {
+  const heroId = G.hq[hqIndex];
+  if (heroId === null || heroId === undefined) {
+    return null;
+  }
+  // why: WP-692 / D-24509 — FREE recruit: vacate the slot + refill from G.heroDeck via
+  // refillHqSlot, but NEVER read or spend `turnEconomy.recruit` (the whole point of the
+  // "for free" tactics vs the normal cost-paying recruit path). D-24327 — the gain routes
+  // to the recipient's DISCARD, never the victory pile.
+  G.hq[hqIndex] = null;
+  const refillResult = refillHqSlot(G.hq, hqIndex, G.heroDeck);
+  G.hq = refillResult.hq;
+  G.heroDeck = refillResult.heroDeck;
+  const zones = G.playerZones[playerId];
+  if (zones) {
+    zones.discard.push(heroId);
+  }
+  return heroId;
+}
+
+/**
+ * Shared filtered-free-recruit-from-HQ mechanic for the two core mastermind tactics
+ * (WP-692 / D-24509): the defeating player recruits an eligible HQ Hero for free.
+ *
+ * Cardinality (EC-729 locked): 0 eligible → no-op; when `optional` (Dark Technology's
+ * "may") → always park an active pending choice so the player picks or declines, even
+ * for a single eligible Hero; when mandatory (Bitter Captor) → exactly 1 eligible
+ * auto-gains (the pick is forced), ≥ 2 parks. Parking reuses the give-hq-hero pending
+ * queue + resolve move + block-all + projection + renderer (the sim-enrolled sibling),
+ * carrying the trait `filter` and the `optional` flag on the entry. Free recruit spends
+ * NO `turnEconomy.recruit`. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating (recruiting) player id.
+ * @param filter - The eligibility predicate (heroClass or team).
+ * @param optional - true for Dark Technology's "may" (decline allowed); false for Bitter Captor.
+ * @param tacticName - The printed tactic name, for the self-narrated log lines.
+ */
+function freeRecruitFromHqByFilter(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  filter: GiveHqHeroFilter,
+  optional: boolean,
+  tacticName: string,
+): void {
+  const eligibleIndices = collectEligibleHqIndices(G, filter);
+
+  if (eligibleIndices.length === 0) {
+    // why: no HQ Hero matches the filter — a reachable no-op (never a hollow record).
+    pushLog(G, `Fight effect: no eligible Hero in the HQ to recruit (${tacticName}); no effect.`, 'blocked');
+    return;
+  }
+
+  if (!optional && eligibleIndices.length === 1) {
+    // why: EC-729 — a mandatory tactic (Bitter Captor) with exactly one eligible Hero is a
+    // FORCED gain, so auto-resolve it now (no prompt); the parked path would offer a
+    // one-option pick with no decline, which is just ceremony.
+    const gainedId = gainHqHeroFree(G, currentPlayer, eligibleIndices[0]!);
+    if (gainedId !== null) {
+      pushLog(G,
+        `Fight effect: Player ${currentPlayer} recruited ${formatCardRef(G.cardDisplayData, gainedId)} from the HQ for free (${tacticName}).`,
+        'applied',
+      );
+    }
+    return;
+  }
+
+  // why: EC-729 — park an active pending choice on the give-hq-hero queue. optional ≥ 1 or
+  // mandatory ≥ 2 both prompt. Lazily create the FIFO queue at the park site (never in
+  // Game.setup) so an untriggered match leaves the field undefined and the hash oracles stay
+  // stable. The block-all guard + resolveGiveHqHeroChoice (both already sim-enrolled) freeze
+  // the board until the current player resolves.
+  if (!G.pendingGiveHqHeroChoices) {
+    G.pendingGiveHqHeroChoices = [];
+  }
+  const entry: PendingGiveHqHeroChoice = {
+    choiceType: 'give-hq-hero',
+    playerID: currentPlayer,
+    filter,
+    ...(optional ? { optional: true } : {}),
+  };
+  G.pendingGiveHqHeroChoices.push(entry);
+  const declineHint = optional ? ' (or decline)' : '';
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} — recruit an eligible Hero from the HQ for free${declineHint} (${tacticName}).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Dr. Doom's "Dark Technology" tactic Fight effect: the defeating player
+ * MAY recruit a tech or ranged Hero from the HQ for free (WP-692 / D-24509).
+ *
+ * // why: optional ("may") — the player can decline (a clean no-op) via the parked
+ * choice's decline arm, so this ALWAYS parks when ≥ 1 eligible Hero exists.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating (recruiting) player id.
+ */
+export function resolveDarkTechnology(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  freeRecruitFromHqByFilter(G, currentPlayer, DARK_TECHNOLOGY_FILTER, true, 'Dark Technology');
+}
+
+/**
+ * Resolves Magneto's "Bitter Captor" tactic Fight effect: the defeating player
+ * recruits an X-Men Hero from the HQ for free (WP-692 / D-24509).
+ *
+ * // why: mandatory (no "may") — 0 eligible is a no-op, exactly 1 auto-gains, ≥ 2
+ * parks a pick with no decline arm.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The defeating (recruiting) player id.
+ */
+export function resolveBitterCaptor(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  freeRecruitFromHqByFilter(G, currentPlayer, BITTER_CAPTOR_FILTER, false, 'Bitter Captor');
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
@@ -666,6 +893,18 @@ export function dispatchTacticOnFight(
   // defeating player, honored at their next turn-end.
   if (defeatedTacticId === SECRETS_OF_TIME_TRAVEL_TACTIC_ID) {
     resolveSecretsOfTimeTravel(G, currentPlayer);
+    return;
+  }
+  // why: WP-692 / D-24509 — Dr. Doom's Dark Technology parks an OPTIONAL filtered
+  // free-recruit (tech/ranged) active pending choice for the defeating player.
+  if (defeatedTacticId === DARK_TECHNOLOGY_TACTIC_ID) {
+    resolveDarkTechnology(G, currentPlayer);
+    return;
+  }
+  // why: WP-692 / D-24509 — Magneto's Bitter Captor parks a MANDATORY filtered
+  // free-recruit (x-men) choice (auto-gain when exactly one eligible; no decline).
+  if (defeatedTacticId === BITTER_CAPTOR_TACTIC_ID) {
+    resolveBitterCaptor(G, currentPlayer);
     return;
   }
 }

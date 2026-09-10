@@ -1439,6 +1439,11 @@ export interface UIPendingGiveHqHeroChoice {
   // against this, mirroring UIPendingReturnOnDiscard.playerID.
   playerID: string;
   eligible: UIHqCardChoice[];
+  // why: WP-692 / D-24509 — true when the parked choice is the OPTIONAL free-recruit
+  // tactic (Dr. Doom's Dark Technology "may recruit"); the client renders a Decline
+  // button that submits `resolveGiveHqHeroChoice({ decline: true })`. Absent/false is
+  // the mandatory form (Paibok's give, Magneto's Bitter Captor) — no decline control.
+  optional?: boolean;
 }
 
 /**

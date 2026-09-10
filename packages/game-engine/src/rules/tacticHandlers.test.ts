@@ -591,7 +591,10 @@ describe('dispatchTacticOnFight — Secrets of Time Travel branch (WP-696 / D-24
 
   it('AC-6: an unknown Dr. Doom tactic id stays a silent no-op (no counter, no log)', () => {
     const G = makeState();
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-dr-doom-dark-technology', SHUFFLE);
+    // why: WP-692 landed `dark-technology` (the original sentinel here) as a real
+    // resolver, so this uses a fabricated Dr. Doom tactic id that no WP implements —
+    // still proving the dispatch's unknown-id fall-through no-op.
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-dr-doom-nonexistent-tactic', SHUFFLE);
     assert.equal(G.extraTurns, undefined);
     assert.equal(G.messages.length, 0);
   });
@@ -652,5 +655,112 @@ describe('extra-turn end-to-end: resolver → counter → turn-end grant (WP-696
     G.playerZones['0']!.inPlay = ['some-card'];
     endTurn(context as never);
     assert.deepEqual(endTurnSpy.mock.calls[2]!.arguments, []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-692 / D-24509 — free-recruit-from-HQ tactics: Dark Technology (Dr. Doom,
+// hero-class tech/ranged, OPTIONAL "may") + Bitter Captor (Magneto, team x-men).
+// Both park onto the give-hq-hero queue (reuse of resolveGiveHqHeroChoice); a
+// mandatory Bitter Captor with exactly one eligible Hero auto-gains for free.
+// ---------------------------------------------------------------------------
+
+import { resolveDarkTechnology, resolveBitterCaptor } from './tacticHandlers.js';
+
+const DARK_TECHNOLOGY_TACTIC_ID = 'core-mastermind-dr-doom-dark-technology';
+const BITTER_CAPTOR_TACTIC_ID = 'core-mastermind-magneto-bitter-captor';
+
+const FR_TRAITS = {
+  hTech: { heroClass: 'tech', team: 'avengers' },
+  hRanged: { heroClass: 'ranged', team: 'avengers' },
+  hStrength: { heroClass: 'strength', team: 'avengers' },
+  hXmen: { heroClass: 'covert', team: 'x-men' },
+  hXmen2: { heroClass: 'ranged', team: 'x-men' },
+} as Record<string, { team?: string | null; heroClass?: string | null }>;
+
+/** HQ/recruit state for the free-recruit tactics (WP-692). */
+function makeFreeRecruitState(hq: (string | null)[], heroDeck: string[] = []): LegendaryGameState {
+  return {
+    messages: [],
+    turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    hq: hq as LegendaryGameState['hq'],
+    heroDeck: heroDeck as CardExtId[],
+    cardTraits: FR_TRAITS,
+    cardStats: {
+      hTech: { cost: 3 }, hRanged: { cost: 5 }, hStrength: { cost: 9 },
+      hXmen: { cost: 4 }, hXmen2: { cost: 6 },
+    },
+    cardDisplayData: {},
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveDarkTechnology (WP-692 / D-24509 — optional tech/ranged free recruit)', () => {
+  it('parks an OPTIONAL give-hq-hero choice with the hero-class filter (≥1 eligible)', () => {
+    const G = makeFreeRecruitState(['hTech', 'hStrength', 'hRanged', null, null]);
+    resolveDarkTechnology(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1);
+    const entry = G.pendingGiveHqHeroChoices![0]!;
+    assert.equal(entry.playerID, '0');
+    assert.equal(entry.optional, true, 'Dark Technology "may" → decline allowed');
+    assert.deepEqual(entry.filter, { kind: 'hero-class', values: ['tech', 'ranged'] });
+    assert.equal(G.turnEconomy.recruit, 0, 'parking spends no recruit');
+  });
+
+  it('parks even with exactly one eligible Hero (the "may" lets the player decline)', () => {
+    const G = makeFreeRecruitState(['hTech', 'hStrength', null, null, null]);
+    resolveDarkTechnology(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'optional → always park, never auto-gain');
+    assert.deepEqual(G.playerZones['0']!.discard, [], 'no auto-gain for an optional choice');
+  });
+
+  it('no-op (no park) when no eligible tech/ranged Hero is in the HQ', () => {
+    const G = makeFreeRecruitState(['hStrength', 'hXmen', null, null, null]);
+    resolveDarkTechnology(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices, undefined, 'no eligible → no park');
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+  });
+
+  it('dispatches from dispatchTacticOnFight by ext_id', () => {
+    const G = makeFreeRecruitState(['hTech', 'hRanged', null, null, null]);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, DARK_TECHNOLOGY_TACTIC_ID as CardExtId, SHUFFLE);
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1);
+    assert.equal(G.pendingGiveHqHeroChoices![0]!.optional, true);
+  });
+});
+
+describe('resolveBitterCaptor (WP-692 / D-24509 — mandatory x-men free recruit)', () => {
+  it('auto-gains for FREE when exactly one eligible x-men Hero (no recruit spent, HQ refills)', () => {
+    const G = makeFreeRecruitState(['hStrength', 'hXmen', null, null, null], ['refill']);
+    resolveBitterCaptor(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices, undefined, 'forced single → auto-gain, no park');
+    assert.deepEqual(G.playerZones['0']!.discard, ['hXmen'], 'gained to discard');
+    assert.equal(G.hq[1], 'refill', 'HQ slot refilled from heroDeck');
+    assert.equal(G.turnEconomy.recruit, 0, 'free recruit spends NO recruit');
+  });
+
+  it('parks a MANDATORY (no-optional) choice when ≥2 eligible x-men Heroes', () => {
+    const G = makeFreeRecruitState(['hXmen', 'hStrength', 'hXmen2', null, null]);
+    resolveBitterCaptor(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1);
+    const entry = G.pendingGiveHqHeroChoices![0]!;
+    assert.equal(entry.optional, undefined, 'Bitter Captor is not optional (no decline)');
+    assert.deepEqual(entry.filter, { kind: 'team', values: ['x-men'] });
+  });
+
+  it('no-op when no x-men Hero is in the HQ', () => {
+    const G = makeFreeRecruitState(['hTech', 'hStrength', null, null, null]);
+    resolveBitterCaptor(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices, undefined);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+  });
+
+  it('dispatches from dispatchTacticOnFight by ext_id', () => {
+    const G = makeFreeRecruitState(['hXmen', null, null, null, null], ['refill']);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, BITTER_CAPTOR_TACTIC_ID as CardExtId, SHUFFLE);
+    assert.deepEqual(G.playerZones['0']!.discard, ['hXmen'], 'forced single auto-gain');
   });
 });

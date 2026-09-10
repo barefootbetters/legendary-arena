@@ -1150,6 +1150,36 @@ export interface PendingGiveHqHeroChoice {
   choiceType: 'give-hq-hero';
   /** The player who must pick an HQ Hero to gain. */
   playerID: string;
+  /**
+   * Optional eligibility filter (WP-692 / D-24509). When present, only HQ Heroes
+   * whose `G.cardTraits` match the predicate are gainable — the free-recruit-from-HQ
+   * mastermind tactics: Dark Technology (`hero-class` ∈ {tech, ranged}) and Bitter
+   * Captor (`team` === x-men). Absent = every HQ Hero is gainable (Paibok the Power
+   * Skrull's give-hq-hero-each-player, unchanged).
+   */
+  filter?: GiveHqHeroFilter | undefined;
+  /**
+   * Optional "may" decline arm (WP-692 / D-24509). `true` = the chooser may decline
+   * the gain (Dark Technology's printed "**may** recruit"); absent/false = the pick
+   * is mandatory (Paibok, Bitter Captor — the player must gain a Hero).
+   */
+  optional?: boolean | undefined;
+}
+
+/**
+ * Trait eligibility predicate for a filtered give-HQ-Hero / free-recruit choice
+ * (WP-692 / D-24509).
+ *
+ * `values` carries OR semantics: an HQ Hero is eligible when its matching trait
+ * equals ANY listed value (Dark Technology lists both `tech` and `ranged`; Bitter
+ * Captor lists the single `x-men`). Values are the normalized lowercase trait slugs
+ * stored on `G.cardTraits[extId].heroClass` / `.team`.
+ */
+export interface GiveHqHeroFilter {
+  /** Which trait to read on `G.cardTraits[extId]` — `team` or `hero-class`. */
+  kind: 'team' | 'hero-class';
+  /** The normalized trait slugs; an HQ Hero matching ANY is eligible. */
+  values: readonly string[];
 }
 
 /**

@@ -40,6 +40,40 @@ edges — additive stacking, 0 X-Men, short supply, skip-self, <2 Bystanders), t
 `data/metadata/effect-implementation-index.json`. No card-data edit, no client
 change. Engine suite **3366 pass**; `pnpm -r build` 0; `cards:check` reproducible;
 `effect-index:check` current.
+### WP-692 — Free-recruit-from-HQ core mastermind tactics (EC-729 / D-24509) (2026-09-10)
+
+Implemented the two core mastermind tactic Fight abilities that recruit an HQ Hero
+**for free**: Dr. Doom's **Dark Technology** (may recruit a `[hc:tech]`/`[hc:ranged]`
+Hero) and Magneto's **Bitter Captor** (recruit a `[team:x-men]` Hero). Second of the
+core mastermind-tactics arc (WP-691..696).
+
+**Reuse-first (D-24509).** Rather than a redundant `resolve*` move, the mechanic
+extends the already sim-enrolled give-hq-hero flow (Paibok, WP-532 / D-24343), whose
+gain-to-discard + `refillHqSlot` mutation is already the free-recruit mutation.
+`PendingGiveHqHeroChoice` gains an optional trait `filter`
+(`{ kind: 'team' | 'hero-class'; values }`, OR semantics) and an `optional` decline
+flag. `getEligibleGiveHqHeroCards` / `selectDefaultGiveHqHeroCard` become
+filter-aware (the bot always picks an *eligible* Hero — the sim-hang guard), and
+`resolveGiveHqHeroChoice` gains a `{ decline: true }` arm honored only for an
+optional front entry.
+
+**Engine.** `tacticHandlers.ts` adds `resolveDarkTechnology` (optional → always parks
+with a decline arm when ≥1 eligible), `resolveBitterCaptor` (mandatory → 0 no-op,
+exactly 1 auto-gains, ≥2 parks), a shared `freeRecruitFromHqByFilter` helper, a
+`gainHqHeroFree` mutation (`refillHqSlot` + push to discard, **never** touching
+`turnEconomy.recruit`), and two dispatch cases. No new move → no sim-dispatch or
+move-registration change.
+
+**Projection + client.** `UIPendingGiveHqHeroChoice.optional` via the five-step
+board-visible-field contract (type → build → owner-only filter pass-through →
+audience test → diagnostics); `PendingGiveHqHeroChoicePrompt.vue` renders a Decline
+button gated on it. The eligible list is already trait-filtered by the shared predicate.
+
+**Determinism.** Resolver-only; `cards:check` reproducible. No new hashed `G` field
+(`pendingGiveHqHeroChoices` already exists, stays undefined for untriggered matches;
+tactic entries are new states, added fields omitted for Paibok entries) → **no
+oracle re-pin** (verified: engine 3370/0). tactic-provenance rows + effect-index
+regenerated. arena-client 1770/0; dashboard 482/0 (coverage thresholds met).
 
 ### WP-696 — Dr. Doom "Secrets of Time Travel" onFight + the extra-turn primitive (EC-733 / D-24513) (2026-09-10)
 
