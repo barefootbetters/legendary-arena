@@ -1301,15 +1301,16 @@ So the model is two-tier, and cleanly so:
   Villain; you cannot bargain with a Mastermind whose whole object is that you be
   ruined.
 
-At a glance (top of the pyramid down):
+At a glance (top of the pyramid down) — one case, the **Spanish Red Terror of
+1936** (spelled out below), read down the ladder:
 
-| Tier | Role in the Scheme | Motive | Negotiable? | Example |
+| Tier | Role in the Scheme | Motive | Negotiable? | Example — the Spanish Red Terror (1936) |
 |---|---|---|---|---|
-| **Satan** *(above the board)* | the father of lies — deceives, confuses, divides | *hatred* of God the Father and of Jesus Christ; to ruin the children they love | **No** — covets nothing he could hold | the lie that the Church is the people's enemy, whispered until neighbours turn on neighbours |
-| **Mastermind** | sets the objective | *spite* — not to gain, but that the other *lose* | **No** — can only be defeated | the revolutionary leadership that orders the Church *erased*, not taxed |
-| **The Funder** *(invisible)* | bankrolls the Scheme, banks the take | *gain*, kept out of sight | Hidden — the top of the money trail | the party paymasters and arms suppliers behind the militias |
-| **Villain** | does the visible damage | gain and standing; the cut it collects | **Yes** — bribed, recruited, turned | the column commander who leads the church-burning for rank |
-| **Henchman** | takes the risk | a nameable price; a real grievance | **Yes** — paid, bought off, recruited | the street militiaman paid in bread and a grievance |
+| **Satan** *(above the board)* | the father of lies — deceives, confuses, divides | *hatred* of God the Father and of Jesus Christ; to ruin the children they love | **No** — covets nothing he could hold | the lie that the Church is the people's oppressor, preached until neighbours drag priests and nuns from their convents |
+| **Mastermind** | sets the objective | *spite* — not to gain, but that the other *lose* | **No** — can only be defeated | the anticlerical revolutionaries who set out to *erase* the Church — kill its clergy, not merely tax or curb it |
+| **The Funder** *(invisible)* | bankrolls the Scheme, banks the take | *gain*, kept out of sight | Hidden — the top of the money trail | those who seize and sell off the confiscated Church lands, gold, and altar-plate |
+| **Villain** | does the visible damage | gain and standing; the cut it collects | **Yes** — bribed, recruited, turned | the militia-column commander who leads the church-burnings for rank and standing |
+| **Henchman** | takes the risk | a nameable price; a real grievance | **Yes** — paid, bought off, recruited | the street *miliciano* paid in bread, drink, and a real grievance |
 
 Three of these rungs are the game's own slots — **Henchman**, **Villain**,
 **Mastermind**; the **Funder** and the tempter sit off the board. The line falls
@@ -1328,10 +1329,11 @@ friars, and hundreds of nuns — burned churches, and desecrated the sacred
 Battle for Spain*). Contemporary accounts also carry the killing and defilement
 of nuns; the most lurid stories were amplified as wartime propaganda, but the
 mass killing of clergy and the burning and desecration of churches are not in
-doubt. Now put the page's own question to it — *who benefits?* The Church held
-little the killers materially needed, so this was not the Funder's ledger; the
-priests and nuns threatened no one on a battlefield, so killing them won no
-ground. So what was it *about*? Strip the tiers away and the object at the very
+doubt. Now put the page's own question to it — *who benefits?* Its lands and
+altar-gold were looted, yes — that was the Funder's ledger, the one transactional
+thread in the whole business — but the *killing and desecration* of priests and
+nuns won no property and took no ground; consecrated men and women were no
+battlefield threat. So what was the killing *about*? Strip the tiers away and the object at the very
 top was not gain at all but the **desecration of the holy itself** — the
 humiliation of consecrated men and women *precisely because* they were
 consecrated. That is spite toward God worked through men who had been handed the
