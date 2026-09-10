@@ -32,6 +32,7 @@ import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
+import { hasPendingDoOver } from './doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -57,6 +58,39 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  * that omit the well-known cardStats entry — the recruitHero `?? 0` precedent.
  */
 export const OFFICER_RECRUIT_COST = 3;
+
+/**
+ * Gains a S.H.I.E.L.D. Officer from the shared supply into a player's HAND (WP-681 /
+ * D-24498 — the Battlefield Promotion reward variant).
+ *
+ * Distinct from the recruitOfficer move (which spends Recruit and lands the Officer in
+ * the DISCARD pile) and from the WP-541 `gain-officer-current` reward (which also lands
+ * in discard): this is a card-effect FREE gain that lands the Officer in the acting
+ * player's hand so it can be played the same turn. The discard-bound gains are unchanged.
+ *
+ * // why: D-24498 — Battlefield Promotion's "you may gain a S.H.I.E.L.D. Officer to your
+ * hand." An empty Officer supply is a no-op (returns false), so the reward silently
+ * no-ops rather than throwing — moves never throw.
+ *
+ * @param G - Game state (mutated in place under Immer draft).
+ * @param playerID - The player who gains the Officer.
+ * @returns true when an Officer was moved to hand; false when the supply was empty or the
+ *   player's zones were missing.
+ */
+export function gainOfficerToHand(G: LegendaryGameState, playerID: string): boolean {
+  const officerId = G.piles.officers[0];
+  if (officerId === null || officerId === undefined) {
+    return false;
+  }
+  const zones = G.playerZones[playerID];
+  if (!zones) {
+    return false;
+  }
+  // why: pile[0] is the top card (the locked supply-pile convention); slice(1) drops it.
+  G.piles.officers = G.piles.officers.slice(1);
+  zones.hand = [...zones.hand, officerId];
+  return true;
+}
 
 /**
  * Recruits a S.H.I.E.L.D. Officer from the shared supply.
@@ -114,6 +148,7 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return; // D-24019
   if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
+  if (hasPendingDoOver(G)) return; // why: WP-681 / D-24498 — block-all guard (Do-Over accept/decline choice)
   if (hasPendingVictoryPileCardPick(G)) return; // D-24067
   if (hasPendingDrawOrEmpowered(G)) return;
   if (hasPendingCountScaledChoice(G)) return;

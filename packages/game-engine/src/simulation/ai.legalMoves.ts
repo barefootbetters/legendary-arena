@@ -32,6 +32,8 @@ import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
+import { hasPendingDoOver } from '../moves/doOver.resolve.js';
+import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget } from '../hero/heroEffects.execute.js';
 import {
@@ -140,6 +142,11 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveCountScaledChoice',
   'resolveUndercoverChoice',
   'resolveSmashDiscard',
+  // why: WP-681 / D-24498 — resolveDoOver is a getLegalMoves short-circuit (block-all
+  // pending Do-Over accept/decline), so it MUST be dispatchable in both sim MOVE_MAPs or
+  // the per-turn loop hangs. optional-ko-shield-officer (Battlefield Promotion) reuses the
+  // existing resolveOptionalKoReward dispatch, so it needs no new entry here.
+  'resolveDoOver',
   'resolveReturnZeroCostDiscard',
   'resolveDiscardToPlay',
   // why: WP-498 / D-24301 — getLegalMoves short-circuits to resolveReturnOnDiscard when the
@@ -384,6 +391,15 @@ export function getLegalMoves(
     return [{ name: 'resolveSmashDiscard', args: { decline: true } }];
   }
 
+  // why: WP-681 / D-24498 — a Do-Over accept/decline choice blocks every other move; the bot
+  // resolves it first. Deterministic default: DECLINE — discarding the whole hand to redraw 4
+  // is a large economy swing whose value depends on the current hand, so the conservative
+  // no-op default is chosen (an expected-value default is deferred, mirroring the
+  // play-top-Villain-Deck decline default). Returns a list of length EXACTLY 1.
+  if (hasPendingDoOver(gameState)) {
+    return [{ name: 'resolveDoOver', args: { decline: true } }];
+  }
+
   // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must
   // resolve a pending pick before any other move. Picks the highest-fightCost
   // eligible villain (ties broken by lowest victory-pile index = first in
@@ -417,7 +433,17 @@ export function getLegalMoves(
   // human-only). defaultTarget is non-null here because the park requires ≥1
   // eligible card and the board is frozen. Returns a list of length EXACTLY 1.
   if (hasPendingOptionalKoReward(gameState)) {
-    const defaultTarget = selectDefaultOptionalKoTarget(zones, gameState.cardStats);
+    // why: WP-681 / D-24498 — a Battlefield Promotion entry restricts the KO target to a
+    // S.H.I.E.L.D. Hero (koTeamFilter 'shield') and to hand ∪ discard (koZones); passing a
+    // non-shield or in-play target would be rejected by the resolve and HANG the sim, so the
+    // default selector must honor both. An absent koTeamFilter/koZones = the unrestricted
+    // default (every existing entry unchanged).
+    const front = gameState.pendingOptionalKoRewards![0]!;
+    const isEligible = front.koTeamFilter === 'shield'
+      ? (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId)
+      : undefined;
+    const allowInPlay = front.koZones === undefined || front.koZones.includes('inPlay');
+    const defaultTarget = selectDefaultOptionalKoTarget(zones, gameState.cardStats, isEligible, allowInPlay);
     if (defaultTarget !== null) {
       return [{ name: 'resolveOptionalKoReward', args: defaultTarget }];
     }

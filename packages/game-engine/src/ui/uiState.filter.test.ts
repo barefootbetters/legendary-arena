@@ -1181,6 +1181,49 @@ describe('filterUIStateForAudience — pendingSmashDiscard redaction (D-24492)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-681 / D-24498 — pendingDoOver redaction (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Do-Over accept/decline choice. The choice is
+ * private to the chooser; handSize is a count (not a card identity), but the existence of
+ * the choice is still chooser-only, so it must not appear in a non-chooser's UIState.
+ */
+function createDoOverUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.playerZones['0']!.hand = ['do-over-hand-a', 'do-over-hand-b'];
+  gameState.pendingDoOverChoices = [{ playerID: '0' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingDoOver redaction (D-24498)', () => {
+  it('the chooser sees pendingDoOver with the hand size and fixed draw count', () => {
+    const uiState = createDoOverUIState();
+    assert.ok(uiState.pendingDoOver !== undefined, 'buildUIState projects the Do-Over choice');
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingDoOver !== undefined, 'chooser sees the Do-Over choice');
+    assert.equal(result.pendingDoOver!.playerID, '0');
+    assert.equal(result.pendingDoOver!.handSize, 2, 'hand size reflects the two cards');
+    assert.equal(result.pendingDoOver!.drawCount, 4, 'the fixed draw-4');
+  });
+
+  it('an opponent does NOT see pendingDoOver', () => {
+    const uiState = createDoOverUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingDoOver, undefined, 'opponent must not see the Do-Over choice');
+  });
+
+  it('a spectator does NOT see pendingDoOver', () => {
+    const uiState = createDoOverUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingDoOver, undefined, 'spectator must not see the Do-Over choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-287 / EC-319 — pendingDrawOrEmpowered redaction (D-24071, D-24011 analog)
 // ---------------------------------------------------------------------------
 

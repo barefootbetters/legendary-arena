@@ -215,6 +215,12 @@ export function useTurnActions(
   // at ANY stage (the engine's full block-all guard set freezes the board). OPTIONAL —
   // discard a hand card for +N Attack OR decline.
   hasPendingSmashDiscard: boolean = false,
+  // why: WP-681 / D-24498 — appended LAST (after hasPendingSmashDiscard) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Deadpool Do-Over accept/decline choice is pending; blocks End Turn / Pass
+  // Priority at ANY stage (the engine's full block-all guard set freezes the board). OPTIONAL —
+  // discard the whole hand and draw 4 OR decline.
+  hasPendingDoOver: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -306,6 +312,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Discard a card for +attack, or Decline, before taking another action.',
+        };
+      }
+      // why: WP-681 / D-24498 — block turn-end / pass-priority while a Do-Over choice is
+      // pending (the block-all guard freezes the board, mirroring hasPendingSmashDiscard).
+      // Decline is a first-class exit, so the reason names it.
+      if (hasPendingDoOver) {
+        return {
+          allowed: false,
+          reason: 'Take the Do-Over (discard your hand and draw 4) or Decline before taking another action.',
         };
       }
       // why: D-24071 — End Turn / Pass Priority blocked at any stage while a
@@ -495,6 +510,15 @@ export function useTurnActions(
           reason: 'Discard a card for +attack, or Decline, before taking another action.',
         };
       }
+      if (hasPendingDoOver) {
+        // why: WP-681 / D-24498 — the block-all turn-end guard blocks endTurn while
+        // pendingDoOverChoices is non-empty; this client-side gate surfaces the reason so
+        // the player sees a tooltip instead of a silent rejection. OPTIONAL — accept OR decline.
+        return {
+          allowed: false,
+          reason: 'Take the Do-Over (discard your hand and draw 4) or Decline before taking another action.',
+        };
+      }
       if (hasPendingDrawOrEmpowered) {
         // why: D-24071 — WP-286's block-all turn-end guard blocks endTurn while
         // pendingDrawOrEmpowered is non-empty; this client-side gate surfaces the
@@ -679,7 +703,10 @@ export function useTurnActions(
         // why: WP-676 / D-24492 — mirror the engine healWounds block-all guard, which now
         // returns early while a Smash choice is pending; without this the Heal button would
         // offer a heal the engine silently no-ops.
-        hasPendingSmashDiscard
+        hasPendingSmashDiscard ||
+        // why: WP-681 / D-24498 — mirror the engine healWounds block-all guard, which returns
+        // early while a Do-Over choice is pending.
+        hasPendingDoOver
       ) {
         return {
           allowed: false,

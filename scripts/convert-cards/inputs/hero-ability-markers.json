@@ -146,6 +146,30 @@
   ],
   "core": [
     {
+      "heroSlug": "nick-fury",
+      "cardSlug": "high-tech-weaponry",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack:1]"
+    },
+    {
+      "heroSlug": "deadpool",
+      "cardSlug": "hey-can-i-get-a-do-over",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:first-hero-condition]"
+    },
+    {
+      "heroSlug": "deadpool",
+      "cardSlug": "hey-can-i-get-a-do-over",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:do-over]"
+    },
+    {
+      "heroSlug": "nick-fury",
+      "cardSlug": "battlefield-promotion",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-shield-officer]"
+    },
+    {
       "heroSlug": "captain-america",
       "cardSlug": "perfect-teamwork",
       "abilityIndex": 0,

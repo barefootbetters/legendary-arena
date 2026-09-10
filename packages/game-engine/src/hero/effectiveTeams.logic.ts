@@ -21,6 +21,11 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import {
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+} from '../setup/pilesInit.js';
 
 // why: D-24391 — a frozen shared empty result so the no-grant path (the common case)
 // allocates nothing and callers can iterate it safely without a null check.
@@ -76,4 +81,41 @@ export function cardHasTeamWhenPlayed(
     }
   }
   return false;
+}
+
+// why: WP-681 / D-24498 — the well-known basic S.H.I.E.L.D. Hero tokens (the Officer
+// supply token, the starting Agent and Trooper) carry NO G.cardTraits row (buildCardTraits
+// only fans out hero-deck cards), so cardHasTeamWhenPlayed cannot see them as team 'shield'.
+// They ARE S.H.I.E.L.D. Heroes by identity, and Battlefield Promotion's rule text explicitly
+// counts the S.H.I.E.L.D. Officer as a S.H.I.E.L.D. Hero, so the shield-Hero predicate below
+// treats these three tokens as shield in addition to the trait/copied-team read.
+const WELL_KNOWN_SHIELD_HERO_TOKENS: ReadonlySet<CardExtId> = new Set<CardExtId>([
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+]);
+
+/**
+ * Returns whether a card counts as a S.H.I.E.L.D. Hero for a KO-target / Undercover
+ * eligibility check, regardless of which zone it currently sits in.
+ *
+ * A card counts as a S.H.I.E.L.D. Hero iff its printed/copied team is `shield`
+ * (cardHasTeamWhenPlayed) OR it is one of the well-known basic S.H.I.E.L.D. Hero tokens
+ * (Officer / Agent / Trooper), which are S.H.I.E.L.D. Heroes by identity but carry no
+ * G.cardTraits row.
+ *
+ * // why: WP-681 / D-24498 — Battlefield Promotion KOs "a [team:shield] Hero from your
+ * hand or discard pile", and its rule text counts the S.H.I.E.L.D. Officer itself. The
+ * hand/discard copy-suffixed ids the resolve validates against never carry an in-play
+ * copied-team grant, so the read is effectively the printed team plus the token carve-out.
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The CardExtId to test.
+ * @returns Whether the card is a S.H.I.E.L.D. Hero.
+ */
+export function cardCountsAsShieldHero(G: LegendaryGameState, cardId: CardExtId): boolean {
+  if (WELL_KNOWN_SHIELD_HERO_TOKENS.has(cardId)) {
+    return true;
+  }
+  return cardHasTeamWhenPlayed(G, cardId, 'shield');
 }

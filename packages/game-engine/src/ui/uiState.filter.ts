@@ -872,6 +872,25 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-681 / D-24498 / D-24011 analog — the pending Do-Over choice is private to the
+  // chooser (only they may resolve it). Present only when the audience is a player whose
+  // playerId equals the chooser's playerID; omitted (conditional assignment, never an
+  // `undefined` literal) for opponents AND spectators — mirroring the pendingDrawOrEmpowered
+  // posture. A flat object (binary accept/decline, no eligible-card list); handSize is a count,
+  // not a card identity, so it carries no private hand contents. Missing this pass-through
+  // drops the field at the whitelist and the game freezes with no prompt.
+  if (
+    uiState.pendingDoOver !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingDoOver.playerID
+  ) {
+    result.pendingDoOver = {
+      playerID: uiState.pendingDoOver.playerID,
+      handSize: uiState.pendingDoOver.handSize,
+      drawCount: uiState.pendingDoOver.drawCount,
+    };
+  }
+
   // why: D-24071 / D-24011 analog — the pending draw-or-empowered choice is private to
   // the chooser. Redacted for EVERY audience except the choosing player; present only
   // when the audience is a player whose playerId equals the chooser's playerID; omitted

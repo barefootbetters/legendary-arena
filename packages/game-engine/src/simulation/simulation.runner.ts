@@ -69,6 +69,9 @@ import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard is a getLegalMoves short-circuit (block-all
 // guard), so it MUST be dispatchable here or a parked Smash choice hangs the per-turn loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
+// why: WP-681 / D-24498 — resolveDoOver can be the only legal move (block-all); it must be
+// dispatchable in the runner MOVE_MAP or the per-turn loop hangs.
+import { resolveDoOver } from '../moves/doOver.resolve.js';
 // why: WP-289 / D-24073 — the sibling resolve moves getLegalMoves can also short-circuit to.
 // Like resolveDrawOrEmpowered above, each MUST be dispatchable here or a parked pending choice
 // hangs the per-turn loop. Their pending choices need preconditions a sweep rarely meets (so the
@@ -289,6 +292,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // loop. Reuse the existing move fn, no re-implementation.
   resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
+  // why: WP-681 / D-24498 — getLegalMoves short-circuits to resolveDoOver when a Do-Over
+  // accept/decline choice is parked; a missing dispatch entry spins the per-turn loop.
+  resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),
   // why: D-24440 — getLegalMoves short-circuits to resolveHeroChoice when a
   // reveal-attack-choose hero ability parks pendingHeroChoice; a missing dispatch
   // entry spun the per-turn loop until the move-step budget flagged the game stuck

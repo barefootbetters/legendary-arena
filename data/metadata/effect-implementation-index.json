@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1854,
+    "totalEntries": 1858,
     "byScope": {
-      "hero": 679,
+      "hero": 683,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 414,
+      "executable": 417,
       "deferred": 16,
-      "condition": 26,
+      "condition": 27,
       "unsupported": 324,
       "unmarked": 1071,
       "subsystem": 3
@@ -6822,6 +6822,40 @@
       ]
     },
     {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "do-over",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#do-over",
+      "wp": "WP-681",
+      "decision": "D-24498",
+      "designs": [
+        {
+          "slug": "hey-can-i-get-a-do-over",
+          "name": "Hey, Can I Get a Do-Over?"
+        }
+      ]
+    },
+    {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "hey-can-i-get-a-do-over",
+          "name": "Hey, Can I Get a Do-Over?"
+        }
+      ]
+    },
+    {
       "extId": "core/emma-frost",
       "name": "Emma Frost",
       "set": "core",
@@ -6983,6 +7017,23 @@
       "name": "Nick Fury",
       "set": "core",
       "scope": "hero",
+      "mechanic": "attack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "high-tech-weaponry",
+          "name": "High-Tech Weaponry"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "name": "Nick Fury",
+      "set": "core",
+      "scope": "hero",
       "mechanic": "attack-per-count",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
@@ -6992,6 +7043,23 @@
         {
           "slug": "legendary-commander",
           "name": "Legendary Commander"
+        }
+      ]
+    },
+    {
+      "extId": "core/nick-fury",
+      "name": "Nick Fury",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "optional-ko-shield-officer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-officer",
+      "wp": "WP-681",
+      "decision": "D-24498",
+      "designs": [
+        {
+          "slug": "battlefield-promotion",
+          "name": "Battlefield Promotion"
         }
       ]
     },
@@ -28508,7 +28576,9 @@
     "core/deadpool": {
       "scope": "hero",
       "mechanics": [
-        "attack-per-count"
+        "attack-per-count",
+        "do-over",
+        "first-hero-condition"
       ]
     },
     "core/emma-frost": {
@@ -28548,7 +28618,9 @@
     "core/nick-fury": {
       "scope": "hero",
       "mechanics": [
-        "attack-per-count"
+        "attack",
+        "attack-per-count",
+        "optional-ko-shield-officer"
       ]
     },
     "core/rogue": {

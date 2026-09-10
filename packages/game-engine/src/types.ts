@@ -756,8 +756,12 @@ export interface PendingOptionalKoReward {
   // why: WP-667 / D-24480 — `'none'` is the NO-REWARD variant (Radioactive Riot's
   // "you may KO a card from your hand or discard pile" — the KO is deck-thinning, no
   // follow-up reward). resolveOptionalKoReward skips the Step-6 reward dispatch for it.
-  /** The reward granted iff the player KOs a card (dispatched to the existing executor); `'none'` = no reward. */
-  rewardType: HeroKeyword | 'none';
+  // why: WP-681 / D-24498 — `'gain-officer-hand'` is a NEW reward variant (Battlefield
+  // Promotion): on KO, gain a S.H.I.E.L.D. Officer from supply to the acting player's
+  // HAND. NOT a HeroKeyword, so resolveOptionalKoReward dispatches it via a dedicated
+  // branch (the gainOfficerToHand helper), never through executeSingleEffect.
+  /** The reward granted iff the player KOs a card (dispatched to the existing executor); `'none'` = no reward; `'gain-officer-hand'` = a S.H.I.E.L.D. Officer to hand (D-24498). */
+  rewardType: HeroKeyword | 'none' | 'gain-officer-hand';
   /** The reward magnitude passed to the reward executor. */
   rewardMagnitude: number;
   /** The hero card whose ability parked this choice (passed to the reward executor). */
@@ -768,6 +772,12 @@ export interface PendingOptionalKoReward {
   // resolve rejects a zone not in this list and the projection lists an empty inPlay set.
   /** Optional KO-source-zone scope; absent = hand ∪ discard ∪ inPlay (D-24442). */
   koZones?: ('hand' | 'discard' | 'inPlay')[];
+  // why: WP-681 / D-24498 — Battlefield Promotion restricts the KO target to S.H.I.E.L.D.
+  // Heroes. ABSENT = no team restriction (every existing entry is byte-unchanged). `'shield'`
+  // makes the resolve reject a non-S.H.I.E.L.D. target and the projection list only S.H.I.E.L.D.
+  // Heroes (the S.H.I.E.L.D. Officer token itself counts as a S.H.I.E.L.D. Hero).
+  /** Optional KO-target team restriction; absent = any card (D-24498). */
+  koTeamFilter?: 'shield';
 }
 
 /**
@@ -793,6 +803,26 @@ export interface PendingSmashDiscard {
   playerID: string;
   /** The Attack granted iff the player discards a hand card. */
   magnitude: number;
+}
+
+/**
+ * A pending "discard the rest of your hand and draw four cards?" choice
+ * (WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?").
+ *
+ * Parked on G.pendingDoOverChoices[] (FIFO) by the `do-over` hero ability after
+ * its first-hero-played-this-turn condition passed. Removed (front-popped) by
+ * resolveDoOver after the player accepts (discard the entire current hand through
+ * the discardFromHand chokepoint, then draw a FIXED 4) or declines (nothing). Must
+ * be undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24498 — discarding your whole hand is a real cost, so this is a genuine
+ * accept/decline choice, not an auto-resolve. The entry records only the choosing
+ * player; the draw amount is the fixed printed 4 (not one-per-discard), so it carries
+ * no magnitude. Mirrors PendingSmashDiscard's minimal shape.
+ */
+export interface PendingDoOver {
+  /** The player who must accept (discard hand + draw 4) or decline. */
+  playerID: string;
 }
 
 /**
@@ -1408,6 +1438,17 @@ export interface LegendaryGameState {
   // "no pending choice" (guards test `.length`). Smash is a wwhk-only hero keyword.
   /** FIFO queue of pending Smash discard-for-attack choices awaiting resolution (WP-676). */
   pendingSmashDiscards?: PendingSmashDiscard[] | undefined;
+
+  // why: WP-681 / D-24498 — FIFO queue of pending Do-Over accept/decline choices (Deadpool's
+  // "Hey, Can I Get a Do-Over?" — "you may discard the rest of your hand and draw four cards",
+  // gated on the first-hero-played-this-turn condition). Entries are appended by the
+  // heroEffectDoOver park case; front-popped by resolveDoOver after the player accepts
+  // (discard whole hand → draw 4) or declines. Must be undefined or empty at every turn-end.
+  // Lazily initialized at the park site, never in Game.setup — a game that never plays a
+  // Do-Over carries no new field and serializes byte-identically (no finalStateHash re-pin).
+  // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Do-Over accept/decline choices awaiting resolution (WP-681). */
+  pendingDoOverChoices?: PendingDoOver[] | undefined;
 
   // why: WP-663 / D-24474 — FIFO queue of pending "play the top Villain-Deck card for +N
   // Attack?" choices (Shadowed Thoughts). Lazily materialized (never seeded in Game.setup),

@@ -367,7 +367,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards."
+            "If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards. [keyword:first-hero-condition] [keyword:do-over]"
           ]
         },
         {
@@ -1003,7 +1003,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack]."
+            "[hc:tech]: You get +1[icon:attack]. [keyword:attack:1]"
           ]
         },
         {
@@ -1018,7 +1018,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand."
+            "You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand. [keyword:optional-ko-shield-officer]"
           ]
         },
         {

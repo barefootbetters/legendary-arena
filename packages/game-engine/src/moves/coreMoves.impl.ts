@@ -27,6 +27,7 @@ import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
+import { hasPendingDoOver } from './doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
@@ -123,6 +124,12 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // why: WP-676 / D-24492 — block-all guard: a parked Smash discard-for-attack choice
   // freezes the board until the player discards a hand card or declines.
   if (hasPendingSmashDiscard(G)) {
+    return;
+  }
+
+  // why: WP-681 / D-24498 — block-all guard: a parked Do-Over accept/decline choice
+  // freezes the board until the player accepts (discard hand + draw 4) or declines.
+  if (hasPendingDoOver(G)) {
     return;
   }
 
@@ -340,6 +347,12 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
 
+  // why: WP-681 / D-24498 — block-all guard: a parked Do-Over accept/decline choice
+  // freezes the board until the player accepts (discard hand + draw 4) or declines.
+  if (hasPendingDoOver(G)) {
+    return;
+  }
+
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) {
     return;
@@ -517,6 +530,12 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // why: WP-676 / D-24492 — block-all guard: a parked Smash discard-for-attack choice
   // freezes the board until the player discards a hand card or declines.
   if (hasPendingSmashDiscard(G)) {
+    return;
+  }
+
+  // why: WP-681 / D-24498 — block-all guard: a parked Do-Over accept/decline choice
+  // freezes the board until the player accepts (discard hand + draw 4) or declines.
+  if (hasPendingDoOver(G)) {
     return;
   }
 

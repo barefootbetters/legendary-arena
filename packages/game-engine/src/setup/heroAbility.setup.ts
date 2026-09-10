@@ -649,6 +649,12 @@ function parseAbilityText(
   // X-Men Hero this turn" gate.
   const revealFromHandCriterion = tryResolveRevealFromHandCriterion(abilityText);
   const lineHasRevealFromHand = revealFromHandCriterion !== undefined;
+  // why: WP-681 / D-24498 — on a Battlefield Promotion line ([keyword:optional-ko-shield-officer])
+  // the co-located `[team:shield]` describes the KO TARGET ("KO a [team:shield] Hero"), NOT a
+  // requiresTeam play-gate. Suppress it from Step 1b so the card fires unconditionally (mirrors
+  // the reveal-from-hand / investigate criterion suppression). The engine's koTeamFilter enforces
+  // the S.H.I.E.L.D.-only KO target at resolve time; the setup gate must not also block the play.
+  const lineHasOptionalKoShieldOfficer = abilityText.includes('[keyword:optional-ko-shield-officer]');
   // why: WP-673 / D-24488 — when the line carries the worthy count-scaled marker,
   // its `[keyword:Worthy]` token is the COUNT CRITERION ("each other card … that
   // makes you Worthy"), not a heroCostAtLeastInHandOrPlay play-gate — so Step 2
@@ -736,7 +742,7 @@ function parseAbilityText(
     // CRITERION ("reveal another [team:x-men] Hero"), already captured in
     // revealFromHandCriterion — so emit NO requiresTeam gate. This is the Psychic Link fix:
     // the mid-sentence [team:x-men] was wrongly gating the card on "another X-Men played".
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand) {
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -1099,6 +1105,15 @@ function parseAbilityText(
       // on play). A boolean gate — `value` is unused by the evaluator; '1' is a stable
       // placeholder. Placed before the unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' });
+    } else if (normalizedKeyword === 'first-hero-condition') {
+      // why: WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?" gates its
+      // optional discard-and-redraw on "if this is the first Hero you played this turn".
+      // The marker→condition precedent (Spectrum / recruit-threshold / Outwit): push the
+      // `firstHeroPlayedThisTurn` gate onto the same hook as the line's [keyword:do-over],
+      // so the Do-Over choice parks only when no other Hero has been played this turn. A
+      // boolean gate — `value` is unused by the evaluator; '1' is a stable placeholder.
+      // Placed before the unresolved-marker fallback so it never records a hollow.
+      conditions.push({ type: 'firstHeroPlayedThisTurn', value: '1' });
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a
