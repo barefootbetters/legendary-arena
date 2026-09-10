@@ -84,8 +84,10 @@ describe('dispatchTacticOnFight (WP-497 / D-24300)', () => {
   });
 
   it('is a silent no-op for an unknown/unimplemented tactic id (never throws, no state change)', () => {
+    // why: WP-695 dispatched Electromagnetic Bubble, so this uses a genuinely
+    // unimplemented tactic id to prove the silent-fallthrough contract still holds.
     const G = makeState();
-    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-magneto-electromagnetic-bubble', SHUFFLE);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-loki-some-unimplemented-tactic', SHUFFLE);
     assert.equal(G.handSizeOverrides, undefined);
     assert.equal(G.messages.length, 0);
   });
@@ -299,17 +301,24 @@ describe('dispatchTacticOnFight - Red Skull routing + the deliberate omission (W
     assert.equal(drawState.playerZones['0']!.hand.length, 2);
   });
 
-  it('AC-5: Ruthless Dictator stays UNDISPATCHED - no mutation, no log', () => {
-    // why: deliberate omission, not an oversight. Its printed top-three
-    // KO/discard/replace is INTERACTIVE and parks a pending choice; shipped
-    // without its UIState projection and prompt it HARD-FREEZES the human player.
-    // Pinned so a later packet's arrival is a decision, not an accident.
+  it('WP-695 / D-24512: Ruthless Dictator now PARKS an interactive scry-3 choice', () => {
+    // why: the WP-567 deferral is discharged (WP-695). Dispatching Ruthless Dictator now
+    // parks a PendingRuthlessDictatorChoice (KO one / discard one / top one) for the
+    // defeating player, shipped together with its UIState projection + prompt so it no
+    // longer hard-freezes the human player. Deep behavior is covered by
+    // ruthlessDictatorChoice.resolve.test.ts; here we only assert the dispatch now parks
+    // + logs (it did neither before) and touches no economy.
     const G = makeEconomyState([], ['a', 'b', 'c']);
     dispatchTacticOnFight(G, { currentPlayer: '0' }, RUTHLESS_DICTATOR_TACTIC_ID, SHUFFLE);
-    assert.equal(G.turnEconomy.attack, 0);
-    assert.equal(G.turnEconomy.recruit, 0);
-    assert.equal(G.playerZones['0']!.hand.length, 0);
-    assert.equal(G.messages.length, 0);
+    assert.equal(G.turnEconomy.attack, 0, 'no economy change');
+    assert.equal(G.turnEconomy.recruit, 0, 'no economy change');
+    assert.equal(G.pendingRuthlessDictatorChoices?.length, 1, 'parks one scry-3 choice');
+    assert.deepStrictEqual(
+      G.pendingRuthlessDictatorChoices![0]!.revealedCardIds,
+      ['a', 'b', 'c'],
+      'snapshots the top three deck cards',
+    );
+    assert.ok(G.messages.length > 0, 'logs the park (it was silent before)');
   });
 
   it('AC-7: an unhandled tactic id is still a silent no-op and does not throw', () => {

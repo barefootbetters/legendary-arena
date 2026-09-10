@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 434,
+      "executable": 436,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
-      "unmarked": 1058,
+      "unmarked": 1056,
       "subsystem": 4
     }
   },
@@ -6231,10 +6231,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "electromagnetic-bubble",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveElectromagneticBubble",
+      "wp": "WP-695",
+      "decision": "D-24512"
     },
     {
       "extId": "core-mastermind-magneto-xaviers-nemesis",
@@ -6286,10 +6286,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "ruthless-dictator",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveRuthlessDictator",
+      "wp": "WP-695",
+      "decision": "D-24512"
     },
     {
       "extId": "core-villain-brotherhood-blob",

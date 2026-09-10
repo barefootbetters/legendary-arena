@@ -35,6 +35,8 @@ import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import PendingMelterKoChoicePrompt from '../components/play/PendingMelterKoChoicePrompt.vue';
+import PendingRuthlessDictatorChoicePrompt from '../components/play/PendingRuthlessDictatorChoicePrompt.vue';
+import PendingElectromagneticBubbleChoicePrompt from '../components/play/PendingElectromagneticBubbleChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
 import PendingPutCardsOnDeckChoicePrompt from '../components/play/PendingPutCardsOnDeckChoicePrompt.vue';
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
@@ -115,6 +117,8 @@ export default defineComponent({
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
     PendingMelterKoChoicePrompt,
+    PendingRuthlessDictatorChoicePrompt,
+    PendingElectromagneticBubbleChoicePrompt,
     PendingDiscardChoicePrompt,
     PendingPutCardsOnDeckChoicePrompt,
     PendingKoDiscardChoicePrompt,
@@ -340,6 +344,14 @@ export default defineComponent({
     const hasPendingMelterKoChoice = computed<boolean>(
       () => snapshot.value?.pendingMelterKoChoice !== undefined,
     );
+    // why: WP-695 / D-24512 — derived from UIState.pendingRuthlessDictatorChoice !== undefined.
+    const hasPendingRuthlessDictatorChoice = computed<boolean>(
+      () => snapshot.value?.pendingRuthlessDictatorChoice !== undefined,
+    );
+    // why: WP-695 / D-24512 — derived from UIState.pendingElectromagneticBubbleChoice !== undefined.
+    const hasPendingElectromagneticBubbleChoice = computed<boolean>(
+      () => snapshot.value?.pendingElectromagneticBubbleChoice !== undefined,
+    );
     // why: WP-477 / WP-476 — derived from UIState.pendingDiscardChoice !== undefined. Passed to
     // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Magneto
     // discard-to-limit choice is pending (board frozen, mirrors hasPendingScryKoChoice).
@@ -417,6 +429,8 @@ export default defineComponent({
       hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
       hasPendingMelterKoChoice,
+      hasPendingRuthlessDictatorChoice,
+      hasPendingElectromagneticBubbleChoice,
       hasPendingDiscardChoice,
       hasPendingPutCardsOnDeckChoice,
       hasPendingReorderChoice,
@@ -598,6 +612,18 @@ export default defineComponent({
                pending-choice type is set. -->
           <PendingMelterKoChoicePrompt
             :pending-melter-ko-choice="snapshot.pendingMelterKoChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-695 / D-24512 — the Ruthless Dictator scry-3 prompt; choosing player only. -->
+          <PendingRuthlessDictatorChoicePrompt
+            :pending-ruthless-dictator-choice="snapshot.pendingRuthlessDictatorChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-695 / D-24512 — the Electromagnetic Bubble X-Men pick prompt; choosing player only. -->
+          <PendingElectromagneticBubbleChoicePrompt
+            :pending-electromagnetic-bubble-choice="snapshot.pendingElectromagneticBubbleChoice"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
@@ -797,6 +823,8 @@ export default defineComponent({
             :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
+            :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
+            :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
             :has-pending-put-cards-on-deck-choice="hasPendingPutCardsOnDeckChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"

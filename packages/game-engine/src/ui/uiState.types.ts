@@ -141,6 +141,19 @@ export interface UIState {
   // the revealed cards are the tops of players' own decks (hidden next-draw
   // information). Absent (undefined) means no pending Melter KO/keep choice.
   pendingMelterKoChoice?: UIPendingMelterKoChoice;
+  // why: WP-695 / D-24512 — projects the FRONT of G.pendingRuthlessDictatorChoices with the
+  // revealed deck-top cards and the still-available dispositions so the defeating player can
+  // render the "KO one / discard one / top one" prompt. Redacted (omitted) for every audience
+  // except the chooser — the revealed cards are the top of the chooser's own deck (private
+  // next-draw information). Absent (undefined) means no pending Ruthless Dictator choice.
+  pendingRuthlessDictatorChoice?: UIPendingRuthlessDictatorChoice;
+  // why: WP-695 / D-24512 — projects the FRONT of G.pendingElectromagneticBubbleChoices with
+  // the eligible in-play X-Men Heroes so the defeating player can render the "choose an X-Men
+  // Hero to add to your next hand" prompt. Redacted (omitted) for every audience except the
+  // chooser (the eligible list is the chooser's own in-play Heroes — a public zone, but the
+  // choice is theirs alone, so kept owner-only for consistency with the other pending picks).
+  // Absent (undefined) means no pending Electromagnetic Bubble choice.
+  pendingElectromagneticBubbleChoice?: UIPendingElectromagneticBubbleChoice;
   // why: WP-476 / D-24284 — projects the FRONT of G.pendingDiscardChoices with the
   // choosing player's current hand (the cards they may discard) and the limit, so
   // the current player can render the "Choose which cards to discard down to four"
@@ -949,6 +962,75 @@ export interface UIPendingMelterKoChoice {
   choiceType: "melter-ko";
   playerID: string;
   revealedTops: UIMelterRevealedTop[];
+}
+
+/**
+ * One revealed card in a pending Ruthless Dictator scry-3 choice (WP-695 / D-24512).
+ * The client renders each still-unresolved revealed deck-top card and, for each
+ * still-available disposition, submits
+ * `resolveRuthlessDictatorChoice({ cardId, disposition })`. `cardId` is the deck
+ * instance id the engine resolve matches against the front pending entry's
+ * `revealedCardIds` snapshot (the round-trip rule).
+ */
+export interface UIRuthlessDictatorRevealedCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending Red Skull "Ruthless Dictator" scry-3 disposition
+ * choice (WP-695 / D-24512). Only visible to the choosing (defeating) player; redacted
+ * for opponents and spectators (the revealed cards are the top of the chooser's own
+ * deck — their next draws).
+ *
+ * `revealedCards` is the FRONT pending entry's remaining `revealedCardIds` resolved to
+ * display data, in deck-top order. `availableDispositions` is the remaining slots the
+ * player may still assign (KO → discard → top priority; shrinks as each card is
+ * resolved). The client submits `{ cardId, disposition }` per card; the engine applies
+ * it and drops the card + slot.
+ *
+ * @see WP-695 §Scope (In)
+ * @see EC-732 Locked Values
+ * @see DECISIONS.md D-24512
+ */
+export interface UIPendingRuthlessDictatorChoice {
+  choiceType: "ruthless-dictator";
+  playerID: string;
+  revealedCards: UIRuthlessDictatorRevealedCard[];
+  availableDispositions: ("ko" | "discard" | "top")[];
+}
+
+/**
+ * One eligible in-play X-Men Hero in a pending Electromagnetic Bubble choice (WP-695 /
+ * D-24512). The client renders each eligible Hero and submits
+ * `resolveElectromagneticBubbleChoice({ cardId })` for the one the player chooses to add
+ * to their next hand. `cardId` is matched against the front pending entry's
+ * `eligibleCardIds` snapshot (the round-trip rule).
+ */
+export interface UIElectromagneticBubbleEligibleCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending Magneto "Electromagnetic Bubble" X-Men Hero pick
+ * (WP-695 / D-24512). Only visible to the choosing (defeating) player; redacted for
+ * opponents and spectators (kept owner-only for consistency with the other pending
+ * picks — the decision is the chooser's alone).
+ *
+ * `eligibleCards` is the FRONT pending entry's `eligibleCardIds` snapshot resolved to
+ * display data, in in-play order (the in-play X-Men Heroes the player may add). The
+ * client submits `{ cardId }` for the chosen Hero; the engine records it as a deferred
+ * hand injection added at the player's next hand fill.
+ *
+ * @see WP-695 §Scope (In)
+ * @see EC-732 Locked Values
+ * @see DECISIONS.md D-24512
+ */
+export interface UIPendingElectromagneticBubbleChoice {
+  choiceType: "electromagnetic-bubble";
+  playerID: string;
+  eligibleCards: UIElectromagneticBubbleEligibleCard[];
 }
 
 /**

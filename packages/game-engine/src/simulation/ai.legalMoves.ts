@@ -23,6 +23,8 @@ import {
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
+import { hasPendingRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
@@ -112,6 +114,15 @@ export const SIMULATION_MOVE_NAMES = [
   // MOVE_MAPs) or the per-turn loop hangs (the WP-289 within-turn hang). Asserted by
   // simulation.moveDispatch.drift.test.ts.
   'resolveMelterKoChoice',
+  // why: WP-695 / D-24512 — getLegalMoves short-circuits to resolveRuthlessDictatorChoice
+  // when a Red Skull Ruthless Dictator scry-3 choice is parked; it MUST be dispatchable in
+  // the sim (both MOVE_MAPs) or the per-turn loop hangs (the WP-289 within-turn hang).
+  // Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveRuthlessDictatorChoice',
+  // why: WP-695 / D-24512 — getLegalMoves short-circuits to resolveElectromagneticBubbleChoice
+  // when a Magneto Electromagnetic Bubble X-Men pick is parked; it MUST be dispatchable in the
+  // sim (both MOVE_MAPs) or the per-turn loop hangs. Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveElectromagneticBubbleChoice',
   // why: WP-476 / D-24284 — getLegalMoves short-circuits to resolveDiscardChoice when a
   // Magneto discard-to-limit choice is parked for the active player; it MUST be
   // dispatchable in the sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds
@@ -548,6 +559,47 @@ export function getLegalMoves(
     }
     // why: defensive — an empty revealedTops is an engine-invariant violation (the park
     // requires ≥1 revealed card); fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-695 / D-24512 — pending Ruthless Dictator scry-3 short-circuit. When the choice
+  // is parked the block-all guard freezes every other move, so the bot resolves it first.
+  // The single legal move dispositions the FRONT entry's first revealed card with the first
+  // still-available disposition (the locked KO → discard → top priority order), which is
+  // deterministic (bot-arbitrary but replay-stable — only live human play gets the prompt).
+  // One card resolves per call; getLegalMoves re-enters until revealedCardIds empties.
+  // Returns a list of length EXACTLY 1 — omitting this path (or the MOVE_MAP entries) hangs
+  // the per-turn loop.
+  if (hasPendingRuthlessDictatorChoice(gameState)) {
+    const front = gameState.pendingRuthlessDictatorChoices![0]!;
+    const nextCardId = front.revealedCardIds[0];
+    const nextDisposition = front.availableDispositions[0];
+    if (nextCardId !== undefined && nextDisposition !== undefined) {
+      return [
+        {
+          name: 'resolveRuthlessDictatorChoice',
+          args: { cardId: nextCardId, disposition: nextDisposition },
+        },
+      ];
+    }
+    // why: defensive — an empty snapshot is an engine-invariant violation (the park requires
+    // ≥1 revealed card and ≥1 disposition slot); fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-695 / D-24512 — pending Electromagnetic Bubble X-Men pick short-circuit. When the
+  // choice is parked the block-all guard freezes every other move, so the bot resolves it
+  // first. The single legal move picks the FIRST eligible in-play X-Men Hero — deterministic
+  // (bot-arbitrary but replay-stable — only live human play gets the prompt). Returns a list of
+  // length EXACTLY 1 — omitting this path (or the MOVE_MAP entries) hangs the per-turn loop.
+  if (hasPendingElectromagneticBubbleChoice(gameState)) {
+    const front = gameState.pendingElectromagneticBubbleChoices![0]!;
+    const firstEligible = front.eligibleCardIds[0];
+    if (firstEligible !== undefined) {
+      return [{ name: 'resolveElectromagneticBubbleChoice', args: { cardId: firstEligible } }];
+    }
+    // why: defensive — an empty eligible snapshot is an engine-invariant violation (the park
+    // requires ≥2 eligible Heroes); fail closed rather than emit an unresolvable move.
     return legalMoves;
   }
 

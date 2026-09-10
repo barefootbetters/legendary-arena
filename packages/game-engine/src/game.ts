@@ -6,11 +6,14 @@ import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
+import { consumeDeferredHandInjections } from './moves/deferredHandInjection.logic.js';
 import { composeDeckReshuffledNarrative } from './events/notableEvents.compose.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice, hasPendingMelterKoChoice } from './moves/melterKoChoice.resolve.js';
+import { resolveRuthlessDictatorChoice, hasPendingRuthlessDictatorChoice } from './moves/ruthlessDictatorChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice, hasPendingElectromagneticBubbleChoice } from './moves/electromagneticBubbleChoice.resolve.js';
 import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
@@ -133,6 +136,15 @@ function advanceStage({ G, ctx, events }: MoveContext): void {
   // effects so the fighting player resolves every revealed deck top before any other
   // action. Mirrors the scry-ko check above (also freezes the cleanup turn-end).
   if (hasPendingMelterKoChoice(G)) { return; }
+  // why: block-all guard (WP-695 / D-24512) — while a Ruthless Dictator scry-3 choice
+  // is pending the board is frozen; advanceStage (at any stage) returns with no side
+  // effects so the defeating player dispositions every revealed card before any other
+  // action. Mirrors the melter check above (also freezes the cleanup turn-end).
+  if (hasPendingRuthlessDictatorChoice(G)) { return; }
+  // why: block-all guard (WP-695 / D-24512) — while an Electromagnetic Bubble X-Men
+  // pick is pending the board is frozen; advanceStage returns with no side effects so
+  // the defeating player picks which in-play X-Men Hero to add before any other action.
+  if (hasPendingElectromagneticBubbleChoice(G)) { return; }
   // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
   // pending the board is frozen; advanceStage (at any stage) returns with no side
   // effects so the current player picks which cards to discard. A choice parked at
@@ -510,6 +522,18 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (playerZones.deck / G.ko), absent on UIState. NOT in CORE_MOVE_NAMES (mirrors
     // resolveScryKoChoice).
     resolveMelterKoChoice: { move: resolveMelterKoChoice, client: false },
+    // why: WP-695 / D-24512 — resolveRuthlessDictatorChoice resolves the interactive
+    // Red Skull Ruthless Dictator scry-3 disposition (KO one / discard one / top one,
+    // one revealed card per call). Server-only (client: false) per D-10008 — it mutates
+    // real G (playerZones.deck / .discard / G.ko), absent on UIState. NOT in
+    // CORE_MOVE_NAMES (mirrors resolveMelterKoChoice).
+    resolveRuthlessDictatorChoice: { move: resolveRuthlessDictatorChoice, client: false },
+    // why: WP-695 / D-24512 — resolveElectromagneticBubbleChoice resolves the interactive
+    // Magneto Electromagnetic Bubble X-Men Hero pick (recorded as a deferred hand
+    // injection consumed at the player's next onBegin fill). Server-only (client: false)
+    // per D-10008 — it mutates real G (G.deferredHandInjections), absent on UIState. NOT
+    // in CORE_MOVE_NAMES (mirrors resolveRuthlessDictatorChoice).
+    resolveElectromagneticBubbleChoice: { move: resolveElectromagneticBubbleChoice, client: false },
     // why: WP-476 / D-24284 — resolveDiscardChoice resolves the interactive
     // Magneto discard-to-limit choice (the current player picks which cards to
     // discard down to four). Server-only (client: false) per D-10008 — it mutates
@@ -836,6 +860,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             if (G.handSizeOverrides?.[ctx.currentPlayer] !== undefined) {
               delete G.handSizeOverrides[ctx.currentPlayer];
             }
+            // why: WP-695 / D-24512 — Magneto's "Electromagnetic Bubble" tactic may have
+            // recorded a deferred SPECIFIC-card injection (a chosen in-play X-Men Hero) for
+            // this player. Co-located with the handSizeOverrides consume: AFTER the normal
+            // fill, add each injected ext_id to the hand as an extra (seventh) card, then
+            // CLEAR the key so it raises exactly this one fill. handSizeOverrides cannot carry
+            // WHICH card, so this is a sibling field, not a reuse. Delegated to a testable
+            // helper (a card not locatable in the player's zones is a logged no-op there).
+            consumeDeferredHandInjections(G, ctx.currentPlayer, activePlayerZones);
             G.hasDrawnThisTurn = true;
           }
 

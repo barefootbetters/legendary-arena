@@ -26,6 +26,8 @@ import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
+import { hasPendingRuthlessDictatorChoice } from './ruthlessDictatorChoice.resolve.js';
+import { hasPendingElectromagneticBubbleChoice } from './electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
 import { hasPendingKoDiscardChoice } from './koDiscardChoice.resolve.js';
@@ -142,6 +144,10 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingKoHeroChoice(G)) return; // D-24008
   if (hasPendingScryKoChoice(G)) return; // D-24282
   if (hasPendingMelterKoChoice(G)) return; // WP-603 / D-24413
+  // why: WP-695 / D-24512 — block-all guards for the two interactive core mastermind
+  // tactics (Ruthless Dictator scry-3 / Electromagnetic Bubble X-Men pick).
+  if (hasPendingRuthlessDictatorChoice(G)) return;
+  if (hasPendingElectromagneticBubbleChoice(G)) return;
   if (hasPendingDiscardChoice(G)) return; // WP-476 / D-24284
   if (hasPendingPutCardsOnDeckChoice(G)) return; // WP-538 / D-24347
   if (hasPendingReorderChoice(G)) return; // WP-479 / D-24286

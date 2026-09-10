@@ -91,6 +91,18 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveManiacalTyrant",
       "wp": "WP-693",
       "decision": "D-24510"
+    },
+    "core-mastermind-red-skull-ruthless-dictator": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveRuthlessDictator",
+      "wp": "WP-695",
+      "decision": "D-24512"
+    },
+    "core-mastermind-magneto-electromagnetic-bubble": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveElectromagneticBubble",
+      "wp": "WP-695",
+      "decision": "D-24512"
     }
   }
 }

@@ -581,6 +581,74 @@ export interface PendingMelterKoChoice {
 }
 
 /**
+ * One of the three dispositions the acting player may assign to a card in a
+ * Ruthless Dictator scry-3 choice (WP-695 / D-24512):
+ *   'ko'      — KO the card from the deck top (to the general KO pile).
+ *   'discard' — move the deck-top card to the player's discard pile.
+ *   'top'     — leave the card on top of the deck (a no-op; it was only looked at).
+ */
+export type RuthlessDictatorDisposition = 'ko' | 'discard' | 'top';
+
+/**
+ * Pending Red Skull "Ruthless Dictator" scry-3 disposition choice (WP-695 / D-24512).
+ *
+ * Created when the core Red Skull mastermind's "Ruthless Dictator" tactic Fight is
+ * defeated ("Look at the top three cards of your deck. KO one, discard one and put
+ * one back on top of your deck."). The handler snapshots the top `min(3, deck.length)`
+ * of the DEFEATING player's deck and parks ONE entry carrying that snapshot plus the
+ * remaining disposition slots. Sequentially resolved one revealed card per call by
+ * resolveRuthlessDictatorChoice; front-popped once every revealed card has been
+ * dispositioned. Must be undefined or empty at every turn-end (block-all guards).
+ *
+ * // why: D-24512 mirrors the WP-603 / D-24413 Melter SNAPSHOT + sequential-resolution
+ * discipline (not the ko-hero recompute): the block-all guard freezes the deck top
+ * while the choice is pending, so the snapshot cannot drift, and a KO/discard removes
+ * the card by ext_id (outcome-identical — the same reasoning scry-ko relied on). "Top"
+ * is a no-op (the look-at never removed the card). `availableDispositions` starts as
+ * `['ko','discard','top'].slice(0, revealedCardIds.length)` — the locked <3 rule
+ * (KO→discard→top priority to as many cards as exist), so with 3 cards it is exactly
+ * one of each, with 2 it is KO + discard, with 1 it is KO only. Both arrays shrink as
+ * each card is resolved. No `ctx.random.*` — a look-at never reshuffles.
+ */
+export interface PendingRuthlessDictatorChoice {
+  /** Discriminant; always 'ruthless-dictator'. */
+  choiceType: 'ruthless-dictator';
+  /** The defeating (active) player who assigns each revealed card its disposition. */
+  playerID: string;
+  /** The revealed deck-top cards still awaiting a disposition (snapshot; shrinks). */
+  revealedCardIds: CardExtId[];
+  /** The disposition slots still available to assign (shrinks; locked <3 priority). */
+  availableDispositions: RuthlessDictatorDisposition[];
+}
+
+/**
+ * Pending Magneto "Electromagnetic Bubble" X-Men Hero pick (WP-695 / D-24512).
+ *
+ * Created when the core Magneto mastermind's "Electromagnetic Bubble" tactic Fight is
+ * defeated ("Choose one of your [team:x-men] Heroes. When you draw a new hand of cards
+ * at the end of this turn, add that Hero to your hand as a seventh card.") AND the
+ * defeating player has ≥2 in-play X-Men Heroes to choose among. With 0 in-play X-Men
+ * Heroes the tactic is a logged no-op (no entry parked); with exactly 1 the sole Hero
+ * is auto-selected inline (no entry parked — the undercover 1→auto precedent). Parked
+ * for the DEFEATING player only; front-popped by resolveElectromagneticBubbleChoice
+ * once the pick is recorded. Must be undefined or empty at every turn-end (block-all
+ * guards).
+ *
+ * // why: D-24512 — a single pick from a variable eligible set (not a sequential
+ * disposition), so it carries only the eligible in-play X-Men ext_ids snapshot. The
+ * chosen ext_id is written to G.deferredHandInjections (the deferred half), consumed
+ * once at the player's next play-phase `onBegin` fill.
+ */
+export interface PendingElectromagneticBubbleChoice {
+  /** Discriminant; always 'electromagnetic-bubble'. */
+  choiceType: 'electromagnetic-bubble';
+  /** The defeating (active) player who picks which in-play X-Men Hero to add. */
+  playerID: string;
+  /** The in-play X-Men Hero ext_ids the player may choose among (snapshot). */
+  eligibleCardIds: CardExtId[];
+}
+
+/**
  * Pending discard-to-limit player choice state (WP-476 / D-24284).
  *
  * Created when Magneto's Master Strike ("Each player reveals an [team:x-men]
@@ -1459,6 +1527,22 @@ export interface LegendaryGameState {
   /** Per-player next-`onBegin` hand-fill override (lazy; WP-497 / D-24300). */
   handSizeOverrides?: Record<string, number>;
 
+  // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
+  // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their
+  // NEXT play-phase `onBegin` fill (after the normal fill), then the key is deleted. A
+  // SIBLING to handSizeOverrides, NOT a reuse: handSizeOverrides bumps the fill COUNT and
+  // cannot carry WHICH card, whereas Magneto's "Electromagnetic Bubble" injects a chosen
+  // in-play X-Men Hero as a specific seventh card. Written only by the Electromagnetic
+  // Bubble tactic resolver / its resolve move; read-and-cleared only at the play-phase
+  // `onBegin` fill for the keyed player (game.ts), co-located with the handSizeOverrides
+  // consume. Gameplay-affecting so it MUST be hashed, but — following the
+  // handSizeOverrides hygiene pattern — it is **lazily created**, NEVER seeded in
+  // buildInitialGameState: an untriggered game leaves it undefined, canonical JSON omits
+  // it, and every committed replay/sentinel oracle stays byte-identical (no fixture
+  // defeats this tactic → no re-pin; reference_hashed_g_field_dual_repin). Absent = none.
+  /** Per-player deferred specific-card next-`onBegin` hand injections (lazy; WP-695 / D-24512). */
+  deferredHandInjections?: Record<string, CardExtId[]>;
+
   // why: WP-696 / D-24513 — the extra-turn primitive. A per-player counter of
   // queued additional full turns, keyed by PlayerID. Incremented (stacking, `+= 1`)
   // by a tactic resolver that grants "take another turn" (Dr. Doom's "Secrets of
@@ -1512,6 +1596,30 @@ export interface LegendaryGameState {
   // pending choice" (guards test `.length`).
   /** FIFO queue of pending Melter Fight KO/keep choices awaiting player resolution (WP-603). */
   pendingMelterKoChoices?: PendingMelterKoChoice[] | undefined;
+
+  // why: WP-695 / D-24512 — FIFO queue of pending Red Skull "Ruthless Dictator" scry-3
+  // disposition choices (at most one, parked for the defeating player when the tactic is
+  // defeated with ≥1 card in their deck). Entries are appended by resolveRuthlessDictator
+  // (rules/tacticHandlers.ts); front-popped by resolveRuthlessDictatorChoice once every
+  // revealed card has been dispositioned. Must be undefined or empty at every turn-end.
+  // Runtime-only, never persisted (snapshots stay counts-only), mirroring
+  // pendingMelterKoChoices; **lazily initialized at the park site, never in Game.setup**.
+  // Optional so existing test state literals need no update. Absent (undefined) or empty
+  // [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Ruthless Dictator scry-3 choices awaiting player resolution (WP-695). */
+  pendingRuthlessDictatorChoices?: PendingRuthlessDictatorChoice[] | undefined;
+
+  // why: WP-695 / D-24512 — FIFO queue of pending Magneto "Electromagnetic Bubble" X-Men
+  // Hero picks (at most one, parked for the defeating player when the tactic is defeated
+  // with ≥2 in-play X-Men Heroes). Entries are appended by resolveElectromagneticBubble
+  // (rules/tacticHandlers.ts); front-popped by resolveElectromagneticBubbleChoice once the
+  // pick is recorded into G.deferredHandInjections. Must be undefined or empty at every
+  // turn-end. Runtime-only, never persisted (snapshots stay counts-only), mirroring
+  // pendingMelterKoChoices; **lazily initialized at the park site, never in Game.setup**.
+  // Optional so existing test state literals need no update. Absent (undefined) or empty
+  // [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Electromagnetic Bubble X-Men picks awaiting player resolution (WP-695). */
+  pendingElectromagneticBubbleChoices?: PendingElectromagneticBubbleChoice[] | undefined;
 
   // why: WP-476 / D-24284 — FIFO queue of pending discard-to-limit choices (at
   // most one per Magneto Master Strike, parked ONLY for the current player who

@@ -28,6 +28,7 @@ import type {
   GiveHqHeroFilter,
   PendingDefeatChoice,
   PendingKoDiscardChoice,
+  RuthlessDictatorDisposition,
 } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
@@ -100,13 +101,14 @@ const RED_SKULL_ENDLESS_RESOURCES_TACTIC_ID: CardExtId =
 const RED_SKULL_HYDRA_CONSPIRACY_TACTIC_ID: CardExtId =
   'core-mastermind-red-skull-hydra-conspiracy';
 
-// why: WP-567 - Red Skull's FOURTH tactic, "Ruthless Dictator", is deliberately
-// NOT dispatched. Its printed text ("Look at the top three cards of your deck.
-// KO one, discard one and put one back on top") is INTERACTIVE: it parks a
-// pending choice, and a parked choice shipped without its UIState projection and
-// prompt HARD-FREEZES the human player. It ships in its own packet together with
-// the projection, the prompt and the bot legalMoves enumeration mirror. Three of
-// four is intentional - do not "complete" this switch.
+// why: WP-695 / D-24512 - Red Skull's FOURTH tactic, "Ruthless Dictator", is now
+// dispatched (resolveRuthlessDictator below). WP-567 deferred it because its printed
+// text ("Look at the top three cards of your deck. KO one, discard one and put one
+// back on top") is INTERACTIVE, and a parked choice shipped without its UIState
+// projection and prompt HARD-FREEZES the human player. THIS packet ships the resolver
+// together with the five-step UIState projection, the arena-client prompt, and the bot
+// legalMoves enumeration mirror, so the deferral is discharged. See its constant +
+// dispatch branch below and RED_SKULL_RUTHLESS_DICTATOR_TACTIC_ID.
 
 // why: the printed magnitudes, named rather than inlined so the dispatch reads as
 // the card text and a future audit can grep the numbers.
@@ -226,6 +228,38 @@ const LOKI_MANIACAL_TYRANT_TACTIC_ID: CardExtId =
 // the maximum the player may KO; 0 is a legal choice ("up to"), and the effective cap is
 // clamped by the discard size at resolve. Named, not inlined, so an audit can grep it.
 export const MANIACAL_TYRANT_KO_MAX = 4;
+
+// why: WP-695 / D-24512 — core Red Skull's FOURTH tactic, "Ruthless Dictator", now
+// dispatched (the WP-567 deferral above ships in THIS packet with its UIState
+// projection + prompt + bot enumeration). Same
+// `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar. Printed Fight: "Look at the
+// top three cards of your deck. KO one, discard one and put one back on top of your
+// deck." (data/cards/core.json), read from the card text rather than the known-
+// divergent keyword blurb.
+const RED_SKULL_RUTHLESS_DICTATOR_TACTIC_ID: CardExtId =
+  'core-mastermind-red-skull-ruthless-dictator';
+
+// why: WP-695 / D-24512 — core Magneto's "Electromagnetic Bubble" tactic ext_id, same
+// grammar. Printed Fight: "Choose one of your [team:x-men] Heroes. When you draw a new
+// hand of cards at the end of this turn, add that Hero to your hand as a seventh card."
+// (data/cards/core.json).
+const MAGNETO_ELECTROMAGNETIC_BUBBLE_TACTIC_ID: CardExtId =
+  'core-mastermind-magneto-electromagnetic-bubble';
+
+// why: WP-695 / D-24512 — Ruthless Dictator looks at the top THREE cards; named, not
+// inlined, so an audit can grep the number against the printed text.
+export const RUTHLESS_DICTATOR_LOOK_COUNT = 3;
+
+// why: WP-695 / D-24512 — the LOCKED <3-card disposition priority (D-24512): with fewer
+// than three cards, apply dispositions in printed order KO → discard → top to as many
+// cards as exist (a card with no remaining slot stays on top; NEVER reshuffle, no
+// `ctx.random.*` — the rulebook "look at" never shuffles). With 3 cards this yields
+// exactly one KO, one discard, one top. The park slices this to the revealed count.
+const RUTHLESS_DICTATOR_DISPOSITION_PRIORITY: readonly RuthlessDictatorDisposition[] = [
+  'ko',
+  'discard',
+  'top',
+];
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -1082,6 +1116,186 @@ export function resolveManiacalTyrant(
   );
 }
 
+/**
+ * Resolves core Red Skull's "Ruthless Dictator" tactic Fight effect: "Look at the
+ * top three cards of your deck. KO one, discard one and put one back on top of your
+ * deck." (WP-695 / D-24512).
+ *
+ * Snapshots the top `min(3, deck.length)` of the DEFEATING player's deck and PARKS a
+ * single PendingRuthlessDictatorChoice carrying that snapshot plus the disposition
+ * slots available (the locked <3 priority KO → discard → top, sliced to the revealed
+ * count). The individual dispositions (KO / discard / top) are applied — and logged —
+ * by the resolve move. An empty deck is a logged no-op (no reshuffle: a look-at never
+ * shuffles, so no `ctx.random.*`). Active-scoped (parks only for `currentPlayer`).
+ * Mutates `G` directly; never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the chooser).
+ */
+export function resolveRuthlessDictator(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  const lookCount = Math.min(RUTHLESS_DICTATOR_LOOK_COUNT, playerZones.deck.length);
+  if (lookCount === 0) {
+    // why: an empty deck is a legitimate no-op — the printed text "looks at" the top,
+    // and with nothing to look at there is no reshuffle (no `ctx.random.*`) and no park.
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer}'s deck is empty — nothing to look at (Ruthless Dictator).`,
+      'blocked',
+    );
+    return;
+  }
+
+  // why: snapshot the top `lookCount` ext_ids (slice returns a COPY — the projection /
+  // resolve never aliases into playerZones.deck). availableDispositions is the locked
+  // <3 priority sliced to the revealed count (D-24512): 3 → one of each; 2 → KO+discard;
+  // 1 → KO only. Both arrays shrink as the resolve move dispositions each card.
+  const revealedCardIds = playerZones.deck.slice(0, lookCount);
+  const availableDispositions = RUTHLESS_DICTATOR_DISPOSITION_PRIORITY.slice(0, lookCount);
+
+  if (G.pendingRuthlessDictatorChoices === undefined) {
+    G.pendingRuthlessDictatorChoices = [];
+  }
+  G.pendingRuthlessDictatorChoices.push({
+    choiceType: 'ruthless-dictator',
+    playerID: currentPlayer,
+    revealedCardIds,
+    availableDispositions,
+  });
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} looks at the top ${String(lookCount)} card(s) of their deck — assign KO / discard / top (Ruthless Dictator).`,
+    'neutral',
+  );
+}
+
+/**
+ * Collects the acting player's in-play Heroes on the X-Men team — the Electromagnetic
+ * Bubble eligibility scan.
+ *
+ * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot (the WP-506 precedent:
+ * only Heroes carry a team, so Wounds / Bystanders / the teamless basic S.H.I.E.L.D.
+ * cards never false-match). Map-level defensive `?.` — a legacy state predating WP-179
+ * leaves the map undefined and matches nothing rather than throwing. Do NOT add a
+ * heroClass guard and do NOT drop the map-level `?.` (WP-695 non-negotiable).
+ *
+ * @param G - The game state (read-only here; supplies `cardTraits`).
+ * @param inPlay - The acting player's in-play zone, in order.
+ * @returns The in-play X-Men Hero ext_ids, in play order.
+ */
+function collectInPlayXMenHeroes(
+  G: LegendaryGameState,
+  inPlay: readonly CardExtId[],
+): CardExtId[] {
+  const eligible: CardExtId[] = [];
+  for (const cardExtId of inPlay) {
+    if (G.cardTraits?.[cardExtId]?.team === TEAM_X_MEN) {
+      eligible.push(cardExtId);
+    }
+  }
+  return eligible;
+}
+
+/**
+ * Records a deferred specific-card hand injection for a player (WP-695 / D-24512).
+ *
+ * Appends `cardId` to `G.deferredHandInjections[playerId]`, lazily creating the map and
+ * the per-player array. Consumed once at that player's next play-phase `onBegin` fill
+ * (game.ts), which adds it as an extra (seventh) card and clears the key. A SIBLING to
+ * `handSizeOverrides`: that field bumps the fill COUNT and cannot carry WHICH card, so
+ * a specific injected Hero needs this ext_id-carrying field instead.
+ *
+ * @param G - The game state, mutated in place.
+ * @param playerId - The player whose next hand gains the card.
+ * @param cardId - The specific Hero ext_id to inject.
+ */
+export function recordDeferredHandInjection(
+  G: LegendaryGameState,
+  playerId: string,
+  cardId: CardExtId,
+): void {
+  // why: lazy-create the map + per-player array before the first write — the field is
+  // absent by default (never seeded in Game.setup); index-assigning undefined throws.
+  if (G.deferredHandInjections === undefined) {
+    G.deferredHandInjections = {};
+  }
+  if (G.deferredHandInjections[playerId] === undefined) {
+    G.deferredHandInjections[playerId] = [];
+  }
+  G.deferredHandInjections[playerId].push(cardId);
+}
+
+/**
+ * Resolves core Magneto's "Electromagnetic Bubble" tactic Fight effect: "Choose one of
+ * your [team:x-men] Heroes. When you draw a new hand of cards at the end of this turn,
+ * add that Hero to your hand as a seventh card." (WP-695 / D-24512).
+ *
+ * Scans the DEFEATING player's in-play X-Men Heroes:
+ *   0 → a logged no-op (no entry parked);
+ *   1 → auto-select the sole Hero inline (record the deferred injection, no park — the
+ *       undercover 1→auto precedent: a one-option pick with no decline is just ceremony);
+ *   ≥2 → park a PendingElectromagneticBubbleChoice carrying the eligible ext_ids.
+ *
+ * Active-scoped (parks only for `currentPlayer`). Mutates `G` directly; never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the chooser/beneficiary).
+ */
+export function resolveElectromagneticBubble(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  const eligibleCardIds = collectInPlayXMenHeroes(G, playerZones.inPlay);
+
+  if (eligibleCardIds.length === 0) {
+    // why: 0 in-play X-Men Heroes — a reachable no-op (never a hollow record); nothing to add.
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no in-play X-Men Hero to add (Electromagnetic Bubble); no effect.`,
+      'blocked',
+    );
+    return;
+  }
+
+  if (eligibleCardIds.length === 1) {
+    // why: exactly one eligible Hero — auto-select inline (no prompt, no freeze); a parked
+    // one-option pick with no decline is ceremony (the WP-678 undercover 1→auto precedent).
+    const soleCardId = eligibleCardIds[0]!;
+    recordDeferredHandInjection(G, currentPlayer, soleCardId);
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} will add ${formatCardRef(G.cardDisplayData, soleCardId)} to their next hand as a seventh card (Electromagnetic Bubble).`,
+      'applied',
+    );
+    return;
+  }
+
+  // why: ≥2 eligible Heroes — park an active pending pick. Lazily create the FIFO queue at
+  // the park site (never in Game.setup) so an untriggered match leaves the field undefined
+  // and the hash oracles stay stable. The block-all guard + resolveElectromagneticBubbleChoice
+  // freeze the board until the current player picks.
+  if (G.pendingElectromagneticBubbleChoices === undefined) {
+    G.pendingElectromagneticBubbleChoices = [];
+  }
+  G.pendingElectromagneticBubbleChoices.push({
+    choiceType: 'electromagnetic-bubble',
+    playerID: currentPlayer,
+    eligibleCardIds,
+  });
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} — choose an in-play X-Men Hero to add to your next hand (Electromagnetic Bubble).`,
+    'neutral',
+  );
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
@@ -1177,6 +1391,19 @@ export function dispatchTacticOnFight(
   // choice for the active player (empty discard → no-op); the resolve move performs the KO.
   if (defeatedTacticId === LOKI_MANIACAL_TYRANT_TACTIC_ID) {
     resolveManiacalTyrant(G, currentPlayer);
+    return;
+  }
+  // why: WP-695 / D-24512 — Red Skull's Ruthless Dictator parks an INTERACTIVE scry-3
+  // disposition choice (KO one / discard one / top one) for the defeating player.
+  if (defeatedTacticId === RED_SKULL_RUTHLESS_DICTATOR_TACTIC_ID) {
+    resolveRuthlessDictator(G, currentPlayer);
+    return;
+  }
+  // why: WP-695 / D-24512 — Magneto's Electromagnetic Bubble picks an in-play X-Men Hero
+  // (0 → no-op, 1 → auto inline, ≥2 → park) and defers adding it as a seventh card at the
+  // player's next hand fill.
+  if (defeatedTacticId === MAGNETO_ELECTROMAGNETIC_BUBBLE_TACTIC_ID) {
+    resolveElectromagneticBubble(G, currentPlayer);
     return;
   }
 }
