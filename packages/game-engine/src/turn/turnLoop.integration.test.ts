@@ -21,9 +21,12 @@ import { TURN_STAGES } from './turnPhases.types.js';
  *
  * @returns An object with the context and the endTurn spy for assertions.
  */
-function makeTurnLoopMockContext(): { context: TurnLoopContext; endTurnSpy: ReturnType<typeof mock.fn> } {
+function makeTurnLoopMockContext(currentPlayer = '0'): { context: TurnLoopContext; endTurnSpy: ReturnType<typeof mock.fn> } {
   const endTurnSpy = mock.fn();
   const context: TurnLoopContext = {
+    // why: WP-696 / D-24513 — TurnLoopContext now carries the acting seat so the
+    // extra-turn branch can grant that same seat another turn.
+    currentPlayer,
     events: {
       endTurn: endTurnSpy,
     },

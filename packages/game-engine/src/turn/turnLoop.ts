@@ -19,8 +19,16 @@ import { getNextTurnStage } from './turnPhases.logic.js';
  * Defined locally to avoid importing boardgame.io in this pure helper.
  */
 export interface TurnLoopContext {
+  // why: WP-696 / D-24513 — the extra-turn primitive needs the acting seat's id
+  // to grant that SAME seat another turn (`events.endTurn({ next: currentPlayer })`).
+  // Carried on the context so advanceTurnStage never rotates the player manually.
+  currentPlayer: string;
   events: {
-    endTurn: () => void;
+    // why: WP-696 / D-24513 — widened to accept boardgame.io 0.50.x's optional
+    // `{ next }` argument (EventsAPI.endTurn). Passing `{ next: currentPlayer }`
+    // ends the current turn and begins that same seat's next turn (fires
+    // onEnd -> onBegin) instead of rotating to the default next seat.
+    endTurn: (opts?: { next: string }) => void;
   };
 }
 
@@ -37,6 +45,55 @@ export interface TurnLoopState {
   // advances. Optional + narrow (only the field this file writes) to stay decoupled from
   // the full LegendaryGameState / logMeta shape.
   logMeta?: { actionInStep: number };
+  // why: WP-696 / D-24513 — the extra-turn counter (see LegendaryGameState.extraTurns).
+  // Narrow + optional (absent by default) so this decoupled interface, and the
+  // bgio-bypassing harnesses that reuse consumeExtraTurn, all read the same field.
+  extraTurns?: Record<string, number>;
+}
+
+/**
+ * Consumes one queued extra turn for a player, if any is owed.
+ *
+ * The extra-turn primitive (WP-696 / D-24513): `state.extraTurns` is a lazy,
+ * per-player counter of additional full turns a player has earned (Dr. Doom's
+ * "Secrets of Time Travel" tactic). When the player has one or more queued, this
+ * decrements the counter and returns `true`, signalling the caller to grant the
+ * SAME seat another turn — on the live boardgame.io path by calling
+ * `events.endTurn({ next: currentPlayer })`, and on the framework-bypassing sim /
+ * PAR / replay harnesses by NOT rotating away from that seat. When nothing is
+ * owed it returns `false` and the caller ends the turn / rotates normally.
+ *
+ * // why: a SINGLE shared consumption keeps every production turn-rotation site
+ * // (advanceTurnStage, the endTurn move, and the three bgio-bypassing harnesses
+ * // that observe the forwarded `{ next }` signal) draining the counter IDENTICALLY
+ * // — the arc's foundational lockstep. A divergent private copy would desync
+ * // live-vs-harness turn counts (reference_simulation_harness_bypasses_bgio).
+ * // why: decrement-to-delete — a spent counter leaves NO key, so a game that used
+ * // up its extra turns serializes identically to one that never had any (the
+ * // lazy-omit hash pattern that keeps PRE_WP080 + sentinel oracles byte-identical).
+ *
+ * @param state - Any state carrying the optional `extraTurns` counter map.
+ * @param currentPlayer - The seat whose queued extra turn is being consumed.
+ * @returns True if an extra turn was owed (and one was consumed); false otherwise.
+ */
+export function consumeExtraTurn(
+  state: { extraTurns?: Record<string, number> },
+  currentPlayer: string,
+): boolean {
+  const queued = state.extraTurns?.[currentPlayer] ?? 0;
+  if (queued <= 0) {
+    return false;
+  }
+  const remaining = queued - 1;
+  if (remaining === 0) {
+    // why: delete the key (not just zero it) so a fully-spent counter leaves the
+    // map exactly as a never-triggered game would — no residual `{ "0": 0 }` that
+    // would perturb the hashed G.
+    delete state.extraTurns![currentPlayer];
+  } else {
+    state.extraTurns![currentPlayer] = remaining;
+  }
+  return true;
 }
 
 /**
@@ -65,6 +122,18 @@ export function advanceTurnStage(gameState: TurnLoopState, context: TurnLoopCont
     if (gameState.logMeta !== undefined) {
       gameState.logMeta.actionInStep = 0;
     }
+    return;
+  }
+
+  // why: WP-696 / D-24513 — honor any queued extra turn for the acting seat. When
+  // the player defeated Dr. Doom's "Secrets of Time Travel" tactic this turn, they
+  // "take another turn after this one": end the current turn but begin the SAME
+  // seat's next turn via boardgame.io's documented `events.endTurn({ next })`
+  // primitive (fires onEnd -> onBegin — a full fresh turn), never a manual player
+  // rotation (forbidden by the game-engine SKILL / .claude/rules/architecture.md).
+  // consumeExtraTurn decrements-to-delete so normal turns stay byte-identical.
+  if (consumeExtraTurn(gameState, context.currentPlayer)) {
+    context.events.endTurn({ next: context.currentPlayer });
     return;
   }
 

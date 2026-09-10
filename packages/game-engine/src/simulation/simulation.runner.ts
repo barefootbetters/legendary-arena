@@ -141,7 +141,10 @@ interface SimulationMoveContext {
   };
   readonly events: {
     setPhase: (name: string) => void;
-    endTurn: () => void;
+    // why: WP-696 / D-24513 — accept boardgame.io's optional `{ next }` arg so the
+    // real endTurn move / advanceTurnStage can request the SAME seat's next turn;
+    // the closure records it on endTurnFlag for the manual rotation to honor.
+    endTurn: (opts?: { next?: string }) => void;
   };
   readonly random: {
     Shuffle: <T>(deck: T[]) => T[];
@@ -261,7 +264,14 @@ export function makeSeededSetupContext(
  * advanceTurnStage directly.
  */
 function simulationAdvanceStage(context: SimulationMoveContext): void {
-  advanceTurnStage(context.G, { events: { endTurn: context.events.endTurn } });
+  // why: WP-696 / D-24513 — pass currentPlayer + forward the endTurn closure so a
+  // cleanup-stage advance that ends the turn routes any queued extra turn through
+  // advanceTurnStage's `{ next }` call; the runner's endTurn closure captures that
+  // `next` and the manual rotation below honors it (no divergence from the live path).
+  advanceTurnStage(context.G, {
+    currentPlayer: context.ctx.currentPlayer,
+    events: { endTurn: context.events.endTurn },
+  });
 }
 
 /**
@@ -397,7 +407,9 @@ function buildMoveContext(
   phase: string,
   turn: number,
   numPlayers: number,
-  endTurnFlag: { triggered: boolean },
+  // why: WP-696 / D-24513 — `nextPlayer` carries the extra-turn `{ next }` signal
+  // from the endTurn closure to the runner's manual rotation (harness parity).
+  endTurnFlag: { triggered: boolean; nextPlayer?: string },
   nextRandom: () => number,
 ): SimulationMoveContext {
   return {
@@ -416,8 +428,13 @@ function buildMoveContext(
         // matches replay.execute.ts behavior (D-0205 determinism-only
         // harness pattern).
       },
-      endTurn: () => {
+      endTurn: (opts?: { next?: string }) => {
         endTurnFlag.triggered = true;
+        // why: WP-696 / D-24513 — capture the extra-turn target so the manual
+        // rotation grants the SAME seat another turn instead of rotating away.
+        if (opts?.next !== undefined) {
+          endTurnFlag.nextPlayer = opts.next;
+        }
       },
     },
     random: {
@@ -571,7 +588,9 @@ function runPerTurnLoop(
     }
 
     const moveFn = MOVE_MAP[intent.move.name];
-    const endTurnFlag = { triggered: false };
+    // why: WP-696 / D-24513 — nextPlayer records the extra-turn `{ next }` target the
+    // dispatched move / advanceTurnStage forwarded, honored by the manual rotation.
+    const endTurnFlag: { triggered: boolean; nextPlayer?: string } = { triggered: false };
 
     if (moveFn === undefined) {
       pushLog(
@@ -641,7 +660,13 @@ function runPerTurnLoop(
       // because simulation is observation-only and the hooks would not
       // alter the legal-moves shape in any MVP scenario; replay harness
       // omits them for the same reason (D-0205).
-      currentPlayer = String((policyIndex + 1) % numPlayers);
+      // why: WP-696 / D-24513 — honor a queued extra turn. The live endTurn
+      // move / advanceTurnStage already consumed (decremented) G.extraTurns and
+      // signalled the SAME seat via `{ next }`, captured on endTurnFlag.nextPlayer;
+      // keep that seat rather than rotating, so the sim turn count matches the live
+      // path (harness parity). No counter read/decrement HERE — that would double-
+      // consume, since the dispatched real endTurn move already drained it.
+      currentPlayer = endTurnFlag.nextPlayer ?? String((policyIndex + 1) % numPlayers);
       turn += 1;
       turnsElapsed += 1;
       // why (WP-554): the budget is PER TURN — a fresh turn starts a fresh count.

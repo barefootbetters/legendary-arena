@@ -408,7 +408,10 @@ interface AggregatorMoveContext {
   };
   readonly events: {
     setPhase: (name: string) => void;
-    endTurn: () => void;
+    // why: WP-696 / D-24513 — accept boardgame.io's optional `{ next }` arg so the
+    // real endTurn move / advanceTurnStage can request the SAME seat's next turn;
+    // the closure records it on endTurnFlag for the manual rotation to honor.
+    endTurn: (opts?: { next?: string }) => void;
   };
   readonly random: {
     Shuffle: <T>(deck: T[]) => T[];
@@ -422,7 +425,14 @@ type MoveFn = (context: AggregatorMoveContext, args?: unknown) => void;
  * Wraps advanceTurnStage for the aggregator MOVE_MAP dispatch slot.
  */
 function aggregatorAdvanceStage(context: AggregatorMoveContext): void {
-  advanceTurnStage(context.G, { events: { endTurn: context.events.endTurn } });
+  // why: WP-696 / D-24513 — pass currentPlayer + forward the endTurn closure so a
+  // cleanup-stage advance that ends the turn routes any queued extra turn through
+  // advanceTurnStage's `{ next }` call; the aggregator's endTurn closure captures
+  // that `next` and the manual rotation below honors it (PAR-scoring harness parity).
+  advanceTurnStage(context.G, {
+    currentPlayer: context.ctx.currentPlayer,
+    events: { endTurn: context.events.endTurn },
+  });
 }
 
 /**
@@ -501,7 +511,9 @@ function buildMoveContext(
   phase: string,
   turn: number,
   numPlayers: number,
-  endTurnFlag: { triggered: boolean },
+  // why: WP-696 / D-24513 — `nextPlayer` carries the extra-turn `{ next }` signal
+  // from the endTurn closure to the aggregator's manual rotation (harness parity).
+  endTurnFlag: { triggered: boolean; nextPlayer?: string },
   nextRandom: () => number,
 ): AggregatorMoveContext {
   return {
@@ -519,8 +531,13 @@ function buildMoveContext(
         // Moves that call setPhase become no-ops in simulation, matching
         // the WP-036 runner and the replay harness (D-0205).
       },
-      endTurn: () => {
+      endTurn: (opts?: { next?: string }) => {
         endTurnFlag.triggered = true;
+        // why: WP-696 / D-24513 — capture the extra-turn target so the manual
+        // rotation grants the SAME seat another turn instead of rotating away.
+        if (opts?.next !== undefined) {
+          endTurnFlag.nextPlayer = opts.next;
+        }
       },
     },
     random: {
@@ -642,7 +659,9 @@ function simulateOneGame(
 
     const intent: ClientTurnIntent = policy.decideTurn(filteredState, legalMoves);
     const moveFn = MOVE_MAP[intent.move.name];
-    const endTurnFlag = { triggered: false };
+    // why: WP-696 / D-24513 — nextPlayer records the extra-turn `{ next }` target the
+    // dispatched move / advanceTurnStage forwarded, honored by the manual rotation.
+    const endTurnFlag: { triggered: boolean; nextPlayer?: string } = { triggered: false };
 
     if (moveFn === undefined) {
       pushLog(
@@ -695,7 +714,14 @@ function simulateOneGame(
       // because the aggregator is observation-only (same as WP-036 /
       // replay harness D-0205).
       const policyIndex = Number(currentPlayer);
-      currentPlayer = String((policyIndex + 1) % numPlayers);
+      // why: WP-696 / D-24513 — honor a queued extra turn. The dispatched real
+      // endTurn move / advanceTurnStage already consumed (decremented) G.extraTurns
+      // and signalled the SAME seat via `{ next }`, captured on endTurnFlag.nextPlayer;
+      // keep that seat rather than rotating, so the PAR scoring surface's turn count
+      // matches the live path (this is why sim:runtime-observed:check stays current).
+      // No counter read/decrement HERE — that would double-consume the already-drained
+      // counter.
+      currentPlayer = endTurnFlag.nextPlayer ?? String((policyIndex + 1) % numPlayers);
       turn += 1;
       turnsElapsed += 1;
       gameState.currentStage = 'start';

@@ -124,6 +124,14 @@ export const TREASURES_EXTRA_CARDS = 3;
 // have (clamped by the count present). The max per other player.
 export const WHISPERS_BYSTANDER_KO = 2;
 
+// why: WP-696 / D-24513 — core Dr. Doom's "Secrets of Time Travel" tactic ext_id,
+// same `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar as the constants above
+// (mastermind slug `dr-doom`, tactic slug `secrets-of-time-travel`; printed "Fight:
+// Take another turn after this one." in data/cards/core.json). This resolver is the
+// arc's only novel mechanic — the extra-turn primitive.
+const SECRETS_OF_TIME_TRAVEL_TACTIC_ID: CardExtId =
+  'core-mastermind-dr-doom-secrets-of-time-travel';
+
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
  * the defeating player draws a new hand of 8 (instead of 6) on their next fill.
@@ -417,6 +425,42 @@ export function resolveTreasuresOfLatveria(
 }
 
 /**
+ * Resolves core Dr. Doom's "Secrets of Time Travel" tactic Fight effect:
+ * "Take another turn after this one."
+ *
+ * Increments the defeating player's queued extra-turn counter by one. The counter
+ * is honored at that player's next turn-end (advanceTurnStage / the endTurn move /
+ * the sim / PAR / replay harnesses), which grants the SAME seat a fresh full turn
+ * via boardgame.io `events.endTurn({ next })`. It **increments** rather than
+ * setting to 1 so two extra-turn grants in one turn STACK into two consecutive
+ * extra turns (a future set, or two such tactics defeated together) — the natural
+ * faithful reading. `G.extraTurns` is lazily created here and never seeded in
+ * buildInitialGameState, keeping untriggered games byte-identical (WP-696 / D-24513).
+ * Mutates `G` directly; never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolveSecretsOfTimeTravel(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  // why: lazy-create the container before the first per-player write — the field is
+  // absent by default (never seeded in Game.setup), and index-assigning on an
+  // undefined value would throw. Mirrors resolveOctetOfValenceElectrons' pattern.
+  if (G.extraTurns === undefined) {
+    G.extraTurns = {};
+  }
+  // why: `+= 1` (INCREMENT), not set-to-1, so stacked grants queue multiple extra
+  // turns rather than collapsing to one (WP-696 / D-24513 stacking contract).
+  G.extraTurns[currentPlayer] = (G.extraTurns[currentPlayer] ?? 0) + 1;
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} will take another turn after this one (Secrets of Time Travel).`,
+    'applied',
+  );
+}
+
+/**
  * Counts the acting player's in-play Heroes on the X-Men team — Xavier's Nemesis's
  * "for each of your [team:x-men] Heroes" scan.
  *
@@ -615,6 +659,13 @@ export function dispatchTacticOnFight(
   // Victory-Pile Bystanders (no player choice; skips currentPlayer).
   if (defeatedTacticId === LOKI_WHISPERS_AND_LIES_TACTIC_ID) {
     resolveWhispersAndLies(G, currentPlayer);
+    return;
+  }
+  // why: WP-696 / D-24513 — core Dr. Doom's "Secrets of Time Travel"; the arc's
+  // only novel mechanic (the extra-turn primitive). Increments G.extraTurns for the
+  // defeating player, honored at their next turn-end.
+  if (defeatedTacticId === SECRETS_OF_TIME_TRAVEL_TACTIC_ID) {
+    resolveSecretsOfTimeTravel(G, currentPlayer);
     return;
   }
 }

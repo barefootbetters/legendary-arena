@@ -31,6 +31,12 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveWhispersAndLies",
       "wp": "WP-691",
       "decision": "D-24508"
+    },
+    "core-mastermind-dr-doom-secrets-of-time-travel": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveSecretsOfTimeTravel",
+      "wp": "WP-696",
+      "decision": "D-24513"
     }
   }
 }

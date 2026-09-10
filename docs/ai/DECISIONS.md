@@ -41897,4 +41897,53 @@ tactics, so **no re-pin** — verified: no `.replay.json` / hash-fixture churn.
 rescue). **Coverage:** three `executable` rows in `scripts/coverage/tactic-provenance.json`
 + regenerated `data/metadata/effect-implementation-index.json`.
 
+### D-24513 — the extra-turn primitive + Dr. Doom "Secrets of Time Travel" resolution (Active 2026-09-10 — WP-696 / EC-733)
+
+**Context.** Defeating core Dr. Doom's "Secrets of Time Travel" tactic
+(`core-mastermind-dr-doom-secrets-of-time-travel`, printed "Fight: Take another
+turn after this one.") fired nothing — it fell through `dispatchTacticOnFight` to
+the silent no-op like every unimplemented tactic (WP-497 / D-24300). Making it
+faithful required the arc's only novel mechanic: an extra turn. The engine had no
+extra-turn primitive.
+
+**Decision.** A deterministic optional `G.extraTurns: Record<playerID, number>`
+per-player counter. `resolveSecretsOfTimeTravel` increments (`+= 1`, so grants
+STACK) the defeating player's entry when the tactic is defeated. The counter is
+honored at turn-end by ending the current turn but beginning the SAME seat's next
+turn via boardgame.io 0.50.x's documented `events.endTurn({ next: currentPlayer })`
+primitive (fires `onEnd` → `onBegin`, a full fresh turn) — never a manual
+`ctx.currentPlayer` rotation. The counter decrements-to-delete.
+
+**The turn-model (gate-corrected — NOT a single chokepoint).** There are TWO
+production live turn-end paths, and BOTH honor the counter: (1) `advanceTurnStage`
+(`turn/turnLoop.ts`) — the cleanup-stage auto-end (and the game.ts KO-driven
+synthetic wrapper that forwards through it); (2) the player-initiated `endTurn`
+MOVE (`moves/coreMoves.impl.ts`), which ends the turn via a DIRECT
+`events.endTurn()` NOT routed through `advanceTurnStage` (D-22002). A shared
+`consumeExtraTurn` helper drains the counter identically at both. Honoring it only
+in `advanceTurnStage` would silently drop the extra turn on the primary user path
+(the pre-flight + copilot gates caught this). The three bgio-bypassing harnesses
+(`simulation.runner.ts`, `par.aggregator.ts` — the PAR scoring surface —, and
+`replay.execute.ts`, plus the test fixture harness) observe the forwarded
+`{ next }` signal at their manual rotation points and keep that seat, so harness
+turn-count stays in lockstep with the live path. They do NOT re-decrement the
+counter, because the real `endTurn` move they dispatch already drained it — a
+second decrement would desync (the correction to the naive "each harness decrements
+independently" reading, which double-consumes given the two-path fix).
+
+**Determinism / re-pin.** `G.extraTurns` is part of the hashed `G` but is lazily
+created (NEVER seeded in `buildInitialGameState`) and deleted when spent, so an
+untriggered game — and a game that fully spends its extra turns — serializes
+identically to today (the `handSizeOverrides` / `lastPlayEffectsFired` lazy-omit
+pattern). No committed fixture defeats this tactic: the sole Dr. Doom sentinel
+(`sentinel-core-doom-2p`) runs zero `fightMastermind` moves. Verified empirically —
+`PRE_WP080_HASH` and the sentinel `finalStateHash` are byte-identical, **no
+re-pin**. Had a fixture defeated this tactic, the inserted extra turn would desync
+a recorded move-log and this would have been an escalation, not a blind re-pin
+(reference_hashed_g_field_dual_repin).
+
+**Status:** Active. **Builds on:** D-24300 (tactic-onFight framework), D-22002
+(the two coexisting end-turn paths). **Enables:** any future "take another turn"
+effect, which reuses `G.extraTurns` + `consumeExtraTurn`.
+
 Protect this file.

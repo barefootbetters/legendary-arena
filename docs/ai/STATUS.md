@@ -41,6 +41,44 @@ edges — additive stacking, 0 X-Men, short supply, skip-self, <2 Bystanders), t
 change. Engine suite **3366 pass**; `pnpm -r build` 0; `cards:check` reproducible;
 `effect-index:check` current.
 
+### WP-696 — Dr. Doom "Secrets of Time Travel" onFight + the extra-turn primitive (EC-733 / D-24513) (2026-09-10)
+
+Made defeating core Dr. Doom's "Secrets of Time Travel" tactic
+(`core-mastermind-dr-doom-secrets-of-time-travel`, "Fight: Take another turn
+after this one.") faithful — it previously fell through `dispatchTacticOnFight`
+to the silent no-op. This required the arc's only novel mechanic: the engine's
+first **extra-turn primitive**.
+
+**Engine.** New lazy optional `G.extraTurns: Record<playerID, number>` (never
+seeded in `buildInitialGameState`; decrement-to-delete). `resolveSecretsOfTimeTravel`
+increments (`+= 1`, so grants STACK) the defeating player's entry; a
+`dispatchTacticOnFight` branch routes the tactic id. A shared `consumeExtraTurn`
+helper is honored at **both** production live turn-end paths (gate-corrected — not
+a single chokepoint): `advanceTurnStage` (cleanup auto-end + the game.ts KO
+wrapper) and the `endTurn` MOVE's direct `events.endTurn()` (D-22002). Each grants
+the SAME seat another full turn via boardgame.io's `events.endTurn({ next:
+currentPlayer })` (fires `onEnd` → `onBegin`), never manual rotation. The three
+bgio-bypassing harnesses (`simulation.runner`, `par.aggregator` — the PAR scoring
+surface —, `replay.execute`) plus the test fixture harness observe the forwarded
+`{ next }` signal at their manual rotation and keep that seat, so harness
+turn-count stays in lockstep with live (no double-consume — the dispatched real
+endTurn move already drained the counter).
+
+**Determinism.** `G.extraTurns` is hashed but lazily created / spent-to-empty, so
+untriggered games serialize identically to today. No committed fixture defeats
+this tactic (the sole `sentinel-core-doom-2p` runs zero `fightMastermind` moves),
+so `PRE_WP080_HASH` and the sentinel `finalStateHash` are **byte-identical — no
+re-pin** (verified; a fixture that defeated it would have been an escalation, not
+a blind re-pin). Full engine suite **3369 pass / 0 fail**; a control-stub of the
+resolver makes the extra-turn/stacking/end-to-end tests fail (non-vacuous).
+`pnpm -r build` 0; `cards:check` reproducible; `effect-index:check` +
+`sim:runtime-observed:check` current.
+
+**Live-verify:** operator-pending (post-deploy) — on `play.legendary-arena.com`,
+defeat Dr. Doom's "Secrets of Time Travel" and confirm the defeating player
+immediately takes another full turn, then play advances; the log shows the Fight
+line. No UI surface (the extra turn is an ordinary turn).
+
 ### WP-687 — Final Blow endgame gate + UI (EC-724 / D-24504) (2026-09-10)
 
 Shipped the rulebook "Final Blow (Optional)" Mastermind variant — the mechanic

@@ -3,7 +3,7 @@
  * (WP-497 / D-24300 Octet; WP-506 / D-24312 Crushing Shockwave).
  */
 
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -17,6 +17,7 @@ import {
   resolveTreasuresOfLatveria,
   resolveXaviersNemesis,
   resolveWhispersAndLies,
+  resolveSecretsOfTimeTravel,
   OCTET_HAND_SIZE,
   SHOCKWAVE_WOUND_COUNT,
   NEGABLAST_GRENADES_ATTACK,
@@ -25,6 +26,8 @@ import {
   TREASURES_EXTRA_CARDS,
   WHISPERS_BYSTANDER_KO,
 } from './tacticHandlers.js';
+import { advanceTurnStage } from '../turn/turnLoop.js';
+import { endTurn } from '../moves/coreMoves.impl.js';
 
 const OCTET_TACTIC_ID =
   'co2e-mastermind-doctor-octopus-octet-of-valence-electrons';
@@ -516,5 +519,138 @@ describe('resolveWhispersAndLies (WP-691 / D-24508)', () => {
     assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
     assert.equal(G.playerZones['1']!.victory.length, 0);
     assert.equal(G.ko.length, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Secrets of Time Travel — core Dr. Doom tactic Fight + the extra-turn
+// primitive (WP-696 / D-24513)
+// ---------------------------------------------------------------------------
+
+const SECRETS_OF_TIME_TRAVEL_TACTIC_ID =
+  'core-mastermind-dr-doom-secrets-of-time-travel';
+
+/**
+ * Builds the minimal cleanup-stage move context the endTurn move needs: the
+ * acting player's zones (a card in play so the sweep does observable work),
+ * G.extraTurns preset, and an endTurn spy that records its `{ next }` argument.
+ *
+ * @param extraTurns - The initial extra-turn counter map (preset onto G).
+ * @param playerID - The acting seat (default '0').
+ * @returns The move context (cast to the move signature) plus the endTurn spy.
+ */
+function makeEndTurnContext(
+  extraTurns: Record<string, number> | undefined,
+  playerID = '0',
+): { context: unknown; endTurnSpy: ReturnType<typeof mock.fn> } {
+  const endTurnSpy = mock.fn();
+  const G = {
+    currentStage: 'cleanup',
+    messages: [],
+    playerZones: {
+      [playerID]: { deck: [], hand: [], discard: [], inPlay: ['some-card'], victory: [] },
+    },
+    ...(extraTurns !== undefined ? { extraTurns } : {}),
+  } as unknown as LegendaryGameState;
+  const context = { G, playerID, events: { endTurn: endTurnSpy } };
+  return { context, endTurnSpy };
+}
+
+describe('resolveSecretsOfTimeTravel (WP-696 / D-24513)', () => {
+  it('AC-1: lazily creates the counter and increments the defeating player to 1, logging', () => {
+    const G = makeState();
+    resolveSecretsOfTimeTravel(G, '0');
+    assert.deepEqual(G.extraTurns, { '0': 1 });
+    assert.equal(G.messages.length, 1);
+    assert.match(G.messages[0]!.text, /Secrets of Time Travel/);
+    assert.equal(G.messages[0]!.outcome, 'applied');
+  });
+
+  it('AC-4: increments (stacks) rather than setting to 1 — two grants queue two turns', () => {
+    const G = makeState();
+    resolveSecretsOfTimeTravel(G, '0');
+    resolveSecretsOfTimeTravel(G, '0');
+    // why: a set-to-1 bug would leave this at 1; increment stacks to 2.
+    assert.deepEqual(G.extraTurns, { '0': 2 });
+  });
+
+  it('does not disturb another player already holding a queued extra turn', () => {
+    const G = makeState();
+    G.extraTurns = { '1': 1 };
+    resolveSecretsOfTimeTravel(G, '0');
+    assert.deepEqual(G.extraTurns, { '0': 1, '1': 1 });
+  });
+});
+
+describe('dispatchTacticOnFight — Secrets of Time Travel branch (WP-696 / D-24513)', () => {
+  it('AC-1: routes the tactic id to the resolver (increments ctx.currentPlayer)', () => {
+    const G = makeState();
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, SECRETS_OF_TIME_TRAVEL_TACTIC_ID, SHUFFLE);
+    assert.deepEqual(G.extraTurns, { '1': 1 });
+  });
+
+  it('AC-6: an unknown Dr. Doom tactic id stays a silent no-op (no counter, no log)', () => {
+    const G = makeState();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, 'core-mastermind-dr-doom-dark-technology', SHUFFLE);
+    assert.equal(G.extraTurns, undefined);
+    assert.equal(G.messages.length, 0);
+  });
+});
+
+describe('extra-turn end-to-end: resolver → counter → turn-end grant (WP-696 / D-24513)', () => {
+  it('AC-1+AC-2: dispatch then advanceTurnStage grants the SAME seat another turn and drains the counter', () => {
+    // why: chains the resolver to the turn-loop honoring — the control-stub check
+    // (stub resolveSecretsOfTimeTravel to a no-op) makes THIS fail, proving the
+    // grant depends on the resolver actually setting the counter (non-vacuous).
+    const G = { currentStage: 'cleanup', messages: [] } as unknown as LegendaryGameState;
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, SECRETS_OF_TIME_TRAVEL_TACTIC_ID, SHUFFLE);
+    assert.deepEqual(G.extraTurns, { '0': 1 });
+
+    const endTurnSpy = mock.fn();
+    advanceTurnStage(G as never, { currentPlayer: '0', events: { endTurn: endTurnSpy } });
+
+    assert.equal(endTurnSpy.mock.callCount(), 1);
+    assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, [{ next: '0' }]);
+    assert.equal(G.extraTurns?.['0'], undefined);
+  });
+
+  it('AC-2: the endTurn MOVE (the direct-events path) forwards { next } and decrements', () => {
+    // why: this is the primary user path — the endTurn move calls events.endTurn
+    // DIRECTLY, not via advanceTurnStage (D-22002 two-path model), so it must honor
+    // the counter itself. This is ALSO exactly the call the sim / PAR / replay
+    // harnesses dispatch and observe, so it doubles as the harness-parity signal.
+    const { context, endTurnSpy } = makeEndTurnContext({ '0': 1 }, '0');
+    endTurn(context as never);
+    assert.equal(endTurnSpy.mock.callCount(), 1);
+    assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, [{ next: '0' }]);
+    assert.equal((context as { G: LegendaryGameState }).G.extraTurns?.['0'], undefined);
+  });
+
+  it('AC-3: the endTurn MOVE with no counter uses the bare endTurn() (normal rotation)', () => {
+    const { context, endTurnSpy } = makeEndTurnContext(undefined, '0');
+    endTurn(context as never);
+    assert.equal(endTurnSpy.mock.callCount(), 1);
+    assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, []);
+  });
+
+  it('AC-4: stacking — the endTurn MOVE drains one queued turn per call', () => {
+    const { context, endTurnSpy } = makeEndTurnContext({ '0': 2 }, '0');
+    const G = (context as { G: LegendaryGameState }).G;
+    endTurn(context as never);
+    assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, [{ next: '0' }]);
+    assert.equal(G.extraTurns?.['0'], 1);
+
+    // why: a second cleanup end-turn drains the last queued extra turn, then a
+    // third rotates normally — the stacking contract end-to-end on the move path.
+    G.currentStage = 'cleanup';
+    G.playerZones['0']!.inPlay = ['some-card'];
+    endTurn(context as never);
+    assert.deepEqual(endTurnSpy.mock.calls[1]!.arguments, [{ next: '0' }]);
+    assert.equal(G.extraTurns?.['0'], undefined);
+
+    G.currentStage = 'cleanup';
+    G.playerZones['0']!.inPlay = ['some-card'];
+    endTurn(context as never);
+    assert.deepEqual(endTurnSpy.mock.calls[2]!.arguments, []);
   });
 });
