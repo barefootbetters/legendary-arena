@@ -179,6 +179,8 @@ core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/g
 core/deadpool,Deadpool,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,oddball
 core/deadpool,Deadpool,core,do-over,executable,WP-681,D-24498,packages/game-engine/src/hero/heroEffects.execute.ts#do-over,hey-can-i-get-a-do-over
 core/deadpool,Deadpool,core,first-hero-condition,condition,,,,hey-can-i-get-a-do-over
+core/deadpool,Deadpool,core,here-hold-this,executable,WP-683,D-24500,packages/game-engine/src/hero/heroEffects.execute.ts#here-hold-this,here-hold-this-for-a-second
+core/deadpool,Deadpool,core,random-acts,executable,WP-683,D-24500,packages/game-engine/src/hero/heroEffects.execute.ts#random-acts,random-acts-of-unkindness
 core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,condition,,,,diamond-form
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 core/emma-frost,Emma Frost,core,optional-play-villain-top,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-play-villain-top,shadowed-thoughts

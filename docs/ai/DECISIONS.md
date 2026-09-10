@@ -41581,3 +41581,91 @@ readability/layout change; no monetization / pay-to-win).
 desktop side):** D-24251.
 
 Protect this file.
+### D-24500 — Deadpool's `here-hold-this` (active-scoped directed Bystander capture) + `random-acts` (optional gain-Wound-to-hand then a simultaneous multi-seat pass-left), both riding WP-684's seat-choice capability (Active 2026-09-10 — WP-683 / EC-720)
+
+**Type:** Engine mechanic + cross-layer contract (Game Engine + Arena Client)
+**Packet:** WP-683 / EC-720
+**Date:** 2026-09-10
+
+**Decision.** Deadpool's two interactive/multiplayer hero cards are implemented as two
+new NO-MAGNITUDE handler-bearing HeroKeywords, both routed through the WP-684
+non-active/multi-seat pending-choice capability (`G.pendingSeatChoice` /
+`resolveSeatChoice`) rather than a new bespoke queue.
+
+1. **`here-hold-this`** ("A Villain of your choice captures a Bystander."). Handler
+   `heroEffectHereHoldThis` resolves by cardinality: **empty Bystander supply → a clean
+   no-op** (checked first, so no Mastermind capture of a non-existent Bystander and no
+   empty park); **0 City Villains → the Mastermind captures** the top-supply Bystander into
+   `G.mastermind.attachedBystanders` (universal-rules-v23 §capture, the D-15401
+   mastermind-side store); **exactly 1 City occupant → auto-attach** via the shared
+   `attachBystanderToVillain`; **≥2 → park an ACTIVE-scoped single-seat `PendingSeatChoice`**
+   (kind `here-hold-this`, one option per City space) resolved by `resolveSeatChoice`, whose
+   apply calls `attachBystanderToVillain` for the chosen space. Every non-empty City space
+   (Villain or Henchman) is eligible — a Henchman is a City occupant that captures
+   Bystanders too.
+2. **`random-acts`** ("You may gain a Wound to your hand. Then each player passes a card
+   from their hand to the player on their left."). Two chained steps:
+   - **Step 1 — optional gain-Wound-to-HAND**, a new destination variant of the
+     discard-default gain (`heroEffectGainWound` is unchanged; `random-acts` calls the
+     destination-agnostic `gainWound` helper with the acting player's HAND as the
+     destination). Parked as an ACTIVE-scoped single-seat `PendingSeatChoice` (kind
+     `random-acts-wound`, options Gain / Decline, default = Decline). Skipped when the Wound
+     supply is empty.
+   - **Step 2 — a SIMULTANEOUS multi-seat pass-left** (kind `random-acts-pass-left`): every
+     seat holding ≥1 card is addressed with one option per hand card; on resolve every
+     chosen card moves to the seat on its **left** (the next seat in `ctx.playOrder`,
+     wrapping), applied ATOMICALLY in a **two-phase** pass (all removals before any
+     additions) over the addressed seats sorted ascending — so a seat never sees or
+     re-passes an incoming card (no peeking) and the resolution is replay-identical
+     regardless of submission order. Left-neighbour adjacency is precomputed at park time
+     (`PendingSeatChoice.leftNeighborBySeat`) so the ctx-free apply stays deterministic.
+   The chain (step 1 → step 2) lands in `resolveSeatChoice` (which has the live
+   `events`/`ctx`), because admitting the NON-ACTIVE seats for the pass needs
+   `events.setActivePlayers` and "left" needs `ctx.playOrder`; the ctx-free apply cannot
+   park it. The gained Wound is a full hand card in step 2 — the player may pass it OR keep
+   it and pass another card (the full faithful decision tree; no dominated option is
+   removed). `woundsDrawn` is NOT bumped for the gained Wound (it is passed away, or in solo
+   kept but not "drawn" for the turn-economy meter).
+
+**Deviations from the WP text (genuine ambiguities, reconciled here).**
+- The WP "Assumes" framed Here, Hold This as using the shipped **active-player** pending
+  model and Random Acts' pass as riding WP-684. Both are instead routed through WP-684's
+  `pendingSeatChoice` — a **single-seat** seat choice IS an active-scoped pending choice (a
+  strict superset of the active-only model), so this inherits WP-684's already-shipped
+  block-all guards, projection, per-seat redaction, `resolveSeatChoice`, sim dispatch, and
+  the wired `PendingSeatChoicePrompt.vue` **with zero new move / queue / sim / filter
+  wiring**. An active-scoped park skips the framework stage-ride (`parkSeatChoice` with
+  `events` undefined) because the active player is already `currentPlayer` and can submit the
+  global `resolveSeatChoice`; only the multi-seat pass admits its (non-active) seats via the
+  ride. The only WP-684 files touched are `seatChoice.resolve.ts` (kind dispatch + the
+  wound→pass chain) and `types.ts` (two optional `SeatChoiceOption` fields + optional
+  `PendingSeatChoice.leftNeighborBySeat`); the new card logic lives in
+  `moves/seatChoiceCards.ts`.
+- **Disconnect / timeout** follows D-24501 exactly: a play-phase disconnect PAUSES the match
+  and PRESERVES the pending choice (D-11602 = B); the deterministic
+  `applySeatChoiceTimeoutDefault` default is a governing-policy call (the unwired WP-116
+  path), not an engine side effect. That timeout path dispatches the card-specific apply (so
+  a defaulted here-hold-this / pass-left still resolves its real effect) but does NOT chain
+  the Random Acts pass after a defaulted wound choice — it has no `events` to admit the
+  seats, and the paused-and-preserved posture means the live pass is never reached via a
+  timeout.
+- **Solo** (playOrder < 2): `buildPassLeftChoice` returns undefined, so the pass is skipped
+  as a no-op; the optional Wound gain in step 1 captures the only observable solo effect
+  ("you may gain a Wound to your hand").
+
+**Determinism / hash.** No hashed field was added — the two `SeatChoiceOption` fields and
+`leftNeighborBySeat` live on the transient `G.pendingSeatChoice`, which is set only during a
+Deadpool play and cleared at resolve; the sentinel replays never play Deadpool, so no
+state-hash oracle moves (verified: full engine suite green, no re-pin). Card markers
+(`[keyword:here-hold-this]`, `[keyword:random-acts]`) added via
+`hero-ability-markers.json` under `core` + the 5-stage regen (only `core.json` semantically
+changed; `cards:check` reproducible). Both keywords enroll in `NO_MAGNITUDE_KEYWORDS`.
+
+**Layer / boundary.** Engine decides; client renders; server stays authoritative (Vision §5
+multiplayer integrity — the cross-seat pass is server-authoritative and replay-identical).
+Moves never throw. No pay-to-win / no client authority (NG-1 uncrossed). Completes the
+core-unmarked-heroes arc (WP-680..684): Deadpool 0/4 remaining.
+
+**Status:** Active.
+
+Protect this file.

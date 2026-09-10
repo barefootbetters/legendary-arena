@@ -766,6 +766,17 @@
       "hidden": true
     },
     {
+      "slug": "here-hold-this",
+      "label": "Here Hold This",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/deadpool"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "highest-abomination",
       "label": "Highest Abomination",
       "scope": "hero",
@@ -1115,6 +1126,17 @@
       "cardIds": [
         "antm/wonder-man",
         "xmen/kitty-pryde"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "random-acts",
+      "label": "Random Acts",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/deadpool"
       ],
       "hidden": true
     },
@@ -2555,7 +2577,9 @@
       "mechanics": [
         "attack-per-count",
         "do-over",
-        "first-hero-condition"
+        "first-hero-condition",
+        "here-hold-this",
+        "random-acts"
       ]
     },
     "core/emma-frost": {

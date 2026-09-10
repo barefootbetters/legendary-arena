@@ -18,6 +18,8 @@
     "optional-ko-shield-officer": { "wp": "WP-681", "decision": "D-24498" },
     "diving-block": { "wp": "WP-682", "decision": "D-24499" },
     "pure-fury": { "wp": "WP-682", "decision": "D-24499" },
+    "here-hold-this": { "wp": "WP-683", "decision": "D-24500" },
+    "random-acts": { "wp": "WP-683", "decision": "D-24500" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "D-24019" },
     "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },

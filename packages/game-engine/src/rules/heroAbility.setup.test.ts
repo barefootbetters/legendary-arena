@@ -520,7 +520,7 @@ describe('buildHeroAbilityHooks WP-681 optional/interactive core heroes (D-24498
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 52 canonical keyword values', () => {
+  it('contains exactly the 54 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -574,12 +574,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'optional-ko-shield-officer', // why: WP-681 / D-24498 — Nick Fury "Battlefield Promotion" ("You may KO a [team:shield] Hero from your hand or discard pile. If you do, you may gain a S.H.I.E.L.D. Officer to your hand.") — reuses the optional-ko-reward queue with a shield team filter + gain-officer-hand reward
     'diving-block', // why: WP-682 / D-24499 — Captain America "Diving Block" ("If you would gain a Wound, you may reveal this card and draw a card instead.") — reactive wound interception at the gainWoundForPlayer chokepoint (WOUND_TIME_EXECUTED_KEYWORDS; no onPlay handler)
     'pure-fury', // why: WP-682 / D-24499 — Nick Fury "Pure Fury" ("Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile.") — free conditional defeat reusing the defeat-with-bystander shared path
+    'here-hold-this', // why: WP-683 / D-24500 — Deadpool "Here, Hold This for a Second" ("A Villain of your choice captures a Bystander.") — active-scoped directed Bystander capture (Mastermind fallback at 0 Villains)
+    'random-acts', // why: WP-683 / D-24500 — Deadpool "Random Acts of Unkindness" ("You may gain a Wound to your hand. Then each player passes a card from their hand to the player on their left.") — optional gain-Wound-to-hand + simultaneous multi-seat pass-left
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      52,
-      'HERO_KEYWORDS must have exactly 52 entries',
+      54,
+      'HERO_KEYWORDS must have exactly 54 entries',
     );
 
     assert.deepStrictEqual(

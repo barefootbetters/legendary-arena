@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1860,
+    "totalEntries": 1862,
     "byScope": {
-      "hero": 685,
+      "hero": 687,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 419,
+      "executable": 421,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
@@ -6869,6 +6869,40 @@
         {
           "slug": "hey-can-i-get-a-do-over",
           "name": "Hey, Can I Get a Do-Over?"
+        }
+      ]
+    },
+    {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "here-hold-this",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#here-hold-this",
+      "wp": "WP-683",
+      "decision": "D-24500",
+      "designs": [
+        {
+          "slug": "here-hold-this-for-a-second",
+          "name": "Here, Hold This for a Second"
+        }
+      ]
+    },
+    {
+      "extId": "core/deadpool",
+      "name": "Deadpool",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "random-acts",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#random-acts",
+      "wp": "WP-683",
+      "decision": "D-24500",
+      "designs": [
+        {
+          "slug": "random-acts-of-unkindness",
+          "name": "Random Acts of Unkindness"
         }
       ]
     },
@@ -28613,7 +28647,9 @@
       "mechanics": [
         "attack-per-count",
         "do-over",
-        "first-hero-condition"
+        "first-hero-condition",
+        "here-hold-this",
+        "random-acts"
       ]
     },
     "core/emma-frost": {

@@ -30,6 +30,14 @@ import {
   applyDivingBlockResolvedSeatChoice,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from './divingBlock.logic.js';
+// why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
+// Random-Acts wound→pass chain builder.
+import {
+  applySeatChoiceCard,
+  buildPassLeftChoice,
+  RANDOM_ACTS_WOUND_KIND,
+} from './seatChoiceCards.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -246,7 +254,7 @@ export function applyResolvedSeatChoice(
  * @param args - The chosen option index.
  */
 export function resolveSeatChoice(
-  { G, playerID, random }: MoveContext,
+  { G, ctx, events, playerID, random }: MoveContext,
   args: ResolveSeatChoiceArgs,
 ): void {
   // Step 1: a seat choice must be open.
@@ -282,8 +290,19 @@ export function resolveSeatChoice(
 
   // Step 5: apply atomically only when every addressed seat has submitted.
   if (allSeatsSubmitted(choice)) {
+    const appliedKind = choice.kind;
+    // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
+    // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     applySeatChoiceByKind(G, choice, { random });
     delete G.pendingSeatChoice;
+    // why: WP-683 / D-24500 — Random Acts is two steps: the active-scoped optional wound
+    // gain (step 1) CHAINS the simultaneous multi-seat pass-left (step 2). The chain parks
+    // here (not inside the ctx-free apply) because admitting the NON-ACTIVE seats needs the
+    // move's events.setActivePlayers, and "left" adjacency needs ctx.playOrder — both present
+    // only in this live move context.
+    if (appliedKind === RANDOM_ACTS_WOUND_KIND) {
+      chainRandomActsPassLeft(G, ctx, events);
+    }
   }
 }
 
@@ -295,6 +314,10 @@ export function resolveSeatChoice(
  * consuming card wires its effect here by kind. Diving Block undoes the resolved Wound
  * (or keeps it) and drains its FIFO. The shuffle context is threaded for the reveal draw;
  * the disconnect/timeout default supplies none (its default is decline → no draw).
+ *
+ * // why: WP-683 / D-24500 — the Deadpool kinds (here-hold-this / random-acts-wound /
+ * random-acts-pass-left) dispatch through applySeatChoiceCard; only the foundational
+ * 'generic' kind (and any unrecognized kind) reaches the per-seat message log.
  *
  * @param G - The game state to mutate.
  * @param choice - The fully-submitted pending seat choice.
@@ -309,7 +332,46 @@ function applySeatChoiceByKind(
     applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext);
     return;
   }
+  if (applySeatChoiceCard(G, choice)) {
+    return;
+  }
   applyResolvedSeatChoice(G, choice);
+}
+
+/**
+ * The subset of the boardgame.io ctx the pass-left chain reads for seat adjacency.
+ */
+interface SeatChoiceChainCtx {
+  playOrder?: readonly string[];
+}
+
+/**
+ * Chains Random Acts' simultaneous multi-seat pass-left after the active-scoped wound
+ * choice resolved: builds the pass-left choice from `ctx.playOrder` and parks it
+ * (admitting the addressed seats via the framework stage ride).
+ *
+ * // why: WP-683 / D-24500 — a solo game (or a board where no seat holds a card) has no
+ * cross-seat pass, so buildPassLeftChoice returns undefined and the chain logs a no-op —
+ * the optional Wound gain already captured the only observable solo effect.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the pass).
+ * @param ctx - The bare boardgame.io ctx (read for playOrder adjacency).
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ */
+function chainRandomActsPassLeft(
+  G: LegendaryGameState,
+  ctx: SeatChoiceChainCtx | undefined,
+  events: SeatChoiceEvents | undefined,
+): void {
+  const playOrder = ctx?.playOrder ?? Object.keys(G.playerZones).sort();
+  const passChoice = buildPassLeftChoice(G, playOrder);
+  if (passChoice === undefined) {
+    // why: solo (playOrder < 2) or no seat holds a card — nothing to pass.
+    pushLog(G, `No card was passed for Random Acts of Unkindness — there is no other player to pass to.`, 'neutral');
+    return;
+  }
+  parkSeatChoice(G, events, passChoice);
+  pushLog(G, `Each player must choose a card to pass to the player on their left (Random Acts of Unkindness).`, 'neutral');
 }
 
 /**
@@ -359,6 +421,11 @@ export function applySeatChoiceTimeoutDefault(
     // the diving-block FIFO; a generic log-only apply would leave the FIFO non-empty and
     // onMove would re-open the wave forever. No shuffle source on the timeout path (decline
     // never draws).
+    // why: WP-683 / D-24500 — the same dispatcher resolves a DEFAULTED here-hold-this /
+    // random-acts-pass-left (its real effect, not only a log). This path does NOT chain the
+    // Random Acts pass after a defaulted wound choice — it has no events to admit the seats;
+    // per D-24501 a play-phase disconnect PAUSES the match (this default is the not-yet-wired
+    // WP-116 governing-policy path), so the live pass-left is never reached via a timeout here.
     applySeatChoiceByKind(G, choice, undefined);
     delete G.pendingSeatChoice;
   }

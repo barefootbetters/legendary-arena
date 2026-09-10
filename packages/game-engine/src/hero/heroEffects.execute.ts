@@ -57,6 +57,15 @@ import {
   buildDefeatWithBystanderTargets,
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
+import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+import {
+  buildHereHoldThisTargets,
+  attachBystanderToCityVillain,
+  captureBystanderToMastermind,
+  buildHereHoldThisChoice,
+  buildRandomActsWoundChoice,
+  buildPassLeftChoice,
+} from '../moves/seatChoiceCards.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
@@ -147,6 +156,18 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // 'undercover' token is NOT here — it is an honest hollow, no source zone → no handler.)
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-683 / D-24500 — Deadpool's Here, Hold This for a Second ("A Villain of your
+  // choice captures a Bystander."); has a HERO_EFFECT_HANDLERS entry (heroEffectHereHoldThis)
+  // that attaches via attachBystanderToVillain (Mastermind fallback at 0 Villains, empty-supply
+  // no-op) or parks an active-scoped PendingSeatChoice, so it belongs here. Carries NO magnitude
+  // → also in NO_MAGNITUDE_KEYWORDS.
+  'here-hold-this',
+  // why: WP-683 / D-24500 — Deadpool's Random Acts of Unkindness ("You may gain a Wound to your
+  // hand. Then each player passes a card from their hand to the player on their left."); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectRandomActs) that parks the active-scoped wound choice
+  // (which chains the simultaneous multi-seat pass-left), so it belongs here. Carries NO
+  // magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'random-acts',
   // why: WP-681 / D-24498 — Deadpool's Do-Over ("discard the rest of your hand and draw
   // four cards", first-Hero-gated); has a HERO_EFFECT_HANDLERS entry (heroEffectDoOver)
   // that parks the accept/decline PendingDoOver. Carries NO magnitude → also in
@@ -357,6 +378,14 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // time, so the magnitude pre-gate must not drop them, or the send never fires / the pick never parks.
   'undercover-hand-shield-hero',
   'undercover-officer-stack',
+  // why: WP-683 / D-24500 — here-hold-this carries NO magnitude (it attaches exactly one
+  // Bystander to the chosen Villain); the eligible City set is computed from G at play time,
+  // so the magnitude pre-gate must not drop it, or the capture / pick never fires.
+  'here-hold-this',
+  // why: WP-683 / D-24500 — random-acts carries NO magnitude (the optional Wound is one, the
+  // pass is one card per seat); both steps are resolved via pending choices, so the magnitude
+  // pre-gate must not drop it, or the wound choice never parks.
+  'random-acts',
   // why: WP-681 / D-24498 — do-over carries NO magnitude (the draw amount is the fixed
   // printed 4, applied at resolve time, not a play-time grant); the magnitude pre-gate must
   // not drop it, or the accept/decline choice never parks.
@@ -2180,6 +2209,138 @@ function heroEffectDoOver(
 }
 
 /**
+ * Handler for the `here-hold-this` hero keyword (WP-683 / D-24500).
+ *
+ * Deadpool's "Here, Hold This for a Second" — "A Villain of your choice captures a
+ * Bystander." The active player picks a City Villain that captures the top-supply
+ * Bystander (reusing `attachBystanderToVillain`). Resolves by cardinality:
+ * empty Bystander supply → a logged no-op; 0 City Villains → the Mastermind captures
+ * (universal-rules-v23 §capture); exactly 1 Villain → auto-attach; ≥2 → park an
+ * ACTIVE-scoped single-seat PendingSeatChoice (kind 'here-hold-this') so the player
+ * picks which Villain, resolved by resolveSeatChoice.
+ *
+ * // why: WP-683 / D-24500 — the empty-supply check is FIRST, so with no Bystander to
+ * capture the ability is a clean no-op regardless of the City (never a Mastermind
+ * capture of a non-existent Bystander, never a parked choice with nothing to award).
+ *
+ * // why: the ≥2 park uses parkSeatChoice WITHOUT the framework stage ride (events
+ * undefined) — the sole addressed seat is the ACTIVE player, already the currentPlayer
+ * in the (empty) playTurn stage, so they can submit the global resolveSeatChoice move
+ * with no setActivePlayers admission (which is only needed to admit NON-ACTIVE seats).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the pick is active-scoped; no stage ride, no randomness).
+ * @param playerID - The player who played the card (the sole addressed seat).
+ * @param cardId - The played card (recorded for the neutral park log).
+ * @param _effect - The `{ type: 'here-hold-this' }` descriptor (no magnitude).
+ */
+function heroEffectHereHoldThis(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: empty Bystander supply → nothing to capture (a clean no-op). Checked first
+  // so neither the Mastermind fallback nor a parked pick fires with no Bystander.
+  if (G.piles.bystanders.length === 0) {
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} could not have a Villain capture a Bystander — the Bystander supply is empty.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  const targets = buildHereHoldThisTargets(G);
+  // why: WP-683 / D-24500 — universal-rules-v23 §capture: with no Villain in the City,
+  // the MASTERMIND captures the Bystander instead.
+  if (targets.length === 0) {
+    captureBystanderToMastermind(G);
+    return;
+  }
+  // why: exactly 1 City Villain → auto-attach with no prompt (mandatory-if-able).
+  if (targets.length === 1) {
+    attachBystanderToCityVillain(G, targets[0]!.cityIndex);
+    return;
+  }
+  // why: ≥2 City Villains → park an ACTIVE-scoped pick; the current player chooses which
+  // Villain captures. parkSeatChoice with events undefined (no stage ride) — the active
+  // player is already the currentPlayer and needs no admission.
+  parkSeatChoice(G, undefined, buildHereHoldThisChoice(G, playerID, targets));
+  pushLog(G,
+    `Player ${playerID} must choose which Villain captures a Bystander (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+}
+
+/**
+ * Handler for the `random-acts` hero keyword (WP-683 / D-24500).
+ *
+ * Deadpool's "Random Acts of Unkindness" — "You may gain a Wound to your hand. Then
+ * each player passes a card from their hand to the player on their left." Two steps:
+ *
+ *   Step 1 (this handler): if the Wound supply is non-empty, park an ACTIVE-scoped
+ *   optional gain-Wound-to-HAND choice (kind 'random-acts-wound'); resolveSeatChoice
+ *   gains the Wound (or declines) then CHAINS step 2.
+ *   Step 2 (chained in resolveSeatChoice, or here when the Wound supply is empty): the
+ *   simultaneous multi-seat pass-left (kind 'random-acts-pass-left').
+ *
+ * // why: WP-683 / D-24500 — the wound step is parked WITHOUT the stage ride (active
+ * player only); the pass step (step 2) needs the stage ride to admit the NON-ACTIVE
+ * seats, so it is parked WITH the move's events — done in resolveSeatChoice's chain
+ * (which has the live events/ctx) or, when there is no wound step, here.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The move-context wrapper (read for events + ctx.playOrder).
+ * @param playerID - The player who played the card (the active player).
+ * @param cardId - The played card (recorded for the neutral park log).
+ * @param _effect - The `{ type: 'random-acts' }` descriptor (no magnitude).
+ */
+function heroEffectRandomActs(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-683 / D-24500 — if the Wound supply can offer a Wound, the optional
+  // gain-to-hand is a real choice, so park it (it chains the pass on resolve). The wound
+  // choice is active-scoped, so no stage ride (events undefined).
+  if (G.piles.wounds.length > 0) {
+    parkSeatChoice(G, undefined, buildRandomActsWoundChoice(playerID));
+    pushLog(G,
+      `Player ${playerID} may gain a Wound to their hand before the pass (${formatCardRef(G.cardDisplayData, cardId)}).`,
+      'neutral',
+      cardId,
+    );
+    return;
+  }
+  // why: no Wound to gain (empty supply) → skip step 1 and go straight to the pass. The
+  // pass needs the stage ride to admit non-active seats, so it uses the move's events.
+  const events = (ctx as { events?: unknown }).events as Parameters<typeof parkSeatChoice>[1];
+  const bareCtx = (ctx as { ctx?: { playOrder?: readonly string[] } }).ctx;
+  const playOrder = bareCtx?.playOrder ?? Object.keys(G.playerZones).sort();
+  const passChoice = buildPassLeftChoice(G, playOrder);
+  if (passChoice === undefined) {
+    // why: solo (playOrder < 2) or no seat holds a card, and no Wound to gain — the
+    // ability does nothing; log the reason so it is not a silent no-op.
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} did nothing — the Wound supply is empty and there is no other player to pass to.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  parkSeatChoice(G, events, passChoice);
+  pushLog(G,
+    `Each player must choose a card to pass to the player on their left (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'neutral',
+    cardId,
+  );
+}
+
+/**
  * Park handler for the `optional-ko-shield-officer` hero keyword (WP-681 / D-24498).
  *
  * Nick Fury's "Battlefield Promotion" — "You may KO a [team:shield] Hero from your hand
@@ -3855,6 +4016,16 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // parks a PendingUndercoverChoice (≥2 eligible); 'undercover-officer-stack' is deterministic.
   'undercover-hand-shield-hero': heroEffectUndercoverHandShieldHero,
   'undercover-officer-stack': heroEffectUndercoverOfficerStack,
+  // why: WP-683 / D-24500 — Deadpool's Here, Hold This for a Second ("A Villain of your
+  // choice captures a Bystander."): attaches via attachBystanderToVillain (Mastermind
+  // fallback at 0 Villains, empty-supply no-op, 1 → auto, ≥2 → active-scoped PendingSeatChoice
+  // kind 'here-hold-this' resolved by resolveSeatChoice).
+  'here-hold-this': heroEffectHereHoldThis,
+  // why: WP-683 / D-24500 — Deadpool's Random Acts of Unkindness ("You may gain a Wound to
+  // your hand. Then each player passes a card from their hand to the player on their left."):
+  // parks an active-scoped wound choice (kind 'random-acts-wound') that chains a simultaneous
+  // multi-seat pass-left (kind 'random-acts-pass-left'), both resolved by resolveSeatChoice.
+  'random-acts': heroEffectRandomActs,
   // why: WP-681 / D-24498 — Deadpool's Do-Over ("discard the rest of your hand and draw
   // four cards", first-Hero-gated): parks a PendingDoOver resolved by resolveDoOver
   // (accept = discard hand + draw 4, or decline).

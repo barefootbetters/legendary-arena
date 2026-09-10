@@ -352,7 +352,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "A Villain of your choice captures a Bystander."
+            "A Villain of your choice captures a Bystander. [keyword:here-hold-this]"
           ]
         },
         {
@@ -397,7 +397,7 @@
           "attack": "6",
           "recruit": null,
           "abilities": [
-            "You may gain a Wound to your hand. Then each player passes a card from their hand to the player on their left."
+            "You may gain a Wound to your hand. Then each player passes a card from their hand to the player on their left. [keyword:random-acts]"
           ]
         }
       ],
