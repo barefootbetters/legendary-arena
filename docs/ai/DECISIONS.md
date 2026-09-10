@@ -41378,4 +41378,62 @@ pass-left)**, which supply the consumers.
 
 **Status:** Active.
 
+### D-24503 — Final Blow optional-rule setup flag: an additive optional match-setup envelope field the engine consumes, stored omit-when-off on G (Active 2026-09-10 — WP-686 / EC-723)
+
+**Decision.** The optional **Final Blow** Mastermind rule (rulebook "Final Blow
+(Optional)": after the four Tactics are gone the player must still fight the
+Mastermind card itself a fifth, final time to put it into their Victory Pile and
+win) is marked on a match by an additive **optional envelope** field
+`finalBlow?: boolean` (default `false`). It follows the additive + backward-
+compatible envelope-extensibility path of `heroSelectionMode` (D-9301),
+`supportPools` (D-24194), and `heroAlternateIds` (D-24212): `schemaVersion` stays
+`"1.0"`, and the 9-field `MatchSetupConfig` composition lock is untouched
+(`finalBlow` is envelope/payload-level, never composition-level).
+
+**Divergence from prior envelope fields — the engine consumes it.** Every prior
+envelope field is engine-inert. `finalBlow` is not: WP-687's endgame gate reads
+it. Because the server forwards `requestBody.setupData` verbatim to boardgame.io
+(`matchGate.routes.ts`; no server reshaping), the flag rides **inside the setup
+payload**. So the engine payload alias widens to
+`MatchConfiguration = MatchSetupConfig & { readonly finalBlow?: boolean }` (the
+composition type `MatchSetupConfig` is unchanged), and the sole `G` constructor
+`buildInitialGameState` — not `game.ts setup()`, which only delegates — reads
+`config.finalBlow` (its `config` param widened to `MatchConfiguration`).
+
+**Storage is omit-when-off (load-bearing for determinism).** `G.finalBlow?` is
+**optional** and seeded **only when `config.finalBlow === true`**
+(conditional spread), never written as `false`/`undefined`. Both whole-`G` hash
+oracles — `computeStateHash` (the `PRE_WP080` oracle) and `hashGameState` (the
+`finalStateHash` oracle) — serialize the entire state, and `JSON.stringify` drops
+absent keys, so a match whose `setupData` omits `finalBlow` (every committed
+replay/sentinel fixture) is byte-identical to pre-WP-686: **no oracle moves, no
+re-pin.** Verified empirically — the engine suite (incl. the sentinel
+`finalStateHash`) stays green with three new setup tests; the sentinel hash
+`deba0f43…` is unchanged. (`G.matchConfiguration` faithfully echoes whatever
+`setupData` carried, so a client that sends an explicit `finalBlow: false` records
+it there; the WP-687 lobby toggle should therefore omit the flag when off to keep
+off-matches fully byte-identical. No committed fixture sends it, so this does not
+affect any pinned hash.)
+
+**Registry-side validation.** `SetupEnvelope` gains `finalBlow?: boolean`; the
+`.strict()` zod `EnvelopeSchema` gains `finalBlow: z.boolean().optional()` (a
+non-boolean is rejected `wrong_type` on the `finalBlow` field; absent is valid).
+The registry validator rebuilds its returned `value` field-by-field, so
+`finalBlow` is echoed there too (the `heroAlternateIds` / `supportPools`
+silent-vanish precedent) — this required adding `setupContract.validate.ts` to the
+EC-723 allowlist as an inline amendment (a file-allowlist omission the execution
+surfaced; no scope-category change). The engine's own `validateMatchSetup` is
+**not** changed: it ignores extra envelope fields and its stripped `value` is not
+the storage source (the raw payload flows to `buildInitialGameState`).
+
+**Scope.** INERT — WP-686 stores the flag and changes no gameplay. The endgame
+gate (defer `MASTERMIND_DEFEATED`, the fifth fight, the Mastermind-card→Victory-
+Pile award, the `UIMastermindState` surface) is D-24504 / WP-687.
+
+**Layer / boundary.** Registry provides data; engine decides; server wires (no
+server change). `G` stays JSON-serializable. No pay-to-win (NG-1 uncrossed — a
+difficulty variant chosen by the group, never a paid advantage).
+
+**Status:** Active.
+
 Protect this file.
