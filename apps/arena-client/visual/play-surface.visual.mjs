@@ -137,16 +137,45 @@ function measureInvariants() {
   };
 }
 
+/**
+ * Load the fixture route in a page and wait for the board to mount. Uses a
+ * generous timeout because a COLD `vite` dev server compiles the app's modules
+ * on the first browser request (hundreds of modules — can take far longer than a
+ * warm server). If the board never mounts, dump what DID render so a failure is
+ * self-diagnosing instead of a bare selector timeout.
+ */
+async function loadBoard(page, baseUrl, timeoutMs) {
+  await page.goto(baseUrl + FIXTURE_PATH, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+  try {
+    await page.waitForSelector('.play-desktop__stage', { timeout: timeoutMs });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      hasPlayDesktop: !!document.querySelector('.play-desktop'),
+      hasPlayMobile: !!document.querySelector('.play-mobile'),
+      hasEmptyMatch: !!document.querySelector('[data-testid="play-empty-match"]'),
+      innerWidth: window.innerWidth,
+      bodyTextStart: document.body.innerText.slice(0, 160),
+    }));
+    console.error('  .play-desktop__stage never mounted. Page state:', JSON.stringify(diagnostic));
+    throw error;
+  }
+}
+
 async function run() {
   await mkdir(SCREENSHOT_DIR, { recursive: true });
   const { baseUrl, stop } = await startServer();
   const browser = await chromium.launch();
   const failures = [];
   try {
+    // why: warm the cold dev server ONCE (first-request compile is the slow part);
+    // give it 90s. After this the per-viewport loads below are fast.
+    const warmup = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    await loadBoard(warmup, baseUrl, 90_000);
+    await warmup.close();
+
     for (const viewport of VIEWPORTS) {
       const page = await browser.newPage({ viewport, deviceScaleFactor: 2 });
-      await page.goto(baseUrl + FIXTURE_PATH, { waitUntil: 'domcontentloaded', timeout: 20_000 });
-      await page.waitForSelector('.play-desktop__stage', { timeout: 20_000 });
+      await loadBoard(page, baseUrl, 30_000);
       // why: let useScaleToFit settle + fonts render before measuring/shooting.
       await page.waitForTimeout(700);
 
