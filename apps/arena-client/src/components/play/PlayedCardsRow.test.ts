@@ -35,6 +35,33 @@ describe('PlayedCardsRow', () => {
     assert.equal(cards[0]!.attributes('data-card-id'), 'cap-rogers');
   });
 
+  test('WP-685: a long turn renders EVERY played card (the in-play well scrolls in-zone; never sliced)', () => {
+    // why: a long turn (8-10 played cards) must not crush the City / HQ; the well
+    // binds the full inPlayCards array and scrolls, so all cards render.
+    const eight = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const wrapper = mount(PlayedCardsRow, { props: { inPlayCards: eight } });
+    assert.equal(wrapper.findAll('[data-testid="play-played-card"]').length, 8);
+  });
+
+  test('WP-685: an empty in-play well shows a "play here" target, enabled on the viewer main step', () => {
+    const wrapper = mount(PlayedCardsRow, {
+      props: { inPlayCards: [], currentStage: 'main', isViewerTurn: true },
+    });
+    const target = wrapper.find('[data-testid="play-played-empty"]');
+    assert.equal(target.exists(), true);
+    assert.equal(target.attributes('data-can-play'), 'true');
+  });
+
+  test('WP-685: the empty in-play target is disabled off the main step', () => {
+    // why: D-24502 lock 5 — the landing affordance is disabled off-turn / off-main.
+    const wrapper = mount(PlayedCardsRow, {
+      props: { inPlayCards: [], currentStage: 'start', isViewerTurn: true },
+    });
+    const target = wrapper.find('[data-testid="play-played-empty"]');
+    assert.equal(target.attributes('data-can-play'), 'false');
+    assert.equal(target.attributes('aria-disabled'), 'true');
+  });
+
   test('uses inPlayDisplay names when provided (WP-128 parallel array)', () => {
     const wrapper = mount(PlayedCardsRow, {
       props: {

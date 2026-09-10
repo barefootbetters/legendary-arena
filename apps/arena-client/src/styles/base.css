@@ -69,6 +69,11 @@
   --card-width-sm: clamp(60px, 4.4vw, 76px);
   --card-width-md: clamp(90px, 6.6vw, 112px);
   --card-width-lg: clamp(120px, 8.8vw, 150px);
+  /* why: WP-685 / D-24502 — the fixed width of the spatial board's right rail
+     (opponent panels + game log). Fluid within a bound so it holds ~two opponent
+     mini-panels wide at the 1280 authoring floor and grows modestly on wider
+     monitors without stealing width from the dense City / HQ rows. */
+  --play-rail-width: clamp(200px, 15vw, 260px);
 }
 
 /* why: no @media (prefers-color-scheme: dark) override here. Brand
