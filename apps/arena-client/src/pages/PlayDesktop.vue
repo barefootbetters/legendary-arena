@@ -1155,6 +1155,19 @@ export default defineComponent({
   --play-gutter: 10px;
 }
 
+/* why: WP-689 / D-24506 — the TurnActionBar is `position: sticky; bottom: 0`
+   (TurnActionBar.vue). Inside this scaled, absolutely-positioned stage a
+   `transform` ancestor becomes the sticky containing block, so `bottom: 0` pins
+   the bar mid-stage and it overlaps the cockpit (played row / economy / victory
+   pile) — the WP-688 regression the full-res 1280×720 shot caught. The fitted
+   board never page-scrolls, so sticky has no job here: pin the bar to normal flow
+   so it sits at the bottom of the cockpit. Stage-scoped via :deep() so
+   TurnActionBar.vue is untouched and keeps its sticky behaviour on <PlayMobile>
+   and any non-fit surface. */
+.play-desktop__stage :deep(.turn-action-bar) {
+  position: static;
+}
+
 /* why: WP-685 / D-24502 — the spatial board is a two-column grid: the shared
    board + player cockpit in the main column, the opponent panels + game log in a
    fixed-width right RAIL. The rail reclaims the vertical height the old vertical

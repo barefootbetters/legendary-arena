@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
-    "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\""
+    "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\"",
+    "test:visual": "vite build && node visual/play-surface.visual.mjs",
+    "test:visual:run": "node visual/play-surface.visual.mjs"
   },
   "dependencies": {
     "@legendary-arena/preplan": "workspace:*",
@@ -32,6 +34,7 @@
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^24.1.0",
+    "playwright": "^1.48.0",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5",
     "vite": "^5.3.1",

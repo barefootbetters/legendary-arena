@@ -70,3 +70,8 @@ docs/ai/audits/architecture-inventory-latest.md
 # with every run; pruning is operator-driven. Never committed; WP-195
 # consumes manifests in-place rather than pulling them from history.
 sweep-output/
+
+# WP-689 — the play-surface Playwright visual guard writes full-res PNG frames
+# here as artifacts (evidence / local inspection). Assertion-based check, so the
+# images are never a committed golden baseline; regenerated on every run.
+apps/arena-client/visual/__screenshots__/
