@@ -7,9 +7,9 @@
       "executable": 285,
       "deferred": 16,
       "condition": 27,
-      "unsupported": 323,
+      "unsupported": 322,
       "unmarked": 35,
-      "subsystem": 1
+      "subsystem": 2
     },
     "distinctMechanics": 141
   },
@@ -3726,10 +3726,10 @@
       "heroName": "Spider-Man",
       "set": "core",
       "mechanic": "reveal-count",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "subsystem",
+      "wp": "WP-478",
+      "decision": "D-24514",
+      "handler": "setup:reveal-count-modifier",
       "designs": [
         {
           "slug": "the-amazing-spider-man",
