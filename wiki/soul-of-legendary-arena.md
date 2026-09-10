@@ -704,6 +704,61 @@ The purpose of revealing a flaw is to **illuminate the path upward, not to
 extinguish it** — revelation, warning, consequence, repentance, redemption,
 rather than exposure, deconstruction, dismissal, replacement.
 
+### The burden you didn't earn — suffering that forms, not suffering that excuses
+
+The [flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)
+is one half of "difficulty is not the enemy" — failure a person *caused*,
+recorded as warning and instruction. The other half is harder, because it is not
+about a wrong you did but a wrong done *to* you: the burden you did not earn. And
+here the source material's deepest figure is not a flawed man at all.
+
+The sinless one carries the weight of the world. No one in the whole book has a
+better claim to unfairness — and he makes no claim at all. That is the strongest
+counterexample the tradition offers, and its power is precisely that it does not
+depend on the grievance being false. It was unfair, and he bore it anyway.
+
+What he does *not* do is instructive twice over, because he refuses both of the
+easy exits:
+
+- **Not the victim.** He does not organize around the injustice, nurse it, or let
+  it become his identity and his excuse. The legitimate grievance does not harden
+  into a permanent claim against the Father.
+- **Not the stoic.** He does not pretend it costs nothing. Gethsemane is a real
+  ask — "O my Father, if it be possible, let this cup pass from me: nevertheless
+  not as I will, but as thou wilt"
+  ([Matthew 26:39](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p39#p39),
+  KJV; cf. [Luke 22:42](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/22?lang=eng&id=p42#p42)).
+  He names the cost aloud, asks to be spared, and is refused.
+
+Between those two refusals is the third thing, and scripture states it with
+startling plainness: "Though he were a Son, yet learned he obedience by the
+things which he suffered"
+([Hebrews 5:8](https://www.churchofjesuschrist.org/study/scriptures/nt/heb/5?lang=eng&id=p8#p8),
+KJV). Even he was *formed* by what he carried. The carrying itself did something —
+which is "difficulty is not the enemy" driven to its deepest possible scale.
+
+The lesson this hands a story — and a player, and a person — reframes the
+question the injustice seems to pose. The standard is not *whether you were
+wronged*; nearly everyone can answer that yes. The standard is *what you do
+carrying it*. That reframing holds up better than any argument that turns on
+proving a grievance false, because it survives granting every grievance: concede
+the wrong in full, and the real question is still standing, and it still has
+teeth — a rule for the one carrying the burden, not a weapon to aim at someone
+else.
+
+This is the same [receive, become, pass on](#the-upward-pull--what-the-game-is-for)
+motion the page is built on, seen at the "become" step under the worst possible
+conditions. A hero is not formed only by the good gifts he receives; he is formed
+by what he *suffers* and refuses to let make him small. It is why the game's
+heroes are allowed real loss, real cost, and real defeat along the way —
+[Steve Rogers formed by poverty and grief before the serum ever found
+him](#three-stories-that-hold-the-lesson) is the small version; Gethsemane is the
+whole of it. Suffering that *excuses* is the downward pull wearing a wound;
+suffering that *forms* is the upward pull paying its steepest price.
+
+> The injustice is not the question — almost everyone has one. What you do
+> carrying it is. Not the exit; the next step.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -1387,6 +1442,88 @@ antagonist's side: render the evil faithfully — cunning, not cartoon — and g
 the heroes the real tools to *see* the move and answer it. A good-versus-evil
 game earns its stakes only if the evil is genuinely worth beating.
 
+### "Give us a king": the throne a people asks for
+
+Every Scheme named so far is *taken*. The Mastermind seizes the channel,
+erases the memory, splits the coalition; the throne is something evil reaches
+for and the heroes must defend. But the oldest political warning in scripture
+describes the opposite motion, and it is the more unsettling one: a throne the
+people *ask for* — a Scheme with no coup, because the coup is a petition.
+
+In [1 Samuel 8](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng)
+Israel comes to the prophet Samuel and asks him to "make us a king to judge us
+like all the nations"
+([8:5](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng&id=p5#p5),
+KJV). Samuel reads them the price in advance, and the warning is one relentless
+verb — *take*:
+
+| What the king will take | Text (1 Samuel 8, KJV) |
+|---|---|
+| Your sons | "for his chariots… and to be his horsemen; and some shall run before his chariots" (8:11) |
+| Your daughters | "to be confectionaries, and to be cooks, and to be bakers" (8:13) |
+| Your land | "your fields, and your vineyards, and your oliveyards, even the best of them" (8:14) |
+| A tenth of everything | "the tenth of your seed… and of your sheep: and ye shall be his servants" (8:15, 17) |
+
+Then the line that seals it: "ye shall cry out in that day because of your king
+which ye shall have chosen you; and the LORD will not hear you in that day"
+([8:18](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng&id=p18#p18)).
+They hear the whole bill of costs read aloud — and choose it anyway: "Nay; but
+we will have a king over us; That we also may be like all the nations"
+([8:19–20](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng&id=p19-p20#p19)).
+
+God's own frame for what they were doing is the key to reading it as this page
+reads everything else. "They have not rejected thee," He tells Samuel, "but they
+have rejected me, that I should not reign over them"
+([8:7](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng&id=p7#p7)).
+The demand for a visible authority was the *abandonment of an invisible
+responsibility* — a whole people trading the burden of governing themselves
+under God for one man who would carry it, and take from them for the privilege.
+
+That is the [receive, become, pass on](#the-upward-pull--what-the-game-is-for)
+motion failing a third way. The [fence](#the-fence) is a man's protection
+refused; the [harvest](#the-harvest) is a woman's future refused; *this* is
+**responsibility itself refused** — the agency a free people is meant to carry,
+handed up the ladder to be rid of it. And the stated reason is the tell: not a
+problem they could not solve, but a wish to "be like all the nations." It is the
+[novelty lever](#the-masterminds-common-tactics-the-grammar-of-manipulation) run
+at the scale of a whole polity — everyone else has a throne, so having none feels
+like a defect to fix.
+
+The discipline of this page forbids the lazy reading, though, and the honest
+version is stronger. Samuel's warning is *not* "never crown anyone." Some
+concentration of force genuinely does reduce private violence; a people with no
+central authority at all is not thereby safe. The warning is narrower and
+harder: **count the cost before you ask, and know that you asked** — because
+what the throne takes, "the LORD will not hear you" to give back. Power
+surrendered by petition is not returned by petition. That is the same
+[who-benefits](#five-tells-for-naming-the-mastermind) test the page runs
+everywhere, turned forward in time: not *who seized this?* but *what will it
+cost, and can it be undone?*
+
+Read that way, the chapter is the missing first act of a story the page already
+tells. The king Israel demands here is the throne that, generations on,
+[Rehoboam inherits and abuses](#three-stories-that-hold-the-lesson) in 1 Kings
+12 — his "heavy yoke" and his "scorpions" are Samuel's *he-will-take* grown to
+full height. The demand and the tyranny are one arc: a people asks for a throne
+to be spared the weight of self-rule, and their grandchildren are crushed under
+the throne they asked for. The freely-offered crown does not stay a convenience;
+it becomes the [concentrated, unaccountable
+power](#the-real-evil-behind-the-red-skull) the page names as the real evil
+behind every villain's mask. **Abdication is how that power gets built without a
+coup.**
+
+The modern shapes are left as shapes, faction-blind, exactly as the rest of the
+cluster leaves them: any time a people is urged to hand a monopoly — over force,
+over provision, over speech, over the raising of its own children — to a central
+authority so that no one need carry the burden themselves, *and to feel that
+surrender as safety rather than cost*, the tactic is 1 Samuel 8, whatever flag
+flies over it. The Scheme does not need to storm the throne when it can persuade
+the crowd to build one and climb down from their own.
+
+> A Scheme seizes a throne; the subtler Scheme is *handed* one. "Give us a king"
+> is the Mastermind's cheapest victory — the throne the heroes themselves vote to
+> build, for the comfort of no longer having to stand.
+
 ### Contested memory: the hidden hand and the manufactured icon
 
 The hardest test of this page's discipline is a case where the *same source*
@@ -1606,6 +1743,20 @@ claim at a safe distance — it stands on it.
   overstate the cultural claim" below, the load-bearing assertion stays the
   structural one — erase-the-inheritance is the same move whether the target
   is a hero, a sacred text, or a nation's memory of itself.
+- **The "Give us a king" section affirms the scripture and leaves the modern
+  mapping as shape, not roster.**
+  [That section](#give-us-a-king-the-throne-a-people-asks-for) affirms 1 Samuel 8
+  as *true*, in the same posture as the page's other scriptural claims (per "the
+  scriptural claim is affirmed" below): a people trading self-rule for a visible
+  throne is the abandonment of a real responsibility, and it carries a cost that
+  is not easily undone. What it does **not** do is name a partisan roster or
+  adjudicate any contemporary policy — the central-authority parallels are stated
+  as *shape*, faction-blind, exactly as
+  [the Hanson episode](#the-masterminds-scheme-a-nation-that-forgot-its-own-story)
+  and the Mastermind-tactics sketches are. And the section is explicit that
+  Samuel's warning is *not* "never centralize" — some concentration of force
+  genuinely reduces private violence; the load-bearing claim is *count the cost
+  and know you asked*, not a blanket verdict against every state.
 - **The Mastermind-tactics section is a design *lens*, not cards, data, or
   governance.** [The tactics catalog](#the-masterminds-common-tactics-the-grammar-of-manipulation)
   attributes Chase Hughes's F.A.T.E. framework as *his* argument (cited, not
@@ -1651,10 +1802,18 @@ claim at a safe distance — it stands on it.
   is treated differently on purpose: the page affirms as *true*, not as one
   reading among many, that honoring one's fathers is right and scorning
   their counsel brings ruin (Exodus 20:12; 1 Kings 12:6–14, KJV; parallel
-  2 Chronicles 10). The flawed-hero accounts (2 Samuel 11–12; Numbers
+  2 Chronicles 10), and that trading self-rule for a visible throne is the
+  abandonment of a real responsibility that carries a cost not easily undone
+  (1 Samuel 8, KJV). The flawed-hero accounts (2 Samuel 11–12; Numbers
   20:7–12; Matthew 26:69–75) are handled the same way — recorded faithfully,
   greatness and failure both, as warning and instruction rather than as
-  proof that virtue is a mask. That the essay states this conviction plainly is
+  proof that virtue is a mask. The
+  [undeserved-suffering account](#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses)
+  (Gethsemane, Matthew 26:39 / Luke 22:42; Hebrews 5:8) is likewise affirmed as
+  *true*: Christ carried an unfair burden he had every claim to refuse, was
+  neither victim nor stoic, and was formed by what he suffered — the reframing
+  that the standard is what you do carrying an injustice, not whether you were
+  wronged, is stated as conviction, not one reading among many. That the essay states this conviction plainly is
   deliberate and set by the operator who owns the page; the secular reflex
   to relativize it is the very thing the
   [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
@@ -1737,6 +1896,15 @@ claim at a safe distance — it stands on it.
   divides; the root of the honour-thy-father theme this page affirms. See
   also Exodus 20:12 — the commandment given with a promise, and
   Matthew 20:25–28 — Christlike servant leadership.
+- [1 Samuel 8](https://www.churchofjesuschrist.org/study/scriptures/ot/1-sam/8?lang=eng)
+  (KJV, Church of Jesus Christ of Latter-day Saints scripture text) — Israel
+  demands a king "like all the nations"; Samuel's *he-will-take* warning
+  (8:11–17), the "ye shall cry out… and the LORD will not hear you" cost (8:18),
+  and "they have not rejected thee, but they have rejected me" (8:7). The
+  demand-side root of the throne
+  [Rehoboam](#three-stories-that-hold-the-lesson) later abuses (1 Kings 12);
+  affirmed by the page, behind
+  [the "Give us a king" section](#give-us-a-king-the-throne-a-people-asks-for).
 - Flawed-hero scriptures behind
   [The flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)
   (KJV) —
@@ -1748,6 +1916,17 @@ claim at a safe distance — it stands on it.
   [Matthew 26:69–75](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p69-p75#p69)
   (Peter's denial). Preserved as recorded — greatness and failure both — to
   show failure that teaches rather than failure that dismisses.
+- Undeserved-suffering scriptures behind
+  [The burden you didn't earn](#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses)
+  (KJV) —
+  [Matthew 26:39](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p39#p39)
+  and [Luke 22:42](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/22?lang=eng&id=p42#p42)
+  (Gethsemane — "let this cup pass from me: nevertheless not as I will, but as
+  thou wilt"), and
+  [Hebrews 5:8](https://www.churchofjesuschrist.org/study/scriptures/nt/heb/5?lang=eng&id=p8#p8)
+  ("yet learned he obedience by the things which he suffered"). Affirmed by the
+  page: the sinless one carried an unfair burden and was formed by it — not
+  victim, not stoic.
 - Greg Pak on the Red Skull — the
   [*Red Skull: Incarnate* (2011) #1 issue page (afterword)](https://www.marvel.com/comics/issue/34598/red_skull_2011_1)
   and the [#5 issue page (back-cover passage)](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
