@@ -74,6 +74,13 @@
      mini-panels wide at the 1280 authoring floor and grows modestly on wider
      monitors without stealing width from the dense City / HQ rows. */
   --play-rail-width: clamp(200px, 15vw, 260px);
+  /* why: WP-688 / D-24502 lock 1 — the fixed authoring width the desktop play
+     board (<PlayDesktop> stage) is laid out at, then SCALED to fit the viewport
+     (useScaleToFit). Sized to the 1280×720 floor (1280 minus the side gutters) so
+     the board fits that floor at ~1:1 and scales up on wider screens rather than
+     reflowing. Size token only — no color, so the "no raw hex" color rule above
+     does not apply. Consumed only inside .play-desktop__stage. */
+  --play-authoring-width: 1500px;
 }
 
 /* why: no @media (prefers-color-scheme: dark) override here. Brand

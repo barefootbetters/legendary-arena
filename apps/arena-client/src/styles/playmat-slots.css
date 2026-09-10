@@ -163,6 +163,47 @@
   padding: 0.85rem 1rem !important;
 }
 
+/* ── WP-688 / D-24502 lock 1: desktop board-fit compaction ───────────────────
+   The empty-slot min-heights (7rem / 9.5rem) and the frosted-panel paddings above
+   are sized for comfortable standalone zones; summed down the <PlayDesktop> main
+   column they make the board ~1330px tall, so the scale-to-fit had to shrink it
+   past readability to fit 1280×720. These overrides compact ONLY the desktop board
+   (every selector is prefixed with `.play-desktop__stage`, which exists only on the
+   desktop surface), so the shared zone treatment and the entire <PlayMobile> surface
+   keep the original spacing. Higher specificity + !important to win over the base
+   !important rules above. The board then fits at a readable scale (~0.7× at 1280).*/
+.play-viewport .play-desktop__stage .city-space-empty,
+.play-viewport .play-desktop__stage .city-space-deck,
+.play-viewport .play-desktop__stage .hq-slot-deck {
+  min-height: 3.6rem !important;
+}
+
+.play-viewport .play-desktop__stage .hq-slot-empty {
+  min-height: 4.2rem !important;
+}
+
+.play-viewport .play-desktop__stage .shared-decks__cell,
+.play-viewport .play-desktop__stage .master-strike-pile,
+.play-viewport .play-desktop__stage .scheme-twist-pile,
+.play-viewport .play-desktop__stage .play-desktop__mastermind-zone,
+.play-viewport .play-desktop__stage .play-desktop__scheme-zone,
+.play-viewport .play-desktop__stage .play-desktop__hq-zone,
+.play-viewport .play-desktop__stage .ko-pile,
+.play-viewport .play-desktop__stage [class*="victory"],
+.play-viewport .play-desktop__stage [class*="your-deck"],
+.play-viewport .play-desktop__stage [class*="your-discard"] {
+  padding: 0.25rem 0.4rem !important;
+}
+
+.play-viewport .play-desktop__stage .top-hud-bar,
+.play-viewport .play-desktop__stage .turn-action-bar,
+.play-viewport .play-desktop__stage .economy-bar,
+.play-viewport .play-desktop__stage .hand-row,
+.play-viewport .play-desktop__stage .played-row,
+.play-viewport .play-desktop__stage .play-desktop__log {
+  padding: 0.25rem 0.45rem !important;
+}
+
 /* ── Dark theme (day/night, html[data-theme="dark"]) ────────────────────────
    The frosted panels above are hardcoded light (to mask the mat) and rely on
    the app's dark text. Under the dark brand-token palette the text flips light,

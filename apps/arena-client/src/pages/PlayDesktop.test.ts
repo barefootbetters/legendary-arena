@@ -249,6 +249,29 @@ describe('PlayDesktop (WP-129)', () => {
     assert.equal(rail.find('[data-testid="play-desktop-log"]').exists(), true);
   });
 
+  test('WP-688: the board renders inside the scale-to-fit stage (fit container + stage wrap the whole board)', () => {
+    // why: D-24502 lock 1 — the board is authored inside `.play-desktop__stage`
+    // (fixed width) nested in `.play-desktop__fit` (the viewport box) and scaled
+    // to fit so it never page-scrolls. Assert both wrappers render and the shared
+    // board lives inside the stage. The actual fit/scale is layout-pixel behavior
+    // verified live (D-24026); jsdom has no layout engine, so this guards only the
+    // structural wiring.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: noopSubmitMove },
+    });
+    const fit = wrapper.find('.play-desktop__fit');
+    assert.equal(fit.exists(), true, 'the fit container renders');
+    const stage = fit.find('.play-desktop__stage');
+    assert.equal(stage.exists(), true, 'the authoring stage renders inside the fit container');
+    // The shared board + cockpit live inside the scaled stage.
+    assert.equal(stage.find('[data-testid="play-city-row"]').exists(), true);
+    assert.equal(stage.find('[data-testid="play-hand-row"]').exists(), true);
+    assert.equal(stage.find('[data-testid="play-desktop-rail"]').exists(), true);
+  });
+
   // why: a spectator / rewound-autoplay frame is audience-filtered (D-16303),
   // so NO player exposes handCards and `viewer` resolves to null. The shared
   // board MUST still render (the rewind blank-screen bug); only the personal
