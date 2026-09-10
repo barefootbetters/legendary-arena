@@ -325,9 +325,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // mechanics. Net: totalObs 2355 -> 2833; percentResolved 31.3 -> 25.3 (the larger denominator
   // dilutes the resolved share — a sweep-trajectory artifact, not a regression). Honest gauge,
   // deterministic — CI computes the same 2833 / 25.3.
+  // 2026-09-10 (WP-692 / D-24509, re-pin): the two free-recruit-from-HQ tactics
+  // (Dark Technology, Bitter Captor) ship executable, so the regenerated
+  // runtime-observed-hollows feed gains 2 distinct mechanics (28 -> 30) and the
+  // fixed-seed sweep's trajectories shift slightly. Net: totalObs 2833 -> 2831;
+  // percentResolved 25.3 -> 25.2 (a sweep-trajectory artifact, not a regression).
+  // Honest gauge, deterministic — CI computes the same 2831 / 25.2.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2833);
-  assert.equal(view.percentResolved.value, 25.3);
+  assert.equal(view.totalObs.value, 2831);
+  assert.equal(view.percentResolved.value, 25.2);
   assert.ok(view.remaining.value.length > 0);
 });
 
