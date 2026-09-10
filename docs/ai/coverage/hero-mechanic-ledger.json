@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 685,
+    "totalRows": 687,
     "byStatus": {
-      "executable": 283,
+      "executable": 285,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
       "unmarked": 35,
       "subsystem": 1
     },
-    "distinctMechanics": 139
+    "distinctMechanics": 141
   },
   "rows": [
     {

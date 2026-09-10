@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1860,
+    "totalEntries": 1862,
     "byScope": {
-      "hero": 685,
+      "hero": 687,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 419,
+      "executable": 421,
       "deferred": 16,
       "condition": 27,
       "unsupported": 324,
