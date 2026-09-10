@@ -21,7 +21,7 @@ source:
   - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
   - ../apps/wiki-viewer/layouts/shortcodes/swatch.html
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-09-05
+last-reviewed: 2026-09-09
 ---
 
 # Ewiki Authoring
