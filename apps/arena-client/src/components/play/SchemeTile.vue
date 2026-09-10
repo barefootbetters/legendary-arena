@@ -35,15 +35,30 @@ export default defineComponent({
     },
     /**
      * Total twist threshold for the scheme (e.g., 8 in "Capture Five
-     * Bystanders" with 8 twist cards). Owned by the scenario; passed in
-     * by the parent which knows the active scenario.
+     * Bystanders" with 8 twist cards). The parent passes the projected
+     * `progress.schemeTwistThreshold`, which is optional — when it is
+     * absent (an older fixture or a recorded replay), the tile shows the
+     * bare twist count with no denominator rather than a fake one.
      */
     twistThreshold: {
-      type: Number,
-      required: true,
+      type: Number as PropType<number | undefined>,
+      required: false,
+      default: undefined,
     },
   },
   setup(props, { emit }) {
+    // why: mirror TopHudBar.twistProgressLabel — the denominator is the
+    // projected `schemeTwistThreshold`, which varies by scenario (Civil War's
+    // is 5, the unconfigured fallback is 7), so it is never hardcoded. When the
+    // projection omits it, show the bare count; a defaulted denominator (the
+    // former hardcoded `/8`) is the original defect this fix removes.
+    function twistProgressLabel(): string {
+      if (props.twistThreshold === undefined) {
+        return `Twists: ${props.scheme.twistCount}`;
+      }
+      return `Twists: ${props.scheme.twistCount}/${props.twistThreshold}`;
+    }
+
     function schemeCardDisplay(): UICardDisplay {
       if (props.scheme.display !== undefined && props.scheme.display !== null) {
         return props.scheme.display;
@@ -73,7 +88,7 @@ export default defineComponent({
       });
     }
 
-    return { schemeCardDisplay, onRead };
+    return { schemeCardDisplay, onRead, twistProgressLabel };
   },
 });
 </script>
@@ -86,7 +101,7 @@ export default defineComponent({
   >
     <CardTile :display="schemeCardDisplay()" size="md" :show-cost="false" :show-label="true" />
     <p class="scheme-tile__progress" data-testid="play-scheme-twist-progress">
-      Twists: {{ scheme.twistCount }}/{{ twistThreshold }}
+      {{ twistProgressLabel() }}
     </p>
     <!-- why: the scheme's twist + win-condition rules open in the shared
          CardReaderModal instead of rendering inline, keeping the tile short. -->

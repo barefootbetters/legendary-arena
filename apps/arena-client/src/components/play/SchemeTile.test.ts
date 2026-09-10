@@ -20,7 +20,7 @@ function scheme(over: Partial<UISchemeState> = {}): UISchemeState {
 }
 
 describe('SchemeTile', () => {
-  test('renders the twist progress fraction', () => {
+  test('renders the twist progress fraction against the projected threshold', () => {
     const wrapper = mount(SchemeTile, {
       props: { scheme: scheme(), twistThreshold: 8 },
     });
@@ -28,6 +28,30 @@ describe('SchemeTile', () => {
       wrapper.find('[data-testid="play-scheme-twist-progress"]').text(),
       /Twists: 2\/8/,
     );
+  });
+
+  test('a non-8 projected threshold drives the denominator (never a hardcoded /8)', () => {
+    // why: Civil War's twist stack is 5, not 8; the tile must render the
+    // projected threshold, which is the whole point of this fix.
+    const wrapper = mount(SchemeTile, {
+      props: { scheme: scheme(), twistThreshold: 5 },
+    });
+    assert.match(
+      wrapper.find('[data-testid="play-scheme-twist-progress"]').text(),
+      /Twists: 2\/5/,
+    );
+  });
+
+  test('omits the denominator when the threshold is unprojected (bare count, no fake /8)', () => {
+    // why: `progress.schemeTwistThreshold` is optional (an older fixture or a
+    // recorded replay may omit it); the tile shows the bare count rather than a
+    // defaulted denominator — the original defect this fix removes.
+    const wrapper = mount(SchemeTile, {
+      props: { scheme: scheme() },
+    });
+    const text = wrapper.find('[data-testid="play-scheme-twist-progress"]').text();
+    assert.match(text, /Twists: 2\b/);
+    assert.ok(!text.includes('/'), `expected no denominator, got: ${text}`);
   });
 
   test('does NOT render scheme rules text inline (moved to the reader modal)', () => {
