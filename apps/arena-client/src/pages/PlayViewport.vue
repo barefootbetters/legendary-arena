@@ -548,6 +548,25 @@ export default defineComponent({
   min-height: 100vh;
 }
 
+/* why: WP-688 / D-24502 lock 1 — on DESKTOP the play area fills the flex gap the
+   app-shell (a flex column: brand header + flex:1 content + footer) leaves
+   between the header and footer, instead of forcing min-height:100vh. Below a
+   ~68px header and a ~55px footer, a 100vh play area guaranteed a page scroll no
+   matter how short the board — the structural half of Tex's sub-1366 scroll.
+   <PlayDesktop> then flex-fills this box and scales its board to fit it (no page
+   scroll). Scoped to ≥768px so the D-12909 <PlayMobile> surface keeps its own
+   min-height:100vh scrolling-column behavior BYTE-UNCHANGED. All the play-viewport
+   overlays (PlaymatBackground, banners, controls) are position:absolute/fixed, so
+   switching this box to a flex column only affects the in-flow board child. */
+@media (min-width: 768px) {
+  .play-viewport {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 /* why: WP-654 — position the shared final-turn banner as a fixed top-center
    overlay over the play surface (the banner-overlay precedent set by the other
    viewport-root banners, which own their own fixed positioning). Vue applies

@@ -127,6 +127,30 @@ Governance (not code): `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24505 land
 
 `apps/arena-client/src/composables/useViewport.ts`, every `<PlayMobile>` file, `SchemeTile.vue` / `TopHudBar.vue`, `CardTile.vue`, all skin assets, and `packages/**` / `apps/server/**` are **NOT** in scope. This WP declares **no** `01.5` runtime-wiring file. The `useScaleToFit` composable + test and the `playmat-slots.css` edit are **conditional** (used only if the fit needs them); whichever conditional files are / are not produced is recorded in the EC at execution.
 
+### Execution amendment (2026-09-10) — the flex-chain files
+
+Live verification (D-24026) surfaced that the page scroll was **structural**, not
+just tile-size: `.app-shell` is a flex column (brand header + `flex:1` content +
+footer) but `.play-viewport` forced `min-height: 100vh`, so below the header +
+footer the page always exceeded 100vh and scrolled regardless of board height — a
+blocker `<PlayDesktop>` cannot fix from inside the wrapper. Closing the fit
+therefore required two files beyond the original allowlist, both **App-layer
+arena-client presentation, no contract**, added as an inline allowlist amendment:
+
+- `apps/arena-client/src/pages/PlayViewport.vue` — **modified** — at `≥768px`,
+  `.play-viewport` fills the app-shell flex gap (`flex:1 1 auto; min-height:0`)
+  instead of forcing `100vh`. `≤767px` (mobile) is byte-unchanged.
+- `apps/arena-client/src/App.vue` — **modified** — at `≥768px` and scoped to the
+  two play routes (`main[data-route='play-fixture']` / `[data-route='live']`),
+  `<main>` becomes a `flex:1` column so the flex height reaches `.play-viewport`.
+  Every other route's `<main>` is unchanged.
+
+**Conditional files used at execution:** `useScaleToFit.ts` + `useScaleToFit.test.ts`
+(the scale stage uses JS measurement) and `playmat-slots.css` (desktop-board
+compaction) were **all used**. Both amendment files are `≥768px`-scoped (and
+`<main>` additionally play-route-scoped), so the D-12909 `<PlayMobile>` surface
+stays byte-unchanged (verified live at 375px).
+
 ---
 
 ## Contract

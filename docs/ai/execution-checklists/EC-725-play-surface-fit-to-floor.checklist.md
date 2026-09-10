@@ -38,6 +38,10 @@
 - `apps/arena-client/src/styles/playmat-slots.css` — **modified (conditional)** — board per-zone padding/label spacing tightened if token compaction is insufficient; frosted-panel + mask behavior preserved.
 - `docs/05-ROADMAP-MINDMAP.md` — **modified** — flip the WP-688 node `📝 → ✅`.
 
+### Execution record (2026-09-10)
+- **Conditional files USED:** `useScaleToFit.ts` + `.test.ts` (the JS scale stage) and `playmat-slots.css` (desktop-board compaction) — all used.
+- **Allowlist amendment (App-layer, no contract):** `apps/arena-client/src/pages/PlayViewport.vue` + `apps/arena-client/src/App.vue` were added. The fit's root cause was structural — the app-shell flex column had `.play-viewport` forcing `min-height:100vh` below a ~68px header + ~55px footer, guaranteeing a page scroll regardless of board height, which `<PlayDesktop>` cannot fix from inside the wrapper. At `≥768px`, `.play-viewport` and `<main>` (the latter scoped to the `play-fixture`/`live` routes) fill the app-shell flex gap instead of forcing 100vh. Both are `≥768px`-scoped so the D-12909 `<PlayMobile>` surface is byte-unchanged (verified live at 375px). Recorded in WP-688 §Execution amendment + D-24505.
+
 ## After Completing
 - [ ] `pnpm -r build` exits 0.
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0 (vue-tsc — REQUIRED for arena-client).

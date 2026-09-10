@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-688 — Play-Surface Fit-to-Floor: `<PlayDesktop>` fits 1280×720 with no page scroll (EC-725 / D-24505) (2026-09-10)
+
+The desktop play surface now **fits the 1280×720 authoring floor with no page
+scroll** and scales up (never rewraps) on wider screens — realizing **D-24502
+lock 1** and completing the WP-685 spatial rebuild (WP-685 is now closed too).
+WP-685 shipped the structure (grid + right rail + full-array wells + regroup) but
+the live D-24026 check found the board still ~1360px tall and vertically scrolling
+at an effective 1280×720 (a 1080p monitor at 150% zoom — Tex's viewport).
+
+Root cause was **structural**: `.app-shell` is a flex column (brand header +
+`flex:1` content + footer), but `.play-viewport` forced `min-height:100vh`, so
+below a ~68px header + ~55px footer the page was always `68 + 100vh + 55` — it
+page-scrolled no matter how short the board. The fix, at **≥768px only** (so the
+D-12909 `<PlayMobile>` surface is byte-unchanged): `<main>` (App.vue, scoped to
+the `play-fixture` / `live` routes) and `.play-viewport` fill the flex gap
+(`flex:1 1 auto; min-height:0`) instead of forcing 100vh. On top of that,
+`<PlayDesktop>` is authored inside a fixed-width stage (`--play-authoring-width`)
+and scaled by `useScaleToFit` (a DOM-geometry composable, clamps into `[0.5,1.5]`)
+so the whole board fits and scales up; a `.play-desktop`-scoped `--card-width-*`
+override + desktop-board-scoped playmat-slot compaction keep the live scale
+readable and stop the adversary band wrapping.
+
+**Live-verified (D-24026):** 1280×720 fits with no page scroll (~0.61×, readable),
+1366×768 (~0.66×), 1920×1080 (~0.98× — scales up, same layout, no rewrap), 375px
+`<PlayMobile>` renders unchanged (`.play-viewport` stays `display:block;
+min-height:100vh`). Shared `:root --card-width-*` values, `CardTile.vue`,
+`SchemeTile`/`TopHudBar`, and all `<PlayMobile>`/`useViewport` files untouched.
+Pure App-layer arena-client presentation — no engine/`UIState`/persistence/hash.
+`App.vue` + `PlayViewport.vue` were the flex-chain allowlist amendment the live
+fit required (recorded in WP-688 / EC-725).
+
 ### WP-686 — Final Blow Mastermind setup flag (EC-723 / D-24503) (2026-09-10)
 
 **No user-observable change — infrastructure only.** This WP adds the *flag*, not

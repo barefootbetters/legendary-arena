@@ -502,6 +502,24 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: WP-688 / D-24502 lock 1 — complete the flex height chain on the play
+   routes so <PlayDesktop> can fill the play area (the flex gap app-shell leaves
+   between the brand header and footer) and scale its board to fit with no page
+   scroll. app-shell-content is already a flex:1 column; this makes the <main>
+   that wraps the routed view a flex:1 column too, so its height reaches
+   .play-viewport → .play-desktop. Scoped to the two play routes (play-fixture =
+   the dev ?fixture route, live = a real match) so every other route's <main>
+   stays a plain block, and to ≥768px so the D-12909 mobile surface is untouched. */
+@media (min-width: 768px) {
+  main[data-route='play-fixture'],
+  main[data-route='live'] {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 .live-diagnostics {
   display: flex;
   gap: 1rem;

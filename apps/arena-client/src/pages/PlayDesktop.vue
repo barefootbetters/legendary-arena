@@ -8,6 +8,7 @@ import type {
 } from '@legendary-arena/game-engine';
 import { useUiStateStore } from '../stores/uiState';
 import { useNotableEventStream } from '../composables/useNotableEventStream';
+import { useScaleToFit } from '../composables/useScaleToFit';
 import type { NotableEventCardLookup } from '../components/play/NotableEventOverlay.vue';
 import {
   getStatus,
@@ -192,6 +193,28 @@ export default defineComponent({
     const { snapshot } = storeToRefs(store);
     const { currentEvent: notableEvent, dismiss: dismissNotableEvent } =
       useNotableEventStream(snapshot);
+
+    // why: WP-688 / D-24502 lock 1 — the board is authored at a fixed width (the
+    // 1280×720 floor) inside `fitStageRef` and scaled to fit `fitContainerRef`
+    // (the viewport box), so the whole board fits the smallest supported desktop
+    // viewport with no page scroll and scales up (never rewraps) on wider / taller
+    // screens. The composable owns only the geometry math; the template binds the
+    // returned scale to a `transform: scale()` on the stage and reserves the
+    // *scaled* height so the page itself never scrolls.
+    const fitContainerRef = ref<HTMLElement | null>(null);
+    const fitStageRef = ref<HTMLElement | null>(null);
+    const { scale: fitScale } = useScaleToFit({
+      containerRef: fitContainerRef,
+      stageRef: fitStageRef,
+    });
+    // why: bind the computed scale as a CSS custom property so the stage's own
+    // scoped CSS owns the `transform: scale()` string + `transform-origin`. The
+    // container is flex-sized to the play area and the stage is absolutely
+    // positioned inside it, so no height needs reserving — the board simply
+    // scales to fill the box.
+    const fitStageStyle = computed<Record<string, string>>(() => ({
+      '--play-fit-scale': String(fitScale.value),
+    }));
 
     // why: the engine's `cardDisplayData` lives on G and is NOT projected as
     // a top-level UIState field (pre-flight inspection of `uiState.types.ts`
@@ -539,6 +562,9 @@ export default defineComponent({
       snapshot,
       viewer,
       opponents,
+      fitContainerRef,
+      fitStageRef,
+      fitStageStyle,
       isLobbyPhase,
       isPlayPhase,
       boardVisible,
@@ -602,6 +628,15 @@ export default defineComponent({
       return to the lobby.
     </p>
     <template v-else>
+      <!-- why: WP-688 / D-24502 lock 1 — the fit container is the viewport box;
+           the stage is the board authored at the fixed 1280×720 floor and scaled
+           to fit (transform: scale in <style>). The container reserves only the
+           SCALED height (fitContainerStyle) so the page never scrolls, and the
+           stage's board-scoped --card-width-* / gutter override (in <style>)
+           compacts the desktop board without touching the shared :root tokens or
+           <PlayMobile>. Everything WP-685 shipped lives unchanged inside the stage. -->
+      <div class="play-desktop__fit" ref="fitContainerRef">
+        <div class="play-desktop__stage" ref="fitStageRef" :style="fitStageStyle">
       <TopHudBar
         :snapshot="snapshot"
         :mastermind-tactics-total="snapshot.mastermind.tacticsRemaining + snapshot.mastermind.tacticsDefeated"
@@ -1018,6 +1053,8 @@ export default defineComponent({
           </aside>
         </div>
       </template>
+        </div><!-- /.play-desktop__stage (WP-688) -->
+      </div><!-- /.play-desktop__fit (WP-688) -->
     </template>
     <!-- why: WP-171 / EC-189 — exactly one pile-browse-modal instance per
          page; the page-level `activePile` ref discriminates which pile is
@@ -1049,6 +1086,18 @@ export default defineComponent({
   flex-direction: column;
   gap: 0.25rem;
   position: relative;
+  /* why: WP-688 / D-24502 lock 1 — fill the play area (the flex gap the desktop
+     .play-viewport now occupies between the brand header and footer) so the fit
+     container below gets a definite height to scale the board into, instead of
+     the board's own content height overflowing the page. min-height:0 lets it
+     shrink inside the flex parent. */
+  flex: 1 1 auto;
+  min-height: 0;
+  /* why: WP-688 — as a flex-column item whose only in-flow descendant (the stage)
+     is absolutely positioned, the column has no intrinsic width; pin it to the
+     full container width so the fit box keeps its width (the cap + auto margins
+     below still center it). */
+  width: 100%;
   /* why: WP-430 / D-24251 (retained by WP-685) — cap the desktop play area at
      --play-max-width and center it so ultra-wide / 4K monitors gain margin, not
      oversized cards. The fluid --play-gutter sits INSIDE the cap. */
@@ -1058,6 +1107,52 @@ export default defineComponent({
   /* why: minimal padding — the sticky TurnActionBar overlaps the bottom of the
      page; this just keeps the last content line from being fully hidden. */
   padding-bottom: 0.25rem;
+}
+
+/* why: WP-688 / D-24502 lock 1 — the fit container is the viewport-sized box the
+   board is scaled to fit. Its height is set inline to the SCALED stage height
+   (fitContainerStyle) so the page reserves only the scaled box — the stage is
+   taken out of flow (absolute), so without this the page would reserve the full
+   unscaled height and still scroll. position: relative anchors the absolute stage. */
+.play-desktop__fit {
+  position: relative;
+  width: 100%;
+  /* why: WP-688 — fill the play-desktop column so clientHeight is the real space
+     the board has; useScaleToFit measures this box directly (no viewport math). */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* why: WP-688 / D-24502 lock 1 — the authoring stage. The board is laid out at a
+   FIXED width (--play-authoring-width, the 1280 floor) and scaled by --play-fit-scale
+   (computed live by useScaleToFit) about its top-center, so it fits the viewport
+   with no page scroll and scales UP (never rewraps) on wider / taller screens —
+   the JS fit supersedes the per-width scale media queries the fluid model used.
+   left:50% + translateX(-50%) centers it; transform-origin keeps it top-anchored
+   and centered as it scales. It is absolutely positioned so its unscaled layout
+   height never reaches page flow (the container reserves the scaled height).
+   why the --card-width-* / --play-gutter override: the desktop board is DENSER
+   than the shared D-12909 mobile tokens (the real tiles are ~2× the Rev-4 mock),
+   so compact them here — scoped to the stage, this cascades by CSS-variable
+   inheritance only to the desktop board's descendants; the shared :root token
+   values and the entire <PlayMobile> subtree (a sibling, never a descendant) are
+   byte-unchanged. Moderate compaction keeps the live scale readable (~0.75× at 1280). */
+.play-desktop__stage {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--play-authoring-width);
+  transform: translateX(-50%) scale(var(--play-fit-scale, 1));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  /* Board-scoped compaction (authoring-space constants; scaled visually above). */
+  --card-width-sm: 54px;
+  --card-width-md: 80px;
+  --card-width-lg: 108px;
+  --play-gutter: 10px;
 }
 
 /* why: WP-685 / D-24502 — the spatial board is a two-column grid: the shared
