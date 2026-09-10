@@ -19,6 +19,19 @@
 */ -}}
 {{- $page := .page -}}
 {{- $name := $page.File.BaseFileName -}}
+{{- /*
+  why: every file reference shows BOTH forms — the full local drafting path
+  (the directory to `cd` into for a local clone) as plain text, and a GitHub
+  link for the browser/no-clone path. A local editor asked "what do I cd into?"
+  and a repo-relative path does not answer that; a full path cannot be a GitHub
+  hyperlink. $repoRoot is the hardcoded drafting location, matching the
+  wiki/SCHEMA.md §Self-reference convention (which already hardcodes this exact
+  path because the drafting repo sits in a different tree from most doc
+  consumers, so a relative path resolves differently per reader). Backtick raw
+  string: the path contains backslashes, which are escape chars in a
+  double-quoted Go-template string.
+*/ -}}
+{{- $repoRoot := `C:\pcloud\BB\DEV\legendary-arena` -}}
 {{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
 {{- $editBase := "https://github.com/barefootbetters/legendary-arena/edit/main" -}}
 {{- $canonical := index $page.Params "canonical-source" -}}
@@ -51,7 +64,8 @@
       */ -}}
       <p>
         This page is <strong>auto-generated</strong> from
-        <a href="{{ $blobBase }}/docs/09-CHANGELOG.md"><code>docs/09-CHANGELOG.md</code></a>
+        <code>{{ $repoRoot }}\docs\09-CHANGELOG.md</code>
+        (<a href="{{ $blobBase }}/docs/09-CHANGELOG.md">view on GitHub</a>)
         — editing the wiki copy is discarded on the next build.
       </p>
       <p>
@@ -69,9 +83,24 @@
         the source. Field spec: wiki/SCHEMA.md §Front-Matter Format; decision
         D-24304.
       */ -}}
+      {{- /*
+        why: for a SAME-repo canonical doc the local drafting path is knowable
+        ($repoRoot + the repo-relative canonical-source, backslash-separated for
+        Windows), so show both forms like every other reference. For a CROSS-repo
+        canonical (canonical-source-repo set) the doc lives in a different repo
+        whose local checkout path we cannot know, so keep the GitHub-only form.
+      */ -}}
+      {{- $canonicalLocal := "" -}}
+      {{- if not $canonicalRepo -}}
+        {{- $canonicalLocal = printf `%s\%s` $repoRoot (replace $canonical "/" `\`) -}}
+      {{- end -}}
       <p>
         This page synthesizes
-        <a href="{{ $canonicalBlobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a>{{ with $canonicalRepo }} in the <code>{{ . }}</code> repo{{ end }},
+        {{ if $canonicalRepo -}}
+          <a href="{{ $canonicalBlobBase }}/{{ $canonical }}"><code>{{ $canonical }}</code></a> in the <code>{{ $canonicalRepo }}</code> repo,
+        {{- else -}}
+          <code>{{ $canonicalLocal }}</code> (<a href="{{ $canonicalBlobBase }}/{{ $canonical }}">view on GitHub</a>),
+        {{- end }}
         which owns the canonical prose — the other <strong>Sources</strong>
         entries are references it draws on, not edit targets.
       </p>
@@ -79,17 +108,19 @@
         <strong>Fast path:</strong>
         <a href="{{ $canonicalEditBase }}/{{ $canonical }}">✏️ Edit the canonical doc on GitHub</a>
         {{ if $canonicalRepo }}(following that repo's commit convention){{ else }}(commit <code>SPEC:</code>){{ end }}, then update this page to match —
-        <a href="{{ $editBase }}/wiki/{{ $name }}.md">edit <code>wiki/{{ $name }}.md</code></a>
-        (commit <code>INFRA:</code>) and bump <code>last-reviewed</code>. Branch → PR,
+        its source is <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code>
+        (<a href="{{ $editBase }}/wiki/{{ $name }}.md">edit on GitHub</a>, commit
+        <code>INFRA:</code>) and bump <code>last-reviewed</code>. Branch → PR,
         merge when green.
       </p>
     {{- else -}}
       <p>
         The editable source for this page is
-        <a href="{{ $blobBase }}/wiki/{{ $name }}.md"><code>wiki/{{ $name }}.md</code></a>
-        in the <code>legendary-arena</code> repo. The <strong>Sources</strong>
-        section lists the repo files this page is built from — those are
-        references it documents, not this page's editable copy.
+        <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code>
+        (<a href="{{ $blobBase }}/wiki/{{ $name }}.md">view on GitHub</a>) — that
+        is the file to <code>cd</code> to and edit in a local clone. The
+        <strong>Sources</strong> section lists the repo files this page is built
+        from — those are references it documents, not this page's editable copy.
       </p>
       <p>
         <strong>Fast path</strong> — fix this page in your browser, no clone:
