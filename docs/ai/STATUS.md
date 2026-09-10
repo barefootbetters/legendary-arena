@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-689 — Play-Surface TurnActionBar overlap fix + Playwright visual guard (EC-726 / D-24506) (2026-09-10)
+
+Fixed a WP-688 regression + closed the review gap that let it ship. A
+**full-resolution 1280×720 Playwright screenshot** (taken after #1992) revealed
+that the sticky `TurnActionBar` (`position: sticky; bottom: 0; z-index: 100`),
+inside WP-688's scaled + absolutely-positioned `.play-desktop__stage`, resolved
+its sticky containing block against the `transform` ancestor and floated
+**mid-stage, overlapping the cockpit** (played row / economy / Your Victory
+Pile). jsdom (no layout engine) and the ~800px browser-pane preview both missed
+it; only a full-res browser caught it.
+
+**Fix:** `.play-desktop__stage :deep(.turn-action-bar) { position: static; }` —
+the fitted board never page-scrolls, so sticky is unneeded there; stage-scoped
+via `:deep()` so `TurnActionBar.vue` is untouched and keeps `position: sticky`
+on `<PlayMobile>`. Verified by resolution-independent DOM geometry at 1280×720:
+`position: static`, turn-bar top 579 ≥ hand-row bottom 576 (below the cockpit,
+no overlap with played/economy/victory), no page scroll in either axis.
+
+**Guard:** `apps/arena-client/visual/play-surface.visual.mjs` — a Playwright
+check (arena-client **devDependency**, Shared-Tooling posture) asserting the
+D-24505 fit invariants (no page scroll either axis; turn bar not overlapping the
+cockpit; board fits its container) at 1280/1366/1920 + a full-res PNG per width.
+Assertion-based, not pixel-diff; screenshots gitignored. `pnpm --filter
+@legendary-arena/arena-client test:visual` (builds + previews + checks). It is a
+local / on-demand guard and a required step of the D-24026 play-surface
+verification; a CI Playwright job is a documented follow-on (not shipped here — a
+browser-install gate must be proven green on the Linux runner first). Documented
+on `wiki/testing.md`. Run-verified on a chromium-capable host (the CI/dev-env
+sandbox blocks the browser binary, so the fix's in-repo verification is the
+DOM-geometry check above).
+
+App presentation (fix) + Shared-Tooling devDep (guard) + docs; no
+engine/`UIState`/persistence/hash. `<PlayMobile>` / `useViewport` untouched.
+
 ### WP-688 — Play-Surface Fit-to-Floor: `<PlayDesktop>` fits 1280×720 with no page scroll (EC-725 / D-24505) (2026-09-10)
 
 The desktop play surface now **fits the 1280×720 authoring floor with no page

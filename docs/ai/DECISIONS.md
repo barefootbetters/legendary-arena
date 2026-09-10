@@ -41669,3 +41669,57 @@ core-unmarked-heroes arc (WP-680..684): Deadpool 0/4 remaining.
 **Status:** Active.
 
 Protect this file.
+
+---
+
+### D-24506 — sticky descendants of the scale-to-fit stage are neutralized (TurnActionBar overlap fix) + Playwright adopted as the play-surface visual-regression guard (Active 2026-09-10 — WP-689 / EC-726)
+
+**Type:** Client UI fix (corollary to D-24505) + Shared-Tooling adoption
+**Packet:** WP-689 / EC-726
+**Date:** 2026-09-10
+
+**Decision.** Two coupled rulings from a defect the WP-688 fit shipped:
+
+1. **Sticky descendants of the scale-to-fit stage must be neutralized (the fix).**
+   D-24505 authors `<PlayDesktop>` inside `.play-desktop__stage` (`position: absolute`
+   + `transform: scale(var(--play-fit-scale))`). A `transform` establishes the
+   containing block for `position: fixed` **and** shifts how a `position: sticky`
+   descendant resolves its stickiness, so `TurnActionBar`'s `position: sticky;
+   bottom: 0` (unchanged in `TurnActionBar.vue`) pinned the bar **mid-stage**, floating
+   it over the cockpit (played row / economy / Your Victory Pile). Because the fitted
+   board never page-scrolls, sticky has no job inside the stage: the desktop stage pins
+   it to normal flow — `.play-desktop__stage :deep(.turn-action-bar) { position: static; }`
+   — so it sits at the bottom of the cockpit. **Stage-scoped via `:deep()`**, so
+   `TurnActionBar.vue` is untouched and the bar keeps `position: sticky` on `<PlayMobile>`
+   and any non-fit surface. Generalizes: any future `position: sticky` / `position: fixed`
+   descendant of the scale stage must be re-based to the stage, not left viewport-relative.
+
+2. **Playwright is the play-surface visual-regression guard (the tooling).** The overlap
+   was invisible to the two checks WP-688 used: jsdom (the unit DOM — no layout engine)
+   and the ~800px browser-pane preview (too downscaled to see a mid-board overlap). Only
+   a full-resolution browser layout engine catches this class. WP-689 adds
+   `apps/arena-client/visual/play-surface.visual.mjs`, a Playwright check asserting the
+   D-24505 fit invariants — no page scroll (either axis); `TurnActionBar` not overlapping
+   the cockpit; the stage fits its container — at 1280×720 / 1366×768 / 1920×1080, plus a
+   full-resolution PNG per width. **Assertion-based, not pixel-diff** (no committed golden
+   images; those flake on cross-platform font rendering). Playwright is an `apps/arena-client`
+   **devDependency** only — the Shared-Tooling posture (`.claude/rules/architecture.md`),
+   like `vue-sfc-loader` / `jsdom`; never a production dependency. It is a **local /
+   on-demand** guard and a required step of the D-24026 live-verification for play-surface
+   layout changes; a CI job (a Linux Playwright lane) is a documented follow-on, deliberately
+   not shipped here (a browser-install gate must be proven green on the runner before it can
+   block PRs).
+
+**Rationale.** A downscaled preview passed a board that overlapped at full resolution —
+the review gap that let the regression ship. The fix restores the intended layout; the guard
+converts "eyeball a thumbnail" into a resolution-independent, automatable assertion so the gap
+cannot recur silently.
+
+**Layer / boundary.** App layer (`apps/arena-client`) presentation for the fix + Shared-Tooling
+devDependency for the guard + ewiki docs (`wiki/testing.md`). No `G`/`ctx`, no `UIState` field,
+no persistence, no `finalStateHash`, no HTTP surface; the guard reads DOM geometry only.
+`<PlayMobile>` / `useViewport` / D-12909 untouched. Vision NG-1..7 uncrossed.
+
+**Status:** Active. **Corollary to:** D-24505.
+
+Protect this file.
