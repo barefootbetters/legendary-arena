@@ -15,6 +15,7 @@ import { resolveDiscardChoice, hasPendingDiscardChoice } from './moves/discardCh
 import { resolvePutCardsOnDeckChoice, hasPendingPutCardsOnDeckChoice } from './moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice, hasPendingReorderChoice } from './moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice, hasPendingDefeatChoice } from './moves/defeatChoice.resolve.js';
+import { resolveKoDiscardChoice, hasPendingKoDiscardChoice } from './moves/koDiscardChoice.resolve.js';
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveSmashDiscard, hasPendingSmashDiscard } from './moves/smashDiscard.resolve.js';
 import { resolveDoOver, hasPendingDoOver } from './moves/doOver.resolve.js';
@@ -150,6 +151,11 @@ function advanceStage({ G, ctx, events }: MoveContext): void {
   // current player picks which target to defeat before the stage advances or the
   // cleanup turn-end fires (the pending queue must be empty at turn-end).
   if (hasPendingDefeatChoice(G)) { return; }
+  // why: block-all guard (WP-693 / D-24510) — while a KO-from-discard choice is
+  // pending (Loki's Maniacal Tyrant) the board is frozen; advanceStage returns with no
+  // side effects so the active player selects which discard cards to KO before the stage
+  // advances or the cleanup turn-end fires (the pending queue must be empty at turn-end).
+  if (hasPendingKoDiscardChoice(G)) { return; }
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (this also blocks the cleanup turn-end
   // auto-transition below, mirroring the D-24008 KO-hero check above).
@@ -528,6 +534,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // false) per D-10008 — it mutates real G (city / victory / mastermind), absent on
     // UIState. NOT in CORE_MOVE_NAMES (mirrors resolveReorderChoice).
     resolveDefeatChoice: { move: resolveDefeatChoice, client: false },
+    // why: WP-693 / D-24510 — resolveKoDiscardChoice resolves the interactive Loki
+    // Maniacal Tyrant KO-from-discard choice (the active player selects 0..4 of their
+    // own discard cards to KO into G.ko). Server-only (client: false) per D-10008 — it
+    // mutates real G (playerZones.discard / G.ko), absent on UIState. NOT in
+    // CORE_MOVE_NAMES (mirrors resolveDefeatChoice / resolvePutCardsOnDeckChoice).
+    resolveKoDiscardChoice: { move: resolveKoDiscardChoice, client: false },
     resolveOptionalKoReward: { move: resolveOptionalKoReward, client: false },
     // why: WP-676 / D-24492 — resolves a Smash "discard another card from your hand for +N
     // Attack?" choice (discard grants +N to G.turnEconomy.attack; decline does nothing).

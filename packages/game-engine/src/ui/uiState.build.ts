@@ -52,6 +52,7 @@ import type {
   UIPendingReorderChoice,
   UIReorderChoiceCard,
   UIPendingDefeatChoice,
+  UIPendingKoDiscardChoice,
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingSmashDiscard,
@@ -1230,6 +1231,34 @@ export function buildUIState(
     };
   }
 
+  // why: WP-693 / D-24510 — project the FRONT entry of G.pendingKoDiscardChoices with the
+  // chooser's CURRENT discard (recomputed fresh from G — the pending entry stores no
+  // snapshot; the block-all guard freezes the discard while pending) resolved to display
+  // data, in discard order, plus the cap. The client picks 0..maxCount DISTINCT cards.
+  // resolveDisplay is spread fresh per entry so the projection holds no reference into
+  // G.cardDisplayData (aliasing defense, WP-111 D-11105). Redaction to the chooser-only
+  // audience is enforced by filterUIStateForAudience (it is the chooser's pending decision).
+  let pendingKoDiscardChoice: UIPendingKoDiscardChoice | undefined;
+  if (gameState.pendingKoDiscardChoices !== undefined && gameState.pendingKoDiscardChoices.length > 0) {
+    const frontChoice = gameState.pendingKoDiscardChoices[0]!;
+    const chooserZones = gameState.playerZones[frontChoice.playerID];
+    if (chooserZones !== undefined) {
+      const discard: UIDiscardChoiceHandCard[] = [];
+      for (const cardId of chooserZones.discard) {
+        discard.push({
+          cardId,
+          display: { ...resolveDisplay(cardId, gameState) },
+        });
+      }
+      pendingKoDiscardChoice = {
+        choiceType: frontChoice.choiceType,
+        playerID: frontChoice.playerID,
+        maxCount: frontChoice.maxCount,
+        discard,
+      };
+    }
+  }
+
   // --- 13c. Project pending optional-KO-then-reward choice (front of queue) ---
   // why: D-24020 + WP-249 — project the FRONT entry of G.pendingOptionalKoRewards
   // with the chooser's eligible hand + discard cards recomputed fresh from current
@@ -1885,6 +1914,9 @@ export function buildUIState(
     // why: WP-486 / D-24291 — conditional spread so an absent choice omits the field
     // (no `pendingDefeatChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDefeatChoice !== undefined ? { pendingDefeatChoice } : {}),
+    // why: WP-693 / D-24510 — conditional spread so an absent choice omits the field
+    // (no `pendingKoDiscardChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingKoDiscardChoice !== undefined ? { pendingKoDiscardChoice } : {}),
     ...(pendingOptionalKoReward !== undefined ? { pendingOptionalKoReward } : {}),
     // why: WP-676 / D-24492 — conditional spread so an absent choice omits the field (no
     // `pendingSmashDiscard: undefined` literal under exactOptionalPropertyTypes).

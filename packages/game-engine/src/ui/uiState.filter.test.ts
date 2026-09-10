@@ -881,6 +881,64 @@ describe('filterUIStateForAudience — pendingPutCardsOnDeckChoice redaction (D-
 });
 
 // ---------------------------------------------------------------------------
+// WP-693 / EC-730 — pendingKoDiscardChoice redaction (D-24510, D-24011 analog)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a Loki Maniacal Tyrant KO-from-discard
+ * choice. The discard ext_ids are the cards the chooser may KO — projected to the
+ * chooser and redacted for everyone else.
+ */
+function createKoDiscardChoiceUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.discard = [
+    'kodiscard-secret-a' as CardExtId,
+    'kodiscard-secret-b' as CardExtId,
+    'kodiscard-secret-c' as CardExtId,
+  ];
+  gameState.pendingKoDiscardChoices = [
+    { choiceType: 'ko-from-discard', playerID: '0', maxCount: 4 },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510)', () => {
+  it('the chooser sees pendingKoDiscardChoice with the discard and the cap', () => {
+    const uiState = createKoDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingKoDiscardChoice !== undefined, 'chooser sees the KO-from-discard choice');
+    assert.equal(result.pendingKoDiscardChoice!.playerID, '0');
+    assert.equal(result.pendingKoDiscardChoice!.maxCount, 4);
+    assert.equal(result.pendingKoDiscardChoice!.discard.length, 3, 'the full discard is projected to the chooser');
+  });
+
+  it('an opponent does NOT see pendingKoDiscardChoice and no discard ext_id leaks', () => {
+    const uiState = createKoDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingKoDiscardChoice, undefined, 'opponent must not see the choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('kodiscard-secret-a'), false, 'no discard ext_id leaks to an opponent');
+  });
+
+  it('a spectator does NOT see pendingKoDiscardChoice', () => {
+    const uiState = createKoDiscardChoiceUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingKoDiscardChoice, undefined, 'spectator must not see the choice');
+  });
+
+  it('does not mutate the input UIState (pendingKoDiscardChoice still present on the source)', () => {
+    const uiState = createKoDiscardChoiceUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingKoDiscardChoice !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-249 / EC-280 — pendingOptionalKoReward redaction (D-24020, D-24011 analog)
 // ---------------------------------------------------------------------------
 

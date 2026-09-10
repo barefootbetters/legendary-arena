@@ -221,6 +221,12 @@ export function useTurnActions(
   // Priority at ANY stage (the engine's full block-all guard set freezes the board). OPTIONAL —
   // discard the whole hand and draw 4 OR decline.
   hasPendingDoOver: boolean = false,
+  // why: WP-693 / D-24510 — appended LAST (after hasPendingDoOver) so existing positional
+  // callers stay valid without edits; degrades gracefully (no gate) when omitted. True while
+  // a Loki Maniacal Tyrant KO-from-discard choice is pending; blocks End Turn / Pass Priority
+  // at ANY stage (the engine's full block-all guard set freezes the board). OPTIONAL — the
+  // player may KO 0..4, so "KO None" is the decline path.
+  hasPendingKoDiscardChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -472,6 +478,15 @@ export function useTurnActions(
           reason: 'Play the top card of the Villain Deck, or Decline, before taking another action.',
         };
       }
+      if (hasPendingKoDiscardChoice) {
+        // why: WP-693 / D-24510 — End Turn / Pass Priority blocked at any stage while a
+        // Loki Maniacal Tyrant KO-from-discard choice is pending (the engine's full
+        // block-all guard set freezes the board). OPTIONAL — "KO None" is the decline path.
+        return {
+          allowed: false,
+          reason: 'KO up to four cards from your discard pile, or KO None, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         return {
           allowed: false,
@@ -655,6 +670,15 @@ export function useTurnActions(
           reason: 'Play the top card of the Villain Deck, or Decline, before taking another action.',
         };
       }
+      if (hasPendingKoDiscardChoice) {
+        // why: WP-693 / D-24510 — the engine's block-all guards block endTurn while
+        // pendingKoDiscardChoices is non-empty (Loki's Maniacal Tyrant); this client-side
+        // gate surfaces the reason so the player sees a tooltip instead of a silent rejection.
+        return {
+          allowed: false,
+          reason: 'KO up to four cards from your discard pile, or KO None, before taking another action.',
+        };
+      }
       if (currentStage === 'cleanup' && hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
@@ -706,7 +730,10 @@ export function useTurnActions(
         hasPendingSmashDiscard ||
         // why: WP-681 / D-24498 — mirror the engine healWounds block-all guard, which returns
         // early while a Do-Over choice is pending.
-        hasPendingDoOver
+        hasPendingDoOver ||
+        // why: WP-693 / D-24510 — mirror the engine healWounds block-all guard, which returns
+        // early while a Loki Maniacal Tyrant KO-from-discard choice is pending.
+        hasPendingKoDiscardChoice
       ) {
         return {
           allowed: false,

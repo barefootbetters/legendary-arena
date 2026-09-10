@@ -10,6 +10,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildDefeatWithBystanderTargets,
+  buildCityVillainDefeatTargets,
   dispatchDefeatWithBystanderTarget,
   hasPendingDefeatChoice,
   resolveDefeatChoice,
@@ -181,6 +182,44 @@ describe('buildDefeatWithBystanderTargets (WP-486 / D-24291)', () => {
       mastermindTacticsDeck: [],
     });
     assert.deepStrictEqual(buildDefeatWithBystanderTargets(G), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildCityVillainDefeatTargets — Cruel Ruler (WP-693 / D-24510)
+// ---------------------------------------------------------------------------
+
+describe('buildCityVillainDefeatTargets (WP-693 / D-24510)', () => {
+  it('returns 0 targets when the City is empty', () => {
+    const G = makeG({ city: [null, null, null, null, null] });
+    assert.deepStrictEqual(buildCityVillainDefeatTargets(G), []);
+  });
+
+  it('returns every occupied City space (NO Bystander requirement), City-ascending', () => {
+    const G = makeG({ city: ['villain-a', null, 'villain-c', null, 'villain-e'] });
+    assert.deepStrictEqual(buildCityVillainDefeatTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'villain', cityIndex: 2, cardId: 'villain-c' },
+      { kind: 'villain', cityIndex: 4, cardId: 'villain-e' },
+    ]);
+  });
+
+  it('includes a City Villain with NO attached Bystander (unlike buildDefeatWithBystanderTargets)', () => {
+    const G = makeG({ city: ['villain-a', null, null, null, null] });
+    assert.deepStrictEqual(buildCityVillainDefeatTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ]);
+  });
+
+  it('never offers the Mastermind, even when it holds a Bystander with tactics left', () => {
+    const G = makeG({
+      city: ['villain-a', null, null, null, null],
+      mastermindAttachedBystanders: ['bystander-m'],
+      mastermindTacticsDeck: ['tactic-1'],
+    });
+    const targets = buildCityVillainDefeatTargets(G);
+    assert.ok(targets.every((target) => target.kind === 'villain'), 'no Mastermind target');
+    assert.equal(targets.length, 1);
   });
 });
 
@@ -362,5 +401,47 @@ describe('resolveDefeatChoice (WP-486 / D-24291)', () => {
     resolveDefeatChoice(makeMoveContext(notInSet) as never, { targetKind: 'villain', cityIndex: 3 });
     assert.equal(hasPendingDefeatChoice(notInSet), true, 'a target not in the parked set leaves the queue intact (resubmit)');
     assert.equal(notInSet.city[0], 'villain-a', 'no villain was defeated on the rejected submission');
+  });
+
+  it('accepts a "cruel-ruler" front entry and defeats the chosen City Villain for free (WP-693 / D-24510)', () => {
+    const G = makeG({
+      city: ['villain-a', null, 'villain-c', null, null],
+      attack: 4,
+      pendingDefeatChoices: [
+        {
+          choiceType: 'cruel-ruler',
+          playerID: '0',
+          targets: [
+            { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+            { kind: 'villain', cityIndex: 2, cardId: 'villain-c' },
+          ],
+        },
+      ],
+    });
+    const context = makeMoveContext(G);
+
+    resolveDefeatChoice(context as never, { targetKind: 'villain', cityIndex: 2 });
+
+    assert.equal(hasPendingDefeatChoice(G), false, 'the cruel-ruler entry is popped on success');
+    assert.equal(G.city[2], null, 'the chosen City Villain is removed');
+    assert.ok(G.playerZones['0']!.victory.includes('villain-c'), 'the chosen villain is in the victory pile');
+    assert.equal(G.turnEconomy.attack, 4, 'attack unchanged — Cruel Ruler is a free defeat');
+    assert.equal(G.turnEconomy.spentAttack, 0, 'no attack spent');
+  });
+
+  it('a "cruel-ruler" front entry rejects a target not in the parked snapshot (queue intact)', () => {
+    const G = makeG({
+      city: ['villain-a', null, null, null, null],
+      pendingDefeatChoices: [
+        {
+          choiceType: 'cruel-ruler',
+          playerID: '0',
+          targets: [{ kind: 'villain', cityIndex: 0, cardId: 'villain-a' }],
+        },
+      ],
+    });
+    resolveDefeatChoice(makeMoveContext(G) as never, { targetKind: 'villain', cityIndex: 3 });
+    assert.equal(hasPendingDefeatChoice(G), true, 'a target not in the snapshot leaves the queue intact');
+    assert.equal(G.city[0], 'villain-a', 'no villain was defeated on the rejected submission');
   });
 });

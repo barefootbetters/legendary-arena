@@ -120,6 +120,46 @@ export function buildDefeatWithBystanderTargets(
 }
 
 /**
+ * Builds the deterministic list of every City Villain as a free-defeat target —
+ * Loki's "Cruel Ruler" Fight ("Defeat a Villain in the City for free") eligible
+ * set (WP-693 / D-24510).
+ *
+ * Unlike buildDefeatWithBystanderTargets, a target is eligible simply for being a
+ * villain/henchman occupying a City space — there is NO Bystander requirement and
+ * NO Mastermind entry (the printed text is "a Villain in the City"). No Guard
+ * filter: the shipped free defeat bypasses the Guard access restriction (it spends
+ * no attack), and "for free" carries no such restriction — matching
+ * buildDefeatWithBystanderTargets, which likewise does not check isGuardBlocking.
+ *
+ * why (D-24510): the order is pinned — City spaces ascending — because it feeds
+ * BOTH the UIState projection and the bot/sim default (the first parked target),
+ * exactly like buildDefeatWithBystanderTargets; a drift there would flip a seeded
+ * decision. Each target is a `kind: 'villain'` DefeatWithBystanderTarget, so it
+ * reuses the shared dispatchDefeatWithBystanderTarget path unchanged.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @returns Every occupied City space as a villain free-defeat target, City ascending.
+ */
+export function buildCityVillainDefeatTargets(
+  G: LegendaryGameState,
+): DefeatWithBystanderTarget[] {
+  const targets: DefeatWithBystanderTarget[] = [];
+
+  // why: iterate City spaces by ascending index (a stable contract) so the target
+  // list replays identically — the same pinned order buildDefeatWithBystanderTargets
+  // uses. No .reduce() (effect/zone work per code-style rules).
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    const cardId = G.city[cityIndex];
+    if (cardId === null || cardId === undefined) {
+      continue;
+    }
+    targets.push({ kind: 'villain', cityIndex, cardId });
+  }
+
+  return targets;
+}
+
+/**
  * Dispatches a chosen defeat-with-a-Bystander target through the shared
  * fight-defeat core — a City Villain via defeatCityVillainCore (fires the
  * villain's onFight abilities), or the Mastermind tactic via
@@ -229,7 +269,15 @@ export function resolveDefeatChoice(
   // families: Silent Sniper (defeat-with-bystander) and Nick Fury's Pure Fury
   // (pure-fury). Both park the same target-snapshot shape and dispatch through the same
   // shared free-defeat core, so either discriminant is a valid front entry here.
-  if (front.choiceType !== 'defeat-with-bystander' && front.choiceType !== 'pure-fury') {
+  // why: WP-693 / D-24510 — 'cruel-ruler' (Loki's Cruel Ruler) is the THIRD member of
+  // this shared free-defeat family: it parks the same DefeatWithBystanderTarget snapshot
+  // (built by buildCityVillainDefeatTargets) and dispatches through the same shared core,
+  // so it is a valid front entry here alongside 'defeat-with-bystander' and 'pure-fury'.
+  if (
+    front.choiceType !== 'defeat-with-bystander' &&
+    front.choiceType !== 'pure-fury' &&
+    front.choiceType !== 'cruel-ruler'
+  ) {
     return;
   }
 

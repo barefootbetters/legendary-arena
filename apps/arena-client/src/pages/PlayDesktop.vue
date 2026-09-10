@@ -51,6 +51,7 @@ import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoiceP
 import PendingPutCardsOnDeckChoicePrompt from '../components/play/PendingPutCardsOnDeckChoicePrompt.vue';
 import PendingReorderChoicePrompt from '../components/play/PendingReorderChoicePrompt.vue';
 import PendingDefeatChoicePrompt from '../components/play/PendingDefeatChoicePrompt.vue';
+import PendingKoDiscardChoicePrompt from '../components/play/PendingKoDiscardChoicePrompt.vue';
 import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vue';
 import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DoOverPrompt from '../components/play/DoOverPrompt.vue';
@@ -130,6 +131,7 @@ export default defineComponent({
     PendingMelterKoChoicePrompt,
     PendingDiscardChoicePrompt,
     PendingPutCardsOnDeckChoicePrompt,
+    PendingKoDiscardChoicePrompt,
     PendingReorderChoicePrompt,
     PendingDefeatChoicePrompt,
     OptionalKoRewardPrompt,
@@ -540,6 +542,12 @@ export default defineComponent({
     const hasPendingDefeatChoice = computed<boolean>(
       () => snapshot.value?.pendingDefeatChoice !== undefined,
     );
+    // why: WP-693 / D-24510 — derived from UIState.pendingKoDiscardChoice !== undefined. Passed to
+    // TurnActionBar to block end-turn and pass-priority at EVERY stage while a Loki Maniacal Tyrant
+    // KO-from-discard choice is pending (board frozen, mirrors hasPendingDefeatChoice).
+    const hasPendingKoDiscardChoice = computed<boolean>(
+      () => snapshot.value?.pendingKoDiscardChoice !== undefined,
+    );
     // why: WP-532 / D-24343 — derived from UIState.pendingGiveHqHeroChoice !== undefined. Passed
     // to TurnActionBar to block end-turn and pass-priority at EVERY stage while a Paibok Fight
     // give-HQ-Hero choice is pending (board frozen, mirrors hasPendingDefeatChoice).
@@ -600,6 +608,7 @@ export default defineComponent({
       hasPendingPutCardsOnDeckChoice,
       hasPendingReorderChoice,
       hasPendingDefeatChoice,
+      hasPendingKoDiscardChoice,
       hasPendingGiveHqHeroChoice,
       hasPendingCopyPowersChoice,
       hasWoundInHand,
@@ -848,6 +857,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-693 / D-24510 — the KO-from-discard prompt (Loki's Maniacal Tyrant)
+               renders above TurnActionBar; appears only for the choosing player when
+               pendingKoDiscardChoice is set. NOT a modal; normal document flow. -->
+          <PendingKoDiscardChoicePrompt
+            :pending-ko-discard-choice="snapshot.pendingKoDiscardChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-24020 + WP-249 — the optional-KO-reward prompt renders above
                TurnActionBar in DOM order; appears only for the choosing player
                when pendingOptionalKoReward is set. NOT a modal; normal document
@@ -1017,6 +1034,7 @@ export default defineComponent({
             :has-pending-put-cards-on-deck-choice="hasPendingPutCardsOnDeckChoice"
             :has-pending-reorder-choice="hasPendingReorderChoice"
             :has-pending-defeat-choice="hasPendingDefeatChoice"
+            :has-pending-ko-discard-choice="hasPendingKoDiscardChoice"
             :has-pending-give-hq-hero-choice="hasPendingGiveHqHeroChoice"
             :has-pending-copy-powers-choice="hasPendingCopyPowersChoice"
             :has-wound-in-hand="hasWoundInHand"

@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 432,
+      "executable": 434,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
-      "unmarked": 1060,
+      "unmarked": 1058,
       "subsystem": 4
     }
   },
@@ -6165,10 +6165,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "cruel-ruler",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCruelRuler",
+      "wp": "WP-693",
+      "decision": "D-24510"
     },
     {
       "extId": "core-mastermind-loki-maniacal-tyrant",
@@ -6176,10 +6176,10 @@
       "set": "core",
       "scope": "mastermind",
       "mechanic": "maniacal-tyrant",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveManiacalTyrant",
+      "wp": "WP-693",
+      "decision": "D-24510"
     },
     {
       "extId": "core-mastermind-loki-vanishing-illusions",

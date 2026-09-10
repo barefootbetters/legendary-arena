@@ -803,6 +803,31 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-693 / D-24510 — the KO-from-discard choice is the chooser's pending decision
+  // (the board is frozen for everyone, but only the chooser resolves it). Present only when
+  // the audience is the choosing player; omitted (conditional assignment, never an
+  // `undefined` literal) for opponents AND spectators. Per-entry display spread prevents
+  // aliasing with the input UIState — mirroring pendingDefeatChoice / pendingPutCardsOnDeckChoice.
+  if (
+    uiState.pendingKoDiscardChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingKoDiscardChoice.playerID
+  ) {
+    const discardCopy = [];
+    for (const entry of uiState.pendingKoDiscardChoice.discard) {
+      discardCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingKoDiscardChoice = {
+      choiceType: uiState.pendingKoDiscardChoice.choiceType,
+      playerID: uiState.pendingKoDiscardChoice.playerID,
+      maxCount: uiState.pendingKoDiscardChoice.maxCount,
+      discard: discardCopy,
+    };
+  }
+
   // why: D-24020 — hand/discard are private to the chooser. pendingOptionalKoReward
   // is redacted for EVERY audience except the choosing player (the D-24011
   // hand-privacy analog). Its eligibleHand and eligibleDiscard lists carry the

@@ -81,6 +81,11 @@ export default defineComponent({
       if (props.pendingDefeatChoice?.choiceType === "pure-fury") {
         return "Pure Fury — defeat a weak Villain or Mastermind for free";
       }
+      // why: WP-693 / D-24510 — Loki's Cruel Ruler reuses this prompt for its
+      // "Defeat a Villain in the City for free" (villains only, no Mastermind).
+      if (props.pendingDefeatChoice?.choiceType === "cruel-ruler") {
+        return "Cruel Ruler — defeat a Villain in the City for free";
+      }
       return "Defeat a Villain or Mastermind that has a Bystander";
     }
 

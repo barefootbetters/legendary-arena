@@ -167,6 +167,13 @@ export interface UIState {
   // Redacted (omitted) for every audience except the chooser — it is the chooser's
   // pending decision (D-24011). Absent (undefined) means no pending defeat choice.
   pendingDefeatChoice?: UIPendingDefeatChoice;
+  // why: WP-693 / D-24510 — projects the FRONT of G.pendingKoDiscardChoices with the
+  // chooser's current discard (the cards they may KO) and the cap, so the active player
+  // can render the "KO up to four cards from your discard pile" prompt for Loki's
+  // Maniacal Tyrant. Redacted (omitted) for every audience except the chooser — it is
+  // the chooser's pending decision (D-24011). Absent (undefined) means no pending
+  // KO-from-discard choice.
+  pendingKoDiscardChoice?: UIPendingKoDiscardChoice;
   // why: D-24020 + WP-249 — projects the FRONT of G.pendingOptionalKoRewards
   // with the derived reward label + the chooser's eligible hand/discard cards so
   // the choosing player can render the "KO a card for a reward, or Decline"
@@ -1069,9 +1076,34 @@ export interface UIPendingDefeatChoice {
   // why: WP-682 / D-24499 — Pure Fury reuses the defeat-with-bystander pending shape
   // + client prompt with its own predicate; the discriminant lets the client label
   // the free-defeat source correctly (both dispatch through the same resolve move).
-  choiceType: "defeat-with-bystander" | "pure-fury";
+  // why: WP-693 / D-24510 — Cruel Ruler (Loki) is the third free-defeat family member;
+  // the discriminant lets the client label its "Defeat a Villain in the City for free"
+  // prompt while sharing the same resolve move and target shape.
+  choiceType: "defeat-with-bystander" | "pure-fury" | "cruel-ruler";
   playerID: string;
   targets: UIDefeatChoiceTarget[];
+}
+
+/**
+ * UI contract for resolving a pending KO-from-discard choice (WP-693 / D-24510).
+ * Only visible to the choosing player (the active player who defeated Loki's Maniacal
+ * Tyrant); redacted for opponents and spectators — it is the chooser's pending decision.
+ *
+ * `discard` is the chooser's current discard pile (the KO source), recomputed fresh and
+ * resolved to display data, in discard order. The client picks 0..`maxCount` DISTINCT
+ * cards and submits `resolveKoDiscardChoice({ cardIds })` — an empty array is the legal
+ * "KO nothing" choice. Each entry's instance `cardId` (NOT `display.extId`) is what the
+ * engine resolve matches against the live discard (the round-trip rule).
+ *
+ * @see WP-693 §Scope (In)
+ * @see EC-730 Locked Values
+ * @see DECISIONS.md D-24510
+ */
+export interface UIPendingKoDiscardChoice {
+  choiceType: "ko-from-discard";
+  playerID: string;
+  maxCount: number;
+  discard: UIDiscardChoiceHandCard[];
 }
 
 /**

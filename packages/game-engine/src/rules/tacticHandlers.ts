@@ -22,9 +22,23 @@
  * shuffles).
  */
 
-import type { LegendaryGameState, PendingGiveHqHeroChoice, GiveHqHeroFilter } from '../types.js';
+import type {
+  LegendaryGameState,
+  PendingGiveHqHeroChoice,
+  GiveHqHeroFilter,
+  PendingDefeatChoice,
+  PendingKoDiscardChoice,
+} from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-693 / D-24510 — Cruel Ruler reuses the shared free-defeat family (WP-486/682):
+// buildCityVillainDefeatTargets builds its all-City-Villain snapshot and
+// dispatchDefeatWithBystanderTarget performs the free defeat for the exactly-1 auto path.
+// defeatChoice.resolve.ts imports boardgame.io as TYPES ONLY, so this stays a pure helper.
+import {
+  buildCityVillainDefeatTargets,
+  dispatchDefeatWithBystanderTarget,
+} from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { addResources } from '../economy/economy.logic.js';
@@ -194,6 +208,24 @@ interface TacticSeatChoiceEvents {
     revert?: boolean;
   }) => void;
 }
+
+// why: WP-693 / D-24510 — core Loki's "Cruel Ruler" tactic ext_id, same
+// `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar as the constants above
+// (mastermind slug `loki`, tactic slug `cruel-ruler` in data/cards/core.json).
+// Printed Fight: "Defeat a Villain in the City for free."
+const LOKI_CRUEL_RULER_TACTIC_ID: CardExtId =
+  'core-mastermind-loki-cruel-ruler';
+
+// why: WP-693 / D-24510 — core Loki's "Maniacal Tyrant" tactic ext_id, same grammar
+// as the constant above (tactic slug `maniacal-tyrant`). Printed Fight: "KO up to
+// four cards from your discard pile."
+const LOKI_MANIACAL_TYRANT_TACTIC_ID: CardExtId =
+  'core-mastermind-loki-maniacal-tyrant';
+
+// why: WP-693 / D-24510 — the printed "up to FOUR cards" cap of Maniacal Tyrant. It is
+// the maximum the player may KO; 0 is a legal choice ("up to"), and the effective cap is
+// clamped by the discard size at resolve. Named, not inlined, so an audit can grep it.
+export const MANIACAL_TYRANT_KO_MAX = 4;
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -945,6 +977,111 @@ export function resolveVanishingIllusions(
   );
 }
 
+/**
+ * Resolves core Loki's "Cruel Ruler" tactic Fight effect: "Defeat a Villain in the
+ * City for free" (WP-693 / D-24510).
+ *
+ * The active player defeats a chosen City Villain for free (no attack spent, no
+ * acted-this-turn flag, Bystanders + captured Heroes rescued, its onFight fired) via
+ * the shared free-defeat family (WP-486/682). Cardinality:
+ *   0 City Villains → silent no-op;
+ *   1 → auto-defeat it directly via dispatchDefeatWithBystanderTarget (no prompt);
+ *   ≥2 → park a PendingDefeatChoice (choiceType 'cruel-ruler') for the active player.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ctx - The bare boardgame.io ctx (only `currentPlayer` is read), forwarded to
+ *   the shared free-defeat core; typed `unknown` to avoid a framework import.
+ * @param currentPlayer - The player who defeated the tactic (the free-defeat chooser).
+ * @param shuffleContext - ShuffleProvider ({ random }) for a defeated villain's Fight scry reshuffle.
+ */
+export function resolveCruelRuler(
+  G: LegendaryGameState,
+  ctx: unknown,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const targets = buildCityVillainDefeatTargets(G);
+
+  if (targets.length === 0) {
+    // why: no Villain in the City is a reachable no-op (never a hollow record).
+    pushLog(G, 'Fight effect: no Villain in the City to defeat for free (Cruel Ruler); no effect.', 'blocked');
+    return;
+  }
+
+  if (targets.length === 1) {
+    // why: exactly one City Villain is a FORCED free defeat — auto-resolve it now
+    // (no prompt), mirroring the exactly-1 auto path of the shared free-defeat family.
+    dispatchDefeatWithBystanderTarget(G, ctx, targets[0]!, shuffleContext);
+    return;
+  }
+
+  // why: ≥2 City Villains — park an ACTIVE-player pending choice on the shared
+  // defeat-choice queue with the 'cruel-ruler' discriminant. Lazily create the FIFO queue
+  // at the park site (never in Game.setup) so an untriggered match leaves the field
+  // undefined and the hash oracles stay byte-stable. The block-all guard + resolveDefeatChoice
+  // (both already sim-enrolled) freeze the board until the active player picks a target.
+  if (!G.pendingDefeatChoices) {
+    G.pendingDefeatChoices = [];
+  }
+  const entry: PendingDefeatChoice = {
+    choiceType: 'cruel-ruler',
+    playerID: currentPlayer,
+    targets,
+  };
+  G.pendingDefeatChoices.push(entry);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} — choose a Villain in the City to defeat for free (Cruel Ruler).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves core Loki's "Maniacal Tyrant" tactic Fight effect: "KO up to four cards
+ * from your discard pile" (WP-693 / D-24510).
+ *
+ * The active player may optionally KO 0..4 cards from their OWN discard into the global
+ * KO pile. Empty discard → silent no-op; otherwise parks a PendingKoDiscardChoice for
+ * the active player (the resolve move performs the KO). This is a discard→KO removal, so
+ * it fires NO return-on-discard reaction (that chokepoint, discardFromHand, is
+ * hand→discard only).
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the KO chooser).
+ */
+export function resolveManiacalTyrant(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  if (playerZones.discard.length === 0) {
+    // why: an empty discard leaves nothing to KO — a reachable no-op (never hollow).
+    pushLog(G, `Fight effect: Player ${currentPlayer} has an empty discard pile (Maniacal Tyrant); no effect.`, 'blocked');
+    return;
+  }
+
+  // why: park an ACTIVE-player pending KO-from-discard choice. Lazily create the FIFO
+  // queue at the park site (never in Game.setup) so an untriggered match leaves the field
+  // undefined and the hash oracles stay byte-stable. The block-all guard + resolveKoDiscardChoice
+  // freeze the board until the active player selects 0..4 of their own discard cards to KO.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount: MANIACAL_TYRANT_KO_MAX,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} — KO up to ${String(MANIACAL_TYRANT_KO_MAX)} cards from your discard pile (Maniacal Tyrant).`,
+    'neutral',
+  );
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
@@ -1027,6 +1164,19 @@ export function dispatchTacticOnFight(
   // choice for every other seat holding a Victory-Pile Villain (skips currentPlayer).
   if (defeatedTacticId === VANISHING_ILLUSIONS_TACTIC_ID) {
     resolveVanishingIllusions(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-693 / D-24510 — Loki's Cruel Ruler defeats a chosen City Villain for free
+  // (0/1/≥2 City Villains → no-op/auto-defeat/active pending choice); reuses the shared
+  // WP-486/682 free-defeat family, so `ctx` + `shuffleContext` forward to its defeat core.
+  if (defeatedTacticId === LOKI_CRUEL_RULER_TACTIC_ID) {
+    resolveCruelRuler(G, ctx, currentPlayer, shuffleContext);
+    return;
+  }
+  // why: WP-693 / D-24510 — Loki's Maniacal Tyrant parks an OPTIONAL 0..4 KO-from-discard
+  // choice for the active player (empty discard → no-op); the resolve move performs the KO.
+  if (defeatedTacticId === LOKI_MANIACAL_TYRANT_TACTIC_ID) {
+    resolveManiacalTyrant(G, currentPlayer);
     return;
   }
 }
