@@ -764,3 +764,158 @@ describe('resolveBitterCaptor (WP-692 / D-24509 — mandatory x-men free recruit
     assert.deepEqual(G.playerZones['0']!.discard, ['hXmen'], 'forced single auto-gain');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-694 / D-24511 — multi-seat "each other player chooses" tactics: Monarch's
+// Decree (Dr. Doom; active draw-vs-discard, discard chains a multi-seat discard)
+// and Vanishing Illusions (Loki; multi-seat KO-a-Victory-Pile-Villain). Both PARK
+// a WP-684 pending seat choice; the flow is exercised end-to-end via resolveSeatChoice.
+// ---------------------------------------------------------------------------
+
+import { resolveSeatChoice, applySeatChoiceTimeoutDefault } from '../moves/seatChoice.resolve.js';
+import {
+  MONARCHS_DECREE_MODE_KIND,
+  MONARCHS_DISCARD_KIND,
+  VANISHING_ILLUSIONS_KO_KIND,
+} from '../moves/seatChoiceTactics.js';
+
+const MONARCHS_DECREE_TACTIC_ID = 'core-mastermind-dr-doom-monarchs-decree';
+const VANISHING_ILLUSIONS_TACTIC_ID = 'core-mastermind-loki-vanishing-illusions';
+
+/** A stub boardgame.io events surface that records setActivePlayers admissions. */
+function makeSeatEvents(): { setActivePlayers: (arg: unknown) => void; admitted: unknown[] } {
+  const admitted: unknown[] = [];
+  return { admitted, setActivePlayers: (arg: unknown) => admitted.push(arg) };
+}
+
+/** Minimal multi-seat G carrying only the fields the two tactics touch. */
+function makeSeatState(zonesBySeat: Record<string, {
+  deck?: string[];
+  hand?: string[];
+  discard?: string[];
+  victory?: string[];
+}>): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const z = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [...(z.deck ?? [])],
+      hand: [...(z.hand ?? [])],
+      discard: [...(z.discard ?? [])],
+      inPlay: [],
+      victory: [...(z.victory ?? [])],
+    };
+  }
+  return { playerZones, ko: [], cardDisplayData: {}, messages: [] } as unknown as LegendaryGameState;
+}
+
+/** A resolveSeatChoice move context for a submitting seat. */
+function makeSeatResolveCtx(
+  G: LegendaryGameState,
+  playerID: string,
+): Parameters<typeof resolveSeatChoice>[0] {
+  return {
+    G,
+    playerID,
+    ctx: { currentPlayer: '0', numPlayers: Object.keys(G.playerZones).length, turn: 2 },
+    events: makeSeatEvents(),
+    random: SHUFFLE.random,
+    log: {},
+  } as unknown as Parameters<typeof resolveSeatChoice>[0];
+}
+
+describe('dispatchTacticOnFight — Monarch\'s Decree (WP-694 / D-24511)', () => {
+  it('parks an active monarchs-decree-mode choice for the defeating player only + admits it', () => {
+    const G = makeSeatState({ '0': {}, '1': { deck: ['b0'] }, '2': { deck: ['c0'] } });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, events);
+    const choice = G.pendingSeatChoice;
+    assert.ok(choice !== undefined, 'a mode choice was parked');
+    assert.equal(choice!.kind, MONARCHS_DECREE_MODE_KIND);
+    assert.deepEqual(choice!.addressedSeats, ['0'], 'active-scoped to the defeating player');
+    assert.equal(events.admitted.length, 1, 'the addressed seat was admitted via setActivePlayers');
+  });
+
+  it('AC-2 draw branch: each OTHER player draws one card; the defeating player draws nothing', () => {
+    const G = makeSeatState({ '0': { deck: ['a0'] }, '1': { deck: ['b0', 'b1'] }, '2': { deck: ['c0', 'c1'] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
+    resolveSeatChoice(makeSeatResolveCtx(G, '0'), { optionIndex: 0 }); // draw
+    assert.equal(G.pendingSeatChoice, undefined, 'mode choice cleared; no chain on draw');
+    assert.deepEqual(G.playerZones['0']!.hand, [], 'defeating player drew nothing');
+    assert.deepEqual(G.playerZones['1']!.hand, ['b0']);
+    assert.deepEqual(G.playerZones['2']!.hand, ['c0']);
+  });
+
+  it('AC-3 discard branch: chains a multi-seat discard for every other seat with a card', () => {
+    const G = makeSeatState({
+      '0': { hand: ['own'] },
+      '1': { hand: ['h1a', 'h1b'] },
+      '2': { hand: [] }, // empty hand → not addressed
+      '3': { hand: ['h3a'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
+    resolveSeatChoice(makeSeatResolveCtx(G, '0'), { optionIndex: 1 }); // discard
+    const discardChoice = G.pendingSeatChoice;
+    assert.ok(discardChoice !== undefined, 'the discard multi-seat choice was chained');
+    assert.equal(discardChoice!.kind, MONARCHS_DISCARD_KIND);
+    assert.deepEqual(discardChoice!.addressedSeats, ['1', '3'], 'skips self (0) and the empty-hand seat (2)');
+    // Every addressed seat submits; the atomic apply runs on the last.
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 }); // discard h1b
+    resolveSeatChoice(makeSeatResolveCtx(G, '3'), { optionIndex: 0 }); // discard h3a
+    assert.equal(G.pendingSeatChoice, undefined, 'discard choice applied + cleared');
+    assert.deepEqual(G.playerZones['1']!.discard, ['h1b']);
+    assert.deepEqual(G.playerZones['3']!.discard, ['h3a']);
+    assert.deepEqual(G.playerZones['0']!.hand, ['own'], 'the defeating player did not discard');
+  });
+
+  it('discard branch with no other seat holding a card parks nothing (clean no-op)', () => {
+    const G = makeSeatState({ '0': { hand: ['own'] }, '1': { hand: [] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
+    resolveSeatChoice(makeSeatResolveCtx(G, '0'), { optionIndex: 1 });
+    assert.equal(G.pendingSeatChoice, undefined, 'nothing to discard → nothing chained');
+  });
+});
+
+describe('dispatchTacticOnFight — Vanishing Illusions (WP-694 / D-24511)', () => {
+  it('AC-4 parks a multi-seat KO choice for every other seat with a Victory-Pile Villain', () => {
+    const G = makeSeatState({
+      '0': { victory: ['core-villain-hydra-own#0'] }, // defeating player — skipped
+      '1': { victory: ['core-villain-hydra-a#0', 'core-villain-hydra-b#0'] },
+      '2': { victory: [] }, // no villain → not addressed
+      '3': { victory: ['core-villain-brotherhood-c#0'] },
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, events);
+    const choice = G.pendingSeatChoice;
+    assert.ok(choice !== undefined);
+    assert.equal(choice!.kind, VANISHING_ILLUSIONS_KO_KIND);
+    assert.deepEqual(choice!.addressedSeats, ['1', '3'], 'skips self (0) and the no-villain seat (2)');
+    assert.equal(events.admitted.length, 1, 'addressed seats admitted');
+    // Resolve each seat; the chosen villains move to G.ko atomically on the last submit.
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 }); // KO hydra-b
+    resolveSeatChoice(makeSeatResolveCtx(G, '3'), { optionIndex: 0 }); // KO brotherhood-c
+    assert.equal(G.pendingSeatChoice, undefined, 'applied + cleared');
+    assert.deepEqual(G.playerZones['1']!.victory, ['core-villain-hydra-a#0']);
+    assert.deepEqual(G.playerZones['3']!.victory, []);
+    assert.deepEqual(G.ko, ['core-villain-hydra-b#0', 'core-villain-brotherhood-c#0'], 'KO to top-level G.ko');
+    assert.deepEqual(G.playerZones['0']!.victory, ['core-villain-hydra-own#0'], 'the defeating player is untouched');
+  });
+
+  it('a seat with no Victory-Pile Villain no-ops; no other seat qualifying parks nothing', () => {
+    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: [] }, '2': { victory: [] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
+    assert.equal(G.pendingSeatChoice, undefined, 'no other seat qualifies → nothing parked');
+  });
+});
+
+describe('multi-seat tactic disconnect/timeout default (WP-694 / D-24511)', () => {
+  it('AC-6 resolves an absent seat to defaultOptionIndex (0) and applies atomically', () => {
+    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: ['core-villain-hydra-a#0'] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
+    assert.ok(G.pendingSeatChoice !== undefined);
+    // Governing-policy default resolves the absent seat to its default (index 0).
+    applySeatChoiceTimeoutDefault(G, ['1']);
+    assert.equal(G.pendingSeatChoice, undefined, 'defaulted seat completed the choice → applied + cleared');
+    assert.deepEqual(G.ko, ['core-villain-hydra-a#0'], 'the default KO landed in G.ko');
+  });
+});

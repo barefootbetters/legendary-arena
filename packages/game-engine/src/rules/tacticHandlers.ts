@@ -34,6 +34,15 @@ import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+// why: WP-694 / D-24511 — the two multi-seat tactics PARK a WP-684 pending seat choice.
+// parkSeatChoice is the foundational park entry; the mode/KO builders are pure (from the
+// no-cycle seatChoiceTactics module). tacticHandlers imports these one-directionally;
+// seatChoice.resolve.ts never imports tacticHandlers (no cycle).
+import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+import {
+  buildMonarchsDecreeModeChoice,
+  buildVanishingIllusionsChoice,
+} from '../moves/seatChoiceTactics.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -158,6 +167,33 @@ const BITTER_CAPTOR_FILTER: GiveHqHeroFilter = {
   kind: 'team',
   values: [TEAM_X_MEN],
 };
+
+// why: WP-694 / D-24511 — the two multi-seat "each other player chooses" core mastermind
+// tactic ext_ids, same `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as
+// the constants above. Each names the PRINTED Fight text (data/cards/core.json) the resolver
+// parks a WP-684 pending seat choice for:
+//   Monarch's Decree     "Choose one: each other player draws a card OR each other player
+//                         discards a card." (Dr. Doom)
+//   Vanishing Illusions  "Each other player KOs a Villain from their Victory Pile." (Loki)
+const MONARCHS_DECREE_TACTIC_ID: CardExtId =
+  'core-mastermind-dr-doom-monarchs-decree';
+const VANISHING_ILLUSIONS_TACTIC_ID: CardExtId =
+  'core-mastermind-loki-vanishing-illusions';
+
+/**
+ * The minimal boardgame.io events surface the two multi-seat tactic resolvers thread into
+ * parkSeatChoice (for the setActivePlayers stage ride that admits the non-active seats).
+ *
+ * // why: WP-694 / D-24511 — narrowed via a structural type (mirroring seatChoice.resolve.ts's
+ * SeatChoiceEvents) so this module needs no boardgame.io import. Optional so a unit/replay
+ * context without a live framework parks on G and resolves directly.
+ */
+interface TacticSeatChoiceEvents {
+  setActivePlayers?: (arg: {
+    value: Record<string, { stage: string; moveLimit: number }>;
+    revert?: boolean;
+  }) => void;
+}
 
 /**
  * Resolves Doctor Octopus's "Octet of Valence Electrons" tactic Fight effect:
@@ -300,6 +336,10 @@ export function resolveCrushingShockwave(
  * @param shuffleContext - Carries `random.Shuffle` for any resolver that draws
  *   (HYDRA Conspiracy). The bare `ctx` has no `random` (the D-24051 hazard the
  *   dodgeCard comment records), so the caller passes its full move context.
+ * @param events - The move's boardgame.io events (WP-694 / D-24511), threaded so the
+ *   two multi-seat tactics can park a WP-684 seat choice (the setActivePlayers stage ride
+ *   that admits the non-active seats). Optional — a unit/replay context omits it and the
+ *   parked choice resolves directly against G.
  */
 /**
  * Counts villains of one group in a player's Victory Pile.
@@ -837,11 +877,80 @@ export function resolveBitterCaptor(
   freeRecruitFromHqByFilter(G, currentPlayer, BITTER_CAPTOR_FILTER, false, 'Bitter Captor');
 }
 
+/**
+ * Resolves core Dr. Doom's "Monarch's Decree" tactic Fight effect: "Choose one: each
+ * other player draws a card OR each other player discards a card."
+ *
+ * Parks a WP-684 active single-seat draw-vs-discard mode choice addressed to the
+ * defeating player only. On "draw" (option 0) each other player draws one card
+ * deterministically inside the mode apply; on "discard" (option 1) the resolve move
+ * chains a simultaneous multi-seat discard for every other seat holding a card.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic (the sole addressed seat).
+ */
+export function resolveMonarchsDecree(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const modeChoice = buildMonarchsDecreeModeChoice(currentPlayer);
+  parkSeatChoice(G, events, modeChoice);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} must choose — each other player draws a card, or each other player discards a card (Monarch's Decree).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves core Loki's "Vanishing Illusions" tactic Fight effect: "Each other player
+ * KOs a Villain from their Victory Pile."
+ *
+ * Parks a WP-684 simultaneous multi-seat KO choice addressed to every OTHER seat holding
+ * ≥1 Victory-Pile Villain (one option per Villain); each addressed seat's chosen Villain
+ * moves to the top-level KO pile (G.ko) atomically. A seat with no Victory-Pile Villain is
+ * not addressed (no-op); when no other seat qualifies, nothing is parked.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic. Skipped — the effect targets
+ *   the OTHER players ("each other player").
+ */
+export function resolveVanishingIllusions(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  // why: "each OTHER player" — a tactic Fight penalizes the defeater's opponents, not the
+  // defeater. Enumerate every seat except currentPlayer in ascending id order (deterministic).
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  const koChoice = buildVanishingIllusionsChoice(G, otherSeats);
+  if (koChoice === undefined) {
+    // why: no other seat holds a Victory-Pile Villain — a clean no-op (moves never throw).
+    pushLog(G,
+      `Fight effect: no other player had a Villain in their Victory Pile to KO (Vanishing Illusions).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, koChoice);
+  pushLog(G,
+    `Fight effect: each other player must KO a Villain from their Victory Pile (Vanishing Illusions).`,
+    'neutral',
+  );
+}
+
 export function dispatchTacticOnFight(
   G: LegendaryGameState,
   ctx: unknown,
   defeatedTacticId: CardExtId,
   shuffleContext: ShuffleProvider,
+  events?: TacticSeatChoiceEvents,
 ): void {
   // why: narrow the unknown ctx to the one field this dispatch reads (the
   // defeating player), mirroring defeatMastermindTacticCore - no framework import.
@@ -905,6 +1014,19 @@ export function dispatchTacticOnFight(
   // free-recruit (x-men) choice (auto-gain when exactly one eligible; no decline).
   if (defeatedTacticId === BITTER_CAPTOR_TACTIC_ID) {
     resolveBitterCaptor(G, currentPlayer);
+    return;
+  }
+  // why: WP-694 / D-24511 — Dr. Doom's Monarch's Decree parks an ACTIVE draw-vs-discard
+  // mode choice for the defeating player (the "discard" branch chains a multi-seat discard).
+  // Threads events for the WP-684 setActivePlayers stage ride that admits the other seats.
+  if (defeatedTacticId === MONARCHS_DECREE_TACTIC_ID) {
+    resolveMonarchsDecree(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-694 / D-24511 — Loki's Vanishing Illusions parks a simultaneous MULTI-SEAT KO
+  // choice for every other seat holding a Victory-Pile Villain (skips currentPlayer).
+  if (defeatedTacticId === VANISHING_ILLUSIONS_TACTIC_ID) {
+    resolveVanishingIllusions(G, events, currentPlayer);
     return;
   }
 }

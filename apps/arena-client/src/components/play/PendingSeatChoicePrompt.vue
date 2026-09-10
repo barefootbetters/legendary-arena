@@ -93,6 +93,15 @@ export default defineComponent({
           return 'Gain a Wound to your hand?';
         case 'random-acts-pass-left':
           return 'Choose a card to pass to the player on your left';
+        // why: WP-694 / D-24511 — the two multi-seat core mastermind tactics. The
+        // Monarch's Decree mode choice is the active player's draw-vs-discard pick; the
+        // discard + KO kinds are each addressed seat's own concurrent pick.
+        case 'monarchs-decree-mode':
+          return 'Monarch’s Decree: choose one for the other players';
+        case 'monarchs-discard':
+          return 'Choose a card to discard (Monarch’s Decree)';
+        case 'vanishing-illusions-ko':
+          return 'Choose a Villain to KO from your Victory Pile (Vanishing Illusions)';
         default:
           return 'Your choice';
       }

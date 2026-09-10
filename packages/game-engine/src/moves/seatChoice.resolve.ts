@@ -37,6 +37,19 @@ import {
   buildPassLeftChoice,
   RANDOM_ACTS_WOUND_KIND,
 } from './seatChoiceCards.js';
+// why: WP-694 / D-24511 — the two multi-seat core mastermind tactics' kind-specific
+// applies + the Monarch's-discard chain builder + the mode reader. Pure module (no
+// boardgame.io / parkSeatChoice import) so it never cycles with this one.
+import {
+  applyMonarchsDecreeMode,
+  applyMonarchsDiscard,
+  applyVanishingIllusionsKo,
+  buildMonarchsDiscardChoice,
+  readMonarchsDecreeSelectedMode,
+  MONARCHS_DECREE_MODE_KIND,
+  MONARCHS_DISCARD_KIND,
+  VANISHING_ILLUSIONS_KO_KIND,
+} from './seatChoiceTactics.js';
 import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -291,6 +304,15 @@ export function resolveSeatChoice(
   // Step 5: apply atomically only when every addressed seat has submitted.
   if (allSeatsSubmitted(choice)) {
     const appliedKind = choice.kind;
+    // why: WP-694 / D-24511 — capture the Monarch's-Decree active seat + chosen mode BEFORE
+    // the apply clears the choice, so the "discard" branch can chain its multi-seat discard
+    // (the mode's own submissions are gone once G.pendingSeatChoice is deleted).
+    const monarchsActiveSeat =
+      appliedKind === MONARCHS_DECREE_MODE_KIND ? choice.addressedSeats[0] : undefined;
+    const monarchsMode =
+      appliedKind === MONARCHS_DECREE_MODE_KIND
+        ? readMonarchsDecreeSelectedMode(choice)
+        : undefined;
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     applySeatChoiceByKind(G, choice, { random });
@@ -302,6 +324,15 @@ export function resolveSeatChoice(
     // only in this live move context.
     if (appliedKind === RANDOM_ACTS_WOUND_KIND) {
       chainRandomActsPassLeft(G, ctx, events);
+    }
+    // why: WP-694 / D-24511 — Monarch's Decree "discard" branch CHAINS the simultaneous
+    // multi-seat discard (each other player picks a card to discard). The chain parks here
+    // (not inside the ctx-free apply) because admitting the NON-ACTIVE seats needs the move's
+    // events.setActivePlayers — exactly as chainRandomActsPassLeft chains the Random Acts pass
+    // (WP-683 precedent). The "draw" branch already resolved inside the mode apply and chains
+    // nothing.
+    if (monarchsMode === 'discard' && monarchsActiveSeat !== undefined) {
+      chainMonarchsDiscard(G, monarchsActiveSeat, events);
     }
   }
 }
@@ -330,6 +361,23 @@ function applySeatChoiceByKind(
 ): void {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
     applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext);
+    return;
+  }
+  // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each
+  // other player (reshuffle-aware, so it needs the shuffle context); the "discard" branch is
+  // a no-op here and chains its multi-seat discard from the live move context below.
+  if (choice.kind === MONARCHS_DECREE_MODE_KIND) {
+    applyMonarchsDecreeMode(G, choice, shuffleContext);
+    return;
+  }
+  // why: WP-694 / D-24511 — the two simultaneous multi-seat tactic applies (each atomic +
+  // ascending-seat-order); neither draws, so neither needs the shuffle context.
+  if (choice.kind === MONARCHS_DISCARD_KIND) {
+    applyMonarchsDiscard(G, choice);
+    return;
+  }
+  if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
+    applyVanishingIllusionsKo(G, choice);
     return;
   }
   if (applySeatChoiceCard(G, choice)) {
@@ -372,6 +420,39 @@ function chainRandomActsPassLeft(
   }
   parkSeatChoice(G, events, passChoice);
   pushLog(G, `Each player must choose a card to pass to the player on their left (Random Acts of Unkindness).`, 'neutral');
+}
+
+/**
+ * Chains Monarch's Decree's simultaneous multi-seat discard after the active seat chose
+ * the "discard" mode: builds the discard choice for every OTHER seat holding ≥1 hand card
+ * and parks it (admitting the addressed seats via the framework stage ride).
+ *
+ * // why: WP-694 / D-24511 — parked from the live move context (not the ctx-free apply)
+ * because admitting the NON-ACTIVE seats needs the move's events.setActivePlayers, mirroring
+ * chainRandomActsPassLeft. "Each other player" = every seat except the active seat that chose
+ * the mode. When no other seat holds a card, buildMonarchsDiscardChoice returns undefined and
+ * the chain logs a no-op.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the discard).
+ * @param activeSeat - The seat that chose the Monarch's Decree mode (skipped — "each other").
+ * @param events - The move's boardgame.io events (for the stage-ride admission).
+ */
+function chainMonarchsDiscard(
+  G: LegendaryGameState,
+  activeSeat: string,
+  events: SeatChoiceEvents | undefined,
+): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== activeSeat)
+    .sort();
+  const discardChoice = buildMonarchsDiscardChoice(G, otherSeats);
+  if (discardChoice === undefined) {
+    // why: no other seat holds a card to discard — a clean no-op (moves never throw).
+    pushLog(G, `No other player had a card to discard (Monarch's Decree).`, 'neutral');
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G, `Each other player must choose a card to discard (Monarch's Decree).`, 'neutral');
 }
 
 /**
