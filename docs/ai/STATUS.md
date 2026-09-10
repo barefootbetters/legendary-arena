@@ -55,6 +55,47 @@ two `executable` rows in `scripts/coverage/tactic-provenance.json`; regenerated
 `effect-implementation-index.json`. Suites green: engine 3424/0, arena-client 1771/0,
 dashboard 482/0. D-24026 live-verify operator-pending (post-deploy, 2+-seat match).
 
+### WP-693 — Cruel Ruler + Maniacal Tyrant Loki tactics (EC-730 / D-24510) (2026-09-10)
+
+Implemented the two **active-player-choice** core Loki mastermind tactics as
+per-tactic resolvers in `packages/game-engine/src/rules/tacticHandlers.ts`, the
+third slice of the core mastermind-tactics arc (WP-691..696). Both were inert
+before this — `dispatchTacticOnFight` did not key their ext_ids.
+
+**Cruel Ruler** ("Fight: Defeat a Villain in the City for free") reuses the shipped
+WP-486/682 free-defeat family: a new `'cruel-ruler'` discriminant on
+`PendingDefeatChoice` + a new all-City-Villain target builder
+`buildCityVillainDefeatTargets` (every occupied City space, ascending, villain-only,
+**no** Mastermind, **no** Guard filter — faithful to "for free"). Cardinality
+0/1/≥2 → no-op / auto-defeat via the shared `dispatchDefeatWithBystanderTarget` /
+park a `PendingDefeatChoice`. The defeat routes through `defeatCityVillainCore` (no
+attack spent, Bystanders + captured Heroes + `onFight` fire); `resolveDefeatChoice`
+accepts the new discriminant. No new resolve move.
+
+**Maniacal Tyrant** ("Fight: KO up to four cards from your discard pile") is a NEW
+bounded-optional 0..4 multi-select pending family: `G.pendingKoDiscardChoices?` of
+`PendingKoDiscardChoice { choiceType: 'ko-from-discard', playerID, maxCount: 4 }`, a
+new `resolveKoDiscardChoice({ cardIds })` move (`client:false`) that KOs the active
+player's chosen own-discard cards to global `G.ko` (remove-before-`koCard`; distinct
+ids; 0 legal; over-cap/dup/absent/wrong-player/empty-queue silent no-ops), and a
+resolver that parks on a non-empty discard.
+
+**Cross-layer.** `pendingKoDiscardChoice` carried through the UIState five-step
+(type → build → owner-only filter pass-through → audience test → diagnostics) + a
+new `PendingKoDiscardChoicePrompt.vue` wired into the pending-choice cascade
+(`useTurnActions` / `TurnActionBar` / `PlayDesktop` / `PlayMobile`); Cruel Ruler adds
+a `'cruel-ruler'` heading branch to `PendingDefeatChoicePrompt.vue`. Block-all guard
+`hasPendingKoDiscardChoice(G)` at every action-move site; `resolveKoDiscardChoice`
+enrolled in `SIMULATION_MOVE_NAMES` + both sim `MOVE_MAP`s + `game.test.ts` (37→38).
+tactic-provenance rows + effect-index regen.
+
+**Verification.** `pnpm -r build` 0; engine 3435/0, arena-client 1776/0, dashboard
+482/0. `cards:check` reproducible; `effect-index:check` + `sim:runtime-observed:check`
+current (runtime-observed byte-identical → dashboard in-play-coverage pin unchanged).
+**No re-pin** — `PRE_WP080_HASH` + sentinel `finalStateHash` byte-identical (no
+committed fixture defeats a Loki tactic). D-24026 live-verify operator-pending
+(post-deploy).
+
 ### WP-691 — Deterministic core mastermind tactics (EC-728 / D-24508) (2026-09-10)
 
 Implemented the three **no-choice** remaining core mastermind tactics as

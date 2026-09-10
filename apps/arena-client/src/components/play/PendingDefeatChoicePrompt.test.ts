@@ -18,7 +18,7 @@ import PendingDefeatChoicePrompt from './PendingDefeatChoicePrompt.vue';
 
 const noopSubmit: SubmitMove = () => {};
 
-function choiceOfType(choiceType: 'defeat-with-bystander' | 'pure-fury'): UIPendingDefeatChoice {
+function choiceOfType(choiceType: 'defeat-with-bystander' | 'pure-fury' | 'cruel-ruler'): UIPendingDefeatChoice {
   return {
     choiceType,
     playerID: 'player-0',
@@ -41,5 +41,12 @@ describe('PendingDefeatChoicePrompt heading (WP-682 / D-24499)', () => {
       props: { pendingDefeatChoice: choiceOfType('pure-fury'), viewerPlayerId: 'player-0', submitMove: noopSubmit },
     });
     assert.match(wrapper.find('.pending-defeat-choice-prompt__heading').text(), /Pure Fury/);
+  });
+
+  test('names Cruel Ruler for the cruel-ruler choiceType (WP-693 / D-24510)', () => {
+    const wrapper = mount(PendingDefeatChoicePrompt, {
+      props: { pendingDefeatChoice: choiceOfType('cruel-ruler'), viewerPlayerId: 'player-0', submitMove: noopSubmit },
+    });
+    assert.match(wrapper.find('.pending-defeat-choice-prompt__heading').text(), /Cruel Ruler/);
   });
 });

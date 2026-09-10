@@ -41,6 +41,7 @@ import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
+import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -131,6 +132,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingPutCardsOnDeckChoice(G)) return; // why: WP-538 / D-24347 block-all guard
   if (hasPendingReorderChoice(G)) return; // why: WP-479 / D-24286 block-all guard
   if (hasPendingDefeatChoice(G)) return; // why: WP-486 / D-24291 block-all guard
+  if (hasPendingKoDiscardChoice(G)) return; // why: WP-693 / D-24510 block-all guard
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)

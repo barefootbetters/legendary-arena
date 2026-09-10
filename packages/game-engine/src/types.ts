@@ -713,12 +713,45 @@ export interface PendingDefeatChoice {
    * eligible-target snapshot) and dispatch through the SAME shared free-defeat core
    * (dispatchDefeatWithBystanderTarget), differing only in the predicate that built
    * the snapshot — so resolveDefeatChoice accepts either discriminant.
+   *
+   * // why: WP-693 / D-24510 — Loki's Cruel Ruler ("Defeat a Villain in the City for
+   * free") is a THIRD member of the same family: it parks the SAME shape (a
+   * deterministic City-Villain target snapshot, built by buildCityVillainDefeatTargets)
+   * and dispatches through the SAME shared free-defeat core, so resolveDefeatChoice
+   * accepts 'cruel-ruler' too. It differs only in the predicate (every City Villain,
+   * not only Bystander-holders) and in offering no Mastermind target.
    */
-  choiceType: 'defeat-with-bystander' | 'pure-fury';
+  choiceType: 'defeat-with-bystander' | 'pure-fury' | 'cruel-ruler';
   /** The player who must choose which target to defeat. */
   playerID: string;
   /** The eligible targets at park time, in deterministic order (City ascending, Mastermind last). */
   targets: DefeatWithBystanderTarget[];
+}
+
+/**
+ * Pending KO-from-discard player choice state (WP-693 / D-24510).
+ *
+ * Created when Loki's "Maniacal Tyrant" tactic Fight ("KO up to four cards from
+ * your discard pile") is defeated with a non-empty active-player discard. Appended
+ * to G.pendingKoDiscardChoices[] (FIFO queue); front-popped by
+ * resolveKoDiscardChoice after the player selects which cards to KO. Must be
+ * undefined or empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24510 — this is a BOUNDED, OPTIONAL 0..N multi-select (0 is legal —
+ * "up to four"), the first such pending pattern in the engine: the exact-count
+ * siblings (PendingPutCardsOnDeckChoice, PendingReorderChoice) reject any count
+ * other than their fixed `count`. Stores NO card snapshot — the choice is "which
+ * of your own discard cards to KO", validated fresh against the current discard by
+ * the resolve move (the block-all guard freezes the discard while pending). Only
+ * the active player (the defeater) resolves it, and only from their OWN discard.
+ */
+export interface PendingKoDiscardChoice {
+  /** Discriminant for future extensibility; always 'ko-from-discard'. */
+  choiceType: 'ko-from-discard';
+  /** The player who may KO cards from their own discard pile. */
+  playerID: string;
+  /** The maximum number of cards the player may KO (MANIACAL_TYRANT_KO_MAX = 4), clamped by discard size at resolve. */
+  maxCount: number;
 }
 
 /**
@@ -1530,6 +1563,19 @@ export interface LegendaryGameState {
   // pending choice" (guards test `.length`).
   /** FIFO queue of pending defeat-with-a-Bystander choices awaiting player resolution (WP-486). */
   pendingDefeatChoices?: PendingDefeatChoice[] | undefined;
+
+  // why: WP-693 / D-24510 — FIFO queue of pending KO-from-discard choices (at most
+  // one per defeated Loki Maniacal Tyrant tactic, parked ONLY for the active player
+  // whose own discard is the KO source). Entries are appended by resolveManiacalTyrant;
+  // front-popped by resolveKoDiscardChoice after the player selects 0..4 cards. Must be
+  // undefined or empty at every turn-end. Runtime-only, never persisted (snapshots stay
+  // counts-only), mirroring pendingDefeatChoices; **lazily initialized at the park site,
+  // never in Game.setup** — an undefined field is omitted from canonical JSON, keeping
+  // the empty-replay PRE_WP080_HASH / hashGameState oracles from re-pinning. Optional so
+  // existing test state literals need no update. Absent (undefined) or empty [] both mean
+  // "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending KO-from-discard choices awaiting player resolution (WP-693). */
+  pendingKoDiscardChoices?: PendingKoDiscardChoice[] | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

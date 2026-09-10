@@ -28,6 +28,7 @@ import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
+import { hasPendingKoDiscardChoice } from './koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
@@ -145,6 +146,7 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   if (hasPendingPutCardsOnDeckChoice(G)) return; // WP-538 / D-24347
   if (hasPendingReorderChoice(G)) return; // WP-479 / D-24286
   if (hasPendingDefeatChoice(G)) return; // WP-486 / D-24291
+  if (hasPendingKoDiscardChoice(G)) return; // why: WP-693 / D-24510 block-all guard
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return; // D-24019
   if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)

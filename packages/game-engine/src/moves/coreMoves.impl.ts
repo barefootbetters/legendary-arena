@@ -23,6 +23,7 @@ import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from './discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from './putCardsOnDeckChoice.resolve.js';
+import { hasPendingKoDiscardChoice } from './koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
@@ -113,6 +114,12 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // why: block-all guard (WP-486 / D-24291) — a pending defeat-with-a-Bystander
   // choice freezes the board until the current player picks which target to defeat.
   if (hasPendingDefeatChoice(G)) {
+    return;
+  }
+  // why: block-all guard (WP-693 / D-24510) — a pending KO-from-discard choice
+  // (Loki's Maniacal Tyrant) freezes the board until the active player selects 0..4
+  // of their own discard cards to KO.
+  if (hasPendingKoDiscardChoice(G)) {
     return;
   }
 
@@ -335,6 +342,12 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingDefeatChoice(G)) {
     return;
   }
+  // why: block-all guard (WP-693 / D-24510) — a pending KO-from-discard choice
+  // (Loki's Maniacal Tyrant) freezes the board until the active player selects 0..4
+  // of their own discard cards to KO.
+  if (hasPendingKoDiscardChoice(G)) {
+    return;
+  }
 
   // why: block-all guard (D-24019) — optional-KO-reward choice pending; the
   // board is frozen until resolved (beside the D-24008 KO-hero check above).
@@ -518,6 +531,12 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   // why: block-all guard (WP-486 / D-24291) — a pending defeat-with-a-Bystander
   // choice freezes the board until the current player picks which target to defeat.
   if (hasPendingDefeatChoice(G)) {
+    return;
+  }
+  // why: block-all guard (WP-693 / D-24510) — a pending KO-from-discard choice
+  // (Loki's Maniacal Tyrant) freezes the board until the active player selects 0..4
+  // of their own discard cards to KO.
+  if (hasPendingKoDiscardChoice(G)) {
     return;
   }
 

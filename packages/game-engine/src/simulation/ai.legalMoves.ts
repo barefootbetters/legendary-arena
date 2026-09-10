@@ -25,6 +25,7 @@ import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
+import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
@@ -132,6 +133,11 @@ export const SIMULATION_MOVE_NAMES = [
   // the sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not
   // within-turn move-steps — the WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveDefeatChoice',
+  // why: WP-693 / D-24510 — getLegalMoves short-circuits to resolveKoDiscardChoice when a
+  // Loki Maniacal Tyrant KO-from-discard choice is parked; it MUST be dispatchable in the
+  // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not within-turn
+  // move-steps — the WP-289 hang). Asserted by simulation.moveDispatch.drift.test.ts.
+  'resolveKoDiscardChoice',
   'resolveOptionalKoReward',
   // why: WP-663 / D-24474 — getLegalMoves short-circuits to resolvePlayVillainTopChoice
   // (single DECLINE default) when a Shadowed Thoughts play-top-Villain-Deck choice is parked;
@@ -609,6 +615,16 @@ export function getLegalMoves(
         ? { name: 'resolveDefeatChoice', args: { targetKind: 'villain', cityIndex: target.cityIndex } }
         : { name: 'resolveDefeatChoice', args: { targetKind: 'mastermind' } },
     ];
+  }
+
+  // why: WP-693 / D-24510 — pending KO-from-discard short-circuit (Loki's Maniacal Tyrant).
+  // The engine block-all guard freezes every other move, so the bot must resolve it first.
+  // The deterministic default is the EMPTY "KO nothing" selection — always valid and
+  // unblocking (the choice is OPTIONAL, "up to four"), so par/replay stay byte-identical to
+  // a no-KO world except for the extra park→resolve move pair; only live human play gets the
+  // prompt. Mirrors the resolvePutAnyNumberBottomHQ empty-default. Returns EXACTLY 1 move.
+  if (hasPendingKoDiscardChoice(gameState)) {
+    return [{ name: 'resolveKoDiscardChoice', args: { cardIds: [] } }];
   }
 
   // why: WP-427 / D-24248 — pending optional-put-bottom-HQ short-circuit. While a

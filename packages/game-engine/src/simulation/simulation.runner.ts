@@ -88,6 +88,7 @@ import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
+import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -332,6 +333,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-486 / D-24291 — getLegalMoves short-circuits to resolveDefeatChoice when a
   // Silent Sniper defeat-with-a-Bystander choice is parked; a missing dispatch entry hangs the per-turn loop.
   resolveDefeatChoice: (context, args) => resolveDefeatChoice(context as never, args as never),
+  // why: WP-693 / D-24510 — getLegalMoves short-circuits to resolveKoDiscardChoice when a
+  // Loki Maniacal Tyrant KO-from-discard choice is parked; a missing dispatch entry hangs the per-turn loop.
+  resolveKoDiscardChoice: (context, args) => resolveKoDiscardChoice(context as never, args as never),
   resolveOptionalKoReward: (context, args) => resolveOptionalKoReward(context as never, args as never),
   resolvePlayVillainTopChoice: (context, args) => resolvePlayVillainTopChoice(context as never, args as never),
   resolveVictoryPileCardPick: (context, args) => resolveVictoryPileCardPick(context as never, args as never),

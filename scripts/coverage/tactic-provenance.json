@@ -79,6 +79,18 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveVanishingIllusions",
       "wp": "WP-694",
       "decision": "D-24511"
+    },
+    "core-mastermind-loki-cruel-ruler": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCruelRuler",
+      "wp": "WP-693",
+      "decision": "D-24510"
+    },
+    "core-mastermind-loki-maniacal-tyrant": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveManiacalTyrant",
+      "wp": "WP-693",
+      "decision": "D-24510"
     }
   }
 }
