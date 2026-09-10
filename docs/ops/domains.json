@@ -87,6 +87,17 @@
       "notes": "Live since 2026-06-02. CF Pages project: legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Ships in mock mode (VITE_USE_MOCKS=true on CF Pages Production scope); real-data wiring is a separate WP."
     },
     {
+      "name": "Internal admin dashboard (pages.dev alias)",
+      "url": "https://legendary-arena-dashboard.pages.dev",
+      "host": "Cloudflare Pages + Cloudflare Access",
+      "source": "apps/dashboard",
+      "expectedStatus": [302, 401, 403],
+      "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
+      "state": "planned",
+      "anchor": "dashboard",
+      "notes": "The CF Pages project's built-in production alias. The dashboard.legendary-arena.com Access application (WP-197) gates ONLY the custom domain, so this alias has served the operator SPA bundle UNGATED since 2026-06-02 (observed 200 on 2026-09-10). Same gate-before-expose concern as the custom domain: the in-app mock LoginPage accepts any email, so an ungated alias exposes it. state is 'planned' deliberately: until the gate is enabled the probe returns 200 (not the expected 302/401/403), so check:domains reports FAIL for this row — that FAIL is the actionable 'alias not yet gated' signal, not a regression. Close it via Pages -> legendary-arena-dashboard -> Settings -> Enable access policy (auto-gates the *.pages.dev production alias AND preview deployments with the same Email-OTP operator allow rule; see DOMAINS.md#dashboard). Then re-run check:domains: expect READY, and flip state 'planned' -> 'live'."
+    },
+    {
       "name": "API (game server, friendly hostname)",
       "url": "https://api.legendary-arena.com/health",
       "host": "Render (legendary-arena-server)",
