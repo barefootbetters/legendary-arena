@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 678,
+    "totalRows": 679,
     "byStatus": {
-      "executable": 274,
+      "executable": 278,
       "deferred": 16,
       "condition": 26,
       "unsupported": 323,
-      "unmarked": 38,
+      "unmarked": 35,
       "subsystem": 1
     },
     "distinctMechanics": 133
@@ -3253,12 +3253,37 @@
       "extId": "core/captain-america",
       "heroName": "Captain America",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "a-day-unlike-any-other",
+          "name": "A Day Unlike Any Other"
+        },
+        {
+          "slug": "perfect-teamwork",
+          "name": "Perfect Teamwork"
+        }
+      ]
+    },
+    {
+      "extId": "core/captain-america",
+      "heroName": "Captain America",
+      "set": "core",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "designs": [
+        {
+          "slug": "avengers-assemble",
+          "name": "Avengers Assemble!"
+        }
+      ]
     },
     {
       "extId": "core/cyclops",
@@ -3300,12 +3325,17 @@
       "extId": "core/deadpool",
       "heroName": "Deadpool",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "oddball",
+          "name": "Oddball"
+        }
+      ]
     },
     {
       "extId": "core/emma-frost",
@@ -3459,12 +3489,17 @@
       "extId": "core/nick-fury",
       "heroName": "Nick Fury",
       "set": "core",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "legendary-commander",
+          "name": "Legendary Commander"
+        }
+      ]
     },
     {
       "extId": "core/rogue",

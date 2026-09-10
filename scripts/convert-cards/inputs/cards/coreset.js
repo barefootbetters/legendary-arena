@@ -238,9 +238,7 @@ exports.CoreSet = {
                             "You get ",
                             { bold: "+1" },
                             { icon: 1 },
-                            " for each other Hero with an odd-numbered ",
-                            { icon: 3 },
-                            " you played this turn."
+                            " for each other Hero with an odd-numbered cost you played this turn."
                         ]
                     ]
                 },

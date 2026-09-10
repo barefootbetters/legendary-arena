@@ -380,7 +380,7 @@ export function findFailedCondition(
  * @param playerID - Active player ID.
  * @returns How many distinct hero classes are in play for that player.
  */
-function countDistinctHeroClassesInPlay(
+export function countDistinctHeroClassesInPlay(
   G: LegendaryGameState,
   playerID: string,
 ): number {

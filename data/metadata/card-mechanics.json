@@ -87,11 +87,14 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 9,
+      "cardCount": 12,
       "cardIds": [
         "asrd/thor",
         "co2e/black-widow",
         "core/black-widow",
+        "core/captain-america",
+        "core/deadpool",
+        "core/nick-fury",
         "cvwr/goliath",
         "noir/luke-cage-noir",
         "shld/agent-phil-coulson",
@@ -1065,8 +1068,9 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
+        "core/captain-america",
         "noir/luke-cage-noir",
         "vnom/venom"
       ],
@@ -1766,7 +1770,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 38,
+      "cardCount": 35,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/howard-the-duck",
@@ -1777,9 +1781,6 @@
         "co2e/nick-fury",
         "co2e/spider-man-miles-morales",
         "co2e/storm",
-        "core/captain-america",
-        "core/deadpool",
-        "core/nick-fury",
         "cosm/nebula",
         "cvwr/captain-america-secret-avenger",
         "cvwr/daredevil",
@@ -2473,7 +2474,8 @@
     },
     "core/captain-america": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count",
+        "recruit-per-count"
       ]
     },
     "core/cyclops": {
@@ -2484,7 +2486,7 @@
     },
     "core/deadpool": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count"
       ]
     },
     "core/emma-frost": {
@@ -2518,7 +2520,7 @@
     },
     "core/nick-fury": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count"
       ]
     },
     "core/rogue": {

@@ -47,7 +47,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 6 canonical count-source values', () => {
+  it('contains exactly the 10 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -55,12 +55,16 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'attack-icon-played-this-turn',
       'recruit-icon-played-this-turn',
       'shield-levels',
+      'distinct-hero-classes-played-this-turn',
+      'avengers-played-this-turn',
+      'shield-heroes-played-this-turn',
+      'odd-cost-heroes-played-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      6,
-      'HERO_COUNT_SOURCES must have exactly 6 entries',
+      10,
+      'HERO_COUNT_SOURCES must have exactly 10 entries',
     );
 
     assert.deepStrictEqual(
@@ -475,6 +479,147 @@ describe('resolveCountSource unknown source', () => {
       resolveCountSource(gameState, '0', unknownSource),
       0,
       'an unknown source must resolve to 0',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-680 / D-24497 — per-count sources for five unmarked core heroes
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a minimal state whose player "0" has an in-play zone plus the
+ * cardTraits (heroClass/team) and cardStats (cost) the WP-680 sources read.
+ *
+ * @param inPlay - The in-play ext_ids for player "0".
+ * @param cardTraits - Per-card heroClass/team.
+ * @param cardStats - Per-card cost (only `cost` is read here).
+ * @returns A minimal game state cast to LegendaryGameState.
+ */
+function makeStatePlayed(
+  inPlay: string[],
+  cardTraits: Record<string, { heroClass: string | null; team: string | null }>,
+  cardStats: Record<string, { cost: number }>,
+): LegendaryGameState {
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay, victory: [] },
+    },
+    cardTraits,
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('resolveCountSource distinct-hero-classes-played-this-turn (WP-680)', () => {
+  it('counts distinct hero classes and is SELF-INCLUSIVE (ignores triggeringCardId)', () => {
+    const gameState = makeStatePlayed(
+      ['perfect-teamwork', 'covert-op', 'another-tech'],
+      {
+        'perfect-teamwork': { heroClass: 'strength', team: 'avengers' },
+        'covert-op': { heroClass: 'covert', team: null },
+        'another-tech': { heroClass: 'strength', team: null },
+      },
+      {},
+    );
+
+    // why: distinct classes = {strength, covert} = 2; the duplicate 'strength'
+    // counts once. Passing the triggering card must NOT change the count —
+    // "for each color of Hero you have" includes this card (self-inclusive).
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn', 'perfect-teamwork'),
+      2,
+      'distinct classes are counted once each, self-inclusive',
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn'),
+      2,
+      'omitting triggeringCardId yields the same self-inclusive count',
+    );
+  });
+
+  it('ignores cards with no hero class (Officers/Sidekicks)', () => {
+    const gameState = makeStatePlayed(
+      ['tech-hero', 'shield-officer'],
+      {
+        'tech-hero': { heroClass: 'tech', team: null },
+        'shield-officer': { heroClass: null, team: 'shield' },
+      },
+      {},
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn'),
+      1,
+      'a no-class card contributes no color',
+    );
+  });
+});
+
+describe('resolveCountSource team-played sources (WP-680)', () => {
+  it('avengers-played-this-turn counts OTHER Avengers, self-excluded, wrong team ignored', () => {
+    const gameState = makeStatePlayed(
+      ['a-day', 'iron-man', 'nick-fury'],
+      {
+        'a-day': { heroClass: 'covert', team: 'avengers' },
+        'iron-man': { heroClass: 'tech', team: 'avengers' },
+        'nick-fury': { heroClass: 'tech', team: 'shield' },
+      },
+      {},
+    );
+
+    // why: self-exclusive — the triggering 'a-day' is excluded; 'iron-man' counts,
+    // 'nick-fury' (shield) does not.
+    assert.equal(
+      resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day'),
+      1,
+      'counts other Avengers only, excluding the triggering card',
+    );
+  });
+
+  it('shield-heroes-played-this-turn counts OTHER S.H.I.E.L.D. cards, self-excluded', () => {
+    const gameState = makeStatePlayed(
+      ['legendary-commander', 'shield-officer', 'wolverine'],
+      {
+        'legendary-commander': { heroClass: 'strength', team: 'shield' },
+        'shield-officer': { heroClass: null, team: 'shield' },
+        'wolverine': { heroClass: 'instinct', team: 'x-men' },
+      },
+      {},
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-played-this-turn', 'legendary-commander'),
+      1,
+      'the S.H.I.E.L.D. Officer counts; the X-Men card does not; self excluded',
+    );
+  });
+});
+
+describe('resolveCountSource odd-cost-heroes-played-this-turn (WP-680)', () => {
+  it('counts OTHER odd-cost cards; self-excluded; even and cost-0 ignored', () => {
+    const gameState = makeStatePlayed(
+      ['oddball', 'cost-three', 'cost-four', 'basic-agent'],
+      {
+        oddball: { heroClass: 'covert', team: null },
+        'cost-three': { heroClass: 'tech', team: null },
+        'cost-four': { heroClass: 'strength', team: null },
+        'basic-agent': { heroClass: null, team: 'shield' },
+      },
+      {
+        oddball: { cost: 5 },
+        'cost-three': { cost: 3 },
+        'cost-four': { cost: 4 },
+        // basic-agent has no cardStats row → cost 0 → even → never counts
+      },
+    );
+
+    // why: odd costs among OTHER cards = {cost-three (3)}; cost-four (even) and
+    // basic-agent (no row → 0, even) excluded; oddball (5, odd) is the triggering
+    // card and is self-excluded.
+    assert.equal(
+      resolveCountSource(gameState, '0', 'odd-cost-heroes-played-this-turn', 'oddball'),
+      1,
+      'only other odd-cost cards count',
     );
   });
 });
