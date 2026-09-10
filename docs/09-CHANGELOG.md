@@ -3,7 +3,7 @@
 > High-level, human-readable record of significant changes to Legendary Arena.
 > Not a git log — focuses on architectural impact and milestone completions.
 >
-> **Last updated:** 2026-09-01
+> **Last updated:** 2026-09-10
 > **Format:** Newest first. Each entry tied to commits and Work Packets.
 >
 > **Note:** the 2026-04-15 → 2026-07-13 window (WP-027 → WP-366, ~130 Work
@@ -48,6 +48,46 @@ Active work and the forward roadmap are tracked in
 [`docs/05-ROADMAP-MINDMAP.md`](05-ROADMAP-MINDMAP.md) — this changelog records
 milestones as they ship. Recent deferred follow-ons include retro-rescoring
 historical competitive scores and gauntlet progress on player profiles.
+
+---
+
+## 2026-09-10 — Mastermind-fight juice + the optional Final Blow rule
+
+**PRs:** #2002 / #2004 / #2006 · **Work Packets:** WP-690 / WP-687 · **Decisions:** D-24507 / D-24504 · **Live on play.legendary-arena.com.**
+
+Brought the whole Mastermind endgame to life — four escalating hit beats as you
+knock down the Tactics, the optional Final Blow rule's 5th, final blow, and a
+victory celebration that fires on the win. Two Work Packets, joined end-to-end,
+plus an ewiki documentation sync. See
+[Visual Effects](https://ewiki.legendary-arena.com/visual-effects/) and
+[Master Strike](https://ewiki.legendary-arena.com/master-strike/).
+
+- **#2002 — Mastermind-hit VFX + heroes-win victory finale (WP-690 / D-24507).**
+  Two pure-presentation VFX consumers on the WP-556 juice foundation, with **zero
+  engine change** — both ride already-projected `UIState` fields. Each Tactic
+  defeat fires an escalating ember burst (`useMastermindHitVfx` off the
+  `mastermind.tacticsDefeated` count delta: `hit1` spark → `hit2` "STAGGERED!" →
+  `hit3` "RECKONING!" + screen-shake → `hit4` top impact). The heroes-win finale
+  (`useVictoryFinaleVfx` off the projected `gameOver.outcome`) throws a gold
+  confetti storm + bloom + a "VICTORY!" banner. Both gated by the
+  Effect-Intensity accessibility contract; absent from the determinism hash.
+- **#2004 — Final Blow endgame gate + 5th-fight UI (WP-687 / D-24504).** The
+  rulebook "Final Blow (Optional)" Mastermind variant. With `G.finalBlow` on
+  (WP-686's setup flag), defeating the 4th/last Tactic no longer wins:
+  `defeatMastermindTacticCore` latches `MastermindState.finalBlowPending` and
+  defers, and a distinct 5th fight (`fightMastermind` / `awardMastermindOnFinalBlow`)
+  moves the **Mastermind card itself** into the winner's Victory Pile and sets
+  `MASTERMIND_DEFEATED` (reused — no new endgame condition). New
+  `UIMastermindState.finalBlowPending` via the five-step board-visible-field
+  contract; `MastermindTile.vue` shows a "⚔ Final blow" affordance; the lobby
+  gains a "Final Blow (optional)" toggle. Off-path byte-identical (no hashed-G
+  re-pin; full 3351-test engine suite green). **The WP-690 victory finale fires
+  on the 5th blow with no rework** — it keys off the projected win, so the two
+  halves join automatically.
+- **#2006 — ewiki documentation sync.** Marked the mastermind-hit beat and the
+  heroes-win finale as shipped on the Visual Effects page (four → six shipped
+  surfaces) and documented how Final Blow changes *when* `MASTERMIND_DEFEATED` is
+  set on the Master Strike page.
 
 ---
 
