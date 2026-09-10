@@ -11,7 +11,7 @@
     "typecheck": "vue-tsc --noEmit",
     "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
     "test": "node --import tsx --import @legendary-arena/vue-sfc-loader/register --test \"src/**/*.test.ts\" \"functions/**/*.test.ts\"",
-    "test:visual": "vite build && node visual/play-surface.visual.mjs",
+    "test:visual": "node visual/play-surface.visual.mjs",
     "test:visual:run": "node visual/play-surface.visual.mjs"
   },
   "dependencies": {
