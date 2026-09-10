@@ -233,6 +233,22 @@ describe('PlayDesktop (WP-129)', () => {
     assert.deepEqual(ids.sort(), ['bob', 'cara']);
   });
 
+  test('WP-685: the right rail holds the opponent panels AND the game log (off the main board column)', () => {
+    // why: D-24502 lock 2 — moving opponents + log into the right rail is what
+    // reclaims the vertical height the old flex stack spent. Assert both live
+    // inside the rail, not the main column.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: noopSubmitMove },
+    });
+    const rail = wrapper.find('[data-testid="play-desktop-rail"]');
+    assert.equal(rail.exists(), true);
+    assert.equal(rail.find('[data-testid="play-desktop-opponents"]').exists(), true);
+    assert.equal(rail.find('[data-testid="play-desktop-log"]').exists(), true);
+  });
+
   // why: a spectator / rewound-autoplay frame is audience-filtered (D-16303),
   // so NO player exposes handCards and `viewer` resolves to null. The shared
   // board MUST still render (the rewind blank-screen bug); only the personal

@@ -635,107 +635,118 @@ export default defineComponent({
           :duration-ms="2500"
           @dismiss="dismissNotableEvent"
         />
-        <section class="play-desktop__info-row">
-          <div class="play-desktop__opponents" data-testid="play-desktop-opponents">
-            <OpponentPanel
-              v-for="opponent in opponents"
-              :key="opponent.playerId"
-              :player="opponent"
-            />
-          </div>
-          <SharedDecks
-            :piles="snapshot.piles"
-            :current-stage="snapshot.game.currentStage"
-            :is-viewer-turn="isViewerTurn"
-            :economy="snapshot.economy"
-            :submit-move="submitMove"
-          />
-        </section>
-        <section class="play-desktop__top-row">
-          <div class="play-desktop__mastermind-zone">
-            <!-- why: D-12901 — Mastermind sits top-left of the board. -->
-            <MastermindTile
-              :mastermind="snapshot.mastermind"
+        <!-- why: WP-685 / D-24502 — the spatial board is a two-column grid: the
+             shared board + player cockpit in the main column, the opponent panels
+             and game log in a right RAIL. Moving opponents + log off the main
+             column is what reclaims the vertical height the old flex stack spent,
+             so the dense City / HQ / hand rows fit the 1280×720 authoring floor.
+             Scale-up across the resolution ladder comes from the fluid --card-width-*
+             tokens (WP-430); zones never rewrap into a different arrangement. -->
+        <div class="play-desktop__grid">
+          <div class="play-desktop__main">
+            <!-- why: WP-685 / D-24502 — the adversary band groups the Mastermind,
+                 the Scheme, the shared supply decks, and the shared KO pile into one
+                 fixed top strip (the physical Legendary mat's adversary row); the
+                 shared decks + KO used to drift into the opponent / scheme columns. -->
+            <section class="play-desktop__adversary-band">
+              <div class="play-desktop__mastermind-zone">
+                <!-- why: D-12901 — Mastermind sits top-left of the board. -->
+                <MastermindTile
+                  :mastermind="snapshot.mastermind"
+                  :current-stage="snapshot.game.currentStage"
+                  :is-viewer-turn="isViewerTurn"
+                  :economy="snapshot.economy"
+                  :submit-move="submitMove"
+                  @read="onCardRead"
+                />
+                <MasterStrikePile
+                  :pile="snapshot.mastermind.strikePile"
+                  @open="onPileOpen"
+                />
+              </div>
+              <div class="play-desktop__scheme-zone">
+                <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
+                <SchemeTwistPile
+                  :pile="snapshot.scheme.twistPile"
+                  @open="onPileOpen"
+                />
+              </div>
+              <SharedDecks
+                :piles="snapshot.piles"
+                :current-stage="snapshot.game.currentStage"
+                :is-viewer-turn="isViewerTurn"
+                :economy="snapshot.economy"
+                :submit-move="submitMove"
+              />
+              <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
+            </section>
+            <CityRow
+              :city="snapshot.city"
+              :decks="snapshot.decks"
               :current-stage="snapshot.game.currentStage"
               :is-viewer-turn="isViewerTurn"
               :economy="snapshot.economy"
               :submit-move="submitMove"
-              @read="onCardRead"
             />
-            <MasterStrikePile
-              :pile="snapshot.mastermind.strikePile"
-              @open="onPileOpen"
-            />
-          </div>
-          <div class="play-desktop__scheme-zone">
-            <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
-            <SchemeTwistPile
-              :pile="snapshot.scheme.twistPile"
-              @open="onPileOpen"
-            />
-            <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
-            <div v-if="viewer !== null" class="play-desktop__victory-deck-stack">
-              <YourVictoryPile
-                :victory-cards="viewer.victoryCards ?? []"
-                :victory-vp="viewer.victoryVP ?? 0"
-                @open="onPileOpen"
+            <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
+                 RIGHT of the HQ (it holds the second-forms some HQ heroes transform
+                 into). The deck bounds its own width and scrolls horizontally, so a
+                 large side deck never pushes the layout. It hides itself when empty,
+                 so this row reads as a plain HQ for non-transform games. -->
+            <div class="play-desktop__hq-zone">
+              <HQRow
+                :hq="snapshot.hq"
+                :decks="snapshot.decks"
+                :current-stage="snapshot.game.currentStage"
+                :is-viewer-turn="isViewerTurn"
+                :economy="snapshot.economy"
+                :submit-move="submitMove"
               />
-              <YourDeckDiscardZone
-                :deck-count="viewer.deckCount"
-                :discard-count="viewer.discardCount"
-                :discard-top-card="viewer.discardTopCard"
-                :discard-cards="viewer.discardCards"
-                :discard-display="viewer.discardDisplay"
-              />
+              <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
             </div>
-          </div>
-        </section>
-        <CityRow
-          :city="snapshot.city"
-          :decks="snapshot.decks"
-          :current-stage="snapshot.game.currentStage"
-          :is-viewer-turn="isViewerTurn"
-          :economy="snapshot.economy"
-          :submit-move="submitMove"
-        />
-        <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
-             RIGHT of the HQ (it holds the second-forms some HQ heroes transform
-             into). The deck bounds its own width and scrolls horizontally, so a
-             large side deck never pushes the layout. It hides itself when empty,
-             so this row reads as a plain HQ for non-transform games. -->
-        <div class="play-desktop__hq-zone">
-          <HQRow
-            :hq="snapshot.hq"
-            :decks="snapshot.decks"
-            :current-stage="snapshot.game.currentStage"
-            :is-viewer-turn="isViewerTurn"
-            :economy="snapshot.economy"
-            :submit-move="submitMove"
-          />
-          <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
-        </div>
-        <!-- why: the personal zone (own hand / economy / deck / victory) and the
-             turn-action bar require an identified viewer. They are hidden for a
-             spectator or rewound-autoplay frame (viewer null) while the shared
-             board above stays visible. -->
-        <template v-if="viewer !== null">
-          <section class="play-desktop__player-zone">
-            <!-- why: the mat labels the card lifecycle explicitly — played
-                 cards sit above the unplayed hand; endTurn sweeps both to
-                 the discard pile and next turn's onBegin draws back to 6. -->
-            <PlayedCardsRow
-              :in-play-cards="viewer.inPlayCards ?? []"
-              :in-play-display="viewer.inPlayDisplay"
-            />
-            <HandRow
-              :hand-cards="viewer.handCards ?? []"
-              :hand-display="viewer.handDisplay"
-              :current-stage="snapshot.game.currentStage"
-              :is-viewer-turn="isViewerTurn"
-              :submit-move="submitMove"
-            />
-            <EconomyBar :economy="snapshot.economy" />
-          </section>
+            <!-- why: the personal zone (own hand / economy / deck / victory) and the
+                 turn-action bar require an identified viewer. They are hidden for a
+                 spectator or rewound-autoplay frame (viewer null) while the shared
+                 board above stays visible. -->
+            <template v-if="viewer !== null">
+              <!-- why: WP-685 / D-24502 — the cockpit is two columns: the card
+                   lifecycle (played above hand) on the left, your economy + deck /
+                   discard / victory piles on the right; the piles used to drift into
+                   the scheme column. -->
+              <section class="play-desktop__player-zone">
+                <div class="play-desktop__cockpit-main">
+                  <PlayedCardsRow
+                    :in-play-cards="viewer.inPlayCards ?? []"
+                    :in-play-display="viewer.inPlayDisplay"
+                    :current-stage="snapshot.game.currentStage"
+                    :is-viewer-turn="isViewerTurn"
+                  />
+                  <HandRow
+                    :hand-cards="viewer.handCards ?? []"
+                    :hand-display="viewer.handDisplay"
+                    :current-stage="snapshot.game.currentStage"
+                    :is-viewer-turn="isViewerTurn"
+                    :submit-move="submitMove"
+                  />
+                </div>
+                <div class="play-desktop__cockpit-side">
+                  <EconomyBar :economy="snapshot.economy" />
+                  <div class="play-desktop__victory-deck-stack">
+                    <YourVictoryPile
+                      :victory-cards="viewer.victoryCards ?? []"
+                      :victory-vp="viewer.victoryVP ?? 0"
+                      @open="onPileOpen"
+                    />
+                    <YourDeckDiscardZone
+                      :deck-count="viewer.deckCount"
+                      :discard-count="viewer.discardCount"
+                      :discard-top-card="viewer.discardTopCard"
+                      :discard-cards="viewer.discardCards"
+                      :discard-display="viewer.discardDisplay"
+                    />
+                  </div>
+                </div>
+              </section>
           <!-- why: D-24012 + WP-243 — the KO prompt renders ABOVE the hero-choice
                prompt (higher urgency — full board freeze) and both render above
                TurnActionBar in DOM order. Appears only for the choosing player
@@ -979,21 +990,33 @@ export default defineComponent({
             :submit-move="submitMove"
           />
         </template>
-        <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)
-             rendered in the live HUD. Fight/Ambush/Escape effect lines (naming
-             the hero, WP-316), Empowered/Berserk grants (WP-317), and every
-             other engine log line were previously visible only in the replay
-             inspector; mounting GameLogPanel here surfaces them during play.
-             Outside the `viewer !== null` block so a spectator sees the log too.
-             Read-only projection — the engine owns log authorship (D-20002). -->
-        <section class="play-desktop__log" data-testid="play-desktop-log">
-          <h2 class="play-desktop__log-heading">Game Log</h2>
-          <GameLogPanel :log="snapshot.log" />
-        </section>
-        <!-- why: D-12908 — pre-plan affordance slot reserved for WP-059;
-             this page declares the slot only. WP-059 owns the integration
-             shape. -->
-        <slot name="preplan-affordance" />
+            <!-- why: D-12908 — pre-plan affordance slot reserved for WP-059;
+                 this page declares the slot only. WP-059 owns the integration
+                 shape. -->
+            <slot name="preplan-affordance" />
+          </div>
+          <!-- why: WP-685 / D-24502 — the right rail holds the opponent panels and
+               the game log, off the main board column. Both render for spectators
+               (outside the viewer!==null gate) so a rewound/audience frame still
+               shows opponents + the log. Moving them here is what reclaims the
+               vertical height the old flex stack spent. -->
+          <aside class="play-desktop__rail" data-testid="play-desktop-rail">
+            <div class="play-desktop__opponents" data-testid="play-desktop-opponents">
+              <OpponentPanel
+                v-for="opponent in opponents"
+                :key="opponent.playerId"
+                :player="opponent"
+              />
+            </div>
+            <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)
+                 rendered live; previously replay-only. Read-only projection — the
+                 engine owns log authorship (D-20002). -->
+            <section class="play-desktop__log" data-testid="play-desktop-log">
+              <h2 class="play-desktop__log-heading">Game Log</h2>
+              <GameLogPanel :log="snapshot.log" />
+            </section>
+          </aside>
+        </div>
       </template>
     </template>
     <!-- why: WP-171 / EC-189 — exactly one pile-browse-modal instance per
@@ -1026,31 +1049,73 @@ export default defineComponent({
   flex-direction: column;
   gap: 0.25rem;
   position: relative;
-  /* why: WP-430 / D-24251 — cap the desktop play area at --play-max-width and
-     center it so ultra-wide / 4K monitors gain margin, not oversized cards. The
-     fluid --play-gutter sits INSIDE the cap (global box-sizing:border-box), so
-     no horizontal page scrollbar appears down to the 1366px desktop floor. */
+  /* why: WP-430 / D-24251 (retained by WP-685) — cap the desktop play area at
+     --play-max-width and center it so ultra-wide / 4K monitors gain margin, not
+     oversized cards. The fluid --play-gutter sits INSIDE the cap. */
   max-width: var(--play-max-width);
   margin-inline: auto;
   padding-inline: var(--play-gutter);
-  /* why: minimal padding — the sticky TurnActionBar overlaps the bottom
-     of the page; this just prevents the last content line from being
-     fully hidden behind it */
+  /* why: minimal padding — the sticky TurnActionBar overlaps the bottom of the
+     page; this just keeps the last content line from being fully hidden. */
   padding-bottom: 0.25rem;
 }
 
-.play-desktop__info-row {
-  display: flex;
+/* why: WP-685 / D-24502 — the spatial board is a two-column grid: the shared
+   board + player cockpit in the main column, the opponent panels + game log in a
+   fixed-width right RAIL. The rail reclaims the vertical height the old vertical
+   flex stack spent, so the dense City / HQ / hand rows fit the 1280×720 authoring
+   floor. Scale-up across the resolution ladder comes from the fluid --card-width-*
+   tokens (WP-430); zones never rewrap into a different arrangement. */
+.play-desktop__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--play-rail-width);
   gap: 0.5rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  align-items: start;
 }
 
-/* why: WP-664 follow-up — HQ on the left, the Transform side deck to its right.
-   The HQ keeps its natural width; the Transform deck takes the remaining space
-   and scrolls horizontally within it (min-width:0 lets the flex child shrink
-   below its content so its own overflow-x scrollbar engages instead of widening
-   the row). */
+.play-desktop__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* why: the rail scrolls its OWN overflow (a long opponent list or log) in-zone
+   rather than growing the board past the viewport — in-zone scroll, never page
+   scroll (D-24502 lock 1). It sticks so it stays in view as the main column
+   scrolls during a tall pending-choice prompt. */
+.play-desktop__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  position: sticky;
+  top: 0.25rem;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+/* why: WP-685 / D-24502 — the adversary band groups Mastermind + Scheme + shared
+   supply + KO into one fixed top strip (the physical mat's adversary row). */
+.play-desktop__adversary-band {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* why: keep each tile/pile at its own height rather than stretching it to the
+   tallest neighbour in the band. */
+.play-desktop__mastermind-zone,
+.play-desktop__scheme-zone {
+  display: flex;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+/* why: WP-664 — HQ on the left, the Transform side deck to its right; the deck
+   takes the remaining space and scrolls horizontally within it (min-width:0 lets
+   the flex child shrink below its content so its own overflow-x engages). */
 .play-desktop__hq-zone {
   display: flex;
   gap: 0.75rem;
@@ -1062,42 +1127,29 @@ export default defineComponent({
   flex: 1 1 auto;
 }
 
-.play-desktop__log {
+/* why: WP-685 / D-24502 — the cockpit is two columns: the played + hand wells on
+   the left, the economy + your deck/discard/victory piles on the right (the piles
+   used to drift into the scheme column). */
+.play-desktop__player-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: start;
+  border-top: 1px solid var(--color-foreground, #999);
+  padding-top: 0.25rem;
+}
+
+.play-desktop__cockpit-main {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
-.play-desktop__log-heading {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.play-desktop__opponents {
+.play-desktop__cockpit-side {
   display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.play-desktop__top-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  /* why: size each zone to its own content instead of stretching every tile
-     to the tallest member of the row. Without this the compact Mastermind /
-     Scheme tiles stretch to match the (taller) victory/deck/discard stack,
-     re-inflating the exact vertical space this change is meant to reclaim. */
-  align-items: flex-start;
-}
-
-.play-desktop__mastermind-zone,
-.play-desktop__scheme-zone {
-  display: flex;
-  gap: 0.35rem;
-  /* why: keep each tile/pile at its own height rather than stretching the
-     Scheme tile to the taller victory/deck/discard stack beside it. */
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .play-desktop__victory-deck-stack {
@@ -1106,12 +1158,25 @@ export default defineComponent({
   gap: 0.25rem;
 }
 
-.play-desktop__player-zone {
+.play-desktop__log {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  border-top: 1px solid var(--color-foreground, #999);
-  padding-top: 0.25rem;
+  min-height: 0;
+}
+
+.play-desktop__log-heading {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* why: WP-685 — in the rail the opponent panels stack vertically (the rail is a
+   narrow column), not the old wrapping row. */
+.play-desktop__opponents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .play-empty-match {
@@ -1119,29 +1184,14 @@ export default defineComponent({
   border: 1px dashed var(--color-foreground, #666);
 }
 
-/* why: WP-430 / D-24251 — 1440px checkpoint: a touch more inter-zone breathing
-   room. Spacing tuning only, NOT a layout change (zones keep their
-   D-12901/D-12902 placement). */
+/* why: WP-430 / D-24502 scale-up checkpoints — more inter-zone breathing room as
+   the surface widens. Spacing tuning only; zones keep their D-24502 grid
+   arrangement (no rewrap). */
 @media (min-width: 1440px) {
-  .play-desktop {
-    gap: 0.35rem;
-  }
+  .play-desktop__grid { gap: 0.6rem; }
 }
 
-/* why: WP-430 / D-24251 — 1920px checkpoint (the primary desktop target):
-   more gap as the capped surface has room. Spacing only, not a layout change. */
 @media (min-width: 1920px) {
-  .play-desktop {
-    gap: 0.5rem;
-  }
-}
-
-/* why: WP-430 / D-24251 — 2560px checkpoint: at/above the cap the surface is
-   centered with wide margins; a slightly larger gap keeps zones from looking
-   cramped inside the 1600px cap. Spacing only, not a layout change. */
-@media (min-width: 2560px) {
-  .play-desktop {
-    gap: 0.6rem;
-  }
+  .play-desktop__grid { gap: 0.75rem; }
 }
 </style>

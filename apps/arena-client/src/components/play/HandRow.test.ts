@@ -59,6 +59,23 @@ describe('HandRow (WP-129 — extends WP-100)', () => {
     assert.equal(buttons[0]!.attributes('data-card-id'), 'cap-rogers');
   });
 
+  test('WP-685: a hand larger than six renders EVERY card (the well scrolls in-zone; never sliced to a fixed count)', () => {
+    // why: Legendary hands routinely exceed six (draw effects, extra turns). The
+    // hand well binds the full handCards array and scrolls horizontally in-zone;
+    // a slice(0,6) regression would drop cards, so this asserts the full count.
+    const { submitMove } = recorder();
+    const nineCards = [
+      'shield-officer-a', 'shield-officer-b', 'tactician-c', 'iron-man-d',
+      'shield-officer-e', 'trooper-f', 'cyclops-g', 'black-cat-h', 'thing-i',
+    ];
+    const wrapper = mount(HandRow, {
+      props: { handCards: nineCards, currentStage: 'main', submitMove },
+    });
+    const buttons = wrapper.findAll('[data-testid="play-hand-card"]');
+    assert.equal(buttons.length, 9);
+    assert.equal(buttons[8]!.attributes('data-card-id'), 'thing-i');
+  });
+
   test('uses handDisplay names when provided (WP-128 parallel array)', () => {
     const { submitMove } = recorder();
     const wrapper = mount(HandRow, {

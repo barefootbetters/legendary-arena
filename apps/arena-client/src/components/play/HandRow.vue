@@ -225,13 +225,22 @@ export default defineComponent({
   opacity: 0.85;
 }
 
+/* why: WP-685 / D-24502 — the hand is a horizontally-scrolling WELL. The full
+   handCards array is bound above (never sliced), and a hand larger than fits
+   scrolls in-zone here rather than wrapping onto a second row and pushing into
+   the City / HQ rows above. */
 .hand-cards {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   list-style: none;
-  padding: 0;
+  padding: 0 0 0.25rem;
   margin: 0;
+  overflow-x: auto;
+}
+
+.hand-card {
+  flex: 0 0 auto;
 }
 
 .hand-card button {
