@@ -8,6 +8,8 @@ tags:
   - ci
   - governance
   - node-test
+  - visual-regression
+  - playwright
 related:
   - complete-game-fixtures.md
   - development-workflow.md
@@ -23,7 +25,7 @@ source:
   - ../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md
   - ../apps/dashboard/docs/jarvis-command-center.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-01
+last-reviewed: 2026-09-10
 ---
 
 # Testing
@@ -229,6 +231,50 @@ pnpm --filter @legendary-arena/game-engine test
 # Engine test typecheck — local only, not a CI gate
 pnpm --filter @legendary-arena/game-engine typecheck:tests
 ```
+
+### Play-surface visual regression (Playwright)
+
+The unit suite runs on **jsdom, which has no layout engine** — it can assert
+rendered *structure* but never *geometry* (positions, overlaps, whether the
+board fits the viewport). That gap shipped a real bug: WP-688 fit `<PlayDesktop>`
+to the 1280×720 floor, but the sticky `TurnActionBar`, inside the scaled fit
+stage, overlapped the cockpit — invisible to jsdom **and** to the ~800px
+browser-pane preview used during review. Only a full-resolution browser caught
+it. WP-689 / D-24506 added a **Playwright** guard so that class of defect can't
+slip through again.
+
+- **Where:** `apps/arena-client/visual/play-surface.visual.mjs`. Playwright is an
+  arena-client **devDependency** only (Shared-Tooling posture,
+  `.claude/rules/architecture.md` — never a production dependency, like
+  `jsdom` / `vue-sfc-loader`).
+- **What it asserts** (geometry invariants, *not* a pixel/golden-image diff — those
+  flake on cross-platform font rendering) at 1280×720 / 1366×768 / 1920×1080 on the
+  `?fixture=mid-turn&play=1` route: no page scroll in either axis (the board fits
+  the floor); the `TurnActionBar` does **not** vertically overlap the cockpit zones
+  (played row / economy / victory pile); the authoring stage fits its container. It
+  also writes a full-resolution PNG per width to `visual/__screenshots__/` (gitignored
+  artifacts, never committed).
+- **Run it:**
+
+```bash
+npx playwright install chromium                              # one-time browser fetch
+pnpm --filter @legendary-arena/arena-client test:visual      # builds, previews, checks
+# or, against an already-running server:
+PLAY_URL="http://localhost:4318/?fixture=mid-turn&play=1" \
+  pnpm --filter @legendary-arena/arena-client test:visual:run
+```
+
+  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width and exits 0; any violated invariant exits non-zero and names the width + invariant.
+- **Not CI-gated yet.** This is a **local / on-demand** guard and a required step of
+  the D-24026 live-verification for any play-surface layout change. Wiring it into
+  `ci.yml` as its own job — build arena-client → `vite preview` on a fixed port →
+  `npx playwright install --with-deps chromium` (the runners are `ubuntu-latest`) →
+  `test:visual:run` — modelled on the existing service-dependent "Server DB Tests"
+  job, is the recommended follow-on; it is out of scope for WP-689 (a browser-install
+  CI job should be proven green on the Linux runner before it can block PRs).
+- Once Playwright is in devDependencies, the weekly `architecture-inventory` cron
+  surfaces it automatically in [Architecture Inventory](architecture-inventory.md)
+  (that file is generated — never hand-edited).
 
 ### Healthy test environment
 
