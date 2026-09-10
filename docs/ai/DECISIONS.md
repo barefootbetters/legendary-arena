@@ -42135,4 +42135,62 @@ never throw; unknown tactic id stays a silent no-op; both choices are active-sco
 (active-player pending-choice / block-all model), D-24347 (exact-count multi-select
 sibling). **Reserved by:** WP-693 draft (NUMBER-LEDGER).
 
+### D-24512 — two single-player interactive core mastermind tactics: Ruthless Dictator (scry-3 sequential disposition) + Electromagnetic Bubble (X-Men pick + deferred specific-card hand injection) (Active 2026-09-10 — WP-695 / EC-732)
+
+**Context.** Two core mastermind tactics remained inert (`dispatchTacticOnFight`
+silent no-op): Red Skull's "Ruthless Dictator" (printed "Look at the top three cards
+of your deck. KO one, discard one and put one back on top of your deck.") — deferred
+by WP-567 because it is INTERACTIVE and a parked choice shipped without its UIState
+projection + prompt hard-freezes a human player — and Magneto's "Electromagnetic
+Bubble" (printed "Choose one of your [team:x-men] Heroes. When you draw a new hand of
+cards at the end of this turn, add that Hero to your hand as a seventh card."), named
+by WP-506 as needing a pending choice + a deferred hand injection. Both are
+single-player interactive (the defeating player's own choice), so they extend the
+existing active-scoped pending-choice architecture rather than the multi-seat stance.
+
+**Decision.** Each tactic ships as a per-tactic resolver (`tacticHandlers.ts`) with
+its full active-scoped pending-choice stack (queue field + resolve move + block-all
+guard enrollment + five-step UIState projection + arena-client renderer + sim
+dispatch), modeled on the closest sibling. Two new pending-choice types (not one
+shared union) per the duplicate-first rule.
+
+*Ruthless Dictator* — a `PendingRuthlessDictatorChoice` snapshotting the top
+`min(3, deck.length)` deck ext_ids plus the disposition slots available, resolved one
+revealed card per call by `resolveRuthlessDictatorChoice({ cardId, disposition })`
+(disposition ∈ `ko | discard | top`), front-popping when every card is dispositioned
+(the WP-603 Melter sequential-resolution shape). KO via `koCard`; **discard is a
+deck-top card to the discard pile via `moveCardFromZone`, NEVER `discardFromHand`**;
+"top" leaves the card on the deck (a no-op — the look-at never removed it). **Locked
+<3 rule:** with fewer than three cards, `availableDispositions` is the printed
+priority `[ko, discard, top]` sliced to the revealed count (2 → KO+discard, 1 → KO
+only); a card with no remaining slot stays on top; **never reshuffle, no `ctx.random.*`**
+(a look-at never shuffles).
+
+*Electromagnetic Bubble* — team-only eligibility (`G.cardTraits?.[extId]?.team ===
+'x-men'`, map-level `?.`, no heroClass guard, the WP-506 precedent): 0 in-play X-Men
+Heroes → logged no-op; exactly 1 → auto-select inline (no park — the undercover 1→auto
+precedent); ≥2 → park a `PendingElectromagneticBubbleChoice`. The chosen ext_id is
+recorded in a **new lazily-materialized `G.deferredHandInjections: Record<playerID,
+CardExtId[]>`** — a SIBLING to `handSizeOverrides` (which bumps the fill COUNT and
+cannot carry WHICH card) — consumed once at the defeating player's next play-phase
+`onBegin` fill (co-located with the `handSizeOverrides` consume) as a seventh card,
+then the key is cleared (a card not locatable in the player's discard/in-play/deck is
+a logged no-op). Not mirrored in `applyOnBeginParity`, matching the existing
+`handSizeOverrides` parity gap (the observation harnesses draw to `HAND_SIZE`).
+
+**Determinism / re-pin.** Both pending-queue fields and `G.deferredHandInjections` are
+part of the hashed `G` but lazily created (NEVER seeded in `buildInitialGameState`) and
+deleted/absent by default. No committed fixture defeats these tactics (the sole
+sentinel is `sentinel-core-doom-2p`, zero `fightMastermind`), and the sim's
+runtime-observed set did not shift. Verified empirically — `PRE_WP080_HASH` and the
+sentinel `finalStateHash` are byte-identical, **no re-pin**
+(reference_hashed_g_field_dual_repin).
+
+**Status:** Active. **Builds on:** D-24282 (scry-ko snapshot pending choice), D-24413
+(Melter sequential resolution), D-24300 (tactic-onFight framework), D-24069
+(active-player pending-choice / block-all), D-24284/D-24347 (single-player park
+precedents), WP-497/D-24300 (`handSizeOverrides` next-hand pattern). **Enables:** any
+future "add a specific card to the next hand" effect (reuses `G.deferredHandInjections`).
+**Reserved by:** WP-695 draft (NUMBER-LEDGER).
+
 Protect this file.

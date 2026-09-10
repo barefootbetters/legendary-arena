@@ -96,6 +96,43 @@ current (runtime-observed byte-identical → dashboard in-play-coverage pin unch
 committed fixture defeats a Loki tactic). D-24026 live-verify operator-pending
 (post-deploy).
 
+### WP-695 — Single-player interactive core mastermind tactics (EC-732 / D-24512) (2026-09-10)
+
+Shipped the two **single-player interactive** core mastermind tactics as per-tactic
+resolvers in `packages/game-engine/src/rules/tacticHandlers.ts`, each with the full
+active-scoped pending-choice stack (queue + resolve move + block-all guard + five-step
+UIState projection + arena-client renderer + sim dispatch). Before this both were inert.
+
+**Ruthless Dictator** (Red Skull, WP-567-deferred) — "look at the top three cards of
+your deck; KO one, discard one, put one back on top": a `PendingRuthlessDictatorChoice`
+snapshots the top `min(3, deck.length)` plus the disposition slots, resolved one card
+per call by `resolveRuthlessDictatorChoice({ cardId, disposition })` (the WP-603 Melter
+sequential shape). KO via `koCard`; **discard is a deck-top card to the discard pile via
+the zone helper, never `discardFromHand`**; "top" leaves it in place. Locked <3 rule:
+KO→discard→top priority sliced to the revealed count, no reshuffle, no `ctx.random.*`.
+
+**Electromagnetic Bubble** (Magneto) — "choose an in-play [team:x-men] Hero; add it to
+your next hand as a seventh card": team-only eligibility (0 → no-op, 1 → auto-inline,
+≥2 → park a `PendingElectromagneticBubbleChoice`). The pick is recorded in a **new lazy
+`G.deferredHandInjections`** — a sibling to `handSizeOverrides` (which carries only a
+count) — consumed once at the player's next `onBegin` fill as a seventh card, then
+cleared (a not-locatable card is a logged no-op).
+
+**Determinism / re-pin.** Both pending-queue fields and `G.deferredHandInjections` are
+hashed but lazily materialized (never seeded in `Game.setup`). No committed fixture
+defeats these tactics and the sim runtime-observed set did not shift → `PRE_WP080_HASH`
+and the sentinel `finalStateHash` are **byte-identical, no re-pin** (verified).
+
+**Scope.** Two pending-choice types + queues + the injection field (`types.ts`); two
+resolvers + dispatch branches; two resolve moves + predicates; an onBegin consume
+helper; block-all guard enrollment across the full grep'd set; five-step UIState ×2;
+sim lockstep ×2 (`SIMULATION_MOVE_NAMES` + both `MOVE_MAP`s + short-circuits) +
+`game.test.ts`/sim drift; two arena-client prompts + the `useTurnActions`/`TurnActionBar`/
+`PlayDesktop`/`PlayMobile` cascade; two `tactic-provenance` rows + effect-index regen.
+Engine suite **3432 pass**, arena-client **1778 pass**; `pnpm -r build` 0; `cards:check`
+reproducible; `effect-index:check` + `sim:runtime-observed:check` current. D-24026
+(live-verify) operator-pending post-deploy.
+
 ### WP-691 — Deterministic core mastermind tactics (EC-728 / D-24508) (2026-09-10)
 
 Implemented the three **no-choice** remaining core mastermind tactics as
