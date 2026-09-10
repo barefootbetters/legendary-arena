@@ -104,10 +104,10 @@ therefore implements Oddball as `odd-cost-heroes-played-this-turn` (reads the ex
 `cardStats.cost`) and **corrects the upstream card text** `[icon:vp]` → odd-numbered cost
 via the convert-cards overlay/patch, regenerating `data/cards/core.json`.
 
-**Risk surfaced (proactive):** if Jeff intends Oddball to be VP-based, this card must be
-deferred until per-hero-card VP is sourced into the registry — a larger data change. The
-WP recommends the odd-cost reading (buildable, matches the physical card); the executor
-confirms the ruling before authoring the marker.
+**Ruling CONFIRMED (Jeff, 2026-09-09):** odd-**cost** is correct — author the
+`odd-cost-heroes-played-this-turn` source and correct the upstream `[icon:vp]`→odd-cost card
+text. This is now a locked decision, not an open question; the defer-to-VP fallback is retired
+(hero cards carry no VP to read, and the physical card scales by cost).
 
 ## Scope (In)
 
@@ -233,5 +233,5 @@ five derived CI feeds regenerated in-commit (card-data-derived-CI-gates). Tests 
 per resolver + per card + gate composition + drift. §21 API catalog: N/A (no HTTP/library
 surface). §20 funding: N/A. §1: Files Expected to Change present; Context carried by Goal +
 Assumes + Design Rationale. §17.2 Non-Goal proximity: no pay-to-win / no client authority;
-determinism preserved. Oddball fidelity risk surfaced with a recommended reading + defer
-fallback. All applicable items satisfied or explicitly N/A.
+determinism preserved. Oddball odd-cost ruling confirmed by Jeff
+(2026-09-09) — no longer an open decision. All applicable items satisfied or explicitly N/A.

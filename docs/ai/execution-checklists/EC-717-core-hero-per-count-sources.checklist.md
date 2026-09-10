@@ -26,7 +26,7 @@
 - [ ] Team + odd-cost sources SELF-EXCLUSIVE — thread `triggeringCardId` exactly as `worthy-cards-played-this-turn` does
 - [ ] **NO new hashed `G` field → NO setup-state re-pin**; confirm no `cardStats`/`cardTraits` shape diff. EMPIRICAL caveat: a pinned COMPLETE-GAME fixture that plays one of these newly-active cards legitimately shifts THAT fixture's outcome hash — re-pin only such a fixture, only for the play that changed, never to mask an unrelated shift
 - [ ] Card markers authored via the generator + full multi-stage regen — NEVER edit `data/cards/*.json` by hand
-- [ ] Oddball fidelity: confirm the odd-**cost** ruling before authoring the marker; if VP is genuinely intended, STOP and defer Oddball (no per-hero VP exists to read)
+- [ ] Oddball fidelity: odd-**cost** is CONFIRMED (Jeff, 2026-09-09) — author the marker + correct the `[icon:vp]`→odd-cost text; NO defer (hero cards carry no VP; the physical card scales by cost)
 
 ## Required `// why:` Comments
 - [ ] Each new `heroCountSource.ts` union + array entry cites WP-680 / D-24497
