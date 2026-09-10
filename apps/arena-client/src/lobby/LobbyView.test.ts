@@ -911,3 +911,68 @@ test('WP-631: host set 403 (not a participant) shows the "must be in this game" 
   await flushPromises();
   assert.match(wrapper.find('[data-testid="lobby-set-guest-status-m1"]').text(), /must be in this game/i);
 });
+
+// --- WP-687 / D-24504: the Final Blow toggle round-trips into the create setupData ---
+
+/** Records every fetch call and serves setup-requirements + create + join success. */
+function stubCreateCapture(): { url: string; init?: RequestInit | undefined }[] {
+  const calls: { url: string; init?: RequestInit | undefined }[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    calls.push({ url, init });
+    if (url.includes('/api/match/setup-requirements')) {
+      return { ok: true, status: 200, json: async () => ({ requirements: SETUP_REQUIREMENTS }) } as Response;
+    }
+    if (url.includes('/api/match/create')) {
+      return { ok: true, status: 200, json: async () => ({ matchID: 'match-fb-1' }) } as Response;
+    }
+    if (url.includes('/api/match/join')) {
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: [] }) } as Response;
+  }) as typeof globalThis.fetch;
+  return calls;
+}
+
+/** Finds the human create POST (not create-with-bot) and returns its parsed body. */
+function createSetupData(calls: { url: string; init?: RequestInit | undefined }[]): Record<string, unknown> {
+  const createCall = calls.find(
+    (call) => call.url.includes('/api/match/create') && !call.url.includes('create-with-bot'),
+  );
+  assert.ok(createCall, 'the human create endpoint was called');
+  const body = JSON.parse(String(createCall!.init?.body)) as { setupData: Record<string, unknown> };
+  return body.setupData;
+}
+
+test('WP-687: the Final Blow checkbox round-trips finalBlow:true into the create setupData', async () => {
+  setSearch('?route=lobby');
+  const calls = stubCreateCapture();
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Host');
+  // a matching 2-player composition so Create is enabled
+  await setManualComposition(wrapper, { numPlayers: '2', villains: 'core/x,core/y', henchmen: 'core/h', heroes: 'a,b,c,d,e' });
+  await wrapper.find('[data-testid="lobby-final-blow"]').setValue(true);
+  await flushPromises();
+
+  await wrapper.find('[data-testid="lobby-submit-create"]').trigger('click');
+  await flushPromises();
+
+  assert.equal(createSetupData(calls).finalBlow, true, 'checked Final Blow rides in setupData');
+});
+
+test('WP-687: an unchecked Final Blow omits finalBlow from the create setupData (byte-identical off)', async () => {
+  setSearch('?route=lobby');
+  const calls = stubCreateCapture();
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Host');
+  await setManualComposition(wrapper, { numPlayers: '2', villains: 'core/x,core/y', henchmen: 'core/h', heroes: 'a,b,c,d,e' });
+  // leave Final Blow unchecked
+  await flushPromises();
+
+  await wrapper.find('[data-testid="lobby-submit-create"]').trigger('click');
+  await flushPromises();
+
+  assert.equal(createSetupData(calls).finalBlow, undefined, 'unchecked Final Blow is omitted (off = byte-identical)');
+});

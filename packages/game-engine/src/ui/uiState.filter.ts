@@ -486,6 +486,17 @@ export function filterUIStateForAudience(
       ...(uiState.mastermind.gameText !== undefined
         ? { gameText: [...uiState.mastermind.gameText] }
         : {}),
+      // why: WP-687 / D-24504 — the Final Blow "fight the Mastermind again" flag is
+      // public shared-board information (like tacticsRemaining / tacticsDefeated
+      // above), so it MUST survive this field-by-field whitelist. It is optional in
+      // UIMastermindState, so TypeScript does NOT flag its omission; without this
+      // pass-through the field is dropped here and every Final Blow match renders the
+      // Mastermind permanently locked after the 4th tactic (the EC-206 scheme.display
+      // / gameText drop). Conditional spread (never a `finalBlowPending: undefined`
+      // literal) satisfies exactOptionalPropertyTypes.
+      ...(uiState.mastermind.finalBlowPending !== undefined
+        ? { finalBlowPending: uiState.mastermind.finalBlowPending }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,

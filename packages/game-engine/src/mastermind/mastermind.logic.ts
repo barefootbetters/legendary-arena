@@ -61,6 +61,60 @@ export function areAllTacticsDefeated(
 }
 
 /**
+ * Whether the optional Final Blow 5th, final fight is available right now
+ * (WP-687 / D-24504).
+ *
+ * True only when the match is playing the Final Blow rule, every Tactic has been
+ * defeated (the deck is empty), and the final blow is still pending — i.e. the
+ * Mastermind card has not yet been awarded (`finalBlowPending` is cleared to false
+ * the moment the final fight awards the card, so a settled win reads false here).
+ *
+ * This is the SINGLE source of truth shared by exactly two engine sites — the
+ * `fightMastermind` final-fight gate and the `uiState.build` projection — so the
+ * engine's "can the final blow happen" decision and the tile's "fight the
+ * Mastermind again" affordance can never disagree (the `resolveMastermindFightCost`
+ * centralization precedent, D-24348). The client tile consumes the PROJECTED
+ * `finalBlowPending` field, never this helper (layer boundary).
+ *
+ * @param mastermindState - Current mastermind state.
+ * @param finalBlow - Whether the match is playing the Final Blow rule (`G.finalBlow`).
+ * @returns true when the final, Mastermind-card fight is available.
+ */
+export function isFinalBlowAvailable(
+  mastermindState: MastermindState,
+  finalBlow: boolean | undefined,
+): boolean {
+  return (
+    finalBlow === true &&
+    mastermindState.tacticsDeck.length === 0 &&
+    mastermindState.finalBlowPending === true
+  );
+}
+
+/**
+ * Latches the Final Blow "final fight required" state (WP-687 / D-24504).
+ *
+ * Sets `finalBlowPending` true — called when the last Tactic is defeated under the
+ * Final Blow rule, so the Mastermind stays fightable one final time. Returns a new
+ * MastermindState; never mutates the input.
+ *
+ * @param mastermindState - Current mastermind state.
+ * @param pending - The pending value (true to require the final fight, false once it is awarded).
+ * @returns New MastermindState with `finalBlowPending` set.
+ */
+export function setFinalBlowPending(
+  mastermindState: MastermindState,
+  pending: boolean,
+): MastermindState {
+  // why: copy-then-override (the defeatTopTactic precedent) so every unrelated
+  // field survives; only the one flag changes.
+  return {
+    ...mastermindState,
+    finalBlowPending: pending,
+  };
+}
+
+/**
  * Flips a transforming mastermind to its other boss face (WP-669 / D-24483).
  *
  * The active face is `baseCardId`; the inactive one is `alternateFaceId`. This

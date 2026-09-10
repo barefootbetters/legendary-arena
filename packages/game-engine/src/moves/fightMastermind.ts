@@ -20,7 +20,12 @@ import { getSpendableAttack, spendFightCost } from '../economy/economy.logic.js'
 // why: WP-539 / D-24348 — centralized mastermind fight requirement (base fightCost +
 // the Portals Dark-Portal mastermind bonus), so combat / UI / AI never disagree.
 import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
-import { defeatTopTactic, areAllTacticsDefeated } from '../mastermind/mastermind.logic.js';
+import {
+  defeatTopTactic,
+  areAllTacticsDefeated,
+  isFinalBlowAvailable,
+  setFinalBlowPending,
+} from '../mastermind/mastermind.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { composeMastermindDefeatedNarrative } from '../events/notableEvents.compose.js';
 import { dispatchTacticOnFight } from '../rules/tacticHandlers.js';
@@ -70,8 +75,19 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 export function fightMastermind(
   { G, ctx, random }: MoveContext,
 ): void {
+  // why: WP-687 / D-24504 — the optional Final Blow rule. When available, the
+  // Mastermind (with no Tactics left) is fightable a 5th, final time; that fight is
+  // a DISTINCT branch in Step 3 that awards the Mastermind card itself and does NOT
+  // run the tactic defeat core. Off (the default) this is false and every branch
+  // below is byte-identical to pre-WP-687.
+  const isFinalBlow = isFinalBlowAvailable(G.mastermind, G.finalBlow);
+
   // Step 1: Validate
-  if (G.mastermind.tacticsDeck.length === 0) {
+  // why: an empty tactics deck ends the move — EXCEPT under an available Final
+  // Blow, where the empty-deck Mastermind is exactly the one that stays fightable
+  // (WP-687). The `&& !isFinalBlow` is the only change here; with Final Blow off
+  // isFinalBlow is false so the early-return is unchanged (regression pin).
+  if (G.mastermind.tacticsDeck.length === 0 && !isFinalBlow) {
     return;
   }
 
@@ -140,14 +156,25 @@ export function fightMastermind(
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
 
-  // Step 3: Mutate G — reuse the shared mastermind-tactic defeat-core
-  // (WP-486 / D-24291), then spend attack + mark acted. Both are EXCLUDED from
-  // the shared core and stay here in the fight move: Silent Sniper's defeat spends
-  // no attack and is a card play, not a fight. The tactic defeat fires NO onFight
-  // ability (unlike a villain), so nothing between reads G.turnEconomy or
-  // G.hasActedThisTurn — running them after the core is byte-identical to the
-  // prior inline order (the unmodified fightMastermind tests are the oracle).
-  defeatMastermindTacticCore(G, ctx, { random });
+  // Step 3: Mutate G.
+  // why: WP-687 / D-24504 — the Final Blow 5th, final fight is a DISTINCT branch
+  // that awards the Mastermind card itself and does NOT run the tactic defeat core
+  // (whose empty-deck early return would no-op while the shared spend below still
+  // ran — attack for nothing, RS-2). It is an if/else so the final blow NEVER falls
+  // into the core; off the Final Blow rule the else branch is byte-identical to
+  // pre-WP-687.
+  //
+  // why: the normal path reuses the shared mastermind-tactic defeat-core (WP-486 /
+  // D-24291); then spend attack + mark acted (shared by both branches). Both are
+  // EXCLUDED from the shared core and stay here in the fight move: Silent Sniper's
+  // defeat spends no attack and is a card play, not a fight. The tactic defeat
+  // fires NO onFight ability, so nothing between reads G.turnEconomy or
+  // G.hasActedThisTurn — the unmodified fightMastermind tests are the oracle.
+  if (isFinalBlow) {
+    awardMastermindOnFinalBlow(G, ctx);
+  } else {
+    defeatMastermindTacticCore(G, ctx, { random });
+  }
   // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
   // recruit when the conversion is active; identical to spendAttack when unset.
   G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost);
@@ -264,37 +291,54 @@ export function defeatMastermindTacticCore(
   }
 
   if (areAllTacticsDefeated(G.mastermind)) {
-    // why: setting MASTERMIND_DEFEATED counter to 1 triggers the endgame
-    // evaluator from WP-010 — use constant, never string literal
-    G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
-    // why: WP-323 — reuse the mastermind display name resolved above.
-    pushLog(G,
-      `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
-    );
+    if (G.finalBlow === true) {
+      // why: WP-687 / D-24504 — the optional Final Blow rule (Universal Rules v23
+      // "Final Blow (Optional)"): once every Tactic is defeated the Mastermind is
+      // NOT yet won — a player must fight the Mastermind card itself a 5th, final
+      // time. So DEFER the win: latch final-blow-pending (the Mastermind stays
+      // fightable), and do NOT set MASTERMIND_DEFEATED or emit the mastermindDefeated
+      // event here. That vanquish + the Mastermind-card award happen in
+      // fightMastermind's final-blow branch (awardMastermindOnFinalBlow). This is
+      // the SHARED core, so a Silent Sniper free defeat of the last Tactic under
+      // Final Blow also defers — rulebook-correct.
+      G.mastermind = setFinalBlowPending(G.mastermind, true);
+      // why: WP-323 — reuse the mastermind display name resolved above.
+      pushLog(G,
+        `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`,
+      );
+    } else {
+      // why: setting MASTERMIND_DEFEATED counter to 1 triggers the endgame
+      // evaluator from WP-010 — use constant, never string literal
+      G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+      // why: WP-323 — reuse the mastermind display name resolved above.
+      pushLog(G,
+        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
+      );
 
-    // why: D-20008 parity with fightVillain's fightResolved event — surface
-    // a player-visible "mastermind defeated + bystanders rescued" notable
-    // event so the arena-client overlay reports the outcome. G.messages is
-    // NOT projected to clients (UIState carries notableEvents only), so
-    // without this the rescue is invisible on the client. Emitted last so it
-    // observes fully-settled state. Defensive cardDisplayData access mirrors
-    // the mastermind-strike handler — production setup always builds it;
-    // legacy test fixtures may omit it, in which case the id is the fallback.
-    const mastermindDisplay = G.cardDisplayData?.[G.mastermind.baseCardId];
-    const mastermindName =
-      mastermindDisplay && typeof mastermindDisplay.name === 'string' && mastermindDisplay.name.length > 0
-        ? mastermindDisplay.name
-        : G.mastermind.id;
-    G.notableEvents.push({
-      type: 'mastermindDefeated',
-      playerId: currentPlayer,
-      mastermindId: G.mastermind.id,
-      bystandersRescued: rescuedBystanders.length,
-      narrative: composeMastermindDefeatedNarrative(
-        mastermindName,
-        rescuedBystanders.length,
-      ),
-    });
+      // why: D-20008 parity with fightVillain's fightResolved event — surface
+      // a player-visible "mastermind defeated + bystanders rescued" notable
+      // event so the arena-client overlay reports the outcome. G.messages is
+      // NOT projected to clients (UIState carries notableEvents only), so
+      // without this the rescue is invisible on the client. Emitted last so it
+      // observes fully-settled state. Defensive cardDisplayData access mirrors
+      // the mastermind-strike handler — production setup always builds it;
+      // legacy test fixtures may omit it, in which case the id is the fallback.
+      const mastermindDisplay = G.cardDisplayData?.[G.mastermind.baseCardId];
+      const mastermindName =
+        mastermindDisplay && typeof mastermindDisplay.name === 'string' && mastermindDisplay.name.length > 0
+          ? mastermindDisplay.name
+          : G.mastermind.id;
+      G.notableEvents.push({
+        type: 'mastermindDefeated',
+        playerId: currentPlayer,
+        mastermindId: G.mastermind.id,
+        bystandersRescued: rescuedBystanders.length,
+        narrative: composeMastermindDefeatedNarrative(
+          mastermindName,
+          rescuedBystanders.length,
+        ),
+      });
+    }
   }
 
   // why: WP-497 / D-24300 — FINAL step: fire the defeated tactic's printed Fight
@@ -309,4 +353,92 @@ export function defeatMastermindTacticCore(
   // in dodgeCard.ts), so the reshuffle path needs random.Shuffle threaded from
   // the move context or an empty-deck draw would silently stop short.
   dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext);
+}
+
+/**
+ * Awards the Mastermind card itself on the Final Blow 5th, final fight
+ * (WP-687 / D-24504).
+ *
+ * Called ONLY when `isFinalBlowAvailable(...)` held (Final Blow on, every Tactic
+ * defeated, the final blow still pending). Moves the Mastermind BASE card into the
+ * current player's Victory Pile (the win reward per Universal Rules v23 "Final Blow
+ * (Optional)"), rescues any Bystanders the Mastermind still holds, clears the
+ * pending flag + the bystander stores, sets the MASTERMIND_DEFEATED endgame counter
+ * (reused, not a new condition), and emits the mastermindDefeated notable event.
+ *
+ * The Mastermind card enters exactly ONE Victory Pile ONCE: the deferred 4th-Tactic
+ * branch (in `defeatMastermindTacticCore`) never awards it — it only latches
+ * final-blow-pending — so this is the sole award site.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The bare boardgame.io ctx (currentPlayer), typed unknown to avoid a framework import.
+ */
+function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
+  // why: narrow the unknown ctx to the one field this reads (the fighting player),
+  // mirroring defeatMastermindTacticCore — no framework import.
+  const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;
+  const mastermindBaseCardId = G.mastermind.baseCardId;
+
+  // why: the win reward — the Mastermind card itself goes to the fighting player's
+  // Victory Pile (the D-24504 locked award), via the direct `.victory.push` the
+  // tactic / bystander awards use.
+  G.playerZones[currentPlayer]!.victory.push(mastermindBaseCardId);
+
+  // why: rescue any Bystanders the Mastermind still holds. In the common case the
+  // deferred 4th-Tactic defeat already rescued + cleared them (so this is []/0); but
+  // a Master Strike between the 4th Tactic and this final fight can re-capture, and
+  // every mastermind fight rescues held Bystanders (Universal Rules v23) — so they
+  // are never stranded on a now-defeated Mastermind.
+  const rescuedBystanders = G.mastermind.attachedBystanders ?? [];
+  for (const bystanderCardId of rescuedBystanders) {
+    G.playerZones[currentPlayer]!.victory.push(bystanderCardId);
+  }
+
+  // why: the final blow is done — clear the pending flag (so isFinalBlowAvailable
+  // now reads false: the card is awarded) and empty the bystander store (parity
+  // with the core's post-award clear). Copy-then-override preserves every other
+  // MastermindState field.
+  G.mastermind = { ...setFinalBlowPending(G.mastermind, false), attachedBystanders: [] };
+
+  // why: drop the city-mirror bystander entry so no dangling attachment survives
+  // the award (parity with defeatMastermindTacticCore's mirror cleanup).
+  if (G.attachedBystanders[mastermindBaseCardId] !== undefined) {
+    const remainingAttachments = { ...G.attachedBystanders };
+    delete remainingAttachments[mastermindBaseCardId];
+    G.attachedBystanders = remainingAttachments;
+  }
+
+  const mastermindDisplayName = resolveCardName(G.cardDisplayData, mastermindBaseCardId);
+  pushLog(G,
+    `Player ${currentPlayer} struck the final blow and defeated ${mastermindDisplayName}!`,
+  );
+  if (rescuedBystanders.length > 0) {
+    pushLog(G,
+      `Player ${currentPlayer} rescued ${rescuedBystanders.length} bystander(s) from the mastermind into their victory pile.`,
+    );
+  }
+
+  // why: setting MASTERMIND_DEFEATED to 1 fires the WP-010 endgame evaluator
+  // (heroes-win) — reused, never a new condition (D-24504). On Final Blow this is
+  // the ONLY site that sets it; the deferred 4th-Tactic branch does not.
+  G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+
+  // why: D-20008 parity with the core's vanquish event — surface the player-visible
+  // win + any final-blow rescue (G.messages is not projected to clients). Defensive
+  // cardDisplayData access mirrors the core.
+  const mastermindDisplay = G.cardDisplayData?.[mastermindBaseCardId];
+  const mastermindName =
+    mastermindDisplay && typeof mastermindDisplay.name === 'string' && mastermindDisplay.name.length > 0
+      ? mastermindDisplay.name
+      : G.mastermind.id;
+  G.notableEvents.push({
+    type: 'mastermindDefeated',
+    playerId: currentPlayer,
+    mastermindId: G.mastermind.id,
+    bystandersRescued: rescuedBystanders.length,
+    narrative: composeMastermindDefeatedNarrative(
+      mastermindName,
+      rescuedBystanders.length,
+    ),
+  });
 }

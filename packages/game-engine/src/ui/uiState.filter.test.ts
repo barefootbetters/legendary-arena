@@ -2368,3 +2368,53 @@ describe('filterUIStateForAudience — WP-655 finalTurn pass-through (D-24466)',
     }
   });
 });
+
+// WP-687 / D-24504 — the Final Blow `finalBlowPending` board-visible field must
+// survive the audience filter for every audience (the EC-206 drop guard).
+describe('filterUIStateForAudience — mastermind.finalBlowPending (WP-687)', () => {
+  /**
+   * Builds a UIState for a Final Blow match whose Mastermind is final-blow-pending
+   * (every Tactic defeated, the 5th fight still owed).
+   */
+  function finalBlowPendingUIState(): UIState {
+    const config = createTestConfig();
+    const registry = createMockRegistry();
+    const setupContext = makeMockCtx();
+    const gameState = buildInitialGameState(config, registry, setupContext);
+    // why: put the match into the final-blow-pending state — Final Blow on, every
+    // Tactic defeated, finalBlowPending latched (what isFinalBlowAvailable reads).
+    gameState.finalBlow = true;
+    gameState.mastermind = {
+      ...gameState.mastermind,
+      tacticsDeck: [],
+      finalBlowPending: true,
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('build populates finalBlowPending true when the final blow is available', () => {
+    const uiState = finalBlowPendingUIState();
+    assert.equal(uiState.mastermind.finalBlowPending, true);
+  });
+
+  it('finalBlowPending: true survives the filter for PLAYER_0 / PLAYER_1 / SPECTATOR', () => {
+    const uiState = finalBlowPendingUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.mastermind.finalBlowPending,
+        true,
+        `finalBlowPending must survive the whitelist for ${audience.kind} view`,
+      );
+    }
+  });
+
+  it('a non-Final-Blow match projects finalBlowPending false and it survives the filter', () => {
+    const uiState = createTestUIState();
+    assert.equal(uiState.mastermind.finalBlowPending, false, 'off by default');
+    for (const audience of [PLAYER_0, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.mastermind.finalBlowPending, false);
+    }
+  });
+});

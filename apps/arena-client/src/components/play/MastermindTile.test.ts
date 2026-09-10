@@ -117,6 +117,60 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     assert.match(button.attributes('title')!, /All tactics defeated/);
   });
 
+  test('WP-687 Final Blow: 0 tactics + finalBlowPending enables the fight + shows the affordance', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        // all tactics defeated, but the optional Final Blow rule keeps the
+        // Mastermind fightable a 5th, final time (affordable)
+        mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4, finalBlowPending: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), undefined, 'the final blow inverts the 0-tactics lock — fight enabled');
+    assert.ok(
+      wrapper.find('[data-testid="play-mastermind-final-blow"]').exists(),
+      'the Final Blow affordance shows',
+    );
+  });
+
+  test('WP-687 Final Blow: the cost gate still blocks an under-resourced final fight (precedence preserved)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4, finalBlowPending: true }),
+        currentStage: 'main',
+        economy: economy({ attack: 0, availableAttack: 0 }), // short of cost 6
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '', 'an under-resourced final fight stays disabled (cost precedence)');
+  });
+
+  test('WP-687 Final Blow: finalBlowPending false keeps the existing "already fallen" lock', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4, finalBlowPending: false }),
+        currentStage: 'main',
+        economy: economy({ availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, /All tactics defeated/);
+    assert.equal(
+      wrapper.find('[data-testid="play-mastermind-final-blow"]').exists(),
+      false,
+      'no final-blow affordance when the rule is off',
+    );
+  });
+
   test('renders display name + cost + tactics remaining', () => {
     const { submitMove } = recorder();
     const wrapper = mount(MastermindTile, {

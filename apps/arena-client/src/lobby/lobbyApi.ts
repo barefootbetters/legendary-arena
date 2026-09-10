@@ -9,7 +9,7 @@
  * response evidence.
  */
 
-import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+import type { MatchSetupConfig, MatchConfiguration } from '@legendary-arena/game-engine';
 import type { SetupRequirements } from './playerCountRequirements.js';
 
 // why: VITE_SERVER_URL is inlined at build time by Vite. The fallback is a
@@ -48,7 +48,11 @@ export interface LobbyMatchSummary {
  * @throws Error with a full-sentence message on non-2xx responses.
  */
 export async function createMatch(
-  config: MatchSetupConfig,
+  // why: WP-687 / D-24504 — widened from MatchSetupConfig to MatchConfiguration
+  // (the 9-field composition + the additive optional `finalBlow`) so the Final
+  // Blow flag rides in `setupData` to the engine. Additive: a plain 9-field config
+  // is still assignable.
+  config: MatchConfiguration,
   numPlayers: number,
   authToken: string,
 ): Promise<{ matchID: string }> {
@@ -91,7 +95,9 @@ export async function createMatch(
  * @throws Error with a full-sentence message on non-2xx responses.
  */
 export async function createMatchWithBot(
-  config: MatchSetupConfig,
+  // why: WP-687 / D-24504 — widened to MatchConfiguration so a Final Blow BOT match
+  // carries the flag too (not only human matches). Additive over the 9-field config.
+  config: MatchConfiguration,
   seatCount: number,
   botCount: number,
   policy: 'competent' | 'random',

@@ -7,6 +7,53 @@
 
 ## Current State
 
+### WP-687 — Final Blow endgame gate + UI (EC-724 / D-24504) (2026-09-10)
+
+Shipped the rulebook "Final Blow (Optional)" Mastermind variant — the mechanic
+behind the "5th Final Blow attack" — completing the WP-686/687 arc. With
+`G.finalBlow` on (WP-686's flag), defeating the Mastermind's 4th/last Tactic no
+longer wins: the Mastermind stays fightable a **5th, final time**, and that fight
+moves the **Mastermind card itself** into the winner's Victory Pile and fires the
+heroes-win.
+
+**Engine.** `defeatMastermindTacticCore` now branches on `G.finalBlow` when the
+last Tactic falls: on, it latches the new optional `MastermindState.finalBlowPending`
+and defers the win (no `MASTERMIND_DEFEATED`, no `mastermindDefeated` event); off,
+byte-identical to before. `fightMastermind` computes `isFinalBlowAvailable` and
+takes a distinct if/else branch — the 5th fight calls `awardMastermindOnFinalBlow`
+(never the tactic core, RS-2), which awards `baseCardId` to the Victory Pile once,
+rescues any still-held Bystanders, clears the pending flag, sets `MASTERMIND_DEFEATED`
+(reused — no new endgame condition), and emits `mastermindDefeated`. Step 1's
+empty-deck early-return is guarded `&& !isFinalBlow`; with Final Blow off it is
+unchanged (regression pin).
+
+**Projection + UI.** `UIMastermindState.finalBlowPending` via the five-step
+board-visible-field contract (declared → built from `isFinalBlowAvailable` →
+filter pass-through → per-audience filter test → Play Diagnostics). `MastermindTile.vue`
+inverts its `tacticsRemaining === 0` structural lock and shows a "⚔ Final blow —
+fight the Mastermind" affordance, precedence preserved (an under-resourced final
+fight is still cost-blocked). The lobby create form gains a "Final Blow (optional)"
+checkbox; `buildConfig` includes `finalBlow: true` only when checked; the create
+thread widens `MatchSetupConfig` → `MatchConfiguration` so the flag reaches the
+engine for human and bot matches.
+
+**Determinism.** `ctx.random.*` only; moves never throw; `finalBlowPending?`
+optional/omitted-when-off. Full engine suite (3351 tests, incl. state-hash
+oracles) passes with **no re-pin** — no committed fixture uses Final Blow, so the
+`finalBlow=false` path is byte-identical. `fightMastermind.test.ts` pins 4th-tactic
+defers / 5th-fight awards + wins / insufficient-attack no-op / off-path regression.
+
+**Live-verified (D-24026).** On the play surface (arena-client dev, `mid-turn`
+fixture, store-driven): a Mastermind with `tacticsRemaining: 0` +
+`finalBlowPending: true` renders the "⚔ Final blow" affordance with an ENABLED
+fight button when affordable, and stays cost-blocked when not. `pnpm -r build`,
+`pnpm --filter @legendary-arena/game-engine test` (3351), arena-client `typecheck`,
+and the arena-client suite (1768) all exit 0.
+
+**Forward-compat payoff.** WP-690's `useVictoryFinaleVfx` keys off the projected
+`heroes-win`, so the gold **VICTORY!** finale now fires on the 5th/final blow with
+no change to WP-690 — the two halves of the request are joined end-to-end.
+
 ### WP-690 — Mastermind-hit + heroes-win victory VFX (EC-727 / D-24507) (2026-09-10)
 
 Added two pieces of play-surface juice on the WP-556 VFX foundation with **zero
