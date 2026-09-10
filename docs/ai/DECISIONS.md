@@ -41946,4 +41946,56 @@ a recorded move-log and this would have been an escalation, not a blind re-pin
 (the two coexisting end-turn paths). **Enables:** any future "take another turn"
 effect, which reuses `G.extraTurns` + `consumeExtraTurn`.
 
+### D-24509 — Filtered free-recruit-from-HQ core mastermind tactics, reusing the give-hq-hero pending choice (Active 2026-09-10 — WP-692 / EC-729)
+
+**Context.** Two core mastermind tactic Fight abilities let the defeating player
+recruit an HQ Hero **for free** (no recruit cost) by a trait filter: Dr. Doom's
+**Dark Technology** ("You **may** recruit a `[hc:tech]` or `[hc:ranged]` Hero from
+the HQ for free") and Magneto's **Bitter Captor** ("Recruit a `[team:x-men]` Hero
+from the HQ for free"). Both were inert (per [[project_mastermind_tactic_fight_arc]]).
+The give-hq-hero flow (Paibok, WP-532 / D-24343) already moves an HQ Hero to a
+player's discard + refills the slot with **no cost** — the exact free-recruit
+mutation — and is already sim-enrolled, block-all-guarded, projected, and rendered.
+
+**Decision (reuse-first).** Rather than stand up a redundant `resolve*` move, extend
+the give-hq-hero pending choice and its resolve move:
+
+1. **State.** `PendingGiveHqHeroChoice` gains two optional fields: a trait `filter`
+   (`{ kind: 'team' | 'hero-class'; values: string[] }`, OR semantics) and an
+   `optional` decline flag. Absent = Paibok's unfiltered mandatory choice, unchanged.
+2. **Eligibility.** `getEligibleGiveHqHeroCards` applies the front entry's filter;
+   `selectDefaultGiveHqHeroCard` (bot default) picks the highest-cost **eligible**
+   Hero (never an ineligible higher-cost one — the sim-hang guard). The resolve move
+   validates the chosen card against the filtered eligible list and gains a decline
+   arm (`{ decline: true }`, the `optionalKoReward` payload-union pattern) honored
+   ONLY for an `optional` front entry.
+3. **Resolvers.** `tacticHandlers.ts` adds `resolveDarkTechnology` (optional → always
+   parks with a decline arm when ≥1 eligible) and `resolveBitterCaptor` (mandatory →
+   0 no-op, exactly 1 auto-gains for free, ≥2 parks) + a shared
+   `freeRecruitFromHqByFilter` helper + `gainHqHeroFree` (`refillHqSlot` + push to
+   discard, **never** reading/spending `turnEconomy.recruit`) + two dispatch cases.
+4. **Projection / client.** `UIPendingGiveHqHeroChoice.optional` is a five-step
+   board-visible field (type → build → owner-only filter pass-through → audience test
+   → diagnostics); `PendingGiveHqHeroChoicePrompt.vue` renders a Decline button gated
+   on it. The eligible list is already trait-filtered by the shared predicate.
+
+**Why reuse over a new move.** A new `resolve*` move would need
+`SIMULATION_MOVE_NAMES` + both sim `MOVE_MAP`s + `game.test.ts` registration + a new
+block-all guard set + a new projection + a new renderer — all of which the give-hq-hero
+move already carries. Extending it keeps the change to `tacticHandlers.ts` + the reused
+move/type/projection/renderer, and the optional fields keep Paibok's path byte-identical.
+
+**Determinism / re-pin.** Resolver-only (no card-data edit); `cards:check`
+reproducible. No **new** hashed `G` field — `pendingGiveHqHeroChoices` already exists
+and stays undefined for untriggered matches; the tactic entries are new states no
+committed fixture reaches, and the added fields are `undefined` (omitted from JSON)
+for Paibok entries, so no oracle re-pins. Verified empirically (engine suite green:
+3370/0). Moves never throw; unknown tactic id stays a silent no-op; the choice is
+active-scoped.
+
+**Status:** Active. **Builds on:** D-24343 (give-hq-hero flow), D-24069 (active-player
+pending-choice / block-all model), D-24300 (tactic-onFight framework), D-24327
+(gain→discard), D-24335 (HQ trait predicate). **Reserved by:** WP-692 draft
+(NUMBER-LEDGER).
+
 Protect this file.
