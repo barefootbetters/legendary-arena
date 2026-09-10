@@ -81,6 +81,16 @@ export default defineComponent({
         return cost;
       }
       if (props.mastermind.tacticsRemaining === 0) {
+        // why: WP-687 / D-24504 — under the optional Final Blow rule, an
+        // all-tactics-defeated Mastermind is NOT "already fallen": it stays
+        // fightable a 5th, final time (the fight that wins by putting the
+        // Mastermind card into the Victory Pile). The projected finalBlowPending
+        // inverts this structural lock. Precedence is preserved (RS-4): the stage
+        // and cost gates above already ran, so an under-resourced final fight is
+        // still blocked by cost — mirroring the engine's silent no-op.
+        if (props.mastermind.finalBlowPending === true) {
+          return { allowed: true, reason: null };
+        }
         return {
           allowed: false,
           reason: 'All tactics defeated; mastermind already fallen.',
@@ -138,6 +148,17 @@ export default defineComponent({
       />
       <span class="mastermind-status" data-testid="play-mastermind-tactics-remaining">
         Tactics remaining: {{ mastermind.tacticsRemaining }}
+      </span>
+      <!-- why: WP-687 / D-24504 — the Final Blow affordance. When every Tactic is
+           defeated but the Mastermind card is not yet won, the tile inverts its
+           "already fallen" lock into a call to strike the final blow. Plain status
+           copy (never raw marker syntax). -->
+      <span
+        v-if="mastermind.finalBlowPending"
+        class="mastermind-final-blow"
+        data-testid="play-mastermind-final-blow"
+      >
+        ⚔ Final blow — fight the Mastermind
       </span>
     </button>
     <!-- why: the full card + Master-Strike / special rules open in the shared
@@ -234,6 +255,18 @@ export default defineComponent({
   align-self: flex-start;
   padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
+}
+
+/* why: WP-687 — the Final Blow call-to-action badge. Amber/gold so it reads as a
+   payoff moment (the last blow that wins), distinct from the neutral status line. */
+.mastermind-final-blow {
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: var(--color-warning, #b45309);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 /* why: WP-399 — Hypno-Thralls are face-up Heroes stacked next to Loki, so they

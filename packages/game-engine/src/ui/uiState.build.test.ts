@@ -2162,3 +2162,31 @@ describe('buildUIState — city captured-card projection (WP-505)', () => {
     );
   });
 });
+
+describe('buildUIState — mastermind.finalBlowPending (WP-687 / D-24504)', () => {
+  it('projects false for a non-Final-Blow match (default)', () => {
+    const gameState = createTestGameState();
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.finalBlowPending, false);
+  });
+
+  it('projects true when Final Blow is on, every Tactic is defeated, and it is pending', () => {
+    const gameState = createTestGameState();
+    gameState.finalBlow = true;
+    gameState.mastermind = {
+      ...gameState.mastermind,
+      tacticsDeck: [],
+      finalBlowPending: true,
+    };
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.finalBlowPending, true);
+  });
+
+  it('projects false when Final Blow is on but Tactics remain (not yet the final blow)', () => {
+    const gameState = createTestGameState();
+    gameState.finalBlow = true;
+    // tacticsDeck is non-empty in the default fixture -> the final blow is not available yet
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.finalBlowPending, false);
+  });
+});

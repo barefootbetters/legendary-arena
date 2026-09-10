@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch, nextTick } from 'vue';
-import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+import type { MatchConfiguration } from '@legendary-arena/game-engine';
 import {
   addGuest,
   buildGuestPlayUrl,
@@ -96,6 +96,13 @@ export default defineComponent({
 
     const numPlayers = ref('2');
     const playerName = ref('');
+
+    // why: WP-687 / D-24504 — the optional Final Blow rule toggle. Default OFF
+    // (unchecked). When on, `buildConfig` adds the additive envelope field
+    // `finalBlow: true` to the config it launches, so the match requires a 5th,
+    // final fight against the Mastermind card to win. Envelope-level, never part of
+    // the 9-field composition.
+    const finalBlow = ref(false);
 
     // why: WP-499 — the "Join by match ID or link" input. Holds the raw pasted
     // reference (a bare match ID or a full copy-join-link) until the player
@@ -300,7 +307,7 @@ export default defineComponent({
         !isSubmitting.value && manualPlayerCountMismatches.value.length === 0,
     );
 
-    function buildConfig(): MatchSetupConfig {
+    function buildConfig(): MatchConfiguration {
       return {
         schemeId: schemeId.value.trim(),
         mastermindId: mastermindId.value.trim(),
@@ -311,6 +318,11 @@ export default defineComponent({
         woundsCount: parsePositiveInteger(woundsCount.value, 'woundsCount'),
         officersCount: parsePositiveInteger(officersCount.value, 'officersCount'),
         sidekicksCount: parsePositiveInteger(sidekicksCount.value, 'sidekicksCount'),
+        // why: WP-687 / D-24504 — the additive optional Final Blow envelope field,
+        // included ONLY when the toggle is on (omit-when-off, so a normal match's
+        // setupData is byte-identical to pre-WP-687). The 9-field composition above
+        // is unchanged.
+        ...(finalBlow.value ? { finalBlow: true } : {}),
       };
     }
 
@@ -1060,6 +1072,7 @@ export default defineComponent({
       sidekicksCount,
       numPlayers,
       playerName,
+      finalBlow,
       matches,
       joinableMatches,
       errorMessage,
@@ -1437,6 +1450,21 @@ export default defineComponent({
         max="5"
         aria-label="numPlayers"
       />
+
+      <!-- why: WP-687 / D-24504 — the optional Final Blow rule toggle. Default
+           unchecked; when checked, buildConfig adds the additive envelope field
+           finalBlow: true so the match requires a 5th, final fight against the
+           Mastermind card to win. -->
+      <label class="final-blow-toggle" for="finalBlow">
+        <input
+          id="finalBlow"
+          v-model="finalBlow"
+          type="checkbox"
+          data-testid="lobby-final-blow"
+          aria-label="Final Blow (optional rule)"
+        />
+        Final Blow (optional) — win only after a 5th, final fight against the Mastermind
+      </label>
 
       <ul
         v-if="manualPlayerCountWarnings.length > 0"

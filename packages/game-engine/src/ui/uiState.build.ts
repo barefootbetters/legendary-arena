@@ -109,6 +109,7 @@ import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
+import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
@@ -830,6 +831,12 @@ export function buildUIState(
     strikePile: mastermindStrikePile,
     hypnoThralls: mastermindHypnoThralls,
     gameText: gameState.mastermind.gameText ?? [],
+    // why: WP-687 / D-24504 — the Final Blow "fight the Mastermind again" affordance.
+    // Single source of truth with the fightMastermind final-fight gate: both read
+    // isFinalBlowAvailable, so the tile can never show "fight again" when the engine
+    // would refuse it. Always a boolean here; the audience filter must pass it
+    // through (the EC-206 drop) — see uiState.filter.ts.
+    finalBlowPending: isFinalBlowAvailable(gameState.mastermind, gameState.finalBlow),
   };
 
   // --- 6. Project scheme — derive twist count ---

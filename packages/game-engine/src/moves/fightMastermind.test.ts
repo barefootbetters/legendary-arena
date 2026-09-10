@@ -624,3 +624,163 @@ describe('WP-656 / D-24467 — mastermind-defeat signal', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Final Blow (WP-687 / D-24504)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a mastermind with exactly one Tactic left (the 4th/last), so a single
+ * fight defeats it and empties the deck.
+ */
+function lastTacticMastermind(finalBlowPending?: boolean): LegendaryGameState['mastermind'] {
+  return {
+    ...makeMastermindState(),
+    id: 'test-mastermind' as CardExtId,
+    baseCardId: 'test-mastermind-base' as CardExtId,
+    tacticsDeck: ['tactic-last'] as CardExtId[],
+    tacticsDefeated: ['t1', 't2', 't3'] as CardExtId[],
+    ...(finalBlowPending !== undefined ? { finalBlowPending } : {}),
+  };
+}
+
+/**
+ * Builds a fully-defeated mastermind (deck empty, all four tactics down) that is
+ * final-blow-pending — the state after the 4th tactic fell under Final Blow, ready
+ * for the 5th, final fight.
+ */
+function pendingFinalBlowMastermind(): LegendaryGameState['mastermind'] {
+  return {
+    ...makeMastermindState(),
+    id: 'test-mastermind' as CardExtId,
+    baseCardId: 'test-mastermind-base' as CardExtId,
+    tacticsDeck: [] as CardExtId[],
+    tacticsDefeated: ['t1', 't2', 't3', 'tactic-last'] as CardExtId[],
+    finalBlowPending: true,
+  };
+}
+
+describe('fightMastermind — Final Blow (WP-687 / D-24504)', () => {
+  it('OFF (default): the 4th-tactic defeat wins immediately (regression pin)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+      mastermind: lastTacticMastermind(),
+    });
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      1,
+      'with Final Blow off, defeating the last tactic wins immediately',
+    );
+    assert.equal(
+      moveContext.G.mastermind.finalBlowPending,
+      undefined,
+      'finalBlowPending is never set when Final Blow is off (omitted -> byte-identical)',
+    );
+  });
+
+  it('ON: the 4th-tactic defeat does NOT win — it latches finalBlowPending', () => {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        mastermind: lastTacticMastermind(),
+      }),
+      finalBlow: true,
+    };
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.deepStrictEqual(
+      moveContext.G.mastermind.tacticsDeck,
+      [],
+      'the last tactic is still defeated (deck empty)',
+    );
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      undefined,
+      'under Final Blow the 4th-tactic defeat must NOT set MASTERMIND_DEFEATED',
+    );
+    assert.equal(
+      moveContext.G.mastermind.finalBlowPending,
+      true,
+      'the Mastermind is now final-blow-pending (fightable a 5th, final time)',
+    );
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'the tactic still cost attack');
+  });
+
+  it('ON: the 5th fight awards the Mastermind card to the victory pile and wins', () => {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        mastermind: pendingFinalBlowMastermind(),
+      }),
+      finalBlow: true,
+    };
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    const victory = moveContext.G.playerZones['0']!.victory;
+    assert.ok(
+      victory.includes('test-mastermind-base'),
+      'the Mastermind base card is awarded to the fighting player victory pile',
+    );
+    assert.equal(
+      victory.filter((id) => id === 'test-mastermind-base').length,
+      1,
+      'the Mastermind card enters the victory pile EXACTLY once (no double-award)',
+    );
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      1,
+      'the final blow sets MASTERMIND_DEFEATED -> heroes-win',
+    );
+    assert.equal(
+      moveContext.G.mastermind.finalBlowPending,
+      false,
+      'finalBlowPending is cleared once the card is awarded',
+    );
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'the final fight pays the Mastermind fight cost');
+    const lastEvent = moveContext.G.notableEvents.at(-1);
+    assert.equal(lastEvent?.type, 'mastermindDefeated', 'the 5th fight emits the mastermindDefeated notable event');
+  });
+
+  it('ON: the 5th fight with insufficient attack is a silent no-op', () => {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: { ...makeTurnEconomy(), attack: 5, recruit: 0, spentAttack: 0, spentRecruit: 0 }, // < fightCost 8
+        mastermind: pendingFinalBlowMastermind(),
+      }),
+      finalBlow: true,
+    };
+    const economyBefore = { ...gameState.turnEconomy };
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(
+      moveContext.G.playerZones['0']!.victory.includes('test-mastermind-base'),
+      false,
+      'the Mastermind card is NOT awarded when attack is insufficient',
+    );
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      undefined,
+      'no win on an under-resourced final fight',
+    );
+    assert.deepStrictEqual(
+      moveContext.G.turnEconomy,
+      economyBefore,
+      'the under-resourced final fight spends nothing (silent no-op)',
+    );
+    assert.equal(
+      moveContext.G.mastermind.finalBlowPending,
+      true,
+      'the Mastermind stays final-blow-pending after a failed final fight',
+    );
+  });
+});

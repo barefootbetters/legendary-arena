@@ -96,4 +96,17 @@ export interface MastermindState {
   // mastermind, alongside alternateFaceId.
   /** Ability text per face ext_id (transform masterminds only) — the source for gameText on flip. */
   faceGameText?: Record<CardExtId, readonly string[]>;
+
+  // why: WP-687 / D-24504 — the optional Final Blow rule. When a match is played
+  // with `G.finalBlow === true`, defeating the LAST Tactic no longer wins; instead
+  // this flag latches true and the Mastermind stays fightable a 5th, final time
+  // (the fight that moves the Mastermind card itself into the Victory Pile and
+  // wins). It is cleared back to false the moment that final fight awards the card.
+  //
+  // why: OPTIONAL and set ONLY in a Final Blow match (the hypnoThralls?/gameText?/
+  // alternateFaceId? optional-field precedent), so a non–Final-Blow match — which is
+  // every committed sentinel / golden replay fixture — serializes byte-identically
+  // and NO state-hash oracle re-pins.
+  /** Final Blow: the last Tactic fell but the Mastermind card is not yet won (5th fight required). */
+  finalBlowPending?: boolean;
 }

@@ -606,6 +606,14 @@ export interface UIMastermindState {
   // vite/esbuild and tsx do not typecheck SFCs.
   hypnoThralls: UIDisplayEntry[];
   gameText?: readonly string[];
+  // why: WP-687 / D-24504 — the optional Final Blow rule. True when every Tactic is
+  // defeated but the Mastermind card has not yet been won, so the Mastermind is
+  // fightable a 5th, final time. The MastermindTile inverts its "all tactics
+  // defeated → locked" affordance into "fight the Mastermind (final blow)" on this
+  // flag. Optional + omitted when off (the gameText? precedent); a field populated
+  // in buildUIState but not passed through the audience filter is silently dropped
+  // (the EC-206 failure mode) — see uiState.filter.ts.
+  finalBlowPending?: boolean;
 }
 
 /**

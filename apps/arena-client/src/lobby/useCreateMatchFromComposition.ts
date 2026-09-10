@@ -21,7 +21,7 @@ import {
   persistBotAllySetup,
   type BotAllySetup,
 } from '../diagnostics/matchSetupSession';
-import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+import type { MatchConfiguration } from '@legendary-arena/game-engine';
 
 /**
  * Fully-resolved inputs for a create-and-join launch. `playerName` is already
@@ -29,7 +29,10 @@ import type { MatchSetupConfig } from '@legendary-arena/game-engine';
  * validated at the call site so this primitive performs no re-derivation.
  */
 export interface LaunchMatchInput {
-  config: MatchSetupConfig;
+  // why: WP-687 / D-24504 — MatchConfiguration (the 9-field composition + the
+  // additive optional `finalBlow`) so the Final Blow flag threads type-clean from
+  // the create form through to createMatch / createMatchWithBot.
+  config: MatchConfiguration;
   playerCount: number;
   playerName: string;
   authToken: string;

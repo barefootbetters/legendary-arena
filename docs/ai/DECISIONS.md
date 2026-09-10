@@ -41776,3 +41776,80 @@ win-keyed finale now rather than gated on the unshipped 5th-fight mechanic.
 (WP-687 Final Blow).
 
 Protect this file.
+
+### D-24504 — Final Blow endgame gate: the 4th-tactic defeat defers, the 5th fight awards the Mastermind card and wins (Active 2026-09-10 — WP-687 / EC-724)
+
+**Context.** WP-686 shipped the inert `G.finalBlow` setup flag (D-24503). This WP
+implements the Universal Rules v23 "Final Blow (Optional)" behavior it gated:
+after the Mastermind's four Tactics are gone, a player must still fight the
+Mastermind **card itself** a 5th, final time to put it in their Victory Pile and
+win.
+
+**Decision.**
+
+- **Deferral (shared core).** In `defeatMastermindTacticCore`, when
+  `areAllTacticsDefeated` is true, branch on `G.finalBlow === true`: if on, latch
+  the new optional `MastermindState.finalBlowPending` (via
+  `setFinalBlowPending`) and DO NOT set `MASTERMIND_DEFEATED` or emit the
+  `mastermindDefeated` event — the win is deferred; if off, today's behavior is
+  byte-identical. Because it is the shared core, a Silent Sniper free defeat of the
+  last Tactic under Final Blow also defers (rulebook-correct).
+- **The 5th fight (distinct branch).** `fightMastermind` computes
+  `isFinalBlowAvailable(G.mastermind, G.finalBlow)` (`finalBlow === true &&
+  tacticsDeck empty && finalBlowPending === true`) and, when true, takes an
+  if/else branch that calls `awardMastermindOnFinalBlow` INSTEAD of the tactic
+  defeat core — it never falls into the core (whose empty-deck no-op would spend
+  attack for nothing, RS-2). Step 1's empty-deck early-return is guarded
+  `&& !isFinalBlow`; with Final Blow off it is unchanged (regression pin). The
+  final fight shares the same stage + block-all guards + healed check + fight cost
+  as a tactic fight.
+- **The award (once).** `awardMastermindOnFinalBlow` pushes `G.mastermind.baseCardId`
+  into the fighting player's Victory Pile exactly once, rescues any Bystanders the
+  Mastermind still holds (faithful — every mastermind fight rescues held
+  Bystanders; in the common case the deferred 4th-Tactic defeat already cleared
+  them), clears `finalBlowPending` (so `isFinalBlowAvailable` reads false), sets
+  `MASTERMIND_DEFEATED = 1` (reused — NO new `ENDGAME_CONDITIONS`), and emits the
+  `mastermindDefeated` notable event. The deferred 4th-Tactic branch never awards
+  the card, so this is the sole award site (no double-award).
+- **The projection (five-step board-visible field).**
+  `UIMastermindState.finalBlowPending?` is declared, populated in `buildUIState`
+  from `isFinalBlowAvailable` (the single source of truth shared with the fight
+  gate, D-24348 precedent), passed through the audience filter whitelist
+  (conditional spread — the EC-206 drop guard), covered by a per-audience filter
+  test, and present in the Play Diagnostics snapshot (which serializes the whole
+  filtered UIState).
+- **The tile.** `MastermindTile.vue` `gateForFight()` inverts its
+  `tacticsRemaining === 0` structural lock when `finalBlowPending` is true (the
+  fight is allowed), preserving precedence stage → cost → structural (RS-4: an
+  under-resourced final fight is still cost-blocked, mirroring the engine no-op),
+  and shows a "⚔ Final blow — fight the Mastermind" affordance.
+- **Authoring.** The arena-client lobby create form gains a "Final Blow (optional)"
+  checkbox; `buildConfig` includes `finalBlow: true` only when checked
+  (omit-when-off). The create thread (`lobbyApi.createMatch` +
+  `createMatchWithBot`, `useCreateMatchFromComposition.LaunchMatchInput.config`)
+  widens from `MatchSetupConfig` to `MatchConfiguration` so the flag reaches the
+  engine type-clean for human and bot matches alike.
+
+**Determinism / re-pin.** `ctx.random.*` only; moves never throw (an under-resourced
+final fight is a silent no-op); `finalBlowPending?` is optional and omitted when
+off. The full engine suite (3351 tests incl. the state-hash oracles) passes with
+NO re-pin — no committed sentinel/golden fixture uses Final Blow, so the
+`finalBlow=false` path serializes byte-identically. Verified empirically as
+predicted.
+
+**Live-verified (D-24026).** On the play surface (arena-client dev, `mid-turn`
+fixture, store-driven): a Mastermind with `tacticsRemaining: 0` +
+`finalBlowPending: true` renders the "⚔ Final blow" affordance and an ENABLED
+fight button when affordable, and stays cost-blocked when not (precedence
+preserved). Engine behavior proven by `fightMastermind.test.ts` (4th defers / 5th
+awards + wins / insufficient no-op / off-path regression).
+
+**Forward-compat payoff.** WP-690's `useVictoryFinaleVfx` keys off the projected
+`heroes-win`, so the victory finale now fires on the 5th/final blow with no change
+to WP-690.
+
+**Status:** Active. **Builds on:** D-24503 (WP-686 flag), D-24291 (shared defeat
+core), D-24348 (single-resolver-source precedent). **Enables:** the WP-690 finale
+on a Final Blow win.
+
+Protect this file.
