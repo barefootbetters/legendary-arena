@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-691 — Deterministic core mastermind tactics (EC-728 / D-24508) (2026-09-10)
+
+Implemented the three **no-choice** remaining core mastermind tactics as
+deterministic per-tactic resolvers in `packages/game-engine/src/rules/tacticHandlers.ts`
+(the WP-497/506/567 ext_id-keyed pattern), the first/lightest slice of the core
+mastermind-tactics arc (WP-691..696). Before this, defeating any of these three
+tactics fired nothing.
+
+**Resolvers.** (1) **Treasures of Latveria** (Dr. Doom) — "draw three extra cards
+in your next hand": **+3 ADDITIVE** to the defeating player's next-hand fill via
+the shared WP-497 `G.handSizeOverrides[player] = (override ?? HAND_SIZE) + 3`
+writer (the Savage Land Mutates / D-24352 additive precedent, not a set-to-N), so
+a second next-hand bonus the same turn accumulates. (2) **Xavier's Nemesis**
+(Magneto) — "for each of your [team:x-men] Heroes, rescue a Bystander": rescues one
+supply Bystander into the Victory Pile per in-play X-Men Hero, counted via
+`cardHasTeamWhenPlayed` (printed OR Copy-Powers granted team), 0 X-Men → 0, empty
+supply stops early. (3) **Whispers and Lies** (Loki) — "each other player KOs two
+Bystanders from their Victory Pile": each player except `ctx.currentPlayer` KOs up
+to two Victory-Pile Bystanders (the two-arm supply/villain-deck predicate) to
+`G.ko`; fewer than two KOs all they have.
+
+**Determinism / re-pin.** No `Math.random`, no I/O, no `.reduce()` in the
+count/zone loops; resolvers mutate `G` via zone helpers and never throw; unknown
+tactic id stays a silent no-op. No new hashed `G` field and no committed fixture
+defeats these tactics → **no re-pin** (verified: no state-hash fixture churn).
+
+**Scope.** Resolver-only: three resolvers + three dispatch cases + two constants in
+`tacticHandlers.ts`, 15 new tests in `tacticHandlers.test.ts` (each resolver incl.
+edges — additive stacking, 0 X-Men, short supply, skip-self, <2 Bystanders), three
+`executable` rows in `scripts/coverage/tactic-provenance.json`, and a regenerated
+`data/metadata/effect-implementation-index.json`. No card-data edit, no client
+change. Engine suite **3366 pass**; `pnpm -r build` 0; `cards:check` reproducible;
+`effect-index:check` current.
+
 ### WP-687 — Final Blow endgame gate + UI (EC-724 / D-24504) (2026-09-10)
 
 Shipped the rulebook "Final Blow (Optional)" Mastermind variant — the mechanic

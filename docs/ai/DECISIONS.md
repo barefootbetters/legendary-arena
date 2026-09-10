@@ -41852,4 +41852,49 @@ to WP-690.
 core), D-24348 (single-resolver-source precedent). **Enables:** the WP-690 finale
 on a Final Blow win.
 
+### D-24508 — three deterministic no-choice core mastermind tactic resolvers (Treasures of Latveria +3 additive next-hand, Xavier's Nemesis rescue-per-X-Men, Whispers and Lies each-other-KO-2-Bystanders) (Active 2026-09-10 — WP-691 / EC-728)
+
+**Context.** Per D-24300 (WP-497), a defeated Mastermind tactic's printed **Fight:**
+ability resolves through `dispatchTacticOnFight` in
+`packages/game-engine/src/rules/tacticHandlers.ts` — a per-tactic resolver keyed by
+the tactic ext_id, unknown id → silent no-op. The core mastermind-tactics arc
+(WP-691..696) implements the remaining core tactics. WP-691 is the lightest slice:
+the three that need **no player choice**.
+
+**Decision.** Three deterministic resolvers + three dispatch cases, resolver-only
+(no card-data edit, no client change):
+
+1. **Treasures of Latveria** (Dr. Doom, `core-mastermind-dr-doom-treasures-of-latveria`)
+   — "When you draw a new hand of cards at the end of this turn, draw three extra
+   cards." **ADDITIVE +3** to the defeating player's next-hand fill via the shared
+   WP-497 `G.handSizeOverrides[player] = (override ?? HAND_SIZE) + 3` writer (the
+   `villainEffectAddNextHandSize` / Savage Land Mutates D-24352 precedent), NOT a
+   set-to-N like Octet — so a second next-hand bonus in the same turn accumulates.
+   No new `G` field, consumed and cleared at the play-phase `onBegin` fill.
+2. **Xavier's Nemesis** (Magneto, `core-mastermind-magneto-xaviers-nemesis`) — "For
+   each of your [team:x-men] Heroes, rescue a Bystander." Rescues one supply
+   Bystander (`G.piles.bystanders` top, D-21501) into the player's Victory Pile per
+   in-play X-Men Hero, counted via `cardHasTeamWhenPlayed` (printed OR Copy-Powers
+   granted team, D-24391), so a copied X-Men counts. 0 X-Men → 0; empty supply stops
+   early.
+3. **Whispers and Lies** (Loki, `core-mastermind-loki-whispers-and-lies`) — "Each
+   other player KOs two Bystanders from their Victory Pile." Each player except
+   `ctx.currentPlayer` (sorted id order) KOs up to two Victory-Pile Bystanders
+   (supply `pile-bystander` OR rescued `bystander-villain-deck-*`, the
+   `countBystandersInVictory` two-arm predicate) to the global KO pile `G.ko`; a
+   player with fewer than two KOs all they have.
+
+**Locked values.** `TREASURES_EXTRA_CARDS = 3`, `WHISPERS_BYSTANDER_KO = 2`.
+
+**Determinism / re-pin.** No `Math.random`, no I/O, no `.reduce()` in the count/zone
+loops; resolvers mutate `G` via zone helpers and never throw. No new hashed `G`
+field (Treasures reuses the existing lazy `handSizeOverrides`; the others touch
+piles/victory/ko already hashed), and no committed state-hash fixture defeats these
+tactics, so **no re-pin** — verified: no `.replay.json` / hash-fixture churn.
+
+**Status:** Active. **Builds on:** D-24300 (tactic dispatch framework), D-24352
+(additive next-hand writer), D-24391 (effective-team read), D-21501 (top-of-pile
+rescue). **Coverage:** three `executable` rows in `scripts/coverage/tactic-provenance.json`
++ regenerated `data/metadata/effect-implementation-index.json`.
+
 Protect this file.
