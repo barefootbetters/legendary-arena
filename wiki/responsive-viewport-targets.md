@@ -181,6 +181,10 @@ failure this page documents is **fixed**. (The D-24502 illustrative ladder of
 is denser, so the fit is height-bound first — the binding intent, "fit the floor
 and scale up, never rewrap", holds.)
 
+![The SHIPPED `<PlayDesktop>` board captured at 1280×720 (the mid-turn fixture) — the real build, not a mock. The whole board sits within the viewport with no page scroll: a top HUD bar (Mastermind Doctor Octopus, Scheme Midtown Bank Robbery, Turn 3, Twists 2/8, Tactics 1/4, Skin: Classic); an adversary band (the Doctor Octopus Mastermind tile with Master Strikes 0, the Midtown Bank Robbery Scheme with Twists 2/8 and Resolved Twists 0, and the shared supply — Wounds 24, Horrors 0, Bystanders 8, S.H.I.E.L.D. Officers 22, Sidekicks 13, KO Pile 0); the City battle-line in the locked left-to-right order Escaped, Bridge, Streets (Vulture), Rooftops, Bank (Electro), Sewers (Shocker), Villain Deck 28, with occupied spaces keeping their place-names; the H.Q. shop (Dp Weapon X, Sm Hero For Hire, an empty slot, Dp Chimichangas, Sm Web Slinger, Hero Deck 42); the cockpit — Played This Turn (Web Slinger, Chimichangas), the Attack 4/4 · Recruit 3/3 economy, Your Victory Pile, and Your Deck 12 / Discard 3 — with Your Hand of five unplayed cards below; a slim right rail holding the opponent panel and the game log; and the turn-action bar (Step 1 / Step 2 Play-Recruit-Fight with Pass priority + Heal Wounds / Step 3) sitting cleanly at the BOTTOM of the cockpit, no longer overlapping the played/economy/victory zones — the WP-689 fix.](/responsive-viewport-targets/play-mat-1280x820.jpg "width=100%")
+
+*The shipped result at 1280×720 (WP-688 fit + WP-689 turn-bar fix). Unlike the Rev 1/2/4 images above — which are design **proposals** — this is a screenshot of the real build: the board fits the floor with no page scroll, and the turn-action bar sits at the bottom of the cockpit. At wider viewports the same layout scales up (~0.98× at 1920), never rewrapping.*
+
 ### Fluid desktop scaling — shipped (WP-430 / D-24251)
 
 The desktop surface now **scales fluidly across the desktop resolution
