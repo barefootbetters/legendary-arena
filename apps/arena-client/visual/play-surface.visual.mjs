@@ -15,10 +15,16 @@
  *   3. the authoring stage's visual box fits inside its fit container.
  *
  * Run it via `pnpm --filter @legendary-arena/arena-client test:visual` (which
- * builds first and lets this script spawn `vite preview`), or point it at an
+ * lets this script spawn the `vite` DEV server), or point it at an
  * already-running server with `PLAY_URL=… node visual/play-surface.visual.mjs`
  * (the `test:visual:run` script). One-time browser install: `npx playwright
  * install chromium`.
+ *
+ * why the DEV server, not `vite preview`: the `?fixture=…&play=1` route only
+ * loads its snapshot under `import.meta.env.DEV` (`apps/arena-client/src/main.ts`),
+ * so the production build served by `vite preview` renders an empty board and the
+ * guard never finds `.play-desktop__stage`. The check therefore drives `vite`
+ * (dev), where the fixture is populated.
  *
  * Playwright is an arena-client devDependency only (Shared-Tooling posture,
  * `.claude/rules/architecture.md`) — never a production dependency.
@@ -35,9 +41,9 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCREENSHOT_DIR = join(HERE, '__screenshots__');
-// why: a fixed, uncommon preview port so a stray dev server (5173/5174) never
-// collides with the guard's own server.
-const PREVIEW_PORT = 4318;
+// why: a fixed, uncommon port so an already-running dev server (5173/5174) never
+// collides with the guard's own dev server.
+const DEV_SERVER_PORT = 4318;
 const FIXTURE_PATH = '/?fixture=mid-turn&play=1';
 
 // The three supported desktop widths from D-24502 / D-24505. deviceScaleFactor:2
@@ -49,24 +55,25 @@ const VIEWPORTS = [
 ];
 
 /**
- * Start `vite preview` on the fixed port and resolve once it serves 200, unless
- * PLAY_URL is already provided (then reuse that running server). Returns the base
- * URL plus a teardown function.
+ * Start the `vite` dev server on the fixed port and resolve once it serves 200,
+ * unless PLAY_URL is already provided (then reuse that running server). Returns the
+ * base URL plus a teardown function.
  */
 async function startServer() {
   if (process.env.PLAY_URL) {
     return { baseUrl: process.env.PLAY_URL, stop: async () => {} };
   }
-  // why: spawn through the shell so the local `vite` bin resolves from
-  // node_modules/.bin on both Windows (vite.CMD) and POSIX when run under `node`
-  // rather than an npm-script PATH.
+  // why: spawn the DEV server (not `vite preview`) through the shell so the local
+  // `vite` bin resolves from node_modules/.bin on both Windows (vite.CMD) and POSIX
+  // when run under `node`. Dev mode sets import.meta.env.DEV, which is what
+  // populates the `?fixture=` snapshot the guard needs.
   const child = spawn(
-    `npx vite preview --port ${PREVIEW_PORT} --strictPort`,
+    `npx vite --port ${DEV_SERVER_PORT} --strictPort`,
     { cwd: join(HERE, '..'), shell: true, stdio: 'ignore' },
   );
-  const baseUrl = `http://localhost:${PREVIEW_PORT}`;
+  const baseUrl = `http://localhost:${DEV_SERVER_PORT}`;
   const deadline = Date.now() + 30_000;
-  // why: poll the port rather than sleeping a fixed time — preview readiness
+  // why: poll the port rather than sleeping a fixed time — dev-server readiness
   // varies by machine; fail loudly if it never comes up.
   for (;;) {
     try {
@@ -78,7 +85,7 @@ async function startServer() {
     if (Date.now() > deadline) {
       child.kill();
       throw new Error(
-        `vite preview did not serve ${baseUrl} within 30s. Did \`vite build\` run first?`,
+        `vite dev did not serve ${baseUrl} within 30s (is the port free? is arena-client installed?).`,
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 400));

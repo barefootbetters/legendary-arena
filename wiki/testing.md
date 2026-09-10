@@ -258,7 +258,7 @@ slip through again.
 
 ```bash
 npx playwright install chromium                              # one-time browser fetch
-pnpm --filter @legendary-arena/arena-client test:visual      # builds, previews, checks
+pnpm --filter @legendary-arena/arena-client test:visual      # spawns the dev server + checks
 # or, against an already-running server:
 PLAY_URL="http://localhost:4318/?fixture=mid-turn&play=1" \
   pnpm --filter @legendary-arena/arena-client test:visual:run
@@ -267,11 +267,14 @@ PLAY_URL="http://localhost:4318/?fixture=mid-turn&play=1" \
   Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width and exits 0; any violated invariant exits non-zero and names the width + invariant.
 - **Not CI-gated yet.** This is a **local / on-demand** guard and a required step of
   the D-24026 live-verification for any play-surface layout change. Wiring it into
-  `ci.yml` as its own job — build arena-client → `vite preview` on a fixed port →
-  `npx playwright install --with-deps chromium` (the runners are `ubuntu-latest`) →
-  `test:visual:run` — modelled on the existing service-dependent "Server DB Tests"
-  job, is the recommended follow-on; it is out of scope for WP-689 (a browser-install
-  CI job should be proven green on the Linux runner before it can block PRs).
+  `ci.yml` as its own job — `npx playwright install --with-deps chromium` (the runners
+  are `ubuntu-latest`) → `pnpm --filter @legendary-arena/arena-client test:visual`
+  (which spawns the **dev** server on a fixed port; the `?fixture=` route only loads
+  its snapshot under `import.meta.env.DEV`, so a production `vite preview` build would
+  render an empty board) — modelled on the existing service-dependent "Server DB
+  Tests" job, is the recommended follow-on; it is out of scope for WP-689 (a
+  browser-install CI job should be proven green on the Linux runner before it can
+  block PRs).
 - Once Playwright is in devDependencies, the weekly `architecture-inventory` cron
   surfaces it automatically in [Architecture Inventory](architecture-inventory.md)
   (that file is generated — never hand-edited).
