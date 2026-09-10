@@ -35,7 +35,7 @@ source:
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
   - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-05
+last-reviewed: 2026-09-10
 ---
 
 # Master Strike
@@ -188,12 +188,29 @@ share the same Mastermind entity.
   `defeatTopTactic` — is unrelated to the strike trigger. It runs
   when a player successfully fights the Mastermind, drawing the top
   tactic from `tacticsDeck` and appending it to `tacticsDefeated`.
+  Each such defeat now also fires the escalating **mastermind-hit VFX**
+  beat on the play surface (WP-690 — an ember burst off the projected
+  `tacticsDefeated` count, `hit1` spark → `hit4` impact; see
+  [Visual Effects → mastermind-hit](visual-effects.md#shipped-mastermind-hit)).
+  **Under Final Blow (WP-687)** a defeat of the *last* Tactic does not win —
+  it sets `finalBlowPending`, and a distinct 5th fight (`fightMastermind`'s
+  `isFinalBlowAvailable` branch, `awardMastermindOnFinalBlow`) moves the
+  **Mastermind base card itself** into the winning player's Victory Pile and sets
+  `MASTERMIND_DEFEATED` — which fires the shipped **VICTORY! finale**
+  ([Visual Effects → victory finale](visual-effects.md#shipped-victory-finale)).
 - **Endgame.** The strike handler writes to
   `G.counters.masterStrikeCount`. This key is **not** in
   `ENDGAME_CONDITIONS` and is not consumed by `evaluateEndgame`.
-  Victory still resolves through
-  `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED`, which becomes truthy
-  when `areAllTacticsDefeated` returns true.
+  Victory resolves through `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED`.
+  In the default game that counter is set the moment `areAllTacticsDefeated`
+  returns true (the 4th Tactic falls). **Under the optional Final Blow rule
+  (WP-687 / D-24504, `G.finalBlow === true`)** the 4th-Tactic defeat no longer
+  wins: `defeatMastermindTacticCore` instead latches the new optional
+  `MastermindState.finalBlowPending`, and `MASTERMIND_DEFEATED` is set only by the
+  **5th, final fight** against the Mastermind card itself (see [the combat note
+  below](#interactions) and `awardMastermindOnFinalBlow` in `fightMastermind.ts`).
+  Either way the win still flows through the same `MASTERMIND_DEFEATED` counter —
+  Final Blow only changes *when* it is set (no new endgame condition).
 
 ## Edge Cases
 
@@ -255,7 +272,12 @@ share the same Mastermind entity.
   — `MastermindState` interface
 - [`packages/game-engine/src/mastermind/mastermind.logic.ts`](../packages/game-engine/src/mastermind/mastermind.logic.ts)
   — `defeatTopTactic`, `areAllTacticsDefeated` (combat path; unrelated
-  to the strike trigger but shares the Mastermind entity)
+  to the strike trigger but shares the Mastermind entity), plus the Final Blow
+  helpers `isFinalBlowAvailable` / `setFinalBlowPending` (WP-687)
+- [`packages/game-engine/src/moves/fightMastermind.ts`](../packages/game-engine/src/moves/fightMastermind.ts)
+  — `fightMastermind` (the Final Blow `isFinalBlowAvailable` branch),
+  `defeatMastermindTacticCore` (defers the win under `G.finalBlow`),
+  `awardMastermindOnFinalBlow` (the 5th-fight Mastermind-card award, WP-687)
 
 ## History
 
@@ -269,6 +291,8 @@ share the same Mastermind entity.
 - D-24193 / WP-389 (2026-07-18, shipped): the mastermind face classifier had selected the LAST non-tactic face (so the alternate/Epic face played for 65 masterminds across 24 sets); **WP-389 fixed it to select the FIRST non-tactic face**, so the base face plays now (`mastermind.setup.ts`). Supersedes this page's earlier "Epic faces are not engine-selectable" claim and the last-wins bug state
 - WP-644 / D-24456 (2026-09): the **reveal-to-avoid → `strikeBlocked` producer family**. Core Magneto's `resolveMagnetoStrike` gains a reveal-an-`[team:x-men]`-Hero branch that reveals-and-keeps (no penalty) and emits one `strikeBlocked` (`masterStrike`) per protected player, alongside the reveal-or-punish Scheme Twist matched-Hero dodge (`schemeTwist`); the arena-client raises the "Blocked!" chip. WP-645 / D-24457 adds core Dr. Doom (reveal `[hc:tech]`); WP-646 / D-24458 adds the villain Ambush (the `ambush` `threatKind`); WP-647 / D-24459 adds the Captain-America-shield `VfxOverlay` burst (red/purple/green per threat)
 - WP-649 / D-24461 (2026-09-05): `resolveCoreLokiStrike` gains the same reveal-and-keep emit for core Loki (reveal `[hc:strength]`) — the **fourth and last** reveal-and-keep Master Strike producer, surfaced by a live `core/loki` + Legacy Virus playtest. Pure reuse of the WP-644 contract (no new event type / `threatKind` / composer / client change)
+- WP-690 / D-24507 (2026-09-10): the **mastermind-hit VFX** — an escalating ember burst fires on each Tactic defeat (off the projected `tacticsDefeated` count delta, `hit1` spark → `hit4` impact), plus the **heroes-win VICTORY! finale** on the projected win. Pure client presentation, no engine change ([Visual Effects](visual-effects.md#shipped-mastermind-hit))
+- WP-687 / D-24504 (2026-09-10): the optional **Final Blow** rule (Universal Rules v23 "Final Blow (Optional)"). With `G.finalBlow` on (WP-686's setup flag), the 4th-Tactic defeat no longer wins — `defeatMastermindTacticCore` latches `MastermindState.finalBlowPending` and defers, and a distinct 5th fight (`fightMastermind` / `awardMastermindOnFinalBlow`) moves the Mastermind base card into the winner's Victory Pile and sets `MASTERMIND_DEFEATED`. Off-path byte-identical (no hashed-G re-pin). The WP-690 VICTORY! finale fires on that 5th blow with no rework. New `UIMastermindState.finalBlowPending` + a `MastermindTile.vue` "⚔ Final blow" affordance + a lobby toggle
 - WP-651 / D-24463 (2026-09-05): **completes the reveal-to-avoid family** (no new *Master Strike* producer). The same `reveal-or-wound` villain handler (`villainEffectRevealOrWound`, WP-646) now emits `strikeBlocked` at its `onFight` + `onEscape` timings too, adding the `fight` (amber, *"The villain's attack was blocked."*) and `escape` (teal, *"The Escape penalty was blocked."* — the villain still escapes; only the Wound is dodged) `threatKind`s. These are villain **Fight/Escape abilities**, not master strikes, so `mastermindHandlers.ts` is untouched — but the shield-block VFX now recolours across all **five** threat classes (Master Strike red / Scheme Twist purple / Ambush green / Fight amber / Escape teal). Surfaced by a live playtest where a Frost-Giant Fight reveal-block rendered no shield beside an identical Ambush block
 
 ## References

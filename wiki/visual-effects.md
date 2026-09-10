@@ -41,7 +41,11 @@ source:
   - ../apps/arena-client/src/components/play/AudioControls.vue
   - ../apps/arena-client/src/vfx/comboVfxManifest.ts
   - ../apps/arena-client/src/vfx/transformVfxManifest.ts
+  - ../apps/arena-client/src/vfx/mastermindHitVfxManifest.ts
+  - ../apps/arena-client/src/vfx/victoryFinaleVfxManifest.ts
   - ../apps/arena-client/src/composables/useTransformVfx.ts
+  - ../apps/arena-client/src/composables/useMastermindHitVfx.ts
+  - ../apps/arena-client/src/composables/useVictoryFinaleVfx.ts
   - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../packages/game-engine/src/log/logOutcome.types.ts
@@ -49,7 +53,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-08
+last-reviewed: 2026-09-10
 ---
 
 # Visual Effects Framework
@@ -105,18 +109,23 @@ governance layer** (implemented against, and not free to drift); the
 [Mechanics](#mechanics) are **design detail** (the per-event *character* —
 which flash, which colour — is proposal-level and free to evolve); and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
-**roadmap**. **Four surfaces have shipped** — the [combo VFX
+**roadmap**. **Six surfaces have shipped** — the [combo VFX
 foundation](#shipped-combo-vfx) (flash + synergy call-out + the accessibility
 gate, WP-556), the [shield-block beat](#surface-block) with the **complete
 reveal-to-avoid family** (the `strikeBlocked` event + the Cap-shield burst,
 recoloured per `threatKind` across all five threat classes — Master Strike /
 Scheme Twist / Ambush / Fight / Escape, WP-644..651), the [wound-gained
-damage vignette](#surface-1b) (its thematic inverse, WP-650), and the
+damage vignette](#surface-1b) (its thematic inverse, WP-650), the
 [transform power-surge beat](#surface-transform) (the `transformResolved` event
-+ the gamma-green surge + "TRANSFORMED!" word, WP-672); everything else
-here — the remaining notable-event effects (Master Strike vignette,
-mastermind-defeat bloom, fight impact), endgame finales, the other fight/ambush
-sub-effects, action-move cues, faction cries — is still `draft` design against
++ the gamma-green surge + "TRANSFORMED!" word, WP-672), the [mastermind-hit
+beat](#shipped-mastermind-hit) (an escalating ember burst on each Tactic defeat —
+`hit1` spark → `hit4` screen-shaking impact — off the projected `tacticsDefeated`
+count delta, WP-690), and the [heroes-win victory finale](#shipped-victory-finale)
+(a gold confetti storm + bloom + "VICTORY!" banner on the projected win, which now
+also fires on the optional Final Blow's 5th, final blow, WP-690 + WP-687);
+everything else here — the remaining notable-event effects (Master Strike
+vignette, fight impact), the other fight/ambush sub-effects, action-move cues,
+faction cries — is still `draft` design against
 the same contract. The event vocabulary,
 the projected `UIState` signals, the shipped audio precedent, the shipped
 combo layer, and the architectural boundaries are sourced to code; the
@@ -175,18 +184,78 @@ replay hash; recorded in
 [`02-CODE-CATEGORIES.md §client-app`](../docs/ai/REFERENCE/02-CODE-CATEGORIES.md).
 
 **Not yet shipped** (still `draft` design against this same contract, each a
-follow-up WP): the [Surface 1](#surface-1) notable-event effects (Master
-Strike, mastermind-defeated, fight), the [Surface 1b](#surface-1b)
+follow-up WP): the remaining [Surface 1](#surface-1) notable-event effects (the
+Master Strike "uh-oh" vignette, the fight impact), the [Surface 1b](#surface-1b)
 fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
-[Surface 4](#endgame) endgame finales, the [faction battle
+[scheme-wins / tie](#endgame) endgame finales (only **heroes-win** has shipped),
+the [faction battle
 cries](#faction-cries) (licensing-gated, D-24259), and the
 [event-storm coalescing algorithm](#decisions-pending) (not needed until a
 second effect class ships). **Shipped since this list was written:** the
-[shield-block](#surface-block) **`VfxOverlay` burst** — the Captain-America-shield
-beat driven by the `strikeBlocked` event, now covering all five reveal-to-avoid
-threat classes (Master Strike / Scheme Twist / Ambush / Fight / Escape,
-WP-644..651) — and the [wound-gained damage vignette](#surface-1b) (its thematic
-inverse, WP-650). Neither is a follow-on any longer.
+[shield-block](#surface-block) **`VfxOverlay` burst** (the Captain-America-shield
+beat, all five reveal-to-avoid threat classes, WP-644..651), the [wound-gained
+damage vignette](#surface-1b) (WP-650), the [mastermind-hit
+beat](#shipped-mastermind-hit) (WP-690), and the [heroes-win victory
+finale](#shipped-victory-finale) (WP-690, firing on the Final Blow 5th blow too,
+WP-687). None is a follow-on any longer.
+
+## Shipped: the mastermind-hit beat (WP-690 / D-24507) {#shipped-mastermind-hit}
+
+**Live on `play.legendary-arena.com`** (WP-690, verified on-surface 2026-09-10
+under D-24026). Each time a player fights the Mastermind and defeats a Tactic, an
+**escalating** ember burst fires — so a run at the boss visibly builds toward the
+win. It rides the already-projected **`UIState.mastermind.tacticsDefeated`** count
+as a pure **count-delta** consumer (the shipped [wound vignette](#surface-1b)
+pattern), **with zero engine change** — no new notable event, no new `UIState`
+field. Public (fires for every viewer — a Mastermind hit is shared-board).
+
+The tier ladder (`mastermindHitVfxManifest.ts`), escalating on the running
+`tacticsDefeated` count:
+
+| Hit | Beat |
+|---|---|
+| `hit1` | a wordless ember spark (contrast-through-restraint, the combo `small` precedent) |
+| `hit2` | **STAGGERED!** + a bigger burst |
+| `hit3` | **RECKONING!** + burst + the screen-shake impact pulse |
+| `hit4` | a wordless top impact + the biggest burst + shake (the finale banner owns the vanquish word) |
+
+`particleCount` ascends and stays under the 200-particle ceiling; shake is
+reserved for `hit3`/`hit4`; the palette is a hot amber/gold/ember
+(`['#ff9d2e', '#ffd34e', '#ff5a3c']`) distinct from every other effect. Where it
+lives: [`src/vfx/mastermindHitVfxManifest.ts`](../apps/arena-client/src/vfx/mastermindHitVfxManifest.ts)
++ [`useMastermindHitVfx.ts`](../apps/arena-client/src/composables/useMastermindHitVfx.ts)
+(the count-delta consumer, seed-on-first-frame so no pre-mount flash) + the
+[`VfxOverlay`](../apps/arena-client/src/components/play/VfxOverlay.vue) renderer,
+mounted at [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
+beside the other feel consumers, gated by the same
+[accessibility contract](#accessibility-requirements-mandatory). A fifth Final-Blow
+fight ([Master Strike → Final Blow](master-strike.md)) does NOT increment
+`tacticsDefeated` — it awards the Mastermind card and fires the finale below — so
+the ladder is bounded at four by design.
+
+## Shipped: the heroes-win victory finale (WP-690 / D-24507) {#shipped-victory-finale}
+
+**Live on `play.legendary-arena.com`** (WP-690, verified on-surface 2026-09-10
+under D-24026). The [Surface 4](#endgame) heroes-win finale — the biggest positive
+payoff in the game. When the Mastermind falls, a gold confetti **storm** (three
+staggered bursts) + a gold **bloom** + a **"VICTORY!"** banner celebrate the win.
+It fires **once** on the projected `UIState.gameOver.outcome === 'heroes-win'` (not
+`endedEarly`), seeded so a reconnect into an already-won match replays nothing. The
+banner renders in its **own** overlay slot (distinct from the transient combo word)
+so a coincident `hit4` beat and the banner never fight for one slot.
+[`victoryFinaleVfxManifest.ts`](../apps/arena-client/src/vfx/victoryFinaleVfxManifest.ts)
++ [`useVictoryFinaleVfx.ts`](../apps/arena-client/src/composables/useVictoryFinaleVfx.ts),
+gated by the same accessibility contract (banner survives `low`/reduced-motion; the
+storm at `low`/`full`; the bloom at `full` only).
+
+> **It fires on the Final Blow 5th blow, no rework (WP-687 / D-24504).** Because
+> the finale keys off the projected *win* — not any particular fight — it lit up
+> automatically when the [optional Final Blow rule](master-strike.md) shipped:
+> under Final Blow the win fires on the 5th, final fight against the Mastermind
+> card (not the 4th-Tactic defeat), and this celebration lands on it with **no
+> change to WP-690**. The two halves — four escalating hit beats → the 5th Final
+> Blow → the VICTORY! finale — are joined end-to-end. `scheme-wins` and `tie`
+> finales remain `draft`.
 
 ## VFX Trigger Contract
 
@@ -453,7 +522,7 @@ stream — one effect per event type — with zero new engine work.
 | Event (`NotableGameEventType`) | Priority | Fires when | Suggested visual character (proposal) |
 |---|---|---|---|
 | `mastermindStrikeResolved` | T1 | A Mastermind Strike card is revealed and resolved | **Screen-shake** + red edge-vignette pulse + dark shard particles — the signature "uh-oh" jolt |
-| `mastermindDefeated` | T1 | All tactics defeated — the Mastermind is vanquished (win) | The biggest positive payoff: a full-screen **victory bloom** + confetti storm |
+| `mastermindDefeated` | T1 | All tactics defeated — the Mastermind is vanquished (win) | **Shipped** as the [heroes-win victory finale](#shipped-victory-finale) — but keyed off the projected `gameOver.outcome`, not this event (so it fires on the Final Blow 5th blow too, WP-690). Separately, each **Tactic hit** on the way there fires the escalating [mastermind-hit beat](#shipped-mastermind-hit) off the `tacticsDefeated` count delta |
 | `fightResolved` | T1 | A player defeats a villain or henchman in the City | **Impact burst** at the card's City space; a coin/star flourish layered on when `bystandersRescued > 0` |
 | `ambushResolved` | T2 | A villain with an `Ambush:` marker enters the City | Menacing **edge-glow** + a hard card-slam settle as the villain drops into its City space |
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
@@ -691,9 +760,9 @@ resolves every match to exactly one of **three** outcomes —
 `EndgameOutcome` is `'heroes-win' | 'scheme-wins' | 'tie'`. Each deserves
 its own full-screen finale:
 
-| Outcome | Triggers (counter) | Finale character (proposal) |
+| Outcome | Triggers (counter) | Finale character |
 |---|---|---|
-| **`heroes-win`** | `mastermindDefeated` ≥ 1 (also Surface 1's T1 notable event) | The biggest positive moment in the game — **victory bloom + confetti storm + slow-motion hero beat** |
+| **`heroes-win`** | `mastermindDefeated` ≥ 1 (projected as `gameOver.outcome`) | **Shipped** (WP-690) — the [gold **VICTORY!** finale](#shipped-victory-finale): confetti storm + bloom + banner, off the projected `gameOver.outcome === 'heroes-win'`. Fires on the 4th-Tactic win **and**, under the optional [Final Blow rule](master-strike.md) (WP-687), on the 5th, final blow — no rework, because it keys off the projected win, not the fight |
 | **`scheme-wins`** | `schemeLossCount` ≥ 1 — a scheme-loss condition latched. **WP-509 / D-24317 retired** the generic `escapedVillains` ≥ `ESCAPE_LIMIT` (8) cap; a villain-escape loss is now a *per-scheme* `escaped-pile-count` condition that latches `SCHEME_LOSS` (so escapes and twist-count both fold into `schemeLossCount`). `ESCAPE_LIMIT = 8` still exists but only for sim / co-op heuristics, not as an endgame trigger | A dark, **deflating collapse** — desaturate to ash; the distinct loss reasons (an escape stampede vs. the scheme snapping shut) can still take distinct treatments |
 | **`tie`** | `finalTurnTie` ≥ 1 — a deck emptied and the final turn ended with no win or loss (WP-367 / D-24159) | Something **wry and suspended** — a held, unresolved shimmer; neither bloom nor collapse |
 
