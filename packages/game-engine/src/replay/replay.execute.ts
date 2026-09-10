@@ -65,7 +65,13 @@ interface ReplayMoveContext {
   G: LegendaryGameState;
   playerID: string;
   ctx: { currentPlayer: string; numPlayers: number };
-  events: { endTurn: () => void; setPhase: (phase: string) => void };
+  // why: WP-696 / D-24513 — endTurn accepts boardgame.io's optional `{ next }` arg.
+  // It stays a no-op here (replay reconstructs turns from the recorded move list, so
+  // each extra turn is already its own recorded endTurn move); the arg is accepted so
+  // the real endTurn move / advanceTurnStage type-check when they call `{ next }`. The
+  // extra turn stays faithful because the real endTurn move still decrements
+  // G.extraTurns during replay, keeping the reconstructed G consistent with live.
+  events: { endTurn: (opts?: { next?: string }) => void; setPhase: (phase: string) => void };
   random: { Shuffle: <T>(deck: T[]) => T[] };
 }
 
@@ -86,9 +92,13 @@ type MoveFn = (context: ReplayMoveContext, args?: unknown) => void;
  */
 function replayAdvanceStage(context: ReplayMoveContext): void {
   // why: advanceTurnStage expects TurnLoopState (has currentStage) and
-  // TurnLoopContext (has events.endTurn). G satisfies TurnLoopState and
-  // context.events satisfies TurnLoopContext structurally.
+  // TurnLoopContext (has currentPlayer + events.endTurn). G satisfies TurnLoopState
+  // and context.events satisfies TurnLoopContext structurally.
+  // why: WP-696 / D-24513 — pass currentPlayer so advanceTurnStage's extra-turn
+  // branch consumes G.extraTurns identically to live/sim during replay; the endTurn
+  // call itself is a no-op here, but the consume keeps the reconstructed G faithful.
   advanceTurnStage(context.G, {
+    currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
   });
 }

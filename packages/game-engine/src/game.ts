@@ -116,7 +116,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * @param context - boardgame.io move context with G and events.
  */
-function advanceStage({ G, events }: MoveContext): void {
+function advanceStage({ G, ctx, events }: MoveContext): void {
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
   // board is frozen; advanceStage (at any stage) returns with no side effects
   // so the player resolves the Fight effect before any other action. Placed
@@ -194,7 +194,14 @@ function advanceStage({ G, events }: MoveContext): void {
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by
   // the block-all guard above (D-24008 — queue-non-empty blocks turn-end).
   if (G.currentStage === 'cleanup' && G.pendingHeroChoice !== undefined) { return; }
-  advanceTurnStage(G, { events: { endTurn: () => events.endTurn() } });
+  // why: WP-696 / D-24513 — pass ctx.currentPlayer and FORWARD the optional
+  // `{ next }` arg so advanceTurnStage can honor a queued extra turn on this
+  // KO-driven auto-end path exactly as it does on the normal cleanup auto-end
+  // (a bare `() => events.endTurn()` here would silently drop the `{ next }`).
+  advanceTurnStage(G, {
+    currentPlayer: ctx.currentPlayer,
+    events: { endTurn: (opts) => events.endTurn(opts) },
+  });
 }
 
 /**

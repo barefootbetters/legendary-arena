@@ -65,7 +65,10 @@ interface FixtureMoveContext {
   };
   readonly events: {
     setPhase: (name: string) => void;
-    endTurn: () => void;
+    // why: WP-696 / D-24513 — accept boardgame.io's optional `{ next }` arg so the
+    // real endTurn move / advanceTurnStage type-check when they request the SAME
+    // seat's next turn; the closure records it for rotateToNextTurn to honor.
+    endTurn: (opts?: { next?: string }) => void;
   };
   readonly random: {
     Shuffle: <T>(deck: T[]) => T[];
@@ -135,7 +138,11 @@ function shuffleWithPrng<T>(deck: T[], nextRandom: () => number): T[] {
  * by calling `advanceTurnStage` directly.
  */
 function fixtureAdvanceStage(context: FixtureMoveContext): void {
+  // why: WP-696 / D-24513 — pass currentPlayer + forward the endTurn closure so a
+  // cleanup-stage advance that ends the turn routes any queued extra turn through
+  // advanceTurnStage's `{ next }` call; the closure records it for rotateToNextTurn.
   advanceTurnStage(context.G, {
+    currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
   });
 }
@@ -193,7 +200,9 @@ function buildMoveContext(
   playerId: string,
   turn: number,
   numPlayers: number,
-  endTurnFlag: { triggered: boolean },
+  // why: WP-696 / D-24513 — `nextPlayer` carries the extra-turn `{ next }` signal
+  // from the endTurn closure to rotateToNextTurn (fixture-harness parity).
+  endTurnFlag: { triggered: boolean; nextPlayer?: string },
   nextRandom: () => number,
 ): FixtureMoveContext {
   return {
@@ -210,8 +219,13 @@ function buildMoveContext(
       // functions that call setPhase become no-ops. Matches the
       // replay.execute.ts (D-0205) and simulation.runner.ts dispatch shape.
       setPhase: () => {},
-      endTurn: () => {
+      endTurn: (opts?: { next?: string }) => {
         endTurnFlag.triggered = true;
+        // why: WP-696 / D-24513 — capture the extra-turn target so rotateToNextTurn
+        // grants the SAME seat another turn instead of rotating away.
+        if (opts?.next !== undefined) {
+          endTurnFlag.nextPlayer = opts.next;
+        }
       },
     },
     random: {
@@ -276,10 +290,20 @@ function rotateToNextTurn(
   playerOrder: readonly string[],
   numPlayers: number,
   nextRandom: () => number,
+  extraTurnNextPlayer?: string,
 ): void {
-  const currentSeatIndex = playerOrder.indexOf(cursor.currentPlayer);
-  const nextSeatIndex = (currentSeatIndex + 1) % numPlayers;
-  cursor.currentPlayer = playerOrder[nextSeatIndex]!;
+  // why: WP-696 / D-24513 — when the ended turn granted an extra turn, the live
+  // endTurn move / advanceTurnStage already consumed G.extraTurns and signalled the
+  // SAME seat via `{ next }`; keep that seat rather than advancing so the fixture's
+  // turn cadence matches the live path. No committed fixture exercises this today
+  // (low severity), but the harness stays faithful if one ever does.
+  if (extraTurnNextPlayer !== undefined) {
+    cursor.currentPlayer = extraTurnNextPlayer;
+  } else {
+    const currentSeatIndex = playerOrder.indexOf(cursor.currentPlayer);
+    const nextSeatIndex = (currentSeatIndex + 1) % numPlayers;
+    cursor.currentPlayer = playerOrder[nextSeatIndex]!;
+  }
   cursor.turn += 1;
   cursor.completedTurnCount += 1;
   gameState.currentStage = TURN_STAGES[0]!;
@@ -316,7 +340,9 @@ function dispatchSingleMove(
       `Fixture "${fixture.name}" references unknown move name "${move.moveName}" at input.moves[${moveIndex}]; add the move to MOVE_MAP or correct the fixture's move list.`,
     );
   }
-  const endTurnFlag = { triggered: false };
+  // why: WP-696 / D-24513 — nextPlayer carries the extra-turn `{ next }` target the
+  // dispatched move / advanceTurnStage forwarded, honored by rotateToNextTurn.
+  const endTurnFlag: { triggered: boolean; nextPlayer?: string } = { triggered: false };
   const moveContext = buildMoveContext(
     gameState,
     move.playerId,
@@ -328,7 +354,7 @@ function dispatchSingleMove(
   moveDispatch(moveContext, move.args);
 
   if (endTurnFlag.triggered) {
-    rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom);
+    rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);
     const snapshot = captureNormalisedSnapshot(gameState, cursor, fixture);
     cursor.snapshotPerTurn.push(snapshot);
   }

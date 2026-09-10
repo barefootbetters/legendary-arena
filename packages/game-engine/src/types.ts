@@ -1396,6 +1396,21 @@ export interface LegendaryGameState {
   /** Per-player next-`onBegin` hand-fill override (lazy; WP-497 / D-24300). */
   handSizeOverrides?: Record<string, number>;
 
+  // why: WP-696 / D-24513 — the extra-turn primitive. A per-player counter of
+  // queued additional full turns, keyed by PlayerID. Incremented (stacking, `+= 1`)
+  // by a tactic resolver that grants "take another turn" (Dr. Doom's "Secrets of
+  // Time Travel"); honored at every turn-end (advanceTurnStage + the endTurn move +
+  // the sim/PAR/replay harnesses) via boardgame.io `events.endTurn({ next:
+  // currentPlayer })` and decremented-to-delete. It is gameplay-affecting so it MUST
+  // be hashed, but — following the handSizeOverrides / lastPlayEffectsFired hygiene
+  // pattern — it is **lazily created**, NEVER seeded in buildInitialGameState: an
+  // untriggered game leaves it undefined, canonical JSON omits it, and every
+  // committed replay/sentinel oracle stays byte-identical (no re-pin). A spent
+  // counter deletes its key, so a game that used up its extra turns serializes
+  // identically to one that never had any. Absent = no extra turns owed.
+  /** Per-player queued extra-turn counter (lazy; WP-696 / D-24513). */
+  extraTurns?: Record<string, number>;
+
   // why: pending player-choice state set by reveal-attack-choose executor (D-22001).
   // Must be undefined at every turn-end. Optional so existing test state literals
   // do not need updating. Absent (undefined) = no pending choice.

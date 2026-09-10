@@ -42,6 +42,7 @@ import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { consumeExtraTurn } from '../turn/turnLoop.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -598,6 +599,19 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
   const handResult = moveAllCards(playerZones.hand, playerZones.discard);
   playerZones.hand = handResult.from;
   playerZones.discard = handResult.to;
+
+  // why: WP-696 / D-24513 — this is the player-initiated end-turn path, a DIRECT
+  // events.endTurn() that does NOT route through advanceTurnStage (D-22002 two-path
+  // model), so it must honor a queued extra turn ITSELF or the extra turn is dropped
+  // on the primary user path (AC-2). When the acting seat defeated "Secrets of Time
+  // Travel" this turn, end the turn but begin the SAME seat's next turn via
+  // boardgame.io's `events.endTurn({ next })` — a full fresh turn (onEnd -> onBegin),
+  // never manual player rotation. consumeExtraTurn decrements-to-delete so normal
+  // end-turns stay byte-identical.
+  if (consumeExtraTurn(G, playerID)) {
+    events.endTurn({ next: playerID });
+    return;
+  }
 
   // why: boardgame.io manages player rotation via ctx.events.endTurn().
   // Manual player index rotation is forbidden — the framework handles
