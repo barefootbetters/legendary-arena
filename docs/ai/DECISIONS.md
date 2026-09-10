@@ -41112,3 +41112,102 @@ the narrow shld mixed-choose-one arc.
 **Packet:** WP-679 / EC-716. **Active:** 2026-09-09.
 
 Protect this file.
+
+---
+
+### D-24502 — the desktop play surface adopts a fixed 1280×720 authoring-grid spatial board (prospectively supersedes the D-24251 fluid stack) (Active 2026-09-09 — play-mat spatial rebuild; implementation WP TBD)
+
+**Type:** Client UI Lock (play-surface geometry) — design ruling ahead of implementation
+**Packet:** none yet — the implementation is a follow-on WP (see *Implementation*)
+**Date:** 2026-09-09
+
+**Decision.** `<PlayDesktop>` is rebuilt from the current fluid vertical stack
+(D-24251) into a **fixed-geometry spatial board authored at a 1280×720 grid**.
+Eight locks:
+
+1. **Authoring grid is 1280×720 at 1.00×.** 1366×768 renders the same grid at
+   ~1.07× (or a wider gutter); 1920×1080 at 1.50× — gaps grow, zones never
+   rewrap or rearrange. Below 1280 the board letterboxes toward 0.90× before the
+   D-12909 `<PlayMobile>` composer takes over at ≤767px. **This is the D-24251
+   replacement** (see *Supersession*).
+2. **A right rail owns the opponent panels + game log.** The shared board and the
+   player cockpit keep the visual center; moving opponents/log into the rail is
+   what reclaims the vertical height the stack spent.
+3. **City order stays** `Escaped | Bridge | Streets | Rooftops | Bank | Sewers |
+   Villain Deck` (the 2026-05-03 reviewer lock) and **slot place-names stay
+   visible when a villain occupies the space.**
+4. **Hand and in-play bind to the full projected arrays** (`handCards` /
+   `inPlayCards`) — never `slice(0,6)`. Overflow scrolls **horizontally inside the
+   zone** with a `+N` peek; cards never shrink below a readable name+cost, and the
+   extra cards never compress the City / HQ.
+5. **Click-to-play moves a hand card into the in-play well** (WP-100 tap-to-play;
+   City / HQ / Mastermind stay tap-to-fight / tap-to-recruit). "Play here" is the
+   empty-well affordance, not a drop-only target; it is disabled off-turn or
+   off-`main`. Played cards stay in the well until cleanup.
+6. **Draw-6 is the cleanup draw size (WP-008B / WP-006B), not a hand cap.**
+7. **The Transform Deck (WP-664) stays HQ-adjacent** on an overflow rail and hides
+   when empty.
+8. **Twist / tactics denominators come from the projection**
+   (`progress.schemeTwistThreshold`; mastermind tactics = `tacticsRemaining +
+   tacticsDefeated`) — never a painted `/8` or `/4`.
+
+**Supersession.** This **prospectively supersedes D-24251** (the `--play-max-width`
+cap + fluid `clamp()` column stack). D-24251 **remains the shipped behavior until
+the implementation WP lands**; this entry ratifies the direction and governs that
+WP. The D-12909 767px mobile split is unchanged and unrelated.
+
+**Rationale.** The fluid stack (D-24251) reflows into a tall vertical column that
+(a) does not read like the physical Legendary board, (b) packs past the fold at
+its 1366px floor, and (c) horizontal-scrolls below 1366 — the observed
+`play.legendary-arena.com` failure at an effective 1280×720 (1080p @ 150% zoom;
+see the responsive-viewport-targets ewiki page). A board authored to the smallest
+supported viewport and scaled up (rather than reflowed) fits that floor at 1:1 and
+grows losslessly; the right rail is what buys back the height the dense game needs.
+
+**Rejected alternatives.**
+- **Keep the fluid stack, only lower the D-24251 floor from 1366 to 1280** —
+  REJECTED. Fixes the sub-floor viewport but not the reflow/density or the "not a
+  board" problem; the stack still packs past the fold.
+- **Another geometry pass / restack** — REJECTED. The Rev-4 lock mock closed the
+  open geometry questions (authoring floor, hand overflow, in-play destination,
+  City-label order); reopening layout is churn.
+- **Container queries per zone** — REJECTED as heavier than a single board scale;
+  the play surface is the viewport-level container (same call as D-24251(c)).
+
+**Out of scope (explicitly NOT decided here).** Two turn-bar affordances the Rev-4
+mock shows are scoped OUT of this geometry lock:
+- **Heal Wound** — surfaces the already-shipped effect-driven `healWounds`
+  mechanic (WP-379..382); it is a **conditional** control shown only when the
+  viewer can legally heal (a Wound in hand/play + a healing effect), stage-gated
+  like every other action — never an always-on button. No new engine work.
+- **Undo** — a genuinely new, unbuilt feature (no undo/redo concept exists in the
+  engine today). Its scope is decided — **pre-commit, non-revealing** (a player may
+  undo their own actions this turn before End Turn, but never across a
+  hidden-information reveal — draw, villain reveal, scry — which would be
+  outcome-fishing and break shuffle integrity / competitive fairness) — but its
+  design is a **separate cross-layer decision + WP**, not part of this ruling.
+
+Also out of scope and unchanged: the pending-choice overlay model (prompts stay
+above the turn bar), 5-handed rail overflow (collapse to one-liners before the
+City compresses), spectator / opponent-turn framing, the light-theme skin preview,
+and Horrors-hidden-at-0.
+
+**Layer / boundary.** App layer (`apps/arena-client`) only — presentation geometry
+(CSS + template), consuming the existing read-only `UIState` projection. No
+`G`/`ctx`, no new `UIState` field, no persistence, zero
+engine/determinism/replay footprint, no `finalStateHash` re-pin. The denominator
+fix (lock 8) consumes already-projected fields. §21 N/A (client, no HTTP surface).
+Vision NG-1..7 uncrossed (no pay-to-win / layer move). (The Undo feature, when
+designed, WILL cross into the engine — hence it is scoped out here.)
+
+**Implementation.** A follow-on WP (or small WP set) implements this against
+`PlayDesktop.vue` + styles; a companion Priority-2 fix wires the projected
+denominators (lock 8) independently and can land first. The Undo and Heal-Wound
+controls are their own follow-ons per *Out of scope*. Design record: the
+`play-mat-redesign01..04` mockups on the responsive-viewport-targets ewiki page
+and this session's review thread.
+
+**Status:** Active (direction ratified; implementation pending). **Supersedes
+(prospective):** D-24251.
+
+Protect this file.
