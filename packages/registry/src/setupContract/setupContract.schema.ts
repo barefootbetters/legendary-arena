@@ -193,6 +193,13 @@ export const EnvelopeSchema = z
     // The envelope keeps `.strict()` below, so a misspelled key (e.g.
     // `heroAlternatIds`) is still rejected — gaining one field did not loosen it.
     heroAlternateIds: uniqueExtIdArray("heroAlternateIds").optional(),
+    // why: WP-686 / D-24503 — the Final Blow optional-rule flag lives on the
+    // ENVELOPE (beside heroSelectionMode / supportPools / heroAlternateIds), not
+    // in the nine-field composition. Unlike those three the ENGINE consumes this
+    // one, but validation here is shape-only (boolean) and `.optional()` keeps
+    // every pre-existing document valid. The envelope keeps `.strict()` below, so
+    // a misspelled key is still rejected.
+    finalBlow: z.boolean().optional(),
   })
   .strict();
 

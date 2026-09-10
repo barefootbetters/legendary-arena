@@ -230,6 +230,58 @@ describe("setupContract (WP-091)", () => {
     );
   });
 
+  test("#6a WP-686 finalBlow: true validates and round-trips onto the envelope", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      finalBlow: true,
+    };
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.value.finalBlow, true);
+    }
+  });
+
+  test("#6b WP-686 finalBlow: false validates", () => {
+    const registry = buildStubRegistry();
+    const document: MatchSetupDocument = {
+      ...buildValidDocument(),
+      finalBlow: false,
+    };
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.value.finalBlow, false);
+    }
+  });
+
+  test("#6c WP-686 absent finalBlow validates (backward compatible; treated as off)", () => {
+    const registry = buildStubRegistry();
+    const document = buildValidDocument();
+    // why: buildValidDocument does not set finalBlow, so this is the every-prior-
+    // document case; absence is valid and the parsed value carries no finalBlow.
+    const result = validateMatchSetupDocument(document, registry);
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.value.finalBlow, undefined);
+    }
+  });
+
+  test("#6d WP-686 non-boolean finalBlow is rejected with a wrong_type error on the finalBlow field", () => {
+    const registry = buildStubRegistry();
+    const document = {
+      ...buildValidDocument(),
+      finalBlow: "yes",
+    };
+    const errors = errorsOf(validateMatchSetupDocument(document, registry));
+    const finalBlowError = errors.find(
+      (candidate) => candidate.field === "finalBlow",
+    );
+    assert.ok(finalBlowError, "Expected a validation error on the finalBlow field.");
+    assert.strictEqual(finalBlowError.code, "wrong_type");
+  });
+
   test("#7 compound failure: HERO_DRAFT + missing seed emits exactly one dedup'd unsupported_hero_selection_mode error (L11 / A-091-05)", () => {
     // why: Exercises the Step 1b raw-input defensive fallback. Even if
     // zod's issue-order places the missing-seed issue first (or future zod

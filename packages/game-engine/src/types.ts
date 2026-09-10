@@ -441,8 +441,14 @@ import type { UICardDisplay } from './ui/uiState.types.js';
  *
  * All card references use ext_id strings from the card registry. Field names
  * are locked by 00.2 section 8.1 — do not rename, abbreviate, or reorder.
+ *
+ * why: WP-686 / D-24503 — the payload additionally carries the optional Final
+ * Blow rule flag as an intersection over the unchanged 9-field MatchSetupConfig.
+ * The composition lock is untouched (finalBlow is envelope/payload-level, not a
+ * composition field); this widening only lets the flag ride in setupData through
+ * to Game.setup(), where buildInitialGameState stores it on G. Absence = off.
  */
-export type MatchConfiguration = MatchSetupConfig;
+export type MatchConfiguration = MatchSetupConfig & { readonly finalBlow?: boolean };
 
 // why: boardgame.io 0.50.x uses the string player-index convention
 // ("0" | "1" | "2" | ... — the index of the seat within a match's
@@ -1251,6 +1257,17 @@ export interface DeferredConditionalGrant {
 export interface LegendaryGameState {
   /** The match configuration used to set up this game. Immutable after setup. */
   readonly matchConfiguration: MatchConfiguration;
+
+  // why: WP-686 / D-24503 — the Final Blow optional-rule flag (rulebook "Final
+  // Blow (Optional)"). OPTIONAL and seeded by buildInitialGameState ONLY when
+  // the setup payload's finalBlow is true; omitted otherwise. Omit-when-off is
+  // load-bearing: both whole-G hash oracles (computeStateHash / hashGameState)
+  // serialize the entire state, and JSON.stringify drops absent keys, so a
+  // non–Final-Blow match is byte-identical to today and NO state-hash oracle
+  // re-pins (the schemeLossPileSetupSize / activeScoringConfig precedent in
+  // buildInitialGameState). Read by WP-687's endgame gate as `finalBlow === true`.
+  /** Whether this match plays the optional Final Blow rule. Absent = off. */
+  readonly finalBlow?: boolean;
 
   // why: selection extracts the entity reference fields from matchConfiguration
   // for convenient read access. matchConfiguration is the full 9-field input;

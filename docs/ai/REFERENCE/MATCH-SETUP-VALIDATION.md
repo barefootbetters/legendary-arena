@@ -153,6 +153,12 @@ This stage ensures:
   `The loadout envelope's heroSelectionMode is <value>, which is not a supported rule mode in v1 of the match setup schema. Supported modes: GROUP_STANDARD. (HERO_DRAFT is reserved for a future release and is not yet implemented.)`
   See `DECISIONS.md` D-9301 and
   `MATCH-SETUP-SCHEMA.md §Field Semantics / Hero Selection Mode`.
+- if `finalBlow` is present, it must be a boolean; if absent, the
+  envelope is treated as `finalBlow: false`. A non-boolean value is
+  rejected with error code `"wrong_type"` on the `finalBlow` field.
+  Unlike other envelope fields the engine consumes `finalBlow`: it rides
+  in the setup payload to `Game.setup()`, which stores it on `G` (WP-686
+  / D-24503; WP-687 implements the endgame gate that reads it).
 
 **Owner:** Server layer (`apps/server`)
 **Output:** Validated envelope + extracted composition block
@@ -294,6 +300,9 @@ The following test cases are mandatory for any validation implementation.
   consumers must treat the absent field as `heroSelectionMode:
   "GROUP_STANDARD"` per `MATCH-SETUP-SCHEMA.md §Field Semantics / Hero
   Selection Mode`)
+- Valid envelope with `finalBlow: true`, with `finalBlow: false`, and
+  with `finalBlow` absent (backward-compat case: absent is treated as
+  `false`) — WP-686 / D-24503
 
 ### Invalid Cases -- Structural
 
@@ -309,6 +318,8 @@ The following test cases are mandatory for any validation implementation.
   full-sentence error message template documented above. `"HERO_DRAFT"`
   is reserved for a future release and is deliberately **not** in the
   v1 allowed enum; see `DECISIONS.md` D-9301.
+- Non-boolean `finalBlow` (e.g. `"yes"`, `1`) — rejected with error
+  code `"wrong_type"` on the `finalBlow` field (WP-686 / D-24503).
 
 ### Invalid Cases -- Registry
 

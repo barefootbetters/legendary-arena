@@ -326,6 +326,13 @@ export function validateMatchSetupDocument(
   if (parsed.data.heroAlternateIds !== undefined) {
     value.heroAlternateIds = parsed.data.heroAlternateIds;
   }
+  // why: WP-686 / D-24503 — `value` is rebuilt field-by-field above, so the Final
+  // Blow flag must be echoed here or it parses cleanly and then silently vanishes
+  // from the validated output (the heroAlternateIds / supportPools failure mode).
+  // Echoed only when present so an off / pre-existing document's value is unchanged.
+  if (parsed.data.finalBlow !== undefined) {
+    value.finalBlow = parsed.data.finalBlow;
+  }
 
   return { ok: true, value };
 }
