@@ -41218,6 +41218,75 @@ Protect this file.
 
 ---
 
+### D-24499 — Diving Block (reactive wound interception) + Pure Fury (conditional free defeat) (Active 2026-09-10 — WP-682 / EC-719)
+
+Implements two inert core-hero abilities that each needed a NEW engine mechanic. No new
+hashed `G` field, so no hash re-pin: the one new pending FIFO (`pendingDivingBlockWounds`)
+is lazily materialized (never in `Game.setup`) and the block-all guard keeps it empty at
+every turn-end, so an untriggered match's canonical JSON is byte-identical.
+
+1. **Diving Block** (Captain America) — "If you would gain a Wound, you may reveal this
+   card and draw a card instead." The FIRST reactive **WOUND-time** hero keyword, the
+   wound-side sibling of `return-on-discard`. A new mutating chokepoint
+   `gainWoundForPlayer(G, playerID)` (in `board/wounds.logic.ts`) now owns every player
+   wound-gain; all 7 caller families (villain effects, mastermind strikes, scheme twists,
+   tactic Fights, hero self-wounds, villain-deck escape, group-villain) were refactored
+   from the pure `gainWound(woundsPile, discard)` onto it, so EVERY wound source is seen.
+   The Wound lands first (land-then-offer-undo, the `return-on-discard` shape); then
+   `checkDivingBlock` parks one entry PER WOUND onto `G.pendingDivingBlockWounds` (one
+   Diving Block copy per Wound). The FIFO drains one WAVE at a time through the **WP-684**
+   non-active/multi-seat pending-choice capability (`G.pendingSeatChoice`, kind
+   `diving-block`) — the wound recipient MAY be a NON-ACTIVE seat (a Master Strike /
+   "each player gains a Wound" scheme), which the active-only model cannot serve (the
+   WP-684 hard dependency). The play-phase `onMove` opens/re-opens each wave via
+   `events.setActivePlayers` (the WP-684 stage-ride). On reveal the just-gained Wound is
+   returned to the supply, a card is drawn, and Diving Block STAYS in hand; on decline the
+   Wound is kept. Diving Block has NO `onPlay` handler and is NOT in `NO_MAGNITUDE_KEYWORDS`
+   (it never runs at play time) — it joins the new `WOUND_TIME_EXECUTED_KEYWORDS` →
+   `MVP_KEYWORDS`, exactly mirroring `return-on-discard`. Marker `[keyword:diving-block]`.
+2. **Pure Fury** (Nick Fury) — "Defeat any Villain or Mastermind whose Attack is less than
+   the number of S.H.I.E.L.D. Heroes in the KO pile." A FREE defeat (no attack paid) that
+   REUSES the `defeat-with-bystander` shared free-defeat path
+   (`dispatchDefeatWithBystanderTarget`) incl. Masterminds. `heroEffectPureFury` builds the
+   eligible set (`buildPureFuryTargets`: printed attack STRICTLY `<`
+   `countShieldHeroesInKo(G)`, City Villains + a tactic-bearing Mastermind, City ascending
+   then Mastermind last) and resolves 0 → no-op, 1 → auto-defeat, ≥2 → parks a
+   `PendingDefeatChoice { choiceType: 'pure-fury' }` the player resolves via the EXISTING
+   `resolveDefeatChoice` (extended to accept the new discriminant). `countShieldHeroesInKo`
+   reads the GLOBAL `G.ko` via `cardCountsAsShieldHero` (S.H.I.E.L.D.-team Heroes ONLY —
+   NOT HYDRA). Printed attack = `fightCostBase` for a dynamic villain, else `fightCost`.
+   `pure-fury` is a handler-bearing NO-magnitude keyword (in `NO_MAGNITUDE_KEYWORDS` +
+   `HANDLED_KEYWORDS`). Marker `[keyword:pure-fury]`.
+
+`HERO_KEYWORDS` union+array bumped 50→52 (drift pins updated); `HERO_EFFECT_HANDLERS`
+36→37 (pure-fury; Diving Block adds none). Markers authored via
+`inputs/hero-ability-markers.json` + `VALID_TOKEN_PATTERN`, then the regen (only
+`data/cards/core.json` changes semantically). Derived feeds regenerated (hero ledger +
+card-mechanics + effect-index); `mechanic-provenance` rows added for both. No new board
+UIState field: Diving Block rides the existing WP-684 `pendingSeatChoice` projection (kind
++ per-seat option labels), Pure Fury rides the existing WP-486 `pendingDefeatChoice`
+projection (discriminant passed through) — both already audience-filtered; the client
+prompts (`PendingSeatChoicePrompt`, `PendingDefeatChoicePrompt`) gained kind/choiceType-aware
+headings. No new `resolve*` move: both consumers reuse `resolveSeatChoice` (WP-684) and
+`resolveDefeatChoice` (WP-486), already enrolled in the sim MOVE_MAPs +
+`SIMULATION_MOVE_NAMES`, so no sim-dispatch change was needed.
+
+**Deviations from EC-719.** (a) The EC's lockstep guidance called both keywords
+"handler-bearing" and put both in `NO_MAGNITUDE_KEYWORDS`. Diving Block is instead modeled
+faithfully on its cited precedent, `return-on-discard`: a reactive keyword with NO handler
+and NOT in `NO_MAGNITUDE_KEYWORDS`, joining the new `WOUND_TIME_EXECUTED_KEYWORDS` category
+(a no-onPlay-run reactive keyword). Putting it in `HANDLED_KEYWORDS`/`NO_MAGNITUDE_KEYWORDS`
+would have been false (no handler exists; the play-time pre-gate drop is the correct no-op).
+(b) The EC listed a new `ui/uiState.*` board field and a possible new `resolve*` move; both
+proved unnecessary because the two mechanics reuse the WP-684 seat-choice and WP-486
+defeat-choice projections + moves verbatim — the minimal, less-drift-prone path.
+
+**Packet:** WP-682 / EC-719. **Active:** 2026-09-10.
+
+Protect this file.
+
+---
+
 ### D-24502 — the desktop play surface adopts a fixed 1280×720 authoring-grid spatial board (prospectively supersedes the D-24251 fluid stack) (Active 2026-09-09 — play-mat spatial rebuild; implementation WP TBD)
 
 **Type:** Client UI Lock (play-surface geometry) — design ruling ahead of implementation
