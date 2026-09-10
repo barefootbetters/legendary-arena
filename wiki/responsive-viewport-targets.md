@@ -136,6 +136,10 @@ anchor), not something this descriptive page can make on its own; per
 1280×720 is recorded here as a **must-hold target the layout does not
 yet meet**.
 
+![Proposal mockup of a redesigned Legendary Arena play mat, rendered at 1280×720 (Tex's screen) on the dark theme with the playmat skin on. A dark cinematic board fills a single 16:9 frame with no scroll: a top HUD bar (LEGENDARY ARENA wordmark, Phase Play, Turn 4, Twists 2/8, Strikes 0/3); an adversary band holding the Loki Mastermind tile, the Capture Five Bystanders Scheme tile, and a shared-supply strip (Wounds 24, Bystanders 12, S.H.I.E.L.D. Officers 22, Sidekicks 13, KO Pile 6, Escaped 3); the five-space City battle-line (Escaped, Bridge, Doombot, Doombot Legion, Bank, Sewers, Villain Deck 14); the H.Q. hero shop (Wolverine, Iron Man, Storm, Hawkeye, Spider-Man, Hero Deck 42) with class-colour accents; a bottom cockpit with the player's in-play and hand rows, the Attack 3 / Recruit 2 economy, and the Your Deck 18 / Discard 6 / Victory 4 piles; a slim right rail with the two opponent panels and the game log; and a sticky turn-action bar. Four caption cards below explain the redesign: one mat with real geography, the rail reclaims height, authored to the 1280×720 floor, and the skin layer intact.](/responsive-viewport-targets/play-mat-redesign01.jpg "width=100%")
+
+*Illustrative proposal mockup (not shipped) of a **spatial-board redesign** authored at exactly 1280×720 — the below-floor viewport above — so the board fits Tex's screen at 1:1 and scales up from there rather than horizontal-scrolling. It moves the opponent panels and game log into a right rail to reclaim vertical height, replacing the current fluid vertical stack. This is a design proposal, not a locked decision: adopting it would supersede the D-24251 fluid-scaling anchor and require its own `DECISIONS.md` entry and Work Packet. Per [SCHEMA.md](SCHEMA.md) this page records the proposal; it does not make the decision.*
+
 ### Fluid desktop scaling — shipped (WP-430 / D-24251)
 
 The desktop surface now **scales fluidly across the desktop resolution
