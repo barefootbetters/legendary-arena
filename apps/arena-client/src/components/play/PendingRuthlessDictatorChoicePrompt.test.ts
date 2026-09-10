@@ -50,16 +50,26 @@ describe('PendingRuthlessDictatorChoicePrompt (WP-695 / EC-732)', () => {
     assert.ok(wrapper.find('[data-testid="pending-ruthless-dictator-choice-prompt"]').exists());
   });
 
-  test('does not render when undefined, for an opponent, or a spectator', () => {
+  const testId = '[data-testid="pending-ruthless-dictator-choice-prompt"]';
+
+  test('does not render when the choice is undefined', () => {
     const { submitMove } = recorder();
-    for (const props of [
-      { pendingRuthlessDictatorChoice: undefined, viewerPlayerId: 'player-0', submitMove },
-      { pendingRuthlessDictatorChoice: mockChoice, viewerPlayerId: 'player-1', submitMove },
-      { pendingRuthlessDictatorChoice: mockChoice, viewerPlayerId: null, submitMove },
-    ]) {
-      const wrapper = mount(PendingRuthlessDictatorChoicePrompt, { props });
-      assert.ok(!wrapper.find('[data-testid="pending-ruthless-dictator-choice-prompt"]').exists());
-    }
+    const wrapper = mount(PendingRuthlessDictatorChoicePrompt, {
+      props: { pendingRuthlessDictatorChoice: undefined, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!wrapper.find(testId).exists());
+  });
+
+  test('does not render for a non-chooser (opponent) or a spectator', () => {
+    const { submitMove } = recorder();
+    const opponent = mount(PendingRuthlessDictatorChoicePrompt, {
+      props: { pendingRuthlessDictatorChoice: mockChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.ok(!opponent.find(testId).exists());
+    const spectator = mount(PendingRuthlessDictatorChoicePrompt, {
+      props: { pendingRuthlessDictatorChoice: mockChoice, viewerPlayerId: null, submitMove },
+    });
+    assert.ok(!spectator.find(testId).exists());
   });
 
   test('renders a button per available disposition and dispatches { cardId, disposition }', () => {
