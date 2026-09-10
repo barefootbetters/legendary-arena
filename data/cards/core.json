@@ -136,7 +136,7 @@
           "attack": null,
           "recruit": "0+",
           "abilities": [
-            "You get +1[icon:recruit] for each color of Hero you have."
+            "You get +1[icon:recruit] for each color of Hero you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -151,7 +151,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each color of Hero you have."
+            "You get +1[icon:attack] for each color of Hero you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -181,7 +181,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[team:avengers]: You get +3[icon:attack] for each other [team:avengers] you played this turn."
+            "[team:avengers]: You get +3[icon:attack] for each other [team:avengers] you played this turn. [keyword:attack-per-count:avengers-played-this-turn:3]"
           ]
         }
       ],
@@ -382,7 +382,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other Hero with an odd-numbered [icon:vp] you played this turn."
+            "You get +1[icon:attack] for each other Hero with an odd-numbered cost you played this turn. [keyword:attack-per-count:odd-cost-heroes-played-this-turn:1]"
           ]
         },
         {
@@ -1033,7 +1033,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other[team:shield] Hero you played this turn."
+            "You get +1[icon:attack] for each other[team:shield] Hero you played this turn. [keyword:attack-per-count:shield-heroes-played-this-turn:1]"
           ]
         },
         {
@@ -2546,7 +2546,6 @@
     {
       "id": null,
       "name": "Wound",
-      "filterName": null,
       "slug": "wound",
       "imageUrl": "https://images.legendary-arena.com/core/core-wd-wound.webp",
       "cards": [
@@ -2554,7 +2553,8 @@
           "qtd": 30,
           "abilities": []
         }
-      ]
+      ],
+      "filterName": null
     }
   ],
   "other": [

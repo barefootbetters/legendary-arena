@@ -146,6 +146,36 @@
   ],
   "core": [
     {
+      "heroSlug": "captain-america",
+      "cardSlug": "perfect-teamwork",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "avengers-assemble",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "a-day-unlike-any-other",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:avengers-played-this-turn:3]"
+    },
+    {
+      "heroSlug": "nick-fury",
+      "cardSlug": "legendary-commander",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:shield-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "deadpool",
+      "cardSlug": "oddball",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:odd-cost-heroes-played-this-turn:1]"
+    },
+    {
       "heroSlug": "spider-man",
       "cardSlug": "web-shooters",
       "abilityIndex": 0,

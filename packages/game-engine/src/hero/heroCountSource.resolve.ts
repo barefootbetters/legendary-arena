@@ -16,6 +16,13 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+// why: WP-680 / D-24497 — the distinct-class source reuses the D-24055 counting
+// (self-inclusive, incl. getGrantedClasses for Size-Changing) rather than
+// re-deriving it, so it can never diverge from the distinctHeroClassesAtLeast gate.
+import { countDistinctHeroClassesInPlay } from './heroConditions.evaluate.js';
+// why: WP-680 / D-24391 — the team sources count membership the same way the
+// requiresTeam gate does: printed team OR a Copy-Powers-granted team.
+import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -221,6 +228,81 @@ function countShieldLevels(G: LegendaryGameState, playerID: string): number {
 }
 
 /**
+ * Counts the OTHER cards a player has played this turn on a given team.
+ *
+ * "Other" excludes the triggering card itself — the cards' text is "for each
+ * OTHER [team] you played this turn" (Captain America's A Day Unlike Any Other,
+ * Nick Fury's Legendary Commander). Membership uses `cardHasTeamWhenPlayed`, so
+ * a card counts by its printed team OR a Copy-Powers-granted team (D-24391),
+ * exactly as the `requiresTeam` gate reads it. A card with no team never counts.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @param team - The team slug to match (e.g. 'avengers', 'shield').
+ * @returns The number of other cards played this turn on that team.
+ */
+function countTeamCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+  team: string,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return 0;
+  }
+
+  let teamCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    if (cardHasTeamWhenPlayed(G, playedCardId as CardExtId, team)) {
+      teamCount++;
+    }
+  }
+  return teamCount;
+}
+
+/**
+ * Counts the OTHER cards a player has played this turn whose printed cost is odd.
+ *
+ * "Other" excludes the triggering card itself — Deadpool's Oddball reads "+1 attack
+ * for each OTHER Hero with an odd-numbered cost you played this turn". The generated
+ * card text prints an `[icon:vp]`, but hero cards carry no victory-point value in the
+ * data model, so this scales by odd COST (Jeff-confirmed 2026-09-09, D-24497). A card
+ * with no `cardStats` row is cost 0 (even) and never counts.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @returns The number of other cards played this turn with an odd printed cost.
+ */
+function countOddCostCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardStats) {
+    return 0;
+  }
+
+  let oddCostCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    const cost = G.cardStats[playedCardId as CardExtId]?.cost ?? 0;
+    if (cost % 2 === 1) {
+      oddCostCount++;
+    }
+  }
+  return oddCostCount;
+}
+
+/**
  * Resolves a count source to the non-negative integer it represents.
  *
  * Pure and total: reads only `G`, never mutates or throws, and returns 0 for
@@ -262,6 +344,21 @@ export function resolveCountSource(
       // why: WP-677 / D-24493 — counts the whole Victory Pile (no self-exclusion);
       // triggeringCardId is intentionally ignored (S.H.I.E.L.D. Level "just checks").
       return countShieldLevels(G, playerID);
+    }
+    case 'distinct-hero-classes-played-this-turn': {
+      // why: WP-680 / D-24497 — "for each color of Hero you have" is SELF-INCLUSIVE
+      // (this card's own color counts), so triggeringCardId is intentionally ignored.
+      // Reuses the D-24055 counting (incl. getGrantedClasses for Size-Changing).
+      return countDistinctHeroClassesInPlay(G, playerID);
+    }
+    case 'avengers-played-this-turn': {
+      return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'avengers');
+    }
+    case 'shield-heroes-played-this-turn': {
+      return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'shield');
+    }
+    case 'odd-cost-heroes-played-this-turn': {
+      return countOddCostCardsPlayedThisTurn(G, playerID, triggeringCardId);
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
