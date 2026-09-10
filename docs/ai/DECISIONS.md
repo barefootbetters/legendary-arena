@@ -41243,3 +41243,76 @@ and this session's review thread.
 (prospective):** D-24251.
 
 Protect this file.
+
+---
+
+### D-24501 — non-active-seat & simultaneous multi-seat pending-choice capability (generalizes the active-only model as a strict superset) + the deterministic disconnect/timeout posture (Active 2026-09-10 — WP-684 / EC-721)
+
+**Type:** Engine capability + cross-layer contract (Game Engine + Arena Client)
+**Packet:** WP-684 / EC-721
+**Date:** 2026-09-10
+
+**Decision.** The shipped interactive pending-choice model is ACTIVE-player-only
+(the play phase is `activePlayers: { currentPlayer: 'playTurn' }`, so boardgame.io
+rejects any move from a non-current player, and every `resolve*` move / `getLegalMoves`
+short-circuit is scoped to the active player — see
+[[reference_interactive_choice_active_player_only]]). WP-684 generalizes it as a
+**STRICT SUPERSET** so a pending choice may reach a **non-active seat** or **all seats
+at once**, without changing any existing active-only choice.
+
+1. **A single new descriptor and move** (`moves/seatChoice.resolve.ts`,
+   `G.pendingSeatChoice`) carry the capability ALONGSIDE the shipped active-player FIFO
+   queues. At most one `PendingSeatChoice` is open at a time. It names `addressedSeats`
+   (one entry = a single, possibly non-active seat; two or more = a simultaneous
+   multi-seat choice), a per-seat prompt map, per-seat submissions, and a deterministic
+   `defaultOptionIndex`. The field is optional and never set by any existing choice, so an
+   always-absent optional field is omitted by JSON serialization and the state hash is
+   **byte-identical** (verified: full engine suite green, no re-pin).
+2. **Non-active-seat admission rides the framework, it does not fork the turn model.**
+   Parking a seat choice calls `events.setActivePlayers({ value, revert: true })` with each
+   addressed seat in an empty `resolvingSeatChoice` stage at `moveLimit: 1`, so boardgame.io
+   accepts that seat's `resolveSeatChoice` (via the global moves bag) and auto-reverts to
+   `{ currentPlayer: 'playTurn' }` once every addressed seat has spent its one move. The
+   block-all guard set (every action move + `advanceStage`) freezes turn progress while a
+   seat choice is open; only the addressed seats' `resolveSeatChoice` proceeds, and the
+   active player CANNOT resolve another seat's choice (the addressed-seat gate).
+3. **Multi-seat resolution is atomic and deterministic.** Turn progress is blocked until
+   EVERY addressed seat submits; the apply then runs in one synchronous pass over the
+   addressed seats sorted **ascending** (submission-order-independent, replay-identical).
+4. **Per-seat UIState redaction (the five-step board-visible contract).** `UIPendingSeatChoice`
+   is projected in `buildUIState` with every addressed seat's prompt, then
+   `filterUIStateForAudience` emits it ONLY to an audience that is an addressed,
+   still-outstanding seat, carrying ONLY that seat's own prompt — never another seat's
+   options. Opponents, spectators, and already-submitted seats get it omitted.
+   `addressedSeats` / `outstandingSeats` are seat-id liveness info (no private data).
+5. **Sim enrollment.** `resolveSeatChoice` is added to `SIMULATION_MOVE_NAMES` and both sim
+   `MOVE_MAP`s (runner + aggregator); `getLegalMoves` short-circuits to it for the enumerated
+   addressed outstanding seat (at `defaultOptionIndex`), else returns empty for a blocked
+   seat.
+
+**Disconnect / timeout posture (the load-bearing liveness/fairness lock).** Consistent
+with ARCHITECTURE.md §Disconnect & Reconnect Semantics — **not an invented policy**:
+- A play-phase disconnect **PAUSES** the match (D-11602 = B). A pending seat choice is
+  therefore **preserved** for the seat across the pause and resolved on reconnect; the
+  engine does **NOT** auto-resolve it as a side effect of a disconnect (no
+  `ctx.events.*`, no RNG draw, no implicit turn logic — the D-116xx rule).
+- The hard-timeout abandonment path (D-11604 = A) forcibly ends the match
+  (`endReason: 'abandoned'`); it does not silently continue on a defaulted choice.
+- The engine provides a **deterministic, replay-faithful** default-selection helper
+  (`applySeatChoiceTimeoutDefault`) that resolves an unsubmitted seat to its clamped
+  `defaultOptionIndex` (no `Math.random`, no wall-clock). This is invoked only by a
+  **governing policy caller** (the future WP-116 reconnect/abandonment path, or an explicit
+  forfeit) — never by the engine on disconnect. This is the deviation the WP flagged as a
+  genuine ambiguity: the WP text asked for a "default resolution", ARCHITECTURE.md's play
+  posture is pause-then-abandon; the reconciliation is *pause-and-preserve by default,
+  deterministic default available to the policy layer*.
+
+**Layer / boundary.** Engine decides; client renders; server stays authoritative
+(Vision §5 multiplayer integrity). Moves never throw. No pay-to-win / no client authority
+introduced (NG-1 uncrossed). No card wired — **hard-dep of WP-682 (Diving Block, a
+non-active reactive wound-interception) and WP-683 (Random Acts, a simultaneous multi-seat
+pass-left)**, which supply the consumers.
+
+**Status:** Active.
+
+Protect this file.
