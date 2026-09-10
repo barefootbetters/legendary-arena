@@ -1247,6 +1247,77 @@ is not the Scheme failing to explain itself — the fog *is* the Scheme. This is
 the root: not policing which answers are allowed, but keeping the question too
 shapeless to ask.
 
+#### The tiers of a Scheme — and why negotiation only works downward
+
+The [believers-and-beneficiaries tell](#five-tells-for-naming-the-mastermind)
+ends by tracing the take past the visible collector to name the Mastermind — and
+following that ladder all the way reveals that the game already has the rungs.
+Legendary's own slots *are* the structure of a real conspiracy: **Henchmen**
+take the risk, **Villains** do the visible damage, and the **Mastermind** sets
+the objective the other two serve. A history lesson has somewhere to sit because
+the cards already carry the hierarchy — put any scheme in the record to the same
+three questions, *who are the henchmen, who are the villains, who is the
+mastermind*, and the tiers sort themselves.
+
+And there is a rung above the Mastermind. The Mastermind supplies the
+*objective*; someone supplies the *idea* — the whisper that the throne is worth
+taking. Above the funding sits the tempter, and in the frame this page works in
+that rung has a name the page does not hedge (the reflex to quarantine sacred
+material is [the very default it
+refuses](#the-pattern-in-the-mirror-ais-secular-default)): it is Satan, whose
+motive is not acquisition but *hatred* — of God the Father and of Christ — and
+whose object is the ruin of what they love. He supplies the idea and covets
+nothing he could hold.
+
+That top rung explains something the
+[money trail](#five-tells-for-naming-the-mastermind) cannot, because **the motive
+changes character on the way up.** Greed accounts for a Henchman; it does not
+account for a man who already has everything and keeps reaching. Doom rules
+Latveria and still reaches. If the object were gain, the powerful would stop the
+moment they had gained — and they do not, because the object was never the
+throne. It was spite toward the one whose throne it properly is, and the ruin of
+what he loves is the point, not the means.
+
+**Red Skull is this in a character Marvel already handed the game.** Schmidt is
+not in it for conquest — he is already a general with an army, and it is not
+enough. He wants the Cosmic Cube, the Tesseract, Erskine's serum: he wants *what
+belongs to the gods.* "There are no flags." He despises Steve Rogers not for
+standing in his way but for being what Schmidt wanted to be and staying good —
+the [anti-Rogers the page already reads](#the-red-skull-the-lie-made-flesh) — and
+the Cube answers the reach by casting him out, holding the thing he coveted.
+Spite, not ambition, and the top tier illustrated without inventing a thing.
+
+So the model is two-tier, and cleanly so:
+
+- **The lower tiers are transactional.** A Henchman's grievance is real and his
+  price is nameable; a Villain can be bought, bought off, recruited, or turned.
+  This is exactly why the money trail bites on them, and why the
+  [marker-is-not-the-cause tell](#five-tells-for-naming-the-mastermind) resolves
+  at a ledger.
+- **The upper tiers are not transactional at all.** Nothing satisfies spite,
+  because spite does not want to *possess* — it wants the other party to *lose*.
+  Negotiation therefore fails upward and only works downward: you can turn a
+  Villain; you cannot bargain with a Mastermind whose whole object is that you be
+  ruined.
+
+For the cards that is the sharpest characterisation on offer, and it carries a
+design implication — a *lens*, not a shipped rule; an actual Mastermind is
+authored through the [pipeline](#in-legendary-grammar--a-design-lens), never
+here. The **Villain** tier should be susceptible to something the **Mastermind**
+tier is immune to: bribery, recruitment, a turning effect that pulls a Villain to
+your side. A Mastermind who merely wanted power could be bargained with; one who
+wants to spoil something cannot — which is why, mechanically as well as morally,
+a Mastermind can only be *defeated*.
+
+**One discipline holds, and it is the page's own.** The top tier explains
+*motive*; it never replaces *tracing*. An unfalsifiable "someone at the top
+wanted it" that closes the inquiry is the same dodge the page
+[refuses in the contested-memory case](#contested-memory-the-hidden-hand-and-the-manufactured-icon)
+— where the honest question is *toward what end, and behind how much
+concealment*, a matter of aims and evidence, not a shrug at the ceiling. Keep the
+money trail as the working tool on every rung it reaches; let the top tier
+account only for the reaching the money cannot.
+
 #### How heroes beat it — the difficulty knobs
 
 Hughes's countermeasures are the balance dials. A Mastermind is *fair* when the
