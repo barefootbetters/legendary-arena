@@ -8,10 +8,11 @@
     "core-villain-hydra-supreme-hydra":        { "subsystem": "scoring:dynamic-vp", "wp": "WP-546", "decision": "D-24355" },
     "core-villain-masters-of-evil-ultron":     { "subsystem": "scoring:dynamic-vp", "wp": "WP-553", "decision": "D-24362" }
   },
-  "_heroesComment": "Hero cards implemented by a subsystem OTHER than the [effect:X] hero-ability pipeline. Keyed (card ext_id -> mechanic), UNLIKE the card-keyed `cards` block above: the villain ledger emits ONE would-be-'(unmarked)' row per card, so a card-level decision is sound there, but the hero ledger emits one row PER MECHANIC and a single card legitimately mixes both cases — core/spider-man's reveal-reorder is implemented (WP-479 / D-24286) while its reveal-count genuinely is not. A card-keyed hero entry would clear both and hide a real TODO. The hero row keeps its REAL mechanic name (the join key for the effect-implementation index and the /coverage by-mechanic table) and takes wp / decision / handler from the entry. Curated: a pair joins ONLY when its subsystem implementation is merged. See D-24368.",
+  "_heroesComment": "Hero cards implemented by a subsystem OTHER than the [effect:X] hero-ability pipeline. Keyed (card ext_id -> mechanic), UNLIKE the card-keyed `cards` block above: the villain ledger emits ONE would-be-'(unmarked)' row per card, so a card-level decision is sound there, but the hero ledger emits one row PER MECHANIC and a single card legitimately mixes both cases — core/spider-man's reveal-reorder is implemented (WP-479 / D-24286) AND its reveal-count is now implemented too — the multi-peek reveal-count landed after this note (D-24027 descriptor-level count + D-24285/WP-478 discard top-up; empirically verified: The Amazing Spider-Man's markers parse to a reveal descriptor with revealCount 3 + reorderRemainder, executed by the peek-loop + reorder-park handler; test in heroAbility.setup.test.ts). Reclassified unsupported → subsystem per D-24514, applying this file's own rule (a pair joins once its implementation is merged). The hero row keeps its REAL mechanic name (the join key for the effect-implementation index and the /coverage by-mechanic table) and takes wp / decision / handler from the entry. Curated: a pair joins ONLY when its subsystem implementation is merged. See D-24368.",
   "heroes": {
     "core/spider-man": {
-      "reveal-reorder": { "subsystem": "setup:reveal-reorder-modifier", "wp": "WP-479", "decision": "D-24286" }
+      "reveal-reorder": { "subsystem": "setup:reveal-reorder-modifier", "wp": "WP-479", "decision": "D-24286" },
+      "reveal-count": { "subsystem": "setup:reveal-count-modifier", "wp": "WP-478", "decision": "D-24514" }
     }
   }
 }

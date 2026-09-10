@@ -13,9 +13,9 @@
       "executable": 430,
       "deferred": 16,
       "condition": 27,
-      "unsupported": 324,
+      "unsupported": 323,
       "unmarked": 1062,
-      "subsystem": 3
+      "subsystem": 4
     }
   },
   "entries": [
@@ -7234,10 +7234,10 @@
       "set": "core",
       "scope": "hero",
       "mechanic": "reveal-count",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "subsystem",
+      "handler": "setup:reveal-count-modifier",
+      "wp": "WP-478",
+      "decision": "D-24514",
       "designs": [
         {
           "slug": "the-amazing-spider-man",

@@ -41998,4 +41998,33 @@ pending-choice / block-all model), D-24300 (tactic-onFight framework), D-24327
 (gain→discard), D-24335 (HQ trait predicate). **Reserved by:** WP-692 draft
 (NUMBER-LEDGER).
 
+### D-24514 — core/spider-man `reveal-count` is implemented; reclassify unsupported → subsystem (Active 2026-09-10 — bug fix, no WP)
+
+The hero mechanic ledger reported `core/spider-man` `reveal-count` as `unsupported`
+— a **stale false-red**, not a real gap. When the WP-479 reveal-reorder subsystem note
+was written (D-24368 curation), it recorded "reveal-count genuinely is not [implemented]."
+That was true then, but the **multi-peek reveal-count landed afterward**: D-24027
+(descriptor-level `revealCount`, the reveal handler's peek-loop bound) + D-24285 / WP-478
+(the discard top-up so a multi-card reveal reshuffles mid-loop). Nobody added the
+`subsystem-coverage.json` entry once it shipped.
+
+**Empirical verification (not a code re-read):** `buildHeroAbilityHooks` on The Amazing
+Spider-Man's exact marker line
+(`[keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]`)
+produces one `onPlay` reveal descriptor `{ type:'reveal', revealCount:3, revealRules:[cost-lte
+2 → draw], reorderRemainder:true }` — pinned by a new assertion in `heroAbility.setup.test.ts`.
+The `heroEffectReveal` peek-loop + reorder-park handler is already exercised for exactly that
+descriptor shape (revealCount:3 + reorderRemainder) in `heroEffects.execute.test.ts`. So the
+card genuinely reveals the top 3, draws those costing ≤2, and parks an interactive reorder of
+the remainder — end-to-end.
+
+**Decision:** add `"reveal-count"` to `scripts/coverage/subsystem-coverage.json` under
+`core/spider-man` (subsystem `setup:reveal-count-modifier`), applying that file's own D-24368
+rule ("a pair joins ONLY when its subsystem implementation is merged" — it is merged), and
+correct the now-false `_heroesComment`. The hero ledger then reclassifies the mechanic
+`unsupported → subsystem`. Coverage/ledger + a proving test only — **no gameplay code change,
+no hash re-pin**. This is a false-red correction backed by empirical proof, not a ledger game.
+
+**Reserved by:** D-24514 (NUMBER-LEDGER, bug-fix-no-WP).
+
 Protect this file.

@@ -1835,6 +1835,24 @@ describe('buildHeroAbilityHooks — unresolved markers (WP-257)', () => {
     assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'a valid keyword is not unresolved');
   });
 
+  it('The Amazing Spider-Man threads reveal-count:3 + reorderRemainder onto its reveal descriptor', () => {
+    // why: proves core/spider-man's reveal-count IS implemented end-to-end (the multi-peek
+    // reveal-count D-24027 + top-up D-24285 shipped after the WP-479 reveal-reorder subsystem
+    // note). Setup collapses `[keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]`
+    // into ONE reveal descriptor with revealCount 3 + reorderRemainder; the peek-loop + reorder-park
+    // handler is exercised by heroEffects.execute.test.ts (revealCount:3 + reorderRemainder cases).
+    // This backs the subsystem-coverage.json reveal-count entry (reclassify unsupported → subsystem).
+    const hooks = buildSingleAbility('Reveal the top three cards of your deck. Put any that cost 2 or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]');
+    assert.equal(hooks.length, 1);
+    assert.equal(hooks[0]!.timing, 'onPlay');
+    const effects = hooks[0]!.effects ?? [];
+    assert.equal(effects.length, 1, 'the three reveal markers collapse into ONE reveal descriptor');
+    assert.equal(effects[0]!.type, 'reveal');
+    assert.equal(effects[0]!.revealCount, 3, 'reveal-count:3 is threaded onto the descriptor');
+    assert.equal(effects[0]!.reorderRemainder, true, 'reveal-reorder is threaded onto the descriptor');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'no unresolved marker');
+  });
+
   it('a composition marker (berserk) does NOT flag as an unresolved marker', () => {
     const hooks = buildSingleAbility('[keyword:berserk]');
     assert.equal(hooks.length, 1);
