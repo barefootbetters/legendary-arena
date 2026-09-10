@@ -65,11 +65,21 @@ async function startServer() {
   }
   // why: spawn the DEV server (not `vite preview`) through the shell so the local
   // `vite` bin resolves from node_modules/.bin on both Windows (vite.CMD) and POSIX
-  // when run under `node`. Dev mode sets import.meta.env.DEV, which is what
-  // populates the `?fixture=` snapshot the guard needs.
+  // when run under `node`. Dev mode sets import.meta.env.DEV, which is what gates
+  // the `?fixture=` snapshot load in main.ts.
+  // why --mode development + NODE_ENV=development: if the caller's environment has
+  // NODE_ENV=production (some shells/CI set it), a bare `vite` serve resolves
+  // import.meta.env.DEV to FALSE, so main.ts's DEV-only fixture block is skipped and
+  // the board renders "No match loaded" (no .play-desktop__stage). Forcing dev mode
+  // here makes the guard independent of the ambient NODE_ENV.
   const child = spawn(
-    `npx vite --port ${DEV_SERVER_PORT} --strictPort`,
-    { cwd: join(HERE, '..'), shell: true, stdio: 'ignore' },
+    `npx vite --port ${DEV_SERVER_PORT} --strictPort --mode development`,
+    {
+      cwd: join(HERE, '..'),
+      shell: true,
+      stdio: 'ignore',
+      env: { ...process.env, NODE_ENV: 'development' },
+    },
   );
   const baseUrl = `http://localhost:${DEV_SERVER_PORT}`;
   const deadline = Date.now() + 30_000;
@@ -145,6 +155,14 @@ function measureInvariants() {
  * self-diagnosing instead of a bare selector timeout.
  */
 async function loadBoard(page, baseUrl, timeoutMs) {
+  // why: main.ts logs `__WP061_DEV_FIXTURE_HARNESS__` ONLY inside its
+  // `if (import.meta.env.DEV)` block — capturing it tells us whether the dev-only
+  // fixture loader ran, which is the difference between "board fits" and the
+  // empty-match "No match loaded" state.
+  let devFixtureHarnessRan = false;
+  page.on('console', (message) => {
+    if (message.text().includes('__WP061_DEV_FIXTURE_HARNESS__')) devFixtureHarnessRan = true;
+  });
   await page.goto(baseUrl + FIXTURE_PATH, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
   try {
     await page.waitForSelector('.play-desktop__stage', { timeout: timeoutMs });
@@ -156,7 +174,11 @@ async function loadBoard(page, baseUrl, timeoutMs) {
       innerWidth: window.innerWidth,
       bodyTextStart: document.body.innerText.slice(0, 160),
     }));
+    diagnostic.devFixtureHarnessRan = devFixtureHarnessRan;
     console.error('  .play-desktop__stage never mounted. Page state:', JSON.stringify(diagnostic));
+    if (!devFixtureHarnessRan) {
+      console.error('  → the DEV fixture harness did NOT run: import.meta.env.DEV is false. The dev server is in production mode (ambient NODE_ENV?). The guard forces --mode development + NODE_ENV=development; if you still see this, something else is forcing production.');
+    }
     throw error;
   }
 }
