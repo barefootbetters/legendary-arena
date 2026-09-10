@@ -48,16 +48,26 @@ describe('PendingElectromagneticBubbleChoicePrompt (WP-695 / EC-732)', () => {
     assert.ok(wrapper.find('[data-testid="pending-electromagnetic-bubble-choice-prompt"]').exists());
   });
 
-  test('does not render when undefined, for an opponent, or a spectator', () => {
+  const testId = '[data-testid="pending-electromagnetic-bubble-choice-prompt"]';
+
+  test('does not render when the choice is undefined', () => {
     const { submitMove } = recorder();
-    for (const props of [
-      { pendingElectromagneticBubbleChoice: undefined, viewerPlayerId: 'player-0', submitMove },
-      { pendingElectromagneticBubbleChoice: mockChoice, viewerPlayerId: 'player-1', submitMove },
-      { pendingElectromagneticBubbleChoice: mockChoice, viewerPlayerId: null, submitMove },
-    ]) {
-      const wrapper = mount(PendingElectromagneticBubbleChoicePrompt, { props });
-      assert.ok(!wrapper.find('[data-testid="pending-electromagnetic-bubble-choice-prompt"]').exists());
-    }
+    const wrapper = mount(PendingElectromagneticBubbleChoicePrompt, {
+      props: { pendingElectromagneticBubbleChoice: undefined, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!wrapper.find(testId).exists());
+  });
+
+  test('does not render for a non-chooser (opponent) or a spectator', () => {
+    const { submitMove } = recorder();
+    const opponent = mount(PendingElectromagneticBubbleChoicePrompt, {
+      props: { pendingElectromagneticBubbleChoice: mockChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.ok(!opponent.find(testId).exists());
+    const spectator = mount(PendingElectromagneticBubbleChoicePrompt, {
+      props: { pendingElectromagneticBubbleChoice: mockChoice, viewerPlayerId: null, submitMove },
+    });
+    assert.ok(!spectator.find(testId).exists());
   });
 
   test('renders a button per eligible Hero and dispatches { cardId } on click', () => {

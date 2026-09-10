@@ -63,6 +63,9 @@ export type UiMoveName =
   // why: WP-603 / D-24413 — unblocks the Melter Fight KO/keep prompt (KO or keep each
   // player's revealed deck top).
   | 'resolveMelterKoChoice'
+  // why: WP-693 / D-24510 — unblocks the Loki Maniacal Tyrant KO-from-discard prompt
+  // (KO up to four cards from your own discard pile).
+  | 'resolveKoDiscardChoice'
   // why: WP-695 / D-24512 — unblocks the Ruthless Dictator scry-3 prompt (assign each
   // revealed deck-top card a disposition: KO / discard / top).
   | 'resolveRuthlessDictatorChoice'
