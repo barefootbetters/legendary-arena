@@ -704,6 +704,61 @@ The purpose of revealing a flaw is to **illuminate the path upward, not to
 extinguish it** — revelation, warning, consequence, repentance, redemption,
 rather than exposure, deconstruction, dismissal, replacement.
 
+### The burden you didn't earn — suffering that forms, not suffering that excuses
+
+The [flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)
+is one half of "difficulty is not the enemy" — failure a person *caused*,
+recorded as warning and instruction. The other half is harder, because it is not
+about a wrong you did but a wrong done *to* you: the burden you did not earn. And
+here the source material's deepest figure is not a flawed man at all.
+
+The sinless one carries the weight of the world. No one in the whole book has a
+better claim to unfairness — and he makes no claim at all. That is the strongest
+counterexample the tradition offers, and its power is precisely that it does not
+depend on the grievance being false. It was unfair, and he bore it anyway.
+
+What he does *not* do is instructive twice over, because he refuses both of the
+easy exits:
+
+- **Not the victim.** He does not organize around the injustice, nurse it, or let
+  it become his identity and his excuse. The legitimate grievance does not harden
+  into a permanent claim against the Father.
+- **Not the stoic.** He does not pretend it costs nothing. Gethsemane is a real
+  ask — "O my Father, if it be possible, let this cup pass from me: nevertheless
+  not as I will, but as thou wilt"
+  ([Matthew 26:39](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p39#p39),
+  KJV; cf. [Luke 22:42](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/22?lang=eng&id=p42#p42)).
+  He names the cost aloud, asks to be spared, and is refused.
+
+Between those two refusals is the third thing, and scripture states it with
+startling plainness: "Though he were a Son, yet learned he obedience by the
+things which he suffered"
+([Hebrews 5:8](https://www.churchofjesuschrist.org/study/scriptures/nt/heb/5?lang=eng&id=p8#p8),
+KJV). Even he was *formed* by what he carried. The carrying itself did something —
+which is "difficulty is not the enemy" driven to its deepest possible scale.
+
+The lesson this hands a story — and a player, and a person — reframes the
+question the injustice seems to pose. The standard is not *whether you were
+wronged*; nearly everyone can answer that yes. The standard is *what you do
+carrying it*. That reframing holds up better than any argument that turns on
+proving a grievance false, because it survives granting every grievance: concede
+the wrong in full, and the real question is still standing, and it still has
+teeth — a rule for the one carrying the burden, not a weapon to aim at someone
+else.
+
+This is the same [receive, become, pass on](#the-upward-pull--what-the-game-is-for)
+motion the page is built on, seen at the "become" step under the worst possible
+conditions. A hero is not formed only by the good gifts he receives; he is formed
+by what he *suffers* and refuses to let make him small. It is why the game's
+heroes are allowed real loss, real cost, and real defeat along the way —
+[Steve Rogers formed by poverty and grief before the serum ever found
+him](#three-stories-that-hold-the-lesson) is the small version; Gethsemane is the
+whole of it. Suffering that *excuses* is the downward pull wearing a wound;
+suffering that *forms* is the upward pull paying its steepest price.
+
+> The injustice is not the question — almost everyone has one. What you do
+> carrying it is. Not the exit; the next step.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -1752,7 +1807,13 @@ claim at a safe distance — it stands on it.
   (1 Samuel 8, KJV). The flawed-hero accounts (2 Samuel 11–12; Numbers
   20:7–12; Matthew 26:69–75) are handled the same way — recorded faithfully,
   greatness and failure both, as warning and instruction rather than as
-  proof that virtue is a mask. That the essay states this conviction plainly is
+  proof that virtue is a mask. The
+  [undeserved-suffering account](#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses)
+  (Gethsemane, Matthew 26:39 / Luke 22:42; Hebrews 5:8) is likewise affirmed as
+  *true*: Christ carried an unfair burden he had every claim to refuse, was
+  neither victim nor stoic, and was formed by what he suffered — the reframing
+  that the standard is what you do carrying an injustice, not whether you were
+  wronged, is stated as conviction, not one reading among many. That the essay states this conviction plainly is
   deliberate and set by the operator who owns the page; the secular reflex
   to relativize it is the very thing the
   [pattern in the mirror](#the-pattern-in-the-mirror-ais-secular-default)
@@ -1855,6 +1916,17 @@ claim at a safe distance — it stands on it.
   [Matthew 26:69–75](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p69-p75#p69)
   (Peter's denial). Preserved as recorded — greatness and failure both — to
   show failure that teaches rather than failure that dismisses.
+- Undeserved-suffering scriptures behind
+  [The burden you didn't earn](#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses)
+  (KJV) —
+  [Matthew 26:39](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/26?lang=eng&id=p39#p39)
+  and [Luke 22:42](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/22?lang=eng&id=p42#p42)
+  (Gethsemane — "let this cup pass from me: nevertheless not as I will, but as
+  thou wilt"), and
+  [Hebrews 5:8](https://www.churchofjesuschrist.org/study/scriptures/nt/heb/5?lang=eng&id=p8#p8)
+  ("yet learned he obedience by the things which he suffered"). Affirmed by the
+  page: the sinless one carried an unfair burden and was formed by it — not
+  victim, not stoic.
 - Greg Pak on the Red Skull — the
   [*Red Skull: Incarnate* (2011) #1 issue page (afterword)](https://www.marvel.com/comics/issue/34598/red_skull_2011_1)
   and the [#5 issue page (back-cover passage)](https://www.marvel.com/comics/issue/36265/red_skull_2011_5)
