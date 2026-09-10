@@ -1164,12 +1164,15 @@ cause does not launder a self-serving lie, and a lie does not prove the cause
 evil; what separates a justified ruse from a Scheme is where the deception
 *ends*, not what the deceiver says it was for.
 
-#### Two tells for naming the Mastermind
+#### Five tells for naming the Mastermind
 
-A Scheme hides behind two things: process and sympathy. Two tells cut through
-each — and, like the withheld machinery above, they are **faction-blind**,
-catching the move no matter which side makes it. Each is built as a symmetric test, so
-it indicts by *conduct*, never by *side*.
+A Scheme hides behind a handful of things — process, a borrowed grievance, the
+gap between who pays and who profits, a visible marker, and, beneath them all, a
+fog thick enough that no one can quite say what is happening. Five tells cut
+through them — one for each — and, like the withheld machinery above, they are
+**faction-blind**, catching the move no
+matter which side makes it. Each is built as a symmetric test, so it indicts by
+*conduct*, never by *side*.
 
 **Law applied unevenly by faction.** Selective prosecution is judging by
 category wearing legal clothes: the charge is the pretext, and the real offense
@@ -1190,6 +1193,59 @@ whether he speaks *for* the poor but what becomes of them once he has power:
 lifted, or spent? Watch what the campaign is *for*, not what it is *against* — if
 the poor are named constantly and are never actually better off, they were the
 lever, not the purpose. This is *who benefits* turned on the benefactor himself.
+
+**Believers and beneficiaries.** Every movement carries two kinds of member: the
+**believers**, who supply the loyalty — the votes, the risk, the hours, the
+bodies in the street — and the **beneficiaries**, who collect the returns — the
+money, the offices, the standing. In an honest cause they are the same people:
+those who sacrifice are those who gain. A Scheme prises them apart, so the
+believers carry the cost and the beneficiaries bank the profit while both march
+under one banner. The test: **trace where the loyalty is spent and where the
+gains land, and ask whether they land on the same people.** If the faithful end
+each cycle exactly where they began while the leadership rises, the leader is a
+beneficiary wearing a believer's coat. This is the false-champion tell above
+pressed one turn further: that one asks whether the *cause* ever lifts the people
+named in it; this asks which of the two a *leader* actually is.
+
+Follow it all the way down and the tell names the boss directly: **ask who pays
+and who collects.** The believers pay. But the one who *visibly* collects — the
+tax collector, the enforcer, the officer who takes the cut in the open — is
+rarely the one it is all for. He is the Henchman: the hand the extraction wears,
+positioned to draw the resentment while the real gain flows past him. Trace the
+take past the visible collector to whoever quietly banks it and answers to no
+one, and it becomes clear who the Mastermind is. The Scheme depends on the crowd
+stopping its gaze at the Henchman; naming the Mastermind is refusing to.
+
+**The marker is not the cause.** The Tribe lever
+([split the coalition](#the-masterminds-common-tactics-the-grammar-of-manipulation))
+sorts a room by whatever marker is easiest to see — skin, creed, region, the
+costume of a class — and names that marker the cause of the friction. It almost
+never is. The friction runs along a hidden seam of **extraction**: one group's
+labour quietly subsidising another's, a transfer the visible marker is chosen to
+cover. The tell is the counterexample the marker cannot explain: **groups that
+share the marker fracture anyway, and groups that cross it make common cause** —
+because the true fault line is who is paying whom, not who resembles whom. When a
+leader insists the marker is the whole story and puts the transfer underneath it
+out of bounds, the marker is the misdirection and the ledger is the Scheme. It is
+*follow the money*, applied to a fight that has been dressed up as a fight about
+identity.
+
+**Keep them ignorant.** The last tell guards all the others, because it is aimed
+at the reader's ability to *use* them. A Scheme's strongest defence is not a lie
+— a lie can be checked and caught — but **enforced vagueness**: keeping the
+conflict named so loosely that no one can reason about it at all. Who is
+extracting what, from whom, under which rule, toward which end? Leave every one of
+those blurred and the four tells above have nothing to bite on. It is achieved by
+*omission*, not assertion — kin to the
+[withheld machinery](#the-masterminds-common-tactics-the-grammar-of-manipulation)
+above, but broader: the machinery is not denied, it is simply never described
+plainly enough to argue with, and a conflict no one can state is a conflict no one
+can weigh. The test: **can you state the quarrel precisely enough to be proven
+wrong about it?** If every attempt to pin it down dissolves into slogans, the fog
+is not the Scheme failing to explain itself — the fog *is* the Scheme. This is
+[frame control](#the-masterminds-common-tactics-the-grammar-of-manipulation) at
+the root: not policing which answers are allowed, but keeping the question too
+shapeless to ask.
 
 #### How heroes beat it — the difficulty knobs
 
