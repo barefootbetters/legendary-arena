@@ -117,6 +117,9 @@ export type UiMoveName =
   // (foundational; the concrete card renderers ship with WP-682 / WP-683). Each addressed
   // seat resolves its own option index.
   | 'resolveSeatChoice'
+  // why: WP-693 / D-24510 — unblocks the Loki Maniacal Tyrant KO-from-discard prompt
+  // (pick which of the just-discarded cards to KO).
+  | 'resolveKoDiscardChoice'
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'
