@@ -25,7 +25,7 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
 // swaps the boss face on a Master Strike.
@@ -668,24 +668,22 @@ function discardCardFromHand(
 }
 
 /**
- * Gives one Wound from the supply to a player's discard pile.
+ * Gives one Wound from the supply to a player's discard pile via the
+ * gainWoundForPlayer chokepoint.
+ *
+ * // why: WP-682 / D-24499 — routes through the chokepoint so a Master-Strike Wound
+ * to a Diving-Block holder (which is frequently a NON-active seat, since Master
+ * Strikes wound every player) gets the reveal window via the WP-684 seat-choice wave.
  *
  * @param gameState - The game state to mutate.
- * @param playerZones - The player's zones, mutated in place.
+ * @param playerId - The player who gains the Wound (may be a non-active seat).
  * @returns True when a Wound was actually taken; false when the supply is empty.
  */
 function gainWoundToDiscard(
   gameState: LegendaryGameState,
-  playerZones: { discard: CardExtId[] },
+  playerId: string,
 ): boolean {
-  // why: gainWound is NON-mutating like moveCardFromZone — assign both
-  // returned arrays back. An empty wounds pile returns copies unchanged, so
-  // the length comparison is how we detect the no-op (never a throw, AC-9).
-  const woundResult = gainWound(gameState.piles.wounds, playerZones.discard);
-  const tookWound = woundResult.woundsPile.length < gameState.piles.wounds.length;
-  gameState.piles.wounds = woundResult.woundsPile;
-  playerZones.discard = woundResult.playerDiscard;
-  return tookWound;
+  return gainWoundForPlayer(gameState, playerId) !== undefined;
 }
 
 /**
@@ -791,7 +789,7 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
     // cannot cover N takes the Wound — the same branch a tabletop player is
     // forced into. Deterministic auto-pick per D-24192; no prompt.
     if (playerZones.hand.length < omenCount) {
-      const tookWound = gainWoundToDiscard(gameState, playerZones);
+      const tookWound = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
         tookWound
           ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and gained a Wound.`
@@ -876,7 +874,7 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
       continue;
     }
 
-    const tookWound = gainWoundToDiscard(gameState, playerZones);
+    const tookWound = gainWoundToDiscard(gameState, playerId);
     pushLog(gameState,
       tookWound
         ? `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand and gained a Wound.`
@@ -991,7 +989,7 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
     // why: this branch is fully faithful — a player holding no X-Men Hero
     // must take the Wound at the table too, so no fidelity is lost.
     if (targetExtId === null) {
-      const tookWound = gainWoundToDiscard(gameState, playerZones);
+      const tookWound = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
         tookWound
           ? `[Magneto Master Strike] Player ${playerId} has no [team:x-men] Hero in hand and gained a Wound.`

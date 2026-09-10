@@ -105,4 +105,31 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     await button.trigger('click');
     assert.equal(calls.length, 1, 'the second click is guarded');
   });
+
+  // why: WP-682 / D-24499 — Diving Block is the first concrete consumer; the heading
+  // reads naturally for it while the generic scaffold keeps "Your choice" for any other kind.
+  test('renders the Diving Block heading for the diving-block kind (WP-682)', () => {
+    const { submitMove } = recorder();
+    const divingBlockChoice: UIPendingSeatChoice = {
+      kind: 'diving-block',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Reveal Diving Block: prevent the Wound and draw a card' }, { label: 'Take the Wound' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: divingBlockChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.match(wrapper.find('.pending-seat-choice-prompt__heading').text(), /Diving Block/);
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Reveal Diving Block: prevent the Wound and draw a card');
+  });
+
+  test('keeps the generic "Your choice" heading for a non-diving-block kind', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: forSeat1, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Your choice');
+  });
 });

@@ -22,6 +22,14 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, PendingSeatChoice } from '../types.js';
+// why: WP-682 / D-24499 — the Diving-Block consumer's kind-specific apply. This module
+// and divingBlock.logic form a runtime-safe import cycle (each references the other ONLY
+// inside function bodies, never at module top level), so ESM resolves both bindings by
+// call time.
+import {
+  applyDivingBlockResolvedSeatChoice,
+  DIVING_BLOCK_SEAT_CHOICE_KIND,
+} from './divingBlock.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -238,7 +246,7 @@ export function applyResolvedSeatChoice(
  * @param args - The chosen option index.
  */
 export function resolveSeatChoice(
-  { G, playerID }: MoveContext,
+  { G, playerID, random }: MoveContext,
   args: ResolveSeatChoiceArgs,
 ): void {
   // Step 1: a seat choice must be open.
@@ -274,9 +282,34 @@ export function resolveSeatChoice(
 
   // Step 5: apply atomically only when every addressed seat has submitted.
   if (allSeatsSubmitted(choice)) {
-    applyResolvedSeatChoice(G, choice);
+    applySeatChoiceByKind(G, choice, { random });
     delete G.pendingSeatChoice;
   }
+}
+
+/**
+ * Dispatches a fully-submitted seat choice to its kind-specific apply, or the
+ * foundational log-only apply for the generic kind.
+ *
+ * // why: WP-682 / D-24499 — the foundational applyResolvedSeatChoice logs only; each
+ * consuming card wires its effect here by kind. Diving Block undoes the resolved Wound
+ * (or keeps it) and drains its FIFO. The shuffle context is threaded for the reveal draw;
+ * the disconnect/timeout default supplies none (its default is decline → no draw).
+ *
+ * @param G - The game state to mutate.
+ * @param choice - The fully-submitted pending seat choice.
+ * @param shuffleContext - Deterministic reshuffle source, or undefined (timeout path).
+ */
+function applySeatChoiceByKind(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  shuffleContext: { random: { Shuffle: <T>(deck: T[]) => T[] } } | undefined,
+): void {
+  if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
+    applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext);
+    return;
+  }
+  applyResolvedSeatChoice(G, choice);
 }
 
 /**
@@ -321,7 +354,12 @@ export function applySeatChoiceTimeoutDefault(
     choice.submissions[seat] = { optionIndex: clampedIndex };
   }
   if (allSeatsSubmitted(choice)) {
-    applyResolvedSeatChoice(G, choice);
+    // why: WP-682 / D-24499 — the timeout default resolves a Diving-Block choice too
+    // (default = decline → keep the Wound, no draw), so it must dispatch by kind to drain
+    // the diving-block FIFO; a generic log-only apply would leave the FIFO non-empty and
+    // onMove would re-open the wave forever. No shuffle source on the timeout path (decline
+    // never draws).
+    applySeatChoiceByKind(G, choice, undefined);
     delete G.pendingSeatChoice;
   }
 }

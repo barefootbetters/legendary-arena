@@ -408,6 +408,17 @@
       "hidden": true
     },
     {
+      "slug": "diving-block",
+      "label": "Diving Block",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/captain-america"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "do-over",
       "label": "Do Over",
       "scope": "hero",
@@ -1068,6 +1079,17 @@
         "xmen/phoenix",
         "xmen/polaris",
         "xmen/psylocke"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "pure-fury",
+      "label": "Pure Fury",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/nick-fury"
       ],
       "hidden": true
     },
@@ -2519,6 +2541,7 @@
     "core/captain-america": {
       "mechanics": [
         "attack-per-count",
+        "diving-block",
         "recruit-per-count"
       ]
     },
@@ -2568,7 +2591,8 @@
       "mechanics": [
         "attack",
         "attack-per-count",
-        "optional-ko-shield-officer"
+        "optional-ko-shield-officer",
+        "pure-fury"
       ]
     },
     "core/rogue": {

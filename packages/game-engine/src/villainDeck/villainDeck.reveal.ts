@@ -23,7 +23,7 @@ import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
 import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
@@ -299,12 +299,9 @@ export function performVillainReveal(
       // onEscape hooks, so it needs no new data. Current player gains 1 wound.
       if (!villainCardHasEscapeAbility(G, pushResult.escapedCard)) {
         const woundPileBefore = G.piles.wounds.length;
-        const woundResult = gainWound(
-          G.piles.wounds,
-          G.playerZones[ctx.currentPlayer]!.discard,
-        );
-        G.piles.wounds = woundResult.woundsPile;
-        G.playerZones[ctx.currentPlayer]!.discard = woundResult.playerDiscard;
+        // why: WP-682 / D-24499 — route the generic per-escape wound through the
+        // gainWoundForPlayer chokepoint so the current player's Diving Block sees it.
+        gainWoundForPlayer(G, ctx.currentPlayer);
         if (woundPileBefore > 0) {
           // why: track current player wound for UI economy projection
           G.turnEconomy.woundsDrawn += 1;

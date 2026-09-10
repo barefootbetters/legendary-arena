@@ -75,6 +75,18 @@ export default defineComponent({
       );
     }
 
+    /**
+     * The prompt heading, keyed on the choice kind so each consuming card reads
+     * naturally. Diving Block (WP-682 / D-24499) is the first concrete consumer;
+     * the generic "Your choice" is the foundational fallback for any other kind.
+     */
+    function heading(): string {
+      if (props.pendingSeatChoice?.kind === "diving-block") {
+        return "You would gain a Wound — Diving Block?";
+      }
+      return "Your choice";
+    }
+
     function onChoose(optionIndex: number): void {
       if (isSubmitting.value) return;
       isSubmitting.value = true;
@@ -86,6 +98,7 @@ export default defineComponent({
       shouldRender,
       ownOptions,
       onChoose,
+      heading,
     };
   },
 });
@@ -99,7 +112,7 @@ export default defineComponent({
     role="region"
     aria-label="Your choice"
   >
-    <h3 class="pending-seat-choice-prompt__heading">Your choice</h3>
+    <h3 class="pending-seat-choice-prompt__heading">{{ heading() }}</h3>
     <div class="pending-seat-choice-prompt__buttons">
       <button
         v-for="(option, index) in ownOptions()"

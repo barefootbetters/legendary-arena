@@ -72,6 +72,18 @@ export default defineComponent({
       return kind === "mastermind" ? `Mastermind: ${name}` : name;
     }
 
+    /**
+     * The prompt heading, keyed on the free-defeat family (WP-682 / D-24499). Both
+     * Silent Sniper (defeat-with-bystander) and Nick Fury's Pure Fury (pure-fury)
+     * reuse this prompt, so the heading names the correct source.
+     */
+    function heading(): string {
+      if (props.pendingDefeatChoice?.choiceType === "pure-fury") {
+        return "Pure Fury — defeat a weak Villain or Mastermind for free";
+      }
+      return "Defeat a Villain or Mastermind that has a Bystander";
+    }
+
     function onChoose(targetIndex: number): void {
       if (isSubmitting.value || !props.pendingDefeatChoice) return;
       const target = props.pendingDefeatChoice.targets[targetIndex];
@@ -91,6 +103,7 @@ export default defineComponent({
       shouldRender,
       targetLabel,
       onChoose,
+      heading,
     };
   },
 });
@@ -105,7 +118,7 @@ export default defineComponent({
     aria-label="Defeat choice"
   >
     <h3 class="pending-defeat-choice-prompt__heading">
-      Defeat a Villain or Mastermind that has a Bystander
+      {{ heading() }}
       <span class="pending-defeat-choice-prompt__hint">
         (click a target)
       </span>

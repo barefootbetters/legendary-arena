@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -57,7 +57,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 36 handlers and none for the deferred keywords', () => {
+  it('has exactly 37 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -84,7 +84,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // (undercover-hand-shield-hero + undercover-officer-stack) (32 → 34).
     // WP-681 / D-24498 added the do-over park handler and the optional-ko-shield-officer
     // park handler (Battlefield Promotion) (34 → 36).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 36);
+    // WP-682 / D-24499 added the pure-fury handler (Nick Fury's free conditional defeat)
+    // (36 → 37). Diving Block adds NO handler — it is reactive at the gainWoundForPlayer
+    // chokepoint (WOUND_TIME_EXECUTED_KEYWORDS), mirroring return-on-discard.
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 37);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -115,6 +118,11 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // chokepoint (checkReturnOnDiscard parks a pending choice), so it has no handler / reveal
     // translation / move executor / class-grant — its own reachability category.
     const discardTimeExecuted = new Set<string>(DISCARD_TIME_EXECUTED_KEYWORDS);
+    // why: WP-682 / D-24499 — diving-block executes reactively at the gainWoundForPlayer
+    // chokepoint (checkDivingBlock parks a reveal/decline seat choice), so — like
+    // return-on-discard — it has no handler / reveal translation / move executor /
+    // class-grant; its own reachability category.
+    const woundTimeExecuted = new Set<string>(WOUND_TIME_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
@@ -122,9 +130,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
       const executesAtHandAction = handActionExecuted.has(keyword);
       const executesAsClassGrant = classGrantExecuted.has(keyword);
       const executesAtDiscardTime = discardTimeExecuted.has(keyword);
+      const executesAtWoundTime = woundTimeExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, or at discard time`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime || executesAtWoundTime,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, at discard time, or at wound time`,
       );
     }
   });

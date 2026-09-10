@@ -39,7 +39,7 @@ import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import {
   attachBystanderToVillain,
@@ -760,9 +760,10 @@ function villainEffectGainWound(
         // why: supply-bounded — stop once the shared Wound pile is empty (a
         // reachable no-op, never a hollow record).
         if (G.piles.wounds.length === 0) break;
-        const woundResult = gainWound(G.piles.wounds, zones.discard);
-        G.piles.wounds = woundResult.woundsPile;
-        zones.discard = woundResult.playerDiscard;
+        // why: WP-682 / D-24499 — route through the gainWoundForPlayer chokepoint so a
+        // wounded player holding Diving Block gets the reveal window (Master Strike /
+        // scheme wounds reach NON-active seats via the WP-684 seat-choice wave).
+        gainWoundForPlayer(G, playerId);
         woundedThisPlayer = true;
       }
       if (woundedThisPlayer) {
@@ -791,9 +792,9 @@ function villainEffectGainWound(
       const zones = G.playerZones[playerId];
       if (!zones) continue;
       if (G.piles.wounds.length === 0) continue;
-      const result = gainWound(G.piles.wounds, zones.discard);
-      G.piles.wounds = result.woundsPile;
-      zones.discard = result.playerDiscard;
+      // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees
+      // every "each player gains a Wound" source (non-active seats via WP-684).
+      gainWoundForPlayer(G, playerId);
       if (playerId === currentPlayer) {
         // why: woundsDrawn projects the current player's wounds only (UI
         // economy), matching escape-wound and the deleted Ambush loop.
@@ -809,9 +810,9 @@ function villainEffectGainWound(
   const zones = G.playerZones[currentPlayer];
   if (!zones) return { targets: [] };
   if (G.piles.wounds.length === 0) return { targets: [] };
-  const result = gainWound(G.piles.wounds, zones.discard);
-  G.piles.wounds = result.woundsPile;
-  zones.discard = result.playerDiscard;
+  // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint (the current player may
+  // hold Diving Block for a villain self-wound too).
+  gainWoundForPlayer(G, currentPlayer);
   G.turnEconomy.woundsDrawn += 1;
   return { targets: [] };
 }
@@ -1614,9 +1615,9 @@ function villainEffectRevealOrWound(
     if (G.piles.wounds.length === 0) {
       continue;
     }
-    const woundResult = gainWound(G.piles.wounds, zones.discard);
-    G.piles.wounds = woundResult.woundsPile;
-    zones.discard = woundResult.playerDiscard;
+    // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Master-Strike Wound
+    // to a Diving-Block holder (often a NON-active seat) gets the reveal window (WP-684).
+    gainWoundForPlayer(G, playerId);
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // bump it only for the current player, parity with gain-wound:each and the
@@ -2888,9 +2889,9 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
     if (G.piles.wounds.length === 0) {
       continue;
     }
-    const woundResult = gainWound(G.piles.wounds, zones.discard);
-    G.piles.wounds = woundResult.woundsPile;
-    zones.discard = woundResult.playerDiscard;
+    // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees this
+    // group-villain Wound source (NON-active recipients via the WP-684 wave).
+    gainWoundForPlayer(G, playerId);
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // parity with reveal-or-wound / gain-wound:each; a non-current wounded player

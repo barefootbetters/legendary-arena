@@ -31,6 +31,7 @@ import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawO
 import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
+import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -670,7 +671,7 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // and is sticky — a later card effect that refills the deck does NOT
         // cancel the final turn (the exact rulebook edge Jeff reported). See
         // finalTurn.logic.ts.
-        onMove: ({ G, ctx, random }) => {
+        onMove: ({ G, ctx, random, events }) => {
           latchFinalTurnIfDeckExhausted(G);
           // why: same cadence as the final-turn latch above — a pile-depletion
           // scheme (Super Hero Civil War: hero deck) can empty on any move, incl.
@@ -690,6 +691,15 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // threshold a hero ability is waiting on. `{ random }` is passed because a
           // deferred effect may DRAW, and the bare ctx carries no random (D-24051).
           resolveDeferredHeroGrants(G, { G, ctx, random });
+          // why: WP-682 / D-24499 — after every move, open (or re-open) the next
+          // Diving-Block reveal/decline WAVE for any Wounds parked at the
+          // gainWoundForPlayer chokepoint this move. Runs here (not in each
+          // wound-causing move) so EVERY wound path is covered and each resolveSeatChoice
+          // that drains a wave triggers the next one. Uses events.setActivePlayers (the
+          // WP-684 stage-ride) to admit a NON-active wound recipient. Early no-op when no
+          // Diving-Block Wound is pending or another seat choice is already open, so a
+          // normal game does no work here and stays byte-identical.
+          openDivingBlockSeatChoiceIfNeeded(G, events);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent

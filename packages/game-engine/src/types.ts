@@ -706,8 +706,15 @@ export interface DefeatWithBystanderTarget {
  * resolves it.
  */
 export interface PendingDefeatChoice {
-  /** Discriminant; always 'defeat-with-bystander'. */
-  choiceType: 'defeat-with-bystander';
+  /**
+   * Discriminant — the conditional free-defeat family this pending choice belongs
+   * to. 'defeat-with-bystander' is Silent Sniper (WP-486); 'pure-fury' is Nick
+   * Fury's Pure Fury (WP-682 / D-24499): both park the SAME shape (a deterministic
+   * eligible-target snapshot) and dispatch through the SAME shared free-defeat core
+   * (dispatchDefeatWithBystanderTarget), differing only in the predicate that built
+   * the snapshot — so resolveDefeatChoice accepts either discriminant.
+   */
+  choiceType: 'defeat-with-bystander' | 'pure-fury';
   /** The player who must choose which target to defeat. */
   playerID: string;
   /** The eligible targets at park time, in deterministic order (City ascending, Mastermind last). */
@@ -1072,6 +1079,35 @@ export interface PendingReturnOnDiscard {
   playerID: string;
   /** The just-discarded hero card (now in the player's discard pile) that may return. */
   cardId: CardExtId;
+}
+
+/**
+ * Pending reactive Diving-Block wound-interception entry (WP-682 / D-24499).
+ *
+ * Created at the `gainWoundForPlayer` chokepoint (checkDivingBlock) when a player
+ * who holds Captain America's Diving Block ("If you would gain a Wound, you may
+ * reveal this card and draw a card instead.") gains a Wound. The Wound has ALREADY
+ * landed in the player's discard pile when this entry is parked — mirroring the
+ * `return-on-discard` land-then-offer-undo reactive precedent — so `woundCardId`
+ * is the exact Wound card that a reveal will UNDO (returned to the wounds supply,
+ * replaced by a card draw). One entry per gained Wound (PER-WOUND semantics); a
+ * player is offered at most `divingBlockCopiesInHand` reveals per Wound batch
+ * (one Diving Block copy per Wound, per the ruling).
+ *
+ * The FIFO is drained one WAVE at a time through the WP-684 non-active/multi-seat
+ * pending-choice capability (G.pendingSeatChoice, kind 'diving-block'): the wound
+ * recipient may be a NON-ACTIVE seat (a Master Strike / "each player gains a
+ * Wound" scheme), which the active-only pending-choice model cannot serve. Must be
+ * undefined or empty at every turn-end (the block-all guard freezes the turn while
+ * a Diving-Block seat choice is open). Runtime-only, never persisted; lazily
+ * initialized at the park site, never in Game.setup (so an untriggered match
+ * leaves it undefined and the empty-replay hash oracles do not re-pin).
+ */
+export interface PendingDivingBlockWound {
+  /** The player who gained the Wound and holds Diving Block (may be non-active). */
+  playerID: string;
+  /** The just-gained Wound card (now in the player's discard pile) a reveal will undo. */
+  woundCardId: CardExtId;
 }
 
 /**
@@ -1565,6 +1601,17 @@ export interface LegendaryGameState {
   // re-pinning (canonical JSON omits an undefined field).
   /** FIFO queue of pending optional return-on-discard choices awaiting resolution (D-24301). */
   pendingReturnOnDiscard?: PendingReturnOnDiscard[] | undefined;
+  // why: WP-682 / D-24499 — a player who holds Captain America's Diving Block gaining a
+  // Wound parks one entry PER WOUND at the gainWoundForPlayer chokepoint (checkDivingBlock),
+  // AFTER the Wound has landed in their discard. The FIFO is drained one WAVE at a time via
+  // the WP-684 non-active/multi-seat pending-choice capability (G.pendingSeatChoice, kind
+  // 'diving-block') because the wound recipient may be a NON-ACTIVE seat. Must be undefined
+  // or empty at every turn-end. Optional so existing test-state literals need no update;
+  // **lazily initialized at the park site, never in Game.setup** — an undefined field is
+  // omitted from canonical JSON, keeping the empty-replay PRE_WP080_HASH / hashGameState
+  // oracles from re-pinning. Absent (undefined) or empty [] both mean "no pending Wound".
+  /** FIFO queue of pending reactive Diving-Block wound interceptions awaiting resolution (WP-682). */
+  pendingDivingBlockWounds?: PendingDivingBlockWound[] | undefined;
   // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
   // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
   // initialized at the park site, never in Game.setup** — an undefined field is omitted

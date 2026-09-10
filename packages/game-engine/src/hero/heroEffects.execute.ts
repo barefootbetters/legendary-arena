@@ -14,7 +14,7 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice } from '../types.js';
+import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget } from '../types.js';
 import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
@@ -47,7 +47,7 @@ import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { gainWound } from '../board/wounds.logic.js';
+import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
@@ -158,6 +158,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // PendingOptionalKoReward with koTeamFilter 'shield' + rewardType 'gain-officer-hand'.
   // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'optional-ko-shield-officer',
+  // why: WP-682 / D-24499 — Nick Fury's Pure Fury ("Defeat any Villain or Mastermind
+  // whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile"); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectPureFury) that reuses the defeat-with-bystander
+  // shared free-defeat path (0/1/≥2 → no-op/auto/park PendingDefeatChoice choiceType
+  // 'pure-fury'), so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'pure-fury',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -232,6 +238,21 @@ export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
 // the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
 export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['return-on-discard'];
 
+// why: WP-682 / D-24499 — diving-block executes REACTIVELY at the gainWoundForPlayer
+// chokepoint (checkDivingBlock parks a reveal/decline seat choice when a player holding
+// Diving Block gains a Wound), so — exactly like return-on-discard at the discard
+// chokepoint — it has NO HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS. It
+// still joins MVP_KEYWORDS via this wound-time category for the two load-bearing reasons
+// the sibling categories document: (a) the hero mechanic ledger classifies an MVP_KEYWORDS
+// member `executable`; (b) classifyHeroEffectReason returns `applied` for it, so the
+// onPlay hook that executeHeroEffects visits at PLAY time (it does not filter by timing)
+// classifies not-hollow instead of firing a `no-handler` hollow. Kept a SEPARATE set from
+// DISCARD_TIME_EXECUTED_KEYWORDS (duplicate-first per §16.1 — they execute at different
+// chokepoints); NOT in HANDLED_KEYWORDS (no handler) and NOT in NO_MAGNITUDE_KEYWORDS (it
+// never runs at play time, exactly like return-on-discard — the pre-gate drop is the
+// correct no-op there).
+export const WOUND_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['diving-block'];
+
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
 // hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
@@ -248,6 +269,8 @@ export const MVP_KEYWORDS = new Set<string>([
   ...HAND_ACTION_EXECUTED_KEYWORDS,
   ...CLASS_GRANT_KEYWORDS,
   ...DISCARD_TIME_EXECUTED_KEYWORDS,
+  // why: WP-682 / D-24499 — the reactive wound-time keyword (diving-block); see the set above.
+  ...WOUND_TIME_EXECUTED_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -343,6 +366,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // is computed from G at play time, so the magnitude pre-gate must not drop it, or the KO
   // choice never parks.
   'optional-ko-shield-officer',
+  // why: WP-682 / D-24499 — pure-fury carries NO magnitude (it defeats one eligible target
+  // for free); the eligible target set + the S.H.I.E.L.D.-Hero KO count are computed from G
+  // at play time, so the magnitude pre-gate must not drop it, or heroEffectPureFury never runs.
+  'pure-fury',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -1164,9 +1191,10 @@ function heroEffectGainWound(
       );
       continue;
     }
-    const result = gainWound(G.piles.wounds, targetZones.discard);
-    G.piles.wounds = result.woundsPile;
-    targetZones.discard = result.playerDiscard;
+    // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a hero self-wound
+    // (gain-wound-self / gain-wound-each) is also seen by Diving Block; for
+    // gain-wound-each a NON-active recipient reaches the reveal via the WP-684 wave.
+    gainWoundForPlayer(G, targetPlayerId);
     anyWoundGained = true;
     if (targetPlayerId === playerID) {
       // why: woundsDrawn projects the active player's wounds only (UI economy),
@@ -2799,6 +2827,162 @@ function heroEffectDefeatWithBystander(
   );
 }
 
+/**
+ * Counts the S.H.I.E.L.D.-team Hero cards in the GLOBAL KO pile (WP-682 / D-24499).
+ *
+ * // why: Pure Fury's threshold is "the number of S.H.I.E.L.D. Heroes in the KO
+ * pile" — the single global G.ko zone (all players' KO'd cards), NOT per-player.
+ * cardCountsAsShieldHero is S.H.I.E.L.D.-team ONLY (it EXCLUDES HYDRA, unlike the
+ * cardStats.isShieldOrHydra flag) plus the basic S.H.I.E.L.D. token carve-out — the
+ * exact predicate the printed text wants. Pure read (no mutation, no new G field).
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @returns The number of S.H.I.E.L.D.-team Hero cards in G.ko.
+ */
+export function countShieldHeroesInKo(G: LegendaryGameState): number {
+  let count = 0;
+  for (const cardId of G.ko) {
+    if (cardCountsAsShieldHero(G, cardId as CardExtId)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * The PRINTED attack of a Villain / Mastermind defeat target (WP-682 / D-24499).
+ *
+ * // why: Pure Fury compares the target's PRINTED attack (the base fight
+ * requirement), not the runtime-inflated cost. A STATIC villain carries its printed
+ * attack in cardStats.fightCost (fightCostBase is 0 for it); a DYNAMIC "N+" villain
+ * carries the printed base N in fightCostBase — so read fightCostBase for dynamic,
+ * fightCost for static. Masterminds are static, so fightCost is their printed attack.
+ * A "*" fully-dynamic villain has no printed base (0), so it is always eligible when
+ * any S.H.I.E.L.D. Hero sits in the KO pile — a faithful reading of a 0 printed value.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param cardId - The target's stats key (villain ext_id or mastermind baseCardId).
+ * @returns The printed attack value (0 when no stats row exists).
+ */
+function getPrintedAttackForDefeatTarget(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): number {
+  const stats = G.cardStats[cardId];
+  if (stats === undefined) {
+    return 0;
+  }
+  return stats.fightCostMode === 'dynamic' ? stats.fightCostBase : stats.fightCost;
+}
+
+/**
+ * Builds the deterministic list of eligible Pure Fury targets (WP-682 / D-24499).
+ *
+ * A target is eligible when its PRINTED attack is STRICTLY LESS THAN the count of
+ * S.H.I.E.L.D. Heroes in the global KO pile: a City Villain (any occupied space),
+ * or the Mastermind when at least one tactic remains (defeating the Mastermind
+ * defeats one tactic). Order is pinned — City spaces ascending, Mastermind appended
+ * last — matching buildDefeatWithBystanderTargets, because this order feeds BOTH the
+ * UIState projection and the ai.legalMoves bot/sim default.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @returns The eligible targets in pinned order (City ascending, Mastermind last).
+ */
+export function buildPureFuryTargets(
+  G: LegendaryGameState,
+): DefeatWithBystanderTarget[] {
+  const koShieldHeroCount = countShieldHeroesInKo(G);
+  const targets: DefeatWithBystanderTarget[] = [];
+
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    const cardId = G.city[cityIndex];
+    if (cardId === null || cardId === undefined) {
+      continue;
+    }
+    // why: WP-682 / D-24499 — STRICTLY less than (printedAttack < count), per the text.
+    if (getPrintedAttackForDefeatTarget(G, cardId) < koShieldHeroCount) {
+      targets.push({ kind: 'villain', cityIndex, cardId });
+    }
+  }
+
+  // why: Masterminds are explicitly eligible (the text names them); a Mastermind with
+  // no tactics left is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
+  if (G.mastermind.tacticsDeck.length > 0) {
+    const mastermindCardId = G.mastermind.baseCardId;
+    if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
+      targets.push({ kind: 'mastermind', cardId: mastermindCardId });
+    }
+  }
+
+  return targets;
+}
+
+/**
+ * Hero handler for the `pure-fury` keyword (WP-682 / D-24499).
+ *
+ * Nick Fury's Pure Fury — "Defeat any Villain or Mastermind whose Attack is less
+ * than the number of S.H.I.E.L.D. Heroes in the KO pile." A FREE defeat (no attack
+ * paid) that reuses the defeat-with-bystander shared free-defeat path
+ * (dispatchDefeatWithBystanderTarget) incl. Masterminds. 0 eligible → self-narrated
+ * no-op; exactly 1 → auto-defeat; ≥2 → park a PendingDefeatChoice { choiceType:
+ * 'pure-fury' } the current player resolves via resolveDefeatChoice. Mirrors
+ * heroEffectDefeatWithBystander exactly, differing only in the eligibility predicate.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - The move-context wrapper (its nested `.ctx` is the bare bgio ctx).
+ * @param playerID - The player who played Pure Fury.
+ * @param cardId - The Pure Fury card (for provenance logging).
+ * @param _effect - The parsed hero effect descriptor (unused — no magnitude/target).
+ */
+function heroEffectPureFury(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const targets = buildPureFuryTargets(G);
+
+  if (targets.length === 0) {
+    // why: WP-434 — no legal target (no Villain/Mastermind weak enough) → `blocked`.
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} found no Villain or Mastermind weak enough for Pure Fury.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+
+  // why: the same context narrowing heroEffectDefeatWithBystander uses — the shared
+  // cores read the bare bgio ctx (the wrapper's nested `.ctx`); the Fight scry
+  // ShuffleProvider is the wrapper's top-level `.random`.
+  const bareCtx = (ctx as { ctx: unknown }).ctx;
+  const shuffleContext: ShuffleProvider = { random: (ctx as ShuffleProvider).random };
+
+  // why: exactly 1 eligible target → auto-defeat with no prompt (mandatory-if-able),
+  // via the SHARED free-defeat path (no attack spent, no acted-this-turn flag).
+  if (targets.length === 1) {
+    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
+    return;
+  }
+
+  // why: ≥2 eligible targets → park a PendingDefeatChoice with the 'pure-fury'
+  // discriminant; resolveDefeatChoice accepts it and dispatches through the same core.
+  if (!G.pendingDefeatChoices) {
+    G.pendingDefeatChoices = [];
+  }
+  G.pendingDefeatChoices.push({
+    choiceType: 'pure-fury',
+    playerID,
+    targets,
+  });
+  pushLog(G,
+    `Player ${playerID} must choose which Villain or Mastermind to defeat with ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'neutral',
+    cardId,
+  );
+}
+
 // why: WP-535 / D-24345 — the ext_id of every Rogue Copy Powers copy. Excluding this
 // ext_id (not just the one played instance) from the eligible-Hero set means a Copy
 // Powers can never copy itself OR another Copy Powers, which neutralizes copy-of-copy
@@ -3680,6 +3864,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // PendingOptionalKoReward (koTeamFilter 'shield', rewardType 'gain-officer-hand')
   // resolved by resolveOptionalKoReward.
   'optional-ko-shield-officer': heroEffectOptionalKoShieldOfficer,
+  // why: WP-682 / D-24499 — Nick Fury's Pure Fury ("Defeat any Villain or Mastermind whose
+  // Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile"): a FREE defeat
+  // that reuses the defeat-with-bystander shared free-defeat path (0/1/≥2 → no-op / auto /
+  // park PendingDefeatChoice choiceType 'pure-fury', resolved by resolveDefeatChoice).
+  'pure-fury': heroEffectPureFury,
 };
 
 // ---------------------------------------------------------------------------

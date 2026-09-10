@@ -172,6 +172,7 @@ core/black-widow,Black Widow,core,draw,executable,WP-022,D-2201,packages/game-en
 core/black-widow,Black Widow,core,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
 core/black-widow,Black Widow,core,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
 core/captain-america,Captain America,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,a-day-unlike-any-other|perfect-teamwork
+core/captain-america,Captain America,core,diving-block,executable,WP-682,D-24499,packages/game-engine/src/hero/heroEffects.execute.ts#diving-block,diving-block
 core/captain-america,Captain America,core,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast
 core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
@@ -190,6 +191,7 @@ core/iron-man,Iron Man,core,draw,executable,WP-022,D-2201,packages/game-engine/s
 core/nick-fury,Nick Fury,core,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,high-tech-weaponry
 core/nick-fury,Nick Fury,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,legendary-commander
 core/nick-fury,Nick Fury,core,optional-ko-shield-officer,executable,WP-681,D-24498,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-officer,battlefield-promotion
+core/nick-fury,Nick Fury,core,pure-fury,executable,WP-682,D-24499,packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury,pure-fury
 core/rogue,Rogue,core,copy-powers,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#copy-powers,copy-powers
 core/rogue,Rogue,core,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
 core/rogue,Rogue,core,steal-abilities,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#steal-abilities,steal-abilities

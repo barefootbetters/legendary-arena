@@ -187,7 +187,17 @@ export type { RegistryReader as HeroDeckRegistryReader } from "./setup/buildHero
 export { validateCityShape } from "./board/city.validate.js";
 export type { ValidateCityShapeResult } from "./board/city.validate.js";
 export { koCard } from "./board/ko.logic.js";
-export { gainWound } from "./board/wounds.logic.js";
+export { gainWound, gainWoundForPlayer } from "./board/wounds.logic.js";
+// why: WP-682 / D-24499 — reactive Diving-Block wound-interception surface.
+export {
+  cardCarriesDivingBlock,
+  countDivingBlockCopiesInHand,
+  checkDivingBlock,
+  hasPendingDivingBlockWounds,
+  openDivingBlockSeatChoiceIfNeeded,
+  applyDivingBlockResolvedSeatChoice,
+  DIVING_BLOCK_SEAT_CHOICE_KIND,
+} from "./moves/divingBlock.logic.js";
 export type { GainWoundResult } from "./board/wounds.logic.js";
 export {
   attachBystanderToVillain,
