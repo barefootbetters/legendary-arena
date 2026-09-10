@@ -15,6 +15,8 @@ import {
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 import { useTransformVfxSignal } from '../../composables/useTransformVfx';
+import { useMastermindHitVfxSignal } from '../../composables/useMastermindHitVfx';
+import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
 import {
   useEffectIntensity,
   __resetEffectIntensityForTests,
@@ -43,6 +45,18 @@ function emitWound(): void {
 function emitTransform(): void {
   seq += 1;
   useTransformVfxSignal().value = { seq };
+}
+
+/** Pushes a mastermind-hit event (the running defeated-tactic count) onto its signal. */
+function emitMastermindHit(tacticsDefeated: number): void {
+  seq += 1;
+  useMastermindHitVfxSignal().value = { tacticsDefeated, seq };
+}
+
+/** Pushes a victory-finale event onto the shared victory signal. */
+function emitVictory(): void {
+  seq += 1;
+  useVictoryFinaleVfxSignal().value = { seq };
 }
 
 describe('VfxOverlay (WP-556)', () => {
@@ -308,6 +322,155 @@ describe('VfxOverlay — transform beat (WP-672)', () => {
     await nextTick();
     assert.ok(wrapper.find('[data-testid="play-vfx-callout"]').exists());
     assert.equal(wrapper.find('[data-testid="play-vfx-surge"]').exists(), false);
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — mastermind-hit beat', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
+    useTransformVfxSignal().value = null;
+    useMastermindHitVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+  });
+
+  test('a middle hit (hit2) shows its "STAGGERED!" word, no shake', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(2);
+    await nextTick();
+    const callout = wrapper.find('[data-testid="play-vfx-callout"]');
+    assert.ok(callout.exists());
+    assert.equal(callout.text(), 'STAGGERED!');
+    // hit2 does not shake (shake is reserved for hit3/hit4).
+    assert.equal(wrapper.find('[data-testid="play-vfx-impact"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('hit1 is a wordless spark (no call-out)', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(1);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('a heavy hit (hit3) fires the impact shake at full intensity', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(3);
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-impact"]').exists());
+    const callout = wrapper.find('[data-testid="play-vfx-callout"]');
+    assert.ok(callout.exists());
+    assert.equal(callout.text(), 'RECKONING!');
+    wrapper.unmount();
+  });
+
+  test('the top hit (hit4) is a wordless screen-shaking impact (finale owns the word)', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(4);
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-impact"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('intensity off renders nothing (the master kill-switch)', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(3);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-vfx-impact"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('reduced-motion keeps the word but suppresses the impact shake', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitMastermindHit(3);
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-callout"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-impact"]').exists(), false);
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — heroes-win victory finale', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
+    useTransformVfxSignal().value = null;
+    useMastermindHitVfxSignal().value = null;
+    useVictoryFinaleVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+  });
+
+  test('a victory signal shows the "VICTORY!" banner + the gold bloom at full intensity', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitVictory();
+    await nextTick();
+    const banner = wrapper.find('[data-testid="play-vfx-victory"]');
+    assert.ok(banner.exists(), 'the victory banner shows');
+    assert.equal(banner.text(), 'VICTORY!');
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-celebrate"]').exists(),
+      'the gold power bloom shows at full intensity',
+    );
+    wrapper.unmount();
+  });
+
+  test('the victory banner uses its OWN slot (not the transient combo call-out word)', async () => {
+    // why: a coincident mastermind hit-4 (normal-rules vanquish) must not fight the
+    // banner for the combo word slot — they render in separate elements.
+    const wrapper = mount(VfxOverlay);
+    emitVictory();
+    emitMastermindHit(4); // hit4 is wordless, so the combo word slot stays empty
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-victory"]').exists());
+    assert.equal(
+      wrapper.find('[data-testid="play-vfx-callout"]').exists(),
+      false,
+      'the finale banner does not occupy the combo word slot',
+    );
+    wrapper.unmount();
+  });
+
+  test('intensity off renders nothing (the master kill-switch)', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitVictory();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-victory"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-vfx-celebrate"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('reduced-motion keeps the banner but suppresses the full-screen bloom', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitVictory();
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-victory"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-celebrate"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('low intensity keeps the banner but suppresses the bloom (gated on shake — full only)', async () => {
+    useEffectIntensity().setIntensity('low');
+    const wrapper = mount(VfxOverlay);
+    emitVictory();
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-victory"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-celebrate"]').exists(), false);
     wrapper.unmount();
   });
 });
