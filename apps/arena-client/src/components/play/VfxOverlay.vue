@@ -3,6 +3,12 @@ import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { comboVfxManifest } from '../../vfx/comboVfxManifest';
 import { STRIKE_BLOCKED_VFX, BLOCKED_WORD } from '../../vfx/strikeBlockedVfxManifest';
 import { TRANSFORM_VFX, TRANSFORM_WORD } from '../../vfx/transformVfxManifest';
+import {
+  MASTERMIND_HIT_VFX,
+  MASTERMIND_HIT_BURST_COLORS,
+  mastermindHitTierForCount,
+} from '../../vfx/mastermindHitVfxManifest';
+import { VICTORY_FINALE_VFX, VICTORY_WORD } from '../../vfx/victoryFinaleVfxManifest';
 import { useEffectIntensity } from '../../vfx/effectIntensity';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
@@ -11,6 +17,11 @@ import {
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 import { useTransformVfxSignal } from '../../composables/useTransformVfx';
+import {
+  useMastermindHitVfxSignal,
+  type MastermindHitVfxEvent,
+} from '../../composables/useMastermindHitVfx';
+import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
 
 /**
  * VfxOverlay — the single full-bleed VFX layer (WP-556). It hosts ONE shared
@@ -51,6 +62,18 @@ import { useTransformVfxSignal } from '../../composables/useTransformVfx';
  * surge bloom only at `full` (like the impact pulse). Public — it fires for every
  * viewer when any player transforms, mirroring the shield-block consumer.
  *
+ * This change adds a FIFTH and SIXTH consumer, both mounted at the same root:
+ *
+ *   - the mastermind-hit beat — a `useMastermindHitVfx` signal (the shared
+ *     `mastermind.tacticsDefeated` count increasing) fires an escalating ember
+ *     burst (+ a word / impact on the heavier hits) reusing the combo word / burst /
+ *     impact slots, so hit 4 reads bigger than hit 1. Public (shared board).
+ *   - the heroes-win victory finale — a `useVictoryFinaleVfx` signal (a projected
+ *     `heroes-win` outcome) fires a gold confetti STORM + a gold bloom + the
+ *     "VICTORY!" banner, each in its OWN overlay element (a longer, dominant
+ *     treatment separate from the transient combo word). Forward-compatible with
+ *     Final Blow: the finale fires on the projected win, whichever fight lands it.
+ *
  * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
  * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst)
@@ -79,6 +102,14 @@ const SURGE_MS = 480;
 // why: WP-672 — the transform burst's particle count; a lively gamma throw, in the
 // same band as the shield burst and under the WP-556 200-particle ceiling.
 const TRANSFORM_BURST_PARTICLES = 130;
+// why: the heroes-win victory banner hold — longer than the transient combo word
+// (WORD_DISPLAY_MS) because the finale is the game's biggest, one-per-match moment
+// and earns a sustained beat. The banner is opacity/transform only.
+const VICTORY_BANNER_MS = 2600;
+// why: the victory "power bloom" duration — a gold full-screen radial swell, a
+// touch longer than the combo impact pulse to seat the celebration, still
+// opacity/transform only (never a layout property).
+const CELEBRATE_MS = 900;
 
 /**
  * Builds the `canvas-confetti` options for one burst. Exported and pure so the
@@ -125,6 +156,8 @@ export default defineComponent({
     const strikeBlockedSignal = useStrikeBlockedVfxSignal();
     const woundSignal = useWoundVfxSignal();
     const transformSignal = useTransformVfxSignal();
+    const mastermindHitSignal = useMastermindHitVfxSignal();
+    const victoryFinaleSignal = useVictoryFinaleVfxSignal();
 
     const canvasEl = ref<HTMLCanvasElement | null>(null);
     const currentWord = ref<string | null>(null);
@@ -151,11 +184,27 @@ export default defineComponent({
     const isSurging = ref(false);
     const surgeKey = ref(0);
 
+    // why: the heroes-win victory finale state. isCelebrating shows the gold power
+    // bloom; currentVictoryWord holds the "VICTORY!" banner (its OWN slot, distinct
+    // from the transient combo `currentWord`, so a coincident mastermind-hit word
+    // and the victory banner never fight for one slot). The monotonic keys re-mount
+    // each element so the animation runs from the start (defensive — the finale
+    // fires once per match).
+    const isCelebrating = ref(false);
+    const celebrateKey = ref(0);
+    const currentVictoryWord = ref<string | null>(null);
+    const victoryKey = ref(0);
+
     let wordTimer: ReturnType<typeof setTimeout> | null = null;
     let impactTimer: ReturnType<typeof setTimeout> | null = null;
     let shieldTimer: ReturnType<typeof setTimeout> | null = null;
     let woundTimer: ReturnType<typeof setTimeout> | null = null;
     let surgeTimer: ReturnType<typeof setTimeout> | null = null;
+    let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+    let victoryWordTimer: ReturnType<typeof setTimeout> | null = null;
+    // why: the victory confetti STORM is several staggered bursts (setTimeout-
+    // scheduled); track their handles so onUnmounted clears any still pending.
+    const stormTimers: ReturnType<typeof setTimeout>[] = [];
 
     // why: lazy-loaded canvas-confetti launcher, bound to OUR single canvas.
     // Loaded off the first-paint path (dynamic import on first burst), so the
@@ -343,12 +392,106 @@ export default defineComponent({
       renderTransform();
     });
 
+    // why: the mastermind-hit beat — an escalating ember burst on each Tactic
+    // defeat, reusing the combo word / burst / impact slots. The manifest maps the
+    // running `tacticsDefeated` count to a tier (hit 1 spark → hit 4 top impact);
+    // particles + shake are gated exactly like the combo beat (shake at full only),
+    // and the word (present on the middle hits) shows unless intensity is off.
+    function renderMastermindHit(event: MastermindHitVfxEvent): void {
+      const tier = mastermindHitTierForCount(event.tacticsDefeated);
+      // why: a count of 0 has no tier — nothing landed, so render nothing (the
+      // consumer only fires on an increase, but this keeps the render total).
+      if (tier === null) return;
+      const spec = MASTERMIND_HIT_VFX[tier];
+      if (shouldRender('particles')) {
+        // why: the hot ember palette (amber/gold/red-orange) reads as a strike
+        // landing ON the villain, distinct from every other effect's colours.
+        fireBurst(spec.particleCount, MASTERMIND_HIT_BURST_COLORS);
+      }
+      if (spec.shake && shouldRender('shake')) {
+        pulseImpact();
+      }
+      if (spec.word !== null && shouldRender('word')) {
+        showWord(spec.word);
+      }
+    }
+
+    watch(mastermindHitSignal, (event) => {
+      if (event === null) return;
+      renderMastermindHit(event);
+    });
+
+    // why: the heroes-win finale's gold "power bloom" — a full-screen radial swell,
+    // the celebratory twin of the combo impact pulse but grander and longer. The
+    // monotonic key re-mounts it so the animation runs from the start.
+    function pulseCelebrate(): void {
+      isCelebrating.value = true;
+      celebrateKey.value += 1;
+      if (celebrateTimer !== null) clearTimeout(celebrateTimer);
+      celebrateTimer = setTimeout(() => {
+        isCelebrating.value = false;
+        celebrateTimer = null;
+      }, CELEBRATE_MS);
+    }
+
+    // why: the "VICTORY!" banner — held in its OWN slot (not the transient combo
+    // `currentWord`) so a coincident mastermind-hit word cannot displace it, and
+    // held longer (VICTORY_BANNER_MS) because the win is the one-per-match payoff.
+    function showVictoryWord(word: string): void {
+      currentVictoryWord.value = word;
+      victoryKey.value += 1;
+      if (victoryWordTimer !== null) clearTimeout(victoryWordTimer);
+      victoryWordTimer = setTimeout(() => {
+        currentVictoryWord.value = null;
+        victoryWordTimer = null;
+      }, VICTORY_BANNER_MS);
+    }
+
+    // why: the confetti STORM — several staggered bursts (not one pop) so the
+    // celebration rolls. Each burst is scheduled; the handles are tracked for
+    // onUnmounted cleanup. Uses the finale's gold/hero-blue palette.
+    function fireVictoryStorm(): void {
+      for (let index = 0; index < VICTORY_FINALE_VFX.burstCount; index += 1) {
+        const timer = setTimeout(() => {
+          fireBurst(VICTORY_FINALE_VFX.burstParticleCount, VICTORY_FINALE_VFX.colors);
+        }, index * VICTORY_FINALE_VFX.burstIntervalMs);
+        stormTimers.push(timer);
+      }
+    }
+
+    // why: the finale beat. The BANNER shows whenever the word shows
+    // (shouldRender('word'), i.e. unless intensity is off), the confetti storm at
+    // low/full (shouldRender('particles'), not reduced-motion), and the gold bloom
+    // — the heaviest, full-screen colour flash — only at full intensity
+    // (shouldRender('shake'), like the impact pulse / surge bloom).
+    function renderVictory(): void {
+      if (shouldRender('word')) {
+        showVictoryWord(VICTORY_WORD);
+      }
+      if (shouldRender('particles')) {
+        fireVictoryStorm();
+      }
+      if (shouldRender('shake')) {
+        pulseCelebrate();
+      }
+    }
+
+    watch(victoryFinaleSignal, (event) => {
+      if (event === null) return;
+      renderVictory();
+    });
+
     onUnmounted(() => {
       if (wordTimer !== null) clearTimeout(wordTimer);
       if (impactTimer !== null) clearTimeout(impactTimer);
       if (shieldTimer !== null) clearTimeout(shieldTimer);
       if (woundTimer !== null) clearTimeout(woundTimer);
       if (surgeTimer !== null) clearTimeout(surgeTimer);
+      if (celebrateTimer !== null) clearTimeout(celebrateTimer);
+      if (victoryWordTimer !== null) clearTimeout(victoryWordTimer);
+      // why: clear any confetti-storm bursts still pending so a mid-storm unmount
+      // (leaving the play surface right after a win) fires nothing after teardown.
+      for (const timer of stormTimers) clearTimeout(timer);
     });
 
     onMounted(() => {
@@ -370,6 +513,10 @@ export default defineComponent({
       woundKey,
       isSurging,
       surgeKey,
+      isCelebrating,
+      celebrateKey,
+      currentVictoryWord,
+      victoryKey,
     };
   },
 });
@@ -394,6 +541,12 @@ export default defineComponent({
       :key="surgeKey"
       class="vfx-overlay__surge"
       data-testid="play-vfx-surge"
+    ></div>
+    <div
+      v-if="isCelebrating"
+      :key="celebrateKey"
+      class="vfx-overlay__celebrate"
+      data-testid="play-vfx-celebrate"
     ></div>
     <Transition name="vfx-shield">
       <div
@@ -445,6 +598,14 @@ export default defineComponent({
         class="vfx-overlay__word"
         data-testid="play-vfx-callout"
       >{{ currentWord }}</span>
+    </Transition>
+    <Transition name="vfx-victory">
+      <span
+        v-if="currentVictoryWord !== null"
+        :key="victoryKey"
+        class="vfx-overlay__victory"
+        data-testid="play-vfx-victory"
+      >{{ currentVictoryWord }}</span>
     </Transition>
   </div>
 </template>
@@ -564,6 +725,38 @@ export default defineComponent({
   }
 }
 
+/* why: the heroes-win victory "power bloom": a warm gold radial swell filling the
+   screen behind the confetti storm — the game's biggest, one-per-match positive
+   flash. Animates opacity/transform only (GPU-composited), never a layout
+   property, and clears under CELEBRATE_MS. */
+.vfx-overlay__celebrate {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 54%,
+    rgba(255, 211, 78, 0.5),
+    rgba(255, 233, 168, 0.24) 42%,
+    rgba(255, 211, 78, 0) 72%
+  );
+  animation: vfx-celebrate 900ms ease-out;
+  will-change: opacity, transform;
+}
+
+@keyframes vfx-celebrate {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  28% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+
 /* why: the synergy call-out word, centred over the mat. Bold and legible; the
    entrance scale-punch is transform/opacity only. */
 .vfx-overlay__word {
@@ -596,6 +789,42 @@ export default defineComponent({
 .vfx-word-leave-to {
   opacity: 0;
   transform: translate(-50%, -58%) scale(1.05);
+}
+
+/* why: the heroes-win "VICTORY!" banner — its OWN centred slot, bigger and bolder
+   than the transient combo word and in the finale gold, so the win reads as the
+   game's dominant moment (and never competes with a coincident mastermind-hit word
+   for the combo word slot). */
+.vfx-overlay__victory {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(2.6rem, 9vw, 6rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffd34e;
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 211, 78, 0.75);
+  white-space: nowrap;
+}
+
+.vfx-victory-enter-active {
+  transition: opacity 200ms ease-out, transform 320ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+.vfx-victory-leave-active {
+  transition: opacity 420ms ease-in, transform 420ms ease-in;
+}
+
+.vfx-victory-enter-from {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+}
+
+.vfx-victory-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -62%) scale(1.08);
 }
 
 /* why: WP-647 — the Captain-America shield-block glyph, centred over the mat
@@ -700,6 +929,33 @@ export default defineComponent({
   .vfx-overlay__surge {
     animation: none;
     opacity: 0;
+  }
+
+  /* why: under reduced-motion the full-screen gold victory bloom is suppressed
+     (same photosensitivity class as the surge / wound flash), belt-and-braces to
+     the JS shouldRender('shake') gate that already withholds it. The "VICTORY!"
+     banner still shows (a plain fade) — the reward survives without the bloom. */
+  .vfx-overlay__celebrate {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* why: the "VICTORY!" banner still shows under reduced-motion, but its scale-punch
+     entrance degrades to a plain opacity fade — mirroring the combo word's handling
+     so the reward stays legible without motion. */
+  .vfx-victory-enter-active,
+  .vfx-victory-leave-active {
+    transition: opacity 220ms ease;
+  }
+
+  .vfx-victory-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .vfx-victory-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
   }
 
   /* why: WP-647 — under reduced-motion the shield GLYPH still shows (static, a

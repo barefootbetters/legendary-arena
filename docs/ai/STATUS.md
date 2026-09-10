@@ -7,6 +7,50 @@
 
 ## Current State
 
+### WP-690 — Mastermind-hit + heroes-win victory VFX (EC-727 / D-24507) (2026-09-10)
+
+Added two pieces of play-surface juice on the WP-556 VFX foundation with **zero
+engine change** — both ride already-projected `UIState` fields, so no new
+notable event, no new `UIState` field, no `G`/`ctx` read, no hash re-pin.
+
+**Mastermind-hit beat** (`useMastermindHitVfx` + `mastermindHitVfxManifest`).
+Each time a player fights the Mastermind and defeats a Tactic, an escalating
+ember burst fires — `hit1` a wordless spark, `hit2` "STAGGERED!", `hit3`
+"RECKONING!" + a screen-shake, `hit4` a wordless top impact — so a run at the
+boss visibly builds toward the win. It watches the already-projected
+`UIState.mastermind.tacticsDefeated` count and fires on each INCREASE (the
+`useWoundVfx` count-delta pattern, seeded so a mount into a fought Mastermind
+flashes nothing), public so every viewer sees the blow land.
+
+**Heroes-win victory finale** (`useVictoryFinaleVfx` + `victoryFinaleVfxManifest`).
+When the Mastermind falls, a gold confetti storm (3 staggered bursts) + a gold
+bloom + a **VICTORY!** banner (in its OWN overlay slot, so a coincident hit-4 and
+the banner never fight for the combo word slot) celebrate the win. It fires once
+on the transition into `gameOver.outcome === 'heroes-win'` (not `endedEarly`),
+seeded so a reconnect into an already-won match replays nothing.
+
+**Forward-compatible with the optional Final Blow rule** (WP-687, drafted, not
+shipped). The hit beat covers the four Tactic defeats; the finale keys off the
+projected win, so once WP-687 lands and `heroes-win` fires on the fifth (final)
+blow, the celebration lands on it automatically with no change here. That is why
+the request's "5th Final Blow end-of-game special" ships as a win-keyed finale
+now rather than gated on the unshipped 5th-fight mechanic.
+
+Both are gated by the WP-556 `effectIntensity` accessibility contract (`off` =
+nothing; the word/banner survive `low`/reduced-motion as a plain fade; particles
+at `low`/`full`; the full-screen impact/bloom at `full` only) and are absent
+from the determinism hash (the D-24365 `src/vfx/` exemption) — sims/replays
+render nothing.
+
+**Live-verified (D-24026):** on the play surface (arena-client dev, `mid-turn`
+play fixture, store-driven), bumping `tacticsDefeated` fired the escalating hit
+beat (the gold **RECKONING!** call-out + the amber impact wash at hit 3), and
+setting `gameOver.outcome = 'heroes-win'` fired the finale (the gold **VICTORY!**
+banner + the gold/hero-blue confetti storm + bloom). `pnpm -r build`,
+`pnpm --filter @legendary-arena/arena-client typecheck`, and the full
+arena-client suite (1763 tests) all exit 0. Arena-client-only; no
+engine/`UIState`/persistence/hash surface touched.
+
 ### WP-689 — Play-Surface TurnActionBar overlap fix + Playwright visual guard (EC-726 / D-24506) (2026-09-10)
 
 Fixed a WP-688 regression + closed the review gap that let it ship. A

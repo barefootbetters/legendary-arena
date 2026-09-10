@@ -41723,3 +41723,56 @@ no persistence, no `finalStateHash`, no HTTP surface; the guard reads DOM geomet
 **Status:** Active. **Corollary to:** D-24505.
 
 Protect this file.
+
+### D-24507 — Mastermind-hit + heroes-win victory VFX (two client-side consumers on the WP-556 foundation, no engine change) (Active 2026-09-10 — WP-690 / EC-727)
+
+**Context.** The play surface celebrated a chain (combo), a block (shield), a
+wound, and a transform, but a run at the Mastermind and the win itself were
+visually flat. WP-690 adds two pieces of juice riding the WP-556 VFX foundation
+with **zero engine change**.
+
+**Decision.**
+
+1. **Mastermind-hit beat.** `useMastermindHitVfx` watches the already-projected
+   `UIState.mastermind.tacticsDefeated` count and fires an escalating ember beat
+   on each INCREASE (hit 1 spark → hit 4 screen-shaking impact) — the
+   count-delta pattern of `useWoundVfx`, seeded on the first valid frame so no
+   pre-mount flash, public (fires for every viewer — shared board). Tiers
+   (`mastermindHitVfxManifest`): `hit1 {50, no word}`, `hit2 {90, STAGGERED!}`,
+   `hit3 {130, RECKONING!, shake}`, `hit4 {175, no word, shake}` — ascending
+   `particleCount` ≤ 200, shake on hit3/hit4 only; the ladder is bounded at
+   `hit4` (there is no 5th Tactic). Palette molten ember `['#ff9d2e','#ffd34e','#ff5a3c']`.
+
+2. **Heroes-win victory finale.** `useVictoryFinaleVfx` fires ONCE on the
+   transition into `UIState.gameOver.outcome === 'heroes-win' && !endedEarly` — a
+   gold confetti storm (3 staggered bursts) + a gold bloom + a `VICTORY!` banner
+   in its OWN overlay slot (so a coincident hit-4 word and the banner never
+   fight for one slot). Seeded on the first valid frame so a reconnect into an
+   already-won match replays nothing; ignores a loss / tie / early-end.
+
+**Why no engine change.** Both signals ride ALREADY-projected `UIState` fields —
+the hit rides the `tacticsDefeated` count delta, the finale rides the
+`gameOver.outcome` — so neither adds a `NotableGameEventType` (no 11th-variant
+DECISIONS entry per D-20001) nor any `G`/`UIState` field. Both are pure
+presentation gated by the WP-556 `effectIntensity` contract (`off` = nothing;
+word/banner survive `low`/reduced-motion; particles at `low`/`full`;
+bloom/impact `full` only) and absent from the determinism hash (the D-24365
+`src/vfx/` exemption); sims / replays render nothing.
+
+**Forward-compatible with Final Blow (WP-687, drafted, not shipped).** The
+mastermind-hit beat covers the four Tactic defeats; the finale keys off the
+projected win, so once WP-687 lands and `heroes-win` fires on the fifth (final)
+blow, the celebration lands on it automatically with no change here. This is why
+the request's "5th Final Blow end-of-game special" is delivered as a
+win-keyed finale now rather than gated on the unshipped 5th-fight mechanic.
+
+**Scope.** `apps/arena-client` only — two manifests, two consumers, the
+`VfxOverlay` renderers, and the `PlayViewport` wiring, with tests. No
+`packages/game-engine/**` change; no `UIState`/persistence/hash re-pin. Vision
+§3/§8/§22/NG-1 uncrossed.
+
+**Status:** Active. **Builds on:** D-24365 (WP-556 VFX foundation), D-24462
+(the `useWoundVfx` count-delta precedent). **Forward-compatible with:** D-24504
+(WP-687 Final Blow).
+
+Protect this file.

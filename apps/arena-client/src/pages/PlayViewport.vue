@@ -30,6 +30,8 @@ import { useComboVfx } from '../composables/useComboVfx';
 import { useStrikeBlockedVfx } from '../composables/useStrikeBlockedVfx';
 import { useWoundVfx } from '../composables/useWoundVfx';
 import { useTransformVfx } from '../composables/useTransformVfx';
+import { useMastermindHitVfx } from '../composables/useMastermindHitVfx';
+import { useVictoryFinaleVfx } from '../composables/useVictoryFinaleVfx';
 import { useWoundCue } from '../composables/useWoundCue';
 import { useAdaptiveMusic } from '../composables/useAdaptiveMusic';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
@@ -183,6 +185,17 @@ export default defineComponent({
     // <VfxOverlay> renders as a gamma-green surge + "TRANSFORMED!" word. Pure
     // presentation — reads UIState only, never writes G/ctx, absent from the hash.
     useTransformVfx(audioSnapshot);
+
+    // why: the mastermind-hit beat + the heroes-win victory finale, mounted at the
+    // SAME shared composable root beside the other feel consumers, reading the SAME
+    // useUiStateStore snapshot. useMastermindHitVfx watches the shared
+    // UIState.mastermind.tacticsDefeated count and fires an escalating ember beat on
+    // each Tactic defeat (hit 1..4); useVictoryFinaleVfx fires once on a projected
+    // heroes-win (forward-compatible with Final Blow: it lands on the winning fight
+    // whichever it is). Both render through <VfxOverlay>. Pure presentation — read
+    // UIState only, never write G/ctx, absent from the determinism hash.
+    useMastermindHitVfx(audioSnapshot);
+    useVictoryFinaleVfx(audioSnapshot);
 
     // why: WP-560 — the adaptive danger score, mounted at the SAME shared
     // composable root beside useComboCue and reading the SAME snapshot. One
