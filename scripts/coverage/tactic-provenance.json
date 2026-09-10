@@ -14,6 +14,24 @@
       "wp": "WP-506",
       "decision": "D-24312"
     },
+    "core-mastermind-red-skull-negablast-grenades": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNegablastGrenades",
+      "wp": "WP-567",
+      "decision": "D-24376"
+    },
+    "core-mastermind-red-skull-endless-resources": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveEndlessResources",
+      "wp": "WP-567",
+      "decision": "D-24376"
+    },
+    "core-mastermind-red-skull-hydra-conspiracy": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHydraConspiracy",
+      "wp": "WP-567",
+      "decision": "D-24376"
+    },
     "core-mastermind-dr-doom-treasures-of-latveria": {
       "status": "executable",
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
