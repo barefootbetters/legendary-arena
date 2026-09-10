@@ -25,30 +25,16 @@ source:
   - C:\www\legendary-arena-com\docs\marketing\homepage-review-template.md
   - C:\www\legendary-arena-com\docs\marketing\homepage-appendix.md
   - C:\www\legendary-arena-com\static\brand-tokens.css
-last-reviewed: 2026-05-16
+last-reviewed: 2026-09-09
 ---
 
 # Newsletter Authoring
 
-> **Editing this page**
->
-> This ewiki page is the authoring guide for weekly email newsletters
-> sent via Brevo. Newsletter drafts live in the marketing repo at
-> `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\`.
->
-> - **To edit this ewiki page:** edit
->   `C:\pcloud\BB\DEV\legendary-arena\wiki\newsletter-authoring.md` in the
->   `legendary-arena` repo and open a **PR** — wiki edits do not go direct
->   to `main`. Prefix `INFRA: wiki newsletter-authoring — <what changed>
->   (#PR)`, matching the surrounding `git log -- wiki/` history. (`SPEC:`
->   is for design/governance locks, not page edits.) Deploy is not
->   automatic on merge: `.github/workflows/wiki-viewer.yml` fires the
->   Render deploy hook, and a green build alone does not prove the deploy
->   step ran.
-> - **Authoritative sources:** Template spec lives at
->   `C:\www\legendary-arena-com\docs\brevo\newsletter-template.md`;
->   brand voice lives at
->   `C:\www\legendary-arena-com\docs\brand\strategy.md`.
+Newsletter drafts themselves live in the marketing repo at
+`C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\`; this ewiki page
+is the authoring guide, not the drafts. To edit this page, use the
+collapsible **Editing this page** panel at the foot of it — and see
+**Sources** below for the authoritative template spec and brand-voice docs.
 
 ## Summary
 

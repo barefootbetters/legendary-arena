@@ -28,30 +28,16 @@ source:
   - C:\www\legendary-arena-com\static\brand-tokens.css
   - C:\www\legendary-arena-com\layouts\_partials\footer.html
   - C:\www\legendary-arena-com\assets\css\extended\custom.css
-last-reviewed: 2026-09-04
+last-reviewed: 2026-09-09
 ---
 
 # Blog Post Authoring
 
-> **Editing this page**
->
-> This ewiki page is the authoring guide for blog posts on
-> `www.legendary-arena.com`. The blog lives in the marketing repo
-> at `C:\www\legendary-arena-com\content\posts\`.
->
-> - **To edit this ewiki page:** edit
->   `C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md` in the
->   `legendary-arena` repo and open a **PR** — wiki edits do not go
->   direct to `main`. Prefix `INFRA: wiki blog-post-authoring — <what
->   changed> (#PR)`, matching the surrounding `git log -- wiki/` history.
->   (`SPEC:` is for design/governance locks, not page edits.)
->   Deploy is not automatic on merge: `.github/workflows/wiki-viewer.yml`
->   fires the Render deploy hook, and a green build alone does not prove
->   the deploy step ran.
-> - **Authoritative sources:** Content conventions live at
->   `C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md`;
->   brand voice lives at
->   `C:\www\legendary-arena-com\docs\brand\strategy.md`.
+The blog posts themselves live in the marketing repo at
+`C:\www\legendary-arena-com\content\posts\`; this ewiki page is the
+authoring guide, not the content. To edit this page, use the collapsible
+**Editing this page** panel at the foot of it — and see **Sources** below
+for the authoritative content-convention and brand-voice docs.
 
 ## Summary
 
