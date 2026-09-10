@@ -21,7 +21,7 @@ source:
   - ../apps/arena-client/src/pages/PlayDesktop.vue
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-09
+last-reviewed: 2026-09-10
 ---
 
 # Responsive Viewport Targets
@@ -147,6 +147,36 @@ yet meet**.
 ![Rev 4 (the lock mock) of the play-mat redesign, the same 1280×720 spatial board on the dark theme, after two further review passes. Versus Rev 2 it corrects the two occupied City spaces to the locked left-to-right order — Doombot on Streets, Doombot Legion on Rooftops (Bridge, Streets, Rooftops, Bank) — reconciles the mastermind readout to a single source (Tactics 1/4 on the tile against a 3-card Tactics deck, HUD Strikes 2 matching the Master Strike pile, no invented HP fraction), relabels the status pill "no page scroll" (the hand and in-play wells scroll in-zone), and adds two controls to the bottom turn-action bar: an Undo button and a green Heal Wound button, sitting left of Pass priority and the red "End turn — draw 6". Everything else matches Rev 2: the fixed 1280×720 authoring grid with 1.00×/1.07×/1.50× preview scales, the right rail of opponent panels plus game log, the overflow-scrolling hand and in-play wells, and the Transform Deck rail right of the Hero Deck.](/responsive-viewport-targets/play-mat-redesign04.jpg "width=100%")
 
 ***Rev 4 — the lock mock, ratified as [`DECISIONS.md` D-24502](../docs/ai/DECISIONS.md).** The geometry is now a **locked design decision** (D-24502), prospectively superseding D-24251: the fixed 1280×720 authoring grid, the right rail, the locked City order, full-array hand/in-play binding, click-to-play into the in-play well, HQ-adjacent Transform Deck, and projection-bound denominators. D-24251's fluid stack **remains the shipped behavior until the implementation WP lands** — this entry ratifies the direction and governs that WP; it is not yet built. The two turn-bar controls are **scoped out of the geometry lock** and tracked separately: **Heal Wound** surfaces the shipped effect-driven `healWounds` mechanic (WP-379..382) as a conditional, stage-gated control (shown only when a heal is legal), and **Undo** is a genuinely new cross-layer feature — decided scope is **pre-commit, non-revealing** (undo your own actions this turn, never across a hidden-information reveal), pending its own decision + WP. (Rev 3 was a transient state — same board with the City labels still swapped and stale poster chrome — and is not archived here.)*
+
+### Implementation status — WP-685 (structural slice shipped; the fit is still open)
+
+The D-24502 rebuild is **partially built**, and the split matters because the
+board a player sees today is **not yet the one that fits Tex's screen**.
+
+**Shipped (WP-685, the structural slice).** `<PlayDesktop>` was rebuilt from the
+D-24251 fluid vertical stack into the spatial layout: a **two-column grid** with
+the shared board + cockpit in the main column and the **opponent panels + game
+log in a right rail**; the adversary-band and cockpit regroup; the hand and
+in-play as **horizontally-scrolling wells** bound to the full arrays (never
+sliced); and the empty in-play "play here" landing target. The occupied City
+place-names and the projection-bound twist/tactics denominators were already in
+place. This is live on the play surface.
+
+**Not shipped — the 1280×720 fit (D-24502 lock 1).** The live check found the
+rebuilt board is still **~1360px tall and vertically scrolls at 1280×720** — so
+the sub-1366 failure this whole page documents is **not yet fixed**. The rail
+reclaimed real height (it measures ~366px), but the **actual `CardTile` and
+per-zone sizes are roughly twice the compact tiles the Rev-4 mock was drawn
+with**, so the grid + rail alone cannot reach the 720px floor. The mock hit
+720px by authoring small tiles; the real components are larger.
+
+**The remaining work is component compaction.** Closing the gap needs the play
+components themselves made denser — smaller `CardTile` widths and tighter
+per-zone spacing so the board's *natural* height drops to roughly 750–900px and
+fits 1280×720 readably — optionally combined with a scale-to-fit stage (a pure
+scale of the 1360px board renders ~0.53× at 1280, too small to read). This is a
+**future Work Packet**; until it lands, D-24502 is realized only structurally and
+the effective floor behavior at 1280×720 is still the D-24251 scroll.
 
 ### Fluid desktop scaling — shipped (WP-430 / D-24251)
 
