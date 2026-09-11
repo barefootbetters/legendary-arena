@@ -783,4 +783,42 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
       'a fight that defeats nothing signals nothing (the flag is on the success path)',
     );
   });
+
+  it('does NOT set the signal on a HENCHMAN defeat (Diamond Form is "Villain or Mastermind")', () => {
+    // why: regression — fightVillain defeats BOTH villains and henchmen, but Diamond
+    // Form's grant excludes henchmen. A live Red Skull match over-fired +3 recruit for
+    // each Hand Ninja defeated; the flag must be gated on the fought card's revealed type.
+    const gameState = createMockGameState({ city: ['ninja-a', null, null, null, null] });
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+    gameState.villainDeckCardTypes = { 'ninja-a': 'henchman' };
+
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.playerZones['0']!.victory.length,
+      1,
+      'the henchman is still defeated (only the Diamond Form signal is gated, not the fight)',
+    );
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      undefined,
+      'a henchman defeat must NOT satisfy "defeat a Villain or Mastermind"',
+    );
+  });
+
+  it('sets the signal on a defeat explicitly typed "villain"', () => {
+    const gameState = createMockGameState({ city: ['villain-b', null, null, null, null] });
+    gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
+    gameState.villainDeckCardTypes = { 'villain-b': 'villain' };
+
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(
+      moveContext.G.villainOrMastermindDefeatedSinceResolve,
+      true,
+      'a typed villain defeat signals Diamond Form',
+    );
+  });
 });

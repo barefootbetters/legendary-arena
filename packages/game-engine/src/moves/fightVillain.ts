@@ -226,7 +226,18 @@ export function fightVillain(
   // move. Placed at the fight-move tail (beside hasActedThisTurn), NOT the shared
   // defeatCityVillainCore — matching the WP's "fightVillain success site" scope, so
   // Silent Sniper's free defeat (which reuses the core) is deliberately out of scope.
-  if (G.deferredConditionalGrants !== undefined && G.deferredConditionalGrants.length > 0) {
+  // why (henchman exclusion): fightVillain defeats BOTH villains and henchmen, but the
+  // grant is "defeat a VILLAIN or Mastermind" — a henchman defeat must NOT satisfy it
+  // (a live over-fire: a Red Skull match had Diamond Form pay +3 recruit per Hand Ninja
+  // defeated). Gate on the fought card's revealed type. `!== 'henchman'` (not
+  // `=== 'villain'`) so legacy/untyped test states — whose villainDeckCardTypes may not
+  // register the fought card — still signal a villain defeat; in production fightVillain
+  // only ever fights a villain or a henchman, so "not a henchman" is exactly "a villain".
+  if (
+    G.deferredConditionalGrants !== undefined &&
+    G.deferredConditionalGrants.length > 0 &&
+    G.villainDeckCardTypes?.[cardId] !== 'henchman'
+  ) {
     G.villainOrMastermindDefeatedSinceResolve = true;
   }
 }
