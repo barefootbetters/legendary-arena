@@ -1257,12 +1257,22 @@ export default defineComponent({
 }
 
 /* why: WP-685 / D-24502 — the adversary band groups Mastermind + Scheme + shared
-   supply + KO into one fixed top strip (the physical mat's adversary row). */
+   supply + KO into one fixed top strip (the physical mat's adversary row).
+   why: nowrap (Jeff feedback) — keep all four clusters on ONE line so the shared
+   supply decks + KO fill the space to the RIGHT of the Scheme rather than wrapping
+   to a second row below it. Removing that wrapped row makes the board shorter, so
+   useScaleToFit (WP-688 / D-24505) scales the whole board a touch larger. The
+   SharedDecks flex-fills the gap between the Scheme and the KO pile. */
 .play-desktop__adversary-band {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
+}
+
+.play-desktop__adversary-band > .shared-decks {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* why: keep each tile/pile at its own height rather than stretching it to the
