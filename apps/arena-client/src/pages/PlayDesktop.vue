@@ -209,9 +209,15 @@ export default defineComponent({
     // *scaled* height so the page itself never scrolls.
     const fitContainerRef = ref<HTMLElement | null>(null);
     const fitStageRef = ref<HTMLElement | null>(null);
+    // why: Jeff feedback (D-24505 carve-out) — the pending-choice prompt block is
+    // measured so useScaleToFit can EXCLUDE its height from the fit: a response
+    // prompt that temporarily grows the board is reached by scrolling at the
+    // resting scale, not by shrinking (or clipping) the whole board.
+    const fitPromptsRef = ref<HTMLElement | null>(null);
     const { scale: fitScale } = useScaleToFit({
       containerRef: fitContainerRef,
       stageRef: fitStageRef,
+      promptsRef: fitPromptsRef,
     });
     // why: bind the computed scale as a CSS custom property so the stage's own
     // scoped CSS owns the `transform: scale()` string + `transform-origin`. The
@@ -588,6 +594,7 @@ export default defineComponent({
       opponents,
       fitContainerRef,
       fitStageRef,
+      fitPromptsRef,
       fitStageStyle,
       isLobbyPhase,
       isPlayPhase,
@@ -809,6 +816,15 @@ export default defineComponent({
                   </div>
                 </div>
               </section>
+          <!-- why: Jeff feedback (D-24505 scale carve-out) — the pending-choice
+               prompts are wrapped so useScaleToFit EXCLUDES their height from the
+               fit. A response prompt that temporarily grows the board is reached
+               by SCROLLING at the resting scale (the fit container is
+               overflow-y:auto), instead of the board shrinking to cram it in or
+               clipping it out of reach. The engine block-all guarantee means at
+               most one prompt renders at a time; DOM order (KO above hero, both
+               above TurnActionBar) is preserved by keeping the wrapper here. -->
+          <div class="play-desktop__prompts" ref="fitPromptsRef">
           <!-- why: D-24012 + WP-243 — the KO prompt renders ABOVE the hero-choice
                prompt (higher urgency — full board freeze) and both render above
                TurnActionBar in DOM order. Appears only for the choosing player
@@ -1044,6 +1060,7 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          </div><!-- /.play-desktop__prompts (Jeff feedback — excluded from the fit; scrolls) -->
           <TurnActionBar
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
@@ -1174,7 +1191,23 @@ export default defineComponent({
      the board has; useScaleToFit measures this box directly (no viewport math). */
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  /* why: Jeff feedback (D-24505 carve-out) — overflow-y:auto instead of hidden so a
+     pending-choice prompt that grows the board past the fitted box can be reached
+     by SCROLLING (the prompt height is excluded from the fit, so the board holds
+     its resting scale). In normal play the board is scaled to fit exactly, so no
+     scrollbar appears. overflow-x stays hidden — the board never scrolls sideways. */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* why: Jeff feedback — the pending-choice prompt block. Empty (no prompt) it is 0
+   height and invisible; its height is excluded from the scale-to-fit so an active
+   response prompt scrolls into view at the resting scale rather than shrinking the
+   board. Keep the prompts spaced as before (they were direct flex children). */
+.play-desktop__prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 /* why: WP-688 / D-24502 lock 1 — the authoring stage. The board is laid out at a
