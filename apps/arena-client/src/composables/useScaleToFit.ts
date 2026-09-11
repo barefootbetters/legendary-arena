@@ -50,6 +50,15 @@ interface ScaleToFitOptions {
   containerRef: Ref<HTMLElement | null>;
   /** The authored board stage whose natural size is measured, then scaled. */
   stageRef: Ref<HTMLElement | null>;
+  /**
+   * Optional: the pending-choice prompt block inside the stage (Jeff feedback,
+   * D-24505 scale carve-out). Its height is SUBTRACTED from the stage height
+   * before fitting, so a response-requiring prompt that temporarily grows the
+   * board is reached by SCROLLING at the resting scale — the board is not shrunk
+   * (or clipped) to cram the prompt on-screen. When absent or empty (no prompt
+   * active) it contributes 0, so normal play fits exactly as before.
+   */
+  promptsRef?: Ref<HTMLElement | null>;
 }
 
 interface ScaleToFitRefs {
@@ -112,7 +121,13 @@ export function useScaleToFit(options: ScaleToFitOptions): ScaleToFitRefs {
     // is position:absolute (out of the container's flow), so it never inflates
     // the container it is measured against.
     const naturalWidth = stage.offsetWidth;
-    const naturalHeight = stage.offsetHeight;
+    // why: subtract the pending-prompt block's height (Jeff feedback, D-24505) so
+    // the fit is computed against the RESTING board. A response prompt that grows
+    // the stage then overflows below the fitted box and is reached by scrolling
+    // (the fit container is overflow-y:auto) at the resting scale — the board is
+    // never shrunk or clipped to fit a prompt. 0 when no prompt is active.
+    const promptsHeight = options.promptsRef?.value?.offsetHeight ?? 0;
+    const naturalHeight = Math.max(1, stage.offsetHeight - promptsHeight);
     // why: the container is CSS-sized to the available play area (the flex gap
     // between header and footer), so its own client box IS the space the board
     // has — measure it directly, no window/header/footer arithmetic.
