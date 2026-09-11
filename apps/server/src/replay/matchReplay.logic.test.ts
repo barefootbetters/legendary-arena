@@ -179,6 +179,21 @@ const MOCK_SETUP_DATA = {
 // { type: 'MAKE_MOVE', payload: { type: <moveName>, args: [...], playerID } }.
 const MAKE_MOVE = 'MAKE_MOVE';
 
+// why: pin the RNG seed so every manufacture is DETERMINISTIC. boardgame.io's
+// Random plugin reads `game.seed`, and when it is undefined derives the seed
+// "from the current date / time" (plugin-random) — so an unseeded
+// InitializeGame shuffles a different villain deck on every run. Since D-24515
+// made each manufactured turn spend a mandatory villain reveal, an unlucky deck
+// order surfaced a Scheme Twist run that advanced the scheme to a loss before
+// the 12th turn, so the 12-turn manufacture reconciled to fewer turns and the
+// turnCount test flaked in CI (a doc-only PR run hit it). A fixed seed makes the
+// deck order — and thus the completed-turn count — reproducible. This value is
+// verified to complete all tested turn counts (0/1/2/5/7/12) without an early
+// game-over. Both the live run and the replay use the same seeded game, so the
+// faithfulness (hash-equality) tests stay faithful.
+const DETERMINISTIC_SEED = 'matchReplay-manufacture-seed-001';
+const SEEDED_GAME = { ...LegendaryGame, seed: DETERMINISTIC_SEED };
+
 /**
  * Manufacture a real short match: InitializeGame, then drive it through the
  * lobby ready-up to `play` via the SAME reducer, accumulating the emitted log.
@@ -190,11 +205,11 @@ function manufactureMatch(): {
   liveFinal: { G: unknown };
 } {
   const initialState = InitializeGame({
-    game: LegendaryGame,
+    game: SEEDED_GAME,
     numPlayers: 2,
     setupData: MOCK_SETUP_DATA,
   });
-  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  const reducer = CreateGameReducer({ game: SEEDED_GAME, isClient: false });
   const log: unknown[] = [];
 
   const dispatch = (
@@ -245,11 +260,11 @@ function manufactureMatchWithTurns(completedTurns: number): {
   liveFinal: { G: unknown };
 } {
   const initialState = InitializeGame({
-    game: LegendaryGame,
+    game: SEEDED_GAME,
     numPlayers: 2,
     setupData: MOCK_SETUP_DATA,
   });
-  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  const reducer = CreateGameReducer({ game: SEEDED_GAME, isClient: false });
   const log: unknown[] = [];
 
   let state: { G: unknown; ctx: unknown; deltalog?: unknown[] } = initialState;
@@ -368,7 +383,7 @@ describe('reduceMatchToFinalState (WP-334)', () => {
 
   test('an empty log returns the initial state unchanged (fold identity)', () => {
     const initialState = InitializeGame({
-      game: LegendaryGame,
+      game: SEEDED_GAME,
       numPlayers: 2,
       setupData: MOCK_SETUP_DATA,
     });
@@ -389,7 +404,7 @@ describe('reduceMatchToFinalState (WP-334)', () => {
 
   test('fails closed on a malformed log entry (no action)', () => {
     const initialState = InitializeGame({
-      game: LegendaryGame,
+      game: SEEDED_GAME,
       numPlayers: 2,
       setupData: MOCK_SETUP_DATA,
     });
