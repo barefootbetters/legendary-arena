@@ -214,19 +214,26 @@ export default defineComponent({
     // prompt that temporarily grows the board is reached by scrolling at the
     // resting scale, not by shrinking (or clipping) the whole board.
     const fitPromptsRef = ref<HTMLElement | null>(null);
-    const { scale: fitScale } = useScaleToFit({
+    const { scale: fitScale, scaledHeight: fitScaledHeight } = useScaleToFit({
       containerRef: fitContainerRef,
       stageRef: fitStageRef,
       promptsRef: fitPromptsRef,
     });
     // why: bind the computed scale as a CSS custom property so the stage's own
-    // scoped CSS owns the `transform: scale()` string + `transform-origin`. The
-    // container is flex-sized to the play area and the stage is absolutely
-    // positioned inside it, so no height needs reserving — the board simply
-    // scales to fill the box.
+    // scoped CSS owns the `transform: scale()` string + `transform-origin`.
     const fitStageStyle = computed<Record<string, string>>(() => ({
       '--play-fit-scale': String(fitScale.value),
     }));
+    // why: Jeff feedback (D-24505 carve-out) — reserve the FULL scaled board height
+    // as the fit container's min-height, so a response prompt that grows the board
+    // grows the PAGE and the whole page scrolls to reach the prompt (not an inner
+    // container scroll). In normal play the scaled board is ≤ the play area, so the
+    // reservation ≤ the flex height and the page does not scroll.
+    const fitContainerStyle = computed<Record<string, string>>(() =>
+      fitScaledHeight.value > 0
+        ? { 'min-height': `${fitScaledHeight.value}px` }
+        : {},
+    );
 
     // why: the engine's `cardDisplayData` lives on G and is NOT projected as
     // a top-level UIState field (pre-flight inspection of `uiState.types.ts`
@@ -596,6 +603,7 @@ export default defineComponent({
       fitStageRef,
       fitPromptsRef,
       fitStageStyle,
+      fitContainerStyle,
       isLobbyPhase,
       isPlayPhase,
       boardVisible,
@@ -669,7 +677,7 @@ export default defineComponent({
            stage's board-scoped --card-width-* / gutter override (in <style>)
            compacts the desktop board without touching the shared :root tokens or
            <PlayMobile>. Everything WP-685 shipped lives unchanged inside the stage. -->
-      <div class="play-desktop__fit" ref="fitContainerRef">
+      <div class="play-desktop__fit" ref="fitContainerRef" :style="fitContainerStyle">
         <div class="play-desktop__stage" ref="fitStageRef" :style="fitStageStyle">
       <TopHudBar
         :snapshot="snapshot"
@@ -1191,13 +1199,13 @@ export default defineComponent({
      the board has; useScaleToFit measures this box directly (no viewport math). */
   flex: 1 1 auto;
   min-height: 0;
-  /* why: Jeff feedback (D-24505 carve-out) — overflow-y:auto instead of hidden so a
-     pending-choice prompt that grows the board past the fitted box can be reached
-     by SCROLLING (the prompt height is excluded from the fit, so the board holds
-     its resting scale). In normal play the board is scaled to fit exactly, so no
-     scrollbar appears. overflow-x stays hidden — the board never scrolls sideways. */
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* why: Jeff feedback (D-24505 carve-out) — overflow:visible + the min-height
+     reservation (:style="fitContainerStyle" = the full scaled board height) means a
+     pending-choice prompt that grows the board grows the PAGE, so the whole page
+     scrolls to reach it (not an inner container scroll), at the resting scale. In
+     normal play the reserved height ≤ the play area, so the page does not scroll.
+     The board is width-fit, so it never overflows sideways. */
+  overflow: visible;
 }
 
 /* why: Jeff feedback — the pending-choice prompt block. Empty (no prompt) it is 0
