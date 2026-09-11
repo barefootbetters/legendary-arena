@@ -20,15 +20,55 @@ function recorder(): { calls: RecordedCall[]; submitMove: SubmitMove } {
 }
 
 describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw scaffold retired)', () => {
-  test('Reveal click emits revealVillainCard with empty payload at play.start', () => {
+  test('Reveal click emits revealVillainCard then auto-advances into main at play.start', () => {
+    // why: the reveal is the only start-stage action, so the client fires the
+    // engine's own two-move contract (revealVillainCard → advanceStage) in one
+    // click, landing the player in main. The engine stays untouched; this mirrors
+    // the autoplay bot's reveal step.
     const { calls, submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: { currentStage: 'start', submitMove },
     });
     void wrapper.find('[data-testid="play-action-reveal"]').trigger('click');
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2);
     assert.equal(calls[0]!.name, 'revealVillainCard');
     assert.deepEqual(calls[0]!.args, {});
+    assert.equal(calls[1]!.name, 'advanceStage');
+    assert.deepEqual(calls[1]!.args, {});
+  });
+
+  test('Reveal auto-advance is latched: a second click before the frame lands does not re-fire advanceStage', () => {
+    // why: without the latch, a fast double-click would advance start → main →
+    // cleanup and skip the main stage. currentStage stays 'start' here (no frame
+    // has flipped it), so the second click must be a no-op until the stage changes.
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove },
+    });
+    const reveal = wrapper.find('[data-testid="play-action-reveal"]');
+    void reveal.trigger('click');
+    void reveal.trigger('click');
+    assert.equal(calls.length, 2, 'only the first click emits the reveal + advance pair');
+    assert.equal(calls[0]!.name, 'revealVillainCard');
+    assert.equal(calls[1]!.name, 'advanceStage');
+  });
+
+  test('Reveal auto-advance latch resets when the stage changes, so the next turn reveals fresh', async () => {
+    // why: the latch clears on any currentStage change (the watch), so a new turn
+    // returning to 'start' re-arms a fresh reveal + advance.
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove },
+    });
+    void wrapper.find('[data-testid="play-action-reveal"]').trigger('click');
+    assert.equal(calls.length, 2);
+    // advance to main (post-reveal frame), then a fresh turn returns to start
+    await wrapper.setProps({ currentStage: 'main' });
+    await wrapper.setProps({ currentStage: 'start' });
+    void wrapper.find('[data-testid="play-action-reveal"]').trigger('click');
+    assert.equal(calls.length, 4, 'the next turn reveal fires a fresh reveal + advance pair');
+    assert.equal(calls[2]!.name, 'revealVillainCard');
+    assert.equal(calls[3]!.name, 'advanceStage');
   });
 
   test('Reveal drops DOM focus after the click so it does not look stuck-active', () => {

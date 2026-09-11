@@ -326,13 +326,56 @@ export default defineComponent({
       }
     }
 
+    // why: the reveal is the player's ONLY action at play.start, and the board
+    // layout always intended step 1 to flow straight into main
+    // (DESIGN-BOARD-LAYOUT.md §5.1 — "auto-advance into play.main after
+    // resolution"). The ENGINE keeps its two-move contract untouched:
+    // revealVillainCard never advances the stage, because the autoplay bot
+    // (autoplay.mjs) and the sim / PAR harness (ai.legalMoves.ts) issue their own
+    // advanceStage after revealing and would desync if the engine did it for them.
+    // So the auto-advance is CLIENT-ONLY — after the human reveals, the client
+    // fires the same advanceStage the bot does. A reveal that parks a pending
+    // choice for this player is refused by the engine's advanceStage block-all
+    // guards (a harmless no-op; the reveal frame still advanced _stateID, so the
+    // move-ack watchdog is satisfied and no resync fires), leaving the player on
+    // start to resolve the choice and then Pass priority manually.
+    const isAutoAdvancing = ref(false);
+
     function onReveal(event: Event): void {
+      blurAfterClick(event);
+      // why: latch against a fast double/triple-click firing advanceStage more
+      // than once before the post-reveal frame flips currentStage to 'main' —
+      // without it two quick clicks would advance start → main → cleanup and skip
+      // the main stage entirely. The latch clears on the next currentStage change
+      // (watch below), including the cleanup → start transition that opens the
+      // next turn.
+      if (isAutoAdvancing.value) {
+        return;
+      }
       // why: empty-object payload — revealVillainCard takes no arguments
       // by engine design (see villainDeck.reveal.ts). Pops a card from
       // the villain deck into the City; gated to play.start.
       props.submitMove('revealVillainCard', {});
-      blurAfterClick(event);
+      // why: D-10011 — advanceStage is the canonical start → main advance. Fired
+      // immediately after the reveal so the player lands in their main stage in one
+      // click (see the isAutoAdvancing block comment above).
+      props.submitMove('advanceStage', {});
+      isAutoAdvancing.value = true;
     }
+
+    // why: reset the reveal auto-advance latch on every currentStage change. The
+    // common start → main advance clears it (the reveal button is disabled at main
+    // regardless), and the cleanup → start transition that begins the next turn
+    // re-arms a fresh reveal. A reveal that parked a pending choice leaves the
+    // stage on 'start' (no change fires here), so the latch stays set and blocks a
+    // redundant re-reveal until the next turn — correct, since the forward action
+    // in that state is Pass priority, not another reveal.
+    watch(
+      () => props.currentStage,
+      () => {
+        isAutoAdvancing.value = false;
+      },
+    );
 
     function onPassPriority(event: Event): void {
       // why: D-10011 — Pass-priority fires advanceStage, the canonical
