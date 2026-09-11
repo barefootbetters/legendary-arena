@@ -3,6 +3,8 @@ import { defineComponent, type PropType } from 'vue';
 import type { UIState } from '@legendary-arena/game-engine';
 import SkinSelector from './SkinSelector.vue';
 import DangerMeter from './DangerMeter.vue';
+import EndGameControl from './EndGameControl.vue';
+import type { SubmitMove } from './uiMoveName.types';
 
 /**
  * Top HUD bar for the WP-129 board layout.
@@ -27,11 +29,31 @@ import DangerMeter from './DangerMeter.vue';
  */
 export default defineComponent({
   name: 'TopHudBar',
-  components: { SkinSelector, DangerMeter },
+  components: { SkinSelector, DangerMeter, EndGameControl },
   props: {
     snapshot: {
       type: Object as PropType<UIState>,
       required: true,
+    },
+    /**
+     * Whether it is the viewing player's turn. Gates the End Game control (only
+     * the active player's endMatchEarly applies). Defaults false so an
+     * audience / spectator mount never shows it.
+     */
+    isViewerTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    /**
+     * The prop-drilled move dispatcher. Optional: when omitted (e.g. a display-
+     * only test mount) the End Game control is not rendered. The pages always
+     * pass it so the ribbon carries the escape hatch during live play.
+     */
+    submitMove: {
+      type: Function as PropType<SubmitMove | undefined>,
+      required: false,
+      default: undefined,
     },
     /**
      * Total Mastermind tactics (e.g., 4 tactics remaining at match start —
@@ -150,6 +172,17 @@ export default defineComponent({
       <span data-testid="play-hud-turn">Turn {{ snapshot.game.turn }}</span>
       <span data-testid="play-hud-active">Active: {{ activePlayerLabel() }}</span>
       <span data-testid="play-hud-stage" class="top-hud-bar__stage">{{ snapshot.game.currentStage }}</span>
+      <!-- why (Jeff feedback): the "End Game for everyone" escape hatch lives in
+           the top ribbon beside the Mastermind, not under the three turn steps —
+           ending the match is a table-level concern, not a turn action. Rendered
+           only when submitMove is wired (live play) and gated to the viewer's turn
+           inside the control. Pushed to the far right of the Mastermind row. -->
+      <EndGameControl
+        v-if="submitMove"
+        class="top-hud-bar__end-game"
+        :is-viewer-turn="isViewerTurn"
+        :submit-move="submitMove"
+      />
     </div>
     <div class="top-hud-bar__row">
       <span data-testid="play-hud-twists">Twists: {{ twistProgressLabel() }}</span>
@@ -189,6 +222,15 @@ export default defineComponent({
 .top-hud-bar__setup {
   font-size: 0.85rem;
   text-transform: capitalize;
+}
+
+/* why (Jeff feedback): push the End Game escape hatch to the far right of the
+   Mastermind row so it reads as a table-level control, set apart from the
+   left-aligned setup data. text-transform:none keeps its label from inheriting
+   the row's capitalize. */
+.top-hud-bar__end-game {
+  margin-inline-start: auto;
+  text-transform: none;
 }
 
 .top-hud-bar__stage {

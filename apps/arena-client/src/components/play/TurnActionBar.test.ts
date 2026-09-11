@@ -406,86 +406,129 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     assert.equal(calls.length, 0, 'a disabled heal button emits no move');
   });
 
-  // WP-502 / D-24306 — the End Game control (two-click confirm → endMatchEarly).
+  // Jeff feedback — the End Game control moved out of TurnActionBar into the top
+  // ribbon (EndGameControl in TopHudBar); its tests live in EndGameControl.test.ts.
 
-  test('End Game requires a confirm: the first click emits nothing, only reveals the prompt', async () => {
-    const { calls, submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', isViewerTurn: true, submitMove },
-    });
-    await wrapper.find('[data-testid="play-action-end-game"]').trigger('click');
-    assert.equal(calls.length, 0, 'the first click must not end the match');
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-game-confirm"]').exists(),
-      true,
-      'the confirm button must appear after the first click',
-    );
-  });
-
-  test('End Game confirm emits endMatchEarly with an empty payload', async () => {
-    const { calls, submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', isViewerTurn: true, submitMove },
-    });
-    await wrapper.find('[data-testid="play-action-end-game"]').trigger('click');
-    await wrapper.find('[data-testid="play-action-end-game-confirm"]').trigger('click');
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0]!.name, 'endMatchEarly');
-    assert.deepEqual(calls[0]!.args, {});
-  });
-
-  test('End Game cancel dismisses the prompt without emitting', async () => {
-    const { calls, submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', isViewerTurn: true, submitMove },
-    });
-    await wrapper.find('[data-testid="play-action-end-game"]').trigger('click');
-    await wrapper.find('[data-testid="play-action-end-game-cancel"]').trigger('click');
-    assert.equal(calls.length, 0, 'cancel must not end the match');
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-game-confirm"]').exists(),
-      false,
-      'the confirm prompt must be dismissed',
-    );
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-game"]').exists(),
-      true,
-      'the End Game button returns after cancel',
-    );
-  });
-
-  test('End Game confirm re-arms to the safe state when the turn passes and returns', async () => {
-    const { calls, submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', isViewerTurn: true, submitMove },
-    });
-    await wrapper.find('[data-testid="play-action-end-game"]').trigger('click');
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-game-confirm"]').exists(),
-      true,
-      'precondition: the confirm is armed on the viewer’s turn',
-    );
-    // the turn passes to another player, then returns to the viewer
-    await wrapper.setProps({ isViewerTurn: false });
-    await wrapper.setProps({ isViewerTurn: true });
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-game-confirm"]').exists(),
-      false,
-      'the armed confirm must NOT survive to the next turn (no pre-armed single-click end)',
-    );
-    assert.equal(wrapper.find('[data-testid="play-action-end-game"]').exists(), true);
-    assert.equal(calls.length, 0);
-  });
-
-  test('End Game is hidden when it is not the viewer’s turn', () => {
+  test('End Game control no longer lives in the turn-action bar', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', isViewerTurn: false, submitMove },
+      props: { currentStage: 'main', isViewerTurn: true, submitMove },
     });
     assert.equal(
       wrapper.find('[data-testid="play-end-game"]').exists(),
       false,
-      'only the active player may end the match (boardgame.io gates the move)',
+      'End Game moved to the top ribbon (EndGameControl); the bar must not render it',
+    );
+  });
+
+  // Jeff feedback — the "Play Hand" convenience button (Step 2). Plays every
+  // playable (non-Wound) hand card in one click, greys out once the hand is
+  // emptied of playable cards, and gates Pass priority at main until then.
+
+  test('Play Hand emits one playCard per playable hand card, in order', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: ['iron-man-tech', 'shield-agent', 'spider-man-instinct'],
+        submitMove,
+      },
+    });
+    const playHand = wrapper.find('[data-testid="play-action-play-hand"]');
+    assert.equal(playHand.attributes('disabled'), undefined, 'enabled with playable cards in hand');
+    void playHand.trigger('click');
+    assert.equal(calls.length, 3);
+    assert.deepEqual(
+      calls.map((call) => call.name),
+      ['playCard', 'playCard', 'playCard'],
+    );
+    assert.deepEqual(
+      calls.map((call) => call.args),
+      [
+        { cardId: 'iron-man-tech' },
+        { cardId: 'shield-agent' },
+        { cardId: 'spider-man-instinct' },
+      ],
+    );
+  });
+
+  test('Play Hand skips Wounds (never submits a playCard for a Wound)', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        // why: WOUND_EXT_ID ('pile-wound') — a Wound carries no play value and cannot be played.
+        handCards: ['pile-wound', 'iron-man-tech', 'pile-wound'],
+        submitMove,
+      },
+    });
+    void wrapper.find('[data-testid="play-action-play-hand"]').trigger('click');
+    assert.equal(calls.length, 1, 'only the single non-Wound card is played');
+    assert.deepEqual(calls[0]!.args, { cardId: 'iron-man-tech' });
+  });
+
+  test('Play Hand is disabled with a tooltip once no playable cards remain (only Wounds / empty)', () => {
+    const { submitMove } = recorder();
+    for (const handCards of [[], ['pile-wound', 'pile-wound']]) {
+      const wrapper = mount(TurnActionBar, {
+        props: { currentStage: 'main', isViewerTurn: true, handCards, submitMove },
+      });
+      const playHand = wrapper.find('[data-testid="play-action-play-hand"]');
+      assert.equal(playHand.attributes('disabled'), '', 'greyed with nothing playable to play');
+      assert.match(playHand.attributes('title')!, /no more cards to play/i);
+    }
+  });
+
+  test('Play Hand is disabled with a stage tooltip outside the main step', () => {
+    const { submitMove } = recorder();
+    for (const stage of ['start', 'cleanup'] as const) {
+      const wrapper = mount(TurnActionBar, {
+        props: { currentStage: stage, isViewerTurn: true, handCards: ['iron-man-tech'], submitMove },
+      });
+      const playHand = wrapper.find('[data-testid="play-action-play-hand"]');
+      assert.equal(playHand.attributes('disabled'), '');
+      assert.match(playHand.attributes('title')!, /Only available during the Main/);
+    }
+  });
+
+  test('Pass priority is blocked at main while playable cards remain, then enabled once the hand is played', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: ['iron-man-tech'],
+        submitMove,
+      },
+    });
+    const blocked = wrapper.find('[data-testid="play-action-pass-priority"]');
+    assert.equal(blocked.attributes('disabled'), '', 'pass-priority disabled while a playable card remains');
+    assert.match(blocked.attributes('title')!, /Play your hand/i);
+    // the hand empties out (all cards played)
+    await wrapper.setProps({ handCards: [] });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
+      undefined,
+      'pass-priority enabled once no playable cards remain',
+    );
+  });
+
+  test('Pass priority is not blocked by the hand gate when only Wounds remain in hand', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: ['pile-wound', 'pile-wound'],
+        submitMove,
+      },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
+      undefined,
+      'a hand of only Wounds counts as nothing-left-to-play; pass priority is enabled',
     );
   });
 });
