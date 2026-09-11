@@ -46,7 +46,7 @@ import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
@@ -3162,10 +3162,14 @@ export const STEAL_ABILITIES_EXT_ID = 'core/rogue/steal-abilities' as CardExtId;
  * The Heroes the given player may copy for a Copy Powers play — the real Heroes in that
  * player's `inPlay` (deduplicated, in play order), excluding the Copy Powers ext_id.
  *
- * "Real Hero" = a card with a non-null printed `heroClass`. S.H.I.E.L.D. starters,
- * Sidekicks, and Wounds carry `heroClass: null` (no class to copy, no Hero ability to
- * re-fire), so a non-null class is the Hero discriminant (the same test
- * heroConditions.evaluate.ts uses for distinct-class scans).
+ * "Real Hero" = any played card that is NOT a Wound or Bystander. Copy Powers copies
+ * "another Hero you played this turn," and the gray S.H.I.E.L.D. starters / Officers and
+ * Sidekicks ARE Heroes — they merely carry `heroClass: null` (no class to copy and no
+ * ability to re-fire, but a real printed economy that a full-duplicate copy doubles, and
+ * a team that transfers). Requiring a non-null class silently dropped every gray Hero, so
+ * Copy Powers reported "found no other Hero to copy" on a turn of only S.H.I.E.L.D. basics
+ * (Jeff's bug report, 2026-09-11). The Wound/Bystander exclusion is the same "not a Hero"
+ * discriminant heroConditions.evaluate.ts uses (countDistinctHeroCostsInHandOrPlay).
  *
  * // why: shared by the park-time handler, the UIState projection, the resolve
  * validation, and the bot default (the round-trip rule) so the client can only submit a
@@ -3202,14 +3206,19 @@ export function buildCopyPowersTargets(
     if (baseCandidate === COPY_POWERS_EXT_ID) {
       continue;
     }
+    // why: Wounds and Bystanders are the only non-Heroes that can sit in inPlay, and they
+    // are not copyable. Every other played card — including a gray S.H.I.E.L.D. basic /
+    // Officer or a Sidekick (heroClass: null) — IS a Hero and IS a valid Copy Powers
+    // target. This is the "not a Hero" discriminant, NOT "has a class" (the earlier
+    // heroClass check wrongly excluded all gray Heroes).
+    if (baseCandidate === WOUND_EXT_ID || baseCandidate === BYSTANDER_EXT_ID) {
+      continue;
+    }
     if (seenBaseIds.has(baseCandidate)) {
       continue;
     }
-    const traitEntry = G.cardTraits[candidate];
-    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
-      seenBaseIds.add(baseCandidate);
-      targets.push(candidate);
-    }
+    seenBaseIds.add(baseCandidate);
+    targets.push(candidate);
   }
   return targets;
 }

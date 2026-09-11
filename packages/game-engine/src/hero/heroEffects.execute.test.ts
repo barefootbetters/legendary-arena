@@ -3493,8 +3493,10 @@ describe('executeHeroEffects steal-abilities recursion guard (WP-592 / D-24401)'
   // Copy Powers, if re-fired, auto-copies the in-play Steal Abilities card (the sole eligible
   // Rogue Hero via buildCopyPowersTargets) and re-fires it → back into heroEffectStealAbilities
   // → the COPY_POWERS_EXT_ID stack-overflow class. The guard excludes copy-powers from re-fire,
-  // so this terminates. cardTraits gives the in-play steal card a heroClass so the recursion
-  // vector is LIVE (buildCopyPowersTargets would return it) — the test is non-vacuous.
+  // so this terminates. The in-play steal card is a real Hero (not Copy Powers / Wound /
+  // Bystander), so buildCopyPowersTargets returns it — the recursion vector is LIVE and the
+  // test is non-vacuous. (Eligibility no longer depends on heroClass; the cardTraits row
+  // below is now incidental.)
   it('a discarded Copy Powers (Steal Abilities the only in-play Hero) is economy-only and does NOT recurse', () => {
     const gameState = makeTestState({
       inPlay: ['core/rogue/steal-abilities#0'],
