@@ -411,20 +411,28 @@ export default defineComponent({
       () => snapshot.value?.game.phase === 'play',
     );
 
-    // why: gameover transitions `phase` from 'play' → 'end' (or in some
-    // boardgame.io v0.50 codepaths nulls it out), which would collapse the
-    // shared board if we kept the outer template gated on `isPlayPhase`
-    // alone — leaving an autoplay viewer stranded on TopHudBar with no way
-    // to click the opponents' `Victory: N ▼` buttons to inspect final
-    // piles. `boardVisible` extends the EC-183 spectator-frame fix to the
-    // post-game frame: render the same shared board (mastermind, scheme,
-    // city, HQ, shared decks, KO, opponent panels) so the final state is
-    // inspectable. The personal `viewer !== null` gate inside still hides
-    // the "your" zone for spectator / autoplay frames; this gate only
-    // controls whether the board renders AT ALL.
+    // why (Jeff feedback): at game over the outcome/score panel is the primary
+    // view — the huge scoring breakdown, not the now-inert board. So the shared
+    // board is COLLAPSED by default at game over and revealed on demand via the
+    // "View final board" toggle (isBoardExpandedAtGameOver). This does NOT undo
+    // the EC-183 inspectability contract: the board is one click away, not gone,
+    // so a viewer who watched an autoplay match to completion can still open it
+    // and click the opponents' `Victory: N ▼` buttons to read the final piles.
+    // During the play phase the board always renders (never collapsed).
+    //
+    // (gameover transitions `phase` from 'play' → 'end' — or nulls it in some
+    // boardgame.io v0.50 codepaths — so the gate keys off isGameOver, not phase.)
+    const isBoardExpandedAtGameOver = ref<boolean>(false);
     const boardVisible = computed<boolean>(
-      () => isPlayPhase.value || isGameOver.value,
+      () =>
+        isPlayPhase.value ||
+        (isGameOver.value && isBoardExpandedAtGameOver.value),
     );
+
+    /** Flip the game-over board between collapsed (outcome-primary) and open. */
+    function toggleGameOverBoard(): void {
+      isBoardExpandedAtGameOver.value = !isBoardExpandedAtGameOver.value;
+    }
 
     // why: actions must be disabled when it's another player's turn —
     // otherwise clicks submit moves as the wrong player and boardgame.io
@@ -607,6 +615,8 @@ export default defineComponent({
       isLobbyPhase,
       isPlayPhase,
       boardVisible,
+      isBoardExpandedAtGameOver,
+      toggleGameOverBoard,
       isViewerTurn,
       notableEvent,
       dismissNotableEvent,
@@ -692,6 +702,20 @@ export default defineComponent({
         :competitive-score="competitiveScore"
         :show-guest-sign-in="showGuestSignIn"
       />
+      <!-- why (Jeff feedback): at game over the outcome panel above is the primary
+           view; the now-inert board is collapsed by default and revealed on demand.
+           The board stays one click away (EC-183 inspectability preserved) — this
+           button only controls whether it renders below the outcome summary. -->
+      <div v-if="isGameOver" class="play-desktop__board-toggle">
+        <button
+          type="button"
+          data-testid="play-gameover-board-toggle"
+          :aria-expanded="isBoardExpandedAtGameOver ? 'true' : 'false'"
+          @click="toggleGameOverBoard"
+        >
+          {{ isBoardExpandedAtGameOver ? 'Hide final board ▲' : 'View final board ▼' }}
+        </button>
+      </div>
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />
       <!-- why: the shared board renders for the whole play phase regardless of
            viewer. A spectator or rewound-autoplay frame is audience-filtered
@@ -1206,6 +1230,29 @@ export default defineComponent({
      normal play the reserved height ≤ the play area, so the page does not scroll.
      The board is width-fit, so it never overflows sideways. */
   overflow: visible;
+}
+
+/* why (Jeff feedback): the game-over "View final board" toggle. Centered under the
+   outcome summary; a quiet control since the outcome panel is the focus. */
+.play-desktop__board-toggle {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0;
+}
+
+.play-desktop__board-toggle button {
+  padding: 0.3rem 0.9rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--color-foreground, #999);
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.play-desktop__board-toggle button:hover {
+  background: rgba(128, 128, 128, 0.15);
 }
 
 /* why: Jeff feedback — the pending-choice prompt block. Empty (no prompt) it is 0
