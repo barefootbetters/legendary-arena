@@ -64,6 +64,14 @@ interface ScaleToFitOptions {
 interface ScaleToFitRefs {
   /** The clamped scale factor to apply as `transform: scale(scale)`. */
   scale: Ref<number>;
+  /**
+   * The scaled height of the FULL stage (including any active prompt), in px.
+   * The page reserves this as the fit container's `min-height` so the whole
+   * board — including a response prompt that grew it — participates in page flow
+   * and the PAGE scrolls to reach it (Jeff feedback, D-24505 carve-out), rather
+   * than the board shrinking or an inner container scrolling.
+   */
+  scaledHeight: Ref<number>;
   /** Recompute on demand (e.g. after a frame that changes the stage height). */
   recompute: () => void;
 }
@@ -104,6 +112,14 @@ export function computeFitScale(
  */
 export function useScaleToFit(options: ScaleToFitOptions): ScaleToFitRefs {
   const scale = ref<number>(1);
+  const scaledHeight = ref<number>(0);
+  // why: the REST available play-area height (container clientHeight when no
+  // prompt is active). The page reserves the scaled board via the container's
+  // `min-height` (so a prompt grows the page and it scrolls, D-24505 carve-out);
+  // that reservation grows the container's own clientHeight, so we must NOT feed
+  // it back into the fit. We cache the rest height (captured while unreserved)
+  // and fit against it whenever a prompt is inflating the board.
+  let restAvailableHeight = 0;
 
   function recompute(): void {
     const container = options.containerRef.value;
@@ -121,22 +137,34 @@ export function useScaleToFit(options: ScaleToFitOptions): ScaleToFitRefs {
     // is position:absolute (out of the container's flow), so it never inflates
     // the container it is measured against.
     const naturalWidth = stage.offsetWidth;
+    const fullHeight = stage.offsetHeight;
     // why: subtract the pending-prompt block's height (Jeff feedback, D-24505) so
     // the fit is computed against the RESTING board. A response prompt that grows
-    // the stage then overflows below the fitted box and is reached by scrolling
-    // (the fit container is overflow-y:auto) at the resting scale — the board is
-    // never shrunk or clipped to fit a prompt. 0 when no prompt is active.
+    // the stage is then reserved into page flow (below) and reached by scrolling
+    // the whole page at the resting scale — the board is never shrunk to fit it.
     const promptsHeight = options.promptsRef?.value?.offsetHeight ?? 0;
-    const naturalHeight = Math.max(1, stage.offsetHeight - promptsHeight);
-    // why: the container is CSS-sized to the available play area (the flex gap
-    // between header and footer), so its own client box IS the space the board
-    // has — measure it directly, no window/header/footer arithmetic.
-    scale.value = computeFitScale(
+    const naturalHeight = Math.max(1, fullHeight - promptsHeight);
+    // why: with no prompt the container is at its rest (play-area) size, so cache
+    // it AND fit against it; with a prompt the container has grown by the reserved
+    // min-height, so fit against the cached rest height (never the grown box).
+    let availableHeight: number;
+    if (promptsHeight <= 0) {
+      restAvailableHeight = container.clientHeight;
+      availableHeight = container.clientHeight;
+    } else {
+      availableHeight =
+        restAvailableHeight > 0 ? restAvailableHeight : container.clientHeight;
+    }
+    const nextScale = computeFitScale(
       naturalWidth,
       naturalHeight,
       container.clientWidth,
-      container.clientHeight,
+      availableHeight,
     );
+    scale.value = nextScale;
+    // why: the page reserves the FULL scaled board (incl. any prompt) as the fit
+    // container min-height, so the page grows and scrolls to the prompt.
+    scaledHeight.value = Math.round(fullHeight * nextScale);
   }
 
   let resizeObserver: ResizeObserver | null = null;
@@ -167,5 +195,5 @@ export function useScaleToFit(options: ScaleToFitOptions): ScaleToFitRefs {
     }
   });
 
-  return { scale, recompute };
+  return { scale, scaledHeight, recompute };
 }
