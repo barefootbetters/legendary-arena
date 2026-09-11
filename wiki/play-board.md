@@ -96,6 +96,25 @@ the engine and the projection pipeline:
 
 If board code starts doing any of these, the layer boundary is already broken.
 
+### Desktop layout & scaling (shipped)
+
+The zones below are projection *data*; how they are **arranged** on the desktop
+board is a separate `<PlayDesktop>` concern. Since WP-685 / WP-688 (D-24502 /
+D-24505) the desktop board is a **fixed-geometry spatial grid authored at
+1280×720 and scaled to fit** the viewport (`useScaleToFit`, a DOM-geometry
+composable): a main column (adversary band → City → H.Q. → cockpit) plus a
+**right rail** holding the opponent panels and the game log. The adversary band
+groups the Mastermind, Scheme, shared supply decks, and KO pile on **one row**;
+the hand and in-play are horizontally-scrolling wells bound to the full projected
+arrays. Normal play shows **no page scroll**; a pending-choice prompt that needs a
+response temporarily grows the board and the **whole page scrolls** to reach it,
+with the board holding its scale (the D-24505 carve-out). The full layout /
+scaling / scroll spec lives on the
+[Responsive Viewport Targets](responsive-viewport-targets.md) page; the
+authoritative wireframe is
+[`DESIGN-BOARD-LAYOUT.md`](../docs/ai/DESIGN-BOARD-LAYOUT.md). The `≤767px` mobile
+surface (`<PlayMobile>`, D-12909) is a separate composer and is unchanged.
+
 ### Board zones and their `UIState` source
 
 The **Authority** column records how the audience filter treats each
