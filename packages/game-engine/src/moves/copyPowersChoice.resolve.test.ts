@@ -36,7 +36,8 @@ import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 const COPY = COPY_POWERS_EXT_ID; // 'core/rogue/copy-powers'
 const GAMBIT = 'core/gambit/card-shark' as CardExtId; // a real Hero (has a heroClass)
 const WOLVERINE = 'core/wolverine/keen-senses' as CardExtId; // a real Hero (draws)
-const SHIELD_AGENT = 'starting-shield-agent' as CardExtId; // heroClass null (not a Hero)
+const SHIELD_AGENT = 'starting-shield-agent' as CardExtId; // gray Hero, heroClass null — copyable
+const WOUND = 'pile-wound' as CardExtId; // not a Hero — never copyable
 
 /**
  * Builds a minimal LegendaryGameState exercising only the fields Copy Powers reads:
@@ -88,12 +89,12 @@ describe('hasPendingCopyPowersChoice', () => {
 });
 
 describe('buildCopyPowersTargets (eligible-set builder)', () => {
-  it('returns the real in-play Heroes, excluding the copy-powers ext_id and non-Heroes', () => {
+  it('returns the real in-play Heroes (incl. gray S.H.I.E.L.D. basics), excluding the copy-powers ext_id', () => {
     const G = makeG({ inPlay0: [COPY, GAMBIT, SHIELD_AGENT, WOLVERINE] });
     assert.deepStrictEqual(
       buildCopyPowersTargets(G, '0'),
-      [GAMBIT, WOLVERINE],
-      'Copy Powers itself + the null-class S.H.I.E.L.D. Agent are excluded',
+      [GAMBIT, SHIELD_AGENT, WOLVERINE],
+      'Copy Powers itself is excluded; the gray S.H.I.E.L.D. Agent IS a copyable Hero',
     );
   });
 
@@ -102,8 +103,13 @@ describe('buildCopyPowersTargets (eligible-set builder)', () => {
     assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), [GAMBIT, WOLVERINE]);
   });
 
-  it('returns [] when only Copy Powers / non-Heroes were played', () => {
-    const G = makeG({ inPlay0: [COPY, SHIELD_AGENT] });
+  it('excludes Wounds/Bystanders (the only in-play non-Heroes)', () => {
+    const G = makeG({ inPlay0: [COPY, WOUND, GAMBIT] });
+    assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), [GAMBIT], 'the Wound is not a copyable Hero');
+  });
+
+  it('returns [] when only Copy Powers / Wounds were played', () => {
+    const G = makeG({ inPlay0: [COPY, WOUND] });
     assert.deepStrictEqual(buildCopyPowersTargets(G, '0'), []);
   });
 });
@@ -144,10 +150,30 @@ describe('heroEffectCopyPowers handler (via executeHeroEffects)', () => {
   };
 
   it('0 eligible → no-op: no pending parked, no class granted', () => {
-    const G = makeG({ inPlay0: [COPY, SHIELD_AGENT], heroAbilityHooks: [copyHook] });
+    const G = makeG({ inPlay0: [COPY, WOUND], heroAbilityHooks: [copyHook] });
     executeHeroEffects(G, ctx, '0', COPY);
     assert.equal(G.pendingCopyPowersChoices, undefined, 'no pending parked');
     assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted');
+  });
+
+  it('1 gray Hero eligible → auto-copies the S.H.I.E.L.D. basic: doubles economy, grants no class', () => {
+    // why: Jeff's bug — a turn of only S.H.I.E.L.D. basics must still give Copy Powers a
+    // target. A gray Hero has no ability to re-fire and no class to copy, but its printed
+    // economy is duplicated and its team (if any) transfers.
+    const G = makeG({
+      inPlay0: [COPY, SHIELD_AGENT],
+      heroAbilityHooks: [copyHook],
+      cardStats: { [SHIELD_AGENT]: { attack: 0, recruit: 1, cost: 0 } },
+      cardTraits: {
+        [COPY]: { heroClass: 'covert', team: null },
+        [SHIELD_AGENT]: { heroClass: null, team: 'shield' },
+      },
+    });
+    executeHeroEffects(G, ctx, '0', COPY);
+    assert.equal(G.pendingCopyPowersChoices, undefined, 'exactly 1 eligible auto-copies, no park');
+    assert.equal(G.turnEconomy.recruit, 1, 'the copied Agent’s +1 recruit is duplicated');
+    assert.equal(G.cardSizeChangingClasses, undefined, 'a gray Hero grants no copied class');
+    assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['shield'], 'Copy Powers gains the copied S.H.I.E.L.D. team');
   });
 
   it('1 eligible → auto-copy: grants the copied class, no pending parked', () => {
