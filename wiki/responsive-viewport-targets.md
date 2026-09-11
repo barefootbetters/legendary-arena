@@ -181,6 +181,24 @@ failure this page documents is **fixed**. (The D-24502 illustrative ladder of
 is denser, so the fit is height-bound first — the binding intent, "fit the floor
 and scale up, never rewrap", holds.)
 
+**Later refinements (2026-09-11, operator feedback).** Two follow-ups tightened
+the shipped board:
+
+- **Adversary band on one row.** The shared supply decks (Wounds / Horrors /
+  Bystanders / S.H.I.E.L.D. Officers / Sidekicks) + KO pile were wrapping to a
+  second row below the Mastermind/Scheme; the band is now `flex-wrap: nowrap`, so
+  they sit on one line to the **right of the Scheme**, filling that space. The
+  shorter board lets `useScaleToFit` scale it a touch larger.
+- **Full-page scroll to reach a response prompt (D-24505 carve-out).** Normal
+  play still shows **no page scroll**, but a pending-choice prompt that requires a
+  response temporarily grows the board. Rather than shrink the whole board to cram
+  the prompt on-screen (or clip it out of reach), `useScaleToFit` now **excludes
+  the prompt block's height** from the fit — so the board holds its resting scale —
+  and **reserves the full scaled height** as the fit container's `min-height`, so
+  the whole **page scrolls** to reach the prompt. Live-verified at 1280×720: no
+  prompt → no page scroll; a tall prompt → scale held + page scrolls to it; prompt
+  resolved → no-scroll restored.
+
 ![The SHIPPED `<PlayDesktop>` board captured at 1280×720 (the mid-turn fixture) — the real build, not a mock. The whole board sits within the viewport with no page scroll: a top HUD bar (Mastermind Doctor Octopus, Scheme Midtown Bank Robbery, Turn 3, Twists 2/8, Tactics 1/4, Skin: Classic); an adversary band (the Doctor Octopus Mastermind tile with Master Strikes 0, the Midtown Bank Robbery Scheme with Twists 2/8 and Resolved Twists 0, and the shared supply — Wounds 24, Horrors 0, Bystanders 8, S.H.I.E.L.D. Officers 22, Sidekicks 13, KO Pile 0); the City battle-line in the locked left-to-right order Escaped, Bridge, Streets (Vulture), Rooftops, Bank (Electro), Sewers (Shocker), Villain Deck 28, with occupied spaces keeping their place-names; the H.Q. shop (Dp Weapon X, Sm Hero For Hire, an empty slot, Dp Chimichangas, Sm Web Slinger, Hero Deck 42); the cockpit — Played This Turn (Web Slinger, Chimichangas), the Attack 4/4 · Recruit 3/3 economy, Your Victory Pile, and Your Deck 12 / Discard 3 — with Your Hand of five unplayed cards below; a slim right rail holding the opponent panel and the game log; and the turn-action bar (Step 1 / Step 2 Play-Recruit-Fight with Pass priority + Heal Wounds / Step 3) sitting cleanly at the BOTTOM of the cockpit, no longer overlapping the played/economy/victory zones — the WP-689 fix.](/responsive-viewport-targets/play-mat-1280x820.jpg "width=100%")
 
 *The shipped result at 1280×720 (WP-688 fit + WP-689 turn-bar fix). Unlike the Rev 1/2/4 images above — which are design **proposals** — this is a screenshot of the real build: the board fits the floor with no page scroll, and the turn-action bar sits at the bottom of the cockpit. At wider viewports the same layout scales up (~0.98× at 1920), never rewrapping.*
