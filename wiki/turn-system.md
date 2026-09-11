@@ -34,7 +34,7 @@ source:
   - ../docs/ai/work-packets/WP-007B-turn-loop-implementation.md
   - ../docs/ai/REFERENCE/00.2-data-requirements.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-05-07
+last-reviewed: 2026-09-10
 ---
 
 # Turn System
@@ -245,6 +245,37 @@ they can never drift from the canonical arrays.
   start-of-turn reveal reads your fresh hand. See
   [Card Effect System](card-effect-system.md) "Villain effects:
   parameterized descriptors" for the mechanic.
+- **The `start` stage takes *two* moves, not one — and the client must
+  not disguise the second.** `revealVillainCard` does **not** advance the
+  stage; it leaves `G.currentStage === 'start'` and sets
+  `G.villainRevealedThisTurn`. Leaving `start` for `main` is a *separate*
+  `advanceStage` move. This two-move contract is deliberate — the autoplay
+  bot ([`autoplay.mjs`](../apps/server/src/autoplay/autoplay.mjs) reveal
+  step) and the sim / PAR harness
+  ([`ai.legalMoves.ts`](../packages/game-engine/src/simulation/ai.legalMoves.ts))
+  both issue `revealVillainCard` then `advanceStage`, so the engine must
+  never auto-advance or their move logs would diverge. The **client**
+  consequence (the human's "Pass priority" button *is* that `advanceStage`)
+  bit once: `<TurnActionBar>` dimmed each inactive turn-step with a
+  whole-container `opacity`, which composited the step's **buttons** too — so
+  the always-legal "Pass priority" advance control (enabled at *every* stage
+  per D-10011) rendered faded-to-grey inside the inactive step-2 box while the
+  player sat on `start`, and the turn looked frozen. The fix (PR #2023): a
+  turn-step is de-emphasized by muting its *descriptive text* only, and
+  "grey" is reserved for genuinely `:disabled` buttons — an enabled control
+  never inherits a container's dim. The design-doc note that step 1 "auto-
+  advance[s] into `play.main`"
+  ([`DESIGN-BOARD-LAYOUT.md §5.1`](../docs/ai/DESIGN-BOARD-LAYOUT.md)) is now
+  honoured **client-side** (PR #2023): after the human reveals, `<TurnActionBar>`
+  fires the same `advanceStage` the bot does, so the reveal is one click and the
+  player lands in `main`. The **engine two-move contract is unchanged** — the bot
+  and harness still issue their own `advanceStage`, and the engine never
+  auto-advances. A reveal that parks a pending choice for the active player is a
+  safe no-op (the engine's `advanceStage` block-all guards refuse it; the reveal
+  frame already advanced `_stateID`, so the move-ack watchdog does not resync),
+  and the player resolves the choice and then Pass priority manually. A local
+  latch keyed on `currentStage` stops a fast double-click from advancing
+  `start → main → cleanup` and skipping `main`.
 
 ## Code Touchpoints
 
@@ -268,6 +299,7 @@ they can never drift from the canonical arrays.
 - WP-002: Four phase names scaffolded (`lobby` / `setup` / `play` / `end`); locked at the contract level
 - WP-007A: Turn-structure phase contracts formalized; `MATCH_PHASES`, `TURN_STAGES`, `MatchPhase`, `TurnStage` introduced as canonical arrays + unions
 - WP-007B: Turn-loop implementation; `getNextTurnStage`, `advanceTurnStage`, `// why:` discipline on `setPhase` / `endTurn` enforced
+- PR #2023 (2026-09-10): client turn-flow bug fix — `<TurnActionBar>` no longer suppresses the enabled "Pass priority" (`advanceStage`) control with a whole-step `opacity`, so leaving the `start` stage is legible; turn-action buttons also blur after firing so a consumed control stops reading as stuck-active. The same PR then wires the client-side auto-advance: revealing at `start` fires `advanceStage` (bot parity, double-click-latched) so the human lands in `main` in one click. Engine turn contract unchanged.
 
 ## References
 
