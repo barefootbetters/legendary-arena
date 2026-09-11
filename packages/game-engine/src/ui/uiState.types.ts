@@ -60,6 +60,15 @@ export interface UIState {
     // projects as false).
     hasActedThisTurn: boolean;
     hasHealedThisTurn: boolean;
+    // why: mirrors G.villainRevealedThisTurn so the client can gate the start-stage
+    // turn flow: the reveal button disables once the mandatory reveal is spent, and
+    // "Pass priority" (advanceStage) is blocked at the start stage until the reveal
+    // happens — matching the engine's advanceStage reveal-first guard (game.ts) so a
+    // premature Pass-priority shows a tooltip instead of a silent no-op. Public (like
+    // currentStage / hasActedThisTurn — whether the active player has revealed is
+    // observable, not secret; no per-player redaction). Always-present boolean (an
+    // undefined G flag projects as false).
+    villainRevealedThisTurn: boolean;
     // why: WP-409 / D-24221 — the per-turn count of hero effects that fired for the
     // most recent play, projected publicly (like currentStage: a played card is
     // face-up, the count is not secret; no per-player redaction). Always-present

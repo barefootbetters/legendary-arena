@@ -37,6 +37,7 @@ function snapshotFor(
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      villainRevealedThisTurn: false,
       lastPlayEffectsFired: 0,
     },
   } as unknown as UIState;

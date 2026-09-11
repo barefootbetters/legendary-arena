@@ -207,6 +207,18 @@ function advanceStage({ G, ctx, events }: MoveContext): void {
   // progress (turn-end included) until EVERY addressed seat has resolved. Only the addressed
   // seats' resolveSeatChoice move proceeds; every action move (this one included) returns.
   if (hasPendingSeatChoice(G)) { return; }
+  // why: D-24515 — the start-of-turn villain reveal is MANDATORY (tabletop Legendary — the
+  // active player plays the top of the Villain Deck before doing anything else).
+  // Advancing start→main before it would silently skip the reveal, a fairness hole:
+  // a player could dodge villains entering the City, Ambushes, Scheme Twists, and
+  // Master Strikes simply by advancing past their own reveal. Block the start→main
+  // advance until revealVillainCard has set villainRevealedThisTurn (it sets the
+  // flag unconditionally once the once-per-turn allowance is spent, even on an
+  // exhausted-deck no-op). The autoplay bot (autoplay.mjs) and the sim AI always
+  // reveal first — reveal outscores advance 400:10 in ai.competent — so this never
+  // no-ops their advance; ai.legalMoves mirrors this guard (advanceStage is not a
+  // legal start-stage move until the reveal is spent) so the bot never faults on it.
+  if (G.currentStage === 'start' && !G.villainRevealedThisTurn) { return; }
   // why: turn cannot end while a player-choice reveal is pending; at cleanup,
   // advanceTurnStage would otherwise call events.endTurn() and bypass the
   // endTurn-move guard (D-22002). The KO turn-end block is already covered by

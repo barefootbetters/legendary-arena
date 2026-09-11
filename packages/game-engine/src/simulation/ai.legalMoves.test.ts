@@ -328,6 +328,22 @@ describe('getLegalMoves — once-per-turn reveal gate (WP-266)', () => {
     // the bot can progress to main after its single start-stage reveal.
     assert.equal(names.includes('advanceStage'), true, 'advanceStage remains available');
   });
+
+  test('does NOT offer advanceStage at the start stage before the reveal is spent (mirrors the reveal-first move guard)', () => {
+    // why: game.ts advanceStage returns a no-op while currentStage==='start' &&
+    // !villainRevealedThisTurn (the mandatory-reveal fairness guard). Listing
+    // advanceStage there would let the policy pick a guaranteed no-op and fault the
+    // bot (getLegalMoves↔move-guard divergence). revealVillainCard is the only
+    // lifecycle move offered until the reveal is spent.
+    const gameState = makeG({ currentStage: 'start', villainRevealedThisTurn: false });
+    const names = getLegalMoves(gameState, CONTEXT).map((m) => m.name);
+    assert.equal(
+      names.includes('advanceStage'),
+      false,
+      'advanceStage is withheld at start until the villain is revealed',
+    );
+    assert.equal(names.includes('revealVillainCard'), true, 'reveal is the offered start action');
+  });
 });
 
 describe('getLegalMoves — pending put-bottom-HQ short-circuits (WP-427 / D-24248)', () => {

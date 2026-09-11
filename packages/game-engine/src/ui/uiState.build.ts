@@ -579,6 +579,11 @@ export function buildUIState(
     // drive the client Heal-Wounds affordance gating (D-24181).
     hasActedThisTurn: gameState.hasActedThisTurn ?? false,
     hasHealedThisTurn: gameState.hasHealedThisTurn ?? false,
+    // why: coerce the optional per-turn reveal flag to a definite boolean
+    // projection (undefined = reveal not yet spent = false). Gates the client's
+    // start-stage flow (reveal-disabled-once-spent; Pass-priority-blocked-until-
+    // revealed) to mirror the engine advanceStage reveal-first guard.
+    villainRevealedThisTurn: gameState.villainRevealedThisTurn ?? false,
     // why: WP-409 — coerce the optional per-turn hero-effect-fired count to a
     // definite projection (undefined = no play yet this turn = 0).
     lastPlayEffectsFired: gameState.lastPlayEffectsFired ?? 0,

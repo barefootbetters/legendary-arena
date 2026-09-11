@@ -114,6 +114,21 @@ describe('buildUIState', () => {
     assert.equal(actedResult.game.hasHealedThisTurn, true);
   });
 
+  it('game.villainRevealedThisTurn mirrors G, undefined projecting as false', () => {
+    // why: the per-turn reveal flag projects as a definite boolean so the client can
+    // gate the start-stage flow (reveal-disabled-once-spent; Pass-priority-blocked-
+    // until-revealed) to match the engine advanceStage reveal-first guard. An absent
+    // G flag projects as false; a set flag projects verbatim.
+    const unsetState = createTestGameState();
+    const unsetResult = buildUIState(unsetState, mockCtx);
+    assert.equal(unsetResult.game.villainRevealedThisTurn, false);
+
+    const revealedState = createTestGameState();
+    revealedState.villainRevealedThisTurn = true;
+    const revealedResult = buildUIState(revealedState, mockCtx);
+    assert.equal(revealedResult.game.villainRevealedThisTurn, true);
+  });
+
   it('game.lastPlayEffectsFired mirrors G, undefined projecting as 0 (WP-409)', () => {
     // why: WP-409 / D-24221 — the per-turn count of hero effects that fired for the
     // most recent play projects publicly. An absent G field (optional, undefined)

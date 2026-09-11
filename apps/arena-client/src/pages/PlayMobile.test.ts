@@ -20,6 +20,7 @@ function snapshot(): UIState {
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      villainRevealedThisTurn: false,
       lastPlayEffectsFired: 0,
     },
     players: [

@@ -6,6 +6,7 @@
     "currentStage": "cleanup",
     "hasActedThisTurn": false,
     "hasHealedThisTurn": false,
+    "villainRevealedThisTurn": true,
     "lastPlayEffectsFired": 0
   },
   "players": [
