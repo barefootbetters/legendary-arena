@@ -237,6 +237,13 @@ export function useTurnActions(
   // True while a Magneto Electromagnetic Bubble X-Men pick is pending; blocks End Turn / Pass
   // Priority at ANY stage (the engine's full block-all guard set freezes the board). Mandatory.
   hasPendingElectromagneticBubbleChoice: boolean = false,
+  // why: appended LAST (after hasPendingElectromagneticBubbleChoice) so existing positional
+  // callers stay valid without edits; degrades gracefully (reveal never marked spent, start
+  // advance never gated) when omitted. Mirrors UIState.game.villainRevealedThisTurn — whether
+  // the active player has spent the mandatory start-of-turn reveal. Gates canRevealVillain
+  // (disabled once spent) and canPassPriority (start→main blocked until the reveal, matching
+  // the engine advanceStage reveal-first guard in game.ts).
+  hasRevealedVillain: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -253,9 +260,17 @@ export function useTurnActions(
     activeStep: activeStepFor(currentStage),
     canRevealVillain: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
-      return currentStage === 'start'
-        ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'start') };
+      if (currentStage !== 'start') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'start') };
+      }
+      // why: the reveal is once per turn (engine villainRevealedThisTurn guard,
+      // villainDeck.reveal.ts). Once spent, disable the button with a tooltip so it
+      // stops reading as the live action and cannot be re-clicked — the forward
+      // action is then Pass priority (or the auto-advance already fired).
+      if (hasRevealedVillain) {
+        return { allowed: false, reason: 'You have already revealed the villain this turn.' };
+      }
+      return ALLOWED;
     },
     canPlayCard: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
@@ -519,6 +534,20 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Resolve the revealed card choice before ending your turn.',
+        };
+      }
+      // why: the start-of-turn villain reveal is mandatory — the engine's advanceStage
+      // blocks start→main until villainRevealedThisTurn (game.ts reveal-first guard).
+      // Surface that as a tooltip instead of a silent no-op so a premature Pass-priority
+      // at the reveal step explains itself rather than looking broken. Advancing is
+      // otherwise allowed at every stage (D-10011); at start, revealing is the way
+      // forward (and it auto-advances). Placed LAST so a genuine board-frozen pending
+      // choice (the guards above) takes precedence — though start+unrevealed+pending is
+      // not a reachable state (the reveal that could park a choice also sets the flag).
+      if (currentStage === 'start' && !hasRevealedVillain) {
+        return {
+          allowed: false,
+          reason: 'Reveal the villain to begin your turn — it advances you to Play automatically.',
         };
       }
       return ALLOWED;

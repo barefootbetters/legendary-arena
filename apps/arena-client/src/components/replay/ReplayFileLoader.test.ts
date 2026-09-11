@@ -29,6 +29,7 @@ function buildValidReplayBlob(): string {
           currentStage: 'start',
           hasActedThisTurn: false,
           hasHealedThisTurn: false,
+          villainRevealedThisTurn: false,
         },
         players: [],
         city: { spaces: [null, null, null, null, null] },

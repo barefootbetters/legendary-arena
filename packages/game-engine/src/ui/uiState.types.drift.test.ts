@@ -828,12 +828,15 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
-  it('UIState.game retains phase/turn/activePlayerId/currentStage + hasActedThisTurn/hasHealedThisTurn AND adds lastPlayEffectsFired (WP-409)', () => {
+  it('UIState.game retains phase/turn/activePlayerId/currentStage + hasActedThisTurn/hasHealedThisTurn/lastPlayEffectsFired AND adds villainRevealedThisTurn', () => {
     // why: WP-380 — additive extension of the inline game shape; hasActedThisTurn /
     // hasHealedThisTurn are the WP-379 per-turn flags projected as public booleans so
     // the client can gate the Heal-Wounds affordance (D-24181).
     // why: WP-409 / D-24221 — lastPlayEffectsFired is the public per-turn count of
     // hero effects that fired for the most recent play (the future combo-cue signal).
+    // why: villainRevealedThisTurn mirrors the G per-turn reveal flag so the client
+    // can gate the start-stage flow (reveal-disabled-once-spent; Pass-priority-blocked-
+    // until-revealed) to match the engine advanceStage reveal-first guard (game.ts).
     // This pin fails if a field is added to the type but not the builder (or vice versa).
     const fixture: UIState['game'] = {
       phase: 'play',
@@ -842,6 +845,7 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      villainRevealedThisTurn: false,
       lastPlayEffectsFired: 0,
     };
 
@@ -853,6 +857,7 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
       'lastPlayEffectsFired',
       'phase',
       'turn',
+      'villainRevealedThisTurn',
     ]);
   });
 

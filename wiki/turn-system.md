@@ -276,6 +276,24 @@ they can never drift from the canonical arrays.
   and the player resolves the choice and then Pass priority manually. A local
   latch keyed on `currentStage` stops a fast double-click from advancing
   `start → main → cleanup` and skipping `main`.
+- **The reveal is mandatory — `advanceStage` enforces it (D-24515).** Making the
+  "Pass priority" button legible (above) exposed that the *engine* had never
+  enforced the reveal: `advanceStage` was allowed at every stage (D-10011), so a
+  player could advance `start → main` **without revealing** and dodge villains
+  entering the City, Ambushes, Scheme Twists, and Master Strikes — a fairness hole,
+  not just a UX one. So `advanceStage` now returns a no-op while
+  `currentStage === 'start' && !villainRevealedThisTurn`
+  ([`game.ts`](../packages/game-engine/src/game.ts)), and
+  [`ai.legalMoves.ts`](../packages/game-engine/src/simulation/ai.legalMoves.ts)
+  withholds `advanceStage` at `start`-before-reveal in **lockstep** so the bot never
+  picks a guaranteed no-op and faults. This is **PAR-neutral**: `ai.competent` scores
+  `revealVillainCard` (400) far above `advanceStage` (10), so the AI always revealed
+  first anyway — no sim selection changes, no hash re-pin (the full engine suite is
+  green). Client-side, `UIState.game.villainRevealedThisTurn` is projected so
+  `<TurnActionBar>` shows a tooltip — "Reveal the villain to begin your turn" — instead
+  of a silent no-op, and disables the Reveal button once the reveal is spent. The
+  two-move contract still holds: the engine never auto-advances; it only *blocks*
+  advancing before the reveal.
 
 ## Code Touchpoints
 
@@ -300,6 +318,7 @@ they can never drift from the canonical arrays.
 - WP-007A: Turn-structure phase contracts formalized; `MATCH_PHASES`, `TURN_STAGES`, `MatchPhase`, `TurnStage` introduced as canonical arrays + unions
 - WP-007B: Turn-loop implementation; `getNextTurnStage`, `advanceTurnStage`, `// why:` discipline on `setPhase` / `endTurn` enforced
 - PR #2023 (2026-09-10): client turn-flow bug fix — `<TurnActionBar>` no longer suppresses the enabled "Pass priority" (`advanceStage`) control with a whole-step `opacity`, so leaving the `start` stage is legible; turn-action buttons also blur after firing so a consumed control stops reading as stuck-active. The same PR then wires the client-side auto-advance: revealing at `start` fires `advanceStage` (bot parity, double-click-latched) so the human lands in `main` in one click. Engine turn contract unchanged.
+- D-24515 (2026-09-10): the reveal-first fairness guard — `advanceStage` now enforces the mandatory start-of-turn reveal (no-op at `start` until `villainRevealedThisTurn`), closing the skip hole that PR #2023's un-dim exposed. `ai.legalMoves` in lockstep (PAR-neutral); `UIState.game.villainRevealedThisTurn` projected so the client gates Reveal (disabled once spent) and Pass priority (blocked at `start` until revealed) with tooltips instead of silent no-ops.
 
 ## References
 

@@ -723,4 +723,53 @@ describe('LegendaryGame', () => {
       'the framework must set ctx.gameover to the evaluateEndgame result once the top-level endIf fires — the wiring whose absence was the bug',
     );
   });
+
+  it('advanceStage cannot skip the mandatory start-of-turn villain reveal (fairness guard)', () => {
+    // why: the villain reveal is the mandatory first action of a turn; advancing
+    // start→main before it would let a player dodge villains entering the City,
+    // Ambushes, Scheme Twists, and Master Strikes. This drives a REAL match into
+    // the play phase, then asserts advanceStage no-ops at start-before-reveal and
+    // advances only once villainRevealedThisTurn is set. The flag is set directly
+    // (rather than via revealVillainCard) so the guard is tested independently of
+    // whatever card the mock villain deck happens to reveal.
+    const setupData: MatchConfiguration = createMockMatchConfiguration();
+    const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData });
+    const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+    const makeMove = (
+      state: unknown,
+      moveName: string,
+      args: unknown[],
+      playerID: string,
+    ): { G: unknown; ctx: { currentPlayer: unknown } } =>
+      reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+
+    let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+    state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+    state = makeMove(state, 'startMatchIfReady', [], '0');
+
+    const activePlayer = String(state.ctx.currentPlayer);
+    const startG = state.G as { currentStage: string; villainRevealedThisTurn: boolean };
+    assert.equal(startG.currentStage, 'start', 'a fresh turn begins at the start stage');
+    assert.equal(startG.villainRevealedThisTurn, false, 'the reveal allowance is unspent at turn start');
+
+    // Before the reveal: advanceStage is a no-op — the stage must not leave 'start'.
+    const blocked = makeMove(state, 'advanceStage', [], activePlayer);
+    assert.equal(
+      (blocked.G as { currentStage: string }).currentStage,
+      'start',
+      'advanceStage must NOT advance start→main before the villain is revealed',
+    );
+
+    // After the reveal allowance is spent: advanceStage advances start→main.
+    const revealedState = {
+      ...state,
+      G: { ...(state.G as Record<string, unknown>), villainRevealedThisTurn: true },
+    };
+    const advanced = makeMove(revealedState, 'advanceStage', [], activePlayer);
+    assert.equal(
+      (advanced.G as { currentStage: string }).currentStage,
+      'main',
+      'advanceStage advances start→main once villainRevealedThisTurn is set',
+    );
+  });
 });

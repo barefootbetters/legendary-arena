@@ -125,9 +125,9 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     assert.deepEqual(calls[0]!.args, {});
   });
 
-  test('Pass-priority is enabled at every stage (D-10011 stage-advance vocabulary)', () => {
+  test('Pass-priority is enabled at main and cleanup (D-10011 stage-advance vocabulary)', () => {
     const { submitMove } = recorder();
-    for (const stage of ['start', 'main', 'cleanup'] as const) {
+    for (const stage of ['main', 'cleanup'] as const) {
       const wrapper = mount(TurnActionBar, {
         props: { currentStage: stage, submitMove },
       });
@@ -137,6 +137,42 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
         `pass-priority should be enabled at stage '${stage}'`,
       );
     }
+  });
+
+  test('Pass-priority is blocked at start until the villain is revealed, then enabled (reveal-first guard)', () => {
+    // why: mirrors the engine advanceStage reveal-first guard — advancing start→main
+    // before the mandatory reveal would skip it, so the button is a tooltip, not a
+    // silent no-op. Once hasRevealedVillain is true (e.g. a reveal that parked a
+    // pending choice), Pass priority becomes the manual advance.
+    const { submitMove } = recorder();
+    const beforeReveal = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove, hasRevealedVillain: false },
+    });
+    const blocked = beforeReveal.find('[data-testid="play-action-pass-priority"]');
+    assert.equal(blocked.attributes('disabled'), '', 'pass-priority disabled at start before reveal');
+    assert.match(blocked.attributes('title')!, /Reveal the villain/);
+
+    const afterReveal = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove, hasRevealedVillain: true },
+    });
+    assert.equal(
+      afterReveal.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
+      undefined,
+      'pass-priority enabled at start once the villain is revealed',
+    );
+  });
+
+  test('Reveal disables once the villain is revealed this turn (stops reading as the live action)', () => {
+    // why: the reveal is once per turn (engine villainRevealedThisTurn guard); once
+    // spent the button disables with a tooltip so it cannot be re-clicked and no longer
+    // looks like the pending action.
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove, hasRevealedVillain: true },
+    });
+    const reveal = wrapper.find('[data-testid="play-action-reveal"]');
+    assert.equal(reveal.attributes('disabled'), '', 'reveal disabled once spent');
+    assert.match(reveal.attributes('title')!, /already revealed the villain/);
   });
 
   test('End Turn click emits endTurn with empty payload at play.cleanup', () => {

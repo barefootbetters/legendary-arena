@@ -834,8 +834,15 @@ export function getLegalMoves(
   // drawCards would only produce a guarded no-op (G.hasDrawnThisTurn is already
   // true after onBegin) and waste a bot move choice.
 
-  // 6. advanceStage — one entry if not at cleanup.
-  if (stage !== 'cleanup') {
+  // 6. advanceStage — 'main' always; 'start' only once the mandatory reveal is
+  //    spent (villainRevealedThisTurn). This mirrors the game.ts advanceStage
+  //    reveal-first guard (D-24515): advancing start→main before the reveal is a guaranteed
+  //    no-op there, so listing it would let the policy pick a move that never
+  //    advances and faults the bot (getLegalMoves↔move-guard divergence). At
+  //    start-before-reveal the only legal lifecycle move is revealVillainCard
+  //    (enumerated above); the AI reveals first regardless (reveal 400 > advance
+  //    10), so tightening this list changes no selection — it is PAR-neutral.
+  if (stage === 'main' || (stage === 'start' && gameState.villainRevealedThisTurn)) {
     legalMoves.push({ name: 'advanceStage', args: {} });
   }
 

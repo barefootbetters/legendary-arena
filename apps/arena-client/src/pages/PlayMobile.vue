@@ -835,6 +835,7 @@ export default defineComponent({
             :has-wound-in-hand="hasWoundInHand"
             :has-acted-this-turn="snapshot.game.hasActedThisTurn"
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
+            :has-revealed-villain="snapshot.game.villainRevealedThisTurn"
             :submit-move="submitMove"
           />
         </template>

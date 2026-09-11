@@ -34,10 +34,17 @@ describe('useTurnActions (WP-129)', () => {
     assert.equal(cleanup.canFightMastermind().allowed, false);
   });
 
-  test('canPassPriority allowed at every stage (D-10011 advanceStage canonical)', () => {
-    assert.equal(useTurnActions('start').canPassPriority().allowed, true);
+  test('canPassPriority allowed at main and cleanup; blocked at start until the villain is revealed', () => {
+    // why: advanceStage is the canonical stage-advance (D-10011), allowed at main and
+    // cleanup. At start it is blocked until the mandatory reveal (villainRevealedThisTurn),
+    // mirroring the engine advanceStage reveal-first guard, so it never silently skips the
+    // reveal. The revealed→start-allowed case (hasRevealedVillain=true) is covered in
+    // TurnActionBar.test via the prop, since the flag is the last positional param here.
     assert.equal(useTurnActions('main').canPassPriority().allowed, true);
     assert.equal(useTurnActions('cleanup').canPassPriority().allowed, true);
+    const startGate = useTurnActions('start').canPassPriority();
+    assert.equal(startGate.allowed, false, 'pass-priority blocked at start before the reveal');
+    assert.match(startGate.reason!, /Reveal the villain/);
   });
 
   test('canEndTurn allowed only in cleanup', () => {
@@ -87,10 +94,10 @@ describe('useTurnActions — hasPendingChoice gating (WP-222 / EC-254 / D-22203)
     assert.equal(actions.canPassPriority().allowed, true);
   });
 
-  test('canPassPriority allowed at start and main even when hasPendingChoice is true', () => {
-    // why: D-22203 — only cleanup is blocked; start and main must remain
-    // passable so the player can advance through stages to reach the prompt.
-    assert.equal(useTurnActions('start', true, true).canPassPriority().allowed, true);
+  test('canPassPriority: hasPendingChoice only blocks cleanup, so main stays passable', () => {
+    // why: D-22203 — hasPendingChoice blocks pass-priority ONLY at cleanup; main must
+    // stay passable so the player can advance to reach the prompt. Start has its own
+    // reveal-first gate (a separate concern, covered above), so it is not asserted here.
     assert.equal(useTurnActions('main', true, true).canPassPriority().allowed, true);
   });
 });

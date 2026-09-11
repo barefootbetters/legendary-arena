@@ -227,9 +227,11 @@ function manufactureMatch(): {
 /**
  * Manufacture a real match with a chosen number of COMPLETED play turns, ending
  * mid-turn (a logged move in the final turn, no trailing endTurn) — the shape a
- * real match has when `endIf` fires on a move. Each completed turn is three
- * `advanceStage` moves (start → main → cleanup → the third fires endTurn), then
- * one more `advanceStage` opens the in-progress final turn. Drives the SAME
+ * real match has when `endIf` fires on a move. Each completed turn is a mandatory
+ * `revealVillainCard` (D-24515 — advanceStage no-ops at 'start' until the reveal is
+ * spent) followed by three `advanceStage` moves (start → main → cleanup → the third
+ * fires endTurn), then a reveal + one more `advanceStage` opens the in-progress final
+ * turn. Drives the SAME
  * reducer, accumulating the emitted log; the per-entry live `turn` stamps are
  * what `reduceMatchToFinalState` counts as `turnCount` (WP-336 / D-24123).
  *
@@ -270,10 +272,16 @@ function manufactureMatchWithTurns(completedTurns: number): {
   dispatch('setPlayerReady', [{ ready: true }], '1');
   dispatch('startMatchIfReady', [], '0');
   for (let turn = 0; turn < completedTurns; turn += 1) {
+    // why: D-24515 — the start-of-turn villain reveal is mandatory; advanceStage is a
+    // no-op at 'start' until villainRevealedThisTurn is set, so each turn must reveal
+    // before it can leave the start stage (this mirrors real play — the reveal draws
+    // the top villain-deck card into the City, then the three advances cycle the stages).
+    dispatch('revealVillainCard', [], currentPlayer()); // start: mandatory reveal
     dispatch('advanceStage', [], currentPlayer()); // start → main
     dispatch('advanceStage', [], currentPlayer()); // main → cleanup
     dispatch('advanceStage', [], currentPlayer()); // cleanup → endTurn (turn++)
   }
+  dispatch('revealVillainCard', [], currentPlayer()); // final turn start: mandatory reveal (D-24515)
   dispatch('advanceStage', [], currentPlayer()); // open the in-progress final turn
 
   return { initialState, log, liveFinal: state };

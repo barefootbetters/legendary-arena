@@ -42193,4 +42193,42 @@ precedents), WP-497/D-24300 (`handSizeOverrides` next-hand pattern). **Enables:*
 future "add a specific card to the next hand" effect (reuses `G.deferredHandInjections`).
 **Reserved by:** WP-695 draft (NUMBER-LEDGER).
 
+---
+
+### D-24515 — advanceStage enforces the mandatory start-of-turn villain reveal (reveal-first guard) (Active 2026-09-10 — bug fix, no WP)
+
+**Decision.** The `advanceStage` move (`game.ts`) returns a no-op while
+`currentStage === 'start' && !G.villainRevealedThisTurn`. The start-of-turn villain
+reveal is mandatory in Legendary (the active player plays the top of the Villain Deck
+before doing anything else); advancing `start → main` before it silently skips the
+reveal, letting a player dodge villains entering the City, Ambushes, Scheme Twists, and
+Master Strikes. This is a fairness invariant, not merely UX (Vision NG-1 / layer
+integrity — no free game-state advantage from a UI gap).
+
+**Why it surfaced.** The hole always existed — `advanceStage` was allowed at every stage
+(D-10011) — but the client's `opacity: 0.4` on the inactive turn-step hid the always-legal
+"Pass priority" button at `start`, so nobody clicked it. PR #2023 (this branch) un-dimmed
+that button to fix a "turn looks stuck" bug, which made the skip discoverable. The un-dim
+was correct; this decision closes the underlying engine hole it exposed.
+
+**Lockstep + PAR-neutrality.** `ai.legalMoves.ts` withholds `advanceStage` at
+`start`-before-reveal in lockstep with the move guard, so the sim/bot never picks a
+guaranteed no-op and faults (reference_bot_legalmoves_moveguard_divergence). This changes
+**no** sim selection — `ai.competent` scores `revealVillainCard` (400) far above
+`advanceStage` (10), so the AI always reveals first and never took the skip branch.
+Verified empirically: the full 3489-test engine suite (sim/PAR/replay included) is green,
+no hash re-pin.
+
+**Client.** `UIState.game.villainRevealedThisTurn` is projected (the standard 5-step
+Board-Visible Field Rule; `villainRevealedThisTurn` already exists in hashed `G`, so the
+projection adds no G field and no hash surface). `<TurnActionBar>` gates the Reveal button
+(disabled once spent, tooltip) and "Pass priority" (blocked at `start` until revealed — a
+tooltip, not a silent no-op, honoring WP-100's never-silently-no-op pattern). The client
+also auto-fires `advanceStage` after the reveal (PR #2023) so the common path is one click.
+
+**Status:** Active. **Builds on:** D-10011 (advanceStage canonical stage-advance),
+WP-212 (villainRevealedThisTurn once-per-turn reveal guard), WP-236 (auto-draw precedent
+for choiceless start actions), the Board-Visible Field Rule (UIState projection contract).
+**Reserved by:** NUMBER-LEDGER D-24515.
+
 Protect this file.

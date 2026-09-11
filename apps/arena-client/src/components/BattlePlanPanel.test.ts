@@ -38,6 +38,7 @@ function snapshotFor(phase: string, isOver: boolean = false): UIState {
       currentStage: 'main',
       hasActedThisTurn: false,
       hasHealedThisTurn: false,
+      villainRevealedThisTurn: false,
       lastPlayEffectsFired: 0,
     },
   } as unknown as UIState;
