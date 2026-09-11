@@ -308,13 +308,15 @@ describe('PlayDesktop (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-your-victory-pile"]').exists(), false);
   });
 
-  // why: regression guard for the autoplay post-game blank-board bug — when
-  // the engine flips `phase` to 'end' and sets `gameOver`, the shared board
-  // (especially the opponent panels with the `Victory: N ▼` buttons) MUST
-  // still render so a viewer who watched a bot match through to completion
-  // can read the final piles. Mirrors the EC-183 spectator-frame contract
-  // but for the gameover frame.
-  test('renders the shared board for a gameover frame (phase=end with gameOver set)', () => {
+  // why (Jeff feedback): at game over the outcome/score panel is the PRIMARY view,
+  // so the now-inert shared board is COLLAPSED by default and revealed on demand via
+  // the "View final board" toggle. This does NOT undo the EC-183 inspectability
+  // contract (the autoplay post-game blank-board regression guard): the board is one
+  // click away, not gone — so a viewer who watched a bot match to completion can open
+  // it and click the opponents' `Victory: N ▼` buttons to read the final piles. This
+  // test asserts BOTH halves: collapsed-by-default, and the full inspection surface
+  // present after the toggle.
+  test('gameover frame: outcome panel primary, board collapsed until the toggle reveals it', async () => {
     setActivePinia(createPinia());
     const endgameFrame = snapshot();
     endgameFrame.game.phase = 'end';
@@ -349,7 +351,23 @@ describe('PlayDesktop (WP-129)', () => {
       props: { submitMove: noopSubmitMove },
     });
 
-    // Shared board renders (the bug: this was empty after game-end).
+    // The outcome/score panel is the primary view and always renders at game over.
+    assert.equal(wrapper.find('[data-testid="arena-hud-endgame"]').exists(), true);
+
+    // The board is COLLAPSED by default — the outcome panel is not buried under it.
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').exists(), false);
+    assert.equal(wrapper.findAll('[data-testid="play-opponent-panel"]').length, 0);
+
+    // The board is one click away — the toggle is present and reveals it.
+    const toggle = wrapper.find('[data-testid="play-gameover-board-toggle"]');
+    assert.equal(toggle.exists(), true);
+    assert.equal(toggle.attributes('aria-expanded'), 'false');
+    await toggle.trigger('click');
+
+    // After expanding, the full EC-183 inspection surface renders (the regression
+    // guard: this was the blank-board bug — every shared zone must be reachable).
+    assert.equal(wrapper.find('[data-testid="play-gameover-board-toggle"]').attributes('aria-expanded'), 'true');
     assert.equal(wrapper.find('[data-testid="play-top-hud-bar"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-scheme-tile"]').exists(), true);
@@ -366,6 +384,10 @@ describe('PlayDesktop (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-turn-action-bar"]').exists(), false);
     assert.equal(wrapper.find('[data-testid="play-your-deck-discard"]').exists(), false);
     assert.equal(wrapper.find('[data-testid="play-your-victory-pile"]').exists(), false);
+
+    // Toggling again re-collapses the board.
+    await wrapper.find('[data-testid="play-gameover-board-toggle"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').exists(), false);
   });
 });
 
