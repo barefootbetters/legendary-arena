@@ -111,13 +111,13 @@ export default defineComponent({
           <EscapedPile :pile="cell.entries" />
         </template>
         <template v-else-if="cell.kind === 'slot'">
-          <!-- why: keep the slot name (Bridge / Streets / …) visible ABOVE the
-               villain when the slot is occupied — the card used to cover it. The
-               empty slot already shows its name inside the dashed placeholder, so
-               this label only renders for the filled case. The frosted-pill
-               backing keeps it legible over a busy playmat (the D-24482 mask). -->
+          <!-- why (Jeff feedback): the slot name (Bridge / Streets / …) sits on the
+               LEFT SIDE of the card, rotated vertical, for EVERY slot (occupied or
+               empty). We have more horizontal than vertical space on the mat, so a
+               side label is shorter than a label above and lets the scale-to-fit
+               board (D-24505) scale larger. The frosted-pill backing keeps it
+               legible over a busy playmat (the D-24482 mask). -->
           <div
-            v-if="cell.card !== null"
             class="city-space__label"
             data-testid="play-city-slot-label"
             :data-slot-name="cell.slotName"
@@ -148,21 +148,22 @@ export default defineComponent({
               :show-label="true"
             />
           </button>
+          <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
+               name inside it — the name is now the side label above. It stays a
+               dashed "place a villain here" box. -->
           <div
             v-else
             class="city-space-empty"
             data-testid="play-city-empty"
             :data-city-index="cell.cityIndex"
             :data-slot-name="cell.slotName"
-          >
-            {{ cell.slotName }}
-          </div>
-          <!-- why: WP-505 — captured cards render underneath the villain tile.
-               Face-up captured heroes (attachedHeroDisplay) show as card art
-               so players see which hero was taken; face-down captured
-               bystanders show as a count-only "N captured" badge (identity
-               hidden = face-down). Rendered outside the fight button so
-               clicking a captured card does not fight the villain. -->
+          ></div>
+          <!-- why: WP-505 + Jeff feedback — captured cards render to the SIDE of the
+               villain tile (was underneath), saving vertical space. Face-up captured
+               heroes (attachedHeroDisplay) show as card art; face-down captured
+               bystanders show as a count-only "N captured" badge (identity hidden =
+               face-down). Rendered outside the fight button so clicking a captured
+               card does not fight the villain. -->
           <div
             v-if="cell.card !== null && (cell.card.attachedHeroDisplay.length > 0 || cell.card.attachedBystanderCount > 0)"
             class="city-space__captured"
@@ -215,35 +216,54 @@ export default defineComponent({
   overflow-x: auto;
 }
 
+/* why (Jeff feedback): a HORIZONTAL row — the slot label rotated on the left, the
+   villain / empty placeholder in the middle, and any captured cards to the right.
+   The mat has more horizontal than vertical space, so a side label + side captures
+   are shorter than the old stacked column, which lets the scale-to-fit board
+   (D-24505) scale larger. */
 .city-space {
-  min-width: 6rem;
-  /* Stack the slot label above the villain / empty placeholder. */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
-/* The persistent slot-name label shown above an occupied city slot. A frosted
-   pill so it stays legible over a busy playmat (matches the D-24482 mask). */
+/* why (Jeff feedback): the slot name rotated 90° on the LEFT side of the card.
+   `writing-mode: vertical-rl` makes the box vertical (takes width, not height);
+   `rotate(180deg)` reads bottom-to-top (the conventional side-label direction). It
+   stretches to the card's height. Frosted pill for legibility over the mat
+   (D-24482). */
 .city-space__label {
-  align-self: center;
-  margin-bottom: 0.25rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 0.5rem;
+  flex: 0 0 auto;
+  align-self: stretch;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.12rem;
+  border-radius: 0.35rem;
   background: rgba(248, 249, 252, 0.85);
   border: 1px solid rgba(40, 44, 66, 0.25);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   color: #1c2333;
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-align: center;
   white-space: nowrap;
 }
 
+/* why (Jeff feedback): the empty placeholder is a dashed "place a villain here" box
+   with NO text (the name is the side label now). A min-height keeps it card-tall so
+   the side label reads at a usable height. */
 .city-space-empty {
-  padding: 0.5rem 0.75rem;
+  flex: 1 1 auto;
+  min-width: 2.75rem;
+  min-height: 76px;
   border: 1px dashed var(--color-foreground, #666);
+  border-radius: 0.35rem;
   opacity: 0.5;
 }
 
@@ -264,22 +284,20 @@ export default defineComponent({
   font-weight: 600;
 }
 
-/* why: WP-505 — captured cards sit beneath the villain tile as a compact,
-   "held under" strip. Heroes are shrunk for REAL by locally overriding the
-   `--card-width-sm` custom property that CardTile reads for its width — NOT a
-   `transform: scale()`, which left a full-size layout box that crowded and
-   overlapped the villain tile above. The border-top reads as "attached below".
-   `min-width: 0` + `overflow-x: auto` keep the strip inside the city column. */
+/* why: WP-505 + Jeff feedback — captured cards sit to the SIDE of the villain tile
+   (a right-hand column), not underneath, saving vertical height. Heroes are shrunk
+   for REAL by locally overriding the `--card-width-sm` custom property CardTile
+   reads for its width — NOT a `transform: scale()`, which would leave a full-size
+   layout box. The dashed left border reads as "attached alongside". */
 .city-space__captured {
-  --card-width-sm: 2.5rem;
+  --card-width-sm: 2.2rem;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0.2rem;
+  gap: 0.15rem;
   min-width: 0;
-  margin-top: 0.3rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--color-foreground, #666);
+  padding-left: 0.25rem;
+  border-left: 1px solid var(--color-foreground, #666);
 }
 
 .city-space__captured-bystanders {
