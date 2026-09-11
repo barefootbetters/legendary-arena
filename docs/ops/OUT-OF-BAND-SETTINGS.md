@@ -28,7 +28,7 @@ both permitted.
 
 | Setting | Value | Why |
 |---|---|---|
-| `required_status_checks.contexts` | `["Workspace Unit Tests"]` | The gate that was silently not gating — see below. |
+| `required_status_checks.contexts` | `["Workspace Unit Tests", "Coverage & Ledger Gates", "Server DB Tests", "Typecheck Arena Client"]` | Started as `["Workspace Unit Tests"]` — the gate that was silently not gating (see below). Three checks were added later; see **Checks added after 2026-07-20**. |
 | `required_status_checks.strict` | `false` | `true` requires every PR branch to be current with `main` before merge, so each merge forces a rebase across all other open PRs. With parallel sessions that is a large tax for little gain. |
 | `enforce_admins` | `false` | Leaves an operator escape hatch — an admin can merge past a red or hung check when the alternative is being stuck. |
 | `required_pull_request_reviews` | `null` | Single-operator project. Requiring an approving review would block every PR indefinitely. |
@@ -58,6 +58,21 @@ runs and reports on every PR targeting `main`, including docs-only ones.
 filter, this protection must be revisited in the same change.** Otherwise the
 first docs-only PR after that change will hang forever with no diagnostic
 beyond "Expected — Waiting for status to be reported."
+
+### Checks added after 2026-07-20
+
+The list grew from the original one context as more CI jobs proved out. Each
+addition satisfies the same safety condition as `Workspace Unit Tests`: the
+job has **no `if:` guard**, and the `pull_request` trigger in
+`.github/workflows/ci.yml` has **no `paths:` filter** — so it runs and reports
+on every PR targeting `main`, including docs-only ones, and cannot deadlock a
+required-check wait.
+
+| Context | Added | Why |
+|---|---|---|
+| `Coverage & Ledger Gates` | 2026-07 (burn-in → required) | Aggregates the repo's markdown/artifact integrity gates (hero-effect coverage baseline, mechanic ledger, etc.). |
+| `Server DB Tests` | 2026-08-27 (D-24435 §1) | Promoted from advisory after its initial green run — the server suite (billing, profile, replay/capture, seat-account, competition) only executes against a live Postgres, so a DB-only regression merged silently before. |
+| `Typecheck Arena Client` | 2026-09-10 | `vue-tsc --noEmit` on `apps/arena-client`. It was non-required, so a red typecheck could auto-merge: WP-695's PR #2018 auto-merged after a git auto-merge on `uiMoveName.types.ts` silently dropped a sibling's union member (`resolveKoDiscardChoice`), breaking a prompt component. `pnpm -r build` passed locally (the `build` tsconfig excludes test files and skips full `vue-tsc`), so it slipped through and needed hotfix PR #2020. Requiring the check closes that gap. The context name matches the job's `name:` in `ci.yml` exactly. |
 
 ### Repository setting: `allow_auto_merge`
 
