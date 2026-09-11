@@ -31,6 +31,29 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     assert.deepEqual(calls[0]!.args, {});
   });
 
+  test('Reveal drops DOM focus after the click so it does not look stuck-active', () => {
+    // why: revealVillainCard leaves G.currentStage on 'start' (the reveal →
+    // advanceStage two-move contract), so without an explicit blur the reveal
+    // button keeps its focus ring after firing and reads as if the click never
+    // registered. attachTo document.body so jsdom tracks document.activeElement.
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove },
+      attachTo: document.body,
+    });
+    const reveal = wrapper.find('[data-testid="play-action-reveal"]');
+    const revealEl = reveal.element as HTMLButtonElement;
+    revealEl.focus();
+    assert.equal(document.activeElement, revealEl, 'button should hold focus before the click');
+    void reveal.trigger('click');
+    assert.notEqual(
+      document.activeElement,
+      revealEl,
+      'reveal button must lose focus after firing the move',
+    );
+    wrapper.unmount();
+  });
+
   test('Reveal is enabled only in start with stage tooltip otherwise', () => {
     const { submitMove } = recorder();
     const startWrapper = mount(TurnActionBar, {

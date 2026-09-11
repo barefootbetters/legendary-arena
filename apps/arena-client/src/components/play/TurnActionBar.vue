@@ -311,32 +311,51 @@ export default defineComponent({
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice).canHealWounds();
     }
 
-    function onReveal(): void {
+    // why: a turn-action button that fires a move keeps native DOM focus after the
+    // click, so its focus ring lingers as if the click had not registered. This is
+    // most misleading at play.start, where revealVillainCard leaves G.currentStage
+    // on 'start' (the reveal → advanceStage two-move contract the engine keeps for
+    // autoplay/sim parity), so the revealed-and-done button stays visibly focused
+    // and the player reads the turn as stuck. Drop focus after dispatch so the
+    // button reads as consumed. Guarded: the event target is only an HTMLElement in
+    // the browser; in a headless test trigger it may be absent.
+    function blurAfterClick(event: Event): void {
+      const target = event.currentTarget;
+      if (target instanceof HTMLElement) {
+        target.blur();
+      }
+    }
+
+    function onReveal(event: Event): void {
       // why: empty-object payload — revealVillainCard takes no arguments
       // by engine design (see villainDeck.reveal.ts). Pops a card from
       // the villain deck into the City; gated to play.start.
       props.submitMove('revealVillainCard', {});
+      blurAfterClick(event);
     }
 
-    function onPassPriority(): void {
+    function onPassPriority(event: Event): void {
       // why: D-10011 — Pass-priority fires advanceStage, the canonical
       // stage-advance vocabulary. NOT a no-op. Cycles G.currentStage
       // through start → main → cleanup; from cleanup it advances and
       // ends the turn per turnLoop.ts.
       props.submitMove('advanceStage', {});
+      blurAfterClick(event);
     }
 
-    function onEndTurn(): void {
+    function onEndTurn(event: Event): void {
       // why: empty-object payload — EndTurnArgs is `Record<string, never>`
       // per coreMoves.types.ts:57. The move takes no arguments.
       props.submitMove('endTurn', {});
+      blurAfterClick(event);
     }
 
-    function onHealWounds(): void {
+    function onHealWounds(event: Event): void {
       // why: WP-380 — empty-object payload; the healWounds move takes no arguments
       // (healWounds.ts). KOs every Wound from the viewer's hand; the next server
       // frame reflects the shrunk hand + grown KO pile + the WP-379 log line.
       props.submitMove('healWounds', {});
+      blurAfterClick(event);
     }
 
     // why: WP-502 / D-24306 — End Game is a two-click affordance (request →
@@ -417,7 +436,7 @@ export default defineComponent({
           :disabled="!revealGate().allowed"
           :aria-disabled="!revealGate().allowed ? 'true' : undefined"
           :title="revealGate().reason ?? undefined"
-          @click="onReveal"
+          @click="onReveal($event)"
         >
           <!-- why: stage gating per D-10012 — revealVillainCard is gated
                to play.start. Disabled-tooltip precedence per EC-132 §3
@@ -442,7 +461,7 @@ export default defineComponent({
           :disabled="!passPriorityGate().allowed"
           :aria-disabled="!passPriorityGate().allowed ? 'true' : undefined"
           :title="passPriorityGate().reason ?? undefined"
-          @click="onPassPriority"
+          @click="onPassPriority($event)"
         >
           <!-- why: D-10011 — Pass-priority fires advanceStage, the
                canonical stage-advance vocabulary. Disabled-tooltip
@@ -457,7 +476,7 @@ export default defineComponent({
           :disabled="!healGate().allowed"
           :aria-disabled="!healGate().allowed ? 'true' : undefined"
           :title="healGate().reason ?? undefined"
-          @click="onHealWounds"
+          @click="onHealWounds($event)"
         >
           <!-- why: WP-380 / D-24181 — the printed Wound "Healing" ability (engine
                healWounds: KO all Wounds from hand). Disabled-tooltip precedence per
@@ -478,7 +497,7 @@ export default defineComponent({
           :disabled="!endTurnGate().allowed"
           :aria-disabled="!endTurnGate().allowed ? 'true' : undefined"
           :title="endTurnGate().reason ?? undefined"
-          @click="onEndTurn"
+          @click="onEndTurn($event)"
         >
           <!-- why: stage gating per WP-100 §Locked contract values —
                endTurn is gated to play.cleanup. Disabled-tooltip
@@ -559,12 +578,27 @@ export default defineComponent({
   flex: 1;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-foreground, #999);
-  opacity: 0.4;
   font-size: 0.8rem;
 }
 
+/* why: an inactive step is de-emphasized by muting its DESCRIPTIVE text and
+   softening its border — NOT by a whole-subtree `opacity`. A container opacity
+   composites the step's BUTTONS along with everything else, so the always-legal
+   "Pass priority" advance control (enabled at every stage per D-10011, and the
+   only way out of play.start) rendered faded-to-grey inside the inactive step-2
+   box and read as disabled — the turn looked stuck. Buttons now keep their true
+   enabled/disabled appearance regardless of which step is active; the disabled
+   rule below is what makes a genuinely-blocked button look grey. */
+.turn-action-bar__step:not(.turn-action-bar__step--active) {
+  border-color: var(--color-foreground, #bbb);
+}
+
+.turn-action-bar__step:not(.turn-action-bar__step--active) header,
+.turn-action-bar__step:not(.turn-action-bar__step--active) .turn-action-bar__hint {
+  opacity: 0.55;
+}
+
 .turn-action-bar__step--active {
-  opacity: 1;
   border-color: var(--color-foreground, #333);
 }
 
@@ -584,6 +618,17 @@ export default defineComponent({
 .turn-action-bar__step button {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* why: "grey" must mean "disabled", never "not the current step". With the
+   step-level opacity gone (above), a disabled button needs its own faded,
+   not-allowed styling so the enabled/disabled distinction is carried by the
+   button itself — an enabled Pass priority at play.start now reads as clickable,
+   a stage-blocked button reads as blocked. */
+.turn-action-bar__step button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* why: WP-502 (discoverability follow-up) — the End Game control sits below the
