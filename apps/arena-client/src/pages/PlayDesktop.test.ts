@@ -389,6 +389,60 @@ describe('PlayDesktop (WP-129)', () => {
     await wrapper.find('[data-testid="play-gameover-board-toggle"]').trigger('click');
     assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').exists(), false);
   });
+
+  // why (Jeff feedback): at match-over the expanded board must be READ-ONLY, not a
+  // live-looking play surface. For a SEATED viewer (not just a spectator) the turn
+  // machinery is hidden and every card affordance is disabled — the game is over, so
+  // it is nobody's actionable turn. This guards the "board still looks interactive at
+  // match-over" fix: isViewerTurn=false at game over + the hidden TurnActionBar.
+  test('gameover frame: the expanded board is read-only for a seated viewer (no turn bar, cards disabled)', async () => {
+    setActivePinia(createPinia());
+    const endgameFrame = snapshot();
+    endgameFrame.game.phase = 'end';
+    // Keep alice's handCards so `viewer` resolves to a SEATED player (not a spectator),
+    // and mark alice active so it WOULD be her turn if the game were still live.
+    endgameFrame.game.activePlayerId = 'alice';
+    endgameFrame.gameOver = {
+      outcome: 'heroes-win',
+      reason: 'Mastermind defeated.',
+      scores: {
+        players: [
+          {
+            playerId: 'alice',
+            villainVP: 6,
+            henchmanVP: 0,
+            bystanderVP: 2,
+            tacticVP: 5,
+            undercoverVP: 0,
+            woundVP: 0,
+            totalVP: 13,
+          },
+        ],
+        winner: 'alice',
+      },
+    };
+    const store = useUiStateStore();
+    store.setSnapshot(endgameFrame);
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: noopSubmitMove },
+    });
+
+    // Reveal the board for inspection.
+    await wrapper.find('[data-testid="play-gameover-board-toggle"]').trigger('click');
+
+    // The turn machinery is gone — nothing to act on post-game.
+    assert.equal(wrapper.find('[data-testid="play-turn-action-bar"]').exists(), false);
+
+    // The seated viewer's hand still renders (final state is inspectable)...
+    assert.equal(wrapper.find('[data-testid="play-hand-row"]').exists(), true);
+    // ...but every hand card is disabled — the board is read-only even though alice
+    // is the "active" player, because the game is over (isViewerTurn=false).
+    const handCards = wrapper.findAll('[data-testid="play-hand-card"]');
+    assert.equal(handCards.length > 0, true);
+    for (const card of handCards) {
+      assert.equal(card.attributes('disabled') !== undefined, true);
+    }
+  });
 });
 
 describe('PlayDesktop autoplay-bar gating (WP-164)', () => {
