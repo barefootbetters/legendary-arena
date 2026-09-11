@@ -437,9 +437,16 @@ export default defineComponent({
     // why: actions must be disabled when it's another player's turn —
     // otherwise clicks submit moves as the wrong player and boardgame.io
     // silently rejects them, making buttons appear broken on alternating turns.
+    // why (Jeff feedback): at game over it is genuinely NO ONE's actionable turn,
+    // so this also returns false once `isGameOver` — that renders the whole shared
+    // board + cockpit READ-ONLY when it is expanded for post-match inspection
+    // (fight / recruit / buy / play / heal all gate to NOT_YOUR_TURN in
+    // useTurnActions), instead of looking live and submitting moves the engine
+    // rejects. The turn machinery (TurnActionBar) is hidden outright at game over.
     const isViewerTurn = computed<boolean>(() => {
       const own = viewer.value;
       if (own === null) return false;
+      if (isGameOver.value) return false;
       return snapshot.value?.game.activePlayerId === own.playerId;
     });
 
@@ -1093,7 +1100,12 @@ export default defineComponent({
             :submit-move="submitMove"
           />
           </div><!-- /.play-desktop__prompts (Jeff feedback — excluded from the fit; scrolls) -->
+          <!-- why (Jeff feedback): the turn-action machinery (Reveal / Play / Recruit /
+               Fight / Heal / Undo / Pass / End turn) is meaningless once the match is
+               over, so it is hidden at game over. The board above still renders (read-only
+               via isViewerTurn=false) for post-match inspection. -->
           <TurnActionBar
+            v-if="!isGameOver"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :has-pending-choice="hasPendingChoice"
