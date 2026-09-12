@@ -532,9 +532,9 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     );
   });
 
-  // Jeff feedback — the CURRENT recommended Step-2 action is highlighted (primary
-  // accent), so after the reveal the player's eye lands on Play Hand, and once the
-  // hand is played the highlight moves to Pass priority.
+  // Jeff feedback — Play Hand is the ONE highlighted call-to-action in Step 2.
+  // Pass priority must NEVER take the accent (a blue Pass priority read as "the
+  // button to click", which Jeff flagged as confusing).
   const PRIMARY = 'turn-action-bar__action--primary';
 
   test('Play Hand is the highlighted primary action while the hand has playable cards', () => {
@@ -558,7 +558,7 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     );
   });
 
-  test('the highlight moves to Pass priority once the hand is played', async () => {
+  test('Pass priority NEVER carries the primary highlight — not even once the hand is played', async () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: {
@@ -568,16 +568,30 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
         submitMove,
       },
     });
-    // hand emptied (all cards played)
+    // hand emptied (all cards played) — Play Hand greys out, but the accent must
+    // NOT jump to Pass priority.
     await wrapper.setProps({ handCards: [] });
-    assert.ok(
+    assert.equal(
       wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
-      'Pass priority becomes the primary action once nothing is left to play',
+      false,
+      'Pass priority stays plain after the hand is played (no blue "active" Pass priority)',
     );
     assert.equal(
       wrapper.find('[data-testid="play-action-play-hand"]').classes().includes(PRIMARY),
       false,
-      'the greyed-out Play Hand no longer carries the highlight',
+      'the greyed-out Play Hand no longer carries the highlight either',
+    );
+  });
+
+  test('Pass priority is not highlighted at the cleanup stage (Play Hand is the only accent)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'cleanup', isViewerTurn: true, handCards: [], submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      false,
+      'even when Pass priority is the forward action at cleanup, it takes no accent',
     );
   });
 
