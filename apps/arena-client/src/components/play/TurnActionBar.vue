@@ -1,6 +1,8 @@
 <script lang="ts">
 import { defineComponent, ref, watch, type PropType } from 'vue';
 import { useTurnActions } from '../../composables/useTurnActions';
+import type { GatingResult } from '../../composables/useCardCostGating';
+import { WOUND_EXT_ID } from './woundIdentity';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -44,6 +46,16 @@ export default defineComponent({
     submitMove: {
       type: Function as PropType<SubmitMove>,
       required: true,
+    },
+    // why (Jeff feedback): the viewer's own hand (CardExtId strings). Feeds the
+    // "Play Hand" convenience button — one click plays every playable (non-Wound)
+    // card — and gates Pass priority at the main stage until the hand is emptied of
+    // playable cards. Defaults to [] so display-only / non-viewer mounts add no
+    // play affordance and never block Pass priority.
+    handCards: {
+      type: Array as PropType<readonly string[]>,
+      required: false,
+      default: () => [],
     },
     // why: D-22203 — derived from UIState.pendingHeroChoice !== undefined at
     // the page level; passed down so TurnActionBar can block end-turn and
@@ -298,13 +310,68 @@ export default defineComponent({
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain).canRevealVillain();
     }
 
+    // why (Jeff feedback): the playable subset of the viewer's hand — every card
+    // except Wounds, which carry no play value and cannot be played (woundIdentity /
+    // wounds.md). This is both what "Play Hand" plays and what gates Pass priority:
+    // a hand of only Wounds counts as "nothing left to play", so it never traps the
+    // player behind an un-emptiable hand.
+    function playableHandCardIds(): string[] {
+      return props.handCards.filter((cardId) => cardId !== WOUND_EXT_ID);
+    }
+
+    // why (Jeff feedback): the "Play Hand" button gate. Turn + stage come from the
+    // shared canPlayCard predicate (a Wound-free 2-arg call, like HandRow); on top
+    // of that the button is disabled once no playable cards remain, so it greys out
+    // after the hand is played and reads as consumed.
+    function playHandGate(): GatingResult {
+      const stageGate = useTurnActions(props.currentStage, props.isViewerTurn).canPlayCard();
+      if (!stageGate.allowed) {
+        return stageGate;
+      }
+      if (playableHandCardIds().length === 0) {
+        return {
+          allowed: false,
+          reason: 'Your hand has no more cards to play.',
+        };
+      }
+      return { allowed: true, reason: null };
+    }
+
+    // why (Jeff feedback): one click plays the whole hand. Fires a playCard for each
+    // playable card in order — the same move HandRow submits per tile, just batched.
+    // A card that parks a pending choice mid-batch stops the rest via the engine's
+    // block-all guards (exactly as fast-clicking hand tiles does today); the leftover
+    // cards stay in hand and the button re-enables so the player resolves the choice
+    // and clicks again.
+    function onPlayHand(event: Event): void {
+      for (const cardId of playableHandCardIds()) {
+        props.submitMove('playCard', { cardId });
+      }
+      blurAfterClick(event);
+    }
+
     // why: WP-477 — hasPendingDiscardChoice is useTurnActions' position-16 (last) param, so
     // reaching it requires passing the heal trio (positions 13–15) too, even though
     // canPassPriority / canEndTurn do not read them. Passing them is harmless (they only gate
     // canHealWounds) and threads the discard gate so the buttons disable while a Magneto
     // discard choice is pending.
-    function passPriorityGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain).canPassPriority();
+    // why (Jeff feedback): on top of the engine-parity gate, Pass priority is held
+    // disabled at the main stage while playable cards remain in hand, so "Play Hand"
+    // is the obvious next action and Pass priority lights up once the hand is played.
+    // Only main is gated this way — start (reveal-first) and cleanup keep their own
+    // rules — and a genuine board-frozen pending choice still takes precedence.
+    function passPriorityGate(): GatingResult {
+      const base = useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain).canPassPriority();
+      if (!base.allowed) {
+        return base;
+      }
+      if (props.currentStage === 'main' && playableHandCardIds().length > 0) {
+        return {
+          allowed: false,
+          reason: 'Play your hand (or Heal Wounds) before you pass priority.',
+        };
+      }
+      return base;
     }
 
     function endTurnGate(): { allowed: boolean; reason: string | null } {
@@ -414,59 +481,18 @@ export default defineComponent({
       blurAfterClick(event);
     }
 
-    // why: WP-502 / D-24306 — End Game is a two-click affordance (request →
-    // confirm) rather than a native window.confirm, so the confirmation is part of
-    // the component's own DOM (testable, styleable, and consistent with the rest of
-    // the bar). Ending the match is irreversible and closes it out for every seat,
-    // so it must never fire on a single stray click.
-    const isConfirmingEndGame = ref(false);
-
-    function requestEndGame(): void {
-      isConfirmingEndGame.value = true;
-    }
-
-    function cancelEndGame(): void {
-      isConfirmingEndGame.value = false;
-    }
-
-    function confirmEndGame(): void {
-      // why: WP-502 / D-24306 — empty-object payload; the endMatchEarly move takes
-      // no arguments. It latches MATCH_ENDED_EARLY so the engine's endIf ends the
-      // match (an endedEarly tie) for ALL seats on the next frame, and every
-      // client's UIState projects the endgame panel. Only the current player's
-      // move applies, which is why this control is shown only on the viewer's turn.
-      props.submitMove('endMatchEarly', {});
-      isConfirmingEndGame.value = false;
-    }
-
-    // why: WP-502 — the confirm affordance is hidden (not unmounted) between the
-    // viewer's turns via `v-if="isViewerTurn"`, so a confirm left un-actioned would
-    // survive to the viewer's NEXT turn and render the armed "Yes, end it" button
-    // first — a single stray click could then end the match. Re-arm to the safe
-    // (un-confirming) state whenever it stops being the viewer's turn.
-    watch(
-      () => props.isViewerTurn,
-      (isViewerTurn) => {
-        if (!isViewerTurn) {
-          isConfirmingEndGame.value = false;
-        }
-      },
-    );
-
     return {
       activeStep,
       revealGate,
+      playHandGate,
       passPriorityGate,
       endTurnGate,
       healGate,
       onReveal,
+      onPlayHand,
       onPassPriority,
       onEndTurn,
       onHealWounds,
-      isConfirmingEndGame,
-      requestEndGame,
-      cancelEndGame,
-      confirmEndGame,
     };
   },
 });
@@ -509,22 +535,23 @@ export default defineComponent({
       >
         <header>Step 2 — Play / Recruit / Fight (play.main)</header>
         <p class="turn-action-bar__hint">
-          Tap a card in hand, a city villain, an HQ hero, or the mastermind tile.
+          Play your hand, then tap a city villain, an HQ hero, or the mastermind
+          tile — or tap a single hand card to play it on its own.
         </p>
+        <!-- why (Jeff feedback): "Play Hand" plays the whole hand in one click.
+             It greys out once no playable cards remain (playHandGate); Pass priority
+             stays disabled at main until then, so the Step-2 flow reads
+             Play Hand → (grey) → Pass priority. Individual hand tiles (HandRow)
+             still work for playing one card at a time. -->
         <button
           type="button"
-          data-testid="play-action-pass-priority"
-          :disabled="!passPriorityGate().allowed"
-          :aria-disabled="!passPriorityGate().allowed ? 'true' : undefined"
-          :title="passPriorityGate().reason ?? undefined"
-          @click="onPassPriority($event)"
+          data-testid="play-action-play-hand"
+          :disabled="!playHandGate().allowed"
+          :aria-disabled="!playHandGate().allowed ? 'true' : undefined"
+          :title="playHandGate().reason ?? undefined"
+          @click="onPlayHand($event)"
         >
-          <!-- why: D-10011 — Pass-priority fires advanceStage, the
-               canonical stage-advance vocabulary. Disabled-tooltip
-               precedence per EC-132 §3 binds the reason from
-               useTurnActions.canPassPriority (always allowed; the gate
-               is here for the precedence-pattern uniformity). -->
-          Pass priority
+          ▶ Play Hand
         </button>
         <button
           type="button"
@@ -539,6 +566,20 @@ export default defineComponent({
                EC-132 §3 binds the reason from useTurnActions.canHealWounds (turn →
                main → no pending → wound-in-hand → not-acted → not-healed). -->
           Heal Wounds
+        </button>
+        <button
+          type="button"
+          data-testid="play-action-pass-priority"
+          :disabled="!passPriorityGate().allowed"
+          :aria-disabled="!passPriorityGate().allowed ? 'true' : undefined"
+          :title="passPriorityGate().reason ?? undefined"
+          @click="onPassPriority($event)"
+        >
+          <!-- why: D-10011 — Pass-priority fires advanceStage, the canonical
+               stage-advance vocabulary. Disabled-tooltip precedence per EC-132 §3
+               binds the reason from passPriorityGate (engine-parity pending gates +
+               the Jeff-feedback play-your-hand-first gate at main). -->
+          Pass priority
         </button>
       </li>
       <li
@@ -563,49 +604,9 @@ export default defineComponent({
         </button>
       </li>
     </ol>
-    <!-- why: WP-502 / D-24306 — the "End Game" escape hatch closes out an
-         in-progress match for EVERY seat (e.g. a co-op table that ran out of
-         time). Shown only on the viewer's turn because only the current player's
-         move applies (boardgame.io gates top-level moves to the active player).
-         Two-click confirm: the first click reveals the confirm/cancel pair so an
-         irreversible match-end never fires on a single stray click. -->
-    <div
-      v-if="isViewerTurn"
-      class="turn-action-bar__end-game"
-      data-testid="play-end-game"
-    >
-      <template v-if="!isConfirmingEndGame">
-        <span class="turn-action-bar__end-game-label">Out of time?</span>
-        <button
-          type="button"
-          class="turn-action-bar__end-game-request"
-          data-testid="play-action-end-game"
-          title="End the match now for every player (e.g. your group ran out of time). This closes the game out for everyone."
-          @click="requestEndGame"
-        >
-          ⏹ End Game for everyone
-        </button>
-      </template>
-      <template v-else>
-        <span class="turn-action-bar__end-game-prompt">End the match for everyone?</span>
-        <button
-          type="button"
-          class="turn-action-bar__end-game-confirm"
-          data-testid="play-action-end-game-confirm"
-          @click="confirmEndGame"
-        >
-          Yes, end it
-        </button>
-        <button
-          type="button"
-          class="turn-action-bar__end-game-cancel"
-          data-testid="play-action-end-game-cancel"
-          @click="cancelEndGame"
-        >
-          Keep playing
-        </button>
-      </template>
-    </div>
+    <!-- why (Jeff feedback): the "End Game for everyone" escape hatch moved out of
+         this bar and into the top ribbon beside the Mastermind (EndGameControl in
+         TopHudBar) — ending the match is a table-level concern, not a turn step. -->
   </section>
 </template>
 
@@ -685,60 +686,5 @@ export default defineComponent({
 .turn-action-bar__step button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* why: WP-502 (discoverability follow-up) — the End Game control sits below the
-   three steps. It must be de-emphasized relative to the primary turn actions but
-   still clearly a button a player can find when their group runs out of time — the
-   first cut was faded to 75% opacity at 0.75rem and was effectively invisible on a
-   busy board. It now reads as a real outlined button with a lead-in label; the
-   confirm button is tinted danger-red to signal irreversibility. */
-.turn-action-bar__end-game {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--color-foreground, #999);
-  font-size: 0.8rem;
-}
-
-.turn-action-bar__end-game button {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.turn-action-bar__end-game-label {
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.turn-action-bar__end-game-request {
-  border: 1px solid rgba(160, 60, 60, 0.8);
-  border-radius: 0.3rem;
-  background: rgba(120, 40, 40, 0.12);
-  color: var(--color-foreground, #7a2828);
-  font-weight: 600;
-}
-
-.turn-action-bar__end-game-request:hover {
-  background: rgba(120, 40, 40, 0.22);
-}
-
-.turn-action-bar__end-game-prompt {
-  font-weight: 700;
-}
-
-.turn-action-bar__end-game-confirm {
-  background: rgba(120, 40, 40, 0.94);
-  color: #f4f4f5;
-  border: 1px solid rgba(160, 60, 60, 0.9);
-  border-radius: 0.3rem;
-}
-
-.turn-action-bar__end-game-cancel {
-  border-radius: 0.3rem;
 }
 </style>

@@ -702,6 +702,8 @@ export default defineComponent({
         :villain-group-ids="villainGroupIds"
         :henchman-group-ids="henchmanGroupIds"
         :hero-deck-ids="heroDeckIds"
+        :is-viewer-turn="isViewerTurn"
+        :submit-move="submitMove"
       />
       <EndgameSummary
         v-if="isGameOver && snapshot.gameOver"
@@ -1108,6 +1110,7 @@ export default defineComponent({
             v-if="!isGameOver"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
+            :hand-cards="viewer.handCards ?? []"
             :has-pending-choice="hasPendingChoice"
             :has-pending-ko-choice="hasPendingKoChoice"
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"

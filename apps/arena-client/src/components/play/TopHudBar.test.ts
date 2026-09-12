@@ -205,3 +205,52 @@ describe('TopHudBar (WP-562) — the twist readout regains its denominator', () 
     assert.equal(text.includes('/'), false);
   });
 });
+
+describe('TopHudBar (Jeff feedback) — the End Game escape hatch lives in the ribbon', () => {
+  test('renders the End Game control on the viewer’s turn when submitMove is wired', () => {
+    setActivePinia(createPinia());
+    const wrapper = mount(TopHudBar, {
+      props: {
+        snapshot: fixture(),
+        mastermindTacticsTotal: 4,
+        isViewerTurn: true,
+        submitMove: () => {},
+      },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-end-game"]').exists(),
+      true,
+      'the End Game control renders in the ribbon on the viewer’s turn',
+    );
+    assert.equal(wrapper.find('[data-testid="play-action-end-game"]').exists(), true);
+  });
+
+  test('does not render the End Game control when submitMove is absent (display-only mount)', () => {
+    setActivePinia(createPinia());
+    const wrapper = mount(TopHudBar, {
+      props: { snapshot: fixture(), mastermindTacticsTotal: 4, isViewerTurn: true },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-end-game"]').exists(),
+      false,
+      'without submitMove the ribbon carries no End Game control',
+    );
+  });
+
+  test('hides the End Game control when it is not the viewer’s turn', () => {
+    setActivePinia(createPinia());
+    const wrapper = mount(TopHudBar, {
+      props: {
+        snapshot: fixture(),
+        mastermindTacticsTotal: 4,
+        isViewerTurn: false,
+        submitMove: () => {},
+      },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-end-game"]').exists(),
+      false,
+      'only the active player may end the match',
+    );
+  });
+});

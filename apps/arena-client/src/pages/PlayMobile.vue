@@ -461,6 +461,8 @@ export default defineComponent({
           :villain-group-ids="villainGroupIds"
           :henchman-group-ids="henchmanGroupIds"
           :hero-deck-ids="heroDeckIds"
+          :is-viewer-turn="isViewerTurn"
+          :submit-move="submitMove"
         />
       </header>
       <EndgameSummary
@@ -808,6 +810,7 @@ export default defineComponent({
           <TurnActionBar
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
+            :hand-cards="viewer.handCards ?? []"
             :has-pending-choice="hasPendingChoice"
             :has-pending-ko-choice="hasPendingKoChoice"
             :has-pending-optional-ko-reward="hasPendingOptionalKoReward"
