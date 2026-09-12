@@ -531,4 +531,76 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
       'a hand of only Wounds counts as nothing-left-to-play; pass priority is enabled',
     );
   });
+
+  // Jeff feedback — the CURRENT recommended Step-2 action is highlighted (primary
+  // accent), so after the reveal the player's eye lands on Play Hand, and once the
+  // hand is played the highlight moves to Pass priority.
+  const PRIMARY = 'turn-action-bar__action--primary';
+
+  test('Play Hand is the highlighted primary action while the hand has playable cards', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: ['iron-man-tech', 'shield-agent'],
+        submitMove,
+      },
+    });
+    assert.ok(
+      wrapper.find('[data-testid="play-action-play-hand"]').classes().includes(PRIMARY),
+      'Play Hand carries the primary-action highlight while cards remain to play',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      false,
+      'Pass priority is NOT highlighted while Play Hand is the recommended action',
+    );
+  });
+
+  test('the highlight moves to Pass priority once the hand is played', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: ['iron-man-tech'],
+        submitMove,
+      },
+    });
+    // hand emptied (all cards played)
+    await wrapper.setProps({ handCards: [] });
+    assert.ok(
+      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      'Pass priority becomes the primary action once nothing is left to play',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-action-play-hand"]').classes().includes(PRIMARY),
+      false,
+      'the greyed-out Play Hand no longer carries the highlight',
+    );
+  });
+
+  test('nothing in Step 2 is highlighted when a pending choice blocks the forward action', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'main',
+        isViewerTurn: true,
+        handCards: [],
+        // a board-freezing pending choice blocks pass priority at every stage
+        hasPendingKoChoice: true,
+        submitMove,
+      },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-play-hand"]').classes().includes(PRIMARY),
+      false,
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      false,
+      'a blocked forward action is never falsely highlighted',
+    );
+  });
 });

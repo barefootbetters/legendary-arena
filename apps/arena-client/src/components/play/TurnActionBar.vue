@@ -374,6 +374,24 @@ export default defineComponent({
       return base;
     }
 
+    // why (Jeff feedback): highlight the CURRENT recommended Step-2 action so the
+    // player's eye lands on the button to click, instead of every Step-2 button
+    // reading the same. After the reveal auto-advances into main the hand is full,
+    // so Play Hand is primary; once the hand is played it greys out (playHandGate
+    // fails) and Pass priority becomes primary. Heal Wounds is situational and is
+    // never the primary — it only offers itself via its own enabled state. Returns
+    // null when neither is the forward action (e.g. a pending choice is blocking, or
+    // it is not the viewer's turn), so nothing is falsely highlighted.
+    function primaryStepTwoAction(): 'play-hand' | 'pass-priority' | null {
+      if (playHandGate().allowed) {
+        return 'play-hand';
+      }
+      if (passPriorityGate().allowed) {
+        return 'pass-priority';
+      }
+      return null;
+    }
+
     function endTurnGate(): { allowed: boolean; reason: string | null } {
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice).canEndTurn();
     }
@@ -486,6 +504,7 @@ export default defineComponent({
       revealGate,
       playHandGate,
       passPriorityGate,
+      primaryStepTwoAction,
       endTurnGate,
       healGate,
       onReveal,
@@ -546,6 +565,7 @@ export default defineComponent({
         <button
           type="button"
           data-testid="play-action-play-hand"
+          :class="{ 'turn-action-bar__action--primary': primaryStepTwoAction() === 'play-hand' }"
           :disabled="!playHandGate().allowed"
           :aria-disabled="!playHandGate().allowed ? 'true' : undefined"
           :title="playHandGate().reason ?? undefined"
@@ -570,6 +590,7 @@ export default defineComponent({
         <button
           type="button"
           data-testid="play-action-pass-priority"
+          :class="{ 'turn-action-bar__action--primary': primaryStepTwoAction() === 'pass-priority' }"
           :disabled="!passPriorityGate().allowed"
           :aria-disabled="!passPriorityGate().allowed ? 'true' : undefined"
           :title="passPriorityGate().reason ?? undefined"
@@ -686,5 +707,19 @@ export default defineComponent({
 .turn-action-bar__step button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* why (Jeff feedback): the CURRENT recommended Step-2 action gets a filled accent
+   so the player's eye lands on the button to click — Play Hand right after the
+   reveal, then Pass priority once the hand is played. The plain siblings and the
+   greyed disabled button recede beside it. Uses --color-active-player (the brand
+   bright-blue, mode-stable) with white text; :not(:disabled) guarantees the accent
+   never sits on an un-clickable button. */
+.turn-action-bar__step button.turn-action-bar__action--primary:not(:disabled) {
+  background: var(--color-active-player, #1d4ed8);
+  color: #ffffff;
+  border: 1px solid var(--color-active-player, #1d4ed8);
+  border-radius: 0.25rem;
+  font-weight: 700;
 }
 </style>
