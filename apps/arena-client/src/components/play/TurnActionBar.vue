@@ -374,22 +374,16 @@ export default defineComponent({
       return base;
     }
 
-    // why (Jeff feedback): highlight the CURRENT recommended Step-2 action so the
-    // player's eye lands on the button to click, instead of every Step-2 button
-    // reading the same. After the reveal auto-advances into main the hand is full,
-    // so Play Hand is primary; once the hand is played it greys out (playHandGate
-    // fails) and Pass priority becomes primary. Heal Wounds is situational and is
-    // never the primary — it only offers itself via its own enabled state. Returns
-    // null when neither is the forward action (e.g. a pending choice is blocking, or
-    // it is not the viewer's turn), so nothing is falsely highlighted.
-    function primaryStepTwoAction(): 'play-hand' | 'pass-priority' | null {
-      if (playHandGate().allowed) {
-        return 'play-hand';
-      }
-      if (passPriorityGate().allowed) {
-        return 'pass-priority';
-      }
-      return null;
+    // why (Jeff feedback): "Play Hand" is the ONE highlighted call-to-action in
+    // Step 2 — Pass priority must never take the accent (an earlier cut moved the
+    // highlight to Pass priority once the hand was played / at cleanup, and that
+    // blue "Pass priority" read as the thing to click, which Jeff flagged twice as
+    // confusing). So the accent lives on Play Hand alone, exactly when it is the
+    // actionable CTA (your turn + main stage + playable cards in hand — i.e.
+    // playHandGate().allowed). Once the hand is played, Play Hand greys out and no
+    // Step-2 button is accented; the player clicks the now-plain Pass priority.
+    function isPlayHandPrimary(): boolean {
+      return playHandGate().allowed;
     }
 
     function endTurnGate(): { allowed: boolean; reason: string | null } {
@@ -504,7 +498,7 @@ export default defineComponent({
       revealGate,
       playHandGate,
       passPriorityGate,
-      primaryStepTwoAction,
+      isPlayHandPrimary,
       endTurnGate,
       healGate,
       onReveal,
@@ -565,7 +559,7 @@ export default defineComponent({
         <button
           type="button"
           data-testid="play-action-play-hand"
-          :class="{ 'turn-action-bar__action--primary': primaryStepTwoAction() === 'play-hand' }"
+          :class="{ 'turn-action-bar__action--primary': isPlayHandPrimary() }"
           :disabled="!playHandGate().allowed"
           :aria-disabled="!playHandGate().allowed ? 'true' : undefined"
           :title="playHandGate().reason ?? undefined"
@@ -590,7 +584,6 @@ export default defineComponent({
         <button
           type="button"
           data-testid="play-action-pass-priority"
-          :class="{ 'turn-action-bar__action--primary': primaryStepTwoAction() === 'pass-priority' }"
           :disabled="!passPriorityGate().allowed"
           :aria-disabled="!passPriorityGate().allowed ? 'true' : undefined"
           :title="passPriorityGate().reason ?? undefined"
@@ -709,12 +702,12 @@ export default defineComponent({
   cursor: not-allowed;
 }
 
-/* why (Jeff feedback): the CURRENT recommended Step-2 action gets a filled accent
-   so the player's eye lands on the button to click — Play Hand right after the
-   reveal, then Pass priority once the hand is played. The plain siblings and the
-   greyed disabled button recede beside it. Uses --color-active-player (the brand
-   bright-blue, mode-stable) with white text; :not(:disabled) guarantees the accent
-   never sits on an un-clickable button. */
+/* why (Jeff feedback): Play Hand is the ONE highlighted call-to-action in Step 2 —
+   a filled accent so the player's eye lands on it right after the reveal. Pass
+   priority and Heal Wounds stay plain and never take this accent (a blue Pass
+   priority read as "the button to click", which Jeff flagged as confusing). Uses
+   --color-active-player (the brand bright-blue, mode-stable) with white text;
+   :not(:disabled) guarantees the accent never sits on an un-clickable button. */
 .turn-action-bar__step button.turn-action-bar__action--primary:not(:disabled) {
   background: var(--color-active-player, #1d4ed8);
   color: #ffffff;
