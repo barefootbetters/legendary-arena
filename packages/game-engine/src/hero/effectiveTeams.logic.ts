@@ -119,3 +119,34 @@ export function cardCountsAsShieldHero(G: LegendaryGameState, cardId: CardExtId)
   }
   return cardHasTeamWhenPlayed(G, cardId, 'shield');
 }
+
+/**
+ * Returns whether a card counts as a member of `teamSlug` for a team-synergy read
+ * (a `requiresTeam` gate or a `…-played-this-turn` team count) — i.e. its printed /
+ * copied team is `teamSlug`, PLUS the S.H.I.E.L.D.-token carve-out for `'shield'`.
+ *
+ * // why (Jeff feedback, Legendary Commander): `cardHasTeamWhenPlayed` is a
+ * trait-only read, so it does NOT see the three teamless basic S.H.I.E.L.D. tokens
+ * (Officer / Agent / Trooper — no `G.cardTraits` row). But they ARE S.H.I.E.L.D.
+ * Heroes by identity (see `cardCountsAsShieldHero`), so a card like Nick Fury's
+ * Legendary Commander ("+1 attack for each other [team:shield] Hero you played this
+ * turn") must count a played Officer/Agent/Trooper. This helper unifies the two
+ * paths: it delegates to `cardCountsAsShieldHero` for `'shield'` (which folds in the
+ * token carve-out) and to the plain trait/grant read for every other team (which has
+ * no teamless tokens, so the carve-out does not apply).
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The CardExtId to test.
+ * @param teamSlug - The team slug to match (e.g. `'avengers'`, `'shield'`).
+ * @returns Whether the card counts as a member of that team for synergy.
+ */
+export function cardCountsAsTeamMember(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  teamSlug: string,
+): boolean {
+  if (teamSlug === 'shield') {
+    return cardCountsAsShieldHero(G, cardId);
+  }
+  return cardHasTeamWhenPlayed(G, cardId, teamSlug);
+}

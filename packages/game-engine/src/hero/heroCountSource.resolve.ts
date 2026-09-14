@@ -21,8 +21,11 @@ import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 // re-deriving it, so it can never diverge from the distinctHeroClassesAtLeast gate.
 import { countDistinctHeroClassesInPlay } from './heroConditions.evaluate.js';
 // why: WP-680 / D-24391 — the team sources count membership the same way the
-// requiresTeam gate does: printed team OR a Copy-Powers-granted team.
-import { cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
+// requiresTeam gate does: printed team OR a Copy-Powers-granted team. why (Jeff
+// feedback): via cardCountsAsTeamMember, so team 'shield' also folds in the teamless
+// basic S.H.I.E.L.D. tokens (Officer/Agent/Trooper) — Legendary Commander must count
+// a played Officer as a shield Hero.
+import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -258,7 +261,7 @@ function countTeamCardsPlayedThisTurn(
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
-    if (cardHasTeamWhenPlayed(G, playedCardId as CardExtId, team)) {
+    if (cardCountsAsTeamMember(G, playedCardId as CardExtId, team)) {
       teamCount++;
     }
   }
