@@ -322,7 +322,7 @@ row by row:
 
 | Surface | Authority | VFX may read |
 |---|---|---|
-| `UIState.notableEvents` (ten locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.notableEvents` (eleven locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
@@ -495,7 +495,7 @@ build in this order rather than attempting twenty effects at once:
 | Tier | Priority | Triggers |
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
-| **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `recruitHero`, `drawCards` |
+| **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `heroEffectResolved`, `recruitHero`, `drawCards` |
 | **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects — the VFX for a villain *successfully escaping*, blocked on the deferred `escapeResolved` event (see [Edge Cases](#edge-cases)); **distinct** from the shipped Escape reveal-**block** teal shield (WP-651), which fires when a player *dodges* an escaping villain's reveal-or-wound; narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
@@ -509,7 +509,7 @@ candidate signals, in decreasing order of readiness:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Ten variants are locked, and — unlike the game
+player-visible outcomes. Eleven variants are locked, and — unlike the game
 log — they **are** projected as `UIState.notableEvents`. The arena client
 already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -531,6 +531,7 @@ stream — one effect per event type — with zero new engine work.
 | `deckReshuffled` | T3 | A player's start-of-turn draw empties their hero deck and reshuffles the discard back into it (`drawCardsIntoHand` reshuffle, at the onBegin auto-draw) | A calm **indigo riffle** over the deck pip — the discard cards sweeping back into a fresh draw pile, an informational "you cycled your deck" beat, never alarming |
 | `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom/**Loki** Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, a villain **Ambush** dodge, or a villain **Fight**/**Escape** ability reveal-or-wound dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (complete):** the engine event + overlay chip and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) — a threat-coloured deflection burst (Master Strike **red** / Scheme Twist **purple** / Ambush **green** / Fight **amber** / Escape **teal** per `threatKind`) + the "BLOCKED!" word (WP-644..651; all five reveal-to-avoid classes) |
 | `transformResolved` | T2 | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form (the World War Hulk signature mechanic; She-Hulk / Amadeus Cho are the supported bases today) — one per completed swap, `{ playerId, narrative }` | A gamma-green **power surge** — a centre-out radial bloom + a gamma particle burst + a **"TRANSFORMED!"** word, plus a **"Transformed!"** chip. The *positive* counterpart to the shield block: the hero powering up, not deflecting. **Shipped:** the engine event + overlay chip + the `VfxOverlay` transform beat ([`#surface-transform`](#surface-transform), `transform-surge.svg`) — the surge bloom (gated `'shake'`), the gamma burst (gated `'particles'`), the "TRANSFORMED!" word (gated `'word'`) (WP-672). Hero surface only; the Mastermind (General Ross) + Scheme (Chthon) transforms do not yet emit the event — named follow-ups |
+| `heroEffectResolved` | T2 | A Hero card's ability does **invisible work** — work whose result the player cannot already see on the board. v1: the reveal-top-of-Hero-Deck-for-attack family (Jade Giantess *Astonishing Strength*, keyword `reveal-herodeck-attack`), where the revealed cards rotate to the **bottom** of the Hero Deck (transient — never shown) and the summed printed attack is added silently, so it otherwise reads as "nothing happened". One per **realized** reveal (`revealedCount > 0`), `{ playerId, narrative }` (card-less; the source card name + realized count + magnitude travel in the narrative) | A warm **hero-amber** glow — the player's own ability paying off. **Shipped:** the engine event + a **"Hero Ability"** overlay chip (`--color-hero-ability` `#f5a623`) rendering the verbatim narrative, e.g. `"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +6 attack.` (WP-697 / D-24516). A **general bucket** — future invisible-work hero-effect families reuse this same event type with their own narrative composer, so the chip/accent stay constant and only the narrative differs. A `VfxOverlay` beat is a named follow-up (v1 is the overlay chip only) |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -1105,7 +1106,7 @@ priority order is fixed and non-negotiable:
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the ten `NotableGameEventType` variants and their payloads
+  — the eleven `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are composed
@@ -1454,7 +1455,7 @@ regenerate with `python block-shield.py`.*
 ## References
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — `NotableGameEventType` (9 locked variants) + payloads; header notes
+  — `NotableGameEventType` (eleven locked variants) + payloads; header notes
   the raw `G.messages` field is not itself projected (the log's content is,
   as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts),
