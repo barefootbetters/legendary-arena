@@ -53,7 +53,7 @@
 - [ ] `pnpm --filter @legendary-arena/arena-client typecheck` (vue-tsc) 0 + `test` — all pass
 - [ ] `Select-String heroEffects.execute.ts "type: 'heroEffectResolved'"` → exactly 1 (the single guarded push; grep the `type:` line, not the bare token, which also appears in the push's `// why:` comment)
 - [ ] `git diff --name-only` — only the allowlist (+ the governance-close artifacts)
-- [ ] Live-on-surface verification — REQUIRED (surface = `play.legendary-arena.com`, D-24026): play a reveal-for-attack hero (Jade Giantess) → the "Hero Ability" overlay names the revealed count + attack gained (post-deploy, pending)
+- [x] Live-on-surface verification — DONE (surface = `play.legendary-arena.com`, D-24026): a real deployed Red Skull / Midtown Bank Robbery match (build `f25986f`) projected four `heroEffectResolved` events into `uiStateSnapshot.notableEvents` (e.g. `"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +6 attack.`) — the feed that drives the "Hero Ability" overlay
 - [ ] `docs/ai/DECISIONS.md` — land D-24516 (Active)
 - [ ] `docs/ai/STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `05-ROADMAP-MINDMAP.md` (+ counts), `NUMBER-LEDGER.md` (mark reservations landed) in the governance-close commit
 

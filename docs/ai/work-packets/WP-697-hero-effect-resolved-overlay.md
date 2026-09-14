@@ -171,7 +171,7 @@ Select-String -Path "packages\game-engine\src\hero\heroEffects.execute.ts" -Patt
 
 > Run every command in `## Verification Steps` before checking any item.
 
-- [ ] **User-visible verification (surface = `play.legendary-arena.com`, D-24026):** in a **real deployed match**, playing Jade Giantess (or any reveal-top-of-Hero-Deck-for-attack hero) raises the "Hero Ability" centre-screen overlay naming the revealed count and the attack gained (green tests + merge alone do NOT satisfy it; post-deploy live-verify pending).
+- [x] **User-visible verification (surface = `play.legendary-arena.com`, D-24026): DONE.** A real deployed solo match (Red Skull / Midtown Bank Robbery, build `f25986f` which contains WP-697) played Jade Giantess and the projected `uiStateSnapshot.notableEvents` carried **four** `heroEffectResolved` events with the verbatim narratives (`"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +6 attack.` and three more) — the exact card-less feed that raises the "Hero Ability" overlay. Confirmed against the captured match diagnostics.
 - [ ] All acceptance criteria pass.
 - [ ] `pnpm -r build` 0; engine + arena-client suites pass; `vue-tsc` 0.
 - [ ] `docs/ai/DECISIONS.md` — land D-24516 (Active).
