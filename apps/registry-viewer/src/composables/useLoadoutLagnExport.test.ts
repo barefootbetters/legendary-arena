@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { ref } from "vue";
-import { validate } from "@legendary-arena/lagn";
+import { validate, LAGN_VERSION } from "@legendary-arena/lagn";
 import { useLoadoutLagnExport } from "./useLoadoutLagnExport";
 import { parseLagnLoadout } from "../lib/loadoutLagnImport";
 import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract";
@@ -367,7 +367,9 @@ test("AC-3 a non-empty bench exports setup.hero_alternates and the document vali
   const built = api.buildLagnFile();
   assert(built, "buildLagnFile should return a file for a draft carrying a bench");
   const parsed = JSON.parse(built.file);
-  assert.equal(parsed.lagn_version, "1.5.0", "the current LAGN_VERSION stamp");
+  // why: WP-698 — assert the LAGN_VERSION constant rather than a hardcoded literal,
+  // so a future additive-field version bump never re-breaks this unrelated case.
+  assert.equal(parsed.lagn_version, LAGN_VERSION, "the current LAGN_VERSION stamp");
   assert.deepEqual(
     parsed.setup.hero_alternates,
     [
@@ -377,6 +379,37 @@ test("AC-3 a non-empty bench exports setup.hero_alternates and the document vali
     "the bench maps to the same { id, name } shape as setup.heroes",
   );
   assert(api.isValid.value, "the exported bench document should pass validate()");
+});
+
+// ── Final Blow through LAGN export (WP-698 / D-24517) ───────────────────────
+
+test("WP-698 a Final-Blow draft exports setup.final_blow: true and validates at 1.6.0", () => {
+  const draft = ref(createValidDraft());
+  draft.value.finalBlow = true;
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for a Final-Blow draft");
+  const parsed = JSON.parse(built.file);
+  assert.equal(parsed.setup.final_blow, true, "the exported setup carries final_blow");
+  // why: the final_blow gate requires lagn_version >= 1.6.0; the writer stamps
+  // LAGN_VERSION (now 1.6.0), so the document is a legal write.
+  assert.equal(parsed.lagn_version, LAGN_VERSION, "stamped at the current version");
+  assert(api.isValid.value, "the Final-Blow document should pass validate()");
+});
+
+test("WP-698 a non-Final-Blow draft omits setup.final_blow entirely", () => {
+  const draft = ref(createValidDraft());
+  assert.notEqual(draft.value.finalBlow, true, "the fixture is not a Final-Blow draft");
+  const api = useLoadoutLagnExport(draft);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file");
+  const parsed = JSON.parse(built.file);
+  assert.equal(
+    "final_blow" in parsed.setup,
+    false,
+    "an off draft must omit the key entirely, never emit false",
+  );
+  assert(api.isValid.value, "the non-Final-Blow document should still pass validate()");
 });
 
 test("AC-4 an empty/absent bench omits setup.hero_alternates entirely and still validates", () => {

@@ -18,9 +18,48 @@ import type { SetupCompositionInput } from "@legendary-arena/registry/setupContr
 
 import {
   parsePlayerCountFromUrl,
+  parseFinalBlowFromUrl,
   parseSetupUrl,
   serializeSetupToUrl,
 } from "./setupUrlParams.js";
+
+const EMPTY_COMPOSITION: SetupCompositionInput = {
+  schemeId: "",
+  mastermindId: "",
+  villainGroupIds: [],
+  henchmanGroupIds: [],
+  heroDeckIds: [],
+  bystandersCount: 0,
+  woundsCount: 0,
+  officersCount: 0,
+  sidekicksCount: 0,
+};
+
+describe("Final Blow on the share link (WP-698 / D-24517)", () => {
+  it("serialize appends finalBlow=true only when the flag is on", () => {
+    const on = serializeSetupToUrl(EMPTY_COMPOSITION, "https://x/", { finalBlow: true });
+    assert.equal(on.includes("finalBlow=true"), true);
+    const off = serializeSetupToUrl(EMPTY_COMPOSITION, "https://x/", { finalBlow: false });
+    assert.equal(off.includes("finalBlow"), false, "off must omit the param entirely");
+    const noOpts = serializeSetupToUrl(EMPTY_COMPOSITION, "https://x/");
+    assert.equal(noOpts.includes("finalBlow"), false, "no options must omit the param");
+  });
+
+  it("parseFinalBlowFromUrl reads finalBlow=true as on and everything else as off", () => {
+    assert.equal(parseFinalBlowFromUrl("?finalBlow=true"), true);
+    assert.equal(parseFinalBlowFromUrl("?finalBlow=false"), false);
+    assert.equal(parseFinalBlowFromUrl("?schemeId=core/x"), false, "absent → off");
+    assert.equal(parseFinalBlowFromUrl(""), false);
+    assert.equal(parseFinalBlowFromUrl("?finalBlow="), false, "empty value → off");
+  });
+
+  it("round-trip: serialize on → parse reads on; serialize off → parse reads off", () => {
+    const on = serializeSetupToUrl(EMPTY_COMPOSITION, "https://x/", { finalBlow: true });
+    assert.equal(parseFinalBlowFromUrl(on.split("?")[1] ?? ""), true);
+    const off = serializeSetupToUrl(EMPTY_COMPOSITION, "https://x/", { finalBlow: false });
+    assert.equal(parseFinalBlowFromUrl(off.split("?")[1] ?? ""), false);
+  });
+});
 
 describe("setupUrlParams (WP-114)", () => {
   it("type-correct round-trip: parse-after-serialize yields the five URL-bound keys", () => {

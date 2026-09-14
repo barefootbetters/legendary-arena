@@ -65,6 +65,18 @@ export interface LagnLoadoutComposition {
    */
   heroAlternateIds?: string[] | undefined;
   /**
+   * Whether the LAGN named the optional Final Blow rule (`setup.final_blow`), or
+   * undefined when the record carries none.
+   *
+   * why: WP-698 / D-24517 — a shared/exported Final-Blow loadout must round-trip
+   * the flag, or a re-import silently downgrades it to a normal match. The LAGN
+   * validator's ordinal gate has already enforced `final_blow` implies
+   * `lagn_version >= 1.6.0`, so no re-check here. The caller applies it to the
+   * ENVELOPE (`draft.finalBlow`) via `setFinalBlow`, never the composition. This
+   * parser stays pure — it only extracts; the apply site sets the draft.
+   */
+  finalBlow?: boolean | undefined;
+  /**
    * The match verdict the LAGN carried, or undefined when the record has none.
    *
    * why: D-24358 — this importer previously mapped only `setup` + `player_count`
@@ -176,10 +188,14 @@ function lagnToComposition(lagn: LAGN): LagnLoadoutComposition {
     setup.hero_alternates === undefined
       ? undefined
       : setup.hero_alternates.map((alternate) => alternate.id);
+  // why: WP-698 / D-24517 — extract the optional Final Blow flag, omitting the key
+  // when the record has none (an absent flag stays distinct from an explicit false).
+  const finalBlow = setup.final_blow === true ? true : undefined;
   return {
     ...(supportPools === undefined ? {} : { supportPools }),
     ...(result === undefined ? {} : { result }),
     ...(heroAlternateIds === undefined ? {} : { heroAlternateIds }),
+    ...(finalBlow === undefined ? {} : { finalBlow }),
     schemeId: setup.scheme.id,
     mastermindId: setup.mastermind.id,
     // why: take only the `id` off each group entry — the LAGN stores `{ id, name }`

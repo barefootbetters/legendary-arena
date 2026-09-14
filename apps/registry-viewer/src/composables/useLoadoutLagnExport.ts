@@ -207,7 +207,16 @@ function buildLagnObject(
     return null;
   }
 
-  const setup = compositionToLagnSetup(composition, draft.supportPools, draft.heroAlternateIds);
+  const baseSetup = compositionToLagnSetup(composition, draft.supportPools, draft.heroAlternateIds);
+  // why: WP-698 / D-24517 — carry the optional Final Blow flag as `setup.final_blow`,
+  // OMITTED when off (parity with the support_pools / hero_alternates spreads and the
+  // setup-envelope finalBlow, WP-686). Emitted here in buildLagnObject — not in
+  // compositionToLagnSetup, which receives only the composition slice, never the draft.
+  // The unconditional `lagn_version: LAGN_VERSION` stamp is now 1.6.0, the version the
+  // final_blow gate requires; a non-Final-Blow loadout stamps 1.6.0 too, which is safe
+  // because every version gate is ordinal (D-24211).
+  const setup: LAGN["setup"] =
+    draft.finalBlow === true ? { ...baseSetup, final_blow: true } : baseSetup;
   const lagnVariant = mapVariantToLagn(variant);
 
   const document: LAGN = {

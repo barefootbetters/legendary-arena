@@ -108,6 +108,11 @@ function applyComposition(
     }
   }
   draftApi.setPlayerCount(composition.playerCount);
+  // why: WP-698 / D-24517 — apply the optional Final Blow flag to the ENVELOPE via
+  // setFinalBlow (omit-when-off: false clears the key). Without this the `?lagn=`
+  // deep-link channel would deliver a Final-Blow loadout as a normal match — the
+  // same silent-drop EC-429 fixed for support_pools and WP-404 for the bench.
+  draftApi.setFinalBlow(composition.finalBlow === true);
 }
 
 /**

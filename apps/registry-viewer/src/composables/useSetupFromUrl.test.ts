@@ -227,6 +227,23 @@ describe("useSetupFromUrl (WP-114)", () => {
     assert.equal(document.playerCount, 4);
   });
 
+  it("WP-698: previewDocument.finalBlow reflects the URL finalBlow flag (on / omit-when-off)", () => {
+    setSearch("?schemeId=core/scheme-foo&finalBlow=true");
+    const on = useSetupFromUrl(
+      makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]),
+    ).previewDocument.value;
+    assert.notEqual(on, null);
+    assert.equal(on?.finalBlow, true);
+
+    setSearch("?schemeId=core/scheme-foo");
+    const off = useSetupFromUrl(
+      makeRegistry([{ extId: "core/scheme-foo", cardType: "scheme" }]),
+    ).previewDocument.value;
+    assert.notEqual(off, null);
+    // why: omit-when-off keeps a normal link's synthetic preview JSON byte-identical.
+    assert.equal(off !== null && "finalBlow" in off, false);
+  });
+
   it("WP-387: previewDocument.playerCount falls back to DEFAULT_PLAYER_COUNT for an invalid playerCount", () => {
     // why: an out-of-range value (9) parses to null, so the preview keeps the
     // shared default — the "absent = unchanged" contract also covers malformed.

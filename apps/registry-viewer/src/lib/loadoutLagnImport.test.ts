@@ -246,3 +246,30 @@ describe("parseLagnLoadout hero alternates bench (WP-404 / D-24212)", () => {
     assert.equal(result.ok, false, "a bench on a 1.0.0 document must be rejected, not stripped");
   });
 });
+
+describe("parseLagnLoadout Final Blow (WP-698 / D-24517)", () => {
+  it("extracts finalBlow: true from a 1.6.0 document carrying setup.final_blow", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    lagn.lagn_version = "1.6.0";
+    lagn.setup.final_blow = true;
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.composition.finalBlow, true);
+  });
+
+  it("omits finalBlow when the document carries no final_blow (absent stays distinct from false)", () => {
+    const result = parseLagnLoadout(makeValidLagnText());
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal("finalBlow" in result.composition, false);
+  });
+
+  it("rejects a pre-1.6.0 document carrying final_blow (the version gate is loud, not silent)", () => {
+    const lagn = JSON.parse(makeValidLagnText());
+    lagn.lagn_version = "1.5.0";
+    lagn.setup.final_blow = true;
+    const result = parseLagnLoadout(JSON.stringify(lagn));
+    assert.equal(result.ok, false, "final_blow on a 1.5.0 document must be rejected, not stripped");
+  });
+});

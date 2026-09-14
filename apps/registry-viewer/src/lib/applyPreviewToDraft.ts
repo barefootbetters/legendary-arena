@@ -43,6 +43,7 @@ export interface PreviewPromotionDraftApi {
     value: number,
   ) => void;
   setPlayerCount: (value: number) => void;
+  setFinalBlow: (enabled: boolean) => void;
 }
 
 /**
@@ -98,4 +99,8 @@ export function applyPreviewToDraft(
   draftApi.setCount("officersCount", incoming.officersCount);
   draftApi.setCount("sidekicksCount", incoming.sidekicksCount);
   draftApi.setPlayerCount(previewDocument.playerCount);
+  // why: WP-698 / D-24517 — promote the Final Blow flag from a shared setup link
+  // onto the editor draft (omit-when-off: false clears the envelope key), so
+  // "Edit this loadout" on a Final-Blow link opens with the box checked.
+  draftApi.setFinalBlow(previewDocument.finalBlow === true);
 }

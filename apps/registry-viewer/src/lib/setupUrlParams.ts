@@ -119,6 +119,29 @@ export function parsePlayerCountFromUrl(search: string): number | null {
 }
 
 /**
+ * Reads the optional Final Blow flag from a setup-link query string.
+ *
+ * why: WP-698 / D-24517 — `finalBlow` is the FIRST setup **envelope** value the
+ * share link carries. Every other envelope field (playerCount aside, its own
+ * parser) is deliberately omitted from the link, but a Final-Blow match plays
+ * fundamentally differently (the Mastermind must be fought a 5th, final time), so
+ * a shared setup that drops the flag would misrepresent the board. Like
+ * `parsePlayerCountFromUrl` it is a SEPARATE parser from `parseSetupUrl` — an
+ * envelope field, not one of the five URL-bound composition fields.
+ *
+ * why: STRICTLY `finalBlow=true` reads as on; anything else (absent, empty,
+ * `false`, malformed) reads as off. Omit-when-off means the serializer only ever
+ * emits `finalBlow=true`, so no other value is a legitimate round-trip input.
+ * Never throws.
+ *
+ * @param search - The raw query string, with or without a leading `?`.
+ * @returns `true` only when `finalBlow=true` is present; otherwise `false`.
+ */
+export function parseFinalBlowFromUrl(search: string): boolean {
+  return new URLSearchParams(search).get("finalBlow") === "true";
+}
+
+/**
  * Serializes a full `SetupCompositionInput` into a URL string with the five
  * URL-bound keys emitted in canonical order: `schemeId`, `mastermindId`,
  * `villainGroupIds`, `henchmanGroupIds`, `heroDeckIds`.
@@ -142,19 +165,26 @@ export function parsePlayerCountFromUrl(search: string): number | null {
 export function serializeSetupToUrl(
   composition: SetupCompositionInput,
   baseUrl: string,
+  options?: { finalBlow?: boolean },
 ): string {
-  // why: Only the five composition entity-ID fields are URL-bound. The
-  // four count fields (bystanders/wounds/officers/sidekicks) and the
-  // entire envelope (schemaVersion, setupId, createdAt, createdBy, seed,
-  // playerCount, expansions, heroSelectionMode) are deliberately omitted —
-  // their defaults live in `useLoadoutDraft.ts` constants and surfacing
-  // them in the URL is a future-extension hook, not part of this packet.
+  // why: Only the five composition entity-ID fields are URL-bound. The four
+  // count fields (bystanders/wounds/officers/sidekicks) and MOST of the envelope
+  // (schemaVersion, setupId, createdAt, createdBy, seed, playerCount, expansions,
+  // heroSelectionMode) are deliberately omitted — their defaults live in
+  // `useLoadoutDraft.ts` constants and surfacing them in the URL buys nothing.
   const params = new URLSearchParams();
   params.set("schemeId", composition.schemeId);
   params.set("mastermindId", composition.mastermindId);
   appendArrayParam(params, "villainGroupIds", composition.villainGroupIds);
   appendArrayParam(params, "henchmanGroupIds", composition.henchmanGroupIds);
   appendArrayParam(params, "heroDeckIds", composition.heroDeckIds);
+  // why: WP-698 / D-24517 — `finalBlow` is the ONE envelope field the link carries
+  // (a Final-Blow match plays fundamentally differently, so a shared setup must
+  // preserve it). OMITTED when off, so a normal loadout's link is byte-identical to
+  // before this change and `parseFinalBlowFromUrl` reads absence as off.
+  if (options?.finalBlow === true) {
+    params.set("finalBlow", "true");
+  }
   return `${baseUrl}?${params.toString()}`;
 }
 
