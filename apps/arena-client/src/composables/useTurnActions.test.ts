@@ -47,10 +47,16 @@ describe('useTurnActions (WP-129)', () => {
     assert.match(startGate.reason!, /Reveal the villain/);
   });
 
-  test('canEndTurn allowed only in cleanup', () => {
+  test('canEndTurn allowed at main and cleanup, blocked at start (Jeff feedback — single terminator)', () => {
+    // why (Jeff feedback): End turn is now the single forward action and fires from
+    // the main stage too (TurnActionBar chains advanceStage → endTurn), so canEndTurn
+    // allows main as well as cleanup. At start it stays blocked — the reveal (which
+    // auto-advances) is the way forward.
     assert.equal(useTurnActions('cleanup').canEndTurn().allowed, true);
-    assert.equal(useTurnActions('start').canEndTurn().allowed, false);
-    assert.equal(useTurnActions('main').canEndTurn().allowed, false);
+    assert.equal(useTurnActions('main').canEndTurn().allowed, true);
+    const startGate = useTurnActions('start').canEndTurn();
+    assert.equal(startGate.allowed, false);
+    assert.match(startGate.reason!, /Reveal the villain/);
   });
 
   test('disabled reason cites the current stage so the user understands why', () => {

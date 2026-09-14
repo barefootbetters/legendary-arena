@@ -752,19 +752,32 @@ export function useTurnActions(
           reason: 'KO up to four cards from your discard pile, or KO None, before taking another action.',
         };
       }
-      if (currentStage === 'cleanup' && hasPendingChoice) {
+      if (hasPendingChoice) {
         // why: D-22203 — the engine's dual turn-end guard (WP-220) blocks
         // endTurn when pendingHeroChoice is set; this client-side gate
         // surfaces the reason so the player sees a tooltip instead of a
         // silent rejection.
+        // why (Jeff feedback): now checked at EVERY stage, not just cleanup —
+        // End turn is a one-click terminator that fires from the main stage too
+        // (the client chains advanceStage → endTurn), so a pending hero-reveal
+        // choice must block it wherever the player clicks, not only at cleanup.
         return {
           allowed: false,
           reason: 'Resolve the revealed card choice before ending your turn.',
         };
       }
-      return currentStage === 'cleanup'
+      // why (Jeff feedback): End turn is now the single forward action for the whole
+      // play part of the turn — the "Pass priority" button is gone. It fires from
+      // the MAIN stage (TurnActionBar chains advanceStage → endTurn, mirroring the
+      // reveal auto-advance) as well as the cleanup stage, so allow both here. At
+      // 'start' it stays blocked: the villain reveal (which auto-advances to main)
+      // is the way forward, not ending the turn.
+      return currentStage === 'main' || currentStage === 'cleanup'
         ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'cleanup') };
+        : {
+            allowed: false,
+            reason: 'Reveal the villain to begin your turn before you can end it.',
+          };
     },
     // why: WP-380 / D-24181 — the Wound "Healing" ability (engine healWounds).
     // Precedence: turn → main stage → block-all pending → wound-in-hand →
