@@ -273,31 +273,39 @@ describe('TurnActionBar — Heal Wounds (shown only when usable)', () => {
   });
 });
 
-describe('TurnActionBar — step highlight matches the live button', () => {
+// Jeff feedback: highlight is STAGE-BASED — exactly one Step box active at a time,
+// matching the stage. Right after Reveal (main) only Step 2 is active; Step 3 is
+// grayed even though End turn is usable from main.
+describe('TurnActionBar — stage-based step highlight (one active step at a time)', () => {
   const stepActive = (wrapper: ReturnType<typeof mount>, step: 1 | 2 | 3): boolean =>
     wrapper.find(`[data-testid="play-turn-step-${step}"]`).classes().includes(ACTIVE);
 
-  test('at start, only Step 1 is lit', () => {
+  test('at start, only Step 1 is active', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: { currentStage: 'start', hasRevealedVillain: false, submitMove },
     });
-    assert.equal(stepActive(wrapper, 1), true, 'Step 1 lit (Reveal usable)');
+    assert.equal(stepActive(wrapper, 1), true);
     assert.equal(stepActive(wrapper, 2), false);
     assert.equal(stepActive(wrapper, 3), false);
   });
 
-  test('at main, Step 2 (play) and Step 3 (End turn) are lit; Step 1 is not', () => {
+  test('at main, ONLY Step 2 is active — Step 3 is grayed even though End turn is usable', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: { currentStage: 'main', submitMove },
     });
-    assert.equal(stepActive(wrapper, 1), false, 'Step 1 dim (Reveal not usable at main)');
-    assert.equal(stepActive(wrapper, 2), true, 'Step 2 lit during play');
-    assert.equal(stepActive(wrapper, 3), true, 'Step 3 lit — End turn is usable');
+    assert.equal(stepActive(wrapper, 1), false);
+    assert.equal(stepActive(wrapper, 2), true, 'Step 2 active during play');
+    assert.equal(stepActive(wrapper, 3), false, 'Step 3 grayed at main (Jeff feedback)');
+    // End turn is still a usable one-click button; it is just not highlighted.
+    assert.equal(
+      wrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
+      undefined,
+    );
   });
 
-  test('at cleanup, only Step 3 is lit', () => {
+  test('at cleanup, only Step 3 is active', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: { currentStage: 'cleanup', submitMove },
@@ -306,40 +314,15 @@ describe('TurnActionBar — step highlight matches the live button', () => {
     assert.equal(stepActive(wrapper, 2), false);
     assert.equal(stepActive(wrapper, 3), true);
   });
-
-  test('a pending choice at main dims Step 3 (End turn not usable), so no live button in a dim box mismatch', () => {
-    const { submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', submitMove, hasPendingKoChoice: true },
-    });
-    // Step 3 header not lit because End turn is blocked; the button is disabled too — consistent.
-    assert.equal(stepActive(wrapper, 3), false);
-    assert.equal(
-      wrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
-      '',
-    );
-  });
 });
 
-describe('TurnActionBar — End turn primary accent', () => {
-  test('End turn carries the primary accent while it is the live action (main / cleanup)', () => {
+describe('TurnActionBar — no accented turn button (stage highlight is the only guide)', () => {
+  test('End turn never carries the primary accent (removed with the stage-based highlight)', () => {
     const { submitMove } = recorder();
-    for (const stage of ['main', 'cleanup'] as const) {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
       const end = mount(TurnActionBar, { props: { currentStage: stage, submitMove } })
         .find('[data-testid="play-action-end-turn"]');
-      assert.ok(end.classes().includes(PRIMARY), `End turn accented at ${stage}`);
+      assert.equal(end.classes().includes(PRIMARY), false, `no accent at ${stage}`);
     }
-  });
-
-  test('End turn is not accented at start, nor while a pending choice blocks it', () => {
-    const { submitMove } = recorder();
-    const atStart = mount(TurnActionBar, { props: { currentStage: 'start', submitMove } })
-      .find('[data-testid="play-action-end-turn"]');
-    assert.equal(atStart.classes().includes(PRIMARY), false);
-
-    const blocked = mount(TurnActionBar, {
-      props: { currentStage: 'main', submitMove, hasPendingKoChoice: true },
-    }).find('[data-testid="play-action-end-turn"]');
-    assert.equal(blocked.classes().includes(PRIMARY), false);
   });
 });
