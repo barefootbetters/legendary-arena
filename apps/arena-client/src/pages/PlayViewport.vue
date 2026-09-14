@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
+import GameLogDownloadButton from '../components/GameLogDownloadButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import BattlePlanPanel from '../components/BattlePlanPanel.vue';
@@ -95,7 +96,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -411,6 +412,14 @@ export default defineComponent({
       :show-guest-sign-in="isGuestResult"
     />
     <DiagnosticExportButton />
+    <!--
+      // why (Jeff feedback): the endgame outcome screen collapses the board and its
+      // GameLogPanel Save button behind the "View final board" toggle, leaving the
+      // game-log transcript with no reachable download there. This button (self-
+      // sourced from the UIState store, shown only at game over) sits beside
+      // "Download diagnostics" so the log .txt can be saved from the outcome screen.
+    -->
+    <GameLogDownloadButton />
     <!--
       // why: WP-363 — mounted ONCE here at the shared viewport root (the same
       // shared-child case as <DiagnosticExportButton>), so the in-match "View
