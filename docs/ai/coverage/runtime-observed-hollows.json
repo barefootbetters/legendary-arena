@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 30,
-    "totalObservations": 2397,
+    "totalObservations": 2410,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 489,
+      "no-handler": 500,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1908
+      "parse-unrecognized": 1910
     }
   },
   "byMechanic": {
@@ -58,12 +58,12 @@
       ]
     },
     "ambush": {
-      "hitCount": 97,
+      "hitCount": 99,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 97
+        "parse-unrecognized": 99
       },
       "examples": [
         {
@@ -79,19 +79,19 @@
           "reason": "parse-unrecognized"
         },
         {
+          "cardId": "bkpt/general-okoye/to-my-last-breath#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/general-okoye/to-my-last-breath#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
           "cardId": "bkpt/general-okoye/to-my-last-breath#1",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "bkpt/general-okoye/to-my-last-breath#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "bkpt/general-okoye/to-my-last-breath#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1087,10 +1087,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 489,
+      "hitCount": 500,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 489,
+        "no-handler": 500,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },
