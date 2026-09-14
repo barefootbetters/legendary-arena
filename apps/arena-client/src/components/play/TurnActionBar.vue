@@ -343,27 +343,12 @@ export default defineComponent({
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice).canEndTurn();
     }
 
-    // why (Jeff feedback): a step box's header lights up exactly when its own button
-    // is usable, so the highlight always matches the live button — no "active box
-    // with a dim button", no "dim box with a live button". Step 2 (Play / Recruit /
-    // Fight) is lit for the whole main stage because its action is on the board (tap
-    // cards / villains / heroes), not a button in this bar.
-    function isStep1Live(): boolean {
-      return revealGate().allowed;
-    }
-    function isStep2Live(): boolean {
-      return props.currentStage === 'main';
-    }
-    function isStep3Live(): boolean {
-      return endTurnGate().allowed;
-    }
-
-    // why (Jeff feedback): End turn carries the primary accent whenever it is the
-    // live forward action (in play), so the eye lands on the one button that ends
-    // the turn. It is the single terminator — no "Pass priority", no "Play Hand".
-    function isEndTurnPrimary(): boolean {
-      return endTurnGate().allowed;
-    }
+    // why (Jeff feedback): highlight is STAGE-BASED — exactly one Step box is active
+    // at a time, matching where the turn is (Step 1 at start, Step 2 at main, Step 3
+    // at cleanup). So right after the reveal only Step 2 is active and Step 3 is
+    // grayed, even though End turn is already usable from main (it stays a plain
+    // enabled button in the grayed Step 3 box, not an accented one — see the template).
+    // `activeStep()` above already returns the stage's step number.
 
     // why: WP-380 — threads the three new props (hasWoundInHand from the page-level
     // hand scan; hasActedThisTurn / hasHealedThisTurn from UIState.game) as the
@@ -501,11 +486,7 @@ export default defineComponent({
       activeStep,
       revealGate,
       endTurnGate,
-      isEndTurnPrimary,
       healGate,
-      isStep1Live,
-      isStep2Live,
-      isStep3Live,
       onReveal,
       onEndTurn,
       onHealWounds,
@@ -524,7 +505,7 @@ export default defineComponent({
     <ol class="turn-action-bar__steps">
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': isStep1Live() }"
+        :class="{ 'turn-action-bar__step--active': activeStep() === 1 }"
         data-testid="play-turn-step-1"
       >
         <header>Step 1 — Reveal villain (play.start)</header>
@@ -546,7 +527,7 @@ export default defineComponent({
       </li>
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': isStep2Live() }"
+        :class="{ 'turn-action-bar__step--active': activeStep() === 2 }"
         data-testid="play-turn-step-2"
       >
         <header>Step 2 — Play / Recruit / Fight (play.main)</header>
@@ -571,14 +552,13 @@ export default defineComponent({
       </li>
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': isStep3Live() }"
+        :class="{ 'turn-action-bar__step--active': activeStep() === 3 }"
         data-testid="play-turn-step-3"
       >
         <header>Step 3 — End turn</header>
         <button
           type="button"
           data-testid="play-action-end-turn"
-          :class="{ 'turn-action-bar__action--primary': isEndTurnPrimary() }"
           :disabled="!endTurnGate().allowed"
           :aria-disabled="!endTurnGate().allowed ? 'true' : undefined"
           :title="endTurnGate().reason ?? undefined"
@@ -586,10 +566,11 @@ export default defineComponent({
         >
           <!-- why (Jeff feedback): End turn is the single forward action and works in
                one click from the main stage — a watcher advances main → cleanup then
-               ends once confirmed, so there is no "Pass priority" step. It carries the
-               primary accent while it is the live action (isEndTurnPrimary), and its
-               box header lights up in step with it (isStep3Live). Disabled-tooltip
-               precedence per EC-132 §3 binds the reason from endTurnGate. -->
+               ends once confirmed, so there is no "Pass priority" step. Highlight is
+               stage-based (Step 3's header is grayed until the cleanup stage), so this
+               is a plain enabled button during main rather than an accented one — that
+               is why Step 2 alone reads as active right after the reveal. Disabled-
+               tooltip precedence per EC-132 §3 binds the reason from endTurnGate. -->
           ✓ End turn — discard hand and draw 6
         </button>
       </li>
@@ -676,18 +657,5 @@ export default defineComponent({
 .turn-action-bar__step button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* why (Jeff feedback): End turn is the ONE highlighted call-to-action once you are
-   in play — a filled accent so the eye lands on the single button that ends the
-   turn. Reveal and Heal Wounds stay plain. Uses --color-active-player (the brand
-   bright-blue, mode-stable) with white text; :not(:disabled) guarantees the accent
-   never sits on an un-clickable button. */
-.turn-action-bar__step button.turn-action-bar__action--primary:not(:disabled) {
-  background: var(--color-active-player, #1d4ed8);
-  color: #ffffff;
-  border: 1px solid var(--color-active-player, #1d4ed8);
-  border-radius: 0.25rem;
-  font-weight: 700;
 }
 </style>
