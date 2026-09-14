@@ -5749,4 +5749,81 @@ describe('heroEffectRevealHeroDeckAttack (WP-668 / D-24481 — Jade Giantess)', 
 
     assert.equal(gameState.turnEconomy.attack, 3, 'the stat-less card contributes 0, the other contributes its printed attack');
   });
+
+  // -------------------------------------------------------------------------
+  // heroEffectResolved notable event (WP-697 / D-24516)
+  // -------------------------------------------------------------------------
+
+  it('emits one heroEffectResolved notable event on a realized reveal (WP-697)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6, // floor(6 / 2) = 3 reveals; 2 + 3 + 4 = 9 attack
+      heroDeck: ['h-a', 'h-b', 'h-c', 'h-d'],
+      cardStats: { 'h-a': heroStat(2), 'h-b': heroStat(3), 'h-c': heroStat(4), 'h-d': heroStat(5) },
+      heroAbilityHooks: [jadeHook()],
+    });
+    // why: WP-697 — the minimal heroEffects builder omits notableEvents (a real match
+    // seeds [] at setup); set it so the emit is observable, mirroring the state a live
+    // playerView projects to the arena-client overlay.
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one notable event was emitted');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'heroEffectResolved', 'the event is a heroEffectResolved');
+    assert.equal(event.type === 'heroEffectResolved' && event.playerId, '0', 'it carries the acting seat');
+    // why: cardDisplayData is empty in the mock, so the name falls back to the raw
+    // ext_id (resolveTransformCardName's defensive fallback) — the narrative still
+    // names the card and carries the realized count + summed attack.
+    assert.ok(
+      event.narrative.includes(JADE_ID)
+        && event.narrative.includes('revealed 3 card(s)')
+        && event.narrative.includes('+9 attack'),
+      'the narrative names the card, the revealed count, and the summed attack',
+    );
+  });
+
+  it('does NOT emit on the below-threshold neutral no-op (WP-697)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 1, // floor(1 / 2) = 0 → the neutral, most-common non-realized path
+      heroDeck: ['h-a', 'h-b'],
+      cardStats: { 'h-a': heroStat(2), 'h-b': heroStat(3) },
+      heroAbilityHooks: [jadeHook()],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.notableEvents.length, 0, 'a below-threshold (0-scale) reveal emits no notable event');
+  });
+
+  it('does NOT emit on an empty Hero Deck (WP-697)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6,
+      heroDeck: [],
+      heroAbilityHooks: [jadeHook()],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.notableEvents.length, 0, 'an empty-deck (blocked) reveal emits no notable event');
+  });
+
+  it('does not throw when notableEvents is absent — the push is guarded (WP-697)', () => {
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 6,
+      heroDeck: ['h-a', 'h-b', 'h-c'],
+      cardStats: { 'h-a': heroStat(2), 'h-b': heroStat(3), 'h-c': heroStat(4) },
+      heroAbilityHooks: [jadeHook()],
+    });
+    // why: WP-697 — leave notableEvents unset (the minimal builder omits it). The
+    // Array.isArray guard must skip the push silently; handlers never throw.
+    assert.doesNotThrow(() => executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID));
+    assert.equal(gameState.turnEconomy.attack, 9, 'the attack grant still applied with notableEvents absent');
+  });
 });

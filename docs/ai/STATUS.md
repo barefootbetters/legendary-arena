@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-697 — Hero-Effect Resolved Overlay: `heroEffectResolved` notable event (EC-734 / D-24516) (2026-09-13)
+
+Surfaces **invisible-work hero effects** on the play surface. Reported by Jeff:
+Jade Giantess (`wwhk/she-hulk/jade-giantess`) fired correctly per the game log
+("revealed N card(s) from the Hero Deck … gained +X attack") but the player saw
+**no on-screen feedback** — the revealed cards rotate to the deck bottom
+(transient) and the attack total just climbs, so it read as "nothing happened."
+`G.messages` is not projected to clients, and none of the ten existing notable
+events carried a hero effect.
+
+**Engine.** Added the eleventh `NotableGameEventType`, `heroEffectResolved`
+(union + `NOTABLE_EVENT_TYPES` + drift test, in lockstep) — a **minimal,
+card-less** `{ type, playerId, narrative }` payload like `transformResolved` /
+`healResolved`. A pure, byte-stable `composeHeroRevealAttackNarrative(cardName,
+revealedCount, totalAttack)`. A **guarded** (`Array.isArray`) push at
+`heroEffectRevealHeroDeckAttack`, emitted **last** on a realized reveal
+(`revealedCount > 0`) so all three non-realized exits (below-threshold `neutral`,
+empty-deck `blocked`, missing-`turnEconomy` guard) emit nothing; the name resolves
+via the shared `resolveTransformCardName`.
+
+**Client.** `NotableEventOverlay` gains a "Hero Ability" chip + `--color-hero-ability`
+amber accent; `sfxManifest` gains the eleventh key (`hero-ability.mp3`,
+operator-pending R2 byte). The client `NotableGameEvent` union auto-derives from
+`UIState`, and `eventCardId` returns `''` for the card-less variant — no other
+client change. Scope is v1 (this one fire site); other invisible-work families
+reuse the same event type; the VFX beat is a named follow-up.
+
+**Determinism.** `G.notableEvents` is hashed (D-24294), but no committed replay /
+sentinel fixture performs this reveal → **NO re-pin** (verified: engine 3501/0
+with `PRE_WP080_HASH` + sentinel `finalStateHash` byte-identical). arena-client
+`vue-tsc` 0 + 1811/0; `pnpm -r build` 0. Drafted + executed in one session off
+`origin/main`; pre-flight (01.4) READY + copilot (01.7) RISK→HOLD ran as
+independent subagents, both fixes folded. **User-visible on
+play.legendary-arena.com — D-24026 live-verify pending post-deploy.**
+
 ### WP-694 — Multi-seat "each other player chooses" core mastermind tactics (EC-731 / D-24511) (2026-09-10)
 
 Implemented the two remaining **"each other player chooses"** core mastermind

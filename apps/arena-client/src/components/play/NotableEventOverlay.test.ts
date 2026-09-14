@@ -119,6 +119,14 @@ function transformResolvedEvent(): NotableGameEvent {
   };
 }
 
+function heroEffectResolvedEvent(): NotableGameEvent {
+  return {
+    type: 'heroEffectResolved',
+    playerId: '0',
+    narrative: '"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +10 attack.',
+  };
+}
+
 describe('NotableEventOverlay — null event renders nothing (WP-201)', () => {
   test('omits the overlay element when event prop is null', () => {
     const wrapper = mount(NotableEventOverlay, { props: { event: null } });
@@ -269,6 +277,19 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
     assert.match(wrapper.text(), /"Hurl Legal Objections" transformed into "Hurl Trucks"\./);
     // why: WP-672 — a transform carries no card id (names travel in the narrative),
     // so eventCardId → '' → cardId null and the card-name row renders empty.
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
+  });
+
+  test('heroEffectResolved → "Hero Ability" chip + verbatim narrative, no card-name row (WP-697)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: heroEffectResolvedEvent() },
+    });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'heroEffectResolved');
+    assert.match(wrapper.text(), /Hero Ability/);
+    assert.match(wrapper.text(), /"Jade Giantess" revealed 4 card\(s\) from the Hero Deck and gained \+10 attack\./);
+    // why: WP-697 — a heroEffectResolved carries no card id (the card name travels in
+    // the narrative), so eventCardId → '' → cardId null and the card-name row renders empty.
     assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
   });
 });

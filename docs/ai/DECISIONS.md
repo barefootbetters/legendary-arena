@@ -42231,4 +42231,61 @@ WP-212 (villainRevealedThisTurn once-per-turn reveal guard), WP-236 (auto-draw p
 for choiceless start actions), the Board-Visible Field Rule (UIState projection contract).
 **Reserved by:** NUMBER-LEDGER D-24515.
 
+### D-24516 — `heroEffectResolved`, the eleventh notable-event variant, surfaces invisible-work hero effects (Active 2026-09-13 — WP-697 / EC-734)
+
+**Context.** Hero-card effects whose result the player cannot already see fire
+silently. The reported case (Jeff, Red Skull / Midtown Bank Robbery): Jade
+Giantess (`wwhk/she-hulk/jade-giantess`) resolved correctly per the game log
+("revealed N card(s) from the Hero Deck … gained +X attack"), but the revealed
+cards rotate to the BOTTOM of the Hero Deck (transient — never shown) and the
+attack total just climbs, so it read as "nothing happened." `G.messages` is not
+projected to clients (the `NotableEventOverlay` keys on `G.notableEvents`), and
+none of the ten existing `NotableGameEventType` variants carried a hero effect.
+
+**Decision.**
+1. Add the eleventh `NotableGameEventType`, `heroEffectResolved`, per the
+   `notableEvents.types.ts` header rule that an eleventh variant needs a new
+   DECISIONS entry. It is a **general bucket for invisible-work hero effects** —
+   effects whose result the player cannot already see. v1 emits it from ONE fire
+   site, `heroEffectRevealHeroDeckAttack` (the reveal-top-of-Hero-Deck-for-attack
+   family). Ordinary attack/recruit/draw icons do NOT emit — their result is
+   already visible in the climbing totals / growing hand. Future invisible-work
+   families (other reveal/peek/derived-magnitude effects) reuse this same variant
+   with their own narrative composer, so no new `NotableGameEventType` is needed
+   per family.
+2. **Minimal, card-less payload** `{ type, playerId, narrative }` (D-20001),
+   matching `healResolved` / `transformResolved`. The source card name and the
+   realized reveal count + attack magnitude travel inside the engine-composed,
+   byte-stable `narrative` (`composeHeroRevealAttackNarrative`), rendered verbatim
+   by the client (D-20002) which branches only on `event.type` for the chip +
+   accent (D-20105 — the UI never re-derives effect semantics).
+3. **Presentation parity only** — the effect already happens; this announces it.
+   No new mechanic, no reward, no gameplay-outcome change. Emitted LAST on a
+   **realized** reveal (`revealedCount > 0`, NOT `totalAttack > 0` — a
+   0-printed-attack reveal still did the invisible work); all three non-realized
+   exits (below-threshold `neutral`, empty-deck `blocked`, missing-`turnEconomy`
+   guard) emit nothing. Guarded on `Array.isArray(G.notableEvents)` (handlers
+   never throw; minimal test builders omit the array).
+
+**Alternative rejected.** Surfacing this client-side off the existing
+`UIState.effectTraces` channel (zero engine change, hash-excluded) was rejected:
+`effectTraces` is **inert diagnostic data** (D-24294) carrying raw machine tokens
+and declared params, and it does **not** carry the realized `+attack` magnitude
+(computed at the fire site, never written to the trace). Reconstructing the
+player-facing outcome from it would put effect-semantics interpretation in the
+client, which D-20105 forbids, off a channel explicitly marked not-player-truth.
+
+**Determinism.** `G.notableEvents` IS serialized by `computeStateHash` (only
+`G.diagnostics` is excluded, D-24294), so the push is hash-relevant wherever a
+reveal-for-attack fires. But no committed replay / sentinel fixture performs a
+Jade Giantess reveal (the sentinel loads no `wwhk` hero), so there is **NO hash
+re-pin** — verified empirically (engine 3501/0; `PRE_WP080_HASH` + sentinel
+`finalStateHash` byte-identical). The VFX beat is out of scope (a named
+follow-up); v1 is the overlay chip only.
+
+**Status:** Active. **Builds on:** D-20001 (minimal payload), D-20002 (verbatim
+render), D-20104 (append-only cursor), D-20105 (no UI semantics), D-24294
+(diagnostics-only hash exclusion), D-24487 (the `transformResolved` hero-effect
+overlay precedent). **Reserved by:** NUMBER-LEDGER D-24516.
+
 Protect this file.

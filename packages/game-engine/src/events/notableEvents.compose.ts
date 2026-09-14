@@ -407,3 +407,33 @@ export function composeTransformNarrative(
 ): string {
   return `"${baseName}" transformed into "${secondFormName}".`;
 }
+
+// ---------------------------------------------------------------------------
+// Hero-effect resolved narrative (reveal-for-attack, WP-697)
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for a `heroEffectResolved` event's
+ * reveal-top-of-Hero-Deck-for-attack family (WP-697 / D-24516).
+ *
+ * Pure + byte-stable: given the same inputs, returns identical output. The card
+ * name is a resolved display name (or the raw ext_id when `cardDisplayData` had
+ * no entry) supplied by the fire site, so the composer keeps its no-`G` purity —
+ * mirroring `composeTransformNarrative`. Voiced in the third person because the
+ * notable-event overlay is a public, all-audience projection; the acting seat
+ * travels on the event's `playerId`, not in the copy. Mirrors the
+ * `heroEffectRevealHeroDeckAttack` `applied` log line minus the `Player N`
+ * prefix, so the overlay and the game log read consistently.
+ *
+ * @param cardName - Human-facing name of the hero card whose ability resolved.
+ * @param revealedCount - Number of Hero-Deck cards revealed (>= 1 for a realized reveal).
+ * @param totalAttack - Summed printed attack gained from the revealed cards (>= 0).
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeHeroRevealAttackNarrative(
+  cardName: string,
+  revealedCount: number,
+  totalAttack: number,
+): string {
+  return `"${cardName}" revealed ${String(revealedCount)} card(s) from the Hero Deck and gained +${String(totalAttack)} attack.`;
+}

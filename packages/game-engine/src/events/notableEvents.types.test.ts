@@ -32,11 +32,12 @@ import type {
   DeckReshuffledEvent,
   StrikeBlockedEvent,
   TransformResolvedEvent,
+  HeroEffectResolvedEvent,
   NotableGameEvent,
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly ten entries in canonical order', () => {
+  it('contains exactly eleven entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -50,6 +51,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'deckReshuffled',
         'strikeBlocked',
         'transformResolved',
+        'heroEffectResolved',
       ],
     );
   });
@@ -74,6 +76,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'deckReshuffled',
       'strikeBlocked',
       'transformResolved',
+      'heroEffectResolved',
     ];
     for (const member of unionMembers) {
       assert.ok(
@@ -291,6 +294,16 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
       narrative: '"Hurl Legal Objections" transformed into "Hurl Trucks".',
     };
     const cloned = JSON.parse(JSON.stringify(original)) as TransformResolvedEvent;
+    assert.deepStrictEqual(cloned, original);
+  });
+
+  it('HeroEffectResolvedEvent round-trips through JSON.stringify/parse', () => {
+    const original: HeroEffectResolvedEvent = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +10 attack.',
+    };
+    const cloned = JSON.parse(JSON.stringify(original)) as HeroEffectResolvedEvent;
     assert.deepStrictEqual(cloned, original);
   });
 
