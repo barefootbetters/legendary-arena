@@ -128,6 +128,7 @@ const {
   setPlayerCount,
   setSeed,
   reRollSeed,
+  setFinalBlow,
   prefillFromTheme,
   loadFromJson,
   exportToJsonBlob,
@@ -1353,6 +1354,32 @@ function slotLabel(slot: PickerSlot): string {
             </button>
           </div>
         </label>
+
+        <!-- why: WP-686 / D-24503 — the optional rulebook "Final Blow" variant.
+             When ON, defeating the last Tactic no longer wins; the Mastermind must
+             be fought a 5th, final time, and that fight moves the Mastermind card
+             into the winner's Victory Pile. It is an envelope field (finalBlow?),
+             OMIT-WHEN-OFF, so an unchecked box authors no key and stays byte-identical
+             to a pre-toggle loadout. Mirrors the play-lobby toggle (LobbyView.vue). -->
+        <label class="field final-blow-field">
+          <span class="field-label">
+            <input
+              type="checkbox"
+              data-testid="final-blow-toggle"
+              :checked="draft.finalBlow === true"
+              @change="setFinalBlow(($event.target as HTMLInputElement).checked)"
+            />
+            Final Blow (optional rule)
+          </span>
+          <span class="field-hint">
+            Defeating the last Mastermind Tactic no longer wins — the Mastermind must
+            be fought one final time, and that fight claims the Mastermind card.
+          </span>
+          <span class="rule-mode-machine-value">
+            <span class="field-label">finalBlow:</span>
+            <code>{{ draft.finalBlow === true ? "true" : "— (off)" }}</code>
+          </span>
+        </label>
       </div>
 
       <!-- Composition: scalars -->
@@ -1968,6 +1995,11 @@ function slotLabel(slot: PickerSlot): string {
 }
 .field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; }
 .field-label { color: #8888aa; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+/* why: WP-686 — the Final Blow toggle's label pairs a checkbox with normal-case
+   text (not the uppercase machine label), and carries a short plain-language hint. */
+.final-blow-field .field-label { display: flex; align-items: center; gap: 0.45rem; text-transform: none; letter-spacing: 0; color: #d0d0e6; font-size: 0.82rem; }
+.final-blow-field input[type="checkbox"] { width: auto; margin: 0; }
+.field-hint { color: #8888aa; font-size: 0.72rem; line-height: 1.35; }
 .field-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .field-value { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 

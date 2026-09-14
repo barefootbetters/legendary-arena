@@ -671,3 +671,85 @@ describe("useLoadoutDraft — hero alternates bench (WP-404 / D-24212)", () => {
     assert.equal(api.draft.value.heroAlternateIds, undefined);
   });
 });
+
+describe("useLoadoutDraft — Final Blow toggle (WP-686 / D-24503)", () => {
+  it("setFinalBlow(true) sets the envelope flag; setFinalBlow(false) deletes it (omit-when-off)", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    // why: a blank draft leaves the key absent — omit-when-off, envelope-level.
+    assert.equal(api.draft.value.finalBlow, undefined);
+    api.setFinalBlow(true);
+    assert.equal(api.draft.value.finalBlow, true);
+    // envelope-level, never on the composition
+    assert.equal(
+      "finalBlow" in api.draft.value.composition,
+      false,
+      "the Final Blow flag is envelope-level, not a composition field",
+    );
+    api.setFinalBlow(false);
+    // why: a `finalBlow: false` key would drift from the engine's omit-when-off
+    // seeding; deleting the key keeps an off loadout byte-identical to a pre-toggle one.
+    assert.equal(api.draft.value.finalBlow, undefined);
+    assert.equal("finalBlow" in api.draft.value, false);
+  });
+
+  it("the MATCH-SETUP export whitelist carries the flag when on (a strict replacer would drop it)", async () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setScheme("core/midtown-bank-robbery");
+    api.setMastermind("core/loki");
+    api.addVillainGroup("core/brotherhood");
+    api.addHenchmanGroup("core/sentinel");
+    api.addHeroGroup("core/spider-man");
+    api.setFinalBlow(true);
+    const text = await api.exportToJsonBlob().text();
+    const parsed = JSON.parse(text);
+    assert.equal(
+      parsed.finalBlow,
+      true,
+      "the downloaded MATCH-SETUP document must carry finalBlow, not silently drop it (the supportPools trap)",
+    );
+  });
+
+  it("the MATCH-SETUP export omits the flag entirely when off", async () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setScheme("core/midtown-bank-robbery");
+    api.setMastermind("core/loki");
+    api.addVillainGroup("core/brotherhood");
+    api.addHenchmanGroup("core/sentinel");
+    api.addHeroGroup("core/spider-man");
+    const text = await api.exportToJsonBlob().text();
+    const parsed = JSON.parse(text);
+    assert.equal(
+      "finalBlow" in parsed,
+      false,
+      "an off loadout must not emit a finalBlow key (omit-when-off byte-identity)",
+    );
+  });
+
+  it("round-trips a loaded Final Blow document through re-export (the strict-whitelist regression)", async () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setScheme("core/midtown-bank-robbery");
+    api.setMastermind("core/loki");
+    api.addVillainGroup("core/brotherhood");
+    api.addHenchmanGroup("core/sentinel");
+    api.addHeroGroup("core/spider-man");
+    api.setFinalBlow(true);
+    const authored = await api.exportToJsonBlob().text();
+
+    // Load the authored document into a fresh draft, then re-export it. Before the
+    // keyOrder fix the flag survived validation into the draft but was stripped on
+    // re-serialization — the exact silent-drop this test guards against.
+    const reader = useLoadoutDraft(FULL_REGISTRY);
+    const result = reader.loadFromJson(authored);
+    assert.equal(result.ok, true);
+    assert.equal(reader.draft.value.finalBlow, true);
+    const reExported = JSON.parse(await reader.exportToJsonBlob().text());
+    assert.equal(reExported.finalBlow, true);
+  });
+
+  it("resetDraft clears the flag", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setFinalBlow(true);
+    api.resetDraft();
+    assert.equal(api.draft.value.finalBlow, undefined);
+  });
+});
