@@ -114,65 +114,61 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     }
   });
 
-  test('Pass-priority click emits advanceStage per D-10011 (canonical, not no-op)', () => {
+  // Jeff feedback — "Pass priority" was removed from Step 2. End turn is now the
+  // single forward action; from the main stage it chains advanceStage → endTurn.
+
+  test('End turn from the main stage chains advanceStage → endTurn (single terminator; no Pass priority)', () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'main', submitMove },
+      // empty hand so the play-your-hand gate does not block End turn
+      props: { currentStage: 'main', handCards: [], submitMove },
     });
-    void wrapper.find('[data-testid="play-action-pass-priority"]').trigger('click');
-    assert.equal(calls.length, 1);
+    void wrapper.find('[data-testid="play-action-end-turn"]').trigger('click');
+    assert.equal(calls.length, 2, 'End turn from main advances then ends');
+    assert.equal(calls[0]!.name, 'advanceStage');
+    assert.deepEqual(calls[0]!.args, {});
+    assert.equal(calls[1]!.name, 'endTurn');
+    assert.deepEqual(calls[1]!.args, {});
+  });
+
+  test('the Pass priority button no longer exists', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', handCards: [], submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="play-action-pass-priority"]').exists(),
+      false,
+      'Step 2 no longer renders a "Pass priority" button',
+    );
+  });
+
+  test('Step 1 becomes "Continue to Play" when the villain is revealed but the turn is still at start (parked-choice recovery)', () => {
+    // why: normally the reveal auto-advances into main; but if the revealed villain
+    // parked a pending choice, the turn stays at 'start'. With Pass priority gone,
+    // the Step-1 button becomes the manual advance so the player is never stranded.
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', submitMove, hasRevealedVillain: true },
+    });
+    const button = wrapper.find('[data-testid="play-action-reveal"]');
+    assert.equal(button.attributes('disabled'), undefined, 'the continue action is enabled');
+    assert.match(button.text(), /Continue to Play/);
+    void button.trigger('click');
+    assert.equal(calls.length, 1, 'continue fires a single advanceStage');
     assert.equal(calls[0]!.name, 'advanceStage');
     assert.deepEqual(calls[0]!.args, {});
   });
 
-  test('Pass-priority is enabled at main and cleanup (D-10011 stage-advance vocabulary)', () => {
-    const { submitMove } = recorder();
-    for (const stage of ['main', 'cleanup'] as const) {
-      const wrapper = mount(TurnActionBar, {
-        props: { currentStage: stage, submitMove },
-      });
-      assert.equal(
-        wrapper.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
-        undefined,
-        `pass-priority should be enabled at stage '${stage}'`,
-      );
-    }
-  });
-
-  test('Pass-priority is blocked at start until the villain is revealed, then enabled (reveal-first guard)', () => {
-    // why: mirrors the engine advanceStage reveal-first guard — advancing start→main
-    // before the mandatory reveal would skip it, so the button is a tooltip, not a
-    // silent no-op. Once hasRevealedVillain is true (e.g. a reveal that parked a
-    // pending choice), Pass priority becomes the manual advance.
-    const { submitMove } = recorder();
-    const beforeReveal = mount(TurnActionBar, {
-      props: { currentStage: 'start', submitMove, hasRevealedVillain: false },
-    });
-    const blocked = beforeReveal.find('[data-testid="play-action-pass-priority"]');
-    assert.equal(blocked.attributes('disabled'), '', 'pass-priority disabled at start before reveal');
-    assert.match(blocked.attributes('title')!, /Reveal the villain/);
-
-    const afterReveal = mount(TurnActionBar, {
-      props: { currentStage: 'start', submitMove, hasRevealedVillain: true },
-    });
-    assert.equal(
-      afterReveal.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
-      undefined,
-      'pass-priority enabled at start once the villain is revealed',
-    );
-  });
-
-  test('Reveal disables once the villain is revealed this turn (stops reading as the live action)', () => {
-    // why: the reveal is once per turn (engine villainRevealedThisTurn guard); once
-    // spent the button disables with a tooltip so it cannot be re-clicked and no longer
-    // looks like the pending action.
+  test('Step 1 shows "Reveal top of Villain Deck" before the reveal', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'start', submitMove, hasRevealedVillain: true },
+      props: { currentStage: 'start', submitMove, hasRevealedVillain: false },
     });
-    const reveal = wrapper.find('[data-testid="play-action-reveal"]');
-    assert.equal(reveal.attributes('disabled'), '', 'reveal disabled once spent');
-    assert.match(reveal.attributes('title')!, /already revealed the villain/);
+    assert.match(
+      wrapper.find('[data-testid="play-action-reveal"]').text(),
+      /Reveal top of Villain Deck/,
+    );
   });
 
   test('End Turn click emits endTurn with empty payload at play.cleanup', () => {
@@ -186,23 +182,42 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     assert.deepEqual(calls[0]!.args, {});
   });
 
-  test('End Turn is enabled only in cleanup with stage tooltip otherwise', () => {
+  test('End turn is enabled at main (hand played) and cleanup, blocked at start', () => {
     const { submitMove } = recorder();
-    for (const stage of ['start', 'main'] as const) {
-      const wrapper = mount(TurnActionBar, {
-        props: { currentStage: stage, submitMove },
-      });
-      const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
-      assert.equal(endTurn.attributes('disabled'), '');
-      assert.match(endTurn.attributes('title')!, /Only available during the Cleanup/);
-    }
-
-    const cleanupWrapper = mount(TurnActionBar, {
-      props: { currentStage: 'cleanup', submitMove },
+    // start: blocked — the reveal (which auto-advances) is the way forward, not End turn
+    const startWrapper = mount(TurnActionBar, {
+      props: { currentStage: 'start', handCards: [], submitMove },
     });
+    const startEnd = startWrapper.find('[data-testid="play-action-end-turn"]');
+    assert.equal(startEnd.attributes('disabled'), '');
+    assert.match(startEnd.attributes('title')!, /Reveal the villain/);
+
+    // main + cleanup with an empty hand (nothing left to play): End turn enabled
+    for (const stage of ['main', 'cleanup'] as const) {
+      const wrapper = mount(TurnActionBar, {
+        props: { currentStage: stage, handCards: [], submitMove },
+      });
+      assert.equal(
+        wrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
+        undefined,
+        `End turn should be enabled at stage '${stage}' once the hand is played`,
+      );
+    }
+  });
+
+  test('End turn is blocked at main while playable cards remain (play your hand first)', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', handCards: ['iron-man-tech'], submitMove },
+    });
+    const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
+    assert.equal(endTurn.attributes('disabled'), '', 'End turn disabled while a playable card remains');
+    assert.match(endTurn.attributes('title')!, /Play your hand/i);
+    await wrapper.setProps({ handCards: [] });
     assert.equal(
-      cleanupWrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
+      wrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
       undefined,
+      'End turn enabled once the hand is played',
     );
   });
 
@@ -252,38 +267,30 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     );
   });
 
-  test('Pass Priority is disabled with pending-choice tooltip at cleanup when hasPendingChoice is true', () => {
-    // why: D-22203 — pass-priority at cleanup also blocked to prevent the
-    // player from advancing past cleanup without resolving the choice.
+  test('End turn is disabled at main too when hasPendingChoice is true (End turn now fires from main)', () => {
+    // why: D-22203 — a pending hero-reveal choice must block End turn wherever the
+    // player clicks; End turn now fires from the main stage, so the gate is checked
+    // at main, not only cleanup.
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'cleanup', submitMove, hasPendingChoice: true },
+      props: { currentStage: 'main', handCards: [], submitMove, hasPendingChoice: true },
     });
-    const passPriority = wrapper.find('[data-testid="play-action-pass-priority"]');
-    assert.equal(passPriority.attributes('disabled'), '');
-    assert.match(
-      passPriority.attributes('title')!,
-      /Resolve the revealed card choice/,
-      'Pass Priority tooltip must cite the pending choice gate reason at cleanup',
-    );
+    const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
+    assert.equal(endTurn.attributes('disabled'), '');
+    assert.match(endTurn.attributes('title')!, /Resolve the revealed card choice/);
   });
 
-  test('End Turn + Pass Priority are disabled at EVERY stage with the KO tooltip when hasPendingKoChoice is true (D-24012)', () => {
-    // why: D-24012 — a pending KO-a-Hero choice freezes the board, so both
-    // end-turn and pass-priority are blocked at every stage (not just cleanup).
+  test('End turn is disabled at EVERY stage with the KO tooltip when hasPendingKoChoice is true (D-24012)', () => {
+    // why: D-24012 — a pending KO-a-Hero choice freezes the board, so End turn (the
+    // single terminator) is blocked at every stage with the KO reason.
     const { submitMove } = recorder();
     for (const stage of ['start', 'main', 'cleanup'] as const) {
       const wrapper = mount(TurnActionBar, {
-        props: { currentStage: stage, submitMove, hasPendingKoChoice: true },
+        props: { currentStage: stage, handCards: [], submitMove, hasPendingKoChoice: true },
       });
       const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
-      const passPriority = wrapper.find('[data-testid="play-action-pass-priority"]');
-      assert.equal(passPriority.attributes('disabled'), '', `pass-priority disabled at ${stage}`);
-      assert.match(passPriority.attributes('title')!, /Choose a Hero to KO/);
-      if (stage === 'cleanup') {
-        assert.equal(endTurn.attributes('disabled'), '', 'end-turn disabled at cleanup');
-        assert.match(endTurn.attributes('title')!, /Choose a Hero to KO/);
-      }
+      assert.equal(endTurn.attributes('disabled'), '', `end-turn disabled at ${stage}`);
+      assert.match(endTurn.attributes('title')!, /Choose a Hero to KO/);
     }
   });
 
@@ -302,23 +309,18 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     );
   });
 
-  test('End Turn + Pass Priority are disabled at EVERY stage with the discard tooltip when hasPendingDiscardChoice is true (WP-477 / D-24284)', () => {
+  test('End turn is disabled at EVERY stage with the discard tooltip when hasPendingDiscardChoice is true (WP-477 / D-24284)', () => {
     // why: WP-477 completes WP-476's deferred wiring — a pending Magneto discard-to-limit
-    // choice freezes the board, so both end-turn and pass-priority are blocked at every stage.
-    // Proves the prop threads through TurnActionBar to the position-16 useTurnActions slot.
+    // choice freezes the board, so End turn is blocked at every stage. Proves the prop
+    // threads through TurnActionBar to its useTurnActions slot.
     const { submitMove } = recorder();
     for (const stage of ['start', 'main', 'cleanup'] as const) {
       const wrapper = mount(TurnActionBar, {
-        props: { currentStage: stage, submitMove, hasPendingDiscardChoice: true },
+        props: { currentStage: stage, handCards: [], submitMove, hasPendingDiscardChoice: true },
       });
       const endTurn = wrapper.find('[data-testid="play-action-end-turn"]');
-      const passPriority = wrapper.find('[data-testid="play-action-pass-priority"]');
-      assert.equal(passPriority.attributes('disabled'), '', `pass-priority disabled at ${stage}`);
-      assert.match(passPriority.attributes('title')!, /Choose which cards to discard/);
-      if (stage === 'cleanup') {
-        assert.equal(endTurn.attributes('disabled'), '', 'end-turn disabled at cleanup');
-        assert.match(endTurn.attributes('title')!, /Choose which cards to discard/);
-      }
+      assert.equal(endTurn.attributes('disabled'), '', `end-turn disabled at ${stage}`);
+      assert.match(endTurn.attributes('title')!, /Choose which cards to discard/);
     }
   });
 
@@ -493,29 +495,7 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
     }
   });
 
-  test('Pass priority is blocked at main while playable cards remain, then enabled once the hand is played', async () => {
-    const { submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: {
-        currentStage: 'main',
-        isViewerTurn: true,
-        handCards: ['iron-man-tech'],
-        submitMove,
-      },
-    });
-    const blocked = wrapper.find('[data-testid="play-action-pass-priority"]');
-    assert.equal(blocked.attributes('disabled'), '', 'pass-priority disabled while a playable card remains');
-    assert.match(blocked.attributes('title')!, /Play your hand/i);
-    // the hand empties out (all cards played)
-    await wrapper.setProps({ handCards: [] });
-    assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
-      undefined,
-      'pass-priority enabled once no playable cards remain',
-    );
-  });
-
-  test('Pass priority is not blocked by the hand gate when only Wounds remain in hand', () => {
+  test('End turn is not blocked by the hand gate when only Wounds remain in hand', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: {
@@ -526,15 +506,14 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
       },
     });
     assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').attributes('disabled'),
+      wrapper.find('[data-testid="play-action-end-turn"]').attributes('disabled'),
       undefined,
-      'a hand of only Wounds counts as nothing-left-to-play; pass priority is enabled',
+      'a hand of only Wounds counts as nothing-left-to-play; End turn is enabled',
     );
   });
 
-  // Jeff feedback — Play Hand is the ONE highlighted call-to-action in Step 2.
-  // Pass priority must NEVER take the accent (a blue Pass priority read as "the
-  // button to click", which Jeff flagged as confusing).
+  // Jeff feedback — the primary accent follows the forward action: Play Hand while
+  // cards remain, then End turn once the hand is played. "Pass priority" is gone.
   const PRIMARY = 'turn-action-bar__action--primary';
 
   test('Play Hand is the highlighted primary action while the hand has playable cards', () => {
@@ -552,13 +531,13 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
       'Play Hand carries the primary-action highlight while cards remain to play',
     );
     assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      wrapper.find('[data-testid="play-action-end-turn"]').classes().includes(PRIMARY),
       false,
-      'Pass priority is NOT highlighted while Play Hand is the recommended action',
+      'End turn is NOT highlighted while Play Hand is the recommended action',
     );
   });
 
-  test('Pass priority NEVER carries the primary highlight — not even once the hand is played', async () => {
+  test('the highlight moves to End turn once the hand is played', async () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: {
@@ -568,41 +547,28 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
         submitMove,
       },
     });
-    // hand emptied (all cards played) — Play Hand greys out, but the accent must
-    // NOT jump to Pass priority.
+    // hand emptied (all cards played) — Play Hand greys out and the accent moves to
+    // End turn (the genuine forward action — NOT the old blue "Pass priority").
     await wrapper.setProps({ handCards: [] });
-    assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
-      false,
-      'Pass priority stays plain after the hand is played (no blue "active" Pass priority)',
+    assert.ok(
+      wrapper.find('[data-testid="play-action-end-turn"]').classes().includes(PRIMARY),
+      'End turn becomes the primary action once nothing is left to play',
     );
     assert.equal(
       wrapper.find('[data-testid="play-action-play-hand"]').classes().includes(PRIMARY),
       false,
-      'the greyed-out Play Hand no longer carries the highlight either',
+      'the greyed-out Play Hand no longer carries the highlight',
     );
   });
 
-  test('Pass priority is not highlighted at the cleanup stage (Play Hand is the only accent)', () => {
-    const { submitMove } = recorder();
-    const wrapper = mount(TurnActionBar, {
-      props: { currentStage: 'cleanup', isViewerTurn: true, handCards: [], submitMove },
-    });
-    assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
-      false,
-      'even when Pass priority is the forward action at cleanup, it takes no accent',
-    );
-  });
-
-  test('nothing in Step 2 is highlighted when a pending choice blocks the forward action', () => {
+  test('nothing in Step 2/3 is highlighted when a pending choice blocks the forward action', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
       props: {
         currentStage: 'main',
         isViewerTurn: true,
         handCards: [],
-        // a board-freezing pending choice blocks pass priority at every stage
+        // a board-freezing pending choice blocks End turn at every stage
         hasPendingKoChoice: true,
         submitMove,
       },
@@ -612,7 +578,7 @@ describe('TurnActionBar (WP-129 — 3-step rewrite of WP-100; WP-236 — Draw sc
       false,
     );
     assert.equal(
-      wrapper.find('[data-testid="play-action-pass-priority"]').classes().includes(PRIMARY),
+      wrapper.find('[data-testid="play-action-end-turn"]').classes().includes(PRIMARY),
       false,
       'a blocked forward action is never falsely highlighted',
     );

@@ -108,10 +108,14 @@ export default defineComponent({
 <style scoped>
 /* why: WP-502 — a fixed, prominent call-to-action anchored bottom-center so it is
    the obvious next step on match end across both the desktop and mobile surfaces.
-   It sits above the score-submission status toast (z-index 41 > 40). */
+   It stacks above the score-submission status toast (z-index 41 > 40).
+   why (Jeff feedback): bottom is 5rem, not 3.25rem — the score toast sits at
+   bottom:1rem and is ~2.5rem tall (reaching ~3.5rem), so the old 3.25rem left this
+   panel's lower edge overlapping the toast. 5rem clears the toast's top with a
+   visible gap so "Match over" and "Score submitted…" no longer collide. */
 .endgame-actions {
   position: fixed;
-  bottom: 3.25rem;
+  bottom: 5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 41;
