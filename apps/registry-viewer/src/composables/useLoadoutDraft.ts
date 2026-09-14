@@ -385,6 +385,12 @@ export interface UseLoadoutDraftApi {
   reRollSeed: () => void;
   setThemeId: (themeId: string | undefined) => void;
   setHeroSelectionMode: (mode: HeroSelectionMode) => void;
+  /**
+   * Toggles the optional Final Blow rule (WP-686 / D-24503) on the envelope.
+   * Omit-when-off: enabling sets `finalBlow: true`; disabling deletes the key so
+   * a non-Final-Blow loadout is byte-identical to one authored before the toggle.
+   */
+  setFinalBlow: (enabled: boolean) => void;
   prefillFromTheme: (theme: ThemeDefinition) => void;
   loadFromJson: (
     jsonText: string,
@@ -670,6 +676,19 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     draft.value.heroSelectionMode = mode;
   }
 
+  function setFinalBlow(enabled: boolean): void {
+    // why: WP-686 / D-24503 — the Final Blow flag is OMIT-WHEN-OFF on the envelope,
+    // mirroring the engine's buildInitialGameState omit-when-off seeding: a
+    // non-Final-Blow loadout stays byte-identical to one authored before this toggle
+    // existed (and the download/LAGN diff stays clean). Set it only when enabled;
+    // delete it when disabled so no `finalBlow: false` ever appears in the document.
+    if (enabled) {
+      draft.value.finalBlow = true;
+    } else {
+      delete draft.value.finalBlow;
+    }
+  }
+
   function prefillFromTheme(theme: ThemeDefinition): void {
     // why: Theme setupIntent fields hold BARE entity slugs (e.g. "magneto",
     // "four-horsemen") with no set prefix, but the engine's match-setup
@@ -754,6 +773,11 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
       // downloaded MATCH-SETUP document would silently lose it — the EC-425
       // supportPools trap. Envelope-level, so it sits beside heroSelectionMode.
       "heroAlternateIds",
+      // why: WP-686 / D-24503 — same strict-whitelist trap: the Final Blow flag is
+      // an envelope field, so it must be listed here or a downloaded (or re-exported)
+      // MATCH-SETUP document silently loses it even after the validator round-tripped
+      // it into the draft. Omit-when-off means it only appears when actually enabled.
+      "finalBlow",
       "composition",
       "schemeId",
       "mastermindId",
@@ -884,6 +908,7 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     reRollSeed,
     setThemeId,
     setHeroSelectionMode,
+    setFinalBlow,
     prefillFromTheme,
     loadFromJson,
     exportToJsonBlob,
