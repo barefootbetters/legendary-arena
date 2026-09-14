@@ -75,7 +75,10 @@ import {
 } from './revealLog.js';
 import { pushLog } from '../log/logPush.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
-import { composeTransformNarrative } from '../events/notableEvents.compose.js';
+import {
+  composeTransformNarrative,
+  composeHeroRevealAttackNarrative,
+} from '../events/notableEvents.compose.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -1995,6 +1998,28 @@ function heroEffectRevealHeroDeckAttack(
     'applied',
     cardId,
   );
+
+  // why: WP-697 / D-24516 — emit the heroEffectResolved notable event LAST, after
+  // the attack grant and the `applied` log push, observing a realized reveal
+  // (revealedCount > 0; realized means cards were revealed, NOT that attack > 0 —
+  // a 0-printed-attack reveal still did the invisible work). Placement after every
+  // early return (the missing-turnEconomy / divisor-≤-0 guard, the below-threshold
+  // `neutral` return, the empty-deck `blocked` return) means those non-realized
+  // paths emit nothing. Guarded because the minimal heroEffects test builder omits
+  // G.notableEvents (a real match seeds [] at setup); handlers never throw, so an
+  // absent array is a silent skip — the transformResolved emission precedent.
+  // G.messages is not projected to clients, so this event is what drives the
+  // arena-client "Hero Ability" overlay. The name resolves HERE via the shared
+  // resolveTransformCardName display-name resolver (raw-ext_id fallback), keeping
+  // composeHeroRevealAttackNarrative pure.
+  if (Array.isArray(G.notableEvents)) {
+    const cardName = resolveTransformCardName(G, cardId);
+    G.notableEvents.push({
+      type: 'heroEffectResolved',
+      playerId: playerID,
+      narrative: composeHeroRevealAttackNarrative(cardName, revealedCount, totalAttack),
+    });
+  }
 }
 
 function heroEffectOptionalKoReward(

@@ -60,12 +60,15 @@ const EFFECT_LABELS: Readonly<Record<string, string>> = {
   captureBystander: 'Captures a Bystander',
 };
 
-// why: locked chip labels — ten entries matching `NotableGameEventType`
+// why: locked chip labels — eleven entries matching `NotableGameEventType`
 // exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
 // `healResolved`; WP-602 / D-24412 added `bystanderRevealed`; WP-642 / D-24454
 // added `deckReshuffled`; WP-644 / D-24456 added `strikeBlocked`; WP-672 /
-// D-24487 added `transformResolved`). The labels are user-facing English
-// (engine-side type names use camelCase suffixes).
+// D-24487 added `transformResolved`; WP-697 / D-24516 added `heroEffectResolved`).
+// The labels are user-facing English (engine-side type names use camelCase
+// suffixes). `heroEffectResolved` is a general bucket for invisible-work hero
+// effects (v1 the reveal-for-attack family), so its chip is the generic "Hero
+// Ability" — future families reuse the type and differ only by narrative.
 const CHIP_LABELS: Readonly<Record<string, string>> = {
   fightResolved: 'Fought',
   ambushResolved: 'Ambush!',
@@ -77,6 +80,7 @@ const CHIP_LABELS: Readonly<Record<string, string>> = {
   deckReshuffled: 'Deck Shuffled',
   strikeBlocked: 'Blocked!',
   transformResolved: 'Transformed!',
+  heroEffectResolved: 'Hero Ability',
 };
 
 function chipLabel(type: string): string {
@@ -273,6 +277,13 @@ export default defineComponent({
    gold twist / red strike / teal heal accents. Matches the transform VFX surge. */
 .notable-event-overlay[data-event-type="transformResolved"] {
   border-color: var(--color-transform, #5ee66b);
+}
+
+/* why: WP-697 — a warm hero amber for the invisible-work hero-effect overlay (the
+   player's own ability paying off), distinct from the gamma-green transform / the
+   scheme-twist gold (#e6a817) / the teal heal / the civilian-blue bystander. */
+.notable-event-overlay[data-event-type="heroEffectResolved"] {
+  border-color: var(--color-hero-ability, #f5a623);
 }
 
 .notable-event-overlay__chip {

@@ -24,6 +24,7 @@ import {
   composeDeckReshuffledNarrative,
   composeStrikeBlockedNarrative,
   composeTransformNarrative,
+  composeHeroRevealAttackNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -398,6 +399,29 @@ describe('composeTransformNarrative (WP-672)', () => {
     assert.equal(
       composeTransformNarrative('Gamma-Draining Nanites', 'Like Totally Smart Hulk'),
       composeTransformNarrative('Gamma-Draining Nanites', 'Like Totally Smart Hulk'),
+    );
+  });
+});
+
+describe('composeHeroRevealAttackNarrative (WP-697)', () => {
+  it('names the card, the revealed count, and the summed attack', () => {
+    assert.equal(
+      composeHeroRevealAttackNarrative('Jade Giantess', 4, 10),
+      '"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +10 attack.',
+    );
+  });
+
+  it('renders a +0 attack reveal honestly (realized work with no attack gained)', () => {
+    assert.equal(
+      composeHeroRevealAttackNarrative('Jade Giantess', 2, 0),
+      '"Jade Giantess" revealed 2 card(s) from the Hero Deck and gained +0 attack.',
+    );
+  });
+
+  it('is pure — identical inputs produce identical output', () => {
+    assert.equal(
+      composeHeroRevealAttackNarrative('Jade Giantess', 3, 7),
+      composeHeroRevealAttackNarrative('Jade Giantess', 3, 7),
     );
   });
 });

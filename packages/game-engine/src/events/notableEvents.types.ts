@@ -3,11 +3,11 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries ten locked variants — `fightResolved`, `ambushResolved`,
+ * carries eleven locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
  * `healResolved`, `bystanderRevealed`, `deckReshuffled`, `strikeBlocked`,
- * `transformResolved` — each composed at its fire site via a pure narrative
- * helper from `notableEvents.compose.ts`.
+ * `transformResolved`, `heroEffectResolved` — each composed at its fire site
+ * via a pure narrative helper from `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -27,17 +27,19 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Ten variants in fixed canonical order: a Fight resolution, an Ambush
+ * Eleven variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
  * Strike resolution, a Mastermind defeat, a Wound heal, a Bystander
- * reveal-and-capture, a hero-deck reshuffle, a blocked/avoided threat, and
- * a Hero-card Transform. `'mastermindDefeated'` was added per D-20008 (citing
- * D-20001), `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per
+ * reveal-and-capture, a hero-deck reshuffle, a blocked/avoided threat, a
+ * Hero-card Transform, and an invisible-work Hero-effect resolution.
+ * `'mastermindDefeated'` was added per D-20008 (citing D-20001),
+ * `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per
  * WP-602 / D-24412, `'deckReshuffled'` per WP-642 / D-24454, `'strikeBlocked'`
- * per WP-644 / D-24456, and `'transformResolved'` per WP-672 / D-24487 so the
- * arena-client overlay can report those outcomes — G.messages is not projected
- * to clients. Adding an eleventh variant requires a new `DECISIONS.md` entry
- * (e.g., WP-186's eventual `'escapeResolved'` per D-20001).
+ * per WP-644 / D-24456, `'transformResolved'` per WP-672 / D-24487, and
+ * `'heroEffectResolved'` per WP-697 / D-24516 so the arena-client overlay can
+ * report those outcomes — G.messages is not projected to clients. Adding a
+ * twelfth variant requires a new `DECISIONS.md` entry (e.g., WP-186's eventual
+ * `'escapeResolved'` per D-20001).
  */
 export type NotableGameEventType =
   | 'fightResolved'
@@ -49,11 +51,12 @@ export type NotableGameEventType =
   | 'bystanderRevealed'
   | 'deckReshuffled'
   | 'strikeBlocked'
-  | 'transformResolved';
+  | 'transformResolved'
+  | 'heroEffectResolved';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
-// parity + length + uniqueness). The ten-entry canonical order is locked:
+// parity + length + uniqueness). The eleven-entry canonical order is locked:
 // `fightResolved` (Fight fire site), `ambushResolved` (Ambush fire site),
 // `schemeTwistResolved` (Scheme Twist resolver terminal),
 // `mastermindStrikeResolved` (Mastermind Strike handler terminal),
@@ -65,7 +68,11 @@ export type NotableGameEventType =
 // `strikeBlocked` (the Magneto reveal-X-Men strike skip + the
 // reveal-or-punish twist dodge, per blocking player, WP-644 / D-24456), and
 // `transformResolved` (the heroEffectTransform swap fire site — a Hero base
-// card powering up into its second form, WP-672 / D-24487).
+// card powering up into its second form, WP-672 / D-24487), and
+// `heroEffectResolved` (an invisible-work Hero effect — v1 the
+// heroEffectRevealHeroDeckAttack reveal-for-attack fire site, where revealed
+// cards rotate to the deck bottom and the attack magnitude is derived, so the
+// work is otherwise unobservable, WP-697 / D-24516).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -82,6 +89,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'deckReshuffled',
   'strikeBlocked',
   'transformResolved',
+  'heroEffectResolved',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -394,6 +402,35 @@ export interface TransformResolvedEvent {
 }
 
 /**
+ * Emitted when a Hero card's ability does **invisible work** — work whose
+ * result the player cannot already see on the board (WP-697 / D-24516). v1
+ * covers the reveal-top-of-Hero-Deck-for-attack fire site
+ * (`heroEffectRevealHeroDeckAttack`, `hero/heroEffects.execute.ts` — Jade
+ * Giantess), where the revealed cards rotate to the BOTTOM of the Hero Deck
+ * (transient — never shown) and the summed printed attack is added silently, so
+ * the effect otherwise reads as "nothing happened". Fires as the LAST step of a
+ * realized reveal (`revealedCount > 0`; after the attack grant and the `applied`
+ * log push), observing settled state — the `transformResolved` / `healResolved`
+ * emission precedent. NOT emitted on any non-realized exit (the below-threshold
+ * `neutral` return, the empty-Hero-Deck `blocked` return, or the missing-
+ * `turnEconomy` / divisor-≤-0 guard). Minimal payload per D-20001 (no `eventId`
+ * / `seq` / `timestamp` / card id — like `healResolved` / `transformResolved`):
+ * the source card name and the realized count + magnitude travel inside the
+ * composed `narrative`. Public and rendered verbatim by the client (D-20002);
+ * presentation parity only, not a new mechanic or reward — the effect already
+ * happens, this announces it. Future invisible-work Hero-effect families reuse
+ * this same variant with their own narrative composer.
+ */
+export interface HeroEffectResolvedEvent {
+  /** Discriminator. */
+  type: 'heroEffectResolved';
+  /** boardgame.io player-index string ("0", "1", ...) of the acting player. */
+  playerId: string;
+  /** Engine-composed single-sentence English narrative (names the card + realized count + magnitude). */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -410,4 +447,5 @@ export type NotableGameEvent =
   | BystanderRevealedEvent
   | DeckReshuffledEvent
   | StrikeBlockedEvent
-  | TransformResolvedEvent;
+  | TransformResolvedEvent
+  | HeroEffectResolvedEvent;
