@@ -330,10 +330,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // runtime-observed-hollows feed gains 2 distinct mechanics (28 -> 30) and the
   // fixed-seed sweep's trajectories shift slightly. Net: totalObs 2833 -> 2831;
   // percentResolved 25.3 -> 25.2 (a sweep-trajectory artifact, not a regression).
-  // Honest gauge, deterministic — CI computes the same 2831 / 25.2.
+  // 2026-09-14 (shield-token team-synergy fix, re-pin): Legendary Commander (and any
+  // requiresTeam:shield gate) now count the basic S.H.I.E.L.D. Officer/Agent/Trooper
+  // tokens, so the fixed-seed sweep observes those attack-per-count grants where it
+  // didn't before. Net: totalObs 2831 -> 2844 (+13); percentResolved 25.2 -> 25.1
+  // (the larger denominator dilutes the resolved share — a sweep-trajectory artifact,
+  // not a regression). Honest gauge, deterministic — CI computes the same 2844 / 25.1.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2831);
-  assert.equal(view.percentResolved.value, 25.2);
+  assert.equal(view.totalObs.value, 2844);
+  assert.equal(view.percentResolved.value, 25.1);
   assert.ok(view.remaining.value.length > 0);
 });
 
