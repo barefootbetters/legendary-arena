@@ -2,7 +2,6 @@
 import { defineComponent, ref, watch, type PropType } from 'vue';
 import { useTurnActions } from '../../composables/useTurnActions';
 import type { GatingResult } from '../../composables/useCardCostGating';
-import { WOUND_EXT_ID } from './woundIdentity';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -46,16 +45,6 @@ export default defineComponent({
     submitMove: {
       type: Function as PropType<SubmitMove>,
       required: true,
-    },
-    // why (Jeff feedback): the viewer's own hand (CardExtId strings). Feeds the
-    // "Play Hand" convenience button — one click plays every playable (non-Wound)
-    // card — and gates Pass priority at the main stage until the hand is emptied of
-    // playable cards. Defaults to [] so display-only / non-viewer mounts add no
-    // play affordance and never block Pass priority.
-    handCards: {
-      type: Array as PropType<readonly string[]>,
-      required: false,
-      default: () => [],
     },
     // why: D-22203 — derived from UIState.pendingHeroChoice !== undefined at
     // the page level; passed down so TurnActionBar can block end-turn and
@@ -310,129 +299,70 @@ export default defineComponent({
       return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain).canRevealVillain();
     }
 
-    // why (Jeff feedback): the playable subset of the viewer's hand — every card
-    // except Wounds, which carry no play value and cannot be played (woundIdentity /
-    // wounds.md). This is both what "Play Hand" plays and what gates Pass priority:
-    // a hand of only Wounds counts as "nothing left to play", so it never traps the
-    // player behind an un-emptiable hand.
-    function playableHandCardIds(): string[] {
-      return props.handCards.filter((cardId) => cardId !== WOUND_EXT_ID);
+    // why (Jeff feedback): whether the viewer has ANY unresolved pending choice —
+    // the OR of every pending-* prop the page derives from UIState. The reveal /
+    // end-turn watchers below read this so they never auto-advance the stage while a
+    // choice (a Master Strike KO, an ambush pick, …) is still on the board.
+    function anyPendingChoice(): boolean {
+      return (
+        props.hasPendingChoice ||
+        props.hasPendingKoChoice ||
+        props.hasPendingOptionalKoReward ||
+        props.hasPendingDrawOrEmpowered ||
+        props.hasPendingPlayVillainTop ||
+        props.hasPendingSmashDiscard ||
+        props.hasPendingDoOver ||
+        props.hasPendingKoDiscardChoice ||
+        props.hasPendingRuthlessDictatorChoice ||
+        props.hasPendingElectromagneticBubbleChoice ||
+        props.hasPendingVictoryPileCardPick ||
+        props.hasPendingOptionalPutBottomHQ ||
+        props.hasPendingPutAnyNumberBottomHQ ||
+        props.hasPendingReturnZeroCostDiscard ||
+        props.hasPendingDiscardToPlay ||
+        props.hasPendingScryKoChoice ||
+        props.hasPendingMelterKoChoice ||
+        props.hasPendingDiscardChoice ||
+        props.hasPendingReorderChoice ||
+        props.hasPendingDefeatChoice ||
+        props.hasPendingReturnOnDiscard ||
+        props.hasPendingGiveHqHeroChoice ||
+        props.hasPendingCopyPowersChoice ||
+        props.hasPendingPutCardsOnDeckChoice
+      );
     }
 
-    // why (Jeff feedback): the "Play Hand" button gate. Turn + stage come from the
-    // shared canPlayCard predicate (a Wound-free 2-arg call, like HandRow); on top
-    // of that the button is disabled once no playable cards remain, so it greys out
-    // after the hand is played and reads as consumed.
-    function playHandGate(): GatingResult {
-      const stageGate = useTurnActions(props.currentStage, props.isViewerTurn).canPlayCard();
-      if (!stageGate.allowed) {
-        return stageGate;
-      }
-      if (playableHandCardIds().length === 0) {
-        return {
-          allowed: false,
-          reason: 'Your hand has no more cards to play.',
-        };
-      }
-      return { allowed: true, reason: null };
-    }
-
-    // why (Jeff feedback): one click plays the whole hand. Fires a playCard for each
-    // playable card in order — the same move HandRow submits per tile, just batched.
-    // A card that parks a pending choice mid-batch stops the rest via the engine's
-    // block-all guards (exactly as fast-clicking hand tiles does today); the leftover
-    // cards stay in hand and the button re-enables so the player resolves the choice
-    // and clicks again.
-    function onPlayHand(event: Event): void {
-      for (const cardId of playableHandCardIds()) {
-        props.submitMove('playCard', { cardId });
-      }
-      blurAfterClick(event);
-    }
-
-    // why (Jeff feedback): the "Continue to Play" recovery. Normally the reveal
-    // auto-advances into main (onReveal fires advanceStage). But if the revealed
-    // villain parked a pending choice for the active player, the engine's block-all
-    // guards refuse that advance and the turn stays at 'start' until the choice is
-    // resolved. With the "Pass priority" button removed, this is the forward action
-    // out of that (rare) stuck state — it fires the advanceStage the reveal could
-    // not. Uses its own latch (isContinuing) rather than the reveal's isAutoAdvancing,
-    // which is left set by the parked reveal; both clear on the next stage change.
-    function onContinueFromStart(event: Event): void {
-      blurAfterClick(event);
-      if (isContinuing.value) {
-        return;
-      }
-      props.submitMove('advanceStage', {});
-      isContinuing.value = true;
-    }
-
-    // why (Jeff feedback): the Step-1 button is a single adaptive control — "Reveal
-    // top of Villain Deck" until the villain is revealed, then (only in the rare
-    // parked-choice stuck state) "Continue to Play". Both keep the flow inside
-    // Step 1 → Step 2 with no "Pass priority".
-    function onStartStep(event: Event): void {
-      if (props.hasRevealedVillain) {
-        onContinueFromStart(event);
-      } else {
-        onReveal(event);
-      }
-    }
-
-    // why: the Step-1 button label follows its mode (reveal vs continue-to-play).
-    function startStepLabel(): string {
-      return props.hasRevealedVillain && props.currentStage === 'start'
-        ? '▶ Continue to Play'
-        : '▶ Reveal top of Villain Deck';
-    }
-
-    // why: continue-to-play mode is enabled for the active player whenever the
-    // villain is revealed but the turn is still at 'start'; otherwise the button
-    // is the reveal, gated by revealGate (turn / stage / already-revealed).
-    function startStepGate(): GatingResult {
-      if (props.isViewerTurn && props.hasRevealedVillain && props.currentStage === 'start') {
-        return { allowed: true, reason: null };
-      }
-      return revealGate();
-    }
-
-    // why (Jeff feedback): "Play Hand" is the ONE highlighted call-to-action while
-    // there are cards to play. Once the hand is played it greys out and the accent
-    // moves to "End turn" (Step 3), which is now the single forward action — the
-    // confusing "Pass priority" button is gone (see endTurnGate / onEndTurn).
-    function isPlayHandPrimary(): boolean {
-      return playHandGate().allowed;
-    }
-
-    // why (Jeff feedback): "End turn" is now the single terminator for the whole
-    // play part of the turn — the "Pass priority" button was removed. The engine
-    // canEndTurn predicate (updated to allow the main stage as well as cleanup)
-    // carries the turn + stage + pending-choice gating; on top of it this wrapper
-    // holds End turn disabled at the main stage while playable cards remain in hand,
-    // so the flow reads Reveal → Play Hand → End turn (a hand of only Wounds counts
-    // as nothing-left-to-play and does not trap the player).
+    // why (Jeff feedback): "End turn" is the single terminator for the whole play
+    // part of the turn — there is no "Pass priority" or "Play Hand" button. The
+    // engine canEndTurn predicate (allows the main stage as well as cleanup, blocked
+    // at start) carries the turn + stage + pending-choice gating. No play-your-hand-
+    // first gate: End turn is a plain one-click action whenever it is legal.
     // why: the positional list reaches every pending-choice param canEndTurn reads;
     // the heal trio (positions 13–15) only gate canHealWounds and are harmless here.
     function endTurnGate(): GatingResult {
-      const base = useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice).canEndTurn();
-      if (!base.allowed) {
-        return base;
-      }
-      if (props.currentStage === 'main' && playableHandCardIds().length > 0) {
-        return {
-          allowed: false,
-          reason: 'Play your hand (or Heal Wounds) before you end your turn.',
-        };
-      }
-      return base;
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice).canEndTurn();
     }
 
-    // why (Jeff feedback): once the hand is played, "End turn" becomes the
-    // highlighted next action (Play Hand has greyed out). This is the accent moving
-    // to the genuine forward action, NOT the old confusing blue "Pass priority" —
-    // that button is gone. Primary only when End turn is actually clickable.
+    // why (Jeff feedback): a step box's header lights up exactly when its own button
+    // is usable, so the highlight always matches the live button — no "active box
+    // with a dim button", no "dim box with a live button". Step 2 (Play / Recruit /
+    // Fight) is lit for the whole main stage because its action is on the board (tap
+    // cards / villains / heroes), not a button in this bar.
+    function isStep1Live(): boolean {
+      return revealGate().allowed;
+    }
+    function isStep2Live(): boolean {
+      return props.currentStage === 'main';
+    }
+    function isStep3Live(): boolean {
+      return endTurnGate().allowed;
+    }
+
+    // why (Jeff feedback): End turn carries the primary accent whenever it is the
+    // live forward action (in play), so the eye lands on the one button that ends
+    // the turn. It is the single terminator — no "Pass priority", no "Play Hand".
     function isEndTurnPrimary(): boolean {
-      return !isPlayHandPrimary() && endTurnGate().allowed;
+      return endTurnGate().allowed;
     }
 
     // why: WP-380 — threads the three new props (hasWoundInHand from the page-level
@@ -463,95 +393,44 @@ export default defineComponent({
       }
     }
 
-    // why: the reveal is the player's ONLY action at play.start, and the board
-    // layout always intended step 1 to flow straight into main
-    // (DESIGN-BOARD-LAYOUT.md §5.1 — "auto-advance into play.main after
-    // resolution"). The ENGINE keeps its two-move contract untouched:
-    // revealVillainCard never advances the stage, because the autoplay bot
-    // (autoplay.mjs) and the sim / PAR harness (ai.legalMoves.ts) issue their own
-    // advanceStage after revealing and would desync if the engine did it for them.
-    // So the auto-advance is CLIENT-ONLY — after the human reveals, the client
-    // fires the same advanceStage the bot does. A reveal that parks a pending
-    // choice for this player is refused by the engine's advanceStage block-all
-    // guards (a harmless no-op; the reveal frame still advanced _stateID, so the
-    // move-ack watchdog is satisfied and no resync fires), leaving the player on
-    // start to resolve the choice and then Pass priority manually.
+    // why (Jeff feedback): Reveal and End turn are driven by STATE WATCHERS, not a
+    // synchronous two-move chain. The old onReveal fired revealVillainCard +
+    // advanceStage back-to-back; over the network that second move could be judged
+    // against un-committed state (the reveal-first guard) and be dropped, leaving the
+    // player stuck at 'start' and needing a second click. Instead onReveal fires only
+    // the reveal, and a watcher fires advanceStage once the reveal — and any forced
+    // choice it parked (a Master Strike KO) — is CONFIRMED in state. Same idea for
+    // End turn from main. isAutoAdvancing latches the auto-advance so it fires once
+    // per start; wantEndTurn records that the viewer asked to end from main.
     const isAutoAdvancing = ref(false);
-    // why (Jeff feedback): declared here (beside isAutoAdvancing, before the
-    // currentStage watch that resets them) so the watch closures capture already-
-    // initialized refs. isEndingTurn latches the End-turn chain against a double-
-    // click; isContinuing latches the "Continue to Play" recovery (below) — a
-    // SEPARATE latch from isAutoAdvancing, which stays set through a parked reveal.
-    const isEndingTurn = ref(false);
-    const isContinuing = ref(false);
+    const wantEndTurn = ref(false);
 
     function onReveal(event: Event): void {
-      blurAfterClick(event);
-      // why: latch against a fast double/triple-click firing advanceStage more
-      // than once before the post-reveal frame flips currentStage to 'main' —
-      // without it two quick clicks would advance start → main → cleanup and skip
-      // the main stage entirely. The latch clears on the next currentStage change
-      // (watch below), including the cleanup → start transition that opens the
-      // next turn.
-      if (isAutoAdvancing.value) {
-        return;
-      }
-      // why: empty-object payload — revealVillainCard takes no arguments
-      // by engine design (see villainDeck.reveal.ts). Pops a card from
-      // the villain deck into the City; gated to play.start.
+      // why: empty-object payload — revealVillainCard takes no arguments by engine
+      // design (villainDeck.reveal.ts). Pops the top villain-deck card into the City;
+      // gated to play.start. The watcher below advances start → main once this (and
+      // any choice it parks) is confirmed — one click, no separate "Continue".
       props.submitMove('revealVillainCard', {});
-      // why: D-10011 — advanceStage is the canonical start → main advance. Fired
-      // immediately after the reveal so the player lands in their main stage in one
-      // click (see the isAutoAdvancing block comment above).
-      props.submitMove('advanceStage', {});
-      isAutoAdvancing.value = true;
+      blurAfterClick(event);
     }
 
-    // why: reset the reveal auto-advance latch on every currentStage change. The
-    // common start → main advance clears it (the reveal button is disabled at main
-    // regardless), and the cleanup → start transition that begins the next turn
-    // re-arms a fresh reveal. A reveal that parked a pending choice leaves the
-    // stage on 'start' (no change fires here), so the latch stays set and blocks a
-    // redundant re-reveal until the next turn — correct, since the forward action
-    // in that state is End turn, not another reveal.
-    // why (Jeff feedback): the End-turn chain latch resets here too, so a click that
-    // advanced main → cleanup but had endTurn refused (a pending choice) re-arms once
-    // the stage change lands, letting the player resolve and click End turn again.
-    watch(
-      () => props.currentStage,
-      () => {
-        isAutoAdvancing.value = false;
-        isEndingTurn.value = false;
-        isContinuing.value = false;
-      },
-    );
-
-    // why (Jeff feedback): End turn is the single forward action for the play part
-    // of the turn (the "Pass priority" button is gone). From the MAIN stage it
-    // chains advanceStage (main → cleanup) then endTurn in one click — the same
-    // two-move idiom the reveal auto-advance uses — so the player never has to think
-    // about the intermediate cleanup stage. From cleanup it just ends the turn.
     function onEndTurn(event: Event): void {
       blurAfterClick(event);
-      // why: latch against a fast double-click firing the chain twice before the
-      // post-advance frame lands. Cleared on the next currentStage change (watch
-      // below), so a genuine next click (e.g. after a pending choice parked at
-      // cleanup) still works.
-      if (isEndingTurn.value) {
+      // why: guard against a double-click re-firing the advance while the first is
+      // still in flight; cleared when the turn returns to 'start' (watch below).
+      if (wantEndTurn.value) {
         return;
       }
-      // why: from main, advance to cleanup first (endTurn is gated to cleanup in
-      // the engine); from cleanup this step is unnecessary. Mirrors the reveal
-      // two-move contract — the engine's block-all guards refuse the advance if a
-      // pending choice is outstanding, a harmless no-op that leaves the player to
-      // resolve it and click End turn again.
-      if (props.currentStage === 'main') {
-        props.submitMove('advanceStage', {});
+      if (props.currentStage === 'cleanup') {
+        // already at cleanup — end directly (empty payload; EndTurnArgs is
+        // Record<string, never> per coreMoves.types.ts).
+        props.submitMove('endTurn', {});
+        return;
       }
-      // why: empty-object payload — EndTurnArgs is `Record<string, never>`
-      // per coreMoves.types.ts:57. The move takes no arguments.
-      props.submitMove('endTurn', {});
-      isEndingTurn.value = true;
+      // from main: advance to cleanup; the watcher fires endTurn once cleanup is
+      // confirmed and nothing is pending (endTurn is gated to cleanup in the engine).
+      wantEndTurn.value = true;
+      props.submitMove('advanceStage', {});
     }
 
     function onHealWounds(event: Event): void {
@@ -562,17 +441,72 @@ export default defineComponent({
       blurAfterClick(event);
     }
 
+    // why (Jeff feedback): one-click Reveal. Advance start → main automatically once
+    // the villain is revealed AND no choice is pending. On a plain turn this fires
+    // right after the reveal; on a Master-Strike turn the reveal parks a "KO a Hero"
+    // choice, the player resolves it, and THEN this fires — no second button. Reacts
+    // to confirmed state, so it is reliable where the old synchronous chain was not.
+    function maybeAutoAdvanceReveal(): void {
+      if (
+        props.isViewerTurn &&
+        props.currentStage === 'start' &&
+        props.hasRevealedVillain &&
+        !anyPendingChoice() &&
+        !isAutoAdvancing.value
+      ) {
+        isAutoAdvancing.value = true;
+        props.submitMove('advanceStage', {});
+      }
+    }
+
+    // why (Jeff feedback): one-click End turn from main — once the advance to cleanup
+    // is confirmed and nothing is pending, fire endTurn. If a card parked a choice at
+    // cleanup, this waits until it is resolved.
+    function maybeCompleteEndTurn(): void {
+      if (
+        props.isViewerTurn &&
+        wantEndTurn.value &&
+        props.currentStage === 'cleanup' &&
+        !anyPendingChoice()
+      ) {
+        wantEndTurn.value = false;
+        props.submitMove('endTurn', {});
+      }
+    }
+
+    // why: run the auto-advance / auto-complete whenever the stage, the reveal flag,
+    // or the pending-choice set changes — and immediately on mount so a reconnect
+    // into a revealed-but-stuck 'start' recovers on its own. Reset the latches when
+    // the turn opens ('start') / leaves 'start' so each turn re-arms cleanly.
+    watch(
+      [
+        () => props.currentStage,
+        () => props.hasRevealedVillain,
+        () => anyPendingChoice(),
+      ],
+      () => {
+        if (props.currentStage !== 'start') {
+          isAutoAdvancing.value = false;
+        }
+        if (props.currentStage === 'start') {
+          wantEndTurn.value = false;
+        }
+        maybeAutoAdvanceReveal();
+        maybeCompleteEndTurn();
+      },
+      { immediate: true },
+    );
+
     return {
       activeStep,
-      startStepGate,
-      startStepLabel,
-      playHandGate,
-      isPlayHandPrimary,
+      revealGate,
       endTurnGate,
       isEndTurnPrimary,
       healGate,
-      onStartStep,
-      onPlayHand,
+      isStep1Live,
+      isStep2Live,
+      isStep3Live,
+      onReveal,
       onEndTurn,
       onHealWounds,
     };
@@ -590,74 +524,54 @@ export default defineComponent({
     <ol class="turn-action-bar__steps">
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': activeStep() === 1 }"
+        :class="{ 'turn-action-bar__step--active': isStep1Live() }"
         data-testid="play-turn-step-1"
       >
         <header>Step 1 — Reveal villain (play.start)</header>
         <button
           type="button"
           data-testid="play-action-reveal"
-          :disabled="!startStepGate().allowed"
-          :aria-disabled="!startStepGate().allowed ? 'true' : undefined"
-          :title="startStepGate().reason ?? undefined"
-          @click="onStartStep($event)"
+          :disabled="!revealGate().allowed"
+          :aria-disabled="!revealGate().allowed ? 'true' : undefined"
+          :title="revealGate().reason ?? undefined"
+          @click="onReveal($event)"
         >
-          <!-- why: stage gating per D-10012 — revealVillainCard is gated to
-               play.start; the reveal auto-advances into main (onReveal). why (Jeff
-               feedback): this is a single adaptive control — its label is "Continue
-               to Play" in the rare state where the villain is revealed but a parked
-               choice held the turn at 'start' (startStepLabel), so the player is
-               never stranded without a forward action now that "Pass priority" is
-               gone. The start-of-turn hand is drawn automatically by the engine
-               onBegin (WP-236); the former "Draw to 6" scaffold button is retired. -->
-          {{ startStepLabel() }}
+          <!-- why (Jeff feedback): one click. revealVillainCard is gated to
+               play.start; a watcher advances start → main automatically once the
+               reveal (and any Master-Strike choice it parks) is confirmed — no
+               second "Continue"/"Pass priority" click. The start-of-turn hand is
+               drawn automatically by the engine onBegin (WP-236). -->
+          ▶ Reveal top of Villain Deck
         </button>
       </li>
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': activeStep() === 2 }"
+        :class="{ 'turn-action-bar__step--active': isStep2Live() }"
         data-testid="play-turn-step-2"
       >
         <header>Step 2 — Play / Recruit / Fight (play.main)</header>
         <p class="turn-action-bar__hint">
-          Play your hand, then tap a city villain, an HQ hero, or the mastermind
-          tile — or tap a single hand card to play it on its own. Finish with
-          End turn.
+          Play cards from your hand, recruit heroes, and fight villains — tap them
+          on the board. Then End turn.
         </p>
-        <!-- why (Jeff feedback): "Play Hand" plays the whole hand in one click.
-             It greys out once no playable cards remain (playHandGate); the accent
-             then moves to End turn (Step 3), which is the single forward action —
-             the old "Pass priority" button was removed. Individual hand tiles
-             (HandRow) still work for playing one card at a time. -->
+        <!-- why (Jeff feedback): the "Play Hand" button was removed — it duplicated
+             clicking the cards in your hand. why: Heal Wounds is shown only when it
+             is actually usable (healGate), so the active Step-2 box never carries a
+             dim, dead button. -->
         <button
-          type="button"
-          data-testid="play-action-play-hand"
-          :class="{ 'turn-action-bar__action--primary': isPlayHandPrimary() }"
-          :disabled="!playHandGate().allowed"
-          :aria-disabled="!playHandGate().allowed ? 'true' : undefined"
-          :title="playHandGate().reason ?? undefined"
-          @click="onPlayHand($event)"
-        >
-          ▶ Play Hand
-        </button>
-        <button
+          v-if="healGate().allowed"
           type="button"
           data-testid="play-action-heal-wounds"
-          :disabled="!healGate().allowed"
-          :aria-disabled="!healGate().allowed ? 'true' : undefined"
-          :title="healGate().reason ?? undefined"
           @click="onHealWounds($event)"
         >
           <!-- why: WP-380 / D-24181 — the printed Wound "Healing" ability (engine
-               healWounds: KO all Wounds from hand). Disabled-tooltip precedence per
-               EC-132 §3 binds the reason from useTurnActions.canHealWounds (turn →
-               main → no pending → wound-in-hand → not-acted → not-healed). -->
+               healWounds: KO all Wounds from hand). Shown only when usable. -->
           Heal Wounds
         </button>
       </li>
       <li
         class="turn-action-bar__step"
-        :class="{ 'turn-action-bar__step--active': activeStep() === 3 }"
+        :class="{ 'turn-action-bar__step--active': isStep3Live() }"
         data-testid="play-turn-step-3"
       >
         <header>Step 3 — End turn</header>
@@ -670,12 +584,12 @@ export default defineComponent({
           :title="endTurnGate().reason ?? undefined"
           @click="onEndTurn($event)"
         >
-          <!-- why (Jeff feedback): End turn is the single forward action — it fires
-               from the main stage too (onEndTurn chains advanceStage → endTurn), so
-               the flow is Reveal → Play Hand → End turn with no "Pass priority"
-               button. It carries the primary accent once the hand is played
-               (isEndTurnPrimary). Disabled-tooltip precedence per EC-132 §3 binds the
-               reason from endTurnGate (engine canEndTurn + the play-your-hand gate). -->
+          <!-- why (Jeff feedback): End turn is the single forward action and works in
+               one click from the main stage — a watcher advances main → cleanup then
+               ends once confirmed, so there is no "Pass priority" step. It carries the
+               primary accent while it is the live action (isEndTurnPrimary), and its
+               box header lights up in step with it (isStep3Live). Disabled-tooltip
+               precedence per EC-132 §3 binds the reason from endTurnGate. -->
           ✓ End turn — discard hand and draw 6
         </button>
       </li>
@@ -764,12 +678,11 @@ export default defineComponent({
   cursor: not-allowed;
 }
 
-/* why (Jeff feedback): Play Hand is the ONE highlighted call-to-action in Step 2 —
-   a filled accent so the player's eye lands on it right after the reveal. Pass
-   priority and Heal Wounds stay plain and never take this accent (a blue Pass
-   priority read as "the button to click", which Jeff flagged as confusing). Uses
-   --color-active-player (the brand bright-blue, mode-stable) with white text;
-   :not(:disabled) guarantees the accent never sits on an un-clickable button. */
+/* why (Jeff feedback): End turn is the ONE highlighted call-to-action once you are
+   in play — a filled accent so the eye lands on the single button that ends the
+   turn. Reveal and Heal Wounds stay plain. Uses --color-active-player (the brand
+   bright-blue, mode-stable) with white text; :not(:disabled) guarantees the accent
+   never sits on an un-clickable button. */
 .turn-action-bar__step button.turn-action-bar__action--primary:not(:disabled) {
   background: var(--color-active-player, #1d4ed8);
   color: #ffffff;
