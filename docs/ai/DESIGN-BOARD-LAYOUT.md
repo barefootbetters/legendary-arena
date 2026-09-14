@@ -691,22 +691,33 @@ Step 2 ends when the active player taps `[End turn]` (Step 3),
 which is the single forward action. There is no auto-advance —
 the player decides when to end step 2.
 
-> **Turn-flow update (Jeff feedback, 2026-09).** The separate
-> `[Pass priority]` button was removed from Step 2. It was a
-> confusing peer to `[Play Hand]` and only duplicated what
-> `[End turn]` already does. `[End turn]` now fires from the
-> **main** stage as well as cleanup — the client chains
-> `advanceStage` → `endTurn` (the same two-move idiom the reveal
-> auto-advance uses), so the flow reads **Reveal → Play Hand →
-> End turn** with no intermediate "pass". The only place a manual
-> stage-advance survives is the rare parked-choice recovery: when a
-> revealed villain parks a pending choice and holds the turn at
-> `start`, the Step-1 button becomes **`[Continue to Play]`**
-> (fires the `advanceStage` the reveal could not) so the player is
-> never stranded. This supersedes the EC-132 §2 "Pass-priority
-> affordance" row for the play surface; `advanceStage` remains the
-> canonical stage-advance move (D-10011), now dispatched by End
-> turn / Continue rather than a dedicated button.
+> **Turn-flow update (Jeff feedback, 2026-09 — one-click rebuild).**
+> The play surface's turn bar keeps its three Step boxes but drops
+> the extra buttons and the double-clicks:
+>
+> - **No `[Pass priority]`, no `[Play Hand]`, no `[Continue to Play]`.**
+>   Play / Recruit / Fight happens by tapping cards and board tiles;
+>   `[End turn]` is the single forward action.
+> - **Reveal is one click.** `[Reveal top of Villain Deck]` fires only
+>   `revealVillainCard`; a client-side state **watcher** then dispatches
+>   `advanceStage` once the reveal — and any choice it parked (a Master
+>   Strike KO) — is *confirmed* in state. This replaces the old
+>   synchronous `revealVillainCard`+`advanceStage` chain, which could be
+>   dropped over the network (the second move judged against un-committed
+>   state) and leave the turn stuck at `start`.
+> - **End turn is one click** from the **main** stage: the button
+>   dispatches `advanceStage`, and the same watcher fires `endTurn` once
+>   `cleanup` is confirmed. From `cleanup` it ends directly.
+> - **Highlight matches the live button.** Each Step box's header lights
+>   up only when its own button is usable (`isStep1Live` / `isStep2Live`
+>   / `isStep3Live`), so there is never an "active box with a dim button"
+>   or a "dim box with a live button". Step 2 stays lit through the whole
+>   main stage because its action is on the board.
+>
+> This supersedes the EC-132 §2 "Pass-priority affordance" row for the
+> play surface; `advanceStage` remains the canonical stage-advance move
+> (D-10011), now dispatched by the reveal/end-turn watchers rather than a
+> dedicated button.
 
 **Step 3 — End turn** (`play.cleanup` stage)
 
