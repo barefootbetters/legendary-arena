@@ -19,6 +19,7 @@ import {
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -150,6 +151,24 @@ describe('evaluateCondition', () => {
 
     assert.equal(result, false,
       'requiresTeam should return false when no matching team in inPlay.');
+  });
+
+  // why (Jeff feedback — Legendary Commander): a requiresTeam 'shield' gate must
+  // count the teamless basic S.H.I.E.L.D. tokens. The real Officer token carries no
+  // cardTraits row, so the old trait-only read failed the gate; it must now pass.
+  it('requiresTeam shield is satisfied by a played S.H.I.E.L.D. Officer token (no cardTraits row)', () => {
+    const gameState = makeTestState({
+      inPlay: [SHIELD_OFFICER_EXT_ID],
+      cardTraits: {},
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'requiresTeam',
+      value: 'shield',
+    });
+
+    assert.equal(result, true,
+      'a played S.H.I.E.L.D. Officer counts as a shield Hero for the requiresTeam gate.');
   });
 
   // -------------------------------------------------------------------------

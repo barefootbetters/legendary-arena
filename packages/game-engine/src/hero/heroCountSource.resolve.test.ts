@@ -15,7 +15,12 @@ import assert from 'node:assert/strict';
 import { resolveCountSource } from './heroCountSource.resolve.js';
 import { HERO_COUNT_SOURCES } from '../rules/heroCountSource.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
-import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+import {
+  BYSTANDER_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+} from '../setup/pilesInit.js';
 import type { LegendaryGameState } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -591,6 +596,23 @@ describe('resolveCountSource team-played sources (WP-680)', () => {
       resolveCountSource(gameState, '0', 'shield-heroes-played-this-turn', 'legendary-commander'),
       1,
       'the S.H.I.E.L.D. Officer counts; the X-Men card does not; self excluded',
+    );
+  });
+
+  it('shield-heroes-played-this-turn counts the teamless basic S.H.I.E.L.D. tokens (Jeff feedback — Legendary Commander)', () => {
+    // why: the REAL Officer / Agent / Trooper tokens carry NO cardTraits row, so the
+    // trait-only read used to miss them and Legendary Commander stayed at +0. Only
+    // legendary-commander has a traits row here; the three tokens do not.
+    const gameState = makeStatePlayed(
+      ['legendary-commander', SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID],
+      { 'legendary-commander': { heroClass: 'strength', team: 'shield' } },
+      {},
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-played-this-turn', 'legendary-commander'),
+      3,
+      'a played Officer, Agent and Trooper each count as a shield Hero',
     );
   });
 });

@@ -12,7 +12,16 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { getGrantedTeams, cardHasTeamWhenPlayed } from './effectiveTeams.logic.js';
+import {
+  getGrantedTeams,
+  cardHasTeamWhenPlayed,
+  cardCountsAsTeamMember,
+} from './effectiveTeams.logic.js';
+import {
+  SHIELD_OFFICER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_TROOPER_EXT_ID,
+} from '../setup/pilesInit.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -131,6 +140,47 @@ describe('cardHasTeamWhenPlayed (WP-582 / D-24391)', () => {
       cardHasTeamWhenPlayed(gameState, 'unknown' as CardExtId, 'x-men'),
       false,
       'an unknown card has no team',
+    );
+  });
+});
+
+// why (Jeff feedback — Legendary Commander): the team-synergy read must count the
+// teamless basic S.H.I.E.L.D. tokens for 'shield'. cardHasTeamWhenPlayed alone
+// misses them (no cardTraits row); cardCountsAsTeamMember folds in the carve-out.
+describe('cardCountsAsTeamMember — shield-token carve-out', () => {
+  it('counts the basic S.H.I.E.L.D. tokens (Officer/Agent/Trooper) as shield, though they carry no cardTraits row', () => {
+    const gameState = makeHelperState({});
+    for (const tokenId of [SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID]) {
+      assert.equal(
+        cardCountsAsTeamMember(gameState, tokenId, 'shield'),
+        true,
+        `${tokenId} counts as a shield Hero for team synergy`,
+      );
+      // control: cardHasTeamWhenPlayed alone does NOT see the token (the old bug)
+      assert.equal(
+        cardHasTeamWhenPlayed(gameState, tokenId, 'shield'),
+        false,
+        `${tokenId} has no cardTraits row, so the trait-only read misses it`,
+      );
+    }
+  });
+
+  it('counts a non-token card with printed team shield', () => {
+    const gameState = makeHelperState({ 'hero-s': { heroClass: 'tech', team: 'shield' } });
+    assert.equal(cardCountsAsTeamMember(gameState, 'hero-s' as CardExtId, 'shield'), true);
+  });
+
+  it('does NOT count the shield tokens for a different team, and delegates plainly there', () => {
+    const gameState = makeHelperState({ 'hero-a': { heroClass: 'tech', team: 'avengers' } });
+    assert.equal(
+      cardCountsAsTeamMember(gameState, SHIELD_OFFICER_EXT_ID, 'avengers'),
+      false,
+      'the shield token is not an Avenger',
+    );
+    assert.equal(
+      cardCountsAsTeamMember(gameState, 'hero-a' as CardExtId, 'avengers'),
+      true,
+      'a printed avenger still counts (plain delegation for non-shield teams)',
     );
   });
 });
