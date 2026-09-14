@@ -42288,4 +42288,73 @@ render), D-20104 (append-only cursor), D-20105 (no UI semantics), D-24294
 (diagnostics-only hash exclusion), D-24487 (the `transformResolved` hero-effect
 overlay precedent). **Reserved by:** NUMBER-LEDGER D-24516.
 
+---
+
+### D-24517 — LAGN 1.6.0 mints `setup.final_blow`; the loadout share link carries its first envelope field (Active 2026-09-14 — WP-698 / EC-735)
+
+**Context.** The loadout builder can author the optional rulebook "Final Blow"
+rule (`draft.finalBlow`, PR #2047), and it round-trips through the MATCH-SETUP
+JSON download. But the two OTHER loadout transports silently dropped it: the
+public **LAGN** export/import (the setup schema had no such field) and the
+**Copy Setup Link** (the URL is deliberately composition-only). A shared or
+LAGN-exported Final-Blow loadout therefore came back as a normal match — a
+different game.
+
+**Decision.**
+
+1. **Mint LAGN 1.6.0.** Add `setup.final_blow?: boolean` to `GameSetupSchema`
+   (`z.boolean().optional()`), a new `LAGN_VERSION_1_6_0 = '1.6.0'` constant in
+   `LAGN_SUPPORTED_VERSIONS`, a root **ordinal** `superRefine` gate
+   (`isLagnVersionAtLeast(v, 1.6.0) || setup.final_blow === undefined` — a
+   pre-1.6.0 document carrying the flag is rejected LOUDLY, never silently
+   stripped, the same posture as `support_pools`/`hero_alternates`), and a pure
+   `1.5.0 → 1.6.0` restamp migration hop. Exactly the additive-versioned-field
+   path `support_pools` (1.1.0, D-24195) and `hero_alternates` (1.3.0, D-24212)
+   took.
+
+2. **Bump the default `LAGN_VERSION` to 1.6.0.** All producers (the loadout
+   emitter AND the server result-LAGN emitter, `matchLagn.logic.ts`) stamp the
+   constant, so every emitted document becomes 1.6.0. This is SAFE — and
+   deliberately so — because every version gate is **ordinal**
+   (`isLagnVersionAtLeast`, D-24211), never `=== version`: a 1.6.0 document
+   clears every `≥` minimum, so nothing that validated before is now rejected.
+   The `package.json` version bumps in lockstep (the EC-422 manifest lock).
+
+3. **The loadout transports carry the flag, omit-when-off.** The registry-viewer
+   LAGN exporter emits `setup.final_blow` (in `buildLagnObject`, where the draft
+   is in scope — `compositionToLagnSetup` receives only the composition slice)
+   only when the draft has it on; the parser (`loadoutLagnImport.ts`) extracts it
+   into its return struct; the apply callers (`useLagnFromUrl.applyComposition`,
+   `LoadoutBuilder.vue`'s paste/file import, `applyPreviewToDraft` for the
+   Copy-Setup-Link → editor promotion) call `setFinalBlow`. Omitted when off, so a
+   non-Final-Blow loadout's LAGN and URL are byte-identical to before except the
+   `lagn_version` restamp.
+
+4. **The share link gains its first ENVELOPE field.** `setupUrlParams` was
+   deliberately composition-only (every envelope field, `playerCount` aside,
+   omitted). `finalBlow=true` is added — emitted only when on
+   (`serializeSetupToUrl` option), read by a dedicated `parseFinalBlowFromUrl`
+   (the `parsePlayerCountFromUrl` precedent). Rationale: a Final-Blow match plays
+   fundamentally differently (the Mastermind must be fought a 5th, final time), so
+   a shared setup that dropped the flag would misrepresent the board — the one
+   envelope value worth the departure.
+
+**No engine / determinism / persistence / hash change.** `final_blow` lives only
+on the LAGN loadout transport (a browser-safe descriptive standard) and the URL;
+the engine already consumes the setup-envelope `finalBlow` (WP-686). `G`,
+`finalStateHash`, and every state-hash oracle are untouched (N/A).
+
+**Accepted deviation.** Post-bump, the `// why:` comments in
+`matchLagn.logic.ts:485/497/576` that describe the writer version as "1.5.0 as of
+WP-641" are stale, but that file is server runtime and was deliberately not
+touched (no-server-runtime-change); the only server edit is the
+`matchLagn.routes.test.ts` version-literal update. The comment staleness is a
+documented, out-of-scope deviation.
+
+**Status:** Active. **Builds on:** D-24211 (ordinal version gates — the safety
+premise for the default bump), D-24195 (`support_pools` LAGN field + migrate
+precedent), D-24212 (`hero_alternates`), D-24503 (the setup-envelope `finalBlow`
+field this transports), EC-422 (manifest lock). **Reserved by:** NUMBER-LEDGER
+D-24517.
+
 Protect this file.
