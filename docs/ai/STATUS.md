@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-698 — LAGN Final Blow field + loadout share-link (EC-735 / D-24517) (2026-09-14)
+
+A Final-Blow loadout now **survives every loadout transport** on
+cards.legendary-arena.com, not just the MATCH-SETUP download. The optional
+rulebook "Final Blow" rule (the Mastermind must be fought a 5th, final time to
+win) was authorable in the Loadout tab (PR #2047) but silently dropped by the two
+sharing paths: the **LAGN** export/import and the **Copy Setup Link**.
+
+**LAGN spec.** Minted **LAGN 1.6.0** with an additive-optional
+`setup.final_blow?: boolean`, an ordinal `≥1.6.0` version gate, a `1.5.0→1.6.0`
+pure-restamp migration, a regenerated public `lagn-v1.json`, a `tier1-final-blow`
+example, and validator tests — exactly the versioned-additive-field path
+`support_pools` (1.1.0) and `hero_alternates` (1.3.0) took. Bumping the default
+`LAGN_VERSION` is safe because every gate is ordinal (D-24211), so no
+previously-valid document is rejected.
+
+**Loadout transports.** The registry-viewer LAGN exporter emits `setup.final_blow`
+when on; the importer reads it back into the draft; and the Copy Setup Link gains
+a `finalBlow` query param — the first setup **envelope** value the link carries
+(a Final-Blow match plays fundamentally differently, so the shared setup must
+preserve it). Omit-when-off everywhere, so a normal loadout's LAGN and URL are
+byte-identical to before.
+
+**No engine / determinism / hash change** — the flag lives only on the LAGN
+transport and the URL; the engine already consumes the setup-envelope `finalBlow`
+(WP-686). lagn-spec + registry-viewer suites green. **D-24026 live-verify** on
+cards.legendary-arena.com pending the deploy (toggle Final Blow → Download LAGN
+carries `setup.final_blow: true` at 1.6.0; Copy Setup Link → open → the box is
+checked).
+
 ### WP-697 — Hero-Effect Resolved Overlay: `heroEffectResolved` notable event (EC-734 / D-24516) (2026-09-13)
 
 Surfaces **invisible-work hero effects** on the play surface. Reported by Jeff:

@@ -37,7 +37,7 @@ import {
   DEFAULT_EXPANSIONS,
 } from "./useLoadoutDraft.js";
 
-import { parseSetupUrl, parsePlayerCountFromUrl } from "../lib/setupUrlParams.js";
+import { parseSetupUrl, parsePlayerCountFromUrl, parseFinalBlowFromUrl } from "../lib/setupUrlParams.js";
 
 /** Per-field matched-count breakdown surfaced for the preview header. */
 export interface SetupMatchedCount {
@@ -79,6 +79,12 @@ export function useSetupFromUrl(registry: CardRegistryReader): UseSetupFromUrlAp
   // below (byte-identical to pre-WP-387 behavior).
   const parsedPlayerCountRef = ref<number | null>(
     parsePlayerCountFromUrl(window.location.search),
+  );
+  // why: WP-698 / D-24517 — the URL's optional Final Blow flag (the one envelope
+  // field the link carries) drives the preview doc and the promoted draft, so a
+  // shared Final-Blow link opens with the rule on. Absent → false (off).
+  const parsedFinalBlowRef = ref<boolean>(
+    parseFinalBlowFromUrl(window.location.search),
   );
 
   const parsedParams = computed<Partial<SetupCompositionInput>>(
@@ -126,6 +132,9 @@ export function useSetupFromUrl(registry: CardRegistryReader): UseSetupFromUrlAp
       playerCount: parsedPlayerCountRef.value ?? DEFAULT_PLAYER_COUNT,
       expansions: [...DEFAULT_EXPANSIONS],
       heroSelectionMode: "GROUP_STANDARD",
+      // why: WP-698 — carry Final Blow onto the preview doc, OMITTED when off so a
+      // normal link's synthetic JSON stays byte-identical (the determinism contract).
+      ...(parsedFinalBlowRef.value ? { finalBlow: true } : {}),
       composition,
     };
   });

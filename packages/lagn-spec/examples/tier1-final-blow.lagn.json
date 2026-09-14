@@ -1,0 +1,44 @@
+{
+  "lagn_version": "1.6.0",
+  "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json",
+  "game_id": "example-tier1-final-blow-001",
+  "variant": "solo",
+  "player_count": 1,
+  "setup": {
+    "mastermind": {
+      "id": "red-skull",
+      "name": "Red Skull"
+    },
+    "scheme": {
+      "id": "midtown-bank-robbery",
+      "name": "Midtown Bank Robbery"
+    },
+    "villain_groups": [
+      {
+        "id": "hydra",
+        "name": "HYDRA"
+      }
+    ],
+    "henchmen_groups": [
+      {
+        "id": "hand-ninjas",
+        "name": "Hand Ninjas"
+      }
+    ],
+    "heroes": [
+      {
+        "id": "spider-man",
+        "name": "Spider-Man"
+      },
+      {
+        "id": "wolverine",
+        "name": "Wolverine"
+      }
+    ],
+    "bystanders_count": 10,
+    "wounds_count": 5,
+    "shield_officers_count": 2,
+    "sidekicks_count": 3,
+    "final_blow": true
+  }
+}

@@ -887,6 +887,10 @@ function applyLagnImport(text: string): void {
     }
   }
   setPlayerCount(composition.playerCount);
+  // why: WP-698 / D-24517 — apply the optional Final Blow flag, the SAME sequence
+  // useLagnFromUrl.applyComposition uses (both import consumers wired, or the paste
+  // and `?lagn=` round trips diverge). Omit-when-off: false clears the envelope key.
+  setFinalBlow(composition.finalBlow === true);
   lagnImportSuccessAt.value = new Date().toISOString();
   lagnImportText.value = "";
 }
@@ -1209,6 +1213,10 @@ async function onCopySetupLink(): Promise<void> {
   const url = serializeSetupToUrl(
     draft.value.composition,
     window.location.origin + window.location.pathname,
+    // why: WP-698 / D-24517 — carry the Final Blow flag on the shared link
+    // (omit-when-off inside the serializer), so a shared Final-Blow loadout
+    // opens with the box already checked instead of silently downgrading.
+    { finalBlow: draft.value.finalBlow === true },
   );
   copyLinkUrl.value = url;
   try {

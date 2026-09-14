@@ -38,6 +38,7 @@ function makeDraftStub(initial?: {
     heroDeckIds: string[];
     counts: Record<string, number>;
     playerCount: number;
+    finalBlow: boolean;
   };
 } {
   const calls: string[] = [];
@@ -49,6 +50,7 @@ function makeDraftStub(initial?: {
     heroDeckIds: [...(initial?.heroDeckIds ?? [])],
     counts: {} as Record<string, number>,
     playerCount: 2,
+    finalBlow: false,
   };
   const api: PreviewPromotionDraftApi = {
     draft: {
@@ -106,6 +108,10 @@ function makeDraftStub(initial?: {
       calls.push(`setPlayerCount:${value}`);
       state.playerCount = value;
     },
+    setFinalBlow: (enabled) => {
+      calls.push(`setFinalBlow:${enabled}`);
+      state.finalBlow = enabled;
+    },
   };
   return { api, calls, state };
 }
@@ -118,6 +124,7 @@ function makePreview(overrides: {
   henchmanGroupIds?: string[];
   heroDeckIds?: string[];
   playerCount?: number;
+  finalBlow?: boolean;
 }): MatchSetupDocument {
   return {
     schemaVersion: "1.0",
@@ -128,6 +135,7 @@ function makePreview(overrides: {
     playerCount: overrides.playerCount ?? 2,
     expansions: [],
     heroSelectionMode: "GROUP_STANDARD",
+    ...(overrides.finalBlow === true ? { finalBlow: true } : {}),
     composition: {
       schemeId: overrides.schemeId,
       mastermindId: overrides.mastermindId,
@@ -161,6 +169,25 @@ describe("applyPreviewToDraft (D-24190)", () => {
     assert.deepEqual(state.villainGroupIds, []);
     assert.deepEqual(state.henchmanGroupIds, []);
     assert.deepEqual(state.heroDeckIds, []);
+  });
+
+  // why: WP-698 / D-24517 — a Final-Blow setup link promoted into the editor must
+  // carry the flag; an ordinary link must leave it off (omit-when-off).
+  it("promotes the Final Blow flag onto the draft when the preview carries it", () => {
+    const { api, state, calls } = makeDraftStub();
+    applyPreviewToDraft(
+      api,
+      makePreview({ schemeId: "co2e/x", mastermindId: "co2e/y", finalBlow: true }),
+    );
+    assert.equal(state.finalBlow, true);
+    assert.ok(calls.includes("setFinalBlow:true"));
+  });
+
+  it("leaves Final Blow off when the preview does not carry it", () => {
+    const { api, state, calls } = makeDraftStub();
+    applyPreviewToDraft(api, makePreview({ schemeId: "co2e/x", mastermindId: "co2e/y" }));
+    assert.equal(state.finalBlow, false);
+    assert.ok(calls.includes("setFinalBlow:false"));
   });
 
   it("promotes a fully-specified preview including every group array", () => {

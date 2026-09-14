@@ -60,9 +60,32 @@ export const LAGN_VERSION_1_4_0 = '1.4.0'
 export const LAGN_VERSION_1_5_0 = '1.5.0'
 
 /**
+ * Adds one optional field — `setup.final_blow` (WP-698) — recording that a
+ * loadout plays the rulebook "Final Blow (Optional)" Mastermind variant. Strict
+ * superset of 1.5.0.
+ *
+ * why: 1.6.0 and not 1.5.0 — 1.5.0 is already allocated to
+ * `battle_plan`/`result.score` (D-24452), which must survive untouched. The new
+ * field is additive-optional, so every prior document is already a structurally
+ * valid 1.6.0 document (the migration is a pure restamp).
+ */
+export const LAGN_VERSION_1_6_0 = '1.6.0'
+
+/**
  * The version this build stamps on documents it writes.
  *
- * why: 1.5.0 as of WP-641 — the result-LAGN producer
+ * why: 1.6.0 as of WP-698 — the loadout LAGN emitter now carries
+ * `setup.final_blow`, which the WP-698 version gate rejects on any pre-1.6.0
+ * document, so the writer must stamp 1.6.0 for a Final-Blow loadout to be a legal
+ * write. Bumping the default also restamps the server result-LAGN emitter; that
+ * is safe because every version gate is ORDINAL (`isLagnVersionAtLeast`, never
+ * `=== version`), so a 1.6.0 document clears every existing minimum. Readers
+ * still accept every version back to 1.0.0 (`LAGN_SUPPORTED_VERSIONS`), so no
+ * stored record migrates. `package.json` is bumped in lockstep (the EC-422
+ * manifest lock) in this same commit, so the validator constant and the manifest
+ * never briefly advertise different versions.
+ *
+ * why (historical, pre-WP-698): 1.5.0 as of WP-641 — the result-LAGN producer
  * (`GET /api/match/:matchId/result-lagn`) now emits `battle_plan` and
  * `result.score`, which the WP-640 version gate rejects on any pre-1.5.0
  * document, so the writer must stamp 1.5.0 for the emitted result to be a legal
@@ -75,7 +98,7 @@ export const LAGN_VERSION_1_5_0 = '1.5.0'
  * validator constant and the manifest never briefly advertise different
  * versions.
  */
-export const LAGN_VERSION = LAGN_VERSION_1_5_0
+export const LAGN_VERSION = LAGN_VERSION_1_6_0
 
 /**
  * Every version this build can read, oldest first.
@@ -90,7 +113,8 @@ export const LAGN_SUPPORTED_VERSIONS = [
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
   LAGN_VERSION_1_4_0,
-  LAGN_VERSION_1_5_0
+  LAGN_VERSION_1_5_0,
+  LAGN_VERSION_1_6_0
 ] as const
 
 export type LagnVersion = (typeof LAGN_SUPPORTED_VERSIONS)[number]
@@ -280,7 +304,12 @@ const GameSetupSchema = z.object({
   wounds_count: z.number().int().min(0),
   shield_officers_count: z.number().int().min(0),
   sidekicks_count: z.number().int().min(0),
-  support_pools: SupportPoolsSchema.optional()
+  support_pools: SupportPoolsSchema.optional(),
+  // why: WP-698 — the optional rulebook "Final Blow" flag. Additive-optional, so
+  // every prior document is a valid 1.6.0 document; gated to lagn_version ≥ 1.6.0
+  // by the root superRefine below (a document cannot carry it at an earlier
+  // version). Omitted when off, mirroring the setup-envelope finalBlow (WP-686).
+  final_blow: z.boolean().optional()
 }).superRefine((setup, ctx) => {
   // why: a pool that disagrees with its count describes a different pile than
   // the engine builds. Checked here rather than at the root because both
@@ -823,6 +852,19 @@ export const lagnSchema = z.object({
     message: `battle_plan and result.score require lagn_version ${LAGN_VERSION_1_5_0} or later — an earlier document cannot carry a battle plan or a report card`,
     path: ['battle_plan']
   }
+).refine(
+  // why: WP-698 — same silent-strip hazard the support_pools, hero_alternates,
+  // players/scoring_profile, and battle_plan gates guard against. `lagnSchema` is
+  // not `.strict()`, so `setup.final_blow` written into a pre-1.6.0 document would
+  // be STRIPPED on parse — a shared Final-Blow loadout would silently come back as
+  // a normal match, changing how it plays with no error. Rejecting loudly is the
+  // only honest option. Ordinal (D-24211) so every version from 1.6.0 onward
+  // carries it.
+  (data) => isLagnVersionAtLeast(data.lagn_version, LAGN_VERSION_1_6_0) || data.setup.final_blow === undefined,
+  {
+    message: `setup.final_blow requires lagn_version ${LAGN_VERSION_1_6_0} or later — an earlier document cannot carry the Final Blow flag`,
+    path: ['setup', 'final_blow']
+  }
 ).superRefine((data, ctx) => {
   // why: JSON Schema cannot express any of these — a count comparison against a
   // sibling field, a per-seat range keyed on that sibling, or uniqueness within
@@ -1029,6 +1071,15 @@ export const UNEXPRESSIBLE_CONSTRAINTS = [
     constraint: `battle_plan and result.score require lagn_version ${LAGN_VERSION_1_5_0}; an earlier document may not carry either.`,
     reason:
       'Cross-field dependency between the root version and two optional blocks at two nesting levels — a root block and one nested in result. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
+  },
+  {
+    // why: WP-698 — one UNEXPRESSIBLE_CONSTRAINTS entry per refinement node. The
+    // final_blow version gate is the 12th `.refine()`, so it needs its allowlist
+    // entry or EXPECTED_REFINEMENT_COUNT (= this array's length) undercounts.
+    path: 'lagn_version / setup.final_blow',
+    constraint: `setup.final_blow requires lagn_version ${LAGN_VERSION_1_6_0}; an earlier document may not carry it.`,
+    reason:
+      'Cross-field dependency between the root version and a nested optional field. Expressible as a deeply-nested if/then, but only by hand-writing exactly the duplicate structure this derivation exists to eliminate.'
   }
 ] as const
 

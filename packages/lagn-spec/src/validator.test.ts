@@ -16,7 +16,8 @@ import {
   LAGN_VERSION_1_2_0,
   LAGN_VERSION_1_3_0,
   LAGN_VERSION_1_4_0,
-  LAGN_VERSION_1_5_0
+  LAGN_VERSION_1_5_0,
+  LAGN_VERSION_1_6_0
 } from './validator'
 import { migrateToCurrent } from './migrate'
 
@@ -649,7 +650,7 @@ describe('LAGN v1.0 Validator', () => {
     })
 
     test('LAGN_VERSION is the version this build writes', () => {
-      assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_5_0)
+      assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
     })
   })
 
@@ -737,9 +738,9 @@ describe('LAGN v1.0 Validator', () => {
 
   describe('Migration', () => {
     test('a 1.0.0 document migrates to the current version and then validates', () => {
-      // why: WP-641 flipped the writer to 1.5.0, so migrateToCurrent now walks the
-      // full registered chain 1.0.0 -> 1.5.0 (every step became reachable at the
-      // flip). Each hop is a pure restamp; the migrated document validates at 1.5.0.
+      // why: WP-698 flipped the writer to 1.6.0, so migrateToCurrent now walks the
+      // full registered chain 1.0.0 -> 1.6.0 (every step is reachable at the current
+      // writer). Each hop is a pure restamp; the migrated document validates at 1.6.0.
       const original = buildSetupDocument(LAGN_VERSION_1_0_0)
       const result = migrateToCurrent(original)
       assert.strictEqual(result.error, undefined)
@@ -749,7 +750,8 @@ describe('LAGN v1.0 Validator', () => {
         '1.1.0->1.2.0',
         '1.2.0->1.3.0',
         '1.3.0->1.4.0',
-        '1.4.0->1.5.0'
+        '1.4.0->1.5.0',
+        '1.5.0->1.6.0'
       ])
       assert.strictEqual(validate(result.payload).valid, true)
     })
@@ -762,10 +764,10 @@ describe('LAGN v1.0 Validator', () => {
     })
 
     test('a document already at the current version is returned unchanged', () => {
-      // why: "current" is the writer version, now 1.5.0 (WP-641). A document
+      // why: "current" is the writer version, now 1.6.0 (WP-698). A document
       // already at it needs no migration — applied is empty and the payload is
       // returned byte-identical.
-      const original = buildSetupDocument(LAGN_VERSION_1_5_0)
+      const original = buildSetupDocument(LAGN_VERSION_1_6_0)
       const result = migrateToCurrent(original)
       assert.strictEqual(result.error, undefined)
       assert.deepStrictEqual(result.applied, [])
@@ -928,12 +930,13 @@ describe('JSON Schema derivation', () => {
       LAGN_VERSION_1_2_0,
       LAGN_VERSION_1_3_0,
       LAGN_VERSION_1_4_0,
-      LAGN_VERSION_1_5_0
+      LAGN_VERSION_1_5_0,
+      LAGN_VERSION_1_6_0
     ])
-    // why: the writer stamps 1.5.0 as of WP-641 — the result-LAGN producer emits
-    // battle_plan / result.score, which the version gate requires. Readers still
-    // accept every version back to 1.0.0, so no stored record migrates.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_5_0)
+    // why: the writer stamps 1.6.0 as of WP-698 — the loadout LAGN emitter carries
+    // setup.final_blow, which the version gate requires. Readers still accept every
+    // version back to 1.0.0, so no stored record migrates.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
     assert.strictEqual(
       schema.properties.$schema.default,
       'https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json'
@@ -1096,18 +1099,23 @@ describe('LAGN 1.2.0 provenance', () => {
     assert.strictEqual(result.valid, false)
   })
 
-  test('AC-5: migrateToCurrent targets the writer version (1.5.0 as of WP-641)', () => {
+  test('AC-5: migrateToCurrent targets the writer version (1.6.0 as of WP-698)', () => {
     const migratedFrom100 = migrateToCurrent(buildSetupDocument(LAGN_VERSION_1_0_0))
     assert.strictEqual(migratedFrom100.error, undefined)
     assert.strictEqual(migratedFrom100.payload.lagn_version, LAGN_VERSION)
 
-    // why: WP-641 flipped the writer to 1.5.0, so the previously-unreachable
-    // 1.1.0 -> 1.2.0 -> 1.3.0 -> 1.4.0 -> 1.5.0 steps are now REACHABLE — a 1.2.0
-    // document migrates FORWARD to 1.5.0. It was returned untouched only while the
-    // writer sat at 1.1.0.
+    // why: WP-698 flipped the writer to 1.6.0, so the previously-unreachable
+    // 1.1.0 -> 1.2.0 -> 1.3.0 -> 1.4.0 -> 1.5.0 -> 1.6.0 steps are now REACHABLE — a
+    // 1.2.0 document migrates FORWARD to 1.6.0. It was returned untouched only while
+    // the writer sat at 1.1.0.
     const from120 = migrateToCurrent(buildProvenanceDocument(LAGN_VERSION_1_2_0))
-    assert.strictEqual(from120.payload.lagn_version, LAGN_VERSION_1_5_0)
-    assert.deepStrictEqual(from120.applied, ['1.2.0->1.3.0', '1.3.0->1.4.0', '1.4.0->1.5.0'])
+    assert.strictEqual(from120.payload.lagn_version, LAGN_VERSION_1_6_0)
+    assert.deepStrictEqual(from120.applied, [
+      '1.2.0->1.3.0',
+      '1.3.0->1.4.0',
+      '1.4.0->1.5.0',
+      '1.5.0->1.6.0'
+    ])
   })
 
   test('AC-5: support_pools survives migration untouched', () => {
@@ -1166,12 +1174,12 @@ describe('LAGN 1.3.0 hero alternates', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-6: no producer emits 1.3.0 — the writer skipped it (now 1.5.0)', () => {
+  test('AC-6: no producer emits 1.3.0 — the writer skipped it (now 1.6.0)', () => {
     // why: WP-402 added 1.3.0 to the READ set only; it never flipped the writer.
-    // WP-406 then flipped the writer to 1.4.0 and WP-641 to 1.5.0, both skipping
-    // 1.3.0 — so 1.3.0 stays a read-only version no producer emits, and the stamped
-    // version is 1.5.0.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_5_0)
+    // WP-406 then flipped the writer to 1.4.0, WP-641 to 1.5.0, and WP-698 to 1.6.0,
+    // all skipping 1.3.0 — so 1.3.0 stays a read-only version no producer emits, and
+    // the stamped version is 1.6.0.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
     assert.notStrictEqual(LAGN_VERSION, LAGN_VERSION_1_3_0)
   })
 
@@ -1244,16 +1252,16 @@ describe('LAGN 1.3.0 hero alternates', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-7: migrateToCurrent steps a 1.3.0 input forward to 1.5.0', () => {
-    // why: WP-641 flipped the writer to 1.5.0, so a 1.3.0 document now migrates
-    // forward two hops (1.3.0 -> 1.4.0 -> 1.5.0); it was returned untouched only
-    // while the writer sat at 1.1.0. The restamp carries the bench through
-    // untouched: migration only advances the version marker, never the setup.
+  test('AC-7: migrateToCurrent steps a 1.3.0 input forward to 1.6.0', () => {
+    // why: WP-698 flipped the writer to 1.6.0, so a 1.3.0 document now migrates
+    // forward three hops (1.3.0 -> 1.4.0 -> 1.5.0 -> 1.6.0); it was returned
+    // untouched only while the writer sat at 1.1.0. The restamp carries the bench
+    // through untouched: migration only advances the version marker, never the setup.
     const original = buildSetupDocument(LAGN_VERSION_1_3_0, { hero_alternates: BENCH })
     const result = migrateToCurrent(original)
     assert.strictEqual(result.error, undefined)
-    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_5_0)
-    assert.deepStrictEqual(result.applied, ['1.3.0->1.4.0', '1.4.0->1.5.0'])
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
+    assert.deepStrictEqual(result.applied, ['1.3.0->1.4.0', '1.4.0->1.5.0', '1.5.0->1.6.0'])
     assert.deepStrictEqual(result.payload.setup, original.setup)
   })
 
@@ -1432,30 +1440,31 @@ describe('LAGN 1.4.0 match participants + scoring profile', () => {
     assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
   })
 
-  test('AC-6: the writer stamps 1.5.0 as of WP-641 (the result-LAGN producer)', () => {
+  test('AC-6: the writer stamps 1.6.0 as of WP-698 (the loadout LAGN emitter)', () => {
     // why: WP-405 added 1.4.0 to the READ set only, and WP-406 flipped the WRITE
-    // value to 1.4.0. WP-641 now flips it to 1.5.0 because the result-LAGN producer
-    // also emits battle_plan / result.score, which the version gate requires.
-    // Readers still accept every version back to 1.0.0.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_5_0)
+    // value to 1.4.0. WP-641 flipped it to 1.5.0 (result-LAGN battle_plan /
+    // result.score), and WP-698 now flips it to 1.6.0 because the loadout LAGN
+    // emitter carries setup.final_blow, which the version gate requires. Readers
+    // still accept every version back to 1.0.0.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
   })
 
-  test('AC-7: migrateToCurrent steps a 1.4.0 input forward to 1.5.0', () => {
-    // why: WP-641 flipped LAGN_VERSION to 1.5.0, so a 1.4.0 input now sits one hop
-    // BEHIND the writer target — the forward loop runs the 1.4.0 -> 1.5.0 restamp.
-    // The restamp only advances the version marker; participants and scoring_profile
-    // carry through untouched (migration never invents or drops them).
+  test('AC-7: migrateToCurrent steps a 1.4.0 input forward to 1.6.0', () => {
+    // why: WP-698 flipped LAGN_VERSION to 1.6.0, so a 1.4.0 input now sits two hops
+    // BEHIND the writer target — the forward loop runs the 1.4.0 -> 1.5.0 -> 1.6.0
+    // restamps. The restamp only advances the version marker; participants and
+    // scoring_profile carry through untouched (migration never invents or drops them).
     const original = buildPlayersDocument(LAGN_VERSION_1_4_0, 3, {
       players: ROSTER,
       scoring_profile: 'legends-gauntlet-v1'
     })
     const result = migrateToCurrent(original)
     assert.strictEqual(result.error, undefined)
-    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_5_0)
-    assert.deepStrictEqual(result.applied, ['1.4.0->1.5.0'])
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
+    assert.deepStrictEqual(result.applied, ['1.4.0->1.5.0', '1.5.0->1.6.0'])
     // why: a pure restamp — the migrated document equals the original with only the
     // version marker advanced; participants and scoring_profile carry through.
-    assert.deepStrictEqual(result.payload, { ...original, lagn_version: LAGN_VERSION_1_5_0 })
+    assert.deepStrictEqual(result.payload, { ...original, lagn_version: LAGN_VERSION_1_6_0 })
   })
 })
 
@@ -1566,38 +1575,87 @@ describe('LAGN 1.5.0 battle plan + report card', () => {
     assert.strictEqual(result.valid, false)
   })
 
-  test('AC-5: migrateToCurrent steps a 1.4.0 document forward to 1.5.0', () => {
-    // why: WP-641 flipped LAGN_VERSION to 1.5.0, so the 1.4.0 -> 1.5.0 hop is now
-    // REACHABLE — a 1.4.0 input migrates forward one hop (it was returned untouched
-    // only while the writer sat at 1.4.0). The restamp only advances the version
-    // marker; the setup carries through untouched.
+  test('AC-5: migrateToCurrent steps a 1.4.0 document forward to 1.6.0', () => {
+    // why: WP-698 flipped LAGN_VERSION to 1.6.0, so a 1.4.0 input now sits two hops
+    // BEHIND the writer — the forward loop runs the 1.4.0 -> 1.5.0 -> 1.6.0 restamps
+    // (it was returned untouched only while the writer sat at 1.4.0). The restamp
+    // only advances the version marker; the setup carries through untouched.
     const original = buildSetupDocument(LAGN_VERSION_1_4_0)
     const result = migrateToCurrent(original)
     assert.strictEqual(result.error, undefined)
-    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_5_0)
-    assert.deepStrictEqual(result.applied, ['1.4.0->1.5.0'])
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
+    assert.deepStrictEqual(result.applied, ['1.4.0->1.5.0', '1.5.0->1.6.0'])
     assert.deepStrictEqual(result.payload.setup, original.setup)
   })
 
-  test('AC-5: migrateToCurrent leaves a 1.5.0 input unchanged (newer than the writer)', () => {
-    // why: 1.5.0 is NEWER than LAGN_VERSION (1.4.0), so the forward-walk leaves it
-    // untouched — never downgraded, never re-stamped, never invents a plan.
-    const original = buildReportDocument(LAGN_VERSION_1_5_0, {
+  test('AC-5: migrateToCurrent leaves a 1.6.0 input unchanged (at the writer head)', () => {
+    // why: 1.6.0 is the writer head (WP-698), so a document already at it is left
+    // untouched — never re-stamped, never invents a plan. (A 1.5.0 input now sits
+    // one hop behind and migrates forward — that is covered in the Final Blow suite.)
+    const original = buildReportDocument(LAGN_VERSION_1_6_0, {
       battle_plan: BATTLE_PLAN,
       result: { outcome: 'victory', score: REPORT_CARD }
     })
     const result = migrateToCurrent(original)
     assert.strictEqual(result.error, undefined)
-    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_5_0)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
     assert.deepStrictEqual(result.applied, [])
     assert.deepStrictEqual(result.payload, original)
   })
 
-  test('AC-10: LAGN_VERSION is flipped to 1.5.0 — the producer emits the new blocks', () => {
-    // why: WP-640 added 1.5.0 to the READ set only (writer stayed 1.4.0). WP-641 is
-    // the producer packet that flips the WRITE value to 1.5.0, because the
-    // result-LAGN producer now emits battle_plan / result.score, which the WP-640
-    // version gate requires. No stored record migrates — readers accept 1.0.0..1.5.0.
-    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_5_0)
+  test('AC-10: LAGN_VERSION is flipped past 1.5.0 — the writer is now 1.6.0 (WP-698)', () => {
+    // why: WP-640 added 1.5.0 to the READ set only (writer stayed 1.4.0); WP-641
+    // flipped the WRITE value to 1.5.0 for the result-LAGN producer. WP-698 flips it
+    // again to 1.6.0 because the loadout LAGN emitter now carries setup.final_blow,
+    // which the version gate requires. No stored record migrates — readers accept
+    // 1.0.0..1.6.0.
+    assert.strictEqual(LAGN_VERSION, LAGN_VERSION_1_6_0)
+  })
+})
+
+// ============================================================================
+// LAGN 1.6.0 Final Blow (WP-698)
+// ============================================================================
+
+describe('LAGN 1.6.0 final blow', () => {
+  test('a 1.6.0 document carrying setup.final_blow: true validates', () => {
+    const result = validate(buildSetupDocument(LAGN_VERSION_1_6_0, { final_blow: true }))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('a 1.6.0 document carrying setup.final_blow: false validates', () => {
+    const result = validate(buildSetupDocument(LAGN_VERSION_1_6_0, { final_blow: false }))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('a 1.6.0 document with setup.final_blow absent validates (the field is optional)', () => {
+    const result = validate(buildSetupDocument(LAGN_VERSION_1_6_0))
+    assert.strictEqual(result.valid, true, JSON.stringify(result.errors))
+  })
+
+  test('setup.final_blow on a 1.5.0 document is REJECTED, never stripped', () => {
+    // why: lagnSchema is not .strict(), so an ungated final_blow would vanish on
+    // parse and a shared Final-Blow loadout would silently come back as a normal
+    // match. The ordinal gate turns that silent loss into a loud failure.
+    const result = validate(buildSetupDocument(LAGN_VERSION_1_5_0, { final_blow: true }))
+    assert.strictEqual(result.valid, false)
+    assert.ok(
+      result.errors?.some((error) =>
+        error.includes('setup.final_blow requires lagn_version 1.6.0 or later')
+      ),
+      `expected the version-gate message, got: ${JSON.stringify(result.errors)}`
+    )
+  })
+
+  test('migrateToCurrent restamps a 1.5.0 document to 1.6.0 via the 1.5.0->1.6.0 hop', () => {
+    // why: WP-698 flipped the writer to 1.6.0, so a 1.5.0 input now sits one hop
+    // behind and migrates forward one restamp. The migration only advances the
+    // version marker; the setup carries through untouched (it never invents a flag).
+    const original = buildSetupDocument(LAGN_VERSION_1_5_0)
+    const result = migrateToCurrent(original)
+    assert.strictEqual(result.error, undefined)
+    assert.strictEqual(result.payload.lagn_version, LAGN_VERSION_1_6_0)
+    assert.deepStrictEqual(result.applied, ['1.5.0->1.6.0'])
+    assert.deepStrictEqual(result.payload.setup, original.setup)
   })
 })

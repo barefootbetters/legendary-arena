@@ -83,6 +83,10 @@ function makeRecordingDraft(): { api: UseLoadoutDraftApi; calls: Call[] } {
     // case the round trip exists to support.
     setSupportPool: record("setSupportPool"),
     setPlayerCount: record("setPlayerCount"),
+    // why: WP-698 — the apply path now calls setFinalBlow for every LAGN (true
+    // when the record carries setup.final_blow, false otherwise). Without it here
+    // the double would throw on the exact Final-Blow round trip this WP adds.
+    setFinalBlow: record("setFinalBlow"),
   } as unknown as UseLoadoutDraftApi;
   return { api, calls };
 }
@@ -264,5 +268,35 @@ describe("useLagnFromUrl", () => {
     const { api, calls } = makeRecordingDraft();
     useLagnFromUrl(api);
     assert.equal(calls.filter((call) => call[0] === "addHeroAlternate").length, 0);
+  });
+
+  // ── Final Blow through the share link (WP-698 / D-24517) ─────────────────
+
+  test("a ?lagn= carrying setup.final_blow applies setFinalBlow(true) to the draft", () => {
+    const finalBlowLagn = {
+      ...VALID_LAGN,
+      // why: final_blow is version-gated at >= 1.6.0 (D-24517), so the document
+      // must stamp 1.6.0 to carry it.
+      lagn_version: "1.6.0",
+      setup: { ...VALID_LAGN.setup, final_blow: true },
+    };
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(finalBlowLagn))}`);
+    const { api, calls } = makeRecordingDraft();
+    const result = useLagnFromUrl(api);
+    assert.deepEqual(result.lagnUrlErrors, []);
+    assert.deepEqual(
+      calls.find((call) => call[0] === "setFinalBlow"),
+      ["setFinalBlow", true],
+    );
+  });
+
+  test("a ?lagn= without final_blow applies setFinalBlow(false)", () => {
+    setSearch(`?lagn=${encodeLagn(JSON.stringify(VALID_LAGN))}`);
+    const { api, calls } = makeRecordingDraft();
+    useLagnFromUrl(api);
+    assert.deepEqual(
+      calls.find((call) => call[0] === "setFinalBlow"),
+      ["setFinalBlow", false],
+    );
   });
 });

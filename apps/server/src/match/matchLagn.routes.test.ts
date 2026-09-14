@@ -15,7 +15,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validate } from '@legendary-arena/lagn';
+import { validate, LAGN_VERSION } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
 
 import {
@@ -290,7 +290,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     const body = context.body as { lagn: Record<string, unknown> };
     assert.deepEqual(Object.keys(body), ['lagn']);
     assert.equal(validate(body.lagn).valid, true);
-    assert.equal(body.lagn.lagn_version, '1.5.0');
+    assert.equal(body.lagn.lagn_version, LAGN_VERSION);
     assert.deepEqual(body.lagn.result, { outcome: 'victory' });
     assert.equal(body.lagn.scoring_profile, 'classic');
 
@@ -439,7 +439,7 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     assert.equal(context.status, 200);
     const body = context.body as { lagn: Record<string, unknown> };
     assert.equal(validate(body.lagn).valid, true);
-    assert.equal(body.lagn.lagn_version, '1.5.0');
+    assert.equal(body.lagn.lagn_version, LAGN_VERSION);
     // battle_plan rides — the two present phases, the null one omitted
     assert.deepEqual(body.lagn.battle_plan, {
       pre_battle: 'Recruit Covert early.',
