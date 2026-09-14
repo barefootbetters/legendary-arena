@@ -40,7 +40,13 @@ with `PRE_WP080_HASH` + sentinel `finalStateHash` byte-identical). arena-client
 `vue-tsc` 0 + 1811/0; `pnpm -r build` 0. Drafted + executed in one session off
 `origin/main`; pre-flight (01.4) READY + copilot (01.7) RISK→HOLD ran as
 independent subagents, both fixes folded. **User-visible on
-play.legendary-arena.com — D-24026 live-verify pending post-deploy.**
+play.legendary-arena.com — D-24026 LIVE-VERIFIED.** Jeff's real Red Skull /
+Midtown Bank Robbery solo match on deployed build `f25986f` (contains WP-697)
+projected four `heroEffectResolved` events into `uiStateSnapshot.notableEvents`
+— e.g. `"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +6
+attack.` — the exact card-less minimal payload + verbatim narrative that feeds
+the "Hero Ability" overlay, confirming the engine→projection→client pipeline on
+the deployed build.
 
 ### WP-694 — Multi-seat "each other player chooses" core mastermind tactics (EC-731 / D-24511) (2026-09-10)
 
