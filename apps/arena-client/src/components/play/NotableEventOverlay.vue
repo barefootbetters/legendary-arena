@@ -25,10 +25,14 @@ export type NotableEventCardLookup = Readonly<Record<string, UICardDisplay>>;
 
 /**
  * Descriptive notable-event overlay surfacing the engine-composed
- * `NotableGameEvent` stream from WP-200 over five locked event types:
- * Fight, Ambush, Scheme Twist, Master Strike, Mastermind Defeated
- * (D-20008). Renders a chip + card name + engine-composed narrative +
- * applied-effect badges layout.
+ * `NotableGameEvent` stream from WP-200. Renders a chip + card name +
+ * engine-composed narrative + applied-effect badges for whichever
+ * `NotableGameEventType` variant the current event carries. The per-variant
+ * chip label + accent live in the `CHIP_LABELS` map + the per-`data-event-type`
+ * CSS blocks below; the engine's `NOTABLE_EVENT_TYPES` array is the source of
+ * truth for the full variant set (eleven as of WP-697 / `heroEffectResolved`),
+ * so this comment intentionally does not re-enumerate them (it drifted from
+ * "five" once the set grew past the WP-200/D-20008 originals).
  *
  * Per D-20002 the narrative is rendered verbatim (engine-authoritative
  * composition). Per D-20105 the UI does not interpret event semantics —
