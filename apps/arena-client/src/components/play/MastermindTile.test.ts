@@ -269,7 +269,10 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     });
     const badge = wrapper.find('[data-testid="play-mastermind-bystanders"]');
     assert.equal(badge.exists(), true);
-    assert.match(badge.text(), /2 captured/);
+    // why (Jeff feedback): the badge is now a compact icon + count (no "N captured"
+    // text) — assert the count shows and the full phrase lives on the aria-label.
+    assert.match(badge.text(), /2/);
+    assert.equal(badge.attributes('aria-label'), '2 bystanders captured');
     // why: WP-505 — face-down bystanders are count-only; the captured
     // identities must NOT leak to the board, and the old <li> list is gone.
     assert.equal(badge.text().includes('Civilian'), false);
