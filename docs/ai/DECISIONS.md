@@ -42401,6 +42401,22 @@ green. **No re-pin.** New behavior-oracle tests in `fightMastermind.test.ts` are
 (vanquish-on-Electromagnetic-Bubble / -Ruthless-Dictator park nothing; a non-final defeat still
 parks; the Final Blow 4th-tactic defeat still parks).
 
+**Audit hardening (2026-09-15).** A follow-up audit of every choice-parking tactic
+confirmed the six-queue drop covered every tactic that parks a choice *directly*, but found
+that a tactic Fight *Wound* (Crushing Shockwave) routes through `gainWoundForPlayer` →
+`checkDivingBlock`, which parks BOTH `pendingSeatChoice` (the prompt — covered) AND a
+companion `pendingDivingBlockWounds` queue (a reactive park *not* in the original six) —
+reachable in multiplayer when a wound-inflicting tactic is the vanquishing blow against a
+Diving-Block holder. Rather than chase reactive parks queue-by-queue, the drop was widened
+to clear **every** `pending*` field on `LegendaryGameState` (`dropAllPendingPlayerChoices`,
+the complete 28-field set), realizing the invariant directly: *a vanquished-mastermind win
+carries no pending choice, however it was parked.* This is safe because the `fightMastermind`
+block-all guards guarantee none pre-existed the fight, and future-proofs against any new
+tactic or reactive keyword. A drift guard (`clears EVERY pending-choice field on the
+vanquish`) seeds a sentinel into all 28 fields and asserts the vanquish clears them; a
+win-only guard pins that a non-winning defeat clears nothing. Still no re-pin (engine suite
+3512/0, both hash oracles byte-identical); engine move + test only.
+
 **Status:** Active. **Builds on:** D-24291 (the shared `defeatMastermindTacticCore`), D-24300
 (tactic Fight effects resolve on defeat via `dispatchTacticOnFight`), D-24504 / WP-687 (the
 Final Blow deferral this guard is careful to respect), D-24512 (Electromagnetic Bubble /

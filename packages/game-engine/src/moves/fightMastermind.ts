@@ -390,48 +390,77 @@ export function defeatMastermindTacticCore(
 
   // why: D-24518 — [bug observed on play.legendary-arena.com] a tactic that
   // VANQUISHES the Mastermind ends the game (endIf fires on MASTERMIND_DEFEATED).
-  // If that final tactic's Fight ability parked a pending player choice
-  // (Electromagnetic Bubble's next-hand X-Men pick, Ruthless Dictator's deck scry,
-  // Maniacal Tyrant's KO-from-discard, Cruel Ruler's free-defeat pick, Dark
-  // Technology / Bitter Captor's free-recruit pick, Monarch's Decree / Vanishing
-  // Illusions' seat choice), there is NO turn or decision window left to resolve it —
-  // it dangles as a prompt on the victory screen (a real heroes-win left an active
-  // pendingElectromagneticBubbleChoice). Every immediate, self-contained fight effect
-  // (Xavier's Nemesis rescue -> victory pile, wounds, economy, draws) already applied
-  // inside dispatchTacticOnFight above; only the now-unreachable PENDING CHOICES are
-  // dropped here. Guarded on the true vanquish (MASTERMIND_DEFEATED === 1), NOT
-  // areAllTacticsDefeated — under the optional Final Blow rule (WP-687) the 4th-Tactic
-  // defeat sets finalBlowPending and does NOT set MASTERMIND_DEFEATED, so a choice
-  // parked on that non-winning defeat legitimately stands. The fightMastermind
-  // block-all guards guarantee no pending choice pre-existed this fight, so this drops
-  // exactly what the final tactic just parked.
+  // Any pending player choice parked while resolving that final fight can never be
+  // reached — there is no turn or decision window left — so it would dangle as a
+  // prompt on the victory screen (a real heroes-win left an active
+  // pendingElectromagneticBubbleChoice). The final tactic's own Fight ability can
+  // park one (Electromagnetic Bubble, Ruthless Dictator, Maniacal Tyrant, Cruel
+  // Ruler, Dark Technology / Bitter Captor, Monarch's Decree / Vanishing Illusions),
+  // AND a reactive hero keyword the fight triggers can park one too (a tactic Wound
+  // reaching a Diving-Block holder via gainWoundForPlayer). So this drops EVERY
+  // pending choice, not a hand-picked subset — the audit-hardened invariant "a
+  // vanquished-mastermind win carries no pending choice." Every immediate,
+  // self-contained fight effect (Xavier's Nemesis rescue -> victory pile, wounds,
+  // economy, draws) already applied inside dispatchTacticOnFight above; only the
+  // now-unreachable PENDING CHOICES are dropped. Guarded on the true vanquish
+  // (MASTERMIND_DEFEATED === 1), NOT areAllTacticsDefeated — under the optional Final
+  // Blow rule (WP-687) the 4th-Tactic defeat sets finalBlowPending and does NOT set
+  // MASTERMIND_DEFEATED, so a choice parked on that non-winning defeat legitimately
+  // stands. The fightMastermind block-all guards guarantee no pending choice
+  // pre-existed this fight, so this drops exactly what this winning fight parked.
   if (G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] === 1) {
-    dropTacticParkedPendingChoices(G);
+    dropAllPendingPlayerChoices(G);
   }
 }
 
 /**
- * Drops every pending player choice a Mastermind-tactic Fight ability can park.
+ * Drops EVERY pending player choice from `G` (D-24518, audit-hardened).
  *
  * Called ONLY on the vanquishing blow (see the call site in
- * defeatMastermindTacticCore): the game is over, so any choice the final tactic
- * parked can never be resolved and must not survive as a dangling prompt on the
- * victory screen (D-24518). Each field is set to `undefined` so the won final state
- * carries no pending choice (JSON-omitted, so the hash oracles stay clean).
+ * defeatMastermindTacticCore): the game is over, so no pending choice can ever be
+ * resolved and none must survive as a dangling prompt on the victory screen. Each
+ * field is set to `undefined` so the won final state carries no pending choice
+ * (JSON-omitted, so the hash oracles stay clean). The `fightMastermind` block-all
+ * guards guarantee none of these pre-existed the fight, so this removes exactly what
+ * the winning fight (tactic Fight ability + any reactive keyword it triggered)
+ * parked — nothing else.
  *
- * If a NEW mastermind-tactic Fight ability parks a new pending-choice queue, add it
- * here (and to the vanquish tests in fightMastermind.test.ts) or it will dangle on
- * the winning blow.
+ * This is the COMPLETE `pending*` set on `LegendaryGameState`. If a new pending-choice
+ * field is added to the game state, add it here too (and to the `all-pending-choice
+ * fields are cleared on the vanquish` drift test in fightMastermind.test.ts), or a
+ * choice parked in it on the winning blow will dangle.
  *
  * @param G - Game state (mutated under the move's Immer draft).
  */
-function dropTacticParkedPendingChoices(G: LegendaryGameState): void {
-  G.pendingElectromagneticBubbleChoices = undefined;
-  G.pendingRuthlessDictatorChoices = undefined;
-  G.pendingKoDiscardChoices = undefined;
+function dropAllPendingPlayerChoices(G: LegendaryGameState): void {
+  G.pendingCopyPowersChoices = undefined;
+  G.pendingCountScaledChoice = undefined;
   G.pendingDefeatChoices = undefined;
+  G.pendingDiscardChoices = undefined;
+  G.pendingDiscardToPlay = undefined;
+  G.pendingDivingBlockWounds = undefined;
+  G.pendingDoOverChoices = undefined;
+  G.pendingDrawOrEmpowered = undefined;
+  G.pendingElectromagneticBubbleChoices = undefined;
   G.pendingGiveHqHeroChoices = undefined;
+  G.pendingHeroChoice = undefined;
+  G.pendingKoDiscardChoices = undefined;
+  G.pendingKoHeroChoices = undefined;
+  G.pendingMelterKoChoices = undefined;
+  G.pendingOptionalKoRewards = undefined;
+  G.pendingOptionalPutBottomHQ = undefined;
+  G.pendingPlayVillainTopChoices = undefined;
+  G.pendingPutAnyNumberBottomHQ = undefined;
+  G.pendingPutCardsOnDeckChoices = undefined;
+  G.pendingReorderChoices = undefined;
+  G.pendingReturnOnDiscard = undefined;
+  G.pendingReturnZeroCostDiscard = undefined;
+  G.pendingRuthlessDictatorChoices = undefined;
+  G.pendingScryKoChoices = undefined;
   G.pendingSeatChoice = undefined;
+  G.pendingSmashDiscards = undefined;
+  G.pendingUndercoverChoice = undefined;
+  G.pendingVictoryPileCardPick = undefined;
 }
 
 /**
