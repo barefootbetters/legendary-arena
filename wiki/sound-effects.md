@@ -37,7 +37,7 @@ source:
   - ../ewiki/sound-effects/strike-blocked.py
   - ../scripts/upload-move-sfx-to-r2.mjs
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-14
+last-reviewed: 2026-09-15
 ---
 
 # Sound Effects
@@ -264,10 +264,14 @@ wired (see the callout below).
 
 Distinct from the [Surface-2 move cues](#surface-2), which fire on a move
 that *does* dispatch: this is the **negative** tactile cue — a muted, dull
-tap when the player attempts something the UI rejects (clicking an
-[unplayable / greyed-out card](visual-effects.md#card-interaction-feel), an
-illegal target). It is the audio pair of the visual grey-out, and a game-feel
-review of the play surface lists it in the Phase-1 minimum sound set. It fires
+tap when the player attempts something the UI rejects (clicking a
+**disabled** hand tile — a Wound, or any card while it is not the player's
+turn / not the main step — or an illegal target). A game-feel review of the
+play surface lists it in the Phase-1 minimum sound set. (Note: there is **no
+affordability grey-out** to pair with — playing a card from hand is
+resource-free in this game; see [Visual Effects → card-interaction
+feel](visual-effects.md#card-interaction-feel). This cue rides the existing
+turn/stage/Wound disabled states, not a cost gate.) It fires
 from the **client interaction
 layer** — not a move dispatch and not a notable event, because the rejected
 click never reaches the engine (so, like `recruitHero`, it has no `UIState`
