@@ -42357,4 +42357,54 @@ precedent), D-24212 (`hero_alternates`), D-24503 (the setup-envelope `finalBlow`
 field this transports), EC-422 (manifest lock). **Reserved by:** NUMBER-LEDGER
 D-24517.
 
+### D-24518 — a mastermind-vanquishing tactic drops any pending choice its Fight ability parked (Active 2026-09-15 — bug fix, no WP)
+
+**Decision.** In `defeatMastermindTacticCore` (`packages/game-engine/src/moves/fightMastermind.ts`),
+immediately after the defeated tactic's Fight ability runs (`dispatchTacticOnFight`), when
+`G.counters[MASTERMIND_DEFEATED] === 1` — the mastermind was vanquished by this very fight —
+every pending player choice a tactic Fight ability can park is dropped
+(`pendingElectromagneticBubbleChoices`, `pendingRuthlessDictatorChoices`,
+`pendingKoDiscardChoices`, `pendingDefeatChoices`, `pendingGiveHqHeroChoices`,
+`pendingSeatChoice` → `undefined`). A vanquish ends the game (`endIf` fires on
+`MASTERMIND_DEFEATED`), so there is no turn or decision window in which such a choice could
+ever be resolved — leaving it parked makes it a **dangling prompt on the victory screen**.
+
+**Why it surfaced.** Reported from a real deployed match (Jeff, Magneto / Cosmic Cube 1p,
+build `f7e2850`). The winning blow defeated the last tactic, **Electromagnetic Bubble**,
+whose Fight ability ("choose an in-play X-Men Hero to add to your NEXT hand") parks
+`pendingElectromagneticBubbleChoices`. The engine latched the heroes-win **and** parked the
+pick; the diagnostics `uiStateSnapshot` showed an active `pendingElectromagneticBubbleChoice`
+with eligible cards while `mastermind.tacticsDefeated: 4`. The client renders that pending
+prompt from the projected field with no game-over guard, so on the (default-collapsed) "View
+final board" it reappears — a choice the player can never meaningfully make on a won game.
+Every tactic that parks a choice (Ruthless Dictator, Maniacal Tyrant, Cruel Ruler, Dark
+Technology / Bitter Captor, Monarch's Decree / Vanishing Illusions) shares the shape.
+
+**Scope + correctness.** The guard keys on `MASTERMIND_DEFEATED === 1`, **not**
+`areAllTacticsDefeated` — under the optional Final Blow rule (WP-687 / D-24504) the 4th-Tactic
+defeat sets `finalBlowPending` and deliberately does *not* set `MASTERMIND_DEFEATED` (the win
+comes later, in `awardMastermindOnFinalBlow`, which never dispatches a tactic Fight), so a
+choice parked on that non-winning defeat legitimately stands. The `fightMastermind` block-all
+guards guarantee no pending choice pre-existed the fight, so the drop removes exactly what the
+final tactic just parked — nothing else. **Immediate, self-contained fight effects are
+untouched:** Xavier's Nemesis's rescue into the victory pile (VP that counts toward the final
+score), wounds, economy, and draws all applied inside `dispatchTacticOnFight` before the drop,
+so a blanket "skip the fight effect on the vanquish" (which would lose that VP) is deliberately
+NOT what this does. The engine fix fully resolves the symptom — the projected `pending*` field
+stays absent, so no client change is required.
+
+**Determinism.** The dropped fields are hashed (they live in `G`), but **no committed replay
+or sentinel fixture defeats a choice-parking tactic as the final tactic**, so the change is
+byte-identical on every pinned oracle — `PRE_WP080_HASH` and the sentinel `finalStateHash`
+(`sentinel-core-doom-2p.replay.json`) both pass unchanged; the full 3510-test engine suite is
+green. **No re-pin.** New behavior-oracle tests in `fightMastermind.test.ts` are additive
+(vanquish-on-Electromagnetic-Bubble / -Ruthless-Dictator park nothing; a non-final defeat still
+parks; the Final Blow 4th-tactic defeat still parks).
+
+**Status:** Active. **Builds on:** D-24291 (the shared `defeatMastermindTacticCore`), D-24300
+(tactic Fight effects resolve on defeat via `dispatchTacticOnFight`), D-24504 / WP-687 (the
+Final Blow deferral this guard is careful to respect), D-24512 (Electromagnetic Bubble /
+Ruthless Dictator park sites), D-24008 (the block-all guards that guarantee no pre-existing
+pending choice). **Reserved by:** NUMBER-LEDGER D-24518.
+
 Protect this file.

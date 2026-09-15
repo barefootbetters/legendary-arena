@@ -784,3 +784,109 @@ describe('fightMastermind — Final Blow (WP-687 / D-24504)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-24518 — a vanquishing tactic must not leave a dangling pending choice
+// ---------------------------------------------------------------------------
+
+const ELECTROMAGNETIC_BUBBLE_TACTIC_ID =
+  'core-mastermind-magneto-electromagnetic-bubble' as CardExtId;
+const RUTHLESS_DICTATOR_TACTIC_ID =
+  'core-mastermind-red-skull-ruthless-dictator' as CardExtId;
+
+/** A deterministic reverse-shuffle context (the pattern the onFight tests above use). */
+const REVERSE_SHUFFLE = { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } };
+
+/** Seeds two in-play X-Men Heroes on player 0 so Electromagnetic Bubble parks (>= 2 eligible). */
+function seedTwoInPlayXMenHeroes(gameState: LegendaryGameState): void {
+  const firstHero = 'core/cyclops/optic-blast#1' as CardExtId;
+  const secondHero = 'core/cyclops/optic-blast#2' as CardExtId;
+  gameState.playerZones['0']!.inPlay = [firstHero, secondHero];
+  gameState.cardTraits = {
+    [firstHero]: { heroClass: null, team: 'x-men' },
+    [secondHero]: { heroClass: null, team: 'x-men' },
+  };
+}
+
+describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', () => {
+  it('vanquishing on Electromagnetic Bubble sets the win and parks NO next-hand pick', () => {
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'core/magneto' as CardExtId,
+        baseCardId: 'core-mastermind-magneto-magneto' as CardExtId,
+        tacticsDeck: [ELECTROMAGNETIC_BUBBLE_TACTIC_ID],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    seedTwoInPlayXMenHeroes(gameState);
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'defeating the last tactic vanquishes the mastermind');
+    assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 0,
+      'the next-hand X-Men pick must NOT dangle as a prompt on a won game');
+  });
+
+  it('vanquishing on Ruthless Dictator sets the win and parks NO deck-scry choice', () => {
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'core/red-skull' as CardExtId,
+        baseCardId: 'core-mastermind-red-skull-red-skull' as CardExtId,
+        tacticsDeck: [RUTHLESS_DICTATOR_TACTIC_ID],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    gameState.playerZones['0']!.deck = ['c1', 'c2', 'c3'] as CardExtId[];
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'defeating the last tactic vanquishes the mastermind');
+    assert.equal(gameState.pendingRuthlessDictatorChoices?.length ?? 0, 0,
+      'the deck-scry choice must NOT dangle as a prompt on a won game');
+  });
+
+  it('a NON-final Electromagnetic Bubble defeat STILL parks the pick (the drop only fires on the win)', () => {
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'core/magneto' as CardExtId,
+        baseCardId: 'core-mastermind-magneto-magneto' as CardExtId,
+        tacticsDeck: [ELECTROMAGNETIC_BUBBLE_TACTIC_ID, 'tactic-2' as CardExtId],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    seedTwoInPlayXMenHeroes(gameState);
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.notEqual(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'a tactic remains — not the vanquishing blow');
+    assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 1,
+      'a mid-game defeat still parks the pick unchanged');
+  });
+
+  it('Final Blow: the 4th-tactic Electromagnetic Bubble defeat parks the pick (win deferred, choice stands)', () => {
+    // why: the guard keys on MASTERMIND_DEFEATED === 1, NOT areAllTacticsDefeated. Under
+    // the optional Final Blow rule the 4th-tactic defeat latches finalBlowPending and does
+    // NOT set MASTERMIND_DEFEATED — the game is not over — so the parked choice is legitimate.
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'core/magneto' as CardExtId,
+        baseCardId: 'core-mastermind-magneto-magneto' as CardExtId,
+        tacticsDeck: [ELECTROMAGNETIC_BUBBLE_TACTIC_ID],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    gameState.finalBlow = true;
+    seedTwoInPlayXMenHeroes(gameState);
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.notEqual(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'Final Blow defers the win — MASTERMIND_DEFEATED is not set on the 4th-tactic defeat');
+    assert.equal(gameState.mastermind.finalBlowPending, true, 'the final blow is pending');
+    assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 1,
+      'under Final Blow the game is not over, so the parked pick legitimately stands');
+  });
+});

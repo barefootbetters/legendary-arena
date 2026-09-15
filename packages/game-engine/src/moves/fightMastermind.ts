@@ -387,6 +387,51 @@ export function defeatMastermindTacticCore(
   // why: WP-694 / D-24511 - forward events so Monarch's Decree / Vanishing Illusions can
   // park a WP-684 multi-seat seat choice (setActivePlayers admits the non-active seats).
   dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext, events);
+
+  // why: D-24518 — [bug observed on play.legendary-arena.com] a tactic that
+  // VANQUISHES the Mastermind ends the game (endIf fires on MASTERMIND_DEFEATED).
+  // If that final tactic's Fight ability parked a pending player choice
+  // (Electromagnetic Bubble's next-hand X-Men pick, Ruthless Dictator's deck scry,
+  // Maniacal Tyrant's KO-from-discard, Cruel Ruler's free-defeat pick, Dark
+  // Technology / Bitter Captor's free-recruit pick, Monarch's Decree / Vanishing
+  // Illusions' seat choice), there is NO turn or decision window left to resolve it —
+  // it dangles as a prompt on the victory screen (a real heroes-win left an active
+  // pendingElectromagneticBubbleChoice). Every immediate, self-contained fight effect
+  // (Xavier's Nemesis rescue -> victory pile, wounds, economy, draws) already applied
+  // inside dispatchTacticOnFight above; only the now-unreachable PENDING CHOICES are
+  // dropped here. Guarded on the true vanquish (MASTERMIND_DEFEATED === 1), NOT
+  // areAllTacticsDefeated — under the optional Final Blow rule (WP-687) the 4th-Tactic
+  // defeat sets finalBlowPending and does NOT set MASTERMIND_DEFEATED, so a choice
+  // parked on that non-winning defeat legitimately stands. The fightMastermind
+  // block-all guards guarantee no pending choice pre-existed this fight, so this drops
+  // exactly what the final tactic just parked.
+  if (G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] === 1) {
+    dropTacticParkedPendingChoices(G);
+  }
+}
+
+/**
+ * Drops every pending player choice a Mastermind-tactic Fight ability can park.
+ *
+ * Called ONLY on the vanquishing blow (see the call site in
+ * defeatMastermindTacticCore): the game is over, so any choice the final tactic
+ * parked can never be resolved and must not survive as a dangling prompt on the
+ * victory screen (D-24518). Each field is set to `undefined` so the won final state
+ * carries no pending choice (JSON-omitted, so the hash oracles stay clean).
+ *
+ * If a NEW mastermind-tactic Fight ability parks a new pending-choice queue, add it
+ * here (and to the vanquish tests in fightMastermind.test.ts) or it will dangle on
+ * the winning blow.
+ *
+ * @param G - Game state (mutated under the move's Immer draft).
+ */
+function dropTacticParkedPendingChoices(G: LegendaryGameState): void {
+  G.pendingElectromagneticBubbleChoices = undefined;
+  G.pendingRuthlessDictatorChoices = undefined;
+  G.pendingKoDiscardChoices = undefined;
+  G.pendingDefeatChoices = undefined;
+  G.pendingGiveHqHeroChoices = undefined;
+  G.pendingSeatChoice = undefined;
 }
 
 /**
