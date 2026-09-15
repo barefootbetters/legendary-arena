@@ -1,11 +1,12 @@
 import '../../testing/jsdom-setup';
 
-import { describe, test } from 'node:test';
+import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
 import HandRow from './HandRow.vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
+import { useEffectIntensity, __resetEffectIntensityForTests } from '../../vfx/effectIntensity';
 
 interface RecordedCall {
   name: UiMoveName;
@@ -215,5 +216,74 @@ describe('HandRow (WP-129 — extends WP-100)', () => {
     });
     assert.equal(wrapper.find('[data-testid="play-hand-empty"]').exists(), true);
     assert.equal(wrapper.findAll('[data-testid="play-hand-card"]').length, 0);
+  });
+});
+
+describe('HandRow (WP-699) — hand arc + gated hover lift', () => {
+  beforeEach(() => {
+    // why: effectIntensity is a module singleton — reset it (and its
+    // localStorage backing) between tests so an 'off' / reduced-motion case
+    // never leaks into the next test's default-full expectation.
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+  });
+
+  function mountHand(handCards: string[]) {
+    const { submitMove } = recorder();
+    return mount(HandRow, { props: { handCards, currentStage: 'main', submitMove } });
+  }
+
+  function rotationOf(wrapper: ReturnType<typeof mountHand>, index: number): string {
+    const cards = wrapper.findAll('.hand-card');
+    return (cards[index]!.element as HTMLElement).style.getPropertyValue('--hand-card-rotation');
+  }
+
+  test('binds a symmetric arc rotation onto each hand card', () => {
+    const wrapper = mountHand(['a', 'b', 'c', 'd', 'e']);
+    assert.equal(wrapper.findAll('.hand-card').length, 5);
+    // The middle card is upright; the two ends are mirror-images about 0°.
+    assert.equal(rotationOf(wrapper, 2), '0deg');
+    assert.ok(parseFloat(rotationOf(wrapper, 0)) < 0, 'the first card tilts left');
+    assert.ok(parseFloat(rotationOf(wrapper, 4)) > 0, 'the last card tilts right');
+    assert.equal(parseFloat(rotationOf(wrapper, 0)), -parseFloat(rotationOf(wrapper, 4)));
+  });
+
+  test('a playable hand tile is lift-enabled at full intensity', () => {
+    const wrapper = mountHand(['cap-rogers']);
+    assert.equal(useEffectIntensity().intensity.value, 'full');
+    assert.equal(
+      wrapper.find('[data-testid="card-tile"]').classes().includes('card-tile--lift-enabled'),
+      true,
+    );
+  });
+
+  test('the lift is suppressed when Effect-Intensity is off', () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mountHand(['cap-rogers']);
+    assert.equal(
+      wrapper.find('[data-testid="card-tile"]').classes().includes('card-tile--lift-enabled'),
+      false,
+    );
+  });
+
+  test('the lift is suppressed under prefers-reduced-motion', () => {
+    // why: prefersReducedMotion is an exposed ref on the seam (jsdom has no
+    // matchMedia to stub), so set it directly to exercise the reduced-motion
+    // branch — matching the effectIntensity.test.ts gate tests.
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mountHand(['cap-rogers']);
+    assert.equal(
+      wrapper.find('[data-testid="card-tile"]').classes().includes('card-tile--lift-enabled'),
+      false,
+    );
+  });
+
+  test('a disabled Wound tile is never lift-enabled, and every card still renders', () => {
+    const wrapper = mountHand(['cap-rogers', 'pile-wound']);
+    const tiles = wrapper.findAll('[data-testid="card-tile"]');
+    assert.equal(tiles.length, 2, 'every hand card renders');
+    // The playable Hero lifts; the disabled (non-interactive) Wound never does.
+    assert.equal(tiles[0]!.classes().includes('card-tile--lift-enabled'), true);
+    assert.equal(tiles[1]!.classes().includes('card-tile--lift-enabled'), false);
   });
 });
