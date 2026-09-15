@@ -53,7 +53,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-10
+last-reviewed: 2026-09-14
 ---
 
 # Visual Effects Framework
@@ -901,6 +901,54 @@ stand-in (the live beat plays over the real played card). Animation source:
 [transform-surge.py](../ewiki/visual-effects/transform-surge.py)
 — regenerate with `python transform-surge.py`.*
 
+### Card-interaction & hand feel (the Hearthstone-feel pass) {#card-interaction-feel}
+
+Every surface above reacts to an **engine signal** — a notable event, the
+combo scalar, an outcome. This section is the one **client-local** feel
+layer: effects driven purely by the **pointer, the hand contents, and the
+local seat's own affordability**, with *no* engine event behind them. It
+collects the "make it feel like Hearthstone" card-handling polish from a
+game-feel review — all of it **proposal**, and a **different category**
+from the notable-event juice
+layer, so it is grouped apart from the [trigger surfaces](#surface-1) rather
+than pretending to be another one.
+
+It inherits the same three hard boundaries as everything else here: it is
+[pure presentation](#critical-invariants) (reads projected `UIState`, never
+`G` / `ctx`), it is [absent from the determinism
+hash](#determinism-requirements-mandatory), and it honours the
+[accessibility gate](#accessibility-requirements-mandatory) — the shipped
+`shouldRender` / `prefers-reduced-motion` seam already exists, so each item
+below degrades to its static end-state, never a loss of function. Per the
+[library posture](#library-posture) these are **hand-rolled CSS / WAAPI
+`transform` + `opacity`** animations — exactly the tool that section already
+names for card motion — so the polish plan's suggestion of the *Motion*
+library would **reopen** the locked no-new-dependency call (D-24365) and
+should not be adopted without a `DECISIONS.md` entry.
+
+| Feel item | Client signal | Suggested character (proposal) | Priority |
+|---|---|---|---|
+| **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card scales ~1.06, rises ~12 px, gains a shadow and a `z-index` bump, ~150 ms ease-out; reverse on leave, restore `z-index` after the leave settles | recommend |
+| **Grey-out unplayable** | the local seat's recruit / attack resources + per-card cost, read from `UIState` (see the [signal caveat](#card-interaction-decisions)) | desaturate + drop to ~0.55 opacity, and suppress both the hover lift and the click, so the player never has to work out what they can afford — the single biggest cognitive-load reduction in the plan | **recommend (highest-value item)** |
+| **Hand arc / fan** | hand size + card index (layout only) | lay the hand along a shallow arc, each card rotated to its tangent with a `transform-origin` below it; compress spacing as the hand grows so it never overflows; the hovered card straightens to 0° and nudges its neighbours outward | recommend |
+| **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
+| **Turn-start banner + active-player marker** | the turn boundary in `UIState` (active-player change) | a brief non-blocking sweep / banner naming the active player (~600 ms), paired with the [turn-start sound](sound-effects.md#surface-3), plus a **persistent** active-player indicator | recommend |
+| **Per-element damage shake** | a `UIState.players[id].woundCount` delta scoped to a **specific** panel | a short positional shake (3–4 oscillations, ~6 px, ≤ 250 ms per the [performance budget](#performance-budget)) on the *damaged element only* — never the viewport — amplitude scaled by the hit; this is the per-panel refinement the [shipped full-screen wound vignette](#surface-1b) already flags as a follow-up WP | recommend |
+| **Opponent card-reveal moment** | *no ready signal* — see the [caveat](#card-interaction-decisions) | the opponent's played card animates to centre, scales up, holds ~800 ms to be read, then moves to its destination — the multiplayer "what just happened?" fix | recommend, blocked on a signal |
+
+The **play-log** half of the plan's "opponent action visibility" item
+already **shipped** — the HUD
+[`GameLogPanel`](#game-log-outcome-colours) is the scrollable, colour-coded
+action list (WP-434 / D-24253) — so only the *reveal animation* above
+remains of that item.
+
+> **Not on this page.** The plan's **canned emotes** and **one-click
+> rematch** are a networked social feature and an end-of-match retention
+> flow — neither is a client-local presentation effect, so they belong with
+> the multiplayer / lobby work, not the feel layer. (An emote's *per-emote
+> sound* would be the only piece that touches
+> [Sound Effects](sound-effects.md).)
+
 ### Future direction — alternate thematic presentations {#playstyle-lens}
 
 The VFX trigger spine is **compatible with alternate thematic
@@ -1211,6 +1259,30 @@ right owner.
   out of scope by design.
 - **`heroRecruited` result event** — would replace client-side
   delta-watching for the recruit effect.
+
+#### Card-interaction feel — open questions {#card-interaction-decisions}
+
+The two [card-interaction feel](#card-interaction-feel) items that are not a
+pure client render — each needs a signal decision before it can ship:
+
+- **Grey-out playability source.** The [grey-out
+  affordance](#card-interaction-feel) needs to know whether a card is playable
+  *right now*. The engine owns truth, so the client must **not** re-implement
+  affordability as a parallel rules engine ([engine owns
+  truth](#critical-invariants)). Decide between a cheap client **hint** from
+  the already-projected resources (fast, but can disagree with the engine at
+  the margins) and a **projected legal-play set** the client renders verbatim
+  (authoritative, but a new `UIState` field). A hint that only ever *greys*
+  (and never enables an illegal play) is a safe v1 — the engine still
+  validates every move.
+- **Opponent-play reveal signal.** The [reveal moment](#card-interaction-feel)
+  has **no engine event**: `playCard` emits no notable event, so an opponent's
+  play reaches the client only as `UIState` deltas and a game-log line.
+  Showing "the opponent just played *X*" dramatically needs either a new
+  notable event or a decision to drive the reveal off the projected
+  log / board delta. This is the same class of gap as the deferred
+  [`escapeResolved`](#decisions-pending) — a dramatic moment with no ready
+  hook.
 
 ### Implementation decisions pending
 
