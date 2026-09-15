@@ -626,8 +626,14 @@ export default defineComponent({
   opacity: 0.55;
 }
 
+/* why (Jeff feedback): the CURRENT step's box goes white so the live action stands
+   out from the gray turn-bar ground — after Step 1 finishes and it's Step 2's turn,
+   the Step 2 box turns white ("act here now"). Inactive step boxes stay transparent
+   (they show the gray bar behind them). arena-client v1 is a light surface, so a
+   literal white reads correctly. */
 .turn-action-bar__step--active {
   border-color: var(--color-foreground, #333);
+  background-color: #ffffff;
 }
 
 .turn-action-bar__step header {
