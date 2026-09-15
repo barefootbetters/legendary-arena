@@ -30,8 +30,15 @@ Hand-rolled CSS/WAAPI, `transform`+`opacity` only, **no new dependency**
 type-only `UICardDisplay` stays), absent from the determinism hash, `packages/`
 and `package.json` untouched. arena-client 1814/0 (+11 tests), `vue-tsc` 0,
 `pnpm -r build` 0. Live-verified at 1280×720 on the `?fixture=mid-turn&play=1`
-dev route (arc fan, hover lift, edge-card straighten, no page scroll); **D-24026
-deployed live-verify pending the arena-client CF Pages deploy.**
+dev route (arc fan, hover lift, edge-card straighten, no page scroll).
+
+**D-24026 deployed-verified (2026-09-15).** The change is live in the served
+arena-client bundle on play.legendary-arena.com (`card-tile--lift-enabled` +
+`hand-card-rotation` present in the deployed CSS/JS), and a full real match on
+the deployed build — Magneto / Cosmic Cube 1p, ending in a heroes-win — played
+the hand click-by-click to completion, so hand interaction / playability is
+intact on the live surface. (The `?fixture=` render harness is dev-only, so the
+fan/lift visual is not scriptable on prod; it was eyeballed in the live match.)
 
 ### WP-698 — LAGN Final Blow field + loadout share-link (EC-735 / D-24517) (2026-09-14)
 
