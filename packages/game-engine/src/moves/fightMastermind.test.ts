@@ -889,4 +889,79 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
     assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 1,
       'under Final Blow the game is not over, so the parked pick legitimately stands');
   });
+
+  // why: the audit hardening — the vanquish drops EVERY pending choice, not just the
+  // ones a tactic parks directly, because a reactive keyword the fight triggers (a
+  // tactic Wound reaching a Diving-Block holder) can park one too. This drift guard
+  // seeds a sentinel into every pending* field and asserts the vanquish clears them
+  // all. ALL_PENDING_FIELDS is the complete pending* set on LegendaryGameState; if a
+  // field is added there, add it here and to dropAllPendingPlayerChoices, or a choice
+  // parked in it on the winning blow will dangle.
+  const ALL_PENDING_FIELDS = [
+    'pendingCopyPowersChoices', 'pendingCountScaledChoice', 'pendingDefeatChoices',
+    'pendingDiscardChoices', 'pendingDiscardToPlay', 'pendingDivingBlockWounds',
+    'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices',
+    'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
+    'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
+    'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
+    'pendingPutCardsOnDeckChoices', 'pendingReorderChoices', 'pendingReturnOnDiscard',
+    'pendingReturnZeroCostDiscard', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
+    'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',
+    'pendingVictoryPileCardPick',
+  ] as const;
+  const SINGLE_VALUE_PENDING_FIELDS = new Set(['pendingHeroChoice', 'pendingSeatChoice']);
+
+  it('clears EVERY pending-choice field on the vanquish (drift guard)', () => {
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'test-mastermind' as CardExtId,
+        baseCardId: 'test-mastermind-base' as CardExtId,
+        // why: a synthetic last tactic with no onFight handler — the vanquish latches
+        // MASTERMIND_DEFEATED without the tactic itself parking anything, so the ONLY
+        // pending state is the sentinels seeded below; every one must be cleared.
+        tacticsDeck: ['synthetic-vanquish-tactic' as CardExtId],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+
+    // why: seed a non-empty sentinel into every pending field. Dynamic access is a
+    // drift-test convenience only; the production helper clears each field explicitly
+    // (00.6 §16.2).
+    const pendingBag = gameState as unknown as Record<string, unknown>;
+    for (const field of ALL_PENDING_FIELDS) {
+      pendingBag[field] = SINGLE_VALUE_PENDING_FIELDS.has(field)
+        ? { sentinel: true }
+        : [{ sentinel: true }];
+    }
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'the synthetic last tactic vanquishes the mastermind');
+    for (const field of ALL_PENDING_FIELDS) {
+      assert.equal(pendingBag[field], undefined,
+        `${field} must be cleared on the vanquishing blow (D-24518 audit-hardened)`);
+    }
+  });
+
+  it('a NON-vanquishing defeat leaves seeded pending fields untouched (the drop is win-only)', () => {
+    const gameState = createMockGameState({
+      mastermind: { ...makeMastermindState(),
+        id: 'test-mastermind' as CardExtId,
+        baseCardId: 'test-mastermind-base' as CardExtId,
+        tacticsDeck: ['synthetic-tactic' as CardExtId, 'tactic-2' as CardExtId],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    // why: a lone unrelated pending choice pre-existing a non-winning defeat must NOT
+    // be cleared — the drop is strictly the vanquish path.
+    gameState.pendingReturnOnDiscard = [{ sentinel: true }] as unknown as LegendaryGameState['pendingReturnOnDiscard'];
+
+    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
+
+    assert.notEqual(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
+      'a tactic remains — not the vanquishing blow');
+    assert.equal(gameState.pendingReturnOnDiscard?.length ?? 0, 1,
+      'a non-winning defeat does not clear pending choices');
+  });
 });
