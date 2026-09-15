@@ -302,6 +302,11 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  /* why (Jeff feedback): center the captured block against the villain card and
+     let it size to its own content. Without this it inherits the row's
+     `align-items: stretch` and grows to the full card height, leaving blank
+     bordered space beneath a lone bystander pill. */
+  align-self: center;
   gap: 0.15rem;
   min-width: 0;
   padding-left: 0.25rem;

@@ -172,16 +172,18 @@ export default defineComponent({
     >
       Read card ▸
     </button>
-    <!-- why: WP-505 — captured bystanders are face down, so they render as a
-         count-only "N captured" badge (identity hidden), matching the
-         city-villain badge; shown only when the mastermind holds some. -->
+    <!-- why: WP-505 + Jeff feedback — captured bystanders are face down, so they
+         render as a compact icon + count badge (identity hidden), matching the
+         city-villain badge; shown only when the mastermind holds some. The person
+         glyph is decorative (aria-hidden) with the full phrase on the aria-label. -->
     <span
       v-if="mastermind.attachedBystanders.length > 0"
       class="mastermind-bystanders"
       data-testid="play-mastermind-bystanders"
       :aria-label="mastermind.attachedBystanders.length + ' bystanders captured'"
+      :title="mastermind.attachedBystanders.length + ' bystander(s) captured'"
     >
-      {{ mastermind.attachedBystanders.length }} captured
+      <span class="mastermind-bystanders-icon" aria-hidden="true">👤</span>{{ mastermind.attachedBystanders.length }}
     </span>
     <!-- why: WP-399 / D-24202 — Hypno-Thralls are the non-grey Heroes co2e
          Loki's Master Strike stacks next to Loki (the D-24201 zone made
@@ -238,17 +240,27 @@ export default defineComponent({
   opacity: 0.85;
 }
 
-/* why: WP-505 — count-only badge (face-down bystanders), matching the
-   city-villain "N captured" pill. */
+/* why: WP-505 + Jeff feedback — compact icon + count badge (face-down
+   bystanders), matching the city-villain pill: an inline-flex pill so the person
+   glyph and the number sit tight together. */
 .mastermind-bystanders {
   align-self: flex-start;
-  padding: 0.05rem 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.05rem 0.3rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.6);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mastermind-bystanders-icon {
+  font-size: 0.7rem;
 }
 
 .mastermind-read {
