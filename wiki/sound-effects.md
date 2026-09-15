@@ -37,7 +37,7 @@ source:
   - ../ewiki/sound-effects/strike-blocked.py
   - ../scripts/upload-move-sfx-to-r2.mjs
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-08
+last-reviewed: 2026-09-14
 ---
 
 # Sound Effects
@@ -260,12 +260,35 @@ wired (see the callout below).
 > plays the recruit cue on the dispatch itself (the `submitMove` chokepoint),
 > which is the only hook that fires for it at all.
 
-#### Surface 3 — Turn lifecycle (rule triggers)
+#### UI-affordance cue — invalid action {#invalid-action}
+
+Distinct from the [Surface-2 move cues](#surface-2), which fire on a move
+that *does* dispatch: this is the **negative** tactile cue — a muted, dull
+tap when the player attempts something the UI rejects (clicking an
+[unplayable / greyed-out card](visual-effects.md#card-interaction-feel), an
+illegal target). It is the audio pair of the visual grey-out, and a game-feel
+review of the play surface lists it in the Phase-1 minimum sound set. It fires
+from the **client interaction
+layer** — not a move dispatch and not a notable event, because the rejected
+click never reaches the engine (so, like `recruitHero`, it has no `UIState`
+signal; unlike it, it has no *move* either). It is a Phase-1 candidate from a
+game-feel review of the play surface. Keep it **quiet and short** (a soft
+~80–120 ms dull tap): its whole job is a "nope" that never becomes annoying
+on repeat, so it should self-debounce rather than fire on every frame of a
+held or mashed click. Candidate CC0 source: Kenney Interface Sounds (a soft
+"error" / muted tap). No R2 clip yet — operator-pending like the other
+unshipped candidates below.
+
+#### Surface 3 — Turn lifecycle (rule triggers) {#surface-3}
 
 `onTurnStart` and `onTurnEnd` are two of the five `RuleTriggerName`
 values; the client sees the effect as a turn boundary in `UIState`. A
 subtle "your turn" cue is the main candidate here — used sparingly to
-avoid fatigue.
+avoid fatigue. A game-feel review of the play surface flags this turn-start
+cue as a Phase-1 candidate, paired with the
+[turn-start banner / active-player marker](visual-effects.md#card-interaction-feel)
+on the visual side; the `turn-start.mp3` candidate is auditioned under
+[Audio previews](#audio-previews).
 
 #### Surface 4 — Outcome / endgame
 
@@ -955,8 +978,9 @@ unusable on a revenue-generating site.
   [adaptive danger-meter score](#adaptive-background-music--the-danger-meter)
   (WP-560 / D-24369), and the wound-gained thud (WP-650 / D-24462) have landed.
   The remaining layers — Surface-3 turn-lifecycle cues, the Surface-4 endgame
-  stings, and a dodge UI affordance so `dodgeCard` can be dispatched (and
-  sounded) — still need a WP defining their contract.
+  stings, the [invalid-action affordance cue](#invalid-action), and a dodge UI
+  affordance so `dodgeCard` can be dispatched (and sounded) — still need a WP
+  defining their contract.
 - **Asset delivery — bundle vs CDN.** Ship clips/loops inside the
   arena-client bundle, or host them on R2 (the
   `images.legendary-arena.com` precedent suggests a `sounds.` / R2 path
