@@ -28,6 +28,7 @@ source:
   - ../packages/game-engine/src/villainDeck/villainDeck.reveal.ts
   - ../packages/game-engine/src/mastermind/mastermind.types.ts
   - ../packages/game-engine/src/mastermind/mastermind.logic.ts
+  - ../packages/game-engine/src/moves/fightMastermind.ts
   - ../packages/game-engine/src/board/ko.logic.ts
   - ../data/cards/co2e.json
   - ../docs/ai/ARCHITECTURE.md
@@ -35,7 +36,7 @@ source:
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
   - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-10
+last-reviewed: 2026-09-15
 ---
 
 # Master Strike
@@ -241,6 +242,23 @@ share the same Mastermind entity.
   association, the strike handler never reads or writes
   `G.mastermind.tacticsDeck` / `tacticsDefeated`. Tactic resolution is
   the combat path (`defeatTopTactic`), a separate mechanic.
+- **The vanquishing Tactic leaves no dangling prompt (D-24518).** A defeated
+  Tactic's own *Fight* ability resolves on defeat (WP-497 / D-24300). When the
+  defeat is the **vanquishing** blow — the fight that sets `MASTERMIND_DEFEATED`
+  — the game is over, so a Fight ability that parks a block-all **pending
+  choice** (e.g. core Magneto's Electromagnetic Bubble, "add an `[team:x-men]`
+  Hero to your next hand") would dangle as a prompt on the victory screen.
+  `defeatMastermindTacticCore` therefore drops **every** `pending*` choice on the
+  vanquish, so nothing is left to render. Immediate effects still apply (a rescue
+  into the Victory Pile counts toward the score); only the now-unreachable
+  pending choices are cleared, and only on the **true** vanquish
+  (`MASTERMIND_DEFEATED === 1`, not `areAllTacticsDefeated`) — **not** on a
+  deferred Final Blow 4th-Tactic defeat, which sets `finalBlowPending` and does
+  not set `MASTERMIND_DEFEATED`. Observed and fixed from a real heroes-win
+  (Magneto / Cosmic Cube left an active `pendingElectromagneticBubbleChoice`);
+  audit-hardened from an initial six-queue drop to all pending fields after a
+  reactive-park gap (a Tactic Wound reaching a Diving-Block holder). See
+  [Visual Effects → Edge Cases](visual-effects.md#edge-cases).
 - **Pipeline ordering inside one reveal.** The strike trigger fires
   *after* `onCardRevealed` in the same `revealVillainCard` call.
   Effects from both are collected first, then applied together —
@@ -276,8 +294,9 @@ share the same Mastermind entity.
   helpers `isFinalBlowAvailable` / `setFinalBlowPending` (WP-687)
 - [`packages/game-engine/src/moves/fightMastermind.ts`](../packages/game-engine/src/moves/fightMastermind.ts)
   — `fightMastermind` (the Final Blow `isFinalBlowAvailable` branch),
-  `defeatMastermindTacticCore` (defers the win under `G.finalBlow`),
-  `awardMastermindOnFinalBlow` (the 5th-fight Mastermind-card award, WP-687)
+  `defeatMastermindTacticCore` (defers the win under `G.finalBlow`; and
+  `dropAllPendingPlayerChoices` — clears every `pending*` choice on the vanquish,
+  D-24518), `awardMastermindOnFinalBlow` (the 5th-fight Mastermind-card award, WP-687)
 
 ## History
 
@@ -293,6 +312,7 @@ share the same Mastermind entity.
 - WP-649 / D-24461 (2026-09-05): `resolveCoreLokiStrike` gains the same reveal-and-keep emit for core Loki (reveal `[hc:strength]`) — the **fourth and last** reveal-and-keep Master Strike producer, surfaced by a live `core/loki` + Legacy Virus playtest. Pure reuse of the WP-644 contract (no new event type / `threatKind` / composer / client change)
 - WP-690 / D-24507 (2026-09-10): the **mastermind-hit VFX** — an escalating ember burst fires on each Tactic defeat (off the projected `tacticsDefeated` count delta, `hit1` spark → `hit4` impact), plus the **heroes-win VICTORY! finale** on the projected win. Pure client presentation, no engine change ([Visual Effects](visual-effects.md#shipped-mastermind-hit))
 - WP-687 / D-24504 (2026-09-10): the optional **Final Blow** rule (Universal Rules v23 "Final Blow (Optional)"). With `G.finalBlow` on (WP-686's setup flag), the 4th-Tactic defeat no longer wins — `defeatMastermindTacticCore` latches `MastermindState.finalBlowPending` and defers, and a distinct 5th fight (`fightMastermind` / `awardMastermindOnFinalBlow`) moves the Mastermind base card into the winner's Victory Pile and sets `MASTERMIND_DEFEATED`. Off-path byte-identical (no hashed-G re-pin). The WP-690 VICTORY! finale fires on that 5th blow with no rework. New `UIMastermindState.finalBlowPending` + a `MastermindTile.vue` "⚔ Final blow" affordance + a lobby toggle
+- D-24518 (2026-09-15, bug fix, no WP): a Tactic that **vanquishes** the Mastermind no longer leaves its Fight ability's parked **pending choice** dangling on the won game. `defeatMastermindTacticCore` drops every `pending*` field when `MASTERMIND_DEFEATED === 1` (the true vanquish — not `areAllTacticsDefeated`, so a deferred Final Blow 4th-Tactic defeat is unaffected), after immediate VP effects apply. Audit-hardened from an initial six-queue drop to all pending fields after a reactive-park gap (a Tactic Wound → Diving Block parks a companion `pendingDivingBlockWounds` queue). No hash re-pin. Surfaced by a real `play.legendary-arena.com` heroes-win (Magneto / Cosmic Cube) whose diagnostics carried an active `pendingElectromagneticBubbleChoice`
 - WP-651 / D-24463 (2026-09-05): **completes the reveal-to-avoid family** (no new *Master Strike* producer). The same `reveal-or-wound` villain handler (`villainEffectRevealOrWound`, WP-646) now emits `strikeBlocked` at its `onFight` + `onEscape` timings too, adding the `fight` (amber, *"The villain's attack was blocked."*) and `escape` (teal, *"The Escape penalty was blocked."* — the villain still escapes; only the Wound is dodged) `threatKind`s. These are villain **Fight/Escape abilities**, not master strikes, so `mastermindHandlers.ts` is untouched — but the shield-block VFX now recolours across all **five** threat classes (Master Strike red / Scheme Twist purple / Ambush green / Fight amber / Escape teal). Surfaced by a live playtest where a Frost-Giant Fight reveal-block rendered no shield beside an identical Ambush block
 
 ## References
