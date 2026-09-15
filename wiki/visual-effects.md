@@ -53,7 +53,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-14
+last-reviewed: 2026-09-15
 ---
 
 # Visual Effects Framework
@@ -929,7 +929,7 @@ should not be adopted without a `DECISIONS.md` entry.
 | Feel item | Client signal | Suggested character (proposal) | Priority |
 |---|---|---|---|
 | **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card scales ~1.06, rises ~12 px, gains a shadow and a `z-index` bump, ~150 ms ease-out; reverse on leave, restore `z-index` after the leave settles | recommend |
-| **Grey-out unplayable** | the local seat's recruit / attack resources + per-card cost, read from `UIState` (see the [signal caveat](#card-interaction-decisions)) | desaturate + drop to ~0.55 opacity, and suppress both the hover lift and the click, so the player never has to work out what they can afford — the single biggest cognitive-load reduction in the plan | **recommend (highest-value item)** |
+| **Grey-out unplayable** | ~~affordability~~ — see the [caveat](#card-interaction-decisions) | The plan's affordability grey-out (dim what you can't afford) **does not apply here**: playing a card from hand is **resource-free** in this game (cost gating is only for recruiting HQ heroes and fighting villains, [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts) checks turn + stage only). The only in-hand "unplayable" states — not-your-turn / not-main-step / Wound — are already gated (and the Wound is already a disabled tile). | **dropped** (not applicable) |
 | **Hand arc / fan** | hand size + card index (layout only) | lay the hand along a shallow arc, each card rotated to its tangent with a `transform-origin` below it; compress spacing as the hand grows so it never overflows; the hovered card straightens to 0° and nudges its neighbours outward | recommend |
 | **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
 | **Turn-start banner + active-player marker** | the turn boundary in `UIState` (active-player change) | a brief non-blocking sweep / banner naming the active player (~600 ms), paired with the [turn-start sound](sound-effects.md#surface-3), plus a **persistent** active-player indicator | recommend |
@@ -1265,16 +1265,20 @@ right owner.
 The two [card-interaction feel](#card-interaction-feel) items that are not a
 pure client render — each needs a signal decision before it can ship:
 
-- **Grey-out playability source.** The [grey-out
-  affordance](#card-interaction-feel) needs to know whether a card is playable
-  *right now*. The engine owns truth, so the client must **not** re-implement
-  affordability as a parallel rules engine ([engine owns
-  truth](#critical-invariants)). Decide between a cheap client **hint** from
-  the already-projected resources (fast, but can disagree with the engine at
-  the margins) and a **projected legal-play set** the client renders verbatim
-  (authoritative, but a new `UIState` field). A hint that only ever *greys*
-  (and never enables an illegal play) is a safe v1 — the engine still
-  validates every move.
+- **Grey-out playability source — RESOLVED (dropped, not applicable).** The
+  original plan assumed a Hearthstone-style affordability grey-out (dim the
+  cards you can't afford). This game has no such state: **playing a card from
+  hand costs no resource** — recruit/attack are spent only on recruiting HQ
+  heroes and fighting villains, and [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts)
+  gates the hand on turn + stage alone (there is no cost gate on `playCard`).
+  The only in-hand "unplayable" states — not-your-turn, not-main-step, and
+  Wound — are already gated client-side in
+  [`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue) (the
+  Wound is already a disabled tile), so there is nothing left to grey on
+  affordability. The affordability grey-out is therefore **dropped** — it was
+  excluded from the hand-presentation work (WP-699, which ships the [hover
+  lift](#card-interaction-feel) + [hand arc](#card-interaction-feel)). Recorded
+  here so a future reader does not re-propose it against the same false premise.
 - **Opponent-play reveal signal.** The [reveal moment](#card-interaction-feel)
   has **no engine event**: `playCard` emits no notable event, so an opponent's
   play reaches the client only as `UIState` deltas and a game-log line.
