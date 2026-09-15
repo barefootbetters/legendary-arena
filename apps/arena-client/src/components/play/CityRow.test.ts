@@ -252,7 +252,10 @@ describe('CityRow — captured cards under villains (WP-505)', () => {
     });
     const badge = wrapper.find('[data-testid="play-city-captured-bystanders"]');
     assert.equal(badge.exists(), true);
-    assert.match(badge.text(), /2 captured/);
+    // why (Jeff feedback): the badge is now a compact icon + count (no "N captured"
+    // text) — assert the count shows and the full phrase lives on the aria-label.
+    assert.match(badge.text(), /2/);
+    assert.equal(badge.attributes('aria-label'), '2 bystanders captured');
   });
 
   test('renders no captured block when a villain holds nothing', () => {

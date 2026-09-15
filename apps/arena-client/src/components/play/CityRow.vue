@@ -141,9 +141,12 @@ export default defineComponent({
                  from useTurnActions / useCardCostGating, not composed
                  ad-hoc. Cost gate consumes WP-128 economy.availableAttack
                  + UICityCard.display.cost. -->
+            <!-- why (Jeff feedback): city villains render at `md` (was `sm`) so the
+                 villain art is easier to read; the city row scrolls in-zone, so the
+                 larger tiles never push the layout. -->
             <CardTile
               :display="cell.card.display"
-              size="sm"
+              size="md"
               :interactive="gateForCell(cell).allowed"
               :show-label="true"
             />
@@ -179,13 +182,18 @@ export default defineComponent({
               size="sm"
               :show-cost="false"
             />
+            <!-- why (Jeff feedback): a compact bystander icon + count instead of the
+                 horizontal "N captured" text, to save room on the mat. The count is
+                 how many bystanders this villain is holding; the icon is decorative
+                 (aria-hidden) with the full text on the aria-label + hover title. -->
             <span
               v-if="cell.card.attachedBystanderCount > 0"
               class="city-space__captured-bystanders"
               data-testid="play-city-captured-bystanders"
               :aria-label="cell.card.attachedBystanderCount + ' bystanders captured'"
+              :title="cell.card.attachedBystanderCount + ' bystander(s) captured'"
             >
-              {{ cell.card.attachedBystanderCount }} captured
+              <span class="city-space__captured-bystanders-icon" aria-hidden="true">👤</span>{{ cell.card.attachedBystanderCount }}
             </span>
           </div>
         </template>
@@ -300,14 +308,25 @@ export default defineComponent({
   border-left: 1px solid var(--color-foreground, #666);
 }
 
+/* why (Jeff feedback): a compact icon + count badge (was the "N captured" text) —
+   an inline-flex pill so the person glyph and the number sit tight together and the
+   badge takes minimal room on the mat. */
 .city-space__captured-bystanders {
-  padding: 0.05rem 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.05rem 0.3rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.6);
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
+}
+
+.city-space__captured-bystanders-icon {
+  font-size: 0.7rem;
 }
 </style>
