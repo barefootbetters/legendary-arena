@@ -3,6 +3,7 @@ import { defineComponent, type PropType } from 'vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
+import { computeHandArc } from './handArc';
 import { WOUND_EXT_ID } from './woundIdentity';
 import type { SubmitMove } from './uiMoveName.types';
 
@@ -157,7 +158,36 @@ export default defineComponent({
       };
     }
 
-    return { onPlay, buttonReason, buttonDisabled, displayName, displayForIndex, resolveDisplay };
+    function arcStyle(index: number): Record<string, string> {
+      // why: WP-699 — bind the pure arc geometry as CSS custom properties the
+      // hand-rolled CSS applies as a transform (no animation dependency, D-24365).
+      const { rotationDegrees, offsetPx } = computeHandArc(props.handCards.length, index);
+      return {
+        '--hand-card-rotation': `${rotationDegrees}deg`,
+        '--hand-card-offset': `${offsetPx}px`,
+      };
+    }
+
+    function listStyle(): Record<string, string> {
+      // why: small hands sit with positive spacing; once the hand grows past
+      // what the well holds, cards overlap (negative margin) so the fan never
+      // overflows the fitted 1280×720 board (WP-688) and forces a page scroll.
+      // Capped at -40px so overlapping cards stay legible.
+      const count = props.handCards.length;
+      const spacingPx = count <= 6 ? 8 : Math.max(-40, 8 - (count - 6) * 9);
+      return { '--hand-card-spacing': `${spacingPx}px` };
+    }
+
+    return {
+      onPlay,
+      buttonReason,
+      buttonDisabled,
+      displayName,
+      displayForIndex,
+      resolveDisplay,
+      arcStyle,
+      listStyle,
+    };
   },
 });
 </script>
@@ -178,11 +208,12 @@ export default defineComponent({
     >
       Hand is empty.
     </p>
-    <ul v-else class="hand-cards">
+    <ul v-else class="hand-cards" :style="listStyle()">
       <li
         v-for="(cardId, index) in handCards"
         :key="`${cardId}-${index}`"
         class="hand-card"
+        :style="arcStyle(index)"
       >
         <button
           type="button"
@@ -203,6 +234,7 @@ export default defineComponent({
             size="md"
             :interactive="!buttonDisabled(cardId)"
             :show-label="true"
+            :hand-lift="true"
           />
         </button>
       </li>
@@ -225,26 +257,74 @@ export default defineComponent({
   opacity: 0.85;
 }
 
-/* why: WP-685 / D-24502 — the hand is a horizontally-scrolling WELL. The full
-   handCards array is bound above (never sliced), and a hand larger than fits
-   scrolls in-zone here rather than wrapping onto a second row and pushing into
-   the City / HQ rows above. */
+/* WP-699 — the hand fans along a shallow arc (replacing the WP-685 flat
+   scroll well). The full handCards array is still bound above (never sliced);
+   a hand larger than fits OVERLAPS (negative margin via --hand-card-spacing,
+   set from the hand size) rather than scrolling or wrapping, so the fan stays
+   inside the fitted 1280×720 board (WP-688) without a page scroll. Centred and
+   bottom-aligned so the arc pivots from a common baseline. overflow is visible
+   so a hovered lifted card can rise above its neighbours. The top padding
+   reserves room for the -12px lift so it is never clipped by the row above. */
 .hand-cards {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.5rem;
+  justify-content: center;
+  align-items: flex-end;
   list-style: none;
-  padding: 0 0 0.25rem;
+  padding: 1rem 0 0.25rem;
   margin: 0;
-  overflow-x: auto;
+  max-width: 100%;
+  overflow: visible;
 }
 
 .hand-card {
   flex: 0 0 auto;
+  /* why: rotate about the bottom-centre so cards splay like a held fan rather
+     than pivoting from their middle. */
+  transform-origin: center bottom;
+  transform: rotate(var(--hand-card-rotation, 0deg)) translateY(var(--hand-card-offset, 0px));
+  transition: transform 0.15s ease-out, margin 0.15s ease-out;
+}
+
+.hand-card:not(:first-child) {
+  margin-left: var(--hand-card-spacing, 8px);
 }
 
 .hand-card button {
-  padding: 0.5rem 0.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: inherit;
   font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  /* why: the hovered card straightens upright and rises above the fan so it is
+     fully readable; the lift itself (translateY + scale + shadow) is on the
+     inner CardTile, gated by the feel-layer accessibility contract. */
+  .hand-card:hover {
+    transform: rotate(0deg) translateY(0);
+    z-index: 5;
+  }
+
+  /* why: nudge the immediate neighbours outward so the straightened card has
+     room — the card to the right eases right, the card to the left eases left
+     (:has selects the left neighbour of the hovered card). */
+  .hand-card:hover + .hand-card {
+    transform: rotate(var(--hand-card-rotation, 0deg)) translateY(var(--hand-card-offset, 0px)) translateX(12px);
+  }
+
+  .hand-card:has(+ .hand-card:hover) {
+    transform: rotate(var(--hand-card-rotation, 0deg)) translateY(var(--hand-card-offset, 0px)) translateX(-12px);
+  }
+}
+
+/* why: honour OS reduced-motion — the arc still lays out (a static resting
+   shape, not motion), but the hover straighten / nudge apply instantly with no
+   animated transition. The CardTile lift is separately suppressed in JS. */
+@media (prefers-reduced-motion: reduce) {
+  .hand-card {
+    transition: none;
+  }
 }
 </style>

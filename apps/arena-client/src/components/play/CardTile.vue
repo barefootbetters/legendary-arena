@@ -1,6 +1,7 @@
 <script lang="ts">
-import { defineComponent, ref, type PropType } from 'vue';
+import { computed, defineComponent, ref, type PropType } from 'vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
+import { useEffectIntensity } from '../../vfx/effectIntensity';
 
 /**
  * Reusable card tile — renders either a card image (when imageUrl is truthy)
@@ -34,11 +35,36 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    /**
+     * When true (hand tiles only, set by {@link HandRow}), the tile gets the
+     * WP-699 hover lift — but only on a real pointer and only when the feel
+     * layer's accessibility gate allows it. City / HQ / in-play tiles leave
+     * this off and keep the plain interactive scale hover.
+     */
+    handLift: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     // why: tracks broken image loads so the tile falls back to text mode
     // instead of rendering a black rectangle on the dark card background
     const imageLoadFailed = ref(false);
+
+    // why: the WP-699 hover lift is a hand-tile-only affordance and must obey
+    // the shipped feel-layer accessibility gate. shouldRender('particles')
+    // already returns false at 'off' intensity and under reduced-motion; the
+    // explicit prefersReducedMotion check mirrors the WP-699 locked value and
+    // keeps the intent readable. A disabled (non-interactive) tile never lifts.
+    const { prefersReducedMotion, shouldRender } = useEffectIntensity();
+    const isLiftEnabled = computed(
+      () =>
+        props.handLift &&
+        props.interactive &&
+        shouldRender('particles') &&
+        !prefersReducedMotion.value,
+    );
 
     function hasImage(): boolean {
       return !!props.display.imageUrl && !imageLoadFailed.value;
@@ -52,7 +78,7 @@ export default defineComponent({
       return props.showCost && props.display.cost !== null;
     }
 
-    return { hasImage, onImageError, shouldShowCostBadge };
+    return { hasImage, onImageError, shouldShowCostBadge, isLiftEnabled };
   },
 });
 </script>
@@ -62,7 +88,7 @@ export default defineComponent({
     class="card-tile"
     :class="[
       `card-tile--${size}`,
-      { 'card-tile--interactive': interactive },
+      { 'card-tile--interactive': interactive, 'card-tile--lift-enabled': isLiftEnabled },
     ]"
     :title="display.name"
     data-testid="card-tile"
@@ -145,6 +171,37 @@ export default defineComponent({
 
 .card-tile--interactive:hover {
   transform: scale(1.05);
+}
+
+/* WP-699 hover lift — hand tiles only, pointer devices only, gated in JS by the
+   feel-layer accessibility contract (the `card-tile--lift-enabled` class is
+   absent at 'off' intensity and under reduced-motion). transform + box-shadow +
+   z-index only (no layout property animates; D-24365 hand-rolled CSS). */
+@media (hover: hover) {
+  .card-tile--lift-enabled {
+    position: relative;
+    z-index: 1;
+    /* why: transform + shadow animate over 150ms, but z-index restores only
+       AFTER that window (0s change, 150ms delay) so a card easing back down
+       never drops beneath a neighbour mid-transition and clips. The :hover rule
+       below removes the delay so the raise is immediate on enter. */
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out,
+      z-index 0s linear 0.15s;
+  }
+
+  /* why: the lift is more specific than the plain interactive scale and is
+     declared later, so on a hand tile it wins the transform on hover. */
+  .card-tile--lift-enabled:hover {
+    transform: translateY(-12px) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    z-index: 10;
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out,
+      z-index 0s;
+  }
 }
 
 .card-tile__image {

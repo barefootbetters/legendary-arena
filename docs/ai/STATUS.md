@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-699 — Hand Presentation: hover-lift + shallow hand arc (EC-736) (2026-09-15)
+
+The player's hand on **play.legendary-arena.com** now reads as a Hearthstone-style
+fanned hand instead of a flat strip. Two client-only, pure-presentation
+affordances landed on the WP-556 feel-layer foundation:
+
+- **Hover lift** — moving the pointer over a hand card raises it above its
+  neighbours (`scale(1.06)` + `translateY(-12px)` + drop-shadow + a `z-index`
+  bump that restores only after the card settles back). Pointer devices only
+  (`@media (hover: hover)`), and gated by the shipped Effect-Intensity control:
+  it does not animate at `off` intensity or under OS reduce-motion — the resting
+  hand still renders and every card stays playable.
+- **Shallow arc** — the hand fans along a gentle ±12° arc (a pure
+  `computeHandArc(handSize, index)` helper drives per-card rotation + dip about a
+  bottom-centre pivot); a growing hand overlaps rather than scrolling, so the fan
+  never overflows the fitted 1280×720 board (WP-688). The hovered card straightens
+  upright and its neighbours ease outward.
+
+Hand-rolled CSS/WAAPI, `transform`+`opacity` only, **no new dependency**
+(D-24365). App-layer only — reads projected `UIState`, no engine import (the
+type-only `UICardDisplay` stays), absent from the determinism hash, `packages/`
+and `package.json` untouched. arena-client 1814/0 (+11 tests), `vue-tsc` 0,
+`pnpm -r build` 0. Live-verified at 1280×720 on the `?fixture=mid-turn&play=1`
+dev route (arc fan, hover lift, edge-card straighten, no page scroll); **D-24026
+deployed live-verify pending the arena-client CF Pages deploy.**
+
 ### WP-698 — LAGN Final Blow field + loadout share-link (EC-735 / D-24517) (2026-09-14)
 
 A Final-Blow loadout now **survives every loadout transport** on
