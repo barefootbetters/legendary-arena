@@ -242,7 +242,10 @@ staggered bursts) + a gold **bloom** + a **"VICTORY!"** banner celebrate the win
 It fires **once** on the projected `UIState.gameOver.outcome === 'heroes-win'` (not
 `endedEarly`), seeded so a reconnect into an already-won match replays nothing. The
 banner renders in its **own** overlay slot (distinct from the transient combo word)
-so a coincident `hit4` beat and the banner never fight for one slot.
+so a coincident `hit4` beat and the banner never fight for one slot. The engine also
+guarantees the finale never renders over a **stale pending-choice prompt** — a choice
+the winning fight parked (e.g. Electromagnetic Bubble) is dropped on the vanquish so it
+can't dangle over the victory screen (D-24518; see [Edge Cases](#edge-cases)).
 [`victoryFinaleVfxManifest.ts`](../apps/arena-client/src/vfx/victoryFinaleVfxManifest.ts)
 + [`useVictoryFinaleVfx.ts`](../apps/arena-client/src/composables/useVictoryFinaleVfx.ts),
 gated by the same accessibility contract (banner survives `low`/reduced-motion; the
@@ -1150,6 +1153,20 @@ priority order is fixed and non-negotiable:
   [contract](#determinism-requirements-mandatory): VFX is pure
   presentation; it never reads into or writes out of `G`/`ctx`, never
   affects move validation, and never branches engine logic.
+- **No pending-choice prompt survives the win (D-24518).** The heroes-win
+  [victory finale](#shipped-victory-finale) is the client's payoff frame, but a
+  block-all **pending-choice prompt** (e.g. Electromagnetic Bubble's "add an
+  X-Men Hero to your next hand" pick) is rendered from its projected
+  `UIState.pending*` field with no game-over guard of its own. So a choice parked
+  by the **vanquishing blow itself** would dangle over the victory screen — a
+  real heroes-win (Magneto / Cosmic Cube) left an active
+  `pendingElectromagneticBubbleChoice`. This is an **engine** guarantee, not a
+  VFX one: `fightMastermind` drops **every** `pending*` field on the vanquish
+  (D-24518, audit-hardened after a reactive-park gap — a tactic Wound reaching a
+  Diving-Block holder), so the projected pending field stays absent and the
+  finale renders clean. The VFX layer takes no action — it relies on the engine
+  leaving no pending choice to render — but the invariant is noted here because
+  the symptom *appears* on the victory surface this page owns.
 
 ## Code Touchpoints
 
@@ -1556,7 +1573,9 @@ regenerate with `python block-shield.py`.*
   `escapeResolved`), D-20008 (`mastermindDefeated` added so a Mastermind
   defeat raises a curated on-screen event — the raw `G.messages` field is not
   projected), D-24159 / WP-367 (the deck-exhaustion final-turn
-  **tie**)
+  **tie**), D-24518 (the engine drops every `pending*` choice on a mastermind
+  vanquish so no block-all prompt dangles over the victory finale — an engine
+  guarantee the [Edge Cases](#edge-cases) entry relies on)
 - VFX / animation libraries (confirm each license at adoption):
   - [canvas-confetti](https://github.com/catdad/canvas-confetti) (MIT)
   - [tsparticles](https://github.com/tsparticles/tsparticles) (MIT)
