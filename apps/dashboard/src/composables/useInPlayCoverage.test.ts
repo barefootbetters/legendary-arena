@@ -341,9 +341,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // pending choice (a resolved mechanic) instead of the inert/hollow line, and the fixed-seed
   // sweep's trajectories shift by one observation. Net: totalObs 2844 -> 2845 (+1);
   // percentResolved holds at 25.1. Honest gauge, deterministic — CI computes the same.
+  // 2026-09-16 (WP-701 / D-24520, re-pin): the new hand is drawn at END of turn, so a player
+  // holds a full hand during opponents' turns and Master Strikes / each-player effects now
+  // land instead of whiffing on empty hands. That materially changes the fixed-seed sweep
+  // (harder, more faithful game): more cards leave play into discard/KO, so the sweep surfaces
+  // more downstream observations from still-unimplemented mechanics. Net: totalObs 2845 -> 2965
+  // (+120); percentResolved 25.1 -> 24.7 (the larger denominator dilutes the resolved share — a
+  // sweep-trajectory artifact of the faithfulness fix, NOT a regression). Deterministic — CI
+  // computes the same 2965 / 24.7 from the regenerated runtime-observed-hollows feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2845);
-  assert.equal(view.percentResolved.value, 25.1);
+  assert.equal(view.totalObs.value, 2965);
+  assert.equal(view.percentResolved.value, 24.7);
   assert.ok(view.remaining.value.length > 0);
 });
 
