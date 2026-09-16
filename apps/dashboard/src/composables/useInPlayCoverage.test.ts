@@ -336,8 +336,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // didn't before. Net: totalObs 2831 -> 2844 (+13); percentResolved 25.2 -> 25.1
   // (the larger denominator dilutes the resolved share — a sweep-trajectory artifact,
   // not a regression). Honest gauge, deterministic — CI computes the same 2844 / 25.1.
+  // 2026-09-15 (WP-700 / D-24519, re-pin): the put-hand-on-deck-top keyword ships executable,
+  // so Gambit's Stack the Deck + its 6 siblings now draw N and park a mandatory put-on-top
+  // pending choice (a resolved mechanic) instead of the inert/hollow line, and the fixed-seed
+  // sweep's trajectories shift by one observation. Net: totalObs 2844 -> 2845 (+1);
+  // percentResolved holds at 25.1. Honest gauge, deterministic — CI computes the same.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2844);
+  assert.equal(view.totalObs.value, 2845);
   assert.equal(view.percentResolved.value, 25.1);
   assert.ok(view.remaining.value.length > 0);
 });
