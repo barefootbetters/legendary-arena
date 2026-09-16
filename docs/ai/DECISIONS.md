@@ -42468,7 +42468,7 @@ behavior); Seed-PAR is scheme-keyed and hero-agnostic (unaffected).
 **Supersedes.** The D-22501 deferral of Time Loop Experiments (and the untracked hollow of
 Stack the Deck) as "compound-executor territory" — this WP is that compound executor.
 
-**Status:** Active 2026-09-15 — WP-700 merged via PR #2065 (D-24026 live-on-surface verify pending deploy).
+**Status:** Active 2026-09-15 — WP-700 merged via PR #2065. D-24026 deployed-verified 2026-09-16 (a real 2p Magneto / Legacy Virus match played Stack the Deck: drew 2, placed a hand card on the deck top, no freeze).
 **Builds on:** D-24492 / WP-676 (Smash magnitude-carrying park + client prompt), D-24184 /
 D-24185 / WP-383 (mandatory hand-pick + eligibility helper), D-24069 (pending-choice + UIState
 framework), D-24518 (vanquish-drop set), D-24372 (RUNTIME drift pins). **Reserved by:**

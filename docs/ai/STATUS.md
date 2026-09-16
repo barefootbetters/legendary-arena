@@ -21,9 +21,10 @@ enrollment; full five-step UIState + `PutHandOnDeckTopPrompt.vue` (freeze-preven
 dispatch; hero-ability markers + reproducible regen of the 6 sets; coverage/ledger regen flips
 all 7 cards to `executable`. Merged via PR #2065; engine 3532/0, arena-client 1823/0, dashboard
 482/0, Dashboard Gates green, `finalStateHash` sentinels byte-unchanged. The wpnx Fantomex
-*Misdirection* draw-a-new-hand-timing variant is out of scope (deferred). **D-24026 live-verify
-pending deploy** (play Stack the Deck on play.legendary-arena.com → confirm the prompt + deck-top
-placement).
+*Misdirection* draw-a-new-hand-timing variant is out of scope (deferred). **D-24026
+deployed-verified 2026-09-16:** a real 2p Magneto / Legacy Virus match on the deployed build
+played Stack the Deck — drew 2, then placed a S.H.I.E.L.D. Agent from hand on top of the deck
+(log 18.2.1–18.2.3), no freeze; play ran to completion.
 
 ### WP-699 — Hand Presentation: hover-lift + shallow hand arc (EC-736) (2026-09-15)
 
