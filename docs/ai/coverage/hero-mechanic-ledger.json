@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 687,
+    "totalRows": 694,
     "byStatus": {
-      "executable": 285,
+      "executable": 292,
       "deferred": 16,
       "condition": 27,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 141
+    "distinctMechanics": 142
   },
   "rows": [
     {
@@ -747,6 +747,22 @@
           "slug": "borrow-from-the-future",
           "name": "Borrow from the Future"
         },
+        {
+          "slug": "time-loop-experiments",
+          "name": "Time Loop Experiments"
+        }
+      ]
+    },
+    {
+      "extId": "anni/brainstorm",
+      "heroName": "Brainstorm",
+      "set": "anni",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
         {
           "slug": "time-loop-experiments",
           "name": "Time Loop Experiments"
@@ -2956,6 +2972,22 @@
       "extId": "co2e/gambit",
       "heroName": "Gambit",
       "set": "co2e",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "stack-the-deck",
+          "name": "Stack the Deck"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
       "mechanic": "reveal-cost-attack",
       "status": "executable",
       "wp": "WP-253",
@@ -3478,6 +3510,22 @@
         {
           "slug": "psychic-link",
           "name": "Psychic Link"
+        }
+      ]
+    },
+    {
+      "extId": "core/gambit",
+      "heroName": "Gambit",
+      "set": "core",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "stack-the-deck",
+          "name": "Stack the Deck"
         }
       ]
     },
@@ -5260,6 +5308,22 @@
         {
           "slug": "demonic-descendant",
           "name": "Demonic Descendant"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/clea",
+      "heroName": "Clea",
+      "set": "dstr",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "prepare-dark-magic",
+          "name": "Prepare Dark Magic"
         }
       ]
     },
@@ -10451,6 +10515,22 @@
       "extId": "wpnx/marrow",
       "heroName": "Marrow",
       "set": "wpnx",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "osteogenesis",
+          "name": "Osteogenesis"
+        }
+      ]
+    },
+    {
+      "extId": "wpnx/marrow",
+      "heroName": "Marrow",
+      "set": "wpnx",
       "mechanic": "weapon-x-sequence",
       "status": "unsupported",
       "wp": "",
@@ -10719,6 +10799,22 @@
       "extId": "wtif/gamora-destroyer-of-thanos",
       "heroName": "Gamora, Destroyer of Thanos",
       "set": "wtif",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "tactical-insight",
+          "name": "Tactical Insight"
+        }
+      ]
+    },
+    {
+      "extId": "wtif/gamora-destroyer-of-thanos",
+      "heroName": "Gamora, Destroyer of Thanos",
+      "set": "wtif",
       "mechanic": "soulbind",
       "status": "unsupported",
       "wp": "",
@@ -10904,6 +11000,22 @@
         {
           "slug": "convoke-the-guardians",
           "name": "Convoke the Guardians"
+        }
+      ]
+    },
+    {
+      "extId": "wtif/uatu-the-watcher",
+      "heroName": "Uatu, The Watcher",
+      "set": "wtif",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "designs": [
+        {
+          "slug": "diverging-timestreams",
+          "name": "Diverging Timestreams"
         }
       ]
     },

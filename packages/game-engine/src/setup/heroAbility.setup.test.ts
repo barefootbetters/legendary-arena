@@ -530,6 +530,39 @@ describe('buildHeroAbilityHooks — smash marker (WP-676 / D-24492)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// put-hand-on-deck-top marker → keyword + magnitude (WP-700 / D-24519). The
+// [keyword:put-hand-on-deck-top:N] token parses (via the generic 2-segment capture,
+// no dedicated parser arm) to a put-hand-on-deck-top effect carrying the draw-count
+// magnitude N. The prose "Draw N cards. Then put a card…" is decorative; only the
+// appended marker drives the engine.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — put-hand-on-deck-top marker (WP-700 / D-24519)', () => {
+  it('parses [keyword:put-hand-on-deck-top:2] into an effect carrying the draw-count magnitude 2', () => {
+    const registry = makeRegistry('core', 'gambit', [
+      { slug: 'stack-the-deck', abilities: ['Draw two cards. Then put a card from your hand on top of your deck. [keyword:put-hand-on-deck-top:2]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/gambit'));
+    const putHook = hooks.find((hook) => (hook.keywords ?? []).includes('put-hand-on-deck-top'));
+    assert.ok(putHook !== undefined, 'a put-hand-on-deck-top hook is built');
+    const putEffects = (putHook!.effects ?? []).filter((effect) => effect.type === 'put-hand-on-deck-top');
+    assert.equal(putEffects.length, 1, 'exactly one put-hand-on-deck-top effect');
+    assert.equal(putEffects[0]!.magnitude, 2, 'the draw-count magnitude rides the effect');
+  });
+
+  it('parses the draw-1 variant [keyword:put-hand-on-deck-top:1] with magnitude 1', () => {
+    const registry = makeRegistry('anni', 'brainstorm', [
+      { slug: 'time-loop-experiments', abilities: ['Draw a card. Then put a card from your hand on top of your deck. [keyword:put-hand-on-deck-top:1]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('anni/brainstorm'));
+    const putHook = hooks.find((hook) => (hook.keywords ?? []).includes('put-hand-on-deck-top'));
+    assert.ok(putHook !== undefined, 'a put-hand-on-deck-top hook is built');
+    const putEffects = (putHook!.effects ?? []).filter((effect) => effect.type === 'put-hand-on-deck-top');
+    assert.equal(putEffects[0]!.magnitude, 1, 'the draw-1 magnitude rides the effect');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // recruit-threshold gates the co2e/ssw1 "made at least N recruit" attack grants
 // (WP-661 / D-24472). WP-660 removed the phantom +N recruit these condition
 // clauses emitted, but left the REAL attack grant UNGATED — a pre-existing

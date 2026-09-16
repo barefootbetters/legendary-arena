@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1862,
+    "totalEntries": 1869,
     "byScope": {
-      "hero": 687,
+      "hero": 694,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 436,
+      "executable": 443,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -1722,6 +1722,23 @@
           "slug": "borrow-from-the-future",
           "name": "Borrow from the Future"
         },
+        {
+          "slug": "time-loop-experiments",
+          "name": "Time Loop Experiments"
+        }
+      ]
+    },
+    {
+      "extId": "anni/brainstorm",
+      "name": "Brainstorm",
+      "set": "anni",
+      "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
         {
           "slug": "time-loop-experiments",
           "name": "Time Loop Experiments"
@@ -5893,6 +5910,23 @@
       "name": "Gambit",
       "set": "co2e",
       "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "stack-the-deck",
+          "name": "Stack the Deck"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "name": "Gambit",
+      "set": "co2e",
+      "scope": "hero",
       "mechanic": "reveal-cost-attack",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack",
@@ -6971,6 +7005,23 @@
         {
           "slug": "psychic-link",
           "name": "Psychic Link"
+        }
+      ]
+    },
+    {
+      "extId": "core/gambit",
+      "name": "Gambit",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "stack-the-deck",
+          "name": "Stack the Deck"
         }
       ]
     },
@@ -10592,6 +10643,23 @@
         {
           "slug": "demonic-descendant",
           "name": "Demonic Descendant"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/clea",
+      "name": "Clea",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "prepare-dark-magic",
+          "name": "Prepare Dark Magic"
         }
       ]
     },
@@ -22041,6 +22109,23 @@
       "name": "Marrow",
       "set": "wpnx",
       "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "osteogenesis",
+          "name": "Osteogenesis"
+        }
+      ]
+    },
+    {
+      "extId": "wpnx/marrow",
+      "name": "Marrow",
+      "set": "wpnx",
+      "scope": "hero",
       "mechanic": "weapon-x-sequence",
       "status": "unsupported",
       "handler": "",
@@ -22873,6 +22958,23 @@
       "name": "Gamora, Destroyer of Thanos",
       "set": "wtif",
       "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "tactical-insight",
+          "name": "Tactical Insight"
+        }
+      ]
+    },
+    {
+      "extId": "wtif/gamora-destroyer-of-thanos",
+      "name": "Gamora, Destroyer of Thanos",
+      "set": "wtif",
+      "scope": "hero",
       "mechanic": "soulbind",
       "status": "unsupported",
       "handler": "",
@@ -23067,6 +23169,23 @@
         {
           "slug": "convoke-the-guardians",
           "name": "Convoke the Guardians"
+        }
+      ]
+    },
+    {
+      "extId": "wtif/uatu-the-watcher",
+      "name": "Uatu, The Watcher",
+      "set": "wtif",
+      "scope": "hero",
+      "mechanic": "put-hand-on-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top",
+      "wp": "WP-700",
+      "decision": "D-24519",
+      "designs": [
+        {
+          "slug": "diverging-timestreams",
+          "name": "Diverging Timestreams"
         }
       ]
     },
@@ -26981,7 +27100,8 @@
     "anni/brainstorm": {
       "scope": "hero",
       "mechanics": [
-        "out-of-time"
+        "out-of-time",
+        "put-hand-on-deck-top"
       ]
     },
     "anni/fantastic-four-united": {
@@ -28284,6 +28404,7 @@
     "co2e/gambit": {
       "scope": "hero",
       "mechanics": [
+        "put-hand-on-deck-top",
         "reveal-cost-attack"
       ]
     },
@@ -28664,6 +28785,7 @@
     "core/gambit": {
       "scope": "hero",
       "mechanics": [
+        "put-hand-on-deck-top",
         "reveal-cost-attack"
       ]
     },
@@ -30033,6 +30155,7 @@
       "scope": "hero",
       "mechanics": [
         "demonic-bargain",
+        "put-hand-on-deck-top",
         "ritual-artifact"
       ]
     },
@@ -34282,6 +34405,7 @@
       "scope": "hero",
       "mechanics": [
         "berserk",
+        "put-hand-on-deck-top",
         "weapon-x-sequence"
       ]
     },
@@ -34621,6 +34745,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "put-hand-on-deck-top",
         "soulbind",
         "what-if"
       ]
@@ -34651,6 +34776,7 @@
       "scope": "hero",
       "mechanics": [
         "empowered",
+        "put-hand-on-deck-top",
         "soulbind",
         "what-if"
       ]

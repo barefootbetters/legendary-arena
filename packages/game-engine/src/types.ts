@@ -920,6 +920,29 @@ export interface PendingSmashDiscard {
 }
 
 /**
+ * A pending "put a card from your hand on top of your deck" choice
+ * (WP-700 / D-24519 — Gambit's Stack the Deck, Brainstorm's Time Loop Experiments,
+ * and the dstr/wpnx/wtif siblings — the `put-hand-on-deck-top` hero keyword).
+ *
+ * Parked on G.pendingPutHandOnDeckTop[] (FIFO) by the compound `heroEffectPutHandOnDeckTop`
+ * handler AFTER it has drawn the printed number of cards (so the choice is made from the
+ * enlarged hand). Removed (front-popped) by resolvePutHandOnDeckTop once the player names a
+ * hand card, which is moved to the TOP (index 0) of their own deck. Must be undefined or
+ * empty at every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24519 — the placement is MANDATORY (the printed text is "put a card…", not
+ * "you may"), so there is no decline; the entry records only the choosing player (the draw
+ * already happened, and the whole hand is eligible). `sourceCardId` is the played card, kept
+ * for log/UX provenance only. Mirrors PendingDoOver's minimal shape.
+ */
+export interface PendingPutHandOnDeckTop {
+  /** The player who must place one hand card on top of their deck. */
+  playerID: string;
+  /** The played card that parked the choice (log/UX provenance only). */
+  sourceCardId?: CardExtId;
+}
+
+/**
  * A pending "discard the rest of your hand and draw four cards?" choice
  * (WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?").
  *
@@ -1707,6 +1730,17 @@ export interface LegendaryGameState {
   // "no pending choice" (guards test `.length`). Smash is a wwhk-only hero keyword.
   /** FIFO queue of pending Smash discard-for-attack choices awaiting resolution (WP-676). */
   pendingSmashDiscards?: PendingSmashDiscard[] | undefined;
+
+  // why: WP-700 / D-24519 — FIFO queue of pending "put a card from your hand on top of your
+  // deck" choices (Gambit's Stack the Deck + siblings — the `put-hand-on-deck-top` keyword).
+  // Entries are appended by the heroEffectPutHandOnDeckTop park case AFTER it draws the printed
+  // number of cards; front-popped by resolvePutHandOnDeckTop once the player places one hand
+  // card on the deck top. Must be undefined or empty at every turn-end. Lazily initialized at
+  // the park site, never in Game.setup — a game that never plays one of these cards carries no
+  // new field and serializes byte-identically (no finalStateHash re-pin). Absent (undefined) or
+  // empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending put-a-hand-card-on-deck-top choices awaiting resolution (WP-700). */
+  pendingPutHandOnDeckTop?: PendingPutHandOnDeckTop[] | undefined;
 
   // why: WP-681 / D-24498 — FIFO queue of pending Do-Over accept/decline choices (Deadpool's
   // "Hey, Can I Get a Do-Over?" — "you may discard the rest of your hand and draw four cards",

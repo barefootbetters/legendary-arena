@@ -68,6 +68,7 @@ import ReturnOnDiscardPrompt from '../components/play/ReturnOnDiscardPrompt.vue'
 import PutAnyNumberBottomHQPrompt from '../components/play/PutAnyNumberBottomHQPrompt.vue';
 import ReturnZeroCostDiscardPrompt from '../components/play/ReturnZeroCostDiscardPrompt.vue';
 import DiscardToPlayPrompt from '../components/play/DiscardToPlayPrompt.vue';
+import PutHandOnDeckTopPrompt from '../components/play/PutHandOnDeckTopPrompt.vue';
 import PendingGiveHqHeroChoicePrompt from '../components/play/PendingGiveHqHeroChoicePrompt.vue';
 import PendingCopyPowersChoicePrompt from '../components/play/PendingCopyPowersChoicePrompt.vue';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
@@ -152,6 +153,7 @@ export default defineComponent({
     PutAnyNumberBottomHQPrompt,
     ReturnZeroCostDiscardPrompt,
     DiscardToPlayPrompt,
+    PutHandOnDeckTopPrompt,
     PendingGiveHqHeroChoicePrompt,
     PendingCopyPowersChoicePrompt,
   },
@@ -532,6 +534,12 @@ export default defineComponent({
     const hasPendingDiscardToPlay = computed<boolean>(
       () => snapshot.value?.pendingDiscardToPlay !== undefined,
     );
+    // why: WP-700 / D-24519 — derived from UIState.pendingPutHandOnDeckTop !== undefined.
+    // Passed to TurnActionBar to gate End Turn / Pass Priority while the mandatory
+    // put-a-hand-card-on-deck-top choice is pending.
+    const hasPendingPutHandOnDeckTop = computed<boolean>(
+      () => snapshot.value?.pendingPutHandOnDeckTop !== undefined,
+    );
     // why: WP-498 / D-24301 — derived from UIState.pendingReturnOnDiscard !== undefined.
     // Passed to TurnActionBar to gate End Turn / Pass Priority while the OPTIONAL
     // return-on-discard choice is pending (board frozen).
@@ -649,6 +657,7 @@ export default defineComponent({
       hasPendingPutAnyNumberBottomHQ,
       hasPendingReturnZeroCostDiscard,
       hasPendingDiscardToPlay,
+      hasPendingPutHandOnDeckTop,
       hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
       hasPendingMelterKoChoice,
@@ -1075,6 +1084,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-700 / D-24519 — the put-a-hand-card-on-deck-top prompt (Gambit's
+               Stack the Deck + siblings) renders above TurnActionBar in DOM order; appears
+               only for the choosing player when pendingPutHandOnDeckTop is set. Mandatory
+               (no Decline). Normal document flow. -->
+          <PutHandOnDeckTopPrompt
+            :pending-put-hand-on-deck-top="snapshot.pendingPutHandOnDeckTop"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: D-22201 + WP-222 — prompt renders above TurnActionBar in DOM
                order; appears only for the choosing player when pendingHeroChoice
                is set. NOT a modal; NOT position:fixed. Normal document flow. -->
@@ -1122,6 +1140,7 @@ export default defineComponent({
             :has-pending-put-any-number-bottom-h-q="hasPendingPutAnyNumberBottomHQ"
             :has-pending-return-zero-cost-discard="hasPendingReturnZeroCostDiscard"
             :has-pending-discard-to-play="hasPendingDiscardToPlay"
+            :has-pending-put-hand-on-deck-top="hasPendingPutHandOnDeckTop"
             :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"

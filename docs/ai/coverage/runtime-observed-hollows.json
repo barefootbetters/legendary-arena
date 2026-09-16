@@ -99,12 +99,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 168,
+      "hitCount": 169,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 168
+        "parse-unrecognized": 169
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 14,
+      "hitCount": 15,
       "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 14
+        "parse-unrecognized": 15
       },
       "examples": [
         {
@@ -243,19 +243,19 @@
           "reason": "parse-unrecognized"
         },
         {
+          "cardId": "anni/super-skrull/rock-solid#3",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
           "cardId": "anni/super-skrull/rock-solid#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/transparent-motives#1",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "anni/super-skrull/transparent-motives#2",
+          "cardId": "anni/super-skrull/rock-solid#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -568,7 +568,7 @@
     },
     "liberate": {
       "hitCount": 2,
-      "lastSeenTurn": 23,
+      "lastSeenTurn": 22,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -714,7 +714,7 @@
     },
     "rooftops": {
       "hitCount": 3,
-      "lastSeenTurn": 16,
+      "lastSeenTurn": 13,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -824,27 +824,15 @@
       ]
     },
     "soulbind": {
-      "hitCount": 5,
-      "lastSeenTurn": 26,
+      "hitCount": 3,
+      "lastSeenTurn": 23,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 5
+        "parse-unrecognized": 3
       },
       "examples": [
         {
-          "cardId": "wtif/doctor-strange-supreme/stygian-communion#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "wtif/doctor-strange-supreme/stygian-communion#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
           "cardType": "hero",
           "timing": "onPlay",
@@ -857,7 +845,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#1",
+          "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

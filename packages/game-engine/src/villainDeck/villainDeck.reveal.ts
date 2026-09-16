@@ -48,6 +48,7 @@ import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
+import { hasPendingPutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { hasPendingDoOver } from '../moves/doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
@@ -144,6 +145,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return;
   if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
+  if (hasPendingPutHandOnDeckTop(G)) return; // why: WP-700 / D-24519 — block-all guard (put-a-hand-card-on-deck-top choice)
   if (hasPendingDoOver(G)) return; // why: WP-681 / D-24498 — block-all guard (Do-Over accept/decline choice)
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;

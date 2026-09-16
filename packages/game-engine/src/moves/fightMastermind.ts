@@ -42,6 +42,7 @@ import { hasPendingReorderChoice } from './reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
+import { hasPendingPutHandOnDeckTop } from './putHandOnDeckTop.resolve.js';
 import { hasPendingDoOver } from './doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
@@ -155,6 +156,7 @@ export function fightMastermind(
   if (hasPendingPlayVillainTopChoice(G)) return; // why: WP-663 / D-24474 — block-all guard (Shadowed Thoughts play-villain-top choice)
   if (hasPendingOptionalKoReward(G)) return;
   if (hasPendingSmashDiscard(G)) return; // why: WP-676 / D-24492 — block-all guard (Smash discard-for-attack choice)
+  if (hasPendingPutHandOnDeckTop(G)) return; // why: WP-700 / D-24519 — block-all guard (put-a-hand-card-on-deck-top choice)
   if (hasPendingDoOver(G)) return; // why: WP-681 / D-24498 — block-all guard (Do-Over accept/decline choice)
   // why: block-all — pendingVictoryPileCardPick must be resolved before any other action (D-24067)
   if (hasPendingVictoryPileCardPick(G)) return;
@@ -452,6 +454,7 @@ function dropAllPendingPlayerChoices(G: LegendaryGameState): void {
   G.pendingPlayVillainTopChoices = undefined;
   G.pendingPutAnyNumberBottomHQ = undefined;
   G.pendingPutCardsOnDeckChoices = undefined;
+  G.pendingPutHandOnDeckTop = undefined; // why: WP-700 / D-24519 — the put-a-hand-card-on-deck-top queue joins the vanquish-drop set (D-24518)
   G.pendingReorderChoices = undefined;
   G.pendingReturnOnDiscard = undefined;
   G.pendingReturnZeroCostDiscard = undefined;

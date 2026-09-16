@@ -78,6 +78,9 @@ export type UiMoveName =
   // why: WP-538 / D-24347 — unblocks the core Dr. Doom put-cards-on-deck prompt (pick
   // which 2 cards to put on top of the deck, in top order).
   | 'resolvePutCardsOnDeckChoice'
+  // why: WP-700 / D-24519 — unblocks the put-a-hand-card-on-deck-top prompt (Gambit's Stack
+  // the Deck + siblings; the player places one hand card on top of their own deck, mandatory).
+  | 'resolvePutHandOnDeckTop'
   // why: WP-479 / D-24286 — unblocks the reveal-remainder reorder prompt (put the
   // non-drawn revealed cards back on top of the deck in any order).
   | 'resolveReorderChoice'

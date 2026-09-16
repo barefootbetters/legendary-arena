@@ -1239,6 +1239,53 @@ describe('filterUIStateForAudience — pendingSmashDiscard redaction (D-24492)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-700 / D-24519 — pendingPutHandOnDeckTop redaction (chooser-only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a put-a-hand-card-on-deck-top choice. The choice
+ * is private to the chooser — its eligibleHand carries the chooser's private hand
+ * identities, so it must not appear in a non-chooser's UIState.
+ */
+function createPutHandOnDeckTopUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.playerZones['0']!.hand = ['put-hand-a', 'put-hand-b'];
+  gameState.pendingPutHandOnDeckTop = [{ playerID: '0' }];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingPutHandOnDeckTop redaction (D-24519)', () => {
+  it('the chooser sees pendingPutHandOnDeckTop with the eligible hand', () => {
+    const uiState = createPutHandOnDeckTopUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingPutHandOnDeckTop !== undefined, 'chooser sees the put-on-top choice');
+    assert.equal(result.pendingPutHandOnDeckTop!.playerID, '0');
+    assert.equal(result.pendingPutHandOnDeckTop!.eligibleHand.length, 2, 'both hand cards are placement options');
+  });
+
+  it('an opponent does NOT see pendingPutHandOnDeckTop', () => {
+    const uiState = createPutHandOnDeckTopUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingPutHandOnDeckTop, undefined, 'opponent must not see the put-on-top choice');
+  });
+
+  it('a spectator does NOT see pendingPutHandOnDeckTop', () => {
+    const uiState = createPutHandOnDeckTopUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingPutHandOnDeckTop, undefined, 'spectator must not see the put-on-top choice');
+  });
+
+  it('does not mutate the input UIState (pendingPutHandOnDeckTop still present on the source)', () => {
+    const uiState = createPutHandOnDeckTopUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingPutHandOnDeckTop !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-681 / D-24498 — pendingDoOver redaction (chooser-only)
 // ---------------------------------------------------------------------------
 

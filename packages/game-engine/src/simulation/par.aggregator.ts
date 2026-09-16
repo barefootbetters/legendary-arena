@@ -82,6 +82,10 @@ import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked Smash choice hangs the PAR loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
+// why: WP-700 / D-24519 — resolvePutHandOnDeckTop can be the only legal move (block-all); it
+// must be a MOVE_MAP key here too or the PAR aggregator hangs on a put-hand-on-deck-top card
+// (the drift-pinned dual-dispatch invariant, mirrors resolveSmashDiscard).
+import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 // why: WP-681 / D-24498 — resolveDoOver can be the only legal move (block-all); it must be
 // dispatchable in the aggregator MOVE_MAP or the per-turn loop hangs.
 import { resolveDoOver } from '../moves/doOver.resolve.js';
@@ -464,6 +468,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // choice is open; a missing dispatch entry hangs the loop (pinned by the drift guard).
   resolveSeatChoice: (context, args) => resolveSeatChoice(context as never, args as never),
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
+  resolvePutHandOnDeckTop: (context, args) => resolvePutHandOnDeckTop(context as never, args as never),
   // why: WP-681 / D-24498 — getLegalMoves short-circuits to resolveDoOver when a Do-Over
   // accept/decline choice is parked; a missing dispatch entry stalls the loop.
   resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),

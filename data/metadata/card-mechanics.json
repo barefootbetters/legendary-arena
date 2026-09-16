@@ -1130,6 +1130,23 @@
       "hidden": true
     },
     {
+      "slug": "put-hand-on-deck-top",
+      "label": "Put Hand On Deck Top",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 7,
+      "cardIds": [
+        "anni/brainstorm",
+        "co2e/gambit",
+        "core/gambit",
+        "dstr/clea",
+        "wpnx/marrow",
+        "wtif/gamora-destroyer-of-thanos",
+        "wtif/uatu-the-watcher"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "random-acts",
       "label": "Random Acts",
       "scope": "hero",
@@ -2225,7 +2242,8 @@
     },
     "anni/brainstorm": {
       "mechanics": [
-        "out-of-time"
+        "out-of-time",
+        "put-hand-on-deck-top"
       ]
     },
     "anni/fantastic-four-united": {
@@ -2496,6 +2514,7 @@
     },
     "co2e/gambit": {
       "mechanics": [
+        "put-hand-on-deck-top",
         "reveal-cost-attack"
       ]
     },
@@ -2592,6 +2611,7 @@
     },
     "core/gambit": {
       "mechanics": [
+        "put-hand-on-deck-top",
         "reveal-cost-attack"
       ]
     },
@@ -2944,6 +2964,7 @@
     "dstr/clea": {
       "mechanics": [
         "demonic-bargain",
+        "put-hand-on-deck-top",
         "ritual-artifact"
       ]
     },
@@ -3810,6 +3831,7 @@
     "wpnx/marrow": {
       "mechanics": [
         "berserk",
+        "put-hand-on-deck-top",
         "weapon-x-sequence"
       ]
     },
@@ -3848,6 +3870,7 @@
     "wtif/gamora-destroyer-of-thanos": {
       "mechanics": [
         "draw",
+        "put-hand-on-deck-top",
         "soulbind",
         "what-if"
       ]
@@ -3874,6 +3897,7 @@
     "wtif/uatu-the-watcher": {
       "mechanics": [
         "empowered",
+        "put-hand-on-deck-top",
         "soulbind",
         "what-if"
       ]
