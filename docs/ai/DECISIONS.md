@@ -42474,7 +42474,7 @@ D-24185 / WP-383 (mandatory hand-pick + eligibility helper), D-24069 (pending-ch
 framework), D-24518 (vanquish-drop set), D-24372 (RUNTIME drift pins). **Reserved by:**
 NUMBER-LEDGER D-24519.
 
-### D-24520 — draw the new hand at end of turn (not start), deal initial hands at setup (Drafted 2026-09-16; not yet landed — WP-701 / EC-738)
+### D-24520 — draw the new hand at end of turn (not start), deal initial hands at setup (Active 2026-09-16 — WP-701 / EC-738)
 
 **Decision.** Move the new-hand draw from the play-phase `turn.onBegin` auto-draw
 (D-10003/D-23605 — the MVP shortcut where `endTurn` discards but does not draw, and the next
@@ -42514,7 +42514,9 @@ change, not a silent tuning.
 
 **Supersedes.** The D-10003/D-23605 MVP `onBegin` auto-draw shortcut.
 
-**Status:** Drafted 2026-09-16; not yet landed (flips to Active when WP-701 executes).
+**Status:** Active 2026-09-16 — WP-701 merged via PR #2071. Determinism re-pin verified (the
+regenerated core Dr. Doom sentinel shows the Master Strike making a non-active player put 2
+cards on top — it whiffed on the empty hand before). D-24026 live-on-surface verify pending deploy.
 **Builds on:** D-23605 (`drawCardsIntoHand`/`HAND_SIZE`), D-22002 (dual turn-end path), D-24513
 (extra-turn), D-24512 (deferredHandInjection), D-24300 (handSizeOverrides), D-24081
 (messages/logMeta hash exclusion). **Reserved by:** NUMBER-LEDGER D-24520.

@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-701 — End-of-turn hand draw (EC-738 / D-24520) (2026-09-16)
+
+Fixed the reported turn-flow bug: the engine drew each player's new hand at the START of their
+turn (`onBegin`, the D-10003/D-23605 MVP shortcut), leaving a player with 0 cards during
+opponents' turns — so Master Strikes and every "each player discards / reveals" effect whiffed
+(live-observed: Player 0 at 0 cards through both Magneto Master Strikes). Now the new hand is
+drawn at the END of a turn (after the hand + in-play discard) and initial hands are dealt at
+setup, so a player holds a full six-card hand between turns and Master Strikes land — the game is
+harder and more faithful. New shared `applyEndOfTurnCleanup` helper invoked from both D-22002
+turn-end paths (the `endTurn` move + `advanceTurnStage` cleanup) via a `cleanup` closure on
+`TurnLoopContext`; `onBegin` loses the draw and sets `hasDrawnThisTurn=true` (closing a mid-turn
+scaffold-drawCards refill hole); all three bgio-bypassing harnesses + replay replicate it. Merged
+via PR #2071; engine 3535/0, whole-repo 11 packages fail 0, dashboard 482/0. Honest determinism
+re-pin, verified: PRE_WP080 `29e41e8`→`4b119265`; the regenerated core Dr. Doom sentinel shows the
+Master Strike making a non-active player put 2 cards on top; sim:runtime-observed + dashboard
+in-play coverage (2845→2965 / 24.7) re-pinned. ewiki `turn-system.md` updated. **D-24026
+live-verify pending deploy.**
+
 ### WP-700 — Put-hand-on-deck-top: draw-then-stack hero keyword (EC-737 / D-24519) (2026-09-15)
 
 Fixed the reported Gambit **Stack the Deck** "effect isn't firing" bug — the card was never
