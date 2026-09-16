@@ -490,7 +490,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. Discard it or put it back.",
+            "Reveal the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:ranged]: You may choose a player to make a [keyword:Demonic Bargain] to draw two extra cards at the end of this turn."
           ]
         },

@@ -577,12 +577,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'here-hold-this', // why: WP-683 / D-24500 — Deadpool "Here, Hold This for a Second" ("A Villain of your choice captures a Bystander.") — active-scoped directed Bystander capture (Mastermind fallback at 0 Villains)
     'random-acts', // why: WP-683 / D-24500 — Deadpool "Random Acts of Unkindness" ("You may gain a Wound to your hand. Then each player passes a card from their hand to the player on their left.") — optional gain-Wound-to-hand + simultaneous multi-seat pass-left
     'put-hand-on-deck-top', // why: WP-700 / D-24519 — "Draw N cards. Then put a card from your hand on top of your deck." (Gambit's Stack the Deck + siblings) — compound onPlay draw-N + mandatory put-a-hand-card-on-deck-top pending choice
+    'reveal-top-dispose', // why: WP-702 / D-24521 — "Reveal the top card of your deck. Discard it or put it back." (Gambit's Hypnotic Charm entry 1 + standalone family) — snapshot own deck top + block-all discard-or-keep pending choice
+    'reveal-top-dispose-others', // why: WP-702 / D-24521 — "Do the same thing to each other player's deck." (Hypnotic Charm entry 2, [hc:instinct]-gated) — snapshot each OTHER seat's deck top into one shared discard-or-keep pending choice
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      55,
-      'HERO_KEYWORDS must have exactly 55 entries',
+      57,
+      'HERO_KEYWORDS must have exactly 57 entries',
     );
 
     assert.deepStrictEqual(

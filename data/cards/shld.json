@@ -250,7 +250,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "Look at the top card of your deck. Discard it or put it back.",
+            "Look at the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:instinct]: If that card was a [team:shield] Hero, you may send it, [keyword:Undercover]."
           ]
         },

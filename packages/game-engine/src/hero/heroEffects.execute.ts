@@ -14,7 +14,7 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget } from '../types.js';
+import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose } from '../types.js';
 import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
@@ -193,6 +193,16 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectPutHandOnDeckTop) that draws N then parks a mandatory PendingPutHandOnDeckTop, so
   // it belongs here. Carries a magnitude (the draw count) → NOT in NO_MAGNITUDE_KEYWORDS.
   'put-hand-on-deck-top',
+  // why: WP-702 / D-24521 — "Reveal the top card of your deck. Discard it or put it back."
+  // (Gambit's Hypnotic Charm entry 1 + standalone family); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectRevealTopDispose) that snapshots the deck top and parks a PendingRevealTopDispose,
+  // so it belongs here. Carries NO magnitude (per-card disposition) → also in NO_MAGNITUDE_KEYWORDS.
+  'reveal-top-dispose',
+  // why: WP-702 / D-24521 — "Do the same thing to each other player's deck." (Hypnotic Charm
+  // entry 2, [hc:instinct]-gated); has a HERO_EFFECT_HANDLERS entry (heroEffectRevealTopDisposeOthers)
+  // that snapshots each OTHER seat's deck top and parks one shared PendingRevealTopDispose, so it
+  // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'reveal-top-dispose-others',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -407,6 +417,12 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // for free); the eligible target set + the S.H.I.E.L.D.-Hero KO count are computed from G
   // at play time, so the magnitude pre-gate must not drop it, or heroEffectPureFury never runs.
   'pure-fury',
+  // why: WP-702 / D-24521 — the two reveal-top-dispose keywords carry NO magnitude: the outcome
+  // is a per-card discard-or-keep disposition, not a count. The revealed set is snapshotted from
+  // the deck top(s) at play time, so the magnitude pre-gate must not drop them, or the reveal
+  // never parks its choice.
+  'reveal-top-dispose',
+  'reveal-top-dispose-others',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2265,6 +2281,154 @@ function heroEffectPutHandOnDeckTop(
   }
   if (!G.pendingPutHandOnDeckTop) { G.pendingPutHandOnDeckTop = []; }
   G.pendingPutHandOnDeckTop.push({ playerID, sourceCardId: cardId });
+}
+
+/**
+ * Reveals (SNAPSHOTS) one player's deck top for a reveal-top-dispose choice (WP-702 / D-24521),
+ * reshuffling their discard into the deck first when the deck is empty (the Legendary
+ * reveal-reshuffle rule). Returns the `{ ownerPlayerID, cardId }` snapshot, or null when the
+ * deck (and discard) are genuinely exhausted — nothing to reveal.
+ *
+ * // why: the reveal SNAPSHOTS the deck top and does NOT remove it (the Melter / Ruthless
+ * Dictator SNAPSHOT discipline): the block-all guard freezes the deck top while the choice is
+ * pending, so this snapshot cannot drift; the resolve move then discards the exact top card or
+ * keeps it. Shared by both handlers (own-deck + each-other) — one reveal-one-deck implementation.
+ *
+ * @param G - Game state (mutated only by a possible reshuffle-on-empty).
+ * @param ownerPlayerID - The player whose deck top to reveal.
+ * @param shuffleContext - ShuffleProvider for the reshuffle-on-empty (ctx.random).
+ * @returns the snapshot entry, or null if the player has no revealable card.
+ */
+function revealDeckTopForDispose(
+  G: LegendaryGameState,
+  ownerPlayerID: string,
+  shuffleContext: ShuffleProvider,
+): RevealedTopEntry | null {
+  const zones = G.playerZones[ownerPlayerID];
+  if (!zones) { return null; }
+  // why: D-24285 — "reveal the top card" is a reveal, so an empty deck reshuffles the
+  // discard into the deck first (the reveal-reshuffle rule; the Melter each-deck precedent).
+  // reshuffleDiscardIntoDeck no-ops on an empty discard, so a genuinely exhausted deck +
+  // discard contributes no revealed card (never a hollow — nothing was there to reveal).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  if (zones.deck.length === 0) { return null; }
+  return { ownerPlayerID, cardId: zones.deck[0]! };
+}
+
+/**
+ * Parks ONE PendingRevealTopDispose for the active player carrying the revealed snapshot
+ * (WP-702 / D-24521), lazily initializing the FIFO queue at the park site (NEVER in
+ * Game.setup, so a game that never plays one of these cards carries no new field and both
+ * hash oracles stay byte-unchanged). Self-narrates the park so the log records the choice
+ * opened; resolveRevealTopDispose narrates each discard/keep. Callers guarantee a non-empty
+ * `revealedTops`.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param activePlayerID - The active player who chooses discard-or-keep for every revealed card.
+ * @param revealedTops - The non-empty snapshot of revealed `{ ownerPlayerID, cardId }` tops.
+ */
+function parkRevealTopDispose(
+  G: LegendaryGameState,
+  activePlayerID: string,
+  revealedTops: RevealedTopEntry[],
+): void {
+  if (!G.pendingRevealTopDispose) { G.pendingRevealTopDispose = []; }
+  G.pendingRevealTopDispose.push({
+    choiceType: 'reveal-top-dispose',
+    playerID: activePlayerID,
+    revealedTops,
+  } satisfies PendingRevealTopDispose);
+  // why: self-narrate the park so the log records the choice opened; the resolve move
+  // narrates each discard/keep. Outcome `neutral` — nothing has landed yet.
+  pushLog(
+    G,
+    `Player ${activePlayerID} revealed ${String(revealedTops.length)} deck top(s) — choose to discard or keep each (reveal-top).`,
+    'neutral',
+  );
+}
+
+/**
+ * Park handler for the `reveal-top-dispose` hero keyword (WP-702 / D-24521).
+ *
+ * Gambit's Hypnotic Charm entry 1 + the standalone family ("Reveal the top card of your deck.
+ * Discard it or put it back."). Snapshots the ACTIVE player's OWN deck top (reshuffle-on-empty)
+ * and parks a block-all PendingRevealTopDispose for the active player; the shared
+ * resolveRevealTopDispose then discards it ('discard') or keeps it ('top').
+ *
+ * // why: reveal-top-dispose carries NO magnitude — the outcome is a single per-card disposition
+ * (discard or keep), not a count — so it is in NO_MAGNITUDE_KEYWORDS (a magnitude pre-gate would
+ * wrongly safe-skip it). The reveal SNAPSHOTS the deck top (see revealDeckTopForDispose); an empty
+ * deck + discard parks nothing and logs the no-op so the player sees why the ability did nothing.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
+ * @param playerID - The active player who played the card.
+ * @param _cardId - The played card (unused; the choice carries only the revealed tops).
+ * @param _effect - The `{ type: 'reveal-top-dispose' }` descriptor (no magnitude).
+ */
+function heroEffectRevealTopDispose(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: ctx narrows to ShuffleProvider structurally for the reveal-reshuffle (ctx.random),
+  // exactly as heroEffectReveal / heroEffectPutHandOnDeckTop do (the WP-005B/008B pattern).
+  const revealed = revealDeckTopForDispose(G, playerID, ctx as ShuffleProvider);
+  if (revealed === null) {
+    // why: reachable no-op — the active player's deck and discard were both empty, so nothing
+    // was revealed and no choice is parked. G.messages is hash-excluded (D-24081).
+    pushLog(G, `Player ${playerID} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
+    return;
+  }
+  parkRevealTopDispose(G, playerID, [revealed]);
+}
+
+/**
+ * Park handler for the `reveal-top-dispose-others` hero keyword (WP-702 / D-24521).
+ *
+ * Gambit's Hypnotic Charm entry 2, [hc:instinct]-gated ("Do the same thing to each other
+ * player's deck."). Reveals EACH OTHER seat's deck top (sorted seat order) and parks ONE
+ * shared PendingRevealTopDispose for the active player carrying every revealed
+ * `{ ownerPlayerID, cardId }`; the shared resolveRevealTopDispose dispositions each by
+ * owner+ext_id.
+ *
+ * // why: the each-other loop skips the ACTIVE player — the base clause (reveal-top-dispose)
+ * already handled the active player's OWN deck, and this extension is "each OTHER player's
+ * deck" (the Lizard/Melter each-other skip idiom, D-18902 sorted seat order for replay
+ * determinism). NO magnitude → in NO_MAGNITUDE_KEYWORDS. No other seat / all exhausted parks
+ * nothing and logs the no-op.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
+ * @param playerID - The active player who played the card.
+ * @param _cardId - The played card (unused; the choice carries only the revealed tops).
+ * @param _effect - The `{ type: 'reveal-top-dispose-others' }` descriptor (no magnitude).
+ */
+function heroEffectRevealTopDisposeOthers(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const revealedTops: RevealedTopEntry[] = [];
+  for (const ownerPlayerID of Object.keys(G.playerZones).sort()) {
+    // why: each OTHER player's deck — skip the active player (their own deck is the base clause).
+    if (ownerPlayerID === playerID) { continue; }
+    const revealed = revealDeckTopForDispose(G, ownerPlayerID, ctx as ShuffleProvider);
+    if (revealed !== null) { revealedTops.push(revealed); }
+  }
+  if (revealedTops.length === 0) {
+    // why: reachable no-op — no OTHER seat had a revealable deck top (a solo game, or every
+    // other deck + discard exhausted). Nothing parked. G.messages hash-excluded (D-24081).
+    pushLog(G, `Player ${playerID} had no other player's deck top to reveal (reveal-top).`, 'blocked');
+    return;
+  }
+  parkRevealTopDispose(G, playerID, revealedTops);
 }
 
 /**
@@ -4153,6 +4317,8 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // hand card on the deck top; no decline). Carries a magnitude (the draw count) → NOT in
   // NO_MAGNITUDE_KEYWORDS.
   'put-hand-on-deck-top': heroEffectPutHandOnDeckTop,
+  'reveal-top-dispose': heroEffectRevealTopDispose,
+  'reveal-top-dispose-others': heroEffectRevealTopDisposeOthers,
 };
 
 // ---------------------------------------------------------------------------

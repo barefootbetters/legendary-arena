@@ -91,7 +91,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // (Deadpool's directed capture + multiplayer pass-left) (37 → 39).
     // WP-700 / D-24519 added the put-hand-on-deck-top compound handler (Gambit's Stack the
     // Deck + siblings — draw N then park the mandatory put-on-top choice) (39 → 40).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 40);
+    // WP-702 / D-24521 added the reveal-top-dispose handler (own deck) and the
+    // reveal-top-dispose-others handler (each other deck) for Gambit's Hypnotic Charm +
+    // standalone family — snapshot the deck top(s) then park the discard-or-keep choice (40 → 42).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 42);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3300,6 +3303,97 @@ describe('executeHeroEffects put-hand-on-deck-top park (WP-700 / D-24519)', () =
     assert.ok(
       gameState.messages.some((line) => line.text.includes('could not put a card on top')),
       'the empty-hand degenerate appends a game-log line explaining the no-op',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-702 / D-24521 — reveal-top-dispose park cases (own deck + each other deck)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects reveal-top-dispose park (WP-702 / D-24521)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('snapshots the active player OWN deck top (does NOT remove it) and parks one choice', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose'], effects: [{ type: 'reveal-top-dispose' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['deck-a', 'deck-b'], 'the reveal SNAPSHOTS — deck top NOT removed');
+    assert.equal(gameState.pendingRevealTopDispose?.length, 1, 'exactly one reveal-top choice parked');
+    assert.equal(gameState.pendingRevealTopDispose![0]!.playerID, '0', 'parked for the active player');
+    assert.deepEqual(
+      gameState.pendingRevealTopDispose![0]!.revealedTops,
+      [{ ownerPlayerID: '0', cardId: 'deck-a' }],
+      'the active player own deck top is the sole revealed entry',
+    );
+  });
+
+  it('parks nothing (logged no-op) when the active player deck AND discard are empty', () => {
+    const gameState = makeTestState({
+      deck: [],
+      discard: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose'], effects: [{ type: 'reveal-top-dispose' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingRevealTopDispose?.length ?? 0, 0, 'no choice parked — nothing to reveal');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('no card to reveal')),
+      'the empty-deck no-op appends a game-log line',
+    );
+  });
+
+  it('reveal-top-dispose-others snapshots each OTHER seat deck top, skipping the active player', () => {
+    const gameState = makeTestState({
+      deck: ['p0-top'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose-others'], effects: [{ type: 'reveal-top-dispose-others' }] },
+      ],
+    });
+    // why: makeTestState builds only player '0'; inject two more seats so the each-other
+    // loop has decks to reveal.
+    gameState.playerZones['1'] = { ...gameState.playerZones['0']!, deck: ['p1-top'], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.playerZones['2'] = { ...gameState.playerZones['0']!, deck: ['p2-top'], hand: [], discard: [], inPlay: [], victory: [] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingRevealTopDispose?.length, 1, 'one shared choice parked');
+    assert.equal(gameState.pendingRevealTopDispose![0]!.playerID, '0', 'parked for the active (choosing) player');
+    assert.deepEqual(
+      gameState.pendingRevealTopDispose![0]!.revealedTops,
+      [{ ownerPlayerID: '1', cardId: 'p1-top' }, { ownerPlayerID: '2', cardId: 'p2-top' }],
+      'each OTHER seat deck top, sorted seat order; the active player OWN deck is NOT included',
+    );
+    assert.deepEqual(gameState.playerZones['1']!.deck, ['p1-top'], 'other decks SNAPSHOTTED, not removed');
+  });
+
+  it('reveal-top-dispose-others parks nothing (logged no-op) in a solo game (no other seat)', () => {
+    const gameState = makeTestState({
+      deck: ['p0-top'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose-others'], effects: [{ type: 'reveal-top-dispose-others' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingRevealTopDispose?.length ?? 0, 0, 'no other seat → no park');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes("no other player's deck top")),
+      'the no-other-seat no-op appends a game-log line',
     );
   });
 });

@@ -250,6 +250,13 @@ export function useTurnActions(
   // End Turn / Pass Priority / Heal at ANY stage (the engine's full block-all guard set freezes
   // the board). Mandatory — the player must place one hand card on top of their deck.
   hasPendingPutHandOnDeckTop: boolean = false,
+  // why: WP-702 / D-24521 — appended LAST (after hasPendingPutHandOnDeckTop) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a reveal-top discard-or-keep choice is pending (Gambit's Hypnotic Charm +
+  // standalone family); blocks End Turn / Pass Priority / Heal at ANY stage (the engine's
+  // full block-all guard set freezes the board). Mandatory — the player must disposition
+  // every revealed deck top before another action.
+  hasPendingRevealTopDispose: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -459,6 +466,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Put a card from your hand on top of your deck before taking another action.',
+        };
+      }
+      // why: WP-702 / D-24521 — End Turn / Pass Priority blocked at any stage while a
+      // reveal-top discard-or-keep choice is pending (the engine's full block-all guard set
+      // freezes the board, mirroring hasPendingMelterKoChoice). The choice is mandatory.
+      if (hasPendingRevealTopDispose) {
+        return {
+          allowed: false,
+          reason: 'Discard or keep each revealed deck top before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -678,6 +694,14 @@ export function useTurnActions(
           reason: 'Resolve Melter — KO or keep each revealed deck top before taking another action.',
         };
       }
+      if (hasPendingRevealTopDispose) {
+        // why: WP-702 / D-24521 — the engine's block-all guards block endTurn while
+        // pendingRevealTopDispose is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Discard or keep each revealed deck top before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -812,6 +836,9 @@ export function useTurnActions(
         hasPendingKoChoice ||
         hasPendingScryKoChoice ||
         hasPendingMelterKoChoice ||
+        // why: WP-702 / D-24521 — mirror the engine healWounds block-all guard, which returns
+        // early while a reveal-top discard-or-keep choice is pending.
+        hasPendingRevealTopDispose ||
         hasPendingOptionalKoReward ||
         hasPendingVictoryPileCardPick ||
         hasPendingDrawOrEmpowered ||

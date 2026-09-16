@@ -43,7 +43,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "Look at the top card of your deck. Discard it or put it back.",
+            "Look at the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:instinct]: You may KO the card you discarded this way."
           ]
         },

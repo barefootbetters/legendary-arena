@@ -38,6 +38,9 @@ export type AwaitingInputKind =
   // why: WP-700 / D-24519 — a parked put-a-hand-card-on-deck-top choice is a block-all
   // freeze class; surface it so a "froze after I played Stack the Deck" report names its cause.
   | 'putHandOnDeckTop'
+  // why: WP-702 / D-24521 — a parked reveal-top discard-or-keep choice is a block-all freeze
+  // class; surface it so a "froze after I played Hypnotic Charm" report names its own cause.
+  | 'revealTopDispose'
   | 'drawOrEmpowered'
   | 'koHeroChoice';
 
@@ -84,6 +87,7 @@ const PENDING_FIELD_TO_KIND: ReadonlyArray<readonly [string, AwaitingInputKind]>
   ['pendingOptionalKoReward', 'optionalKoReward'],
   ['pendingSmashDiscard', 'smashDiscard'],
   ['pendingPutHandOnDeckTop', 'putHandOnDeckTop'],
+  ['pendingRevealTopDispose', 'revealTopDispose'],
   ['pendingDrawOrEmpowered', 'drawOrEmpowered'],
   ['pendingKoHeroChoice', 'koHeroChoice'],
 ];

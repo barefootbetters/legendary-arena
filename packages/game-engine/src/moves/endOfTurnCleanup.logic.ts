@@ -62,7 +62,6 @@ export function applyEndOfTurnCleanup(
   if (!playerZones) {
     return;
   }
-
   // Step 1: discard in-play, then the remaining hand.
   const inPlayResult = moveAllCards(playerZones.inPlay, playerZones.discard);
   playerZones.inPlay = inPlayResult.from;

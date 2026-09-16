@@ -622,6 +622,60 @@ export interface PendingRuthlessDictatorChoice {
 }
 
 /**
+ * One of the two dispositions the acting player may assign to a revealed deck-top card
+ * in a reveal-top discard-or-keep choice (WP-702 / D-24521):
+ *   'discard' — move the revealed deck-top card to its owner's discard pile.
+ *   'top'     — leave the card on top of its owner's deck (a no-op; it was only revealed).
+ *
+ * // why: D-24521 — the printed "Discard it or put it back." has exactly these two
+ * outcomes (no KO), so the vocabulary is narrower than RuthlessDictatorDisposition.
+ */
+export type RevealTopDisposition = 'discard' | 'top';
+
+/**
+ * One revealed deck top awaiting a discard-or-keep decision in a reveal-top-dispose
+ * choice (WP-702 / D-24521).
+ *
+ * `ownerPlayerID` is load-bearing (not decorative), mirroring MelterRevealedTop: the
+ * each-other variant (`reveal-top-dispose-others`, Hypnotic Charm's instinct clause)
+ * reveals every OTHER player's deck top, and starter ext_ids like `starting-shield-agent`
+ * are shared across every player's deck, so `cardId` alone cannot say WHICH player's deck
+ * top a decision targets. The resolve move keys on both.
+ */
+export interface RevealedTopEntry {
+  /** The player whose deck top this card is. */
+  ownerPlayerID: string;
+  /** The revealed deck-top card's ext_id (snapshotted at park time). */
+  cardId: CardExtId;
+}
+
+/**
+ * Pending reveal-top discard-or-keep player choice state (WP-702 / D-24521).
+ *
+ * Created when a hero plays a `reveal-top-dispose` card ("Reveal the top card of your
+ * deck. Discard it or put it back.") or Hypnotic Charm's `reveal-top-dispose-others`
+ * instinct clause ("Do the same thing to each other player's deck."): the handler reveals
+ * the targeted deck top(s) and parks ONE entry for the ACTIVE player carrying the snapshot
+ * of every revealed `{ ownerPlayerID, cardId }`. Front-popped by resolveRevealTopDispose
+ * once every revealed card has been resolved (each discard/keep decision removes one entry
+ * from `revealedTops`). Must be undefined or empty at every turn-end (block-all guards).
+ *
+ * // why: D-24521 mirrors the WP-603 / D-24413 Melter SNAPSHOT + sequential-resolution
+ * discipline (not the ko-hero recompute): the block-all guard freezes every targeted deck
+ * top while the choice is pending, so the snapshot cannot drift, and a discard removes the
+ * card by owner+ext_id (outcome-identical). "Top" is a no-op — the reveal never removed the
+ * card, so putting it back is leaving it on top.
+ */
+export interface PendingRevealTopDispose {
+  /** Discriminant; always 'reveal-top-dispose'. */
+  choiceType: 'reveal-top-dispose';
+  /** The active player who chooses discard-or-keep for every revealed card. */
+  playerID: string;
+  /** Each targeted deck's revealed top, still awaiting a discard/keep decision (snapshot). */
+  revealedTops: RevealedTopEntry[];
+}
+
+/**
  * Pending Magneto "Electromagnetic Bubble" X-Men Hero pick (WP-695 / D-24512).
  *
  * Created when the core Magneto mastermind's "Electromagnetic Bubble" tactic Fight is
@@ -1741,6 +1795,18 @@ export interface LegendaryGameState {
   // empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending put-a-hand-card-on-deck-top choices awaiting resolution (WP-700). */
   pendingPutHandOnDeckTop?: PendingPutHandOnDeckTop[] | undefined;
+
+  // why: WP-702 / D-24521 — FIFO queue of pending "reveal the top card of a deck; discard it
+  // or put it back" choices (Gambit's Hypnotic Charm + the standalone reveal-top-dispose family
+  // — the `reveal-top-dispose` / `reveal-top-dispose-others` keywords). Entries are appended by
+  // the heroEffectRevealTopDispose(Others) handlers AFTER they snapshot each targeted deck top
+  // (the reveal does NOT remove the card); front-popped by resolveRevealTopDispose once every
+  // revealed top has been dispositioned discard-or-keep. Must be undefined or empty at every
+  // turn-end. Lazily initialized at the park site, never in Game.setup — a game that never plays
+  // one of these cards carries no new field and serializes byte-identically (no finalStateHash
+  // re-pin). Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending reveal-top discard-or-keep choices awaiting resolution (WP-702). */
+  pendingRevealTopDispose?: PendingRevealTopDispose[] | undefined;
 
   // why: WP-681 / D-24498 — FIFO queue of pending Do-Over accept/decline choices (Deadpool's
   // "Hey, Can I Get a Do-Over?" — "you may discard the rest of your hand and draw four cards",

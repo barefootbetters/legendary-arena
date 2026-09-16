@@ -373,6 +373,8 @@ export type {
   UIScryKoRevealedCard,
   UIPendingMelterKoChoice,
   UIMelterRevealedTop,
+  UIPendingRevealTopDispose,
+  UIRevealedTopEntry,
   UIPendingRuthlessDictatorChoice,
   UIRuthlessDictatorRevealedCard,
   UIPendingElectromagneticBubbleChoice,

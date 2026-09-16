@@ -263,7 +263,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "Look at the top card of your deck.",
+            "Look at the top card of your deck. [keyword:reveal-top-dispose]",
             "Discard it or put it back.",
             "[hc:strength]: [keyword:Berserk]"
           ]

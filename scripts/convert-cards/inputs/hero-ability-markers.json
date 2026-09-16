@@ -153,6 +153,18 @@
   "core": [
     {
       "heroSlug": "gambit",
+      "cardSlug": "hypnotic-charm",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
+      "heroSlug": "gambit",
+      "cardSlug": "hypnotic-charm",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:reveal-top-dispose-others]"
+    },
+    {
+      "heroSlug": "gambit",
       "cardSlug": "stack-the-deck",
       "abilityIndex": 0,
       "markupToken": "[keyword:put-hand-on-deck-top:2]"
@@ -449,6 +461,12 @@
     }
   ],
   "cvwr": [
+    {
+      "heroSlug": "tigra",
+      "cardSlug": "supernatural-senses",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
     {
       "heroSlug": "hulkling",
       "cardSlug": "cellular-regeneration",
@@ -870,7 +888,21 @@
       "markupToken": "[keyword:draw:1]"
     }
   ],
+  "gotg": [
+    {
+      "heroSlug": "drax-the-destroyer",
+      "cardSlug": "interstellar-tracker",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    }
+  ],
   "wwhk": [
+    {
+      "heroSlug": "no-name-brood-queen",
+      "cardSlug": "appetite-for-destruction",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
     {
       "heroSlug": "she-hulk",
       "cardSlug": "hurl-legal-objections",
@@ -1254,6 +1286,12 @@
   ],
   "dstr": [
     {
+      "heroSlug": "vishanti-the",
+      "cardSlug": "agamotto",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
       "heroSlug": "clea",
       "cardSlug": "prepare-dark-magic",
       "abilityIndex": 0,
@@ -1364,6 +1402,18 @@
   ],
   "rvlt": [
     {
+      "heroSlug": "quicksilver",
+      "cardSlug": "jittery-impatience",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
+      "heroSlug": "scarlet-witch",
+      "cardSlug": "alter-reality",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
       "heroSlug": "darkhawk",
       "cardSlug": "balance-the-darkforce",
       "abilityIndex": 0,
@@ -1377,6 +1427,12 @@
     }
   ],
   "shld": [
+    {
+      "heroSlug": "mockingbird",
+      "cardSlug": "take-cover",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
     {
       "heroSlug": "deathlok",
       "cardSlug": "authorize-lethal-force",
@@ -1476,6 +1532,12 @@
   ],
   "wpnx": [
     {
+      "heroSlug": "weapon-h",
+      "cardSlug": "the-future-of-warfare",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
       "heroSlug": "marrow",
       "cardSlug": "osteogenesis",
       "abilityIndex": 0,
@@ -1527,6 +1589,18 @@
     }
   ],
   "xmen": [
+    {
+      "heroSlug": "beast",
+      "cardSlug": "calculated-rage",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
+    {
+      "heroSlug": "longshot",
+      "cardSlug": "make-my-own-luck",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-dispose]"
+    },
     {
       "heroSlug": "havok",
       "cardSlug": "unleash-havok",

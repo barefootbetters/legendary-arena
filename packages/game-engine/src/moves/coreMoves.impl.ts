@@ -32,6 +32,7 @@ import { hasPendingDefeatChoice } from './defeatChoice.resolve.js';
 import { hasPendingOptionalKoReward } from './optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from './smashDiscard.resolve.js';
 import { hasPendingPutHandOnDeckTop } from './putHandOnDeckTop.resolve.js';
+import { hasPendingRevealTopDispose } from './revealTopDispose.resolve.js';
 import { hasPendingDoOver } from './doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
@@ -152,6 +153,11 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   // why: WP-700 / D-24519 — block-all guard: a parked put-a-hand-card-on-deck-top choice
   // freezes the board until the player places one hand card on top of their deck (mandatory).
   if (hasPendingPutHandOnDeckTop(G)) {
+    return;
+  }
+  // why: WP-702 / D-24521 — block-all guard: a parked reveal-top discard-or-keep choice
+  // freezes the board until the player dispositions every revealed deck top (discard or keep).
+  if (hasPendingRevealTopDispose(G)) {
     return;
   }
 
@@ -396,6 +402,11 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingPutHandOnDeckTop(G)) {
     return;
   }
+  // why: WP-702 / D-24521 — block-all guard: a parked reveal-top discard-or-keep choice
+  // freezes the board until the player dispositions every revealed deck top (discard or keep).
+  if (hasPendingRevealTopDispose(G)) {
+    return;
+  }
 
   // why: WP-681 / D-24498 — block-all guard: a parked Do-Over accept/decline choice
   // freezes the board until the player accepts (discard hand + draw 4) or declines.
@@ -602,6 +613,11 @@ export function endTurn({ G, playerID, events, random }: MoveContext): void {
   // why: WP-700 / D-24519 — block-all guard: a parked put-a-hand-card-on-deck-top choice
   // freezes the board until the player places one hand card on top of their deck (mandatory).
   if (hasPendingPutHandOnDeckTop(G)) {
+    return;
+  }
+  // why: WP-702 / D-24521 — block-all guard: a parked reveal-top discard-or-keep choice
+  // freezes the board until the player dispositions every revealed deck top (discard or keep).
+  if (hasPendingRevealTopDispose(G)) {
     return;
   }
 

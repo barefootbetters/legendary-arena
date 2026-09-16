@@ -496,7 +496,7 @@
           "attack": "2",
           "recruit": "2",
           "abilities": [
-            "Look at the top card of your deck. Discard it or put it back.",
+            "Look at the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:instinct]: You may KO the card you discarded this way."
           ]
         },
@@ -701,7 +701,7 @@
           "attack": "0+",
           "recruit": "2",
           "abilities": [
-            "Reveal the top card of your deck. Discard it or put it back.",
+            "Reveal the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:covert]: [keyword:Dark Memories]"
           ]
         },

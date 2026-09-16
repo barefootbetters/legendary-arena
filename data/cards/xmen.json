@@ -300,7 +300,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "Look at the top card of your deck. Discard it or put it back.",
+            "Look at the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[keyword:Berserk]"
           ]
         },
@@ -1245,7 +1245,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Look at the top card of your deck. Discard it or put it back.",
+            "Look at the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
             "[hc:covert]: You may KO the card you discarded this way."
           ]
         },

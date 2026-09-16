@@ -583,8 +583,8 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "Reveal the top card of your deck. Discard it or put it back.",
-            "[hc:instinct]: Do the same thing to each other player's deck."
+            "Reveal the top card of your deck. Discard it or put it back. [keyword:reveal-top-dispose]",
+            "[hc:instinct]: Do the same thing to each other player's deck. [keyword:reveal-top-dispose-others]"
           ]
         },
         {

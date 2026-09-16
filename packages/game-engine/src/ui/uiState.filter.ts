@@ -701,6 +701,32 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-702 / D-24521 — the pending reveal-top discard-or-keep choice is redacted for
+  // EVERY audience except the choosing (active) player. Its revealedTops are the tops of
+  // players' OWN decks (their next draws) — leaking them to opponents/spectators would reveal
+  // deck-order. Present only when the audience is a player whose playerId equals the chooser's
+  // playerID; omitted (conditional assignment, never an `undefined` literal) for opponents AND
+  // spectators. Rebuilt field-by-field; per-entry display spread prevents aliasing with input.
+  if (
+    uiState.pendingRevealTopDispose !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingRevealTopDispose.playerID
+  ) {
+    const revealedTopsCopy = [];
+    for (const entry of uiState.pendingRevealTopDispose.revealedTops) {
+      revealedTopsCopy.push({
+        ownerPlayerID: entry.ownerPlayerID,
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingRevealTopDispose = {
+      choiceType: uiState.pendingRevealTopDispose.choiceType,
+      playerID: uiState.pendingRevealTopDispose.playerID,
+      revealedTops: revealedTopsCopy,
+    };
+  }
+
   // why: WP-695 / D-24512 — the pending Ruthless Dictator scry-3 choice is redacted for
   // EVERY audience except the choosing (defeating) player. Its revealedCards are the top
   // of the chooser's OWN deck (their next draws) — leaking them to opponents/spectators

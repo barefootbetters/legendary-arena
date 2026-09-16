@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1869,
+    "totalEntries": 1881,
     "byScope": {
-      "hero": 694,
+      "hero": 706,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 443,
+      "executable": 455,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -7043,6 +7043,40 @@
       ]
     },
     {
+      "extId": "core/gambit",
+      "name": "Gambit",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "core/gambit",
+      "name": "Gambit",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose-others",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
       "extId": "core/hawkeye",
       "name": "Hawkeye",
       "set": "core",
@@ -8964,6 +8998,23 @@
       ]
     },
     {
+      "extId": "cvwr/tigra",
+      "name": "Tigra",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "supernatural-senses",
+          "name": "Supernatural Senses"
+        }
+      ]
+    },
+    {
       "extId": "cvwr/vision",
       "name": "Vision",
       "set": "cvwr",
@@ -10807,6 +10858,23 @@
       "name": "Vishanti, The",
       "set": "dstr",
       "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "agamotto",
+          "name": "Agamotto"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/vishanti-the",
+      "name": "Vishanti, The",
+      "set": "dstr",
+      "scope": "hero",
       "mechanic": "ritual-artifact",
       "status": "unsupported",
       "handler": "",
@@ -11689,6 +11757,23 @@
         {
           "slug": "knives-of-the-hunter",
           "name": "Knives of the Hunter"
+        }
+      ]
+    },
+    {
+      "extId": "gotg/drax-the-destroyer",
+      "name": "Drax the Destroyer",
+      "set": "gotg",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "interstellar-tracker",
+          "name": "Interstellar Tracker"
         }
       ]
     },
@@ -17414,6 +17499,23 @@
       ]
     },
     {
+      "extId": "rvlt/quicksilver",
+      "name": "Quicksilver",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "jittery-impatience",
+          "name": "Jittery Impatience"
+        }
+      ]
+    },
+    {
       "extId": "rvlt/ronin",
       "name": "Ronin",
       "set": "rvlt",
@@ -17486,6 +17588,23 @@
         {
           "slug": "warp-time-and-space",
           "name": "Warp Time and Space"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/scarlet-witch",
+      "name": "Scarlet Witch",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "alter-reality",
+          "name": "Alter Reality"
         }
       ]
     },
@@ -17965,6 +18084,23 @@
         {
           "slug": "infinity-formula",
           "name": "Infinity Formula"
+        }
+      ]
+    },
+    {
+      "extId": "shld/mockingbird",
+      "name": "Mockingbird",
+      "set": "shld",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "take-cover",
+          "name": "Take Cover"
         }
       ]
     },
@@ -22168,6 +22304,23 @@
       "name": "Weapon H",
       "set": "wpnx",
       "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "the-future-of-warfare",
+          "name": "The Future of Warfare"
+        }
+      ]
+    },
+    {
+      "extId": "wpnx/weapon-h",
+      "name": "Weapon H",
+      "set": "wpnx",
+      "scope": "hero",
       "mechanic": "weapon-x-sequence",
       "status": "unsupported",
       "handler": "",
@@ -24605,6 +24758,23 @@
       "name": "No-Name, Brood Queen",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "appetite-for-destruction",
+          "name": "Appetite for Destruction"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "name": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "transform",
       "status": "unsupported",
       "handler": "",
@@ -25766,6 +25936,23 @@
       "name": "Beast",
       "set": "xmen",
       "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "calculated-rage",
+          "name": "Calculated Rage"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/beast",
+      "name": "Beast",
+      "set": "xmen",
+      "scope": "hero",
       "mechanic": "x-gene",
       "status": "unsupported",
       "handler": "",
@@ -26200,6 +26387,23 @@
         {
           "slug": "flurry-of-blades",
           "name": "Flurry of Blades"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/longshot",
+      "name": "Longshot",
+      "set": "xmen",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "make-my-own-luck",
+          "name": "Make My Own Luck"
         }
       ]
     },
@@ -28786,7 +28990,9 @@
       "scope": "hero",
       "mechanics": [
         "put-hand-on-deck-top",
-        "reveal-cost-attack"
+        "reveal-cost-attack",
+        "reveal-top-dispose",
+        "reveal-top-dispose-others"
       ]
     },
     "core/hawkeye": {
@@ -29471,7 +29677,8 @@
     "cvwr/tigra": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "reveal-top-dispose"
       ]
     },
     "cvwr/vision": {
@@ -30178,6 +30385,7 @@
       "mechanics": [
         "demonic-bargain",
         "ko-wound-reward",
+        "reveal-top-dispose",
         "ritual-artifact"
       ]
     },
@@ -30550,7 +30758,8 @@
     "gotg/drax-the-destroyer": {
       "scope": "hero",
       "mechanics": [
-        "artifact"
+        "artifact",
+        "reveal-top-dispose"
       ]
     },
     "gotg/gamora": {
@@ -32662,7 +32871,8 @@
     "rvlt/quicksilver": {
       "scope": "hero",
       "mechanics": [
-        "hyperspeed"
+        "hyperspeed",
+        "reveal-top-dispose"
       ]
     },
     "rvlt/ronin": {
@@ -32676,7 +32886,8 @@
     "rvlt/scarlet-witch": {
       "scope": "hero",
       "mechanics": [
-        "dark-memories"
+        "dark-memories",
+        "reveal-top-dispose"
       ]
     },
     "rvlt/speed": {
@@ -32840,6 +33051,7 @@
       "mechanics": [
         "attack-per-count",
         "draw",
+        "reveal-top-dispose",
         "s.h.i.e.l.d.-level",
         "s.h.i.e.l.d.-levels",
         "undercover",
@@ -34413,6 +34625,7 @@
       "scope": "hero",
       "mechanics": [
         "berserk",
+        "reveal-top-dispose",
         "weapon-x-sequence"
       ]
     },
@@ -35231,6 +35444,7 @@
       "mechanics": [
         "draw",
         "feast",
+        "reveal-top-dispose",
         "transform"
       ]
     },
@@ -35651,6 +35865,7 @@
       "scope": "hero",
       "mechanics": [
         "berserk",
+        "reveal-top-dispose",
         "x-gene"
       ]
     },
@@ -35712,7 +35927,8 @@
     "xmen/longshot": {
       "scope": "hero",
       "mechanics": [
-        "berserk"
+        "berserk",
+        "reveal-top-dispose"
       ]
     },
     "xmen/phoenix": {
