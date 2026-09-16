@@ -81,6 +81,9 @@ export type UiMoveName =
   // why: WP-700 / D-24519 — unblocks the put-a-hand-card-on-deck-top prompt (Gambit's Stack
   // the Deck + siblings; the player places one hand card on top of their own deck, mandatory).
   | 'resolvePutHandOnDeckTop'
+  // why: WP-702 / D-24521 — unblocks the reveal-top discard-or-keep prompt (Gambit's Hypnotic
+  // Charm + standalone family; the active player discards or keeps each revealed deck top).
+  | 'resolveRevealTopDispose'
   // why: WP-479 / D-24286 — unblocks the reveal-remainder reorder prompt (put the
   // non-drawn revealed cards back on top of the deck in any order).
   | 'resolveReorderChoice'

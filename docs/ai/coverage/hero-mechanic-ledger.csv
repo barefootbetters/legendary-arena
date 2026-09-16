@@ -189,6 +189,8 @@ core/emma-frost,Emma Frost,core,optional-play-villain-top,executable,,,packages/
 core/emma-frost,Emma Frost,core,reveal-from-hand,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-from-hand,psychic-link
 core/gambit,Gambit,core,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
+core/gambit,Gambit,core,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,hypnotic-charm
+core/gambit,Gambit,core,reveal-top-dispose-others,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others,hypnotic-charm
 core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 core/hulk,Hulk,core,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
 core/hulk,Hulk,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
@@ -246,6 +248,7 @@ cvwr/stature,Stature,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src
 cvwr/stature,Stature,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,crush-ants|crush-file-sizes|growing-confidence|shrink-to-nothing|trample-the-tiny
 cvwr/storm-black-panther,Storm & Black Panther,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-clues|gathering-rain-clouds
 cvwr/tigra,Tigra,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ferocity
+cvwr/tigra,Tigra,cvwr,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,supernatural-senses
 cvwr/vision,Vision,cvwr,phasing,unsupported,,,,harder-than-diamond|insubstantial-accomplishments|lighter-than-air|solar-energy|through-solid-objects
 cvwr/vision,Vision,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,harder-than-diamond|lighter-than-air
 cvwr/wiccan,Wiccan,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,supersonic-speed|supersonic-spells
@@ -296,6 +299,7 @@ dstr/doctor-voodoo,Doctor Voodoo,dstr,artifact,unsupported,,,,commune-with-the-s
 dstr/doctor-voodoo,Doctor Voodoo,dstr,ritual-artifact,unsupported,,,,medallion-of-many-loas|staff-of-legba
 dstr/vishanti-the,"Vishanti, The",dstr,demonic-bargain,unsupported,,,,agamotto|hoggoth
 dstr/vishanti-the,"Vishanti, The",dstr,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,oshtur
+dstr/vishanti-the,"Vishanti, The",dstr,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,agamotto
 dstr/vishanti-the,"Vishanti, The",dstr,ritual-artifact,unsupported,,,,the-book-of-the-vishanti
 fear/greithoth-breaker-of-wills,"Greithoth, Breaker of Wills",fear,artifact,unsupported,,,,absorb-metal
 fear/greithoth-breaker-of-wills,"Greithoth, Breaker of Wills",fear,artifacts,unsupported,,,,body-of-uru
@@ -315,6 +319,7 @@ ff04/mr-fantastic,Mr. Fantastic,ff04,focus,unsupported,,,,twisting-equations|ult
 ff04/silver-surfer,Silver Surfer,ff04,focus,unsupported,,,,epic-destiny|the-power-cosmic|warp-speed
 ff04/thing,Thing,ff04,focus,unsupported,,,,crime-stopper|knuckle-sandwich
 gotg/drax-the-destroyer,Drax the Destroyer,gotg,artifact,unsupported,,,,knives-of-the-hunter
+gotg/drax-the-destroyer,Drax the Destroyer,gotg,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,interstellar-tracker
 gotg/gamora,Gamora,gotg,artifact,unsupported,,,,godslayer-blade
 gotg/groot,Groot,gotg,(unmarked),unmarked,,,,
 gotg/rocket-raccoon,Rocket Raccoon,gotg,artifact,unsupported,,,,incoming-detector
@@ -438,10 +443,12 @@ rvlt/hellcat,Hellcat,rvlt,(unmarked),unmarked,,,,
 rvlt/photon,Photon,rvlt,hyperspeed,unsupported,,,,ultraviolet-radiation
 rvlt/photon,Photon,rvlt,last-stand,unsupported,,,,coruscating-vengeance
 rvlt/quicksilver,Quicksilver,rvlt,hyperspeed,unsupported,,,,around-the-world-punch|perpetual-motion|too-fast-to-see
+rvlt/quicksilver,Quicksilver,rvlt,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,jittery-impatience
 rvlt/ronin,Ronin,rvlt,dark-memories,unsupported,,,,brooding-fury|haunted-by-loss
 rvlt/ronin,Ronin,rvlt,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,storm-of-arrows
 rvlt/ronin,Ronin,rvlt,hyperspeed,unsupported,,,,storm-of-arrows
 rvlt/scarlet-witch,Scarlet Witch,rvlt,dark-memories,unsupported,,,,alter-reality|warp-time-and-space
+rvlt/scarlet-witch,Scarlet Witch,rvlt,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,alter-reality
 rvlt/speed,Speed,rvlt,hyperspeed,unsupported,,,,accelerate|break-the-sound-barrier
 rvlt/war-machine,War Machine,rvlt,hyperspeed,unsupported,,,,hypersonic-cannon
 shld/agent-phil-coulson,Agent Phil Coulson,shld,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,approve-orbital-strike
@@ -459,6 +466,7 @@ shld/leo-fitz-and-jemma-simmons,Leo Fitz and Jemma Simmons,shld,(unmarked),unmar
 shld/melinda-may,Melinda May,shld,(unmarked),unmarked,,,,
 shld/mockingbird,Mockingbird,shld,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,spymaster
 shld/mockingbird,Mockingbird,shld,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,infinity-formula
+shld/mockingbird,Mockingbird,shld,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,take-cover
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-level,unsupported,,,,battle-staves
 shld/mockingbird,Mockingbird,shld,s.h.i.e.l.d.-levels,unsupported,,,,infinity-formula|spymaster
 shld/mockingbird,Mockingbird,shld,undercover,deferred,WP-282,D-24060,,infinity-formula|spymaster|take-cover
@@ -570,6 +578,7 @@ wpnx/marrow,Marrow,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/s
 wpnx/marrow,Marrow,wpnx,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,osteogenesis
 wpnx/marrow,Marrow,wpnx,weapon-x-sequence,unsupported,,,,metabolic-overdrive
 wpnx/weapon-h,Weapon H,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,slice-and-smash|the-future-of-warfare|ultimate-killing-machine
+wpnx/weapon-h,Weapon H,wpnx,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,the-future-of-warfare
 wpnx/weapon-h,Weapon H,wpnx,weapon-x-sequence,unsupported,,,,ultimate-killing-machine
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,escape-the-weapon-x-lab|raging-regeneration|violent-conditioning
 wpnx/weapon-x-wolverine,Weapon X (Wolverine),wpnx,weapon-x-sequence,unsupported,,,,escape-the-weapon-x-lab|infuse-skeleton-with-adamantium
@@ -633,6 +642,7 @@ wwhk/namora,Namora,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src
 wwhk/namora,Namora,wwhk,transform,unsupported,,,,herculean-effort
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,torrent-of-broodlings
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,feast,unsupported,,,,appetite-for-destruction|bursting-with-life|world-spanning-hunger
+wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,appetite-for-destruction
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,transform,unsupported,,,,bursting-with-life
 wwhk/rick-jones,Rick Jones,wwhk,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,captain-marvel
 wwhk/rick-jones,Rick Jones,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,a-bomb
@@ -658,6 +668,7 @@ xmen/banshee,Banshee,xmen,piercing-energy,unsupported,,,,bone-shattering-howl|so
 xmen/banshee,Banshee,xmen,soaring-flight,unsupported,,,,speed-of-sound
 xmen/banshee,Banshee,xmen,x-gene,unsupported,,,,sonar-detection
 xmen/beast,Beast,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,calculated-rage|furry-fury|recursive-pummeling
+xmen/beast,Beast,xmen,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,calculated-rage
 xmen/beast,Beast,xmen,x-gene,unsupported,,,,captivating-conundrum|furry-fury|recursive-pummeling
 xmen/cannonball,Cannonball,xmen,soaring-flight,unsupported,,,,carry-to-the-air|human-cannon|kinetic-blast-field|natural-leader
 xmen/colossus-wolverine,Colossus & Wolverine,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,fastball-special|insane-disregard-for-danger|uncanny-x-men|unpredictable
@@ -680,6 +691,7 @@ xmen/legion,Legion,xmen,lightshow,unsupported,,,,bend-light
 xmen/legion,Legion,xmen,piercing-energy,unsupported,,,,split-eardrums
 xmen/legion,Legion,xmen,soaring-flight,unsupported,,,,maelstrom-of-clashing-powers
 xmen/longshot,Longshot,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,flurry-of-blades
+xmen/longshot,Longshot,xmen,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,make-my-own-luck
 xmen/phoenix,Phoenix,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,driven-mad-by-power
 xmen/phoenix,Phoenix,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,reincarnating-phoenix
 xmen/phoenix,Phoenix,xmen,piercing-energy,unsupported,,,,obliterating-fire

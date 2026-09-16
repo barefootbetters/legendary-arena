@@ -36,6 +36,7 @@ import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { hasPendingPutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
+import { hasPendingRevealTopDispose, selectDefaultRevealTopDisposition } from '../moves/revealTopDispose.resolve.js';
 import { hasPendingDoOver } from '../moves/doOver.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
@@ -161,6 +162,10 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveUndercoverChoice',
   'resolveSmashDiscard',
   'resolvePutHandOnDeckTop',
+  // why: WP-702 / D-24521 — resolveRevealTopDispose is a getLegalMoves short-circuit (block-all
+  // pending reveal-top discard-or-keep). ONE shared move for both reveal-top-dispose keywords;
+  // it MUST be dispatchable in both sim MOVE_MAPs or the per-turn loop hangs.
+  'resolveRevealTopDispose',
   // why: WP-681 / D-24498 — resolveDoOver is a getLegalMoves short-circuit (block-all
   // pending Do-Over accept/decline), so it MUST be dispatchable in both sim MOVE_MAPs or
   // the per-turn loop hangs. optional-ko-shield-officer (Battlefield Promotion) reuses the
@@ -568,6 +573,35 @@ export function getLegalMoves(
             ownerPlayerID: next.ownerPlayerID,
             cardId: next.cardId,
             keep: !isCullableDeckTopCard(next.cardId),
+          },
+        },
+      ];
+    }
+    // why: defensive — an empty revealedTops is an engine-invariant violation (the park
+    // requires ≥1 revealed card); fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-702 / D-24521 — pending reveal-top discard-or-keep short-circuit, placed beside
+  // the Melter one (same precedence tier — both are each-deck revealedTops choices). When the
+  // choice is parked the block-all guard freezes every other move, so the bot resolves it
+  // first. The single legal move dispositions the FRONT entry's first revealed card with the
+  // deterministic default (selectDefaultRevealTopDisposition: discard cullable cards — Wounds /
+  // basic starters — keep the rest), reproducing the thinning heuristic byte-identically (only
+  // live human play gets the interactive prompt). One card resolves per call; getLegalMoves
+  // re-enters until revealedTops empties. Returns a list of length EXACTLY 1 — omitting this
+  // path (or the MOVE_MAP entries) hangs the per-turn loop.
+  if (hasPendingRevealTopDispose(gameState)) {
+    const front = gameState.pendingRevealTopDispose![0]!;
+    const next = front.revealedTops[0];
+    if (next !== undefined) {
+      return [
+        {
+          name: 'resolveRevealTopDispose',
+          args: {
+            ownerPlayerID: next.ownerPlayerID,
+            cardId: next.cardId,
+            disposition: selectDefaultRevealTopDisposition(next.cardId),
           },
         },
       ];

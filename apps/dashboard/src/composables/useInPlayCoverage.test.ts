@@ -349,8 +349,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (+120); percentResolved 25.1 -> 24.7 (the larger denominator dilutes the resolved share — a
   // sweep-trajectory artifact of the faithfulness fix, NOT a regression). Deterministic — CI
   // computes the same 2965 / 24.7 from the regenerated runtime-observed-hollows feed.
+  // 2026-09-16 (WP-702 / D-24521, re-pin): the reveal-top discard-or-keep keywords now execute on
+  // the 11 previously-hollow cards, so the fixed-seed sweep's trajectories shift slightly (some
+  // hollow tallies rise, some fall as decks thin differently). reveal-top-dispose itself never
+  // appeared in this hollow denominator (it had no marker before, and now has a handler), so this
+  // is purely a downstream trajectory artifact. Net: totalObs 2965 -> 2968 (+3); percentResolved
+  // holds at 24.7 (the +3 denominator shift is too small to move the rounded share). Deterministic
+  // — CI computes the same from the regenerated feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2965);
+  assert.equal(view.totalObs.value, 2968);
   assert.equal(view.percentResolved.value, 24.7);
   assert.ok(view.remaining.value.length > 0);
 });

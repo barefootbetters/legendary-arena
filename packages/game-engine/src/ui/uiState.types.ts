@@ -150,6 +150,12 @@ export interface UIState {
   // the revealed cards are the tops of players' own decks (hidden next-draw
   // information). Absent (undefined) means no pending Melter KO/keep choice.
   pendingMelterKoChoice?: UIPendingMelterKoChoice;
+  // why: WP-702 / D-24521 — projects the FRONT of G.pendingRevealTopDispose with each
+  // revealed deck top so the active player can render the "discard or keep each revealed
+  // card" prompt. Redacted (omitted) for every audience except the chooser — the revealed
+  // cards are the tops of players' own decks (hidden next-draw information). Absent
+  // (undefined) means no pending reveal-top discard-or-keep choice.
+  pendingRevealTopDispose?: UIPendingRevealTopDispose;
   // why: WP-695 / D-24512 — projects the FRONT of G.pendingRuthlessDictatorChoices with the
   // revealed deck-top cards and the still-available dispositions so the defeating player can
   // render the "KO one / discard one / top one" prompt. Redacted (omitted) for every audience
@@ -977,6 +983,41 @@ export interface UIPendingMelterKoChoice {
   choiceType: "melter-ko";
   playerID: string;
   revealedTops: UIMelterRevealedTop[];
+}
+
+/**
+ * One revealed deck-top card in a pending reveal-top discard-or-keep choice (WP-702 /
+ * D-24521): which player owns the deck it sits on top of, its ext_id, and its display data.
+ *
+ * The client renders each entry (owner-labelled) with a Discard and a Keep button, and on
+ * click submits `resolveRevealTopDispose({ ownerPlayerID, cardId, disposition })`. Both
+ * `ownerPlayerID` and `cardId` are required to identify the card — starter ext_ids are
+ * shared across every player's deck (the round-trip rule matches on both).
+ */
+export interface UIRevealedTopEntry {
+  ownerPlayerID: string;
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending reveal-top discard-or-keep choice (WP-702 / D-24521).
+ * Only visible to the active (choosing) player; redacted for opponents and spectators (the
+ * revealed cards are the tops of players' own decks — hidden next-draw information).
+ *
+ * `revealedTops` is the FRONT pending entry's snapshot resolved to display data, in reveal
+ * (sorted player-id) order. Each still-unresolved deck top the active player must discard or
+ * keep. The client submits `{ ownerPlayerID, cardId, disposition }` per card; the engine
+ * discards it from its owner's deck ('discard') or leaves it on top ('top').
+ *
+ * @see WP-702 §Scope (In)
+ * @see EC-739 Locked Values
+ * @see DECISIONS.md D-24521
+ */
+export interface UIPendingRevealTopDispose {
+  choiceType: "reveal-top-dispose";
+  playerID: string;
+  revealedTops: UIRevealedTopEntry[];
 }
 
 /**

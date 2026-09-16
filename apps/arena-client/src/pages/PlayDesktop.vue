@@ -47,6 +47,7 @@ import PendingHeroChoicePrompt from '../components/play/PendingHeroChoicePrompt.
 import PendingKoHeroChoicePrompt from '../components/play/PendingKoHeroChoicePrompt.vue';
 import PendingScryKoChoicePrompt from '../components/play/PendingScryKoChoicePrompt.vue';
 import PendingMelterKoChoicePrompt from '../components/play/PendingMelterKoChoicePrompt.vue';
+import PendingRevealTopDisposePrompt from '../components/play/PendingRevealTopDisposePrompt.vue';
 import PendingRuthlessDictatorChoicePrompt from '../components/play/PendingRuthlessDictatorChoicePrompt.vue';
 import PendingElectromagneticBubbleChoicePrompt from '../components/play/PendingElectromagneticBubbleChoicePrompt.vue';
 import PendingDiscardChoicePrompt from '../components/play/PendingDiscardChoicePrompt.vue';
@@ -132,6 +133,7 @@ export default defineComponent({
     PendingKoHeroChoicePrompt,
     PendingScryKoChoicePrompt,
     PendingMelterKoChoicePrompt,
+    PendingRevealTopDisposePrompt,
     PendingRuthlessDictatorChoicePrompt,
     PendingElectromagneticBubbleChoicePrompt,
     PendingDiscardChoicePrompt,
@@ -565,6 +567,12 @@ export default defineComponent({
     const hasPendingMelterKoChoice = computed<boolean>(
       () => snapshot.value?.pendingMelterKoChoice !== undefined,
     );
+    // why: WP-702 / D-24521 — derived from UIState.pendingRevealTopDispose !== undefined.
+    // Passed to TurnActionBar to block end-turn / pass-priority at EVERY stage while a
+    // reveal-top discard-or-keep choice is pending (board frozen, mirrors hasPendingMelterKoChoice).
+    const hasPendingRevealTopDispose = computed<boolean>(
+      () => snapshot.value?.pendingRevealTopDispose !== undefined,
+    );
     // why: WP-695 / D-24512 — derived from UIState.pendingRuthlessDictatorChoice !== undefined.
     // Passed to TurnActionBar to block end-turn / pass-priority at EVERY stage while a Ruthless
     // Dictator scry-3 choice is pending (board frozen, mirrors hasPendingMelterKoChoice).
@@ -668,6 +676,7 @@ export default defineComponent({
       hasPendingReturnOnDiscard,
       hasPendingScryKoChoice,
       hasPendingMelterKoChoice,
+      hasPendingRevealTopDispose,
       hasPendingRuthlessDictatorChoice,
       hasPendingElectromagneticBubbleChoice,
       hasPendingDiscardChoice,
@@ -907,6 +916,13 @@ export default defineComponent({
                block-all guard guarantees at most one pending-choice type is set. -->
           <PendingMelterKoChoicePrompt
             :pending-melter-ko-choice="snapshot.pendingMelterKoChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
+          <!-- why: WP-702 / D-24521 — the reveal-top discard-or-keep prompt; appears only for
+               the choosing (active) player when pendingRevealTopDispose is set. Normal flow. -->
+          <PendingRevealTopDisposePrompt
+            :pending-reveal-top-dispose="snapshot.pendingRevealTopDispose"
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
@@ -1152,6 +1168,7 @@ export default defineComponent({
             :has-pending-return-on-discard="hasPendingReturnOnDiscard"
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
+            :has-pending-reveal-top-dispose="hasPendingRevealTopDispose"
             :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
             :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"

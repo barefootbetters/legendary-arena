@@ -45,6 +45,8 @@ import type {
   UIPendingScryKoChoice,
   UIScryKoRevealedCard,
   UIPendingMelterKoChoice,
+  UIPendingRevealTopDispose,
+  UIRevealedTopEntry,
   UIPendingRuthlessDictatorChoice,
   UIRuthlessDictatorRevealedCard,
   UIPendingElectromagneticBubbleChoice,
@@ -1128,6 +1130,32 @@ export function buildUIState(
     };
   }
 
+  // why: WP-702 / D-24521 — project the FRONT entry of G.pendingRevealTopDispose with each
+  // revealed deck top (the snapshot captured at park time) resolved to display data, in
+  // reveal (sorted player-id) order. Reads the SNAPSHOT, not the live zone (the Melter
+  // precedent): the block-all guard freezes every revealed deck top while pending, so it
+  // cannot drift, and it is exactly what resolveRevealTopDispose validates the client's
+  // { ownerPlayerID, cardId } against (the round-trip rule). resolveDisplay is spread fresh
+  // per entry so the projection holds no reference into G.cardDisplayData (WP-111 D-11105).
+  // Redaction to the chooser-only audience is enforced by filterUIStateForAudience.
+  let pendingRevealTopDispose: UIPendingRevealTopDispose | undefined;
+  if (gameState.pendingRevealTopDispose !== undefined && gameState.pendingRevealTopDispose.length > 0) {
+    const frontChoice = gameState.pendingRevealTopDispose[0]!;
+    const revealedTops: UIRevealedTopEntry[] = [];
+    for (const entry of frontChoice.revealedTops) {
+      revealedTops.push({
+        ownerPlayerID: entry.ownerPlayerID,
+        cardId: entry.cardId,
+        display: { ...resolveDisplay(entry.cardId, gameState) },
+      });
+    }
+    pendingRevealTopDispose = {
+      choiceType: frontChoice.choiceType,
+      playerID: frontChoice.playerID,
+      revealedTops,
+    };
+  }
+
   // --- 13b.3b Project pending Ruthless Dictator scry-3 choice (front of queue) ---
   // why: WP-695 / D-24512 — project the FRONT entry of G.pendingRuthlessDictatorChoices
   // with its remaining revealed deck-top cards (the snapshot captured at park time,
@@ -2001,6 +2029,9 @@ export function buildUIState(
     // why: WP-603 / D-24413 — conditional spread so an absent choice omits the field
     // (no `pendingMelterKoChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingMelterKoChoice !== undefined ? { pendingMelterKoChoice } : {}),
+    // why: WP-702 / D-24521 — conditional spread so an absent choice omits the field
+    // (no `pendingRevealTopDispose: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingRevealTopDispose !== undefined ? { pendingRevealTopDispose } : {}),
     // why: WP-695 / D-24512 — spread-in only when present (no `undefined` literal under
     // exactOptionalPropertyTypes).
     ...(pendingRuthlessDictatorChoice !== undefined ? { pendingRuthlessDictatorChoice } : {}),

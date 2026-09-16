@@ -20,6 +20,7 @@ import { resolveKoDiscardChoice, hasPendingKoDiscardChoice } from './moves/koDis
 import { resolveOptionalKoReward, hasPendingOptionalKoReward } from './moves/optionalKoReward.resolve.js';
 import { resolveSmashDiscard, hasPendingSmashDiscard } from './moves/smashDiscard.resolve.js';
 import { resolvePutHandOnDeckTop, hasPendingPutHandOnDeckTop } from './moves/putHandOnDeckTop.resolve.js';
+import { resolveRevealTopDispose, hasPendingRevealTopDispose } from './moves/revealTopDispose.resolve.js';
 import { resolveDoOver, hasPendingDoOver } from './moves/doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice, resolvePlayVillainTopChoice } from './moves/playVillainTop.resolve.js';
 import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './moves/resolveOptionalPutBottomHQ.js';
@@ -182,6 +183,11 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
   // player places one hand card on top of their deck. The placement is mandatory (no decline),
   // so leaving it dangling would freeze the game / lose the choice.
   if (hasPendingPutHandOnDeckTop(G)) { return; }
+  // why: WP-702 / D-24521 — block-all guard: while a reveal-top discard-or-keep choice is
+  // pending the board is frozen (turn-end included), so no other move proceeds until the player
+  // dispositions every revealed deck top. This also freezes each revealed deck top so the
+  // snapshot cannot drift before the resolve discards or keeps the exact top card.
+  if (hasPendingRevealTopDispose(G)) { return; }
   // why: WP-681 / D-24498 — block-all guard: while a Do-Over accept/decline choice is
   // pending the board is frozen (turn-end included) until the player accepts or declines.
   if (hasPendingDoOver(G)) { return; }
@@ -593,6 +599,9 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // why: WP-700 / D-24519 — server-only: the client submits the { cardId } intent; the engine
     // moves the chosen hand card to the deck top. Mandatory placement (no decline arm).
     resolvePutHandOnDeckTop: { move: resolvePutHandOnDeckTop, client: false },
+    // why: WP-702 / D-24521 — server-only: the client submits the { ownerPlayerID, cardId,
+    // disposition } intent; the engine discards or keeps that exact revealed deck-top card.
+    resolveRevealTopDispose: { move: resolveRevealTopDispose, client: false },
     // why: WP-681 / D-24498 — Do-Over accept/decline resolver; server-only (client submits
     // intent { accept: true } / { decline: true }, the engine performs the discard + draw).
     resolveDoOver: { move: resolveDoOver, client: false },

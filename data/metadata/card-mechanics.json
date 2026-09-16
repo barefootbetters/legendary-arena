@@ -1397,6 +1397,38 @@
       "hidden": true
     },
     {
+      "slug": "reveal-top-dispose",
+      "label": "Reveal Top Dispose",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 11,
+      "cardIds": [
+        "core/gambit",
+        "cvwr/tigra",
+        "dstr/vishanti-the",
+        "gotg/drax-the-destroyer",
+        "rvlt/quicksilver",
+        "rvlt/scarlet-witch",
+        "shld/mockingbird",
+        "wpnx/weapon-h",
+        "wwhk/no-name-brood-queen",
+        "xmen/beast",
+        "xmen/longshot"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "reveal-top-dispose-others",
+      "label": "Reveal Top Dispose Others",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/gambit"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ritual-artifact",
       "label": "Ritual Artifact",
       "scope": "hero",
@@ -2612,7 +2644,9 @@
     "core/gambit": {
       "mechanics": [
         "put-hand-on-deck-top",
-        "reveal-cost-attack"
+        "reveal-cost-attack",
+        "reveal-top-dispose",
+        "reveal-top-dispose-others"
       ]
     },
     "core/hawkeye": {
@@ -2797,7 +2831,8 @@
     },
     "cvwr/tigra": {
       "mechanics": [
-        "draw"
+        "draw",
+        "reveal-top-dispose"
       ]
     },
     "cvwr/vision": {
@@ -2984,6 +3019,7 @@
       "mechanics": [
         "demonic-bargain",
         "ko-wound-reward",
+        "reveal-top-dispose",
         "ritual-artifact"
       ]
     },
@@ -3050,7 +3086,8 @@
     },
     "gotg/drax-the-destroyer": {
       "mechanics": [
-        "artifact"
+        "artifact",
+        "reveal-top-dispose"
       ]
     },
     "gotg/gamora": {
@@ -3409,7 +3446,8 @@
     },
     "rvlt/quicksilver": {
       "mechanics": [
-        "hyperspeed"
+        "hyperspeed",
+        "reveal-top-dispose"
       ]
     },
     "rvlt/ronin": {
@@ -3421,7 +3459,8 @@
     },
     "rvlt/scarlet-witch": {
       "mechanics": [
-        "dark-memories"
+        "dark-memories",
+        "reveal-top-dispose"
       ]
     },
     "rvlt/speed": {
@@ -3479,6 +3518,7 @@
       "mechanics": [
         "attack-per-count",
         "draw",
+        "reveal-top-dispose",
         "s-h-i-e-l-d-level",
         "s-h-i-e-l-d-levels",
         "undercover",
@@ -3838,6 +3878,7 @@
     "wpnx/weapon-h": {
       "mechanics": [
         "berserk",
+        "reveal-top-dispose",
         "weapon-x-sequence"
       ]
     },
@@ -3981,6 +4022,7 @@
       "mechanics": [
         "draw",
         "feast",
+        "reveal-top-dispose",
         "transform"
       ]
     },
@@ -4034,6 +4076,7 @@
     "xmen/beast": {
       "mechanics": [
         "berserk",
+        "reveal-top-dispose",
         "x-gene"
       ]
     },
@@ -4087,7 +4130,8 @@
     },
     "xmen/longshot": {
       "mechanics": [
-        "berserk"
+        "berserk",
+        "reveal-top-dispose"
       ]
     },
     "xmen/phoenix": {

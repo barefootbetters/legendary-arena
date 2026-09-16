@@ -42521,4 +42521,62 @@ cards on top — it whiffed on the empty hand before). D-24026 live-on-surface v
 (extra-turn), D-24512 (deferredHandInjection), D-24300 (handSizeOverrides), D-24081
 (messages/logMeta hash exclusion). **Reserved by:** NUMBER-LEDGER D-24520.
 
+### D-24521 — the reveal-top discard-or-keep hero disposition (two keywords) (Active 2026-09-16 — WP-702 / EC-739)
+
+**Decision.** Add the interactive "Reveal / Look at the top card of your deck. Discard it or put
+it back." disposition as **two** handler-bearing `HeroKeyword`s sharing one pending-choice queue +
+resolve move (Gambit's Hypnotic Charm — core — plus the 10 standalone siblings across
+rvlt/dstr/cvwr/gotg/shld/xmen/wwhk/wpnx, all hollow today). This locks:
+
+1. **Two keywords, one shared machinery.** `reveal-top-dispose` (the ACTIVE player reveals their
+   OWN deck's top card) and `reveal-top-dispose-others` (Hypnotic Charm's `[hc:instinct]:` clause —
+   the same disposition on EACH OTHER seat's deck, the active player deciding each). Both snapshot
+   the relevant deck top(s) and park a `PendingRevealTopDispose { playerID: active, revealedTops:
+   [{ ownerPlayerID, cardId }] }`; `resolveRevealTopDispose({ ownerPlayerID, cardId, disposition })`
+   resolves one revealed card per call — `discard` moves that exact deck-top to the owner's discard,
+   `top` keeps it (a no-op). The snapshot-and-sequential-resolve discipline is the Ruthless Dictator
+   (D-24512, `discard`/`top`) + Melter (D-24413, each-deck) precedent, dropping the `ko` disposition.
+2. **The reveal SNAPSHOTS, it does not remove.** The deck top stays on top until the resolve move
+   discards it (or keeps it); an empty deck reshuffles the discard via `ctx.random` (the Melter
+   idiom).
+3. **The each-other clause is ACTIVE-scoped, not multi-seat (WP-684).** Per the printed "you reveal
+   and choose" phrasing, the ACTIVE player disposes every deck; the each-other handler iterates
+   `Object.keys(playerZones).sort()` skipping `currentPlayer` (the Lizard pattern). A solo game
+   parks nothing for the extension.
+4. **The `[hc:instinct]` gate is free.** Hypnotic Charm's each-other clause is a SEPARATE
+   `abilities[]` entry (`core.json:587`), so the `heroClassMatch` "another instinct Hero played this
+   turn" condition (D-24354) attaches to that entry's hook automatically; entry 1 is unconditional.
+5. **"Reveal" and "Look at" resolve identically** — the public-vs-private distinction is log/UX
+   only; no engine primitive reads it. The reveal-for-attack family (already keyworded), the
+   conditional reveal-draw-else-dispose card (co2e supernatural-senses-adjacent), and the
+   bottom-card variant (fear) are out of scope. Both keywords carry no magnitude (in
+   `NO_MAGNITUDE_KEYWORDS`); the new queue enrolls in the D-24518 vanquish-drop set.
+6. **Co-resolved-effect robustness (execution finding).** `executeHeroEffects` runs a card's
+   sibling abilities SYNCHRONOUSLY after a block-all park, with no stop-and-resume. Beast's
+   `calculated-rage` prints reveal-top-dispose (ability 0) AND `[keyword:Berserk]` (ability 1); the
+   Berserk primitive (`deck`→`discard`) moves the just-snapshotted deck top BEFORE the player
+   decides, so an in-place snapshot the resolve re-validates against `deck[0]` can go stale and the
+   bot loops on an unresolvable `discard` (a MAX_TURNS soft-lock caught by the sim sweep). Fix
+   (WP-702): `resolveRevealTopDispose` ALWAYS drops the resolved entry — it discards only when the
+   card is STILL `deck[0]`, and otherwise clears the choice with a neutral "already moved" log
+   instead of no-op-looping. The block-all guard therefore can never dangle. The strict co-ability
+   ORDERING (reveal-top fully before Berserk) is a known engine limitation (no continuation
+   mechanism) — the graceful-clear approximates it; a faithful ordering fix is a separate follow-up.
+
+**Determinism.** The reveal/reshuffle uses `ctx.random.*`; the disposition is the player's choice
+recorded as an ordinary move. `pendingRevealTopDispose?` is optional and absent for any game that
+never plays one of these cards, so those oracles (incl. the core `finalStateHash` sentinels, none
+of which play these cards) serialize byte-identically → **no re-pin** (verified: all engine hash /
+replay sentinels unchanged). The card-data regen changes the 11 cards' parsed abilities (intended);
+`cards:check` reproduces. The fixed-seed sim sweep shifted slightly (reveal-top cards now execute,
+nudging other hollow tallies), so `sim:runtime-observed` re-pinned honestly (`:check` green). The
+dashboard in-play coverage pin (a high-water-mark denominator, non-gated) is left as-is: reveal-top
+is no longer hollow so it never appears in that baseline, and a full regen there would bundle an
+unrelated pre-existing staleness (undercover 20→488) into this WP — parked as a separate cleanup.
+
+**Status:** Active 2026-09-16 (WP-702 executed / merged).
+**Builds on:** D-24512 (Ruthless Dictator disposition), D-24413 (Melter each-deck), D-24354
+(heroClassMatch gate), D-24518 (vanquish drop), D-24372 (RUNTIME drift pins). **Reserved by:**
+NUMBER-LEDGER D-24521.
+
 Protect this file.

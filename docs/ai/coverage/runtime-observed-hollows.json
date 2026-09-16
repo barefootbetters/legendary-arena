@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 2508,
+    "totalObservations": 2510,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 488,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2020
+      "parse-unrecognized": 2022
     }
   },
   "byMechanic": {
@@ -99,12 +99,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 168,
+      "hitCount": 166,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 168
+        "parse-unrecognized": 166
       },
       "examples": [
         {
@@ -567,12 +567,12 @@
       ]
     },
     "lightshow": {
-      "hitCount": 66,
-      "lastSeenTurn": 29,
+      "hitCount": 67,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 66
+        "parse-unrecognized": 67
       },
       "examples": [
         {
@@ -1087,12 +1087,12 @@
       ]
     },
     "x-gene": {
-      "hitCount": 23,
+      "hitCount": 26,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 23
+        "parse-unrecognized": 26
       },
       "examples": [
         {

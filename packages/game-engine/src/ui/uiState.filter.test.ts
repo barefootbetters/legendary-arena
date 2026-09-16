@@ -758,6 +758,76 @@ describe('filterUIStateForAudience — pendingMelterKoChoice redaction (D-24413)
 });
 
 // ---------------------------------------------------------------------------
+// WP-702 / EC-739 — pendingRevealTopDispose redaction (D-24521)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where the active player '0' owes a reveal-top discard-or-keep choice
+ * over each other player's revealed deck top. The revealed ext_ids are the tops of players'
+ * own decks — hidden next-draw ORDER that must not leak as a top-reveal to a non-chooser.
+ */
+function createRevealTopDisposeUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.deck = ['reveal-secret-p0' as CardExtId, 'reveal-deep-p0' as CardExtId];
+  gameState.playerZones['1']!.deck = ['reveal-secret-p1' as CardExtId, 'reveal-deep-p1' as CardExtId];
+  gameState.pendingRevealTopDispose = [
+    {
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [
+        { ownerPlayerID: '0', cardId: 'reveal-secret-p0' as CardExtId },
+        { ownerPlayerID: '1', cardId: 'reveal-secret-p1' as CardExtId },
+      ],
+    },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingRevealTopDispose redaction (D-24521)', () => {
+  it('the active player sees pendingRevealTopDispose with every revealed top', () => {
+    const uiState = createRevealTopDisposeUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(result.pendingRevealTopDispose !== undefined, 'chooser sees the reveal-top choice');
+    assert.equal(result.pendingRevealTopDispose!.playerID, '0');
+    assert.equal(result.pendingRevealTopDispose!.revealedTops.length, 2, 'both players tops present');
+    assert.deepStrictEqual(
+      result.pendingRevealTopDispose!.revealedTops.map((t) => t.ownerPlayerID),
+      ['0', '1'],
+      'owners carried through for disambiguation + labelling',
+    );
+  });
+
+  it('an opponent does NOT see pendingRevealTopDispose, nor another player revealed deck ext_id', () => {
+    const uiState = createRevealTopDisposeUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingRevealTopDispose, undefined, 'opponent must not see the reveal-top choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('reveal-secret-p0'), false, "another player's revealed deck ext_id does not leak");
+    assert.equal(serialized.includes('reveal-deep-p0'), false, "another player's deck ext_id does not leak");
+  });
+
+  it('a spectator does NOT see pendingRevealTopDispose and no revealed deck ext_id leaks', () => {
+    const uiState = createRevealTopDisposeUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingRevealTopDispose, undefined, 'spectator must not see the reveal-top choice');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('reveal-secret-p0'), false, 'no revealed deck ext_id leaks');
+    assert.equal(serialized.includes('reveal-secret-p1'), false, 'no revealed deck ext_id leaks');
+  });
+
+  it('does not mutate the input UIState (pendingRevealTopDispose still present on the source)', () => {
+    const uiState = createRevealTopDisposeUIState();
+    filterUIStateForAudience(uiState, PLAYER_1);
+    assert.ok(uiState.pendingRevealTopDispose !== undefined, 'source UIState unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-476 / EC-511 — pendingDiscardChoice redaction (D-24284, D-24011 analog)
 // ---------------------------------------------------------------------------
 

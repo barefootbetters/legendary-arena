@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-702 — Reveal-top discard-or-keep hero keyword (EC-739 / D-24521) (2026-09-16)
+
+Fixed the reported Gambit **Hypnotic Charm** "effect isn't firing" bug (the second half of the same
+report as WP-700): "Reveal the top card of your deck. Discard it or put it back. [instinct] Do the
+same thing to each other player's deck." had no marker and no handler, so it did nothing. Added the
+disposition as **two** handler-bearing keywords sharing one pending-choice queue + resolve move —
+`reveal-top-dispose` (active player's OWN deck top) and `reveal-top-dispose-others` (the
+`[hc:instinct]` each-other clause, active-decides, gated by the free heroClassMatch condition on its
+separate abilities[] entry). Covers Hypnotic Charm + the 10 standalone siblings (rvlt ×2, dstr,
+cvwr, gotg, shld, xmen ×2, wwhk, wpnx — 11 instances / 9 sets), all hollow before. Snapshot-and-park
+per the Ruthless Dictator (`discard`/`top`) + Melter (each-deck) + Lizard (skip-current) precedent;
+server-only `resolveRevealTopDispose` + `hasPendingRevealTopDispose` guard replicated per action
+move + D-24518 vanquish-drop; five-step UIState + `PendingRevealTopDisposePrompt.vue`; sim dispatch;
+markers (wpnx split form handled) + regen of 9 sets. Drift pins `HERO_KEYWORDS` 55→57,
+`HERO_EFFECT_HANDLERS` 40→42, moves 40→41 (RUNTIME); both NO_MAGNITUDE. **Execution finding + fix:**
+the sim sweep caught a MAX_TURNS soft-lock — Beast's `calculated-rage` prints reveal-top-dispose AND
+`[keyword:Berserk]` (a `deck`→`discard` primitive) whose synchronous run right after the block-all
+park moved the snapshotted deck top, so the bot looped forever on an unresolvable `discard`. Fixed by
+making the resolve ALWAYS drop the entry (discard only if the card is still `deck[0]`, else clear
+gracefully); the strict co-ability ordering is a documented engine limitation (no continuation),
+parked as a follow-up (D-24521 §6). Engine 3554/0, arena-client 1842/0, dashboard green; `cards:check`
++ `ledger:heroes:check` + `effect-index:check` + `sim:runtime-observed:check` all green. No
+`finalStateHash` re-pin (optional field, verified). Dashboard in-play high-water baseline left as-is
+(reveal-top is no longer hollow; a full regen would bundle unrelated pre-existing undercover
+staleness — parked). **D-24026 live-verify pending deploy.**
+
 ### WP-701 — End-of-turn hand draw (EC-738 / D-24520) (2026-09-16)
 
 Fixed the reported turn-flow bug: the engine drew each player's new hand at the START of their
