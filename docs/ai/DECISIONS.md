@@ -42423,4 +42423,55 @@ Final Blow deferral this guard is careful to respect), D-24512 (Electromagnetic 
 Ruthless Dictator park sites), D-24008 (the block-all guards that guarantee no pre-existing
 pending choice). **Reserved by:** NUMBER-LEDGER D-24518.
 
+### D-24519 — the `put-hand-on-deck-top` hero keyword (Drafted 2026-09-15; not yet landed — WP-700 / EC-737)
+
+**Decision.** Add a new handler-bearing `HeroKeyword` `put-hand-on-deck-top` for the printed
+compound "Draw N cards. Then put a card from your hand on top of your deck." (Gambit's Stack
+the Deck — core/co2e; Brainstorm's Time Loop Experiments — anni; and the identical-text cards
+in `dstr`/`wpnx`/`wtif` — 7 instances across 6 sets, all previously honest-hollow or
+D-22501-deferred as compound multi-effect lines). This locks:
+
+1. **The keyword owns its full compound line.** A single onPlay handler
+   `heroEffectPutHandOnDeckTop` draws `magnitude` cards via the shared `drawFromPlayerDeck`
+   helper (`ctx.random.*`-seeded, reshuffle-on-empty), THEN parks the choice — the Smash /
+   reveal-herodeck precedent of a handler subsuming its whole descriptor line, rather than
+   decomposing into co-located `[keyword:draw:N]` + a magnitude-less park (which would depend
+   on cross-hook execution order). The whole descriptive line is replaced by the single marker
+   `[keyword:put-hand-on-deck-top:N]`.
+2. **Magnitude encodes the draw count.** `N` (∈ {1,2}) is the printed number of cards drawn,
+   consumed by the `executeSingleEffect` magnitude pre-gate — so the keyword is **NOT** in
+   `NO_MAGNITUDE_KEYWORDS` (the `smash` precedent, where magnitude is the attack grant).
+3. **The placement is MANDATORY and to the deck TOP.** The chosen hand card goes to
+   `deck[0]` (drawn first next turn) via the established `deck = [cardId, ...deck]` idiom
+   (`putCardsOnDeckChoice` precedent; no new `zoneOps` helper). `resolvePutHandOnDeckTop`
+   has **no decline arm** (the printed text is "put a card…", not "you may"); the only
+   degenerate is an empty post-draw hand, handled at park time (no park), never at resolve.
+4. **A MANDATORY block-all interactive pending choice for the ACTIVE player.** A new FIFO
+   `PendingPutHandOnDeckTop { playerID; sourceCardId? }` queue + a server-only
+   `resolvePutHandOnDeckTop({ cardId })` move, with `hasPendingPutHandOnDeckTop` replicated at
+   every action-move block-all guard site, a full five-step UIState projection, and the
+   `PutHandOnDeckTopPrompt.vue` renderer (an engine park without its client prompt freezes the
+   game — the pending-choice-is-one-cross-layer-WP precedent, WP-676/WP-675).
+5. **The new queue enrolls in the D-24518 vanquish-drop set.** `dropAllPendingPlayerChoices`
+   clears `pendingPutHandOnDeckTop` on a true mastermind vanquish, so a vanquishing final blow
+   never leaves the choice dangling on the won game (the field becomes the 29th cleared field;
+   its drift test is extended in lockstep).
+
+**Determinism.** The draw is `ctx.random.*`-seeded via the shared helper; the placement is the
+player's choice recorded as an ordinary boardgame.io move. `pendingPutHandOnDeckTop?` is
+optional and absent for any game that never plays one of these cards — including the core
+`finalStateHash` sentinels (none play Stack the Deck; only `card-shark`, a different Gambit
+card, appears in engine fixtures) — so those oracles serialize byte-identically. **No re-pin.**
+The card-data regen changes the seven cards' parsed abilities (intended — the fix changes
+behavior); Seed-PAR is scheme-keyed and hero-agnostic (unaffected).
+
+**Supersedes.** The D-22501 deferral of Time Loop Experiments (and the untracked hollow of
+Stack the Deck) as "compound-executor territory" — this WP is that compound executor.
+
+**Status:** Drafted 2026-09-15; not yet landed (flips to Active when WP-700 executes).
+**Builds on:** D-24492 / WP-676 (Smash magnitude-carrying park + client prompt), D-24184 /
+D-24185 / WP-383 (mandatory hand-pick + eligibility helper), D-24069 (pending-choice + UIState
+framework), D-24518 (vanquish-drop set), D-24372 (RUNTIME drift pins). **Reserved by:**
+NUMBER-LEDGER D-24519.
+
 Protect this file.

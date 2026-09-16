@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -57,7 +57,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 37 handlers and none for the deferred keywords', () => {
+  it('has exactly 40 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -89,7 +89,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // chokepoint (WOUND_TIME_EXECUTED_KEYWORDS), mirroring return-on-discard.
     // WP-683 / D-24500 added the here-hold-this handler and the random-acts handler
     // (Deadpool's directed capture + multiplayer pass-left) (37 → 39).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 39);
+    // WP-700 / D-24519 added the put-hand-on-deck-top compound handler (Gambit's Stack the
+    // Deck + siblings — draw N then park the mandatory put-on-top choice) (39 → 40).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 40);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3251,6 +3253,74 @@ describe('executeHeroEffects smash park (WP-676 / D-24492)', () => {
     executeHeroEffects(gameState, mockCtx, '0', 'korg-card' as string);
 
     assert.equal(gameState.pendingSmashDiscards?.length ?? 0, 0, 'a magnitude-less smash parks nothing');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-700 / D-24519 — put-hand-on-deck-top park case (draw N, then park the mandatory choice)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects put-hand-on-deck-top park (WP-700 / D-24519)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('draws `magnitude` cards THEN parks exactly one mandatory choice', () => {
+    const gameState = makeTestState({
+      hand: ['card-h'],
+      deck: ['deck-a', 'deck-b', 'deck-c'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['put-hand-on-deck-top'], effects: [{ type: 'put-hand-on-deck-top', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 3, 'drew 2 into the 1-card hand (now 3)');
+    assert.equal(gameState.pendingPutHandOnDeckTop?.length, 1, 'exactly one put-on-top choice parked');
+    assert.equal(gameState.pendingPutHandOnDeckTop![0]!.playerID, '0', 'parked entry records the chooser');
+    assert.equal(gameState.pendingPutHandOnDeckTop![0]!.sourceCardId, 'hero-x', 'parked entry records the played card');
+  });
+
+  it('parks nothing (logged no-op) when the hand is empty after the draw (degenerate)', () => {
+    // why: deck + discard both empty → drawFromPlayerDeck draws 0; with an empty hand there is
+    // no card to place, so the handler parks nothing and logs the no-op (mirrors smash's branch).
+    const gameState = makeTestState({
+      hand: [],
+      deck: [],
+      discard: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['put-hand-on-deck-top'], effects: [{ type: 'put-hand-on-deck-top', magnitude: 2 }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingPutHandOnDeckTop?.length ?? 0, 0, 'no choice parked when the post-draw hand is empty');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('could not put a card on top')),
+      'the empty-hand degenerate appends a game-log line explaining the no-op',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-700 / D-24519 — selectDefaultPutHandOnDeckTopTarget (bot/sim default)
+// ---------------------------------------------------------------------------
+
+describe('selectDefaultPutHandOnDeckTopTarget (WP-700 / D-24519)', () => {
+  it('picks the lowest-cost hand card, ties broken by ascending CardExtId', () => {
+    const gameState = makeTestState({ hand: ['expensive', 'cheap-b', 'cheap-a'] });
+    gameState.cardStats = {
+      expensive: { cost: 5 } as never,
+      'cheap-b': { cost: 1 } as never,
+      'cheap-a': { cost: 1 } as never,
+    };
+    assert.equal(selectDefaultPutHandOnDeckTopTarget(gameState, '0'), 'cheap-a', 'lowest cost, ascending id tie-break');
+  });
+
+  it('returns null for an empty hand', () => {
+    assert.equal(selectDefaultPutHandOnDeckTopTarget(makeTestState({ hand: [] }), '0'), null);
   });
 });
 

@@ -211,6 +211,12 @@ export interface UIState {
   // hand-privacy analog — keyed on .playerID). Absent (undefined) means no pending Smash
   // choice; the client must not render the prompt in that case.
   pendingSmashDiscard?: UIPendingSmashDiscard;
+  // why: WP-700 / D-24519 — projects the FRONT of G.pendingPutHandOnDeckTop with the eligible
+  // hand cards so the choosing player can render the MANDATORY "put a card from your hand on top
+  // of your deck" prompt (no Decline). Redacted (omitted) for every audience except the chooser —
+  // eligibleHand carries the chooser's private hand identities (keyed on .playerID). Absent
+  // (undefined) means no pending choice; the client must not render the prompt in that case.
+  pendingPutHandOnDeckTop?: UIPendingPutHandOnDeckTop;
   // why: WP-681 / D-24498 — projects the FRONT of G.pendingDoOverChoices as a binary
   // accept/decline prompt (Deadpool's Do-Over) with the current hand size + fixed draw count
   // so the choosing player can render "Discard N cards and draw 4, or Decline". Redacted
@@ -1254,6 +1260,30 @@ export interface UIPendingSmashDiscard {
   playerID: string;
   /** The Attack a discard grants (+N), for the prompt label. */
   magnitude: number;
+  eligibleHand: UIEligibleKoHeroCard[];
+}
+
+/**
+ * The active player's pending "put a card from your hand on top of your deck" choice
+ * (WP-700 / D-24519 — Gambit's Stack the Deck + siblings, the `put-hand-on-deck-top`
+ * keyword). Projected from the FRONT entry of G.pendingPutHandOnDeckTop.
+ *
+ * `eligibleHand` REUSES `UIEligibleKoHeroCard` (zone is always 'hand' here) — the
+ * chooser's whole current hand (after the draw), in hand order (the same list the
+ * resolve move validates against, the round-trip rule). The choice is MANDATORY (the
+ * printed text is "put a card…", not "you may"): the client renders one button per
+ * eligible hand card and NO Decline button (`resolvePutHandOnDeckTop({ cardId })`).
+ * Only visible to the chooser; redacted for opponents and spectators (keyed on
+ * .playerID).
+ *
+ * @see WP-700 §Scope (In) — projection + prompt
+ * @see EC-737 Locked Values
+ * @see DECISIONS.md D-24519
+ */
+export interface UIPendingPutHandOnDeckTop {
+  // why: D-24519 — the redaction key; the chooser-only filter compares audience.playerId
+  // against this, mirroring UIPendingSmashDiscard.playerID.
+  playerID: string;
   eligibleHand: UIEligibleKoHeroCard[];
 }
 

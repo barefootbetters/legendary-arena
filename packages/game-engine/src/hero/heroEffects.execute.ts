@@ -188,6 +188,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // shared free-defeat path (0/1/≥2 → no-op/auto/park PendingDefeatChoice choiceType
   // 'pure-fury'), so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'pure-fury',
+  // why: WP-700 / D-24519 — "Draw N cards. Then put a card from your hand on top of your deck."
+  // (Gambit's Stack the Deck + siblings); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectPutHandOnDeckTop) that draws N then parks a mandatory PendingPutHandOnDeckTop, so
+  // it belongs here. Carries a magnitude (the draw count) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'put-hand-on-deck-top',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -2195,6 +2200,74 @@ function heroEffectSmash(
 }
 
 /**
+ * Compound park handler for the `put-hand-on-deck-top` hero keyword (WP-700 / D-24519).
+ *
+ * Gambit's Stack the Deck / Brainstorm's Time Loop Experiments / the dstr/wpnx/wtif siblings —
+ * "Draw N cards. Then put a card from your hand on top of your deck." This is a two-part onPlay
+ * effect: (1) draw `magnitude` cards for the acting player, then (2) park a MANDATORY
+ * PendingPutHandOnDeckTop so the player places one card from the enlarged hand on top of their
+ * own deck. resolvePutHandOnDeckTop performs the placement.
+ *
+ * // why: D-24519 — the draw happens HERE, before the park, so the drawn cards are in hand for
+ * the player to choose from (faithful to "Draw N. THEN put a card…"). The draw reuses the same
+ * deterministic drawFromPlayerDeck helper the `draw` keyword uses (reshuffle-on-empty via
+ * ShuffleProvider); ctx is narrowed to ShuffleProvider structurally (the WP-005B/008B pattern).
+ * effect.magnitude is the printed draw count, pre-gate-validated (put-hand-on-deck-top is NOT in
+ * NO_MAGNITUDE_KEYWORDS); the ?? 1 is a defensive default for a direct unit dispatch.
+ *
+ * // why: D-24519 — an empty hand AFTER the draw (a degenerate that cannot arise from the seven
+ * shipped cards, which always draw ≥1) parks nothing and logs the no-op, so the player sees why
+ * the ability did nothing (mirrors heroEffectSmash's empty-hand branch). Lazy-init at the park
+ * site, NEVER in Game.setup, so a game that never plays one of these cards carries no new field
+ * and both hash oracles stay byte-unchanged. The park is SILENT; resolvePutHandOnDeckTop logs
+ * the placement.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context, narrowed to ShuffleProvider for the deck reshuffle.
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (kept on the pending entry for log/UX provenance).
+ * @param effect - The `{ type: 'put-hand-on-deck-top', magnitude: N }` descriptor.
+ */
+function heroEffectPutHandOnDeckTop(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+
+  // Part 1: draw the printed number of cards into the acting player's hand.
+  const requestedCount = effect.magnitude ?? 1;
+  const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
+  if (drawnCount < requestedCount) {
+    // why: WP-434 — a short draw (deck + discard empty) is `partial`; name the realized amount.
+    pushLog(G,
+      `Player ${playerID} drew ${drawnCount} of ${requestedCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)} — their deck and discard pile were empty.`,
+      'partial',
+      cardId,
+    );
+  } else {
+    pushLog(G,
+      `Player ${playerID} drew ${drawnCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+      'applied',
+      cardId,
+    );
+  }
+
+  // Part 2: park the mandatory put-on-top choice, unless the hand is empty (degenerate).
+  if (playerZones.hand.length === 0) {
+    pushLog(G,
+      `Player ${playerID} could not put a card on top of their deck for ${formatCardRef(G.cardDisplayData, cardId)} — their hand was empty.`,
+    );
+    return;
+  }
+  if (!G.pendingPutHandOnDeckTop) { G.pendingPutHandOnDeckTop = []; }
+  G.pendingPutHandOnDeckTop.push({ playerID, sourceCardId: cardId });
+}
+
+/**
  * Park handler for the `do-over` hero keyword (WP-681 / D-24498).
  *
  * Deadpool's "Hey, Can I Get a Do-Over?" — "If this is the first Hero you played this
@@ -4074,6 +4147,12 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // that reuses the defeat-with-bystander shared free-defeat path (0/1/≥2 → no-op / auto /
   // park PendingDefeatChoice choiceType 'pure-fury', resolved by resolveDefeatChoice).
   'pure-fury': heroEffectPureFury,
+  // why: WP-700 / D-24519 — "Draw N cards. Then put a card from your hand on top of your deck."
+  // (Gambit's Stack the Deck + siblings): draws `magnitude` cards via drawFromPlayerDeck then
+  // parks a MANDATORY PendingPutHandOnDeckTop resolved by resolvePutHandOnDeckTop (place one
+  // hand card on the deck top; no decline). Carries a magnitude (the draw count) → NOT in
+  // NO_MAGNITUDE_KEYWORDS.
+  'put-hand-on-deck-top': heroEffectPutHandOnDeckTop,
 };
 
 // ---------------------------------------------------------------------------
@@ -4281,6 +4360,41 @@ export function selectDefaultSmashDiscardTarget(
   // why: scan the hand once, replacing the candidate on a strictly lower cost, or on
   // an equal cost with a strictly lower CardExtId (the ascending-string tie-break). An
   // explicit for loop, never .reduce() (effect/selection code, code-style §Patterns).
+  let bestCardId: CardExtId | null = null;
+  let bestCost = Number.POSITIVE_INFINITY;
+  for (const cardId of playerZones.hand) {
+    const cost = G.cardStats[cardId]?.cost ?? 0;
+    if (
+      cost < bestCost ||
+      (cost === bestCost && bestCardId !== null && cardId < bestCardId)
+    ) {
+      bestCost = cost;
+      bestCardId = cardId;
+    }
+  }
+  return bestCardId;
+}
+
+/**
+ * Bot/sim default target for a pending put-a-hand-card-on-deck-top choice (WP-700 / D-24519):
+ * the lowest-`cost` hand card, ties broken by ascending CardExtId. Deterministic, not strategic
+ * — the bot must make some legal placement; optimal deck-stacking is out of scope. Mirrors
+ * selectDefaultSmashDiscardTarget exactly (a distinct export so the two defaults can diverge if
+ * strategy is ever added).
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param playerID - The player whose hand supplies the default.
+ * @returns The chosen CardExtId, or null when the hand is empty (no legal placement).
+ */
+export function selectDefaultPutHandOnDeckTopTarget(
+  G: LegendaryGameState,
+  playerID: string,
+): CardExtId | null {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return null; }
+  // why: scan the hand once, replacing the candidate on a strictly lower cost, or on an equal
+  // cost with a strictly lower CardExtId (the ascending-string tie-break). An explicit for loop,
+  // never .reduce() (effect/selection code, code-style §Patterns).
   let bestCardId: CardExtId | null = null;
   let bestCost = Number.POSITIVE_INFINITY;
   for (const cardId of playerZones.hand) {

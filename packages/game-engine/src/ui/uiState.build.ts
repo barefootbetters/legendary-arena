@@ -60,6 +60,7 @@ import type {
   UIDefeatChoiceTarget,
   UIPendingOptionalKoReward,
   UIPendingSmashDiscard,
+  UIPendingPutHandOnDeckTop,
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCountScaledChoice,
@@ -94,6 +95,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
+import { getEligiblePutHandOnDeckTopCards } from '../moves/putHandOnDeckTop.resolve.js';
 import { DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
 import { getEligibleReturnOnDiscardCards } from '../moves/resolveReturnOnDiscard.js';
 // why: WP-532 / D-24343 — reuse the engine's authoritative give-HQ-Hero eligibility helper
@@ -1710,6 +1712,33 @@ export function buildUIState(
     };
   }
 
+  // why: WP-700 / D-24519 — project the FRONT entry of G.pendingPutHandOnDeckTop with the
+  // eligible hand cards recomputed fresh via getEligiblePutHandOnDeckTopCards — the SAME
+  // predicate the resolve move validates with, so the client's { cardId } selection always
+  // round-trips. Each card lives in the chooser's hand (zone 'hand'); each display is spread
+  // fresh (aliasing defense, WP-111 D-11105). No magnitude — the placement is mandatory, so the
+  // prompt needs no reward label. Chooser-only redaction is enforced by filterUIStateForAudience
+  // (keyed on .playerID), mirroring pendingSmashDiscard.
+  let pendingPutHandOnDeckTop: UIPendingPutHandOnDeckTop | undefined;
+  if (
+    gameState.pendingPutHandOnDeckTop !== undefined &&
+    gameState.pendingPutHandOnDeckTop.length > 0
+  ) {
+    const frontChoice = gameState.pendingPutHandOnDeckTop[0]!;
+    const eligibleHand: UIEligibleKoHeroCard[] = [];
+    for (const cardId of getEligiblePutHandOnDeckTopCards(gameState, frontChoice.playerID)) {
+      eligibleHand.push({
+        zone: 'hand',
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingPutHandOnDeckTop = {
+      playerID: frontChoice.playerID,
+      eligibleHand,
+    };
+  }
+
   // why: WP-681 / D-24498 — project the FRONT entry of G.pendingDoOverChoices as a binary
   // accept/decline prompt (no eligible-card list — Do-Over discards the WHOLE hand, so there
   // is nothing to pick). handSize is the current hand count so the client can label the cost
@@ -1993,6 +2022,7 @@ export function buildUIState(
     // why: WP-676 / D-24492 — conditional spread so an absent choice omits the field (no
     // `pendingSmashDiscard: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingSmashDiscard !== undefined ? { pendingSmashDiscard } : {}),
+    ...(pendingPutHandOnDeckTop !== undefined ? { pendingPutHandOnDeckTop } : {}),
     // why: WP-681 / D-24498 — conditional spread so an absent choice omits the field (no
     // `pendingDoOver: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDoOver !== undefined ? { pendingDoOver } : {}),

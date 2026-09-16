@@ -568,7 +568,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Draw two cards. Then put a card from your hand on top of your deck."
+            "Draw two cards. Then put a card from your hand on top of your deck. [keyword:put-hand-on-deck-top:2]"
           ]
         },
         {

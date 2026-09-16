@@ -244,6 +244,12 @@ export function useTurnActions(
   // (disabled once spent) and canPassPriority (start→main blocked until the reveal, matching
   // the engine advanceStage reveal-first guard in game.ts).
   hasRevealedVillain: boolean = false,
+  // why: WP-700 / D-24519 — appended LAST (after hasRevealedVillain) so existing positional
+  // callers stay valid without edits; degrades gracefully (no gate) when omitted. True while a
+  // put-a-hand-card-on-deck-top choice is pending (Gambit's Stack the Deck + siblings); blocks
+  // End Turn / Pass Priority / Heal at ANY stage (the engine's full block-all guard set freezes
+  // the board). Mandatory — the player must place one hand card on top of their deck.
+  hasPendingPutHandOnDeckTop: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -444,6 +450,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose an X-Men Hero to add to your next hand before taking another action.',
+        };
+      }
+      // why: WP-700 / D-24519 — End Turn / Pass Priority blocked at any stage while a
+      // put-a-hand-card-on-deck-top choice is pending (the engine's full block-all guard set
+      // freezes the board). The choice is mandatory — no decline exit to name.
+      if (hasPendingPutHandOnDeckTop) {
+        return {
+          allowed: false,
+          reason: 'Put a card from your hand on top of your deck before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -823,7 +838,10 @@ export function useTurnActions(
         // why: WP-695 / D-24512 — mirror the engine healWounds block-all guards, which return
         // early while a Ruthless Dictator scry-3 or Electromagnetic Bubble pick is pending.
         hasPendingRuthlessDictatorChoice ||
-        hasPendingElectromagneticBubbleChoice
+        hasPendingElectromagneticBubbleChoice ||
+        // why: WP-700 / D-24519 — mirror the engine healWounds block-all guard, which returns
+        // early while a put-a-hand-card-on-deck-top choice is pending.
+        hasPendingPutHandOnDeckTop
       ) {
         return {
           allowed: false,

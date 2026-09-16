@@ -39,6 +39,7 @@ amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerf
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,,
 amwp/wasp,Wasp,amwp,(unmarked),unmarked,,,,
 anni/brainstorm,Brainstorm,anni,out-of-time,unsupported,,,,borrow-from-the-future|time-loop-experiments
+anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mr-fantastic
 anni/fantastic-four-united,Fantastic Four United,anni,focus,unsupported,,,,human-torch|invisible-woman|mr-fantastic|thing
 anni/heralds-of-galactus,Heralds of Galactus,anni,conqueror,unsupported,,,,firelord|stardust
@@ -153,6 +154,7 @@ co2e/black-widow,Black Widow,co2e,rescue,executable,WP-215,D-21501,packages/game
 co2e/captain-america,Captain America,co2e,(unmarked),unmarked,,,,
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
 co2e/emma-frost,Emma Frost,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
+co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
 co2e/gambit,Gambit,co2e,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
@@ -185,6 +187,7 @@ core/emma-frost,Emma Frost,core,defeated-villain-or-mastermind,condition,,,,diam
 core/emma-frost,Emma Frost,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 core/emma-frost,Emma Frost,core,optional-play-villain-top,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-play-villain-top,shadowed-thoughts
 core/emma-frost,Emma Frost,core,reveal-from-hand,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-from-hand,psychic-link
+core/gambit,Gambit,core,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
 core/gambit,Gambit,core,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 core/hulk,Hulk,core,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
@@ -285,6 +288,7 @@ dstr/ancient-one-the,"Ancient One, The",dstr,astral-plane,unsupported,,,,astral-
 dstr/ancient-one-the,"Ancient One, The",dstr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,teachings-of-kamar-taj
 dstr/ancient-one-the,"Ancient One, The",dstr,ritual-artifact,unsupported,,,,the-orb-of-agamotto
 dstr/clea,Clea,dstr,demonic-bargain,unsupported,,,,bind-the-dark-dimension|demonic-descendant
+dstr/clea,Clea,dstr,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,prepare-dark-magic
 dstr/clea,Clea,dstr,ritual-artifact,unsupported,,,,the-purple-gem
 dstr/doctor-strange,Doctor Strange,dstr,artifact,unsupported,,,,keeper-of-the-sanctum|the-eye-of-agamotto
 dstr/doctor-strange,Doctor Strange,dstr,ritual-artifact,unsupported,,,,book-of-cagliostro|the-eye-of-agamotto|wand-of-watoomb
@@ -563,6 +567,7 @@ vnom/venompool,Venompool,vnom,excessive-violence,unsupported,,,,can-i-get-a-litt
 vnom/venompool,Venompool,vnom,indigestion,unsupported,,,,digest-that-chimichanga|play-to-the-crowd
 wpnx/fantomex,Fantomex,wpnx,weapon-x-sequence,unsupported,,,,misdirection|sentient-bullets|three-brains|weapon-xiii
 wpnx/marrow,Marrow,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bone-shards|hyper-adaptive-skeleton
+wpnx/marrow,Marrow,wpnx,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,osteogenesis
 wpnx/marrow,Marrow,wpnx,weapon-x-sequence,unsupported,,,,metabolic-overdrive
 wpnx/weapon-h,Weapon H,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,slice-and-smash|the-future-of-warfare|ultimate-killing-machine
 wpnx/weapon-h,Weapon H,wpnx,weapon-x-sequence,unsupported,,,,ultimate-killing-machine
@@ -577,6 +582,7 @@ wtif/doctor-strange-supreme,Doctor Strange Supreme,wtif,draw,executable,WP-022,D
 wtif/doctor-strange-supreme,Doctor Strange Supreme,wtif,soulbind,unsupported,,,,seize-infernal-power|stygian-communion|summon-demon-minions|to-save-christine
 wtif/doctor-strange-supreme,Doctor Strange Supreme,wtif,what-if,unsupported,,,,wards-of-the-vishanti
 wtif/gamora-destroyer-of-thanos,"Gamora, Destroyer of Thanos",wtif,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,assassins-stealth
+wtif/gamora-destroyer-of-thanos,"Gamora, Destroyer of Thanos",wtif,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,tactical-insight
 wtif/gamora-destroyer-of-thanos,"Gamora, Destroyer of Thanos",wtif,soulbind,unsupported,,,,destroy-an-infinity-stone|the-infinity-crusher
 wtif/gamora-destroyer-of-thanos,"Gamora, Destroyer of Thanos",wtif,what-if,unsupported,,,,titanicide
 wtif/killmonger-spec-ops,"Killmonger, Spec Ops",wtif,liberate,unsupported,,,,hostage-rescue|im-the-king-baby|plot-a-betrayal
@@ -587,6 +593,7 @@ wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,empowered,executable,WP-267,D-240
 wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,put-any-number-bottom-hq,executable,,D-24132,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq,colliding-dreams
 wtif/star-lord-tchalla,Star-Lord T'Challa,wtif,what-if,unsupported,,,,cross-the-multiverse|interstellar-adventures|unexpected-exit
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,empowered,unsupported,WP-267,D-24044,,anoint-a-champion|convoke-the-guardians
+wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,diverging-timestreams
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,soulbind,unsupported,,,,history-repeats
 wtif/uatu-the-watcher,"Uatu, The Watcher",wtif,what-if,unsupported,,,,another-dimension-crumbles|break-the-oath|convoke-the-guardians
 wwhk/amadeus-cho,Amadeus Cho,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,extrapolate|gamma-draining-nanites|renegade-genius

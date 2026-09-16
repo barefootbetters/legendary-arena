@@ -35,6 +35,9 @@ export type AwaitingInputKind =
   // freeze class; surface it in the diagnostic so a "froze after I played a Smash card"
   // report names its own cause.
   | 'smashDiscard'
+  // why: WP-700 / D-24519 — a parked put-a-hand-card-on-deck-top choice is a block-all
+  // freeze class; surface it so a "froze after I played Stack the Deck" report names its cause.
+  | 'putHandOnDeckTop'
   | 'drawOrEmpowered'
   | 'koHeroChoice';
 
@@ -80,6 +83,7 @@ const PENDING_FIELD_TO_KIND: ReadonlyArray<readonly [string, AwaitingInputKind]>
   ['pendingVictoryPileCardPick', 'victoryPileCardPick'],
   ['pendingOptionalKoReward', 'optionalKoReward'],
   ['pendingSmashDiscard', 'smashDiscard'],
+  ['pendingPutHandOnDeckTop', 'putHandOnDeckTop'],
   ['pendingDrawOrEmpowered', 'drawOrEmpowered'],
   ['pendingKoHeroChoice', 'koHeroChoice'],
 ];

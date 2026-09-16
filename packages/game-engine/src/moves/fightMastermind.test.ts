@@ -904,7 +904,7 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
     'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
     'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
     'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
-    'pendingPutCardsOnDeckChoices', 'pendingReorderChoices', 'pendingReturnOnDiscard',
+    'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
     'pendingReturnZeroCostDiscard', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
     'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',
     'pendingVictoryPileCardPick',

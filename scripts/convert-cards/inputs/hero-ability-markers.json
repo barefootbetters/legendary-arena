@@ -120,6 +120,12 @@
   ],
   "co2e": [
     {
+      "heroSlug": "gambit",
+      "cardSlug": "stack-the-deck",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:2]"
+    },
+    {
       "heroSlug": "cyclops",
       "cardSlug": "determination",
       "abilityIndex": 0,
@@ -145,6 +151,12 @@
     }
   ],
   "core": [
+    {
+      "heroSlug": "gambit",
+      "cardSlug": "stack-the-deck",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:2]"
+    },
     {
       "heroSlug": "nick-fury",
       "cardSlug": "high-tech-weaponry",
@@ -1110,6 +1122,12 @@
   ],
   "anni": [
     {
+      "heroSlug": "brainstorm",
+      "cardSlug": "time-loop-experiments",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:1]"
+    },
+    {
       "heroSlug": "fantastic-four-united",
       "cardSlug": "mr-fantastic",
       "abilityIndex": 0,
@@ -1235,6 +1253,12 @@
     }
   ],
   "dstr": [
+    {
+      "heroSlug": "clea",
+      "cardSlug": "prepare-dark-magic",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:1]"
+    },
     {
       "heroSlug": "vishanti-the",
       "cardSlug": "oshtur",
@@ -1450,7 +1474,27 @@
       "markupToken": "[keyword:attack-per-count:attack-icon-played-this-turn:1]"
     }
   ],
+  "wpnx": [
+    {
+      "heroSlug": "marrow",
+      "cardSlug": "osteogenesis",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:2]"
+    }
+  ],
   "wtif": [
+    {
+      "heroSlug": "gamora-destroyer-of-thanos",
+      "cardSlug": "tactical-insight",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:2]"
+    },
+    {
+      "heroSlug": "uatu-the-watcher",
+      "cardSlug": "diverging-timestreams",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:put-hand-on-deck-top:1]"
+    },
     {
       "heroSlug": "apocalyptic-black-widow",
       "cardSlug": "plant-hidden-asset",
@@ -1852,12 +1896,12 @@
       "reason": "D-22501 — timing-/keyword-gated draw: gated by a card-ability keyword timing prefix ([keyword:Heist], analogous to Fight:/[keyword:Ambush]); the keyword-timing dispatch is not wired to executeHeroEffects."
     },
     {
-      "setAbbr": "anni",
-      "heroSlug": "brainstorm",
-      "cardSlug": "time-loop-experiments",
-      "abilityIndex": 0,
-      "abilityText": "Draw a card. Then put a card from your hand on top of your deck.",
-      "reason": "D-22501 — compound multi-effect line: draws AND performs a second effect (put a card from hand on top of deck) in the same line; compound-executor territory."
+      "setAbbr": "wpnx",
+      "heroSlug": "fantomex",
+      "cardSlug": "misdirection",
+      "abilityIndex": 1,
+      "abilityText": "When you draw a new hand this turn, draw an extra card, then put a card from your hand on top of your deck.",
+      "reason": "WP-700 / D-24519 — draw-a-new-hand-timing variant: NOT the onPlay 'Draw N cards. Then put a card…' compound the put-hand-on-deck-top keyword wires. This is an end-of-turn hand-replacement trigger (the viv-vision Expanding Neural Network / D-22501 class) with no timing dispatch to executeHeroEffects; the put-on-top rides that same unwired trigger. Deferred."
     },
     {
       "setAbbr": "wtif",

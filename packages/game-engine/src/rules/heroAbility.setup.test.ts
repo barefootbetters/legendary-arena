@@ -520,7 +520,7 @@ describe('buildHeroAbilityHooks WP-681 optional/interactive core heroes (D-24498
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 54 canonical keyword values', () => {
+  it('contains exactly the 55 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -576,12 +576,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'pure-fury', // why: WP-682 / D-24499 — Nick Fury "Pure Fury" ("Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile.") — free conditional defeat reusing the defeat-with-bystander shared path
     'here-hold-this', // why: WP-683 / D-24500 — Deadpool "Here, Hold This for a Second" ("A Villain of your choice captures a Bystander.") — active-scoped directed Bystander capture (Mastermind fallback at 0 Villains)
     'random-acts', // why: WP-683 / D-24500 — Deadpool "Random Acts of Unkindness" ("You may gain a Wound to your hand. Then each player passes a card from their hand to the player on their left.") — optional gain-Wound-to-hand + simultaneous multi-seat pass-left
+    'put-hand-on-deck-top', // why: WP-700 / D-24519 — "Draw N cards. Then put a card from your hand on top of your deck." (Gambit's Stack the Deck + siblings) — compound onPlay draw-N + mandatory put-a-hand-card-on-deck-top pending choice
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      54,
-      'HERO_KEYWORDS must have exactly 54 entries',
+      55,
+      'HERO_KEYWORDS must have exactly 55 entries',
     );
 
     assert.deepStrictEqual(

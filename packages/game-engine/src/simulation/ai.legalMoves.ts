@@ -35,10 +35,11 @@ import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
+import { hasPendingPutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { hasPendingDoOver } from '../moves/doOver.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
-import { selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget } from '../hero/heroEffects.execute.js';
+import { selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget } from '../hero/heroEffects.execute.js';
 import {
   hasPendingVictoryPileCardPick,
   getEligibleVictoryVillains,
@@ -159,6 +160,7 @@ export const SIMULATION_MOVE_NAMES = [
   'resolveCountScaledChoice',
   'resolveUndercoverChoice',
   'resolveSmashDiscard',
+  'resolvePutHandOnDeckTop',
   // why: WP-681 / D-24498 — resolveDoOver is a getLegalMoves short-circuit (block-all
   // pending Do-Over accept/decline), so it MUST be dispatchable in both sim MOVE_MAPs or
   // the per-turn loop hangs. optional-ko-shield-officer (Battlefield Promotion) reuses the
@@ -406,6 +408,19 @@ export function getLegalMoves(
       return [{ name: 'resolveSmashDiscard', args: { cardId: smashTarget } }];
     }
     return [{ name: 'resolveSmashDiscard', args: { decline: true } }];
+  }
+  // why: WP-700 / D-24519 — a put-a-hand-card-on-deck-top choice blocks every other move; the
+  // bot resolves it first by placing the deterministic default target
+  // (selectDefaultPutHandOnDeckTopTarget: lowest cost, CardExtId asc tie-break) on top of its
+  // deck. The placement is MANDATORY (no decline arm), and the park requires a non-empty hand,
+  // so the target is always non-null here; the null branch returns nothing (an unreachable
+  // defensive guard). Returns a list of length EXACTLY 1.
+  if (hasPendingPutHandOnDeckTop(gameState)) {
+    const putTarget = selectDefaultPutHandOnDeckTopTarget(gameState, activePlayer);
+    if (putTarget !== null) {
+      return [{ name: 'resolvePutHandOnDeckTop', args: { cardId: putTarget } }];
+    }
+    return [];
   }
 
   // why: WP-681 / D-24498 — a Do-Over accept/decline choice blocks every other move; the bot
