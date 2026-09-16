@@ -203,15 +203,26 @@ test('useInPlayCoverage credits a fixed mechanic from the committed seed', () =>
   // totalObs 2285 -> 2306 as the engine deepened between the two rebuilds; resolvedObs
   // holds at 37, percentResolved holds at 1.6. (D-24439 re-seeded to v2 but left this
   // test's figure at the pre-re-seed 2285, so this is the first rebuild it reflects.)
+  // 2026-09-16 (baseline-refresh hygiene, re-pin): the committed baseline had gone
+  // stale — many high-water peaks lagged the live sweep (most starkly `undercover`
+  // 20 -> 488 after the WP-678 family added ~56 Undercover hero cards), and two new
+  // mechanics (`empowered`, `speak`) were unseeded. Re-running the monotonic writer
+  // (`build:in-play-baseline`) merged the live sweep back in: 35 -> 37 mechanics,
+  // summed peaks 2306 -> 2965. This test injects an EMPTY live sweep, so its totalObs
+  // is the pure baseline sum and moves 2306 -> 2965. resolvedObs holds at 37 (dodge's
+  // peak was already at the high-water and did not move); percentResolved falls
+  // 1.6 -> 1.2 purely because the denominator caught up. The large snapshot test below
+  // (real live sweep) passes UNCHANGED at 2965 — the confirmation the runtime
+  // max(baseline, live) denominator held (D-24050 / D-24370).
   const baseline = baselineSeed as unknown as InPlayHollowBaseline;
   const view = useInPlayCoverage({
     baseline,
     ledger: makeLedger([makeRow({ mechanic: 'dodge', status: 'executable' })]),
     runtimeObserved: makeRuntimeObserved({}),
   });
-  assert.equal(view.totalObs.value, 2306);
+  assert.equal(view.totalObs.value, 2965);
   assert.equal(view.resolvedObs.value, 37);
-  assert.equal(view.percentResolved.value, 1.6);
+  assert.equal(view.percentResolved.value, 1.2);
 });
 
 test('useInPlayCoverage reads the real committed seed + ledger and computes the in-play coverage snapshot', () => {
