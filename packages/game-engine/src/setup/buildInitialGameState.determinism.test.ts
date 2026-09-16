@@ -121,15 +121,20 @@ describe('buildInitialGameState — determinism', () => {
     // value would already throw here. `!` is erased at compile time and carries
     // no runtime semantics. See D-24379 for the idiom and why it is permitted
     // where the suppression pragmas that decision bans are not.
-    const deck = gameState.playerZones['0']!.deck;
+    const zones = gameState.playerZones['0']!;
+    // why: WP-701 / D-24520 — setup now deals the opening hand off the top of the
+    // shuffled deck, so the shuffled starting deck's order is split across hand
+    // (first 6, in draw order) then the remaining deck. Reconstruct the full
+    // shuffled deck to assert the shuffle ran: full = [...hand, ...deck].
+    const startingDeck = [...zones.hand, ...zones.deck];
 
     // why: makeMockCtx reverses arrays during shuffle. The unshuffled starting
     // deck is [agent x8, trooper x4]. After reversal, the deck should start
     // with troopers and end with agents. If the deck matches the unshuffled
     // order, the shuffle was skipped.
-    const firstCard = deck[0];
+    const firstCard = startingDeck[0];
     assert.ok(firstCard !== undefined, 'The shuffled deck must not be empty.');
-    const lastCard = deck[deck.length - 1];
+    const lastCard = startingDeck[startingDeck.length - 1];
     assert.ok(lastCard !== undefined, 'The shuffled deck must not be empty.');
 
     // After reversal: troopers at front, agents at back

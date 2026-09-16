@@ -391,8 +391,14 @@ describe('playCard', () => {
 });
 
 describe('endTurn', () => {
-  it('moves all inPlay and hand cards to discard', () => {
+  it('moves all inPlay and hand cards to discard, then draws a fresh HAND_SIZE hand from the deck', () => {
+    // why: WP-701 / D-24520 — endTurn now bundles the discard sweep AND the new-hand
+    // draw (formerly the start-of-turn onBegin auto-draw). The deck is stocked with
+    // HAND_SIZE cards so the fill draws entirely from the deck top, leaving the just-
+    // discarded cards in the discard pile (no reshuffle) — this keeps the original
+    // "all inPlay + hand moved to discard" assertion observable while pinning the refill.
     const gameState = makeTestGameState({
+      deck: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
       hand: ['card-a', 'card-b'],
       inPlay: ['card-c', 'card-d'],
       discard: ['card-e'],
@@ -401,9 +407,14 @@ describe('endTurn', () => {
 
     endTurn(context);
 
-    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE);
+    // why: the fresh hand is the HAND_SIZE cards drawn off the deck top, in order.
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['d1', 'd2', 'd3', 'd4', 'd5', 'd6']);
     assert.deepEqual(gameState.playerZones['0']!.inPlay, []);
-    // Discard should contain: original discard + inPlay + hand
+    // Deck fully drained by the HAND_SIZE fill (6 cards drawn from a 6-card deck).
+    assert.deepEqual(gameState.playerZones['0']!.deck, []);
+    // Discard should contain: original discard + inPlay + hand (the swept cards stay
+    // in discard because the deck fed the whole draw — no reshuffle).
     assert.deepEqual(gameState.playerZones['0']!.discard, [
       'card-e', 'card-c', 'card-d', 'card-a', 'card-b',
     ]);

@@ -46,6 +46,7 @@ import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
+import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 
 // Move function imports — these files import boardgame.io types internally,
 // but this file does NOT import boardgame.io directly. Same dispatch pattern
@@ -278,6 +279,11 @@ function simulationAdvanceStage(context: SimulationMoveContext): void {
   advanceTurnStage(context.G, {
     currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
+    // why: WP-701 / D-24520 — end-of-turn cleanup (discard + draw the new hand) on the
+    // cleanup-stage turn-end path, using the harness's own seeded ShuffleProvider so the
+    // draw's reshuffle stays reproducible (mirrors the live game.ts advanceStage binding).
+    cleanup: (endingPlayerID) =>
+      applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
   });
 }
 
@@ -537,14 +543,11 @@ function runPerTurnLoop(
   let endgameWinner: EndgameOutcome | null = null;
   let moveStepsThisTurn = 0;
 
-  // why (WP-266): the real onBegin runs at the start of every turn including
-  // turn 1; mirror it before the first move-step so the opening hand is drawn
-  // (buildInitialGameState defers the opening draw to onBegin, which this
-  // observation-only loop never runs). Without this the bot hand stays empty
-  // forever and playCard is never legal.
-  applyOnBeginParity(gameState, currentPlayer, {
-    random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) },
-  });
+  // why (WP-266 / WP-701 D-24520): the real onBegin resets the per-turn allowance
+  // flags at the start of every turn including turn 1; mirror the RESETS here. The
+  // opening hand is now dealt by buildInitialGameState (the draw moved to end-of-turn),
+  // so this no longer draws — turn 1's hand already exists on the seeded state.
+  applyOnBeginParity(gameState, currentPlayer);
 
   while (turnsElapsed < maxTurns) {
     // why (WP-554 / D-24363): the structural within-turn bound. Ten prior packets
@@ -690,12 +693,10 @@ function runPerTurnLoop(
       moveStepsThisTurn = 0;
       gameState.currentStage = 'start';
       gameState.turnEconomy = resetTurnEconomy();
-      // why (WP-266): mirror the rest of onBegin for the incoming player —
-      // reset the once-per-turn flags and auto-draw their hand to HAND_SIZE so
-      // the next turn can actually play cards.
-      applyOnBeginParity(gameState, currentPlayer, {
-        random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) },
-      });
+      // why (WP-266 / WP-701 D-24520): reset the incoming seat's once-per-turn flags
+      // (onBegin parity). No draw — the incoming seat already holds the hand it drew
+      // at the end of its own previous turn (or at setup for its first turn).
+      applyOnBeginParity(gameState, currentPlayer);
     }
   }
 

@@ -306,6 +306,13 @@ describe('ext_id grammar reconciliation — end-to-end effect resolution (WP-191
       piercing: 0,
       woundsDrawn: 0,
     };
+    // why: WP-701 / D-24520 — setup now deals a 6-card opening hand (all KO-able
+    // Heroes for koHeroCurrentPlayer). With extra eligible Heroes on hand the Fight:
+    // KO would PARK a choice (≥2 distinct options) instead of auto-KOing. Clear the
+    // hand + in-play so the single discard Hero is the ONLY KO-able target, forcing
+    // the auto-KO path this test exercises.
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.inPlay = [];
     gameState.playerZones['0']!.discard = [heroKoTarget!];
 
     const koBefore = gameState.ko.length;

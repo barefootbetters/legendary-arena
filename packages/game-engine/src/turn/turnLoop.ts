@@ -30,6 +30,12 @@ export interface TurnLoopContext {
     // onEnd -> onBegin) instead of rotating to the default next seat.
     endTurn: (opts?: { next: string }) => void;
   };
+  // why: WP-701 / D-24520 — the end-of-turn cleanup (discard + draw the new hand)
+  // runs for the ending seat before the turn ends on THIS path too (the D-22002
+  // second turn-end path). Carried as a closure so turnLoop.ts stays decoupled from
+  // the full LegendaryGameState (mirroring the events.endTurn closure) — the caller,
+  // which holds G + the ShuffleProvider, binds applyEndOfTurnCleanup(G, pid, { random }).
+  cleanup: (endingPlayerID: string) => void;
 }
 
 /**
@@ -124,6 +130,13 @@ export function advanceTurnStage(gameState: TurnLoopState, context: TurnLoopCont
     }
     return;
   }
+
+  // why: WP-701 / D-24520 — end-of-turn cleanup on the D-22002 SECOND turn-end path
+  // (advanceStage -> advanceTurnStage at cleanup). The ending seat discards + draws its
+  // new hand here, BEFORE events.endTurn(), so this path matches the endTurn move and a
+  // queued extra turn (below) begins with the freshly drawn hand. (This also repairs the
+  // path's former no-discard behaviour.)
+  context.cleanup(context.currentPlayer);
 
   // why: WP-696 / D-24513 — honor any queued extra turn for the acting seat. When
   // the player defeated Dr. Doom's "Secrets of Time Travel" tactic this turn, they

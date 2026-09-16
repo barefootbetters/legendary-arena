@@ -147,6 +147,34 @@ is the single helper that drives stage progression:
   player index rotation is forbidden** per
   [`game-engine.md` "Turn Stage Cycle"](../.claude/skills/legendary-game-engine/SKILL.md).
 
+### Hand draw & discard lifecycle (WP-701 / D-24520)
+
+The new hand is drawn at the **END** of a turn, matching the tabletop rule
+(discard your played cards and remaining hand, then draw a fresh six):
+
+- **Initial hands** are dealt at **setup** (`buildInitialGameState` draws
+  `HAND_SIZE` = 6 into every seat's hand) — no `onBegin`/`onEnd` runs before
+  seat 0's opening turn, so the starting hand must come from setup.
+- **At end of turn**, the ending seat discards its in-play cards and its
+  remaining hand, then draws a fresh `HAND_SIZE` hand — a single shared
+  [`applyEndOfTurnCleanup`](../packages/game-engine/src/moves/endOfTurnCleanup.logic.ts)
+  helper (discard → fill → reshuffle event → consume one-shot
+  `handSizeOverrides` / `deferredHandInjections`). It is invoked from **both**
+  turn-end paths (the `endTurn` move and the `advanceStage` → `advanceTurnStage`
+  cleanup branch), so the cleanup is identical however the turn ends, and the
+  three bgio-bypassing harnesses (simulation runner, PAR aggregator, replay
+  `runFixture`) run the same cleanup for byte-consistent replays.
+- **`onBegin` no longer draws** — it only resets the per-turn allowance flags.
+  The incoming seat already holds the hand it drew at the end of its own
+  previous turn.
+
+Consequence: a player holds a full six-card hand **during opponents' turns**,
+so Master Strikes and every "each player discards / reveals" effect act on real
+hands. This supersedes the earlier MVP model (D-10003 / D-23605) that drew at
+`onBegin` and left a player empty-handed between turns. The change re-pinned the
+determinism oracles (setup deals hands; the draw moved in the RNG stream), which
+is expected and verified — not a masked regression.
+
 ### Transition discipline
 
 Two transition primitives exist, both restricted:

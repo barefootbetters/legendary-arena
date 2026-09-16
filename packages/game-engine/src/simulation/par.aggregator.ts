@@ -59,6 +59,7 @@ import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
+import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: move function imports mirror the WP-036 runner (D-2705 static
@@ -439,6 +440,11 @@ function aggregatorAdvanceStage(context: AggregatorMoveContext): void {
   advanceTurnStage(context.G, {
     currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
+    // why: WP-701 / D-24520 — end-of-turn cleanup (discard + draw the new hand) on the
+    // cleanup-stage turn-end path, using the aggregator's seeded ShuffleProvider (parity
+    // with the live game.ts advanceStage binding + the simulation runner).
+    cleanup: (endingPlayerID) =>
+      applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
   });
 }
 
@@ -632,13 +638,10 @@ function simulateOneGame(
   let turnsElapsed = 0;
   let movesDispatched = 0;
 
-  // why (WP-266): the real onBegin runs at the start of every turn including
-  // turn 1; mirror it before the first move-step so the opening hand is drawn
-  // (buildInitialGameState defers the opening draw to onBegin, which this
-  // observation-only loop never runs).
-  applyOnBeginParity(gameState, currentPlayer, {
-    random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) },
-  });
+  // why (WP-266 / WP-701 D-24520): reset the per-turn allowance flags (onBegin
+  // parity). The opening hand is dealt by buildInitialGameState now (the draw moved
+  // to end-of-turn), so this no longer draws.
+  applyOnBeginParity(gameState, currentPlayer);
 
   while (turnsElapsed < MAX_TURNS_PER_GAME) {
     if (movesDispatched >= MAX_MOVES_PER_GAME) {
@@ -740,12 +743,10 @@ function simulateOneGame(
       turnsElapsed += 1;
       gameState.currentStage = 'start';
       gameState.turnEconomy = resetTurnEconomy();
-      // why (WP-266): mirror the rest of onBegin for the incoming player —
-      // reset the once-per-turn flags and auto-draw their hand to HAND_SIZE so
-      // the next turn can actually play cards.
-      applyOnBeginParity(gameState, currentPlayer, {
-        random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) },
-      });
+      // why (WP-266 / WP-701 D-24520): reset the incoming seat's once-per-turn flags
+      // (onBegin parity). No draw — the incoming seat already holds the hand it drew at
+      // the end of its own previous turn.
+      applyOnBeginParity(gameState, currentPlayer);
     }
   }
 

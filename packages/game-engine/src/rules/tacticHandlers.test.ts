@@ -28,6 +28,7 @@ import {
 } from './tacticHandlers.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 import { endTurn } from '../moves/coreMoves.impl.js';
+import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 
 const OCTET_TACTIC_ID =
   'co2e-mastermind-doctor-octopus-octet-of-valence-electrons';
@@ -561,7 +562,11 @@ function makeEndTurnContext(
     },
     ...(extraTurns !== undefined ? { extraTurns } : {}),
   } as unknown as LegendaryGameState;
-  const context = { G, playerID, events: { endTurn: endTurnSpy } };
+  // why: WP-701 / D-24520 — the endTurn move now destructures `random` and runs the
+  // end-of-turn cleanup (discard + draw), so the context must supply a ShuffleProvider's
+  // random. The draw itself is covered in endOfTurnCleanup.logic.test.ts; here it must
+  // simply not throw so the extra-turn `{ next }` / counter assertions hold.
+  const context = { G, playerID, events: { endTurn: endTurnSpy }, random: SHUFFLE.random };
   return { context, endTurnSpy };
 }
 
@@ -614,12 +619,22 @@ describe('extra-turn end-to-end: resolver → counter → turn-end grant (WP-696
     // why: chains the resolver to the turn-loop honoring — the control-stub check
     // (stub resolveSecretsOfTimeTravel to a no-op) makes THIS fail, proving the
     // grant depends on the resolver actually setting the counter (non-vacuous).
-    const G = { currentStage: 'cleanup', messages: [] } as unknown as LegendaryGameState;
+    // why: WP-701 / D-24520 — an empty playerZones lets the bound end-of-turn cleanup
+    // resolve seat 0 to undefined and return early (a safe no-op), so this test stays
+    // focused on the extra-turn grant while exercising the real cleanup wire.
+    const G = { currentStage: 'cleanup', messages: [], playerZones: {} } as unknown as LegendaryGameState;
     dispatchTacticOnFight(G, { currentPlayer: '0' }, SECRETS_OF_TIME_TRAVEL_TACTIC_ID, SHUFFLE);
     assert.deepEqual(G.extraTurns, { '0': 1 });
 
     const endTurnSpy = mock.fn();
-    advanceTurnStage(G as never, { currentPlayer: '0', events: { endTurn: endTurnSpy } });
+    // why: WP-701 / D-24520 — advanceTurnStage now invokes the required cleanup closure
+    // on the turn-end branch. Bind the real end-of-turn cleanup (a safe no-op here — this
+    // minimal G has no playerZones for seat 0), keeping the test focused on the grant.
+    advanceTurnStage(G as never, {
+      currentPlayer: '0',
+      events: { endTurn: endTurnSpy },
+      cleanup: (endingPlayerID) => applyEndOfTurnCleanup(G, endingPlayerID, SHUFFLE),
+    });
 
     assert.equal(endTurnSpy.mock.callCount(), 1);
     assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, [{ next: '0' }]);

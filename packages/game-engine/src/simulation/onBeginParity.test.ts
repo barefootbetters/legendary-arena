@@ -1,26 +1,27 @@
 /**
- * Unit tests for the shared onBegin-parity helper (WP-266).
+ * Unit tests for the shared onBegin-parity helper (WP-266, updated WP-701).
  *
- * applyOnBeginParity mirrors the play-phase onBegin reset+draw for the three
+ * applyOnBeginParity mirrors the play-phase onBegin resets for the three
  * observation-only per-turn loops (simulation runner, PAR aggregator, replay
- * fixture harness). These tests verify the wrapper behaviour: both once-per-turn
- * flags are reset, the hand is auto-drawn up to HAND_SIZE via the supplied
- * deterministic ShuffleProvider (reshuffling the discard on exhaustion), an
- * exhausted deck+discard draws fewer without throwing, and a missing seat is a
- * safe no-op. The underlying draw primitive is covered in
- * moves/drawCards.logic.test.ts. No boardgame.io import — the helper is pure.
+ * fixture harness). Since WP-701 / D-24520 the helper is RESETS ONLY — the new
+ * hand is drawn at the END of the previous turn (applyEndOfTurnCleanup) and the
+ * initial hands are dealt at setup, so onBegin no longer draws and the helper
+ * takes only (gameState, playerId). These tests verify the wrapper behaviour:
+ * villainRevealedThisTurn is reset to false, hasDrawnThisTurn is set to true
+ * (the incoming seat already holds its hand, so the scaffold drawCards move
+ * stays a guarded no-op), the hand is left untouched, and a missing seat is a
+ * safe no-op that still resets the flags. The end-of-turn draw is covered in
+ * moves/endOfTurnCleanup.logic.test.ts. No boardgame.io import — the helper is pure.
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { applyOnBeginParity } from './onBeginParity.js';
-import { HAND_SIZE } from '../moves/drawCards.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
-import type { ShuffleProvider } from '../setup/shuffle.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 
 /**
@@ -52,17 +53,10 @@ function createMockRegistry(): CardRegistryReader {
   return { ...makeCardRegistryReader(), listCards: () => [] };
 }
 
-// why: the reverse-shuffle proves the reshuffle path actually ran on deck
-// exhaustion — an identity shuffle would pass even if the helper skipped it.
-// Mirrors the deterministic ShuffleProvider in drawCards.logic.test.ts.
-const reverseShuffleContext: ShuffleProvider = {
-  random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
-};
-
 /**
  * Builds a real LegendaryGameState and replaces player 0's zones with a known
- * deck/hand/discard so the helper's draw is deterministic regardless of what
- * the minimal mock registry produced at setup.
+ * deck/hand/discard so the helper's (non-)effect on the hand is observable
+ * regardless of what the minimal mock registry produced at setup.
  *
  * @param deck - the deck contents to install for player 0.
  * @param hand - the hand contents to install for player 0.
@@ -83,90 +77,52 @@ function makeStateWithDeck(deck: string[], hand: string[], discard: string[]) {
   return { gameState, zones };
 }
 
-describe('applyOnBeginParity (WP-266)', () => {
-  it('resets villainRevealedThisTurn to false and leaves hasDrawnThisTurn true after a draw', () => {
+describe('applyOnBeginParity (WP-266 / WP-701)', () => {
+  it('resets villainRevealedThisTurn to false and sets hasDrawnThisTurn true', () => {
     const { gameState } = makeStateWithDeck(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'], [], []);
     gameState.villainRevealedThisTurn = true;
     gameState.hasDrawnThisTurn = false;
 
-    applyOnBeginParity(gameState, '0', reverseShuffleContext);
+    applyOnBeginParity(gameState, '0');
 
     assert.equal(gameState.villainRevealedThisTurn, false);
+    // why: WP-701 / D-24520 — the incoming seat already holds its hand (dealt at
+    // its own end-of-turn, or at setup for turn 1), so the flag is set TRUE to keep
+    // the scaffold drawCards move a guarded no-op all turn.
     assert.equal(gameState.hasDrawnThisTurn, true);
   });
 
-  it('auto-draws the active player hand up to HAND_SIZE from the top of the deck', () => {
+  it('does NOT draw — the incoming seat hand is left untouched (draw is at end of turn now)', () => {
     const { gameState, zones } = makeStateWithDeck(
       ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'],
-      [],
+      ['h1', 'h2'],
       [],
     );
 
-    applyOnBeginParity(gameState, '0', reverseShuffleContext);
+    applyOnBeginParity(gameState, '0');
 
-    assert.equal(zones.hand.length, HAND_SIZE);
-    assert.deepEqual(zones.hand, ['c1', 'c2', 'c3', 'c4', 'c5', 'c6']);
-    assert.deepEqual(zones.deck, ['c7', 'c8']);
-  });
-
-  it('tops up a partial hand to HAND_SIZE (draws only the gap)', () => {
-    const { gameState, zones } = makeStateWithDeck(['c1', 'c2', 'c3', 'c4'], ['h1', 'h2'], []);
-
-    applyOnBeginParity(gameState, '0', reverseShuffleContext);
-
-    assert.equal(zones.hand.length, HAND_SIZE);
-    assert.deepEqual(zones.hand, ['h1', 'h2', 'c1', 'c2', 'c3', 'c4']);
-    // why: WP-642 — a top-up that never exhausts the deck pushes NO
-    // deckReshuffled notable event.
+    // why: WP-701 / D-24520 — onBegin no longer draws; the hand/deck/discard are
+    // unchanged. The end-of-turn draw is covered in endOfTurnCleanup.logic.test.ts.
+    assert.deepEqual(zones.hand, ['h1', 'h2']);
+    assert.deepEqual(zones.deck, ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8']);
+    assert.deepEqual(zones.discard, []);
+    // why: WP-642 — with no draw, the mirror pushes no deckReshuffled notable event.
     assert.equal(gameState.notableEvents.length, 0);
   });
 
-  it('reshuffles the discard into the deck via the supplied provider on exhaustion', () => {
-    const { gameState, zones } = makeStateWithDeck(
-      ['c1', 'c2'],
-      [],
-      ['d1', 'd2', 'd3', 'd4', 'd5'],
-    );
-
-    applyOnBeginParity(gameState, '0', reverseShuffleContext);
-
-    // 2 drawn from the deck, then the discard is reversed into the new deck
-    // (['d5','d4','d3','d2','d1']) and 4 more are drawn from its top.
-    assert.equal(zones.hand.length, HAND_SIZE);
-    assert.deepEqual(zones.hand, ['c1', 'c2', 'd5', 'd4', 'd3', 'd2']);
-    assert.deepEqual(zones.deck, ['d1']);
-    assert.deepEqual(zones.discard, []);
-    // why: WP-642 / D-24454 — the mirror emits exactly one deckReshuffled
-    // notable event for the drawing seat when the draw reshuffled, matching the
-    // real game.ts onBegin so the runFixture finalStateHash oracle stays faithful.
-    assert.equal(gameState.notableEvents.length, 1);
-    assert.deepEqual(gameState.notableEvents[0], {
-      type: 'deckReshuffled',
-      playerId: '0',
-      narrative: 'The hero deck was reshuffled from the discard pile.',
-    });
-  });
-
-  it('draws fewer than HAND_SIZE without throwing when deck and discard are exhausted', () => {
-    const { gameState, zones } = makeStateWithDeck(['c1', 'c2'], [], []);
-
-    applyOnBeginParity(gameState, '0', reverseShuffleContext);
-
-    assert.equal(zones.hand.length, 2);
-    assert.deepEqual(zones.hand, ['c1', 'c2']);
-    assert.equal(gameState.hasDrawnThisTurn, true);
-  });
-
-  it('resets the reveal flag but does not draw (hasDrawnThisTurn stays false) for a missing seat', () => {
-    const { gameState } = makeStateWithDeck(['c1'], [], []);
+  it('sets the flags even for a missing seat (no draw ever ran, so no zones are touched)', () => {
+    const { gameState, zones } = makeStateWithDeck(['c1'], ['h1'], []);
     gameState.villainRevealedThisTurn = true;
     gameState.hasDrawnThisTurn = false;
 
-    // why: an unknown seat id must not throw — the helper guards on zones, so
-    // the flags reset but no draw runs (hasDrawnThisTurn is only set after a draw).
-    applyOnBeginParity(gameState, 'nonexistent-seat', reverseShuffleContext);
+    // why: WP-701 / D-24520 — the helper is resets-only and reads no zones, so an
+    // unknown seat id cannot throw; the two global-per-turn flags reset regardless,
+    // and player 0's zones are left untouched.
+    applyOnBeginParity(gameState, 'nonexistent-seat');
 
     assert.equal(gameState.villainRevealedThisTurn, false);
-    assert.equal(gameState.hasDrawnThisTurn, false);
+    assert.equal(gameState.hasDrawnThisTurn, true);
+    assert.deepEqual(zones.hand, ['h1']);
+    assert.deepEqual(zones.deck, ['c1']);
   });
 });

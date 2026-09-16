@@ -5,9 +5,7 @@ import { buildInitialGameState } from './setup/buildInitialGameState.js';
 import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
-import { HAND_SIZE, drawCardsIntoHand } from './moves/drawCards.logic.js';
-import { consumeDeferredHandInjections } from './moves/deferredHandInjection.logic.js';
-import { composeDeckReshuffledNarrative } from './events/notableEvents.compose.js';
+import { applyEndOfTurnCleanup } from './moves/endOfTurnCleanup.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
@@ -121,7 +119,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * @param context - boardgame.io move context with G and events.
  */
-function advanceStage({ G, ctx, events }: MoveContext): void {
+function advanceStage({ G, ctx, events, random }: MoveContext): void {
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
   // board is frozen; advanceStage (at any stage) returns with no side effects
   // so the player resolves the Fight effect before any other action. Placed
@@ -237,6 +235,11 @@ function advanceStage({ G, ctx, events }: MoveContext): void {
   advanceTurnStage(G, {
     currentPlayer: ctx.currentPlayer,
     events: { endTurn: (opts) => events.endTurn(opts) },
+    // why: WP-701 / D-24520 — bind the end-of-turn cleanup (discard + draw the new hand)
+    // for the ending seat so the cleanup-stage turn-end path (D-22002) draws too. The
+    // closure carries G + the ShuffleProvider (ctx.random) that turnLoop.ts's narrow
+    // state interface deliberately does not.
+    cleanup: (endingPlayerID) => applyEndOfTurnCleanup(G, endingPlayerID, { random }),
   });
 }
 
@@ -824,10 +827,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // would permanently block reveals from turn 2 onward.
           G.villainRevealedThisTurn = false;
 
-          // why: the once-per-turn draw allowance refreshes at the start of
-          // every player turn; without this reset the drawCards move guard
-          // would permanently block draws from turn 2 onward.
-          G.hasDrawnThisTurn = false;
+          // why: WP-701 / D-24520 — the start-of-turn hand is ALREADY drawn (at the
+          // end of the previous turn, or at setup for turn 1), so the scaffold
+          // `drawCards` move must stay a guarded no-op ALL turn — a mid-turn manual
+          // refill is not a legal action under the end-of-turn-draw model. Set the
+          // flag TRUE (matching the OLD model's post-onBegin-draw value), so the
+          // move guard + ai.legalMoves both treat this turn's draw as already spent.
+          G.hasDrawnThisTurn = true;
 
           // why: WP-379 / D-24180 — the Healing/act mutual-exclusion allowance
           // refreshes at the start of every player turn. Without this reset a
@@ -844,53 +850,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // no hash re-pin (verified: full engine suite green).
           G.lastPlayEffectsFired = 0;
 
-          // why: the engine owns the start-of-turn draw — the former
-          // TurnActionBar "Draw to 6" UI scaffold is retired. Fill the active
-          // player's hand to HAND_SIZE from their deck (reshuffling the
-          // discard on exhaustion via the engine's deterministic shuffle — no
-          // new randomness source). This runs BEFORE the onTurnStart hooks
-          // below so a hand-reading turn-start hook (e.g. Magneto's hand-size
-          // trim) observes the freshly drawn hand. hasDrawnThisTurn is set so
-          // a subsequent drawCards submission is a guarded no-op.
-          const activePlayerZones = G.playerZones[ctx.currentPlayer];
-          if (activePlayerZones) {
-            // why: WP-497 / D-24300 — a tactic Fight resolver (Doc Ock's "Octet of
-            // Valence Electrons") may have recorded a per-player next-hand override;
-            // fill to it instead of HAND_SIZE, then CONSUME it (delete the entry) so
-            // it raises exactly this one fill and no later turn. "Draw a new hand
-            // this turn" (tabletop) ≡ this player's next onBegin fill (there is no
-            // end-of-turn cleanup draw here). Absent override → the default HAND_SIZE.
-            const fillTarget = G.handSizeOverrides?.[ctx.currentPlayer] ?? HAND_SIZE;
-            const cardsToDraw = Math.max(0, fillTarget - activePlayerZones.hand.length);
-            const reshuffleCount = drawCardsIntoHand(activePlayerZones, cardsToDraw, { random });
-            // why: WP-642 / D-24454 — announce the empty-deck reshuffle that
-            // drawCardsIntoHand just performed (WP-236's reshuffle was silent —
-            // no log line, no notable event, no VFX — so players reported "my
-            // hero deck isn't shuffling"). Additive: the reshuffle mechanic is
-            // unchanged; this only pushes a deckReshuffled notable event when a
-            // reshuffle actually occurred. Minimal payload (D-20001), no card id
-            // (the healResolved shape). The applyOnBeginParity mirror pushes the
-            // same event so the runFixture finalStateHash oracle stays faithful.
-            if (reshuffleCount > 0) {
-              G.notableEvents.push({
-                type: 'deckReshuffled',
-                playerId: ctx.currentPlayer,
-                narrative: composeDeckReshuffledNarrative(),
-              });
-            }
-            if (G.handSizeOverrides?.[ctx.currentPlayer] !== undefined) {
-              delete G.handSizeOverrides[ctx.currentPlayer];
-            }
-            // why: WP-695 / D-24512 — Magneto's "Electromagnetic Bubble" tactic may have
-            // recorded a deferred SPECIFIC-card injection (a chosen in-play X-Men Hero) for
-            // this player. Co-located with the handSizeOverrides consume: AFTER the normal
-            // fill, add each injected ext_id to the hand as an extra (seventh) card, then
-            // CLEAR the key so it raises exactly this one fill. handSizeOverrides cannot carry
-            // WHICH card, so this is a sibling field, not a reuse. Delegated to a testable
-            // helper (a card not locatable in the player's zones is a logged no-op there).
-            consumeDeferredHandInjections(G, ctx.currentPlayer, activePlayerZones);
-            G.hasDrawnThisTurn = true;
-          }
+          // why: WP-701 / D-24520 — the start-of-turn auto-draw is RETIRED. The new hand
+          // is now drawn at the END of the previous turn (applyEndOfTurnCleanup, reached
+          // from both D-22002 turn-end paths) and initial hands are dealt at setup, so a
+          // player holds a full hand during opponents' turns and onBegin only resets
+          // per-turn flags. The incoming player already holds their hand; the
+          // handSizeOverrides / deferredHandInjections consume travels to the end-of-turn
+          // cleanup. hasDrawnThisTurn stays reset to false above (it guards the scaffold
+          // drawCards move, which now computes a 0-card no-op against the full hand).
 
           // why: trigger -> collect effects -> apply effects pipeline.
           // onTurnStart fires at the beginning of each player's turn so
