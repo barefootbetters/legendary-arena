@@ -21,8 +21,13 @@ import { TURN_STAGES } from './turnPhases.types.js';
  *
  * @returns An object with the context and the endTurn spy for assertions.
  */
-function makeTurnLoopMockContext(currentPlayer = '0'): { context: TurnLoopContext; endTurnSpy: ReturnType<typeof mock.fn> } {
+function makeTurnLoopMockContext(currentPlayer = '0'): {
+  context: TurnLoopContext;
+  endTurnSpy: ReturnType<typeof mock.fn>;
+  cleanupSpy: ReturnType<typeof mock.fn>;
+} {
   const endTurnSpy = mock.fn();
+  const cleanupSpy = mock.fn();
   const context: TurnLoopContext = {
     // why: WP-696 / D-24513 — TurnLoopContext now carries the acting seat so the
     // extra-turn branch can grant that same seat another turn.
@@ -30,8 +35,12 @@ function makeTurnLoopMockContext(currentPlayer = '0'): { context: TurnLoopContex
     events: {
       endTurn: endTurnSpy,
     },
+    // why: WP-701 / D-24520 — the required end-of-turn cleanup closure. Spied here
+    // so the turn-end test can assert it ran for the ending seat; the draw itself
+    // is covered in moves/endOfTurnCleanup.logic.test.ts.
+    cleanup: cleanupSpy,
   };
-  return { context, endTurnSpy };
+  return { context, endTurnSpy, cleanupSpy };
 }
 
 describe('advanceTurnStage', () => {
@@ -57,11 +66,15 @@ describe('advanceTurnStage', () => {
 
   it('calls ctx.events.endTurn when at the last stage', () => {
     const gameState: TurnLoopState = { currentStage: TURN_STAGES[2] };
-    const { context, endTurnSpy } = makeTurnLoopMockContext();
+    const { context, endTurnSpy, cleanupSpy } = makeTurnLoopMockContext();
 
     advanceTurnStage(gameState, context);
 
     assert.equal(endTurnSpy.mock.callCount(), 1);
+    // why: WP-701 / D-24520 — the ending seat's end-of-turn cleanup runs before
+    // the turn ends on this path.
+    assert.equal(cleanupSpy.mock.callCount(), 1);
+    assert.deepEqual(cleanupSpy.mock.calls[0]!.arguments, ['0']);
     // why: currentStage should remain unchanged — the play phase onBegin
     // hook resets it to TURN_STAGES[0] when the next turn begins.
     assert.equal(gameState.currentStage, TURN_STAGES[2]);

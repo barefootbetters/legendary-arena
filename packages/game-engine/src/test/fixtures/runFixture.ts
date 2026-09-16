@@ -38,6 +38,7 @@ import { TURN_STAGES } from '../../turn/turnPhases.types.js';
 import { CORE_MOVE_NAMES } from '../../moves/coreMoves.types.js';
 import { drawCards, playCard, endTurn } from '../../moves/coreMoves.impl.js';
 import { applyOnBeginParity } from '../../simulation/onBeginParity.js';
+import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../../moves/fightVillain.js';
 import { recruitHero } from '../../moves/recruitHero.js';
@@ -144,6 +145,11 @@ function fixtureAdvanceStage(context: FixtureMoveContext): void {
   advanceTurnStage(context.G, {
     currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
+    // why: WP-701 / D-24520 — end-of-turn cleanup (discard + draw the new hand) on the
+    // cleanup-stage turn-end path, using the fixture harness's own ShuffleProvider so the
+    // replay reproduces the live end-of-turn draw byte-for-byte.
+    cleanup: (endingPlayerID) =>
+      applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
   });
 }
 
@@ -308,14 +314,12 @@ function rotateToNextTurn(
   cursor.completedTurnCount += 1;
   gameState.currentStage = TURN_STAGES[0]!;
   gameState.turnEconomy = resetTurnEconomy();
-  // why: mirror the rest of the play phase onBegin — reset the once-per-turn
-  // flags and auto-draw the incoming player's hand to HAND_SIZE (WP-212 reveal
-  // reset + WP-236 auto-draw), now shared with the simulation runner + PAR
-  // aggregator via applyOnBeginParity (WP-266). The reshuffle reuses the
-  // harness's single mulberry32 stream (nextRandom) so determinism holds.
-  applyOnBeginParity(gameState, cursor.currentPlayer, {
-    random: { Shuffle: <T>(deck: T[]): T[] => shuffleWithPrng(deck, nextRandom) },
-  });
+  // why: mirror the play phase onBegin RESETS for the incoming player (WP-212 reveal
+  // reset + the hasDrawnThisTurn flag), shared via applyOnBeginParity (WP-266). Under
+  // WP-701 / D-24520 the DRAW is no longer here — the incoming seat already holds the
+  // hand it drew at the end of its own previous turn (or at setup for turn 1), so this
+  // is resets-only and needs no ShuffleProvider.
+  applyOnBeginParity(gameState, cursor.currentPlayer);
 }
 
 /**

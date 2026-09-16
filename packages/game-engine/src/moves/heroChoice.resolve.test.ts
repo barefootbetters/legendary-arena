@@ -330,7 +330,12 @@ describe('turn-end guard: endTurn blocks when pendingHeroChoice is set', () => {
   });
 
   it('endTurn proceeds normally and calls events.endTurn() when pendingHeroChoice is cleared', () => {
+    // why: WP-701 / D-24520 — endTurn now sweeps hand + in-play to discard AND draws a
+    // fresh HAND_SIZE hand. A stocked deck feeds the draw off the top, so the swept
+    // cards stay observable in discard (no reshuffle) — the Guard 1 control case still
+    // proves the sweep ran and events.endTurn() fired.
     const gameState = makeTestGameState({
+      deck: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
       hand: ['hero-b'],
       inPlay: ['hero-c'],
     }, 'cleanup');
@@ -340,8 +345,12 @@ describe('turn-end guard: endTurn blocks when pendingHeroChoice is set', () => {
 
     assert.equal(endTurnSpy.mock.calls.length, 1,
       'events.endTurn() must be called exactly once when no pending choice exists (Guard 1 control case).');
-    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [],
-      'hand must be swept to discard when no pending choice exists (Guard 1 control case).');
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [],
+      'inPlay must be swept to discard when no pending choice exists (Guard 1 control case).');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-c', 'hero-b'],
+      'the old in-play + hand must be swept to discard when no pending choice exists (Guard 1 control case).');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
+      'the fresh hand is drawn from the deck top after the sweep (WP-701 / D-24520).');
   });
 });
 

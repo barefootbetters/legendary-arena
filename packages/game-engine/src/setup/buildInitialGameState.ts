@@ -22,6 +22,7 @@ import type {
 // why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME } from '../types.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
+import { HAND_SIZE, drawCardsIntoHand } from '../moves/drawCards.logic.js';
 import type { LogEntry } from '../log/logOutcome.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
@@ -313,6 +314,14 @@ export function buildInitialGameState(
     const playerId = String(playerIndex);
     const startingDeck = buildStartingDeckCards();
     const playerState = buildPlayerState(playerId, startingDeck, context);
+    // why: WP-701 / D-24520 — deal the starting hand at setup. The engine no longer
+    // draws at the start of a turn (the draw moved to end-of-turn via
+    // applyEndOfTurnCleanup), so every seat's FIRST hand must be dealt here — no
+    // onBegin/onEnd runs before seat 0's opening turn. A fresh 12-card deck drawing
+    // HAND_SIZE never reshuffles, so this consumes no RNG and the rest of setup's
+    // stream (hero deck, Skrull conversion) is byte-unchanged; only the hand/deck
+    // split moves. Seat order (playerIndex ascending) is the locked deal order.
+    drawCardsIntoHand(playerState.zones, HAND_SIZE, context);
     playerZones[playerId] = playerState.zones;
   }
 
@@ -605,9 +614,10 @@ export function buildInitialGameState(
     // why: the start-of-turn villain reveal has not occurred at setup time; the
     // play phase onBegin hook resets this to false on every turn including turn 1.
     villainRevealedThisTurn: false,
-    // why: no draw has occurred at setup time; the play phase onBegin hook resets
-    // this to false on every turn and performs the turn-1 auto-draw.
-    hasDrawnThisTurn: false,
+    // why: WP-701 / D-24520 — setup DEALS every player's starting hand (above), so
+    // the turn-1 hand is already drawn; the flag is TRUE so the scaffold drawCards
+    // move is a guarded no-op from the opening turn (onBegin keeps it true).
+    hasDrawnThisTurn: true,
     // why: WP-379 — neither turn-action flag is set at setup time; the play phase
     // onBegin hook resets both to false on every turn. hasActedThisTurn gates the
     // Wound Healing ability; hasHealedThisTurn reverse-locks fight/recruit

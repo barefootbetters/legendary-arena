@@ -6,23 +6,23 @@
     "matrixDescription": "policy=competent-heuristic; maxTurns=50; playerCount=1; seedsPerBoard=8; runSeed=wp265-real-v1. Real signal (WP-265): the competent policy recruits / plays / fights (enabled by WP-266 onBegin parity) and surfaces the runtime hollows those plays trigger. The signal lever is hero/board diversity, not seeds — each hero-deck set below is swept over the sentinel core × 8 seeds. sentinelCore: scheme=core/portals-to-the-dark-dimension, mastermind=core/dr-doom, villainGroups=[core/brotherhood], henchmanGroups=[core/savage-land-mutates]. heroDeckSets: 2099{2099/doctor-doom-2099, 2099/ghost-rider-2099, 2099/hulk-2099, 2099/ravage-2099, 2099/spider-man-2099}; 3dtc{3dtc/black-widow, 3dtc/deadpool, 3dtc/howard-the-duck, 3dtc/hulk, 3dtc/man-thing}; amwp{amwp/ant-army, amwp/ant-man, amwp/cassie-lang, amwp/freedom-fighters, amwp/janet-van-dyne}; anni{anni/brainstorm, anni/fantastic-four-united, anni/heralds-of-galactus, anni/psi-lord, anni/super-skrull}; antm{antm/ant-man, antm/black-knight, antm/jocasta, antm/wasp, antm/wonder-man}; asrd{asrd/beta-ray-bill, asrd/lady-sif, asrd/thor, asrd/valkyrie, asrd/warriors-three-the}; bkpt{bkpt/general-okoye, bkpt/king-black-panther, bkpt/princess-shuri, bkpt/queen-storm-of-wakanda, bkpt/white-wolf}; bkwd{bkwd/black-widow, bkwd/falcon-winter-soldier, bkwd/red-guardian, bkwd/white-tiger, bkwd/yelena-belova}; ca75{ca75/agent-x-13, ca75/captain-america-1941, ca75/captain-america-falcon, ca75/steve-rogers-director-of-shield, ca75/winter-soldier}; chmp{chmp/gwenpool, chmp/ms-marvel, chmp/nova, chmp/totally-awesome-hulk, chmp/viv-vision}; core{core/black-widow, core/captain-america, core/cyclops, core/deadpool, core/emma-frost}; cosm{cosm/adam-warlock, cosm/captain-mar-vell, cosm/moondragon, cosm/nebula, cosm/nova}; cvwr{cvwr/captain-america-secret-avenger, cvwr/cloak-dagger, cvwr/daredevil, cvwr/falcon, cvwr/goliath}; dead{dead/bob-agent-of-hydra, dead/deadpool, dead/slapstick, dead/solo, dead/stingray}; dims{dims/howard-the-duck, dims/jessica-jones, dims/man-thing, dims/ms-america, dims/squirrel-girl}; dkcy{dkcy/angel, dkcy/bishop, dkcy/blade, dkcy/cable, dkcy/colossus}; dstr{dstr/ancient-one-the, dstr/clea, dstr/doctor-strange, dstr/doctor-voodoo, dstr/vishanti-the}; fear{fear/greithoth-breaker-of-wills, fear/kuurth-breaker-of-stone, fear/nerkkod-breaker-of-oceans, fear/nul-breaker-of-worlds, fear/skadi}; ff04{ff04/human-torch, ff04/invisible-woman, ff04/mr-fantastic, ff04/silver-surfer, ff04/thing}; gotg{gotg/drax-the-destroyer, gotg/gamora, gotg/groot, gotg/rocket-raccoon, gotg/star-lord}; mdns{mdns/blade-daywalker, mdns/elsa-bloodstone, mdns/morbius, mdns/werewolf-by-night, mdns/wong-master-of-the-mystic-arts}; mgtg{mgtg/drax, mgtg/gamora, mgtg/mantis, mgtg/rocket-groot, mgtg/star-lord}; msis{msis/black-panther, msis/bruce-banner, msis/captain-marvel, msis/doctor-strange, msis/wanda-vision}; msmc{msmc/m, msmc/multiple-man, msmc/rictor, msmc/shatterstar, msmc/siryn}; msp1{msp1/black-widow, msp1/captain-america, msp1/hawkeye, msp1/hulk, msp1/iron-man}; nmut{nmut/karma, nmut/mirage, nmut/sunspot, nmut/warlock, nmut/wolfsbane}; noir{noir/angel-noir, noir/daredevil-noir, noir/iron-man-noir, noir/luke-cage-noir, noir/spider-man-noir}; pttr{pttr/black-cat, pttr/moon-knight, pttr/scarlet-spider, pttr/spider-woman, pttr/symbiote-spider-man}; rlmk{rlmk/black-bolt, rlmk/crystal, rlmk/gorgon, rlmk/karnak, rlmk/medusa}; rvlt{rvlt/captain-marvel-agent-of-shield, rvlt/darkhawk, rvlt/hellcat, rvlt/photon, rvlt/quicksilver}; shld{shld/agent-phil-coulson, shld/deathlok, shld/dum-dum-dugan, shld/grant-ward, shld/gw-bridge}; smhc{smhc/happy-hogan, smhc/high-tech-spider-man, smhc/peter-parker-homecoming, smhc/peters-allies, smhc/tony-stark}; ssw1{ssw1/apocalyptic-kitty-pryde, ssw1/black-bolt, ssw1/black-panther, ssw1/captain-marvel, ssw1/dr-strange}; ssw2{ssw2/agent-venom, ssw2/arkon-the-magnificent, ssw2/beast, ssw2/black-swan, ssw2/captain-and-the-devil-the}; vill{vill/bullseye, vill/dr-octopus, vill/electro, vill/enchantress, vill/green-goblin}; vnom{vnom/carnage, vnom/venom, vnom/venom-rocket, vnom/venomized-dr-strange, vnom/venompool}; wtif{wtif/apocalyptic-black-widow, wtif/captain-carter, wtif/doctor-strange-supreme, wtif/gamora-destroyer-of-thanos, wtif/killmonger-spec-ops}; wwhk{wwhk/amadeus-cho, wwhk/bruce-banner, wwhk/caiera, wwhk/gladiator-hulk, wwhk/hiroim}; xmen{xmen/aurora-northstar, xmen/banshee, xmen/beast, xmen/cannonball, xmen/colossus-wolverine}"
   },
   "summary": {
-    "distinctMechanics": 30,
-    "totalObservations": 2410,
+    "distinctMechanics": 29,
+    "totalObservations": 2508,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 500,
+      "no-handler": 488,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1910
+      "parse-unrecognized": 2020
     }
   },
   "byMechanic": {
     "abomination": {
-      "hitCount": 28,
+      "hitCount": 34,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 28
+        "parse-unrecognized": 34
       },
       "examples": [
         {
@@ -38,7 +38,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "rlmk/gorgon/stomping-shockwave#1",
+          "cardId": "rlmk/gorgon/stomping-shockwave#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -58,12 +58,12 @@
       ]
     },
     "ambush": {
-      "hitCount": 99,
+      "hitCount": 103,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 99
+        "parse-unrecognized": 103
       },
       "examples": [
         {
@@ -91,7 +91,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "bkpt/general-okoye/to-my-last-breath#1",
+          "cardId": "bkpt/general-okoye/to-my-last-breath#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -99,12 +99,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 169,
-      "lastSeenTurn": 30,
+      "hitCount": 168,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 169
+        "parse-unrecognized": 168
       },
       "examples": [
         {
@@ -140,12 +140,12 @@
       ]
     },
     "bridge": {
-      "hitCount": 18,
-      "lastSeenTurn": 29,
+      "hitCount": 7,
+      "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 18
+        "parse-unrecognized": 7
       },
       "examples": [
         {
@@ -167,7 +167,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "asrd/warriors-three-the/volstagg-the-valiant#0",
+          "cardId": "asrd/valkyrie/usher-to-valhalla#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -181,12 +181,12 @@
       ]
     },
     "clone": {
-      "hitCount": 78,
-      "lastSeenTurn": 28,
+      "hitCount": 89,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 78
+        "parse-unrecognized": 89
       },
       "examples": [
         {
@@ -196,13 +196,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/m/interweaving-powers#1",
+          "cardId": "msmc/m/interweaving-powers#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/m/interweaving-powers#1",
+          "cardId": "msmc/m/interweaving-powers#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -222,16 +222,16 @@
       ]
     },
     "conqueror": {
-      "hitCount": 15,
+      "hitCount": 11,
       "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 11
       },
       "examples": [
         {
-          "cardId": "anni/super-skrull/rock-solid#1",
+          "cardId": "anni/super-skrull/rock-solid#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -243,19 +243,19 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/rock-solid#3",
+          "cardId": "anni/super-skrull/rock-solid#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/rock-solid#4",
+          "cardId": "anni/super-skrull/transparent-motives#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/rock-solid#4",
+          "cardId": "anni/super-skrull/transparent-motives#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -263,12 +263,12 @@
       ]
     },
     "coordinate": {
-      "hitCount": 218,
+      "hitCount": 262,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 218
+        "parse-unrecognized": 262
       },
       "examples": [
         {
@@ -304,12 +304,12 @@
       ]
     },
     "cyber-mod": {
-      "hitCount": 11,
+      "hitCount": 7,
       "lastSeenTurn": 22,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 11
+        "parse-unrecognized": 7
       },
       "examples": [
         {
@@ -319,13 +319,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "2099/ghost-rider-2099/cyber-specter#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "2099/ghost-rider-2099/cyber-specter#0",
+          "cardId": "2099/ghost-rider-2099/cyber-specter#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -341,20 +335,26 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ghost-rider-2099/cyber-specter#3",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
         }
       ]
     },
     "demolish": {
-      "hitCount": 23,
+      "hitCount": 15,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 23
+        "parse-unrecognized": 15
       },
       "examples": [
         {
-          "cardId": "fear/nul-breaker-of-worlds/demolition-derby#0",
+          "cardId": "fear/nul-breaker-of-worlds/break-the-world#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -387,7 +387,7 @@
     },
     "empowered": {
       "hitCount": 1,
-      "lastSeenTurn": 17,
+      "lastSeenTurn": 21,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -395,7 +395,7 @@
       },
       "examples": [
         {
-          "cardId": "bkpt/princess-shuri/shock-net#1",
+          "cardId": "bkpt/princess-shuri/shock-net#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -403,12 +403,12 @@
       ]
     },
     "endgame": {
-      "hitCount": 30,
-      "lastSeenTurn": 29,
+      "hitCount": 15,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 30
+        "parse-unrecognized": 15
       },
       "examples": [
         {
@@ -444,12 +444,12 @@
       ]
     },
     "heist": {
-      "hitCount": 30,
+      "hitCount": 50,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 30
+        "parse-unrecognized": 50
       },
       "examples": [
         {
@@ -485,12 +485,12 @@
       ]
     },
     "indigestion": {
-      "hitCount": 32,
+      "hitCount": 38,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 32
+        "parse-unrecognized": 38
       },
       "examples": [
         {
@@ -500,13 +500,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "vnom/venompool/digest-that-chimichanga#1",
+          "cardId": "vnom/venompool/digest-that-chimichanga#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "vnom/venompool/digest-that-chimichanga#1",
+          "cardId": "vnom/venompool/digest-that-chimichanga#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -526,12 +526,12 @@
       ]
     },
     "investigate": {
-      "hitCount": 201,
+      "hitCount": 207,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 201
+        "parse-unrecognized": 207
       },
       "examples": [
         {
@@ -566,36 +566,13 @@
         }
       ]
     },
-    "liberate": {
-      "hitCount": 2,
-      "lastSeenTurn": 22,
-      "byReason": {
-        "no-handler": 0,
-        "unsupported-keyword": 0,
-        "parse-unrecognized": 2
-      },
-      "examples": [
-        {
-          "cardId": "wtif/apocalyptic-black-widow/time-to-save-the-multiverse#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "wtif/apocalyptic-black-widow/time-to-save-the-multiverse#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        }
-      ]
-    },
     "lightshow": {
-      "hitCount": 71,
-      "lastSeenTurn": 30,
+      "hitCount": 66,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 71
+        "parse-unrecognized": 66
       },
       "examples": [
         {
@@ -632,7 +609,7 @@
     },
     "moonlight": {
       "hitCount": 273,
-      "lastSeenTurn": 29,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -640,31 +617,31 @@
       },
       "examples": [
         {
-          "cardId": "mdns/blade-daywalker/creature-of-dawn-and-dusk#0",
+          "cardId": "mdns/werewolf-by-night/release-the-beast#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#0",
+          "cardId": "mdns/werewolf-by-night/release-the-beast#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#0",
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#0",
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#0",
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -672,12 +649,12 @@
       ]
     },
     "phasing": {
-      "hitCount": 87,
+      "hitCount": 100,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 87
+        "parse-unrecognized": 100
       },
       "examples": [
         {
@@ -714,7 +691,7 @@
     },
     "rooftops": {
       "hitCount": 3,
-      "lastSeenTurn": 13,
+      "lastSeenTurn": 10,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -742,12 +719,12 @@
       ]
     },
     "sacrifice": {
-      "hitCount": 7,
+      "hitCount": 10,
       "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 7
+        "parse-unrecognized": 10
       },
       "examples": [
         {
@@ -763,19 +740,19 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msis/black-panther/great-many-lives-lost#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "msis/black-panther/great-many-lives-lost#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msis/black-panther/great-many-lives-lost#1",
+          "cardId": "msis/doctor-strange/1-in-14-000-065#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msis/doctor-strange/invoke-the-time-stone#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -783,12 +760,12 @@
       ]
     },
     "shatter": {
-      "hitCount": 13,
-      "lastSeenTurn": 28,
+      "hitCount": 22,
+      "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 13
+        "parse-unrecognized": 22
       },
       "examples": [
         {
@@ -804,7 +781,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msmc/rictor/underground-cave-in#1",
+          "cardId": "msmc/rictor/underground-cave-in#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -824,26 +801,14 @@
       ]
     },
     "soulbind": {
-      "hitCount": 3,
-      "lastSeenTurn": 23,
+      "hitCount": 1,
+      "lastSeenTurn": 20,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 3
+        "parse-unrecognized": 1
       },
       "examples": [
-        {
-          "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
         {
           "cardId": "wtif/gamora-destroyer-of-thanos/destroy-an-infinity-stone#0",
           "cardType": "hero",
@@ -853,14 +818,20 @@
       ]
     },
     "speak": {
-      "hitCount": 1,
-      "lastSeenTurn": 27,
+      "hitCount": 2,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 1
+        "parse-unrecognized": 2
       },
       "examples": [
+        {
+          "cardId": "rlmk/black-bolt/the-kings-speech#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "rlmk/black-bolt/the-kings-speech#0",
           "cardType": "hero",
@@ -870,12 +841,12 @@
       ]
     },
     "streets": {
-      "hitCount": 58,
+      "hitCount": 59,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 58
+        "parse-unrecognized": 59
       },
       "examples": [
         {
@@ -911,20 +882,14 @@
       ]
     },
     "striker": {
-      "hitCount": 14,
-      "lastSeenTurn": 27,
+      "hitCount": 18,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 14
+        "parse-unrecognized": 18
       },
       "examples": [
-        {
-          "cardId": "smhc/happy-hogan/loyal-friend#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
         {
           "cardId": "smhc/happy-hogan/loyal-friend#0",
           "cardType": "hero",
@@ -948,16 +913,22 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "smhc/happy-hogan/loyal-friend#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
         }
       ]
     },
     "sunlight": {
-      "hitCount": 104,
-      "lastSeenTurn": 29,
+      "hitCount": 107,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 104
+        "parse-unrecognized": 107
       },
       "examples": [
         {
@@ -973,7 +944,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#1",
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -993,12 +964,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 180,
-      "lastSeenTurn": 29,
+      "hitCount": 187,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 180
+        "parse-unrecognized": 187
       },
       "examples": [
         {
@@ -1034,12 +1005,12 @@
       ]
     },
     "transform": {
-      "hitCount": 123,
-      "lastSeenTurn": 30,
+      "hitCount": 142,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 123
+        "parse-unrecognized": 142
       },
       "examples": [
         {
@@ -1075,27 +1046,15 @@
       ]
     },
     "undercover": {
-      "hitCount": 500,
+      "hitCount": 488,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 500,
+        "no-handler": 488,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },
       "examples": [
         {
-          "cardId": "2099/doctor-doom-2099/flesh-grafted-doombots#1",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "no-handler"
-        },
-        {
-          "cardId": "2099/doctor-doom-2099/flesh-grafted-doombots#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "no-handler"
-        },
-        {
           "cardId": "2099/doctor-doom-2099/tear-through-time-itself#0",
           "cardType": "hero",
           "timing": "onPlay",
@@ -1109,6 +1068,18 @@
         },
         {
           "cardId": "2099/doctor-doom-2099/tear-through-time-itself#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "no-handler"
+        },
+        {
+          "cardId": "2099/ghost-rider-2099/infernal-chainsaw#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "no-handler"
+        },
+        {
+          "cardId": "2099/ghost-rider-2099/infernal-chainsaw#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "no-handler"
@@ -1116,12 +1087,12 @@
       ]
     },
     "x-gene": {
-      "hitCount": 18,
-      "lastSeenTurn": 27,
+      "hitCount": 23,
+      "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 18
+        "parse-unrecognized": 23
       },
       "examples": [
         {
@@ -1137,7 +1108,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/banshee/sonar-detection#1",
+          "cardId": "xmen/banshee/sonar-detection#2",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

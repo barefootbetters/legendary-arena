@@ -144,7 +144,11 @@ describe('buildInitialGameState — shape', () => {
     }
   });
 
-  it('only deck is non-empty after setup; hand, discard, inPlay, victory are empty', () => {
+  it('deck and hand are dealt at setup (6 each); discard, inPlay, victory are empty', () => {
+    // why: WP-701 / D-24520 — setup now deals every seat's opening hand
+    // (HAND_SIZE = 6) from its 12-card starting deck, leaving deck 6 / hand 6.
+    // The former start-of-turn onBegin auto-draw is retired, so a freshly built
+    // state already holds a full hand.
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 2 });
     const registry = createMockRegistry();
@@ -154,15 +158,18 @@ describe('buildInitialGameState — shape', () => {
     for (const playerId of Object.keys(gameState.playerZones)) {
       const zones = gameState.playerZones[playerId];
       assert.ok(zones !== undefined, `Game state must carry zones for player ${playerId}.`);
-      assert.ok(zones.deck.length > 0, `Player ${playerId} deck must be non-empty`);
-      assert.equal(zones.hand.length, 0, `Player ${playerId} hand must be empty`);
+      assert.equal(zones.deck.length, 6, `Player ${playerId} deck must hold 6 cards after the setup deal`);
+      assert.equal(zones.hand.length, 6, `Player ${playerId} hand must hold HAND_SIZE (6) cards dealt at setup`);
       assert.equal(zones.discard.length, 0, `Player ${playerId} discard must be empty`);
       assert.equal(zones.inPlay.length, 0, `Player ${playerId} inPlay must be empty`);
       assert.equal(zones.victory.length, 0, `Player ${playerId} victory must be empty`);
     }
   });
 
-  it('each player starting deck has 12 cards (8 agents + 4 troopers)', () => {
+  it('each player starting deck has 12 cards total, split deck 6 / hand 6 after the setup deal', () => {
+    // why: WP-701 / D-24520 — the 12-card starting deck (8 agents + 4 troopers) is
+    // now dealt at setup into deck (6) + opening hand (6). The full starting
+    // composition still totals 12; only the deck/hand split changed.
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 2 });
     const registry = createMockRegistry();
@@ -170,15 +177,21 @@ describe('buildInitialGameState — shape', () => {
     const gameState = buildInitialGameState(config, registry, context);
 
     for (const playerId of Object.keys(gameState.playerZones)) {
+      // why: the `!` on these index accesses is a type-level narrowing, not a
+      // suppression: the expression is dereferenced either way, so an undefined
+      // value would already throw here. `!` is erased at compile time and carries
+      // no runtime semantics. See D-24379 for the idiom and why it is permitted
+      // where the suppression pragmas that decision bans are not.
+      const zones = gameState.playerZones[playerId]!;
       assert.equal(
-        // why: the `!` on these index accesses is a type-level narrowing, not a
-        // suppression: the expression is dereferenced either way, so an undefined
-        // value would already throw here. `!` is erased at compile time and carries
-        // no runtime semantics. See D-24379 for the idiom and why it is permitted
-        // where the suppression pragmas that decision bans are not.
-        gameState.playerZones[playerId]!.deck.length,
+        zones.deck.length,
+        6,
+        `Player ${playerId} deck must hold 6 cards after the setup deal`,
+      );
+      assert.equal(
+        zones.deck.length + zones.hand.length,
         12,
-        `Player ${playerId} starting deck must have 12 cards`,
+        `Player ${playerId} starting deck + hand must total 12 cards`,
       );
     }
   });
@@ -332,7 +345,10 @@ describe('buildInitialGameState — shape', () => {
     );
   });
 
-  it('starting deck contains exactly 8 agents and 4 troopers', () => {
+  it('starting deck contains exactly 8 agents and 4 troopers (across deck + dealt hand)', () => {
+    // why: WP-701 / D-24520 — the setup deal splits the 12-card starting deck into
+    // deck (6) + opening hand (6), so the 8-agent / 4-trooper composition is now
+    // distributed across both zones. Count the full starting deck = deck + hand.
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 2 });
     const registry = createMockRegistry();
@@ -340,11 +356,12 @@ describe('buildInitialGameState — shape', () => {
     const gameState = buildInitialGameState(config, registry, context);
 
     for (const playerId of Object.keys(gameState.playerZones)) {
-      const deck = gameState.playerZones[playerId]!.deck;
+      const zones = gameState.playerZones[playerId]!;
+      const startingDeck = [...zones.deck, ...zones.hand];
       let agentCount = 0;
       let trooperCount = 0;
 
-      for (const cardId of deck) {
+      for (const cardId of startingDeck) {
         if (cardId === SHIELD_AGENT_EXT_ID) {
           agentCount++;
         } else if (cardId === SHIELD_TROOPER_EXT_ID) {

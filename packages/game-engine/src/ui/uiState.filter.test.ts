@@ -79,9 +79,11 @@ function createTestUIState(): UIState {
   const gameState = buildInitialGameState(config, registry, setupContext);
 
   // why: populate hand with known cards so we can verify filter behavior.
-  // After setup, hands are empty — manually add cards for testing.
-  gameState.playerZones['0']!.hand.push('hero-card-001', 'hero-card-002');
-  gameState.playerZones['1']!.hand.push('hero-card-003');
+  // WP-701 / D-24520 — setup now deals a 6-card opening hand, so REPLACE the dealt
+  // hand with the known test set (assign, not push) to keep the filter-redaction
+  // assertions deterministic and independent of the setup deal.
+  gameState.playerZones['0']!.hand = ['hero-card-001', 'hero-card-002'];
+  gameState.playerZones['1']!.hand = ['hero-card-003'];
 
   return buildUIState(gameState, mockCtx);
 }

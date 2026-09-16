@@ -251,14 +251,13 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('play-phase onBegin auto-draws the active player to HAND_SIZE and sets hasDrawnThisTurn (WP-236)', () => {
-    // why: WP-236 — the engine owns the start-of-turn draw. After onBegin the
-    // active player's hand is filled to HAND_SIZE from their deck and
-    // G.hasDrawnThisTurn is true. The auto-draw runs before the onTurnStart
-    // hooks (locked onBegin order), so a hand-reading turn-start hook (e.g.
-    // Magneto's hand-size trim) observes the freshly drawn hand; the default
-    // onTurnStart hooks do not touch the hand, so the filled hand observed
-    // here is the auto-draw's work, not a later hook's.
+  it('play-phase onBegin does NOT draw (hand/deck untouched) and sets hasDrawnThisTurn true (WP-701 / D-24520)', () => {
+    // why: WP-701 / D-24520 — the start-of-turn auto-draw is RETIRED. Setup deals
+    // each seat's opening hand and the new hand is drawn at the END of the previous
+    // turn (applyEndOfTurnCleanup), so onBegin only resets per-turn flags: it leaves
+    // the hand/deck untouched and sets hasDrawnThisTurn true (the incoming seat
+    // already holds its hand, so the scaffold drawCards move stays a guarded no-op).
+    // The end-of-turn draw itself is covered in moves/endOfTurnCleanup.logic.test.ts.
     const mockConfiguration = createMockMatchConfiguration();
     const mockContext = makeMockCtx({ numPlayers: 2 });
     const gameState = LegendaryGame.setup!(
@@ -266,10 +265,10 @@ describe('LegendaryGame', () => {
       mockConfiguration,
     );
 
-    // The active player begins their turn with an empty hand (no draw at setup).
-    assert.equal(gameState.playerZones['0']!.hand.length, 0);
-    const deckBefore = gameState.playerZones['0']!.deck.length;
-    assert.ok(deckBefore >= HAND_SIZE, 'starting deck must have at least HAND_SIZE cards');
+    // The active player already holds a hand dealt at setup (no longer empty).
+    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE, 'setup deals the opening hand');
+    const handBefore = [...gameState.playerZones['0']!.hand];
+    const deckBefore = [...gameState.playerZones['0']!.deck];
 
     const playPhase = (
       LegendaryGame.phases as Record<
@@ -292,24 +291,25 @@ describe('LegendaryGame', () => {
       events: { setPhase: () => void; endTurn: () => void };
     });
 
-    assert.equal(
-      gameState.playerZones['0']!.hand.length,
-      HAND_SIZE,
-      'onBegin must fill the active player hand to HAND_SIZE',
+    assert.deepEqual(
+      gameState.playerZones['0']!.hand,
+      handBefore,
+      'onBegin must NOT draw — the hand is unchanged',
     );
-    assert.equal(
-      gameState.playerZones['0']!.deck.length,
-      deckBefore - HAND_SIZE,
-      'the drawn cards must come off the deck',
+    assert.deepEqual(
+      gameState.playerZones['0']!.deck,
+      deckBefore,
+      'onBegin must NOT touch the deck',
     );
     assert.equal(gameState.hasDrawnThisTurn, true);
   });
 
-  it('play-phase onBegin pushes exactly one deckReshuffled notable event when its auto-draw reshuffles (WP-642 / D-24454)', () => {
-    // why: WP-642 — the real game.ts onBegin (not just the applyOnBeginParity
-    // mirror) announces the empty-deck reshuffle. Force the reshuffle path:
-    // empty the active player's deck, stock the discard with a full hand's
-    // worth, and clear notableEvents so the single push is isolated.
+  it('play-phase onBegin does NOT draw or reshuffle even with an empty deck and stocked discard (WP-701 / D-24520)', () => {
+    // why: WP-701 / D-24520 — the reshuffle-on-exhaustion draw moved to end-of-turn
+    // (applyEndOfTurnCleanup), so onBegin no longer draws OR reshuffles. Force what
+    // used to be the reshuffle path — empty deck, stocked discard, empty hand — and
+    // assert onBegin leaves the zones untouched and pushes NO deckReshuffled event.
+    // The end-of-turn reshuffle + event is covered in moves/endOfTurnCleanup.logic.test.ts.
     const gameState = LegendaryGame.setup!(
       makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
       createMockMatchConfiguration(),
@@ -332,24 +332,35 @@ describe('LegendaryGame', () => {
       events: { setPhase: (): void => {}, endTurn: (): void => {} },
     });
 
-    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE);
-    assert.equal(gameState.notableEvents.length, 1);
-    assert.deepEqual(gameState.notableEvents[0], {
-      type: 'deckReshuffled',
-      playerId: '0',
-      narrative: 'The hero deck was reshuffled from the discard pile.',
-    });
+    // No draw: the empty hand stays empty; deck/discard untouched.
+    assert.equal(gameState.playerZones['0']!.hand.length, 0, 'onBegin must NOT draw');
+    assert.deepEqual(gameState.playerZones['0']!.deck, []);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7']);
+    // No reshuffle event pushed.
+    assert.equal(
+      gameState.notableEvents.filter((event) => event.type === 'deckReshuffled').length,
+      0,
+      'onBegin must push NO deckReshuffled event',
+    );
   });
 
-  it('play-phase onBegin pushes NO deckReshuffled when the deck feeds the draw without exhausting (WP-642)', () => {
-    // why: WP-642 — the event fires ONLY on an actual reshuffle. A full starting
-    // deck feeds the HAND_SIZE draw with cards to spare, so no event is pushed.
+  it('play-phase onBegin does NOT draw from a full deck and pushes no deckReshuffled (WP-701 / D-24520)', () => {
+    // why: WP-701 / D-24520 — companion to the empty-deck case: even with a full
+    // starting deck, onBegin never draws (the fill is at end-of-turn now), so the
+    // hand/deck are unchanged and no deckReshuffled event is pushed.
     const gameState = LegendaryGame.setup!(
       makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
       createMockMatchConfiguration(),
     );
     gameState.notableEvents = [];
-    assert.ok(gameState.playerZones['0']!.deck.length > HAND_SIZE);
+    // why: setup deals the opening hand, leaving deck == HAND_SIZE; install a larger
+    // deck so the scenario is unambiguously "a deck that could feed a draw with room
+    // to spare" — and prove onBegin still does not draw from it.
+    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.deck = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8'];
+    assert.ok(gameState.playerZones['0']!.deck.length > HAND_SIZE, 'deck feeds a draw with room to spare');
+    const handBefore = [...gameState.playerZones['0']!.hand];
+    const deckBefore = [...gameState.playerZones['0']!.deck];
 
     const onBegin = (
       LegendaryGame.phases as Record<
@@ -364,21 +375,25 @@ describe('LegendaryGame', () => {
       events: { setPhase: (): void => {}, endTurn: (): void => {} },
     });
 
+    assert.deepEqual(gameState.playerZones['0']!.hand, handBefore, 'onBegin must NOT draw from a full deck');
+    assert.deepEqual(gameState.playerZones['0']!.deck, deckBefore, 'the deck is untouched');
     assert.equal(
       gameState.notableEvents.filter((event) => event.type === 'deckReshuffled').length,
       0,
     );
   });
 
-  it('play-phase onBegin honours a handSizeOverride (fills to 8) and clears it (WP-497 / D-24300, AC-2/AC-3)', () => {
-    // why: WP-497 — a defeated Doc Ock "Octet of Valence Electrons" tactic records
-    // G.handSizeOverrides[player] = 8; that player's NEXT onBegin fills to 8 instead
-    // of HAND_SIZE, then the entry is consumed (deleted) so no later turn draws 8.
+  it('play-phase onBegin does NOT consume a handSizeOverride or fill to it (WP-701 / D-24520)', () => {
+    // why: WP-701 / D-24520 — the handSizeOverride consume (a defeated Doc Ock "Octet
+    // of Valence Electrons" tactic records G.handSizeOverrides[player] = 8) moved from
+    // onBegin to the end-of-turn cleanup, since that is where the draw now happens. So
+    // onBegin leaves the override in place (it is consumed at the player's NEXT
+    // end-of-turn) and does not fill the hand to it. The fill-to-8-and-consume behavior
+    // is covered in moves/endOfTurnCleanup.logic.test.ts.
     const gameState = LegendaryGame.setup!(
       makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
       createMockMatchConfiguration(),
     );
-    assert.ok(gameState.playerZones['0']!.deck.length >= 8, 'starting deck must have >= 8 cards');
 
     const playPhase = (
       LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
@@ -391,19 +406,15 @@ describe('LegendaryGame', () => {
       events: { setPhase: (): void => {}, endTurn: (): void => {} },
     };
 
-    // AC-2: override set → onBegin fills to 8 and deletes the consumed entry.
+    // Install a known hand and a pending override, then run onBegin.
+    gameState.playerZones['0']!.hand = ['keep1', 'keep2'];
     gameState.handSizeOverrides = { '0': 8 };
     onBegin(beginContext);
-    assert.equal(gameState.playerZones['0']!.hand.length, 8, 'onBegin fills to the override (8)');
-    assert.equal(gameState.handSizeOverrides['0'], undefined, 'the consumed override entry is deleted');
 
-    // AC-3: no override on a later fill → back to HAND_SIZE (the override did not
-    // persist). Install a fresh ≥HAND_SIZE deck so the fill is not deck-limited by
-    // AC-2's 8-card draw (which is a deck-size artifact, not the override).
-    gameState.playerZones['0']!.hand = [];
-    gameState.playerZones['0']!.deck = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8'];
-    onBegin(beginContext);
-    assert.equal(gameState.playerZones['0']!.hand.length, HAND_SIZE, 'a later fill draws to HAND_SIZE, not 8');
+    // onBegin does not draw, so the hand is unchanged (not filled to 8)...
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['keep1', 'keep2'], 'onBegin does not fill to the override');
+    // ...and the override survives onBegin (it is consumed at end-of-turn cleanup).
+    assert.equal(gameState.handSizeOverrides['0'], 8, 'the override is NOT consumed by onBegin');
   });
 
   it('play-phase onBegin numbers the first play turn as 1, not the framework ctx.turn (lobby offset)', () => {

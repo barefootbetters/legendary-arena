@@ -14,7 +14,8 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { DrawCardsArgs, PlayCardArgs } from './coreMoves.types.js';
 import { validateDrawCardsArgs, validatePlayCardArgs, validateMoveAllowedInStage } from './coreMoves.validate.js';
-import { moveCardFromZone, moveAllCards } from './zoneOps.js';
+import { moveCardFromZone } from './zoneOps.js';
+import { applyEndOfTurnCleanup } from './endOfTurnCleanup.logic.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
@@ -512,7 +513,7 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
  *
  * @param context - boardgame.io move context with G, events, random, playerID.
  */
-export function endTurn({ G, playerID, events }: MoveContext): void {
+export function endTurn({ G, playerID, events, random }: MoveContext): void {
   // Step 1: Validate args (endTurn has no args — skip to stage gate)
 
   // Step 2: Check stage gate
@@ -662,13 +663,12 @@ export function endTurn({ G, playerID, events }: MoveContext): void {
     return;
   }
 
-  const inPlayResult = moveAllCards(playerZones.inPlay, playerZones.discard);
-  playerZones.inPlay = inPlayResult.from;
-  playerZones.discard = inPlayResult.to;
-
-  const handResult = moveAllCards(playerZones.hand, playerZones.discard);
-  playerZones.hand = handResult.from;
-  playerZones.discard = handResult.to;
+  // why: WP-701 / D-24520 — end-of-turn cleanup: discard in-play + hand, then draw the
+  // player's new hand to HAND_SIZE. Replaces the former inline discard sweep — the draw
+  // moved here from the start-of-turn onBegin auto-draw so a player holds a full hand
+  // during opponents' turns (Master Strikes now land). Runs BEFORE the extra-turn branch
+  // so a queued extra turn (D-24513) begins with the freshly drawn hand.
+  applyEndOfTurnCleanup(G, playerID, { random });
 
   // why: WP-696 / D-24513 — this is the player-initiated end-turn path, a DIRECT
   // events.endTurn() that does NOT route through advanceTurnStage (D-22002 two-path

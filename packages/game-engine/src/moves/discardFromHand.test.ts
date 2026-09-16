@@ -93,10 +93,11 @@ describe('discardFromHand (WP-498 / D-24301)', () => {
 // guard scans the engine source for the canonical hand→discard zoneOps idioms and
 // asserts every occurrence lives in an allowlisted file. Allowlist:
 //   - discardFromHand.ts — the chokepoint itself (the one legal home).
-//   - coreMoves.impl.ts  — the normal end-of-turn CLEANUP discard, which is turn
-//     structure, NOT "a card effect", so it must NOT trigger the return (WP §Out
-//     of Scope) and legitimately keeps its own moveAllCards(hand, discard).
-const ALLOWLISTED_BASENAMES = new Set(['discardFromHand.ts', 'coreMoves.impl.ts']);
+//   - endOfTurnCleanup.logic.ts — the normal end-of-turn CLEANUP discard (WP-701 /
+//     D-24520 moved it here from coreMoves.impl.ts as the shared cleanup helper),
+//     which is turn structure, NOT "a card effect", so it must NOT trigger the
+//     return (WP §Out of Scope) and legitimately keeps its own moveAllCards(hand, discard).
+const ALLOWLISTED_BASENAMES = new Set(['discardFromHand.ts', 'endOfTurnCleanup.logic.ts']);
 
 // Matches moveCardFromZone(X.hand, Y.discard  and  moveAllCards(X.hand, Y.discard
 // — the two zoneOps idioms that move a card OUT of hand INTO discard. A deck→discard

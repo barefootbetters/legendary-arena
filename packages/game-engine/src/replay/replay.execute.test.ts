@@ -169,7 +169,16 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // cardStats, so the empty-replay hash shifts uniformly. The SOLE canonical-JSON delta is
 // the one new boolean per cardStats entry — no gameplay changed (this replay plays no
 // shield-levels card, and the flag alters no move outcome). Sanctioned new-hashed-field class.
-const PRE_WP080_HASH = '29e41e8';
+// Post-WP-701: '4b119265'.
+// why: WP-701 / D-24520 re-pin — setup now DEALS every player's starting hand (HAND_SIZE
+// cards move deck→hand at buildInitialGameState) and hasDrawnThisTurn is TRUE at setup, so
+// this empty (moves:[]) replay's initial G legitimately changes: each player's hand holds 6
+// cards and their deck holds 6 (was hand []/deck 12). The setup deal draws from the top of an
+// already-shuffled deck and never reshuffles, so it consumes NO RNG — the rest of setup's
+// stream is byte-unchanged; the sole delta is the hand/deck split. A real behaviour change
+// (the tabletop starting-hand deal), verified against the regenerated sentinel — not a masked
+// regression.
+const PRE_WP080_HASH = '4b119265';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

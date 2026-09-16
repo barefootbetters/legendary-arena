@@ -20,18 +20,31 @@ import type { TurnLoopState, TurnLoopContext } from './turnLoop.js';
 import { TURN_STAGES } from './turnPhases.types.js';
 
 /**
- * Creates a minimal TurnLoopContext with a spy on events.endTurn.
+ * Creates a minimal TurnLoopContext with spies on events.endTurn and the
+ * end-of-turn cleanup closure.
+ *
+ * why: WP-701 / D-24520 — TurnLoopContext now carries a required `cleanup`
+ * closure that advanceTurnStage invokes on the turn-end branch (the ending seat
+ * discards + draws its new hand). The spy lets the turn-end tests assert cleanup
+ * ran for the ending seat without wiring the full LegendaryGameState draw here —
+ * the draw itself is covered in moves/endOfTurnCleanup.logic.test.ts.
  *
  * @param currentPlayer - The acting seat id (default '0').
- * @returns The context plus the endTurn spy for call/argument assertions.
+ * @returns The context plus the endTurn and cleanup spies for assertions.
  */
-function makeContext(currentPlayer = '0'): { context: TurnLoopContext; endTurnSpy: ReturnType<typeof mock.fn> } {
+function makeContext(currentPlayer = '0'): {
+  context: TurnLoopContext;
+  endTurnSpy: ReturnType<typeof mock.fn>;
+  cleanupSpy: ReturnType<typeof mock.fn>;
+} {
   const endTurnSpy = mock.fn();
+  const cleanupSpy = mock.fn();
   const context: TurnLoopContext = {
     currentPlayer,
     events: { endTurn: endTurnSpy },
+    cleanup: cleanupSpy,
   };
-  return { context, endTurnSpy };
+  return { context, endTurnSpy, cleanupSpy };
 }
 
 describe('consumeExtraTurn', () => {
@@ -69,10 +82,15 @@ describe('consumeExtraTurn', () => {
 describe('advanceTurnStage — extra-turn branch', () => {
   it('grants the same seat another turn via endTurn({ next }) when a turn is queued', () => {
     const gameState: TurnLoopState = { currentStage: TURN_STAGES[2], extraTurns: { '0': 1 } };
-    const { context, endTurnSpy } = makeContext('0');
+    const { context, endTurnSpy, cleanupSpy } = makeContext('0');
 
     advanceTurnStage(gameState, context);
 
+    // why: WP-701 / D-24520 — the ending seat's end-of-turn cleanup (discard +
+    // draw) runs on this path BEFORE the extra turn begins, so the queued turn
+    // starts with a freshly drawn hand.
+    assert.equal(cleanupSpy.mock.callCount(), 1);
+    assert.deepEqual(cleanupSpy.mock.calls[0]!.arguments, ['0']);
     assert.equal(endTurnSpy.mock.callCount(), 1);
     // why: the extra turn is the SAME seat's next turn — endTurn is called with
     // { next: currentPlayer }, not the bare form that would rotate away.
@@ -83,10 +101,14 @@ describe('advanceTurnStage — extra-turn branch', () => {
 
   it('ends the turn with the bare endTurn() when no extra turn is queued', () => {
     const gameState: TurnLoopState = { currentStage: TURN_STAGES[2] };
-    const { context, endTurnSpy } = makeContext('0');
+    const { context, endTurnSpy, cleanupSpy } = makeContext('0');
 
     advanceTurnStage(gameState, context);
 
+    // why: WP-701 / D-24520 — the ending seat's end-of-turn cleanup runs on the
+    // normal-rotation path too, before boardgame.io rotates to the next seat.
+    assert.equal(cleanupSpy.mock.callCount(), 1);
+    assert.deepEqual(cleanupSpy.mock.calls[0]!.arguments, ['0']);
     assert.equal(endTurnSpy.mock.callCount(), 1);
     // why: regression-safe — normal turns must call endTurn with no argument so
     // boardgame.io rotates to the next seat.
@@ -115,11 +137,14 @@ describe('advanceTurnStage — extra-turn branch', () => {
 
   it('does not end the turn (or touch the counter) mid-stage', () => {
     const gameState: TurnLoopState = { currentStage: TURN_STAGES[0], extraTurns: { '0': 1 } };
-    const { context, endTurnSpy } = makeContext('0');
+    const { context, endTurnSpy, cleanupSpy } = makeContext('0');
 
     advanceTurnStage(gameState, context);
 
     assert.equal(endTurnSpy.mock.callCount(), 0);
+    // why: WP-701 / D-24520 — cleanup runs only on the turn-end branch, never on a
+    // plain stage advance.
+    assert.equal(cleanupSpy.mock.callCount(), 0);
     assert.equal(gameState.currentStage, TURN_STAGES[1]);
     // why: the counter is only consumed at turn-end, not on a stage advance.
     assert.equal(gameState.extraTurns?.['0'], 1);

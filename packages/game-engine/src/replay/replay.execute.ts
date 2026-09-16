@@ -48,6 +48,7 @@ import { recruitOfficer } from '../moves/recruitOfficer.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
+import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 import { pushLog } from '../log/logPush.js';
 
 // why: move functions expect FnContext<LegendaryGameState> & { playerID }.
@@ -100,6 +101,11 @@ function replayAdvanceStage(context: ReplayMoveContext): void {
   advanceTurnStage(context.G, {
     currentPlayer: context.ctx.currentPlayer,
     events: { endTurn: context.events.endTurn },
+    // why: WP-701 / D-24520 — end-of-turn cleanup (discard + draw the new hand) on the
+    // cleanup-stage turn-end path, using the replay's reconstructed ShuffleProvider so
+    // the replayed G matches live/sim byte-for-byte.
+    cleanup: (endingPlayerID) =>
+      applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
   });
 }
 
