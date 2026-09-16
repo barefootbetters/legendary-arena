@@ -42474,4 +42474,49 @@ D-24185 / WP-383 (mandatory hand-pick + eligibility helper), D-24069 (pending-ch
 framework), D-24518 (vanquish-drop set), D-24372 (RUNTIME drift pins). **Reserved by:**
 NUMBER-LEDGER D-24519.
 
+### D-24520 — draw the new hand at end of turn (not start), deal initial hands at setup (Drafted 2026-09-16; not yet landed — WP-701 / EC-738)
+
+**Decision.** Move the new-hand draw from the play-phase `turn.onBegin` auto-draw
+(D-10003/D-23605 — the MVP shortcut where `endTurn` discards but does not draw, and the next
+`onBegin` fills) to the **end of the player's turn**, after the hand + in-play discard, and
+deal every player's **initial** hand at setup. This restores the tabletop rule (discard and
+draw a fresh six at end of turn) so a player holds `HAND_SIZE` cards during opponents' turns.
+
+Locks:
+
+1. **A single shared cleanup site.** `applyEndOfTurnCleanup(G, playerID, shuffleProvider)`
+   (pure, no boardgame.io import): discard `inPlay` + `hand` → `discard`, fill to
+   `handSizeOverrides?.[playerID] ?? HAND_SIZE` via the existing `drawCardsIntoHand`, push the
+   `deckReshuffled` notable event on a realized reshuffle, then consume `handSizeOverrides`
+   (D-24300) and `deferredHandInjections` (D-24512). It bundles the old `endTurn`-move discard
+   and the old `onBegin` draw block.
+2. **Both D-22002 turn-end paths clean up (never both for one end).** The `endTurn` move
+   replaces its inline discard sweep with the helper (before the extra-turn branch); the
+   `advanceStage`→`advanceTurnStage` cleanup branch calls the helper before its
+   `events.endTurn()` — which also fixes that path's latent no-discard. The extra-turn
+   (D-24513) begins with the freshly drawn hand because cleanup precedes `events.endTurn({next})`.
+3. **`turn.onBegin` performs resets only** (no draw); the incoming player already holds the hand
+   drawn at their prior end-of-turn (or at setup for their first turn). The harness mirror
+   `applyOnBeginParity` likewise keeps its resets and drops its draw, and all three
+   bgio-bypassing harnesses (`simulation.runner`, `par.aggregator`, `runFixture`) reach the
+   end-of-turn draw through the same `endTurn` move / `advanceTurnStage` they already dispatch.
+4. **The determinism re-pin is EXPECTED and HONEST.** Setup now deals hands and the draw moved
+   in the RNG stream, so `PRE_WP080_HASH` and the sentinel `sentinel-core-doom-2p.replay.json`
+   `finalStateHash` (+ its `expected` block) regenerate to new values — verified correct (the
+   core Dr. Doom Master Strike now discards full hands), never a fixture edited to mask a
+   change. The PAR profile sweep (`data/par/profile/v1/**`) is gitignored / not CI-gated and
+   refreshes separately.
+
+**Balance note.** This makes the game **harder and more faithful** — Master Strikes and every
+"each player discards / reveals" effect now land on real hands instead of the 0-card hand a
+player is left with between turns today (live-observed). A deliberate correctness/balance
+change, not a silent tuning.
+
+**Supersedes.** The D-10003/D-23605 MVP `onBegin` auto-draw shortcut.
+
+**Status:** Drafted 2026-09-16; not yet landed (flips to Active when WP-701 executes).
+**Builds on:** D-23605 (`drawCardsIntoHand`/`HAND_SIZE`), D-22002 (dual turn-end path), D-24513
+(extra-turn), D-24512 (deferredHandInjection), D-24300 (handSizeOverrides), D-24081
+(messages/logMeta hash exclusion). **Reserved by:** NUMBER-LEDGER D-24520.
+
 Protect this file.
