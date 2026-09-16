@@ -146,6 +146,27 @@ determinism invariant (D-24029 §9 / D-24030), because a binding persisted
 into `G` would break the runtime-only persistence boundary and risk
 double-application on replay.
 
+**A compound draw-then-park hero keyword (WP-700 / D-24519).** The
+`put-hand-on-deck-top` keyword — Gambit's *"Draw two cards. Then put a card from
+your hand on top of your deck."* and its six siblings across `core` / `co2e` /
+`anni` / `dstr` / `wpnx` / `wtif` — is the pending-choice family's first
+**compound onPlay** member: the handler
+([`heroEffects.execute.ts`](../packages/game-engine/src/hero/heroEffects.execute.ts)#put-hand-on-deck-top)
+first draws `magnitude` cards synchronously (the printed count, via the shared
+`drawFromPlayerDeck`), **then** parks a **mandatory** `PendingPutHandOnDeckTop`
+so the active player places one card from the now-enlarged hand on the *top*
+(`deck[0]`) of their own deck. Unlike the scry / discard / reorder / Smash
+choices — which park directly on play — the preceding synchronous draw is what
+makes the hand the player then chooses from. It rides the same block-all model
+(guard replicated per action move + `resolvePutHandOnDeckTop` move + a
+chooser-redacted UIState projection + `PutHandOnDeckTopPrompt.vue` — the three
+ship together or the match hard-freezes), carries the draw count as its
+`magnitude` (so it is **not** in `NO_MAGNITUDE_KEYWORDS`), has **no decline arm**
+(the printed text is *"put a card…"*, not *"you may"*), and enrolls its queue in
+the D-24518 vanquish-drop set. It supersedes the D-22501 deferral that left Stack
+the Deck an honest hollow — the card drew nothing and parked nothing until this
+keyword shipped.
+
 ### Villain effects: parameterized descriptors
 
 The villain/henchman path in
