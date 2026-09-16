@@ -42423,7 +42423,7 @@ Final Blow deferral this guard is careful to respect), D-24512 (Electromagnetic 
 Ruthless Dictator park sites), D-24008 (the block-all guards that guarantee no pre-existing
 pending choice). **Reserved by:** NUMBER-LEDGER D-24518.
 
-### D-24519 — the `put-hand-on-deck-top` hero keyword (Drafted 2026-09-15; not yet landed — WP-700 / EC-737)
+### D-24519 — the `put-hand-on-deck-top` hero keyword (Active 2026-09-15 — WP-700 / EC-737)
 
 **Decision.** Add a new handler-bearing `HeroKeyword` `put-hand-on-deck-top` for the printed
 compound "Draw N cards. Then put a card from your hand on top of your deck." (Gambit's Stack
@@ -42468,7 +42468,7 @@ behavior); Seed-PAR is scheme-keyed and hero-agnostic (unaffected).
 **Supersedes.** The D-22501 deferral of Time Loop Experiments (and the untracked hollow of
 Stack the Deck) as "compound-executor territory" — this WP is that compound executor.
 
-**Status:** Drafted 2026-09-15; not yet landed (flips to Active when WP-700 executes).
+**Status:** Active 2026-09-15 — WP-700 merged via PR #2065 (D-24026 live-on-surface verify pending deploy).
 **Builds on:** D-24492 / WP-676 (Smash magnitude-carrying park + client prompt), D-24184 /
 D-24185 / WP-383 (mandatory hand-pick + eligibility helper), D-24069 (pending-choice + UIState
 framework), D-24518 (vanquish-drop set), D-24372 (RUNTIME drift pins). **Reserved by:**
