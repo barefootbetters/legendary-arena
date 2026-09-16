@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-700 — Put-hand-on-deck-top: draw-then-stack hero keyword (EC-737 / D-24519) (2026-09-15)
+
+Fixed the reported Gambit **Stack the Deck** "effect isn't firing" bug — the card was never
+wired (an unmarked honest-hollow compound line, D-22501-deferred), not a regression. Added the
+new `put-hand-on-deck-top` hero keyword covering 7 onPlay card instances across 6 sets
+(core/co2e Stack the Deck, anni Time Loop Experiments, dstr Prepare Dark Magic, wpnx
+Osteogenesis, wtif Tactical Insight + Diverging Timestreams). A compound onPlay handler draws
+the printed number of cards, then parks a MANDATORY block-all interactive choice for the active
+player to place one hand card on top (deck[0]) of their own deck — no decline. Server-only
+`resolvePutHandOnDeckTop` move + block-all guard across every action move + D-24518 vanquish-drop
+enrollment; full five-step UIState + `PutHandOnDeckTopPrompt.vue` (freeze-prevention); sim
+dispatch; hero-ability markers + reproducible regen of the 6 sets; coverage/ledger regen flips
+all 7 cards to `executable`. Merged via PR #2065; engine 3532/0, arena-client 1823/0, dashboard
+482/0, Dashboard Gates green, `finalStateHash` sentinels byte-unchanged. The wpnx Fantomex
+*Misdirection* draw-a-new-hand-timing variant is out of scope (deferred). **D-24026 live-verify
+pending deploy** (play Stack the Deck on play.legendary-arena.com → confirm the prompt + deck-top
+placement).
+
 ### WP-699 — Hand Presentation: hover-lift + shallow hand arc (EC-736) (2026-09-15)
 
 The player's hand on **play.legendary-arena.com** now reads as a Hearthstone-style
