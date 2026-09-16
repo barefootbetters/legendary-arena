@@ -24,6 +24,7 @@ import {
   useCompetitiveSubmitOnGameover,
   type SubmissionStatus,
 } from '../composables/useCompetitiveSubmitOnGameover';
+import { useSeatIdentitiesOnGameover } from '../composables/useSeatIdentitiesOnGameover';
 import { useCardImagePrefetch } from '../composables/useCardImagePrefetch';
 import { useSoundEffects } from '../composables/useSoundEffects';
 import { useComboCue } from '../composables/useComboCue';
@@ -209,6 +210,16 @@ export default defineComponent({
     const { submissionStatus, submittedScore } = useCompetitiveSubmitOnGameover(
       toRef(props, 'matchId'),
     );
+
+    // why: INFRA (endgame seat names) — on gameover, fetch the per-seat identity
+    // roster so the co-op VP recap can label seats "Player N (@handle)" / "(Bot)".
+    // The competitive report card gets the same roster from its submit response;
+    // this covers the unscored / guest / local matches that fall through to the
+    // recap. Public read (runs for guests too); toRef keeps matchId reactive so it
+    // re-arms for a new live match on the same viewport instance.
+    const { seatIdentities } = useSeatIdentitiesOnGameover(
+      toRef(props, 'matchId'),
+    );
     const submissionMessage = computed<string>(() => {
       const status = submissionStatus.value;
       // why: WP-465 — 'idle' has no banner (rendered only when status !== 'idle')
@@ -361,6 +372,7 @@ export default defineComponent({
       heroDeckIds: props.heroDeckIds,
       submissionStatus,
       submittedScore,
+      seatIdentities,
       submissionMessage,
       isGuestResult,
       isBotAllyStopped,
@@ -399,6 +411,7 @@ export default defineComponent({
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
       :competitive-score="submittedScore"
+      :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
     />
     <PlayDesktop
@@ -409,6 +422,7 @@ export default defineComponent({
       :henchman-group-ids="henchmanGroupIds"
       :hero-deck-ids="heroDeckIds"
       :competitive-score="submittedScore"
+      :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
     />
     <DiagnosticExportButton />

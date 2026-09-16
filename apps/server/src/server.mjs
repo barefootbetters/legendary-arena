@@ -46,6 +46,7 @@ import { registerProfileRoutes } from './profile/profile.routes.js';
 import { registerTeamRoutes } from './teams/team.routes.js';
 import { registerMatchGateRoutes } from './match/matchGate.routes.js';
 import { registerMatchLagnRoutes } from './match/matchLagn.routes.js';
+import { registerSeatIdentitiesRoute } from './match/seatIdentities.routes.js';
 import { registerCoachRoutes } from './coach/coach.routes.js';
 import { createAnthropicCoachClient } from './coach/coachClient.js';
 import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
@@ -1023,6 +1024,16 @@ export async function startServer() {
   // Tier-1 LAGN projection (the D-24153 carve-out extension); they never mutate or
   // persist anything.
   registerMatchLagnRoutes(server.router, pool, { registry });
+
+  // why: INFRA (endgame seat names) — register the public finished-match seat
+  // identities read (GET /api/match/:matchId/seat-identities). It gives the
+  // endgame co-op VP recap the same per-seat roster ("Player N (@handle)" /
+  // "(Bot)") the competitive report card already shows, for matches that were
+  // never competitively scored (guest / local). A derived, read-only projection
+  // of the seat→account map + bot tags + display handles; same public
+  // finished-match privacy posture as the result-lagn twin above (D-24169 /
+  // D-24446). No auth deps — public read, like the LAGN routes.
+  registerSeatIdentitiesRoute(server.router, pool);
 
   // why: WP-594 / D-24403 — register the Legendary-Pass endgame AI coach
   // (GET /api/me/scores/:replayHash/coach). Lazy + cached (the paid model runs at

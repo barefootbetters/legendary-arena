@@ -372,7 +372,7 @@ function buildPerPlayerSplit(
  * @param identity - The seat's identity, or undefined when unknown.
  * @returns The player label.
  */
-function playerLabel(
+export function playerLabel(
   playerId: string,
   identity: CompetitiveSeatIdentity | undefined,
 ): string {
