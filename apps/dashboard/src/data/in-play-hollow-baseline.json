@@ -3,10 +3,10 @@
   "generatedAt": "seed",
   "byMechanic": {
     "abomination": {
-      "peakObs": 29
+      "peakObs": 34
     },
     "ambush": {
-      "peakObs": 94
+      "peakObs": 103
     },
     "antics": {
       "peakObs": 16
@@ -18,13 +18,13 @@
       "peakObs": 17
     },
     "clone": {
-      "peakObs": 73
+      "peakObs": 89
     },
     "conqueror": {
       "peakObs": 12
     },
     "coordinate": {
-      "peakObs": 226
+      "peakObs": 262
     },
     "cyber-mod": {
       "peakObs": 12
@@ -35,14 +35,17 @@
     "dodge": {
       "peakObs": 37
     },
+    "empowered": {
+      "peakObs": 1
+    },
     "endgame": {
       "peakObs": 29
     },
     "heist": {
-      "peakObs": 35
+      "peakObs": 50
     },
     "indigestion": {
-      "peakObs": 32
+      "peakObs": 38
     },
     "investigate": {
       "peakObs": 293
@@ -60,19 +63,19 @@
       "peakObs": 157
     },
     "phasing": {
-      "peakObs": 86
+      "peakObs": 100
     },
     "rooftops": {
       "peakObs": 4
     },
     "sacrifice": {
-      "peakObs": 7
+      "peakObs": 10
     },
     "savior": {
       "peakObs": 23
     },
     "shatter": {
-      "peakObs": 10
+      "peakObs": 22
     },
     "size-changing": {
       "peakObs": 2
@@ -80,23 +83,26 @@
     "soulbind": {
       "peakObs": 5
     },
+    "speak": {
+      "peakObs": 2
+    },
     "streets": {
-      "peakObs": 51
+      "peakObs": 59
     },
     "striker": {
-      "peakObs": 14
+      "peakObs": 18
     },
     "sunlight": {
       "peakObs": 109
     },
     "teleport": {
-      "peakObs": 178
+      "peakObs": 187
     },
     "transform": {
-      "peakObs": 98
+      "peakObs": 142
     },
     "undercover": {
-      "peakObs": 20
+      "peakObs": 488
     },
     "unleash": {
       "peakObs": 4
@@ -105,7 +111,7 @@
       "peakObs": 61
     },
     "x-gene": {
-      "peakObs": 16
+      "peakObs": 23
     }
   }
 }
