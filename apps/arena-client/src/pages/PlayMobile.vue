@@ -9,7 +9,7 @@ import type {
 import { useUiStateStore } from '../stores/uiState';
 
 import EndgameSummary from '../components/hud/EndgameSummary.vue';
-import type { MyCompetitiveScore } from '../lib/api/competitionApi';
+import type { MyCompetitiveScore, CompetitiveSeatIdentity } from '../lib/api/competitionApi';
 import TopHudBar from '../components/play/TopHudBar.vue';
 import OpponentPanel from '../components/play/OpponentPanel.vue';
 import MastermindTile from '../components/play/MastermindTile.vue';
@@ -163,6 +163,13 @@ export default defineComponent({
     // guests / pending / non-scoring matches.
     competitiveScore: {
       type: Object as PropType<MyCompetitiveScore | null>,
+      default: null,
+    },
+    // why: INFRA (endgame seat names) — prop-drilled PlayViewport → here →
+    // EndgameSummary so the co-op VP recap can label seats "Player N (@handle)" /
+    // "(Bot)". Null until the gameover fetch resolves (recap then shows "Player N").
+    seatIdentities: {
+      type: Array as PropType<readonly CompetitiveSeatIdentity[] | null>,
       default: null,
     },
     // why: prop-drilled PlayViewport → here → EndgameSummary so the endgame panel
@@ -469,6 +476,7 @@ export default defineComponent({
         v-if="isGameOver && snapshot.gameOver"
         :game-over="snapshot.gameOver"
         :competitive-score="competitiveScore"
+        :seat-identities="seatIdentities"
         :show-guest-sign-in="showGuestSignIn"
       />
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />

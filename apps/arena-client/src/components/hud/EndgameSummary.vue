@@ -6,8 +6,8 @@ import type { UIGameOverState } from '@legendary-arena/game-engine';
 // the player-facing word comes from the client `gradeDisplay` helper (D-24392).
 import { gradeForFinalScore } from '@legendary-arena/game-engine';
 import { gradeLabel, gradeClass, gradeAriaText, buildGradeScale } from '../../vfx/gradeDisplay';
-import { buildWorkedScoreCalc, buildLuckRead, buildScoringKey } from '../../vfx/scoreCalcDisplay';
-import type { MyCompetitiveScore } from '../../lib/api/competitionApi';
+import { buildWorkedScoreCalc, buildLuckRead, buildScoringKey, playerLabel } from '../../vfx/scoreCalcDisplay';
+import type { MyCompetitiveScore, CompetitiveSeatIdentity } from '../../lib/api/competitionApi';
 import EndgameCoachPanel from './EndgameCoachPanel.vue';
 
 /**
@@ -83,6 +83,16 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    // why: INFRA (endgame seat names) — the per-seat identity roster
+    // ({ playerId, isBot, handle }) fetched on gameover (PlayViewport →
+    // useSeatIdentitiesOnGameover), so the co-op VP recap labels seats
+    // "Player N (@handle)" / "(Bot)" — the same labelling the competitive block
+    // gets from competitiveScore.seatIdentities. Null until the fetch resolves and
+    // for a failed/unavailable read; the recap then falls back to plain "Player N".
+    seatIdentities: {
+      type: Array as PropType<readonly CompetitiveSeatIdentity[] | null>,
+      default: null,
+    },
   },
   setup(props) {
     // Guarded accessors for optional fields — fail-soft-for-optional per
@@ -136,6 +146,29 @@ export default defineComponent({
     // them); rendered whenever a competitive score exists.
     const scoringKey = buildScoringKey();
 
+    // why: INFRA (endgame seat names) — index the roster once so the co-op recap
+    // can label each seat exactly as the competitive per-player block does
+    // (`playerLabel`): "Player N", "Player N (Bot)", or "Player N (@handle)".
+    const identityByPlayer = computed(() => {
+      const map = new Map<string, CompetitiveSeatIdentity>();
+      for (const identity of props.seatIdentities ?? []) {
+        map.set(identity.playerId, identity);
+      }
+      return map;
+    });
+
+    /**
+     * Label one co-op recap seat. Reuses `playerLabel` so the wording matches the
+     * competitive block; a seat with no identity (roster absent, or a guest /
+     * handle-less seat) falls back to a plain "Player N".
+     *
+     * @param playerId - The boardgame.io seat id ("0", "1", ...).
+     * @returns The seat label.
+     */
+    function seatLabel(playerId: string): string {
+      return playerLabel(playerId, identityByPlayer.value.get(playerId));
+    }
+
     return {
       hasPar,
       hasScores,
@@ -147,6 +180,7 @@ export default defineComponent({
       gradeScale,
       scoringKey,
       contributionPhrases,
+      seatLabel,
     };
   },
 });
@@ -488,7 +522,7 @@ export default defineComponent({
             class="coop-score-row"
             :data-testid="'arena-hud-coop-score-' + player.playerId"
           >
-            <span class="coop-score-name">Player {{ Number(player.playerId) + 1 }}</span>
+            <span class="coop-score-name">{{ seatLabel(player.playerId) }}</span>
             <strong class="coop-score-total" :aria-label="'player ' + player.playerId + ' total VP'">
               {{ player.totalVP }} VP
             </strong>

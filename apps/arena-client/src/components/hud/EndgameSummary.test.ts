@@ -591,4 +591,37 @@ describe('EndgameSummary (WP-636 co-op VP recap for guests / non-scored)', () =>
     assert.equal(recap.includes('loser'), false);
     assert.equal(recap.includes('beat'), false);
   });
+
+  test('INFRA (endgame seat names): the recap labels seats from seatIdentities (@handle / Bot)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: withScores(),
+        competitiveScore: null,
+        seatIdentities: [
+          { playerId: '0', isBot: false, handle: 'jeff' },
+          { playerId: '1', isBot: true, handle: null },
+        ],
+      },
+    });
+    const seat0 = wrapper.find('[data-testid="arena-hud-coop-score-0"]').text();
+    const seat1 = wrapper.find('[data-testid="arena-hud-coop-score-1"]').text();
+    // the handle is rendered with a single leading "@"; the bot seat is marked "(Bot)".
+    assert.match(seat0, /Player 1 \(@jeff\)/);
+    assert.match(seat1, /Player 2 \(Bot\)/);
+  });
+
+  test('INFRA (endgame seat names): a seat with no identity falls back to plain "Player N"', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: withScores(),
+        competitiveScore: null,
+        // only seat 0 has an identity; seat 1 must stay a plain "Player 2".
+        seatIdentities: [{ playerId: '0', isBot: false, handle: 'jeff' }],
+      },
+    });
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-score-0"]').text(), /Player 1 \(@jeff\)/);
+    const seat1 = wrapper.find('[data-testid="arena-hud-coop-score-1"]').text();
+    assert.match(seat1, /Player 2/);
+    assert.equal(seat1.includes('('), false, 'seat with no identity has no suffix');
+  });
 });
