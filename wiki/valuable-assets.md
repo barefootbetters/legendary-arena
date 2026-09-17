@@ -48,7 +48,7 @@ to reproduce is the accumulated engineering and analytical work.
 **In one line:** the moat is the engine plus the catalogue; the product is how you
 collect rent on that moat; governance is why the moat does not rot; the vision is
 why the product is more than "another online Legendary"; and rulings are the
-insurance policy you have not bought yet.
+insurance policy you have only started to pay into.
 
 > **This is a snapshot, not a metric.** It reflects what has been built as of
 > 2026-09-17 and a judgment about durability. The revenue lens in particular
@@ -145,10 +145,11 @@ readings are true at once.
 
 ### The effect-rulings corpus: current rank vs strategic potential
 
-- **Current rank: unranked — it is not built.** Scoped as
-  [WP-704](effect-rulings.md) (drafted 2026-09-17), not shipped. It cannot rank on
-  either lens today.
-- **Strategic potential: a candidate for moat #1 *if* WP-704 is fully realised.**
+- **Current rank: low — first slice shipped, far below the completeness that
+  would make it a moat asset.** [WP-704](effect-rulings.md) landed the schema,
+  harness, and a 14-ruling seed set (D-24524 Active, PR #2092, 2026-09-17). A
+  dozen rulings is a gesture, not the moat; it climbs only as the corpus is filled.
+- **Strategic potential: a candidate for moat #1 *as the corpus fills*.**
   The engine is *machine-executable* knowledge; the rulings corpus is
   *human-readable* knowledge of the same interactions — and that is what makes it
   powerful. If the engine disappeared, a mature rulings corpus could let another
@@ -198,8 +199,8 @@ but none is the moat:
   — the live product (moat #5, revenue #1).
 - **[Scoring](scoring.md)** / [LAGN Specification](lagn-v1.md) / [Monetization Model](monetization-model.md)
   — the competitive / economy layer (revenue #2).
-- **[Effect Rulings](effect-rulings.md)** — insurance on moat #1; a future moat-#1
-  candidate if WP-704 is realised.
+- **[Effect Rulings](effect-rulings.md)** — insurance on moat #1 (first slice
+  shipped, WP-704); a future moat-#1 candidate as the corpus fills.
 
 ## Edge Cases
 
@@ -212,10 +213,11 @@ but none is the moat:
 - **"Crown jewel" language is about the analytical work, not a file.** The brief's
   moat argument is sound; the mistake is reading it as "the rulings JSON is the
   main asset." The analytical work is mostly already captured in the engine and
-  the markers — which is why the corpus is a *future* candidate, not a current one.
+  the markers — which is why the corpus, though now shipped as a first slice, is
+  still a *future* moat candidate rather than a current one.
 - **This page will drift.** It is a dated snapshot. Re-review when a major
-  subsystem ships (especially WP-704) or the business model shifts; do not treat
-  an old ranking as current truth.
+  subsystem ships or the business model shifts; do not treat an old ranking as
+  current truth.
 
 ## History
 
@@ -229,6 +231,9 @@ but none is the moat:
   ranked asset, moved governance up and the live product down on the moat lens,
   and reframed the rulings corpus as a *future* moat-#1 candidate rather than a
   current also-ran.
+- **2026-09-17** — Synced with WP-704 shipping (PR #2092, D-24524 Active): the
+  effect-rulings corpus is no longer "unbuilt" — its first slice (14 rulings) is
+  live; it is now a low-but-real asset that climbs as the corpus fills.
 
 ## Open Questions
 
@@ -236,10 +241,10 @@ but none is the moat:
   order (does the Pass out-earn the base product experience? does the Gauntlet
   drive retention more than new-player conversion?) needs the billing and
   engagement data the operator dashboard holds. Sharpen it once that data is at hand.
-- **When does the rulings corpus actually climb?** It becomes a moat-tier asset
-  only past a completeness threshold (a dozen rulings is a gesture; several
-  hundred is a moat). Worth revisiting its rank after WP-704 ships and the corpus
-  has been filled for a while.
+- **When does the rulings corpus actually climb?** WP-704's first slice shipped
+  (14 rulings), but it becomes a moat-tier asset only past a completeness
+  threshold (a dozen rulings is a gesture; several hundred is a moat). Worth
+  revisiting its rank once the corpus has been filled for a while.
 
 ## References
 
