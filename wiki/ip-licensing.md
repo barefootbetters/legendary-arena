@@ -208,6 +208,52 @@ decision** — advertising an unlicensed Marvel build into the rights-holders' o
 community is Risk 7 amplified, so any placement points at the license-clean surface
 only. Traction is measured with the canonical KPI definitions (`02`).
 
+### Reaching the designer and publisher — the channel map
+
+The "earn a partnership, UD as broker" framing above needs a *who* and a *where*.
+This is the channel map, not an outreach runbook — the sequencing, the
+verified counsel/agent shortlist, and the Disney no-unsolicited workaround live
+in the corporate-memory plan (`05`, `07`). `[CONFIRM]` — channels below are from
+open research (2026-09); re-verify each before any outreach, and route anything
+license-related through Upper Deck, not a personal inbox.
+
+**Devin Low (the designer).** He publishes no public fan-email or phone number;
+the reliable channels are the ones he already uses for *Legendary* and
+professional work. He designs *Legendary* on the side and holds a full-time role
+at Riot, so keep any approach short and on-topic.
+
+- **BoardGameGeek — most reliable for Legendary design/rules questions.** His
+  designer page lists the account **devinlow**; a free BGG account can send
+  **GeekMail** or reply in *Legendary* rules/design threads, where he has a long
+  history of answering the community.
+  <https://boardgamegeek.com/boardgamedesigner/5816/devin-low> ·
+  <https://boardgamegeek.com/user/devinlow>
+- **LinkedIn — professional / partnership outreach only** (not product support):
+  <https://www.linkedin.com/in/devinlow>. Confirm you have the **real** `devinlow`
+  profile — he has warned publicly about impersonation profiles used for job
+  scams.
+- **Player communities.** Low and Upper Deck staff show up in the main
+  *Legendary* Facebook groups and on BGG; design-intent questions often draw a
+  reply from Low or from UD's *Legendary* product manager.
+
+**Upper Deck (the publisher / licensor).** For rules, missing cards, reprint
+status, or "please pass this to the designer," go through the publisher:
+
+- Customer care: **QA@upperdeck.com** · **1-800-873-7332** (Mon–Fri, 6 a.m.–5
+  p.m. PT)
+- Entertainment / games dealer line: **Dealer_Services@upperdeck.com**
+- Social: **@upperdeckent** on Facebook, Instagram, and X
+- Contact hub: <https://upperdeck.com/contact-community/>
+
+**What not to use.** Skip data-broker sites that list scraped emails and phone
+numbers — those are not channels he advertised, and some of that data is
+personal. For a question rooted in the Bageltop interview (schemes, mixing
+Marvel/DC, Second Edition cards), a BGG GeekMail or a public *Legendary* thread
+is the channel most likely to actually reach him; the licensing ask itself still
+goes through Upper Deck (and, per `05`, counsel or an agent with an existing
+Disney relationship — the no-unsolicited barrier makes a cold solo approach
+policy-blocked, not merely low-odds).
+
 ### Relationship to the royalty covenant
 
 VISION's "royalties on *all* revenue" rule and the printables-store royalty-routing
