@@ -65,7 +65,9 @@ export function cardHasClassWhenPlayed(
   classSlug: string,
 ): boolean {
   const traitEntry = G.cardTraits[cardId];
-  if (traitEntry !== undefined && traitEntry.heroClass === classSlug) {
+  // why: WP-703 / D-24523 — a card counts as EITHER printed class (hc or hc2)
+  // in addition to any Size-Changing granted class (D-24074, below).
+  if (traitEntry !== undefined && (traitEntry.heroClass === classSlug || traitEntry.heroClass2 === classSlug)) {
     return true;
   }
   for (const grantedClass of getGrantedClasses(G, cardId)) {

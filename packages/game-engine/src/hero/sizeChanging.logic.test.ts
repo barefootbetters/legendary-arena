@@ -30,7 +30,7 @@ import type { CardExtId } from '../state/zones.types.js';
  * @returns A game state usable by the helper.
  */
 function makeHelperState(
-  cardTraits: Record<string, { heroClass: string | null; team: string | null }>,
+  cardTraits: Record<string, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
   cardSizeChangingClasses?: Record<string, string[]>,
 ): LegendaryGameState {
   const partial: Pick<LegendaryGameState, 'cardTraits' | 'cardSizeChangingClasses'> = {
@@ -84,6 +84,25 @@ describe('cardHasClassWhenPlayed (WP-290 / D-24074)', () => {
       cardHasClassWhenPlayed(gameState, 'hero-a' as CardExtId, 'covert'),
       true,
       'a card has its printed class',
+    );
+  });
+
+  it('WP-703: returns true for the SECOND printed class (hc2) of a dual-class card', () => {
+    const gameState = makeHelperState({ 'heir-to-legends': { heroClass: 'strength', heroClass2: 'ranged', team: 'x-men' } });
+    assert.equal(
+      cardHasClassWhenPlayed(gameState, 'heir-to-legends' as CardExtId, 'ranged'),
+      true,
+      'a dual-class card matches on its second printed class',
+    );
+    assert.equal(
+      cardHasClassWhenPlayed(gameState, 'heir-to-legends' as CardExtId, 'strength'),
+      true,
+      'a dual-class card still matches on its first printed class',
+    );
+    assert.equal(
+      cardHasClassWhenPlayed(gameState, 'heir-to-legends' as CardExtId, 'tech'),
+      false,
+      'a dual-class card does not match a class it lacks',
     );
   });
 

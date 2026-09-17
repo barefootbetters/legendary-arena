@@ -1476,7 +1476,8 @@ function cardTraitMatches(
   }
   // why: the kind union is closed to 'team' | 'hero-class', so the remaining case
   // is 'hero-class' — total without a default branch.
-  return trait.heroClass === value;
+  // why: WP-703 / D-24523 — a dual-class card matches on either printed class.
+  return trait.heroClass === value || trait.heroClass2 === value;
 }
 
 // why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076

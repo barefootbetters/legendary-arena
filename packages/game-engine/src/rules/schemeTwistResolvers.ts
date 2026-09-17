@@ -130,8 +130,11 @@ function revealOrPunish(
         const traits = gameState.cardTraits[cardId];
         if (!traits) continue;
 
-        const traitValue = condition.field === 'heroClass' ? traits.heroClass : traits.team;
-        if (traitValue === condition.value) {
+        // why: WP-703 / D-24523 — on a heroClass field a dual-class card matches on EITHER printed class.
+        const matchesTrait = condition.field === 'heroClass'
+          ? (traits.heroClass === condition.value || traits.heroClass2 === condition.value)
+          : traits.team === condition.value;
+        if (matchesTrait) {
           matchFound = true;
           // why: WP-643-follow-up — the player revealed a matching Hero and DODGED
           // the penalty; that is a good outcome for the player → `applied` (green).

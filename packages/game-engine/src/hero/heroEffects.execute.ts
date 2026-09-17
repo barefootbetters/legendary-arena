@@ -3990,6 +3990,8 @@ function investigateCardMatchesCriteria(
     recruit: stats?.recruit,
     cost: stats?.cost,
     heroClass: traits?.heroClass,
+    // why: WP-703 / D-24523 — carry the second printed class so the Investigate hero-class criterion matches a dual-class card on either class.
+    heroClass2: traits?.heroClass2,
     team: traits?.team,
   };
   return investigateCandidateMatches(criteria, candidate);

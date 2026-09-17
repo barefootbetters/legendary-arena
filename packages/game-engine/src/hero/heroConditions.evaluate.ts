@@ -163,6 +163,10 @@ export function evaluateCondition(
         if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
           distinctClasses.add(traitEntry.heroClass);
         }
+        // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes to the distinct-class set.
+        if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+          distinctClasses.add(traitEntry.heroClass2);
+        }
         // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
         for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
           distinctClasses.add(grantedClass);
@@ -410,6 +414,10 @@ export function countDistinctHeroClassesInPlay(
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
       distinctClasses.add(traitEntry.heroClass);
+    }
+    // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes.
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
     }
     for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(grantedClass);
