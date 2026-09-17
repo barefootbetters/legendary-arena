@@ -250,6 +250,11 @@ const matchedMechanicalPattern = computed(() => {
             <span class="stat-label">Class</span>
             <span class="stat-value" :style="{ color: HC_COLOR[card.hc] }">{{ card.hc }}</span>
           </div>
+          <!-- why: WP-703 / D-24522 — dual-class cards show their second hero class too. -->
+          <div v-if="card.hc2" class="stat">
+            <span class="stat-label">Class 2</span>
+            <span class="stat-value" :style="{ color: HC_COLOR[card.hc2] }">{{ card.hc2 }}</span>
+          </div>
           <div v-if="card.cost !== undefined" class="stat">
             <span class="stat-label">Cost</span>
             <span class="stat-value">{{ card.cost }}</span>

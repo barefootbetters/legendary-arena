@@ -42578,5 +42578,17 @@ unrelated pre-existing staleness (undercover 20→488) into this WP — parked a
 **Builds on:** D-24512 (Ruthless Dictator disposition), D-24413 (Melter each-deck), D-24354
 (heroClassMatch gate), D-24518 (vanquish drop), D-24372 (RUNTIME drift pins). **Reserved by:**
 NUMBER-LEDGER D-24521.
+### D-24522 — card data carries `hc2` (second hero class); registry + viewer consume both classes (Active 2026-09-16 — interim of WP-703 / EC-740)
+
+**Context.** Dual-class hero cards (e.g. Ruby Summers’ "Heir to Legends": Strength + Ranged) were losing their second class. The upstream npm source marks them with both `hc` and `hc2` (`scripts/convert-cards/inputs/cards/{sw1,sw2,msis,blackpanther}.js`), but `convert-cards-v15.mjs` only emitted `hc`, so `data/cards/*.json` — and everything downstream — saw a single class. The registry viewer’s Class filter did an exact single-value match (`shared.ts applyQuery`: `c.hc !== q.heroClass`), so filtering e.g. "ranged" silently omitted every dual-class card whose printed first class was something else. 54 hero cards across 4 sets are affected (ssw1 17, ssw2 19, msis 10, bkpt 8).
+
+**Decision.** Card data carries an **additive, optional** second hero class `hc2`, mirroring `hc` (mapped through `HC_SLUG_MAP`). It is emitted only when the source card has `hc2`, so single-class cards stay byte-identical and the `cards:check` semantic regen gate reproduces. The field is added to both card schemas (`packages/registry/src/schema.ts` and `apps/registry-viewer/src/registry/schema.ts`, `HeroClassSchema.optional()`) so Zod no longer strips it. The viewer flattens `hc2` (both `flattenSet` paths), the Class filter matches on **either** class (`c.hc === q.heroClass || c.hc2 === q.heroClass`), and `CardDetail` renders a second "Class 2" stat.
+
+**Scope of this decision (interim).** Registry (data + schema) and the viewer only. The **game engine still treats these cards as single-class** — it never reads `hc2`, so the field is inert for gameplay and there is **no determinism / hash impact** (no `G` field changes; `[hc:X]` synergy resolution is unchanged). The engine dual-class consumption — making a card count as *either* class for `heroClassMatch` / `distinctHeroClasses` / reveal-top-class, which **reverses the D-24065 single-class MVP** and requires a PAR/replay re-pin — is deferred to **WP-703 / EC-740**. That WP will supersede D-24065 for the engine when it lands.
+
+**Verification.** `cards:check` green (clean regen semantically identical, 40 sets compared); registry-viewer 305/0 and registry 253/0 tests pass; `pnpm -r build` green. The updated 4 card JSONs were uploaded to R2 so cards.legendary-arena.com filters on both classes.
+
+**Status:** Active 2026-09-16 (registry + viewer landed). Engine consumption pending WP-703.
+**Builds on:** D-24065 (single-class MVP — reversed by the deferred WP-703). **Reserved by:** NUMBER-LEDGER D-24522.
 
 Protect this file.

@@ -80,6 +80,7 @@ export interface FlatCard {
   heroName?:  string;
   team?:      string;
   hc?:        HeroClass;
+  hc2?:       HeroClass;    // second hero class for dual-class cards (WP-703 / D-24522)
   rarity?:     number;      // 0-3 depending on set
   rarityLabel?: string;
   slot?:       number;      // may be missing in some sets
