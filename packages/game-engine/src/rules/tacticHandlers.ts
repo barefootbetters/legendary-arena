@@ -777,7 +777,8 @@ function hqHeroMatchesFreeRecruitFilter(
     } else {
       // why: the kind union is closed to 'team' | 'hero-class', so the else branch is
       // 'hero-class' — total without a default (mirrors cardTraitMatches).
-      if (trait.heroClass === value) {
+      // why: WP-703 / D-24523 — a dual-class card matches on either printed class.
+      if (trait.heroClass === value || trait.heroClass2 === value) {
         return true;
       }
     }

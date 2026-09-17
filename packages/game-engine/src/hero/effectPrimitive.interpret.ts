@@ -197,7 +197,8 @@ function evaluateCountCardsByClassInZone(
       continue;
     }
     const traitEntry = G.cardTraits[slotCardId];
-    if (traitEntry !== undefined && traitEntry.heroClass === countExpression.heroClass) {
+    // why: WP-703 / D-24523 — a dual-class card counts on EITHER printed class.
+    if (traitEntry !== undefined && (traitEntry.heroClass === countExpression.heroClass || traitEntry.heroClass2 === countExpression.heroClass)) {
       matchCount += 1;
     }
   }
@@ -248,8 +249,11 @@ function evaluateMaxClassCountInZone(
       continue;
     }
     const heroClass = traitEntry.heroClass;
-    const existingCount = classCountMap.get(heroClass) ?? 0;
-    classCountMap.set(heroClass, existingCount + 1);
+    classCountMap.set(heroClass, (classCountMap.get(heroClass) ?? 0) + 1);
+    // why: WP-703 / D-24523 — a dual-class card counts toward BOTH printed classes' buckets.
+    if (typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      classCountMap.set(traitEntry.heroClass2, (classCountMap.get(traitEntry.heroClass2) ?? 0) + 1);
+    }
   }
   // Find the maximum count among candidate classes (for...of only, no .reduce()).
   let maxCount = 0;
@@ -320,9 +324,15 @@ function evaluateTopDeckCardClassCountInZone(
   }
   const traitEntry = G.cardTraits[topCardId];
   const heroClass = traitEntry?.heroClass;
-  // why: single-class MVP (D-24065) — null, empty string, or non-string heroClass → 0.
+  // why: WP-703 / D-24523 relaxes the D-24065 deck-peek single-class scope note here.
+  // The revealed card still needs a valid FIRST printed class (null/empty → 0), but a
+  // dual-class revealed card now counts HQ heroes matching EITHER of its printed classes.
   if (typeof heroClass !== 'string' || heroClass === '') {
     return 0;
+  }
+  const revealedClasses = new Set<string>([heroClass]);
+  if (typeof traitEntry?.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+    revealedClasses.add(traitEntry.heroClass2);
   }
   const hqZone = G.hq;
   if (!Array.isArray(hqZone)) {
@@ -340,7 +350,10 @@ function evaluateTopDeckCardClassCountInZone(
       continue;
     }
     const slotTraitEntry = G.cardTraits[slotCardId];
-    if (slotTraitEntry !== undefined && slotTraitEntry.heroClass === heroClass) {
+    // why: WP-703 / D-24523 — an HQ card matches if EITHER of its printed classes is in the revealed card's class set.
+    const slotClass = slotTraitEntry?.heroClass;
+    const slotClass2 = slotTraitEntry?.heroClass2;
+    if ((typeof slotClass === 'string' && revealedClasses.has(slotClass)) || (typeof slotClass2 === 'string' && revealedClasses.has(slotClass2))) {
       matchCount += 1;
     }
   }

@@ -27,7 +27,7 @@ function makeConfig(heroDeckIds: string[]): MatchSetupConfig {
 function makeRegistry(heroes: Array<{
   slug: string;
   team?: string;
-  cards: Array<{ slug: string; hc?: string }>;
+  cards: Array<{ slug: string; hc?: string; hc2?: string }>;
   physicalCards?: Array<{ count: number; sides: string[] }>;
 }>) {
   return {
@@ -53,6 +53,39 @@ describe('buildCardTraits', () => {
     assert.ok(entry !== undefined, 'entry must exist');
     assert.equal(entry.heroClass, 'covert');
     assert.equal(entry.team, 'avengers');
+  });
+
+  it('WP-703: a dual-class card (hc + hc2) emits heroClass2', () => {
+    const registry = makeRegistry([
+      {
+        slug: 'ruby-summers',
+        team: 'x-men',
+        cards: [{ slug: 'heir-to-legends', hc: 'strength', hc2: 'ranged' }],
+        physicalCards: [{ count: 5, sides: ['heir-to-legends'] }],
+      },
+    ]);
+    const traits = buildCardTraits(registry, makeConfig(['core/ruby-summers']));
+    const entry = traits['core/ruby-summers/heir-to-legends#0' as CardExtId];
+    assert.ok(entry !== undefined, 'entry must exist');
+    assert.equal(entry.heroClass, 'strength');
+    assert.equal(entry.heroClass2, 'ranged');
+  });
+
+  it('WP-703: a single-class card OMITS the heroClass2 key (byte-identical serialization)', () => {
+    const registry = makeRegistry([
+      {
+        slug: 'black-widow',
+        team: 'avengers',
+        cards: [{ slug: 'mission-accomplished', hc: 'covert' }],
+        physicalCards: [{ count: 1, sides: ['mission-accomplished'] }],
+      },
+    ]);
+    const traits = buildCardTraits(registry, makeConfig(['core/black-widow']));
+    const entry = traits['core/black-widow/mission-accomplished#0' as CardExtId];
+    assert.ok(entry !== undefined, 'entry must exist');
+    // why: WP-703 / D-24523 — omit-when-absent is the determinism guarantee; the
+    // key must be ABSENT (not present-and-null) so single-class matches hash identically.
+    assert.ok(!('heroClass2' in entry), 'heroClass2 key must be absent on a single-class card');
   });
 
   it('non-hero cards (when no hero matches) produce empty result', () => {

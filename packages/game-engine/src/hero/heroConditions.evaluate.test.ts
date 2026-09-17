@@ -586,6 +586,24 @@ describe('evaluateCondition distinctHeroClassesAtLeast (WP-280)', () => {
     assert.equal(result, true, 'should return true when ≥3 distinct hero classes present, self-inclusive');
   });
 
+  it('WP-703: a dual-class card contributes BOTH printed classes to the distinct set', () => {
+    // dual (strength+ranged) + covert = 3 distinct classes; without hc2 counting it would be 2.
+    const gameState = makeTestState({
+      inPlay: ['dual#0', 'hero-covert#0'],
+      cardTraits: {
+        'dual#0': { heroClass: 'strength', heroClass2: 'ranged', team: 'x-men' },
+        'hero-covert#0': { heroClass: 'covert', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'distinctHeroClassesAtLeast',
+      value: '3',
+    }, 'dual#0' as unknown as import('../state/zones.types.js').CardExtId);
+
+    assert.equal(result, true, 'a single dual-class card counts as two distinct classes');
+  });
+
   it('<3 classes: self-inclusive boundary (2 other distinct + self shares one) returns false', () => {
     const gameState = makeTestState({
       inPlay: ['hero-tech#0', 'hero-covert#0', 'hero-tech-2#0'],

@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 2510,
+    "totalObservations": 2548,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 488,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2022
+      "parse-unrecognized": 2060
     }
   },
   "byMechanic": {
@@ -58,12 +58,12 @@
       ]
     },
     "ambush": {
-      "hitCount": 103,
+      "hitCount": 118,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 103
+        "parse-unrecognized": 118
       },
       "examples": [
         {
@@ -386,12 +386,12 @@
       ]
     },
     "empowered": {
-      "hitCount": 1,
+      "hitCount": 2,
       "lastSeenTurn": 21,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 1
+        "parse-unrecognized": 2
       },
       "examples": [
         {
@@ -399,16 +399,22 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/queen-storm-of-wakanda/thunderous-tempest#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
         }
       ]
     },
     "endgame": {
-      "hitCount": 15,
-      "lastSeenTurn": 24,
+      "hitCount": 18,
+      "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 18
       },
       "examples": [
         {
@@ -649,12 +655,12 @@
       ]
     },
     "phasing": {
-      "hitCount": 100,
+      "hitCount": 101,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 100
+        "parse-unrecognized": 101
       },
       "examples": [
         {
@@ -719,12 +725,12 @@
       ]
     },
     "sacrifice": {
-      "hitCount": 10,
-      "lastSeenTurn": 27,
+      "hitCount": 16,
+      "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 10
+        "parse-unrecognized": 16
       },
       "examples": [
         {
@@ -746,13 +752,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msis/doctor-strange/1-in-14-000-065#0",
+          "cardId": "msis/black-panther/great-many-lives-lost#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msis/doctor-strange/invoke-the-time-stone#0",
+          "cardId": "msis/black-panther/great-many-lives-lost#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -964,12 +970,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 187,
+      "hitCount": 199,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 187
+        "parse-unrecognized": 199
       },
       "examples": [
         {

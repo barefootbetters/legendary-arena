@@ -625,9 +625,11 @@ function selectLowestCostHero(
       } else {
         // why: 'team' / 'heroClass' match the corresponding G.cardTraits field
         // against the requested slug.
-        const traitValue =
-          traitKind === 'team' ? traitEntry?.team : traitEntry?.heroClass;
-        if (traitValue !== traitSlug) {
+        // why: WP-703 / D-24523 — on a heroClass kind a dual-class card matches on EITHER printed class.
+        const matchesTrait = traitKind === 'team'
+          ? traitEntry?.team === traitSlug
+          : (traitEntry?.heroClass === traitSlug || traitEntry?.heroClass2 === traitSlug);
+        if (!matchesTrait) {
           continue;
         }
       }
