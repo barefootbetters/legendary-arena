@@ -42591,4 +42591,22 @@ NUMBER-LEDGER D-24521.
 **Status:** Active 2026-09-16 (registry + viewer landed). Engine consumption pending WP-703.
 **Builds on:** D-24074 (the class multi-value precedent — `cardHasClassWhenPlayed`, printed-plus-granted; WP-703 extends it with the second printed class). Correction: an earlier draft mis-cited D-24065 as a global single-class MVP; D-24065 is the deck-peek mechanic whose single-class note is scoped to one evaluator. **Reserved by:** NUMBER-LEDGER D-24522.
 
+### D-24523 — dual-class hero cards: the engine counts a card as either printed class (Active 2026-09-17 — WP-703 / EC-740)
+
+**Context.** Dual-class hero CARDS (printed `hc` + `hc2`, e.g. Ruby Summers "Heir to Legends" = Strength + Ranged) had their data + registry/viewer support shipped by D-24522, but the engine read only the first printed class. So a `[hc:X]` synergy gate, a class count, a "defeat a [class] Hero" requirement, or tech-VP scoring silently ignored a card whose SECOND class was `X` — a fidelity bug on the 54 dual-class cards (ssw1/ssw2/msis/bkpt).
+
+**Decision.** The engine treats a dual-class card as belonging to BOTH printed classes, inside the EXISTING D-24074 printed-plus-granted model (NOT a new helper):
+- `CardTraitEntry` (`state/cardTraits.types.ts`) gains an **omit-when-absent** `heroClass2?: string | null`, written by `buildCardTraits` only when the card has `hc2` — so a match with no dual-class hero serializes byte-identically (no determinism re-pin).
+- The existing `cardHasClassWhenPlayed(G, cardId, classSlug)` printed branch also matches `heroClass2`, so every gate caller (`heroClassMatch`) is covered; `distinctHeroClassesAtLeast` adds BOTH printed classes to the distinct set.
+- The direct-read membership / count / tech-VP sites add `heroClass2`: `giveHqHeroChoice`, `villainDefeatRequirement`, `tacticHandlers`, `villainEffects`, `dynamicVictoryPoints` (tech-VP), the variable-indirection `schemeTwistResolvers`/`mastermindHandlers`, the three `effectPrimitive` count evaluators (count-by-class either; max-class both buckets; top-deck-class the revealed `{hc,hc2}` set), and the Investigate criterion (`InvestigateCandidate.heroClass2` field + builder + matcher).
+
+**Relationship to D-24065.** D-24065 ("Dynamic Empowered via Deck-Peek") is NOT superseded; only its "single-class MVP" scope note on the deck-peek class-count evaluator (`effectPrimitive.interpret.ts`) is relaxed to this decision. The class multi-value precedent is D-24074 (Size-Changing granted classes); D-24391 is the team analogue.
+
+**Determinism (honest).** Omit-when-absent → single-class-only matches hash byte-identically; no `finalStateHash` sentinel or `PRE_WP080_HASH` changed (no committed fixture plays a dual-class hero — verified: engine 3554 → 3558/0, all hash/replay sentinels byte-identical). `sim:runtime-observed` regenerated honestly (2510 → 2548 observations; per-mechanic hit-counts rose because dual-class effects now fire) — never an edited assertion. `cards:check` green (no card-data change). `dynamicVictoryPoints` feeds PAR, so a future match with a dual-class tech card scores differently by design; the gitignored PAR sweep is not CI-gated.
+
+**Scope.** Game-engine only; no client change (the class already projects to the client via the registry — `uiState.build.ts:190` deliberately left single-class). Copy-Powers (`heroEffects.execute.ts:3530`) copies only the first printed class, deferred.
+
+**Status:** Active 2026-09-17 (WP-703 executed / merged).
+**Builds on:** D-24074 (printed-plus-granted class model / `cardHasClassWhenPlayed`), D-24391 (team analogue), D-24522 (the `hc2` data contract), WP-179 (cardTraits). **Reserved by:** NUMBER-LEDGER D-24523.
+
 Protect this file.
