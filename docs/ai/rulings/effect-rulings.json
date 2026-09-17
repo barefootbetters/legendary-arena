@@ -276,5 +276,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
     "why": "The current (fighting) player is excluded from an 'each-other' wound and gains nothing — the seat-exclusion a hand-rolled each-player loop gets wrong. Paired with gain-wound-each-other-wounds-other-player, which proves the handler ran (D-24295)."
+  },
+  {
+    "id": "ko-hero-each-zone-restricted-kos-only-named-zone",
+    "mechanic": "ko-hero",
+    "decision": "D-24280",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/x-men-foes/juggernaut#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "each", "magnitude": 2, "zone": "discard" },
+        "playerZones": { "0": { "discard": ["core/wolverine/wolverine#0"], "hand": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "A zone-restricted each-player ko-hero (Juggernaut) KOs only from the named source zone (discard); with magnitude 2 but one Hero in discard it KOs that Hero and stops — it does NOT fall back to hand (D-24280)."
+  },
+  {
+    "id": "ko-hero-each-zone-restricted-spares-other-zones",
+    "mechanic": "ko-hero",
+    "decision": "D-24280",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/x-men-foes/juggernaut#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "each", "magnitude": 2, "zone": "discard" },
+        "playerZones": { "0": { "discard": ["core/wolverine/wolverine#0"], "hand": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The hand Hero is untouched by a discard-restricted KO even when the KO count exceeds the discard's Hero supply — the no-fallback source restriction (D-24280). Paired with the positive sibling that asserts the discard Hero was KO'd."
   }
 ]
