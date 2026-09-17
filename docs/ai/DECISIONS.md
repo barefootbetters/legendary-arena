@@ -42610,3 +42610,79 @@ NUMBER-LEDGER D-24521.
 **Builds on:** D-24074 (printed-plus-granted class model / `cardHasClassWhenPlayed`), D-24391 (team analogue), D-24522 (the `hc2` data contract), WP-179 (cardTraits). **Reserved by:** NUMBER-LEDGER D-24523.
 
 Protect this file.
+
+### D-24524 — Executable effect-rulings corpus (first slice: schema + harness + seed) (Active 2026-09-17 — WP-704 / EC-741)
+
+**Context.** The LAGN architecture brief calls the accumulated card-effect edge-case
+*rulings analysis* its "crown jewel" (layer 5), and `wiki/card-effect-system.md` flags it
+as Known-gap #4: the analysis exists but is scattered across `DECISIONS.md` prose, inline
+`// why:` comments, and full-game replay hash-oracle fixtures. None of those isolates a
+single interaction with its rationale, and prose rots as handlers change. The brief's
+target is a **single, executable** record of `scenario → expected → why` rulings run
+against the real engine handlers so a ruling cannot silently drift from the code.
+
+**Decision.** Stand up the **effect-rulings corpus** — first slice only. A private,
+hand-authored JSON corpus (`docs/ai/rulings/effect-rulings.json`) of ruling entries
+(`{ id (kebab, unique), mechanic, decision? (D-ref), scenario, expected, why (non-empty) }`),
+executed by a `node:test` harness (`packages/game-engine/src/rules/effectRulings.test.ts`)
+that, for each ruling, builds a minimal `G` via `buildInitialGameState` + the engine's own
+`src/test/fixtureBuilders.ts` and fires the ruling's action through the **real handler**
+(`executeVillainAbilities`, `resolveMelterKoChoice`, `resolveOptionalKoReward`,
+`cardHasClassWhenPlayed`), asserting the expectation **on the handler's output**. Nothing
+reads the corpus at runtime — it is a test corpus only.
+
+**Validator (Node built-ins only, NO zod).** The ruling validator
+(`packages/game-engine/src/rules/effectRulings.validate.ts`) is a **hand-written runtime
+type guard + closed unions** — the engine may import Node built-ins only
+(`.claude/rules/architecture.md`); zod is the registry layer's dependency and a zod import
+here would break `pnpm -r build` and cross the layer boundary. It mirrors the
+`VillainEffectPrimitive` / `VILLAIN_EFFECT_PRIMITIVES` precedent: a local structural
+interface + a runtime guard + closed canonical readonly arrays.
+
+**Closed, drift-pinned vocabulary — no DSL.** The `scenario.action` and `expected.kind`
+verbs are small **closed** unions (`RULING_SCENARIO_ACTIONS`, `RULING_EXPECTATION_KINDS`)
+with **runtime** drift pins (D-24372: runtime keyset assertions binding each array to the
+harness's `SCENARIO_RUNNERS` / `EXPECTATION_CHECKERS` / `PERTURBERS` maps — not a bare
+`satisfies`, since engine test files were historically un-typechecked). There is
+deliberately **no general scenario DSL**: the union grows one member at a time, together
+with its harness mapping and the ruling that needs it (the D-24029 effect-primitive
+discipline). An unmapped verb is a **hard failure**, never an `it.skip` or always-pass.
+
+**Per-ruling non-vacuity self-test (the reward-integrity core).** A standing harness guard
+programmatically perturbs **every** ruling's `expected` and asserts THAT ruling then fails —
+proving each ruling's assertion is a live strict-equality check that genuinely depends on its
+expected value, never a constant-true / always-pass fixture (and not a one-shot manual flip).
+This is the primary reward-integrity vector it forbids. It does **not** by itself prove the
+asserted value originated in the handler rather than the setup baseline — a non-mutation
+("spared" / "unchanged") ruling passes the guard even against a do-nothing handler — so each
+such seed ruling is paired with a positive sibling ruling (same mechanic / decision) that
+asserts the handler produced a change, and is designed so a regression of the behavior it
+guards flips it (e.g. Ymir's spared in-play Wound would be KO'd by a scope regression).
+
+**Seed set.** 14 rulings across the five decided edge cases the brief names, each citing its
+`D-` with a non-empty `why`: D-24281 (reveal-or-wound counts hand ∪ in-play), D-24329
+(KO-own-Wounds from hand + discard only, sparing in-play), D-24413 (Melter interactive
+KO/keep — parks, KOs nothing until resolve, culls on `keep=false`), D-24442
+(`optional-ko-reward` KO source widened to include in-play), D-24523 (dual-class card counts
+as either printed class). Count is subordinate to vocabulary minimalism: no verb was added to
+reach a count, and the four scenario actions + four expectation kinds express all five
+mechanics.
+
+**Private naming.** Called **"effect rulings"**, never "LAGN rulings" (the public LAGN
+surface stays the verb list + argument shapes only); nothing here lives in
+`packages/lagn-spec`. `docs/ai/rulings/` is a docs-only directory with no runtime
+consumption.
+
+**Test corpus only — no gameplay change.** No production `src` handler was modified, no `G`
+field added, no move/phase/UIState change. `finalStateHash` / `PRE_WP080` sentinels are
+**byte-identical** (verified — the sentinel/replay pins are part of the engine suite, which
+is green). Engine suite 3558 → **3592/0** (+34: 4 drift-pin + 2 corpus-shape + 14 executed
+rulings + 14 non-vacuity). `pnpm -r build` exit 0.
+
+_Active 2026-09-17 — WP-704 / EC-741. Complements — does not replace — the replay
+hash-oracle fixtures (whole-game determinism) and the coverage indices (implementation
+status) with focused single-interaction correctness + rationale. Related: D-24372 (runtime
+drift pins), D-24029 (grow-one-primitive-at-a-time discipline), and the seed decisions
+D-24281 / D-24329 / D-24413 / D-24442 / D-24523. **Reserved by:** NUMBER-LEDGER D-24524._
+
+Protect this file.
