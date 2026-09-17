@@ -240,5 +240,41 @@
     },
     "expected": { "kind": "boolean-result", "value": false },
     "why": "A dual-class card matches ONLY its two printed classes: a class it does not print (Tech) returns false, so the dual-class change grants no phantom membership (D-24523)."
+  },
+  {
+    "id": "gain-wound-each-other-wounds-other-player",
+    "mechanic": "gain-wound",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/lizard#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "each-other" },
+        "playerZones": { "0": {}, "1": {} },
+        "woundsSupply": 4
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "1", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "gain-wound with target 'each-other' wounds every player except the current one; the non-current player gains exactly one Wound to their discard, proving the effect fired (D-24295, the Lizard)."
+  },
+  {
+    "id": "gain-wound-each-other-spares-current-player",
+    "mechanic": "gain-wound",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/lizard#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "each-other" },
+        "playerZones": { "0": {}, "1": {} },
+        "woundsSupply": 4
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The current (fighting) player is excluded from an 'each-other' wound and gains nothing — the seat-exclusion a hand-rolled each-player loop gets wrong. Paired with gain-wound-each-other-wounds-other-player, which proves the handler ran (D-24295)."
   }
 ]
