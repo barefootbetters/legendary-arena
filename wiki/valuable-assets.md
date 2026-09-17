@@ -39,6 +39,10 @@ page names the top five assets in order of strategic value (survival lens:
 protect revenue, ship a better product, reduce risk), and places the frequently
 over-claimed [effect-rulings corpus](effect-rulings.md) honestly against them.
 
+**In one line:** the moat is the engine plus the catalogue; the product is how
+you collect rent on that moat; governance is why the moat does not rot; rulings
+are the insurance policy you have not bought yet.
+
 > **This is a snapshot, not a metric.** The ranking reflects what has been built
 > as of 2026-09-17 and a judgment about durability. Real revenue mix can reorder
 > it — see [Edge Cases](#edge-cases).
@@ -102,6 +106,30 @@ its "crown jewel." That is aspirational, and it is worth building — but it ran
 The moat is the engine plus the catalogue. The rulings corpus protects and
 documents that moat; it does not constitute it.
 
+### What does not rank
+
+Naming the non-assets sharpens the boundary. These matter — some pay the bills —
+but none is the moat:
+
+| Thing | Why it does not rank |
+|---|---|
+| Marvel / Legendary card IP | Licensed, not owned. It can be lost; a moat you can lose is not yours. |
+| boardgame.io, Vue, Postgres, R2 | Reproducible commodity architecture — anyone can stand it up. |
+| Marketing site, brand tokens, merch SKUs | Useful distribution and cash, not the moat. A starter box and a playmat are copyable. |
+| "Crown jewel" as a *file* | The asset is the encoded rules, not any one document. Do not let a JSON corpus inherit the title. |
+
+### How to use this ranking
+
+- **Protect first:** the engine + catalogue. Treat effect-system changes and
+  registry regeneration as high-risk surfaces — this is where the
+  [reward-integrity](reward-integrity.md) CI and the semantic-diff gate earn their keep.
+- **Ship next:** the live product. An engine with no table anyone sits at pays no bills.
+- **Monetize after fidelity:** scoring / Pass / LAGN only carry integrity while
+  asset #1 is stable. That ordering is why reward-integrity is a gate, not a nicety.
+- **Re-rank on revenue, not vibes.** If billing data says the Pass or the Gauntlet
+  is what converts, asset #4 moves up. That is an operator-dashboard question, not
+  an engineering one — see [Open Questions](#open-questions).
+
 ## Interactions
 
 - **[Card Effect System](card-effect-system.md)** and
@@ -135,6 +163,9 @@ documents that moat; it does not constitute it.
 - **2026-09-17** — Page created to capture the top-five asset ranking and the
   moat reasoning, alongside the [effect-rulings](effect-rulings.md) page and the
   reconciled LAGN architecture brief (PR #2085 / #2088).
+- **2026-09-17** — Ranking cross-reviewed independently and confirmed; added the
+  "what does not rank" boundary and the "how to use this ranking" operational
+  guidance, plus the one-line summary.
 
 ## Open Questions
 
