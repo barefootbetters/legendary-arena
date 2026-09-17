@@ -14,7 +14,7 @@
     "emoji": "🫳",
     "order": 15,
     "matchers": [
-      { "type": "regex", "pattern": "\\bdiscards?\\b", "flags": "i" }
+      { "type": "regex", "pattern": "\\bdiscards?\\s+(?!piles?\\b)", "flags": "i" }
     ]
   },
   {
