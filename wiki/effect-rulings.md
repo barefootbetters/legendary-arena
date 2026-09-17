@@ -16,7 +16,7 @@ related:
   - debug-effects.md
   - rule-execution-pipeline.md
   - play-diagnostics.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\effect-rulings.md (this page — https://ewiki.legendary-arena.com/effect-rulings/)
   - ../docs/lagn-architecture-brief.md
@@ -42,13 +42,17 @@ is not owned, but the accumulated *analytical work* — the vocabulary decisions
 the messy edge-case rulings — is what is genuinely expensive to reproduce. It is
 the one real moat.
 
-> **Status: scoped, not built.** This corpus does not exist in the repo yet. It
-> is scoped as **WP-704 / EC-741 / D-24524 (Draft, 2026-09-17)** — the schema,
-> harness, CI gate, and a seed set are the planned first slice. Everything below
-> describes the design the WP locks in; nothing here is running today. Until it
-> ships, edge-case rulings live scattered as `DECISIONS.md` prose, the
-> [Card Effect System](card-effect-system.md) §Edge Cases, inline `// why:`
-> comments, and the full-game replay hash-oracle fixtures.
+> **Status: shipped (first slice).** The corpus exists and runs — **WP-704 /
+> EC-741 / D-24524 (Active, 2026-09-17, PR #2092)**. The first slice landed the
+> schema, the runtime validator, the executing harness, the per-ruling
+> non-vacuity self-test, and a **14-ruling seed set** across D-24281 / D-24329 /
+> D-24413 / D-24442 / D-24523; the engine suite runs them green (3558 → 3592/0,
+> sentinels byte-identical). What remains is the *grind* of filling the corpus —
+> a ruling captured per edge case as future WPs decide them (see
+> [Open Questions](#open-questions)). Edge-case rulings still also live as
+> `DECISIONS.md` prose, the [Card Effect System](card-effect-system.md) §Edge
+> Cases, inline `// why:` comments, and the replay hash-oracle fixtures; the
+> corpus is now the single *executable* home that keeps them from drifting.
 
 ## Mechanics
 
@@ -187,17 +191,17 @@ nothing about them lives in `packages/lagn-spec`.
   real gap between the brief's five-layer vision and what is actually built.
 - **2026-09-17** — Scoped as **WP-704** (Executable effect-rulings corpus, first
   slice) with **EC-741** and reserved decision **D-24524**. Draft; not executed.
+- **2026-09-17** — **Executed and shipped** (PR #2092; D-24524 Active). First
+  slice: schema + runtime validator + harness + per-ruling non-vacuity self-test
+  + a 14-ruling seed set. Test corpus only — engine suite 3558 → 3592/0,
+  `finalStateHash` / `PRE_WP080` sentinels byte-identical.
 
 ## Open Questions
 
-- **Not yet executed.** WP-704 is drafted only; the schema, harness, CI gate, and
-  seed set do not exist until it ships. Check WP-704 / EC-741 before relying on
-  this page for anything concrete.
-- **Seed set.** The intended seeds migrate D-24281 (reveal-or-wound counts hand ∪
-  in-play), D-24329 (KO-own-Wounds beneficial), D-24413 (Melter KO-or-keep),
-  D-24442 (`optional-ko-reward` source widened to `inPlay`), and D-24523
-  (dual-class card counts as either printed class) — final membership settles at
-  execution.
+- **Seed set shipped.** The first slice landed 14 rulings across D-24281
+  (reveal-or-wound counts hand ∪ in-play), D-24329 (KO-own-Wounds beneficial),
+  D-24413 (Melter KO-or-keep), D-24442 (`optional-ko-reward` source widened to
+  `inPlay`), and D-24523 (dual-class card counts as either printed class).
 - **Filling the corpus is the ongoing grind.** Value is proportional to
   completeness: a dozen rulings is a gesture, several hundred covering the messy
   interactions is the moat. The first slice seeds it; a ruling captured per
