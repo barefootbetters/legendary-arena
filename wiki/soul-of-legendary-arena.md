@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-10
+last-reviewed: 2026-09-17
 ---
 
 # Soul of Legendary Arena
@@ -788,6 +788,20 @@ set, not as a mutation of first-edition cards. Growth by addition is a
 [primary vision goal](vision.md#primary-goals-non-negotiable-15) (Longevity
 & Expandability), and it is the technical expression of "honor, don't
 overwrite."
+
+This is not only Legendary Arena's principle — the source material's own
+designer works the same way. In a September 2026 interview, **Devin Low**, who
+designed the original 2012 *Legendary* and still leads the line, described the
+Marvel Second Edition rebuild as *a conversation with his 2012 self*: keep the
+game's identity, use a decade-plus of expansions to fix the weak spots, and make
+a cleaner on-ramp for newcomers **without** turning the box into a downgrade for
+veterans. Heroes are rebalanced, not replaced in spirit — Spider-Man stays the
+same character fantasy with cleaner, more reliable mechanics. That is "build *on*
+the past; surpass it while acknowledging the debt," said by the person who built
+the past — a game stewarded across 10+ years and 35+ boxes, not reinvented. The
+2026 line and its licensing weight are catalogued in
+[IP Licensing](ip-licensing.md); what matters here is that the ethic this page
+names is not invented after the fact.
 
 ### Soul, not candy — content that carries its weight
 
