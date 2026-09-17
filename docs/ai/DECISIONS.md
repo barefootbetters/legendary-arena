@@ -42589,6 +42589,6 @@ NUMBER-LEDGER D-24521.
 **Verification.** `cards:check` green (clean regen semantically identical, 40 sets compared); registry-viewer 305/0 and registry 253/0 tests pass; `pnpm -r build` green. The updated 4 card JSONs were uploaded to R2 so cards.legendary-arena.com filters on both classes.
 
 **Status:** Active 2026-09-16 (registry + viewer landed). Engine consumption pending WP-703.
-**Builds on:** D-24065 (single-class MVP — reversed by the deferred WP-703). **Reserved by:** NUMBER-LEDGER D-24522.
+**Builds on:** D-24074 (the class multi-value precedent — `cardHasClassWhenPlayed`, printed-plus-granted; WP-703 extends it with the second printed class). Correction: an earlier draft mis-cited D-24065 as a global single-class MVP; D-24065 is the deck-peek mechanic whose single-class note is scoped to one evaluator. **Reserved by:** NUMBER-LEDGER D-24522.
 
 Protect this file.
