@@ -1892,6 +1892,13 @@ claim at a safe distance — it stands on it.
   — meaning, archetype, and the authorial-voice tests applied to story beats
 - [IP Licensing](ip-licensing.md) — stewarding licensed Marvel / Upper Deck
   material
+- Bageltop Games: The Podcast, Ep. 4 — *Devin Low on Legendary: Marvel Second
+  Edition & DC* (uploaded 2026-09-16) — the real-world source behind
+  [Honoring is not ossifying](#honoring-is-not-ossifying--the-real-distinction):
+  the original 2012 *Legendary* designer framing the Second Edition rebuild as
+  "a conversation with his 2012 self" — addition, not overwrite. An attributed
+  external designer interview, not adjudicated by this page; the factual /
+  licensing detail lives in [IP Licensing](ip-licensing.md).
 - [Blog Post Authoring](blog-post-authoring.md),
   [Newsletter Authoring](newsletter-authoring.md) — the character-history
   content pipeline
