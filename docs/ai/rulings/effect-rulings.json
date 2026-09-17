@@ -1,0 +1,244 @@
+[
+  {
+    "id": "reveal-or-wound-no-match-gains-wound",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": ["core/spider-man/spider-man#0"] } },
+        "cardTraits": { "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "A player with no matching Hero to reveal gains one Wound to their discard pile — reveal-or-wound applies gainWound only when the hero-trait predicate is unmet (D-24281)."
+  },
+  {
+    "id": "reveal-or-wound-match-in-hand-spared",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } },
+        "cardTraits": { "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "A player holding a matching X-Men Hero in hand reveals it for free and gains no Wound (D-24281)."
+  },
+  {
+    "id": "reveal-or-wound-match-in-play-spared",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": [], "inPlay": ["core/wolverine/wolverine#0"] } },
+        "cardTraits": { "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The reveal predicate scans hand union in-play, not hand alone (the 2026-07-31 amendment): a matching Hero already played this turn sits in in-play and still spares the Wound. A hand-only regression would wrongly wound this player (D-24281)."
+  },
+  {
+    "id": "ko-wounds-current-kos-hand-and-discard",
+    "mechanic": "ko-wounds-current-hand-and-discard",
+    "decision": "D-24329",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/ymir-frost-giant-king#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-wounds-current-hand-and-discard" },
+        "playerZones": { "0": { "hand": ["pile-wound", "core/wolverine/wolverine#0", "pile-wound"], "discard": ["core/spider-man/spider-man#0", "pile-wound"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound", "pile-wound", "pile-wound"] },
+    "why": "Ymir's Fight KOs every Wound from the current player's hand and discard pile to the general KO pile — the two hand Wounds then the discard Wound all land in G.ko (D-24329)."
+  },
+  {
+    "id": "ko-wounds-current-spares-in-play",
+    "mechanic": "ko-wounds-current-hand-and-discard",
+    "decision": "D-24329",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/ymir-frost-giant-king#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-wounds-current-hand-and-discard" },
+        "playerZones": { "0": { "hand": ["pile-wound"], "inPlay": ["pile-wound"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "inPlay", "cards": ["pile-wound"] },
+    "why": "The scan is hand + discard only, never in-play — a Wound in play is left untouched (Wounds are never played into in-play; D-24329 narrowing 2). The hand Wound is still KO'd, so the handler did run."
+  },
+  {
+    "id": "melter-park-kos-nothing",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": {
+          "0": { "deck": ["pile-wound", "core/wolverine/wolverine#0"] },
+          "1": { "deck": ["core/spider-man/spider-man#0"] }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Melter's Fight is now an interactive per-card KO/keep choice (D-24413, superseding the D-24332 auto-resolve): revealing the deck tops KOs nothing at park time — the KO waits for the player's resolve. The old auto-resolve would have culled the revealed Wound immediately."
+  },
+  {
+    "id": "melter-park-queues-one-choice",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": {
+          "0": { "deck": ["pile-wound", "core/wolverine/wolverine#0"] },
+          "1": { "deck": ["core/spider-man/spider-man#0"] }
+        }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "Melter's Fight parks exactly one PendingMelterKoChoice for the fighting player, carrying every revealed deck top (D-24413, active-player-scoped choice)."
+  },
+  {
+    "id": "melter-resolve-ko-culls-revealed-card",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/wolverine/wolverine#0"] },
+        "revealedTops": [{ "ownerPlayerID": "0", "cardId": "pile-wound" }],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "Resolving a Melter choice with keep=false KOs the chosen revealed card from its owner's deck top to the KO pile (D-24413)."
+  },
+  {
+    "id": "melter-resolve-keep-spares-card",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/wolverine/wolverine#0"] },
+        "revealedTops": [{ "ownerPlayerID": "0", "cardId": "pile-wound" }],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": true }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Resolving a Melter choice with keep=true is a KO no-op — the card was never removed and stays face-up on top of its owner's deck (D-24413, the printed 'or put it back')."
+  },
+  {
+    "id": "optional-ko-reward-kos-in-play-card",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24442",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["starting-shield-agent"] },
+    "why": "The optional-ko-reward KO source now includes in-play (hand union discard union in-play): a card played this turn can be KO'd for the reward — the classic deck-thinning play the printed hand-or-discard wording excluded (D-24442)."
+  },
+  {
+    "id": "optional-ko-reward-in-play-fires-reward",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24442",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "KO'ing an in-play card still dispatches the reward (here rescue, moving one Bystander to the Victory pile); the KO does not claw back the value the played card already produced (D-24442)."
+  },
+  {
+    "id": "dual-class-matches-second-printed-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "ranged",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": true },
+    "why": "A dual-class card counts as its SECOND printed class: Ruby Summers 'Heir to Legends' (Strength + Ranged) satisfies a Ranged test (D-24523)."
+  },
+  {
+    "id": "dual-class-matches-first-printed-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "strength",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": true },
+    "why": "A dual-class card still counts as its FIRST printed class — the second class is additive, not a replacement (D-24523)."
+  },
+  {
+    "id": "dual-class-rejects-unprinted-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "tech",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": false },
+    "why": "A dual-class card matches ONLY its two printed classes: a class it does not print (Tech) returns false, so the dual-class change grants no phantom membership (D-24523)."
+  }
+]
