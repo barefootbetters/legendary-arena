@@ -151,13 +151,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   Confidence column plus an Open-Questions verification list, and a
   Distribution & availability section (Upper Deck's CDD / gaming-AIR
   pipe, and why 93433 is buyable while 93431 is a ghost).
-- [Valuable Assets](valuable-assets.md) — *(draft)* ranked editorial
-  inventory of the highest-value things built and where the moat is: the
-  deterministic engine + effect system (#1), the card catalogue + registry +
-  images (#2), the live multiplayer product (#3), the competitive + economy
-  layer (#4), and the AI-development governance system (#5) — with the
-  [effect-rulings corpus](effect-rulings.md) placed honestly as insurance on
-  #1, not the main asset.
+- [Valuable Assets](valuable-assets.md) — *(draft)* editorial inventory of the
+  highest-value things built, ranked along two deliberately-disagreeing lenses:
+  **strategic moat** (replacement cost — engine → catalogue → governance →
+  vision/soul → live product) and **revenue** (what pays payroll — live product
+  → economy → engine/catalogue → …). Names what does *not* rank (licensed IP,
+  commodity stack, merch), and frames the [effect-rulings corpus](effect-rulings.md)
+  as insurance on the engine today, a future moat-#1 candidate if WP-704 ships.
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement
