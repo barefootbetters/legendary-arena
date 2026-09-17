@@ -142,6 +142,9 @@ export function flattenSet(
         heroName:    hero.name,
         team:        hero.team ?? undefined,
         hc:          card.hc ?? undefined,
+        // why: WP-703 / D-24522 — dual-class hero cards carry a second class
+        // (hc2). Surfaced so the Class filter and card detail see both classes.
+        hc2:         card.hc2 ?? undefined,
         rarity:      card.rarity ?? undefined,
         rarityLabel: card.rarityLabel ?? undefined,
         slot:        card.slot ?? undefined,
@@ -441,6 +444,7 @@ export function flattenSet(
       attack:    entryRecord["attack"] != null ? String(entryRecord["attack"]) : undefined,
       recruit:   entryRecord["recruit"] != null ? String(entryRecord["recruit"]) : undefined,
       hc:        typeof entryRecord["hc"] === "string" ? entryRecord["hc"] as FlatCard["hc"] : undefined,
+      hc2:       typeof entryRecord["hc2"] === "string" ? entryRecord["hc2"] as FlatCard["hc2"] : undefined,
       team:      typeof entryRecord["team"] === "string" ? entryRecord["team"] : undefined,
     });
   }
@@ -495,7 +499,10 @@ export function applyQuery(
       if (c.cardType !== q.cardType) return false;
     }
     if (q.setAbbr   && c.setAbbr  !== q.setAbbr)  return false;
-    if (q.heroClass && c.hc       !== q.heroClass) return false;
+    // why: WP-703 / D-24522 — a dual-class card matches the Class filter on
+    // EITHER of its hero classes (hc or hc2), so filtering "ranged" surfaces
+    // strength+ranged cards like Ruby Summers' "Heir to Legends".
+    if (q.heroClass && c.hc !== q.heroClass && c.hc2 !== q.heroClass) return false;
     if (q.team      && c.team     !== q.team)      return false;
     if (q.rarity    && c.rarity   !== q.rarity)    return false;
     if (q.nameContains) {

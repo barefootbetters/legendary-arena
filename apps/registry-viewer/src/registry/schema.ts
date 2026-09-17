@@ -31,6 +31,8 @@ export const HeroCardSchema = z.object({
   // slot: optional — some sets omit it entirely
   slot:        z.number().int().min(1).optional().nullable(),
   hc:          HeroClassSchema.optional().nullable(),
+  // why: WP-703 / D-24522 — second hero class for dual-class cards.
+  hc2:         HeroClassSchema.optional().nullable(),
   cost:        z.union([z.number(), z.string(), z.null()]).optional(),
   // attack/recruit: accept number OR string OR null — some sets use numbers
   attack:      z.union([z.string(), z.number(), z.null()]).optional(),
