@@ -111,6 +111,11 @@ Abstract data shapes, contracts, and design concepts.
   Cloudflare R2 image URLs; the full 37-entry card-type prefix registry
   (`sc` · `mm` · `vi` · `hr` · `sa` · `tr` · …) lives in the upstream
   `card-types.json`, with the imaged subset auto-composed by the convert pipeline.
+- [Effect Rulings](effect-rulings.md) — *(draft)* a private, executable
+  `scenario → expected → why` corpus of card-effect edge-case rulings, run by a
+  `node:test` harness against the real engine handlers so a ruling cannot drift
+  from code; the LAGN brief's layer-5 "crown jewel", scoped as WP-704 (not yet
+  built). Complements the replay hash-oracle fixtures and the coverage indices.
 
 ## Card-Type
 
