@@ -1114,5 +1114,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
     "why": "An empty Officer supply is a reachable no-op — nothing is gained and the player's discard stays empty (D-24350). Paired with the sibling that proves an Officer is gained when the supply has one."
+  },
+  {
+    "id": "override-next-hand-size-sets-absolute-target",
+    "mechanic": "override-next-hand-size",
+    "decision": "D-24307",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/doctor-octopus#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "override-next-hand-size", "magnitude": 8 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "hand-size-override", "player": "0", "size": 8 },
+    "why": "Doctor Octopus's Fight sets the current player's next-hand fill target to an ABSOLUTE size (8, 'draw eight cards instead of six'), written to G.handSizeOverrides (D-24307)."
+  },
+  {
+    "id": "add-next-hand-size-adds-to-base-hand-size",
+    "mechanic": "add-next-hand-size",
+    "decision": "D-24352",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/savage-land/savage-land-mutates#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "add-next-hand-size", "magnitude": 1 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "hand-size-override", "player": "0", "size": 7 },
+    "why": "Savage Land Mutates ADDS to the base hand size rather than replacing it: with no prior override the next-hand target becomes HAND_SIZE (6) + 1 = 7, so two defeats in a turn would stack (D-24352, contrast the absolute override-next-hand-size)."
   }
 ]
