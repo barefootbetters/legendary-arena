@@ -1339,12 +1339,14 @@ describe('UIState type drift (WP-575 / D-24384) — effectTraces', () => {
     assert.equal(fixture.effectTraces.length, 1);
   });
 
-  it('buildUIState projects G.diagnostics.traces with the exact 9-field record shape', () => {
+  it('buildUIState projects a resolution-less G.diagnostics.trace with the nine required fields', () => {
     // why: RUNTIME pin on a built projection — this is what actually catches a
     // dropped or renamed field (an optional add passes the existing top-level
-    // keyset checks silently, the WP-562 lesson). Inject a traces channel, build
-    // the UIState, and assert the projected record carries EXACTLY the nine
-    // EffectTrace keys — so widening/renaming the field set trips here.
+    // keyset checks silently, the WP-562 lesson). Inject a traces channel with NO
+    // `resolution`, build the UIState, and assert the projected record carries
+    // EXACTLY the nine required EffectTrace keys — so renaming a required field or
+    // injecting `resolution` where none exists trips here. The paired case below
+    // pins the ten-key shape when `resolution` IS present (WP-706 / D-24528).
     const config: MatchSetupConfig = {
       schemeId: 'test-scheme-001',
       mastermindId: 'test-mastermind-001',
@@ -1400,7 +1402,88 @@ describe('UIState type drift (WP-575 / D-24384) — effectTraces', () => {
         'timing',
         'turn',
       ],
-      'projected EffectTrace record must carry exactly the nine locked fields',
+      'projected EffectTrace record must carry exactly the nine required fields (no resolution)',
+    );
+  });
+
+  it('buildUIState projects a resolution-bearing trace with the ten-key shape (WP-706 / D-24528)', () => {
+    // why: WP-706 / D-24528 + the WP-562 optional-add drift class — an OPTIONAL field
+    // addition passes the nine-key case above silently (that trace carries no
+    // resolution), so this paired RUNTIME pin seeds a resolution-BEARING trace and
+    // asserts the built projection carries the ten keys (nine required + `resolution`)
+    // AND that the nested `resolution` + `countedInputs` survive the build fresh-copy.
+    // Without this, widening the projected field set stops being guarded.
+    const config: MatchSetupConfig = {
+      schemeId: 'test-scheme-001',
+      mastermindId: 'test-mastermind-001',
+      villainGroupIds: ['test-villain-group-001'],
+      henchmanGroupIds: ['test-henchman-group-001'],
+      heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(),
+      listCards: () => [],
+      listSets: () => [],
+      getSet: () => undefined,
+    };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx());
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      traces: [
+        {
+          cardId: 'core/captain-america/perfect-teamwork#1',
+          scope: 'hero',
+          timing: 'onPlay',
+          effect: 'attack-per-count',
+          handler: 'attack-per-count',
+          status: 'fired',
+          fireSite: 'hero-executor',
+          params: { magnitude: 1, countSource: 'distinct-hero-classes-played-this-turn' },
+          turn: 7,
+          resolution: {
+            countSource: 'distinct-hero-classes-played-this-turn',
+            resource: 'attack',
+            magnitude: 1,
+            count: 3,
+            perEach: 1,
+            computedValue: 3,
+            countedInputs: ['card-a#0', 'card-b#0', 'card-c#0'],
+          },
+        },
+      ],
+      tracesDropped: 0,
+    };
+    const ctx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+    const ui = buildUIState(gameState, ctx);
+
+    assert.ok(Array.isArray(ui.effectTraces), 'effectTraces present as an array');
+    assert.equal(ui.effectTraces!.length, 1, 'exactly the one seeded trace projected');
+    assert.deepStrictEqual(
+      Object.keys(ui.effectTraces![0]!).sort(),
+      [
+        'cardId',
+        'effect',
+        'fireSite',
+        'handler',
+        'params',
+        'resolution',
+        'scope',
+        'status',
+        'timing',
+        'turn',
+      ],
+      'projected EffectTrace record must carry the nine required fields plus the optional resolution',
+    );
+    const projectedResolution = ui.effectTraces![0]!.resolution!;
+    assert.equal(projectedResolution.computedValue, 3, 'the nested resolution survives the build copy');
+    assert.deepStrictEqual(
+      projectedResolution.countedInputs,
+      ['card-a#0', 'card-b#0', 'card-c#0'],
+      'the nested countedInputs array survives the build copy',
     );
   });
 

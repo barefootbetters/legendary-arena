@@ -22,7 +22,7 @@ import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { HeroAbilityHook, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
 import { getHooksForCard, investigateCandidateMatches } from '../rules/heroAbility.types.js';
-import type { EffectExecutionReason, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
+import type { EffectExecutionReason, EffectTrace, EffectTraceStatus, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
@@ -48,7 +48,8 @@ import { addResources, enableRecruitSpendableAsAttack } from '../economy/economy
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
-import { resolveCountSource } from './heroCountSource.resolve.js';
+import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
+import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -546,11 +547,18 @@ function runHookEffects(
       if (fired) {
         firedEffectCount++;
       }
+      // why: WP-706 / D-24528 — for a count-scaled effect, re-resolve the realized
+      // computation from the SETTLED G at trace-build time (the void executor does not
+      // surface count/perEach/magnitude/grant). Deterministic: the grant added to
+      // turnEconomy without moving any inPlay card in this same loop iteration, so the
+      // re-read equals the granted count. undefined for a non-count-scaled effect, so the
+      // pure assembler omits the `resolution` key.
+      const resolution = buildCountScaledResolution(G, playerID, cardId, effect);
       // why: WP-488 / D-24294 — emit a trace per legacy hero effect dispatch from THIS
       // caller loop (it carries turn + hook.timing + cardId + the descriptor + the
       // dispatch boolean together). `fired` maps to `fired`/`no-handler`. Inert +
       // hash-excluded.
-      recordEffectTrace(G, buildHeroLegacyEffectTrace(cardId, hook.timing, effect, fired, turn));
+      recordEffectTrace(G, buildHeroLegacyEffectTrace(cardId, hook.timing, effect, fired, turn, resolution));
     }
   }
 
@@ -895,6 +903,10 @@ function detectHollowHeroHook(
  * @param effect - The dispatched hero effect descriptor.
  * @param fired - Whether executeSingleEffect reached a handler and ran.
  * @param turn - The turn number for the trace.
+ * @param resolution - The count-scaled resolution record (WP-706 / D-24528), or
+ *   undefined for a non-count-scaled effect. Computed by the caller (which holds
+ *   `G`/`playerID`) and passed in so this stays a PURE record assembler — no resolve /
+ *   explain fold. Assigned conditionally: undefined omits the key entirely.
  * @returns The effect trace to record.
  */
 function buildHeroLegacyEffectTrace(
@@ -903,13 +915,14 @@ function buildHeroLegacyEffectTrace(
   effect: HeroEffectDescriptor,
   fired: boolean,
   turn: number,
+  resolution?: EffectTraceResolution,
 ): EffectTrace {
   // why: effect.type is typed HeroKeyword but read defensively so a malformed hook /
   // test cast cannot throw before the guarded writer runs.
   const keywordValue = (effect as { type?: unknown }).type;
   const effectToken = typeof keywordValue === 'string' ? keywordValue : '';
   const status = heroLegacyTraceStatus(effect, fired);
-  return {
+  const trace: EffectTrace = {
     cardId,
     scope: 'hero',
     timing,
@@ -922,6 +935,87 @@ function buildHeroLegacyEffectTrace(
     params: buildHeroEffectTraceParams(effect),
     turn,
   };
+  // why: WP-706 / D-24528 — conditional assignment so a non-count-scaled effect
+  // (resolution === undefined) OMITS the key under exactOptionalPropertyTypes, matching
+  // the omit-when-absent posture of the rest of the trace channel.
+  if (resolution !== undefined) {
+    trace.resolution = resolution;
+  }
+  return trace;
+}
+
+/**
+ * Builds the count-scaled `resolution` sub-record for a legacy hero trace, or
+ * undefined when the effect is not count-scaled (WP-706 / D-24528).
+ *
+ * why: the `attack-per-count` / `recruit-per-count` executors are `void` and never
+ * surface the computed count/perEach/magnitude/grant, so the resolution is RE-RESOLVED
+ * here from the settled `G` at trace-build time. Deterministic: the grant added to
+ * `turnEconomy` without moving any `inPlay` card in the same caller-loop iteration, so
+ * `resolveCountSource` re-reads the identical count the grant used, and `computedValue`
+ * (magnitude × floor(count / perEach), same absent/≤0 → 1 perEach normalization the
+ * executor applies) equals the granted value. `explainCountSourceInputs` is the separate
+ * read-only counted-inputs pass; `countedInputs` is omitted when it returns `[]` (the
+ * victory-pile sources). Guarded — diagnostics is best-effort, so any unexpected shape
+ * returns undefined rather than throwing and never breaks the play path.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The acting player.
+ * @param cardId - The played card that owns the effect (the trigger, for self-exclusion).
+ * @param effect - The dispatched hero effect descriptor.
+ * @returns The resolution record, or undefined for a non-count-scaled effect.
+ */
+function buildCountScaledResolution(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): EffectTraceResolution | undefined {
+  // why: only the two count-scaled keywords carry a resolution; every other effect omits it.
+  let resource: 'attack' | 'recruit' | undefined;
+  if (effect.type === 'attack-per-count') {
+    resource = 'attack';
+  } else if (effect.type === 'recruit-per-count') {
+    resource = 'recruit';
+  } else {
+    resource = undefined;
+  }
+  if (resource === undefined) {
+    return undefined;
+  }
+  // why: mirrors the executor's own no-source skip — nothing to scale by, no resolution.
+  if (effect.countSource === undefined) {
+    return undefined;
+  }
+  try {
+    const countSource: HeroCountSource = effect.countSource;
+    const magnitude = typeof effect.magnitude === 'number' ? effect.magnitude : 0;
+    // why: same absent/≤0 → 1 normalization the executor applies, so computedValue equals
+    // the granted value and never divides by 0/undefined.
+    const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+    // why: re-resolve from the settled G — byte-identical to the integer the grant used.
+    const count = resolveCountSource(G, playerID, countSource, cardId);
+    const computedValue = magnitude * Math.floor(count / perEach);
+    const countedInputs = explainCountSourceInputs(G, playerID, countSource, cardId);
+    const resolution: EffectTraceResolution = {
+      countSource,
+      resource,
+      magnitude,
+      count,
+      perEach,
+      computedValue,
+    };
+    // why: omit countedInputs when the explain returned [] (the victory-pile sources), so
+    // the key is absent rather than an empty array (the countedInputs invariant).
+    if (countedInputs.length > 0) {
+      resolution.countedInputs = countedInputs;
+    }
+    return resolution;
+  } catch {
+    // why: diagnostics is best-effort (mirrors the guarded trace push) — a malformed hook
+    // or missing zone must never throw out of the play path; drop the resolution instead.
+    return undefined;
+  }
 }
 
 /**

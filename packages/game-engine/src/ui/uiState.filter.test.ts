@@ -2074,6 +2074,119 @@ describe('filterUIStateForAudience — effectTraces public pass-through (WP-575 
 });
 
 // ---------------------------------------------------------------------------
+// WP-706 / D-24528 — effectTraces.resolution survives the audience filter
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds two EffectTraces: one count-scaled (carrying a resolution with countedInputs)
+ * and one plain (no resolution). The mix exercises both the pass-through of a present
+ * resolution and the omit-when-absent case within the same records array.
+ */
+function sampleResolutionTraces(): EffectTrace[] {
+  return [
+    {
+      cardId: 'core/captain-america/perfect-teamwork#1',
+      scope: 'hero',
+      timing: 'onPlay',
+      effect: 'attack-per-count',
+      handler: 'attack-per-count',
+      status: 'fired',
+      fireSite: 'hero-executor',
+      params: { magnitude: 1, countSource: 'distinct-hero-classes-played-this-turn' },
+      turn: 7,
+      resolution: {
+        countSource: 'distinct-hero-classes-played-this-turn',
+        resource: 'attack',
+        magnitude: 1,
+        count: 3,
+        perEach: 1,
+        computedValue: 3,
+        countedInputs: ['card-a#0', 'card-b#0', 'card-c#0'],
+      },
+    },
+    {
+      cardId: 'core/thor/surge-of-power#1',
+      scope: 'hero',
+      timing: 'onPlay',
+      effect: 'attack',
+      handler: 'attack',
+      status: 'fired',
+      fireSite: 'hero-executor',
+      params: { magnitude: 2 },
+      turn: 8,
+    },
+  ];
+}
+
+/** Builds a UIState whose G.diagnostics.traces carry a resolution-bearing record. */
+function createResolutionTracesUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.diagnostics = {
+    hollowEffects: [],
+    hollowEffectsDropped: 0,
+    traces: sampleResolutionTraces(),
+    tracesDropped: 0,
+  };
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — effectTraces resolution pass-through (WP-706 / D-24528)', () => {
+  it('resolution survives value-unchanged for every audience (Board-Visible Field Rule)', () => {
+    const uiState = createResolutionTracesUIState();
+    const source = uiState.effectTraces;
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(result.effectTraces !== undefined, 'the trace channel survives the filter');
+      assert.deepStrictEqual(
+        result.effectTraces,
+        source,
+        'the count-scaled resolution (and countedInputs) must survive every audience unchanged',
+      );
+    }
+  });
+
+  it('a trace without a resolution keeps the key omitted after filtering', () => {
+    const uiState = createResolutionTracesUIState();
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+
+    const scaled = result.effectTraces!.find((trace) => trace.effect === 'attack-per-count');
+    const plain = result.effectTraces!.find((trace) => trace.effect === 'attack');
+    assert.ok(scaled!.resolution !== undefined, 'the count-scaled trace carries resolution');
+    assert.equal('resolution' in plain!, false, 'the plain trace omits the resolution key');
+  });
+
+  it('the filtered resolution and its countedInputs are fresh objects (aliasing defence)', () => {
+    const uiState = createResolutionTracesUIState();
+
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+
+    const filteredScaled = result.effectTraces!.find((trace) => trace.effect === 'attack-per-count')!;
+    const sourceScaled = uiState.effectTraces!.find((trace) => trace.effect === 'attack-per-count')!;
+    assert.notStrictEqual(
+      filteredScaled.resolution,
+      sourceScaled.resolution,
+      'the resolution is a fresh object, not an alias into the source',
+    );
+    assert.notStrictEqual(
+      filteredScaled.resolution!.countedInputs,
+      sourceScaled.resolution!.countedInputs,
+      'countedInputs is a fresh array, not an alias into the source',
+    );
+    filteredScaled.resolution!.countedInputs!.push('mutant#9');
+    assert.equal(
+      sourceScaled.resolution!.countedInputs!.length,
+      3,
+      'mutating the filtered countedInputs must not touch the source',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // D-24139 — pendingReturnZeroCostDiscard redaction (chooser-scoped)
 // ---------------------------------------------------------------------------
 
