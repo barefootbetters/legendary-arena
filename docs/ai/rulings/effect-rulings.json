@@ -812,5 +812,37 @@
     },
     "expected": { "kind": "ko-pile-equal", "cards": [] },
     "why": "The interactive scry-ko KOs nothing at park time — the KO waits for the player's resolve; the old auto-resolve would have immediately KO'd the worse of the two cards (D-24282). Paired with the park-length sibling that proves the choice opened."
+  },
+  {
+    "id": "scry-ko-resolve-kos-the-chosen-card",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "resolve-scry-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "revealedCardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked scry-ko choice KOs the player's chosen card from the revealed top two (D-24282); the pick must be one of the revealed ext_ids (round-trip rule)."
+  },
+  {
+    "id": "scry-ko-resolve-keeps-the-other-on-deck",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "resolve-scry-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "revealedCardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The un-chosen revealed card stays on top of the deck — only the picked card is removed, so the other of the two is kept (D-24282, 'the other stays on top')."
   }
 ]

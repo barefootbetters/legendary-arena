@@ -50,6 +50,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
 | `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/…) |
 | `fire-rule-hook` | `executeRuleHooks` + `applyRuleEffects` for one trigger | scheme-twist / mastermind-strike pipeline (counters + messages) |
+| `resolve-scry-ko` | `resolveScryKoChoice` move | the Doombot scry-KO pick |
 
 ### Current expectation kinds
 
