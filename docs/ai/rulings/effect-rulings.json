@@ -1033,5 +1033,50 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0"] },
     "why": "A Hero whose trait does not match the predicate is left in hand — the trait-filtered KO removes only the matching Heroes (D-24290). Paired with the sibling that proves the matching Hero was KO'd."
+  },
+  {
+    "id": "rescue-bystanders-by-trait-count-one-per-matching-hero",
+    "mechanic": "rescue-bystanders-current-by-trait-count",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/baron-zemo#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "rescue-bystanders-current-by-trait-count", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": { "hand": ["core/avengers/captain-america#0", "core/avengers/iron-man#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "Baron Zemo rescues one Bystander per current-player Hero matching the trait ([team:avengers]) — two Avengers Heroes rescue two Bystanders to the Victory pile, and the non-matching X-Men Hero adds none (D-24290)."
+  },
+  {
+    "id": "rescue-bystanders-by-trait-count-bounded-by-supply",
+    "mechanic": "rescue-bystanders-current-by-trait-count",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/baron-zemo#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "rescue-bystanders-current-by-trait-count", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": { "hand": ["core/avengers/captain-america#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "The per-matching-hero rescue is bounded by the Bystander supply: two matching Heroes but only one Bystander available rescues exactly one (D-24290)."
   }
 ]
