@@ -689,5 +689,77 @@
     },
     "expected": { "kind": "counter-value", "counter": "masterStrikeCount", "count": 1 },
     "why": "D-2403 (MVP Mastermind Strike Uses Counter + Message Only) has the mastermind-strike handler produce a modifyCounter masterStrikeCount delta:1 plus a queueMessage, so one onMastermindStrikeRevealed reveal on a fresh state (masterStrikeCount absent = 0) leaves the counter at 1."
+  },
+  {
+    "id": "melter-multi-resolve-leaves-sibling-pending",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/spider-man/spider-man#0"], "1": ["core/wolverine/wolverine#0"] },
+        "revealedTops": [
+          { "ownerPlayerID": "0", "cardId": "pile-wound" },
+          { "ownerPlayerID": "1", "cardId": "core/wolverine/wolverine#0" }
+        ],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "Resolving one of a two-reveal Melter choice removes only that revealed top from the entry; the entry still holds the sibling reveal, so the choice is NOT front-popped and the queue stays length 1 (the entry pops only when its revealedTops list empties, D-24413)."
+  },
+  {
+    "id": "melter-multi-resolve-kos-only-chosen-owner",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/spider-man/spider-man#0"], "1": ["core/wolverine/wolverine#0"] },
+        "revealedTops": [
+          { "ownerPlayerID": "0", "cardId": "pile-wound" },
+          { "ownerPlayerID": "1", "cardId": "core/wolverine/wolverine#0" }
+        ],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "A single resolve KOs only the chosen owner's revealed card (Player 0's Wound); the sibling reveal (Player 1's Hero) is untouched and still awaits its own resolve — one decision per revealed top (D-24413)."
+  },
+  {
+    "id": "optional-ko-reward-stale-target-kos-nothing",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "not-a-card-in-play" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "A resolve naming a card absent from the stated zone is a silent no-op: nothing is KO'd and the reward never fires, because the reward is atomic on an actual KO (D-24019)."
+  },
+  {
+    "id": "optional-ko-reward-stale-target-keeps-queue",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "not-a-card-in-play" }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 1 },
+    "why": "The stale-target no-op leaves the pending entry in place so the player can resubmit a valid target — the queue is not front-popped on an invalid KO (D-24019). Paired with the sibling that proves nothing was KO'd."
   }
 ]
