@@ -9822,6 +9822,10 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
       "designs": [
         {
+          "slug": "extinction-blast",
+          "name": "Extinction Blast"
+        },
+        {
           "slug": "heir-to-legends",
           "name": "Heir to Legends"
         }

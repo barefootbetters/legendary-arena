@@ -528,7 +528,7 @@ ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,patrol,unsupported,,,,monster-hunter
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,spectrum,condition,,,,bloodstone-pendant|prodigy-of-ulysses-bloodstone
 ssw2/elsa-bloodstone,Elsa Bloodstone,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,defend-the-shield-wall
 ssw2/phoenix-force-cyclops,Phoenix Force Cyclops,ssw2,(unmarked),unmarked,,,,
-ssw2/ruby-summers,Ruby Summers,ssw2,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,heir-to-legends
+ssw2/ruby-summers,Ruby Summers,ssw2,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,extinction-blast|heir-to-legends
 ssw2/ruby-summers,Ruby Summers,ssw2,teleport,unsupported,,,,guerrilla-warfare
 ssw2/shang-chi,Shang-Chi,ssw2,patrol,unsupported,,,,acrobatic-kung-fu|seek-the-empty-mind
 ssw2/shang-chi,Shang-Chi,ssw2,wall-crawl,executable,WP-273,D-24049,packages/game-engine/src/moves/recruitHero.ts,acrobatic-kung-fu|muscle-memory

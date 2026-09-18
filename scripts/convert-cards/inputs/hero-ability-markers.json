@@ -802,6 +802,12 @@
       "markupToken": "[keyword:discard-to-play:1]"
     },
     {
+      "heroSlug": "ruby-summers",
+      "cardSlug": "extinction-blast",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:3]"
+    },
+    {
       "heroSlug": "dr-punisher-soldier-supreme",
       "cardSlug": "youre-a-slow-learner",
       "abilityIndex": 0,
@@ -2016,14 +2022,6 @@
       "abilityIndex": 0,
       "abilityText": "You may KO a Wound from your hand or discard pile.",
       "reason": "WP-382 / D-24183 — rewardless: same as x-23/healing-factor-genome; no reward clause, so no ko-wound-reward token."
-    },
-    {
-      "setAbbr": "ssw2",
-      "heroSlug": "ruby-summers",
-      "cardSlug": "extinction-blast",
-      "abilityIndex": 0,
-      "abilityText": "To play this card, you must discard three cards from your hand.",
-      "reason": "WP-383 / D-24184 — discard-to-play cost with n=3 (the only multi-discard card). The PendingDiscardToPlay `remaining` counter supports n>1 structurally, but the 3-sequential-prompt resolve UX and its tests are out of scope for the first ship; the 5 single-discard cards are the target. A future marker-only addition of [keyword:discard-to-play:3] enables it once the multi-discard flow is test-covered."
     },
     {
       "setAbbr": "core",

@@ -42685,6 +42685,58 @@ status) with focused single-interaction correctness + rationale. Related: D-2437
 drift pins), D-24029 (grow-one-primitive-at-a-time discipline), and the seed decisions
 D-24281 / D-24329 / D-24413 / D-24442 / D-24523. **Reserved by:** NUMBER-LEDGER D-24524._
 
+### D-24527 — a return-on-discard defers until a discard-to-play cost is fully paid; Extinction Blast un-hollowed (Active 2026-09-17 — bug fix, no WP; renumbered from D-24525 on 2026-09-17 — pre-merge collision with #2100)
+
+**Decision.** Two mandatory-vs-optional pending choices can co-occur when a
+`return-on-discard` hero card (Cyclops "Unending Energy") is discarded to pay a
+`discard-to-play` cost. The mandatory cost takes strict priority over the optional
+return:
+
+1. **Engine (correctness).** `resolveReturnOnDiscard`
+   (`packages/game-engine/src/moves/resolveReturnOnDiscard.ts`) is a silent no-op
+   while `hasPendingDiscardToPlay(G)` — both queues left intact. The return (and its
+   Decline) resolve only after the discard-to-play queue has fully drained.
+2. **Engine (projection / UX).** `buildUIState`
+   (`packages/game-engine/src/ui/uiState.build.ts`) omits `pendingReturnOnDiscard`
+   while a discard-to-play cost is pending, so the client is shown only the
+   actionable prompt (no dead-click). The return prompt reappears once the cost is paid.
+
+Both mirror the block-all guard priority already declared in `game.ts` (discard-to-play
+at the guard ordering outranks return-on-discard).
+
+**Why it surfaced.** Reported by Jeff. Cyclops "Unending Energy" reads *"if a card
+effect makes you discard this card, you may return this card to your hand."* The
+`discard-to-play` cost routes its discard through the `discardFromHand` chokepoint
+(WP-498 / D-24301), which parks the optional return. For a **multi-discard** cost
+(Ruby Summers "Extinction Blast" — *"discard three cards"*), `resolveDiscardToPlay`
+resolves one discard per move call and carries `remaining` across calls. Without a
+priority guard a client could interleave — discard Cyclops (remaining 3→2), **return
+it**, discard it again (2→1), return, discard (1→0) — so ONE card pays a three-card
+cost and ends in hand. The bot's `ai.legalMoves` already drains discard-to-play before
+offering the return, but the engine move handlers (the authority) did not enforce that
+order, so a human / crafted client could reach the interleave. The guard forces N
+**distinct** cards, then returns the card — the faithful tabletop timing (pay the whole
+cost, then the "you may return" trigger resolves). Magneto's discard-to-**limit**
+(`resolveDiscardChoice`) is immune — it discards the whole selection in one atomic move,
+leaving no gap to interleave a return.
+
+**Un-hollows Extinction Blast.** The WP-383 / D-24184 ship deferred the only n=3
+discard-to-play card (`ssw2/ruby-summers/extinction-blast`) — its printed *"discard
+three cards"* cost was unenforced (free to play). This decision adds
+`[keyword:discard-to-play:3]` to `hero-ability-markers.json` (marker-only; the
+`PendingDiscardToPlay.remaining` counter and the `DiscardToPlayPrompt` `remaining > 1`
+UX already support n>1) and moves the entry out of the `_deferred` list. `cards:check`
+reproduces the regenerated corpus.
+
+**Scope + determinism.** Engine move guard + UIState projection + card-data marker +
+tests; no new client code. The pending queues lazy-init at their park sites, so an
+untriggered match serializes byte-identically — no hash-oracle / PAR re-pin. Engine
+suite 3612 → 3618 (6 new: 4 in `resolveReturnOnDiscard.test.ts` — guard, decline-block,
+normal-resolution, exploit-closure — plus 2 projection tests in `uiState.build.test.ts`),
+0 fail; `cards:check` green.
+
+**Reserved by:** NUMBER-LEDGER D-24527.
+
 Protect this file.
 
 ### D-24525 — the simulation dispatch was missing `resolveCopyPowersChoice` (the D-24440 emittable-but-unregistered gap, second instance) (Active 2026-09-17)

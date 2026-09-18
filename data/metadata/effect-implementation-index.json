@@ -20380,6 +20380,10 @@
       "decision": "D-24184",
       "designs": [
         {
+          "slug": "extinction-blast",
+          "name": "Extinction Blast"
+        },
+        {
           "slug": "heir-to-legends",
           "name": "Heir to Legends"
         }
