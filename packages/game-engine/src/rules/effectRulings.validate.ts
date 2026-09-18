@@ -106,6 +106,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `turn-economy-value` — a named `G.turnEconomy` field equals an exact amount.
  * - `counter-value` — a named `G.counters` field equals an exact count (absent
  *   reads as 0, matching the handlers' own `?? 0` counter reads).
+ * - `hand-size-override` — a named player's `G.handSizeOverrides` next-hand size
+ *   equals an exact value.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -113,7 +115,8 @@ export type RulingExpectationKind =
   | 'pending-queue-length'
   | 'boolean-result'
   | 'turn-economy-value'
-  | 'counter-value';
+  | 'counter-value'
+  | 'hand-size-override';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -126,6 +129,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'boolean-result',
   'turn-economy-value',
   'counter-value',
+  'hand-size-override',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -209,6 +213,8 @@ export interface RulingExpectation {
   counter?: RulingCounterField;
   /** `counter-value`: the exact expected count (absent counter reads as 0). */
   count?: number;
+  /** `hand-size-override`: the exact expected `G.handSizeOverrides[player]` value. */
+  size?: number;
 }
 
 /**
@@ -310,6 +316,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (typeof expected.count !== 'number' || !Number.isInteger(expected.count) || expected.count < 0) {
         return `Ruling "${rulingId}" has a counter-value expectation whose "count" is not a non-negative integer.`;
+      }
+      return null;
+    case 'hand-size-override':
+      if (!isNonEmptyString(expected.player)) {
+        return `Ruling "${rulingId}" has a hand-size-override expectation with no "player"; name the player whose next-hand size is asserted.`;
+      }
+      if (typeof expected.size !== 'number' || !Number.isInteger(expected.size) || expected.size < 0) {
+        return `Ruling "${rulingId}" has a hand-size-override expectation whose "size" is not a non-negative integer.`;
       }
       return null;
     default:

@@ -618,6 +618,12 @@ function checkCounterValue(outcome: Outcome, expected: RulingExpectation): void 
   assert.equal(outcome.G.counters[counter] ?? 0, expected.count, `counters.${counter} mismatch`);
 }
 
+/** Asserts a named player's `G.handSizeOverrides` next-hand size equals the expected value. */
+function checkHandSizeOverride(outcome: Outcome, expected: RulingExpectation): void {
+  const player = expected.player as string;
+  assert.equal(outcome.G.handSizeOverrides[player], expected.size, `handSizeOverrides.${player} mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
@@ -625,6 +631,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'boolean-result': checkBooleanResult,
   'turn-economy-value': checkTurnEconomyValue,
   'counter-value': checkCounterValue,
+  'hand-size-override': checkHandSizeOverride,
 };
 
 /**
@@ -656,6 +663,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'boolean-result': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
   'turn-economy-value': (expected) => ({ ...expected, amount: (expected.amount ?? 0) + 1 }),
   'counter-value': (expected) => ({ ...expected, count: (expected.count ?? 0) + 1 }),
+  'hand-size-override': (expected) => ({ ...expected, size: (expected.size ?? 0) + 1 }),
 };
 
 /**

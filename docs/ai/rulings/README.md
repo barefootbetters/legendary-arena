@@ -64,6 +64,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `boolean-result` | the query's boolean return | `value` |
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 | `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |
+| `hand-size-override` | a player's `G.handSizeOverrides` next-hand size equals a value | `player`, `size` |
 
 ## How to add a ruling
 
