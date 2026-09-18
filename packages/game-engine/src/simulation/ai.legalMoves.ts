@@ -181,6 +181,16 @@ export const SIMULATION_MOVE_NAMES = [
   // interactive give-HQ-Hero choice (Paibok Fight) is parked; it MUST be dispatchable in the
   // sim or the per-turn loop hangs (the WP-289 / D-24073 within-turn hang).
   'resolveGiveHqHeroChoice',
+  // why: WP-535 / D-24345 / D-24525 — getLegalMoves short-circuits to resolveCopyPowersChoice
+  // when the interactive copy-a-Hero choice (Rogue's Copy Powers, ≥2 eligible Heroes) is parked;
+  // it MUST be in this array AND dispatchable in both MOVE_MAPs or the per-turn loop spins on
+  // "unknown move name" until the move-step budget flags the game stuck. This is the SAME
+  // emittable-but-unregistered gap D-24440 closed for resolveHeroChoice: the move shipped in
+  // getLegalMoves (D-24345) registered only in game.ts for live play, never here, so the drift
+  // guard passed vacuously (it checks SIMULATION_MOVE_NAMES ⊆ MOVE_MAP, not emits ⊆ names).
+  // Latent until a sim/PAR sweep plays Rogue's Copy Powers with ≥2 eligible Heroes. Asserted by
+  // simulation.moveDispatch.drift.test.ts.
+  'resolveCopyPowersChoice',
   // why: WP-427 / D-24248 — getLegalMoves now short-circuits to these two put-bottom-HQ
   // resolve moves when their block-all choice is parked; they MUST be dispatchable in the
   // sim (both MOVE_MAPs) or the per-turn loop hangs (maxTurns bounds turns, not

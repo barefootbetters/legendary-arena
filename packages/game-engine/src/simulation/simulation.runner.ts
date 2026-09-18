@@ -109,6 +109,7 @@ import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDisc
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
 import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
+import { resolveCopyPowersChoice } from '../moves/copyPowersChoice.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
@@ -372,6 +373,11 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // interactive give-HQ-Hero choice (Paibok Fight) is parked; a missing dispatch entry hangs
   // the per-turn loop. Reuse the existing move fn, no re-implementation.
   resolveGiveHqHeroChoice: (context, args) => resolveGiveHqHeroChoice(context as never, args as never),
+  // why: WP-535 / D-24345 / D-24525 — getLegalMoves short-circuits to resolveCopyPowersChoice
+  // when the interactive copy-a-Hero choice (Rogue's Copy Powers) is parked; a missing dispatch
+  // entry spins the per-turn loop (the D-24440 emittable-but-unregistered gap). Reuse the
+  // existing move fn, no re-implementation.
+  resolveCopyPowersChoice: (context, args) => resolveCopyPowersChoice(context as never, args as never),
   // why: WP-427 / D-24248 — getLegalMoves short-circuits to these two put-bottom-HQ resolve
   // moves when their block-all choice is parked; a missing dispatch entry hangs the per-turn
   // loop (observed: sim:runtime-observed:check hung when the getLegalMoves short-circuit landed
