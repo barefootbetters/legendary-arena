@@ -1,5 +1,5 @@
 /**
- * Tests for the resolveReturnOnDiscard priority guard (D-24525).
+ * Tests for the resolveReturnOnDiscard priority guard (D-24527).
  *
  * An OPTIONAL return-on-discard (Cyclops "Unending Energy") must not be
  * resolvable while a MANDATORY discard-to-play cost is still being paid. Without
@@ -75,7 +75,7 @@ function ctx(
   return { G: gameState, playerID } as unknown as Parameters<typeof resolveReturnOnDiscard>[0];
 }
 
-describe('resolveReturnOnDiscard priority guard (D-24525)', () => {
+describe('resolveReturnOnDiscard priority guard (D-24527)', () => {
   it('is a no-op while a discard-to-play cost is pending (both queues intact)', () => {
     const G = makeState({
       hand: [CARD_B, CARD_C],
@@ -120,7 +120,7 @@ describe('resolveReturnOnDiscard priority guard (D-24525)', () => {
   });
 });
 
-describe('Extinction Blast n=3 + Cyclops exploit is closed (D-24525)', () => {
+describe('Extinction Blast n=3 + Cyclops exploit is closed (D-24527)', () => {
   it('one Cyclops cannot pay a three-discard cost — it forces three distinct cards, then returns', () => {
     // Extinction Blast is already inPlay; the cost (remaining 3) is pending.
     const G = makeState({

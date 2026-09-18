@@ -116,7 +116,7 @@ export function resolveReturnOnDiscard(
     return;
   }
 
-  // Step 1b: Priority guard (D-24525) — a return-on-discard is OPTIONAL and lower
+  // Step 1b: Priority guard (D-24527) — a return-on-discard is OPTIONAL and lower
   // priority than a MANDATORY discard-to-play cost still being paid (the block-all
   // guard list orders discard-to-play before return-on-discard, game.ts). While a
   // discard-to-play cost is unresolved, this move is a silent no-op that leaves BOTH

@@ -1792,7 +1792,7 @@ export function buildUIState(
   // round-trips. The card lives in the chooser's discard pile (zone 'discard'). Each display
   // is spread fresh (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
   // filterUIStateForAudience (keyed on .playerID), mirroring pendingDiscardToPlay.
-  // why: D-24525 — suppress the return-on-discard prompt while a MANDATORY
+  // why: D-24527 — suppress the return-on-discard prompt while a MANDATORY
   // discard-to-play cost is still being paid. The move-level priority guard
   // (resolveReturnOnDiscard) already no-ops the return in that window, so surfacing
   // the prompt would only offer a dead-click; the projection mirrors the block-all

@@ -42685,7 +42685,7 @@ status) with focused single-interaction correctness + rationale. Related: D-2437
 drift pins), D-24029 (grow-one-primitive-at-a-time discipline), and the seed decisions
 D-24281 / D-24329 / D-24413 / D-24442 / D-24523. **Reserved by:** NUMBER-LEDGER D-24524._
 
-### D-24525 — a return-on-discard defers until a discard-to-play cost is fully paid; Extinction Blast un-hollowed (Active 2026-09-17 — bug fix, no WP)
+### D-24527 — a return-on-discard defers until a discard-to-play cost is fully paid; Extinction Blast un-hollowed (Active 2026-09-17 — bug fix, no WP; renumbered from D-24525 on 2026-09-17 — pre-merge collision with #2100)
 
 **Decision.** Two mandatory-vs-optional pending choices can co-occur when a
 `return-on-discard` hero card (Cyclops "Unending Energy") is discarded to pay a
@@ -42735,7 +42735,7 @@ suite 3612 → 3618 (6 new: 4 in `resolveReturnOnDiscard.test.ts` — guard, dec
 normal-resolution, exploit-closure — plus 2 projection tests in `uiState.build.test.ts`),
 0 fail; `cards:check` green.
 
-**Reserved by:** NUMBER-LEDGER D-24525.
+**Reserved by:** NUMBER-LEDGER D-24527.
 
 Protect this file.
 

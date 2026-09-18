@@ -2206,7 +2206,7 @@ describe('buildUIState — mastermind.finalBlowPending (WP-687 / D-24504)', () =
   });
 });
 
-describe('buildUIState — return-on-discard suppressed while discard-to-play pending (D-24525)', () => {
+describe('buildUIState — return-on-discard suppressed while discard-to-play pending (D-24527)', () => {
   const CYCLOPS = 'core/cyclops' as CardExtId;
 
   it('projects pendingReturnOnDiscard when no discard-to-play cost is pending', () => {
