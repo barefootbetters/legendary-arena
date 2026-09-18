@@ -207,7 +207,7 @@ interface ResolveOptionalKoRewardSetup {
   hand?: string[];
   discard?: string[];
   bystandersSupply?: number;
-  resolve: { zone: 'hand' | 'discard' | 'inPlay'; cardId: string };
+  resolve: { zone: 'hand' | 'discard' | 'inPlay'; cardId: string } | { decline: true };
 }
 
 interface QueryCardHasClassSetup {
@@ -350,7 +350,13 @@ function runResolveOptionalKoReward(rawSetup: Record<string, unknown>): Outcome 
   G.pendingOptionalKoRewards = [pending];
 
   const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
-  resolveOptionalKoReward(moveContext, { zone: setup.resolve.zone, cardId: setup.resolve.cardId as CardExtId });
+  // why: the resolve payload is a decline flag XOR a { zone, cardId } KO request (the
+  // move's own arg union) — branch so the harness can exercise the decline path too.
+  if ('decline' in setup.resolve) {
+    resolveOptionalKoReward(moveContext, { decline: true });
+  } else {
+    resolveOptionalKoReward(moveContext, { zone: setup.resolve.zone, cardId: setup.resolve.cardId as CardExtId });
+  }
 
   return { G };
 }
