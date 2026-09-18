@@ -6,6 +6,7 @@ import PlayDesktop from './PlayDesktop.vue';
 import PlayMobile from './PlayMobile.vue';
 import DiagnosticExportButton from '../components/DiagnosticExportButton.vue';
 import GameLogDownloadButton from '../components/GameLogDownloadButton.vue';
+import GameLogCopyButton from '../components/GameLogCopyButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import BattlePlanPanel from '../components/BattlePlanPanel.vue';
@@ -97,7 +98,7 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -434,6 +435,14 @@ export default defineComponent({
       // "Download diagnostics" so the log .txt can be saved from the outcome screen.
     -->
     <GameLogDownloadButton />
+    <!--
+      // why (WP-707, Jeff feedback): the endgame Copy affordance. The in-match
+      // GameLogPanel Copy button is collapsed behind "View final board" at game
+      // over, so this clipboard sibling (self-sourced from the UIState store,
+      // shown only at game over) stacks above "Download game log" so the log
+      // transcript can be copied without expanding the board.
+    -->
+    <GameLogCopyButton />
     <!--
       // why: WP-363 — mounted ONCE here at the shared viewport root (the same
       // shared-child case as <DiagnosticExportButton>), so the in-match "View
