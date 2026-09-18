@@ -761,5 +761,56 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 1 },
     "why": "The stale-target no-op leaves the pending entry in place so the player can resubmit a valid target — the queue is not front-popped on an invalid KO (D-24019). Paired with the sibling that proves nothing was KO'd."
+  },
+  {
+    "id": "scry-ko-single-card-deck-auto-kos",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "With only one card to look at there is nothing to choose, so scry-ko-own-deck AUTO-KOs the sole deck-top card rather than parking a single-option choice that would freeze the board (D-24282 single-card carve-out)."
+  },
+  {
+    "id": "scry-ko-two-card-deck-parks-a-choice",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "scry-ko", "length": 1 },
+    "why": "With two or more cards the interactive upgrade parks one scry-ko choice for the player to pick which of the revealed top two to KO — restoring the agency the old auto-resolve removed (D-24282 / WP-470)."
+  },
+  {
+    "id": "scry-ko-two-card-deck-kos-nothing-at-park",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "The interactive scry-ko KOs nothing at park time — the KO waits for the player's resolve; the old auto-resolve would have immediately KO'd the worse of the two cards (D-24282). Paired with the park-length sibling that proves the choice opened."
   }
 ]
