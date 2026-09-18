@@ -382,5 +382,43 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander"] },
     "why": "The counted rescue is bounded by the Bystander supply: with magnitude 3 but only two Bystanders available, exactly two are rescued and the loop stops (D-24295)."
+  },
+  {
+    "id": "villain-location-gate-fires-on-listed-space",
+    "mechanic": "villain-location-gate",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "cityIndex": 0,
+        "descriptor": { "primitive": "gain-wound", "target": "current", "requireCitySpaces": ["sewers"] },
+        "playerZones": { "0": {} },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "A location-gated villain effect fires when the villain is fought on a listed City space (index 0 = Sewers): the current player gains the Wound (D-24295)."
+  },
+  {
+    "id": "villain-location-gate-blocked-off-listed-space",
+    "mechanic": "villain-location-gate",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "cityIndex": 4,
+        "descriptor": { "primitive": "gain-wound", "target": "current", "requireCitySpaces": ["sewers"] },
+        "playerZones": { "0": {} },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The same effect is blocked when the villain is fought off the listed space (index 4 = Bridge, not Sewers): the gate fails closed and no Wound is gained. Paired with the on-space sibling that proves the effect fires (D-24295)."
   }
 ]

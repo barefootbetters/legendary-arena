@@ -182,6 +182,7 @@ interface FireVillainEffectSetup {
   cardTraits?: Record<string, TraitOverride>;
   woundsSupply?: number;
   bystandersSupply?: number;
+  cityIndex?: number;
 }
 
 interface ResolveMelterKoSetup {
@@ -254,7 +255,7 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
   // (Melter's reveal-reshuffle) via its random.Shuffle. Reusing the engine helper — not
   // a re-implemented dispatch — is what makes a broken handler redden the ruling.
   const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer, numPlayers: seatIds.length || 1 });
-  executeVillainAbilities(G, moveContext.ctx, setup.cardId as CardExtId, setup.timing, moveContext);
+  executeVillainAbilities(G, moveContext.ctx, setup.cardId as CardExtId, setup.timing, moveContext, setup.cityIndex);
 
   return { G };
 }
