@@ -50,6 +50,8 @@
  *   `onMastermindStrikeRevealed`) against the real default handlers (D-2401).
  * - `resolve-scry-ko` — call the `resolveScryKoChoice` move on a parked Doombot
  *   scry-KO choice.
+ * - `resolve-ko-hero` — call the `resolveKoHeroChoice` move on a parked KO-a-Hero
+ *   choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -58,7 +60,8 @@ export type RulingScenarioAction =
   | 'query-card-has-class'
   | 'fire-hero-effect'
   | 'fire-rule-hook'
-  | 'resolve-scry-ko';
+  | 'resolve-scry-ko'
+  | 'resolve-ko-hero';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -72,6 +75,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'fire-hero-effect',
   'fire-rule-hook',
   'resolve-scry-ko',
+  'resolve-ko-hero',
 ] as const;
 
 // ---------------------------------------------------------------------------

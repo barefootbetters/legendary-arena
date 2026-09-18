@@ -929,5 +929,35 @@
     },
     "expected": { "kind": "ko-pile-equal", "cards": [] },
     "why": "The interactive current-player ko-hero KOs nothing at park time — the KO waits for the player's pick (D-24007). Paired with the park-length sibling that proves the choice opened."
+  },
+  {
+    "id": "ko-hero-resolve-kos-the-chosen-hero",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "resolve-ko-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } },
+        "resolve": { "zone": "hand", "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked KO-a-Hero choice KOs the player's chosen Hero from the named zone (D-24007); eligibility is recomputed against current G, so only a present target is accepted."
+  },
+  {
+    "id": "ko-hero-resolve-spares-the-unchosen-hero",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "resolve-ko-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } },
+        "resolve": { "zone": "hand", "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "Only the chosen Hero is KO'd — the other eligible Hero is spared and stays in hand, which is the whole point of the interactive pick (D-24007)."
   }
 ]
