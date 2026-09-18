@@ -41,29 +41,94 @@ test('findPendingChoiceMove returns the resolveGiveHqHeroChoice short-circuit (W
   assert.deepEqual(found, { name: 'resolveGiveHqHeroChoice', args: { cardId: 'core-spider-man' } });
 });
 
-test('findPendingChoiceMove drains every block-all resolve short-circuit (WP-427)', () => {
-  // why: the list had drifted to 2 of the engine's block-all resolve moves; each must be
-  // recognized so the bot drains the parked choice via the fast-path (the put-bottom-HQ
-  // pair, which had NO getLegalMoves short-circuit at all, faulted the bot before WP-427;
-  // resolveHeroChoice was the last such gap, added alongside its engine short-circuit).
-  const allResolveMoves = [
-    'resolveKoHeroChoice',
-    'resolveOptionalKoReward',
-    'resolveVictoryPileCardPick',
-    'resolveDrawOrEmpowered',
+test('findPendingChoiceMove drains every block-all resolve short-circuit the engine emits', () => {
+  // why: the recognizer used to carry a hardcoded name LIST that drifted to 10 of the
+  // engine's ~29 `resolve…` short-circuits, so the missing ones (resolveDiscardChoice —
+  // Magneto's "discard down to four" Master Strike — among them) were never drained and
+  // the autoplay loop aborted with "no legal move available" (observed live 2026-09-17).
+  // The recognizer now matches the shared `resolve` prefix instead, so it drains ANY
+  // block-all choice getLegalMoves can short-circuit to. This list is the FULL set of
+  // `resolve…` names getLegalMoves emits (source of truth:
+  // packages/game-engine/src/simulation/ai.legalMoves.ts) — a faithful pin that would
+  // have failed on the drifted list. Every one must be recognized.
+  const allResolveShortCircuits = [
+    'resolveSeatChoice',
+    'resolveHeroChoice',
     'resolveReturnZeroCostDiscard',
     'resolveDiscardToPlay',
+    'resolveReturnOnDiscard',
+    'resolveGiveHqHeroChoice',
+    'resolveCopyPowersChoice',
+    'resolveDrawOrEmpowered',
+    'resolveCountScaledChoice',
+    'resolveUndercoverChoice',
+    'resolveSmashDiscard',
+    'resolvePutHandOnDeckTop',
+    'resolveDoOver',
+    'resolveVictoryPileCardPick',
+    'resolveOptionalKoReward',
+    'resolvePlayVillainTopChoice',
+    'resolveKoHeroChoice',
+    'resolveScryKoChoice',
+    'resolveMelterKoChoice',
+    'resolveRevealTopDispose',
+    'resolveRuthlessDictatorChoice',
+    'resolveElectromagneticBubbleChoice',
+    'resolveDiscardChoice',
+    'resolvePutCardsOnDeckChoice',
+    'resolveReorderChoice',
+    'resolveDefeatChoice',
+    'resolveKoDiscardChoice',
     'resolveOptionalPutBottomHQ',
     'resolvePutAnyNumberBottomHQ',
-    'resolveHeroChoice',
-    'resolveGiveHqHeroChoice',
   ];
-  for (const name of allResolveMoves) {
+  for (const name of allResolveShortCircuits) {
     const parked = [{ name, args: { any: 'default' } }];
     assert.deepEqual(
       findPendingChoiceMove(parked),
       { name, args: { any: 'default' } },
       `${name} is recognized as a parked-choice short-circuit`,
+    );
+  }
+});
+
+test('findPendingChoiceMove recognizes the resolveDiscardChoice short-circuit (regression)', () => {
+  // why: the specific move behind the observed 2026-09-17 stall — Magneto's Master
+  // Strike parks a discard-to-limit choice and getLegalMoves short-circuits to this
+  // move with a cheapest-first default selection already filled.
+  const parked = [{ name: 'resolveDiscardChoice', args: { cardIds: ['core/wound#0'] } }];
+  assert.deepEqual(findPendingChoiceMove(parked), { name: 'resolveDiscardChoice', args: { cardIds: ['core/wound#0'] } });
+});
+
+test('findPendingChoiceMove finds a resolve short-circuit regardless of list position', () => {
+  // why: getLegalMoves returns a length-1 list for a block-all choice, but the recognizer
+  // must scan the whole list defensively rather than only inspect the first entry.
+  const mixed = [
+    { name: 'playCard', args: { cardId: 'core-shield-agent' } },
+    { name: 'resolveDiscardChoice', args: { cardIds: ['core/a#0'] } },
+  ];
+  assert.deepEqual(findPendingChoiceMove(mixed), { name: 'resolveDiscardChoice', args: { cardIds: ['core/a#0'] } });
+});
+
+test('findPendingChoiceMove does NOT recognize any core lifecycle / economy move', () => {
+  // why: the structural `resolve` prefix rule must never swallow a real stage move —
+  // draining one as a parked choice would dispatch it with the wrong args. These are
+  // every non-`resolve` move getLegalMoves emits (CORE_MOVE_NAMES-family); none may match.
+  const coreMoves = [
+    'playCard',
+    'recruitHero',
+    'fightVillain',
+    'fightMastermind',
+    'revealVillainCard',
+    'advanceStage',
+    'endTurn',
+    'drawCards',
+  ];
+  for (const name of coreMoves) {
+    assert.equal(
+      findPendingChoiceMove([{ name, args: {} }]),
+      null,
+      `${name} is a core move, never a parked-choice short-circuit`,
     );
   }
 });
