@@ -43,12 +43,15 @@
  * - `resolve-optional-ko-reward` — call the `resolveOptionalKoReward` move on a
  *   parked reward.
  * - `query-card-has-class` — call the pure `cardHasClassWhenPlayed` query.
+ * - `fire-hero-effect` — call `executeSingleEffect` (the hero-effect executor) for
+ *   one hero keyword against a real handler.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
   | 'resolve-melter-ko'
   | 'resolve-optional-ko-reward'
-  | 'query-card-has-class';
+  | 'query-card-has-class'
+  | 'fire-hero-effect';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -59,6 +62,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-melter-ko',
   'resolve-optional-ko-reward',
   'query-card-has-class',
+  'fire-hero-effect',
 ] as const;
 
 // ---------------------------------------------------------------------------

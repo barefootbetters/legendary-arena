@@ -33,6 +33,7 @@ import { makePlayerZones, makeGlobalPiles, makeCardRegistryReader } from '../tes
 import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import {
   validateRulingCorpus,
@@ -208,6 +209,13 @@ interface QueryCardHasClassSetup {
   cardTraits: Record<string, TraitOverride>;
 }
 
+interface FireHeroEffectSetup {
+  playerID?: string;
+  cardId: string;
+  effect: { type: string; magnitude?: number };
+  playerZones?: Record<string, ZoneOverride>;
+}
+
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
 interface Outcome {
   G: LegendaryGameState;
@@ -341,6 +349,33 @@ function runQueryCardHasClass(rawSetup: Record<string, unknown>): Outcome {
   return { G, booleanResult };
 }
 
+/**
+ * Fires one hero-effect keyword through the real `executeSingleEffect` executor.
+ *
+ * @param rawSetup - The ruling's fire-hero-effect setup payload.
+ * @returns The mutated game state plus the executor's applied boolean.
+ */
+function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as FireHeroEffectSetup;
+  const playerID = setup.playerID ?? '0';
+  const G = buildBaseState(1);
+
+  const zoneOverride = setup.playerZones?.[playerID] ?? {};
+  G.playerZones = { [playerID]: makePlayerZones(zoneOverride as Partial<PlayerZones>) };
+
+  // why: executeSingleEffect takes the bare ctx as `unknown`; some hero handlers (draw)
+  // read ctx.random, so pass the full makeMockMoveContext. The effect is cast to the
+  // executor's own descriptor parameter type so the harness needs no separate type import.
+  const moveContext = makeMockMoveContext(G, { playerID });
+  const effect = {
+    type: setup.effect.type,
+    magnitude: setup.effect.magnitude,
+  } as Parameters<typeof executeSingleEffect>[4];
+  const booleanResult = executeSingleEffect(G, moveContext, playerID, setup.cardId as CardExtId, effect);
+
+  return { G, booleanResult };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -351,6 +386,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-melter-ko': runResolveMelterKo,
   'resolve-optional-ko-reward': runResolveOptionalKoReward,
   'query-card-has-class': runQueryCardHasClass,
+  'fire-hero-effect': runFireHeroEffect,
 };
 
 /**

@@ -48,6 +48,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
+| `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/…) |
 
 ### Current expectation kinds
 
