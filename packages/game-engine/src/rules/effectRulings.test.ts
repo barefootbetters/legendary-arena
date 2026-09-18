@@ -181,6 +181,7 @@ interface FireVillainEffectSetup {
   playerZones: Record<string, ZoneOverride>;
   cardTraits?: Record<string, TraitOverride>;
   woundsSupply?: number;
+  bystandersSupply?: number;
 }
 
 interface ResolveMelterKoSetup {
@@ -237,7 +238,10 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
   if (setup.cardTraits !== undefined) {
     G.cardTraits = setup.cardTraits as LegendaryGameState['cardTraits'];
   }
-  G.piles = makeGlobalPiles({ wounds: buildTokenPile('pile-wound', setup.woundsSupply ?? 0) });
+  G.piles = makeGlobalPiles({
+    wounds: buildTokenPile('pile-wound', setup.woundsSupply ?? 0),
+    bystanders: buildTokenPile('pile-bystander', setup.bystandersSupply ?? 0),
+  });
 
   G.villainAbilityHooks = [
     { cardId: setup.cardId as CardExtId, timing: setup.timing, keywords: [], effects: [setup.descriptor] },

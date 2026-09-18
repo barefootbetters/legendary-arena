@@ -310,5 +310,77 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
     "why": "The hand Hero is untouched by a discard-restricted KO even when the KO count exceeds the discard's Hero supply — the no-fallback source restriction (D-24280). Paired with the positive sibling that asserts the discard Hero was KO'd."
+  },
+  {
+    "id": "gain-wound-unless-victory-group-wounds-without-group-villain",
+    "mechanic": "gain-wound-unless-victory-villain-group",
+    "decision": "D-24299",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core-villain-hydra-viper-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound-unless-victory-villain-group", "victoryVillainGroup": "hydra" },
+        "playerZones": { "0": { "victory": [] } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "Viper's conditional each-player wound: a player with no other HYDRA Villain in their Victory pile gains one Wound to their discard (D-24299)."
+  },
+  {
+    "id": "gain-wound-unless-victory-group-spares-with-group-villain",
+    "mechanic": "gain-wound-unless-victory-villain-group",
+    "decision": "D-24299",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core-villain-hydra-viper-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound-unless-victory-villain-group", "victoryVillainGroup": "hydra" },
+        "playerZones": { "0": { "victory": ["core-villain-hydra-baron-strucker-02"] } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "A player who already holds ANOTHER HYDRA Villain in their Victory pile is spared the Wound — the anchored group-prefix membership test excludes the just-fought Viper. Paired with the positive sibling that proves the handler wounds an unprotected player (D-24299)."
+  },
+  {
+    "id": "capture-bystander-counted-awards-to-victory",
+    "mechanic": "capture-bystander",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander", "magnitude": 3 },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander", "pile-bystander"] },
+    "why": "The counted capture-bystander (Abomination, magnitude 3) rescues N Bystanders and, on Fight, awards them immediately to the defeating player's Victory pile (D-24295)."
+  },
+  {
+    "id": "capture-bystander-counted-bounded-by-supply",
+    "mechanic": "capture-bystander",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander", "magnitude": 3 },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "The counted rescue is bounded by the Bystander supply: with magnitude 3 but only two Bystanders available, exactly two are rescued and the loop stops (D-24295)."
   }
 ]
