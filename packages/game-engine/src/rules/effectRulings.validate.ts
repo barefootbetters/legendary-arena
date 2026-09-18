@@ -82,12 +82,14 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `ko-pile-equal` — `G.ko` equals an exact card list.
  * - `pending-queue-length` — a named pending queue has an exact length.
  * - `boolean-result` — the query action's boolean return equals an exact value.
+ * - `turn-economy-value` — a named `G.turnEconomy` field equals an exact amount.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
   | 'ko-pile-equal'
   | 'pending-queue-length'
-  | 'boolean-result';
+  | 'boolean-result'
+  | 'turn-economy-value';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -98,6 +100,21 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'ko-pile-equal',
   'pending-queue-length',
   'boolean-result',
+  'turn-economy-value',
+] as const;
+
+// why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
+// expectation may assert on. A small validated list (not any string) keeps the
+// vocabulary closed; grow it one field at a time as a ruling needs another producer.
+/** The `G.turnEconomy` fields a `turn-economy-value` expectation may name. */
+export type RulingEconomyField = 'attack' | 'recruit' | 'woundsDrawn' | 'cardsDrawn';
+
+/** All economy fields a `turn-economy-value` expectation may name. */
+export const RULING_ECONOMY_FIELDS: readonly RulingEconomyField[] = [
+  'attack',
+  'recruit',
+  'woundsDrawn',
+  'cardsDrawn',
 ] as const;
 
 /** The player zones a `zone-cards-equal` expectation may name. */
@@ -144,6 +161,10 @@ export interface RulingExpectation {
   length?: number;
   /** `boolean-result`: the exact expected boolean return. */
   value?: boolean;
+  /** `turn-economy-value`: which `G.turnEconomy` field to assert. */
+  economyField?: RulingEconomyField;
+  /** `turn-economy-value`: the exact expected amount. */
+  amount?: number;
 }
 
 /**
@@ -229,6 +250,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
     case 'boolean-result':
       if (typeof expected.value !== 'boolean') {
         return `Ruling "${rulingId}" has a boolean-result expectation whose "value" is not a boolean.`;
+      }
+      return null;
+    case 'turn-economy-value':
+      if (!isMemberOf<RulingEconomyField>(expected.economyField, RULING_ECONOMY_FIELDS)) {
+        return `Ruling "${rulingId}" has a turn-economy-value expectation with an invalid "economyField"; use one of ${RULING_ECONOMY_FIELDS.join('/')}.`;
+      }
+      if (typeof expected.amount !== 'number' || !Number.isFinite(expected.amount)) {
+        return `Ruling "${rulingId}" has a turn-economy-value expectation whose "amount" is not a finite number.`;
       }
       return null;
     default:

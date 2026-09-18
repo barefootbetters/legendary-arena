@@ -398,11 +398,18 @@ function checkBooleanResult(outcome: Outcome, expected: RulingExpectation): void
   assert.equal(outcome.booleanResult, expected.value, 'boolean result mismatch');
 }
 
+/** Asserts a named `G.turnEconomy` field equals the expected amount. */
+function checkTurnEconomyValue(outcome: Outcome, expected: RulingExpectation): void {
+  const field = expected.economyField as 'attack' | 'recruit' | 'woundsDrawn' | 'cardsDrawn';
+  assert.equal(outcome.G.turnEconomy[field], expected.amount, `turnEconomy.${field} mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
   'pending-queue-length': checkPendingQueueLength,
   'boolean-result': checkBooleanResult,
+  'turn-economy-value': checkTurnEconomyValue,
 };
 
 /**
@@ -432,6 +439,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'ko-pile-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'pending-queue-length': (expected) => ({ ...expected, length: (expected.length ?? 0) + 1 }),
   'boolean-result': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
+  'turn-economy-value': (expected) => ({ ...expected, amount: (expected.amount ?? 0) + 1 }),
 };
 
 /**

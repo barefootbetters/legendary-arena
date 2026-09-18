@@ -454,5 +454,22 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
     "why": "A Melter choice parks over the reshuffled deck top — the reveal proceeded on the refilled deck, not a no-op on an empty one; had the reshuffle been skipped the deck would stay empty and no choice would park (D-24413)."
+  },
+  {
+    "id": "gain-recruit-current-adds-to-turn-economy",
+    "mechanic": "gain-recruit-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hand/hand-ninjas#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-recruit-current", "magnitude": 2 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "gain-recruit-current (Hand Ninjas Fight reward) adds its magnitude to the defeating player's recruit for the turn — the first ruling asserting on the turn economy, via the new turn-economy-value expectation kind (D-24350)."
   }
 ]
