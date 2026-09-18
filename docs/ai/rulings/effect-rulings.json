@@ -603,5 +603,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"] },
     "why": "The hero draw moves the top N cards of the player's deck into their hand, in deck order (D-24022, the data-driven hero-effect dispatch / draw keyword)."
+  },
+  {
+    "id": "hero-rescue-moves-bystander-to-victory",
+    "mechanic": "hero-rescue",
+    "decision": "D-24017",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/dangerous-rescue#0",
+        "effect": { "type": "rescue", "magnitude": 1 },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "A hero rescue effect moves a Bystander from the shared supply into the acting player's Victory pile (D-24017)."
+  },
+  {
+    "id": "hero-rescue-bounded-by-bystander-supply",
+    "mechanic": "hero-rescue",
+    "decision": "D-24017",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/dangerous-rescue#0",
+        "effect": { "type": "rescue", "magnitude": 2 },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "The rescue is bounded by the Bystander supply — magnitude 2 with one Bystander available rescues exactly one (D-24017)."
   }
 ]

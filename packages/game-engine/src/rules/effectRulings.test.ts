@@ -214,6 +214,7 @@ interface FireHeroEffectSetup {
   cardId: string;
   effect: { type: string; magnitude?: number };
   playerZones?: Record<string, ZoneOverride>;
+  bystandersSupply?: number;
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -362,6 +363,12 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
 
   const zoneOverride = setup.playerZones?.[playerID] ?? {};
   G.playerZones = { [playerID]: makePlayerZones(zoneOverride as Partial<PlayerZones>) };
+
+  // why: seed the Bystander supply only when the ruling needs it (a rescue effect), so
+  // rulings that don't touch piles keep the base setup unchanged. Default absent = untouched.
+  if (setup.bystandersSupply !== undefined) {
+    G.piles = makeGlobalPiles({ bystanders: buildTokenPile('pile-bystander', setup.bystandersSupply) });
+  }
 
   // why: executeSingleEffect takes the bare ctx as `unknown`; some hero handlers (draw)
   // read ctx.random, so pass the full makeMockMoveContext. The effect is cast to the
