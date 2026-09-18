@@ -959,5 +959,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
     "why": "Only the chosen Hero is KO'd — the other eligible Hero is spared and stays in hand, which is the whole point of the interactive pick (D-24007)."
+  },
+  {
+    "id": "discard-to-play-resolve-removes-cost-card-from-hand",
+    "mechanic": "discard-to-play",
+    "decision": "D-24184",
+    "scenario": {
+      "action": "resolve-discard-to-play",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"],
+        "pending": { "sourceCardId": "core/cyclops/determination#0", "remaining": 1 },
+        "resolve": { "cardId": "core/spider-man/spider-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a mandatory discard-to-play cost moves the chosen hand card out of hand to pay the cost — the remaining hand card is untouched (D-24184, WP-383)."
+  },
+  {
+    "id": "discard-to-play-resolve-moves-cost-card-to-discard",
+    "mechanic": "discard-to-play",
+    "decision": "D-24184",
+    "scenario": {
+      "action": "resolve-discard-to-play",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"],
+        "pending": { "sourceCardId": "core/cyclops/determination#0", "remaining": 1 },
+        "resolve": { "cardId": "core/spider-man/spider-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The card discarded to pay the cost lands in the player's discard pile (through the WP-498 discard chokepoint), not the KO pile — a discard-to-play cost is a discard, not a KO (D-24184)."
   }
 ]
