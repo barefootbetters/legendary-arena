@@ -635,5 +635,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
     "why": "The rescue is bounded by the Bystander supply — magnitude 2 with one Bystander available rescues exactly one (D-24017)."
+  },
+  {
+    "id": "hero-ko-removes-played-card-to-ko-pile",
+    "mechanic": "hero-ko",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "ko" },
+        "playerZones": { "0": { "inPlay": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "A hero ko effect KOs the played card itself — the source card moves from in-play to the KO pile (D-24022, the ko keyword targets the played card)."
+  },
+  {
+    "id": "hero-ko-empties-in-play-of-the-card",
+    "mechanic": "hero-ko",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "ko" },
+        "playerZones": { "0": { "inPlay": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "inPlay", "cards": [] },
+    "why": "The KO'd card is removed from in-play before it enters the KO pile — it is no longer in play (D-24022). Paired with the positive sibling that asserts it reached the KO pile."
   }
 ]
