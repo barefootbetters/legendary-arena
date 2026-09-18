@@ -27,8 +27,11 @@ present for the 8 played-this-turn sources, omitted for the 2 victory-pile sourc
 byte-unchanged (13/13 hash-pin tests green, incl. the `PRE_WP080_HASH` regression guard). Engine
 3661→3682/0 (+21), arena-client `vue-tsc` 0 + 1843/0, `pnpm -r build` 0. Five engine source files +
 six test files (one new, `hollowEffect.types.test.ts`). Landed D-24528 (Active). **D-24026
-live-verify operator-pending** (a real deployed match with a count-scaled hero, exported, grep
-`effectTraces` for the `resolution` record). Follow-ups: the `resolveCountScaledChoice` dispatch site,
+live-verify VERIFIED 2026-09-18** — a real 2p Red Skull / Midtown Bank Robbery deployed match
+(build `0f011a1`, descendant of #2117) exported 12 unique `resolution` records
+(`distinct-hero-classes-played-this-turn`), each `computedValue` matching the grant; the `heroClass2`
+tie proven — turn 16 *Perfect Teamwork* counted 4 with `countedInputs` including
+`ssw2/ruby-summers/heir-to-legends` (strength + `hc2` ranged), the 4th colour present only via hc2. Follow-ups: the `resolveCountScaledChoice` dispatch site,
 victory-pile `countedInputs`, the base-stat game-log economy clause, a player-facing
 `heroEffectResolved` chip.
 ### WP-705 — `teleport-on-discard` reactive hero keyword: Ruby Summers "Guerrilla Warfare" (EC-742 / D-24526) (2026-09-18)
