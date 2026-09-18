@@ -57,6 +57,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `ko-pile-equal` | `G.ko` equals an exact card list | `cards` |
 | `pending-queue-length` | a pending queue has an exact length | `queue`, `length` |
 | `boolean-result` | the query's boolean return | `value` |
+| `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 
 ## How to add a ruling
 
