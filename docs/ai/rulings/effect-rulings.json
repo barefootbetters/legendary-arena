@@ -1078,5 +1078,41 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
     "why": "The per-matching-hero rescue is bounded by the Bystander supply: two matching Heroes but only one Bystander available rescues exactly one (D-24290)."
+  },
+  {
+    "id": "gain-officer-current-moves-officer-to-discard",
+    "mechanic": "gain-officer-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/hydra-kidnappers#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-officer-current" },
+        "playerZones": { "0": {} },
+        "officersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-shield-officer"] },
+    "why": "HYDRA Kidnappers' beneficial 'may gain a S.H.I.E.L.D. Officer' auto-takes (pure upside, no choice): one Officer moves from the supply to the defeating player's discard (D-24350)."
+  },
+  {
+    "id": "gain-officer-current-empty-supply-is-noop",
+    "mechanic": "gain-officer-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/hydra-kidnappers#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-officer-current" },
+        "playerZones": { "0": {} },
+        "officersSupply": 0
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "An empty Officer supply is a reachable no-op — nothing is gained and the player's discard stays empty (D-24350). Paired with the sibling that proves an Officer is gained when the supply has one."
   }
 ]

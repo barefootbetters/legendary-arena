@@ -194,6 +194,7 @@ interface FireVillainEffectSetup {
   cardTraits?: Record<string, TraitOverride>;
   woundsSupply?: number;
   bystandersSupply?: number;
+  officersSupply?: number;
   cityIndex?: number;
 }
 
@@ -287,6 +288,7 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
   G.piles = makeGlobalPiles({
     wounds: buildTokenPile('pile-wound', setup.woundsSupply ?? 0),
     bystanders: buildTokenPile('pile-bystander', setup.bystandersSupply ?? 0),
+    officers: buildTokenPile('pile-shield-officer', setup.officersSupply ?? 0),
   });
 
   G.villainAbilityHooks = [
