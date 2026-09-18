@@ -991,5 +991,47 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/spider-man/spider-man#0"] },
     "why": "The card discarded to pay the cost lands in the player's discard pile (through the WP-498 discard chokepoint), not the KO pile — a discard-to-play cost is a discard, not a KO (D-24184)."
+  },
+  {
+    "id": "ko-heroes-by-trait-kos-the-matching-heroes",
+    "mechanic": "ko-heroes-current-by-trait",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/destroyer#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-by-trait", "requireKind": "team", "requireValue": "shield" },
+        "playerZones": { "0": { "hand": ["core/shield/nick-fury#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/shield/nick-fury#0": { "heroClass": "covert", "team": "shield" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/shield/nick-fury#0"] },
+    "why": "The Destroyer's Fight KOs ALL of the current player's Heroes matching the trait predicate ([team:shield]); the S.H.I.E.L.D. Hero is KO'd while the non-matching X-Men Hero is not (D-24290)."
+  },
+  {
+    "id": "ko-heroes-by-trait-spares-non-matching-heroes",
+    "mechanic": "ko-heroes-current-by-trait",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/destroyer#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-by-trait", "requireKind": "team", "requireValue": "shield" },
+        "playerZones": { "0": { "hand": ["core/shield/nick-fury#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/shield/nick-fury#0": { "heroClass": "covert", "team": "shield" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "A Hero whose trait does not match the predicate is left in hand — the trait-filtered KO removes only the matching Heroes (D-24290). Paired with the sibling that proves the matching Hero was KO'd."
   }
 ]
