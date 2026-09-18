@@ -33,6 +33,7 @@ import { makePlayerZones, makeGlobalPiles, makeCardRegistryReader } from '../tes
 import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -58,6 +59,7 @@ import type {
   MatchSetupConfig,
   PendingMelterKoChoice,
   PendingOptionalKoReward,
+  PendingScryKoChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -225,6 +227,13 @@ interface FireHeroEffectSetup {
 interface FireRuleHookSetup {
   trigger: 'onSchemeTwistRevealed' | 'onMastermindStrikeRevealed';
   cardId: string;
+}
+
+interface ResolveScryKoSetup {
+  currentPlayer: string;
+  deck: string[];
+  revealedCardIds: string[];
+  resolve: { cardId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -427,6 +436,30 @@ function runFireRuleHook(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveScryKoChoice` move against a parked Doombot scry-KO choice.
+ *
+ * @param rawSetup - The ruling's resolve-scry-ko setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveScryKo(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveScryKoSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: setup.deck as CardExtId[] }) };
+  const pending: PendingScryKoChoice = {
+    choiceType: 'scry-ko',
+    playerID: setup.currentPlayer,
+    revealedCardIds: setup.revealedCardIds as CardExtId[],
+  };
+  G.pendingScryKoChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveScryKoChoice(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -439,6 +472,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'query-card-has-class': runQueryCardHasClass,
   'fire-hero-effect': runFireHeroEffect,
   'fire-rule-hook': runFireRuleHook,
+  'resolve-scry-ko': runResolveScryKo,
 };
 
 /**

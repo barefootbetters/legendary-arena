@@ -48,6 +48,8 @@
  * - `fire-rule-hook` — fire the `executeRuleHooks` → `applyRuleEffects` scheme /
  *   mastermind rule pipeline for one trigger (`onSchemeTwistRevealed` /
  *   `onMastermindStrikeRevealed`) against the real default handlers (D-2401).
+ * - `resolve-scry-ko` — call the `resolveScryKoChoice` move on a parked Doombot
+ *   scry-KO choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -55,7 +57,8 @@ export type RulingScenarioAction =
   | 'resolve-optional-ko-reward'
   | 'query-card-has-class'
   | 'fire-hero-effect'
-  | 'fire-rule-hook';
+  | 'fire-rule-hook'
+  | 'resolve-scry-ko';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -68,6 +71,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'query-card-has-class',
   'fire-hero-effect',
   'fire-rule-hook',
+  'resolve-scry-ko',
 ] as const;
 
 // ---------------------------------------------------------------------------
