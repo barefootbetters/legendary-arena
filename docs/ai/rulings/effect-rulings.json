@@ -541,5 +541,35 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/hulk/hulk#0"] },
     "why": "The drawn cards are removed from the top of the deck, leaving the undrawn remainder — proving the draw consumed the deck top rather than copying (D-24290)."
+  },
+  {
+    "id": "hero-attack-grant-adds-to-turn-economy",
+    "mechanic": "hero-attack",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "attack", "magnitude": 3 }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 3 },
+    "why": "A hero attack-grant effect adds its magnitude to the acting player's attack for the turn — the first hero-effect ruling, via the new fire-hero-effect action reaching the data-driven hero-effect executor (D-24022)."
+  },
+  {
+    "id": "hero-recruit-grant-adds-to-turn-economy",
+    "mechanic": "hero-recruit",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/black-widow#0",
+        "effect": { "type": "recruit", "magnitude": 2 }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "A hero recruit-grant effect adds its magnitude to the acting player's recruit — the fire-hero-effect action reaches the hero-effect executor for any MVP keyword, not just attack (D-24022)."
   }
 ]
