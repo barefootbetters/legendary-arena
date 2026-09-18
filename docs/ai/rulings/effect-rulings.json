@@ -420,5 +420,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
     "why": "The same effect is blocked when the villain is fought off the listed space (index 4 = Bridge, not Sewers): the gate fails closed and no Wound is gained. Paired with the on-space sibling that proves the effect fires (D-24295)."
+  },
+  {
+    "id": "melter-reshuffle-on-empty-deck-refills-from-discard",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": { "0": { "deck": [], "discard": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "When a player's deck is empty, Melter's reveal reshuffles their discard into the deck first (the standard reveal-reshuffle rule, D-24285): the discarded card is now on the deck and revealed (D-24413)."
+  },
+  {
+    "id": "melter-reshuffle-on-empty-deck-empties-discard-and-parks",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": { "0": { "deck": [], "discard": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "A Melter choice parks over the reshuffled deck top — the reveal proceeded on the refilled deck, not a no-op on an empty one; had the reshuffle been skipped the deck would stay empty and no choice would park (D-24413)."
   }
 ]
