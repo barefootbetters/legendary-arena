@@ -1,7 +1,21 @@
 # EC-742 — `teleport-on-discard` Reactive Hero Ability (Execution Checklist)
 
 **Source:** docs/ai/work-packets/WP-705-guerrilla-warfare-teleport-on-discard.md
-**Layer:** Game Engine + Card Data (NO client)
+**Layer:** Game Engine (NO client, NO card data — see as-built)
+
+> **Execution amendments (as-built 2026-09-18, live-diagnostics-driven — D-24526):**
+> **(1)** The observed hollow was a `parse-unrecognized` flag from the bare `[keyword:Teleport]`
+> DISPLAY token, not the no-handler hollow the marker approach targeted. So instead of a card-data
+> marker + regen, a **card-scoped PARSER RESOLVER** (`TELEPORT_ON_DISCARD_CARDS` +
+> `teleportOnDiscardSupported` option, in `heroAbility.setup.ts`) resolves the card's existing
+> `[keyword:Teleport]` to `teleport-on-discard` for the whitelisted card only — the Honest-Partial
+> Invariant (mirrors the transform/investigate resolvers). NO card-data / hero-ability-markers /
+> ssw2 regen. **(2)** `consumeTeleportReturns` runs INSIDE `applyEndOfTurnCleanup` (the single
+> per-turn-end helper hit by every live + harness path once) — no per-harness replication edits,
+> no replay-divergence risk. **(3)** Follow-up: the hero-mechanic-ledger keys rows on the raw
+> `[keyword:X]` token, so guerrilla-warfare still reads `teleport/unsupported` (the resolved keyword
+> is named differently than the token); the card IS implemented — a small ledger-generator follow-up.
+> Engine + tests only; no coverage-index change; `HERO_KEYWORDS` 57→58; no oracle re-pin.
 
 ## Before Starting
 - [ ] Baseline: `origin/main` @ `ee39dcbc` (or later); working tree clean, synced.

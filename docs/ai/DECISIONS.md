@@ -42751,6 +42751,52 @@ Protect this file.
 
 **Determinism / blast radius.** Simulation-only — no engine rule, `G` field, phase/turn hook, hash surface (`finalStateHash` / `PRE_WP080_HASH` untouched), persistence, card data, or migration. Full engine suite green (3609/0, +1 for the new drift-guard pin); `pnpm -r build` exit 0. Related: D-24440 (the first instance — `resolveHeroChoice`, the precedent this follows), D-24345 / WP-535 (the Copy Powers move + its `getLegalMoves` short-circuit), D-24073 / WP-289 (the move-dispatch drift guard this extends), D-24501 (the sibling latent `resolveSeatChoice` case). **Reserved by:** NUMBER-LEDGER D-24525.
 
+### D-24526 — `teleport-on-discard` reactive hero keyword (Ruby Summers "Guerrilla Warfare") (Active 2026-09-18 — WP-705 / EC-742)
+
+**Decision.** A new reactive hero keyword `teleport-on-discard` makes Ruby Summers
+"Guerrilla Warfare" (ssw2) faithful: *"When a card effect causes you to discard this
+card, if it is your turn, Teleport it instead. If it is not your turn, set it aside and
+add it to your hand at the end of this turn."* MANDATORY + automatic (no "you may"): no
+pending choice, resolve move, block-all guard, UIState field, or client. It fires at the
+shipped WP-498/D-24301 `discardFromHand` chokepoint (`checkTeleportOnDiscard`), which
+REMOVES the just-discarded card from the discard pile (set aside — held in no zone) and
+records it on a lazy-init `G.pendingTeleportReturns`; `consumeTeleportReturns` re-adds each
+card to its OWNER's hand as an extra card at the current turn's end.
+
+**Both printed branches collapse to one mechanism.** Under WP-701/D-24520 (the new hand is
+drawn at end of turn), "your turn → Teleport it" and "not your turn → set aside, add at end
+of this turn" produce the identical outcome — end-of-current-turn return — so no turn-owner
+(`ctx.currentPlayer`) distinction is needed. `consumeTeleportReturns` runs INSIDE
+`applyEndOfTurnCleanup` (the single per-turn-end helper called once at every live turn-end
+sub-path AND every bgio-bypassing harness), AFTER the ending player's new-hand draw, so the
+active owner's return is an extra on the fresh HAND_SIZE hand and a non-active owner's return
+is an extra on their existing hand — with zero per-harness edits and no replay divergence.
+
+**Parser resolver, not a card-data marker (as-built, live-diagnostics-driven).** The
+observed hollow (build b8858c6) was a `parse-unrecognized` flag from the bare
+`[keyword:Teleport]` DISPLAY token, which the parser captures. Appending a separate marker
+would not silence it, and globally whitelisting `teleport` would dishonestly hide the ~30
+still-unimplemented general onPlay-Teleport cards. So the parser resolves the card's existing
+`[keyword:Teleport]` to `teleport-on-discard` for a whitelisted card set
+(`TELEPORT_ON_DISCARD_CARDS`, threaded via a `teleportOnDiscardSupported` option) — the
+Honest-Partial Invariant, mirroring the `transform` / `investigate` resolvers. Every other
+`[keyword:Teleport]` card keeps an honest unresolved marker. Enrolled in
+`DISCARD_TIME_EXECUTED_KEYWORDS` → `MVP_KEYWORDS` so the play-time hook visit does not emit a
+no-handler hollow; no `HERO_EFFECT_HANDLERS` entry. No card-data marker/regen.
+
+**Determinism.** No `ctx.random`; `PendingTeleportReturn` is JSON-serializable;
+`G.pendingTeleportReturns` is hashed but lazy-init (never seeded), so the empty-replay
+`PRE_WP080_HASH` / `hashGameState` oracles do NOT re-pin (verified byte-identical). A gameplay
+fixture would re-pin only if it force-discards then returns Guerrilla Warfare — none in the
+corpus. Engine suite 3633 → 3642/0; `HERO_KEYWORDS` 57 → 58.
+
+**Known limitation (follow-up).** The hero-mechanic-ledger keys rows on the raw `[keyword:X]`
+token, so it still shows guerrilla-warfare as `teleport/unsupported` (the resolved keyword
+`teleport-on-discard` is named differently than the "teleport" token, unlike the `transform`
+resolver whose keyword name matches its token). The card IS implemented; teaching the ledger
+to credit card-scoped resolvers whose keyword name differs from the token is a small tooling
+follow-up, not a correctness gap. **Reserved by:** NUMBER-LEDGER D-24526.
+
 Protect this file.
 
 ### D-24528 — count-scaled effect resolution trace (the realized `EffectTrace.resolution` on the hash-excluded `G.diagnostics` channel) (Active 2026-09-18)

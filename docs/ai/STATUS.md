@@ -31,6 +31,28 @@ live-verify operator-pending** (a real deployed match with a count-scaled hero, 
 `effectTraces` for the `resolution` record). Follow-ups: the `resolveCountScaledChoice` dispatch site,
 victory-pile `countedInputs`, the base-stat game-log economy clause, a player-facing
 `heroEffectResolved` chip.
+### WP-705 — `teleport-on-discard` reactive hero keyword: Ruby Summers "Guerrilla Warfare" (EC-742 / D-24526) (2026-09-18)
+
+Made Guerrilla Warfare (ssw2) faithful — *"When a card effect causes you to discard this card, if
+it is your turn, Teleport it instead. If it is not your turn, set it aside and add it to your hand
+at the end of this turn."* — reported hollow from a live game (build b8858c6, which logged an
+"unhandled teleport at onPlay, parse-unrecognized" every time it was played). MANDATORY + automatic
+(no "you may"): the reaction fires at the shipped WP-498 `discardFromHand` chokepoint
+(`checkTeleportOnDiscard`), removes the card from discard (set aside, in no zone), records it on a
+lazy-init `G.pendingTeleportReturns`, and `consumeTeleportReturns` (inside `applyEndOfTurnCleanup`,
+after the ending player's new-hand draw) re-adds each set-aside card to its owner's hand as an extra
+card at the current turn's end — both printed branches collapse to that one mechanism. NO pending
+choice / resolve move / block-all guard / UIState field / client. **As-built (execution-time):** a
+card-scoped PARSER RESOLVER (`TELEPORT_ON_DISCARD_CARDS`, mirrors the transform/investigate
+Honest-Partial resolvers) resolves the card's existing `[keyword:Teleport]` to the new keyword —
+NOT a card-data marker — so no card-data/coverage change; and the consume lives inside the single
+per-turn-end cleanup helper so every live + harness path is covered once (no per-harness edits, no
+replay divergence). Engine + tests only. Engine suite 3633→3642/0; `HERO_KEYWORDS` 57→58; no oracle
+re-pin (lazy-init, `PRE_WP080`/`hashGameState` byte-identical). **Known follow-up:** the
+hero-mechanic-ledger keys on the raw `[keyword:X]` token, so it still shows guerrilla-warfare as
+`teleport/unsupported` (the resolved keyword is named differently than the token); the card IS
+implemented — teaching the ledger to credit renamed card-scoped resolvers is a small tooling
+follow-up. **D-24026 live-verify operator-pending on deploy.**
 
 ### WP-702 — Reveal-top discard-or-keep hero keyword (EC-739 / D-24521) (2026-09-16)
 
