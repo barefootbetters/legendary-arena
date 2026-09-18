@@ -12,7 +12,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveCountSource } from './heroCountSource.resolve.js';
+import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import { HERO_COUNT_SOURCES } from '../rules/heroCountSource.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import {
@@ -643,5 +643,165 @@ describe('resolveCountSource odd-cost-heroes-played-this-turn (WP-680)', () => {
       1,
       'only other odd-cost cards count',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-706 / D-24528 — explainCountSourceInputs (diagnostics-only counted inputs)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a minimal state whose player "0" has an in-play zone plus cardTraits that
+ * can carry `heroClass` AND `heroClass2` (the dual-class case), and an optional
+ * cardStats cost/icon map. The explain reads only these.
+ *
+ * @param inPlay - The in-play ext_ids for player "0".
+ * @param cardTraits - Per-card heroClass / heroClass2 / team.
+ * @param cardStats - Per-card cost + icon flags (only the read fields matter).
+ * @returns A minimal game state cast to LegendaryGameState.
+ */
+function makeExplainState(
+  inPlay: string[],
+  cardTraits: Record<string, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
+  cardStats: Record<string, { cost?: number; hasAttackIcon?: boolean; hasRecruitIcon?: boolean }> = {},
+): LegendaryGameState {
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay, victory: [] },
+    },
+    cardTraits,
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('explainCountSourceInputs — per-card played-this-turn sources (WP-706)', () => {
+  it('returns the matched ext-ids and count === length for a cost-threshold source', () => {
+    const gameState = makeExplainState(
+      ['divine-lightning#0', 'worthy-ally#0', 'weak-ally#0'],
+      {
+        'divine-lightning#0': { heroClass: 'strength', team: null },
+        'worthy-ally#0': { heroClass: 'tech', team: null },
+        'weak-ally#0': { heroClass: 'covert', team: null },
+      },
+      {
+        'divine-lightning#0': { cost: 5 },
+        'worthy-ally#0': { cost: 6 },
+        'weak-ally#0': { cost: 2 },
+      },
+    );
+
+    // why: self-EXCLUSIVE — the triggering divine-lightning#0 is skipped; only the
+    // other cost >= 5 card (worthy-ally#0) is collected.
+    const inputs = explainCountSourceInputs(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0');
+    assert.deepStrictEqual(inputs, ['worthy-ally#0'], 'collects the other Worthy-making card');
+    const count = resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0');
+    assert.equal(count, inputs.length, 'count === countedInputs.length for a per-card source');
+  });
+
+  it('collects the OTHER team cards, self-excluded, matching the resolver count', () => {
+    const gameState = makeExplainState(
+      ['a-day#0', 'iron-man#0', 'nick-fury#0'],
+      {
+        'a-day#0': { heroClass: 'covert', team: 'avengers' },
+        'iron-man#0': { heroClass: 'tech', team: 'avengers' },
+        'nick-fury#0': { heroClass: 'tech', team: 'shield' },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    assert.deepStrictEqual(inputs, ['iron-man#0'], 'the other Avenger only, self-excluded');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+
+  it('collects the OTHER attack-icon cards via the faithful icon flag', () => {
+    const gameState = makeExplainState(
+      ['sym#0', 'ally-a#0', 'ally-b#0'],
+      {
+        'sym#0': { heroClass: 'instinct', team: null },
+        'ally-a#0': { heroClass: 'tech', team: null },
+        'ally-b#0': { heroClass: 'covert', team: null },
+      },
+      {
+        'sym#0': { hasAttackIcon: true, hasRecruitIcon: true },
+        'ally-a#0': { hasAttackIcon: true, hasRecruitIcon: false },
+        'ally-b#0': { hasAttackIcon: false, hasRecruitIcon: true },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'attack-icon-played-this-turn', 'sym#0');
+    assert.deepStrictEqual(inputs, ['ally-a#0'], 'only the other attack-icon card');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'attack-icon-played-this-turn', 'sym#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+});
+
+describe('explainCountSourceInputs — victory-pile sources return [] (WP-706)', () => {
+  it('returns [] for victory-bystanders (countedInputs omitted at the capture site)', () => {
+    const gameState = makeStateWithVictory([BYSTANDER_EXT_ID, BYSTANDER_EXT_ID]);
+    assert.deepStrictEqual(
+      explainCountSourceInputs(gameState, '0', 'victory-bystanders'),
+      [],
+      'victory-pile source explains to no counted inputs',
+    );
+  });
+
+  it('returns [] for shield-levels', () => {
+    const gameState = makeStateWithVictory(['some-shield-card#0']);
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'shield-levels'), []);
+  });
+});
+
+describe('explainCountSourceInputs — distinct-hero-classes dual-class case (WP-706 / WP-703)', () => {
+  it('includes a dual-class card whose colour is matched ONLY via heroClass2', () => {
+    // why: the load-bearing WP-703 tie — a dual-class card contributes its second colour
+    // via heroClass2 alone; explainCountSourceInputs must list that card so the heroClass2
+    // contribution is live-observable. dual#0 has heroClass 'tech' (shared with tech#0) and
+    // heroClass2 'covert' (unique) — its unique colour comes ONLY from heroClass2.
+    const gameState = makeExplainState(
+      ['tech#0', 'dual#0'],
+      {
+        'tech#0': { heroClass: 'tech', team: null },
+        'dual#0': { heroClass: 'tech', heroClass2: 'covert', team: null },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.ok(inputs.includes('dual#0'), 'the dual-class card appears in the counted inputs');
+    assert.ok(inputs.includes('tech#0'), 'the single-class card appears too');
+
+    // why: self-INCLUSIVE, distinct-colour rollup — count (distinct colours {tech,covert}=2)
+    // <= the card-list length (2 here, but the invariant is count <= length, not ===).
+    const count = resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.equal(count, 2, 'two distinct colours: tech + covert (covert only via heroClass2)');
+    assert.ok(count <= inputs.length, 'distinct-class invariant: count <= countedInputs.length');
+  });
+});
+
+describe('explainCountSourceInputs — resolver byte-identical guarantee (WP-706)', () => {
+  it('resolveCountSource returns the identical integer with and without an explain call', () => {
+    // why: the gameplay grant path is untouched — the explain is a SEPARATE read-only pass;
+    // the resolver integer the grant uses must be byte-identical whether or not explain runs.
+    const gameState = makeExplainState(
+      ['a-day#0', 'iron-man#0', 'thor#0'],
+      {
+        'a-day#0': { heroClass: 'covert', team: 'avengers' },
+        'iron-man#0': { heroClass: 'tech', team: 'avengers' },
+        'thor#0': { heroClass: 'strength', team: 'avengers' },
+      },
+    );
+
+    const before = resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    const explained = explainCountSourceInputs(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    const after = resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+
+    assert.equal(before, after, 'resolver is unaffected by the explain pass');
+    assert.equal(before, explained.length, 'and agrees with the explain length for a per-card source');
   });
 });

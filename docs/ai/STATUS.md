@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-706 — Count-scaled effect resolution trace (EC-743 / D-24528) (2026-09-18)
+
+Made ability-**computed** count-scaled hero-effect resolutions live-observable. The shipped
+`attack-per-count` / `recruit-per-count` family grants `magnitude × floor(count / perEach)` scaled by
+a `HeroCountSource` (Nick Fury *Legendary Commander*, Captain America *Perfect Teamwork*, the
+Deadpool / cost-4+ / icon-count siblings), but the computed grant + which cards/classes were counted
+was captured nowhere live. Enriched the WP-488/D-24294 runtime `EffectTrace` on the hash-excluded
+`G.diagnostics` channel with an additive optional `resolution` sub-record `{countSource, resource,
+magnitude, count, perEach, computedValue, countedInputs?}`, re-resolved at the `runHookEffects`
+trace-build site (`buildCountScaledResolution` → the pure `buildHeroLegacyEffectTrace` assembler).
+Counted-card ext-ids come from a NEW diagnostics-only `explainCountSourceInputs` that mirrors each
+counter's matching logic (incl. the `distinct-hero-classes-played-this-turn` `heroClass2` Set — the
+WP-703 dual-class live-verify tie) without touching `resolveCountSource` (gameplay integer
+byte-identical). Carried through BOTH `uiState.build` + `uiState.filter` (Board-Visible Field Rule)
+and rides the WP-575 Play Diagnostics export opaquely (no arena-client source change). `countedInputs`
+present for the 8 played-this-turn sources, omitted for the 2 victory-pile sources. **NO hash re-pin**
+— `G.diagnostics` is excluded from both oracles; the replay/sentinel/determinism suite passed
+byte-unchanged (13/13 hash-pin tests green, incl. the `PRE_WP080_HASH` regression guard). Engine
+3661→3682/0 (+21), arena-client `vue-tsc` 0 + 1843/0, `pnpm -r build` 0. Five engine source files +
+six test files (one new, `hollowEffect.types.test.ts`). Landed D-24528 (Active). **D-24026
+live-verify operator-pending** (a real deployed match with a count-scaled hero, exported, grep
+`effectTraces` for the `resolution` record). Follow-ups: the `resolveCountScaledChoice` dispatch site,
+victory-pile `countedInputs`, the base-stat game-log economy clause, a player-facing
+`heroEffectResolved` chip.
+
 ### WP-702 — Reveal-top discard-or-keep hero keyword (EC-739 / D-24521) (2026-09-16)
 
 Fixed the reported Gambit **Hypnotic Charm** "effect isn't firing" bug (the second half of the same

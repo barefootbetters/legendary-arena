@@ -23,6 +23,11 @@
 // bare `string`. Type-only — erased at compile time, so the "no runtime imports"
 // posture of this contracts file is preserved (no cycle, no I/O).
 import type { CardExtId } from '../state/zones.types.js';
+// why: type-only import of the closed HeroCountSource union (WP-680 / D-24497) so
+// the EffectTraceResolution contract names the count source with its canonical type
+// rather than a bare `string`. Type-only — erased at compile time, so the "no runtime
+// imports" posture of this contracts file is preserved (no cycle, no I/O).
+import type { HeroCountSource } from '../rules/heroCountSource.js';
 
 // ---------------------------------------------------------------------------
 // EffectExecutionReason — the per-effect classification taxonomy (D-24033)
@@ -257,6 +262,45 @@ export const EFFECT_TRACE_FIRE_SITES: readonly EffectTraceFireSite[] = [
 ] as const;
 
 /**
+ * The realized computation of a count-scaled hero effect (WP-706 / D-24528).
+ *
+ * Records what an `attack-per-count` / `recruit-per-count` dispatch actually
+ * resolved to: the count source it scaled by, the resolved count, the per-each
+ * divisor, the resource it granted, the per-unit magnitude, the computed grant,
+ * and — for the played-this-turn card-counting sources — the ext_ids of the
+ * cards that were counted. `computedValue === magnitude × floor(count / perEach)`
+ * (with `perEach` normalized absent/≤0 → 1, exactly as the executor does, so it
+ * never divides by 0/undefined and always equals the granted value).
+ *
+ * why: WP-706 / D-24528 — this sub-record is DIAGNOSTICS-ONLY, INERT (no move /
+ * rule / `endIf` / bot / scoring / PAR reads it), and HASH-EXCLUDED: it rides the
+ * existing D-24294 `G.diagnostics` channel exclusion (both the `computeStateHash`
+ * replay oracle, D-24271, and the `hashGameState` fixture oracle exclude
+ * `G.diagnostics`), so adding it re-pins NO hash. Plain scalars + a string array,
+ * so it stays JSON-serializable and rides the existing `EFFECT_TRACES_CAP` with no
+ * new cap. `countedInputs` is OMIT-WHEN-UNAVAILABLE: present for the played-this-turn
+ * card-counting sources, absent for the victory-pile sources (`victory-bystanders`,
+ * `shield-levels`) which enumerate the Victory Pile, not cards-played-this-turn.
+ *
+ * @property countSource - The count source the effect scaled by.
+ * @property resource - Which resource the grant added: attack or recruit.
+ * @property magnitude - The per-unit magnitude off the effect descriptor.
+ * @property count - The resolved count (the resolveCountSource integer).
+ * @property perEach - The "for each N" divisor, normalized absent/≤0 → 1.
+ * @property computedValue - The granted amount: magnitude × floor(count / perEach).
+ * @property countedInputs - The counted cards' ext_ids (omitted for victory-pile sources).
+ */
+export interface EffectTraceResolution {
+  countSource: HeroCountSource;
+  resource: 'attack' | 'recruit';
+  magnitude: number;
+  count: number;
+  perEach: number;
+  computedValue: number;
+  countedInputs?: CardExtId[];
+}
+
+/**
  * One JSON-serializable per-dispatch effect trace (WP-488 / D-24294).
  *
  * Materialized on the runtime-only `G.diagnostics.traces` channel whenever a card
@@ -283,6 +327,10 @@ export const EFFECT_TRACE_FIRE_SITES: readonly EffectTraceFireSite[] = [
  * @property params - A shallow scalar snapshot of the descriptor's own parameter fields.
  * @property turn - The boardgame.io turn number the trace was observed on (0 when the
  *   emitting context carries no turn, e.g. the villain-deck reveal path).
+ * @property resolution - The realized count-scaled computation (WP-706 / D-24528).
+ *   Additive OPTIONAL: present only on a count-scaled (`attack-per-count` /
+ *   `recruit-per-count`) dispatch, absent on every other trace. Diagnostics-only,
+ *   INERT, and hash-excluded (rides the existing `G.diagnostics` exclusion).
  */
 export interface EffectTrace {
   cardId: CardExtId;
@@ -294,6 +342,7 @@ export interface EffectTrace {
   fireSite: EffectTraceFireSite;
   params: Record<string, string | number | boolean>;
   turn: number;
+  resolution?: EffectTraceResolution;
 }
 
 // why: WP-488 / D-24294 — a trace fires on EVERY effect dispatch (unlike the rare

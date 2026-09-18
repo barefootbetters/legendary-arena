@@ -33,7 +33,7 @@ import type {
 import type { UIAudience } from './uiAudience.types.js';
 // why: WP-258 — the filtered hollow-effect records are the engine's canonical
 // HollowEffectRecord (WP-257); the public pass-through copies them value-for-value.
-import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 
 // why: non-active players and spectators must not see the active player's
 // remaining resources (attack/recruit/piercing/woundsDrawn). Zeroed
@@ -1380,7 +1380,7 @@ export function filterUIStateForAudience(
   if (uiState.effectTraces !== undefined) {
     const effectTracesCopy: EffectTrace[] = [];
     for (const trace of uiState.effectTraces) {
-      effectTracesCopy.push({
+      const traceCopy: EffectTrace = {
         cardId: trace.cardId,
         scope: trace.scope,
         timing: trace.timing,
@@ -1390,7 +1390,29 @@ export function filterUIStateForAudience(
         fireSite: trace.fireSite,
         params: { ...trace.params },
         turn: trace.turn,
-      });
+      };
+      // why: WP-706 / D-24528 — carry the count-scaled `resolution` sub-record through the
+      // audience filter with a FRESH-object copy (+ a fresh `countedInputs` array) for the
+      // same aliasing defence (D-11105) and conditional assignment (absent ⇒ omitted). This
+      // MUST mirror uiState.build.ts: a field built but NOT carried here is silently dropped
+      // at the whitelist (the shipped EC-206 failure mode / Board-Visible Field Rule).
+      // resolution is PUBLIC dispatch data (D-12803) — passed through value-unchanged for
+      // every audience, redacting nothing.
+      if (trace.resolution !== undefined) {
+        const resolutionCopy: EffectTraceResolution = {
+          countSource: trace.resolution.countSource,
+          resource: trace.resolution.resource,
+          magnitude: trace.resolution.magnitude,
+          count: trace.resolution.count,
+          perEach: trace.resolution.perEach,
+          computedValue: trace.resolution.computedValue,
+        };
+        if (trace.resolution.countedInputs !== undefined) {
+          resolutionCopy.countedInputs = [...trace.resolution.countedInputs];
+        }
+        traceCopy.resolution = resolutionCopy;
+      }
+      effectTracesCopy.push(traceCopy);
     }
     result.effectTraces = effectTracesCopy;
   }
