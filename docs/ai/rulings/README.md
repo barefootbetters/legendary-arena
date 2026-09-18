@@ -51,6 +51,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/…) |
 | `fire-rule-hook` | `executeRuleHooks` + `applyRuleEffects` for one trigger | scheme-twist / mastermind-strike pipeline (counters + messages) |
 | `resolve-scry-ko` | `resolveScryKoChoice` move | the Doombot scry-KO pick |
+| `resolve-ko-hero` | `resolveKoHeroChoice` move | the KO-a-Hero pick |
 
 ### Current expectation kinds
 
