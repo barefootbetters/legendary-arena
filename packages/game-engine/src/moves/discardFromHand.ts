@@ -84,6 +84,75 @@ export function checkReturnOnDiscard(
 }
 
 /**
+ * Whether a card carries the reactive `teleport-on-discard` keyword (WP-705 / D-24526).
+ *
+ * // why: the reaction keys on the KEYWORD, not the hook's `onDiscard` timing (the timing
+ * label is declarative-only). The Array.isArray guard covers minimal test states that omit
+ * G.heroAbilityHooks, mirroring cardCarriesReturnOnDiscard.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param cardId - The card whose hooks are scanned.
+ * @returns true when the card has a `teleport-on-discard` hook.
+ */
+export function cardCarriesTeleportOnDiscard(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): boolean {
+  if (!Array.isArray(G.heroAbilityHooks)) {
+    return false;
+  }
+  for (const hook of getHooksForCard(G.heroAbilityHooks, cardId)) {
+    if (hook.keywords.includes('teleport-on-discard')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Sets a just-discarded `teleport-on-discard` card aside (WP-705 / D-24526). G-only.
+ *
+ * The card has already moved hand→discard (this runs AFTER the move). Because the printed
+ * text is MANDATORY ("Teleport it instead" / "set it aside" — no "you may"), the reaction is
+ * automatic: it REMOVES the card from the discard pile so it is truly set aside (in no zone,
+ * protected from discard-pile effects for the rest of the turn) and records it on
+ * G.pendingTeleportReturns. consumeTeleportReturns re-adds it to its owner's hand at the
+ * current turn's end. Lazy-initializes the FIFO queue at the park site (never in Game.setup)
+ * so an untriggered match omits the field from canonical JSON (no hash-oracle re-pin).
+ *
+ * @param G - The game state, mutated in place (card removed from discard, queue appended).
+ * @param playerID - The player who owns the discarded card.
+ * @param cardId - The just-discarded card to set aside and return at end of turn.
+ */
+export function checkTeleportOnDiscard(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+): void {
+  if (!cardCarriesTeleportOnDiscard(G, cardId)) {
+    return;
+  }
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+  // why: WP-705 / D-24526 — remove the card from discard (the throwaway [] "to" zone is
+  // discarded) so it is set aside in no zone; it is held only on the pending queue until it
+  // returns. Guarded on `found` in case a later chokepoint caller mutated discard first.
+  const removeResult = moveCardFromZone(playerZones.discard, [], cardId);
+  if (!removeResult.found) {
+    return;
+  }
+  playerZones.discard = removeResult.from;
+  // why: WP-705 / D-24526 — lazy-init the FIFO queue at the park site, NEVER in Game.setup,
+  // so an untriggered match leaves the field undefined (no empty-replay oracle re-pin).
+  if (G.pendingTeleportReturns === undefined) {
+    G.pendingTeleportReturns = [];
+  }
+  G.pendingTeleportReturns.push({ playerID, cardId });
+}
+
+/**
  * Moves one card from a player's hand to their discard pile (the SINGLE
  * card-effect hand→discard chokepoint), then fires the return-on-discard
  * reaction. Mutates G.playerZones in place.
@@ -113,5 +182,9 @@ export function discardFromHand(
   playerZones.hand = moveResult.from;
   playerZones.discard = moveResult.to;
   checkReturnOnDiscard(G, playerID, cardId);
+  // why: WP-705 / D-24526 — a second reactive on-discard keyword at the same chokepoint;
+  // a card carries at most one (Cyclops = return-on-discard, Guerrilla Warfare =
+  // teleport-on-discard), so only the matching reaction fires.
+  checkTeleportOnDiscard(G, playerID, cardId);
   return true;
 }

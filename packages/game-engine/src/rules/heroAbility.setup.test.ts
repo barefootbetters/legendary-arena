@@ -517,10 +517,47 @@ describe('buildHeroAbilityHooks WP-681 optional/interactive core heroes (D-24498
   });
 });
 
+describe('teleport-on-discard resolver (WP-705 / D-24526)', () => {
+  const GW_TEXT =
+    'When a card effect causes you to discard this card, if it is your turn, [keyword:Teleport] it instead. If it is not your turn, set it aside and add it to your hand at the end of this turn.';
+
+  it('resolves Guerrilla Warfare\'s [keyword:Teleport] to a teleport-on-discard hook (onDiscard)', () => {
+    const registry = makeHeroRegistry('ssw2', 'ruby-summers', [
+      { slug: 'guerrilla-warfare', rarityLabel: 'Common 1', abilities: [GW_TEXT] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['ssw2/ruby-summers'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks.find((entry) => entry.cardId === 'ssw2/ruby-summers/guerrilla-warfare#0');
+
+    assert.ok(hook !== undefined, 'the guerrilla-warfare hook exists');
+    assert.ok(hook!.keywords.includes('teleport-on-discard'), 'the bare [keyword:Teleport] resolves to teleport-on-discard');
+    assert.equal(hook!.timing, 'onDiscard', 'the reactive keyword carries onDiscard timing');
+    assert.ok(
+      !(hook!.unresolvedMarkers ?? []).includes('teleport'),
+      'teleport is NOT an unresolved marker for the allowlisted card (no parse-unrecognized hollow)',
+    );
+  });
+
+  it('leaves [keyword:Teleport] an unresolved marker for a NON-allowlisted card (Honest-Partial)', () => {
+    // why: the same reactive text on an unlisted card key must stay an honest hollow — the
+    // ~30 general onPlay-Teleport cards are still unimplemented.
+    const registry = makeHeroRegistry('ssw2', 'ruby-summers', [
+      { slug: 'not-guerrilla', rarityLabel: 'Common 1', abilities: [GW_TEXT] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['ssw2/ruby-summers'] };
+    const hooks = buildHeroAbilityHooks(registry, config);
+    const hook = hooks.find((entry) => entry.cardId === 'ssw2/ruby-summers/not-guerrilla#0');
+
+    assert.ok(hook !== undefined, 'the hook exists (carries the unresolved marker)');
+    assert.ok(!hook!.keywords.includes('teleport-on-discard'), 'teleport does NOT resolve for an unlisted card');
+    assert.ok((hook!.unresolvedMarkers ?? []).includes('teleport'), 'teleport stays an honest unresolved marker');
+  });
+});
+
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 55 canonical keyword values', () => {
+  it('contains exactly the 58 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -562,6 +599,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'defeat-with-bystander', // why: WP-486 / D-24291 — Silent Sniper "Defeat a Villain or Mastermind that has a Bystander."
       'copy-powers', // why: WP-535 / D-24345 — Rogue's Copy Powers "Play this card as a copy of another Hero you played this turn."
       'return-on-discard', // why: WP-498 / D-24301 — Cyclops Unending Energy "If a card effect makes you discard this card, you may return this card to your hand."
+      'teleport-on-discard', // why: WP-705 / D-24526 — Ruby Summers Guerrilla Warfare reactive teleport (set aside → return to hand at current turn's end)
       'recruit-as-attack', // why: WP-580 / D-24389 — God of Thunder "You can use Recruit as Attack this turn."
       'steal-abilities', // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."
       'investigate', // why: WP-564 / D-24373 — "Investigate for <criterion>" static-criterion + draw subset (Alias Investigations + siblings)
@@ -583,8 +621,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      57,
-      'HERO_KEYWORDS must have exactly 57 entries',
+      58,
+      'HERO_KEYWORDS must have exactly 58 entries',
     );
 
     assert.deepStrictEqual(

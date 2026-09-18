@@ -276,7 +276,15 @@ export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
 // recruit-/hand-/face-down-/class-grant categories (duplicate-first per §16.1 — they execute
 // at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and would break
 // the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
-export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['return-on-discard'];
+// why: WP-705 / D-24526 — teleport-on-discard (Guerrilla Warfare) is a SECOND reactive
+// discard-time keyword: it fires at the discardFromHand chokepoint (checkTeleportOnDiscard),
+// never at play time. Enrolling it here → MVP_KEYWORDS keeps the play-time hook visit
+// (executeHeroEffects does not filter by timing) classifying `applied` instead of a
+// `no-handler` hollow, exactly like return-on-discard. NOT in HANDLED_KEYWORDS (no handler).
+export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
+  'return-on-discard',
+  'teleport-on-discard',
+];
 
 // why: WP-682 / D-24499 — diving-block executes REACTIVELY at the gainWoundForPlayer
 // chokepoint (checkDivingBlock parks a reveal/decline seat choice when a player holding
