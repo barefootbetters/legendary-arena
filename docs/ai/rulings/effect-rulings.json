@@ -667,5 +667,27 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "inPlay", "cards": [] },
     "why": "The KO'd card is removed from in-play before it enters the KO pile — it is no longer in play (D-24022). Paired with the positive sibling that asserts it reached the KO pile."
+  },
+  {
+    "id": "scheme-twist-increments-twist-count",
+    "mechanic": "scheme-twist-counter",
+    "decision": "D-2401",
+    "scenario": {
+      "action": "fire-rule-hook",
+      "setup": { "trigger": "onSchemeTwistRevealed", "cardId": "test-twist-001" }
+    },
+    "expected": { "kind": "counter-value", "counter": "schemeTwistCount", "count": 1 },
+    "why": "D-2401 routes the scheme-twist handler through the executeRuleHooks → applyRuleEffects pipeline as an ImplementationMap entry, and buildGenericTwistEffects (schemeHandlers.ts) emits a modifyCounter schemeTwistCount delta:1 on every onSchemeTwistRevealed, so one reveal on a fresh state (schemeTwistCount absent = 0) leaves the counter at 1."
+  },
+  {
+    "id": "mastermind-strike-increments-strike-count",
+    "mechanic": "mastermind-strike-counter",
+    "decision": "D-2403",
+    "scenario": {
+      "action": "fire-rule-hook",
+      "setup": { "trigger": "onMastermindStrikeRevealed", "cardId": "test-strike-001" }
+    },
+    "expected": { "kind": "counter-value", "counter": "masterStrikeCount", "count": 1 },
+    "why": "D-2403 (MVP Mastermind Strike Uses Counter + Message Only) has the mastermind-strike handler produce a modifyCounter masterStrikeCount delta:1 plus a queueMessage, so one onMastermindStrikeRevealed reveal on a fresh state (masterStrikeCount absent = 0) leaves the counter at 1."
   }
 ]

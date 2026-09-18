@@ -35,6 +35,9 @@ import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
+import { executeRuleHooks } from './ruleRuntime.execute.js';
+import { applyRuleEffects } from './ruleRuntime.effects.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from './ruleRuntime.impl.js';
 import {
   validateRulingCorpus,
   RULING_SCENARIO_ACTIONS,
@@ -47,7 +50,9 @@ import type {
   RulingScenarioAction,
   RulingExpectationKind,
   RulingZoneName,
+  RulingCounterField,
 } from './effectRulings.validate.js';
+import type { RuleTriggerName } from './ruleHooks.types.js';
 import type {
   LegendaryGameState,
   MatchSetupConfig,
@@ -217,6 +222,11 @@ interface FireHeroEffectSetup {
   bystandersSupply?: number;
 }
 
+interface FireRuleHookSetup {
+  trigger: 'onSchemeTwistRevealed' | 'onMastermindStrikeRevealed';
+  cardId: string;
+}
+
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
 interface Outcome {
   G: LegendaryGameState;
@@ -383,6 +393,40 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
   return { G, booleanResult };
 }
 
+/**
+ * Fires the real scheme / mastermind rule pipeline for one trigger, reusing the
+ * proven `executeRuleHooks` → `applyRuleEffects` entry points (D-2401) exactly as
+ * `ruleRuntime.integration.test.ts` does. `buildInitialGameState` (inside
+ * `buildBaseState`) populates `G.hookRegistry` with the default scheme + mastermind
+ * hook definitions, and `DEFAULT_IMPLEMENTATION_MAP` binds those hook ids to the real
+ * `schemeTwistHandler` / `mastermindStrikeHandler`. So the ruling exercises the same
+ * production pipeline a live reveal runs — the handlers are never re-implemented here.
+ *
+ * @param rawSetup - The ruling's fire-rule-hook setup payload.
+ * @returns The mutated game state (counters + messages written by the pipeline).
+ */
+function runFireRuleHook(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as FireRuleHookSetup;
+  const G = buildBaseState(1);
+
+  // why: the pipeline's `ctx` param is typed `unknown` and the default scheme /
+  // mastermind handlers read only the trigger payload's `{ cardId }`, so an empty
+  // object satisfies it (matching the integration test). The trigger is narrowed to
+  // RuleTriggerName from the closed setup shape; getHooksForTrigger fails loudly on a
+  // trigger with no registered hook rather than silently doing nothing.
+  const effects = executeRuleHooks(
+    G,
+    {},
+    setup.trigger as RuleTriggerName,
+    { cardId: setup.cardId },
+    G.hookRegistry,
+    DEFAULT_IMPLEMENTATION_MAP,
+  );
+  applyRuleEffects(G, {}, effects);
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -394,6 +438,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-optional-ko-reward': runResolveOptionalKoReward,
   'query-card-has-class': runQueryCardHasClass,
   'fire-hero-effect': runFireHeroEffect,
+  'fire-rule-hook': runFireRuleHook,
 };
 
 /**
@@ -447,12 +492,23 @@ function checkTurnEconomyValue(outcome: Outcome, expected: RulingExpectation): v
   assert.equal(outcome.G.turnEconomy[field], expected.amount, `turnEconomy.${field} mismatch`);
 }
 
+// why: `G.counters` is an open Record and an untouched counter is absent, so read it
+// as `?? 0` — the same default the scheme / mastermind handlers use when they read a
+// counter (schemeHandlers.ts / mastermindHandlers.ts). A perturbed count still flips
+// the assertion (the actual value never changes), so the non-vacuity guard holds.
+/** Asserts a named `G.counters` key equals the expected count (absent reads as 0). */
+function checkCounterValue(outcome: Outcome, expected: RulingExpectation): void {
+  const counter = expected.counter as RulingCounterField;
+  assert.equal(outcome.G.counters[counter] ?? 0, expected.count, `counters.${counter} mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
   'pending-queue-length': checkPendingQueueLength,
   'boolean-result': checkBooleanResult,
   'turn-economy-value': checkTurnEconomyValue,
+  'counter-value': checkCounterValue,
 };
 
 /**
@@ -483,6 +539,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'pending-queue-length': (expected) => ({ ...expected, length: (expected.length ?? 0) + 1 }),
   'boolean-result': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
   'turn-economy-value': (expected) => ({ ...expected, amount: (expected.amount ?? 0) + 1 }),
+  'counter-value': (expected) => ({ ...expected, count: (expected.count ?? 0) + 1 }),
 };
 
 /**

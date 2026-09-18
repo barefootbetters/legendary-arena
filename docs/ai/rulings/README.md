@@ -49,6 +49,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
 | `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/…) |
+| `fire-rule-hook` | `executeRuleHooks` + `applyRuleEffects` for one trigger | scheme-twist / mastermind-strike pipeline (counters + messages) |
 
 ### Current expectation kinds
 
@@ -59,6 +60,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `pending-queue-length` | a pending queue has an exact length | `queue`, `length` |
 | `boolean-result` | the query's boolean return | `value` |
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
+| `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |
 
 ## How to add a ruling
 

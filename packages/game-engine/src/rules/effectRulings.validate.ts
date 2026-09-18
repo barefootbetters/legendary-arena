@@ -45,13 +45,17 @@
  * - `query-card-has-class` — call the pure `cardHasClassWhenPlayed` query.
  * - `fire-hero-effect` — call `executeSingleEffect` (the hero-effect executor) for
  *   one hero keyword against a real handler.
+ * - `fire-rule-hook` — fire the `executeRuleHooks` → `applyRuleEffects` scheme /
+ *   mastermind rule pipeline for one trigger (`onSchemeTwistRevealed` /
+ *   `onMastermindStrikeRevealed`) against the real default handlers (D-2401).
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
   | 'resolve-melter-ko'
   | 'resolve-optional-ko-reward'
   | 'query-card-has-class'
-  | 'fire-hero-effect';
+  | 'fire-hero-effect'
+  | 'fire-rule-hook';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -63,6 +67,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-optional-ko-reward',
   'query-card-has-class',
   'fire-hero-effect',
+  'fire-rule-hook',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -87,13 +92,16 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `pending-queue-length` — a named pending queue has an exact length.
  * - `boolean-result` — the query action's boolean return equals an exact value.
  * - `turn-economy-value` — a named `G.turnEconomy` field equals an exact amount.
+ * - `counter-value` — a named `G.counters` field equals an exact count (absent
+ *   reads as 0, matching the handlers' own `?? 0` counter reads).
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
   | 'ko-pile-equal'
   | 'pending-queue-length'
   | 'boolean-result'
-  | 'turn-economy-value';
+  | 'turn-economy-value'
+  | 'counter-value';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -105,6 +113,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'pending-queue-length',
   'boolean-result',
   'turn-economy-value',
+  'counter-value',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -119,6 +128,21 @@ export const RULING_ECONOMY_FIELDS: readonly RulingEconomyField[] = [
   'recruit',
   'woundsDrawn',
   'cardsDrawn',
+] as const;
+
+// why: D-24524 — the closed set of `G.counters` keys a `counter-value` expectation
+// may assert on. `G.counters` is an open `Record<string, number>` at the type level,
+// so a validated closed list (not any string) keeps the ruling vocabulary closed;
+// grow it one key at a time as a ruling needs another counter. `schemeTwistCount` is
+// incremented by the scheme-twist handler (D-2401 / schemeHandlers.ts), and
+// `masterStrikeCount` by the mastermind-strike handler (D-2403 / mastermindHandlers.ts).
+/** The `G.counters` keys a `counter-value` expectation may name. */
+export type RulingCounterField = 'schemeTwistCount' | 'masterStrikeCount';
+
+/** All counter keys a `counter-value` expectation may name. */
+export const RULING_COUNTER_FIELDS: readonly RulingCounterField[] = [
+  'schemeTwistCount',
+  'masterStrikeCount',
 ] as const;
 
 /** The player zones a `zone-cards-equal` expectation may name. */
@@ -169,6 +193,10 @@ export interface RulingExpectation {
   economyField?: RulingEconomyField;
   /** `turn-economy-value`: the exact expected amount. */
   amount?: number;
+  /** `counter-value`: which `G.counters` key to assert. */
+  counter?: RulingCounterField;
+  /** `counter-value`: the exact expected count (absent counter reads as 0). */
+  count?: number;
 }
 
 /**
@@ -262,6 +290,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (typeof expected.amount !== 'number' || !Number.isFinite(expected.amount)) {
         return `Ruling "${rulingId}" has a turn-economy-value expectation whose "amount" is not a finite number.`;
+      }
+      return null;
+    case 'counter-value':
+      if (!isMemberOf<RulingCounterField>(expected.counter, RULING_COUNTER_FIELDS)) {
+        return `Ruling "${rulingId}" has a counter-value expectation with an invalid "counter"; use one of ${RULING_COUNTER_FIELDS.join('/')}.`;
+      }
+      if (typeof expected.count !== 'number' || !Number.isInteger(expected.count) || expected.count < 0) {
+        return `Ruling "${rulingId}" has a counter-value expectation whose "count" is not a non-negative integer.`;
       }
       return null;
     default:
