@@ -844,5 +844,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/spider-man/spider-man#0"] },
     "why": "The un-chosen revealed card stays on top of the deck — only the picked card is removed, so the other of the two is kept (D-24282, 'the other stays on top')."
+  },
+  {
+    "id": "optional-ko-reward-decline-kos-nothing",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Declining the optional KO leaves the board untouched — no card is KO'd and (since the reward is atomic on an actual KO) no reward fires (D-24019)."
+  },
+  {
+    "id": "optional-ko-reward-decline-pops-the-queue",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 0 },
+    "why": "Unlike a stale-target no-op, an explicit decline front-pops the pending entry so the choice is resolved and the turn can end — the queue empties (D-24019). Paired with the sibling that proves nothing was KO'd."
   }
 ]
