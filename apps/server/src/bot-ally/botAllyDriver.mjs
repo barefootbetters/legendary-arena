@@ -699,27 +699,52 @@ async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   return result;
 }
 
-// why: WP-433 — the ten block-all pending-choice flags on `G`. When a bot turn
-// faults, logging which of these is set is the single most useful signal for
-// telling a getLegalMoves resolution gap (a pending is set) from a transient
-// store/_stateID wedge (none set) — the exact discriminator that three rounds of
-// server logs could not provide because the fault path logged nothing.
-const PENDING_CHOICE_FLAGS = [
-  'pendingHeroChoice',
-  'pendingKoHeroChoices',
-  'pendingOptionalKoRewards',
-  'pendingVictoryPileCardPick',
-  'pendingDrawOrEmpowered',
-  'pendingReturnZeroCostDiscard',
-  'pendingDiscardToPlay',
-  'pendingOptionalPutBottomHQ',
-  'pendingPutAnyNumberBottomHQ',
-  // why: WP-532 / D-24343 — Paibok the Power Skrull's give-an-HQ-Hero pending
-  // queue; logging it when a bot turn faults discriminates a getLegalMoves
-  // resolution gap from a store/_stateID wedge. Keep in lockstep with
-  // PENDING_CHOICE_MOVE_NAMES in botLoopProgress.mjs.
-  'pendingGiveHqHeroChoices',
-];
+/**
+ * The prefix every block-all / reactive pending-choice field on `G` shares. The
+ * engine names each interactive choice it parks with this prefix
+ * (`pendingHeroChoice`, `pendingDiscardChoices`, `pendingRevealTopDispose`, …).
+ */
+const PENDING_CHOICE_FIELD_PREFIX = 'pending';
+
+/**
+ * Collects the block-all / reactive pending-choice field names PRESENT on a
+ * fetched game state, in a deterministic (sorted) order — the drift-proof
+ * replacement for a hand-maintained flag list.
+ *
+ * // why: 2026-09-17 (PR #2097 sibling) — the engine parks each interactive /
+ * block-all choice in a `pending…`-prefixed field on `G`. `ai.legalMoves.ts` now
+ * carries ~29 block-all short-circuits (plus reactive queues like
+ * `pendingDivingBlockWounds`), but the previous hand-maintained list named only
+ * ten — AND named some of them with the wrong variant (`pendingSmashDiscard`
+ * vs the real `pendingSmashDiscards`, `hasPendingDoOver` predicate vs the real
+ * `pendingDoOverChoices` field). A resolve of an unlisted choice that moved no
+ * card (an empty / decline resolution) was misread by `progressFingerprint` as a
+ * no-op, and `summarizeBotTurnState` under-reported which choice was parked.
+ * Deriving the set structurally from the live state's OWN keys — the same
+ * drift-proof approach PR #2097 applied to the resolve-move recognizer
+ * (`findPendingChoiceMove`) — cannot re-drift: any `pending…` field the engine
+ * adds is folded in automatically, and no server-side list can fall out of
+ * lockstep with the engine's naming. Reading present keys is strictly safe for
+ * both consumers: the fault diagnostic only lists a set flag, and the fingerprint
+ * only gains sensitivity (a captured field can never cause a false no-op — a
+ * missed one is the bug this fixes). Defensive — never throws.
+ *
+ * @param {object} gameState - The boardgame.io match `G`.
+ * @returns {string[]} The present `pending…` field names, sorted ascending.
+ */
+function collectPendingChoiceFlags(gameState) {
+  const flags = [];
+  for (const fieldName of Object.keys(gameState)) {
+    if (fieldName.startsWith(PENDING_CHOICE_FIELD_PREFIX)) {
+      flags.push(fieldName);
+    }
+  }
+  // why: sort so the fingerprint (which joins these) is order-stable regardless
+  // of `G`'s key insertion order — two states with the same pending set always
+  // fingerprint identically.
+  flags.sort();
+  return flags;
+}
 
 /**
  * Builds a one-line diagnostic of a bot turn's state for a fault log: turn,
@@ -736,7 +761,7 @@ export function summarizeBotTurnState(state, botSeat) {
     if (!state || !state.G || !state.ctx) return 'state=unavailable';
     const gameState = state.G;
     const pendingSet = [];
-    for (const flag of PENDING_CHOICE_FLAGS) {
+    for (const flag of collectPendingChoiceFlags(gameState)) {
       const value = gameState[flag];
       const isSet = Array.isArray(value) ? value.length > 0 : Boolean(value);
       if (isSet) pendingSet.push(flag);
@@ -816,9 +841,11 @@ export function progressFingerprint(state) {
           `${(zones.inPlay ?? []).length}/${(zones.victory ?? []).length}/${(zones.deck ?? []).length}`,
       );
     }
-    // why: the nine block-all pending choices — resolving one changes its count here even
-    // when it moves no card (e.g. a declined optional choice), so a resolve is never a no-op.
-    for (const flag of PENDING_CHOICE_FLAGS) {
+    // why: every block-all / reactive pending choice present on `G` (structurally
+    // derived, so the full ~29-field engine set is covered, not a stale subset) —
+    // resolving one changes its count here even when it moves no card (e.g. a
+    // declined optional choice), so a resolve is never misread as a no-op.
+    for (const flag of collectPendingChoiceFlags(gameState)) {
       const value = gameState[flag];
       parts.push(`${flag}=${Array.isArray(value) ? value.length : value ? 1 : 0}`);
     }

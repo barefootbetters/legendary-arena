@@ -969,3 +969,102 @@ test('a no-op move that only bumps _stateID recovers via the fault fallback inst
     'recovery went through the advanceStage fault fallback',
   );
 });
+
+// ---------------------------------------------------------------------------
+// Structural pending-choice derivation (PR #2097 sibling, 2026-09-17).
+// The block-all / reactive pending set is derived from `G`'s `pending…` keys,
+// not a hand-maintained list, so it cannot drift behind the engine's ~29
+// block-all short-circuits (ai.legalMoves.ts). These guard both consumers: the
+// fault diagnostic (summarizeBotTurnState) and the no-op detector
+// (progressFingerprint) — the two places the stale ten-item list under-covered.
+// ---------------------------------------------------------------------------
+
+test('summarizeBotTurnState surfaces a pending flag the old ten-item list omitted', () => {
+  // why: pendingDiscardChoices is a real block-all engine field (ai.legalMoves.ts,
+  // Magneto discard-to-limit) that the previous hand-maintained PENDING_CHOICE_FLAGS
+  // list did not name; the structural scan now surfaces it in the fault log so the
+  // getLegalMoves-gap-vs-store-wedge discriminator is complete.
+  const summary = summarizeBotTurnState(
+    {
+      ctx: { turn: 4 },
+      _stateID: 88,
+      G: {
+        currentStage: 'main',
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        playerZones: { '1': { hand: [] } },
+        pendingDiscardChoices: [{ playerID: '1', limit: 4 }],
+      },
+    },
+    '1',
+  );
+  assert.ok(
+    summary.includes('pending=[pendingDiscardChoices]'),
+    'a formerly-unlisted block-all pending flag is now surfaced in the fault diagnostic',
+  );
+});
+
+test('progressFingerprint folds a formerly-unlisted pending flag so a no-card resolve is real progress', () => {
+  // why: the low-severity bug this fixes — a decline / empty resolution of a pending
+  // choice whose field was NOT in the old list moved no card, so the fingerprint was
+  // unchanged and dispatchMadeRealProgress misread the resolve as a no-op → the driver
+  // fell to its fault fallback needlessly. pendingReturnOnDiscard is one such real field;
+  // with structural derivation the pending count itself changes, so the resolve counts.
+  const parked = {
+    ctx: { currentPlayer: '1', turn: 6 },
+    _stateID: 20,
+    G: fingerprintG({ pendingReturnOnDiscard: [{ playerID: '1', cardId: 'c1' }] }),
+  };
+  const resolvedEmpty = {
+    ctx: { currentPlayer: '1', turn: 6 },
+    _stateID: 21,
+    G: fingerprintG({ pendingReturnOnDiscard: [] }),
+  };
+  assert.notEqual(
+    progressFingerprint(parked),
+    progressFingerprint(resolvedEmpty),
+    'clearing the pending queue (even moving no card) changes the fingerprint',
+  );
+  assert.equal(
+    dispatchMadeRealProgress(parked, resolvedEmpty, '1'),
+    true,
+    'resolving a formerly-unlisted pending choice is real progress, not a no-op',
+  );
+});
+
+test('the pending-flag scan is structural: any future pending… field is captured', () => {
+  // why: drift-proofness — the derivation keys off the `pending…` prefix, so a block-all
+  // field the engine adds LATER is folded into both the fingerprint and the diagnostic
+  // automatically, with no server-side edit. A synthetic field stands in for that future
+  // addition; this is the assertion that keeps the fix from silently re-drifting.
+  const parked = {
+    ctx: { currentPlayer: '1', turn: 2 },
+    _stateID: 5,
+    G: fingerprintG({ pendingSomeFutureChoice: [{ playerID: '1' }] }),
+  };
+  const cleared = {
+    ctx: { currentPlayer: '1', turn: 2 },
+    _stateID: 6,
+    G: fingerprintG({ pendingSomeFutureChoice: [] }),
+  };
+  assert.notEqual(
+    progressFingerprint(parked),
+    progressFingerprint(cleared),
+    'a future pending… field folds into the fingerprint',
+  );
+  assert.ok(
+    summarizeBotTurnState(parked, '1').includes('pendingSomeFutureChoice'),
+    'a future pending… field is surfaced in the fault diagnostic',
+  );
+});
+
+test('a real engine setup state parks no pending choices (structural scan stays clean)', () => {
+  // why: engine-backed sanity — a fresh buildInitialGameState G lazily initializes no
+  // pending fields (they park only at their move sites, never in Game.setup), so the
+  // structural scan must report pending=[none] rather than spuriously flagging a clean
+  // state. Proves the `pending…` prefix does not sweep in unrelated setup-time G fields.
+  const state = realBotState('1');
+  assert.ok(
+    summarizeBotTurnState(state, '1').includes('pending=[none]'),
+    'a freshly set-up match has no parked pending choices',
+  );
+});

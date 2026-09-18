@@ -35,8 +35,10 @@
 // explicit and drift-resistant. `resolveHeroChoice` (pendingHeroChoice, D-22001) is
 // the ninth — the last block-all choice that lacked a getLegalMoves short-circuit,
 // added alongside the engine short-circuit so a bot turn that reveals a discard-or-
-// return hero card resolves it instead of faulting. Keep in lockstep with
-// PENDING_CHOICE_FLAGS in botAllyDriver.mjs (both enumerate the ten block-all choices).
+// return hero card resolves it instead of faulting. This list still enumerates
+// resolve-move NAMES; botAllyDriver.mjs no longer keeps a parallel field-name list —
+// it derives the block-all pending set structurally from `G`'s `pending…` keys
+// (collectPendingChoiceFlags), so that side can no longer drift.
 const PENDING_CHOICE_MOVE_NAMES = [
   'resolveKoHeroChoice',
   'resolveOptionalKoReward',
