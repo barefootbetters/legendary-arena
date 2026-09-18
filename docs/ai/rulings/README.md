@@ -58,7 +58,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 |---|---|---|
 | `zone-cards-equal` | a player's zone equals an exact card list | `player`, `zone`, `cards` |
 | `ko-pile-equal` | `G.ko` equals an exact card list | `cards` |
-| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko`) | `queue`, `length` |
+| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko` / `ko-hero`) | `queue`, `length` |
 | `boolean-result` | the query's boolean return | `value` |
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 | `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |

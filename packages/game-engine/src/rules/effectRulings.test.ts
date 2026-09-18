@@ -516,14 +516,16 @@ function checkKoPileEqual(outcome: Outcome, expected: RulingExpectation): void {
 
 /** Asserts a named pending queue has the expected exact length. */
 function checkPendingQueueLength(outcome: Outcome, expected: RulingExpectation): void {
-  // why: code-style forbids chained ternaries; three pending queues → if/else if/else.
+  // why: code-style forbids chained ternaries; four pending queues → if/else if chain.
   let queue: readonly unknown[] | undefined;
   if (expected.queue === 'melter') {
     queue = outcome.G.pendingMelterKoChoices;
   } else if (expected.queue === 'optional-ko-reward') {
     queue = outcome.G.pendingOptionalKoRewards;
-  } else {
+  } else if (expected.queue === 'scry-ko') {
     queue = outcome.G.pendingScryKoChoices;
+  } else {
+    queue = outcome.G.pendingKoHeroChoices;
   }
   assert.equal(queue?.length ?? 0, expected.length, `pending ${expected.queue} queue length mismatch`);
 }

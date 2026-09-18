@@ -878,5 +878,56 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 0 },
     "why": "Unlike a stale-target no-op, an explicit decline front-pops the pending entry so the choice is resolved and the turn can end — the queue empties (D-24019). Paired with the sibling that proves nothing was KO'd."
+  },
+  {
+    "id": "ko-hero-current-single-eligible-auto-kos",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "With exactly one KO-able Hero the choice is forced, so a current-player ko-hero AUTO-KOs it rather than parking a single-option choice that would freeze the board (D-24007 decision C: one distinct option → auto-KO)."
+  },
+  {
+    "id": "ko-hero-current-two-eligible-parks-a-choice",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "ko-hero", "length": 1 },
+    "why": "With two or more distinct KO-able Heroes there is a genuine choice of which to spare, so a current-player ko-hero parks one interactive choice for the player instead of auto-resolving (D-24007 / WP-242)."
+  },
+  {
+    "id": "ko-hero-current-two-eligible-kos-nothing-at-park",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "The interactive current-player ko-hero KOs nothing at park time — the KO waits for the player's pick (D-24007). Paired with the park-length sibling that proves the choice opened."
   }
 ]
