@@ -95,7 +95,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // why: WP-383 / D-24184 — reuse the engine's authoritative discard-to-play eligibility
 // helper (the chooser's whole hand) so the projected list is byte-identical to what
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
-import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
+import { getEligibleDiscardToPlayCards, hasPendingDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
 import { getEligiblePutHandOnDeckTopCards } from '../moves/putHandOnDeckTop.resolve.js';
 import { DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
@@ -1792,10 +1792,17 @@ export function buildUIState(
   // round-trips. The card lives in the chooser's discard pile (zone 'discard'). Each display
   // is spread fresh (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
   // filterUIStateForAudience (keyed on .playerID), mirroring pendingDiscardToPlay.
+  // why: D-24525 — suppress the return-on-discard prompt while a MANDATORY
+  // discard-to-play cost is still being paid. The move-level priority guard
+  // (resolveReturnOnDiscard) already no-ops the return in that window, so surfacing
+  // the prompt would only offer a dead-click; the projection mirrors the block-all
+  // priority (discard-to-play outranks return-on-discard) so the client is shown only
+  // the actionable choice. The return prompt reappears once the cost is fully paid.
   let pendingReturnOnDiscard: UIPendingReturnOnDiscard | undefined;
   if (
     gameState.pendingReturnOnDiscard !== undefined &&
-    gameState.pendingReturnOnDiscard.length > 0
+    gameState.pendingReturnOnDiscard.length > 0 &&
+    !hasPendingDiscardToPlay(gameState)
   ) {
     const frontReturn = gameState.pendingReturnOnDiscard[0]!;
     const eligibleReturnCards: UIEligibleKoHeroCard[] = [];
