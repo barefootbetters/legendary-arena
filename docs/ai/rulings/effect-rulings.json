@@ -507,5 +507,39 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "woundsDrawn", "amount": 1 },
     "why": "An each-player wound wounds every player but bumps woundsDrawn only ONCE, for the current player — the projection reports the current player's wounds only, so a two-player each-wound leaves woundsDrawn at 1 rather than 2 (D-24023)."
+  },
+  {
+    "id": "draw-cards-current-draws-to-hand",
+    "mechanic": "draw-cards-current",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/enchantress#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "draw-cards-current", "drawCount": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"] },
+    "why": "draw-cards-current (Enchantress) draws its drawCount cards from the top of the current player's deck into their hand, in deck order (D-24290)."
+  },
+  {
+    "id": "draw-cards-current-removes-from-deck-top",
+    "mechanic": "draw-cards-current",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/enchantress#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "draw-cards-current", "drawCount": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/hulk/hulk#0"] },
+    "why": "The drawn cards are removed from the top of the deck, leaving the undrawn remainder — proving the draw consumed the deck top rather than copying (D-24290)."
   }
 ]
