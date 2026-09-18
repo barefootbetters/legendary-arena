@@ -476,8 +476,15 @@ function checkKoPileEqual(outcome: Outcome, expected: RulingExpectation): void {
 
 /** Asserts a named pending queue has the expected exact length. */
 function checkPendingQueueLength(outcome: Outcome, expected: RulingExpectation): void {
-  const queue =
-    expected.queue === 'melter' ? outcome.G.pendingMelterKoChoices : outcome.G.pendingOptionalKoRewards;
+  // why: code-style forbids chained ternaries; three pending queues → if/else if/else.
+  let queue: readonly unknown[] | undefined;
+  if (expected.queue === 'melter') {
+    queue = outcome.G.pendingMelterKoChoices;
+  } else if (expected.queue === 'optional-ko-reward') {
+    queue = outcome.G.pendingOptionalKoRewards;
+  } else {
+    queue = outcome.G.pendingScryKoChoices;
+  }
   assert.equal(queue?.length ?? 0, expected.length, `pending ${expected.queue} queue length mismatch`);
 }
 

@@ -149,7 +149,7 @@ export const RULING_COUNTER_FIELDS: readonly RulingCounterField[] = [
 export type RulingZoneName = 'deck' | 'hand' | 'discard' | 'inPlay' | 'victory';
 
 /** The pending queues a `pending-queue-length` expectation may name. */
-export type RulingPendingQueue = 'melter' | 'optional-ko-reward';
+export type RulingPendingQueue = 'melter' | 'optional-ko-reward' | 'scry-ko';
 
 // ---------------------------------------------------------------------------
 // Ruling entry shape
@@ -272,7 +272,7 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       return null;
     case 'pending-queue-length':
-      if (!isMemberOf<RulingPendingQueue>(expected.queue, ['melter', 'optional-ko-reward'])) {
+      if (!isMemberOf<RulingPendingQueue>(expected.queue, ['melter', 'optional-ko-reward', 'scry-ko'])) {
         return `Ruling "${rulingId}" has a pending-queue-length expectation with an invalid "queue"; use melter or optional-ko-reward.`;
       }
       if (typeof expected.length !== 'number' || !Number.isInteger(expected.length) || expected.length < 0) {
