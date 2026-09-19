@@ -1451,5 +1451,53 @@
     },
     "expected": { "kind": "ko-pile-equal", "cards": [] },
     "why": "With no [hc:strength] Hero the trait count is zero, so Maestro KOs nothing — a reachable no-op, and the non-matching Covert Hero is never a victim (D-24353). Paired with the positive sibling that proves the counted KO fires."
+  },
+  {
+    "id": "capture-bystanders-plus-per-hq-hero-counts-base-plus-matching",
+    "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+    "decision": "D-24334",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/baron-zemo#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystanders-plus-per-hq-hero-by-trait", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": {} },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/wolverine/wolverine#0", null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "co2e/masters-of-evil/baron-zemo#0", "cards": ["pile-bystander", "pile-bystander", "pile-bystander"] },
+    "why": "Baron Zemo's Ambush captures a base 1 Bystander plus one per [team:avengers] Hero in the HQ: with two Avengers (Iron Man, Captain America) and one non-Avenger (Wolverine) the count is 1 + 2 = 3, all attached to Baron Zemo's captured-bystander list — attach-only, never awarded here (awarded at his defeat, D-18506 / D-24334)."
+  },
+  {
+    "id": "capture-bystanders-plus-per-hq-hero-bounded-by-supply",
+    "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+    "decision": "D-24334",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/baron-zemo#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystanders-plus-per-hq-hero-by-trait", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": {} },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/wolverine/wolverine#0", null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 2
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "co2e/masters-of-evil/baron-zemo#0", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "The 1 + per-Avengers-HQ-Hero capture (count 3 here) is bounded by the Bystander supply: with only two Bystanders available exactly two attach and the loop stops (D-24334). Paired with the full-supply sibling that proves the base-plus-matching count."
   }
 ]
