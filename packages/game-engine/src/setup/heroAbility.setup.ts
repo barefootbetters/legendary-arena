@@ -677,6 +677,14 @@ function parseAbilityText(
   // the reveal-from-hand / investigate criterion suppression). The engine's koTeamFilter enforces
   // the S.H.I.E.L.D.-only KO target at resolve time; the setup gate must not also block the play.
   const lineHasOptionalKoShieldOfficer = abilityText.includes('[keyword:optional-ko-shield-officer]');
+  // why: D-24530 — on a Pure Fury line ([keyword:pure-fury]) the co-located `[team:shield]`
+  // describes WHICH Heroes to count in the KO pile ("less than the number of [team:shield]
+  // Heroes in the KO pile"), NOT a requiresTeam play-gate. Suppress it from Step 1b so the
+  // card fires unconditionally (mirrors the optional-ko-shield-officer / reveal-from-hand
+  // suppression). heroEffectPureFury reads the KO pile at resolve time; the setup gate must
+  // not block the play on "another shield Hero played this turn" (live bug: Pure Fury blocked
+  // whenever no shield Hero preceded it — 2p Red Skull / Midtown match yqj7YblJCt4).
+  const lineHasPureFury = abilityText.includes('[keyword:pure-fury]');
   // why: WP-673 / D-24488 — when the line carries the worthy count-scaled marker,
   // its `[keyword:Worthy]` token is the COUNT CRITERION ("each other card … that
   // makes you Worthy"), not a heroCostAtLeastInHandOrPlay play-gate — so Step 2
@@ -764,7 +772,9 @@ function parseAbilityText(
     // CRITERION ("reveal another [team:x-men] Hero"), already captured in
     // revealFromHandCriterion — so emit NO requiresTeam gate. This is the Psychic Link fix:
     // the mid-sentence [team:x-men] was wrongly gating the card on "another X-Men played".
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer) {
+    // why: D-24530 — likewise on a Pure Fury line the [team:shield] describes the KO-pile
+    // Heroes to count, not a play-gate — so emit NO requiresTeam gate (see lineHasPureFury).
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),

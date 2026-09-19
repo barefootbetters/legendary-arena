@@ -2321,3 +2321,48 @@ describe('buildHeroAbilityHooks optional-ko-reward icon-suppression (WP-589 / D-
     assert.equal(optional[0]!.rewardType, 'rescue', 'reward is rescue — never dropped');
   });
 });
+
+describe('buildHeroAbilityHooks Pure Fury [team:shield] is descriptive, not a play-gate (D-24530)', () => {
+  /** Builds a single Nick Fury Pure Fury ability from its real card text. */
+  function buildPureFuryAbility() {
+    const registry = makeHeroRegistry('core', 'nick-fury', [
+      {
+        slug: 'pure-fury',
+        rarityLabel: 'Rare',
+        abilities: [
+          'Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile. [keyword:pure-fury]',
+        ],
+      },
+    ]);
+    // why: buildHeroAbilityHooks only builds abilities for heroes in the selected
+    // heroDeckIds, so the config must select nick-fury (createTestConfig picks spider-man).
+    const config = { ...createTestConfig(), heroDeckIds: ['core/nick-fury'] };
+    return buildHeroAbilityHooks(registry, config);
+  }
+
+  it('emits NO requiresTeam condition — the [team:shield] names KO-pile Heroes, not a play gate', () => {
+    const hooks = buildPureFuryAbility();
+    assert.equal(hooks.length, 1);
+    const conditions = hooks[0]!.conditions ?? [];
+    // why: D-24530 — the live bug was a spurious requiresTeam:'shield' gate that blocked
+    // Pure Fury unless another S.H.I.E.L.D. Hero was played first ("it needs another shield
+    // Hero played this turn"). Its [team:shield] describes which KO-pile Heroes to count, so
+    // NO requiresTeam gate must be emitted — the card fires unconditionally and the handler
+    // reads the KO pile.
+    assert.equal(
+      conditions.filter((condition) => condition.type === 'requiresTeam').length,
+      0,
+      'Pure Fury must carry no requiresTeam play-gate',
+    );
+  });
+
+  it('still resolves the pure-fury keyword (suppression does not drop the ability)', () => {
+    const hooks = buildPureFuryAbility();
+    // why: the line also carries a bare `[icon:attack]` (in "whose [icon:attack] is less
+    // than…") which parses to an inert, no-magnitude `attack` icon-keyword — descriptive,
+    // not a grant (the live log shows no attack from Pure Fury). Assert pure-fury is present
+    // rather than an exact keyword list.
+    assert.ok((hooks[0]!.keywords ?? []).includes('pure-fury'), 'the pure-fury keyword is recognized');
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'no unresolved marker');
+  });
+});
