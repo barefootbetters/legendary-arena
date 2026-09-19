@@ -62,6 +62,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-victory-pile-card-pick` | `resolveVictoryPileCardPick` move | the Ebony Blade claim-attack-from-a-victory-villain choice |
 | `resolve-ko-discard` | `resolveKoDiscardChoice` move | the Maniacal Tyrant KO-up-to-N-from-discard choice (over-cap rejected) |
 | `resolve-put-hand-on-deck-top` | `resolvePutHandOnDeckTop` move | the Stack the Deck put-a-hand-card-on-deck-top choice |
+| `resolve-undercover` | `resolveUndercoverChoice` move | the send-a-S.H.I.E.L.D.-Hero-Undercover choice (eligibility gate) |
 
 ### Current expectation kinds
 

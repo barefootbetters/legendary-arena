@@ -2026,5 +2026,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
     "why": "The card placed on the deck top leaves the hand — the mandatory placement moves it hand→deck, so only the unchosen Spider-Man remains in hand (D-24519). Paired with the deck-top sibling that proves the card lands on top of the deck."
+  },
+  {
+    "id": "resolve-undercover-sends-chosen-hero-to-victory",
+    "mechanic": "undercover-hand-shield-hero",
+    "decision": "D-24494",
+    "scenario": {
+      "action": "resolve-undercover",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/shield/nick-fury#0", "core/shield/nick-fury#1"],
+        "eligibleTargets": ["core/shield/nick-fury#0", "core/shield/nick-fury#1"],
+        "sourceCardId": "core/shield/undercover-shield#0",
+        "resolve": { "targetExtId": "core/shield/nick-fury#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["core/shield/nick-fury#0"] },
+    "why": "The Undercover choice sends the chosen eligible [team:shield] Hero from hand to the Victory Pile (worth 1 VP): the picked Nick Fury copy lands in victory while the other stays in hand (D-24494 / WP-678)."
+  },
+  {
+    "id": "resolve-undercover-ineligible-target-is-noop",
+    "mechanic": "undercover-hand-shield-hero",
+    "decision": "D-24494",
+    "scenario": {
+      "action": "resolve-undercover",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/shield/nick-fury#0", "core/shield/nick-fury#1"],
+        "eligibleTargets": ["core/shield/nick-fury#0"],
+        "sourceCardId": "core/shield/undercover-shield#0",
+        "resolve": { "targetExtId": "core/shield/nick-fury#1" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": [] },
+    "why": "A target not in the parked eligible snapshot cannot be sent Undercover — resolving with an ineligible copy is a no-op, so the Victory Pile stays empty (the round-trip eligibility gate, D-24494). Paired with the sibling that proves an eligible Hero is sent."
   }
 ]
