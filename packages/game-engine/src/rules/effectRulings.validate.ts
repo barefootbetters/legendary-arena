@@ -56,6 +56,8 @@
  *   discard-to-play cost choice.
  * - `resolve-smash` — call the `resolveSmashDiscard` move on a parked Smash
  *   discard-for-attack choice.
+ * - `resolve-reveal-top-dispose` — call the `resolveRevealTopDispose` move on a
+ *   parked reveal-top discard-or-keep choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -67,7 +69,8 @@ export type RulingScenarioAction =
   | 'resolve-scry-ko'
   | 'resolve-ko-hero'
   | 'resolve-discard-to-play'
-  | 'resolve-smash';
+  | 'resolve-smash'
+  | 'resolve-reveal-top-dispose';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -84,6 +87,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-ko-hero',
   'resolve-discard-to-play',
   'resolve-smash',
+  'resolve-reveal-top-dispose',
 ] as const;
 
 // ---------------------------------------------------------------------------
