@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-708 — Synergy Realization: per-match Synergy Rate + Table Total (EC-745 / D-24531) (2026-09-19)
+
+Gave players their first end-of-match synergy feedback. Legendary rewards assembling conditional Hero
+clauses (`[hc:X]` / `[team:X]` / threshold gates), but the engine surfaced those only per-play (WP-295
+whiff log, WP-409 fired-count, WP-706 resolution trace). WP-708 adds the missing per-MATCH aggregate: a
+per-player `{played, assembled}` conditional-clause counter on the hash-excluded `G.diagnostics` (new
+`recordConditionalClause`), incremented at the `heroEffects.execute` `evaluateAllConditions` chokepoint
+(both branches; hollow-excluded via `hookHasExecutableEffect`; wait-and-see/deferred not counted —
+snapshot-gate synergy only), derived into display-only
+`PlayerScoringContribution.conditionalClauses{Played,Assembled}` → `CoachPlayerLine` →
+`EndgameSummary.vue` (a **Table Total** headline "The table assembled N synergy clauses" + a per-seat
+"assembled N of M synergy clauses" line), plus the client `competitionApi` / `scoreCalcDisplay` mirror.
+**Display-only** (never `finalScore`/PAR — NG-1, proven by an identical breakdown with vs without a
+tally); **two-vocabulary** copy-lint (engine `condition-failed` vs player-facing "assembled"; no
+whiff/failed/missed); **NO** `EffectTraceStatus` member. **NO hash re-pin** — `G.diagnostics` is
+excluded from both oracles: engine **3831/0** (sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical), server **1320/0**, arena-client **1853/0** + `vue-tsc` clean; `sim:runtime-observed`
+current; `cards:check` reproducible; `pnpm -r build` 0. 16-file impl (5 engine src + 3 engine test + 2
+server + 1 server test + 3 client + 2 client test). Landed **D-24531** (Active). Phase 1 of
+`DESIGN-SYNERGY-REALIZATION.md` — Realized Value % (rides WP-706), the play-order sequence teacher, and
+co-op cross-seat cooperation are later phases. **D-24026 live-verify operator-pending** (a real match
+with a live + a dead condition shows the Table Total + a seat's assembled/played line).
+
 ### WP-706 — Count-scaled effect resolution trace (EC-743 / D-24528) (2026-09-18)
 
 Made ability-**computed** count-scaled hero-effect resolutions live-observable. The shipped
