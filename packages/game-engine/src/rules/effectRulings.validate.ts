@@ -66,6 +66,8 @@
  *   accept/decline choice.
  * - `resolve-optional-put-bottom-hq` — call the `resolveOptionalPutBottomHQ` move on
  *   a parked put-a-card-from-the-HQ-on-the-deck-bottom choice.
+ * - `resolve-victory-pile-card-pick` — call the `resolveVictoryPileCardPick` move on
+ *   a parked claim-attack-from-a-victory-pile-villain choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -82,7 +84,8 @@ export type RulingScenarioAction =
   | 'resolve-give-hq-hero'
   | 'resolve-return-zero-cost-discard'
   | 'resolve-do-over'
-  | 'resolve-optional-put-bottom-hq';
+  | 'resolve-optional-put-bottom-hq'
+  | 'resolve-victory-pile-card-pick';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -104,6 +107,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-return-zero-cost-discard',
   'resolve-do-over',
   'resolve-optional-put-bottom-hq',
+  'resolve-victory-pile-card-pick',
 ] as const;
 
 // ---------------------------------------------------------------------------

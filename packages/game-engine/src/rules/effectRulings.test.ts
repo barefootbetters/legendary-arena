@@ -42,6 +42,7 @@ import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDoOver } from '../moves/doOver.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
+import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -77,6 +78,7 @@ import type {
   PendingReturnZeroCostDiscard,
   PendingDoOver,
   PendingOptionalPutBottomHQ,
+  PendingVictoryPileCardPick,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -315,6 +317,14 @@ interface ResolveOptionalPutBottomHqSetup {
   cardStats: Record<string, { recruit?: number; attack?: number; cost?: number }>;
   sourceCardId: string;
   iconRewardMagnitude: number;
+  resolve: { cardId: string };
+}
+
+interface ResolveVictoryPileCardPickSetup {
+  currentPlayer: string;
+  victory: string[];
+  villainDeckCardTypes: Record<string, string>;
+  cardStats: Record<string, { fightCost?: number }>;
   resolve: { cardId: string };
 }
 
@@ -822,6 +832,34 @@ function runResolveOptionalPutBottomHq(rawSetup: Record<string, unknown>): Outco
   return { G };
 }
 
+/**
+ * Fires the real `resolveVictoryPileCardPick` move against a parked Ebony Blade choice —
+ * claim attack equal to a chosen victory-pile villain's printed fight cost.
+ *
+ * @param rawSetup - The ruling's resolve-victory-pile-card-pick setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveVictoryPileCardPick(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveVictoryPileCardPickSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ victory: setup.victory as CardExtId[] }) };
+  // why: eligibility reads G.villainDeckCardTypes (only 'villain'-typed victory cards
+  // qualify) and the attack grant reads G.cardStats[id].fightCost (a villain's printed
+  // attack is stored as fightCost, never .attack). Seed both from the ruling.
+  G.villainDeckCardTypes = setup.villainDeckCardTypes as LegendaryGameState['villainDeckCardTypes'];
+  for (const [cardId, stats] of Object.entries(setup.cardStats)) {
+    G.cardStats[cardId as CardExtId] = makeCardStatEntry(stats);
+  }
+  const pending: PendingVictoryPileCardPick = { playerID: setup.currentPlayer, rewardType: 'attack' };
+  G.pendingVictoryPileCardPick = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveVictoryPileCardPick(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -843,6 +881,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-return-zero-cost-discard': runResolveReturnZeroCostDiscard,
   'resolve-do-over': runResolveDoOver,
   'resolve-optional-put-bottom-hq': runResolveOptionalPutBottomHq,
+  'resolve-victory-pile-card-pick': runResolveVictoryPileCardPick,
 };
 
 /**

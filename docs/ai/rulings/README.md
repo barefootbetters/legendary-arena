@@ -59,6 +59,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-return-zero-cost-discard` | `resolveReturnZeroCostDiscard` move | the return-a-0-cost-discard choice (0-cost eligibility) |
 | `resolve-do-over` | `resolveDoOver` move | the Do-Over accept/decline (discard hand + draw 4) |
 | `resolve-optional-put-bottom-hq` | `resolveOptionalPutBottomHQ` move | the put-HQ-card-on-deck-bottom choice (icon-conditional reward) |
+| `resolve-victory-pile-card-pick` | `resolveVictoryPileCardPick` move | the Ebony Blade claim-attack-from-a-victory-villain choice |
 
 ### Current expectation kinds
 
