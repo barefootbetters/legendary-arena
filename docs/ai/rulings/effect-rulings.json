@@ -1360,5 +1360,55 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "give-hq-hero", "length": 1 },
     "why": "After the non-current player auto-gains one HQ Hero (leaving two, since the empty hero-deck refills the vacated slot with null), the current (human) player faces a genuine which-Hero choice and parks exactly one give-hq-hero pending entry rather than auto-resolving (D-24343 / D-24284 current-parks). Paired with the sibling that proves the non-current auto-gain landed."
+  },
+  {
+    "id": "swap-two-city-villains-swaps-lowest-and-highest",
+    "mechanic": "swap-two-city-villains",
+    "decision": "D-24336",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/whirlwind#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "swap-two-city-villains" },
+        "playerZones": { "0": {} },
+        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "core/masters-of-evil/melter#0"],
+        "villainDeckCardTypes": {
+          "co2e/masters-of-evil/whirlwind#0": "villain",
+          "core/hand/hand-ninjas#0": "henchman",
+          "co2e/masters-of-evil/ultron#0": "villain",
+          "core/hydra/doombot-legion#0": "henchman",
+          "core/masters-of-evil/melter#0": "villain"
+        }
+      }
+    },
+    "expected": { "kind": "city-equal", "cards": ["core/masters-of-evil/melter#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "co2e/masters-of-evil/whirlwind#0"] },
+    "why": "Whirlwind's Ambush (Rule B) swaps the entrance-side villain (index 0, Whirlwind) with the escape-side villain (index 4, Melter) — the maximum positional displacement. The middle villain (Ultron, index 2) and both henchmen (Hand Ninjas index 1, Doombot Legion index 3) are untouched — henchmen never swap and only the lowest/highest villain-occupied spaces move (D-24336, the engine's first City board-position manipulation)."
+  },
+  {
+    "id": "swap-two-city-villains-fewer-than-two-is-noop",
+    "mechanic": "swap-two-city-villains",
+    "decision": "D-24336",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/whirlwind#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "swap-two-city-villains" },
+        "playerZones": { "0": {} },
+        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"],
+        "villainDeckCardTypes": {
+          "co2e/masters-of-evil/whirlwind#0": "villain",
+          "core/hand/hand-ninjas#0": "henchman",
+          "core/hand/hand-ninjas#1": "henchman",
+          "core/hydra/doombot-legion#0": "henchman",
+          "core/hydra/doombot-legion#1": "henchman"
+        }
+      }
+    },
+    "expected": { "kind": "city-equal", "cards": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"] },
+    "why": "Fewer than two Villains in the City is a reachable no-op: with a single Villain (Whirlwind) among four henchmen there is no second Villain to swap with, so the City row is unchanged (D-24336). Paired with the positive sibling that proves the swap fires with two or more Villains."
   }
 ]

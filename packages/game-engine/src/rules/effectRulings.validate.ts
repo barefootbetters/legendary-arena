@@ -113,6 +113,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `escaped-pile-equal` — `G.escapedPile` equals an exact card list.
  * - `attached-bystanders-equal` — the bystanders attached to a named card
  *   (`G.attachedBystanders[villainCardId]`) equal an exact card list.
+ * - `city-equal` — `G.city` (the City row) equals an exact occupant list.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -124,7 +125,8 @@ export type RulingExpectationKind =
   | 'hand-size-override'
   | 'villain-attached-heroes'
   | 'escaped-pile-equal'
-  | 'attached-bystanders-equal';
+  | 'attached-bystanders-equal'
+  | 'city-equal';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -141,6 +143,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'villain-attached-heroes',
   'escaped-pile-equal',
   'attached-bystanders-equal',
+  'city-equal',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -208,7 +211,7 @@ export interface RulingExpectation {
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal` / `city-equal`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -358,6 +361,11 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has an attached-bystanders-equal expectation whose "cards" is not an array of bystander ext_id strings.`;
+      }
+      return null;
+    case 'city-equal':
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has a city-equal expectation whose "cards" is not an array of City occupant ext_id strings.`;
       }
       return null;
     default:

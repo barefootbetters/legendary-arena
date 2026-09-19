@@ -199,6 +199,8 @@ interface FireVillainEffectSetup {
   hq?: (string | null)[];
   cardStats?: Record<string, number>;
   heroDeck?: string[];
+  city?: (string | null)[];
+  villainDeckCardTypes?: Record<string, string>;
 }
 
 interface ResolveMelterKoSetup {
@@ -309,6 +311,17 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
   }
   if (setup.heroDeck !== undefined) {
     G.heroDeck = setup.heroDeck as CardExtId[];
+  }
+
+  // why: swap-two-city-villains reads the City row (G.city) and classifies each
+  // occupant via G.villainDeckCardTypes (only 'villain' occupants swap; henchmen
+  // never do). Seed both only when the ruling provides them so other villain
+  // rulings keep the base City untouched.
+  if (setup.city !== undefined) {
+    G.city = setup.city as LegendaryGameState['city'];
+  }
+  if (setup.villainDeckCardTypes !== undefined) {
+    G.villainDeckCardTypes = setup.villainDeckCardTypes as LegendaryGameState['villainDeckCardTypes'];
   }
 
   G.villainAbilityHooks = [
@@ -669,6 +682,11 @@ function checkAttachedBystandersEqual(outcome: Outcome, expected: RulingExpectat
   assert.deepStrictEqual(actual, expected.cards, `attachedBystanders.${villainCardId} mismatch`);
 }
 
+/** Asserts the City row (`G.city`) equals the expected exact occupant list. */
+function checkCityEqual(outcome: Outcome, expected: RulingExpectation): void {
+  assert.deepStrictEqual(outcome.G.city, expected.cards, 'City row mismatch');
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
@@ -680,6 +698,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'villain-attached-heroes': checkVillainAttachedHeroes,
   'escaped-pile-equal': checkEscapedPileEqual,
   'attached-bystanders-equal': checkAttachedBystandersEqual,
+  'city-equal': checkCityEqual,
 };
 
 /**
@@ -715,6 +734,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'villain-attached-heroes': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'escaped-pile-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'attached-bystanders-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
+  'city-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
 };
 
 /**
