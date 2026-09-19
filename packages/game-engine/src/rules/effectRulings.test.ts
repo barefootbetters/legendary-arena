@@ -45,6 +45,7 @@ import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
+import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -83,6 +84,7 @@ import type {
   PendingVictoryPileCardPick,
   PendingKoDiscardChoice,
   PendingPutHandOnDeckTop,
+  PendingUndercoverChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -344,6 +346,14 @@ interface ResolvePutHandOnDeckTopSetup {
   hand: string[];
   deck: string[];
   resolve: { cardId: string };
+}
+
+interface ResolveUndercoverSetup {
+  currentPlayer: string;
+  hand: string[];
+  eligibleTargets: string[];
+  sourceCardId: string;
+  resolve: { targetExtId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -926,6 +936,32 @@ function runResolvePutHandOnDeckTop(rawSetup: Record<string, unknown>): Outcome 
   return { G };
 }
 
+/**
+ * Fires the real `resolveUndercoverChoice` move against a parked send-a-S.H.I.E.L.D.-
+ * Hero-Undercover choice — the chosen eligible hand Hero moves to the Victory Pile.
+ *
+ * @param rawSetup - The ruling's resolve-undercover setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveUndercover(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveUndercoverSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[] }) };
+  const pending: PendingUndercoverChoice = {
+    playerID: setup.currentPlayer,
+    cardId: setup.sourceCardId,
+    source: 'hand-shield-hero',
+    eligibleTargets: setup.eligibleTargets as CardExtId[],
+  };
+  G.pendingUndercoverChoice = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveUndercoverChoice(moveContext, { targetExtId: setup.resolve.targetExtId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -950,6 +986,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-victory-pile-card-pick': runResolveVictoryPileCardPick,
   'resolve-ko-discard': runResolveKoDiscard,
   'resolve-put-hand-on-deck-top': runResolvePutHandOnDeckTop,
+  'resolve-undercover': runResolveUndercover,
 };
 
 /**
