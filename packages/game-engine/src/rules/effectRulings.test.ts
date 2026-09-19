@@ -44,6 +44,7 @@ import { resolveDoOver } from '../moves/doOver.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
+import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -81,6 +82,7 @@ import type {
   PendingOptionalPutBottomHQ,
   PendingVictoryPileCardPick,
   PendingKoDiscardChoice,
+  PendingPutHandOnDeckTop,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -335,6 +337,13 @@ interface ResolveKoDiscardSetup {
   discard: string[];
   maxCount: number;
   resolve: { cardIds: string[] };
+}
+
+interface ResolvePutHandOnDeckTopSetup {
+  currentPlayer: string;
+  hand: string[];
+  deck: string[];
+  resolve: { cardId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -894,6 +903,29 @@ function runResolveKoDiscard(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolvePutHandOnDeckTop` move against a parked put-a-hand-card-on-
+ * top-of-deck choice (Gambit's Stack the Deck) — the chosen hand card moves to deck[0].
+ *
+ * @param rawSetup - The ruling's resolve-put-hand-on-deck-top setup payload.
+ * @returns The mutated game state.
+ */
+function runResolvePutHandOnDeckTop(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolvePutHandOnDeckTopSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = {
+    [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[], deck: setup.deck as CardExtId[] }),
+  };
+  const pending: PendingPutHandOnDeckTop = { playerID: setup.currentPlayer };
+  G.pendingPutHandOnDeckTop = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolvePutHandOnDeckTop(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -917,6 +949,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-optional-put-bottom-hq': runResolveOptionalPutBottomHq,
   'resolve-victory-pile-card-pick': runResolveVictoryPileCardPick,
   'resolve-ko-discard': runResolveKoDiscard,
+  'resolve-put-hand-on-deck-top': runResolvePutHandOnDeckTop,
 };
 
 /**

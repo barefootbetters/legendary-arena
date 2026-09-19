@@ -1994,5 +1994,37 @@
     },
     "expected": { "kind": "ko-pile-equal", "cards": [] },
     "why": "A selection larger than the printed cap (two cards chosen against maxCount 1) is an invalid payload — the whole resolve is a no-op and nothing is KO'd, leaving the queue intact so the player resubmits within the cap (D-24510). Paired with the in-cap sibling that proves the KO fires."
+  },
+  {
+    "id": "resolve-put-hand-on-deck-top-prepends-chosen-card",
+    "mechanic": "put-hand-on-deck-top",
+    "decision": "D-24519",
+    "scenario": {
+      "action": "resolve-put-hand-on-deck-top",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/hulk/hulk#0"] },
+    "why": "Gambit's Stack the Deck puts the chosen hand card on TOP of the deck (deck[0], drawn first next): Wolverine is prepended ahead of the existing Hulk, so the deck becomes [Wolverine, Hulk] (D-24519 / WP-700)."
+  },
+  {
+    "id": "resolve-put-hand-on-deck-top-removes-from-hand",
+    "mechanic": "put-hand-on-deck-top",
+    "decision": "D-24519",
+    "scenario": {
+      "action": "resolve-put-hand-on-deck-top",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The card placed on the deck top leaves the hand — the mandatory placement moves it hand→deck, so only the unchosen Spider-Man remains in hand (D-24519). Paired with the deck-top sibling that proves the card lands on top of the deck."
   }
 ]

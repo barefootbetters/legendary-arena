@@ -61,6 +61,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-optional-put-bottom-hq` | `resolveOptionalPutBottomHQ` move | the put-HQ-card-on-deck-bottom choice (icon-conditional reward) |
 | `resolve-victory-pile-card-pick` | `resolveVictoryPileCardPick` move | the Ebony Blade claim-attack-from-a-victory-villain choice |
 | `resolve-ko-discard` | `resolveKoDiscardChoice` move | the Maniacal Tyrant KO-up-to-N-from-discard choice (over-cap rejected) |
+| `resolve-put-hand-on-deck-top` | `resolvePutHandOnDeckTop` move | the Stack the Deck put-a-hand-card-on-deck-top choice |
 
 ### Current expectation kinds
 
