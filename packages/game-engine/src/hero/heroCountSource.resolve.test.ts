@@ -558,6 +558,65 @@ describe('resolveCountSource distinct-hero-classes-played-this-turn (WP-680)', (
       'a no-class card contributes no color',
     );
   });
+
+  it('counts colors of Heroes still in HAND, order-independent (D-24529 — the reported bug)', () => {
+    // why: D-24529 — "for each color of Hero you have" is the rulebook term of art
+    // "Heroes you have" = HAND + play area (universal-rules §"'Your Heroes/Allies' &
+    // 'Heroes/Allies You Have'"). The literal bug: Avengers Assemble! (instinct) played
+    // FIRST while a Tech Hero sits unplayed in hand must still count the Tech colour.
+    // Under the old play-area-only reading this returned 1; the fix returns 2.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-in-hand', 'shield-agent-in-hand'],
+          discard: [],
+          inPlay: ['avengers-assemble'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'avengers-assemble': { heroClass: 'instinct', team: 'avengers' },
+        'tech-in-hand': { heroClass: 'tech', team: null },
+        'shield-agent-in-hand': { heroClass: null, team: 'shield' },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn', 'avengers-assemble'),
+      2,
+      'the Tech Hero in hand contributes its colour even though only the instinct card was played',
+    );
+  });
+
+  it('does NOT count colors in deck or discard (only hand + play)', () => {
+    // why: D-24529 — the rulebook term of art excludes deck/discard/KO; only hand + play.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: ['covert-in-deck'],
+          hand: ['tech-in-hand'],
+          discard: ['ranged-in-discard'],
+          inPlay: ['strength-in-play'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'covert-in-deck': { heroClass: 'covert', team: null },
+        'tech-in-hand': { heroClass: 'tech', team: null },
+        'ranged-in-discard': { heroClass: 'ranged', team: null },
+        'strength-in-play': { heroClass: 'strength', team: null },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn'),
+      2,
+      'only the hand (tech) and play (strength) colours count — deck/discard are excluded',
+    );
+  });
 });
 
 describe('resolveCountSource team-played sources (WP-680)', () => {
@@ -780,6 +839,34 @@ describe('explainCountSourceInputs — distinct-hero-classes dual-class case (WP
     // <= the card-list length (2 here, but the invariant is count <= length, not ===).
     const count = resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn');
     assert.equal(count, 2, 'two distinct colours: tech + covert (covert only via heroClass2)');
+    assert.ok(count <= inputs.length, 'distinct-class invariant: count <= countedInputs.length');
+  });
+
+  it('lists Heroes still in HAND among the counted inputs (D-24529), invariant holds', () => {
+    // why: D-24529 — the collector scans hand + play, so a coloured Hero in hand appears
+    // in countedInputs and the count <= length invariant still holds with the corrected count.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-in-hand#0'],
+          discard: [],
+          inPlay: ['avengers-assemble#0'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'avengers-assemble#0': { heroClass: 'instinct', team: 'avengers' },
+        'tech-in-hand#0': { heroClass: 'tech', team: null },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.ok(inputs.includes('tech-in-hand#0'), 'the hand Hero appears in the counted inputs');
+    assert.ok(inputs.includes('avengers-assemble#0'), 'the played Hero appears too');
+    const count = resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.equal(count, 2, 'instinct (play) + tech (hand) = 2');
     assert.ok(count <= inputs.length, 'distinct-class invariant: count <= countedInputs.length');
   });
 });

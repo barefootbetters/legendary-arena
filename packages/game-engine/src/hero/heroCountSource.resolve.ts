@@ -16,10 +16,11 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
-// why: WP-680 / D-24497 — the distinct-class source reuses the D-24055 counting
-// (self-inclusive, incl. getGrantedClasses for Size-Changing) rather than
-// re-deriving it, so it can never diverge from the distinctHeroClassesAtLeast gate.
-import { countDistinctHeroClassesInPlay } from './heroConditions.evaluate.js';
+// why: WP-680 / D-24497, corrected D-24529 — the distinct-class source counts the
+// colors of Heroes you HAVE (hand + play, self-inclusive, order-independent — the
+// rulebook "Heroes you have" term of art), reusing the D-24055 in-play counting for
+// the play-area half (incl. getGrantedClasses for Size-Changing) plus the hand.
+import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 // why: WP-680 / D-24391 — the team sources count membership the same way the
 // requiresTeam gate does: printed team OR a Copy-Powers-granted team. why (Jeff
 // feedback): via cardCountsAsTeamMember, so team 'shield' also folds in the teamless
@@ -354,10 +355,12 @@ export function resolveCountSource(
       return countShieldLevels(G, playerID);
     }
     case 'distinct-hero-classes-played-this-turn': {
-      // why: WP-680 / D-24497 — "for each color of Hero you have" is SELF-INCLUSIVE
-      // (this card's own color counts), so triggeringCardId is intentionally ignored.
-      // Reuses the D-24055 counting (incl. getGrantedClasses for Size-Changing).
-      return countDistinctHeroClassesInPlay(G, playerID);
+      // why: WP-680 / D-24497, semantics corrected D-24529 — "for each color of Hero
+      // you have" counts the distinct colors among the Heroes you HAVE (your HAND +
+      // play area), SELF-INCLUSIVE and ORDER-INDEPENDENT, so a Tech card still in hand
+      // counts even when this card is played first. triggeringCardId is intentionally
+      // ignored. (The slug keeps the "played-this-turn" wording as a stable id.)
+      return countDistinctHeroClassesYouHave(G, playerID);
     }
     case 'avengers-played-this-turn': {
       return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'avengers');
@@ -529,18 +532,23 @@ function collectOddCostCardsPlayedThisTurn(
 }
 
 /**
- * Collects the played-this-turn cards that contribute at least one distinct hero class.
+ * Collects the cards you HAVE (hand + play) that contribute at least one distinct hero class.
  *
- * Mirrors countDistinctHeroClassesInPlay's inline gathering (printed `heroClass` +
- * `heroClass2` + the Size-Changing granted classes) in ext-id-collecting form. It is
- * SELF-INCLUSIVE — the count source counts distinct COLOURS over all cards including the
- * trigger, so this takes no `triggeringCardId` and lists every card that carries any
- * class. Because the resolved count is a distinct-colour rollup (multiple cards may share
- * a colour), `count <= collected.length` here — a documented rollup, not an error.
+ * Mirrors countDistinctHeroClassesYouHave's gathering in ext-id-collecting form: the HAND
+ * half by printed `heroClass` / `heroClass2` only, and the PLAY half by those plus the
+ * Size-Changing granted classes (an in-play-only grant). It is SELF-INCLUSIVE — the count
+ * source counts distinct COLOURS over all Heroes you have including the trigger, so this
+ * takes no `triggeringCardId` and lists every card that carries any class. Because the
+ * resolved count is a distinct-colour rollup (multiple cards may share a colour),
+ * `count <= collected.length` here — a documented rollup, not an error.
+ *
+ * // why: D-24529 — must scan hand + play (not just inPlay) so the countedInputs stay
+ * consistent with the corrected resolveCountSource count; a hand-only colour would
+ * otherwise push count above the returned length and break the WP-706 invariant.
  *
  * @param G - Game state (read-only).
- * @param playerID - The player whose in-play zone to scan.
- * @returns The ext_ids of the played-this-turn cards contributing any hero class.
+ * @param playerID - The player whose hand + in-play zones to scan.
+ * @returns The ext_ids of the Heroes-you-have contributing any hero class.
  */
 function collectDistinctHeroClassCards(
   G: LegendaryGameState,
@@ -552,6 +560,19 @@ function collectDistinctHeroClassCards(
   }
 
   const matchedCardIds: CardExtId[] = [];
+  // why: HAND half — printed colours only (no Size-Changing grant, an in-play effect).
+  for (const handCardId of playerZones.hand) {
+    const traitEntry = G.cardTraits[handCardId as CardExtId];
+    const hasPrintedClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;
+    // why: WP-703 / D-24523 — a dual-class card contributes via heroClass2 alone.
+    const hasSecondClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
+    if (hasPrintedClass || hasSecondClass) {
+      matchedCardIds.push(handCardId as CardExtId);
+    }
+  }
+  // why: PLAY half — printed colours plus Size-Changing granted classes.
   for (const playedCardId of playerZones.inPlay) {
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     const hasPrintedClass =
