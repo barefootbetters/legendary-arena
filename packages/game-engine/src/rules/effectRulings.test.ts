@@ -39,6 +39,7 @@ import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
 import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
+import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -71,6 +72,7 @@ import type {
   PendingSmashDiscard,
   PendingRevealTopDispose,
   PendingGiveHqHeroChoice,
+  PendingReturnZeroCostDiscard,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -285,6 +287,14 @@ interface ResolveGiveHqHeroSetup {
   hq: (string | null)[];
   heroDeck?: string[];
   resolve: { cardId: string } | { decline: true };
+}
+
+interface ResolveReturnZeroCostDiscardSetup {
+  currentPlayer: string;
+  discard: string[];
+  cardStats: Record<string, number>;
+  sourceCardId: string;
+  resolve: { cardId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -697,6 +707,35 @@ function runResolveGiveHqHero(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveReturnZeroCostDiscard` move against a parked return-a-0-cost
+ * choice — the mandatory move of a 0-cost card from discard back to hand.
+ *
+ * @param rawSetup - The ruling's resolve-return-zero-cost-discard setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveReturnZeroCostDiscard(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveReturnZeroCostDiscardSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ discard: setup.discard as CardExtId[] }) };
+  // why: the eligibility predicate reads G.cardStats[id].cost (a card is returnable iff
+  // 0-cost), so seed the costs the ruling declares via the complete-entry builder.
+  for (const [cardId, cost] of Object.entries(setup.cardStats)) {
+    G.cardStats[cardId as CardExtId] = makeCardStatEntry({ cost });
+  }
+  const pending: PendingReturnZeroCostDiscard = {
+    playerID: setup.currentPlayer,
+    sourceCardId: setup.sourceCardId as CardExtId,
+  };
+  G.pendingReturnZeroCostDiscard = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveReturnZeroCostDiscard(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -715,6 +754,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-smash': runResolveSmash,
   'resolve-reveal-top-dispose': runResolveRevealTopDispose,
   'resolve-give-hq-hero': runResolveGiveHqHero,
+  'resolve-return-zero-cost-discard': runResolveReturnZeroCostDiscard,
 };
 
 /**
