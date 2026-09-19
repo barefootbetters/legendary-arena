@@ -108,6 +108,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  *   reads as 0, matching the handlers' own `?? 0` counter reads).
  * - `hand-size-override` — a named player's `G.handSizeOverrides` next-hand size
  *   equals an exact value.
+ * - `villain-attached-heroes` — the heroes captured onto a named villain
+ *   (`G.villainAttachedHeroes[villainCardId]`) equal an exact card list.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -116,7 +118,8 @@ export type RulingExpectationKind =
   | 'boolean-result'
   | 'turn-economy-value'
   | 'counter-value'
-  | 'hand-size-override';
+  | 'hand-size-override'
+  | 'villain-attached-heroes';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -130,6 +133,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'turn-economy-value',
   'counter-value',
   'hand-size-override',
+  'villain-attached-heroes',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -197,7 +201,7 @@ export interface RulingExpectation {
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -215,6 +219,8 @@ export interface RulingExpectation {
   count?: number;
   /** `hand-size-override`: the exact expected `G.handSizeOverrides[player]` value. */
   size?: number;
+  /** `villain-attached-heroes`: the villain ext_id whose captured-hero list is asserted. */
+  villainCardId?: string;
 }
 
 /**
@@ -324,6 +330,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (typeof expected.size !== 'number' || !Number.isInteger(expected.size) || expected.size < 0) {
         return `Ruling "${rulingId}" has a hand-size-override expectation whose "size" is not a non-negative integer.`;
+      }
+      return null;
+    case 'villain-attached-heroes':
+      if (!isNonEmptyString(expected.villainCardId)) {
+        return `Ruling "${rulingId}" has a villain-attached-heroes expectation with no "villainCardId"; name the villain whose captured-hero list is asserted.`;
+      }
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has a villain-attached-heroes expectation whose "cards" is not an array of captured-hero ext_id strings.`;
       }
       return null;
     default:

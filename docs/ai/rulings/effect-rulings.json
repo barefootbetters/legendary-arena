@@ -1148,5 +1148,61 @@
     },
     "expected": { "kind": "hand-size-override", "player": "0", "size": 7 },
     "why": "Savage Land Mutates ADDS to the base hand size rather than replacing it: with no prior override the next-hand target becomes HAND_SIZE (6) + 1 = 7, so two defeats in a turn would stack (D-24352, contrast the absolute override-next-hand-size)."
+  },
+  {
+    "id": "capture-hq-hero-rightmost-captures-rightmost-non-null",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "rightmost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", null, "core/wolverine/wolverine#0", null, "core/hulk/hulk#0"]
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/hulk/hulk#0"] },
+    "why": "The rightmost selector scans the five HQ slots from index 4 down to 0 and captures the first non-null Hero, skipping empty slots: with heroes in slots 0/2/4 it captures slot 4 (Hulk) and attaches it to the villain's capture list (D-21401, WP-214 selector determinism)."
+  },
+  {
+    "id": "capture-hq-hero-highest-cost-captures-costliest",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "highest-cost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/spider-man/spider-man#0": 3, "core/wolverine/wolverine#0": 7, "core/hulk/hulk#0": 2 }
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "The highest-cost selector reads G.cardStats[id].cost across the HQ and captures the costliest Hero — here Wolverine at cost 7 over Spider-Man (3) and Hulk (2) — proving the selector uses the cost stat, not slot position (D-21401, WP-214)."
+  },
+  {
+    "id": "capture-hq-hero-highest-cost-tie-breaks-to-rightmost-index",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "highest-cost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", null, "core/wolverine/wolverine#0", null, null],
+        "cardStats": { "core/spider-man/spider-man#0": 5, "core/wolverine/wolverine#0": 5 }
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "When two HQ Heroes tie on cost (both 5) the highest-cost selector breaks the tie by the RIGHTMOST slot index, capturing Wolverine (slot 2) over Spider-Man (slot 0) — the determinism contract that keeps the capture replayable regardless of scan order (D-21401, WP-214)."
   }
 ]

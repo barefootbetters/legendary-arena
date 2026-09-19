@@ -29,7 +29,7 @@ import path from 'node:path';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
-import { makePlayerZones, makeGlobalPiles, makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { makePlayerZones, makeGlobalPiles, makeCardRegistryReader, makeCardStatEntry } from '../test/fixtureBuilders.js';
 import { executeVillainAbilities } from '../villain/villainEffects.execute.js';
 import { resolveMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
@@ -196,6 +196,9 @@ interface FireVillainEffectSetup {
   bystandersSupply?: number;
   officersSupply?: number;
   cityIndex?: number;
+  hq?: (string | null)[];
+  cardStats?: Record<string, number>;
+  heroDeck?: string[];
 }
 
 interface ResolveMelterKoSetup {
@@ -290,6 +293,23 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
     bystanders: buildTokenPile('pile-bystander', setup.bystandersSupply ?? 0),
     officers: buildTokenPile('pile-shield-officer', setup.officersSupply ?? 0),
   });
+
+  // why: capture-hq-hero reads the 5-slot G.hq, G.cardStats[id].cost (the
+  // highest/lowest-cost selectors) and refills the vacated slot from G.heroDeck.
+  // Seed them only when the ruling provides them so other villain rulings keep the
+  // base setup unchanged. cardStats entries are built complete via makeCardStatEntry
+  // (cost overridden) so the cost selectors read exactly what the ruling declares.
+  if (setup.hq !== undefined) {
+    G.hq = setup.hq as (CardExtId | null)[];
+  }
+  if (setup.cardStats !== undefined) {
+    for (const [heroId, cost] of Object.entries(setup.cardStats)) {
+      G.cardStats[heroId as CardExtId] = makeCardStatEntry({ cost });
+    }
+  }
+  if (setup.heroDeck !== undefined) {
+    G.heroDeck = setup.heroDeck as CardExtId[];
+  }
 
   G.villainAbilityHooks = [
     { cardId: setup.cardId as CardExtId, timing: setup.timing, keywords: [], effects: [setup.descriptor] },
@@ -624,6 +644,13 @@ function checkHandSizeOverride(outcome: Outcome, expected: RulingExpectation): v
   assert.equal(outcome.G.handSizeOverrides[player], expected.size, `handSizeOverrides.${player} mismatch`);
 }
 
+/** Asserts a named villain's captured-hero list (`G.villainAttachedHeroes[id]`) equals the expected cards. */
+function checkVillainAttachedHeroes(outcome: Outcome, expected: RulingExpectation): void {
+  const villainCardId = expected.villainCardId as string;
+  const actual = outcome.G.villainAttachedHeroes[villainCardId] ?? [];
+  assert.deepStrictEqual(actual, expected.cards, `villainAttachedHeroes.${villainCardId} mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
@@ -632,6 +659,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'turn-economy-value': checkTurnEconomyValue,
   'counter-value': checkCounterValue,
   'hand-size-override': checkHandSizeOverride,
+  'villain-attached-heroes': checkVillainAttachedHeroes,
 };
 
 /**
@@ -664,6 +692,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'turn-economy-value': (expected) => ({ ...expected, amount: (expected.amount ?? 0) + 1 }),
   'counter-value': (expected) => ({ ...expected, count: (expected.count ?? 0) + 1 }),
   'hand-size-override': (expected) => ({ ...expected, size: (expected.size ?? 0) + 1 }),
+  'villain-attached-heroes': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
 };
 
 /**
