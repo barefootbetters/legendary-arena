@@ -233,6 +233,53 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
       'condition failure must append exactly one observability log line.');
     assert.match(gameState.messages[gameState.messages.length - 1]!.text, /did not activate/,
       'the appended log line must explain the ability did not activate.');
+    // why: WP-702 follow-up — a SINGLE-hook card keeps the whole-card wording (the gated hook IS
+    // the card's ability), so it must NOT claim only "one of its abilities" was gated.
+    assert.equal(
+      gameState.messages[gameState.messages.length - 1]!.text.includes('one of its abilities'),
+      false,
+      'a single-ability card uses the whole-card "ability did not activate" wording.',
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4b: a MULTI-hook card names ONE ability (WP-702 live-verify follow-up)
+  // -------------------------------------------------------------------------
+  it('a multi-hook card says "one of its abilities" when a sibling clause fired (WP-702 follow-up)', () => {
+    // why: Gambit's Hypnotic Charm carries an unconditional reveal-top clause PLUS an
+    // `[hc:instinct]`-gated each-other clause. In the live log the own-deck reveal clearly
+    // resolved, yet the bare "ability did not activate" line for the gated clause read as if the
+    // whole card fizzled. A card with >1 ability hook must name ONE ability, not the whole card.
+    const gameState = makeTestState({
+      deck: ['card-a'],
+      inPlay: ['hero-x'], // only the played card is in play, so the heroClassMatch gate below fails
+      heroAbilityHooks: [
+        // hook 0: unconditional — fires (draws a card), mirroring Hypnotic Charm's own-deck clause
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+        // hook 1: `[hc:tech]`-gated — blocked (no other tech Hero in play), the each-other analogue
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+          effects: [{ type: 'attack', magnitude: 2 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 1,
+      'the unconditional sibling clause still fired (drew a card).');
+    const blockedLine = gameState.messages.find((message) => message.text.includes('did not activate'));
+    assert.ok(blockedLine !== undefined, 'the gated clause appends a did-not-activate line.');
+    assert.match(blockedLine!.text, /did not activate one of its abilities/,
+      'a multi-hook card names ONE ability so a fired sibling clause is not read as the whole card fizzling.');
   });
 
   // -------------------------------------------------------------------------
