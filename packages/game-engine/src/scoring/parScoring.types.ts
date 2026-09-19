@@ -233,6 +233,17 @@ export interface PlayerScoringContribution {
   readonly villainsDefeated: number;
   /** Henchmen this player defeated (in their victory pile). */
   readonly henchmenDefeated: number;
+  // why: WP-708 / D-24531 — the per-match Synergy Rate inputs, read from the
+  // hash-excluded `G.diagnostics.conditionalClauses` tally. Display-only, exactly
+  // like the WP-616 defeat counts above — NEVER summed into `finalScore`/PAR/grade
+  // (NG-1, no skill-stat-to-ranking leakage). `conditionalClausesPlayed` is the
+  // count of conditional Hero clauses this seat played; `...Assembled` is how many
+  // had their condition met. The player-facing Synergy Rate = assembled / played is
+  // derived at render (hidden when played is 0).
+  /** Conditional Hero clauses this player played (synergy denominator). */
+  readonly conditionalClausesPlayed: number;
+  /** Conditional Hero clauses this player assembled — condition met (numerator). */
+  readonly conditionalClausesAssembled: number;
 }
 
 export interface ScoringInputs {

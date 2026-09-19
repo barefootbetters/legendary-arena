@@ -26,6 +26,7 @@ import type { EffectExecutionReason, EffectTrace, EffectTraceStatus, EffectTrace
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
+import { recordConditionalClause } from '../diagnostics/synergyCount.record.js';
 import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
@@ -645,6 +646,13 @@ export function executeHeroEffects(
   const turn = readTurnNumber(ctx);
 
   for (const hook of hooks) {
+    // why: WP-708 / D-24531 — a hook is a countable "conditional clause" for the
+    // per-match Synergy Rate iff it carries >=1 condition AND an executable effect
+    // body. An unconditional hook has no synergy decision; a hollow (unimplemented)
+    // body is our backlog, never the player's miss — both are excluded from the tally.
+    const isCountableConditionalClause =
+      (hook.conditions?.length ?? 0) > 0 && hookHasExecutableEffect(hook);
+
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
     // (self-exclusion rule — a card's own class/team does not satisfy its own
@@ -691,9 +699,18 @@ export function executeHeroEffects(
           'neutral',
           cardId,
         );
+        // why: WP-708 — the wait-and-see branch is NOT counted toward the Synergy
+        // Rate: a numeric-threshold gate that may still be reached later this turn is
+        // neither assembled nor a miss. Snapshot-gate synergy (hc / team / keyword /
+        // playedThisTurn) is measured; deferred threshold synergy is a Phase-2 concern.
         continue;
       }
 
+      // why: WP-708 / D-24531 — a hard-blocked conditional clause (the condition was
+      // genuinely unmet) counts as PLAYED but not assembled.
+      if (isCountableConditionalClause) {
+        recordConditionalClause(G, playerID, { assembled: false });
+      }
       pushLog(G,
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — ${reason}.`,
         'blocked',
@@ -702,6 +719,13 @@ export function executeHeroEffects(
       continue;
     }
 
+    // why: WP-708 / D-24531 — the conditions passed, so a countable conditional clause
+    // was ASSEMBLED (the player met the synergy condition). Recorded before
+    // runHookEffects: "assembled" is the player's decision (the condition was met),
+    // independent of whether the downstream handler then no-ops.
+    if (isCountableConditionalClause) {
+      recordConditionalClause(G, playerID, { assembled: true });
+    }
     // why: effects is optional on HeroAbilityHook. A hook may carry legacy `effects`,
     // composition `primitiveEffects`, or both — run whichever are present. (The former
     // early-`continue` on absent `effects` is gone because it would skip a Berserk hook,
@@ -787,6 +811,32 @@ function classifyHeroEffectReason(effect: HeroEffectDescriptor): EffectExecution
     return 'no-handler';
   }
   return 'unsupported-keyword';
+}
+
+/**
+ * Returns whether a hero hook carries at least one executable (non-hollow) effect
+ * body (WP-708 / D-24531).
+ *
+ * Mirrors `detectHollowHeroHook`'s reachability rule (D-24033): a composition
+ * primitive always reaches the interpreter (reachable), and a legacy effect is
+ * reachable when `classifyHeroEffectReason` is not a hollow reason. The synergy
+ * counter uses this to exclude a conditional hook whose effect body is
+ * unimplemented — an unbuilt payoff is our backlog, never the player's synergy
+ * miss, so it must not enter the per-match Synergy Rate.
+ *
+ * @param hook - The hero ability hook.
+ * @returns Whether the hook has a reachable effect body.
+ */
+function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
+  if ((hook.primitiveEffects?.length ?? 0) > 0) {
+    return true;
+  }
+  for (const effect of hook.effects ?? []) {
+    if (!isHollowReason(classifyHeroEffectReason(effect))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

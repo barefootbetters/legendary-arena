@@ -310,6 +310,8 @@ describe('per-player split (WP-588)', () => {
     // why: WP-621 — a record predating WP-616 carries no per-seat defeat counts,
     // so the three contribution fields map to null (the report card then omits
     // the "defeated" line for that seat).
+    // why: WP-708 — the same record carries no synergy counts either, so the two
+    // conditional-clause fields also map to null (the Synergy line is then omitted).
     assert.deepEqual(calc.perPlayer?.[0], {
       label: 'Player 1',
       victoryPoints: 34,
@@ -317,6 +319,8 @@ describe('per-player split (WP-588)', () => {
       villainsDefeated: null,
       henchmenDefeated: null,
       mastermindTacticsDefeated: null,
+      conditionalClausesPlayed: null,
+      conditionalClausesAssembled: null,
     });
     assert.deepEqual(calc.perPlayer?.[1], {
       label: 'Player 2',
@@ -325,6 +329,8 @@ describe('per-player split (WP-588)', () => {
       villainsDefeated: null,
       henchmenDefeated: null,
       mastermindTacticsDefeated: null,
+      conditionalClausesPlayed: null,
+      conditionalClausesAssembled: null,
     });
     // The per-player VP + bystanders reconcile with the team totals shown in the raw calc.
     const summedVp = (calc.perPlayer ?? []).reduce((total, row) => total + row.victoryPoints, 0);

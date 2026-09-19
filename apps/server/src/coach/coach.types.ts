@@ -36,6 +36,13 @@ export interface CoachPlayerLine {
   readonly villainsDefeated: number;
   readonly henchmenDefeated: number;
   readonly mastermindTacticsDefeated: number;
+  // why: WP-708 / D-24531 — this seat's per-match synergy tally (display-only,
+  // read from the engine's hash-excluded conditional-clause counter), so the coach
+  // can speak to how much of the synergy the seat's conditional Hero clauses offered
+  // it actually assembled. Default 0 for records persisted before WP-708. NEVER a
+  // scored term (NG-1). The player-facing Synergy Rate = assembled / played.
+  readonly conditionalClausesPlayed: number;
+  readonly conditionalClausesAssembled: number;
   /** Acquired hero cards as "Display Name ×N" strings, most-acquired first. */
   readonly acquiredCards: readonly string[];
 }
