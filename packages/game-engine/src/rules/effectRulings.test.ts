@@ -46,6 +46,7 @@ import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
+import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -85,6 +86,7 @@ import type {
   PendingKoDiscardChoice,
   PendingPutHandOnDeckTop,
   PendingUndercoverChoice,
+  PendingDiscardChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -354,6 +356,13 @@ interface ResolveUndercoverSetup {
   eligibleTargets: string[];
   sourceCardId: string;
   resolve: { targetExtId: string };
+}
+
+interface ResolveDiscardChoiceSetup {
+  currentPlayer: string;
+  hand: string[];
+  limit: number;
+  resolve: { cardIds: string[] };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -962,6 +971,31 @@ function runResolveUndercover(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveDiscardChoice` move against a parked discard-down-to-a-limit
+ * choice (Magneto's Master Strike) — the chosen hand cards move hand→discard.
+ *
+ * @param rawSetup - The ruling's resolve-discard-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveDiscardChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveDiscardChoiceSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[] }) };
+  const pending: PendingDiscardChoice = {
+    choiceType: 'discard-to-limit',
+    playerID: setup.currentPlayer,
+    limit: setup.limit,
+  };
+  G.pendingDiscardChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveDiscardChoice(moveContext, { cardIds: setup.resolve.cardIds as CardExtId[] });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -987,6 +1021,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-ko-discard': runResolveKoDiscard,
   'resolve-put-hand-on-deck-top': runResolvePutHandOnDeckTop,
   'resolve-undercover': runResolveUndercover,
+  'resolve-discard-choice': runResolveDiscardChoice,
 };
 
 /**

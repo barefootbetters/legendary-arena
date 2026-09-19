@@ -63,6 +63,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-ko-discard` | `resolveKoDiscardChoice` move | the Maniacal Tyrant KO-up-to-N-from-discard choice (over-cap rejected) |
 | `resolve-put-hand-on-deck-top` | `resolvePutHandOnDeckTop` move | the Stack the Deck put-a-hand-card-on-deck-top choice |
 | `resolve-undercover` | `resolveUndercoverChoice` move | the send-a-S.H.I.E.L.D.-Hero-Undercover choice (eligibility gate) |
+| `resolve-discard-choice` | `resolveDiscardChoice` move | the Magneto discard-down-to-a-limit choice (exactly-to-limit) |
 
 ### Current expectation kinds
 
