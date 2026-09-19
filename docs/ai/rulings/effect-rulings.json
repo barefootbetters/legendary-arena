@@ -1824,5 +1824,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
     "why": "Paibok's give-HQ-Hero is MANDATORY (not an optional 'may recruit' tactic), so a decline is a no-op — nothing is gained and the discard stays empty; the player must still pick (D-24343; the decline arm is honored only for optional entries per D-24509). Paired with the gain sibling that proves a chosen Hero lands in discard."
+  },
+  {
+    "id": "resolve-return-zero-cost-returns-zero-cost-card-to-hand",
+    "mechanic": "return-zero-cost-discard",
+    "decision": "D-24139",
+    "scenario": {
+      "action": "resolve-return-zero-cost-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["starting-shield-agent", "core/wolverine/wolverine#0"],
+        "cardStats": { "starting-shield-agent": 0, "core/wolverine/wolverine#0": 3 },
+        "sourceCardId": "core/black-knight/defend-the-weak#0",
+        "resolve": { "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["starting-shield-agent"] },
+    "why": "Black Knight's 'return a 0-cost card from your discard to your hand' (Defend the Weak) moves the chosen 0-cost card (the cost-0 S.H.I.E.L.D. Agent) from discard into hand (D-24139)."
+  },
+  {
+    "id": "resolve-return-zero-cost-rejects-non-zero-cost-target",
+    "mechanic": "return-zero-cost-discard",
+    "decision": "D-24139",
+    "scenario": {
+      "action": "resolve-return-zero-cost-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["core/wolverine/wolverine#0"],
+        "cardStats": { "core/wolverine/wolverine#0": 3 },
+        "sourceCardId": "core/black-knight/defend-the-weak#0",
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": [] },
+    "why": "A non-0-cost discard card (Wolverine, cost 3) is not a legal target for the 0-cost-return ability, so the resolve is a no-op — nothing enters the hand (D-24139, the 0-cost eligibility filter). Paired with the sibling that proves a 0-cost card returns."
   }
 ]
