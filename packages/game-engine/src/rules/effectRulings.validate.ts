@@ -58,6 +58,8 @@
  *   discard-for-attack choice.
  * - `resolve-reveal-top-dispose` — call the `resolveRevealTopDispose` move on a
  *   parked reveal-top discard-or-keep choice.
+ * - `resolve-give-hq-hero` — call the `resolveGiveHqHeroChoice` move on a parked
+ *   give-HQ-Hero choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -70,7 +72,8 @@ export type RulingScenarioAction =
   | 'resolve-ko-hero'
   | 'resolve-discard-to-play'
   | 'resolve-smash'
-  | 'resolve-reveal-top-dispose';
+  | 'resolve-reveal-top-dispose'
+  | 'resolve-give-hq-hero';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -88,6 +91,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-discard-to-play',
   'resolve-smash',
   'resolve-reveal-top-dispose',
+  'resolve-give-hq-hero',
 ] as const;
 
 // ---------------------------------------------------------------------------
