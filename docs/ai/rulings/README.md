@@ -44,7 +44,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 
 | action | fires | used for |
 |---|---|---|
-| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park, capture-hq-hero, hero-deck-top-to-escape, capture-bystander, give-hq-hero-by-trait-to-current |
+| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park, capture-hq-hero, hero-deck-top-to-escape, capture-bystander, give-hq-hero-by-trait-to-current, give-hq-hero-each-player |
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
@@ -60,7 +60,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 |---|---|---|
 | `zone-cards-equal` | a player's zone equals an exact card list | `player`, `zone`, `cards` |
 | `ko-pile-equal` | `G.ko` equals an exact card list | `cards` |
-| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko` / `ko-hero`) | `queue`, `length` |
+| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko` / `ko-hero` / `give-hq-hero`) | `queue`, `length` |
 | `boolean-result` | the query's boolean return | `value` |
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 | `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |
