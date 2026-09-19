@@ -64,6 +64,8 @@
  *   move on a parked return-a-0-cost-discard choice.
  * - `resolve-do-over` — call the `resolveDoOver` move on a parked Do-Over
  *   accept/decline choice.
+ * - `resolve-optional-put-bottom-hq` — call the `resolveOptionalPutBottomHQ` move on
+ *   a parked put-a-card-from-the-HQ-on-the-deck-bottom choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -79,7 +81,8 @@ export type RulingScenarioAction =
   | 'resolve-reveal-top-dispose'
   | 'resolve-give-hq-hero'
   | 'resolve-return-zero-cost-discard'
-  | 'resolve-do-over';
+  | 'resolve-do-over'
+  | 'resolve-optional-put-bottom-hq';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -100,6 +103,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-give-hq-hero',
   'resolve-return-zero-cost-discard',
   'resolve-do-over',
+  'resolve-optional-put-bottom-hq',
 ] as const;
 
 // ---------------------------------------------------------------------------
