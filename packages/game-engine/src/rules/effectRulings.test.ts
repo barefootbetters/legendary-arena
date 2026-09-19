@@ -36,6 +36,7 @@ import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
+import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -65,6 +66,7 @@ import type {
   PendingScryKoChoice,
   PendingKoHeroChoice,
   PendingDiscardToPlay,
+  PendingSmashDiscard,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -259,6 +261,13 @@ interface ResolveDiscardToPlaySetup {
   hand: string[];
   pending: { sourceCardId: string; remaining: number };
   resolve: { cardId: string };
+}
+
+interface ResolveSmashSetup {
+  currentPlayer: string;
+  hand: string[];
+  magnitude: number;
+  resolve: { cardId: string } | { decline: true };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -578,6 +587,33 @@ function runResolveDiscardToPlay(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveSmashDiscard` move against a parked Smash discard-for-attack
+ * choice — either the discard-for-Attack path or the decline path.
+ *
+ * @param rawSetup - The ruling's resolve-smash setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveSmash(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveSmashSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[] }) };
+  const pending: PendingSmashDiscard = { playerID: setup.currentPlayer, magnitude: setup.magnitude };
+  G.pendingSmashDiscards = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  // why: the resolve payload is a decline flag XOR a { cardId } discard request (the
+  // move's own arg union) — branch so the harness can exercise both paths.
+  if ('decline' in setup.resolve) {
+    resolveSmashDiscard(moveContext, { decline: true });
+  } else {
+    resolveSmashDiscard(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+  }
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -593,6 +629,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-scry-ko': runResolveScryKo,
   'resolve-ko-hero': runResolveKoHero,
   'resolve-discard-to-play': runResolveDiscardToPlay,
+  'resolve-smash': runResolveSmash,
 };
 
 /**
