@@ -174,6 +174,14 @@ export interface GameDiagnostics {
   hollowEffectsDropped: number;
   traces?: EffectTrace[];
   tracesDropped?: number;
+  // why: WP-708 / D-24531 — the per-player conditional-clause tally
+  // ({played, assembled}) behind the display-only per-match Synergy Rate. Optional
+  // + lazy-init (like `traces`): `recordConditionalClause` seeds it on first write,
+  // never in `Game.setup`. Rides the D-24034 hash-excluded `G.diagnostics` channel
+  // (both oracles exclude it) → NO re-pin. Display-only: never read by any
+  // move/rule/`endIf`/bot/scoring as gameplay input — only `deriveScoringInputs`
+  // reads it into a display-only report-card field.
+  conditionalClauses?: Record<string, { played: number; assembled: number }>;
 }
 
 // why: the bound mirrors the arena-client diagnostics ring buffer — large enough

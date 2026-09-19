@@ -138,6 +138,11 @@ export interface WorkedScoreCalc {
     readonly villainsDefeated: number | null;
     readonly henchmenDefeated: number | null;
     readonly mastermindTacticsDefeated: number | null;
+    // why: WP-708 / D-24531 — this seat's synergy tally, surfaced as "assembled N of
+    // M synergy clauses". Null when the record predates WP-708 (no synergy counts) —
+    // the report card then omits the Synergy line for that seat.
+    readonly conditionalClausesPlayed: number | null;
+    readonly conditionalClausesAssembled: number | null;
   }> | undefined;
   /**
    * How PAR was derived from the scenario baseline (WP-587). Absent when the
@@ -359,6 +364,10 @@ function buildPerPlayerSplit(
     villainsDefeated: contribution.villainsDefeated ?? null,
     henchmenDefeated: contribution.henchmenDefeated ?? null,
     mastermindTacticsDefeated: contribution.mastermindTacticsDefeated ?? null,
+    // why: WP-708 — pre-WP-708 records carry no synergy counts; map absent fields to
+    // null so the report card omits the Synergy line rather than showing "0 of 0".
+    conditionalClausesPlayed: contribution.conditionalClausesPlayed ?? null,
+    conditionalClausesAssembled: contribution.conditionalClausesAssembled ?? null,
   }));
 }
 

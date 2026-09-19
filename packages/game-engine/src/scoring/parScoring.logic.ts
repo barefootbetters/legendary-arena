@@ -119,6 +119,11 @@ export function deriveScoringInputs(
         }
       }
     }
+    // why: WP-708 / D-24531 — read the per-seat conditional-clause tally from the
+    // hash-excluded G.diagnostics channel (absent → 0, the same lazy-absence-means-
+    // zero pattern as the counters reads above). Display-only: these ride into the
+    // report card but are NEVER summed into any raw-score / PAR term below.
+    const synergy = gameState.diagnostics?.conditionalClauses?.[playerBreakdown.playerId];
     perPlayer.push({
       playerId: playerBreakdown.playerId,
       victoryPoints: playerBreakdown.totalVP,
@@ -126,6 +131,8 @@ export function deriveScoringInputs(
       mastermindTacticsDefeated: playerMastermindTacticsDefeated,
       villainsDefeated: playerVillainsDefeated,
       henchmenDefeated: playerHenchmenDefeated,
+      conditionalClausesPlayed: synergy?.played ?? 0,
+      conditionalClausesAssembled: synergy?.assembled ?? 0,
     });
   }
 
@@ -415,6 +422,10 @@ export function buildScoreBreakdown(
         mastermindTacticsDefeated: contribution.mastermindTacticsDefeated,
         villainsDefeated: contribution.villainsDefeated,
         henchmenDefeated: contribution.henchmenDefeated,
+        // why: WP-708 — carry the per-seat synergy tally through the deep copy so a
+        // copied breakdown reads it, not 0. Display-only (never scored below).
+        conditionalClausesPlayed: contribution.conditionalClausesPlayed,
+        conditionalClausesAssembled: contribution.conditionalClausesAssembled,
       }))
     : undefined;
 

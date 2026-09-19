@@ -150,6 +150,38 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     assert.equal(summary.perPlayer[1]?.mastermindTacticsDefeated, 2);
   });
 
+  test('carries each seat\'s WP-708 synergy tally into the coach line (default 0 when absent)', () => {
+    const emptyZone = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const state = makeState({ '0': { ...emptyZone }, '1': { ...emptyZone } });
+    const breakdown = makeBreakdown({
+      inputs: {
+        rounds: 12,
+        victoryPoints: 56,
+        bystandersRescued: 17,
+        escapes: 0,
+        penaltyEventCounts: {
+          villainEscaped: 0,
+          bystanderLost: 0,
+          schemeTwistNegative: 0,
+          mastermindTacticUntaken: 0,
+          scenarioSpecificPenalty: 0,
+        },
+        perPlayer: [
+          { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 8, conditionalClausesAssembled: 6 },
+          // why: seat 1 carries NO synergy counts (a pre-WP-708 record) → the coach
+          // line must default both to 0, not undefined.
+          { playerId: '1', victoryPoints: 20, bystandersRescued: 4 },
+        ],
+        matchLost: false,
+      },
+    } as unknown as Partial<ScoreBreakdown>);
+    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName);
+    assert.equal(summary.perPlayer[0]?.conditionalClausesPlayed, 8);
+    assert.equal(summary.perPlayer[0]?.conditionalClausesAssembled, 6);
+    assert.equal(summary.perPlayer[1]?.conditionalClausesPlayed, 0);
+    assert.equal(summary.perPlayer[1]?.conditionalClausesAssembled, 0);
+  });
+
   test('defaults the defeat counts to 0 for a record predating WP-616', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
