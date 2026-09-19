@@ -232,7 +232,7 @@ interface QueryCardHasClassSetup {
 interface FireHeroEffectSetup {
   playerID?: string;
   cardId: string;
-  effect: { type: string; magnitude?: number; rewardType?: string; investigateCriteria?: unknown[]; investigateLookCount?: number };
+  effect: { type: string; magnitude?: number; rewardType?: string; investigateCriteria?: unknown[]; investigateLookCount?: number; countSource?: string; perEach?: number };
   playerZones?: Record<string, ZoneOverride>;
   cardTraits?: Record<string, TraitOverride>;
   bystandersSupply?: number;
@@ -477,6 +477,12 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
     rewardType: setup.effect.rewardType,
     investigateCriteria: setup.effect.investigateCriteria,
     investigateLookCount: setup.effect.investigateLookCount,
+    // why: D-24529 — the count-scaled family ('recruit-per-count' / 'attack-per-count')
+    // reads countSource + perEach off the descriptor; forward them so a ruling can fire a
+    // real count-scaled grant (e.g. Avengers Assemble!'s "for each color of Hero you have").
+    // Undefined for every non-count-scaled keyword and passes through harmlessly.
+    countSource: setup.effect.countSource,
+    perEach: setup.effect.perEach,
   } as Parameters<typeof executeSingleEffect>[4];
   const booleanResult = executeSingleEffect(G, moveContext, playerID, setup.cardId as CardExtId, effect);
 

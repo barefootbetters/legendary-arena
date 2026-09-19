@@ -1701,5 +1701,66 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
     "why": "Declining the Smash grants zero Attack — 'you MAY discard' makes declining a legal, no-cost choice, so no discard means no payoff (D-24492). Paired with the discard sibling that proves the +N Attack fires when the player does discard."
+  },
+  {
+    "id": "color-of-hero-you-have-counts-hand-and-play",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["core/iron-man/arc-reactor#0"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "core/iron-man/arc-reactor#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "Avengers Assemble!'s 'for each color of Hero you have' counts the distinct Hero colors among the Heroes you HAVE = hand + play area, order-independent (D-24529, rulebook \"'Your Heroes/Allies' & 'Heroes/Allies You Have'\"). Avengers Assemble! (Instinct) in play plus an unplayed Arc Reactor (Tech) still in hand = 2 colors → +2 Recruit, even though only the Instinct card was played. The pre-fix play-area-only reading gave +1."
+  },
+  {
+    "id": "color-of-hero-you-have-excludes-grey-shield",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["starting-shield-agent", "pile-shield-officer"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "starting-shield-agent": { "heroClass": null, "team": null },
+          "pile-shield-officer": { "heroClass": null, "team": null }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 1 },
+    "why": "Grey S.H.I.E.L.D. cards (Agent / Officer / Trooper) have NO Hero Class, so they add no color to 'for each color of Hero you have' (D-24529, rulebook Grey Heroes + Spectrum 'don't have classes, so they don't help'). A hand of two grey Heroes contributes nothing; only the Instinct Avengers Assemble! counts → +1 Recruit. The flip side of D-24345's 'heroClass != null means has a color, never is a Hero'."
+  },
+  {
+    "id": "color-of-hero-you-have-dual-class-in-hand-counts-both",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["ssw2/ruby-summers/heir-to-legends#0"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "ssw2/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 3 },
+    "why": "A dual-class Hero in hand contributes BOTH its printed colors to 'color of Hero you have' (D-24529 hand ∪ play scope × D-24523 dual-class): Avengers Assemble! (Instinct) in play plus Heir to Legends (Strength + Ranged) unplayed in hand = 3 distinct colors → +3 Recruit."
   }
 ]
