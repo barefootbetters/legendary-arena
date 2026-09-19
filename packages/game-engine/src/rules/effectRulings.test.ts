@@ -603,7 +603,9 @@ function checkKoPileEqual(outcome: Outcome, expected: RulingExpectation): void {
 
 /** Asserts a named pending queue has the expected exact length. */
 function checkPendingQueueLength(outcome: Outcome, expected: RulingExpectation): void {
-  // why: code-style forbids chained ternaries; four pending queues → if/else if chain.
+  // why: code-style forbids chained ternaries; five pending queues → if/else if chain.
+  // Each queue is named explicitly (no catch-all else) so a new RulingPendingQueue
+  // member added without a branch here fails loudly rather than misrouting to a default.
   let queue: readonly unknown[] | undefined;
   if (expected.queue === 'melter') {
     queue = outcome.G.pendingMelterKoChoices;
@@ -611,8 +613,12 @@ function checkPendingQueueLength(outcome: Outcome, expected: RulingExpectation):
     queue = outcome.G.pendingOptionalKoRewards;
   } else if (expected.queue === 'scry-ko') {
     queue = outcome.G.pendingScryKoChoices;
-  } else {
+  } else if (expected.queue === 'ko-hero') {
     queue = outcome.G.pendingKoHeroChoices;
+  } else if (expected.queue === 'give-hq-hero') {
+    queue = outcome.G.pendingGiveHqHeroChoices;
+  } else {
+    throw new Error(`No harness mapping for pending queue "${expected.queue}"; add a branch to checkPendingQueueLength.`);
   }
   assert.equal(queue?.length ?? 0, expected.length, `pending ${expected.queue} queue length mismatch`);
 }

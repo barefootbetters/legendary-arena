@@ -1276,5 +1276,89 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": [] },
     "why": "On Escape the auto-award is suppressed: the immediate award to the player's Victory pile happens ONLY on Fight (the post-award fire site), so an escape leaves the captured Bystander attached and the Victory pile empty — the villain got away with it (D-18603, contrast the onFight capture-bystander that awards to Victory). Paired with the sibling that proves the Bystander was attached."
+  },
+  {
+    "id": "give-hq-hero-by-trait-gifts-matching-hero-to-current-discard",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/avengers/iron-man#0"] },
+    "why": "Ultron's Fight (the KO-or-gift double-choice, collapsed to the co-op-dominant gift) gives the [hc:tech] HQ Hero to the CURRENT player's discard, never the victory pile (D-24327 gain-routes-to-discard): Iron Man (Tech) is gifted while Captain America (Strength) is left in the HQ — the trait predicate selects the recipient card (D-24335)."
+  },
+  {
+    "id": "give-hq-hero-by-trait-no-matching-hero-is-noop",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/captain-america#0", "core/hulk/hulk#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "When no HQ Hero matches the trait predicate ([hc:tech]) the gift is a reachable no-op — nothing is removed from the HQ and the current player's discard stays empty (D-24335). Paired with the positive sibling that proves a matching Hero is gifted."
+  },
+  {
+    "id": "give-hq-hero-each-player-non-current-auto-gains-highest-cost",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/skrulls/paibok-the-power-skrull#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-each-player" },
+        "playerZones": { "0": { "discard": [] }, "1": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/avengers/iron-man#0": 3, "core/avengers/captain-america#0": 8, "core/hulk/hulk#0": 5 },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "1", "zone": "discard", "cards": ["core/avengers/captain-america#0"] },
+    "why": "Paibok's Fight (D-24343 / D-24284 current-parks / others-auto split) resolves non-current players FIRST, each auto-gaining the highest-cost HQ Hero into their discard: the non-current player gains Captain America (cost 8) over Iron Man (3) and Hulk (5), proving the auto-gain uses the cost stat and routes to discard (D-24327)."
+  },
+  {
+    "id": "give-hq-hero-each-player-current-parks-when-multiple-remain",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/skrulls/paibok-the-power-skrull#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-each-player" },
+        "playerZones": { "0": { "discard": [] }, "1": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/avengers/iron-man#0": 3, "core/avengers/captain-america#0": 8, "core/hulk/hulk#0": 5 },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "give-hq-hero", "length": 1 },
+    "why": "After the non-current player auto-gains one HQ Hero (leaving two, since the empty hero-deck refills the vacated slot with null), the current (human) player faces a genuine which-Hero choice and parks exactly one give-hq-hero pending entry rather than auto-resolving (D-24343 / D-24284 current-parks). Paired with the sibling that proves the non-current auto-gain landed."
   }
 ]
