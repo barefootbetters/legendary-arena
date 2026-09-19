@@ -1240,5 +1240,41 @@
     },
     "expected": { "kind": "escaped-pile-equal", "cards": [] },
     "why": "An empty hero-deck reservoir is a reachable silent no-op — nothing escapes and the escaped pile stays empty (D-18502, WP-185). Paired with the positive sibling that proves a card escapes when the reservoir is non-empty."
+  },
+  {
+    "id": "capture-bystander-on-escape-attaches-to-villain",
+    "mechanic": "capture-bystander",
+    "decision": "D-18603",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-bystander-escape-01",
+        "timing": "onEscape",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander" },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "villain-bystander-escape-01", "cards": ["pile-bystander"] },
+    "why": "The un-counted capture-bystander fired on Escape attaches one Bystander from the supply to the escaping card's attached-bystander list (G.attachedBystanders), proving the capture ran off the Fight fire site (D-18603)."
+  },
+  {
+    "id": "capture-bystander-on-escape-does-not-award-to-victory",
+    "mechanic": "capture-bystander",
+    "decision": "D-18603",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-bystander-escape-01",
+        "timing": "onEscape",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander" },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": [] },
+    "why": "On Escape the auto-award is suppressed: the immediate award to the player's Victory pile happens ONLY on Fight (the post-award fire site), so an escape leaves the captured Bystander attached and the Victory pile empty — the villain got away with it (D-18603, contrast the onFight capture-bystander that awards to Victory). Paired with the sibling that proves the Bystander was attached."
   }
 ]
