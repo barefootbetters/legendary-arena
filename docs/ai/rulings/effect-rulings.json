@@ -1928,5 +1928,39 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 0 },
     "why": "The SAME moved card seeded WITHOUT a recruit or attack icon (recruit 0, attack 0) grants no reward — the +N is conditional on the moved card's printed icon, so it stays at 0 recruit (D-24133). Paired with the recruit-icon sibling that proves the reward fires when the icon is present."
+  },
+  {
+    "id": "resolve-victory-pile-pick-grants-villain-fight-cost-as-attack",
+    "mechanic": "victory-pile-card-pick",
+    "decision": "D-24067",
+    "scenario": {
+      "action": "resolve-victory-pile-card-pick",
+      "setup": {
+        "currentPlayer": "0",
+        "victory": ["core/spider-foes/lizard#0"],
+        "villainDeckCardTypes": { "core/spider-foes/lizard#0": "villain" },
+        "cardStats": { "core/spider-foes/lizard#0": { "fightCost": 5 } },
+        "resolve": { "cardId": "core/spider-foes/lizard#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 5 },
+    "why": "Ebony Blade's 'claim the printed Attack of a Villain in your Victory pile' grants attack equal to the chosen villain's printed attack, stored as fightCost on villain cards (their .attack is always 0): the Lizard's fightCost 5 → +5 attack (D-24067 / WP-285)."
+  },
+  {
+    "id": "resolve-victory-pile-pick-non-villain-target-is-noop",
+    "mechanic": "victory-pile-card-pick",
+    "decision": "D-24067",
+    "scenario": {
+      "action": "resolve-victory-pile-card-pick",
+      "setup": {
+        "currentPlayer": "0",
+        "victory": ["core/hydra/doombot-legion#0"],
+        "villainDeckCardTypes": { "core/hydra/doombot-legion#0": "henchman" },
+        "cardStats": { "core/hydra/doombot-legion#0": { "fightCost": 4 } },
+        "resolve": { "cardId": "core/hydra/doombot-legion#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "Only cards typed 'villain' in G.villainDeckCardTypes are eligible — a henchman (Doombot Legion) in the Victory pile is not a valid Ebony Blade target, so the pick is a no-op and no attack is granted despite its fightCost (D-24067). Paired with the villain sibling that proves the attack claim fires."
   }
 ]
