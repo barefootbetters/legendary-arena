@@ -114,6 +114,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `attached-bystanders-equal` — the bystanders attached to a named card
  *   (`G.attachedBystanders[villainCardId]`) equal an exact card list.
  * - `city-equal` — `G.city` (the City row) equals an exact occupant list.
+ * - `turn-economy-flag` — a named boolean `G.turnEconomy` flag (absent reads as
+ *   false) equals an exact boolean.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -126,7 +128,8 @@ export type RulingExpectationKind =
   | 'villain-attached-heroes'
   | 'escaped-pile-equal'
   | 'attached-bystanders-equal'
-  | 'city-equal';
+  | 'city-equal'
+  | 'turn-economy-flag';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -144,6 +147,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'escaped-pile-equal',
   'attached-bystanders-equal',
   'city-equal',
+  'turn-economy-flag',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -159,6 +163,16 @@ export const RULING_ECONOMY_FIELDS: readonly RulingEconomyField[] = [
   'woundsDrawn',
   'cardsDrawn',
 ] as const;
+
+// why: D-24524 — the closed set of boolean `G.turnEconomy` flags a `turn-economy-flag`
+// expectation may assert on. `recruitSpendableAsAttack` is the WP-580 / D-24389 God of
+// Thunder conversion flag (absent when unset — lazy-materialized so the hash oracles stay
+// byte-stable). Grow this one flag at a time as a ruling needs another.
+/** The boolean `G.turnEconomy` flags a `turn-economy-flag` expectation may name. */
+export type RulingEconomyFlag = 'recruitSpendableAsAttack';
+
+/** All economy flags a `turn-economy-flag` expectation may name. */
+export const RULING_ECONOMY_FLAGS: readonly RulingEconomyFlag[] = ['recruitSpendableAsAttack'] as const;
 
 // why: D-24524 — the closed set of `G.counters` keys a `counter-value` expectation
 // may assert on. `G.counters` is an open `Record<string, number>` at the type level,
@@ -217,8 +231,10 @@ export interface RulingExpectation {
   queue?: RulingPendingQueue;
   /** `pending-queue-length`: the exact expected queue length. */
   length?: number;
-  /** `boolean-result`: the exact expected boolean return. */
+  /** `boolean-result` / `turn-economy-flag`: the exact expected boolean. */
   value?: boolean;
+  /** `turn-economy-flag`: which boolean `G.turnEconomy` flag to assert. */
+  economyFlag?: RulingEconomyFlag;
   /** `turn-economy-value`: which `G.turnEconomy` field to assert. */
   economyField?: RulingEconomyField;
   /** `turn-economy-value`: the exact expected amount. */
@@ -366,6 +382,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
     case 'city-equal':
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has a city-equal expectation whose "cards" is not an array of City occupant ext_id strings.`;
+      }
+      return null;
+    case 'turn-economy-flag':
+      if (!isMemberOf<RulingEconomyFlag>(expected.economyFlag, RULING_ECONOMY_FLAGS)) {
+        return `Ruling "${rulingId}" has a turn-economy-flag expectation with an invalid "economyFlag"; use one of ${RULING_ECONOMY_FLAGS.join('/')}.`;
+      }
+      if (typeof expected.value !== 'boolean') {
+        return `Ruling "${rulingId}" has a turn-economy-flag expectation whose "value" is not a boolean.`;
       }
       return null;
     default:
