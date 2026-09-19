@@ -1573,5 +1573,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/avengers/iron-man#0", "core/hulk/hulk#0"] },
     "why": "After drawing the matched Spider-Man, the non-selected looked-at card (Hulk) goes to the BOTTOM of the deck in look order, while the un-looked-at third card (Iron Man) is now on top: deck becomes [Iron Man, Hulk] (D-24373). Paired with the sibling that proves the matching card was drawn."
+  },
+  {
+    "id": "hero-recruit-as-attack-sets-conversion-flag",
+    "mechanic": "recruit-as-attack",
+    "decision": "D-24389",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "msp1/thor/god-of-thunder#0",
+        "effect": { "type": "recruit-as-attack" },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-flag", "economyFlag": "recruitSpendableAsAttack", "value": true },
+    "why": "God of Thunder's 'You can use Recruit as Attack this turn.' sets the turn-scoped G.turnEconomy.recruitSpendableAsAttack conversion flag to true, so getSpendableAttack later folds unspent Recruit into the fight budget (D-24389 / WP-580)."
+  },
+  {
+    "id": "hero-recruit-as-attack-adds-no-attack-total",
+    "mechanic": "recruit-as-attack",
+    "decision": "D-24389",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "msp1/thor/god-of-thunder#0",
+        "effect": { "type": "recruit-as-attack" },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "recruit-as-attack is a permission flag, not a grant: it moves no resource total, so G.turnEconomy.attack stays 0 even though the conversion is 'applied' (WP-434) — the Recruit is spendable as Attack only via getSpendableAttack, never by inflating the attack counter (D-24389). Paired with the flag-set sibling."
   }
 ]

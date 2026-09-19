@@ -54,6 +54,7 @@ import type {
   RulingExpectationKind,
   RulingZoneName,
   RulingCounterField,
+  RulingEconomyFlag,
 } from './effectRulings.validate.js';
 import type { RuleTriggerName } from './ruleHooks.types.js';
 import type {
@@ -700,6 +701,15 @@ function checkCityEqual(outcome: Outcome, expected: RulingExpectation): void {
   assert.deepStrictEqual(outcome.G.city, expected.cards, 'City row mismatch');
 }
 
+// why: a boolean `G.turnEconomy` flag is lazily materialized (absent when unset), so read
+// it as `=== true` — the same absent-is-false posture the economy helpers use. A perturbed
+// value still flips the assertion (the actual boolean never changes), so non-vacuity holds.
+/** Asserts a named boolean `G.turnEconomy` flag equals the expected value (absent reads as false). */
+function checkTurnEconomyFlag(outcome: Outcome, expected: RulingExpectation): void {
+  const flag = expected.economyFlag as RulingEconomyFlag;
+  assert.equal(outcome.G.turnEconomy[flag] === true, expected.value, `turnEconomy.${flag} flag mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
@@ -712,6 +722,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'escaped-pile-equal': checkEscapedPileEqual,
   'attached-bystanders-equal': checkAttachedBystandersEqual,
   'city-equal': checkCityEqual,
+  'turn-economy-flag': checkTurnEconomyFlag,
 };
 
 /**
@@ -748,6 +759,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'escaped-pile-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'attached-bystanders-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'city-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
+  'turn-economy-flag': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
 };
 
 /**
