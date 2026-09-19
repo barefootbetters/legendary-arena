@@ -35,7 +35,7 @@ source:
   - ../docs/ai/DESIGN-HOLLOW-EFFECT-DETECTION.md
   - ../docs/ai/DESIGN-EFFECT-MODEL-DECISION.md
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-10
+last-reviewed: 2026-09-19
 ---
 
 # Debug Effects
@@ -232,6 +232,12 @@ missing provenance row shows `unmarked` rather than a guessed attribution.
   a "froze after I played X" report already names its own cause via
   `effectProvenance`. Runtime traces are the server/engine-side complement — a
   full descriptor-level record rather than a projected outcome class.
+- **[Play Board](play-board.md).** For *seeing* an effect's client-side result
+  rather than tracing it: the `?fixture=…&play=1` dev route
+  ([Previewing a board state locally](play-board.md#preview-fixture))
+  loads a committed `UIState` snapshot into the play surface, so a
+  pending-choice **prompt** (e.g. `diving-block-wound` → Captain America's
+  Diving Block reveal/decline) can be verified without waiting for a live match.
 - **[Rule Execution Pipeline](rule-execution-pipeline.md).** The scheme /
   mastermind effect path; a `become-scheme-twist` escape fires
   `onSchemeTwistRevealed` through this pipeline, which a trace records as a
