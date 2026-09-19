@@ -644,6 +644,8 @@ function checkPendingQueueLength(outcome: Outcome, expected: RulingExpectation):
     queue = outcome.G.pendingKoHeroChoices;
   } else if (expected.queue === 'give-hq-hero') {
     queue = outcome.G.pendingGiveHqHeroChoices;
+  } else if (expected.queue === 'smash') {
+    queue = outcome.G.pendingSmashDiscards;
   } else {
     throw new Error(`No harness mapping for pending queue "${expected.queue}"; add a branch to checkPendingQueueLength.`);
   }
