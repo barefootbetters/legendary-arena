@@ -44,7 +44,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 
 | action | fires | used for |
 |---|---|---|
-| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park |
+| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park, capture-hq-hero |
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
@@ -65,6 +65,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 | `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |
 | `hand-size-override` | a player's `G.handSizeOverrides` next-hand size equals a value | `player`, `size` |
+| `villain-attached-heroes` | a villain's captured-hero list (`G.villainAttachedHeroes[id]`) equals an exact card list | `villainCardId`, `cards` |
 
 ## How to add a ruling
 
