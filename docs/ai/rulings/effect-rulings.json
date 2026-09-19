@@ -1499,5 +1499,37 @@
     },
     "expected": { "kind": "attached-bystanders-equal", "villainCardId": "co2e/masters-of-evil/baron-zemo#0", "cards": ["pile-bystander", "pile-bystander"] },
     "why": "The 1 + per-Avengers-HQ-Hero capture (count 3 here) is bounded by the Bystander supply: with only two Bystanders available exactly two attach and the loop stops (D-24334). Paired with the full-supply sibling that proves the base-plus-matching count."
+  },
+  {
+    "id": "hero-ko-wound-reward-kos-the-hand-wound",
+    "mechanic": "ko-wound-reward",
+    "decision": "D-24183",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/wolverine/healing-factor#0",
+        "effect": { "type": "ko-wound-reward", "rewardType": "draw", "magnitude": 1 },
+        "playerZones": { "0": { "hand": ["pile-wound", "core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "Healing Factor's KO-a-Wound reward KOs exactly one Wound from the player's hand to the KO pile before granting the draw reward; the co-played Wolverine (a valuable Hero) is never a KO target — the target is filtered to the Wound token, which is why this family could not reuse the KO-any-card keyword (D-24183). The draw reward is a clean no-op here (empty deck + discard)."
+  },
+  {
+    "id": "hero-ko-wound-reward-no-wound-spares-heroes",
+    "mechanic": "ko-wound-reward",
+    "decision": "D-24183",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/wolverine/healing-factor#0",
+        "effect": { "type": "ko-wound-reward", "rewardType": "draw", "magnitude": 1 },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "With no Wound in hand or discard the optional KO-a-Wound does nothing — nothing is KO'd (the valuable Hero is never KO'd) and no reward is granted (D-24183). Paired with the positive sibling that proves a Wound is KO'd when present."
   }
 ]

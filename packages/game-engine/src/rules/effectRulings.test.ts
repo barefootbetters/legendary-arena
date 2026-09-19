@@ -229,7 +229,7 @@ interface QueryCardHasClassSetup {
 interface FireHeroEffectSetup {
   playerID?: string;
   cardId: string;
-  effect: { type: string; magnitude?: number };
+  effect: { type: string; magnitude?: number; rewardType?: string };
   playerZones?: Record<string, ZoneOverride>;
   bystandersSupply?: number;
 }
@@ -451,9 +451,13 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
   // read ctx.random, so pass the full makeMockMoveContext. The effect is cast to the
   // executor's own descriptor parameter type so the harness needs no separate type import.
   const moveContext = makeMockMoveContext(G, { playerID });
+  // why: `rewardType` is carried only by keywords whose reward is a nested keyword
+  // (ko-wound-reward: KO a Wound, THEN grant this reward); it is undefined for the
+  // plain grants and passes through harmlessly.
   const effect = {
     type: setup.effect.type,
     magnitude: setup.effect.magnitude,
+    rewardType: setup.effect.rewardType,
   } as Parameters<typeof executeSingleEffect>[4];
   const booleanResult = executeSingleEffect(G, moveContext, playerID, setup.cardId as CardExtId, effect);
 
