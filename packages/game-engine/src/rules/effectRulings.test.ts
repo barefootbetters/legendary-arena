@@ -37,6 +37,7 @@ import { resolveScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
+import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -67,6 +68,7 @@ import type {
   PendingKoHeroChoice,
   PendingDiscardToPlay,
   PendingSmashDiscard,
+  PendingRevealTopDispose,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -268,6 +270,12 @@ interface ResolveSmashSetup {
   hand: string[];
   magnitude: number;
   resolve: { cardId: string } | { decline: true };
+}
+
+interface ResolveRevealTopDisposeSetup {
+  currentPlayer: string;
+  deck: string[];
+  resolve: { ownerPlayerID: string; cardId: string; disposition: 'discard' | 'top' };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -614,6 +622,35 @@ function runResolveSmash(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveRevealTopDispose` move against a parked reveal-top choice —
+ * either the discard path (revealed top → owner discard) or the keep-on-top path.
+ *
+ * @param rawSetup - The ruling's resolve-reveal-top-dispose setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveRevealTopDispose(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveRevealTopDisposeSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: setup.deck as CardExtId[] }) };
+  const pending: PendingRevealTopDispose = {
+    choiceType: 'reveal-top-dispose',
+    playerID: setup.currentPlayer,
+    revealedTops: [{ ownerPlayerID: setup.resolve.ownerPlayerID, cardId: setup.resolve.cardId as CardExtId }],
+  };
+  G.pendingRevealTopDispose = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveRevealTopDispose(moveContext, {
+    ownerPlayerID: setup.resolve.ownerPlayerID,
+    cardId: setup.resolve.cardId as CardExtId,
+    disposition: setup.resolve.disposition,
+  });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -630,6 +667,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-ko-hero': runResolveKoHero,
   'resolve-discard-to-play': runResolveDiscardToPlay,
   'resolve-smash': runResolveSmash,
+  'resolve-reveal-top-dispose': runResolveRevealTopDispose,
 };
 
 /**

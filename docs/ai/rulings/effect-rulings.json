@@ -1701,5 +1701,35 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
     "why": "Declining the Smash grants zero Attack — 'you MAY discard' makes declining a legal, no-cost choice, so no discard means no payoff (D-24492). Paired with the discard sibling that proves the +N Attack fires when the player does discard."
+  },
+  {
+    "id": "resolve-reveal-top-dispose-discard-moves-to-discard",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "resolve-reveal-top-dispose",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "ownerPlayerID": "0", "cardId": "core/wolverine/wolverine#0", "disposition": "discard" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked reveal-top choice with disposition 'discard' moves the revealed deck-top card from its owner's deck to that owner's discard pile (D-24521); the disposition applies only while the card is still the live deck top."
+  },
+  {
+    "id": "resolve-reveal-top-dispose-keep-leaves-deck-unchanged",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "resolve-reveal-top-dispose",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "ownerPlayerID": "0", "cardId": "core/wolverine/wolverine#0", "disposition": "top" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
+    "why": "Resolving with disposition 'top' ('put it back') is a no-op on the deck — the reveal never removed the card, so it stays face-up on top and the deck is unchanged (D-24521). Paired with the discard sibling that proves the card moves when discarded."
   }
 ]
