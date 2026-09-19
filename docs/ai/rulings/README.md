@@ -55,6 +55,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-discard-to-play` | `resolveDiscardToPlay` move | the discard-to-play cost payment |
 | `resolve-smash` | `resolveSmashDiscard` move | the Smash discard-for-attack choice (discard / decline) |
 | `resolve-reveal-top-dispose` | `resolveRevealTopDispose` move | the reveal-top discard-or-keep choice (discard / top) |
+| `resolve-give-hq-hero` | `resolveGiveHqHeroChoice` move | the give-HQ-Hero choice (gain / decline) |
 
 ### Current expectation kinds
 

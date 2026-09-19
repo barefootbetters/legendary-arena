@@ -1792,5 +1792,37 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 3 },
     "why": "A dual-class Hero in hand contributes BOTH its printed colors to 'color of Hero you have' (D-24529 hand ∪ play scope × D-24523 dual-class): Avengers Assemble! (Instinct) in play plus Heir to Legends (Strength + Ranged) unplayed in hand = 3 distinct colors → +3 Recruit."
+  },
+  {
+    "id": "resolve-give-hq-hero-gains-chosen-to-discard",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "resolve-give-hq-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "heroDeck": [],
+        "resolve": { "cardId": "core/avengers/iron-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/avengers/iron-man#0"] },
+    "why": "Resolving a parked give-HQ-Hero choice moves the CHOSEN HQ Hero (Iron Man) into the chooser's DISCARD pile, never the victory pile (D-24327 gain-routes-to-discard); the untaken Captain America stays in the HQ (D-24343 / WP-532)."
+  },
+  {
+    "id": "resolve-give-hq-hero-decline-mandatory-is-noop",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "resolve-give-hq-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "heroDeck": [],
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "Paibok's give-HQ-Hero is MANDATORY (not an optional 'may recruit' tactic), so a decline is a no-op — nothing is gained and the discard stays empty; the player must still pick (D-24343; the decline arm is honored only for optional entries per D-24509). Paired with the gain sibling that proves a chosen Hero lands in discard."
   }
 ]

@@ -38,6 +38,7 @@ import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
+import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -69,6 +70,7 @@ import type {
   PendingDiscardToPlay,
   PendingSmashDiscard,
   PendingRevealTopDispose,
+  PendingGiveHqHeroChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -276,6 +278,13 @@ interface ResolveRevealTopDisposeSetup {
   currentPlayer: string;
   deck: string[];
   resolve: { ownerPlayerID: string; cardId: string; disposition: 'discard' | 'top' };
+}
+
+interface ResolveGiveHqHeroSetup {
+  currentPlayer: string;
+  hq: (string | null)[];
+  heroDeck?: string[];
+  resolve: { cardId: string } | { decline: true };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -657,6 +666,37 @@ function runResolveRevealTopDispose(rawSetup: Record<string, unknown>): Outcome 
   return { G };
 }
 
+/**
+ * Fires the real `resolveGiveHqHeroChoice` move against a parked give-HQ-Hero choice —
+ * either the gain path (chosen HQ Hero → chooser discard) or the decline path.
+ *
+ * @param rawSetup - The ruling's resolve-give-hq-hero setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveGiveHqHero(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveGiveHqHeroSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({}) };
+  G.hq = setup.hq as LegendaryGameState['hq'];
+  if (setup.heroDeck !== undefined) {
+    G.heroDeck = setup.heroDeck as CardExtId[];
+  }
+  const pending: PendingGiveHqHeroChoice = { choiceType: 'give-hq-hero', playerID: setup.currentPlayer };
+  G.pendingGiveHqHeroChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  // why: the resolve payload is a decline flag XOR a { cardId } gain request (the move's
+  // own arg union) — branch so the harness exercises both the gain and decline paths.
+  if ('decline' in setup.resolve) {
+    resolveGiveHqHeroChoice(moveContext, { decline: true });
+  } else {
+    resolveGiveHqHeroChoice(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+  }
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -674,6 +714,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-discard-to-play': runResolveDiscardToPlay,
   'resolve-smash': runResolveSmash,
   'resolve-reveal-top-dispose': runResolveRevealTopDispose,
+  'resolve-give-hq-hero': runResolveGiveHqHero,
 };
 
 /**
