@@ -711,8 +711,16 @@ export function executeHeroEffects(
       if (isCountableConditionalClause) {
         recordConditionalClause(G, playerID, { assembled: false });
       }
+      // why: WP-702 live-verify follow-up — a card with MORE THAN ONE ability hook (e.g. Gambit's
+      // Hypnotic Charm: an unconditional reveal-top clause PLUS an `[hc:instinct]`-gated each-other
+      // clause) can have one clause fire while another is gated. The bare "ability did not activate"
+      // then reads as if the WHOLE card fizzled — the exact confusion Jeff flagged from the live log,
+      // where the own-deck reveal clearly resolved yet this line sat between its two entries. Name it
+      // as ONE of the card's abilities when the card carries multiple hooks; keep the singular wording
+      // for a single-ability card (where the whole card's ability really was the gated one).
+      const abilityPhrase = hooks.length > 1 ? 'did not activate one of its abilities' : 'ability did not activate';
       pushLog(G,
-        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability did not activate — ${reason}.`,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.`,
         'blocked',
         cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );
