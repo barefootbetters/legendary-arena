@@ -44,7 +44,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 
 | action | fires | used for |
 |---|---|---|
-| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park, capture-hq-hero, hero-deck-top-to-escape, capture-bystander |
+| `fire-villain-effect` | `executeVillainAbilities` with a single injected hook | reveal-or-wound, ko-wounds-current-hand-and-discard, the Melter ko-cullable park, capture-hq-hero, hero-deck-top-to-escape, capture-bystander, give-hq-hero-by-trait-to-current |
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |

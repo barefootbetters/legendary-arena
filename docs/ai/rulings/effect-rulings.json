@@ -1276,5 +1276,49 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": [] },
     "why": "On Escape the auto-award is suppressed: the immediate award to the player's Victory pile happens ONLY on Fight (the post-award fire site), so an escape leaves the captured Bystander attached and the Victory pile empty — the villain got away with it (D-18603, contrast the onFight capture-bystander that awards to Victory). Paired with the sibling that proves the Bystander was attached."
+  },
+  {
+    "id": "give-hq-hero-by-trait-gifts-matching-hero-to-current-discard",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/avengers/iron-man#0"] },
+    "why": "Ultron's Fight (the KO-or-gift double-choice, collapsed to the co-op-dominant gift) gives the [hc:tech] HQ Hero to the CURRENT player's discard, never the victory pile (D-24327 gain-routes-to-discard): Iron Man (Tech) is gifted while Captain America (Strength) is left in the HQ — the trait predicate selects the recipient card (D-24335)."
+  },
+  {
+    "id": "give-hq-hero-by-trait-no-matching-hero-is-noop",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/captain-america#0", "core/hulk/hulk#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "When no HQ Hero matches the trait predicate ([hc:tech]) the gift is a reachable no-op — nothing is removed from the HQ and the current player's discard stays empty (D-24335). Paired with the positive sibling that proves a matching Hero is gifted."
   }
 ]
