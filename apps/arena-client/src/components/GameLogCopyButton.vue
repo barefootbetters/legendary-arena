@@ -157,13 +157,15 @@ export default defineComponent({
 </template>
 
 <style scoped>
-/* why: mirrors the DiagnosticExportButton fixed-position pill, stacked directly
-   above the "Download game log" button (bottom: 72px vs its 40px vs the
-   diagnostics button's 8px) so the endgame copy/download/diagnostics affordances
-   sit together in the bottom-left corner. */
+/* why: mirrors the DiagnosticExportButton fixed-position pill, at the top of the
+   SHARED bottom-left fixed-pill stack (each left: 8px, z-index: 9999):
+   DiagnosticExportButton 8px, ViewLoadoutButton 40px (while `?match=`),
+   "Download game log" 72px, this "Copy game log" 104px. (Was 72px, which after
+   the WP-707 collision fix moved the download button up would have overlapped
+   it — hence 104px.) Any new bottom-left pill MUST take the next free slot. */
 .game-log-copy-button {
   position: fixed;
-  bottom: 72px;
+  bottom: 104px;
   left: 8px;
   /* why: a fixed min-width keeps the pill from resizing as the label swaps
      between "Copy game log", "Copied!", and "Copy failed". */
