@@ -111,6 +111,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `villain-attached-heroes` — the heroes captured onto a named villain
  *   (`G.villainAttachedHeroes[villainCardId]`) equal an exact card list.
  * - `escaped-pile-equal` — `G.escapedPile` equals an exact card list.
+ * - `attached-bystanders-equal` — the bystanders attached to a named card
+ *   (`G.attachedBystanders[villainCardId]`) equal an exact card list.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -121,7 +123,8 @@ export type RulingExpectationKind =
   | 'counter-value'
   | 'hand-size-override'
   | 'villain-attached-heroes'
-  | 'escaped-pile-equal';
+  | 'escaped-pile-equal'
+  | 'attached-bystanders-equal';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -137,6 +140,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'hand-size-override',
   'villain-attached-heroes',
   'escaped-pile-equal',
+  'attached-bystanders-equal',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -204,7 +208,7 @@ export interface RulingExpectation {
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -222,7 +226,7 @@ export interface RulingExpectation {
   count?: number;
   /** `hand-size-override`: the exact expected `G.handSizeOverrides[player]` value. */
   size?: number;
-  /** `villain-attached-heroes`: the villain ext_id whose captured-hero list is asserted. */
+  /** `villain-attached-heroes` / `attached-bystanders-equal`: the card ext_id whose attached-card list is asserted. */
   villainCardId?: string;
 }
 
@@ -346,6 +350,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
     case 'escaped-pile-equal':
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has an escaped-pile-equal expectation whose "cards" is not an array of card ext_id strings.`;
+      }
+      return null;
+    case 'attached-bystanders-equal':
+      if (!isNonEmptyString(expected.villainCardId)) {
+        return `Ruling "${rulingId}" has an attached-bystanders-equal expectation with no "villainCardId"; name the card whose attached-bystander list is asserted.`;
+      }
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has an attached-bystanders-equal expectation whose "cards" is not an array of bystander ext_id strings.`;
       }
       return null;
     default:

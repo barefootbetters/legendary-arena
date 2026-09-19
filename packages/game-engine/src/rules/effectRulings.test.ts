@@ -656,6 +656,13 @@ function checkEscapedPileEqual(outcome: Outcome, expected: RulingExpectation): v
   assert.deepStrictEqual(outcome.G.escapedPile, expected.cards, 'escaped pile mismatch');
 }
 
+/** Asserts a named card's attached-bystander list (`G.attachedBystanders[id]`) equals the expected cards. */
+function checkAttachedBystandersEqual(outcome: Outcome, expected: RulingExpectation): void {
+  const villainCardId = expected.villainCardId as string;
+  const actual = outcome.G.attachedBystanders[villainCardId] ?? [];
+  assert.deepStrictEqual(actual, expected.cards, `attachedBystanders.${villainCardId} mismatch`);
+}
+
 const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, expected: RulingExpectation) => void> = {
   'zone-cards-equal': checkZoneCardsEqual,
   'ko-pile-equal': checkKoPileEqual,
@@ -666,6 +673,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'hand-size-override': checkHandSizeOverride,
   'villain-attached-heroes': checkVillainAttachedHeroes,
   'escaped-pile-equal': checkEscapedPileEqual,
+  'attached-bystanders-equal': checkAttachedBystandersEqual,
 };
 
 /**
@@ -700,6 +708,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'hand-size-override': (expected) => ({ ...expected, size: (expected.size ?? 0) + 1 }),
   'villain-attached-heroes': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'escaped-pile-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
+  'attached-bystanders-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
 };
 
 /**
