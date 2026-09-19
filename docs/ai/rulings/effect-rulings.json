@@ -1531,5 +1531,47 @@
     },
     "expected": { "kind": "ko-pile-equal", "cards": [] },
     "why": "With no Wound in hand or discard the optional KO-a-Wound does nothing — nothing is KO'd (the valuable Hero is never KO'd) and no reward is granted (D-24183). Paired with the positive sibling that proves a Wound is KO'd when present."
+  },
+  {
+    "id": "hero-investigate-draws-first-matching-from-top",
+    "mechanic": "investigate",
+    "decision": "D-24373",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "noir/angel-noir/multitalented#0",
+        "effect": { "type": "investigate", "magnitude": 1, "investigateLookCount": 2, "investigateCriteria": [{ "kind": "hero-class", "heroClass": "covert" }] },
+        "playerZones": { "0": { "deck": ["core/hulk/hulk#0", "core/spider-man/spider-man#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "Investigate looks at the top 2 deck cards (Hulk, Spider-Man) and draws the FIRST that matches the static criterion ([hc:covert]): Hulk (Strength) is skipped and Spider-Man (Covert) is drawn to hand — deterministic first-match in look order, no player choice (D-24373, the WP-564 static-criterion subset)."
+  },
+  {
+    "id": "hero-investigate-non-drawn-looked-cards-go-to-bottom",
+    "mechanic": "investigate",
+    "decision": "D-24373",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "noir/angel-noir/multitalented#0",
+        "effect": { "type": "investigate", "magnitude": 1, "investigateLookCount": 2, "investigateCriteria": [{ "kind": "hero-class", "heroClass": "covert" }] },
+        "playerZones": { "0": { "deck": ["core/hulk/hulk#0", "core/spider-man/spider-man#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/avengers/iron-man#0", "core/hulk/hulk#0"] },
+    "why": "After drawing the matched Spider-Man, the non-selected looked-at card (Hulk) goes to the BOTTOM of the deck in look order, while the un-looked-at third card (Iron Man) is now on top: deck becomes [Iron Man, Hulk] (D-24373). Paired with the sibling that proves the matching card was drawn."
   }
 ]

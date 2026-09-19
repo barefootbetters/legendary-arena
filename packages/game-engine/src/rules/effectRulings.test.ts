@@ -229,8 +229,9 @@ interface QueryCardHasClassSetup {
 interface FireHeroEffectSetup {
   playerID?: string;
   cardId: string;
-  effect: { type: string; magnitude?: number; rewardType?: string };
+  effect: { type: string; magnitude?: number; rewardType?: string; investigateCriteria?: unknown[]; investigateLookCount?: number };
   playerZones?: Record<string, ZoneOverride>;
+  cardTraits?: Record<string, TraitOverride>;
   bystandersSupply?: number;
 }
 
@@ -441,6 +442,12 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
   const zoneOverride = setup.playerZones?.[playerID] ?? {};
   G.playerZones = { [playerID]: makePlayerZones(zoneOverride as Partial<PlayerZones>) };
 
+  // why: seed cardTraits only when the ruling needs it (an investigate criterion reads
+  // a looked-at card's printed team / hero-class from G.cardTraits). Absent = untouched.
+  if (setup.cardTraits !== undefined) {
+    G.cardTraits = setup.cardTraits as LegendaryGameState['cardTraits'];
+  }
+
   // why: seed the Bystander supply only when the ruling needs it (a rescue effect), so
   // rulings that don't touch piles keep the base setup unchanged. Default absent = untouched.
   if (setup.bystandersSupply !== undefined) {
@@ -458,6 +465,8 @@ function runFireHeroEffect(rawSetup: Record<string, unknown>): Outcome {
     type: setup.effect.type,
     magnitude: setup.effect.magnitude,
     rewardType: setup.effect.rewardType,
+    investigateCriteria: setup.effect.investigateCriteria,
+    investigateLookCount: setup.effect.investigateLookCount,
   } as Parameters<typeof executeSingleEffect>[4];
   const booleanResult = executeSingleEffect(G, moveContext, playerID, setup.cardId as CardExtId, effect);
 
