@@ -1637,5 +1637,37 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "smash", "length": 0 },
     "why": "With no other card in hand to discard there is nothing to Smash for, so no choice parks and no Attack is granted — a reachable no-op (D-24492). Paired with the sibling that proves the choice parks when a discardable card exists."
+  },
+  {
+    "id": "reveal-top-dispose-parks-a-disposition-choice",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "cvwr/tigra/supernatural-senses#0",
+        "effect": { "type": "reveal-top-dispose" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "reveal-top-dispose", "length": 1 },
+    "why": "'Look at the top card of your deck. Discard it or put it back.' snapshots the revealed top and parks one PendingRevealTopDispose for the active player — the discard/keep disposition happens at resolve time, not at the fire site (D-24521, Tigra's Supernatural Senses)."
+  },
+  {
+    "id": "reveal-top-dispose-empty-deck-parks-nothing",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "cvwr/tigra/supernatural-senses#0",
+        "effect": { "type": "reveal-top-dispose" },
+        "playerZones": { "0": { "deck": [], "discard": [] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "reveal-top-dispose", "length": 0 },
+    "why": "An empty deck AND discard means nothing can be revealed on top (the reveal-reshuffle finds no cards), so no choice parks — a reachable no-op (D-24521). Paired with the sibling that proves the choice parks when the deck has a card."
   }
 ]
