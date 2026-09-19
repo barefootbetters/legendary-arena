@@ -68,6 +68,8 @@
  *   a parked put-a-card-from-the-HQ-on-the-deck-bottom choice.
  * - `resolve-victory-pile-card-pick` — call the `resolveVictoryPileCardPick` move on
  *   a parked claim-attack-from-a-victory-pile-villain choice.
+ * - `resolve-ko-discard` — call the `resolveKoDiscardChoice` move on a parked
+ *   KO-up-to-N-from-your-discard choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -85,7 +87,8 @@ export type RulingScenarioAction =
   | 'resolve-return-zero-cost-discard'
   | 'resolve-do-over'
   | 'resolve-optional-put-bottom-hq'
-  | 'resolve-victory-pile-card-pick';
+  | 'resolve-victory-pile-card-pick'
+  | 'resolve-ko-discard';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -108,6 +111,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-do-over',
   'resolve-optional-put-bottom-hq',
   'resolve-victory-pile-card-pick',
+  'resolve-ko-discard',
 ] as const;
 
 // ---------------------------------------------------------------------------
