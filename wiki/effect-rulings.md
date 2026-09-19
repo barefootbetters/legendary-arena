@@ -24,7 +24,7 @@ source:
   - ../docs/ai/execution-checklists/EC-741-effect-rulings-corpus.checklist.md
   - ../docs/ai/DECISIONS.md
   - ../wiki/card-effect-system.md
-last-reviewed: 2026-09-17
+last-reviewed: 2026-09-19
 ---
 
 # Effect Rulings
@@ -42,17 +42,23 @@ is not owned, but the accumulated *analytical work* — the vocabulary decisions
 the messy edge-case rulings — is what is genuinely expensive to reproduce. It is
 the one real moat.
 
-> **Status: shipped (first slice).** The corpus exists and runs — **WP-704 /
-> EC-741 / D-24524 (Active, 2026-09-17, PR #2092)**. The first slice landed the
-> schema, the runtime validator, the executing harness, the per-ruling
-> non-vacuity self-test, and a **14-ruling seed set** across D-24281 / D-24329 /
-> D-24413 / D-24442 / D-24523; the engine suite runs them green (3558 → 3592/0,
-> sentinels byte-identical). What remains is the *grind* of filling the corpus —
-> a ruling captured per edge case as future WPs decide them (see
+> **Status: shipped and actively growing.** The corpus exists and runs — **WP-704
+> / EC-741 / D-24524 (Active, 2026-09-17, PR #2092)** landed the schema, the
+> runtime validator, the executing harness, the per-ruling non-vacuity self-test,
+> and a 14-ruling seed set. Since then it has grown one edge case at a time to
+> **~94 rulings** across a closed vocabulary of **9 scenario actions** and **12
+> expectation kinds** (count as of 2026-09-19). Coverage now spans the full
+> villain-effect primitive surface (reveal-or-wound, ko-hero, gain-wound,
+> capture-hq-hero, hero-deck-top-to-escape, capture-bystander, scry-ko-own-deck,
+> give-hq-hero, swap-two-city-villains, the trait-count KOs, …), a growing
+> hero-effect set (attack/recruit/draw/rescue/ko grants, ko-wound-reward,
+> investigate, recruit-as-attack, smash, reveal-top-dispose), and the
+> scheme-twist / mastermind-strike rule-hook counters. The *grind* of filling it
+> continues — a ruling captured per edge case as WPs decide them (see
 > [Open Questions](#open-questions)). Edge-case rulings still also live as
 > `DECISIONS.md` prose, the [Card Effect System](card-effect-system.md) §Edge
 > Cases, inline `// why:` comments, and the replay hash-oracle fixtures; the
-> corpus is now the single *executable* home that keeps them from drifting.
+> corpus is the single *executable* home that keeps them from drifting.
 
 ## Mechanics
 
@@ -217,17 +223,31 @@ nothing about them lives in `packages/lagn-spec`.
   slice: schema + runtime validator + harness + per-ruling non-vacuity self-test
   + a 14-ruling seed set. Test corpus only — engine suite 3558 → 3592/0,
   `finalStateHash` / `PRE_WP080` sentinels byte-identical.
+- **2026-09-18 → 2026-09-19** — **Grown one edge case at a time** to ~94 rulings
+  (EC-741 series, PRs #2113 – #2150). Added the HQ/City board tier
+  (capture-hq-hero, hero-deck-top-to-escape, capture-bystander Fight/Escape,
+  give-hq-hero-by-trait / -each-player, swap-two-city-villains, the trait-count
+  KOs) and pivoted into hero effects (ko-wound-reward, investigate,
+  recruit-as-attack, smash, reveal-top-dispose). The closed vocabulary grew
+  alongside — to 9 scenario actions and 12 expectation kinds — each new member
+  landing with its harness mapping, its perturber, and the rulings that need it.
+  Test corpus only throughout; no production handler changed.
 
 ## Open Questions
 
-- **Seed set shipped.** The first slice landed 14 rulings across D-24281
-  (reveal-or-wound counts hand ∪ in-play), D-24329 (KO-own-Wounds beneficial),
-  D-24413 (Melter KO-or-keep), D-24442 (`optional-ko-reward` source widened to
-  `inPlay`), and D-24523 (dual-class card counts as either printed class).
+- **Seed set shipped, then grown.** The first slice landed 14 rulings; the corpus
+  is now at ~94 across the full villain-effect surface plus a growing hero-effect
+  set (see [History](#history)). The villain-effect primitives that remain are the
+  deliberate executor no-ops (`gain-attached-hero`, `become-scheme-twist`,
+  `play-villain-deck-cards`) whose real work fires at other sites — covering those
+  needs a new scenario action that drives the reveal / escape / fight pipeline,
+  not the direct effect runner.
 - **Filling the corpus is the ongoing grind.** Value is proportional to
   completeness: a dozen rulings is a gesture, several hundred covering the messy
-  interactions is the moat. The first slice seeds it; a ruling captured per
-  edge case as future WPs decide them is the enduring work.
+  interactions is the moat. ~94 rulings in, the enduring work is a ruling captured
+  per edge case as WPs decide them — plus the *resolve* side of the parked choices
+  (proving the disposition a `smash` / `reveal-top-dispose` / `give-hq-hero` choice
+  actually applies once the player picks).
 - **A dashboard view** of the rulings is a possible later follow-on, explicitly
   out of scope for WP-704.
 
