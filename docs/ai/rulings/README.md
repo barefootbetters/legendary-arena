@@ -48,7 +48,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
-| `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/draw/rescue/ko), ko-wound-reward, investigate, recruit-as-attack |
+| `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/draw/rescue/ko), ko-wound-reward, investigate, recruit-as-attack, smash |
 | `fire-rule-hook` | `executeRuleHooks` + `applyRuleEffects` for one trigger | scheme-twist / mastermind-strike pipeline (counters + messages) |
 | `resolve-scry-ko` | `resolveScryKoChoice` move | the Doombot scry-KO pick |
 | `resolve-ko-hero` | `resolveKoHeroChoice` move | the KO-a-Hero pick |
@@ -60,7 +60,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 |---|---|---|
 | `zone-cards-equal` | a player's zone equals an exact card list | `player`, `zone`, `cards` |
 | `ko-pile-equal` | `G.ko` equals an exact card list | `cards` |
-| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko` / `ko-hero` / `give-hq-hero`) | `queue`, `length` |
+| `pending-queue-length` | a pending queue has an exact length (`melter` / `optional-ko-reward` / `scry-ko` / `ko-hero` / `give-hq-hero` / `smash`) | `queue`, `length` |
 | `boolean-result` | the query's boolean return | `value` |
 | `turn-economy-value` | a `G.turnEconomy` field equals an exact amount | `economyField`, `amount` |
 | `counter-value` | a `G.counters` key equals an exact count (absent = 0) | `counter`, `count` |

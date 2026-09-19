@@ -1605,5 +1605,37 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
     "why": "recruit-as-attack is a permission flag, not a grant: it moves no resource total, so G.turnEconomy.attack stays 0 even though the conversion is 'applied' (WP-434) — the Recruit is spendable as Attack only via getSpendableAttack, never by inflating the attack counter (D-24389). Paired with the flag-set sibling."
+  },
+  {
+    "id": "hero-smash-parks-a-discard-choice-with-a-card-to-discard",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "wwhk/bruce-banner/savage-hulk-unleashed#0",
+        "effect": { "type": "smash", "magnitude": 4 },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "smash", "length": 1 },
+    "why": "Smash ('discard another card from your hand; if you do, +4 Attack') parks one PendingSmashDiscard when the hand holds another card to discard — the +N Attack is granted at resolve time only if the player discards, so the fire site parks the optional choice rather than granting immediately (D-24492)."
+  },
+  {
+    "id": "hero-smash-empty-hand-parks-nothing",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "wwhk/bruce-banner/savage-hulk-unleashed#0",
+        "effect": { "type": "smash", "magnitude": 4 },
+        "playerZones": { "0": { "hand": [] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "smash", "length": 0 },
+    "why": "With no other card in hand to discard there is nothing to Smash for, so no choice parks and no Attack is granted — a reachable no-op (D-24492). Paired with the sibling that proves the choice parks when a discardable card exists."
   }
 ]
