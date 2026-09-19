@@ -1669,5 +1669,37 @@
     },
     "expected": { "kind": "pending-queue-length", "queue": "reveal-top-dispose", "length": 0 },
     "why": "An empty deck AND discard means nothing can be revealed on top (the reveal-reshuffle finds no cards), so no choice parks — a reachable no-op (D-24521). Paired with the sibling that proves the choice parks when the deck has a card."
+  },
+  {
+    "id": "resolve-smash-discard-grants-attack",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "resolve-smash",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0"],
+        "magnitude": 4,
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 4 },
+    "why": "Resolving a parked Smash choice by discarding a hand card grants the entry's +N Attack (4) — the discard is the paid cost and the Attack is the payoff, granted only AFTER the discard actually removes the card (D-24492, 'if you do, +N Attack')."
+  },
+  {
+    "id": "resolve-smash-decline-grants-no-attack",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "resolve-smash",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0"],
+        "magnitude": 4,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "Declining the Smash grants zero Attack — 'you MAY discard' makes declining a legal, no-cost choice, so no discard means no payoff (D-24492). Paired with the discard sibling that proves the +N Attack fires when the player does discard."
   }
 ]

@@ -53,6 +53,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-scry-ko` | `resolveScryKoChoice` move | the Doombot scry-KO pick |
 | `resolve-ko-hero` | `resolveKoHeroChoice` move | the KO-a-Hero pick |
 | `resolve-discard-to-play` | `resolveDiscardToPlay` move | the discard-to-play cost payment |
+| `resolve-smash` | `resolveSmashDiscard` move | the Smash discard-for-attack choice (discard / decline) |
 
 ### Current expectation kinds
 
