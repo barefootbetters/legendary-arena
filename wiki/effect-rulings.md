@@ -56,6 +56,28 @@ the one real moat.
 
 ## Mechanics
 
+### Where the corpus lives (full paths)
+
+All four files live in the **engine repo** (this repo), on `main`. The
+repo-relative path is the durable identifier; the absolute path is that path
+under whichever checkout you have on `main` (the canonical pCloud checkout is
+`C:\pcloud\BB\DEV\legendary-arena\`).
+
+| File | Repo-relative path (canonical) |
+|---|---|
+| The corpus | `docs/ai/rulings/effect-rulings.json` |
+| Authoring guide (actions + kinds) | `docs/ai/rulings/README.md` |
+| Runtime validator + closed vocabulary | `packages/game-engine/src/rules/effectRulings.validate.ts` |
+| Executing harness (`node:test`) | `packages/game-engine/src/rules/effectRulings.test.ts` |
+
+For example, the corpus in the canonical pCloud checkout on `main` is
+`C:\pcloud\BB\DEV\legendary-arena\docs\ai\rulings\effect-rulings.json`. If a
+checkout does not show `docs/ai/rulings/`, it is not on `main` (or is behind) —
+`git checkout main && git pull` brings the folder in. The harness resolves the
+corpus path from its own location via `import.meta.url` (never `process.cwd()`),
+so `pnpm --filter @legendary-arena/game-engine test` reads the same JSON
+regardless of where the run is launched.
+
 ### The entry shape
 
 Each ruling is one JSON object:
