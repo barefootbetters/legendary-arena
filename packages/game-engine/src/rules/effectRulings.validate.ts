@@ -264,14 +264,18 @@ export interface RulingExpectation {
  * One executable effect ruling.
  *
  * `id` is unique + kebab-case; `mechanic` names the effect under test; `decision`
- * (optional) cites the `D-` that settled it; `why` is MANDATORY and non-empty (a
- * ruling without rationale is a fixture, not a ruling); `scenario` + `expected` are the
- * closed-vocabulary action and assertion the harness runs.
+ * (optional) cites the `D-` that settled it; `rulesRef` (optional) cross-references the
+ * player-facing rulebook (`docs/legendary-universal-rules-v23.md`) — e.g.
+ * `"universal-rules-v23 §Smash"` — the same convention the engine's `// why:` comments
+ * use; `why` is MANDATORY and non-empty (a ruling without rationale is a fixture, not a
+ * ruling); `scenario` + `expected` are the closed-vocabulary action and assertion the
+ * harness runs.
  */
 export interface Ruling {
   id: string;
   mechanic: string;
   decision?: string;
+  rulesRef?: string;
   scenario: RulingScenario;
   expected: RulingExpectation;
   why: string;
@@ -435,6 +439,12 @@ export function rulingInvalidReason(value: unknown): string | null {
   }
   if (value.decision !== undefined && (typeof value.decision !== 'string' || !/^D-\d+$/.test(value.decision))) {
     return `Ruling "${id}" has a "decision" that is not a D-reference like "D-24281".`;
+  }
+  // why: rulesRef cross-references the player-facing rulebook (docs/legendary-universal-rules-v23.md)
+  // and, when present, must anchor to that doc — the `universal-rules-vNN §<section>` convention the
+  // engine's `// why:` comments already use — so a citation cannot silently point nowhere.
+  if (value.rulesRef !== undefined && (typeof value.rulesRef !== 'string' || !/^universal-rules-v\d+ §.+/.test(value.rulesRef))) {
+    return `Ruling "${id}" has a "rulesRef" that is not a rulebook citation like "universal-rules-v23 §Smash".`;
   }
   if (!isNonEmptyString(value.why)) {
     return `Ruling "${id}" is missing a non-empty "why"; a ruling without rationale is a fixture, not a ruling.`;

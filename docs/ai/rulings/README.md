@@ -23,6 +23,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
   "id": "reveal-or-wound-match-in-play-spared",
   "mechanic": "reveal-or-wound",
   "decision": "D-24281",
+  "rulesRef": "universal-rules-v23 §Reveal",
   "scenario": { "action": "<closed action verb>", "setup": { "...": "per-action fields" } },
   "expected": { "kind": "<closed expectation verb>", "...": "the comparable value(s)" },
   "why": "Non-empty prose citing the decision's actual clause."
@@ -33,6 +34,13 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 - `mechanic` — the effect under test (free-form label).
 - `decision` — optional, but every seed ruling cites the `D-` that settled it
   (`D-NNNNN`).
+- `rulesRef` — optional cross-reference to the player-facing rulebook
+  (`docs/legendary-universal-rules-v23.md`), in the `universal-rules-vNN §<section>`
+  convention the engine's `// why:` comments already use (e.g.
+  `"universal-rules-v23 §Smash"`). When present the validator requires that shape, so a
+  citation cannot silently point nowhere. Populate it going forward where the ruling
+  interprets a named rulebook keyword/section; older rulings are backfilled
+  opportunistically.
 - `scenario.action` — a member of the **closed** `RULING_SCENARIO_ACTIONS` union; each
   maps to one harness runner that builds a minimal `G` and fires one real handler.
 - `expected.kind` — a member of the **closed** `RULING_EXPECTATION_KINDS` union; each
