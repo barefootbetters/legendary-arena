@@ -1858,5 +1858,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": [] },
     "why": "A non-0-cost discard card (Wolverine, cost 3) is not a legal target for the 0-cost-return ability, so the resolve is a no-op — nothing enters the hand (D-24139, the 0-cost eligibility filter). Paired with the sibling that proves a 0-cost card returns."
+  },
+  {
+    "id": "resolve-do-over-accept-discards-hand-and-draws-four",
+    "mechanic": "do-over",
+    "decision": "D-24498",
+    "scenario": {
+      "action": "resolve-do-over",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0", "starting-shield-agent"],
+        "resolve": { "accept": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0"] },
+    "why": "Accepting the Do-Over discards the ENTIRE current hand and then draws a FIXED 4 cards (not one-per-discard): the two-card hand is discarded and the top four deck cards become the new hand (D-24498, Deadpool's 'Hey, Can I Get a Do-Over?')."
+  },
+  {
+    "id": "resolve-do-over-decline-leaves-hand-unchanged",
+    "mechanic": "do-over",
+    "decision": "D-24498",
+    "scenario": {
+      "action": "resolve-do-over",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0", "starting-shield-agent"],
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
+    "why": "Declining the Do-Over ('you may discard the rest of your hand') is a no-op — nothing is discarded and nothing is drawn, so the hand is unchanged (D-24498). Paired with the accept sibling that proves the discard-and-redraw fires."
   }
 ]

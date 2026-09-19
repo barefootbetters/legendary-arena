@@ -40,6 +40,7 @@ import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
 import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
+import { resolveDoOver } from '../moves/doOver.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -73,6 +74,7 @@ import type {
   PendingRevealTopDispose,
   PendingGiveHqHeroChoice,
   PendingReturnZeroCostDiscard,
+  PendingDoOver,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -295,6 +297,13 @@ interface ResolveReturnZeroCostDiscardSetup {
   cardStats: Record<string, number>;
   sourceCardId: string;
   resolve: { cardId: string };
+}
+
+interface ResolveDoOverSetup {
+  currentPlayer: string;
+  hand: string[];
+  deck: string[];
+  resolve: { accept: true } | { decline: true };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -736,6 +745,36 @@ function runResolveReturnZeroCostDiscard(rawSetup: Record<string, unknown>): Out
   return { G };
 }
 
+/**
+ * Fires the real `resolveDoOver` move against a parked Do-Over choice — accept
+ * (discard the whole hand, draw a fixed 4) or decline (no-op).
+ *
+ * @param rawSetup - The ruling's resolve-do-over setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveDoOver(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveDoOverSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = {
+    [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[], deck: setup.deck as CardExtId[] }),
+  };
+  const pending: PendingDoOver = { playerID: setup.currentPlayer };
+  G.pendingDoOverChoices = [pending];
+
+  // why: resolveDoOver spreads the FnContext for the draw's ShuffleProvider (ctx.random),
+  // so pass the full makeMockMoveContext (not just its .ctx) — the draw reshuffles only
+  // when the deck runs short, which these rulings avoid by seeding a deep-enough deck.
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  if ('accept' in setup.resolve) {
+    resolveDoOver(moveContext, { accept: true });
+  } else {
+    resolveDoOver(moveContext, { decline: true });
+  }
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -755,6 +794,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-reveal-top-dispose': runResolveRevealTopDispose,
   'resolve-give-hq-hero': runResolveGiveHqHero,
   'resolve-return-zero-cost-discard': runResolveReturnZeroCostDiscard,
+  'resolve-do-over': runResolveDoOver,
 };
 
 /**
