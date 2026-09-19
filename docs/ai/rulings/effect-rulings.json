@@ -1204,5 +1204,41 @@
     },
     "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/wolverine/wolverine#0"] },
     "why": "When two HQ Heroes tie on cost (both 5) the highest-cost selector breaks the tie by the RIGHTMOST slot index, capturing Wolverine (slot 2) over Spider-Man (slot 0) — the determinism contract that keeps the capture replayable regardless of scan order (D-21401, WP-214)."
+  },
+  {
+    "id": "hero-deck-top-to-escape-moves-top-card-to-escaped",
+    "mechanic": "hero-deck-top-to-escape",
+    "decision": "D-18502",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-hero-deck-escape-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "hero-deck-top-to-escape" },
+        "playerZones": { "0": {} },
+        "heroDeck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"]
+      }
+    },
+    "expected": { "kind": "escaped-pile-equal", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "hero-deck-top-to-escape moves the TOP card of the shared hero-deck reservoir (G.heroDeck[0], Spider-Man) into the escaped pile — proving it takes index 0, not the card beneath it (D-18502, WP-185; the reservoir is the top-level G.heroDeck, not G.piles)."
+  },
+  {
+    "id": "hero-deck-top-to-escape-empty-reservoir-is-noop",
+    "mechanic": "hero-deck-top-to-escape",
+    "decision": "D-18502",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-hero-deck-escape-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "hero-deck-top-to-escape" },
+        "playerZones": { "0": {} },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "escaped-pile-equal", "cards": [] },
+    "why": "An empty hero-deck reservoir is a reachable silent no-op — nothing escapes and the escaped pile stays empty (D-18502, WP-185). Paired with the positive sibling that proves a card escapes when the reservoir is non-empty."
   }
 ]

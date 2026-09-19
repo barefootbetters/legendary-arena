@@ -110,6 +110,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  *   equals an exact value.
  * - `villain-attached-heroes` — the heroes captured onto a named villain
  *   (`G.villainAttachedHeroes[villainCardId]`) equal an exact card list.
+ * - `escaped-pile-equal` — `G.escapedPile` equals an exact card list.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -119,7 +120,8 @@ export type RulingExpectationKind =
   | 'turn-economy-value'
   | 'counter-value'
   | 'hand-size-override'
-  | 'villain-attached-heroes';
+  | 'villain-attached-heroes'
+  | 'escaped-pile-equal';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -134,6 +136,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'counter-value',
   'hand-size-override',
   'villain-attached-heroes',
+  'escaped-pile-equal',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -201,7 +204,7 @@ export interface RulingExpectation {
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -338,6 +341,11 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has a villain-attached-heroes expectation whose "cards" is not an array of captured-hero ext_id strings.`;
+      }
+      return null;
+    case 'escaped-pile-equal':
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has an escaped-pile-equal expectation whose "cards" is not an array of card ext_id strings.`;
       }
       return null;
     default:
