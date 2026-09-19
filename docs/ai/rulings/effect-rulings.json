@@ -1410,5 +1410,46 @@
     },
     "expected": { "kind": "city-equal", "cards": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"] },
     "why": "Fewer than two Villains in the City is a reachable no-op: with a single Villain (Whirlwind) among four henchmen there is no second Villain to swap with, so the City row is unchanged (D-24336). Paired with the positive sibling that proves the swap fires with two or more Villains."
+  },
+  {
+    "id": "ko-heroes-count-by-trait-forced-auto-kos-the-count",
+    "mechanic": "ko-heroes-current-count-by-trait",
+    "decision": "D-24353",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/radiation/maestro-wasteland-hulk#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-count-by-trait", "requireKind": "hero-class", "requireValue": "strength" },
+        "playerZones": { "0": { "hand": ["core/hulk/hulk#0", "core/avengers/captain-america#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/hulk/hulk#0", "core/avengers/captain-america#0"] },
+    "why": "Maestro's Fight counts the current player's [hc:strength] Heroes (two) and KOs that many of their Heroes; when the count equals every KO-able Hero the KO is forced and auto-resolves, so both Heroes land in the KO pile (D-24353 — the trait supplies the COUNT, not the victims)."
+  },
+  {
+    "id": "ko-heroes-count-by-trait-no-matching-hero-is-noop",
+    "mechanic": "ko-heroes-current-count-by-trait",
+    "decision": "D-24353",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/radiation/maestro-wasteland-hulk#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-count-by-trait", "requireKind": "hero-class", "requireValue": "strength" },
+        "playerZones": { "0": { "hand": ["core/spider-man/spider-man#0"] } },
+        "cardTraits": {
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "With no [hc:strength] Hero the trait count is zero, so Maestro KOs nothing — a reachable no-op, and the non-matching Covert Hero is never a victim (D-24353). Paired with the positive sibling that proves the counted KO fires."
   }
 ]
