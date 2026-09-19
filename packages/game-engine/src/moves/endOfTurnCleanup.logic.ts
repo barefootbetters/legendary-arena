@@ -98,4 +98,41 @@ export function applyEndOfTurnCleanup(
   // Step 5: consume the deferred hand injection (Electromagnetic Bubble) — after the
   // discard + fill, adds each recorded card as an extra card and clears the key.
   consumeDeferredHandInjections(G, playerID, playerZones);
+
+  // why: WP-705 / D-24526 — Step 6: return every teleport-on-discard card set aside this
+  // turn to its OWNER's hand (Guerrilla Warfare). All-owners (not just the ending player),
+  // so a card set aside during a non-active player's discard also returns now. Placed AFTER
+  // the ending player's fill so their own returned card is an EXTRA on top of the fresh hand;
+  // a non-active owner's return adds to their existing hand. applyEndOfTurnCleanup runs once
+  // per turn-end at EVERY path (both live turn-end sub-paths + all bgio-bypassing harnesses),
+  // so this single co-located drain covers them all — no per-harness replication needed.
+  consumeTeleportReturns(G);
+}
+
+/**
+ * Returns every teleport-on-discard card set aside this turn to its owner's hand (WP-705 /
+ * D-24526). Drains the whole G.pendingTeleportReturns queue — each card was removed from
+ * discard at set-aside time (held in no zone), so it is appended directly to its owner's
+ * hand as an extra card. Drain-idempotent: an empty/undefined queue is an early no-op, which
+ * is what makes calling it at the single per-turn-end cleanup site correct and safe.
+ *
+ * // why: G-only, no ctx — both printed branches ("your turn → Teleport it" / "not your turn
+ * → set aside, add at end of this turn") collapse to this one end-of-current-turn return, so
+ * no turn-owner distinction is needed.
+ *
+ * @param G - Game state, mutated in place (cards appended to hands, queue emptied).
+ */
+export function consumeTeleportReturns(G: LegendaryGameState): void {
+  const queue = G.pendingTeleportReturns;
+  if (queue === undefined || queue.length === 0) {
+    return;
+  }
+  for (const entry of queue) {
+    const ownerZones = G.playerZones[entry.playerID];
+    if (!ownerZones) {
+      continue;
+    }
+    ownerZones.hand = [...ownerZones.hand, entry.cardId];
+  }
+  G.pendingTeleportReturns = [];
 }

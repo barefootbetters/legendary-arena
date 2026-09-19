@@ -22,6 +22,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -112,6 +113,20 @@ export function resolveReturnOnDiscard(
   const isReturnRequest = typeof cardId === 'string' && cardId.length > 0;
   // why: exactly-one-shape — both present or neither present is malformed.
   if (isDecline === isReturnRequest) {
+    return;
+  }
+
+  // Step 1b: Priority guard (D-24527) — a return-on-discard is OPTIONAL and lower
+  // priority than a MANDATORY discard-to-play cost still being paid (the block-all
+  // guard list orders discard-to-play before return-on-discard, game.ts). While a
+  // discard-to-play cost is unresolved, this move is a silent no-op that leaves BOTH
+  // queues intact. Without this, a multi-discard cost (Ruby Summers "Extinction Blast"
+  // — discard three) could be paid with ONE return-on-discard card (Cyclops "Unending
+  // Energy"): return it between discards and re-discard the same card N times. Deferring
+  // the return until the full cost is paid forces N distinct cards, then lets the card
+  // come back — the faithful tabletop timing (pay the whole cost, THEN the "you may
+  // return" trigger resolves).
+  if (hasPendingDiscardToPlay(G)) {
     return;
   }
 

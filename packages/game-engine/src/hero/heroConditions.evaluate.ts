@@ -163,6 +163,10 @@ export function evaluateCondition(
         if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
           distinctClasses.add(traitEntry.heroClass);
         }
+        // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes to the distinct-class set.
+        if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+          distinctClasses.add(traitEntry.heroClass2);
+        }
         // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
         for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
           distinctClasses.add(grantedClass);
@@ -410,6 +414,74 @@ export function countDistinctHeroClassesInPlay(
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
       distinctClasses.add(traitEntry.heroClass);
+    }
+    // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes.
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
+    }
+    for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
+      distinctClasses.add(grantedClass);
+    }
+  }
+  return distinctClasses.size;
+}
+
+/**
+ * Counts the distinct hero colors (classes) among the Heroes a player HAS —
+ * their HAND plus their play area — for the "for each color of Hero you have"
+ * count-scaled family (Captain America's Avengers Assemble! / Perfect Teamwork).
+ *
+ * "Heroes you have" is a rulebook term of art (D-24529): per
+ * `docs/legendary-universal-rules-v23.md` §"'Your Heroes/Allies' & 'Heroes/Allies
+ * You Have'" it "include[s] both the cards in your hand and the cards you have
+ * played this turn" — the Heroes in the deck, discard, and KO pile don't count.
+ * So the count is ORDER-INDEPENDENT: a Tech Hero still in hand counts even when
+ * Avengers Assemble! is played first. This is distinct from
+ * `countDistinctHeroClassesInPlay` (play area only), which stays the counting for
+ * the `distinctHeroClassesAtLeast` gate and the deferred-conditional-grant
+ * monotonicity (both deliberately read inPlay — see deferredConditionalGrants.ts).
+ *
+ * Gray S.H.I.E.L.D. basics / Officers / Sidekicks carry no `heroClass` (no color),
+ * so they never add to the count — matching the printed "color of Hero" wording.
+ * A dual-class card contributes BOTH printed classes (WP-703). getGrantedClasses
+ * (Size-Changing) is applied only to in-play cards, because that grant is an
+ * in-play effect; a card in hand contributes only its printed color(s).
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @returns How many distinct hero colors the player has across hand and play.
+ */
+export function countDistinctHeroClassesYouHave(
+  G: LegendaryGameState,
+  playerID: string,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardTraits) {
+    return 0;
+  }
+  const distinctClasses = new Set<string>();
+  // why: HAND half — a Hero still in hand counts as "a Hero you have"; use its
+  // printed color(s) only (no Size-Changing grant, which is an in-play effect).
+  for (const handCardId of playerZones.hand) {
+    const traitEntry = G.cardTraits[handCardId as CardExtId];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      distinctClasses.add(traitEntry.heroClass);
+    }
+    // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes.
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
+    }
+  }
+  // why: PLAY-AREA half — mirrors countDistinctHeroClassesInPlay exactly, including
+  // heroClass2 and getGrantedClasses (an in-play Size-Changing Hero contributes each
+  // granted color).
+  for (const playedCardId of playerZones.inPlay) {
+    const traitEntry = G.cardTraits[playedCardId as CardExtId];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      distinctClasses.add(traitEntry.heroClass);
+    }
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
     }
     for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(grantedClass);

@@ -424,6 +424,12 @@ const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> =
   // chokepoint keys on the keyword, not this timing — but the hook must carry it so
   // the per-hook timing-membership drift test passes.
   'return-on-discard': 'onDiscard',
+  // why: WP-705 / D-24526 — teleport-on-discard is reactive (Guerrilla Warfare's
+  // "when a card effect causes you to discard this card…"), so its hook lands on
+  // onDiscard (parser default is onPlay). Declarative-only — the discardFromHand
+  // chokepoint keys on the keyword — but the hook must carry it for the per-hook
+  // timing-membership drift test.
+  'teleport-on-discard': 'onDiscard',
 };
 
 // why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.
@@ -449,6 +455,17 @@ const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   // condition (a [keyword:draw-threshold:2] marker on its transform ability line). The
   // card's ability is two hooks (draw / transform), so the draw stays unconditional.
   'wwhk/amadeus-cho/gamma-draining-nanites',
+]);
+
+// why: WP-705 / D-24526 — cards whose bare [keyword:Teleport] display token resolves to
+// the reactive `teleport-on-discard` keyword (the mandatory set-aside-and-return-at-end-
+// of-turn form). Keyed by canonical key `{setAbbr}/{heroSlug}/{cardSlug}`. Guerrilla
+// Warfare is the first and only member — its full printed behaviour is modeled by the
+// teleport-on-discard reaction. Every OTHER [keyword:Teleport] card carries the UNMODELED
+// general onPlay-Teleport mechanic, so its token stays an honest unresolved marker
+// (parse-unrecognized hollow) — the Honest-Partial Invariant, mirroring SUPPORTED_TRANSFORM_BASES.
+const TELEPORT_ON_DISCARD_CARDS: ReadonlySet<string> = new Set<string>([
+  'ssw2/ruby-summers/guerrilla-warfare',
 ]);
 
 // why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
@@ -606,7 +623,7 @@ function parseAbilityText(
   // the card id), so the support decision is threaded in. Defaults false so every
   // other caller/test keeps the pre-WP-658 behaviour (a [keyword:Transform] on a
   // non-supported card stays an unresolved marker).
-  options: { transformSupported?: boolean } = {},
+  options: { transformSupported?: boolean; teleportOnDiscardSupported?: boolean } = {},
 ): {
   keywords: HeroKeyword[];
   conditions: HeroCondition[];
@@ -618,6 +635,11 @@ function parseAbilityText(
   timing: HeroAbilityTiming;
 } {
   const transformSupported = options.transformSupported === true;
+  // why: WP-705 / D-24526 — the caller resolves whether this card is in
+  // TELEPORT_ON_DISCARD_CARDS and threads it in (parseAbilityText is text-only and
+  // never sees the card id). Defaults false so a [keyword:Teleport] on any non-listed
+  // card stays an honest unresolved marker.
+  const teleportOnDiscardSupported = options.teleportOnDiscardSupported === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -655,6 +677,14 @@ function parseAbilityText(
   // the reveal-from-hand / investigate criterion suppression). The engine's koTeamFilter enforces
   // the S.H.I.E.L.D.-only KO target at resolve time; the setup gate must not also block the play.
   const lineHasOptionalKoShieldOfficer = abilityText.includes('[keyword:optional-ko-shield-officer]');
+  // why: D-24530 — on a Pure Fury line ([keyword:pure-fury]) the co-located `[team:shield]`
+  // describes WHICH Heroes to count in the KO pile ("less than the number of [team:shield]
+  // Heroes in the KO pile"), NOT a requiresTeam play-gate. Suppress it from Step 1b so the
+  // card fires unconditionally (mirrors the optional-ko-shield-officer / reveal-from-hand
+  // suppression). heroEffectPureFury reads the KO pile at resolve time; the setup gate must
+  // not block the play on "another shield Hero played this turn" (live bug: Pure Fury blocked
+  // whenever no shield Hero preceded it — 2p Red Skull / Midtown match yqj7YblJCt4).
+  const lineHasPureFury = abilityText.includes('[keyword:pure-fury]');
   // why: WP-673 / D-24488 — when the line carries the worthy count-scaled marker,
   // its `[keyword:Worthy]` token is the COUNT CRITERION ("each other card … that
   // makes you Worthy"), not a heroCostAtLeastInHandOrPlay play-gate — so Step 2
@@ -742,7 +772,9 @@ function parseAbilityText(
     // CRITERION ("reveal another [team:x-men] Hero"), already captured in
     // revealFromHandCriterion — so emit NO requiresTeam gate. This is the Psychic Link fix:
     // the mid-sentence [team:x-men] was wrongly gating the card on "another X-Men played".
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer) {
+    // why: D-24530 — likewise on a Pure Fury line the [team:shield] describes the KO-pile
+    // Heroes to count, not a play-gate — so emit NO requiresTeam gate (see lineHasPureFury).
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -1114,6 +1146,24 @@ function parseAbilityText(
       // boolean gate — `value` is unused by the evaluator; '1' is a stable placeholder.
       // Placed before the unresolved-marker fallback so it never records a hollow.
       conditions.push({ type: 'firstHeroPlayedThisTurn', value: '1' });
+    } else if (normalizedKeyword === 'teleport') {
+      // why: WP-705 / D-24526 — the bare [keyword:Teleport] display token resolves to
+      // the reactive `teleport-on-discard` keyword ONLY for a card whose reactive-on-discard
+      // form is modeled (TELEPORT_ON_DISCARD_CARDS → teleportOnDiscardSupported). Every
+      // other [keyword:Teleport] card carries the UNMODELED general onPlay-Teleport mechanic,
+      // so it records `teleport` as an unresolved marker (honest parse-unrecognized hollow),
+      // exactly as before this WP — the Honest-Partial Invariant (mirrors the transform /
+      // investigate resolvers). Checked before the generic unresolved-marker fallback.
+      if (teleportOnDiscardSupported) {
+        keywords.push('teleport-on-discard');
+        // why: D-24045 — record the `teleport` token as RESOLVED (its by-hook positive
+        // provenance) so the hero-mechanic-ledger classifies guerrilla-warfare's `teleport`
+        // mechanic as executable, not an unsupported/parse-unrecognized hollow — symmetric
+        // with unresolvedMarkers.push('teleport') on the non-allowlisted branch below.
+        resolvedMarkers.push('teleport');
+      } else {
+        unresolvedMarkers.push('teleport');
+      }
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
       // NOT a composition marker, and NOT a recognized modifier (reveal-count) is a
@@ -2725,7 +2775,14 @@ export function buildHeroAbilityHooks(
         const transformSupported = SUPPORTED_TRANSFORM_BASES.has(
           `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
         );
-        const parsedAbility = parseAbilityText(abilityText, { transformSupported });
+        // why: WP-705 / D-24526 — resolve whether this card's [keyword:Teleport] is the
+        // modeled reactive teleport-on-discard form (TELEPORT_ON_DISCARD_CARDS), from the
+        // same canonical key, and thread it in so parseAbilityText resolves the token only
+        // for allowlisted cards (all others keep an honest unresolved marker).
+        const teleportOnDiscardSupported = TELEPORT_ON_DISCARD_CARDS.has(
+          `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+        );
+        const parsedAbility = parseAbilityText(abilityText, { transformSupported, teleportOnDiscardSupported });
 
         // why: freshly-constructed hook per instance — copies never alias a
         // shared object or arrays (D-13502).

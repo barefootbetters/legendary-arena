@@ -53,11 +53,22 @@ test('final-turn fixture loads with the WP-367 finalTurn projection set', () => 
   assert.equal('gameOver' in fixture, false);
 });
 
+test('diving-block-wound fixture carries a pending diving-block seat choice for the viewer', () => {
+  const fixture = loadUiStateFixture('diving-block-wound');
+  assert.ok(fixture.pendingSeatChoice, 'diving-block-wound fixture must include a pendingSeatChoice');
+  assert.equal(fixture.pendingSeatChoice.kind, 'diving-block');
+  // why: the viewer (Player 0, the seat carrying handCards) must be an outstanding
+  // seat and have its own prompt options, so PendingSeatChoicePrompt renders.
+  assert.ok(fixture.pendingSeatChoice.outstandingSeats.includes('0'));
+  assert.equal(fixture.pendingSeatChoice.seatPrompts['0']?.options.length, 2);
+});
+
 test('isFixtureName accepts the known names', () => {
   assert.equal(isFixtureName('mid-turn'), true);
   assert.equal(isFixtureName('endgame-win'), true);
   assert.equal(isFixtureName('endgame-loss'), true);
   assert.equal(isFixtureName('final-turn'), true);
+  assert.equal(isFixtureName('diving-block-wound'), true);
 });
 
 test('isFixtureName rejects unknown and malformed names', () => {

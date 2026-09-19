@@ -95,7 +95,7 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // why: WP-383 / D-24184 — reuse the engine's authoritative discard-to-play eligibility
 // helper (the chooser's whole hand) so the projected list is byte-identical to what
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
-import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
+import { getEligibleDiscardToPlayCards, hasPendingDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
 import { getEligiblePutHandOnDeckTopCards } from '../moves/putHandOnDeckTop.resolve.js';
 import { DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
@@ -110,7 +110,7 @@ import { getEligibleGiveHqHeroCards } from '../moves/giveHqHeroChoice.resolve.js
 import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
-import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
+import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { resolveCountSource } from '../hero/heroCountSource.resolve.js';
@@ -1792,10 +1792,17 @@ export function buildUIState(
   // round-trips. The card lives in the chooser's discard pile (zone 'discard'). Each display
   // is spread fresh (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
   // filterUIStateForAudience (keyed on .playerID), mirroring pendingDiscardToPlay.
+  // why: D-24527 — suppress the return-on-discard prompt while a MANDATORY
+  // discard-to-play cost is still being paid. The move-level priority guard
+  // (resolveReturnOnDiscard) already no-ops the return in that window, so surfacing
+  // the prompt would only offer a dead-click; the projection mirrors the block-all
+  // priority (discard-to-play outranks return-on-discard) so the client is shown only
+  // the actionable choice. The return prompt reappears once the cost is fully paid.
   let pendingReturnOnDiscard: UIPendingReturnOnDiscard | undefined;
   if (
     gameState.pendingReturnOnDiscard !== undefined &&
-    gameState.pendingReturnOnDiscard.length > 0
+    gameState.pendingReturnOnDiscard.length > 0 &&
+    !hasPendingDiscardToPlay(gameState)
   ) {
     const frontReturn = gameState.pendingReturnOnDiscard[0]!;
     const eligibleReturnCards: UIEligibleKoHeroCard[] = [];
@@ -1917,7 +1924,7 @@ export function buildUIState(
   ) {
     const projectedEffectTraces: EffectTrace[] = [];
     for (const trace of gameState.diagnostics.traces) {
-      projectedEffectTraces.push({
+      const projectedTrace: EffectTrace = {
         cardId: trace.cardId,
         scope: trace.scope,
         timing: trace.timing,
@@ -1929,7 +1936,27 @@ export function buildUIState(
         // the projection never aliases into G.diagnostics.traces[*].params.
         params: { ...trace.params },
         turn: trace.turn,
-      });
+      };
+      // why: WP-706 / D-24528 — carry the count-scaled `resolution` sub-record with a
+      // FRESH-object copy (and a fresh `countedInputs` array) so the projection never
+      // aliases into G.diagnostics (D-11105). Conditional assignment so an absent
+      // `resolution` omits the key (exactOptionalPropertyTypes). This MUST mirror the
+      // filter pass-through — a build-only add is dropped at the filter whitelist (EC-206).
+      if (trace.resolution !== undefined) {
+        const resolutionCopy: EffectTraceResolution = {
+          countSource: trace.resolution.countSource,
+          resource: trace.resolution.resource,
+          magnitude: trace.resolution.magnitude,
+          count: trace.resolution.count,
+          perEach: trace.resolution.perEach,
+          computedValue: trace.resolution.computedValue,
+        };
+        if (trace.resolution.countedInputs !== undefined) {
+          resolutionCopy.countedInputs = [...trace.resolution.countedInputs];
+        }
+        projectedTrace.resolution = resolutionCopy;
+      }
+      projectedEffectTraces.push(projectedTrace);
     }
     effectTraces = projectedEffectTraces;
   }

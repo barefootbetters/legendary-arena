@@ -68,7 +68,8 @@ export function playerMeetsDefeatRequirement(
     if (requirement.kind === 'team' && trait.team === requirement.value) {
       return true;
     }
-    if (requirement.kind === 'hero-class' && trait.heroClass === requirement.value) {
+    // why: WP-703 / D-24523 — a dual-class card matches a hero-class requirement on either printed class.
+    if (requirement.kind === 'hero-class' && (trait.heroClass === requirement.value || trait.heroClass2 === requirement.value)) {
       return true;
     }
   }

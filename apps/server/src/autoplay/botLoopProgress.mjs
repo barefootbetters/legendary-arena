@@ -14,45 +14,31 @@
  */
 
 /**
- * Move names the engine's getLegalMoves returns as a parked-choice
- * short-circuit. When a KO-a-Hero (D-24009) or optional-KO-reward (D-24019)
- * choice is pending, the engine freezes every other move and returns EXACTLY
- * one of these — with its deterministic default-target args already filled —
- * regardless of the current turn stage. The bot loop must dispatch that resolve
- * move before any stage-specific fallback, in any stage.
+ * The prefix every parked-choice resolve move shares. When any block-all
+ * pending choice is parked (a KO-a-Hero D-24009, an optional-KO-reward D-24019,
+ * a Magneto discard-to-limit D-24284, and ~26 more), the engine freezes every
+ * other move and getLegalMoves returns EXACTLY one move — a `resolve…`-named
+ * move with its deterministic default-target args already filled — regardless of
+ * the current turn stage. The bot loop must dispatch that resolve move before any
+ * stage-specific fallback, in any stage.
  *
- * // why: closed set mirrored read-only from ai.legalMoves.ts; the engine owns
- * the parked-choice contract, so this is the consumer's view of it, not a
- * second source of truth.
+ * // why: a hardcoded name LIST kept drifting behind the engine — it named 10 of
+ * the 29 resolve short-circuits getLegalMoves can emit, so the missing ones
+ * (resolveDiscardChoice among them: Magneto's "discard down to four" Master
+ * Strike) were never drained. The autoplay loop then aborted with "no legal move
+ * available" (observed live 2026-09-17) because its stage handlers only recognize
+ * the core lifecycle moves; the bot-ally driver only limped through by accident of
+ * the single-move policy fallback. The engine's own contract (game.ts) is the
+ * durable invariant: every parked-choice resolver is a `resolve…` move and is
+ * explicitly NOT in CORE_MOVE_NAMES, while every normal-enumeration move
+ * (playCard / recruitHero / fightVillain / fightMastermind / revealVillainCard /
+ * advanceStage / endTurn) is a core move and never starts with `resolve`. Matching
+ * on that prefix instead of a name list drains any block-all choice the engine can
+ * short-circuit to — present and future — with no list to keep in lockstep.
+ * Source of truth: packages/game-engine/src/simulation/ai.legalMoves.ts (every
+ * `resolve…` emit is a length-1 block-all short-circuit with default args).
  */
-// why: WP-427 — the FULL set of block-all resolve short-circuits getLegalMoves can
-// return, kept in lockstep with `ai.legalMoves.ts`. This list had drifted to only
-// the first two while the engine grew six more block-all choice types; the policy
-// fallback happened to dispatch the missing ones (they arrive as the sole legal
-// move with default args), but a choice type with NO getLegalMoves short-circuit at
-// all (the put-bottom-HQ pair, fixed in WP-427) still faulted the bot. Listing all
-// nine here makes the "drain the parked choice before the stage fallback" contract
-// explicit and drift-resistant. `resolveHeroChoice` (pendingHeroChoice, D-22001) is
-// the ninth — the last block-all choice that lacked a getLegalMoves short-circuit,
-// added alongside the engine short-circuit so a bot turn that reveals a discard-or-
-// return hero card resolves it instead of faulting. Keep in lockstep with
-// PENDING_CHOICE_FLAGS in botAllyDriver.mjs (both enumerate the ten block-all choices).
-const PENDING_CHOICE_MOVE_NAMES = [
-  'resolveKoHeroChoice',
-  'resolveOptionalKoReward',
-  'resolveVictoryPileCardPick',
-  'resolveDrawOrEmpowered',
-  'resolveReturnZeroCostDiscard',
-  'resolveDiscardToPlay',
-  'resolveOptionalPutBottomHQ',
-  'resolvePutAnyNumberBottomHQ',
-  'resolveHeroChoice',
-  // why: WP-532 / D-24343 — Paibok the Power Skrull parks a give-an-HQ-Hero
-  // choice; the engine short-circuits getLegalMoves to this resolve move so the
-  // bot drains it before any stage fallback. Keep in lockstep with
-  // PENDING_CHOICE_FLAGS in botAllyDriver.mjs.
-  'resolveGiveHqHeroChoice',
-];
+const PENDING_CHOICE_MOVE_NAME_PREFIX = 'resolve';
 
 /**
  * The public-safe abort reasons surfaced on the guest-accessible playback
@@ -76,7 +62,8 @@ export const ABORT_REASONS = Object.freeze({
  * Finds the parked-choice short-circuit move in a getLegalMoves result.
  *
  * Returns the resolve move (name plus its pre-filled default-target args) when
- * the legal-move list is a parked-choice short-circuit, so the loop can
+ * the legal-move list is a parked-choice short-circuit — recognized by its
+ * `resolve…` name prefix (see PENDING_CHOICE_MOVE_NAME_PREFIX) — so the loop can
  * dispatch it directly in any stage. Returns null when no parked choice is
  * present and the loop should fall back to its stage-specific move selection.
  *
@@ -90,7 +77,12 @@ export function findPendingChoiceMove(legalMoves) {
     return null;
   }
   for (const legalMove of legalMoves) {
-    if (legalMove !== null && legalMove !== undefined && PENDING_CHOICE_MOVE_NAMES.includes(legalMove.name)) {
+    if (
+      legalMove !== null &&
+      legalMove !== undefined &&
+      typeof legalMove.name === 'string' &&
+      legalMove.name.startsWith(PENDING_CHOICE_MOVE_NAME_PREFIX)
+    ) {
       return legalMove;
     }
   }

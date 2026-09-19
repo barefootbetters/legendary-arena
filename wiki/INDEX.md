@@ -111,6 +111,11 @@ Abstract data shapes, contracts, and design concepts.
   Cloudflare R2 image URLs; the full 37-entry card-type prefix registry
   (`sc` · `mm` · `vi` · `hr` · `sa` · `tr` · …) lives in the upstream
   `card-types.json`, with the imaged subset auto-composed by the convert pipeline.
+- [Effect Rulings](effect-rulings.md) — *(draft)* a private, executable
+  `scenario → expected → why` corpus of card-effect edge-case rulings, run by a
+  `node:test` harness against the real engine handlers so a ruling cannot drift
+  from code; the LAGN brief's layer-5 "crown jewel", scoped as WP-704 (not yet
+  built). Complements the replay hash-oracle fixtures and the coverage indices.
 
 ## Card-Type
 
@@ -146,6 +151,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   Confidence column plus an Open-Questions verification list, and a
   Distribution & availability section (Upper Deck's CDD / gaming-AIR
   pipe, and why 93433 is buyable while 93431 is a ghost).
+- [Valuable Assets](valuable-assets.md) — *(draft)* editorial inventory of the
+  highest-value things built, ranked along two deliberately-disagreeing lenses:
+  **strategic moat** (replacement cost — engine → catalogue → governance →
+  vision/soul → live product) and **revenue** (what pays payroll — live product
+  → economy → engine/catalogue → …). Names what does *not* rank (licensed IP,
+  commodity stack, merch), and frames the [effect-rulings corpus](effect-rulings.md)
+  as insurance on the engine today, a future moat-#1 candidate if WP-704 ships.
 - [Vision](vision.md) — Reader's map of `docs/01-VISION.md`: the five
   non-negotiable primary goals, the secondary goals and their identity
   / profile boundaries (§7a, §19a/b), the PAR skill-measurement

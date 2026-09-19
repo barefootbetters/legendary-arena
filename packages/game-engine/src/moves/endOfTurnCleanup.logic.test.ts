@@ -9,7 +9,7 @@
 
 import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyEndOfTurnCleanup } from './endOfTurnCleanup.logic.js';
+import { applyEndOfTurnCleanup, consumeTeleportReturns } from './endOfTurnCleanup.logic.js';
 import { HAND_SIZE } from './drawCards.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -143,5 +143,51 @@ describe('applyEndOfTurnCleanup (WP-701 / D-24520)', () => {
       'the helper leaves hasDrawnThisTurn untouched',
     );
     void mock;
+  });
+
+  it('Step 6: returns a set-aside teleport card to the ending player as an EXTRA on the new hand', () => {
+    // Guerrilla Warfare (ext id 'gw') was set aside during this player's turn (in no zone,
+    // recorded on pendingTeleportReturns); after cleanup draws HAND_SIZE it is the extra card.
+    const deck = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'] as CardExtId[];
+    const state = makeState({ hand: ['h1'] as CardExtId[], deck });
+    (state as unknown as { pendingTeleportReturns: { playerID: string; cardId: CardExtId }[] })
+      .pendingTeleportReturns = [{ playerID: '0', cardId: 'gw' as CardExtId }];
+
+    applyEndOfTurnCleanup(state, '0', reverseShuffle);
+
+    const z = state.playerZones['0']!;
+    assert.equal(z.hand.length, HAND_SIZE + 1, 'the returned card is an extra on top of HAND_SIZE');
+    assert.deepStrictEqual(z.hand, ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'gw']);
+    assert.deepStrictEqual(
+      (state as unknown as { pendingTeleportReturns: unknown[] }).pendingTeleportReturns,
+      [],
+      'the queue is drained',
+    );
+  });
+});
+
+describe('consumeTeleportReturns (WP-705 / D-24526)', () => {
+  it('adds a NON-active owner\'s set-aside card to their EXISTING hand, drains the queue', () => {
+    const state = {
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['a', 'b'], discard: [], inPlay: [], victory: [] },
+      },
+      pendingTeleportReturns: [{ playerID: '1', cardId: 'gw' }],
+    } as unknown as LegendaryGameState;
+
+    consumeTeleportReturns(state);
+
+    assert.deepStrictEqual(state.playerZones['1']!.hand, ['a', 'b', 'gw'], 'extra on the existing hand');
+    assert.deepStrictEqual(
+      (state as unknown as { pendingTeleportReturns: unknown[] }).pendingTeleportReturns,
+      [],
+    );
+  });
+
+  it('is a drain-idempotent no-op on an undefined/empty queue', () => {
+    const empty = makeState({ hand: ['h1'] as CardExtId[] });
+    assert.doesNotThrow(() => consumeTeleportReturns(empty));
+    assert.deepStrictEqual(empty.playerZones['0']!.hand, ['h1'], 'nothing changed');
   });
 });

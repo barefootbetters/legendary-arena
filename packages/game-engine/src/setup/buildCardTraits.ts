@@ -27,6 +27,8 @@ import { normalizeTraitSlug } from '../state/traits.normalize.js';
 interface TraitsHeroCardEntry {
   slug: string;
   hc?: string | null | undefined;
+  // why: WP-703 / D-24523 — the dual-class card's second printed class from the registry.
+  hc2?: string | null | undefined;
 }
 
 /**
@@ -199,11 +201,16 @@ export function buildCardTraits(
         const heroClass = (cardEntry !== null && typeof cardEntry.hc === 'string' && cardEntry.hc.length > 0)
           ? normalizeTraitSlug(cardEntry.hc)
           : null;
+        // why: WP-703 / D-24523 — the dual-class card's second printed class, omitted
+        // from the entry when absent so single-class cards serialize byte-identically.
+        const heroClass2 = (cardEntry !== null && typeof cardEntry.hc2 === 'string' && cardEntry.hc2.length > 0)
+          ? normalizeTraitSlug(cardEntry.hc2)
+          : null;
         const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${canonicalSlug}`;
 
         for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
           const extId = `${baseExtId}#${copyIndex}` as CardExtId;
-          traits[extId] = { heroClass, team };
+          traits[extId] = heroClass2 !== null ? { heroClass, heroClass2, team } : { heroClass, team };
         }
       }
     } else {
@@ -211,8 +218,12 @@ export function buildCardTraits(
         const heroClass = (typeof card.hc === 'string' && card.hc.length > 0)
           ? normalizeTraitSlug(card.hc)
           : null;
+        // why: WP-703 / D-24523 — second printed class, omitted-when-absent (see above).
+        const heroClass2 = (typeof card.hc2 === 'string' && card.hc2.length > 0)
+          ? normalizeTraitSlug(card.hc2)
+          : null;
         const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${card.slug}`;
-        traits[baseExtId as CardExtId] = { heroClass, team };
+        traits[baseExtId as CardExtId] = heroClass2 !== null ? { heroClass, heroClass2, team } : { heroClass, team };
       }
     }
   }

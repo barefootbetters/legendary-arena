@@ -41,6 +41,27 @@ function contributionPhrases(row: {
   return phrases;
 }
 
+/**
+ * Builds this seat's celebratory synergy line for the report card (WP-708 /
+ * D-24531) — "assembled N of M synergy clauses" — or null when the seat played no
+ * conditional clause (nothing to show) or the record predates WP-708. The surface
+ * celebrates what was assembled and never says "whiff", "failed", or "missed".
+ *
+ * @param row - One per-player row from `workedCalc.perPlayer`.
+ * @returns The synergy phrase, or null to omit the line.
+ */
+function synergyPhrase(row: {
+  readonly conditionalClausesPlayed: number | null;
+  readonly conditionalClausesAssembled: number | null;
+}): string | null {
+  if (row.conditionalClausesPlayed === null || row.conditionalClausesPlayed <= 0) {
+    return null;
+  }
+  const assembled = row.conditionalClausesAssembled ?? 0;
+  const noun = row.conditionalClausesPlayed === 1 ? 'synergy clause' : 'synergy clauses';
+  return `assembled ${assembled} of ${row.conditionalClausesPlayed} ${noun}`;
+}
+
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
 // HUD directly to the WP-067 drift test at
@@ -169,6 +190,26 @@ export default defineComponent({
       return playerLabel(playerId, identityByPlayer.value.get(playerId));
     }
 
+    // why: WP-708 / D-24531 — the neutral cross-seat Table Total (sum of every seat's
+    // assembled clauses), shown as a celebration headline above the per-seat rows.
+    // Null when no seat carries synergy data (records predating WP-708), so the
+    // headline is omitted rather than showing "0".
+    const synergyTableTotal = computed<number | null>(() => {
+      const rows = workedCalc.value?.perPlayer;
+      if (rows === undefined) {
+        return null;
+      }
+      let total = 0;
+      let anySynergy = false;
+      for (const row of rows) {
+        if (row.conditionalClausesPlayed !== null && row.conditionalClausesPlayed > 0) {
+          anySynergy = true;
+          total = total + (row.conditionalClausesAssembled ?? 0);
+        }
+      }
+      return anySynergy ? total : null;
+    });
+
     return {
       hasPar,
       hasScores,
@@ -180,6 +221,8 @@ export default defineComponent({
       gradeScale,
       scoringKey,
       contributionPhrases,
+      synergyPhrase,
+      synergyTableTotal,
       seatLabel,
     };
   },
@@ -308,6 +351,15 @@ export default defineComponent({
              used in the raw calc above. Absent for records persisted before WP-588. -->
         <div v-if="workedCalc.perPlayer" class="worked-block" data-testid="arena-hud-per-player">
           <div class="worked-heading">By player</div>
+          <!-- why: WP-708 — the neutral cross-seat Table Total, a celebration headline
+               (sum of every seat's assembled synergy clauses). Omitted when no seat
+               carries synergy data (pre-WP-708 records). Copy order (locked): table
+               total first, then each seat's own rate. -->
+          <div
+            v-if="synergyTableTotal !== null"
+            class="worked-synergy-total"
+            data-testid="arena-hud-synergy-total"
+          >The table assembled {{ synergyTableTotal }} synergy {{ synergyTableTotal === 1 ? 'clause' : 'clauses' }}</div>
           <div class="per-player-grid" aria-label="per-player scoring">
             <div v-for="row in workedCalc.perPlayer" :key="row.label" class="per-player-row">
               <span class="per-player-name">{{ row.label }}</span>
@@ -323,6 +375,15 @@ export default defineComponent({
                 data-testid="arena-hud-per-player-contrib"
                 aria-label="defeated"
               >defeated {{ contributionPhrases(row).join(', ') }}</span>
+              <!-- why: WP-708 — this seat's celebratory synergy line ("assembled N of
+                   M synergy clauses"). Omitted when the seat played no conditional
+                   clause or the record predates WP-708. Never "whiff/failed/missed". -->
+              <span
+                v-if="synergyPhrase(row) !== null"
+                class="per-player-stat per-player-synergy"
+                data-testid="arena-hud-per-player-synergy"
+                aria-label="synergy"
+              >{{ synergyPhrase(row) }}</span>
             </div>
           </div>
         </div>
@@ -857,6 +918,23 @@ dd {
   margin-top: 0.2rem;
   opacity: 0.7;
   font-size: 0.78rem;
+}
+
+/* why: WP-708 — this seat's celebratory synergy line; a touch brighter than the
+   defeated-contribution line above so it reads as a positive callout, not a stat
+   footnote (the surface celebrates what was assembled). */
+.per-player-synergy {
+  margin-top: 0.2rem;
+  opacity: 0.85;
+  font-size: 0.78rem;
+}
+
+/* why: WP-708 — the neutral cross-seat Table Total headline, shown above the
+   per-seat rows (the shared "the table assembled N" number). */
+.worked-synergy-total {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 0.82rem;
+  opacity: 0.9;
 }
 
 /* why: WP-588 — names what sets PAR (the scenario's scheme, mastermind, and

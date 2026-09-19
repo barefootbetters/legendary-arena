@@ -14,8 +14,9 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ip-licensing.md (this page — https://ewiki.legendary-arena.com/ip-licensing/)
   - ../docs/01-VISION.md
   - C:\www\legendary-arena-com\docs\corporate-memory\04-ip-licensing-acquisition-plan.md
+  - Bageltop Games The Podcast Ep. 4 — Devin Low on Legendary Marvel Second Edition & DC (2026-09-16, external/secondary)
 status: draft
-last-reviewed: 2026-08-11
+last-reviewed: 2026-09-17
 ---
 
 # IP Licensing
@@ -87,6 +88,50 @@ Why this matters:
   (no energy systems, no pay-to-skip timers, no randomized/mystery goods). "The
   existing digital Legendary gates play behind energy and sells currency; ours is
   fairness-first, zero pay-to-win" is a cleaner brand-steward story for Marvel.
+
+### The 2026 physical line — a live licensor, a rebuilt Marvel core, and a new DC universe
+
+Upper Deck's physical *Legendary* line is not winding down — it is expanding. In
+a September 2026 designer interview, **Devin Low** — the original 2012
+*Legendary* designer, still leading the line — walked through **two new core sets
+shipping in 2026**: a rebuilt **Marvel Legendary: Second Edition** and a
+brand-new **Legendary: DC** core on the same engine. `[CONFIRM]` — sourced from a
+podcast interview (Bageltop Games: The Podcast, Ep. 4, Sept. 16, 2026), not an
+Upper Deck contract or press release; the card-count and other specifics below
+are the interview's own hedged figures.
+
+Why this matters to the licensing strategy:
+
+- **The licensor is a healthy, active partner — not a fading one.** A publisher
+  still investing its lead designer's time in two new cores is a *better*
+  partnership target than one milking a dead line. It strengthens the "grow the
+  pie, earn a partnership" pitch this page already argues.
+- **DC is now a second licensed universe on the Legendary engine.** The system
+  already carries 35+ Marvel boxes; a full DC core proves Upper Deck can and does
+  bolt new *entertainment* IP onto Legendary — on-pattern with the Alien /
+  Predator / Firefly / Buffy precedents cited above. A future digital
+  conversation could therefore span **more than one** character universe.
+- **The digital gap is unchanged.** Both new cores are *physical*. There is still
+  no official *digital* Marvel or DC Legendary — the market gap the DXP section
+  above describes stays open, now across two universes.
+- **New mechanics arrive with DC, but they are not ours to build.** The DC core
+  introduces **Transform** (secret-identity cards that flip — Clark Kent →
+  Superman, Bruce Wayne → Batman) and a **Hope/Fear track** (a seven-step meter,
+  roughly −3 Fear to +3 Hope, kin to Buffy Legendary's light/dark track). These
+  are physical-design facts that map where the source system is heading; they are
+  **not** a Legendary Arena implementation commitment.
+
+The Second Edition rebuild is **compatibility-preserving**: `[CONFIRM]`
+reportedly ~550 cards (up from the original 500-card core), with upgraded
+masterminds (including double-sided **Epic** variants), rebalanced heroes
+(Spider-Man is the designer's worked example), and Sidekicks in the base box. It
+stays compatible with existing Marvel expansions — the one caution is not mixing
+first- and second-edition versions of the *same* character.
+
+**Load-bearing takeaway:** none of this changes the two-owner IP stack or the
+"digital is a separate grant" thesis — it *reinforces* both, and adds a live,
+expanding licensor plus a second universe to the "grow the pie" story while the
+digital lane stays empty.
 
 ### Deal economics — correcting the "$10k deposit + 10%" assumption
 
@@ -163,6 +208,52 @@ decision** — advertising an unlicensed Marvel build into the rights-holders' o
 community is Risk 7 amplified, so any placement points at the license-clean surface
 only. Traction is measured with the canonical KPI definitions (`02`).
 
+### Reaching the designer and publisher — the channel map
+
+The "earn a partnership, UD as broker" framing above needs a *who* and a *where*.
+This is the channel map, not an outreach runbook — the sequencing, the
+verified counsel/agent shortlist, and the Disney no-unsolicited workaround live
+in the corporate-memory plan (`05`, `07`). `[CONFIRM]` — channels below are from
+open research (2026-09); re-verify each before any outreach, and route anything
+license-related through Upper Deck, not a personal inbox.
+
+**Devin Low (the designer).** He publishes no public fan-email or phone number;
+the reliable channels are the ones he already uses for *Legendary* and
+professional work. He designs *Legendary* on the side and holds a full-time role
+at Riot, so keep any approach short and on-topic.
+
+- **BoardGameGeek — most reliable for Legendary design/rules questions.** His
+  designer page lists the account **devinlow**; a free BGG account can send
+  **GeekMail** or reply in *Legendary* rules/design threads, where he has a long
+  history of answering the community.
+  <https://boardgamegeek.com/boardgamedesigner/5816/devin-low> ·
+  <https://boardgamegeek.com/user/devinlow>
+- **LinkedIn — professional / partnership outreach only** (not product support):
+  <https://www.linkedin.com/in/devinlow>. Confirm you have the **real** `devinlow`
+  profile — he has warned publicly about impersonation profiles used for job
+  scams.
+- **Player communities.** Low and Upper Deck staff show up in the main
+  *Legendary* Facebook groups and on BGG; design-intent questions often draw a
+  reply from Low or from UD's *Legendary* product manager.
+
+**Upper Deck (the publisher / licensor).** For rules, missing cards, reprint
+status, or "please pass this to the designer," go through the publisher:
+
+- Customer care: **QA@upperdeck.com** · **1-800-873-7332** (Mon–Fri, 6 a.m.–5
+  p.m. PT)
+- Entertainment / games dealer line: **Dealer_Services@upperdeck.com**
+- Social: **@upperdeckent** on Facebook, Instagram, and X
+- Contact hub: <https://upperdeck.com/contact-community/>
+
+**What not to use.** Skip data-broker sites that list scraped emails and phone
+numbers — those are not channels he advertised, and some of that data is
+personal. For a question rooted in the Bageltop interview (schemes, mixing
+Marvel/DC, Second Edition cards), a BGG GeekMail or a public *Legendary* thread
+is the channel most likely to actually reach him; the licensing ask itself still
+goes through Upper Deck (and, per `05`, counsel or an agent with an existing
+Disney relationship — the no-unsolicited barrier makes a cold solo approach
+policy-blocked, not merely low-odds).
+
 ### Relationship to the royalty covenant
 
 VISION's "royalties on *all* revenue" rule and the printables-store royalty-routing
@@ -191,6 +282,12 @@ rates this effort lands — and may need to route to *two* licensors, not one.
 - **Two licenses, not one.** Marvel (digital character rights) *and* Upper Deck
   (Legendary system/brand) are both required; a single deal with either is
   insufficient for an official digital Marvel Legendary.
+- **Now two universes, each its own rights-holder.** Upper Deck's 2026 line adds
+  a DC core beside Marvel. DC's character rights sit with **Warner Bros.
+  Discovery**, not Disney — a *third* owner in the picture. The "two separate
+  licenses" rule (system + characters) does not consolidate across universes; it
+  repeats per universe. A DC digital grant would need Upper Deck **and** DC/WBD,
+  exactly as a Marvel one needs Upper Deck and Marvel/Disney.
 - **Upper Deck may not be able to deliver Marvel.** The digital Marvel license is a
   separate Disney negotiation. `[CONFIRM]` UD's own Marvel relationship is in flux
   — it lost the Marvel *trading card* license to Topps (effective 2025); if the
@@ -220,6 +317,11 @@ rates this effort lands — and may need to route to *two* licensors, not one.
 - [Monetization Model](monetization-model.md) — the settled revenue model that
   names Upper Deck / Marvel royalties
 - [Legendary Forge](legendary-forge.md) — physical line under the same IP umbrella
+- **Bageltop Games: The Podcast, Ep. 4** — *Devin Low on Legendary: Marvel Second
+  Edition & DC* (uploaded 2026-09-16) — designer interview; source for the "2026
+  physical line" section above (external, **secondary**; card-count and other
+  figures `[CONFIRM]` — the interview's own hedged numbers, not an Upper Deck
+  document)
 - `C:\www\legendary-arena-com\docs\corporate-memory\04-ip-licensing-acquisition-plan.md`
   — the acquisition plan: IP stack, DXP context, deal economics, phased approach,
   risks, research sources (marketing repo, internal; **draft, pre-outreach**)

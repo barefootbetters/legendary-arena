@@ -5991,3 +5991,182 @@ describe('heroEffectRevealHeroDeckAttack (WP-668 / D-24481 — Jade Giantess)', 
     assert.equal(gameState.turnEconomy.attack, 9, 'the attack grant still applied with notableEvents absent');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-706 / D-24528 — count-scaled resolution captured on the legacy trace
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects count-scaled resolution capture (WP-706 / D-24528)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** cardStats needs the full shape makeTestState declares; only `cost` matters here. */
+  function statOfCost(cost: number) {
+    return { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+  }
+
+  /** Reads the lazy-init effect traces (empty array when never written). */
+  function tracesOf(gameState: LegendaryGameState) {
+    return gameState.diagnostics?.traces ?? [];
+  }
+
+  it('records a resolution with the correct scalars and computedValue = magnitude × floor(count / perEach)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander', 'bystander-villain-deck-02', 'pile-bystander'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 2, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    const scaled = tracesOf(gameState).find((trace) => trace.resolution !== undefined);
+    assert.ok(scaled !== undefined, 'a count-scaled dispatch records a trace carrying resolution');
+    const resolution = scaled!.resolution!;
+    assert.equal(resolution.countSource, 'victory-bystanders');
+    assert.equal(resolution.resource, 'attack');
+    assert.equal(resolution.magnitude, 2);
+    assert.equal(resolution.count, 3, 'three victory-pile bystanders across both ext_id forms');
+    assert.equal(resolution.perEach, 1, 'absent perEach normalizes to 1');
+    assert.equal(resolution.computedValue, 6, '2 × floor(3 / 1) = 6, matching the granted attack');
+    assert.equal(gameState.turnEconomy.attack, 6, 'the grant itself is byte-unchanged from the executor');
+    // why: victory-pile source → countedInputs omitted in this slice.
+    assert.equal('countedInputs' in resolution, false, 'victory-pile source omits countedInputs');
+  });
+
+  it('carries countedInputs (count === length) for a played-this-turn per-card source', () => {
+    const gameState = makeTestState({
+      inPlay: ['smart-hulk-a', 'smart-hulk-b', 'divine-lightning'],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'smart-hulk-a': statOfCost(5),
+        'smart-hulk-b': statOfCost(5),
+        'divine-lightning': statOfCost(5),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'divine-lightning' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'worthy-cards-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'divine-lightning' as string);
+
+    const scaled = tracesOf(gameState).find((trace) => trace.resolution !== undefined);
+    assert.ok(scaled !== undefined, 'a count-scaled dispatch records a resolution');
+    const resolution = scaled!.resolution!;
+    // why: self-EXCLUSIVE — the triggering divine-lightning is skipped; the two other
+    // cost-5 cards are the counted inputs; count === countedInputs.length.
+    assert.deepStrictEqual(
+      (resolution.countedInputs ?? []).slice().sort(),
+      ['smart-hulk-a', 'smart-hulk-b'],
+      'the two other Worthy-making cards are listed',
+    );
+    assert.equal(resolution.count, resolution.countedInputs!.length, 'count === countedInputs.length');
+    assert.equal(resolution.computedValue, 2, '1 × 2 = 2');
+  });
+
+  it('a recruit-per-count dispatch records a resolution naming the recruit resource', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander', 'pile-bystander'],
+      turnEconomyRecruit: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['recruit-per-count'],
+          effects: [{ type: 'recruit-per-count', magnitude: 3, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    const scaled = tracesOf(gameState).find((trace) => trace.resolution !== undefined);
+    assert.ok(scaled !== undefined, 'a recruit-per-count dispatch records a resolution');
+    assert.equal(scaled!.resolution!.resource, 'recruit');
+    assert.equal(scaled!.resolution!.computedValue, 6, '3 × 2 = 6');
+    assert.equal(gameState.turnEconomy.recruit, 6, 'the recruit grant matches computedValue');
+  });
+
+  it('a non-count-scaled dispatch records NO resolution', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          effects: [{ type: 'attack', magnitude: 4 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    for (const trace of tracesOf(gameState)) {
+      assert.equal('resolution' in trace, false, 'a plain attack trace omits resolution');
+    }
+    assert.equal(gameState.turnEconomy.attack, 4);
+  });
+
+  it('params.countSource / params.magnitude agree with the resolution (no silent divergence)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander', 'pile-bystander', 'pile-bystander', 'pile-bystander', 'pile-bystander'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 1, perEach: 2, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    const scaled = tracesOf(gameState).find((trace) => trace.resolution !== undefined);
+    assert.ok(scaled !== undefined);
+    const resolution = scaled!.resolution!;
+    // why: the params snapshot and the resolution are two representations of the same
+    // dispatch — pin their agreement so a future edit cannot let them drift apart.
+    assert.equal(scaled!.params.countSource, resolution.countSource, 'params.countSource === resolution.countSource');
+    assert.equal(scaled!.params.magnitude, resolution.magnitude, 'params.magnitude === resolution.magnitude');
+    assert.equal(resolution.perEach, 2, 'the perEach divisor is captured');
+    assert.equal(resolution.computedValue, 2, '1 × floor(5 / 2) = 2');
+  });
+
+  it('is guarded — a count-scaled dispatch does not throw and still grants', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      victory: ['pile-bystander'],
+      turnEconomyAttack: 0,
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          effects: [{ type: 'attack-per-count', magnitude: 2, countSource: 'victory-bystanders' }],
+        },
+      ],
+    });
+
+    // why: the capture is best-effort diagnostics — building the resolution must never
+    // throw out of the play path, even though this minimal state seeds no G.diagnostics.
+    assert.doesNotThrow(() => executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string));
+    assert.equal(gameState.turnEconomy.attack, 2, 'the grant still applied');
+  });
+});

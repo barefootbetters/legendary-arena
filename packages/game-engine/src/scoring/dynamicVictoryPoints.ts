@@ -43,13 +43,14 @@ export const ULTRON_BONUS_PER_TECH_HERO = 1;
  */
 export function countTechHeroesAmongCards(
   cardIds: readonly CardExtId[],
-  cardTraits: Record<CardExtId, { heroClass: string | null; team: string | null }>,
+  cardTraits: Record<CardExtId, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
 ): number {
   let techHeroCount = 0;
   for (const cardId of cardIds) {
     // why: only Hero cards carry a heroClass; non-hero cards are null/absent and
     // are not counted. Optional-chain so an absent entry reads as undefined, not a throw.
-    if (cardTraits[cardId]?.heroClass === 'tech') {
+    // why: WP-703 / D-24523 — a dual-class tech card (tech on either printed class) counts.
+    if (cardTraits[cardId]?.heroClass === 'tech' || cardTraits[cardId]?.heroClass2 === 'tech') {
       techHeroCount++;
     }
   }
@@ -90,7 +91,7 @@ export function computeDynamicVillainVictoryPoints(
   cardId: CardExtId,
   victoryPile: readonly CardExtId[],
   allPlayerCardIds: readonly CardExtId[],
-  cardTraits: Record<CardExtId, { heroClass: string | null; team: string | null }>,
+  cardTraits: Record<CardExtId, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
 ): number | null {
   // why: `[icon:piercing]` renders Victory Points in this card data (corroborated
   // across the corpus: Ultron, amwp, 3dtc). Supreme HYDRA is the FIRST card-text VP

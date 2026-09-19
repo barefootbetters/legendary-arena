@@ -1,0 +1,1966 @@
+[
+  {
+    "id": "reveal-or-wound-no-match-gains-wound",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": ["core/spider-man/spider-man#0"] } },
+        "cardTraits": { "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "A player with no matching Hero to reveal gains one Wound to their discard pile — reveal-or-wound applies gainWound only when the hero-trait predicate is unmet (D-24281)."
+  },
+  {
+    "id": "reveal-or-wound-match-in-hand-spared",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } },
+        "cardTraits": { "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "A player holding a matching X-Men Hero in hand reveals it for free and gains no Wound (D-24281)."
+  },
+  {
+    "id": "reveal-or-wound-match-in-play-spared",
+    "mechanic": "reveal-or-wound",
+    "decision": "D-24281",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/brotherhood/sabretooth#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "reveal-or-wound", "requireKind": "team", "requireValue": "x-men" },
+        "playerZones": { "0": { "hand": [], "inPlay": ["core/wolverine/wolverine#0"] } },
+        "cardTraits": { "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The reveal predicate scans hand union in-play, not hand alone (the 2026-07-31 amendment): a matching Hero already played this turn sits in in-play and still spares the Wound. A hand-only regression would wrongly wound this player (D-24281)."
+  },
+  {
+    "id": "ko-wounds-current-kos-hand-and-discard",
+    "mechanic": "ko-wounds-current-hand-and-discard",
+    "decision": "D-24329",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/ymir-frost-giant-king#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-wounds-current-hand-and-discard" },
+        "playerZones": { "0": { "hand": ["pile-wound", "core/wolverine/wolverine#0", "pile-wound"], "discard": ["core/spider-man/spider-man#0", "pile-wound"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound", "pile-wound", "pile-wound"] },
+    "why": "Ymir's Fight KOs every Wound from the current player's hand and discard pile to the general KO pile — the two hand Wounds then the discard Wound all land in G.ko (D-24329)."
+  },
+  {
+    "id": "ko-wounds-current-spares-in-play",
+    "mechanic": "ko-wounds-current-hand-and-discard",
+    "decision": "D-24329",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/ymir-frost-giant-king#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-wounds-current-hand-and-discard" },
+        "playerZones": { "0": { "hand": ["pile-wound"], "inPlay": ["pile-wound"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "inPlay", "cards": ["pile-wound"] },
+    "why": "The scan is hand + discard only, never in-play — a Wound in play is left untouched (Wounds are never played into in-play; D-24329 narrowing 2). The hand Wound is still KO'd, so the handler did run."
+  },
+  {
+    "id": "melter-park-kos-nothing",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": {
+          "0": { "deck": ["pile-wound", "core/wolverine/wolverine#0"] },
+          "1": { "deck": ["core/spider-man/spider-man#0"] }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Melter's Fight is now an interactive per-card KO/keep choice (D-24413, superseding the D-24332 auto-resolve): revealing the deck tops KOs nothing at park time — the KO waits for the player's resolve. The old auto-resolve would have culled the revealed Wound immediately."
+  },
+  {
+    "id": "melter-park-queues-one-choice",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": {
+          "0": { "deck": ["pile-wound", "core/wolverine/wolverine#0"] },
+          "1": { "deck": ["core/spider-man/spider-man#0"] }
+        }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "Melter's Fight parks exactly one PendingMelterKoChoice for the fighting player, carrying every revealed deck top (D-24413, active-player-scoped choice)."
+  },
+  {
+    "id": "melter-resolve-ko-culls-revealed-card",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/wolverine/wolverine#0"] },
+        "revealedTops": [{ "ownerPlayerID": "0", "cardId": "pile-wound" }],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "Resolving a Melter choice with keep=false KOs the chosen revealed card from its owner's deck top to the KO pile (D-24413)."
+  },
+  {
+    "id": "melter-resolve-keep-spares-card",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/wolverine/wolverine#0"] },
+        "revealedTops": [{ "ownerPlayerID": "0", "cardId": "pile-wound" }],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": true }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Resolving a Melter choice with keep=true is a KO no-op — the card was never removed and stays face-up on top of its owner's deck (D-24413, the printed 'or put it back')."
+  },
+  {
+    "id": "optional-ko-reward-kos-in-play-card",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24442",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["starting-shield-agent"] },
+    "why": "The optional-ko-reward KO source now includes in-play (hand union discard union in-play): a card played this turn can be KO'd for the reward — the classic deck-thinning play the printed hand-or-discard wording excluded (D-24442)."
+  },
+  {
+    "id": "optional-ko-reward-in-play-fires-reward",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24442",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "KO'ing an in-play card still dispatches the reward (here rescue, moving one Bystander to the Victory pile); the KO does not claw back the value the played card already produced (D-24442)."
+  },
+  {
+    "id": "dual-class-matches-second-printed-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "ranged",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": true },
+    "why": "A dual-class card counts as its SECOND printed class: Ruby Summers 'Heir to Legends' (Strength + Ranged) satisfies a Ranged test (D-24523)."
+  },
+  {
+    "id": "dual-class-matches-first-printed-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "strength",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": true },
+    "why": "A dual-class card still counts as its FIRST printed class — the second class is additive, not a replacement (D-24523)."
+  },
+  {
+    "id": "dual-class-rejects-unprinted-class",
+    "mechanic": "dual-class-hero",
+    "decision": "D-24523",
+    "scenario": {
+      "action": "query-card-has-class",
+      "setup": {
+        "cardId": "ssw1/ruby-summers/heir-to-legends#0",
+        "classSlug": "tech",
+        "cardTraits": { "ssw1/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" } }
+      }
+    },
+    "expected": { "kind": "boolean-result", "value": false },
+    "why": "A dual-class card matches ONLY its two printed classes: a class it does not print (Tech) returns false, so the dual-class change grants no phantom membership (D-24523)."
+  },
+  {
+    "id": "gain-wound-each-other-wounds-other-player",
+    "mechanic": "gain-wound",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/lizard#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "each-other" },
+        "playerZones": { "0": {}, "1": {} },
+        "woundsSupply": 4
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "1", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "gain-wound with target 'each-other' wounds every player except the current one; the non-current player gains exactly one Wound to their discard, proving the effect fired (D-24295, the Lizard)."
+  },
+  {
+    "id": "gain-wound-each-other-spares-current-player",
+    "mechanic": "gain-wound",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/lizard#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "each-other" },
+        "playerZones": { "0": {}, "1": {} },
+        "woundsSupply": 4
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The current (fighting) player is excluded from an 'each-other' wound and gains nothing — the seat-exclusion a hand-rolled each-player loop gets wrong. Paired with gain-wound-each-other-wounds-other-player, which proves the handler ran (D-24295)."
+  },
+  {
+    "id": "ko-hero-each-zone-restricted-kos-only-named-zone",
+    "mechanic": "ko-hero",
+    "decision": "D-24280",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/x-men-foes/juggernaut#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "each", "magnitude": 2, "zone": "discard" },
+        "playerZones": { "0": { "discard": ["core/wolverine/wolverine#0"], "hand": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "A zone-restricted each-player ko-hero (Juggernaut) KOs only from the named source zone (discard); with magnitude 2 but one Hero in discard it KOs that Hero and stops — it does NOT fall back to hand (D-24280)."
+  },
+  {
+    "id": "ko-hero-each-zone-restricted-spares-other-zones",
+    "mechanic": "ko-hero",
+    "decision": "D-24280",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/x-men-foes/juggernaut#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "each", "magnitude": 2, "zone": "discard" },
+        "playerZones": { "0": { "discard": ["core/wolverine/wolverine#0"], "hand": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The hand Hero is untouched by a discard-restricted KO even when the KO count exceeds the discard's Hero supply — the no-fallback source restriction (D-24280). Paired with the positive sibling that asserts the discard Hero was KO'd."
+  },
+  {
+    "id": "gain-wound-unless-victory-group-wounds-without-group-villain",
+    "mechanic": "gain-wound-unless-victory-villain-group",
+    "decision": "D-24299",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core-villain-hydra-viper-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound-unless-victory-villain-group", "victoryVillainGroup": "hydra" },
+        "playerZones": { "0": { "victory": [] } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "Viper's conditional each-player wound: a player with no other HYDRA Villain in their Victory pile gains one Wound to their discard (D-24299)."
+  },
+  {
+    "id": "gain-wound-unless-victory-group-spares-with-group-villain",
+    "mechanic": "gain-wound-unless-victory-villain-group",
+    "decision": "D-24299",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core-villain-hydra-viper-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound-unless-victory-villain-group", "victoryVillainGroup": "hydra" },
+        "playerZones": { "0": { "victory": ["core-villain-hydra-baron-strucker-02"] } },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "A player who already holds ANOTHER HYDRA Villain in their Victory pile is spared the Wound — the anchored group-prefix membership test excludes the just-fought Viper. Paired with the positive sibling that proves the handler wounds an unprotected player (D-24299)."
+  },
+  {
+    "id": "capture-bystander-counted-awards-to-victory",
+    "mechanic": "capture-bystander",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander", "magnitude": 3 },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander", "pile-bystander"] },
+    "why": "The counted capture-bystander (Abomination, magnitude 3) rescues N Bystanders and, on Fight, awards them immediately to the defeating player's Victory pile (D-24295)."
+  },
+  {
+    "id": "capture-bystander-counted-bounded-by-supply",
+    "mechanic": "capture-bystander",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander", "magnitude": 3 },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "The counted rescue is bounded by the Bystander supply: with magnitude 3 but only two Bystanders available, exactly two are rescued and the loop stops (D-24295)."
+  },
+  {
+    "id": "villain-location-gate-fires-on-listed-space",
+    "mechanic": "villain-location-gate",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "cityIndex": 0,
+        "descriptor": { "primitive": "gain-wound", "target": "current", "requireCitySpaces": ["sewers"] },
+        "playerZones": { "0": {} },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-wound"] },
+    "why": "A location-gated villain effect fires when the villain is fought on a listed City space (index 0 = Sewers): the current player gains the Wound (D-24295)."
+  },
+  {
+    "id": "villain-location-gate-blocked-off-listed-space",
+    "mechanic": "villain-location-gate",
+    "decision": "D-24295",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/abomination#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "cityIndex": 4,
+        "descriptor": { "primitive": "gain-wound", "target": "current", "requireCitySpaces": ["sewers"] },
+        "playerZones": { "0": {} },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "The same effect is blocked when the villain is fought off the listed space (index 4 = Bridge, not Sewers): the gate fails closed and no Wound is gained. Paired with the on-space sibling that proves the effect fires (D-24295)."
+  },
+  {
+    "id": "melter-reshuffle-on-empty-deck-refills-from-discard",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": { "0": { "deck": [], "discard": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "When a player's deck is empty, Melter's reveal reshuffles their discard into the deck first (the standard reveal-reshuffle rule, D-24285): the discarded card is now on the deck and revealed (D-24413)."
+  },
+  {
+    "id": "melter-reshuffle-on-empty-deck-empties-discard-and-parks",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/melter#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-cullable-each-deck-top" },
+        "playerZones": { "0": { "deck": [], "discard": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "A Melter choice parks over the reshuffled deck top — the reveal proceeded on the refilled deck, not a no-op on an empty one; had the reshuffle been skipped the deck would stay empty and no choice would park (D-24413)."
+  },
+  {
+    "id": "gain-recruit-current-adds-to-turn-economy",
+    "mechanic": "gain-recruit-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hand/hand-ninjas#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-recruit-current", "magnitude": 2 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "gain-recruit-current (Hand Ninjas Fight reward) adds its magnitude to the defeating player's recruit for the turn — the first ruling asserting on the turn economy, via the new turn-economy-value expectation kind (D-24350)."
+  },
+  {
+    "id": "gain-wound-current-bumps-wounds-drawn",
+    "mechanic": "gain-wound",
+    "decision": "D-24023",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "current" },
+        "playerZones": { "0": {} },
+        "woundsSupply": 2
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "woundsDrawn", "amount": 1 },
+    "why": "When the current player gains a Wound, the handler bumps the UI-facing turnEconomy.woundsDrawn projection by one so the economy is not off-by-one (D-24023, the gain-wound primitive)."
+  },
+  {
+    "id": "gain-wound-each-bumps-wounds-drawn-current-only",
+    "mechanic": "gain-wound",
+    "decision": "D-24023",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-wound", "target": "each" },
+        "playerZones": { "0": {}, "1": {} },
+        "woundsSupply": 4
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "woundsDrawn", "amount": 1 },
+    "why": "An each-player wound wounds every player but bumps woundsDrawn only ONCE, for the current player — the projection reports the current player's wounds only, so a two-player each-wound leaves woundsDrawn at 1 rather than 2 (D-24023)."
+  },
+  {
+    "id": "draw-cards-current-draws-to-hand",
+    "mechanic": "draw-cards-current",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/enchantress#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "draw-cards-current", "drawCount": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"] },
+    "why": "draw-cards-current (Enchantress) draws its drawCount cards from the top of the current player's deck into their hand, in deck order (D-24290)."
+  },
+  {
+    "id": "draw-cards-current-removes-from-deck-top",
+    "mechanic": "draw-cards-current",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/enchantress#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "draw-cards-current", "drawCount": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/hulk/hulk#0"] },
+    "why": "The drawn cards are removed from the top of the deck, leaving the undrawn remainder — proving the draw consumed the deck top rather than copying (D-24290)."
+  },
+  {
+    "id": "hero-attack-grant-adds-to-turn-economy",
+    "mechanic": "hero-attack",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "attack", "magnitude": 3 }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 3 },
+    "why": "A hero attack-grant effect adds its magnitude to the acting player's attack for the turn — the first hero-effect ruling, via the new fire-hero-effect action reaching the data-driven hero-effect executor (D-24022)."
+  },
+  {
+    "id": "hero-recruit-grant-adds-to-turn-economy",
+    "mechanic": "hero-recruit",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/black-widow#0",
+        "effect": { "type": "recruit", "magnitude": 2 }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "A hero recruit-grant effect adds its magnitude to the acting player's recruit — the fire-hero-effect action reaches the hero-effect executor for any MVP keyword, not just attack (D-24022)."
+  },
+  {
+    "id": "hero-draw-bumps-cards-drawn",
+    "mechanic": "hero-draw",
+    "decision": "D-24476",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/web-shooters#0",
+        "effect": { "type": "draw", "magnitude": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "cardsDrawn", "amount": 2 },
+    "why": "A hero draw effect draws N cards and counts the realized draw toward turnEconomy.cardsDrawn — the per-turn effect-draw total the cardsDrawnThisTurnAtLeast gate reads (D-24476)."
+  },
+  {
+    "id": "hero-draw-moves-deck-top-to-hand",
+    "mechanic": "hero-draw",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/web-shooters#0",
+        "effect": { "type": "draw", "magnitude": 2 },
+        "playerZones": { "0": { "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"] },
+    "why": "The hero draw moves the top N cards of the player's deck into their hand, in deck order (D-24022, the data-driven hero-effect dispatch / draw keyword)."
+  },
+  {
+    "id": "hero-rescue-moves-bystander-to-victory",
+    "mechanic": "hero-rescue",
+    "decision": "D-24017",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/dangerous-rescue#0",
+        "effect": { "type": "rescue", "magnitude": 1 },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "A hero rescue effect moves a Bystander from the shared supply into the acting player's Victory pile (D-24017)."
+  },
+  {
+    "id": "hero-rescue-bounded-by-bystander-supply",
+    "mechanic": "hero-rescue",
+    "decision": "D-24017",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/black-widow/dangerous-rescue#0",
+        "effect": { "type": "rescue", "magnitude": 2 },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "The rescue is bounded by the Bystander supply — magnitude 2 with one Bystander available rescues exactly one (D-24017)."
+  },
+  {
+    "id": "hero-ko-removes-played-card-to-ko-pile",
+    "mechanic": "hero-ko",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "ko" },
+        "playerZones": { "0": { "inPlay": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "A hero ko effect KOs the played card itself — the source card moves from in-play to the KO pile (D-24022, the ko keyword targets the played card)."
+  },
+  {
+    "id": "hero-ko-empties-in-play-of-the-card",
+    "mechanic": "hero-ko",
+    "decision": "D-24022",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/spider-man/spider-man#0",
+        "effect": { "type": "ko" },
+        "playerZones": { "0": { "inPlay": ["core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "inPlay", "cards": [] },
+    "why": "The KO'd card is removed from in-play before it enters the KO pile — it is no longer in play (D-24022). Paired with the positive sibling that asserts it reached the KO pile."
+  },
+  {
+    "id": "scheme-twist-increments-twist-count",
+    "mechanic": "scheme-twist-counter",
+    "decision": "D-2401",
+    "scenario": {
+      "action": "fire-rule-hook",
+      "setup": { "trigger": "onSchemeTwistRevealed", "cardId": "test-twist-001" }
+    },
+    "expected": { "kind": "counter-value", "counter": "schemeTwistCount", "count": 1 },
+    "why": "D-2401 routes the scheme-twist handler through the executeRuleHooks → applyRuleEffects pipeline as an ImplementationMap entry, and buildGenericTwistEffects (schemeHandlers.ts) emits a modifyCounter schemeTwistCount delta:1 on every onSchemeTwistRevealed, so one reveal on a fresh state (schemeTwistCount absent = 0) leaves the counter at 1."
+  },
+  {
+    "id": "mastermind-strike-increments-strike-count",
+    "mechanic": "mastermind-strike-counter",
+    "decision": "D-2403",
+    "scenario": {
+      "action": "fire-rule-hook",
+      "setup": { "trigger": "onMastermindStrikeRevealed", "cardId": "test-strike-001" }
+    },
+    "expected": { "kind": "counter-value", "counter": "masterStrikeCount", "count": 1 },
+    "why": "D-2403 (MVP Mastermind Strike Uses Counter + Message Only) has the mastermind-strike handler produce a modifyCounter masterStrikeCount delta:1 plus a queueMessage, so one onMastermindStrikeRevealed reveal on a fresh state (masterStrikeCount absent = 0) leaves the counter at 1."
+  },
+  {
+    "id": "melter-multi-resolve-leaves-sibling-pending",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/spider-man/spider-man#0"], "1": ["core/wolverine/wolverine#0"] },
+        "revealedTops": [
+          { "ownerPlayerID": "0", "cardId": "pile-wound" },
+          { "ownerPlayerID": "1", "cardId": "core/wolverine/wolverine#0" }
+        ],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "melter", "length": 1 },
+    "why": "Resolving one of a two-reveal Melter choice removes only that revealed top from the entry; the entry still holds the sibling reveal, so the choice is NOT front-popped and the queue stays length 1 (the entry pops only when its revealedTops list empties, D-24413)."
+  },
+  {
+    "id": "melter-multi-resolve-kos-only-chosen-owner",
+    "mechanic": "ko-cullable-each-deck-top",
+    "decision": "D-24413",
+    "scenario": {
+      "action": "resolve-melter-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "decks": { "0": ["pile-wound", "core/spider-man/spider-man#0"], "1": ["core/wolverine/wolverine#0"] },
+        "revealedTops": [
+          { "ownerPlayerID": "0", "cardId": "pile-wound" },
+          { "ownerPlayerID": "1", "cardId": "core/wolverine/wolverine#0" }
+        ],
+        "resolve": { "ownerPlayerID": "0", "cardId": "pile-wound", "keep": false }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "A single resolve KOs only the chosen owner's revealed card (Player 0's Wound); the sibling reveal (Player 1's Hero) is untouched and still awaits its own resolve — one decision per revealed top (D-24413)."
+  },
+  {
+    "id": "optional-ko-reward-stale-target-kos-nothing",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "not-a-card-in-play" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "A resolve naming a card absent from the stated zone is a silent no-op: nothing is KO'd and the reward never fires, because the reward is atomic on an actual KO (D-24019)."
+  },
+  {
+    "id": "optional-ko-reward-stale-target-keeps-queue",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "zone": "inPlay", "cardId": "not-a-card-in-play" }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 1 },
+    "why": "The stale-target no-op leaves the pending entry in place so the player can resubmit a valid target — the queue is not front-popped on an invalid KO (D-24019). Paired with the sibling that proves nothing was KO'd."
+  },
+  {
+    "id": "scry-ko-single-card-deck-auto-kos",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "With only one card to look at there is nothing to choose, so scry-ko-own-deck AUTO-KOs the sole deck-top card rather than parking a single-option choice that would freeze the board (D-24282 single-card carve-out)."
+  },
+  {
+    "id": "scry-ko-two-card-deck-parks-a-choice",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "scry-ko", "length": 1 },
+    "why": "With two or more cards the interactive upgrade parks one scry-ko choice for the player to pick which of the revealed top two to KO — restoring the agency the old auto-resolve removed (D-24282 / WP-470)."
+  },
+  {
+    "id": "scry-ko-two-card-deck-kos-nothing-at-park",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/doombot-legion#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "scry-ko-own-deck" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "The interactive scry-ko KOs nothing at park time — the KO waits for the player's resolve; the old auto-resolve would have immediately KO'd the worse of the two cards (D-24282). Paired with the park-length sibling that proves the choice opened."
+  },
+  {
+    "id": "scry-ko-resolve-kos-the-chosen-card",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "resolve-scry-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "revealedCardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked scry-ko choice KOs the player's chosen card from the revealed top two (D-24282); the pick must be one of the revealed ext_ids (round-trip rule)."
+  },
+  {
+    "id": "scry-ko-resolve-keeps-the-other-on-deck",
+    "mechanic": "scry-ko-own-deck",
+    "decision": "D-24282",
+    "scenario": {
+      "action": "resolve-scry-ko",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "revealedCardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The un-chosen revealed card stays on top of the deck — only the picked card is removed, so the other of the two is kept (D-24282, 'the other stays on top')."
+  },
+  {
+    "id": "optional-ko-reward-decline-kos-nothing",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "Declining the optional KO leaves the board untouched — no card is KO'd and (since the reward is atomic on an actual KO) no reward fires (D-24019)."
+  },
+  {
+    "id": "optional-ko-reward-decline-pops-the-queue",
+    "mechanic": "optional-ko-reward",
+    "decision": "D-24019",
+    "scenario": {
+      "action": "resolve-optional-ko-reward",
+      "setup": {
+        "currentPlayer": "0",
+        "pending": { "rewardType": "rescue", "rewardMagnitude": 1, "sourceCardId": "core/black-widow/dangerous-rescue#0" },
+        "inPlay": ["starting-shield-agent"],
+        "bystandersSupply": 1,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "optional-ko-reward", "length": 0 },
+    "why": "Unlike a stale-target no-op, an explicit decline front-pops the pending entry so the choice is resolved and the turn can end — the queue empties (D-24019). Paired with the sibling that proves nothing was KO'd."
+  },
+  {
+    "id": "ko-hero-current-single-eligible-auto-kos",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "With exactly one KO-able Hero the choice is forced, so a current-player ko-hero AUTO-KOs it rather than parking a single-option choice that would freeze the board (D-24007 decision C: one distinct option → auto-KO)."
+  },
+  {
+    "id": "ko-hero-current-two-eligible-parks-a-choice",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "ko-hero", "length": 1 },
+    "why": "With two or more distinct KO-able Heroes there is a genuine choice of which to spare, so a current-player ko-hero parks one interactive choice for the player instead of auto-resolving (D-24007 / WP-242)."
+  },
+  {
+    "id": "ko-hero-current-two-eligible-kos-nothing-at-park",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/green-goblin#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-hero", "target": "current" },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "The interactive current-player ko-hero KOs nothing at park time — the KO waits for the player's pick (D-24007). Paired with the park-length sibling that proves the choice opened."
+  },
+  {
+    "id": "ko-hero-resolve-kos-the-chosen-hero",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "resolve-ko-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } },
+        "resolve": { "zone": "hand", "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked KO-a-Hero choice KOs the player's chosen Hero from the named zone (D-24007); eligibility is recomputed against current G, so only a present target is accepted."
+  },
+  {
+    "id": "ko-hero-resolve-spares-the-unchosen-hero",
+    "mechanic": "ko-hero",
+    "decision": "D-24007",
+    "scenario": {
+      "action": "resolve-ko-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } },
+        "resolve": { "zone": "hand", "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "Only the chosen Hero is KO'd — the other eligible Hero is spared and stays in hand, which is the whole point of the interactive pick (D-24007)."
+  },
+  {
+    "id": "discard-to-play-resolve-removes-cost-card-from-hand",
+    "mechanic": "discard-to-play",
+    "decision": "D-24184",
+    "scenario": {
+      "action": "resolve-discard-to-play",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"],
+        "pending": { "sourceCardId": "core/cyclops/determination#0", "remaining": 1 },
+        "resolve": { "cardId": "core/spider-man/spider-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a mandatory discard-to-play cost moves the chosen hand card out of hand to pay the cost — the remaining hand card is untouched (D-24184, WP-383)."
+  },
+  {
+    "id": "discard-to-play-resolve-moves-cost-card-to-discard",
+    "mechanic": "discard-to-play",
+    "decision": "D-24184",
+    "scenario": {
+      "action": "resolve-discard-to-play",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"],
+        "pending": { "sourceCardId": "core/cyclops/determination#0", "remaining": 1 },
+        "resolve": { "cardId": "core/spider-man/spider-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "The card discarded to pay the cost lands in the player's discard pile (through the WP-498 discard chokepoint), not the KO pile — a discard-to-play cost is a discard, not a KO (D-24184)."
+  },
+  {
+    "id": "ko-heroes-by-trait-kos-the-matching-heroes",
+    "mechanic": "ko-heroes-current-by-trait",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/destroyer#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-by-trait", "requireKind": "team", "requireValue": "shield" },
+        "playerZones": { "0": { "hand": ["core/shield/nick-fury#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/shield/nick-fury#0": { "heroClass": "covert", "team": "shield" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/shield/nick-fury#0"] },
+    "why": "The Destroyer's Fight KOs ALL of the current player's Heroes matching the trait predicate ([team:shield]); the S.H.I.E.L.D. Hero is KO'd while the non-matching X-Men Hero is not (D-24290)."
+  },
+  {
+    "id": "ko-heroes-by-trait-spares-non-matching-heroes",
+    "mechanic": "ko-heroes-current-by-trait",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/enemies-of-asgard/destroyer#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-by-trait", "requireKind": "team", "requireValue": "shield" },
+        "playerZones": { "0": { "hand": ["core/shield/nick-fury#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/shield/nick-fury#0": { "heroClass": "covert", "team": "shield" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "A Hero whose trait does not match the predicate is left in hand — the trait-filtered KO removes only the matching Heroes (D-24290). Paired with the sibling that proves the matching Hero was KO'd."
+  },
+  {
+    "id": "rescue-bystanders-by-trait-count-one-per-matching-hero",
+    "mechanic": "rescue-bystanders-current-by-trait-count",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/baron-zemo#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "rescue-bystanders-current-by-trait-count", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": { "hand": ["core/avengers/captain-america#0", "core/avengers/iron-man#0", "core/wolverine/wolverine#0"] } },
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "Baron Zemo rescues one Bystander per current-player Hero matching the trait ([team:avengers]) — two Avengers Heroes rescue two Bystanders to the Victory pile, and the non-matching X-Men Hero adds none (D-24290)."
+  },
+  {
+    "id": "rescue-bystanders-by-trait-count-bounded-by-supply",
+    "mechanic": "rescue-bystanders-current-by-trait-count",
+    "decision": "D-24290",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/masters-of-evil/baron-zemo#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "rescue-bystanders-current-by-trait-count", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": { "hand": ["core/avengers/captain-america#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": ["pile-bystander"] },
+    "why": "The per-matching-hero rescue is bounded by the Bystander supply: two matching Heroes but only one Bystander available rescues exactly one (D-24290)."
+  },
+  {
+    "id": "gain-officer-current-moves-officer-to-discard",
+    "mechanic": "gain-officer-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/hydra-kidnappers#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-officer-current" },
+        "playerZones": { "0": {} },
+        "officersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["pile-shield-officer"] },
+    "why": "HYDRA Kidnappers' beneficial 'may gain a S.H.I.E.L.D. Officer' auto-takes (pure upside, no choice): one Officer moves from the supply to the defeating player's discard (D-24350)."
+  },
+  {
+    "id": "gain-officer-current-empty-supply-is-noop",
+    "mechanic": "gain-officer-current",
+    "decision": "D-24350",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/hydra/hydra-kidnappers#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "gain-officer-current" },
+        "playerZones": { "0": {} },
+        "officersSupply": 0
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "An empty Officer supply is a reachable no-op — nothing is gained and the player's discard stays empty (D-24350). Paired with the sibling that proves an Officer is gained when the supply has one."
+  },
+  {
+    "id": "override-next-hand-size-sets-absolute-target",
+    "mechanic": "override-next-hand-size",
+    "decision": "D-24307",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/spider-foes/doctor-octopus#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "override-next-hand-size", "magnitude": 8 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "hand-size-override", "player": "0", "size": 8 },
+    "why": "Doctor Octopus's Fight sets the current player's next-hand fill target to an ABSOLUTE size (8, 'draw eight cards instead of six'), written to G.handSizeOverrides (D-24307)."
+  },
+  {
+    "id": "add-next-hand-size-adds-to-base-hand-size",
+    "mechanic": "add-next-hand-size",
+    "decision": "D-24352",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/savage-land/savage-land-mutates#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "add-next-hand-size", "magnitude": 1 },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "hand-size-override", "player": "0", "size": 7 },
+    "why": "Savage Land Mutates ADDS to the base hand size rather than replacing it: with no prior override the next-hand target becomes HAND_SIZE (6) + 1 = 7, so two defeats in a turn would stack (D-24352, contrast the absolute override-next-hand-size)."
+  },
+  {
+    "id": "capture-hq-hero-rightmost-captures-rightmost-non-null",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "rightmost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", null, "core/wolverine/wolverine#0", null, "core/hulk/hulk#0"]
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/hulk/hulk#0"] },
+    "why": "The rightmost selector scans the five HQ slots from index 4 down to 0 and captures the first non-null Hero, skipping empty slots: with heroes in slots 0/2/4 it captures slot 4 (Hulk) and attaches it to the villain's capture list (D-21401, WP-214 selector determinism)."
+  },
+  {
+    "id": "capture-hq-hero-highest-cost-captures-costliest",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "highest-cost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/spider-man/spider-man#0": 3, "core/wolverine/wolverine#0": 7, "core/hulk/hulk#0": 2 }
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "The highest-cost selector reads G.cardStats[id].cost across the HQ and captures the costliest Hero — here Wolverine at cost 7 over Spider-Man (3) and Hulk (2) — proving the selector uses the cost stat, not slot position (D-21401, WP-214)."
+  },
+  {
+    "id": "capture-hq-hero-highest-cost-tie-breaks-to-rightmost-index",
+    "mechanic": "capture-hq-hero",
+    "decision": "D-21401",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "skrull-super-skrull-01",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-hq-hero", "selector": "highest-cost" },
+        "playerZones": { "0": {} },
+        "hq": ["core/spider-man/spider-man#0", null, "core/wolverine/wolverine#0", null, null],
+        "cardStats": { "core/spider-man/spider-man#0": 5, "core/wolverine/wolverine#0": 5 }
+      }
+    },
+    "expected": { "kind": "villain-attached-heroes", "villainCardId": "skrull-super-skrull-01", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "When two HQ Heroes tie on cost (both 5) the highest-cost selector breaks the tie by the RIGHTMOST slot index, capturing Wolverine (slot 2) over Spider-Man (slot 0) — the determinism contract that keeps the capture replayable regardless of scan order (D-21401, WP-214)."
+  },
+  {
+    "id": "hero-deck-top-to-escape-moves-top-card-to-escaped",
+    "mechanic": "hero-deck-top-to-escape",
+    "decision": "D-18502",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-hero-deck-escape-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "hero-deck-top-to-escape" },
+        "playerZones": { "0": {} },
+        "heroDeck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"]
+      }
+    },
+    "expected": { "kind": "escaped-pile-equal", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "hero-deck-top-to-escape moves the TOP card of the shared hero-deck reservoir (G.heroDeck[0], Spider-Man) into the escaped pile — proving it takes index 0, not the card beneath it (D-18502, WP-185; the reservoir is the top-level G.heroDeck, not G.piles)."
+  },
+  {
+    "id": "hero-deck-top-to-escape-empty-reservoir-is-noop",
+    "mechanic": "hero-deck-top-to-escape",
+    "decision": "D-18502",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-hero-deck-escape-01",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "hero-deck-top-to-escape" },
+        "playerZones": { "0": {} },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "escaped-pile-equal", "cards": [] },
+    "why": "An empty hero-deck reservoir is a reachable silent no-op — nothing escapes and the escaped pile stays empty (D-18502, WP-185). Paired with the positive sibling that proves a card escapes when the reservoir is non-empty."
+  },
+  {
+    "id": "capture-bystander-on-escape-attaches-to-villain",
+    "mechanic": "capture-bystander",
+    "decision": "D-18603",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-bystander-escape-01",
+        "timing": "onEscape",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander" },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "villain-bystander-escape-01", "cards": ["pile-bystander"] },
+    "why": "The un-counted capture-bystander fired on Escape attaches one Bystander from the supply to the escaping card's attached-bystander list (G.attachedBystanders), proving the capture ran off the Fight fire site (D-18603)."
+  },
+  {
+    "id": "capture-bystander-on-escape-does-not-award-to-victory",
+    "mechanic": "capture-bystander",
+    "decision": "D-18603",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "villain-bystander-escape-01",
+        "timing": "onEscape",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystander" },
+        "playerZones": { "0": { "victory": [] } },
+        "bystandersSupply": 1
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "victory", "cards": [] },
+    "why": "On Escape the auto-award is suppressed: the immediate award to the player's Victory pile happens ONLY on Fight (the post-award fire site), so an escape leaves the captured Bystander attached and the Victory pile empty — the villain got away with it (D-18603, contrast the onFight capture-bystander that awards to Victory). Paired with the sibling that proves the Bystander was attached."
+  },
+  {
+    "id": "give-hq-hero-by-trait-gifts-matching-hero-to-current-discard",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/avengers/iron-man#0"] },
+    "why": "Ultron's Fight (the KO-or-gift double-choice, collapsed to the co-op-dominant gift) gives the [hc:tech] HQ Hero to the CURRENT player's discard, never the victory pile (D-24327 gain-routes-to-discard): Iron Man (Tech) is gifted while Captain America (Strength) is left in the HQ — the trait predicate selects the recipient card (D-24335)."
+  },
+  {
+    "id": "give-hq-hero-by-trait-no-matching-hero-is-noop",
+    "mechanic": "give-hq-hero-by-trait-to-current",
+    "decision": "D-24335",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/ultron#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-by-trait-to-current", "requireKind": "hero-class", "requireValue": "tech" },
+        "playerZones": { "0": { "discard": [] } },
+        "hq": ["core/avengers/captain-america#0", "core/hulk/hulk#0", null, null, null],
+        "cardTraits": {
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "When no HQ Hero matches the trait predicate ([hc:tech]) the gift is a reachable no-op — nothing is removed from the HQ and the current player's discard stays empty (D-24335). Paired with the positive sibling that proves a matching Hero is gifted."
+  },
+  {
+    "id": "give-hq-hero-each-player-non-current-auto-gains-highest-cost",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/skrulls/paibok-the-power-skrull#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-each-player" },
+        "playerZones": { "0": { "discard": [] }, "1": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/avengers/iron-man#0": 3, "core/avengers/captain-america#0": 8, "core/hulk/hulk#0": 5 },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "1", "zone": "discard", "cards": ["core/avengers/captain-america#0"] },
+    "why": "Paibok's Fight (D-24343 / D-24284 current-parks / others-auto split) resolves non-current players FIRST, each auto-gaining the highest-cost HQ Hero into their discard: the non-current player gains Captain America (cost 8) over Iron Man (3) and Hulk (5), proving the auto-gain uses the cost stat and routes to discard (D-24327)."
+  },
+  {
+    "id": "give-hq-hero-each-player-current-parks-when-multiple-remain",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "core/skrulls/paibok-the-power-skrull#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "give-hq-hero-each-player" },
+        "playerZones": { "0": { "discard": [] }, "1": { "discard": [] } },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/hulk/hulk#0", null, null],
+        "cardStats": { "core/avengers/iron-man#0": 3, "core/avengers/captain-america#0": 8, "core/hulk/hulk#0": 5 },
+        "heroDeck": []
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "give-hq-hero", "length": 1 },
+    "why": "After the non-current player auto-gains one HQ Hero (leaving two, since the empty hero-deck refills the vacated slot with null), the current (human) player faces a genuine which-Hero choice and parks exactly one give-hq-hero pending entry rather than auto-resolving (D-24343 / D-24284 current-parks). Paired with the sibling that proves the non-current auto-gain landed."
+  },
+  {
+    "id": "swap-two-city-villains-swaps-lowest-and-highest",
+    "mechanic": "swap-two-city-villains",
+    "decision": "D-24336",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/whirlwind#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "swap-two-city-villains" },
+        "playerZones": { "0": {} },
+        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "core/masters-of-evil/melter#0"],
+        "villainDeckCardTypes": {
+          "co2e/masters-of-evil/whirlwind#0": "villain",
+          "core/hand/hand-ninjas#0": "henchman",
+          "co2e/masters-of-evil/ultron#0": "villain",
+          "core/hydra/doombot-legion#0": "henchman",
+          "core/masters-of-evil/melter#0": "villain"
+        }
+      }
+    },
+    "expected": { "kind": "city-equal", "cards": ["core/masters-of-evil/melter#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "co2e/masters-of-evil/whirlwind#0"] },
+    "why": "Whirlwind's Ambush (Rule B) swaps the entrance-side villain (index 0, Whirlwind) with the escape-side villain (index 4, Melter) — the maximum positional displacement. The middle villain (Ultron, index 2) and both henchmen (Hand Ninjas index 1, Doombot Legion index 3) are untouched — henchmen never swap and only the lowest/highest villain-occupied spaces move (D-24336, the engine's first City board-position manipulation)."
+  },
+  {
+    "id": "swap-two-city-villains-fewer-than-two-is-noop",
+    "mechanic": "swap-two-city-villains",
+    "decision": "D-24336",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/whirlwind#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "swap-two-city-villains" },
+        "playerZones": { "0": {} },
+        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"],
+        "villainDeckCardTypes": {
+          "co2e/masters-of-evil/whirlwind#0": "villain",
+          "core/hand/hand-ninjas#0": "henchman",
+          "core/hand/hand-ninjas#1": "henchman",
+          "core/hydra/doombot-legion#0": "henchman",
+          "core/hydra/doombot-legion#1": "henchman"
+        }
+      }
+    },
+    "expected": { "kind": "city-equal", "cards": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"] },
+    "why": "Fewer than two Villains in the City is a reachable no-op: with a single Villain (Whirlwind) among four henchmen there is no second Villain to swap with, so the City row is unchanged (D-24336). Paired with the positive sibling that proves the swap fires with two or more Villains."
+  },
+  {
+    "id": "ko-heroes-count-by-trait-forced-auto-kos-the-count",
+    "mechanic": "ko-heroes-current-count-by-trait",
+    "decision": "D-24353",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/radiation/maestro-wasteland-hulk#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-count-by-trait", "requireKind": "hero-class", "requireValue": "strength" },
+        "playerZones": { "0": { "hand": ["core/hulk/hulk#0", "core/avengers/captain-america#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/hulk/hulk#0", "core/avengers/captain-america#0"] },
+    "why": "Maestro's Fight counts the current player's [hc:strength] Heroes (two) and KOs that many of their Heroes; when the count equals every KO-able Hero the KO is forced and auto-resolves, so both Heroes land in the KO pile (D-24353 — the trait supplies the COUNT, not the victims)."
+  },
+  {
+    "id": "ko-heroes-count-by-trait-no-matching-hero-is-noop",
+    "mechanic": "ko-heroes-current-count-by-trait",
+    "decision": "D-24353",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/radiation/maestro-wasteland-hulk#0",
+        "timing": "onFight",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "ko-heroes-current-count-by-trait", "requireKind": "hero-class", "requireValue": "strength" },
+        "playerZones": { "0": { "hand": ["core/spider-man/spider-man#0"] } },
+        "cardTraits": {
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" }
+        }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "With no [hc:strength] Hero the trait count is zero, so Maestro KOs nothing — a reachable no-op, and the non-matching Covert Hero is never a victim (D-24353). Paired with the positive sibling that proves the counted KO fires."
+  },
+  {
+    "id": "capture-bystanders-plus-per-hq-hero-counts-base-plus-matching",
+    "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+    "decision": "D-24334",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/baron-zemo#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystanders-plus-per-hq-hero-by-trait", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": {} },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/wolverine/wolverine#0", null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 3
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "co2e/masters-of-evil/baron-zemo#0", "cards": ["pile-bystander", "pile-bystander", "pile-bystander"] },
+    "why": "Baron Zemo's Ambush captures a base 1 Bystander plus one per [team:avengers] Hero in the HQ: with two Avengers (Iron Man, Captain America) and one non-Avenger (Wolverine) the count is 1 + 2 = 3, all attached to Baron Zemo's captured-bystander list — attach-only, never awarded here (awarded at his defeat, D-18506 / D-24334)."
+  },
+  {
+    "id": "capture-bystanders-plus-per-hq-hero-bounded-by-supply",
+    "mechanic": "capture-bystanders-plus-per-hq-hero-by-trait",
+    "decision": "D-24334",
+    "scenario": {
+      "action": "fire-villain-effect",
+      "setup": {
+        "cardId": "co2e/masters-of-evil/baron-zemo#0",
+        "timing": "onAmbush",
+        "currentPlayer": "0",
+        "descriptor": { "primitive": "capture-bystanders-plus-per-hq-hero-by-trait", "requireKind": "team", "requireValue": "avengers" },
+        "playerZones": { "0": {} },
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/wolverine/wolverine#0", null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/avengers/captain-america#0": { "heroClass": "strength", "team": "avengers" },
+          "core/wolverine/wolverine#0": { "heroClass": "covert", "team": "x-men" }
+        },
+        "bystandersSupply": 2
+      }
+    },
+    "expected": { "kind": "attached-bystanders-equal", "villainCardId": "co2e/masters-of-evil/baron-zemo#0", "cards": ["pile-bystander", "pile-bystander"] },
+    "why": "The 1 + per-Avengers-HQ-Hero capture (count 3 here) is bounded by the Bystander supply: with only two Bystanders available exactly two attach and the loop stops (D-24334). Paired with the full-supply sibling that proves the base-plus-matching count."
+  },
+  {
+    "id": "hero-ko-wound-reward-kos-the-hand-wound",
+    "mechanic": "ko-wound-reward",
+    "decision": "D-24183",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/wolverine/healing-factor#0",
+        "effect": { "type": "ko-wound-reward", "rewardType": "draw", "magnitude": 1 },
+        "playerZones": { "0": { "hand": ["pile-wound", "core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["pile-wound"] },
+    "why": "Healing Factor's KO-a-Wound reward KOs exactly one Wound from the player's hand to the KO pile before granting the draw reward; the co-played Wolverine (a valuable Hero) is never a KO target — the target is filtered to the Wound token, which is why this family could not reuse the KO-any-card keyword (D-24183). The draw reward is a clean no-op here (empty deck + discard)."
+  },
+  {
+    "id": "hero-ko-wound-reward-no-wound-spares-heroes",
+    "mechanic": "ko-wound-reward",
+    "decision": "D-24183",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/wolverine/healing-factor#0",
+        "effect": { "type": "ko-wound-reward", "rewardType": "draw", "magnitude": 1 },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "With no Wound in hand or discard the optional KO-a-Wound does nothing — nothing is KO'd (the valuable Hero is never KO'd) and no reward is granted (D-24183). Paired with the positive sibling that proves a Wound is KO'd when present."
+  },
+  {
+    "id": "hero-investigate-draws-first-matching-from-top",
+    "mechanic": "investigate",
+    "decision": "D-24373",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "noir/angel-noir/multitalented#0",
+        "effect": { "type": "investigate", "magnitude": 1, "investigateLookCount": 2, "investigateCriteria": [{ "kind": "hero-class", "heroClass": "covert" }] },
+        "playerZones": { "0": { "deck": ["core/hulk/hulk#0", "core/spider-man/spider-man#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "Investigate looks at the top 2 deck cards (Hulk, Spider-Man) and draws the FIRST that matches the static criterion ([hc:covert]): Hulk (Strength) is skipped and Spider-Man (Covert) is drawn to hand — deterministic first-match in look order, no player choice (D-24373, the WP-564 static-criterion subset)."
+  },
+  {
+    "id": "hero-investigate-non-drawn-looked-cards-go-to-bottom",
+    "mechanic": "investigate",
+    "decision": "D-24373",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "noir/angel-noir/multitalented#0",
+        "effect": { "type": "investigate", "magnitude": 1, "investigateLookCount": 2, "investigateCriteria": [{ "kind": "hero-class", "heroClass": "covert" }] },
+        "playerZones": { "0": { "deck": ["core/hulk/hulk#0", "core/spider-man/spider-man#0", "core/avengers/iron-man#0"] } },
+        "cardTraits": {
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" },
+          "core/spider-man/spider-man#0": { "heroClass": "covert", "team": "spider-friends" },
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/avengers/iron-man#0", "core/hulk/hulk#0"] },
+    "why": "After drawing the matched Spider-Man, the non-selected looked-at card (Hulk) goes to the BOTTOM of the deck in look order, while the un-looked-at third card (Iron Man) is now on top: deck becomes [Iron Man, Hulk] (D-24373). Paired with the sibling that proves the matching card was drawn."
+  },
+  {
+    "id": "hero-recruit-as-attack-sets-conversion-flag",
+    "mechanic": "recruit-as-attack",
+    "decision": "D-24389",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "msp1/thor/god-of-thunder#0",
+        "effect": { "type": "recruit-as-attack" },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-flag", "economyFlag": "recruitSpendableAsAttack", "value": true },
+    "why": "God of Thunder's 'You can use Recruit as Attack this turn.' sets the turn-scoped G.turnEconomy.recruitSpendableAsAttack conversion flag to true, so getSpendableAttack later folds unspent Recruit into the fight budget (D-24389 / WP-580)."
+  },
+  {
+    "id": "hero-recruit-as-attack-adds-no-attack-total",
+    "mechanic": "recruit-as-attack",
+    "decision": "D-24389",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "msp1/thor/god-of-thunder#0",
+        "effect": { "type": "recruit-as-attack" },
+        "playerZones": { "0": {} }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "recruit-as-attack is a permission flag, not a grant: it moves no resource total, so G.turnEconomy.attack stays 0 even though the conversion is 'applied' (WP-434) — the Recruit is spendable as Attack only via getSpendableAttack, never by inflating the attack counter (D-24389). Paired with the flag-set sibling."
+  },
+  {
+    "id": "hero-smash-parks-a-discard-choice-with-a-card-to-discard",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "wwhk/bruce-banner/savage-hulk-unleashed#0",
+        "effect": { "type": "smash", "magnitude": 4 },
+        "playerZones": { "0": { "hand": ["core/wolverine/wolverine#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "smash", "length": 1 },
+    "why": "Smash ('discard another card from your hand; if you do, +4 Attack') parks one PendingSmashDiscard when the hand holds another card to discard — the +N Attack is granted at resolve time only if the player discards, so the fire site parks the optional choice rather than granting immediately (D-24492)."
+  },
+  {
+    "id": "hero-smash-empty-hand-parks-nothing",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "wwhk/bruce-banner/savage-hulk-unleashed#0",
+        "effect": { "type": "smash", "magnitude": 4 },
+        "playerZones": { "0": { "hand": [] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "smash", "length": 0 },
+    "why": "With no other card in hand to discard there is nothing to Smash for, so no choice parks and no Attack is granted — a reachable no-op (D-24492). Paired with the sibling that proves the choice parks when a discardable card exists."
+  },
+  {
+    "id": "reveal-top-dispose-parks-a-disposition-choice",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "cvwr/tigra/supernatural-senses#0",
+        "effect": { "type": "reveal-top-dispose" },
+        "playerZones": { "0": { "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "reveal-top-dispose", "length": 1 },
+    "why": "'Look at the top card of your deck. Discard it or put it back.' snapshots the revealed top and parks one PendingRevealTopDispose for the active player — the discard/keep disposition happens at resolve time, not at the fire site (D-24521, Tigra's Supernatural Senses)."
+  },
+  {
+    "id": "reveal-top-dispose-empty-deck-parks-nothing",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "cvwr/tigra/supernatural-senses#0",
+        "effect": { "type": "reveal-top-dispose" },
+        "playerZones": { "0": { "deck": [], "discard": [] } }
+      }
+    },
+    "expected": { "kind": "pending-queue-length", "queue": "reveal-top-dispose", "length": 0 },
+    "why": "An empty deck AND discard means nothing can be revealed on top (the reveal-reshuffle finds no cards), so no choice parks — a reachable no-op (D-24521). Paired with the sibling that proves the choice parks when the deck has a card."
+  },
+  {
+    "id": "resolve-smash-discard-grants-attack",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "resolve-smash",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0"],
+        "magnitude": 4,
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 4 },
+    "why": "Resolving a parked Smash choice by discarding a hand card grants the entry's +N Attack (4) — the discard is the paid cost and the Attack is the payoff, granted only AFTER the discard actually removes the card (D-24492, 'if you do, +N Attack')."
+  },
+  {
+    "id": "resolve-smash-decline-grants-no-attack",
+    "mechanic": "smash",
+    "decision": "D-24492",
+    "scenario": {
+      "action": "resolve-smash",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0"],
+        "magnitude": 4,
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "Declining the Smash grants zero Attack — 'you MAY discard' makes declining a legal, no-cost choice, so no discard means no payoff (D-24492). Paired with the discard sibling that proves the +N Attack fires when the player does discard."
+  },
+  {
+    "id": "resolve-reveal-top-dispose-discard-moves-to-discard",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "resolve-reveal-top-dispose",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "ownerPlayerID": "0", "cardId": "core/wolverine/wolverine#0", "disposition": "discard" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/wolverine/wolverine#0"] },
+    "why": "Resolving a parked reveal-top choice with disposition 'discard' moves the revealed deck-top card from its owner's deck to that owner's discard pile (D-24521); the disposition applies only while the card is still the live deck top."
+  },
+  {
+    "id": "resolve-reveal-top-dispose-keep-leaves-deck-unchanged",
+    "mechanic": "reveal-top-dispose",
+    "decision": "D-24521",
+    "scenario": {
+      "action": "resolve-reveal-top-dispose",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "ownerPlayerID": "0", "cardId": "core/wolverine/wolverine#0", "disposition": "top" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
+    "why": "Resolving with disposition 'top' ('put it back') is a no-op on the deck — the reveal never removed the card, so it stays face-up on top and the deck is unchanged (D-24521). Paired with the discard sibling that proves the card moves when discarded."
+  },
+  {
+    "id": "color-of-hero-you-have-counts-hand-and-play",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["core/iron-man/arc-reactor#0"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "core/iron-man/arc-reactor#0": { "heroClass": "tech", "team": "avengers" }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 2 },
+    "why": "Avengers Assemble!'s 'for each color of Hero you have' counts the distinct Hero colors among the Heroes you HAVE = hand + play area, order-independent (D-24529, rulebook \"'Your Heroes/Allies' & 'Heroes/Allies You Have'\"). Avengers Assemble! (Instinct) in play plus an unplayed Arc Reactor (Tech) still in hand = 2 colors → +2 Recruit, even though only the Instinct card was played. The pre-fix play-area-only reading gave +1."
+  },
+  {
+    "id": "color-of-hero-you-have-excludes-grey-shield",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["starting-shield-agent", "pile-shield-officer"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "starting-shield-agent": { "heroClass": null, "team": null },
+          "pile-shield-officer": { "heroClass": null, "team": null }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 1 },
+    "why": "Grey S.H.I.E.L.D. cards (Agent / Officer / Trooper) have NO Hero Class, so they add no color to 'for each color of Hero you have' (D-24529, rulebook Grey Heroes + Spectrum 'don't have classes, so they don't help'). A hand of two grey Heroes contributes nothing; only the Instinct Avengers Assemble! counts → +1 Recruit. The flip side of D-24345's 'heroClass != null means has a color, never is a Hero'."
+  },
+  {
+    "id": "color-of-hero-you-have-dual-class-in-hand-counts-both",
+    "mechanic": "hero-recruit",
+    "decision": "D-24529",
+    "scenario": {
+      "action": "fire-hero-effect",
+      "setup": {
+        "playerID": "0",
+        "cardId": "core/captain-america/avengers-assemble#0",
+        "effect": { "type": "recruit-per-count", "magnitude": 1, "countSource": "distinct-hero-classes-played-this-turn" },
+        "playerZones": { "0": { "inPlay": ["core/captain-america/avengers-assemble#0"], "hand": ["ssw2/ruby-summers/heir-to-legends#0"] } },
+        "cardTraits": {
+          "core/captain-america/avengers-assemble#0": { "heroClass": "instinct", "team": "avengers" },
+          "ssw2/ruby-summers/heir-to-legends#0": { "heroClass": "strength", "heroClass2": "ranged", "team": "x-men" }
+        }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 3 },
+    "why": "A dual-class Hero in hand contributes BOTH its printed colors to 'color of Hero you have' (D-24529 hand ∪ play scope × D-24523 dual-class): Avengers Assemble! (Instinct) in play plus Heir to Legends (Strength + Ranged) unplayed in hand = 3 distinct colors → +3 Recruit."
+  },
+  {
+    "id": "resolve-give-hq-hero-gains-chosen-to-discard",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "resolve-give-hq-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "heroDeck": [],
+        "resolve": { "cardId": "core/avengers/iron-man#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": ["core/avengers/iron-man#0"] },
+    "why": "Resolving a parked give-HQ-Hero choice moves the CHOSEN HQ Hero (Iron Man) into the chooser's DISCARD pile, never the victory pile (D-24327 gain-routes-to-discard); the untaken Captain America stays in the HQ (D-24343 / WP-532)."
+  },
+  {
+    "id": "resolve-give-hq-hero-decline-mandatory-is-noop",
+    "mechanic": "give-hq-hero-each-player",
+    "decision": "D-24343",
+    "scenario": {
+      "action": "resolve-give-hq-hero",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/avengers/iron-man#0", "core/avengers/captain-america#0", null, null, null],
+        "heroDeck": [],
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
+    "why": "Paibok's give-HQ-Hero is MANDATORY (not an optional 'may recruit' tactic), so a decline is a no-op — nothing is gained and the discard stays empty; the player must still pick (D-24343; the decline arm is honored only for optional entries per D-24509). Paired with the gain sibling that proves a chosen Hero lands in discard."
+  },
+  {
+    "id": "resolve-return-zero-cost-returns-zero-cost-card-to-hand",
+    "mechanic": "return-zero-cost-discard",
+    "decision": "D-24139",
+    "scenario": {
+      "action": "resolve-return-zero-cost-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["starting-shield-agent", "core/wolverine/wolverine#0"],
+        "cardStats": { "starting-shield-agent": 0, "core/wolverine/wolverine#0": 3 },
+        "sourceCardId": "core/black-knight/defend-the-weak#0",
+        "resolve": { "cardId": "starting-shield-agent" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["starting-shield-agent"] },
+    "why": "Black Knight's 'return a 0-cost card from your discard to your hand' (Defend the Weak) moves the chosen 0-cost card (the cost-0 S.H.I.E.L.D. Agent) from discard into hand (D-24139)."
+  },
+  {
+    "id": "resolve-return-zero-cost-rejects-non-zero-cost-target",
+    "mechanic": "return-zero-cost-discard",
+    "decision": "D-24139",
+    "scenario": {
+      "action": "resolve-return-zero-cost-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["core/wolverine/wolverine#0"],
+        "cardStats": { "core/wolverine/wolverine#0": 3 },
+        "sourceCardId": "core/black-knight/defend-the-weak#0",
+        "resolve": { "cardId": "core/wolverine/wolverine#0" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": [] },
+    "why": "A non-0-cost discard card (Wolverine, cost 3) is not a legal target for the 0-cost-return ability, so the resolve is a no-op — nothing enters the hand (D-24139, the 0-cost eligibility filter). Paired with the sibling that proves a 0-cost card returns."
+  },
+  {
+    "id": "resolve-do-over-accept-discards-hand-and-draws-four",
+    "mechanic": "do-over",
+    "decision": "D-24498",
+    "scenario": {
+      "action": "resolve-do-over",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0", "starting-shield-agent"],
+        "resolve": { "accept": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0"] },
+    "why": "Accepting the Do-Over discards the ENTIRE current hand and then draws a FIXED 4 cards (not one-per-discard): the two-card hand is discarded and the top four deck cards become the new hand (D-24498, Deadpool's 'Hey, Can I Get a Do-Over?')."
+  },
+  {
+    "id": "resolve-do-over-decline-leaves-hand-unchanged",
+    "mechanic": "do-over",
+    "decision": "D-24498",
+    "scenario": {
+      "action": "resolve-do-over",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "deck": ["core/hulk/hulk#0", "core/avengers/iron-man#0", "core/avengers/captain-america#0", "core/black-widow/black-widow#0", "starting-shield-agent"],
+        "resolve": { "decline": true }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
+    "why": "Declining the Do-Over ('you may discard the rest of your hand') is a no-op — nothing is discarded and nothing is drawn, so the hand is unchanged (D-24498). Paired with the accept sibling that proves the discard-and-redraw fires."
+  },
+  {
+    "id": "resolve-put-bottom-hq-icon-reward-grants-recruit",
+    "mechanic": "optional-put-bottom-hq",
+    "decision": "D-24133",
+    "scenario": {
+      "action": "resolve-optional-put-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/black-widow/black-widow#0", "core/wolverine/wolverine#0", null, null, null],
+        "heroDeck": ["core/hulk/hulk#0"],
+        "cardStats": { "core/black-widow/black-widow#0": { "recruit": 1 } },
+        "sourceCardId": "core/wonder-man/absorb-ambient-power#0",
+        "iconRewardMagnitude": 3,
+        "resolve": { "cardId": "core/black-widow/black-widow#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 3 },
+    "why": "Absorb Ambient Power's mandatory put-a-card-on-the-deck-bottom grants its icon reward when the moved card HAS the matching icon: the moved card is seeded with a recruit icon (recruit 1), so the player gains +3 recruit (D-24133). Paired with the no-icon sibling — same card, no icon, no reward — which isolates that the reward keys on the icon, not the card."
+  },
+  {
+    "id": "resolve-put-bottom-hq-no-icon-grants-nothing",
+    "mechanic": "optional-put-bottom-hq",
+    "decision": "D-24133",
+    "scenario": {
+      "action": "resolve-optional-put-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/black-widow/black-widow#0", "core/wolverine/wolverine#0", null, null, null],
+        "heroDeck": ["core/hulk/hulk#0"],
+        "cardStats": { "core/black-widow/black-widow#0": { "recruit": 0, "attack": 0 } },
+        "sourceCardId": "core/wonder-man/absorb-ambient-power#0",
+        "iconRewardMagnitude": 3,
+        "resolve": { "cardId": "core/black-widow/black-widow#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 0 },
+    "why": "The SAME moved card seeded WITHOUT a recruit or attack icon (recruit 0, attack 0) grants no reward — the +N is conditional on the moved card's printed icon, so it stays at 0 recruit (D-24133). Paired with the recruit-icon sibling that proves the reward fires when the icon is present."
+  },
+  {
+    "id": "resolve-victory-pile-pick-grants-villain-fight-cost-as-attack",
+    "mechanic": "victory-pile-card-pick",
+    "decision": "D-24067",
+    "scenario": {
+      "action": "resolve-victory-pile-card-pick",
+      "setup": {
+        "currentPlayer": "0",
+        "victory": ["core/spider-foes/lizard#0"],
+        "villainDeckCardTypes": { "core/spider-foes/lizard#0": "villain" },
+        "cardStats": { "core/spider-foes/lizard#0": { "fightCost": 5 } },
+        "resolve": { "cardId": "core/spider-foes/lizard#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 5 },
+    "why": "Ebony Blade's 'claim the printed Attack of a Villain in your Victory pile' grants attack equal to the chosen villain's printed attack, stored as fightCost on villain cards (their .attack is always 0): the Lizard's fightCost 5 → +5 attack (D-24067 / WP-285)."
+  },
+  {
+    "id": "resolve-victory-pile-pick-non-villain-target-is-noop",
+    "mechanic": "victory-pile-card-pick",
+    "decision": "D-24067",
+    "scenario": {
+      "action": "resolve-victory-pile-card-pick",
+      "setup": {
+        "currentPlayer": "0",
+        "victory": ["core/hydra/doombot-legion#0"],
+        "villainDeckCardTypes": { "core/hydra/doombot-legion#0": "henchman" },
+        "cardStats": { "core/hydra/doombot-legion#0": { "fightCost": 4 } },
+        "resolve": { "cardId": "core/hydra/doombot-legion#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "Only cards typed 'villain' in G.villainDeckCardTypes are eligible — a henchman (Doombot Legion) in the Victory pile is not a valid Ebony Blade target, so the pick is a no-op and no attack is granted despite its fightCost (D-24067). Paired with the villain sibling that proves the attack claim fires."
+  }
+]

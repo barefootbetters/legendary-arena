@@ -18,5 +18,9 @@
  */
 export interface CardTraitEntry {
   heroClass: string | null;
+  // why: WP-703 / D-24523 — a dual-class hero card's SECOND printed class. Optional
+  // and omitted-when-absent (never `null` on a single-class card) so a match with no
+  // dual-class hero serializes byte-identically to pre-WP-703 (no determinism re-pin).
+  heroClass2?: string | null;
   team: string | null;
 }

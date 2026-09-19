@@ -745,7 +745,7 @@ function convertSet(jsFilePath, setAbbr) {
           card.rarity === 2 ? (uncommonCount > 1 ? `Uncommon ${uncommonCount}` : 'Uncommon') :
           card.rarity === 3 ? 'Rare' : `Rarity ${card.rarity}`;
 
-        return {
+        const flatCard = {
           name: card.name,
           displayName: card.name,
           slug: toSlug(card.name),
@@ -758,6 +758,14 @@ function convertSet(jsFilePath, setAbbr) {
           recruit: card.recruit ?? null,
           abilities: parseAbilities(card.abilities),
         };
+        // why: WP-703 / D-24522 — dual-class cards carry a second hero class as
+        // `hc2` in the upstream source (e.g. Ruby Summers "Heir to Legends":
+        // strength + ranged). Emit it only when present so single-class cards stay
+        // byte-identical to before. Mapped through HC_SLUG_MAP like `hc`.
+        if (card.hc2 != null) {
+          flatCard.hc2 = HC_SLUG_MAP[card.hc2] ?? card.hc2;
+        }
+        return flatCard;
       });
 
       // ── Card counts overlay (v13) ──────────────────────────────────────────

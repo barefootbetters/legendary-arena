@@ -277,6 +277,49 @@ describe('diagnostics — pure redaction + report builders', () => {
     assert.deepEqual(roundTripped.effectTraces, effectTraces);
   });
 
+  test('should_carry_the_count_scaled_resolution_sub_record_end_to_end_when_present', () => {
+    // why: WP-706 / D-24528 — the engine records the realized count-scaled computation
+    // on EffectTrace.resolution (hash-excluded G.diagnostics) and projects it through
+    // UIState.effectTraces. The opaque lift preserves the whole record, so the exported
+    // report carries `resolution` (count source, computed grant, counted cards) verbatim
+    // with NO arena-client source change — the D-24026 live-verify aid. This is the
+    // dual-class case: a colour contributed only via heroClass2 shows up in countedInputs.
+    const effectTraces = [
+      {
+        cardId: 'core/captain-america/perfect-teamwork#1',
+        scope: 'hero',
+        timing: 'onPlay',
+        effect: 'attack-per-count',
+        handler: 'attack-per-count',
+        status: 'fired',
+        fireSite: 'hero-executor',
+        params: { magnitude: 1, countSource: 'distinct-hero-classes-played-this-turn' },
+        turn: 7,
+        resolution: {
+          countSource: 'distinct-hero-classes-played-this-turn',
+          resource: 'attack',
+          magnitude: 1,
+          count: 3,
+          perEach: 1,
+          computedValue: 3,
+          countedInputs: ['card-a#0', 'card-b#0', 'card-c#0'],
+        },
+      },
+    ];
+    const snapshot = { currentStage: 'main', effectTraces };
+    const report = buildDiagnosticReport(
+      [],
+      sampleContext({ uiStateSnapshot: snapshot }),
+    );
+    assert.deepEqual(report.effectTraces, effectTraces);
+    const roundTripped = JSON.parse(serializeDiagnosticReport(report));
+    assert.deepEqual(roundTripped.effectTraces[0].resolution, effectTraces[0]!.resolution);
+    assert.deepEqual(
+      roundTripped.effectTraces[0].resolution.countedInputs,
+      ['card-a#0', 'card-b#0', 'card-c#0'],
+    );
+  });
+
   test('should_default_effectTraces_to_an_empty_array_when_snapshot_is_null', () => {
     // why: the report always carries a defined array — never undefined — so a
     // consumer never has to null-check. No match active → empty.

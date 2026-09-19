@@ -217,6 +217,8 @@ export interface InvestigateCandidate {
   cost: number | undefined;
   /** Printed Hero Class (CardTraitEntry.heroClass); null for non-hero, undefined when no trait entry. */
   heroClass: string | null | undefined;
+  /** Second printed Hero Class (CardTraitEntry.heroClass2) for dual-class cards; undefined when single-class (WP-703 / D-24523). */
+  heroClass2: string | null | undefined;
   /** Printed team (CardTraitEntry.team); null when teamless, undefined when no trait entry. */
   team: string | null | undefined;
 }
@@ -275,9 +277,9 @@ function investigateCriterionMatches(
     return candidate.cost >= criterion.value;
   }
   if (criterion.kind === 'hero-class') {
-    return candidate.heroClass !== undefined
-      && candidate.heroClass !== null
-      && candidate.heroClass === criterion.heroClass;
+    // why: WP-703 / D-24523 — a dual-class card matches the criterion on EITHER printed class.
+    return candidate.heroClass === criterion.heroClass
+      || candidate.heroClass2 === criterion.heroClass;
   }
   // why: the remaining kind is 'team' (the union has exactly four members).
   return candidate.team !== undefined

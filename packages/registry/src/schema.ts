@@ -69,6 +69,8 @@ export const HeroCardSchema = z.object({
   rarityLabel: z.string().optional(),
   slot:        z.number().int().min(1).optional(),
   hc:          HeroClassSchema.optional(),
+  // why: WP-703 / D-24522 — second hero class for dual-class cards (additive optional).
+  hc2:         HeroClassSchema.optional(),
   cost:        z.union([z.number().int().min(0), z.string()]).optional(),
   attack:      z.string().nullable().optional(),
   recruit:     z.string().nullable().optional(),

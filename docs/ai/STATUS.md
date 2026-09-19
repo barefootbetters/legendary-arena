@@ -7,6 +7,79 @@
 
 ## Current State
 
+### WP-708 — Synergy Realization: per-match Synergy Rate + Table Total (EC-745 / D-24531) (2026-09-19)
+
+Gave players their first end-of-match synergy feedback. Legendary rewards assembling conditional Hero
+clauses (`[hc:X]` / `[team:X]` / threshold gates), but the engine surfaced those only per-play (WP-295
+whiff log, WP-409 fired-count, WP-706 resolution trace). WP-708 adds the missing per-MATCH aggregate: a
+per-player `{played, assembled}` conditional-clause counter on the hash-excluded `G.diagnostics` (new
+`recordConditionalClause`), incremented at the `heroEffects.execute` `evaluateAllConditions` chokepoint
+(both branches; hollow-excluded via `hookHasExecutableEffect`; wait-and-see/deferred not counted —
+snapshot-gate synergy only), derived into display-only
+`PlayerScoringContribution.conditionalClauses{Played,Assembled}` → `CoachPlayerLine` →
+`EndgameSummary.vue` (a **Table Total** headline "The table assembled N synergy clauses" + a per-seat
+"assembled N of M synergy clauses" line), plus the client `competitionApi` / `scoreCalcDisplay` mirror.
+**Display-only** (never `finalScore`/PAR — NG-1, proven by an identical breakdown with vs without a
+tally); **two-vocabulary** copy-lint (engine `condition-failed` vs player-facing "assembled"; no
+whiff/failed/missed); **NO** `EffectTraceStatus` member. **NO hash re-pin** — `G.diagnostics` is
+excluded from both oracles: engine **3831/0** (sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical), server **1320/0**, arena-client **1853/0** + `vue-tsc` clean; `sim:runtime-observed`
+current; `cards:check` reproducible; `pnpm -r build` 0. 16-file impl (5 engine src + 3 engine test + 2
+server + 1 server test + 3 client + 2 client test). Landed **D-24531** (Active). Phase 1 of
+`DESIGN-SYNERGY-REALIZATION.md` — Realized Value % (rides WP-706), the play-order sequence teacher, and
+co-op cross-seat cooperation are later phases. **D-24026 live-verify operator-pending** (a real match
+with a live + a dead condition shows the Table Total + a seat's assembled/played line).
+
+### WP-706 — Count-scaled effect resolution trace (EC-743 / D-24528) (2026-09-18)
+
+Made ability-**computed** count-scaled hero-effect resolutions live-observable. The shipped
+`attack-per-count` / `recruit-per-count` family grants `magnitude × floor(count / perEach)` scaled by
+a `HeroCountSource` (Nick Fury *Legendary Commander*, Captain America *Perfect Teamwork*, the
+Deadpool / cost-4+ / icon-count siblings), but the computed grant + which cards/classes were counted
+was captured nowhere live. Enriched the WP-488/D-24294 runtime `EffectTrace` on the hash-excluded
+`G.diagnostics` channel with an additive optional `resolution` sub-record `{countSource, resource,
+magnitude, count, perEach, computedValue, countedInputs?}`, re-resolved at the `runHookEffects`
+trace-build site (`buildCountScaledResolution` → the pure `buildHeroLegacyEffectTrace` assembler).
+Counted-card ext-ids come from a NEW diagnostics-only `explainCountSourceInputs` that mirrors each
+counter's matching logic (incl. the `distinct-hero-classes-played-this-turn` `heroClass2` Set — the
+WP-703 dual-class live-verify tie) without touching `resolveCountSource` (gameplay integer
+byte-identical). Carried through BOTH `uiState.build` + `uiState.filter` (Board-Visible Field Rule)
+and rides the WP-575 Play Diagnostics export opaquely (no arena-client source change). `countedInputs`
+present for the 8 played-this-turn sources, omitted for the 2 victory-pile sources. **NO hash re-pin**
+— `G.diagnostics` is excluded from both oracles; the replay/sentinel/determinism suite passed
+byte-unchanged (13/13 hash-pin tests green, incl. the `PRE_WP080_HASH` regression guard). Engine
+3661→3682/0 (+21), arena-client `vue-tsc` 0 + 1843/0, `pnpm -r build` 0. Five engine source files +
+six test files (one new, `hollowEffect.types.test.ts`). Landed D-24528 (Active). **D-24026
+live-verify VERIFIED 2026-09-18** — a real 2p Red Skull / Midtown Bank Robbery deployed match
+(build `0f011a1`, descendant of #2117) exported 12 unique `resolution` records
+(`distinct-hero-classes-played-this-turn`), each `computedValue` matching the grant; the `heroClass2`
+tie proven — turn 16 *Perfect Teamwork* counted 4 with `countedInputs` including
+`ssw2/ruby-summers/heir-to-legends` (strength + `hc2` ranged), the 4th colour present only via hc2. Follow-ups: the `resolveCountScaledChoice` dispatch site,
+victory-pile `countedInputs`, the base-stat game-log economy clause, a player-facing
+`heroEffectResolved` chip.
+### WP-705 — `teleport-on-discard` reactive hero keyword: Ruby Summers "Guerrilla Warfare" (EC-742 / D-24526) (2026-09-18)
+
+Made Guerrilla Warfare (ssw2) faithful — *"When a card effect causes you to discard this card, if
+it is your turn, Teleport it instead. If it is not your turn, set it aside and add it to your hand
+at the end of this turn."* — reported hollow from a live game (build b8858c6, which logged an
+"unhandled teleport at onPlay, parse-unrecognized" every time it was played). MANDATORY + automatic
+(no "you may"): the reaction fires at the shipped WP-498 `discardFromHand` chokepoint
+(`checkTeleportOnDiscard`), removes the card from discard (set aside, in no zone), records it on a
+lazy-init `G.pendingTeleportReturns`, and `consumeTeleportReturns` (inside `applyEndOfTurnCleanup`,
+after the ending player's new-hand draw) re-adds each set-aside card to its owner's hand as an extra
+card at the current turn's end — both printed branches collapse to that one mechanism. NO pending
+choice / resolve move / block-all guard / UIState field / client. **As-built (execution-time):** a
+card-scoped PARSER RESOLVER (`TELEPORT_ON_DISCARD_CARDS`, mirrors the transform/investigate
+Honest-Partial resolvers) resolves the card's existing `[keyword:Teleport]` to the new keyword —
+NOT a card-data marker — so no card-data/coverage change; and the consume lives inside the single
+per-turn-end cleanup helper so every live + harness path is covered once (no per-harness edits, no
+replay divergence). Engine + tests only. Engine suite 3633→3642/0; `HERO_KEYWORDS` 57→58; no oracle
+re-pin (lazy-init, `PRE_WP080`/`hashGameState` byte-identical). **Known follow-up:** the
+hero-mechanic-ledger keys on the raw `[keyword:X]` token, so it still shows guerrilla-warfare as
+`teleport/unsupported` (the resolved keyword is named differently than the token); the card IS
+implemented — teaching the ledger to credit renamed card-scoped resolvers is a small tooling
+follow-up. **D-24026 live-verify operator-pending on deploy.**
+
 ### WP-702 — Reveal-top discard-or-keep hero keyword (EC-739 / D-24521) (2026-09-16)
 
 Fixed the reported Gambit **Hypnotic Charm** "effect isn't firing" bug (the second half of the same

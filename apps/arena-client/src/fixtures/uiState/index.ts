@@ -6,20 +6,21 @@
  */
 
 import type { UIState } from '@legendary-arena/game-engine';
-import { midTurn, endgameWin, endgameLoss, finalTurn } from './typed';
+import { midTurn, endgameWin, endgameLoss, finalTurn, divingBlockWound } from './typed';
 
 /**
  * The committed fixture names. Inhabited by `'mid-turn'`, `'endgame-win'`,
  * `'endgame-loss'`, and `'final-turn'` (WP-654 — an in-progress snapshot
  * carrying the WP-367 `finalTurn` projection for the final-turn banner).
  */
-export type FixtureName = 'mid-turn' | 'endgame-win' | 'endgame-loss' | 'final-turn';
+export type FixtureName = 'mid-turn' | 'endgame-win' | 'endgame-loss' | 'final-turn' | 'diving-block-wound';
 
 const KNOWN_FIXTURE_NAMES: readonly FixtureName[] = [
   'mid-turn',
   'endgame-win',
   'endgame-loss',
   'final-turn',
+  'diving-block-wound',
 ];
 
 /**
@@ -60,5 +61,7 @@ export function loadUiStateFixture(name: FixtureName): UIState {
       return endgameLoss;
     case 'final-turn':
       return finalTurn;
+    case 'diving-block-wound':
+      return divingBlockWound;
   }
 }

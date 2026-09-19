@@ -2205,3 +2205,34 @@ describe('buildUIState — mastermind.finalBlowPending (WP-687 / D-24504)', () =
     assert.equal(result.mastermind.finalBlowPending, false);
   });
 });
+
+describe('buildUIState — return-on-discard suppressed while discard-to-play pending (D-24527)', () => {
+  const CYCLOPS = 'core/cyclops' as CardExtId;
+
+  it('projects pendingReturnOnDiscard when no discard-to-play cost is pending', () => {
+    const gameState = createTestGameState();
+    gameState.playerZones['0']!.discard = [CYCLOPS];
+    gameState.pendingReturnOnDiscard = [{ playerID: '0', cardId: CYCLOPS }];
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.ok(result.pendingReturnOnDiscard !== undefined, 'the return prompt surfaces when actionable');
+    assert.equal(result.pendingReturnOnDiscard!.playerID, '0');
+  });
+
+  it('omits pendingReturnOnDiscard while a discard-to-play cost is still pending', () => {
+    // why: the move-level guard already no-ops the return in this window; surfacing the
+    // prompt would only offer a dead-click, so the projection mirrors the block-all priority.
+    const gameState = createTestGameState();
+    gameState.playerZones['0']!.discard = [CYCLOPS];
+    gameState.pendingReturnOnDiscard = [{ playerID: '0', cardId: CYCLOPS }];
+    gameState.pendingDiscardToPlay = [
+      { playerID: '0', sourceCardId: 'ssw2/ruby-summers/extinction-blast' as CardExtId, remaining: 2 },
+    ];
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.equal(result.pendingReturnOnDiscard, undefined, 'the return prompt is deferred until the cost is paid');
+    assert.ok(result.pendingDiscardToPlay !== undefined, 'the discard-to-play prompt is the actionable one');
+  });
+});

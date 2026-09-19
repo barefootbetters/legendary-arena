@@ -213,22 +213,25 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
       ],
     });
 
-    // why: WP-295 / D-24082 — the condition-failed branch now appends ONE
-    // observability line to G.messages so a suppressed ability is no longer a
-    // silent skip. The semantic no-mutation invariant still holds for everything
-    // else, so compare with messages excluded to pin the exact mutation surface.
+    // why: WP-295 / D-24082 — the condition-failed branch appends ONE observability
+    // line to G.messages so a suppressed ability is no longer a silent skip.
+    // why: WP-708 / D-24531 — it also increments the hash-excluded
+    // G.diagnostics.conditionalClauses synergy tally (played, not assembled). Both
+    // G.messages and G.diagnostics are observability channels excluded from BOTH hash
+    // oracles, NOT semantic game state — so compare with both excluded to pin the exact
+    // semantic-mutation surface (which must still be empty).
     const messagesBefore = gameState.messages.length;
-    const snapshotWithoutMessages = JSON.parse(
-      JSON.stringify({ ...gameState, messages: [] }),
+    const snapshotWithoutObservability = JSON.parse(
+      JSON.stringify({ ...gameState, messages: [], diagnostics: undefined }),
     );
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    const afterWithoutMessages = JSON.parse(
-      JSON.stringify({ ...gameState, messages: [] }),
+    const afterWithoutObservability = JSON.parse(
+      JSON.stringify({ ...gameState, messages: [], diagnostics: undefined }),
     );
-    assert.deepEqual(afterWithoutMessages, snapshotWithoutMessages,
-      'condition failure must not mutate any game state except G.messages.');
+    assert.deepEqual(afterWithoutObservability, snapshotWithoutObservability,
+      'condition failure must not mutate any semantic game state (only the observability channels G.messages + G.diagnostics).');
     assert.equal(gameState.messages.length, messagesBefore + 1,
       'condition failure must append exactly one observability log line.');
     assert.match(gameState.messages[gameState.messages.length - 1]!.text, /did not activate/,
@@ -419,5 +422,89 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
     executeHeroEffects(gameState, mockCtx, "0", "hero-x" as string);
     assert.equal(gameState.turnEconomy.attack, attackBefore + 5,
       "a satisfied gate must still fire - AC-8 pins both directions.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-708 / D-24531 — per-match conditional-clause synergy counting
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — conditional-clause synergy counting (WP-708)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('a met condition counts played + assembled', () => {
+    // why: playedThisTurn is met (the card is in inPlay), so the conditional clause
+    // is assembled — played and assembled both increment for the acting seat.
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'playedThisTurn', value: '1' }],
+          effects: [{ type: 'attack', magnitude: 3 }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], { played: 1, assembled: 1 });
+  });
+
+  it('a hard-blocked condition counts played, not assembled', () => {
+    // why: heroClassMatch:tech is always false in this harness (the card has no tech
+    // class and none is in play) → hard-blocked. A genuine unmet synergy gate counts
+    // as played, not assembled.
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+          effects: [{ type: 'attack', magnitude: 5 }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], { played: 1, assembled: 0 });
+  });
+
+  it('an unconditional hook is never counted', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['recruit'],
+          effects: [{ type: 'recruit', magnitude: 2 }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+    assert.equal(gameState.diagnostics?.conditionalClauses, undefined,
+      'an unconditional hook has no synergy decision, so no tally is created');
+  });
+
+  it('a conditional hook with a hollow effect body is excluded (backlog, not a miss)', () => {
+    // why: WP-708 — the effect body is an unrecognized token (no handler → hollow).
+    // Even though the condition passes, the player is never counted as assembling a
+    // payoff we have not built — the clause is excluded from the tally entirely.
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          conditions: [{ type: 'playedThisTurn', value: '1' }],
+          effects: [{ type: 'totally-not-a-keyword' }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+    assert.equal(gameState.diagnostics?.conditionalClauses, undefined,
+      'a hollow conditional hook is excluded from the synergy tally');
   });
 });

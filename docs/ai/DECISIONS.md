@@ -42578,5 +42578,283 @@ unrelated pre-existing staleness (undercover 20→488) into this WP — parked a
 **Builds on:** D-24512 (Ruthless Dictator disposition), D-24413 (Melter each-deck), D-24354
 (heroClassMatch gate), D-24518 (vanquish drop), D-24372 (RUNTIME drift pins). **Reserved by:**
 NUMBER-LEDGER D-24521.
+### D-24522 — card data carries `hc2` (second hero class); registry + viewer consume both classes (Active 2026-09-16 — interim of WP-703 / EC-740)
+
+**Context.** Dual-class hero cards (e.g. Ruby Summers’ "Heir to Legends": Strength + Ranged) were losing their second class. The upstream npm source marks them with both `hc` and `hc2` (`scripts/convert-cards/inputs/cards/{sw1,sw2,msis,blackpanther}.js`), but `convert-cards-v15.mjs` only emitted `hc`, so `data/cards/*.json` — and everything downstream — saw a single class. The registry viewer’s Class filter did an exact single-value match (`shared.ts applyQuery`: `c.hc !== q.heroClass`), so filtering e.g. "ranged" silently omitted every dual-class card whose printed first class was something else. 54 hero cards across 4 sets are affected (ssw1 17, ssw2 19, msis 10, bkpt 8).
+
+**Decision.** Card data carries an **additive, optional** second hero class `hc2`, mirroring `hc` (mapped through `HC_SLUG_MAP`). It is emitted only when the source card has `hc2`, so single-class cards stay byte-identical and the `cards:check` semantic regen gate reproduces. The field is added to both card schemas (`packages/registry/src/schema.ts` and `apps/registry-viewer/src/registry/schema.ts`, `HeroClassSchema.optional()`) so Zod no longer strips it. The viewer flattens `hc2` (both `flattenSet` paths), the Class filter matches on **either** class (`c.hc === q.heroClass || c.hc2 === q.heroClass`), and `CardDetail` renders a second "Class 2" stat.
+
+**Scope of this decision (interim).** Registry (data + schema) and the viewer only. The **game engine still treats these cards as single-class** — it never reads `hc2`, so the field is inert for gameplay and there is **no determinism / hash impact** (no `G` field changes; `[hc:X]` synergy resolution is unchanged). The engine dual-class consumption — making a card count as *either* class for `heroClassMatch` / `distinctHeroClasses` / reveal-top-class, which **reverses the D-24065 single-class MVP** and requires a PAR/replay re-pin — is deferred to **WP-703 / EC-740**. That WP will supersede D-24065 for the engine when it lands.
+
+**Verification.** `cards:check` green (clean regen semantically identical, 40 sets compared); registry-viewer 305/0 and registry 253/0 tests pass; `pnpm -r build` green. The updated 4 card JSONs were uploaded to R2 so cards.legendary-arena.com filters on both classes.
+
+**Status:** Active 2026-09-16 (registry + viewer landed). Engine consumption pending WP-703.
+**Builds on:** D-24074 (the class multi-value precedent — `cardHasClassWhenPlayed`, printed-plus-granted; WP-703 extends it with the second printed class). Correction: an earlier draft mis-cited D-24065 as a global single-class MVP; D-24065 is the deck-peek mechanic whose single-class note is scoped to one evaluator. **Reserved by:** NUMBER-LEDGER D-24522.
+
+### D-24523 — dual-class hero cards: the engine counts a card as either printed class (Active 2026-09-17 — WP-703 / EC-740)
+
+**Context.** Dual-class hero CARDS (printed `hc` + `hc2`, e.g. Ruby Summers "Heir to Legends" = Strength + Ranged) had their data + registry/viewer support shipped by D-24522, but the engine read only the first printed class. So a `[hc:X]` synergy gate, a class count, a "defeat a [class] Hero" requirement, or tech-VP scoring silently ignored a card whose SECOND class was `X` — a fidelity bug on the 54 dual-class cards (ssw1/ssw2/msis/bkpt).
+
+**Decision.** The engine treats a dual-class card as belonging to BOTH printed classes, inside the EXISTING D-24074 printed-plus-granted model (NOT a new helper):
+- `CardTraitEntry` (`state/cardTraits.types.ts`) gains an **omit-when-absent** `heroClass2?: string | null`, written by `buildCardTraits` only when the card has `hc2` — so a match with no dual-class hero serializes byte-identically (no determinism re-pin).
+- The existing `cardHasClassWhenPlayed(G, cardId, classSlug)` printed branch also matches `heroClass2`, so every gate caller (`heroClassMatch`) is covered; `distinctHeroClassesAtLeast` adds BOTH printed classes to the distinct set.
+- The direct-read membership / count / tech-VP sites add `heroClass2`: `giveHqHeroChoice`, `villainDefeatRequirement`, `tacticHandlers`, `villainEffects`, `dynamicVictoryPoints` (tech-VP), the variable-indirection `schemeTwistResolvers`/`mastermindHandlers`, the three `effectPrimitive` count evaluators (count-by-class either; max-class both buckets; top-deck-class the revealed `{hc,hc2}` set), and the Investigate criterion (`InvestigateCandidate.heroClass2` field + builder + matcher).
+
+**Relationship to D-24065.** D-24065 ("Dynamic Empowered via Deck-Peek") is NOT superseded; only its "single-class MVP" scope note on the deck-peek class-count evaluator (`effectPrimitive.interpret.ts`) is relaxed to this decision. The class multi-value precedent is D-24074 (Size-Changing granted classes); D-24391 is the team analogue.
+
+**Determinism (honest).** Omit-when-absent → single-class-only matches hash byte-identically; no `finalStateHash` sentinel or `PRE_WP080_HASH` changed (no committed fixture plays a dual-class hero — verified: engine 3554 → 3558/0, all hash/replay sentinels byte-identical). `sim:runtime-observed` regenerated honestly (2510 → 2548 observations; per-mechanic hit-counts rose because dual-class effects now fire) — never an edited assertion. `cards:check` green (no card-data change). `dynamicVictoryPoints` feeds PAR, so a future match with a dual-class tech card scores differently by design; the gitignored PAR sweep is not CI-gated.
+
+**Scope.** Game-engine only; no client change (the class already projects to the client via the registry — `uiState.build.ts:190` deliberately left single-class). Copy-Powers (`heroEffects.execute.ts:3530`) copies only the first printed class, deferred.
+
+**Status:** Active 2026-09-17 (WP-703 executed / merged).
+**Builds on:** D-24074 (printed-plus-granted class model / `cardHasClassWhenPlayed`), D-24391 (team analogue), D-24522 (the `hc2` data contract), WP-179 (cardTraits). **Reserved by:** NUMBER-LEDGER D-24523.
+
+Protect this file.
+
+### D-24524 — Executable effect-rulings corpus (first slice: schema + harness + seed) (Active 2026-09-17 — WP-704 / EC-741)
+
+**Context.** The LAGN architecture brief calls the accumulated card-effect edge-case
+*rulings analysis* its "crown jewel" (layer 5), and `wiki/card-effect-system.md` flags it
+as Known-gap #4: the analysis exists but is scattered across `DECISIONS.md` prose, inline
+`// why:` comments, and full-game replay hash-oracle fixtures. None of those isolates a
+single interaction with its rationale, and prose rots as handlers change. The brief's
+target is a **single, executable** record of `scenario → expected → why` rulings run
+against the real engine handlers so a ruling cannot silently drift from the code.
+
+**Decision.** Stand up the **effect-rulings corpus** — first slice only. A private,
+hand-authored JSON corpus (`docs/ai/rulings/effect-rulings.json`) of ruling entries
+(`{ id (kebab, unique), mechanic, decision? (D-ref), scenario, expected, why (non-empty) }`),
+executed by a `node:test` harness (`packages/game-engine/src/rules/effectRulings.test.ts`)
+that, for each ruling, builds a minimal `G` via `buildInitialGameState` + the engine's own
+`src/test/fixtureBuilders.ts` and fires the ruling's action through the **real handler**
+(`executeVillainAbilities`, `resolveMelterKoChoice`, `resolveOptionalKoReward`,
+`cardHasClassWhenPlayed`), asserting the expectation **on the handler's output**. Nothing
+reads the corpus at runtime — it is a test corpus only.
+
+**Validator (Node built-ins only, NO zod).** The ruling validator
+(`packages/game-engine/src/rules/effectRulings.validate.ts`) is a **hand-written runtime
+type guard + closed unions** — the engine may import Node built-ins only
+(`.claude/rules/architecture.md`); zod is the registry layer's dependency and a zod import
+here would break `pnpm -r build` and cross the layer boundary. It mirrors the
+`VillainEffectPrimitive` / `VILLAIN_EFFECT_PRIMITIVES` precedent: a local structural
+interface + a runtime guard + closed canonical readonly arrays.
+
+**Closed, drift-pinned vocabulary — no DSL.** The `scenario.action` and `expected.kind`
+verbs are small **closed** unions (`RULING_SCENARIO_ACTIONS`, `RULING_EXPECTATION_KINDS`)
+with **runtime** drift pins (D-24372: runtime keyset assertions binding each array to the
+harness's `SCENARIO_RUNNERS` / `EXPECTATION_CHECKERS` / `PERTURBERS` maps — not a bare
+`satisfies`, since engine test files were historically un-typechecked). There is
+deliberately **no general scenario DSL**: the union grows one member at a time, together
+with its harness mapping and the ruling that needs it (the D-24029 effect-primitive
+discipline). An unmapped verb is a **hard failure**, never an `it.skip` or always-pass.
+
+**Per-ruling non-vacuity self-test (the reward-integrity core).** A standing harness guard
+programmatically perturbs **every** ruling's `expected` and asserts THAT ruling then fails —
+proving each ruling's assertion is a live strict-equality check that genuinely depends on its
+expected value, never a constant-true / always-pass fixture (and not a one-shot manual flip).
+This is the primary reward-integrity vector it forbids. It does **not** by itself prove the
+asserted value originated in the handler rather than the setup baseline — a non-mutation
+("spared" / "unchanged") ruling passes the guard even against a do-nothing handler — so each
+such seed ruling is paired with a positive sibling ruling (same mechanic / decision) that
+asserts the handler produced a change, and is designed so a regression of the behavior it
+guards flips it (e.g. Ymir's spared in-play Wound would be KO'd by a scope regression).
+
+**Seed set.** 14 rulings across the five decided edge cases the brief names, each citing its
+`D-` with a non-empty `why`: D-24281 (reveal-or-wound counts hand ∪ in-play), D-24329
+(KO-own-Wounds from hand + discard only, sparing in-play), D-24413 (Melter interactive
+KO/keep — parks, KOs nothing until resolve, culls on `keep=false`), D-24442
+(`optional-ko-reward` KO source widened to include in-play), D-24523 (dual-class card counts
+as either printed class). Count is subordinate to vocabulary minimalism: no verb was added to
+reach a count, and the four scenario actions + four expectation kinds express all five
+mechanics.
+
+**Private naming.** Called **"effect rulings"**, never "LAGN rulings" (the public LAGN
+surface stays the verb list + argument shapes only); nothing here lives in
+`packages/lagn-spec`. `docs/ai/rulings/` is a docs-only directory with no runtime
+consumption.
+
+**Test corpus only — no gameplay change.** No production `src` handler was modified, no `G`
+field added, no move/phase/UIState change. `finalStateHash` / `PRE_WP080` sentinels are
+**byte-identical** (verified — the sentinel/replay pins are part of the engine suite, which
+is green). Engine suite 3558 → **3592/0** (+34: 4 drift-pin + 2 corpus-shape + 14 executed
+rulings + 14 non-vacuity). `pnpm -r build` exit 0.
+
+_Active 2026-09-17 — WP-704 / EC-741. Complements — does not replace — the replay
+hash-oracle fixtures (whole-game determinism) and the coverage indices (implementation
+status) with focused single-interaction correctness + rationale. Related: D-24372 (runtime
+drift pins), D-24029 (grow-one-primitive-at-a-time discipline), and the seed decisions
+D-24281 / D-24329 / D-24413 / D-24442 / D-24523. **Reserved by:** NUMBER-LEDGER D-24524._
+
+### D-24527 — a return-on-discard defers until a discard-to-play cost is fully paid; Extinction Blast un-hollowed (Active 2026-09-17 — bug fix, no WP; renumbered from D-24525 on 2026-09-17 — pre-merge collision with #2100)
+
+**Decision.** Two mandatory-vs-optional pending choices can co-occur when a
+`return-on-discard` hero card (Cyclops "Unending Energy") is discarded to pay a
+`discard-to-play` cost. The mandatory cost takes strict priority over the optional
+return:
+
+1. **Engine (correctness).** `resolveReturnOnDiscard`
+   (`packages/game-engine/src/moves/resolveReturnOnDiscard.ts`) is a silent no-op
+   while `hasPendingDiscardToPlay(G)` — both queues left intact. The return (and its
+   Decline) resolve only after the discard-to-play queue has fully drained.
+2. **Engine (projection / UX).** `buildUIState`
+   (`packages/game-engine/src/ui/uiState.build.ts`) omits `pendingReturnOnDiscard`
+   while a discard-to-play cost is pending, so the client is shown only the
+   actionable prompt (no dead-click). The return prompt reappears once the cost is paid.
+
+Both mirror the block-all guard priority already declared in `game.ts` (discard-to-play
+at the guard ordering outranks return-on-discard).
+
+**Why it surfaced.** Reported by Jeff. Cyclops "Unending Energy" reads *"if a card
+effect makes you discard this card, you may return this card to your hand."* The
+`discard-to-play` cost routes its discard through the `discardFromHand` chokepoint
+(WP-498 / D-24301), which parks the optional return. For a **multi-discard** cost
+(Ruby Summers "Extinction Blast" — *"discard three cards"*), `resolveDiscardToPlay`
+resolves one discard per move call and carries `remaining` across calls. Without a
+priority guard a client could interleave — discard Cyclops (remaining 3→2), **return
+it**, discard it again (2→1), return, discard (1→0) — so ONE card pays a three-card
+cost and ends in hand. The bot's `ai.legalMoves` already drains discard-to-play before
+offering the return, but the engine move handlers (the authority) did not enforce that
+order, so a human / crafted client could reach the interleave. The guard forces N
+**distinct** cards, then returns the card — the faithful tabletop timing (pay the whole
+cost, then the "you may return" trigger resolves). Magneto's discard-to-**limit**
+(`resolveDiscardChoice`) is immune — it discards the whole selection in one atomic move,
+leaving no gap to interleave a return.
+
+**Un-hollows Extinction Blast.** The WP-383 / D-24184 ship deferred the only n=3
+discard-to-play card (`ssw2/ruby-summers/extinction-blast`) — its printed *"discard
+three cards"* cost was unenforced (free to play). This decision adds
+`[keyword:discard-to-play:3]` to `hero-ability-markers.json` (marker-only; the
+`PendingDiscardToPlay.remaining` counter and the `DiscardToPlayPrompt` `remaining > 1`
+UX already support n>1) and moves the entry out of the `_deferred` list. `cards:check`
+reproduces the regenerated corpus.
+
+**Scope + determinism.** Engine move guard + UIState projection + card-data marker +
+tests; no new client code. The pending queues lazy-init at their park sites, so an
+untriggered match serializes byte-identically — no hash-oracle / PAR re-pin. Engine
+suite 3612 → 3618 (6 new: 4 in `resolveReturnOnDiscard.test.ts` — guard, decline-block,
+normal-resolution, exploit-closure — plus 2 projection tests in `uiState.build.test.ts`),
+0 fail; `cards:check` green.
+
+**Reserved by:** NUMBER-LEDGER D-24527.
+
+Protect this file.
+
+### D-24525 — the simulation dispatch was missing `resolveCopyPowersChoice` (the D-24440 emittable-but-unregistered gap, second instance) (Active 2026-09-17)
+
+**Status:** Active 2026-09-17 — landed directly (targeted simulation-fidelity drift-closure, no WP; `INFRA:` commit, precedent D-24440). Implemented in `packages/game-engine/src/simulation/ai.legalMoves.ts` (`SIMULATION_MOVE_NAMES`), `packages/game-engine/src/simulation/simulation.runner.ts` (`MOVE_MAP`), and `packages/game-engine/src/simulation/par.aggregator.ts` (`MOVE_MAP`), pinned by `packages/game-engine/src/simulation/simulation.moveDispatch.drift.test.ts`. Surfaced while auditing the block-all pending-choice short-circuits during PR #2097 (the server-side bot-loop soft-lock).
+
+**Root cause.** Rogue's Copy Powers (WP-535 / D-24345) parks a `PendingCopyPowersChoice` when ≥2 eligible Heroes were played, and `getLegalMoves` (`ai.legalMoves.ts`) correctly block-all-short-circuits to `resolveCopyPowersChoice { cardId }` with the `selectDefaultCopyPowersCard` default. But `resolveCopyPowersChoice` was **registered only in `game.ts`** (the boardgame.io move registry, for live play) — it was **absent from `SIMULATION_MOVE_NAMES` and from BOTH simulation `MOVE_MAP`s** (`simulation.runner.ts`, `par.aggregator.ts`). This is the **exact class D-24440 closed for `resolveHeroChoice`**: `getLegalMoves` gained the emit (D-24345) without the matching sim-dispatch registration, and the drift guard (`simulation.moveDispatch.drift.test.ts`) was blind to it because it asserts `SIMULATION_MOVE_NAMES ⊆ MOVE_MAP`, never `getLegalMoves-emits ⊆ SIMULATION_MOVE_NAMES` — so the check passed **vacuously** for a name not in the array. Had a sim/PAR sweep played Copy Powers with ≥2 eligible Heroes, the runner would have dispatched "unknown move name", never cleared the choice, and spun the within-turn loop until `MAX_MOVE_STEPS_PER_TURN` flagged the game stuck (`endgameReached === false`).
+
+**Latent, not yet firing.** Confirmed latent: `copy-powers` is an implemented mechanic (present in the static `hero-mechanic-ledger`) but has **zero occurrences in `docs/ai/coverage/runtime-observed-hollows.json`** — no committed sim/PAR sweep currently parks the choice. This mirrors `resolveHeroChoice` (latent until the D-24439 RNG shift swept set `2099`) and `resolveSeatChoice` (D-24501, latent — no card parks one yet). Closed proactively per the D-24440 lesson so a future RNG/set sweep cannot surface a hang. Production and the live bot-ally driver are unaffected — they submit through real boardgame.io, which dispatches the registered `game.ts` reducer.
+
+**Decision.** Add `resolveCopyPowersChoice` to `SIMULATION_MOVE_NAMES` and to **both** `MOVE_MAP`s (reusing the existing move fn from `moves/copyPowersChoice.resolve.js`, no re-implementation — the WP-289 / D-24440 pattern), and add an explicit drift-guard test pinning all three memberships (the `SIMULATION_MOVE_NAMES.includes` + both-map assertions) so the emittable-but-unregistered gap cannot silently reopen. Verified non-vacuous: with the array entry removed, the new pin fails red; restored, the engine suite is green.
+
+**Determinism / blast radius.** Simulation-only — no engine rule, `G` field, phase/turn hook, hash surface (`finalStateHash` / `PRE_WP080_HASH` untouched), persistence, card data, or migration. Full engine suite green (3609/0, +1 for the new drift-guard pin); `pnpm -r build` exit 0. Related: D-24440 (the first instance — `resolveHeroChoice`, the precedent this follows), D-24345 / WP-535 (the Copy Powers move + its `getLegalMoves` short-circuit), D-24073 / WP-289 (the move-dispatch drift guard this extends), D-24501 (the sibling latent `resolveSeatChoice` case). **Reserved by:** NUMBER-LEDGER D-24525.
+
+### D-24526 — `teleport-on-discard` reactive hero keyword (Ruby Summers "Guerrilla Warfare") (Active 2026-09-18 — WP-705 / EC-742)
+
+**Decision.** A new reactive hero keyword `teleport-on-discard` makes Ruby Summers
+"Guerrilla Warfare" (ssw2) faithful: *"When a card effect causes you to discard this
+card, if it is your turn, Teleport it instead. If it is not your turn, set it aside and
+add it to your hand at the end of this turn."* MANDATORY + automatic (no "you may"): no
+pending choice, resolve move, block-all guard, UIState field, or client. It fires at the
+shipped WP-498/D-24301 `discardFromHand` chokepoint (`checkTeleportOnDiscard`), which
+REMOVES the just-discarded card from the discard pile (set aside — held in no zone) and
+records it on a lazy-init `G.pendingTeleportReturns`; `consumeTeleportReturns` re-adds each
+card to its OWNER's hand as an extra card at the current turn's end.
+
+**Both printed branches collapse to one mechanism.** Under WP-701/D-24520 (the new hand is
+drawn at end of turn), "your turn → Teleport it" and "not your turn → set aside, add at end
+of this turn" produce the identical outcome — end-of-current-turn return — so no turn-owner
+(`ctx.currentPlayer`) distinction is needed. `consumeTeleportReturns` runs INSIDE
+`applyEndOfTurnCleanup` (the single per-turn-end helper called once at every live turn-end
+sub-path AND every bgio-bypassing harness), AFTER the ending player's new-hand draw, so the
+active owner's return is an extra on the fresh HAND_SIZE hand and a non-active owner's return
+is an extra on their existing hand — with zero per-harness edits and no replay divergence.
+
+**Parser resolver, not a card-data marker (as-built, live-diagnostics-driven).** The
+observed hollow (build b8858c6) was a `parse-unrecognized` flag from the bare
+`[keyword:Teleport]` DISPLAY token, which the parser captures. Appending a separate marker
+would not silence it, and globally whitelisting `teleport` would dishonestly hide the ~30
+still-unimplemented general onPlay-Teleport cards. So the parser resolves the card's existing
+`[keyword:Teleport]` to `teleport-on-discard` for a whitelisted card set
+(`TELEPORT_ON_DISCARD_CARDS`, threaded via a `teleportOnDiscardSupported` option) — the
+Honest-Partial Invariant, mirroring the `transform` / `investigate` resolvers. Every other
+`[keyword:Teleport]` card keeps an honest unresolved marker. Enrolled in
+`DISCARD_TIME_EXECUTED_KEYWORDS` → `MVP_KEYWORDS` so the play-time hook visit does not emit a
+no-handler hollow; no `HERO_EFFECT_HANDLERS` entry. No card-data marker/regen.
+
+**Determinism.** No `ctx.random`; `PendingTeleportReturn` is JSON-serializable;
+`G.pendingTeleportReturns` is hashed but lazy-init (never seeded), so the empty-replay
+`PRE_WP080_HASH` / `hashGameState` oracles do NOT re-pin (verified byte-identical). A gameplay
+fixture would re-pin only if it force-discards then returns Guerrilla Warfare — none in the
+corpus. Engine suite 3633 → 3642/0; `HERO_KEYWORDS` 57 → 58.
+
+**Known limitation (follow-up).** The hero-mechanic-ledger keys rows on the raw `[keyword:X]`
+token, so it still shows guerrilla-warfare as `teleport/unsupported` (the resolved keyword
+`teleport-on-discard` is named differently than the "teleport" token, unlike the `transform`
+resolver whose keyword name matches its token). The card IS implemented; teaching the ledger
+to credit card-scoped resolvers whose keyword name differs from the token is a small tooling
+follow-up, not a correctness gap. **Reserved by:** NUMBER-LEDGER D-24526.
+
+Protect this file.
+
+### D-24528 — count-scaled effect resolution trace (the realized `EffectTrace.resolution` on the hash-excluded `G.diagnostics` channel) (Active 2026-09-18)
+
+**Status:** Active 2026-09-18 — landed by WP-706 / EC-743 (PR for `claude/wp706-exec`). Implemented in `packages/game-engine/src/diagnostics/hollowEffect.types.ts` (the `EffectTraceResolution` interface + the additive optional `resolution?` on `EffectTrace`), `packages/game-engine/src/hero/heroCountSource.resolve.ts` (the diagnostics-only `explainCountSourceInputs`), `packages/game-engine/src/hero/heroEffects.execute.ts` (the `buildCountScaledResolution` re-resolve at the `runHookEffects` trace-build site), and `packages/game-engine/src/ui/uiState.build.ts` + `uiState.filter.ts` (the field-by-field projection pass-through). Extends D-24294.
+
+**Decision.** Enrich the WP-488 / D-24294 runtime `EffectTrace` with an additive optional `resolution` sub-record `{ countSource: HeroCountSource; resource: 'attack' | 'recruit'; magnitude; count; perEach; computedValue; countedInputs?: CardExtId[] }`, capturing a count-scaled hero effect's realized computation (`computedValue === magnitude × floor(count / perEach)`, `perEach` normalized absent/≤0 → 1 exactly as the executor does). Present only on the `attack-per-count` / `recruit-per-count` legacy hero dispatches (`buildHeroLegacyEffectTrace`, fireSite `hero-executor`); absent on every other trace. First slice carries `countedInputs` for the eight played-this-turn card-counting sources and omits it for the two victory-pile sources (`victory-bystanders`, `shield-levels`).
+
+**Why this channel.** `resolution` rides the same `G.diagnostics` channel D-24294 established, which BOTH determinism oracles already exclude — `computeStateHash` destructures `diagnostics` (D-24271) and the fixture `hashGameState` excludes it. So the field is diagnostics-only, INERT (no move / rule / `endIf` / bot / scoring / PAR reads it), and hash-inert: **NO re-pin** of `PRE_WP080_HASH` or `finalStateHash`, verified empirically (the replay/sentinel/determinism suite passes byte-unchanged — 13/13 hash-pin tests green). The game-log economy clause was NOT chosen because `G.messages` is covered by the `messages` oracle + `computeStateHash` (a log-text change re-pins); the diagnostics channel is the non-hashed route.
+
+**Gameplay grant path untouched.** `resolveCountSource` is NOT modified — the integer the grant uses is byte-identical. The counted-card ext-ids are captured by an ADDITIVE, read-only `explainCountSourceInputs` pass that mirrors each counter's matching logic in ext-id-collecting form (shares `cardCountsAsTeamMember`; mirrors `countDistinctHeroClassesInPlay`'s inline `heroClass`/`heroClass2`/`getGrantedClasses` Set — it does NOT call `cardHasClassWhenPlayed`) and never alters the resolver output. The re-resolve at the trace-build site is deterministic because the grant adds to `turnEconomy` without moving any `inPlay` card in the same caller-loop iteration, so the re-read equals the granted count. Self-inclusion follows each source: self-EXCLUSIVE for the seven per-card sources (`count === countedInputs.length`), self-INCLUSIVE for `distinct-hero-classes-played-this-turn` (`count <= countedInputs.length`, a distinct-colour rollup).
+
+**Board-Visible Field Rule.** `resolution` is carried through the WP-575 projection field-by-field in BOTH `uiState.build.ts` AND `uiState.filter.ts` (fresh-object copy + fresh `countedInputs` array for aliasing defence, D-11105; conditional assignment so an absent `resolution` omits the key). A field built but not filtered is silently dropped at the whitelist — the shipped EC-206 failure mode — so a filter-survival regression test pins it for every audience. The arena-client `extractEffectTraces` lifts the whole trace opaquely, so the sub-record rides the Play Diagnostics export with no client source change.
+
+**Scope + determinism.** Five engine source files + six test files (one new, `hollowEffect.types.test.ts`); no server / registry / card-data / migration surface. Engine suite 3661 → 3682 (+21), 0 fail; arena-client `vue-tsc` 0 + 1843 pass; `pnpm -r build` exit 0. Live-on-surface verification (D-24026) — **VERIFIED 2026-09-18** on a real 2p Red Skull / Midtown Bank Robbery deployed match (build `0f011a1`, descendant of the #2117 merge `8457541d`): the exported Play Diagnostics carried **12 unique `resolution` records** (all `distinct-hero-classes-played-this-turn`, Captain America *Perfect Teamwork* / *Avengers Assemble!*), each with `computedValue === magnitude × floor(count / perEach)` equal to the granted attack/recruit and `countedInputs` listing the counted cards. The `heroClass2` tie is proven — turn 16 *Perfect Teamwork* resolved `count: 4` with `countedInputs` including `ssw2/ruby-summers/heir-to-legends` (printed strength, `hc2` ranged), the 4th distinct colour (ranged) present only via her second class. (The `distinct-hero-classes-played-this-turn` source was exercised live; the other seven played-this-turn sources share the identical capture path and are covered by the engine suite.) Follow-ups (explicitly out of scope): the `resolveCountScaledChoice` / vnom Symbiotic Adaptation dispatch site (records no trace today), `countedInputs` for the victory-pile sources, the misleading base-stat game-log economy clause (`logDisplay`), and a player-facing `heroEffectResolved` chip. Related: D-24294 (the `EffectTrace` / `G.diagnostics` channel this enriches), D-24384 / WP-575 (the projection + export), D-24271 (the hash exclusion), D-24523 / WP-703 (the dual-class `heroClass2` this makes live-observable), D-24497 / D-24391 (the count sources + team counting). **Reserved by:** NUMBER-LEDGER D-24528.
+
+Protect this file.
+
+### D-24529 — "for each color of Hero you have" counts HAND + play, not play-area-only (corrects D-24497) (Active 2026-09-19)
+
+**Status:** Active 2026-09-19 — bug fix, no WP (fix-forward, cf. D-24467 / D-24496 / D-24515). Implemented in `packages/game-engine/src/hero/heroConditions.evaluate.ts` (new `countDistinctHeroClassesYouHave`), `packages/game-engine/src/hero/heroCountSource.resolve.ts` (the `distinct-hero-classes-played-this-turn` case now calls it; `collectDistinctHeroClassCards` scans hand + play for `explainCountSourceInputs`), and the corrected `// why:` on the source in `packages/game-engine/src/rules/heroCountSource.ts`. Corrects the interpretation D-24497 shipped.
+
+**Decision.** The `attack-per-count` / `recruit-per-count` source `distinct-hero-classes-played-this-turn` — Captain America's **Perfect Teamwork** ("+1 attack for each color of Hero you have") and **Avengers Assemble!** ("+1 recruit for each color of Hero you have") — counts the distinct hero colors (classes) among the Heroes you **HAVE = your HAND + play area**, SELF-INCLUSIVE and **ORDER-INDEPENDENT**. A Tech Hero still in your hand contributes its color even when Avengers Assemble! is the first card you play.
+
+**Why (rules).** "Heroes you have" / "your Heroes" is a rulebook term of art. `docs/legendary-universal-rules-v23.md` §"'Your Heroes/Allies' & 'Heroes/Allies You Have'": *"These phrases include both the cards in your hand and the cards you have played this turn. The Heroes in your deck and discard pile don't count."* The worked example there is literally Perfect Teamwork — "play this (strength) card and two (ranged) cards this turn, and you still have two (tech) cards and a (covert) card in your hand → **4 Power**, since you have four colors of Heroes." The rules further distinguish "played this turn" from "a Hero you have" (a Sacrificed card still counts as "played this turn" but is no longer "a Hero you have").
+
+**The bug D-24497 shipped.** D-24497 / WP-680 read "for each color of Hero you have" as *distinct colors among cards you played this turn* (`countDistinctHeroClassesInPlay`, play-area only) — order-dependent and ignoring the hand. Live-observed 2026-09-19 (2p Red Skull / Midtown Bank Robbery, match `l5FaVEbyJp0`): Avengers Assemble! played first counted only its own color (`+1`) though the player held a Tech Hero and gray S.H.I.E.L.D. basics. WRONG.
+
+**Fix (surgical, no rename, no data change).** The internal source slug `distinct-hero-classes-played-this-turn` is kept as a stable id (players never see it — they see the ability text; the marker in `data/cards/core.json` is unchanged, so no regen). Only the *counting* is corrected: a new `countDistinctHeroClassesYouHave` scans hand (printed `heroClass` / `heroClass2` only) + play area (those plus `getGrantedClasses` for in-play Size-Changing), deduped by color. Gray Heroes (no color) never contribute. The play-area-only `countDistinctHeroClassesInPlay` is untouched and stays the counting for the `distinctHeroClassesAtLeast` condition gate + the deferred-conditional-grant monotonicity (which deliberately read `inPlay`).
+
+**Diagnostics parity.** `collectDistinctHeroClassCards` (the WP-706 / D-24528 `explainCountSourceInputs` collector for this source) now scans hand + play too, so `countedInputs` stays consistent with the corrected count and the `count <= countedInputs.length` self-inclusive-rollup invariant still holds.
+
+**Scope + determinism.** Four game-engine source files (incl. tests); no server / registry / card-data / migration / regen surface. This DOES change a hashed gameplay value (the count feeds `turnEconomy` attack/recruit) — but **NO re-pin**: the full engine suite (3752/3752, incl. the replay/sentinel/determinism hash-pin tests) is byte-unchanged, because no committed fixture plays Captain America (D-24497's "core-only" observation). Any future fixture that plays these cards with a colored hand will legitimately reflect the corrected higher grant. Related: D-24497 (the interpretation this corrects), D-24055 / D-24074 (the distinct-class / Size-Changing counting reused for the play half), D-24523 / WP-703 (the `heroClass2` dual-class contribution), D-24528 / WP-706 (the `explainCountSourceInputs` diagnostics collector kept in lockstep). **Reserved by:** NUMBER-LEDGER D-24529.
+
+Protect this file.
+
+### D-24530 — Pure Fury's `[team:shield]` is descriptive, not a requiresTeam play-gate (Active 2026-09-19)
+
+**Status:** Active 2026-09-19 — bug fix, no WP (fix-forward, cf. D-24498's Battlefield Promotion suppression and the D-24470 Psychic Link fix). Implemented in `packages/game-engine/src/setup/heroAbility.setup.ts` (a `lineHasPureFury` guard added to the Step 1b `requiresTeam` suppression list).
+
+**Decision.** On a Pure Fury ability line (`[keyword:pure-fury]`), the co-located `[team:shield]` — "Defeat any Villain or Mastermind whose Attack is less than the number of `[team:shield]` Heroes in the **KO pile**" — is DESCRIPTIVE (it names which KO-pile Heroes to count), NOT a `requiresTeam` play-gate. So `buildHeroAbilityHooks` must emit NO `requiresTeam` condition for it, and Pure Fury fires unconditionally; `heroEffectPureFury` (WP-682 / D-24499) reads the KO pile at resolve time.
+
+**The bug.** Step 1b of the hero-ability setup emits a `requiresTeam` gate for every inline `[team:X]` token unless the line is a resolved-investigate, reveal-from-hand, or optional-ko-shield-officer line. Pure Fury matched none of those, so it got a spurious `requiresTeam: 'shield'` gate — "it needs another shield Hero played this turn" — which blocked the play whenever no S.H.I.E.L.D. Hero happened to precede it that turn. Live-observed 2026-09-19 (2p Red Skull / Midtown Bank Robbery, match `yqj7YblJCt4`, build `#2142` — post-D-24499): Pure Fury ran correctly at turn 20 (an Agent was played first, so the spurious gate passed) but was blocked at turns 24 and 32 (Pure Fury played after non-shield cards / played first). This is the SAME class of bug as the Psychic Link (D-24470) and Battlefield Promotion (D-24498) mid-sentence-`[team:X]`-is-not-a-gate fixes.
+
+**Fix.** Add `const lineHasPureFury = abilityText.includes('[keyword:pure-fury]')` and extend the Step 1b guard to `&& !lineHasPureFury`, mirroring `lineHasOptionalKoShieldOfficer`. Engine-only, one guard + a `heroAbility.setup` test asserting Pure Fury emits no `requiresTeam` condition (and still resolves the `pure-fury` keyword). The bare `[icon:attack]` in the comparison clause parses to an inert no-magnitude `attack` icon-keyword (no grant — confirmed by the live log showing no attack from Pure Fury); out of scope.
+
+**Scope + determinism.** Two game-engine files (setup + test); no data / regen / server surface. Removing the spurious gate lets Pure Fury run its handler where it was previously blocked — a hashed gameplay change — but **NO re-pin**: full engine suite 3774/3774, 0 fail, incl. the replay/sentinel/determinism hash-pin tests byte-unchanged (no committed fixture plays Nick Fury). Related: D-24499 / WP-682 (the pure-fury keyword + `heroEffectPureFury` this un-gates), D-24498 (the optional-ko-shield-officer `[team:shield]` suppression precedent), D-24470 (the Psychic Link reveal-criterion suppression precedent). **Reserved by:** NUMBER-LEDGER D-24530.
+
+### D-24531 — Synergy Realization Phase 1: per-match Synergy Rate + Table Total (display-only) (Active 2026-09-19)
+
+**Status:** Active 2026-09-19 — WP-708 / EC-745. Implemented across game-engine (diagnostics + scoring), server (coach), and arena-client (endgame render). Reserved in NUMBER-LEDGER D-24531; lands Active at this execution.
+
+**Decision.** Legendary rewards assembling conditional Hero clauses; the engine surfaces those only per-play today (WP-295 whiff log, WP-409 fired-count, WP-706 resolution trace). WP-708 adds the missing per-MATCH aggregate: a per-player `{played, assembled}` conditional-clause counter on the runtime-only, hash-excluded `G.diagnostics.conditionalClauses` (via a new `recordConditionalClause` recorder), incremented at the `heroEffects.execute` `evaluateAllConditions` chokepoint, and derived at end-of-game into DISPLAY-ONLY fields on `PlayerScoringContribution` (`conditionalClausesPlayed` / `conditionalClausesAssembled`) → `CoachPlayerLine` → `EndgameSummary.vue`, plus a neutral cross-seat Table Total. The player-facing **Synergy Rate** = assembled / played (hidden at played = 0).
+
+**Counting rule.** A hook is counted iff it carries ≥1 condition AND its mechanic is executable (non-hollow, via `hookHasExecutableEffect` mirroring `detectHollowHeroHook`'s reachability rule): `played` always, `assembled` iff `evaluateAllConditions` is true. Unconditional hooks (no synergy decision) and hollow hooks (unimplemented payoff — our backlog, not the player's miss) are excluded from both counts. The wait-and-see / deferred branch (a numeric-threshold gate that may still be reached this turn, `deferredConditionalGrants`) is NOT counted in Phase 1 — snapshot-gate synergy (`[hc:X]` / `[team:X]` / keyword / playedThisTurn) is measured; deferred threshold synergy is a later phase.
+
+**Invariants.** (1) Display-only — never enters `finalScore` / `rawScore` / PAR / grade (NG-1, no pay-to-win, no skill-stat-to-ranking leakage), asserted (same victory piles with vs without a synergy tally produce an identical breakdown). (2) Hash-neutral — the counters ride the D-24034 hash-excluded `G.diagnostics` channel (both `computeStateHash` / D-24271 and the fixture oracle exclude it), so NO re-pin: engine suite 3831/0 with sentinel `finalStateHash` + `PRE_WP080_HASH` byte-identical. (3) NO new `EffectTraceStatus` member (that union stays `fired|no-op|no-handler|secondary-site`; the whiff concept is already `EffectExecutionReason: condition-failed`). (4) Two-vocabulary invariant — the engine keeps `condition-failed`; the player/coach surface never shows whiff/failed/error/missed/wasted (arena-client copy-lint test). (5) Hero path only; layer boundary held (engine records/derives, server carries, client renders — no client condition re-evaluation, D-20105).
+
+**Phase 1 of a phased design** (`DESIGN-SYNERGY-REALIZATION.md`): Realized Value % (rides WP-706/D-24528 `EffectTrace.resolution`), the play-order sequence teacher (over the D-24119 faithful replay), and co-op cross-seat cooperation are later, dependent phases. Related: D-24082 (WP-295, the condition-failed observability log this builds on), D-24221 (WP-409, `lastPlayEffectsFired`), D-24427 (WP-616, the per-seat `PlayerScoringContribution` split extended here), D-24528 (WP-706, the Phase-2 realized-value groundwork), D-24034 (the hash-excluded diagnostics channel). **Reserved by:** NUMBER-LEDGER D-24531.
 
 Protect this file.

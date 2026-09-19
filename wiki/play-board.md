@@ -29,7 +29,7 @@ source:
   - ../packages/game-engine/src/game.ts
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-08-05
+last-reviewed: 2026-09-19
 ---
 
 # Play Board
@@ -333,6 +333,38 @@ report to exactly one of the three layers.
 > upstream ability marker was missing, so there was nothing to project. That
 > routes to the card's `abilities[]` markup + the ability parser, not
 > `buildUIState` / the filter. See [Edge Cases](#edge-cases).
+
+### Previewing a board state locally (the `?fixture=…&play=1` dev route) {#preview-fixture}
+
+To eyeball a specific board state — including a parked pending-choice
+**prompt** — without waiting for a live match to reach it, the dev server
+serves committed `UIState` snapshots. Load
+`http://localhost:5173/?fixture=<name>&play=1`: the `?fixture=` harness in
+`main.ts` sets the store snapshot and `&play=1` routes `App.vue` to render
+`PlayViewport` (the play surface) instead of the lobby. The whole harness is
+gated on `import.meta.env.DEV`, so it is dead-code-eliminated from production
+(EC-067). Fixtures live in
+[`apps/arena-client/src/fixtures/uiState/`](../apps/arena-client/src/fixtures/uiState)
+— each a JSON snapshot bound to the engine's `UIState` at import via
+`satisfies` (drift becomes a compile error), listed in `FixtureName` /
+`KNOWN_FIXTURE_NAMES`. A snapshot is a **post-filter** projection for one
+viewer (the seat carrying `handCards`, Player 0), so it reproduces exactly
+what that seat receives.
+
+Committed fixtures:
+
+| `?fixture=` name | What it shows |
+|---|---|
+| `mid-turn` | A mid-match board (the Playwright fit/scroll baseline). |
+| `endgame-win` / `endgame-loss` | The `gameOver` outcome panel, either result. |
+| `final-turn` | The deck-exhaustion final-turn banner (`UIState.finalTurn`). |
+| `diving-block-wound` | Player 0 holds Captain America's **Diving Block** and owes a parked `pendingSeatChoice` (kind `diving-block`), so `PendingSeatChoicePrompt` renders the *"You would gain a Wound — Diving Block?"* reveal/decline prompt — the WP-682 / D-24499 + WP-684 / D-24501 wound-interception UX. Use it to verify a **prompt** actually renders (the "missing prompt" case above), no live match needed. |
+
+> **Gotcha:** the shared `arena-client` dev-server launch config runs Vite
+> from the **repo root**, so a fixture that only exists on a feature branch
+> will not appear until it merges (or you run `vite` from that branch's
+> `apps/arena-client`). The version footer's git SHA tells you which checkout
+> is being served.
 
 ## Edge Cases {#edge-cases}
 

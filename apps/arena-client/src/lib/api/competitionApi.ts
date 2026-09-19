@@ -95,6 +95,11 @@ export interface CompetitivePlayerContribution {
   readonly mastermindTacticsDefeated?: number;
   readonly villainsDefeated?: number;
   readonly henchmenDefeated?: number;
+  // why: WP-708 / D-24531 — this seat's per-match synergy tally (display-only,
+  // mirrors the engine PlayerScoringContribution). Optional: records persisted
+  // before WP-708 carry none, and the report card then omits the Synergy line.
+  readonly conditionalClausesPlayed?: number;
+  readonly conditionalClausesAssembled?: number;
 }
 
 /**

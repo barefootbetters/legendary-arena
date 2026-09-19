@@ -367,9 +367,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // is purely a downstream trajectory artifact. Net: totalObs 2965 -> 2968 (+3); percentResolved
   // holds at 24.7 (the +3 denominator shift is too small to move the rounded share). Deterministic
   // — CI computes the same from the regenerated feed.
+  // 2026-09-17 (WP-703 / D-24523, re-pin): dual-class hero cards now count as BOTH
+  // printed classes, so `[hc:X]` synergies / class counts / tech-VP fire for a card's
+  // second class where they whiffed before. That shifts the fixed-seed sweep's
+  // trajectories (more class-gated effects execute → more downstream observations).
+  // Net: totalObs 2968 -> 3003 (+35); percentResolved 24.7 -> 24.4 (the larger denominator
+  // dilutes the resolved share — a sweep-trajectory artifact of the faithfulness fix, NOT a
+  // regression). Deterministic — CI computes the same from the regenerated
+  // runtime-observed-hollows feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 2968);
-  assert.equal(view.percentResolved.value, 24.7);
+  assert.equal(view.totalObs.value, 3003);
+  assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
 

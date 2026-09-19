@@ -47,7 +47,7 @@ source:
   - ../docs/ai/DESIGN-MASTERMIND-STRIKE-MIGRATION.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-01
+last-reviewed: 2026-09-19
 ---
 
 # Card Effect System
@@ -570,6 +570,29 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
   it, and the `CardExtId` zone model cannot exclude a single instance — so the
   "nothing eligible" no-op is now defensive (the played card is always in
   `inPlay` at the choice).
+- **"For each color of Hero you have" counts hand ∪ play and excludes grey
+  (D-24529).** Captain America's **Avengers Assemble!** (recruit) and **Perfect
+  Teamwork** (attack) — the `distinct-hero-classes-played-this-turn` count source —
+  count the *distinct Hero colors (classes)* among the Heroes you **have**, which
+  the rulebook defines as **your hand plus your play area** ("'Your Heroes/Allies'
+  & 'Heroes/Allies You Have'": *"include both the cards in your hand and the cards
+  you have played this turn"* — deck / discard / KO excluded). So the count is
+  **order-independent**: a Tech Hero still in hand contributes its color even when
+  Avengers Assemble! is played first. This is a *different* scan from the on-play
+  class-synergy gates above (`[hc:X]:`, which read `inPlay` only at play time), and
+  the engine uses a dedicated `countDistinctHeroClassesYouHave` (hand printed
+  `heroClass`/`heroClass2` + play those plus Size-Changing granted classes) rather
+  than the play-only `countDistinctHeroClassesInPlay`. **Grey cards contribute no
+  color:** the grey S.H.I.E.L.D. Agent / Trooper / Officer, Sidekicks, New Recruits,
+  and HYDRA Allies have *no Hero Class* (rulebook Grey Heroes: *"grey-colored cards
+  with no Hero Class"*; Spectrum's "3 classes of Hero": *"Grey S.H.I.E.L.D. Heroes …
+  don't have classes, so they don't help"*), so `heroClass: null` cards never add to
+  the count. Do not confuse "color of Hero" with the *separate* "grey Hero" wording
+  (Emma Frost / Empath *"+1 for each grey Hero you have"*), which specifically **does**
+  count grey — same hand ∪ play scope, different subject. Dual-class cards contribute
+  **both** printed colors (WP-703 / D-24523). A ruling first surfaced live and settled
+  2026-09-19 (2p Red Skull / Midtown match `l5FaVEbyJp0` — Avengers Assemble! played
+  first read `count 1`, ignoring colored Heroes in hand; corrected to hand ∪ play).
 - **Drift hazard on every closed set.** Adding a hero keyword, effect node
   type, value expression, or villain primitive requires updating the union,
   its canonical readonly array, the dispatch/handler map, and a DECISIONS.md
@@ -641,6 +664,8 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
 - WP-663 (D-24474) — the `optional-play-villain-top` hero keyword: Emma Frost's Shadowed Thoughts *"[hc:covert]: You may play the top card of the Villain Deck. If you do, +2 Attack."* A new **interactive** hero pending-choice on the `optional-ko-reward` (D-24019) model — `heroEffectOptionalPlayVillainTop` parks a `PendingPlayVillainTopChoice` (lazily materialized), a block-all guard freezes every play-phase move while pending, and `resolvePlayVillainTopChoice({accept})` resolves it: accept plays the top Villain-Deck card through the shared `playTopVillainDeckCards` reveal cascade (city entry / Master Strike / Scheme Twist — reused, never re-implemented) then grants +2 Attack; decline does neither. Unlike WP-659's pure-upside auto-reveal, playing the top card has a real downside, so the "may" is a genuine choice: humans get a `PlayVillainTopPrompt.vue` (mandatory `UIPendingPlayVillainTop` projection, owner-scoped through `filterUIStateForAudience`), while bot/autoplay/`getLegalMoves` default to a single deterministic DECLINE. The keyword carries magnitude 2, so — like `optional-ko-reward` — it rides the `executeSingleEffect` pre-gate and is **not** in `NO_MAGNITUDE_KEYWORDS`; the printed `+2[icon:attack]` is suppressed from the icon passes so the reward rides the keyword, not a second unconditional grant. The third and last of the operator-reported Emma Frost "cards not triggering" fixes (after Diamond Form / D-24467 and Psychic Link / D-24470).
 - D-24345 (bug fix, 2026-09-11) — Rogue's Copy Powers *"Play this card as a copy of another Hero you played this turn"* would not copy **gray Heroes** (the basic S.H.I.E.L.D. Troopers / Agents / Officers and Sidekicks). The eligible-target builder `buildCopyPowersTargets` treated a **non-null `heroClass`** as the "is a Hero" test, but a gray Hero carries `heroClass: null` — *no color*, which is not the same as *not a Hero* — so every gray Hero was silently dropped and Copy Powers reported "found no other Hero played this turn to copy" on a turn of only S.H.I.E.L.D. basics (live-observed: DrDoom Civil War 1p). Fixed by inverting the discriminant: the builder now excludes only Wounds / Bystanders (`WOUND_EXT_ID` / `BYSTANDER_EXT_ID`, the only non-Heroes that can sit in `inPlay`), the same "not a Hero" test [`heroConditions.evaluate.ts`](../packages/game-engine/src/hero/heroConditions.evaluate.ts) `countDistinctHeroCostsInHandOrPlay` uses (which counts a 0-cost S.H.I.E.L.D. basic as a Hero). A gray-Hero copy has no class or ability to copy, but the D-24391 full-duplicate machinery still doubles its printed economy and transfers its team. Engine-only, single eligibility site (shared by the park handler, the UIState projection, the resolve validation, and the bot default); no schema, card-data, or client change. **`heroClass != null` means "has a color", never "is a Hero".**
 - D-24467 (bug fix, 2026-09-11) — Diamond Form's *"Whenever you defeat a Villain or Mastermind this turn"* grant **over-fired on henchmen**. WP-656 wired the edge flag into the `fightVillain` success tail — but that move defeats **both villains and henchmen**, with no card-type check, so defeating a Hand Ninja (a henchman) paid +3 Recruit (live-observed: Red Skull / Midtown Bank Robbery 1p, turn 18 — Diamond Form's entire output that game was over-fire). Henchmen are neither Villains nor Masterminds. Fixed by gating the flag on the fought card's revealed type: `G.villainDeckCardTypes?.[cardId] !== 'henchman'` (using `!== 'henchman'` rather than `=== 'villain'` so legacy/untyped test states, whose `villainDeckCardTypes` may not register the fought card, still signal a villain defeat; in production `fightVillain` only ever fights a villain or a henchman). `fightMastermind`'s flag-set was already correct. The over-fire test had delegated the fight-site coverage to `fightVillain.test.ts`, which never asserted the henchman case — now it does (henchman excluded, typed villain included). Engine-only; oracle-safe (the flag is consumed within the move), no re-pin.
+- D-24529 (bug fix, 2026-09-19) — Captain America's Avengers Assemble! / Perfect Teamwork *"for each color of Hero you have"* counted colors among cards **played this turn only** (play-area, order-dependent), so playing the card first ignored colored Heroes still in hand (live-observed: 2p Red Skull / Midtown match `l5FaVEbyJp0`). "Heroes you have" is a rulebook term of art = **hand ∪ play area**, order-independent; corrected via a dedicated `countDistinctHeroClassesYouHave` (leaving the play-only `countDistinctHeroClassesInPlay` for the on-play class-synergy gate + deferred-grant monotonicity). Grey `heroClass: null` cards contribute no color (rulebook Grey Heroes / Spectrum "don't help") — the flip side of D-24345's "`heroClass != null` means 'has a color', never 'is a Hero'." Engine-only; no committed fixture plays Captain America → no re-pin. See the "For each color of Hero you have" edge case above.
+- D-24530 (bug fix, 2026-09-19) — Nick Fury's Pure Fury *"Defeat any Villain or Mastermind whose Attack is less than the number of `[team:shield]` Heroes in the KO pile"* was blocked by a spurious `requiresTeam: 'shield'` play-gate ("needs another shield Hero played this turn") — the same Step 1b mid-sentence-`[team:X]` mis-read fixed for Psychic Link (D-24470) and Battlefield Promotion (D-24498). Its `[team:shield]` describes the KO-pile Heroes to count, not a play-gate; added a `lineHasPureFury` guard to the Step 1b suppression list so the card fires unconditionally and `heroEffectPureFury` (D-24499) reads the KO pile at resolve. Engine-only; no re-pin.
 - The hollow-effect detection and coverage-ledger spine (DESIGN-HOLLOW-EFFECT-DETECTION.md, DESIGN-EFFECT-AUTHORING-SCALE.md)
 
 ## Scaling and Open Directions

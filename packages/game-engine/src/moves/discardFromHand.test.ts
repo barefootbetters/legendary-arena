@@ -15,10 +15,13 @@ import {
   discardFromHand,
   checkReturnOnDiscard,
   cardCarriesReturnOnDiscard,
+  checkTeleportOnDiscard,
+  cardCarriesTeleportOnDiscard,
 } from './discardFromHand.js';
 
 const UNENDING_ENERGY = 'core/cyclops';
 const PLAIN_CARD = 'core/spider-man';
+const GUERRILLA_WARFARE = 'ssw2/ruby-summers/guerrilla-warfare';
 
 /**
  * Builds a minimal game state with one player, the given hand/discard, and a
@@ -80,6 +83,50 @@ describe('discardFromHand (WP-498 / D-24301)', () => {
     const G = makeState([], [UNENDING_ENERGY]);
     checkReturnOnDiscard(G, '0', UNENDING_ENERGY);
     assert.deepEqual(G.pendingReturnOnDiscard, [{ playerID: '0', cardId: UNENDING_ENERGY }]);
+  });
+});
+
+/** Minimal state marking GUERRILLA_WARFARE with the teleport-on-discard keyword. */
+function makeTeleportState(hand: string[], discard: string[]): LegendaryGameState {
+  const hooks: HeroAbilityHook[] = [
+    { cardId: GUERRILLA_WARFARE, timing: 'onDiscard', keywords: ['teleport-on-discard'] },
+  ];
+  return {
+    playerZones: { '0': { deck: [], hand: [...hand], discard: [...discard], inPlay: [], victory: [] } },
+    heroAbilityHooks: hooks,
+  } as unknown as LegendaryGameState;
+}
+
+describe('teleport-on-discard reaction (WP-705 / D-24526)', () => {
+  it('cardCarriesTeleportOnDiscard is true for the marked card, false otherwise', () => {
+    const G = makeTeleportState([], []);
+    assert.equal(cardCarriesTeleportOnDiscard(G, GUERRILLA_WARFARE), true);
+    assert.equal(cardCarriesTeleportOnDiscard(G, PLAIN_CARD), false);
+  });
+
+  it('discardFromHand SETS ASIDE a teleport-on-discard card (removed from discard, held on the queue)', () => {
+    const G = makeTeleportState([GUERRILLA_WARFARE, PLAIN_CARD], []);
+    const found = discardFromHand(G, '0', GUERRILLA_WARFARE);
+    assert.equal(found, true);
+    assert.deepEqual(G.playerZones['0']!.hand, [PLAIN_CARD]);
+    // why: set aside = in NO zone; NOT left in discard (unlike return-on-discard).
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.pendingTeleportReturns, [{ playerID: '0', cardId: GUERRILLA_WARFARE }]);
+  });
+
+  it('leaves an unmarked card in discard and parks nothing (lazy-init stays undefined)', () => {
+    const G = makeTeleportState([PLAIN_CARD], []);
+    const found = discardFromHand(G, '0', PLAIN_CARD);
+    assert.equal(found, true);
+    assert.deepEqual(G.playerZones['0']!.discard, [PLAIN_CARD]);
+    assert.equal(G.pendingTeleportReturns, undefined);
+  });
+
+  it('checkTeleportOnDiscard alone removes from discard + records (reaction is separable)', () => {
+    const G = makeTeleportState([], [GUERRILLA_WARFARE]);
+    checkTeleportOnDiscard(G, '0', GUERRILLA_WARFARE);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.pendingTeleportReturns, [{ playerID: '0', cardId: GUERRILLA_WARFARE }]);
   });
 });
 

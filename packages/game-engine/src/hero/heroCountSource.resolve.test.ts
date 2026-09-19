@@ -12,7 +12,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveCountSource } from './heroCountSource.resolve.js';
+import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import { HERO_COUNT_SOURCES } from '../rules/heroCountSource.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import {
@@ -558,6 +558,65 @@ describe('resolveCountSource distinct-hero-classes-played-this-turn (WP-680)', (
       'a no-class card contributes no color',
     );
   });
+
+  it('counts colors of Heroes still in HAND, order-independent (D-24529 — the reported bug)', () => {
+    // why: D-24529 — "for each color of Hero you have" is the rulebook term of art
+    // "Heroes you have" = HAND + play area (universal-rules §"'Your Heroes/Allies' &
+    // 'Heroes/Allies You Have'"). The literal bug: Avengers Assemble! (instinct) played
+    // FIRST while a Tech Hero sits unplayed in hand must still count the Tech colour.
+    // Under the old play-area-only reading this returned 1; the fix returns 2.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-in-hand', 'shield-agent-in-hand'],
+          discard: [],
+          inPlay: ['avengers-assemble'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'avengers-assemble': { heroClass: 'instinct', team: 'avengers' },
+        'tech-in-hand': { heroClass: 'tech', team: null },
+        'shield-agent-in-hand': { heroClass: null, team: 'shield' },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn', 'avengers-assemble'),
+      2,
+      'the Tech Hero in hand contributes its colour even though only the instinct card was played',
+    );
+  });
+
+  it('does NOT count colors in deck or discard (only hand + play)', () => {
+    // why: D-24529 — the rulebook term of art excludes deck/discard/KO; only hand + play.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: ['covert-in-deck'],
+          hand: ['tech-in-hand'],
+          discard: ['ranged-in-discard'],
+          inPlay: ['strength-in-play'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'covert-in-deck': { heroClass: 'covert', team: null },
+        'tech-in-hand': { heroClass: 'tech', team: null },
+        'ranged-in-discard': { heroClass: 'ranged', team: null },
+        'strength-in-play': { heroClass: 'strength', team: null },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn'),
+      2,
+      'only the hand (tech) and play (strength) colours count — deck/discard are excluded',
+    );
+  });
 });
 
 describe('resolveCountSource team-played sources (WP-680)', () => {
@@ -643,5 +702,193 @@ describe('resolveCountSource odd-cost-heroes-played-this-turn (WP-680)', () => {
       1,
       'only other odd-cost cards count',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-706 / D-24528 — explainCountSourceInputs (diagnostics-only counted inputs)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a minimal state whose player "0" has an in-play zone plus cardTraits that
+ * can carry `heroClass` AND `heroClass2` (the dual-class case), and an optional
+ * cardStats cost/icon map. The explain reads only these.
+ *
+ * @param inPlay - The in-play ext_ids for player "0".
+ * @param cardTraits - Per-card heroClass / heroClass2 / team.
+ * @param cardStats - Per-card cost + icon flags (only the read fields matter).
+ * @returns A minimal game state cast to LegendaryGameState.
+ */
+function makeExplainState(
+  inPlay: string[],
+  cardTraits: Record<string, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
+  cardStats: Record<string, { cost?: number; hasAttackIcon?: boolean; hasRecruitIcon?: boolean }> = {},
+): LegendaryGameState {
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [], discard: [], inPlay, victory: [] },
+    },
+    cardTraits,
+    cardStats,
+  } as unknown as LegendaryGameState;
+}
+
+describe('explainCountSourceInputs — per-card played-this-turn sources (WP-706)', () => {
+  it('returns the matched ext-ids and count === length for a cost-threshold source', () => {
+    const gameState = makeExplainState(
+      ['divine-lightning#0', 'worthy-ally#0', 'weak-ally#0'],
+      {
+        'divine-lightning#0': { heroClass: 'strength', team: null },
+        'worthy-ally#0': { heroClass: 'tech', team: null },
+        'weak-ally#0': { heroClass: 'covert', team: null },
+      },
+      {
+        'divine-lightning#0': { cost: 5 },
+        'worthy-ally#0': { cost: 6 },
+        'weak-ally#0': { cost: 2 },
+      },
+    );
+
+    // why: self-EXCLUSIVE — the triggering divine-lightning#0 is skipped; only the
+    // other cost >= 5 card (worthy-ally#0) is collected.
+    const inputs = explainCountSourceInputs(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0');
+    assert.deepStrictEqual(inputs, ['worthy-ally#0'], 'collects the other Worthy-making card');
+    const count = resolveCountSource(gameState, '0', 'worthy-cards-played-this-turn', 'divine-lightning#0');
+    assert.equal(count, inputs.length, 'count === countedInputs.length for a per-card source');
+  });
+
+  it('collects the OTHER team cards, self-excluded, matching the resolver count', () => {
+    const gameState = makeExplainState(
+      ['a-day#0', 'iron-man#0', 'nick-fury#0'],
+      {
+        'a-day#0': { heroClass: 'covert', team: 'avengers' },
+        'iron-man#0': { heroClass: 'tech', team: 'avengers' },
+        'nick-fury#0': { heroClass: 'tech', team: 'shield' },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    assert.deepStrictEqual(inputs, ['iron-man#0'], 'the other Avenger only, self-excluded');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+
+  it('collects the OTHER attack-icon cards via the faithful icon flag', () => {
+    const gameState = makeExplainState(
+      ['sym#0', 'ally-a#0', 'ally-b#0'],
+      {
+        'sym#0': { heroClass: 'instinct', team: null },
+        'ally-a#0': { heroClass: 'tech', team: null },
+        'ally-b#0': { heroClass: 'covert', team: null },
+      },
+      {
+        'sym#0': { hasAttackIcon: true, hasRecruitIcon: true },
+        'ally-a#0': { hasAttackIcon: true, hasRecruitIcon: false },
+        'ally-b#0': { hasAttackIcon: false, hasRecruitIcon: true },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'attack-icon-played-this-turn', 'sym#0');
+    assert.deepStrictEqual(inputs, ['ally-a#0'], 'only the other attack-icon card');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'attack-icon-played-this-turn', 'sym#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+});
+
+describe('explainCountSourceInputs — victory-pile sources return [] (WP-706)', () => {
+  it('returns [] for victory-bystanders (countedInputs omitted at the capture site)', () => {
+    const gameState = makeStateWithVictory([BYSTANDER_EXT_ID, BYSTANDER_EXT_ID]);
+    assert.deepStrictEqual(
+      explainCountSourceInputs(gameState, '0', 'victory-bystanders'),
+      [],
+      'victory-pile source explains to no counted inputs',
+    );
+  });
+
+  it('returns [] for shield-levels', () => {
+    const gameState = makeStateWithVictory(['some-shield-card#0']);
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'shield-levels'), []);
+  });
+});
+
+describe('explainCountSourceInputs — distinct-hero-classes dual-class case (WP-706 / WP-703)', () => {
+  it('includes a dual-class card whose colour is matched ONLY via heroClass2', () => {
+    // why: the load-bearing WP-703 tie — a dual-class card contributes its second colour
+    // via heroClass2 alone; explainCountSourceInputs must list that card so the heroClass2
+    // contribution is live-observable. dual#0 has heroClass 'tech' (shared with tech#0) and
+    // heroClass2 'covert' (unique) — its unique colour comes ONLY from heroClass2.
+    const gameState = makeExplainState(
+      ['tech#0', 'dual#0'],
+      {
+        'tech#0': { heroClass: 'tech', team: null },
+        'dual#0': { heroClass: 'tech', heroClass2: 'covert', team: null },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.ok(inputs.includes('dual#0'), 'the dual-class card appears in the counted inputs');
+    assert.ok(inputs.includes('tech#0'), 'the single-class card appears too');
+
+    // why: self-INCLUSIVE, distinct-colour rollup — count (distinct colours {tech,covert}=2)
+    // <= the card-list length (2 here, but the invariant is count <= length, not ===).
+    const count = resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.equal(count, 2, 'two distinct colours: tech + covert (covert only via heroClass2)');
+    assert.ok(count <= inputs.length, 'distinct-class invariant: count <= countedInputs.length');
+  });
+
+  it('lists Heroes still in HAND among the counted inputs (D-24529), invariant holds', () => {
+    // why: D-24529 — the collector scans hand + play, so a coloured Hero in hand appears
+    // in countedInputs and the count <= length invariant still holds with the corrected count.
+    const gameState = {
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-in-hand#0'],
+          discard: [],
+          inPlay: ['avengers-assemble#0'],
+          victory: [],
+        },
+      },
+      cardTraits: {
+        'avengers-assemble#0': { heroClass: 'instinct', team: 'avengers' },
+        'tech-in-hand#0': { heroClass: 'tech', team: null },
+      },
+      cardStats: {},
+    } as unknown as LegendaryGameState;
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.ok(inputs.includes('tech-in-hand#0'), 'the hand Hero appears in the counted inputs');
+    assert.ok(inputs.includes('avengers-assemble#0'), 'the played Hero appears too');
+    const count = resolveCountSource(gameState, '0', 'distinct-hero-classes-played-this-turn');
+    assert.equal(count, 2, 'instinct (play) + tech (hand) = 2');
+    assert.ok(count <= inputs.length, 'distinct-class invariant: count <= countedInputs.length');
+  });
+});
+
+describe('explainCountSourceInputs — resolver byte-identical guarantee (WP-706)', () => {
+  it('resolveCountSource returns the identical integer with and without an explain call', () => {
+    // why: the gameplay grant path is untouched — the explain is a SEPARATE read-only pass;
+    // the resolver integer the grant uses must be byte-identical whether or not explain runs.
+    const gameState = makeExplainState(
+      ['a-day#0', 'iron-man#0', 'thor#0'],
+      {
+        'a-day#0': { heroClass: 'covert', team: 'avengers' },
+        'iron-man#0': { heroClass: 'tech', team: 'avengers' },
+        'thor#0': { heroClass: 'strength', team: 'avengers' },
+      },
+    );
+
+    const before = resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    const explained = explainCountSourceInputs(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+    const after = resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0');
+
+    assert.equal(before, after, 'resolver is unaffected by the explain pass');
+    assert.equal(before, explained.length, 'and agrees with the explain length for a per-card source');
   });
 });

@@ -391,6 +391,80 @@ describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
     assert.ok(lines[1]?.text().includes('2 mastermind tactics'), 'seat 1 tactics');
   });
 
+  test('renders each seat\'s synergy line + the Table Total in celebrate-voice (WP-708)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -1660,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 20,
+              victoryPoints: 56,
+              bystandersRescued: 17,
+              escapes: 0,
+              penaltyEventCounts: {
+                villainEscaped: 0,
+                bystanderLost: 0,
+                schemeTwistNegative: 0,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 12, conditionalClausesAssembled: 7 },
+                { playerId: '1', victoryPoints: 20, bystandersRescued: 4, conditionalClausesPlayed: 4, conditionalClausesAssembled: 4 },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    const synergyLines = wrapper.findAll('[data-testid="arena-hud-per-player-synergy"]');
+    assert.equal(synergyLines.length, 2, 'one synergy line per seat with counts');
+    assert.ok(synergyLines[0]?.text().includes('assembled 7 of 12 synergy clauses'), 'seat 0 synergy line');
+    assert.ok(synergyLines[1]?.text().includes('assembled 4 of 4 synergy clauses'), 'seat 1 synergy line');
+    // Table Total = sum of assembled across seats (7 + 4 = 11).
+    const total = wrapper.find('[data-testid="arena-hud-synergy-total"]');
+    assert.ok(total.exists(), 'the Table Total renders when a seat carries synergy data');
+    assert.ok(total.text().includes('The table assembled 11 synergy clauses'), 'Table Total sums assembled across seats');
+    // why: WP-708 copy-lint — the celebrate-voice surface never uses defeatist words.
+    const block = wrapper.find('[data-testid="arena-hud-per-player"]').text().toLowerCase();
+    for (const banned of ['whiff', 'failed', 'error', 'missed', 'wasted']) {
+      assert.ok(!block.includes(banned), `synergy copy must not say "${banned}"`);
+    }
+  });
+
+  test('omits a seat\'s synergy line and the Table Total when the record carries no synergy counts (WP-708)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -550,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 20,
+              victoryPoints: 56,
+              bystandersRescued: 17,
+              escapes: 0,
+              penaltyEventCounts: {
+                villainEscaped: 0,
+                bystanderLost: 0,
+                schemeTwistNegative: 0,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                { playerId: '0', victoryPoints: 36, bystandersRescued: 13 },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    assert.ok(!wrapper.find('[data-testid="arena-hud-per-player-synergy"]').exists(), 'no synergy line without counts');
+    assert.ok(!wrapper.find('[data-testid="arena-hud-synergy-total"]').exists(), 'no Table Total without synergy data');
+  });
+
   test('omits the contribution line for a seat that carries no WP-616 counts (pre-WP-616 record)', () => {
     const wrapper = mount(EndgameSummary, {
       props: {

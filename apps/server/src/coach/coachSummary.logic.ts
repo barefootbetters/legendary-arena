@@ -154,6 +154,10 @@ function buildPerPlayerLines(
       villainsDefeated: contribution?.villainsDefeated ?? 0,
       henchmenDefeated: contribution?.henchmenDefeated ?? 0,
       mastermindTacticsDefeated: contribution?.mastermindTacticsDefeated ?? 0,
+      // why: WP-708 — default 0 when the record predates WP-708 (no per-seat synergy
+      // counts), the same truthful-default pattern as the WP-622 defeat counts above.
+      conditionalClausesPlayed: contribution?.conditionalClausesPlayed ?? 0,
+      conditionalClausesAssembled: contribution?.conditionalClausesAssembled ?? 0,
       acquiredCards: formatAcquiredCards(
         countAcquiredCards(finalState.playerZones[playerId]),
         resolveCardName,

@@ -875,3 +875,63 @@ describe('WP-591 — twist-aware PAR + loss penalty (D-24400)', () => {
     assert.equal(breakdown.rawScore, winBreakdown.rawScore + LOSS_PENALTY);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-708 / D-24531 — Synergy Realization (display-only per-match rate)
+// ---------------------------------------------------------------------------
+
+describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
+  it('reads the per-seat conditional-clause tally from G.diagnostics into perPlayer', () => {
+    const state = makeTwoPlayerTerminalState(
+      { '0': ['vil-0'], '1': ['vil-1'] },
+      { 'vil-0': 'villain', 'vil-1': 'villain' },
+    );
+    // why: WP-708 — inject the hash-excluded diagnostics tally the engine accumulates
+    // at play time, so deriveScoringInputs reads it into the display-only report card.
+    (state as unknown as { diagnostics: unknown }).diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: { '0': { played: 3, assembled: 2 }, '1': { played: 1, assembled: 0 } },
+    };
+    const inputs = deriveScoringInputs(makeReplayResult(12), state);
+    const byPlayer = Object.fromEntries(
+      (inputs.perPlayer ?? []).map((contribution) => [contribution.playerId, contribution]),
+    );
+    assert.equal(byPlayer['0']?.conditionalClausesPlayed, 3);
+    assert.equal(byPlayer['0']?.conditionalClausesAssembled, 2);
+    assert.equal(byPlayer['1']?.conditionalClausesPlayed, 1);
+    assert.equal(byPlayer['1']?.conditionalClausesAssembled, 0);
+  });
+
+  it('defaults to 0 when the record carries no diagnostics tally', () => {
+    const state = makeTwoPlayerTerminalState({ '0': ['vil-0'] }, { 'vil-0': 'villain' });
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    const zero = inputs.perPlayer?.[0];
+    assert.equal(zero?.conditionalClausesPlayed, 0);
+    assert.equal(zero?.conditionalClausesAssembled, 0);
+  });
+
+  it('is display-only: the synergy tally changes NO score term (NG-1)', () => {
+    // why: WP-708 — the same victory piles with vs without a synergy tally must produce
+    // an identical rawScore/finalScore — the fields never enter scoring (no pay-to-win /
+    // no skill-stat-to-ranking leakage).
+    const withoutSynergy = makeTwoPlayerTerminalState(
+      { '0': ['vil-0'], '1': ['vil-1'] },
+      { 'vil-0': 'villain', 'vil-1': 'villain' },
+    );
+    const withSynergy = makeTwoPlayerTerminalState(
+      { '0': ['vil-0'], '1': ['vil-1'] },
+      { 'vil-0': 'villain', 'vil-1': 'villain' },
+    );
+    (withSynergy as unknown as { diagnostics: unknown }).diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: { '0': { played: 9, assembled: 9 }, '1': { played: 9, assembled: 0 } },
+    };
+    const config = makeReferenceConfig();
+    const withoutBreakdown = buildScoreBreakdown(deriveScoringInputs(makeReplayResult(10), withoutSynergy), config);
+    const withBreakdown = buildScoreBreakdown(deriveScoringInputs(makeReplayResult(10), withSynergy), config);
+    assert.equal(withoutBreakdown.rawScore, withBreakdown.rawScore, 'rawScore unaffected by synergy');
+    assert.equal(withoutBreakdown.finalScore, withBreakdown.finalScore, 'finalScore unaffected by synergy');
+  });
+});

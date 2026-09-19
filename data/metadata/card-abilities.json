@@ -9,6 +9,15 @@
     ]
   },
   {
+    "slug": "discard-a-card",
+    "label": "Discard a card",
+    "emoji": "🫳",
+    "order": 15,
+    "matchers": [
+      { "type": "regex", "pattern": "\\bdiscards?\\s+(?!piles?\\b)", "flags": "i" }
+    ]
+  },
+  {
     "slug": "ko-from-hand",
     "label": "KO from hand",
     "emoji": "🥊",

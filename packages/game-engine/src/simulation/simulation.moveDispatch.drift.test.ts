@@ -141,6 +141,31 @@ describe('simulation move-dispatch drift guard (WP-289 / D-24073)', () => {
     );
   });
 
+  it('resolveCopyPowersChoice is dispatchable in BOTH maps AND emittable (D-24525 — else the sim stalls)', () => {
+    // why: D-24525 — Rogue's Copy Powers (WP-535 / D-24345) short-circuits getLegalMoves to
+    // resolveCopyPowersChoice when ≥2 eligible Heroes were played, but the move shipped
+    // registered ONLY in game.ts (live play), never in SIMULATION_MOVE_NAMES or either MOVE_MAP.
+    // That is the exact emittable-but-unregistered gap D-24440 closed for resolveHeroChoice: the
+    // generic missingFrom() superset check passes vacuously because it validates
+    // SIMULATION_MOVE_NAMES ⊆ MOVE_MAP, NOT getLegalMoves-emits ⊆ SIMULATION_MOVE_NAMES. Latent
+    // until a sim/PAR sweep plays Copy Powers with ≥2 eligible Heroes: the loop would dispatch
+    // "unknown move name", never clear the choice, burn the MAX_MOVE_STEPS_PER_TURN budget → game
+    // flagged stuck (endgameReached === false). Pin all three memberships explicitly so the gap
+    // cannot silently reopen.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('resolveCopyPowersChoice'),
+      'resolveCopyPowersChoice must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it, D-24345)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('resolveCopyPowersChoice'),
+      'resolveCopyPowersChoice must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('resolveCopyPowersChoice'),
+      'resolveCopyPowersChoice must be a par.aggregator MOVE_MAP key',
+    );
+  });
+
   it('NEGATIVE: the guard would FAIL if an emittable move lacked a dispatch entry (non-vacuous)', () => {
     const phantom = '__not_a_move__';
     // The real maps do not contain the phantom...

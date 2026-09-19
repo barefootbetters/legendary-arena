@@ -1277,6 +1277,27 @@ export interface PendingReturnOnDiscard {
 }
 
 /**
+ * A card set aside by the `teleport-on-discard` reaction (Ruby Summers "Guerrilla
+ * Warfare", WP-705 / D-24526), awaiting return to its owner's hand at the end of the
+ * CURRENT turn.
+ *
+ * Created when a card effect discards a hero card carrying `teleport-on-discard` from a
+ * player's hand — the discardFromHand chokepoint's checkTeleportOnDiscard reaction REMOVES
+ * the card from the discard pile (it is "set aside" — held only here, in no zone) and
+ * appends one entry to G.pendingTeleportReturns[]. consumeTeleportReturns (inside
+ * applyEndOfTurnCleanup, after the ending player's new-hand draw) drains the whole queue,
+ * adding each card back to its owner's hand as an extra card, so both printed branches
+ * ("your turn → Teleport it" / "not your turn → set aside, add at end of this turn")
+ * resolve identically. MANDATORY + automatic — no player choice, no block-all guard.
+ */
+export interface PendingTeleportReturn {
+  /** The owner whose set-aside card returns to hand at the current turn's end. */
+  playerID: string;
+  /** The just-discarded hero card, removed from discard and held in no zone until it returns. */
+  cardId: CardExtId;
+}
+
+/**
  * Pending reactive Diving-Block wound-interception entry (WP-682 / D-24499).
  *
  * Created at the `gainWoundForPlayer` chokepoint (checkDivingBlock) when a player
@@ -1917,6 +1938,13 @@ export interface LegendaryGameState {
   // re-pinning (canonical JSON omits an undefined field).
   /** FIFO queue of pending optional return-on-discard choices awaiting resolution (D-24301). */
   pendingReturnOnDiscard?: PendingReturnOnDiscard[] | undefined;
+  // why: WP-705 / D-24526 — cards set aside by the teleport-on-discard reaction (Guerrilla
+  // Warfare), returned to their owners' hands at the current turn's end (consumeTeleportReturns
+  // in applyEndOfTurnCleanup). Lazily initialized at the checkTeleportOnDiscard park site, never
+  // in Game.setup, so an untriggered match leaves it undefined and the empty-replay
+  // PRE_WP080_HASH / hashGameState oracles do not re-pin. Drained (emptied) every turn-end.
+  /** FIFO queue of cards set aside by teleport-on-discard, awaiting end-of-turn return (D-24526). */
+  pendingTeleportReturns?: PendingTeleportReturn[] | undefined;
   // why: WP-682 / D-24499 — a player who holds Captain America's Diving Block gaining a
   // Wound parks one entry PER WOUND at the gainWoundForPlayer chokepoint (checkDivingBlock),
   // AFTER the Wound has landed in their discard. The FIFO is drained one WAVE at a time via
