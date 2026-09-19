@@ -1890,5 +1890,43 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
     "why": "Declining the Do-Over ('you may discard the rest of your hand') is a no-op — nothing is discarded and nothing is drawn, so the hand is unchanged (D-24498). Paired with the accept sibling that proves the discard-and-redraw fires."
+  },
+  {
+    "id": "resolve-put-bottom-hq-icon-reward-grants-recruit",
+    "mechanic": "optional-put-bottom-hq",
+    "decision": "D-24133",
+    "scenario": {
+      "action": "resolve-optional-put-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/black-widow/black-widow#0", "core/wolverine/wolverine#0", null, null, null],
+        "heroDeck": ["core/hulk/hulk#0"],
+        "cardStats": { "core/black-widow/black-widow#0": { "recruit": 1 } },
+        "sourceCardId": "core/wonder-man/absorb-ambient-power#0",
+        "iconRewardMagnitude": 3,
+        "resolve": { "cardId": "core/black-widow/black-widow#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 3 },
+    "why": "Absorb Ambient Power's mandatory put-a-card-on-the-deck-bottom grants its icon reward when the moved card HAS the matching icon: the moved card is seeded with a recruit icon (recruit 1), so the player gains +3 recruit (D-24133). Paired with the no-icon sibling — same card, no icon, no reward — which isolates that the reward keys on the icon, not the card."
+  },
+  {
+    "id": "resolve-put-bottom-hq-no-icon-grants-nothing",
+    "mechanic": "optional-put-bottom-hq",
+    "decision": "D-24133",
+    "scenario": {
+      "action": "resolve-optional-put-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": ["core/black-widow/black-widow#0", "core/wolverine/wolverine#0", null, null, null],
+        "heroDeck": ["core/hulk/hulk#0"],
+        "cardStats": { "core/black-widow/black-widow#0": { "recruit": 0, "attack": 0 } },
+        "sourceCardId": "core/wonder-man/absorb-ambient-power#0",
+        "iconRewardMagnitude": 3,
+        "resolve": { "cardId": "core/black-widow/black-widow#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "recruit", "amount": 0 },
+    "why": "The SAME moved card seeded WITHOUT a recruit or attack icon (recruit 0, attack 0) grants no reward — the +N is conditional on the moved card's printed icon, so it stays at 0 recruit (D-24133). Paired with the recruit-icon sibling that proves the reward fires when the icon is present."
   }
 ]

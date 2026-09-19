@@ -41,6 +41,7 @@ import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
 import { resolveGiveHqHeroChoice } from '../moves/giveHqHeroChoice.resolve.js';
 import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDiscard.js';
 import { resolveDoOver } from '../moves/doOver.resolve.js';
+import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -75,6 +76,7 @@ import type {
   PendingGiveHqHeroChoice,
   PendingReturnZeroCostDiscard,
   PendingDoOver,
+  PendingOptionalPutBottomHQ,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -304,6 +306,16 @@ interface ResolveDoOverSetup {
   hand: string[];
   deck: string[];
   resolve: { accept: true } | { decline: true };
+}
+
+interface ResolveOptionalPutBottomHqSetup {
+  currentPlayer: string;
+  hq: (string | null)[];
+  heroDeck: string[];
+  cardStats: Record<string, { recruit?: number; attack?: number; cost?: number }>;
+  sourceCardId: string;
+  iconRewardMagnitude: number;
+  resolve: { cardId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -775,6 +787,41 @@ function runResolveDoOver(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveOptionalPutBottomHQ` move against a parked put-a-card-from-HQ
+ * choice (the mandatory Absorb Ambient Power form) — the moved card goes to the Hero
+ * Deck bottom and the icon-conditional +recruit/+attack reward fires per its icons.
+ *
+ * @param rawSetup - The ruling's resolve-optional-put-bottom-hq setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveOptionalPutBottomHq(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveOptionalPutBottomHqSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({}) };
+  G.hq = setup.hq as LegendaryGameState['hq'];
+  G.heroDeck = setup.heroDeck as CardExtId[];
+  // why: the icon reward reads the moved card's printed recruit/attack from G.cardStats
+  // (recruit > 0 / attack > 0 = "has that icon"), so seed those stats via the complete-
+  // entry builder — the SAME card seeded with vs without an icon drives the two rulings.
+  for (const [cardId, stats] of Object.entries(setup.cardStats)) {
+    G.cardStats[cardId as CardExtId] = makeCardStatEntry(stats);
+  }
+  const pending: PendingOptionalPutBottomHQ = {
+    playerID: setup.currentPlayer,
+    sourceCardId: setup.sourceCardId as CardExtId,
+    mandatory: true,
+    iconRewardMagnitude: setup.iconRewardMagnitude,
+  };
+  G.pendingOptionalPutBottomHQ = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveOptionalPutBottomHQ(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -795,6 +842,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-give-hq-hero': runResolveGiveHqHero,
   'resolve-return-zero-cost-discard': runResolveReturnZeroCostDiscard,
   'resolve-do-over': runResolveDoOver,
+  'resolve-optional-put-bottom-hq': runResolveOptionalPutBottomHq,
 };
 
 /**
