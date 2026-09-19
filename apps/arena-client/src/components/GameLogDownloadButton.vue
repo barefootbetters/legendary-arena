@@ -83,12 +83,17 @@ export default defineComponent({
 </template>
 
 <style scoped>
-/* why: mirrors the DiagnosticExportButton fixed-position pill, stacked directly
-   above it (bottom: 40px vs its 8px) so the endgame "Download diagnostics" and
-   "Download game log" affordances sit together in the bottom-left corner. */
+/* why: mirrors the DiagnosticExportButton fixed-position pill. The bottom-left
+   fixed-pill column is a SHARED, hand-coordinated stack — occupied slots (each
+   left: 8px, z-index: 9999): DiagnosticExportButton 8px, ViewLoadoutButton 40px
+   (shown while `?match=` is present), this "Download game log" 72px, and
+   GameLogCopyButton 104px. This button was originally at 40px, which silently
+   COLLIDED with ViewLoadoutButton (also 40px, painted on top as the later DOM
+   sibling) so it was invisible on every live match — the WP-707 live-verify
+   bug. Any new bottom-left pill MUST take the next free slot above 104px. */
 .game-log-download-button {
   position: fixed;
-  bottom: 40px;
+  bottom: 72px;
   left: 8px;
   font-size: 12px;
   font-family: monospace;
