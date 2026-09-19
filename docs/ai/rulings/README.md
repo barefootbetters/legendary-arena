@@ -48,7 +48,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-melter-ko` | `resolveMelterKoChoice` move | the Melter KO/keep resolve |
 | `resolve-optional-ko-reward` | `resolveOptionalKoReward` move | optional-ko-reward (incl. the in-play source) |
 | `query-card-has-class` | `cardHasClassWhenPlayed` pure query | dual-class hero membership |
-| `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/draw/rescue/ko), ko-wound-reward |
+| `fire-hero-effect` | `executeSingleEffect` (hero-effect executor) | hero keyword grants (attack/recruit/draw/rescue/ko), ko-wound-reward, investigate |
 | `fire-rule-hook` | `executeRuleHooks` + `applyRuleEffects` for one trigger | scheme-twist / mastermind-strike pipeline (counters + messages) |
 | `resolve-scry-ko` | `resolveScryKoChoice` move | the Doombot scry-KO pick |
 | `resolve-ko-hero` | `resolveKoHeroChoice` move | the KO-a-Hero pick |
