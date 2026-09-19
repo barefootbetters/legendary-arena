@@ -1962,5 +1962,37 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
     "why": "Only cards typed 'villain' in G.villainDeckCardTypes are eligible — a henchman (Doombot Legion) in the Victory pile is not a valid Ebony Blade target, so the pick is a no-op and no attack is granted despite its fightCost (D-24067). Paired with the villain sibling that proves the attack claim fires."
+  },
+  {
+    "id": "resolve-ko-discard-kos-selected-cards",
+    "mechanic": "ko-from-discard",
+    "decision": "D-24510",
+    "scenario": {
+      "action": "resolve-ko-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "maxCount": 4,
+        "resolve": { "cardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] },
+    "why": "Loki's Maniacal Tyrant ('KO up to four cards from your discard pile') KOs exactly the chosen distinct discard cards to the general KO pile: the two selected (Wolverine, Spider-Man) land in G.ko while the unselected Hulk stays in discard (D-24510 / WP-693)."
+  },
+  {
+    "id": "resolve-ko-discard-over-cap-selection-is-noop",
+    "mechanic": "ko-from-discard",
+    "decision": "D-24510",
+    "scenario": {
+      "action": "resolve-ko-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "maxCount": 1,
+        "resolve": { "cardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] }
+      }
+    },
+    "expected": { "kind": "ko-pile-equal", "cards": [] },
+    "why": "A selection larger than the printed cap (two cards chosen against maxCount 1) is an invalid payload — the whole resolve is a no-op and nothing is KO'd, leaving the queue intact so the player resubmits within the cap (D-24510). Paired with the in-cap sibling that proves the KO fires."
   }
 ]

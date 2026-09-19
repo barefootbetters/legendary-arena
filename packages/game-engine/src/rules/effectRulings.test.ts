@@ -43,6 +43,7 @@ import { resolveReturnZeroCostDiscard } from '../moves/resolveReturnZeroCostDisc
 import { resolveDoOver } from '../moves/doOver.resolve.js';
 import { resolveOptionalPutBottomHQ } from '../moves/resolveOptionalPutBottomHQ.js';
 import { resolveVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
+import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -79,6 +80,7 @@ import type {
   PendingDoOver,
   PendingOptionalPutBottomHQ,
   PendingVictoryPileCardPick,
+  PendingKoDiscardChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -326,6 +328,13 @@ interface ResolveVictoryPileCardPickSetup {
   villainDeckCardTypes: Record<string, string>;
   cardStats: Record<string, { fightCost?: number }>;
   resolve: { cardId: string };
+}
+
+interface ResolveKoDiscardSetup {
+  currentPlayer: string;
+  discard: string[];
+  maxCount: number;
+  resolve: { cardIds: string[] };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -860,6 +869,31 @@ function runResolveVictoryPileCardPick(rawSetup: Record<string, unknown>): Outco
   return { G };
 }
 
+/**
+ * Fires the real `resolveKoDiscardChoice` move against a parked KO-up-to-N-from-discard
+ * choice (Loki's Maniacal Tyrant) — KO the chosen distinct discard cards to G.ko.
+ *
+ * @param rawSetup - The ruling's resolve-ko-discard setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveKoDiscard(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveKoDiscardSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ discard: setup.discard as CardExtId[] }) };
+  const pending: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: setup.currentPlayer,
+    maxCount: setup.maxCount,
+  };
+  G.pendingKoDiscardChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveKoDiscardChoice(moveContext, { cardIds: setup.resolve.cardIds as CardExtId[] });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -882,6 +916,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-do-over': runResolveDoOver,
   'resolve-optional-put-bottom-hq': runResolveOptionalPutBottomHq,
   'resolve-victory-pile-card-pick': runResolveVictoryPileCardPick,
+  'resolve-ko-discard': runResolveKoDiscard,
 };
 
 /**

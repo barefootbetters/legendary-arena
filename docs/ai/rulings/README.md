@@ -60,6 +60,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-do-over` | `resolveDoOver` move | the Do-Over accept/decline (discard hand + draw 4) |
 | `resolve-optional-put-bottom-hq` | `resolveOptionalPutBottomHQ` move | the put-HQ-card-on-deck-bottom choice (icon-conditional reward) |
 | `resolve-victory-pile-card-pick` | `resolveVictoryPileCardPick` move | the Ebony Blade claim-attack-from-a-victory-villain choice |
+| `resolve-ko-discard` | `resolveKoDiscardChoice` move | the Maniacal Tyrant KO-up-to-N-from-discard choice (over-cap rejected) |
 
 ### Current expectation kinds
 
