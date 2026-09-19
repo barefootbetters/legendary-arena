@@ -57,6 +57,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-reveal-top-dispose` | `resolveRevealTopDispose` move | the reveal-top discard-or-keep choice (discard / top) |
 | `resolve-give-hq-hero` | `resolveGiveHqHeroChoice` move | the give-HQ-Hero choice (gain / decline) |
 | `resolve-return-zero-cost-discard` | `resolveReturnZeroCostDiscard` move | the return-a-0-cost-discard choice (0-cost eligibility) |
+| `resolve-do-over` | `resolveDoOver` move | the Do-Over accept/decline (discard hand + draw 4) |
 
 ### Current expectation kinds
 
