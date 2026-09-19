@@ -21,6 +21,7 @@ import midTurnJson from './mid-turn.json';
 import endgameWinJson from './endgame-win.json';
 import endgameLossJson from './endgame-loss.json';
 import finalTurnJson from './final-turn.json';
+import divingBlockWoundJson from './diving-block-wound.json';
 
 // why: WP-434 — a JSON import widens the `log[].outcome` string literal to `string`,
 // which no longer satisfies `LogEntry['outcome']` (the LogOutcome union). Re-narrow the
@@ -91,4 +92,13 @@ export const finalTurn = {
   ...finalTurnJson,
   log: narrowLog(finalTurnJson.log),
   progress: narrowProgress(finalTurnJson.progress),
+} satisfies UIState;
+// why: a Diving-Block wound-interception snapshot — Player 0 (the viewer) holds
+// Diving Block and owes a `pendingSeatChoice` (kind 'diving-block') from a wound
+// event, so `?fixture=diving-block-wound` renders the reveal/decline prompt
+// (PendingSeatChoicePrompt) through the live play surface for UX verification.
+export const divingBlockWound = {
+  ...divingBlockWoundJson,
+  log: narrowLog(divingBlockWoundJson.log),
+  progress: narrowProgress(divingBlockWoundJson.progress),
 } satisfies UIState;
