@@ -78,7 +78,10 @@ export function markerPresentFor(line, heroClass) {
   const source = `${heroClass}-heroes-played-this-turn`;
   return (
     line.includes(`[keyword:attack-per-count:${source}:`) ||
-    line.includes(`[keyword:recruit-per-count:${source}:`)
+    line.includes(`[keyword:recruit-per-count:${source}:`) ||
+    // why: WP-714 / D-24537 — the count-scaled bystander-capture marker satisfies a
+    // per-class count clause exactly as the attack/recruit-per-count markers do.
+    line.includes(`[keyword:kidnap-per-count:${source}:`)
   );
 }
 
@@ -98,18 +101,11 @@ export function evaluateLine(line) {
 // why: lines that legitimately have no per-class marker yet. Each names the
 // exact (set, hero, card, abilityIndex) plus the reason it is deferred, so the
 // allowlist reads as a tracked backlog, never a silent mute.
-export const DEFERRED = [
-  {
-    set: 'vill',
-    hero: 'ultron',
-    card: 'genetic-experimentation',
-    abilityIndex: 0,
-    reason:
-      "'Kidnap a Bystander for each other [hc:tech] Ally you played this turn' is a " +
-      'non-resource count-scaled effect. No kidnap-per-count keyword/mechanic exists ' +
-      'yet, so it cannot be expressed as an attack/recruit-per-count marker (needs its own WP/D).',
-  },
-];
+// why: WP-714 / D-24537 — Ultron's Genetic Experimentation (the sole prior deferral) is
+// now marked with [keyword:kidnap-per-count:tech-heroes-played-this-turn:1], so its
+// entry is removed. A stale deferral (a card that IS now marked) fails --check, so the
+// allowlist must shrink in lockstep with the marker landing.
+export const DEFERRED = [];
 
 /** True when a scanned entry matches a DEFERRED allowlist entry (by identity). */
 export function isDeferred(entry) {

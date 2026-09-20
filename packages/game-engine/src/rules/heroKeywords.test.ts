@@ -62,11 +62,15 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 58 entries after the WP-705 addition', () => {
+  it('HERO_KEYWORDS array has exactly 59 entries after the WP-714 addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      58,
-      'HERO_KEYWORDS must have exactly 58 entries (57 + teleport-on-discard (WP-705 / D-24526))',
+      59,
+      'HERO_KEYWORDS must have exactly 59 entries (58 + kidnap-per-count (WP-714 / D-24537))',
+    );
+    assert.ok(
+      HERO_KEYWORDS.includes('kidnap-per-count'),
+      'kidnap-per-count must be in HERO_KEYWORDS array',
     );
   });
 });

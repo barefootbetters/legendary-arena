@@ -569,6 +569,7 @@ vill/mystique,Mystique,vill,dodge,executable,WP-275,D-24051,packages/game-engine
 vill/sabretooth,Sabretooth,vill,(unmarked),unmarked,,,,
 vill/ultron,Ultron,vill,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,encephalo-ray
 vill/ultron,Ultron,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,army-of-ultrons|encephalo-ray
+vill/ultron,Ultron,vill,kidnap-per-count,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#kidnap-per-count,genetic-experimentation
 vill/venom,Venom,vill,(unmarked),unmarked,,,,
 vnom/carnage,Carnage,vnom,digest,unsupported,,,,carnivore
 vnom/carnage,Carnage,vnom,excessive-violence,unsupported,,,,feast-or-famine|gruesome-feast|rending-claws

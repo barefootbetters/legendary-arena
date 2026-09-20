@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 717,
+    "totalRows": 718,
     "byStatus": {
-      "executable": 315,
+      "executable": 316,
       "deferred": 16,
       "condition": 27,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 144
+    "distinctMechanics": 145
   },
   "rows": [
     {
@@ -10509,6 +10509,22 @@
         {
           "slug": "encephalo-ray",
           "name": "Encephalo-Ray"
+        }
+      ]
+    },
+    {
+      "extId": "vill/ultron",
+      "heroName": "Ultron",
+      "set": "vill",
+      "mechanic": "kidnap-per-count",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#kidnap-per-count",
+      "designs": [
+        {
+          "slug": "genetic-experimentation",
+          "name": "Genetic Experimentation"
         }
       ]
     },

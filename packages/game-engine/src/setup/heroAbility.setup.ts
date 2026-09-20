@@ -197,6 +197,13 @@ const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/
 /** Regex for [keyword:recruit-per-count:<source>:<perUnit>] count-scaled markup. */
 const RECRUIT_COUNT_SCALED_PATTERN = /\[keyword:recruit-per-count:([a-z][a-z-]*):(\d+)\]/g;
 
+// why: WP-714 / D-24537 — the bystander-capture sibling of COUNT_SCALED_PATTERN. Same
+// three-segment shape, but the marker drives a `kidnap-per-count` effect that captures
+// N Bystanders rather than granting a resource (Ultron's Genetic Experimentation). No
+// optional perEach segment — this card's rate is 1.
+/** Regex for [keyword:kidnap-per-count:<source>:<perUnit>] count-scaled markup. */
+const KIDNAP_COUNT_SCALED_PATTERN = /\[keyword:kidnap-per-count:([a-z][a-z-]*):(\d+)\]/g;
+
 // why: WP-673 / D-24488 — Divine Lightning's line carries BOTH `[keyword:Worthy]`
 // (in the phrase "each other card … that makes you Worthy") AND the count-scaled
 // marker `[keyword:attack-per-count:worthy-cards-played-this-turn:N]`. On such a
@@ -1251,6 +1258,28 @@ function parseAbilityText(
     recruitCountScaledMatch = recruitCountScaledRegex.exec(abilityText);
   }
 
+  // Step 2d'': Extract [keyword:kidnap-per-count:<source>:<perUnit>] count-scaled
+  // markup — the bystander-capture sibling of Step 2d. Same contract: the per-unit
+  // rate is the magnitude, the source resolves the count, and only sources in
+  // HERO_COUNT_SOURCES are accepted. Emits a 'kidnap-per-count' effect that captures
+  // N Bystanders; there is NO printed resource icon on this line, so (unlike the
+  // attack/recruit siblings) no co-located icon-suppression is needed.
+  // why: WP-714 / D-24537 — Ultron's Genetic Experimentation "Kidnap a Bystander for
+  // each other [hc:tech] Ally you played this turn".
+  const kidnapCountScaledRegex = new RegExp(KIDNAP_COUNT_SCALED_PATTERN.source, 'g');
+  let kidnapCountScaledMatch: RegExpExecArray | null = kidnapCountScaledRegex.exec(abilityText);
+  while (kidnapCountScaledMatch !== null) {
+    const kidnapCountSourceCandidate = kidnapCountScaledMatch[1]!;
+    const kidnapPerUnitString = kidnapCountScaledMatch[2]!;
+    // why: WP-675 / D-24490 — same choice-fold suppression as the attack Step 2d above.
+    if (isValidHeroCountSource(kidnapCountSourceCandidate) && !processedAsCountScaledChoose) {
+      keywords.push('kidnap-per-count');
+      magnitudes.set('kidnap-per-count', parseInt(kidnapPerUnitString, 10));
+      countSources.set('kidnap-per-count', kidnapCountSourceCandidate);
+    }
+    kidnapCountScaledMatch = kidnapCountScaledRegex.exec(abilityText);
+  }
+
   // Step 2e: Extract [keyword:optional-ko-reward:<reward>:<n>] markup. The
   // reward is stored in rewardTypes; the reward magnitude is stored in
   // magnitudes so the effect builder can attach both. A descriptor is emitted
@@ -1628,6 +1657,16 @@ function parseAbilityText(
         const recruitCountSource = countSources.get('recruit-per-count');
         if (magnitude !== undefined && recruitCountSource !== undefined) {
           effects.push({ type: keyword, magnitude, countSource: recruitCountSource });
+        }
+      } else if (keyword === 'kidnap-per-count') {
+        // why: WP-714 / D-24537 — the count-scaled bystander-capture effect carries
+        // its count source (the attack-per-count precedent) so the executor can
+        // resolve the count to scale the per-unit magnitude by. Step 2d'' records
+        // both together, so the guard both narrows the optional Map reads and is
+        // defensive.
+        const kidnapCountSource = countSources.get('kidnap-per-count');
+        if (magnitude !== undefined && kidnapCountSource !== undefined) {
+          effects.push({ type: keyword, magnitude, countSource: kidnapCountSource });
         }
       } else if (keyword === 'count-scaled-choose') {
         // why: WP-675 / D-24490 — the count-scaled-choose effect carries the two options

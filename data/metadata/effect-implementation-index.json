@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1892,
+    "totalEntries": 1893,
     "byScope": {
-      "hero": 717,
+      "hero": 718,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 466,
+      "executable": 467,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -21625,6 +21625,23 @@
       ]
     },
     {
+      "extId": "vill/ultron",
+      "name": "Ultron",
+      "set": "vill",
+      "scope": "hero",
+      "mechanic": "kidnap-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#kidnap-per-count",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "genetic-experimentation",
+          "name": "Genetic Experimentation"
+        }
+      ]
+    },
+    {
       "extId": "vill/venom",
       "name": "Venom",
       "set": "vill",
@@ -34497,7 +34514,8 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
-        "dodge"
+        "dodge",
+        "kidnap-per-count"
       ]
     },
     "vill/venom": {

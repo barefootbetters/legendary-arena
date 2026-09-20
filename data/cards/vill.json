@@ -1481,7 +1481,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn."
+            "[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn. [keyword:kidnap-per-count:tech-heroes-played-this-turn:1]"
           ]
         },
         {

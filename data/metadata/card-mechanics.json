@@ -862,6 +862,17 @@
       "hidden": true
     },
     {
+      "slug": "kidnap-per-count",
+      "label": "Kidnap Per Count",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "vill/ultron"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ko-wound-reward",
       "label": "Ko Wound Reward",
       "scope": "hero",
@@ -3843,7 +3854,8 @@
     "vill/ultron": {
       "mechanics": [
         "attack-per-count",
-        "dodge"
+        "dodge",
+        "kidnap-per-count"
       ]
     },
     "vill/venom": {

@@ -106,6 +106,11 @@ import {
 // 'reveal' handler) but stay executable via revealRulesForLegacyKeyword translation.
 export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'attack-per-count', 'recruit-per-count', 'optional-ko-reward', 'optional-put-bottom-hq', 'put-any-number-bottom-hq', 'put-bottom-hq-icon-reward', 'victory-villain-attack', 'draw-or-empowered', 'count-scaled-choose', 'return-zero-cost-discard',
+  // why: WP-714 / D-24537 — the count-scaled bystander-capture sibling of attack/recruit-per-count;
+  // has a HERO_EFFECT_HANDLERS entry (heroEffectKidnapPerCount) that captures N = magnitude ×
+  // ⌊count / perEach⌋ Bystanders to the first City villain (Mastermind fallback), so it belongs
+  // here. Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'kidnap-per-count',
   // why: D-24156 — the plain "gain a Wound" family; each has a HERO_EFFECT_HANDLERS entry (heroEffectGainWound), so it belongs in HANDLED_KEYWORDS (the bidirectional handler-completeness authority).
   'gain-wound-self', 'gain-wound-each',
   // why: D-24148 — mandatory immediate empty-discard-reward-or-shuffle (Jocasta's Reprocess / Electromagnetic Eyebeams); has a HERO_EFFECT_HANDLERS entry, so it belongs here.
@@ -2016,6 +2021,69 @@ function heroEffectRecruitPerCount(
   // why: record the source, count, and grant so the count-scaled recruit is
   // observable in replay inspection (no implicit side effects).
   pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
+}
+
+/**
+ * Count-scaled bystander capture (WP-714 / D-24537). The capture sibling of
+ * heroEffectAttackPerCount / heroEffectRecruitPerCount: it scales the same way
+ * (N = magnitude × floor(count / perEach)), but the grant is N Bystander captures
+ * instead of a resource add. Drives Ultron's Genetic Experimentation ("[hc:tech]:
+ * Kidnap a Bystander for each other [hc:tech] Ally you played this turn").
+ *
+ * Each capture attaches one Bystander to the FIRST City villain by ascending city
+ * index via the shipped attachBystanderToCityVillain; when the City holds no villain
+ * the universal-rules fallback captureBystanderToMastermind captures instead. The
+ * loop is NON-interactive (no PendingSeatChoice) and supply-bounded — it breaks the
+ * moment the Bystander supply empties. No RNG, no .reduce(), count 0 → no-op.
+ *
+ * @param G - Game state (mutated: piles.bystanders + the capture zones).
+ * @param _ctx - Unused (the capture is deterministic; no stage ride, no randomness).
+ * @param playerID - The active player (owner of the played card).
+ * @param cardId - The triggering card, passed to resolveCountSource so the
+ *   tech-heroes-played-this-turn source EXCLUDES this card from its own count.
+ * @param effect - The kidnap-per-count effect descriptor (magnitude + countSource).
+ */
+function heroEffectKidnapPerCount(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-714 / D-24537 — magnitude is the per-unit rate; resolveCountSource
+  // resolves the count it scales by, so N = magnitude × floor(count / perEach).
+  // The count-scaling half is copied from heroEffectRecruitPerCount; the grant is
+  // N Bystander captures instead of a resource add.
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: a count-scaled capture with no count source is a skipped no-op (mirrors the
+  // magnitude gate) — there is nothing to scale by.
+  if (effect.countSource === undefined) { return; }
+  // why: WP-714 / D-24537 — thread the triggering card so tech-heroes-played-this-turn
+  // counts each OTHER Tech card played this turn (self-EXCLUSIVE, honouring hc2 +
+  // Size-Changing granted classes via the shipped resolver — no fresh class loop).
+  const count = resolveCountSource(G, playerID, effect.countSource, cardId);
+  // why: perEach is the "for each N" divisor (absent ≡ 1); see heroEffectAttackPerCount.
+  const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+  const captures = (effect.magnitude as number) * Math.floor(count / perEach);
+  // why: WP-714 / D-24537 — capture one Bystander per iteration to the FIRST City
+  // villain by ascending city index (D-24537 auto-target; captureBystanderToMastermind
+  // fallback when the City holds none), reusing the here-hold-this machinery WITHOUT
+  // its interactive PendingSeatChoice. Supply-bounded: break the moment the Bystander
+  // supply empties (the villainEffectCaptureBystander counted-variant precedent). A
+  // for loop (never .reduce()) per the zone/effect-application rule; count 0 → no-op.
+  for (let capturedSoFar = 0; capturedSoFar < captures; capturedSoFar += 1) {
+    if (G.piles.bystanders.length === 0) { break; }
+    const targets = buildHereHoldThisTargets(G);
+    if (targets.length === 0) {
+      captureBystanderToMastermind(G);
+    } else {
+      attachBystanderToCityVillain(G, targets[0]!.cityIndex);
+    }
+  }
+  // why: record the count and capture total so the count-scaled kidnap is observable
+  // in replay inspection (no implicit side effects).
+  pushLog(G, `Count-scaled kidnap: ${captures} Bystander capture(s) (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
 }
 
 /**
@@ -4443,6 +4511,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   reveal: heroEffectReveal,
   'attack-per-count': heroEffectAttackPerCount,
   'recruit-per-count': heroEffectRecruitPerCount,
+  // why: WP-714 / D-24537 — Ultron's Genetic Experimentation ("[hc:tech]: Kidnap a
+  // Bystander for each other [hc:tech] Ally you played this turn"): captures
+  // N = magnitude × ⌊count / perEach⌋ Bystanders (tech-heroes-played-this-turn, self-
+  // exclusive) to the first City villain (Mastermind fallback), non-interactive + supply-bounded.
+  'kidnap-per-count': heroEffectKidnapPerCount,
   'optional-ko-reward': heroEffectOptionalKoReward,
   'optional-ko-hand-discard': heroEffectOptionalKoHandDiscard,
   'ko-wound-reward': heroEffectKoWoundReward,
