@@ -80,6 +80,8 @@
  *   parked put-exactly-N-cards-on-your-deck-top choice.
  * - `resolve-reorder` — call the `resolveReorderChoice` move on a parked
  *   reorder-the-deck-top-remainder choice.
+ * - `resolve-draw-or-empowered` — call the `resolveDrawOrEmpowered` move on a parked
+ *   choose-one draw-a-card-or-be-Empowered choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -103,7 +105,8 @@ export type RulingScenarioAction =
   | 'resolve-undercover'
   | 'resolve-discard-choice'
   | 'resolve-put-cards-on-deck'
-  | 'resolve-reorder';
+  | 'resolve-reorder'
+  | 'resolve-draw-or-empowered';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -132,6 +135,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-discard-choice',
   'resolve-put-cards-on-deck',
   'resolve-reorder',
+  'resolve-draw-or-empowered',
 ] as const;
 
 // ---------------------------------------------------------------------------
