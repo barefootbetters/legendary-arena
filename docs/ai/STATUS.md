@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-709 — Synergy Realization: Realized Value % (EC-746 / D-24532) (2026-09-19)
+
+Phase 2 of `DESIGN-SYNERGY-REALIZATION.md`, building on WP-708. The Phase-1 Synergy Rate weighs a
+whiffed `+1 Recruit` exactly like a whiffed `+6 Attack` game-swing; WP-709 adds a display-only
+**Realized Value %** that value-weights the same conditional-clause signal so landing a big synergy
+counts more than a small one and whiffing a game-swing costs more than whiffing a chip. A new pure
+`heroClauseValue` (`hero/heroClauseValue.derive.ts`) sums each hook's legacy attack/recruit value — flat
+`magnitude`, plus count-scaled `magnitude × floor(resolveCountSource / perEach)` (mirroring
+`buildCountScaledResolution`) — at the WP-708 `evaluateAllConditions` chokepoint; `recordConditionalClause`
+accrues `potentialValue` for every countable conditional clause played and `realizedValue` only when the
+condition held, both on the hash-excluded `G.diagnostics.conditionalClauses` record. Derived into
+display-only `PlayerScoringContribution.conditionalClauses{Potential,Realized}Value` → `CoachPlayerLine`
+→ `EndgameSummary.vue`, which renders **Realized Value % = round(100 × realized / potential)** per seat
+(hidden at `potentialValue === 0`), below the Phase-1 Synergy Rate line; client `competitionApi` /
+`scoreCalcDisplay` mirror. **Design decision:** computed at the chokepoint, NOT read back from the capped
+(`EFFECT_TRACES_CAP=512`), count-scaled-only, whiff-absent WP-706 `EffectTrace.resolution` traces — while
+agreeing with WP-706 `computedValue` for an assembled single count-scaled clause (cross-checked). Value
+currency = attack + recruit only; hero path only. **Display-only** (never `finalScore`/PAR — NG-1, proven
+by an identical breakdown with vs without the value sums); **two-vocabulary** copy-lint (no
+whiff/failed/missed); **NO hash re-pin** — engine **3864/0** (sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical, no fixture churn), server **1320/0**, arena-client **1855/0** + `vue-tsc` clean;
+`sim:runtime-observed:check` + `cards:check` current; `pnpm -r build` 0. Non-vacuity: stubbing
+`heroClauseValue`→0 fails 9 value assertions (restored). 19-file impl. Landed **D-24532** (Active). The
+play-order sequence teacher (feasibility of per-effect signals during D-24119 replay re-execution is an
+open design question) and co-op cross-seat cooperation are later phases. **D-24026 live-verify
+operator-pending** (a real match with a count-scaled live condition + a flat dead condition shows the seat
+Realized Value %).
+
 ### WP-708 — Synergy Realization: per-match Synergy Rate + Table Total (EC-745 / D-24531) (2026-09-19)
 
 Gave players their first end-of-match synergy feedback. Legendary rewards assembling conditional Hero
