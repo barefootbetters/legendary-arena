@@ -84,6 +84,8 @@
  *   choose-one draw-a-card-or-be-Empowered choice.
  * - `resolve-put-any-number-bottom-hq` — call the `resolvePutAnyNumberBottomHQ` move on
  *   a parked put-any-number-of-HQ-cards-on-the-deck-bottom choice.
+ * - `resolve-return-on-discard` — call the `resolveReturnOnDiscard` move on a parked
+ *   optional return-the-just-discarded-card-to-hand choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -109,7 +111,8 @@ export type RulingScenarioAction =
   | 'resolve-put-cards-on-deck'
   | 'resolve-reorder'
   | 'resolve-draw-or-empowered'
-  | 'resolve-put-any-number-bottom-hq';
+  | 'resolve-put-any-number-bottom-hq'
+  | 'resolve-return-on-discard';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -140,6 +143,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-reorder',
   'resolve-draw-or-empowered',
   'resolve-put-any-number-bottom-hq',
+  'resolve-return-on-discard',
 ] as const;
 
 // ---------------------------------------------------------------------------
