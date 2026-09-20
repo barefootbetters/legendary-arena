@@ -48,6 +48,7 @@ import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
+import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -89,6 +90,7 @@ import type {
   PendingUndercoverChoice,
   PendingDiscardChoice,
   PendingPutCardsOnDeckChoice,
+  PendingReorderChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -373,6 +375,13 @@ interface ResolvePutCardsOnDeckSetup {
   deck: string[];
   count: number;
   resolve: { cardIds: string[] };
+}
+
+interface ResolveReorderSetup {
+  currentPlayer: string;
+  deck: string[];
+  remainder: string[];
+  resolve: { orderedCardIds: string[] };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1034,6 +1043,32 @@ function runResolvePutCardsOnDeck(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveReorderChoice` move against a parked reorder-the-deck-top
+ * choice (Amazing Spider-Man) — rewrites the top-N of the deck to the submitted
+ * permutation of the parked remainder.
+ *
+ * @param rawSetup - The ruling's resolve-reorder setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveReorder(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveReorderSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: setup.deck as CardExtId[] }) };
+  const pending: PendingReorderChoice = {
+    choiceType: 'reorder-deck-top',
+    playerID: setup.currentPlayer,
+    cardIds: setup.remainder as CardExtId[],
+  };
+  G.pendingReorderChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveReorderChoice(moveContext, { orderedCardIds: setup.resolve.orderedCardIds as CardExtId[] });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1061,6 +1096,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-undercover': runResolveUndercover,
   'resolve-discard-choice': runResolveDiscardChoice,
   'resolve-put-cards-on-deck': runResolvePutCardsOnDeck,
+  'resolve-reorder': runResolveReorder,
 };
 
 /**

@@ -2126,5 +2126,37 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/avengers/iron-man#0"] },
     "why": "The selection must be EXACTLY count cards — one card against count 2 is an invalid payload, so the whole resolve is a no-op and the deck is unchanged (D-24347). Paired with the exact-count sibling that proves the placement fires."
+  },
+  {
+    "id": "resolve-reorder-rewrites-deck-top-order",
+    "mechanic": "reorder-deck-top",
+    "decision": "D-24286",
+    "scenario": {
+      "action": "resolve-reorder",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "remainder": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "orderedCardIds": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"] }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0", "core/hulk/hulk#0"] },
+    "why": "The Amazing Spider-Man's 'put the rest back in any order' rewrites the top-N of the deck to the player's chosen order: the two-card remainder [Wolverine, Spider-Man] is reordered to [Spider-Man, Wolverine] while the un-revealed Hulk below is untouched (D-24286, a pure permutation — no card added or dropped)."
+  },
+  {
+    "id": "resolve-reorder-non-permutation-is-noop",
+    "mechanic": "reorder-deck-top",
+    "decision": "D-24286",
+    "scenario": {
+      "action": "resolve-reorder",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "remainder": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"],
+        "resolve": { "orderedCardIds": ["core/wolverine/wolverine#0", "core/hulk/hulk#0"] }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"] },
+    "why": "The submitted order must be a PERMUTATION of the parked remainder — including Hulk (which is below the remainder, not part of it) is not a permutation of [Wolverine, Spider-Man], so the whole resolve is a no-op and the deck is unchanged (D-24286, no card added or dropped). Paired with the valid-permutation sibling that proves the reorder fires."
   }
 ]
