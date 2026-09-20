@@ -87,6 +87,33 @@ describe('recordConditionalClause (WP-708 / WP-709)', () => {
     });
   });
 
+  it('countsTowardRate false accrues value sums but NOT played/assembled (WP-712)', () => {
+    const G = makeG();
+    recordConditionalClause(G, '0', { assembled: true, clauseValue: 3, countsTowardRate: false });
+    // A pure count-scaled clause: its value counts, but it has no assembly decision, so
+    // played/assembled (the Synergy Rate) stay 0 — only the value sums move.
+    assert.deepEqual(G.diagnostics?.conditionalClauses?.['0'], {
+      played: 0,
+      assembled: 0,
+      potentialValue: 3,
+      realizedValue: 3,
+    });
+  });
+
+  it('mixes rate-counted and value-only clauses on one seat (WP-712)', () => {
+    const G = makeG();
+    recordConditionalClause(G, '0', { assembled: true, clauseValue: 2 }); // boolean clause (default countsTowardRate)
+    recordConditionalClause(G, '0', { assembled: false, clauseValue: 1 }); // boolean whiff
+    recordConditionalClause(G, '0', { assembled: true, clauseValue: 3, countsTowardRate: false }); // pure count-scaled
+    // played/assembled reflect only the two boolean clauses; value sums include all three.
+    assert.deepEqual(G.diagnostics?.conditionalClauses?.['0'], {
+      played: 2,
+      assembled: 1,
+      potentialValue: 6,
+      realizedValue: 5,
+    });
+  });
+
   it('preserves an existing hollow channel (does not clobber)', () => {
     const G = {
       diagnostics: { hollowEffects: [{ cardId: 'x' }], hollowEffectsDropped: 2 },

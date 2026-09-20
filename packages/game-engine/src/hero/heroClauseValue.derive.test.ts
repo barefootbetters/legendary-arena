@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { heroClauseValue } from './heroClauseValue.derive.js';
+import { heroClauseValue, heroClausePotentialFloor } from './heroClauseValue.derive.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
 
@@ -124,5 +124,57 @@ describe('heroClauseValue (WP-709)', () => {
       { type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' },
     ]));
     assert.equal(value, 3, 'flat 2 + count-scaled (1 × floor(1/1)) 1');
+  });
+});
+
+describe('heroClausePotentialFloor (WP-712)', () => {
+  it('returns the magnitude of a flat attack/recruit effect', () => {
+    assert.equal(heroClausePotentialFloor(hookWith([{ type: 'attack', magnitude: 3 }])), 3);
+    assert.equal(heroClausePotentialFloor(hookWith([{ type: 'recruit', magnitude: 2 }])), 2);
+  });
+
+  it('sums flat effects on one hook', () => {
+    assert.equal(
+      heroClausePotentialFloor(hookWith([{ type: 'attack', magnitude: 3 }, { type: 'recruit', magnitude: 2 }])),
+      5,
+    );
+  });
+
+  it('a count-scaled effect floor is the per-each magnitude, NOT scaled by count/perEach', () => {
+    // magnitude 1 → floor 1 regardless of the actual count.
+    assert.equal(
+      heroClausePotentialFloor(hookWith([
+        { type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' },
+      ])),
+      1,
+    );
+    // magnitude 3, perEach 2 → floor 3 (one enabling unit at count = perEach), not divided.
+    assert.equal(
+      heroClausePotentialFloor(hookWith([
+        { type: 'recruit-per-count', magnitude: 3, perEach: 2, countSource: 'cost-four-plus-played-this-turn' },
+      ])),
+      3,
+    );
+  });
+
+  it('returns 0 for a count-scaled effect with no countSource (can never scale)', () => {
+    assert.equal(heroClausePotentialFloor(hookWith([{ type: 'attack-per-count', magnitude: 5 }])), 0);
+  });
+
+  it('returns 0 for a non-value effect and for a hook with no effects', () => {
+    assert.equal(heroClausePotentialFloor(hookWith([{ type: 'draw', magnitude: 2 }])), 0);
+    assert.equal(heroClausePotentialFloor({ timing: 'onPlay' } as unknown as HeroAbilityHook), 0);
+  });
+
+  it('is the floor a count-0 whiff rises to: floor > heroClauseValue when count is 0', () => {
+    // Empty board → the count-scaled realized value is 0, but the floor is the per-each magnitude.
+    const hook = hookWith([
+      { type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' },
+    ]);
+    const realized = heroClauseValue(bareState(), '0', 'card#0', hook); // count 0 → 0
+    const floor = heroClausePotentialFloor(hook); // 1
+    assert.equal(realized, 0);
+    assert.equal(floor, 1);
+    assert.equal(Math.max(realized, floor), 1, 'the whiff-branch Math.max lifts a count-0 whiff to the floor');
   });
 });

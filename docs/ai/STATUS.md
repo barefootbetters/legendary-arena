@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-712 — Synergy Realization: Realized Value % value-model refinement (EC-749 / D-24535) (2026-09-20)
+
+Refined WP-709's display-only Realized Value % (engine-only) after a real 2p Red Skull match showed
+it missed most actual synergy: the marquee pure count-scaled cards ("+1 attack/recruit for each color
+of Hero you have" — Avengers Assemble, Perfect Teamwork) carry no `[hc:X]`/`[team:X]` boolean gate, so
+their hooks (`conditions.length === 0`) were skipped by `isCountableConditionalClause` and excluded
+entirely; and a count-scaled class-gated whiff whose gate class equals its count source read 0 potential
+(count 0). Fix: (1) a new no-condition branch records pure count-scaled clauses with realized = potential
+= computedValue, using a new `recordConditionalClause` `countsTowardRate: false` flag so `played`/
+`assembled` (the WP-708 **Synergy Rate**) stay boolean-gated only (unchanged); (2) the whiff branch now
+uses `Math.max(heroClauseValue, heroClausePotentialFloor(hook))` — a **floor** (per-each `magnitude`),
+so a count-0 whiff rises from 0 while a count>0 whiff (gate ≠ count source) keeps its true current-board
+value (the shipped `heroEffects.execute.test.ts:6256` pin stays green with no edit). Flat clauses
+unchanged. **Engine-only** — the display fields already flow to coach + client from WP-709; no
+server/client change. **Display-only** (never `finalScore`/PAR — NG-1); **NO hash re-pin** (all on the
+hash-excluded `G.diagnostics`): engine **3911/0** (sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical, no fixture/card-data churn), `pnpm -r build` 0, `sim:runtime-observed:check` + `cards:check`
+current. Non-vacuity: stubbing `heroClausePotentialFloor`→0 fails 5 assertions (restored). 6-file impl.
+Landed **D-24535** (Active). The whiff floor is the point-in-time minimum, not a reorder counterfactual —
+that is the deferred sequence teacher (WP-710). **D-24026 live-verify operator-pending** (a Cap-color-count
+match's Realized Value % reflects Avengers Assemble / Perfect Teamwork + a count-scaled whiff registers
+nonzero potential).
+
 ### WP-709 — Synergy Realization: Realized Value % (EC-746 / D-24532) (2026-09-19)
 
 Phase 2 of `DESIGN-SYNERGY-REALIZATION.md`, building on WP-708. The Phase-1 Synergy Rate weighs a
