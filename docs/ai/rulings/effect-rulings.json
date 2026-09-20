@@ -2496,5 +2496,55 @@
       "amount": 4
     },
     "why": "Picking option 1 of the same choose-one grants +Recruit = magnitude x count instead: per-unit magnitude 2 times the shield-levels count of 2 gives +4 recruit (recruit-per-count executor, D-24490). The two options differ in BOTH resource and magnitude, so this recruit result (4) vs the attack sibling (2) proves the resolve dispatches strictly by the chosen option index."
+  },
+  {
+    "id": "electromagnetic-bubble-eligible-pick-recorded-as-deferred-injection",
+    "mechanic": "electromagnetic-bubble",
+    "decision": "D-24512",
+    "scenario": {
+      "action": "resolve-electromagnetic-bubble-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "eligibleCardIds": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0"
+        ],
+        "resolve": {
+          "cardId": "core/x-men/wolverine#0"
+        }
+      }
+    },
+    "expected": {
+      "kind": "deferred-hand-injections-equal",
+      "player": "0",
+      "cards": [
+        "core/x-men/wolverine#0"
+      ]
+    },
+    "why": "Magneto's Electromagnetic Bubble, defeated with >=2 in-play X-Men Heroes, parks a pick of one eligible in-play X-Men. Choosing Wolverine records his ext_id into G.deferredHandInjections[player], consumed once at the player's next play-phase fill to add a seventh card (WP-695 / D-24512). Paired with the ineligible-pick sibling that proves the round-trip eligibility gate."
+  },
+  {
+    "id": "electromagnetic-bubble-ineligible-pick-records-nothing",
+    "mechanic": "electromagnetic-bubble",
+    "decision": "D-24512",
+    "scenario": {
+      "action": "resolve-electromagnetic-bubble-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "eligibleCardIds": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0"
+        ],
+        "resolve": {
+          "cardId": "core/x-men/rogue#0"
+        }
+      }
+    },
+    "expected": {
+      "kind": "deferred-hand-injections-equal",
+      "player": "0",
+      "cards": []
+    },
+    "why": "The pick must be one of the front entry's eligibleCardIds snapshot (the round-trip rule): the client may only submit an X-Men the engine projected. Rogue is not among the eligible in-play X-Men, so the resolve is a silent no-op that records no deferred injection and leaves the queue intact for resubmit (D-24512). A regression dropping the eligibility scan would record Rogue, flipping this assertion; paired with the eligible-pick sibling."
   }
 ]
