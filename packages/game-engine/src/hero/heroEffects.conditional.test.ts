@@ -448,7 +448,14 @@ describe('executeHeroEffects — conditional-clause synergy counting (WP-708)', 
       ],
     });
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
-    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], { played: 1, assembled: 1 });
+    // why: WP-709 — the +3 attack clause assembled, so its value 3 accrues to BOTH
+    // potentialValue and realizedValue (the clause realized its full value).
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], {
+      played: 1,
+      assembled: 1,
+      potentialValue: 3,
+      realizedValue: 3,
+    });
   });
 
   it('a hard-blocked condition counts played, not assembled', () => {
@@ -468,7 +475,14 @@ describe('executeHeroEffects — conditional-clause synergy counting (WP-708)', 
       ],
     });
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
-    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], { played: 1, assembled: 0 });
+    // why: WP-709 — the whiffed +5 attack clause realized nothing, but its value 5
+    // still accrues to potentialValue (the value it could have offered), not realizedValue.
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], {
+      played: 1,
+      assembled: 0,
+      potentialValue: 5,
+      realizedValue: 0,
+    });
   });
 
   it('an unconditional hook is never counted', () => {

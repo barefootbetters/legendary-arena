@@ -6170,3 +6170,89 @@ describe('executeHeroEffects count-scaled resolution capture (WP-706 / D-24528)'
     assert.equal(gameState.turnEconomy.attack, 2, 'the grant still applied');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-709 / D-24532 — Realized Value % chokepoint value accrual + the AC-3
+// cross-check that an assembled count-scaled clause's realizedValue equals the
+// WP-706 EffectTrace.resolution.computedValue for the same play.
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Realized Value % (WP-709)', () => {
+  const valueCtx = makeMockCtx();
+
+  /** A full cardStats entry (only `cost` is read by cost-four-plus). */
+  function statEntry(cost: number) {
+    return { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+  }
+
+  it('an assembled count-scaled clause realizedValue equals the trace computedValue (AC-3)', () => {
+    // A [playedThisTurn]-gated single count-scaled effect: +1 attack for each OTHER
+    // cost-4+ card played this turn. inPlay = trigger + two other cost-4+ cards → count 2.
+    const gameState = makeTestState({
+      inPlay: ['big#0', 'a#0', 'b#0'],
+      cardStats: {
+        'big#0': statEntry(5),
+        'a#0': statEntry(4),
+        'b#0': statEntry(6),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'big#0' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          conditions: [{ type: 'playedThisTurn', value: '1' }],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+
+    executeHeroEffects(gameState, valueCtx, '0', 'big#0' as string);
+
+    const synergy = gameState.diagnostics?.conditionalClauses?.['0'];
+    assert.ok(synergy, 'the count-scaled conditional clause was counted');
+    assert.equal(synergy.played, 1);
+    assert.equal(synergy.assembled, 1);
+    // magnitude 1 × floor(count 2 / perEach 1) = 2.
+    assert.equal(synergy.realizedValue, 2, 'realizedValue = the count-scaled grant');
+    assert.equal(synergy.potentialValue, 2, 'assembled → potential equals realized');
+
+    // AC-3: the WP-706 resolution trace's computedValue for the same play matches.
+    const traceWithResolution = (gameState.diagnostics?.traces ?? []).find(
+      (trace) => trace.resolution !== undefined,
+    );
+    assert.ok(traceWithResolution?.resolution, 'the count-scaled dispatch recorded a resolution trace');
+    assert.equal(
+      traceWithResolution.resolution.computedValue,
+      synergy.realizedValue,
+      'realizedValue (chokepoint) === computedValue (WP-706 trace) for a single count-scaled effect',
+    );
+  });
+
+  it('a whiffed count-scaled clause accrues potentialValue only', () => {
+    // heroClassMatch:tech is always false in this harness → the clause is hard-blocked,
+    // but its ceiling (the count-scaled value it could have offered) still counts.
+    const gameState = makeTestState({
+      inPlay: ['big#0', 'a#0', 'b#0'],
+      cardStats: {
+        'big#0': statEntry(5),
+        'a#0': statEntry(4),
+        'b#0': statEntry(6),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'big#0' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+
+    executeHeroEffects(gameState, valueCtx, '0', 'big#0' as string);
+
+    const synergy = gameState.diagnostics?.conditionalClauses?.['0'];
+    assert.ok(synergy, 'the whiffed conditional clause was counted as played');
+    assert.deepEqual(synergy, { played: 1, assembled: 0, potentialValue: 2, realizedValue: 0 });
+  });
+});
