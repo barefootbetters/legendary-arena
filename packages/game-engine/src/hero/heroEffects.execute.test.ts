@@ -6256,3 +6256,90 @@ describe('executeHeroEffects — Realized Value % (WP-709)', () => {
     assert.deepEqual(synergy, { played: 1, assembled: 0, potentialValue: 2, realizedValue: 0 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-712 / D-24535 — Realized Value % value-model refinement: a count-0 whiff
+// rises to the per-each floor; a PURE count-scaled clause (no gate) is now
+// counted (value only, Synergy Rate unchanged); flat clauses unchanged.
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Realized Value % refinement (WP-712)', () => {
+  const refineCtx = makeMockCtx();
+
+  /** A full cardStats entry (only `cost` is read by cost-four-plus). */
+  function statEntry(cost: number) {
+    return { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 };
+  }
+
+  it('a count-0 count-scaled whiff rises to the per-each potential floor (was 0)', () => {
+    // heroClassMatch:tech fails (no tech in this harness) AND the count source counts
+    // 0 other cost-4+ cards → heroClauseValue 0; the floor lifts potentialValue to 1.
+    const gameState = makeTestState({
+      inPlay: ['solo#0'],
+      cardStats: { 'solo#0': statEntry(5) },
+      heroAbilityHooks: [
+        {
+          cardId: 'solo#0' as string,
+          timing: 'onPlay',
+          keywords: ['attack-per-count'],
+          conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+          effects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, refineCtx, '0', 'solo#0' as string);
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], {
+      played: 1,
+      assembled: 0,
+      potentialValue: 1,
+      realizedValue: 0,
+    });
+  });
+
+  it('a PURE count-scaled clause (no boolean gate) is recorded as value only — Synergy Rate unchanged', () => {
+    // No conditions → the no-condition count-scaled branch: realized = potential =
+    // computedValue (count 1 = the one other cost-4+ card), played/assembled stay 0.
+    const gameState = makeTestState({
+      inPlay: ['big#0', 'a#0'],
+      cardStats: { 'big#0': statEntry(5), 'a#0': statEntry(4) },
+      heroAbilityHooks: [
+        {
+          cardId: 'big#0' as string,
+          timing: 'onPlay',
+          keywords: ['recruit-per-count'],
+          effects: [{ type: 'recruit-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, refineCtx, '0', 'big#0' as string);
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], {
+      played: 0,
+      assembled: 0,
+      potentialValue: 1,
+      realizedValue: 1,
+    });
+  });
+
+  it('a flat boolean clause records identically to WP-709 (regression)', () => {
+    // heroClassMatch:tech fails → flat whiff: floor = magnitude = 5 = heroClauseValue.
+    const gameState = makeTestState({
+      inPlay: ['flat#0'],
+      heroAbilityHooks: [
+        {
+          cardId: 'flat#0' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'heroClassMatch', value: 'tech' }],
+          effects: [{ type: 'attack', magnitude: 5 }],
+        } as unknown as HeroAbilityHook,
+      ],
+    });
+    executeHeroEffects(gameState, refineCtx, '0', 'flat#0' as string);
+    assert.deepEqual(gameState.diagnostics?.conditionalClauses?.['0'], {
+      played: 1,
+      assembled: 0,
+      potentialValue: 5,
+      realizedValue: 0,
+    });
+  });
+});

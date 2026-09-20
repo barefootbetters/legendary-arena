@@ -110,3 +110,56 @@ export function heroClauseValue(
   }
   return total;
 }
+
+/**
+ * Computes the attack/recruit **potential floor** of one hero effect descriptor — the
+ * minimum non-zero payoff the effect could offer with one enabling unit — or 0 when the
+ * effect is not a value keyword (WP-712 / D-24535).
+ *
+ * A flat `attack` / `recruit` effect's floor is its `magnitude`. A count-scaled
+ * `attack-per-count` / `recruit-per-count` effect's floor is `magnitude` (the grant at
+ * count = `perEach`, i.e. one enabling unit) — NOT scaled by the actual count. A
+ * count-scaled effect with no `countSource` can never scale, so its floor is 0.
+ *
+ * why: used only on the whiff branch, as a FLOOR under the realized value
+ * (`Math.max(heroClauseValue, heroClausePotentialFloor)`), so a count-0 count-scaled
+ * whiff registers a real (if conservative) left-on-the-table loss instead of 0, while a
+ * count>0 whiff keeps its true current-board value. The counterfactual "best count" is
+ * the deferred sequence teacher (WP-710), not this floor.
+ *
+ * @param effect - The hero effect descriptor to value.
+ * @returns The potential-floor value, or 0 for a non-value effect.
+ */
+function effectPotentialFloor(effect: HeroEffectDescriptor): number {
+  const magnitude = typeof effect.magnitude === 'number' ? effect.magnitude : 0;
+  if (effect.type === 'attack' || effect.type === 'recruit') {
+    return magnitude;
+  }
+  if (effect.type === 'attack-per-count' || effect.type === 'recruit-per-count') {
+    // why: a count-scaled effect with no source can never scale — floor 0 (mirrors
+    // effectValue's no-source skip); with a source, one enabling unit grants `magnitude`.
+    return effect.countSource === undefined ? 0 : magnitude;
+  }
+  return 0;
+}
+
+/**
+ * Sums the attack/recruit potential floor a single hero ability hook's legacy `effects`
+ * offer with one enabling unit each (WP-712 / D-24535). Returns 0 for a hook with no
+ * attack/recruit effects.
+ *
+ * why: the whiff-branch floor. `for...of` over the descriptors — no `.reduce()`.
+ *
+ * @param hook - The hero ability hook whose potential floor is summed.
+ * @returns The total potential-floor value, or 0.
+ */
+export function heroClausePotentialFloor(hook: HeroAbilityHook): number {
+  if (hook.effects === undefined) {
+    return 0;
+  }
+  let total = 0;
+  for (const effect of hook.effects) {
+    total += effectPotentialFloor(effect);
+  }
+  return total;
+}

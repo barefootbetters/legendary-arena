@@ -45,7 +45,7 @@ import type { LegendaryGameState } from '../types.js';
 export function recordConditionalClause(
   G: LegendaryGameState,
   playerID: string,
-  outcome: { assembled: boolean; clauseValue: number },
+  outcome: { assembled: boolean; clauseValue: number; countsTowardRate?: boolean },
 ): void {
   // why: WP-708 — lazy-init the runtime-only diagnostics channel on first write
   // (mirrors recordHollowEffect) — NEVER seeded in Game.setup; tolerates narrow
@@ -66,12 +66,21 @@ export function recordConditionalClause(
     potentialValue: 0,
     realizedValue: 0,
   };
-  entry.played += 1;
+  // why: WP-712 / D-24535 — countsTowardRate (default true) gates the Synergy Rate
+  // counters. A pure count-scaled clause (no boolean gate) carries synergy VALUE but no
+  // assembly decision, so it accrues potentialValue/realizedValue with countsTowardRate
+  // false — keeping played/assembled (WP-708 Synergy Rate) boolean-gated only.
+  const countsTowardRate = outcome.countsTowardRate ?? true;
+  if (countsTowardRate) {
+    entry.played += 1;
+  }
   // why: WP-709 — potentialValue accrues the value the clause could offer whether
   // or not the condition held; realizedValue accrues it only when assembled.
   entry.potentialValue += outcome.clauseValue;
   if (outcome.assembled) {
-    entry.assembled += 1;
+    if (countsTowardRate) {
+      entry.assembled += 1;
+    }
     entry.realizedValue += outcome.clauseValue;
   }
   G.diagnostics.conditionalClauses[playerID] = entry;

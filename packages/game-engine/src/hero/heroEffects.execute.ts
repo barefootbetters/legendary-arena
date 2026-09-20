@@ -27,7 +27,7 @@ import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hol
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import { recordConditionalClause } from '../diagnostics/synergyCount.record.js';
-import { heroClauseValue } from './heroClauseValue.derive.js';
+import { heroClauseValue, heroClausePotentialFloor } from './heroClauseValue.derive.js';
 import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
@@ -713,10 +713,18 @@ export function executeHeroEffects(
       // value it COULD have offered had the condition held). heroClauseValue reads the
       // count source from settled zones, which are independent of the failed boolean
       // condition, so the ceiling is well-defined on this whiff branch too.
+      // why: WP-712 / D-24535 — the potential-floor is a FLOOR, not a replacement. When
+      // the gate class equals the count source the count is 0 and heroClauseValue is 0,
+      // so the floor lifts a count-0 whiff to the per-each magnitude; when the gate class
+      // differs from the count source the count can be > 0 and heroClauseValue already
+      // holds the true current-board value, which Math.max preserves (never lowered).
       if (isCountableConditionalClause) {
         recordConditionalClause(G, playerID, {
           assembled: false,
-          clauseValue: heroClauseValue(G, playerID, cardId, hook),
+          clauseValue: Math.max(
+            heroClauseValue(G, playerID, cardId, hook),
+            heroClausePotentialFloor(hook),
+          ),
         });
       }
       // why: WP-702 live-verify follow-up — a card with MORE THAN ONE ability hook (e.g. Gambit's
@@ -748,6 +756,18 @@ export function executeHeroEffects(
       recordConditionalClause(G, playerID, {
         assembled: true,
         clauseValue: heroClauseValue(G, playerID, cardId, hook),
+      });
+    } else if ((hook.conditions?.length ?? 0) === 0 && hookHasCountScaledValueEffect(hook) && hookHasExecutableEffect(hook)) {
+      // why: WP-712 / D-24535 — a PURE count-scaled clause (no boolean gate, e.g. Avengers
+      // Assemble / Perfect Teamwork "for each color of Hero you have") carries synergy VALUE
+      // but has no assembly decision. Record its realized value (= potential, since there is
+      // no gate to miss) so Realized Value % reflects the marquee count-scaled synergies —
+      // with countsTowardRate false, so Synergy Rate (played/assembled, WP-708) is unchanged.
+      // Mutually exclusive with isCountableConditionalClause (conditions.length === 0 here).
+      recordConditionalClause(G, playerID, {
+        assembled: true,
+        clauseValue: heroClauseValue(G, playerID, cardId, hook),
+        countsTowardRate: false,
       });
     }
     // why: effects is optional on HeroAbilityHook. A hook may carry legacy `effects`,
@@ -835,6 +855,26 @@ function classifyHeroEffectReason(effect: HeroEffectDescriptor): EffectExecution
     return 'no-handler';
   }
   return 'unsupported-keyword';
+}
+
+/**
+ * Returns whether a hero hook carries a count-scaled attack/recruit value effect
+ * (`attack-per-count` / `recruit-per-count`) — WP-712 / D-24535.
+ *
+ * why: gates the no-condition value-recording branch to the pure count-scaled synergy
+ * clauses (Avengers Assemble / Perfect Teamwork). Mirrors the exact type check
+ * `buildCountScaledResolution` uses so the two cannot drift.
+ *
+ * @param hook - The hero ability hook.
+ * @returns Whether the hook has a count-scaled attack/recruit effect.
+ */
+function hookHasCountScaledValueEffect(hook: HeroAbilityHook): boolean {
+  for (const effect of hook.effects ?? []) {
+    if (effect.type === 'attack-per-count' || effect.type === 'recruit-per-count') {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
