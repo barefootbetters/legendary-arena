@@ -667,10 +667,15 @@ function suggestRevealKoAttackToken(line) {
  * prefixed by exactly one `[hc:X]:` or `[team:X]:` condition the parser already
  * evaluates. Lines that also mention `Reveal` (reveal-then-draw, which belongs to
  * the reveal family) or that already carry a `[keyword:` token (already marked, or
- * timing-keyword-gated like `[keyword:Heist]:`) are excluded. The `^…$` anchor
- * rejects cumulative "another/more/extra", bottom-of-deck, game-state-conditional,
- * and compound multi-effect draws by construction. Counts of `four`/`five` and
- * higher are not matched — magnitudes ≥ 4 are deferred per D-22501.
+ * timing-keyword-gated like `[keyword:Heist]:`) are excluded. A whole-line
+ * "Draw another card." (optionally one leading `[hc:X]:`/`[team:X]:` class/team
+ * gate) is a fixed draw-of-1 and IS in scope — "another" maps to magnitude 1, and
+ * the class gate makes the draw conditional, mirroring the working
+ * `[hc:X]: Draw a card. [keyword:draw:1]` cards. The `^…$` anchor still rejects
+ * sentence-embedded cumulative "more/extra" and per-count "another" draws,
+ * bottom-of-deck, game-state-conditional, and compound multi-effect draws by
+ * construction. Counts of `four`/`five` and higher are not matched — magnitudes
+ * ≥ 4 are deferred per D-22501.
  *
  * @param {string} line - The ability line to test.
  * @returns {boolean} True if the line is an in-scope draw candidate.
@@ -678,7 +683,7 @@ function suggestRevealKoAttackToken(line) {
 function isDrawCandidate(line) {
   const normalizedLine = line.trim();
   // why: D-22501 — whole-line fixed-count draw of 1–3 cards, optionally one leading [hc:X]:/[team:X]: condition
-  const DRAW_CANDIDATE_PATTERN = /^(?:\[(?:hc|team):[^\]]+\]:\s*)?Draw (a|one|two|three) cards?\.$/i;
+  const DRAW_CANDIDATE_PATTERN = /^(?:\[(?:hc|team):[^\]]+\]:\s*)?Draw (a|one|two|three|another) cards?\.$/i;
   if (!DRAW_CANDIDATE_PATTERN.test(normalizedLine)) return false;
   // why: reveal-then-draw belongs to the reveal family; defense-in-depth over the anchor (D-22501 rule 2)
   if (normalizedLine.includes('Reveal')) return false;
@@ -689,20 +694,20 @@ function isDrawCandidate(line) {
 
 /**
  * Determines the suggested markup token for an in-scope draw line. Maps the count
- * word to a magnitude: `a`/`one` → 1, `two` → 2, `three` → 3. Returns null when
- * the line does not match the locked draw pattern — callers must guard before
- * emitting a row. Magnitudes ≥ 4 are never produced (deferred per D-22501).
+ * word to a magnitude: `a`/`one`/`another` → 1, `two` → 2, `three` → 3. Returns
+ * null when the line does not match the locked draw pattern — callers must guard
+ * before emitting a row. Magnitudes ≥ 4 are never produced (deferred per D-22501).
  *
  * @param {string} line - The draw ability line.
- * @returns {string|null} The markup token, or null if the count word is not one of a/one/two/three.
+ * @returns {string|null} The markup token, or null if the count word is not one of a/one/another/two/three.
  */
 function suggestDrawToken(line) {
   const normalizedLine = line.trim();
-  const DRAW_CANDIDATE_PATTERN = /^(?:\[(?:hc|team):[^\]]+\]:\s*)?Draw (a|one|two|three) cards?\.$/i;
+  const DRAW_CANDIDATE_PATTERN = /^(?:\[(?:hc|team):[^\]]+\]:\s*)?Draw (a|one|two|three|another) cards?\.$/i;
   const match = DRAW_CANDIDATE_PATTERN.exec(normalizedLine);
   if (match === null) return null;
   const countWord = match[1].toLowerCase();
-  if (countWord === 'a' || countWord === 'one') return '[keyword:draw:1]';
+  if (countWord === 'a' || countWord === 'one' || countWord === 'another') return '[keyword:draw:1]';
   if (countWord === 'two') return '[keyword:draw:2]';
   if (countWord === 'three') return '[keyword:draw:3]';
   return null;

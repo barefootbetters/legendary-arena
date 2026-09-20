@@ -461,7 +461,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:tech]: Draw another card."
+            "[hc:tech]: Draw another card. [keyword:draw:1]"
           ]
         },
         {
