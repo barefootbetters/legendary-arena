@@ -42939,4 +42939,51 @@ D-24523 (hc2 dual-class), D-24074 (Size-Changing granted classes), D-24016/D-244
 grant family + icon suppression), D-24372 (RUNTIME drift pins), D-24529 (the contrasting hand+play
 `distinct-hero-classes` reading). **Reserved by:** NUMBER-LEDGER D-24534.
 
+### D-24537 — Kidnap-per-count bystander-capture hero effect (WP-714 / EC-751) (Active 2026-09-20)
+
+**Context.** Ultron's **Genetic Experimentation** (`vill`) prints `[hc:tech]: Kidnap a Bystander
+for each other [hc:tech] Ally you played this turn`, but did nothing — the line carried no
+count-scaled marker (deferred by WP-711/EC-748 + the #2187 gap-scan allowlist). The count-scaled
+grant family shipped only resource grants (`attack-per-count` / `recruit-per-count`); a
+count-scaled **capture** had no form yet.
+
+**Decision.** Add one new `HeroKeyword`, **`kidnap-per-count`** (union + `HERO_KEYWORDS` array in
+lockstep; RUNTIME drift pin 58 → 59 per D-24372; `HANDLED_KEYWORDS` ↔ `HERO_EFFECT_HANDLERS`
+parity kept; carries a magnitude → NOT in `NO_MAGNITUDE_KEYWORDS`). Its executor
+`heroEffectKidnapPerCount` scales exactly like its siblings —
+**N = magnitude × ⌊count / perEach⌋**, `count = resolveCountSource(G, p,
+'tech-heroes-played-this-turn', cardId)` (the **already-shipped**, self-**exclusive** source,
+WP-711/D-24534) — but the grant is **N bystander captures** instead of a resource add. The
+count-scaling half is copied from `heroEffectRecruitPerCount`; the per-capture action from
+`heroEffectHereHoldThis`. **No new count source, no new capture primitive.**
+
+**Auto-targeted, non-interactive (operator decision 2026-09-20).** Each capture attaches to the
+**first City villain** (lowest city index) via `attachBystanderToCityVillain`, with
+`captureBystanderToMastermind(G)` as the universal-rules fallback when the City holds none —
+reusing the `here-hold-this` machinery but **without** its interactive `PendingSeatChoice`, so
+`kidnap-per-count` is a **synchronous** count-scaled effect like every other `-per-count` sibling.
+The loop is **supply-bounded** (breaks when `G.piles.bystanders` empties). *Rejected:* a
+`PendingSeatChoice` per capture (would turn a bulk effect into N interactive parks); banking
+captured Bystanders to the Victory Pile (different destination + award timing — not the engine's
+capture semantics).
+
+**Marker + gate.** New `[keyword:kidnap-per-count:<source>:<n>]` token — a three-segment form
+(no `perEach` segment; this card's rate is 1) added to `apply-hero-ability-markers.mjs`
+`VALID_TOKEN_PATTERN` and mirrored by an engine parse step (`heroAbility.setup.ts`, mirroring
+Step 2d) + effect-descriptor builder branch. No printed-icon suppression (the line carries no
+`[icon:]`). The Genetic Experimentation marker
+`[keyword:kidnap-per-count:tech-heroes-played-this-turn:1]` is backfilled via
+`hero-ability-markers.json` + regen (never hand-edited), and `check-hero-count-markers`
+recognizes the new marker with the Genetic Experimentation deferral removed (allowlist now empty).
+
+**Invariants.** (1) Game Engine + card-data only; no client, no new grant/capture mechanism.
+(2) Executor pure-ish/total — reads `G`, mutates only the capture zones via the shipped helpers,
+never throws, no registry read, no `.reduce()` in the loop; count 0 → no-op. (3) Determinism —
+reads already-hashed `G` (`inPlay` + `cardTraits` for the count; `piles.bystanders` + city for the
+capture), adds **no new hashed field**; engine suite 3947/0 with every pinned `finalStateHash`
+byte-identical — **NO re-pin** (no committed fixture plays Genetic Experimentation; one that did
+would re-pin honestly). Related: D-24534 (the count source this reuses), D-24016/D-24489 (the
+per-count grant family), D-24500 (the `here-hold-this` capture machinery), D-24372 (RUNTIME drift
+pins). **Reserved by:** NUMBER-LEDGER D-24537.
+
 Protect this file.
