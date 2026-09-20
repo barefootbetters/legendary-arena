@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1888,
+    "totalEntries": 1892,
     "byScope": {
-      "hero": 713,
+      "hero": 717,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 462,
+      "executable": 466,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -11581,6 +11581,23 @@
       "name": "Thing",
       "set": "ff04",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "its-clobberin-time",
+          "name": "It's Clobberin' Time!"
+        }
+      ]
+    },
+    {
+      "extId": "ff04/thing",
+      "name": "Thing",
+      "set": "ff04",
+      "scope": "hero",
       "mechanic": "focus",
       "status": "unsupported",
       "handler": "",
@@ -15353,6 +15370,23 @@
         {
           "slug": "unstoppable-hulk",
           "name": "Unstoppable Hulk"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/iron-man",
+      "name": "Iron Man",
+      "set": "msp1",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "arc-reactor",
+          "name": "Arc Reactor"
         }
       ]
     },
@@ -20248,6 +20282,23 @@
       "name": "Beast",
       "set": "ssw2",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "doctor-of-beatdown",
+          "name": "Doctor of Beatdown"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/beast",
+      "name": "Beast",
+      "set": "ssw2",
+      "scope": "hero",
       "mechanic": "patrol",
       "status": "unsupported",
       "handler": "",
@@ -21534,6 +21585,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "vill/ultron",
+      "name": "Ultron",
+      "set": "vill",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "encephalo-ray",
+          "name": "Encephalo-Ray"
+        }
+      ]
     },
     {
       "extId": "vill/ultron",
@@ -30754,6 +30822,7 @@
     "ff04/thing": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "focus"
       ]
     },
@@ -32144,6 +32213,7 @@
     "msp1/iron-man": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw"
       ]
     },
@@ -33965,6 +34035,7 @@
     "ssw2/beast": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "patrol",
         "wall-crawl"
       ]
@@ -34425,6 +34496,7 @@
     "vill/ultron": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "dodge"
       ]
     },

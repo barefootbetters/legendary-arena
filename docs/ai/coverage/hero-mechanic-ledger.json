@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 713,
+    "totalRows": 717,
     "byStatus": {
-      "executable": 311,
+      "executable": 315,
       "deferred": 16,
       "condition": 27,
       "unsupported": 322,
@@ -5903,6 +5903,22 @@
       "extId": "ff04/thing",
       "heroName": "Thing",
       "set": "ff04",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "its-clobberin-time",
+          "name": "It's Clobberin' Time!"
+        }
+      ]
+    },
+    {
+      "extId": "ff04/thing",
+      "heroName": "Thing",
+      "set": "ff04",
       "mechanic": "focus",
       "status": "unsupported",
       "wp": "",
@@ -7434,6 +7450,22 @@
         {
           "slug": "unstoppable-hulk",
           "name": "Unstoppable Hulk"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/iron-man",
+      "heroName": "Iron Man",
+      "set": "msp1",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "arc-reactor",
+          "name": "Arc Reactor"
         }
       ]
     },
@@ -9696,6 +9728,22 @@
       "extId": "ssw2/beast",
       "heroName": "Beast",
       "set": "ssw2",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "doctor-of-beatdown",
+          "name": "Doctor of Beatdown"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/beast",
+      "heroName": "Beast",
+      "set": "ssw2",
       "mechanic": "patrol",
       "status": "unsupported",
       "wp": "",
@@ -10427,6 +10475,22 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "vill/ultron",
+      "heroName": "Ultron",
+      "set": "vill",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "encephalo-ray",
+          "name": "Encephalo-Ray"
+        }
+      ]
     },
     {
       "extId": "vill/ultron",

@@ -98,7 +98,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 17,
+      "cardCount": 21,
       "cardIds": [
         "asrd/thor",
         "bkwd/red-guardian",
@@ -111,11 +111,15 @@
         "core/nick-fury",
         "cvwr/goliath",
         "dkcy/iceman",
+        "ff04/thing",
+        "msp1/iron-man",
         "noir/luke-cage-noir",
         "shld/agent-phil-coulson",
         "shld/mockingbird",
         "ssw1/captain-marvel",
+        "ssw2/beast",
         "vill/juggernaut",
+        "vill/ultron",
         "vnom/venom"
       ],
       "hidden": true
@@ -3093,6 +3097,7 @@
     },
     "ff04/thing": {
       "mechanics": [
+        "attack-per-count",
         "focus"
       ]
     },
@@ -3302,6 +3307,7 @@
     },
     "msp1/iron-man": {
       "mechanics": [
+        "attack-per-count",
         "draw"
       ]
     },
@@ -3684,6 +3690,7 @@
     },
     "ssw2/beast": {
       "mechanics": [
+        "attack-per-count",
         "patrol",
         "wall-crawl"
       ]
@@ -3835,6 +3842,7 @@
     },
     "vill/ultron": {
       "mechanics": [
+        "attack-per-count",
         "dodge"
       ]
     },
