@@ -15,7 +15,11 @@ import {
   evaluateAllConditions,
   findFailedCondition,
   describeFailedCondition,
+  heroConditionHoldsForInPlay,
+  SEQUENCE_GATE_CONDITION_TYPES,
 } from './heroConditions.evaluate.js';
+import type { HeroConditionCardData } from './heroConditions.evaluate.js';
+import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
@@ -1199,5 +1203,216 @@ describe('describeFailedCondition (WP-653 conditions quote the actual count)', (
       describeFailedCondition(G, '0', { type: 'cheapOrSizeChangingAtLeast', value: '3' }),
       /costing 1-2 or Size-Changing.*you have 3/,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// heroConditionHoldsForInPlay — the WP-710 / D-24533 sequence-teacher predicate
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a `HeroConditionCardData` slice from optional per-map overrides for the
+ * predicate tests — exactly the four setup-static maps the predicate reads.
+ *
+ * @param overrides - Partial card-data maps.
+ * @returns A `HeroConditionCardData`.
+ */
+function makeCardData(overrides?: {
+  cardTraits?: Record<string, { heroClass: string | null; team: string | null; heroClass2?: string | null }>;
+  cardSizeChangingClasses?: Record<string, string[]>;
+  cardCopiedTeams?: Record<string, string[]>;
+  heroAbilityHooks?: HeroAbilityHook[];
+}): HeroConditionCardData {
+  return {
+    cardTraits: (overrides?.cardTraits ?? {}) as HeroConditionCardData['cardTraits'],
+    cardSizeChangingClasses: overrides?.cardSizeChangingClasses ?? {},
+    cardCopiedTeams: overrides?.cardCopiedTeams ?? {},
+    heroAbilityHooks: overrides?.heroAbilityHooks ?? [],
+  };
+}
+
+describe('heroConditionHoldsForInPlay (WP-710 / D-24533)', () => {
+  it('returns holds when a same-class enabler is in the candidate inPlay', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: null },
+        'tech-enabler': { heroClass: 'tech', team: null },
+      },
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'heroClassMatch', value: 'tech' },
+      'gated-card',
+      ['gated-card', 'tech-enabler'],
+      cardData,
+    );
+
+    assert.equal(result, 'holds', 'A same-class enabler in inPlay must make the gate hold.');
+  });
+
+  it('returns fails when no candidate satisfies the class gate', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: null },
+        'ranged-card': { heroClass: 'ranged', team: null },
+      },
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'heroClassMatch', value: 'tech' },
+      'gated-card',
+      ['gated-card', 'ranged-card'],
+      cardData,
+    );
+
+    assert.equal(result, 'fails', 'No matching class in inPlay must make the gate fail.');
+  });
+
+  it('self-excludes the played card (its own class never satisfies its gate)', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        // why: the played card is itself tech; the gate must still fail when it is the
+        // only tech card in play (evaluateCondition self-excludes the trigger).
+        'gated-card': { heroClass: 'tech', team: null },
+      },
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'heroClassMatch', value: 'tech' },
+      'gated-card',
+      ['gated-card'],
+      cardData,
+    );
+
+    assert.equal(result, 'fails', 'The played card must not satisfy its own class gate.');
+  });
+
+  it('returns holds for a requiresTeam gate with a same-team enabler', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: 'x-men' },
+        'avenger-enabler': { heroClass: 'tech', team: 'avengers' },
+      },
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'requiresTeam', value: 'avengers' },
+      'gated-card',
+      ['gated-card', 'avenger-enabler'],
+      cardData,
+    );
+
+    assert.equal(result, 'holds', 'A same-team enabler in inPlay must make the team gate hold.');
+  });
+
+  it('returns holds for a requiresKeyword gate satisfied by an in-play hook keyword', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: null },
+        'keyword-enabler': { heroClass: 'tech', team: null },
+      },
+      heroAbilityHooks: [
+        { cardId: 'keyword-enabler', timing: 'onPlay', keywords: ['covert'] },
+      ] as unknown as HeroAbilityHook[],
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'requiresKeyword', value: 'covert' },
+      'gated-card',
+      ['gated-card', 'keyword-enabler'],
+      cardData,
+    );
+
+    assert.equal(result, 'holds', 'An in-play card with the target keyword must make the keyword gate hold.');
+  });
+
+  it('returns unsupported when the played card is size-changing', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: null },
+        'tech-enabler': { heroClass: 'tech', team: null },
+      },
+      heroAbilityHooks: [
+        // why: a size-changing hook on the played card — its class could depend on an
+        // uncaptured grant, so the predicate must scope it out (unsupported), not guess.
+        { cardId: 'gated-card', timing: 'onPlay', keywords: [], sizeChangingClasses: ['tech'] },
+      ] as unknown as HeroAbilityHook[],
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'heroClassMatch', value: 'tech' },
+      'gated-card',
+      ['gated-card', 'tech-enabler'],
+      cardData,
+    );
+
+    assert.equal(result, 'unsupported', 'A size-changing played card must return unsupported.');
+  });
+
+  it('returns unsupported when a candidate is copy-powers', () => {
+    const cardData = makeCardData({
+      cardTraits: {
+        'gated-card': { heroClass: 'covert', team: null },
+        'rogue-copy': { heroClass: 'covert', team: null },
+      },
+      heroAbilityHooks: [
+        // why: a copy-powers candidate could count as the gated class via an uncaptured
+        // copied-team/class grant, so the whole in-play set is scoped out (unsupported).
+        { cardId: 'rogue-copy', timing: 'onPlay', keywords: ['copy-powers'] },
+      ] as unknown as HeroAbilityHook[],
+    });
+
+    const result = heroConditionHoldsForInPlay(
+      { type: 'heroClassMatch', value: 'tech' },
+      'gated-card',
+      ['gated-card', 'rogue-copy'],
+      cardData,
+    );
+
+    assert.equal(result, 'unsupported', 'A copy-powers card anywhere in inPlay must return unsupported.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEQUENCE_GATE_CONDITION_TYPES — drift-parity assertions (WP-710 RS-1)
+// ---------------------------------------------------------------------------
+
+describe('SEQUENCE_GATE_CONDITION_TYPES drift parity (WP-710 / D-24533)', () => {
+  it('is disjoint from WAIT_AND_SEE_CONDITION_TYPES', () => {
+    // why (RS-1a): a snapshot gate the teacher teaches must NOT also be a numeric
+    // wait-and-see gate the engine already retro-fires — the two sets are mutually
+    // exclusive by construction, and this pin catches any future overlap. Imports the
+    // canonical WAIT_AND_SEE array (never a local re-declaration) so the cross-file
+    // drift the pin exists to prevent cannot slip back in.
+    for (const gateType of SEQUENCE_GATE_CONDITION_TYPES) {
+      assert.equal(
+        WAIT_AND_SEE_CONDITION_TYPES.includes(gateType),
+        false,
+        `Sequence-gate type "${gateType}" must not also be a wait-and-see condition type.`,
+      );
+    }
+  });
+
+  it('every member has a real evaluateCondition case (never the default false)', () => {
+    // why (RS-1b): a member added to the gate set without a matching evaluateCondition
+    // case would silently read as the default `false` — a whiff that can never be taught
+    // or would misfire. Each member is exercised with a state that SATISFIES it; the
+    // default branch can only return false, so a `true` here proves the case exists.
+    for (const gateType of SEQUENCE_GATE_CONDITION_TYPES) {
+      const satisfyingState = makeTestState({
+        inPlay: ['enabler'],
+        cardTraits: { enabler: { heroClass: 'tech', team: 'avengers' } },
+        heroAbilityHooks: [
+          { cardId: 'enabler', timing: 'onPlay', keywords: ['covert'] },
+        ] as unknown as HeroAbilityHook[],
+      });
+      const gateValue =
+        gateType === 'heroClassMatch' ? 'tech' : gateType === 'requiresTeam' ? 'avengers' : 'covert';
+      assert.equal(
+        evaluateCondition(satisfyingState, '0', { type: gateType, value: gateValue }),
+        true,
+        `Sequence-gate type "${gateType}" must have a real evaluateCondition case.`,
+      );
+    }
   });
 });

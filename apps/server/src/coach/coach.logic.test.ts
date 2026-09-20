@@ -106,10 +106,15 @@ function makeDeps(modelClient: CoachModelClient): CoachDependencies {
 }
 
 // A CoachLogic fake that grants the Pass, owns the replay, has a score + replay,
-// and an empty cache; each field is overridable per test. Records writes.
-function makeLogic(over: Partial<CoachLogic> = {}): CoachLogic & { writes: number } {
+// and an empty cache; each field is overridable per test. Records writes and
+// artifact reads. `readReplayArtifactByHash` returns null by default so the
+// sequence teacher yields [] through its clean guarded path (WP-710).
+function makeLogic(
+  over: Partial<CoachLogic> = {},
+): CoachLogic & { writes: number; artifactReads: number } {
   const base = {
     writes: 0,
+    artifactReads: 0,
     getEntitlementsForAccount: async () => ({
       ok: true as const,
       value: [
@@ -126,6 +131,12 @@ function makeLogic(over: Partial<CoachLogic> = {}): CoachLogic & { writes: numbe
     findCompetitiveScore: async () => ({ scoreBreakdown: makeBreakdown() }),
     reduceReplayByHash: async () => ({ finalState: makeState(), stateHash: REPLAY, turnCount: 12 }),
     readCoachReport: async (): Promise<StoredCoachReport | null> => null,
+    readReplayArtifactByHash: async function (this: { artifactReads: number }) {
+      base.artifactReads += 1;
+      // why: WP-710 — a null artifact drives the sequence teacher's clean "no tips"
+      // guard, so the fresh path merges sequenceTips: [] without a real replay fold.
+      return null;
+    },
     writeCoachReport: async function (
       this: { writes: number },
       _hash: string,
@@ -138,7 +149,7 @@ function makeLogic(over: Partial<CoachLogic> = {}): CoachLogic & { writes: numbe
     },
     ...over,
   };
-  return base as unknown as CoachLogic & { writes: number };
+  return base as unknown as CoachLogic & { writes: number; artifactReads: number };
 }
 
 describe('generateOrGetCoachReport (WP-594)', () => {
@@ -235,5 +246,51 @@ describe('generateOrGetCoachReport (WP-594)', () => {
     assert.deepEqual(result, { ok: false, reason: 'coach_unavailable' });
     assert.equal(model.calls, 1);
     assert.equal(logic.writes, 0);
+  });
+
+  // -------------------------------------------------------------------------
+  // WP-710 / D-24533 — sequenceTips flow onto the served/persisted CoachReport
+  // -------------------------------------------------------------------------
+
+  test('fresh path: reads the replay artifact and merges sequenceTips onto the served report', async () => {
+    const model = makeModelClient();
+    const logic = makeLogic();
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok, true);
+    // The teacher seam ran: the raw artifact was read once (to fold hero plays).
+    assert.equal(logic.artifactReads, 1, 'the fresh path must read the replay artifact for the teacher');
+    // sequenceTips is PRESENT on the served report (merged before persistence). The
+    // null-artifact fake drives the clean "no tips" path, so it is the empty array —
+    // the field flows regardless of content (real tip content is covered in the
+    // teacher unit test + the D-24026 live-verify).
+    assert.ok(
+      result.ok === true && Array.isArray(result.report.report.sequenceTips),
+      'the served report must carry a sequenceTips array',
+    );
+    assert.deepEqual(result.ok === true && result.report.report.sequenceTips, []);
+  });
+
+  test('cache path: serves the persisted sequenceTips and never reads the artifact', async () => {
+    const model = makeModelClient();
+    const logic = makeLogic({
+      readCoachReport: async () => ({
+        report: { ...REPORT, sequenceTips: ['Next time, play Iron Man before Repulsor Rays — you would have landed its tech synergy bonus.'] },
+        model: 'cached-model',
+        generatedAt: '2026-08-20T00:00:00.000Z',
+      }),
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok, true);
+    assert.equal(result.ok === true && result.wasCached, true);
+    // The cache short-circuits BEFORE the teacher — the artifact is never read, the
+    // model never called — and the persisted tips are served verbatim from the blob.
+    assert.equal(logic.artifactReads, 0, 'the cache path must not read the artifact');
+    assert.equal(model.calls, 0);
+    assert.deepEqual(
+      result.ok === true && result.report.report.sequenceTips,
+      ['Next time, play Iron Man before Repulsor Rays — you would have landed its tech synergy bonus.'],
+    );
   });
 });

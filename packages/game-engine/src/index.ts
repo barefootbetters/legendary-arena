@@ -287,7 +287,10 @@ export {
   findFailedCondition,
   describeFailedCondition,
   evaluateAllConditions,
+  heroConditionHoldsForInPlay,
+  SEQUENCE_GATE_CONDITION_TYPES,
 } from "./hero/heroConditions.evaluate.js";
+export type { HeroConditionCardData } from "./hero/heroConditions.evaluate.js";
 export {
   parseCardStatValue,
   buildCardStats,

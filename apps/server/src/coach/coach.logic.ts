@@ -25,9 +25,10 @@ import { evaluateEndgame } from '@legendary-arena/game-engine';
 import { getEntitlementsForAccount } from '../entitlements/entitlements.logic.js';
 import { findReplayOwnershipForAccount } from '../identity/replayOwnership.logic.js';
 import { findCompetitiveScore } from '../competition/competition.logic.js';
-import { reduceReplayByHash } from '../replay/matchReplay.logic.js';
+import { reduceReplayByHash, readReplayArtifactByHash, reduceMatchCapturingHeroPlays } from '../replay/matchReplay.logic.js';
 import { readCoachReport, writeCoachReport } from './coachReport.persistence.js';
 import { buildCoachMatchSummary } from './coachSummary.logic.js';
+import { computeSequenceTips } from './sequenceTeacher.logic.js';
 
 import type { AccountId } from '../identity/identity.types.js';
 import type { CoachDependencies, CoachResult } from './coach.types.js';
@@ -49,6 +50,10 @@ export interface CoachLogic {
   readonly reduceReplayByHash: typeof reduceReplayByHash;
   readonly readCoachReport: typeof readCoachReport;
   readonly writeCoachReport: typeof writeCoachReport;
+  // why: WP-710 / D-24533 — the sequence teacher needs the raw {initialState, log}
+  // (not just the reduced final state) to re-run the capturing fold; injectable so the
+  // DB-free coach tests can supply a canned artifact.
+  readonly readReplayArtifactByHash: typeof readReplayArtifactByHash;
 }
 
 const PRODUCTION_COACH_LOGIC: CoachLogic = {
@@ -58,6 +63,7 @@ const PRODUCTION_COACH_LOGIC: CoachLogic = {
   reduceReplayByHash,
   readCoachReport,
   writeCoachReport,
+  readReplayArtifactByHash,
 };
 
 /**
@@ -154,12 +160,58 @@ export async function generateOrGetCoachReport(
     return { ok: false, reason: 'coach_unavailable' };
   }
 
+  // why: WP-710 / D-24533 — compute the deterministic play-order "opportunity" tips
+  // server-side and merge them onto the report BEFORE persistence, so they ride the
+  // persisted/served CoachReport jsonb blob (and the cache-hit path serves them). NOT
+  // model-authored. Best-effort: any teacher failure yields no tips, never blocks the coach.
+  const sequenceTips = await computeSequenceTipsForReplay(replayHash, reduced.finalState, deps, logic);
+  const reportWithTips = { ...report, sequenceTips };
+
   const stored = await logic.writeCoachReport(
     replayHash,
     accountId,
     deps.modelClient.model,
-    report,
+    reportWithTips,
     deps.database,
   );
   return { ok: true, report: stored, wasCached: false };
+}
+
+/**
+ * Computes the WP-710 play-order sequence-teacher tips for a replay, or `[]`
+ * (WP-710 / D-24533).
+ *
+ * why: re-reads the raw `{ initialState, log }` and runs the single capturing fold
+ * (`reduceMatchCapturingHeroPlays`) to recover each hero play's real `inPlay`, then the
+ * pure `computeSequenceTips`. Guarded — a missing artifact or any fold/compute error
+ * yields no tips, so the coach report is never blocked by the teacher.
+ *
+ * @param replayHash - The match's replay hash.
+ * @param finalState - The reduced final state (supplies the setup-static card data).
+ * @param deps - Coach dependencies (database + resolveCardName).
+ * @param logic - The injectable seam (for `readReplayArtifactByHash`).
+ * @returns The tips, or `[]`.
+ */
+async function computeSequenceTipsForReplay(
+  replayHash: string,
+  finalState: Parameters<typeof computeSequenceTips>[1],
+  deps: CoachDependencies,
+  logic: CoachLogic,
+): Promise<readonly string[]> {
+  try {
+    const artifact = await logic.readReplayArtifactByHash(replayHash, deps.database);
+    if (artifact === null) {
+      return [];
+    }
+    const { heroPlays } = reduceMatchCapturingHeroPlays(artifact);
+    return computeSequenceTips(heroPlays, finalState, deps.resolveCardName);
+  } catch (caughtError) {
+    console.warn(
+      '[coach] Sequence-teacher computation failed for replay ' +
+        replayHash +
+        '; returning no tips (the coach report is unaffected). Underlying error: ' +
+        (caughtError instanceof Error ? caughtError.message : String(caughtError)),
+    );
+    return [];
+  }
 }

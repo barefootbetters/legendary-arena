@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-710 — Synergy Realization: play-order sequence teacher (EC-747 / D-24533) (2026-09-19)
+
+Phase 2b of `DESIGN-SYNERGY-REALIZATION.md` §3.3 (Option B — server + engine plumbing; the client
+"Opportunities" render is a named follow-up WP). Synergy Rate (WP-708) and Realized Value % (WP-709)
+say *how much* synergy a player assembled; the sequence teacher says *what to do differently*. When a
+legal same-turn reorder of a seat's hero plays — moving an UNCONDITIONAL same-class/team/keyword hero
+before a whiffed conditional card (gated on `heroClassMatch`/`requiresTeam`/`requiresKeyword`) — would
+have assembled that clause, the coach offers ONE forward *opportunity* tip per seat on
+`CoachReport.sequenceTips`.
+
+No per-play whiff survives server-side, so the teacher re-runs the D-24119 faithful replay:
+`reduceMatchCapturingHeroPlays` (a single faithful fold over the real log order — never reordered, which
+would diverge on the `alea` PRNG) captures each `playCard`'s post-play `inPlay` (`payload.args[0].cardId`).
+Reorderability is a **set-satisfiability** check over the captured sets via a pure Runtime-Safe engine
+predicate `heroConditionHoldsForInPlay` (reuses `evaluateCondition` — the engine stays the sole authority,
+D-20105), NOT a reordered re-simulation. **Net-gain rule** (the correctness fix a real 2p Red Skull match
+forced): a tip fires ONLY for an unconditional enabler — never a mutually-enabling conditional pair (net-zero
+whiff swap). Wait-and-see/numeric gates are excluded (the engine auto-rescues them via
+`deferredConditionalGrants`); `firstHeroPlayedThisTurn`/`playedThisTurn` are excluded (don't fit "play E
+before C"); a size-changing/copy-powers card anywhere in the captured `inPlay` makes the predicate return
+`unsupported` (uncaptured runtime grants → never a wrong tip).
+
+Engine change is read-only additive (a closed `SEQUENCE_GATE_CONDITION_TYPES` array + the predicate; no
+chokepoint edit, no `G`/`G.diagnostics` write). `sequenceTips?` is computed in `coach.logic.ts` (via a new
+`readReplayArtifactByHash` seam member) and merged onto the persisted/served `CoachReport` before
+`writeCoachReport`, so the cache-hit path serves it too. **Display-only** (never `finalScore`/PAR — NG-1);
+opportunity-voice copy-lint (never whiff/failed/error/missed/wasted); hero path only. **NO hash re-pin**:
+engine **3940/0** (new predicate + two runtime drift-parity assertions; sentinel `finalStateHash` +
+`PRE_WP080_HASH` byte-identical, no fixture/card-data churn), server **1338/0** (capture fold, teacher
+decision logic, coach seam + fresh/cache flow), `pnpm -r build` 0. `git diff` = the allowlist (6 source + 4
+test + `api-endpoints.md` per D-11804); **NO arena-client files**. Landed **D-24533** (Active). **D-24026
+live-verify operator-pending** (`GET /api/me/scores/:replayHash/coach` returns the turn-36.2
+Perfect-Teamwork-before-Marvelous-Strength tip and none for the turn-33.2 mutually-enabling pairs; on-screen
+render = follow-up WP).
+
 ### WP-712 — Synergy Realization: Realized Value % value-model refinement (EC-749 / D-24535) (2026-09-20)
 
 Refined WP-709's display-only Realized Value % (engine-only) after a real 2p Red Skull match showed
