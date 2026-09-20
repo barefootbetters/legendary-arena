@@ -84,6 +84,20 @@ export default defineComponent({
         data-testid="arena-hud-coach-report"
       >
         <p class="coach-report-headline" aria-label="coachHeadline">{{ report.report.headline }}</p>
+        <!-- why: WP-718/D-24540 — render the server-computed co-op Table Cooperation
+             recognition (WP-717) verbatim, leading the report with the shared-win team
+             framing; shown only when the array is non-empty, which hides pre-WP-717
+             reports (tableCooperation undefined). The client never composes it (D-20105). -->
+        <div
+          v-if="report.report.tableCooperation && report.report.tableCooperation.length > 0"
+          class="coach-report-block"
+          data-testid="arena-hud-coach-table-cooperation"
+        >
+          <div class="coach-report-label">Table Cooperation</div>
+          <ul class="coach-report-tips">
+            <li v-for="line in report.report.tableCooperation" :key="line">{{ line }}</li>
+          </ul>
+        </div>
         <div class="coach-report-block">
           <div class="coach-report-label">Hero fit</div>
           <p class="coach-report-text">{{ report.report.heroFit }}</p>

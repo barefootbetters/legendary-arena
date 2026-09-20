@@ -34,6 +34,11 @@ export interface CoachReport {
   // importing the server type); optional because reports persisted before WP-710 omit
   // it. The client renders these verbatim — it never composes or re-evaluates them.
   readonly sequenceTips?: readonly string[];
+  // why: WP-718/D-24540 — the deterministic co-op "Table Cooperation" recognition the
+  // server computes (WP-717) and merges onto the report before persistence. A structural
+  // mirror of the server field (no server-type import); optional because reports persisted
+  // before WP-717 omit it. Rendered verbatim — the client never composes it.
+  readonly tableCooperation?: readonly string[];
 }
 
 /**
