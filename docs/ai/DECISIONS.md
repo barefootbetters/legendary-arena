@@ -42985,5 +42985,38 @@ byte-identical — **NO re-pin** (no committed fixture plays Genetic Experimenta
 would re-pin honestly). Related: D-24534 (the count source this reuses), D-24016/D-24489 (the
 per-count grant family), D-24500 (the `here-hold-this` capture machinery), D-24372 (RUNTIME drift
 pins). **Reserved by:** NUMBER-LEDGER D-24537.
+### D-24536 — Synergy Realization: sequence-tips client render (WP-713 / EC-750) (Active 2026-09-19)
+
+**Context.** WP-710/D-24533 (Option B) shipped the deterministic play-order coaching as
+the server-computed `CoachReport.sequenceTips` field — persisted, served on the fresh +
+cache-hit paths, and verified via the coach API — but rendered nothing on screen. WP-713
+is the deferred client-render half: it displays those tips in the arena-client endgame
+coach panel.
+
+**Decision (WP-713/EC-750, arena-client only).** Add `readonly sequenceTips?: readonly
+string[]` to the client's OWN `CoachReport` interface (`apps/arena-client/src/lib/api/coachApi.ts`
+— a structural mirror; the file's layer-boundary rule forbids importing the server type),
+and render a forward **"Opportunities"** block in `EndgameCoachPanel.vue` after the model
+"Next time" `suggestions` block — one `<li>` per tip, verbatim (`v-for`, reusing the
+`.coach-report-tips` styling, `data-testid="arena-hud-coach-opportunities"`). The block
+renders **only when `report.report.sequenceTips` is a non-empty array**, which hides both
+the no-tip common case and pre-WP-710 reports where the field is `undefined`. A new
+coach-panel two-vocabulary copy-lint was added (none existed — the only prior one scans
+`arena-hud-per-player`).
+
+**Invariants.** (1) Client-only, strictly additive — no engine/server/UIState/persistence/
+hash surface; `git diff` = the 3-file allowlist. (2) **Verbatim render** — the client
+composes no tip text and re-evaluates no condition; the engine/server stay the sole
+authority on condition semantics (D-20105). (3) Display-only, off-ranking — the tips never
+enter `finalScore`/PAR/grade (NG-1). (4) Hidden when absent/empty (correct for the common
+case and the pre-WP-710 `undefined` shape). (5) Two-vocabulary — the rendered block shows
+none of `whiff`/`failed`/`error`/`missed`/`wasted` (the new client copy-lint, over a
+realistic-prose fixture). Verification: `EndgameCoachPanel` 8/8 (+4: render / hidden-empty
+/ hidden-omitted / copy-lint), arena-client 1859/0, `vue-tsc` clean, `pnpm -r build` 0.
+Ran the **Lightweight Lane** (single session, two-commit `EC-750:` + `SPEC:`; eligibility
+confirmed at govern-close). D-24026 live-verify operator-pending (post-deploy, on-screen).
+Related: D-24533 (WP-710, the server field this renders), D-24531 (WP-708 Synergy Rate),
+D-24532 (WP-709 Realized Value %), D-20105 (UI renders projections, never interprets engine
+semantics). **Reserved by:** NUMBER-LEDGER D-24536.
 
 Protect this file.

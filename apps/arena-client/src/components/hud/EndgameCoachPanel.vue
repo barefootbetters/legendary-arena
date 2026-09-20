@@ -98,6 +98,20 @@ export default defineComponent({
             <li v-for="tip in report.report.suggestions" :key="tip">{{ tip }}</li>
           </ul>
         </div>
+        <!-- why: WP-713/D-24536 — render the server-computed play-order tips
+             (WP-710/D-24533) verbatim; shown only when the array is non-empty, which
+             hides both the no-tip common case and pre-WP-710 reports (sequenceTips
+             undefined). The client never composes or re-evaluates these (D-20105). -->
+        <div
+          v-if="report.report.sequenceTips && report.report.sequenceTips.length > 0"
+          class="coach-report-block"
+          data-testid="arena-hud-coach-opportunities"
+        >
+          <div class="coach-report-label">Opportunities</div>
+          <ul class="coach-report-tips">
+            <li v-for="tip in report.report.sequenceTips" :key="tip">{{ tip }}</li>
+          </ul>
+        </div>
       </div>
 
       <div v-else-if="coachStatus === 'unavailable'" class="coach-status coach-status--retry">

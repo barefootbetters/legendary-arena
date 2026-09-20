@@ -28,6 +28,12 @@ export interface CoachReport {
   readonly heroFit: string;
   readonly purchases: string;
   readonly suggestions: readonly string[];
+  // why: WP-713/D-24536 — the deterministic play-order "opportunity" tips the server
+  // computes (WP-710/D-24533) and merges onto the report before persistence. A
+  // structural mirror of the server field (the layer-boundary rule above forbids
+  // importing the server type); optional because reports persisted before WP-710 omit
+  // it. The client renders these verbatim — it never composes or re-evaluates them.
+  readonly sequenceTips?: readonly string[];
 }
 
 /**
