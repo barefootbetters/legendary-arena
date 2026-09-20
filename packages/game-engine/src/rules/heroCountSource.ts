@@ -43,7 +43,18 @@ export type HeroCountSource =
   | 'distinct-hero-classes-played-this-turn' // why: WP-680 / D-24497, SEMANTICS corrected by D-24529 — despite the "played-this-turn" slug (kept as a stable internal id; players never see it), this counts the DISTINCT hero colors (classes) among the Heroes you HAVE = your HAND + play area (self-INCLUSIVE), ORDER-INDEPENDENT. "Heroes you have" is a rulebook term of art: per docs/legendary-universal-rules-v23.md §"'Your Heroes/Allies' & 'Heroes/Allies You Have'" it "include[s] both the cards in your hand and the cards you have played this turn" (deck/discard/KO don't count) — the worked example is literally Perfect Teamwork. Captain America's Perfect Teamwork (attack) + Avengers Assemble! (recruit). D-24497 originally read this play-area-only (order-dependent) — WRONG; corrected to hand+play (countDistinctHeroClassesYouHave, incl. heroClass2 + getGrantedClasses for in-play Size-Changing)
   | 'avengers-played-this-turn' // why: WP-680 / D-24497 — the count of OTHER cards played this turn on the Avengers team (cardHasTeamWhenPlayed, honors Copy-Powers teams per D-24391); Captain America's A Day Unlike Any Other "+3 attack for each other Avenger you played this turn". Self-exclusive
   | 'shield-heroes-played-this-turn' // why: WP-680 / D-24497 — the count of OTHER cards played this turn on the S.H.I.E.L.D. team; Nick Fury's Legendary Commander "+1 attack for each other S.H.I.E.L.D. Hero you played this turn". Self-exclusive. Distinct from shield-levels (Victory Pile) — this is played-this-turn
-  | 'odd-cost-heroes-played-this-turn'; // why: WP-680 / D-24497 — the count of OTHER cards played this turn whose printed cost is odd; Deadpool's Oddball "+1 attack for each other Hero with an odd-numbered cost you played this turn" (the [icon:vp] in the generated text is a conversion error — hero cards carry no VP; Jeff-confirmed odd-cost 2026-09-09). Self-exclusive
+  | 'odd-cost-heroes-played-this-turn' // why: WP-680 / D-24497 — the count of OTHER cards played this turn whose printed cost is odd; Deadpool's Oddball "+1 attack for each other Hero with an odd-numbered cost you played this turn" (the [icon:vp] in the generated text is a conversion error — hero cards carry no VP; Jeff-confirmed odd-cost 2026-09-09). Self-exclusive
+  // why: WP-711 / D-24534 — the per-hero-CLASS-played family, the class analogue of the
+  // avengers/shield-heroes-played-this-turn team sources above. Each counts the OTHER cards
+  // played this turn whose hero class matches (cardHasClassWhenPlayed: printed hc OR hc2 OR a
+  // Size-Changing granted class), self-EXCLUSIVE, play-area "played this turn" (NOT the hand+play
+  // "Heroes you have" reading of distinct-hero-classes-played-this-turn). Four classes only —
+  // instinct has no card in this shape (taxonomy discipline). Backfills six flat-parsing lines:
+  // Marvelous Strength/Absorb Energies (ssw1), the dkcy ranged pair, bkwd covert, co2e tech.
+  | 'strength-heroes-played-this-turn'
+  | 'ranged-heroes-played-this-turn'
+  | 'tech-heroes-played-this-turn'
+  | 'covert-heroes-played-this-turn';
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -63,6 +74,10 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'avengers-played-this-turn', // why: WP-680 / D-24497 — OTHER Avengers-team cards played this turn (self-exclusive)
   'shield-heroes-played-this-turn', // why: WP-680 / D-24497 — OTHER S.H.I.E.L.D.-team cards played this turn (self-exclusive; distinct from shield-levels)
   'odd-cost-heroes-played-this-turn', // why: WP-680 / D-24497 — OTHER cards played this turn with odd printed cost (self-exclusive)
+  'strength-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Strength-class cards played this turn (cardHasClassWhenPlayed, self-exclusive); Marvelous Strength (ssw1)
+  'ranged-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Ranged-class cards played this turn (self-exclusive); Absorb Energies (ssw1) + the dkcy ranged pair
+  'tech-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Tech-class cards played this turn (self-exclusive); the co2e tech line
+  'covert-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Covert-class cards played this turn (self-exclusive); the bkwd covert line
 ] as const;
 
 // ---------------------------------------------------------------------------

@@ -375,8 +375,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // dilutes the resolved share — a sweep-trajectory artifact of the faithfulness fix, NOT a
   // regression). Deterministic — CI computes the same from the regenerated
   // runtime-observed-hollows feed.
+  // 2026-09-19 (WP-711 / D-24534, re-pin): the per-hero-class-played count sources
+  // (strength/ranged/tech/covert-heroes-played-this-turn) make six previously-flat
+  // "+N for each other [hc:X] Hero" lines (Marvelous Strength / Absorb Energies / the
+  // dkcy ranged pair / bkwd covert / co2e tech) scale, so the fixed-seed sweep's
+  // trajectories shift by one observation where one of these cards now executes its
+  // count-scaled grant. Net: totalObs 3003 -> 3004 (+1); percentResolved holds at 24.4
+  // (the +1 denominator shift is too small to move the rounded share). Deterministic —
+  // CI computes the same from the regenerated runtime-observed-hollows feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3003);
+  assert.equal(view.totalObs.value, 3004);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });

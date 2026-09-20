@@ -833,6 +833,71 @@ describe('buildHeroAbilityHooks — worthy count-scaled attack (WP-673 / D-24488
 });
 
 // ---------------------------------------------------------------------------
+// Per-hero-class-played count-scaled attack/recruit — WP-711 / EC-748 / D-24534
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — per-hero-class-played count-scaled grants (WP-711 / D-24534)', () => {
+  // The exact generated lines (printed text + the marker the markers pass appends).
+  const MARVELOUS_STRENGTH =
+    '[hc:strength]: For each other [hc:strength] Hero you have played this turn, you get +1[icon:attack]. [keyword:attack-per-count:strength-heroes-played-this-turn:1]';
+  const ABSORB_ENERGIES =
+    '[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]. [keyword:recruit-per-count:ranged-heroes-played-this-turn:1]';
+  const ICE_SLIDE =
+    '[hc:ranged]: You get +1[icon:attack] for each other [hc:ranged] Hero you played this turn. [keyword:attack-per-count:ranged-heroes-played-this-turn:1]';
+  const CHAMPION_WINTER_GUARD =
+    '[hc:covert]: You get +2[icon:attack] for each other [hc:covert] Hero you played this turn. [keyword:attack-per-count:covert-heroes-played-this-turn:2]';
+  const OVERLOADED_UNIBEAM =
+    '[hc:tech]: You get +1[icon:attack] for each other [hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]';
+
+  /** Builds hooks for a single one-card hero from an ability line. */
+  function hooksFor(ability: string): ReturnType<typeof buildHeroAbilityHooks> {
+    const registry = makeRegistry('ssw1', 'captain-marvel', [{ slug: 'the-card', abilities: [ability] }]);
+    return buildHeroAbilityHooks(registry, makeConfig('ssw1/captain-marvel'));
+  }
+
+  const attackCases = [
+    { name: 'Marvelous Strength', ability: MARVELOUS_STRENGTH, source: 'strength-heroes-played-this-turn', magnitude: 1, gate: 'strength' },
+    { name: 'Ice Slide (dkcy)', ability: ICE_SLIDE, source: 'ranged-heroes-played-this-turn', magnitude: 1, gate: 'ranged' },
+    { name: 'Champion of the Winter Guard (bkwd, mag 2)', ability: CHAMPION_WINTER_GUARD, source: 'covert-heroes-played-this-turn', magnitude: 2, gate: 'covert' },
+    { name: 'Overloaded Unibeam (co2e)', ability: OVERLOADED_UNIBEAM, source: 'tech-heroes-played-this-turn', magnitude: 1, gate: 'tech' },
+  ];
+
+  for (const testCase of attackCases) {
+    it(`${testCase.name}: attack-per-count on ${testCase.source} (mag ${testCase.magnitude}), flat icon suppressed, class gate kept`, () => {
+      const hooks = hooksFor(testCase.ability);
+      const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'attack-per-count');
+      assert.ok(effect !== undefined, 'an attack-per-count effect is emitted');
+      assert.equal(effect!.countSource, testCase.source, 'the count source is the per-hero-class source');
+      assert.equal(effect!.magnitude, testCase.magnitude, 'the per-unit rate matches the printed +N');
+      // why: the printed +N[icon:attack] must be subsumed (D-24016) — no phantom flat attack grant.
+      for (const hook of hooks) {
+        assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword alongside the count-scaled effect');
+        assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'attack'), 'no phantom flat attack effect');
+      }
+      // why: the leading [hc:X]: synergy prefix is a real gate and must be preserved (the inline
+      // count-criterion [hc:X] collapses to the same single class gate — Legendary Commander parity).
+      const conditions = hooks.flatMap((hook) => hook.conditions ?? []);
+      assert.ok(
+        conditions.some((condition) => condition.type === 'heroClassMatch' && condition.value === testCase.gate),
+        `the leading [hc:${testCase.gate}]: class gate is preserved`,
+      );
+    });
+  }
+
+  it('Absorb Energies: recruit-per-count on ranged-heroes-played-this-turn (mag 1), flat recruit suppressed', () => {
+    const hooks = hooksFor(ABSORB_ENERGIES);
+    const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'recruit-per-count');
+    assert.ok(effect !== undefined, 'a recruit-per-count effect is emitted');
+    assert.equal(effect!.countSource, 'ranged-heroes-played-this-turn', 'the count source is ranged-heroes-played-this-turn');
+    assert.equal(effect!.magnitude, 1, 'the per-unit rate is 1');
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('recruit'), 'no flat recruit keyword alongside the count-scaled effect');
+      assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'recruit'), 'no phantom flat recruit effect');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cost-four-plus count-scaled attack/recruit siblings (WP-674 / EC-711 / D-24489)
 // ---------------------------------------------------------------------------
 

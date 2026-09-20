@@ -42869,4 +42869,53 @@ Protect this file.
 
 **Out of scope (later phases).** The play-order sequence teacher (a play-order counterfactual over the D-24119 faithful replay — feasibility of observing per-effect signals during replay re-execution is an open design question) and co-op cross-seat cooperation. `count-scaled-choose` / `reveal-herodeck-attack` and `primitiveEffects` value are named follow-ups (the same sites WP-706 excluded). Related: D-24531 (WP-708, Phase 1 this extends), D-24528 (WP-706, the count-scaled `computedValue` this agrees with), D-24034/D-24271 (the hash-excluded diagnostics channel). **Reserved by:** NUMBER-LEDGER D-24532.
 
+### D-24534 — Per-hero-class-played count-source family (WP-711 / EC-748) (Active 2026-09-19)
+
+Adds a **per-hero-class-played** family to the closed `HeroCountSource` union —
+`strength-heroes-played-this-turn`, `ranged-heroes-played-this-turn`,
+`tech-heroes-played-this-turn`, `covert-heroes-played-this-turn` — the hero-class analogue
+of the WP-680/D-24497 `avengers-played-this-turn` / `shield-heroes-played-this-turn` **team**
+sources. Motivation: six printed abilities across four sets ("+N for each other `[hc:X]` Hero
+you played this turn") carried **no** `attack-per-count` / `recruit-per-count` marker, so the
+parser read the inline `[hc:X]` count criterion as a duplicate `heroClassMatch` gate and
+promoted the printed `+N[icon:…]` to a **flat** grant that never scaled (the live 2p Red Skull
+"Marvelous Strength only ever +1" symptom).
+
+**Semantics.** Each source counts the **OTHER** cards played this turn (play-area, **self-EXCLUSIVE**
+via `triggeringCardId`) whose hero class matches, resolved through the shipped
+`cardHasClassWhenPlayed` — so a card counts by its printed `heroClass`, its `heroClass2`
+(D-24523 dual-class), OR a Size-Changing granted class (D-24074). This is the play-area
+"played this turn" reading, **distinct from** the hand+play "Heroes you have" term of art of
+`distinct-hero-classes-played-this-turn` (D-24529). `explainCountSourceInputs` gets a matching
+self-exclusive collector per source (`count === length`, diagnostics-only, gameplay count
+byte-unchanged — the WP-706 invariant).
+
+**Scope discipline.** Exactly **four** classes are added — the ones real cards need
+(strength/ranged/tech/covert). `instinct` has no card in this shape and is NOT added (a fifth
+class is one additive slug + one resolver branch away). Union + `HERO_COUNT_SOURCES` array +
+`resolveCountSource` + `explainCountSourceInputs` updated in lockstep; drift pin bumped **10 → 14**
+as a **RUNTIME** assertion (D-24372 — engine test files are not typechecked, so a bare
+`satisfies` would be documentation only).
+
+**Card-data.** Six markers authored in `hero-ability-markers.json` and applied to
+`data/cards/{ssw1,dkcy,bkwd,co2e}.json` (co2e is the hand-authored outlier, applied directly;
+the other three via the pipeline). No apply-script change (`VALID_TOKEN_PATTERN` already admits
+the token shape). The shipped D-24016/D-24489 Step-4 icon suppression drops the co-located flat
+`[icon:attack|recruit]` — **no new parser suppression**; the inline `[hc:X]` count criterion
+still emits a duplicate `heroClassMatch` gate that collapses to the one leading `[hc:X]:` synergy
+gate the card already prints (accepted **Legendary Commander inline-`[team:shield]` parity** —
+outcome-neutral).
+
+**Invariants.** (1) Game Engine + card-data only; no client, no new grant mechanism (reuses the
+shipped `attack-per-count` / `recruit-per-count` family). (2) Resolvers pure/total — read only
+`G`, never mutate/throw, no registry read, no `.reduce()`; unknown source → 0. (3) Determinism —
+the sources read already-hashed `G` (`playerZones.inPlay` + `cardTraits` + granted classes) and
+add **no new hashed field**; engine suite 3920/0 with every pinned `finalStateHash` /
+`PRE_WP080_HASH` byte-identical — **NO re-pin** (no committed fixture plays these six cards; a
+fixture that did would re-pin honestly). (4) Non-vacuity — stubbing the class helper to 0 fails
+4 resolver assertions. Related: D-24497 (WP-680, the team/class count-source recipe this mirrors),
+D-24523 (hc2 dual-class), D-24074 (Size-Changing granted classes), D-24016/D-24489 (the per-count
+grant family + icon suppression), D-24372 (RUNTIME drift pins), D-24529 (the contrasting hand+play
+`distinct-hero-classes` reading). **Reserved by:** NUMBER-LEDGER D-24534.
+
 Protect this file.
