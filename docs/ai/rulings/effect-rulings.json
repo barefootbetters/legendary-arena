@@ -2158,5 +2158,42 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"] },
     "why": "The submitted order must be a PERMUTATION of the parked remainder — including Hulk (which is below the remainder, not part of it) is not a permutation of [Wolverine, Spider-Man], so the whole resolve is a no-op and the deck is unchanged (D-24286, no card added or dropped). Paired with the valid-permutation sibling that proves the reorder fires."
+  },
+  {
+    "id": "resolve-draw-or-empowered-draw-draws-a-card",
+    "mechanic": "draw-or-empowered",
+    "decision": "D-24069",
+    "scenario": {
+      "action": "resolve-draw-or-empowered",
+      "setup": {
+        "currentPlayer": "0",
+        "empoweredClass": "tech",
+        "deck": ["core/spider-man/spider-man#0", "core/wolverine/wolverine#0"],
+        "resolve": { "choice": "draw" }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "hand", "cards": ["core/spider-man/spider-man#0"] },
+    "why": "One-Hit Wonder's 'Choose one: Draw a card, or you get Empowered' — picking 'draw' draws the top deck card into hand (Spider-Man), reusing the shared draw executor (D-24069). Paired with the empowered sibling that proves the other half of the choose-one."
+  },
+  {
+    "id": "resolve-draw-or-empowered-empowered-grants-hq-class-count-attack",
+    "mechanic": "draw-or-empowered",
+    "decision": "D-24069",
+    "scenario": {
+      "action": "resolve-draw-or-empowered",
+      "setup": {
+        "currentPlayer": "0",
+        "empoweredClass": "tech",
+        "hq": ["core/avengers/iron-man#0", "core/shield/nick-fury#0", "core/hulk/hulk#0", null, null],
+        "cardTraits": {
+          "core/avengers/iron-man#0": { "heroClass": "tech", "team": "avengers" },
+          "core/shield/nick-fury#0": { "heroClass": "tech", "team": "shield" },
+          "core/hulk/hulk#0": { "heroClass": "strength", "team": "avengers" }
+        },
+        "resolve": { "choice": "empowered" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 2 },
+    "why": "Picking 'empowered' grants +Attack equal to the count of the empowered class in the HQ (Empowered by [hc:tech] = +1 per Tech Hero in the HQ): two Tech Heroes (Iron Man, Nick Fury) among a Strength Hulk → +2 attack (D-24069, count-cards-by-class-in-zone over the HQ). Paired with the draw sibling."
   }
 ]

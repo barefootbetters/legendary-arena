@@ -66,6 +66,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-discard-choice` | `resolveDiscardChoice` move | the Magneto discard-down-to-a-limit choice (exactly-to-limit) |
 | `resolve-put-cards-on-deck` | `resolvePutCardsOnDeckChoice` move | the Dr. Doom put-exactly-N-cards-on-deck-top choice (selection order) |
 | `resolve-reorder` | `resolveReorderChoice` move | the Amazing Spider-Man reorder-the-deck-top-remainder choice (permutation) |
+| `resolve-draw-or-empowered` | `resolveDrawOrEmpowered` move | the One-Hit Wonder choose-one draw-or-Empowered choice |
 
 ### Current expectation kinds
 

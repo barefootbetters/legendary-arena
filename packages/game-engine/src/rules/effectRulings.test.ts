@@ -49,6 +49,7 @@ import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
+import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -91,6 +92,7 @@ import type {
   PendingDiscardChoice,
   PendingPutCardsOnDeckChoice,
   PendingReorderChoice,
+  PendingDrawOrEmpowered,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -382,6 +384,15 @@ interface ResolveReorderSetup {
   deck: string[];
   remainder: string[];
   resolve: { orderedCardIds: string[] };
+}
+
+interface ResolveDrawOrEmpoweredSetup {
+  currentPlayer: string;
+  empoweredClass: string;
+  deck?: string[];
+  hq?: (string | null)[];
+  cardTraits?: Record<string, TraitOverride>;
+  resolve: { choice: 'draw' | 'empowered' };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1069,6 +1080,37 @@ function runResolveReorder(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveDrawOrEmpowered` move against a parked choose-one choice
+ * (One-Hit Wonder): 'draw' draws a card; 'empowered' grants +attack equal to the
+ * empoweredClass count in the HQ.
+ *
+ * @param rawSetup - The ruling's resolve-draw-or-empowered setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveDrawOrEmpowered(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveDrawOrEmpoweredSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: (setup.deck ?? []) as CardExtId[] }) };
+  // why: the 'empowered' branch grants +attack equal to the empoweredClass count in the
+  // HQ (count-cards-by-class-in-zone reads G.hq + G.cardTraits), so seed both when the
+  // ruling exercises that branch; the 'draw' branch ignores them.
+  if (setup.hq !== undefined) {
+    G.hq = setup.hq as LegendaryGameState['hq'];
+  }
+  if (setup.cardTraits !== undefined) {
+    G.cardTraits = setup.cardTraits as LegendaryGameState['cardTraits'];
+  }
+  const pending: PendingDrawOrEmpowered = { playerID: setup.currentPlayer, empoweredClass: setup.empoweredClass };
+  G.pendingDrawOrEmpowered = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveDrawOrEmpowered(moveContext, { choice: setup.resolve.choice });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1097,6 +1139,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-discard-choice': runResolveDiscardChoice,
   'resolve-put-cards-on-deck': runResolvePutCardsOnDeck,
   'resolve-reorder': runResolveReorder,
+  'resolve-draw-or-empowered': runResolveDrawOrEmpowered,
 };
 
 /**
