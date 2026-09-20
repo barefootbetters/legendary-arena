@@ -70,6 +70,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-put-any-number-bottom-hq` | `resolvePutAnyNumberBottomHQ` move | the Wonder Man / Sunspot put-any-number-of-HQ-cards-on-deck-bottom choice (multi-select + refill, then trailing Empowered) |
 | `resolve-return-on-discard` | `resolveReturnOnDiscard` move | the Cyclops Unending Energy optional return-the-discarded-card choice (incl. the D-24527 discard-to-play priority deferral) |
 | `resolve-hero-choice` | `resolveHeroChoice` move | the reveal-attack-choose discard-or-return-the-revealed-top-card choice |
+| `resolve-count-scaled-choice` | `resolveCountScaledChoice` move | the vnom Symbiotic Adaptation count-scaled choose-one (option index selects resource; grant = magnitude × count) |
 
 ### Current expectation kinds
 

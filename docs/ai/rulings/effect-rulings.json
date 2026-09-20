@@ -2402,5 +2402,99 @@
       ]
     },
     "why": "Resolving the discard-or-return choice with 'return' leaves the revealed card at deck[0] with no zone mutation — the deck is unchanged (D-22001). The pending choice is cleared either way so it can never wedge the turn-end guard (D-22002). A regression that discarded on 'return' would drop Wolverine from the deck, flipping this assertion; paired with the 'discard' sibling."
+  },
+  {
+    "id": "count-scaled-choice-attack-option-grants-per-shield-level-attack",
+    "mechanic": "count-scaled-choose",
+    "decision": "D-24490",
+    "scenario": {
+      "action": "resolve-count-scaled-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "cardId": "core/venom/symbiotic-adaptation#0",
+        "victory": [
+          "core/shield/shield-trooper#0",
+          "core/shield/shield-agent#0"
+        ],
+        "cardStats": {
+          "core/shield/shield-trooper#0": {
+            "isShieldOrHydra": true
+          },
+          "core/shield/shield-agent#0": {
+            "isShieldOrHydra": true
+          }
+        },
+        "options": [
+          {
+            "kind": "count-scaled",
+            "resource": "attack",
+            "countSource": "shield-levels",
+            "magnitude": 1
+          },
+          {
+            "kind": "count-scaled",
+            "resource": "recruit",
+            "countSource": "shield-levels",
+            "magnitude": 2
+          }
+        ],
+        "resolve": {
+          "optionIndex": 0
+        }
+      }
+    },
+    "expected": {
+      "kind": "turn-economy-value",
+      "economyField": "attack",
+      "amount": 2
+    },
+    "why": "vnom's Symbiotic Adaptation is a count-scaled choose-one; picking option 0 grants +Attack = magnitude x count(countSource). With two S.H.I.E.L.D. cards in the Victory Pile (shield-levels = 2) and per-unit magnitude 1, the attack option grants +2 attack, reusing the shipped attack-per-count executor (D-24490). Paired with the recruit-option sibling to prove the option index selects WHICH resource fires."
+  },
+  {
+    "id": "count-scaled-choice-recruit-option-grants-per-shield-level-recruit",
+    "mechanic": "count-scaled-choose",
+    "decision": "D-24490",
+    "scenario": {
+      "action": "resolve-count-scaled-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "cardId": "core/venom/symbiotic-adaptation#0",
+        "victory": [
+          "core/shield/shield-trooper#0",
+          "core/shield/shield-agent#0"
+        ],
+        "cardStats": {
+          "core/shield/shield-trooper#0": {
+            "isShieldOrHydra": true
+          },
+          "core/shield/shield-agent#0": {
+            "isShieldOrHydra": true
+          }
+        },
+        "options": [
+          {
+            "kind": "count-scaled",
+            "resource": "attack",
+            "countSource": "shield-levels",
+            "magnitude": 1
+          },
+          {
+            "kind": "count-scaled",
+            "resource": "recruit",
+            "countSource": "shield-levels",
+            "magnitude": 2
+          }
+        ],
+        "resolve": {
+          "optionIndex": 1
+        }
+      }
+    },
+    "expected": {
+      "kind": "turn-economy-value",
+      "economyField": "recruit",
+      "amount": 4
+    },
+    "why": "Picking option 1 of the same choose-one grants +Recruit = magnitude x count instead: per-unit magnitude 2 times the shield-levels count of 2 gives +4 recruit (recruit-per-count executor, D-24490). The two options differ in BOTH resource and magnitude, so this recruit result (4) vs the attack sibling (2) proves the resolve dispatches strictly by the chosen option index."
   }
 ]

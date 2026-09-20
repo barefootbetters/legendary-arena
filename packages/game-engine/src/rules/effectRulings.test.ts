@@ -53,6 +53,7 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
 import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
+import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -99,8 +100,10 @@ import type {
   PendingPutAnyNumberBottomHQ,
   PendingReturnOnDiscard,
   PendingHeroChoice,
+  PendingCountScaledChoice,
   MelterRevealedTop,
 } from '../types.js';
+import type { ChooseOneOption } from '../rules/heroCountSource.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { VillainAbilityTiming, VillainEffectDescriptor } from './villainAbility.types.js';
 
@@ -423,6 +426,15 @@ interface ResolveHeroChoiceSetup {
   deck: string[];
   cardId: string;
   resolve: { resolution: 'discard' | 'return' };
+}
+
+interface ResolveCountScaledChoiceSetup {
+  currentPlayer: string;
+  cardId: string;
+  victory: string[];
+  cardStats: Record<string, { isShieldOrHydra?: boolean }>;
+  options: ChooseOneOption[];
+  resolve: { optionIndex: number };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1245,6 +1257,40 @@ function runResolveHeroChoice(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveCountScaledChoice` move against a parked count-scaled
+ * choose-one choice (vnom's Symbiotic Adaptation). The chosen option's grant reuses
+ * the shipped attack-per-count / recruit-per-count executor: grant = magnitude ×
+ * count(countSource). Both rulings use the `shield-levels` source (S.H.I.E.L.D./HYDRA
+ * cards in the Victory Pile) so the count is self-contained; picking the option index
+ * selects WHICH resource is granted.
+ *
+ * @param rawSetup - The ruling's resolve-count-scaled-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveCountScaledChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveCountScaledChoiceSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ victory: setup.victory as CardExtId[] }) };
+  // why: shield-levels counts Victory-Pile cards whose G.cardStats[id].isShieldOrHydra
+  // is true, so seed those stats via the complete-entry builder.
+  for (const [cardId, stats] of Object.entries(setup.cardStats)) {
+    G.cardStats[cardId as CardExtId] = makeCardStatEntry(stats);
+  }
+  const pending: PendingCountScaledChoice = {
+    playerID: setup.currentPlayer,
+    cardId: setup.cardId,
+    options: setup.options,
+  };
+  G.pendingCountScaledChoice = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveCountScaledChoice(moveContext, { optionIndex: setup.resolve.optionIndex });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1277,6 +1323,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-put-any-number-bottom-hq': runResolvePutAnyNumberBottomHq,
   'resolve-return-on-discard': runResolveReturnOnDiscard,
   'resolve-hero-choice': runResolveHeroChoice,
+  'resolve-count-scaled-choice': runResolveCountScaledChoice,
 };
 
 /**

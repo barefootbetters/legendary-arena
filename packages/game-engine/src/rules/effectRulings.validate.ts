@@ -88,6 +88,8 @@
  *   optional return-the-just-discarded-card-to-hand choice.
  * - `resolve-hero-choice` — call the `resolveHeroChoice` move on a parked
  *   discard-or-return-the-revealed-top-card choice.
+ * - `resolve-count-scaled-choice` — call the `resolveCountScaledChoice` move on a
+ *   parked count-scaled choose-one choice (vnom's Symbiotic Adaptation).
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -115,7 +117,8 @@ export type RulingScenarioAction =
   | 'resolve-draw-or-empowered'
   | 'resolve-put-any-number-bottom-hq'
   | 'resolve-return-on-discard'
-  | 'resolve-hero-choice';
+  | 'resolve-hero-choice'
+  | 'resolve-count-scaled-choice';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -148,6 +151,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-put-any-number-bottom-hq',
   'resolve-return-on-discard',
   'resolve-hero-choice',
+  'resolve-count-scaled-choice',
 ] as const;
 
 // ---------------------------------------------------------------------------
