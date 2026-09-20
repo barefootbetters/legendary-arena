@@ -72,6 +72,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-hero-choice` | `resolveHeroChoice` move | the reveal-attack-choose discard-or-return-the-revealed-top-card choice |
 | `resolve-count-scaled-choice` | `resolveCountScaledChoice` move | the vnom Symbiotic Adaptation count-scaled choose-one (option index selects resource; grant = magnitude × count) |
 | `resolve-electromagnetic-bubble-choice` | `resolveElectromagneticBubbleChoice` move | the Magneto Electromagnetic Bubble in-play-X-Men pick (records a deferred seventh-card injection; round-trip eligibility gate) |
+| `resolve-ruthless-dictator-choice` | `resolveRuthlessDictatorChoice` move | the Red Skull Ruthless Dictator scry-3 disposition (ko / discard / top of a revealed deck-top card) |
 
 ### Current expectation kinds
 

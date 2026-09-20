@@ -93,6 +93,8 @@
  * - `resolve-electromagnetic-bubble-choice` — call the
  *   `resolveElectromagneticBubbleChoice` move on a parked Magneto Electromagnetic
  *   Bubble in-play-X-Men pick.
+ * - `resolve-ruthless-dictator-choice` — call the `resolveRuthlessDictatorChoice`
+ *   move on a parked Red Skull Ruthless Dictator scry-3 disposition choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -122,7 +124,8 @@ export type RulingScenarioAction =
   | 'resolve-return-on-discard'
   | 'resolve-hero-choice'
   | 'resolve-count-scaled-choice'
-  | 'resolve-electromagnetic-bubble-choice';
+  | 'resolve-electromagnetic-bubble-choice'
+  | 'resolve-ruthless-dictator-choice';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -157,6 +160,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-hero-choice',
   'resolve-count-scaled-choice',
   'resolve-electromagnetic-bubble-choice',
+  'resolve-ruthless-dictator-choice',
 ] as const;
 
 // ---------------------------------------------------------------------------

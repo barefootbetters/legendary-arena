@@ -55,6 +55,7 @@ import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
 import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
+import { resolveRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -103,6 +104,8 @@ import type {
   PendingHeroChoice,
   PendingCountScaledChoice,
   PendingElectromagneticBubbleChoice,
+  PendingRuthlessDictatorChoice,
+  RuthlessDictatorDisposition,
   MelterRevealedTop,
 } from '../types.js';
 import type { ChooseOneOption } from '../rules/heroCountSource.js';
@@ -443,6 +446,14 @@ interface ResolveElectromagneticBubbleChoiceSetup {
   currentPlayer: string;
   eligibleCardIds: string[];
   resolve: { cardId: string };
+}
+
+interface ResolveRuthlessDictatorChoiceSetup {
+  currentPlayer: string;
+  deck: string[];
+  revealedCardIds: string[];
+  availableDispositions: RuthlessDictatorDisposition[];
+  resolve: { cardId: string; disposition: RuthlessDictatorDisposition };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1326,6 +1337,38 @@ function runResolveElectromagneticBubbleChoice(rawSetup: Record<string, unknown>
   return { G };
 }
 
+/**
+ * Fires the real `resolveRuthlessDictatorChoice` move against a parked Red Skull
+ * scry-3 disposition: assigns ONE revealed deck-top card a disposition — 'ko' (deck
+ * top → G.ko), 'discard' (deck top → discard pile), or 'top' (left on the deck, a
+ * no-op). The revealedCardIds + availableDispositions snapshot is seeded directly so
+ * each ruling exercises one disposition of the closed vocabulary.
+ *
+ * @param rawSetup - The ruling's resolve-ruthless-dictator-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveRuthlessDictatorChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveRuthlessDictatorChoiceSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: setup.deck as CardExtId[], discard: [] }) };
+  const pending: PendingRuthlessDictatorChoice = {
+    choiceType: 'ruthless-dictator',
+    playerID: setup.currentPlayer,
+    revealedCardIds: setup.revealedCardIds as CardExtId[],
+    availableDispositions: [...setup.availableDispositions],
+  };
+  G.pendingRuthlessDictatorChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveRuthlessDictatorChoice(moveContext, {
+    cardId: setup.resolve.cardId as CardExtId,
+    disposition: setup.resolve.disposition,
+  });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1360,6 +1403,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-hero-choice': runResolveHeroChoice,
   'resolve-count-scaled-choice': runResolveCountScaledChoice,
   'resolve-electromagnetic-bubble-choice': runResolveElectromagneticBubbleChoice,
+  'resolve-ruthless-dictator-choice': runResolveRuthlessDictatorChoice,
 };
 
 /**
