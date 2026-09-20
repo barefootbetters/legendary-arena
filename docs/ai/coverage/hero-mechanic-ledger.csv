@@ -105,6 +105,7 @@ bkwd/black-widow,Black Widow,bkwd,undercover,deferred,WP-282,D-24060,,infiltrate
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,,atone|captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,relocate
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,new-plan|reload
+bkwd/red-guardian,Red Guardian,bkwd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,champion-of-the-winter-guard
 bkwd/red-guardian,Red Guardian,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,undercover,deferred,WP-282,D-24060,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
 bkwd/red-guardian,Red Guardian,bkwd,unleash,unsupported,,,,champion-of-the-winter-guard|death-was-only-a-ruse|magnetic-shield|sleeper-agent
@@ -158,6 +159,7 @@ co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/
 co2e/gambit,Gambit,co2e,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
+co2e/iron-man,Iron Man,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,overloaded-unibeam
 co2e/iron-man,Iron Man,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 co2e/nick-fury,Nick Fury,co2e,(unmarked),unmarked,,,,
 co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
@@ -278,7 +280,9 @@ dkcy/domino,Domino,dkcy,versatile,unsupported,,,,against-all-odds|lucky-break|re
 dkcy/elektra,Elektra,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ninjitsu
 dkcy/forge,Forge,dkcy,versatile,unsupported,,,,overdrive
 dkcy/ghost-rider,Ghost Rider,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,infernal-chains
+dkcy/iceman,Iceman,dkcy,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,ice-slide
 dkcy/iceman,Iceman,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,deep-freeze
+dkcy/iceman,Iceman,dkcy,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,deep-freeze
 dkcy/iron-fist,Iron Fist,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ancient-legacy
 dkcy/iron-fist,Iron Fist,dkcy,versatile,unsupported,,,,ancient-legacy
 dkcy/jean-grey,Jean Grey,dkcy,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,psychic-search
@@ -495,7 +499,9 @@ smhc/tony-stark,Tony Stark,smhc,danger-sense,unsupported,,,,little-grey-area|sta
 ssw1/apocalyptic-kitty-pryde,Apocalyptic Kitty Pryde,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,phase-out
 ssw1/black-bolt,Black Bolt,ssw1,(unmarked),unmarked,,,,
 ssw1/black-panther,Black Panther,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,catlike-reflexes
+ssw1/captain-marvel,Captain Marvel,ssw1,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,marvelous-strength
 ssw1/captain-marvel,Captain Marvel,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,supersonic-flight
+ssw1/captain-marvel,Captain Marvel,ssw1,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,absorb-energies
 ssw1/dr-strange,Dr. Strange,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,trust-me-im-a-doctor
 ssw1/dr-strange,Dr. Strange,ssw1,teleport,unsupported,,,,cloak-of-levitation|sorcerer-supreme
 ssw1/lady-thor,Lady Thor,ssw1,recruit-threshold,condition,,,,chosen-by-asgard|living-thunderstorm|mysterious-origin

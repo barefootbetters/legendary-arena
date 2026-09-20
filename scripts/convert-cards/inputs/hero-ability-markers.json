@@ -148,6 +148,12 @@
       "cardSlug": "spark-of-the-divine",
       "abilityIndex": 0,
       "markupToken": "[keyword:recruit-threshold:8]"
+    },
+    {
+      "heroSlug": "iron-man",
+      "cardSlug": "overloaded-unibeam",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
     }
   ],
   "core": [
@@ -654,6 +660,18 @@
       "cardSlug": "draw-their-fire",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-wound-self]"
+    },
+    {
+      "heroSlug": "iceman",
+      "cardSlug": "deep-freeze",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:recruit-per-count:ranged-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "iceman",
+      "cardSlug": "ice-slide",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:ranged-heroes-played-this-turn:1]"
     }
   ],
   "msis": [
@@ -886,6 +904,18 @@
       "cardSlug": "supersonic-flight",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "captain-marvel",
+      "cardSlug": "marvelous-strength",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:strength-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-marvel",
+      "cardSlug": "absorb-energies",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:ranged-heroes-played-this-turn:1]"
     },
     {
       "heroSlug": "superior-iron-man",
@@ -1274,6 +1304,12 @@
       "cardSlug": "sleeper-agent",
       "abilityIndex": 2,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "red-guardian",
+      "cardSlug": "champion-of-the-winter-guard",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:attack-per-count:covert-heroes-played-this-turn:2]"
     }
   ],
   "dead": [

@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 10 canonical count-source values', () => {
+  it('contains exactly the 14 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -64,12 +64,17 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'avengers-played-this-turn',
       'shield-heroes-played-this-turn',
       'odd-cost-heroes-played-this-turn',
+      // why: WP-711 / D-24534 — the per-hero-class-played family (four classes; instinct unneeded).
+      'strength-heroes-played-this-turn',
+      'ranged-heroes-played-this-turn',
+      'tech-heroes-played-this-turn',
+      'covert-heroes-played-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      10,
-      'HERO_COUNT_SOURCES must have exactly 10 entries',
+      14,
+      'HERO_COUNT_SOURCES must have exactly 14 entries',
     );
 
     assert.deepStrictEqual(
@@ -702,6 +707,88 @@ describe('resolveCountSource odd-cost-heroes-played-this-turn (WP-680)', () => {
       1,
       'only other odd-cost cards count',
     );
+  });
+});
+
+describe('resolveCountSource per-hero-class-played sources (WP-711 / D-24534)', () => {
+  it('strength-heroes-played-this-turn counts OTHER strength cards, self-excluded, wrong class ignored', () => {
+    const gameState = makeExplainState(
+      ['marvelous-strength#0', 'another-strength#0', 'a-tech#0'],
+      {
+        'marvelous-strength#0': { heroClass: 'strength', team: null },
+        'another-strength#0': { heroClass: 'strength', team: null },
+        'a-tech#0': { heroClass: 'tech', team: null },
+      },
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'strength-heroes-played-this-turn', 'marvelous-strength#0'),
+      1,
+      'the other strength card counts; the tech card does not; the triggering card is self-excluded',
+    );
+  });
+
+  it('matches a dual-class card via heroClass2 (cardHasClassWhenPlayed, D-24523)', () => {
+    // why: cardHasClassWhenPlayed matches printed heroClass OR heroClass2 — a card whose
+    // SECOND class is ranged counts for ranged-heroes-played-this-turn.
+    const gameState = makeExplainState(
+      ['absorb-energies#0', 'dual-str-ranged#0'],
+      {
+        'absorb-energies#0': { heroClass: 'ranged', team: null },
+        'dual-str-ranged#0': { heroClass: 'strength', heroClass2: 'ranged', team: null },
+      },
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'ranged-heroes-played-this-turn', 'absorb-energies#0'),
+      1,
+      'the dual-class card counts as ranged via heroClass2',
+    );
+  });
+
+  it('a played token with no cardTraits row never counts', () => {
+    const gameState = makeExplainState(
+      ['co2e-tech#0', 'officer-token#0'],
+      { 'co2e-tech#0': { heroClass: 'tech', team: null } },
+    );
+    // why: officer-token#0 has no cardTraits row → no class → not counted; the triggering
+    // co2e-tech#0 is self-excluded, so no other tech card remains.
+    assert.equal(
+      resolveCountSource(gameState, '0', 'tech-heroes-played-this-turn', 'co2e-tech#0'),
+      0,
+      'the traitless token does not count and the trigger is self-excluded',
+    );
+  });
+
+  it('covert-heroes-played-this-turn counts every OTHER covert card (the bkwd mag-2 driver)', () => {
+    const gameState = makeExplainState(
+      ['bkwd-covert#0', 'other-covert#0', 'another-covert#0'],
+      {
+        'bkwd-covert#0': { heroClass: 'covert', team: null },
+        'other-covert#0': { heroClass: 'covert', team: null },
+        'another-covert#0': { heroClass: 'covert', team: null },
+      },
+    );
+    // why: two OTHER covert cards → the bkwd +2-per marker would grant 2 × 2 = 4 attack
+    // (the end-to-end grant is asserted in the grant test); here we pin the count = 2.
+    assert.equal(
+      resolveCountSource(gameState, '0', 'covert-heroes-played-this-turn', 'bkwd-covert#0'),
+      2,
+      'both other covert cards count; the trigger is self-excluded',
+    );
+  });
+
+  it('explainCountSourceInputs returns the matched ext-ids with count === length', () => {
+    const gameState = makeExplainState(
+      ['marvelous-strength#0', 'str-ally#0', 'ranged-ally#0'],
+      {
+        'marvelous-strength#0': { heroClass: 'strength', team: null },
+        'str-ally#0': { heroClass: 'strength', team: null },
+        'ranged-ally#0': { heroClass: 'ranged', team: null },
+      },
+    );
+    const inputs = explainCountSourceInputs(gameState, '0', 'strength-heroes-played-this-turn', 'marvelous-strength#0');
+    assert.deepStrictEqual(inputs, ['str-ally#0'], 'collects the other strength card only');
+    const count = resolveCountSource(gameState, '0', 'strength-heroes-played-this-turn', 'marvelous-strength#0');
+    assert.equal(count, inputs.length, 'count === countedInputs.length for a per-hero-class source');
   });
 });
 

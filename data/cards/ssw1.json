@@ -356,7 +356,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]."
+            "[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]. [keyword:recruit-per-count:ranged-heroes-played-this-turn:1]"
           ]
         },
         {
@@ -387,7 +387,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: For each other [hc:strength] Hero you have played this turn, you get +1[icon:attack]."
+            "[hc:strength]: For each other [hc:strength] Hero you have played this turn, you get +1[icon:attack]. [keyword:attack-per-count:strength-heroes-played-this-turn:1]"
           ]
         },
         {

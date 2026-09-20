@@ -303,7 +303,7 @@
           "abilities": [
             "[keyword:When Recruited]: Send this [keyword:Undercover].",
             "When a Scheme Twist is completed or you play your third [hc:covert] Hero in a turn, you may [keyword:Unleash] this card from [keyword:Undercover].",
-            "[hc:covert]: You get +2[icon:attack] for each other [hc:covert] Hero you played this turn."
+            "[hc:covert]: You get +2[icon:attack] for each other [hc:covert] Hero you played this turn. [keyword:attack-per-count:covert-heroes-played-this-turn:2]"
           ]
         }
       ],
