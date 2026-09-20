@@ -68,6 +68,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-reorder` | `resolveReorderChoice` move | the Amazing Spider-Man reorder-the-deck-top-remainder choice (permutation) |
 | `resolve-draw-or-empowered` | `resolveDrawOrEmpowered` move | the One-Hit Wonder choose-one draw-or-Empowered choice |
 | `resolve-put-any-number-bottom-hq` | `resolvePutAnyNumberBottomHQ` move | the Wonder Man / Sunspot put-any-number-of-HQ-cards-on-deck-bottom choice (multi-select + refill, then trailing Empowered) |
+| `resolve-return-on-discard` | `resolveReturnOnDiscard` move | the Cyclops Unending Energy optional return-the-discarded-card choice (incl. the D-24527 discard-to-play priority deferral) |
 
 ### Current expectation kinds
 

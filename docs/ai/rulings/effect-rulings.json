@@ -2286,5 +2286,61 @@
       "amount": 1
     },
     "why": "The trailing 'Then you get Empowered by [hc:tech]' grant fires AFTER the HQ is reshaped, so it counts the reshaped HQ, not the original (D-24132, printed order). Putting the Tech Iron Man (slot 0) on the deck bottom refills slot 0 with the Strength Hulk from the deck top, dropping the HQ Tech count from two (Iron Man + Nick Fury) to one (Nick Fury) - so Empowered by Tech grants +1 attack, not +2. Had the count run before the move it would read +2; this ruling pins the after-the-reshape ordering."
+  },
+  {
+    "id": "return-on-discard-return-request-moves-card-to-hand",
+    "mechanic": "return-on-discard",
+    "decision": "D-24301",
+    "scenario": {
+      "action": "resolve-return-on-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": [
+          "core/x-men/cyclops#0",
+          "core/x-men/storm#0"
+        ],
+        "pendingCardId": "core/x-men/cyclops#0",
+        "resolve": {
+          "cardId": "core/x-men/cyclops#0"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "hand",
+      "cards": [
+        "core/x-men/cyclops#0"
+      ]
+    },
+    "why": "Cyclops's Unending Energy is a return-on-discard card: 'you may return this card to your hand' when it is discarded from hand. Confirming the choice with the parked card id moves it from the discard pile back to the hand, leaving the other discarded card behind (WP-498 / D-24301). Paired with the priority-guard sibling that proves the deferral timing."
+  },
+  {
+    "id": "return-on-discard-deferred-while-discard-to-play-cost-unpaid",
+    "mechanic": "return-on-discard",
+    "decision": "D-24527",
+    "scenario": {
+      "action": "resolve-return-on-discard",
+      "setup": {
+        "currentPlayer": "0",
+        "discard": [
+          "core/x-men/cyclops#0"
+        ],
+        "pendingCardId": "core/x-men/cyclops#0",
+        "discardToPlayPending": true,
+        "resolve": {
+          "cardId": "core/x-men/cyclops#0"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "discard",
+      "cards": [
+        "core/x-men/cyclops#0"
+      ]
+    },
+    "why": "D-24527 anti-loop: a return-on-discard is optional and lower priority than a still-unpaid mandatory discard-to-play cost. While a discard-to-play cost is pending, resolveReturnOnDiscard is a silent no-op that leaves the card in the discard pile — otherwise a multi-discard cost (Ruby Summers's Extinction Blast) could be paid by returning and re-discarding one Unending Energy N times. The card stays in discard until the whole cost is paid, then the return trigger resolves (faithful tabletop timing). A regression removing the guard would move the card to hand and empty the discard, flipping this assertion."
   }
 ]

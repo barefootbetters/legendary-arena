@@ -51,6 +51,7 @@ import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resol
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
+import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -95,6 +96,7 @@ import type {
   PendingReorderChoice,
   PendingDrawOrEmpowered,
   PendingPutAnyNumberBottomHQ,
+  PendingReturnOnDiscard,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -404,6 +406,14 @@ interface ResolvePutAnyNumberBottomHQSetup {
   empoweredClasses?: string[];
   cardTraits?: Record<string, TraitOverride>;
   resolve: { cardIds: string[] };
+}
+
+interface ResolveReturnOnDiscardSetup {
+  currentPlayer: string;
+  discard: string[];
+  pendingCardId: string;
+  discardToPlayPending?: boolean;
+  resolve: { cardId?: string; decline?: boolean };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1158,6 +1168,48 @@ function runResolvePutAnyNumberBottomHq(rawSetup: Record<string, unknown>): Outc
   return { G };
 }
 
+/**
+ * Fires the real `resolveReturnOnDiscard` move against a parked optional
+ * return-the-just-discarded-card choice (Cyclops's Unending Energy). A `{ cardId }`
+ * returns the front card discard→hand; when `discardToPlayPending` seeds an unpaid
+ * discard-to-play cost, the D-24527 priority guard defers the return (silent no-op,
+ * card stays in discard) — the WP-498 anti-loop timing.
+ *
+ * @param rawSetup - The ruling's resolve-return-on-discard setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveReturnOnDiscard(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveReturnOnDiscardSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ discard: setup.discard as CardExtId[], hand: [] }) };
+  const pending: PendingReturnOnDiscard = {
+    playerID: setup.currentPlayer,
+    cardId: setup.pendingCardId as CardExtId,
+  };
+  G.pendingReturnOnDiscard = [pending];
+  // why: seed a minimal unpaid discard-to-play cost so hasPendingDiscardToPlay() is true,
+  // exercising the D-24527 priority guard that defers the optional return until the
+  // mandatory cost is fully paid (the anti-loop timing).
+  if (setup.discardToPlayPending === true) {
+    const costPending: PendingDiscardToPlay = {
+      playerID: setup.currentPlayer,
+      sourceCardId: 'ruling-return-on-discard-cost-source' as CardExtId,
+      remaining: 1,
+    };
+    G.pendingDiscardToPlay = [costPending];
+  }
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  if (setup.resolve.decline === true) {
+    resolveReturnOnDiscard(moveContext, { decline: true });
+  } else {
+    resolveReturnOnDiscard(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+  }
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1188,6 +1240,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-reorder': runResolveReorder,
   'resolve-draw-or-empowered': runResolveDrawOrEmpowered,
   'resolve-put-any-number-bottom-hq': runResolvePutAnyNumberBottomHq,
+  'resolve-return-on-discard': runResolveReturnOnDiscard,
 };
 
 /**
