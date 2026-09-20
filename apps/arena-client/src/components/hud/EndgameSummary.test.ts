@@ -745,3 +745,55 @@ describe('EndgameSummary (WP-636 co-op VP recap for guests / non-scored)', () =>
     assert.equal(seat1.includes('('), false, 'seat with no identity has no suffix');
   });
 });
+
+describe('EndgameSummary (WP-715 synergy report card on all matches)', () => {
+  /** A casual gameOver carrying per-player VP + per-seat synergy (WP-715 D-24538). */
+  function withScoresAndSynergy(): UIGameOverState {
+    return gameOver({
+      scores: {
+        players: [
+          { playerId: '0', villainVP: 0, henchmanVP: 1, bystanderVP: 5, tacticVP: 5, undercoverVP: 0, woundVP: 0, totalVP: 11 },
+          { playerId: '1', villainVP: 8, henchmanVP: 8, bystanderVP: 5, tacticVP: 15, undercoverVP: 0, woundVP: 0, totalVP: 36 },
+        ],
+        winner: '1',
+      },
+      // why: seat 0 has synergy (played 3 / assembled 2, value 8→4); seat 1 played none.
+      synergyContributions: {
+        '0': { played: 3, assembled: 2, potentialValue: 8, realizedValue: 4 },
+        '1': { played: 0, assembled: 0, potentialValue: 0, realizedValue: 0 },
+      },
+    } as Partial<UIGameOverState>);
+  }
+
+  test('a casual match (no competitive score) shows the synergy report card', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: withScoresAndSynergy(), competitiveScore: null },
+    });
+    // cross-seat Table Total (only seat 0 played, assembled 2)
+    const total = wrapper.find('[data-testid="arena-hud-coop-synergy-total"]');
+    assert.ok(total.exists(), 'the casual synergy Table Total renders');
+    assert.match(total.text(), /assembled 2 synergy clauses/);
+    // seat 0's synergy + realized-value lines (identical wording to the ranked card)
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-synergy-0"]').text(), /assembled 2 of 3 synergy clauses/);
+    assert.match(wrapper.find('[data-testid="arena-hud-coop-realized-value-0"]').text(), /realized 50% of synergy value/);
+    // seat 1 played no conditional clause → its synergy line is omitted (never a zero row)
+    assert.equal(wrapper.find('[data-testid="arena-hud-coop-synergy-1"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="arena-hud-coop-realized-value-1"]').exists(), false);
+    // two-vocabulary copy-lint: the celebrate-first surface never shames
+    const text = wrapper.text().toLowerCase();
+    for (const banned of ['whiff', 'failed', 'missed', 'wasted']) {
+      assert.equal(text.includes(banned), false, `co-op synergy copy must not contain "${banned}"`);
+    }
+  });
+
+  test('a casual match with no synergy data omits the synergy block entirely', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver({ scores: { players: [
+        { playerId: '0', villainVP: 0, henchmanVP: 0, bystanderVP: 0, tacticVP: 0, undercoverVP: 0, woundVP: 0, totalVP: 0 },
+      ], winner: '0' } } as Partial<UIGameOverState>), competitiveScore: null },
+    });
+    assert.ok(wrapper.find('[data-testid="arena-hud-coop-scores"]').exists(), 'VP recap still renders');
+    assert.equal(wrapper.find('[data-testid="arena-hud-coop-synergy-total"]').exists(), false, 'no synergy total when no synergy data');
+    assert.equal(wrapper.find('[data-testid="arena-hud-coop-synergy-0"]').exists(), false);
+  });
+});

@@ -2808,3 +2808,28 @@ describe('filterUIStateForAudience — WP-695 pending choices (D-24512)', () => 
     }
   });
 });
+
+describe('filterUIStateForAudience — gameOver.synergyContributions (WP-715 / D-24538)', () => {
+  it('per-seat synergy survives the filter identically for every audience (public endgame data)', () => {
+    // why: WP-715 — gameOver is carried through the filter by a `{ ...uiState.gameOver }`
+    // spread, so the optional synergyContributions field survives with no whitelist edit
+    // (mirrors endedEarly). It is public endgame data — same for owner, opponent, spectator.
+    const synergyContributions = {
+      '0': { played: 3, assembled: 2, potentialValue: 7, realizedValue: 5 },
+      '1': { played: 1, assembled: 1, potentialValue: 2, realizedValue: 2 },
+    };
+    const uiState: UIState = {
+      ...createTestUIState(),
+      gameOver: { outcome: 'heroes-win', reason: 'test', synergyContributions },
+    };
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(
+        result.gameOver?.synergyContributions,
+        synergyContributions,
+        `synergyContributions must survive the filter for ${audience.kind}`,
+      );
+    }
+  });
+});

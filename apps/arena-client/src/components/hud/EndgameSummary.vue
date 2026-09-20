@@ -87,6 +87,53 @@ function realizedValuePhrase(row: {
   return `realized ${percent}% of synergy value`;
 }
 
+/**
+ * The per-seat Synergy Realization figures projected onto `gameOver.synergyContributions`
+ * (WP-715 / D-24538). Shape mirrors the engine's `conditionalClauses` entry.
+ */
+interface CoopSynergyEntry {
+  readonly played: number;
+  readonly assembled: number;
+  readonly potentialValue: number;
+  readonly realizedValue: number;
+}
+
+/**
+ * Casual/co-op recap synergy line — delegates to `synergyPhrase` so the wording is
+ * byte-identical to the ranked report card (WP-715). Reads the always-available
+ * `gameOver.synergyContributions` entry instead of a `workedCalc` row, so a casual
+ * (`par_not_published`) match shows synergy too.
+ *
+ * @param entry - This seat's synergy contribution, or undefined if none.
+ * @returns The synergy phrase, or null to omit the line.
+ */
+function coopSynergyPhrase(entry: CoopSynergyEntry | undefined): string | null {
+  if (entry === undefined) {
+    return null;
+  }
+  return synergyPhrase({
+    conditionalClausesPlayed: entry.played,
+    conditionalClausesAssembled: entry.assembled,
+  });
+}
+
+/**
+ * Casual/co-op recap Realized Value % line — delegates to `realizedValuePhrase` for
+ * identical wording (WP-715), reading `gameOver.synergyContributions`.
+ *
+ * @param entry - This seat's synergy contribution, or undefined if none.
+ * @returns The Realized Value % phrase, or null to omit the line.
+ */
+function coopRealizedValuePhrase(entry: CoopSynergyEntry | undefined): string | null {
+  if (entry === undefined) {
+    return null;
+  }
+  return realizedValuePhrase({
+    conditionalClausesPotentialValue: entry.potentialValue,
+    conditionalClausesRealizedValue: entry.realizedValue,
+  });
+}
+
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
 // HUD directly to the WP-067 drift test at
@@ -235,6 +282,27 @@ export default defineComponent({
       return anySynergy ? total : null;
     });
 
+    // why: WP-715 / D-24538 — the casual/co-op recap's cross-seat Table Total, summed
+    // from the always-available `gameOver.synergyContributions` (not the ranked
+    // `workedCalc`), so a `par_not_published` match shows the headline too. Null when no
+    // seat carries synergy data (pre-WP-708 records / nothing played), matching the
+    // ranked `synergyTableTotal` behaviour.
+    const coopSynergyTableTotal = computed<number | null>(() => {
+      const contributions = props.gameOver.synergyContributions;
+      if (contributions === undefined) {
+        return null;
+      }
+      let total = 0;
+      let anySynergy = false;
+      for (const entry of Object.values(contributions)) {
+        if (entry.played > 0) {
+          anySynergy = true;
+          total = total + entry.assembled;
+        }
+      }
+      return anySynergy ? total : null;
+    });
+
     return {
       hasPar,
       hasScores,
@@ -249,6 +317,9 @@ export default defineComponent({
       synergyPhrase,
       realizedValuePhrase,
       synergyTableTotal,
+      coopSynergyPhrase,
+      coopRealizedValuePhrase,
+      coopSynergyTableTotal,
       seatLabel,
     };
   },
@@ -612,6 +683,14 @@ export default defineComponent({
            contribution only, no winner/loser between teammates. -->
       <template v-if="!competitiveScore">
         <p class="scores-heading">Final result — victory points by player</p>
+        <!-- why: WP-715 — the neutral cross-seat Table Total, shown on casual matches too
+             (sourced from the always-available gameOver.synergyContributions, not the ranked
+             workedCalc). Same copy as the ranked headline; omitted when no seat has synergy. -->
+        <div
+          v-if="coopSynergyTableTotal !== null"
+          class="worked-synergy-total"
+          data-testid="arena-hud-coop-synergy-total"
+        >The table assembled {{ coopSynergyTableTotal }} synergy {{ coopSynergyTableTotal === 1 ? 'clause' : 'clauses' }}</div>
         <ul class="coop-scores" data-testid="arena-hud-coop-scores">
           <li
             v-for="player in gameOver.scores.players"
@@ -627,6 +706,19 @@ export default defineComponent({
               villains {{ player.villainVP }} · henchmen {{ player.henchmanVP }} ·
               bystanders {{ player.bystanderVP }} · tactics {{ player.tacticVP }}
             </span>
+            <!-- why: WP-715 — this seat's synergy line ("assembled N of M synergy clauses")
+                 + Realized Value % on casual matches, delegating to the ranked helpers for
+                 identical wording; omitted when the seat has no synergy data. -->
+            <span
+              v-if="coopSynergyPhrase(gameOver.synergyContributions?.[player.playerId]) !== null"
+              class="coop-score-detail coop-score-synergy"
+              :data-testid="'arena-hud-coop-synergy-' + player.playerId"
+            >{{ coopSynergyPhrase(gameOver.synergyContributions?.[player.playerId]) }}</span>
+            <span
+              v-if="coopRealizedValuePhrase(gameOver.synergyContributions?.[player.playerId]) !== null"
+              class="coop-score-detail coop-score-realized-value"
+              :data-testid="'arena-hud-coop-realized-value-' + player.playerId"
+            >{{ coopRealizedValuePhrase(gameOver.synergyContributions?.[player.playerId]) }}</span>
           </li>
         </ul>
       </template>

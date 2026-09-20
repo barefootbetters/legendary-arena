@@ -1973,11 +1973,32 @@ export function buildUIState(
     // WP that supplies the payload only modifies `buildParBreakdown`'s body,
     // not `buildUIState`.
     const par = buildParBreakdown(gameState, ctx);
+    // why: WP-715 / D-24538 — project the per-seat Synergy Realization figures
+    // (WP-708/709) from the hash-excluded `G.diagnostics.conditionalClauses` so the
+    // endgame report card can show them on EVERY match, not only ranked ones (they
+    // previously reached the client only inside the PAR/competitive-score breakdown).
+    // A display-only copy (never a reference into G); omit-when-absent so a match with
+    // no conditional clauses (or a pre-WP-708 record) carries no field. Reads only the
+    // hash-excluded diagnostics channel — no hashed state, no re-pin.
+    const conditionalClauses = gameState.diagnostics?.conditionalClauses;
+    let synergyContributions: UIGameOverState['synergyContributions'];
+    if (conditionalClauses !== undefined && Object.keys(conditionalClauses).length > 0) {
+      synergyContributions = {};
+      for (const [seatId, entry] of Object.entries(conditionalClauses)) {
+        synergyContributions[seatId] = {
+          played: entry.played,
+          assembled: entry.assembled,
+          potentialValue: entry.potentialValue,
+          realizedValue: entry.realizedValue,
+        };
+      }
+    }
     gameOver = {
       outcome: endgameResult.outcome,
       reason: endgameResult.reason,
       scores: finalScores,
       ...(par !== undefined ? { par } : {}),
+      ...(synergyContributions !== undefined ? { synergyContributions } : {}),
       // why: WP-502 / D-24306 — surface the early-end marker to clients so the
       // endgame panel labels a player-ended match and the competitive submission
       // is skipped. Omit-when-absent (no `endedEarly: false` literal) under
