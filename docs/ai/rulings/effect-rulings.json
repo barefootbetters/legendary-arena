@@ -2092,5 +2092,39 @@
     },
     "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "discard", "cards": [] },
     "why": "The discard must land EXACTLY on the limit — discarding one card from a 6-card hand would leave 5, not 4, so the wrong-count selection is a whole-move no-op and nothing is discarded (D-24284). Paired with the exactly-to-limit sibling that proves the discard fires."
+  },
+  {
+    "id": "resolve-put-cards-on-deck-orders-by-selection",
+    "mechanic": "put-cards-on-deck",
+    "decision": "D-24347",
+    "scenario": {
+      "action": "resolve-put-cards-on-deck",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "deck": ["core/avengers/iron-man#0"],
+        "count": 2,
+        "resolve": { "cardIds": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0"] }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/avengers/iron-man#0"] },
+    "why": "Dr. Doom's Master Strike puts exactly count (2) hand cards on TOP of the deck in selection order (cardIds[0] ends at deck[0], drawn first): [Wolverine, Spider-Man] prepend ahead of the existing Iron Man → deck [Wolverine, Spider-Man, Iron Man] (D-24347)."
+  },
+  {
+    "id": "resolve-put-cards-on-deck-wrong-count-is-noop",
+    "mechanic": "put-cards-on-deck",
+    "decision": "D-24347",
+    "scenario": {
+      "action": "resolve-put-cards-on-deck",
+      "setup": {
+        "currentPlayer": "0",
+        "hand": ["core/wolverine/wolverine#0", "core/spider-man/spider-man#0", "core/hulk/hulk#0"],
+        "deck": ["core/avengers/iron-man#0"],
+        "count": 2,
+        "resolve": { "cardIds": ["core/wolverine/wolverine#0"] }
+      }
+    },
+    "expected": { "kind": "zone-cards-equal", "player": "0", "zone": "deck", "cards": ["core/avengers/iron-man#0"] },
+    "why": "The selection must be EXACTLY count cards — one card against count 2 is an invalid payload, so the whole resolve is a no-op and the deck is unchanged (D-24347). Paired with the exact-count sibling that proves the placement fires."
   }
 ]

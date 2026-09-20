@@ -76,6 +76,8 @@
  *   send-a-S.H.I.E.L.D.-Hero-Undercover choice.
  * - `resolve-discard-choice` — call the `resolveDiscardChoice` move on a parked
  *   discard-down-to-a-limit choice.
+ * - `resolve-put-cards-on-deck` — call the `resolvePutCardsOnDeckChoice` move on a
+ *   parked put-exactly-N-cards-on-your-deck-top choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -97,7 +99,8 @@ export type RulingScenarioAction =
   | 'resolve-ko-discard'
   | 'resolve-put-hand-on-deck-top'
   | 'resolve-undercover'
-  | 'resolve-discard-choice';
+  | 'resolve-discard-choice'
+  | 'resolve-put-cards-on-deck';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -124,6 +127,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-put-hand-on-deck-top',
   'resolve-undercover',
   'resolve-discard-choice',
+  'resolve-put-cards-on-deck',
 ] as const;
 
 // ---------------------------------------------------------------------------

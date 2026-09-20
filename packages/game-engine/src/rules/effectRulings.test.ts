@@ -47,6 +47,7 @@ import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -87,6 +88,7 @@ import type {
   PendingPutHandOnDeckTop,
   PendingUndercoverChoice,
   PendingDiscardChoice,
+  PendingPutCardsOnDeckChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -362,6 +364,14 @@ interface ResolveDiscardChoiceSetup {
   currentPlayer: string;
   hand: string[];
   limit: number;
+  resolve: { cardIds: string[] };
+}
+
+interface ResolvePutCardsOnDeckSetup {
+  currentPlayer: string;
+  hand: string[];
+  deck: string[];
+  count: number;
   resolve: { cardIds: string[] };
 }
 
@@ -996,6 +1006,34 @@ function runResolveDiscardChoice(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolvePutCardsOnDeckChoice` move against a parked put-exactly-N-
+ * cards-on-deck-top choice (Dr. Doom's Master Strike) — chosen cards move hand→deck
+ * top in selection order (cardIds[0] ends at deck[0]).
+ *
+ * @param rawSetup - The ruling's resolve-put-cards-on-deck setup payload.
+ * @returns The mutated game state.
+ */
+function runResolvePutCardsOnDeck(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolvePutCardsOnDeckSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = {
+    [setup.currentPlayer]: makePlayerZones({ hand: setup.hand as CardExtId[], deck: setup.deck as CardExtId[] }),
+  };
+  const pending: PendingPutCardsOnDeckChoice = {
+    choiceType: 'put-cards-on-deck',
+    playerID: setup.currentPlayer,
+    count: setup.count,
+  };
+  G.pendingPutCardsOnDeckChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolvePutCardsOnDeckChoice(moveContext, { cardIds: setup.resolve.cardIds as CardExtId[] });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1022,6 +1060,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-put-hand-on-deck-top': runResolvePutHandOnDeckTop,
   'resolve-undercover': runResolveUndercover,
   'resolve-discard-choice': runResolveDiscardChoice,
+  'resolve-put-cards-on-deck': runResolvePutCardsOnDeck,
 };
 
 /**
