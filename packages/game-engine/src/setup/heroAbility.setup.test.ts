@@ -901,6 +901,31 @@ describe('buildHeroAbilityHooks — per-hero-class-played count-scaled grants (W
       assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'recruit'), 'no phantom flat recruit effect');
     }
   });
+
+  // why: WP-714 / D-24537 — Ultron's Genetic Experimentation, the bystander-capture sibling.
+  // The exact generated line: printed text + the marker the markers pass appends.
+  const GENETIC_EXPERIMENTATION =
+    '[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn. [keyword:kidnap-per-count:tech-heroes-played-this-turn:1]';
+
+  it('Genetic Experimentation: kidnap-per-count on tech-heroes-played-this-turn (mag 1), class gate kept', () => {
+    const hooks = hooksFor(GENETIC_EXPERIMENTATION);
+    const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'kidnap-per-count');
+    assert.ok(effect !== undefined, 'a kidnap-per-count effect is emitted');
+    assert.equal(effect!.countSource, 'tech-heroes-played-this-turn', 'the count source is tech-heroes-played-this-turn');
+    assert.equal(effect!.magnitude, 1, 'the per-unit rate matches the printed rate (1)');
+    // why: the line carries no resource icon, so no flat attack/recruit keyword should appear.
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword on a kidnap line');
+      assert.ok(!hook.keywords.includes('recruit'), 'no flat recruit keyword on a kidnap line');
+    }
+    // why: the leading [hc:tech]: synergy prefix is a real gate and must be preserved (the inline
+    // count-criterion [hc:tech] collapses to the same single class gate — Legendary Commander parity).
+    const conditions = hooks.flatMap((hook) => hook.conditions ?? []);
+    assert.ok(
+      conditions.some((condition) => condition.type === 'heroClassMatch' && condition.value === 'tech'),
+      'the leading [hc:tech]: class gate is preserved',
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

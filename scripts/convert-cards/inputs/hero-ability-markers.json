@@ -1564,6 +1564,12 @@
       "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
     },
     {
+      "heroSlug": "ultron",
+      "cardSlug": "genetic-experimentation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:kidnap-per-count:tech-heroes-played-this-turn:1]"
+    },
+    {
       "heroSlug": "juggernaut",
       "cardSlug": "runaway-train",
       "abilityIndex": 0,

@@ -94,7 +94,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-702 / D-24521 added the reveal-top-dispose handler (own deck) and the
     // reveal-top-dispose-others handler (each other deck) for Gambit's Hypnotic Charm +
     // standalone family — snapshot the deck top(s) then park the discard-or-keep choice (40 → 42).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 42);
+    // WP-714 / D-24537 added the kidnap-per-count handler (Ultron's Genetic Experimentation —
+    // count-scaled bystander capture) (42 → 43).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 43);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3018,6 +3020,163 @@ describe('executeHeroEffects recruit-per-count cost-four-plus-played-this-turn (
 
     assert.equal(gameState.turnEconomy.attack, 4,
       'grant is 2 × 2 = 4 attack: both other cost>=4 cards count, the triggering card is excluded.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-714 — kidnap-per-count + tech-heroes-played-this-turn (D-24537)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects kidnap-per-count tech-heroes-played-this-turn (WP-714)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: WP-714 / D-24537 — cardTraits carries heroClass (+ heroClass2 for the dual-class
+  // case) so the shipped tech-heroes-played-this-turn resolver counts by effective class.
+  function techTrait() {
+    return { heroClass: 'tech', team: null } as LegendaryGameState['cardTraits'][string];
+  }
+
+  it('captures N Bystanders scaled +1 per OTHER tech card played, all to the first City villain (N=2)', () => {
+    // Genetic Experimentation: two other Tech Ultron cards in play before it → capture 2.
+    const gameState = makeTestState({
+      inPlay: ['tech-a', 'tech-b', 'genetic-experimentation'],
+      bystanders: ['bys-1', 'bys-2', 'bys-3', 'bys-4'],
+      cardTraits: {
+        'tech-a': techTrait(),
+        'tech-b': techTrait(),
+        'genetic-experimentation': techTrait(),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'genetic-experimentation' as string,
+          timing: 'onPlay',
+          keywords: ['kidnap-per-count'],
+          effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+        },
+      ],
+    });
+    // why: two City villains — the capture auto-targets the FIRST by ascending index.
+    gameState.city = ['villain-1', 'villain-2', null, null, null];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'genetic-experimentation' as string);
+
+    assert.equal((gameState.attachedBystanders['villain-1'] ?? []).length, 2,
+      'both captured Bystanders attach to the first City villain (the triggering card is excluded from the count).');
+    assert.equal((gameState.attachedBystanders['villain-2'] ?? []).length, 0,
+      'the second City villain captures nothing (auto-target is the first by ascending index).');
+    assert.equal(gameState.piles.bystanders.length, 2,
+      'two Bystanders leave the supply (4 − 2).');
+  });
+
+  it('falls back to Mastermind capture when the City holds no villain', () => {
+    const gameState = makeTestState({
+      inPlay: ['tech-a', 'tech-b', 'genetic-experimentation'],
+      bystanders: ['bys-1', 'bys-2', 'bys-3'],
+      cardTraits: {
+        'tech-a': techTrait(),
+        'tech-b': techTrait(),
+        'genetic-experimentation': techTrait(),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'genetic-experimentation' as string,
+          timing: 'onPlay',
+          keywords: ['kidnap-per-count'],
+          effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+        },
+      ],
+    });
+    // why: empty City → the universal-rules fallback has the Mastermind capture instead.
+    gameState.city = [null, null, null, null, null];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'genetic-experimentation' as string);
+
+    assert.equal((gameState.mastermind.attachedBystanders ?? []).length, 2,
+      'with no City villain, both Bystanders are captured by the Mastermind.');
+    assert.equal(gameState.piles.bystanders.length, 1,
+      'two Bystanders leave the supply (3 − 2).');
+  });
+
+  it('is supply-bounded: stops the moment the Bystander supply empties', () => {
+    const gameState = makeTestState({
+      inPlay: ['tech-a', 'tech-b', 'tech-c', 'genetic-experimentation'],
+      bystanders: ['only-one'],
+      cardTraits: {
+        'tech-a': techTrait(),
+        'tech-b': techTrait(),
+        'tech-c': techTrait(),
+        'genetic-experimentation': techTrait(),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'genetic-experimentation' as string,
+          timing: 'onPlay',
+          keywords: ['kidnap-per-count'],
+          effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+        },
+      ],
+    });
+    gameState.city = ['villain-1', null, null, null, null];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'genetic-experimentation' as string);
+
+    assert.equal((gameState.attachedBystanders['villain-1'] ?? []).length, 1,
+      'only one Bystander is captured — the loop breaks when the supply empties (count wanted 3).');
+    assert.equal(gameState.piles.bystanders.length, 0,
+      'the whole supply is consumed, and the loop never over-captures.');
+  });
+
+  it('captures nothing when no OTHER tech card was played (count 0 → no-op)', () => {
+    const gameState = makeTestState({
+      inPlay: ['genetic-experimentation'],
+      bystanders: ['bys-1', 'bys-2'],
+      cardTraits: { 'genetic-experimentation': techTrait() },
+      heroAbilityHooks: [
+        {
+          cardId: 'genetic-experimentation' as string,
+          timing: 'onPlay',
+          keywords: ['kidnap-per-count'],
+          effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+        },
+      ],
+    });
+    gameState.city = ['villain-1', null, null, null, null];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'genetic-experimentation' as string);
+
+    assert.equal((gameState.attachedBystanders['villain-1'] ?? []).length, 0,
+      'a lone trigger counts nothing (self-exclusive) → captures 0.');
+    assert.equal(gameState.piles.bystanders.length, 2,
+      'the Bystander supply is untouched.');
+  });
+
+  it('counts a dual-class (hc2) tech card via the shipped resolver (self-exclusive)', () => {
+    const gameState = makeTestState({
+      inPlay: ['dual-card', 'genetic-experimentation'],
+      bystanders: ['bys-1', 'bys-2'],
+      heroAbilityHooks: [
+        {
+          cardId: 'genetic-experimentation' as string,
+          timing: 'onPlay',
+          keywords: ['kidnap-per-count'],
+          effects: [{ type: 'kidnap-per-count', magnitude: 1, countSource: 'tech-heroes-played-this-turn' }],
+        },
+      ],
+    });
+    // why: a strength/tech dual-class card counts as tech via heroClass2 (D-24523),
+    // proving the executor defers to the shipped resolver rather than a fresh class loop.
+    gameState.cardTraits = {
+      'dual-card': { heroClass: 'strength', heroClass2: 'tech', team: null } as LegendaryGameState['cardTraits'][string],
+      'genetic-experimentation': { heroClass: 'tech', team: null } as LegendaryGameState['cardTraits'][string],
+    };
+    gameState.city = ['villain-1', null, null, null, null];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'genetic-experimentation' as string);
+
+    assert.equal((gameState.attachedBystanders['villain-1'] ?? []).length, 1,
+      'the dual-class tech card counts (via hc2) → 1 capture; the triggering card is excluded.');
+    assert.equal(gameState.piles.bystanders.length, 1,
+      'one Bystander leaves the supply (2 − 1).');
   });
 });
 

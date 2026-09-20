@@ -67,6 +67,13 @@ test('markerPresentFor recognizes the attack and recruit markers for the matchin
   const recruitLine =
     '[hc:ranged]: For each other [hc:ranged] Hero you have played this turn, you get+1[icon:recruit]. [keyword:recruit-per-count:ranged-heroes-played-this-turn:1]';
   assert.equal(markerPresentFor(recruitLine, 'ranged'), true);
+
+  // why: WP-714 / D-24537 — the kidnap-per-count marker (Genetic Experimentation)
+  // satisfies a per-class count clause exactly as the attack/recruit markers do.
+  const kidnapLine =
+    '[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn. [keyword:kidnap-per-count:tech-heroes-played-this-turn:1]';
+  assert.equal(markerPresentFor(kidnapLine, 'tech'), true);
+  assert.equal(markerPresentFor(kidnapLine, 'ranged'), false);
 });
 
 test('evaluateLine flags an unmarked count line and clears a marked one', () => {
