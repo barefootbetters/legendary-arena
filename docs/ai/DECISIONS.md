@@ -43061,5 +43061,53 @@ engine projects display-only data, the client only renders (no client re-derivat
 Closes the WP-708/709 D-24026 live-verify gap. Related: D-24531 (WP-708), D-24532 (WP-709),
 D-24034/D-24271 (hash-excluded diagnostics), WP-465 (par_not_published). **Reserved by:**
 NUMBER-LEDGER D-24538.
+### D-24540 — Synergy Realization Phase 3 v1: Table Cooperation recognition (WP-717 / EC-754) (Active 2026-09-20)
+
+**Context.** WP-708/709 shipped a per-seat Synergy Rate + Realized Value % and a weak,
+additive **Table Total**; the design (§9) flagged that total as "a *weak* cooperation
+signal — shipped as a total, not a cooperation score, so it does not overclaim before
+Phase 3." Reconnaissance (2026-09-20) established the game is fully cooperative: every
+multi-seat match shares one `EndgameOutcome` (`heroes-win`/`scheme-wins`/`tie`) via a single
+`ctx.gameover`, and the server labels multi-seat matches `'cooperative'`, "never
+`'competitive'`" — the per-seat Victory Points are a contribution measure, not a competitive
+race. Phase 3 v1 upgrades the weak Table Total into a genuine, celebration-only **Table
+Cooperation** recognition.
+
+**Decision (WP-717/EC-754, server-only).** A pure derivation
+`computeTableCooperation(summary: CoachMatchSummary): readonly string[]`
+(`apps/server/src/coach/tableCooperation.logic.ts`) reads ONLY the already-built
+`CoachMatchSummary` (`outcome` + `team` totals + `perPlayer` contribution counts) and emits:
+(1) a shared-outcome team line (`heroes-win` = the table stopped the Mastermind together;
+`scheme-wins` = a regroup, never blame; `tie` = a held stand); (2) each seat's standout
+co-op role — top combat (max `villainsDefeated + henchmenDefeated + mastermindTacticsDefeated`),
+top synergy (max `conditionalClausesAssembled`, tie-broken by `conditionalClausesRealizedValue`),
+top rescue (max `bystandersRescued`), each **first-max-wins** over `perPlayer` order (strict
+`>`, so a residual tie resolves to the earlier seat and a zero-across-the-table metric omits
+the role line); (3) a combined-table total from the non-zero shares. Solo / single-seat and
+all-zero tables degrade to the outcome line. It is attached to `CoachReport.tableCooperation?:
+readonly string[]` (additive optional, mirroring WP-710 `sequenceTips`), merged in
+`coach.logic.ts` before `writeCoachReport`, so the persisted/served blob and the cache-hit
+path carry it.
+
+**Invariants.** (1) Server-only, deterministic — a pure read of the coach summary; no engine
+change, no `G`/`ctx`, no `ctx.random`, no I/O, no replay read, not model-authored (the engine
+stays the outcome authority, D-20105). (2) No `G`/hash/persistence/fixture/card-data surface.
+(3) Display-only, off-ranking — never `finalScore`/PAR/grade/Victory Points (NG-1). (4) Two
+enforced vocabularies (word-boundary copy-lint so `defeated` never trips `beat`): celebration
+(never whiff/failed/error/missed/wasted) AND cooperative — seats are teammates, never
+`opponent`/`beat`/`versus`/`winner`/`loser` between seats. This co-op framing is the game's own
+rule (`EndgameSummary.vue` "contribution only, no winner/loser between teammates", asserted by
+its recap test), the intra-match analogue of Vision §23b's cross-run player-comparison ban.
+(5) Additive optional — the `CoachModelClient` boundary is untouched; a report persisted before
+WP-717 returns the field `undefined`.
+
+**Out of scope (named follow-ups).** The client render of the recognition on the coach panel
+(Option-B, mirroring WP-710→WP-713); explicit cross-seat gift/assist attribution (Paibok
+`give-hq-hero-each-player` + the cross-seat-benefit keyword family — a replay-log read); and
+HQ-courtesy (no per-seat "wanted" signal exists; design §3.4 "if ever"). Related: D-24533
+(WP-710 the `sequenceTips` merge precedent), D-24531 (WP-708 Synergy Rate + Table Total),
+D-24532 (WP-709 Realized Value %), D-24427 (WP-616 the per-seat contribution split), D-20105
+(server derives, client renders — no re-interpretation). Renumbered from D-24538 (a parallel
+session reserved that number first). **Reserved by:** NUMBER-LEDGER D-24540.
 
 Protect this file.

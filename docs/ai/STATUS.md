@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-717 — Synergy Realization: Table Cooperation recognition (EC-754 / D-24540) (2026-09-20)
+
+**Phase 3 v1** of `DESIGN-SYNERGY-REALIZATION.md` §3.4 — the final phase of the Synergy
+Realization arc. Reconnaissance established the game is fully **cooperative**: every multi-seat
+match shares one outcome (`heroes-win`/`scheme-wins`/`tie`) vs the Mastermind, and per-seat
+Victory Points are a contribution measure, not a competitive race (the server labels multi-seat
+matches `'cooperative'`, never `'competitive'`; `EndgameSummary` states "no winner/loser between
+teammates"). So P3 is buildable now — not blocked on a co-op mode, and celebrating a teammate's
+help never celebrates helping a rival.
+
+Upgrades the weak WP-708 **Table Total** into a deterministic, celebration-only **Table
+Cooperation** recognition on `CoachReport.tableCooperation?: readonly string[]` (additive
+optional, mirrors WP-710 `sequenceTips`). A pure derivation `computeTableCooperation(summary)`
+(`apps/server/src/coach/tableCooperation.logic.ts`) reads only the already-built
+`CoachMatchSummary` (`outcome` + `team` totals + `perPlayer` contribution counts) and emits: the
+shared outcome framed as a team achievement (`scheme-wins` = a regroup, never blame); each seat's
+standout co-op role (top combat / synergy / rescue, **first-max-wins** over `perPlayer` order so
+a residual tie is deterministic and a zero metric omits the line); and a combined-table total
+from the non-zero shares. Solo / all-zero tables degrade to the outcome line. Merged in
+`coach.logic.ts` before `writeCoachReport`, so the fresh and cache-hit paths both carry it.
+
+**Server-only, deterministic** — no engine/`G`/`ctx`/hash/persistence surface, no replay read,
+**not model-authored** (the engine stays the outcome authority, D-20105). **Display-only,
+off-ranking** (NG-1) — never Victory Points. **Two enforced vocabularies** (word-boundary lint
+so `defeated` never trips `beat`): celebration (no whiff/failed/error/missed/wasted) AND
+cooperative (no player-vs-player — seats are teammates, the game's own "no winner/loser between
+teammates" rule, the intra-match analogue of Vision §23b). **Verification:** `tableCooperation`
++ `coach.logic` **21/0** (+11: per-outcome / roles / tie-break determinism / omission / solo +
+all-zero degradation / singular grammar / both copy-lint vocabularies / fresh + cache flow),
+server **1350/0**, `pnpm -r build` 0; `git diff` = the 5-file allowlist + `api-endpoints.md`
+(D-11804). Ran the standard two-session lane (`EC-754:` impl + `SPEC:` close). Renumbered from
+WP-715 (a parallel session took those numbers). Landed **D-24540** (Active). The client render,
+explicit gift/assist attribution, and HQ-courtesy are named follow-ups. **D-24026 live-verify
+operator-pending** (a real multi-seat co-op match's `GET /api/me/scores/:replayHash/coach`
+returns `CoachReport.tableCooperation`; render = follow-up).
+
 ### WP-713 — Synergy Realization: sequence-tips client render (EC-750 / D-24536) (2026-09-19)
 
 The deferred **Option-B client-render** half of WP-710/D-24533, closing the Synergy
