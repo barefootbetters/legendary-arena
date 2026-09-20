@@ -114,6 +114,14 @@ export interface CoachReport {
   // coach.logic.ts always sets it (default []).
   /** Play-order sequence-teacher opportunity tips (WP-710); server-computed, verbatim. */
   readonly sequenceTips?: readonly string[];
+  // why: WP-717 / D-24540 — deterministic, celebration-only "Table Cooperation" lines
+  // computed server-side (NOT model-authored) from the CoachMatchSummary and merged onto
+  // the report before persistence, so they ride the persisted/served jsonb blob (and the
+  // cache-hit path serves them). Every multi-seat match is cooperative (shared outcome), so
+  // these frame the shared win as a team achievement; display-only, off-ranking (NG-1).
+  // Optional so the model-client boundary is untouched; coach.logic.ts always sets it ([]).
+  /** Co-op Table Cooperation recognition (WP-717); server-computed, verbatim. */
+  readonly tableCooperation?: readonly string[];
 }
 
 /**

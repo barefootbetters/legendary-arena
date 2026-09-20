@@ -29,6 +29,7 @@ import { reduceReplayByHash, readReplayArtifactByHash, reduceMatchCapturingHeroP
 import { readCoachReport, writeCoachReport } from './coachReport.persistence.js';
 import { buildCoachMatchSummary } from './coachSummary.logic.js';
 import { computeSequenceTips } from './sequenceTeacher.logic.js';
+import { computeTableCooperation } from './tableCooperation.logic.js';
 
 import type { AccountId } from '../identity/identity.types.js';
 import type { CoachDependencies, CoachResult } from './coach.types.js';
@@ -165,7 +166,13 @@ export async function generateOrGetCoachReport(
   // persisted/served CoachReport jsonb blob (and the cache-hit path serves them). NOT
   // model-authored. Best-effort: any teacher failure yields no tips, never blocks the coach.
   const sequenceTips = await computeSequenceTipsForReplay(replayHash, reduced.finalState, deps, logic);
-  const reportWithTips = { ...report, sequenceTips };
+
+  // why: WP-717 / D-24540 — compute the deterministic, celebration-only Table Cooperation
+  // recognition from the already-built summary (a pure derivation — no model, no replay
+  // read) and merge it onto the report BEFORE persistence, so it rides the persisted/served
+  // CoachReport blob and the cache-hit path serves it. Every multi-seat match is cooperative.
+  const tableCooperation = computeTableCooperation(summary);
+  const reportWithTips = { ...report, sequenceTips, tableCooperation };
 
   const stored = await logic.writeCoachReport(
     replayHash,
