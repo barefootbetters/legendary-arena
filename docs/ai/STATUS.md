@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-718 — Synergy Realization: Table Cooperation client render (EC-755) (2026-09-20)
+
+The deferred client-render half of WP-717/D-24540 (mirrors WP-710→WP-713), closing the
+last visible gap in the Synergy Realization arc. WP-717 shipped `CoachReport.tableCooperation`
+server-only (Option B); a live 2p Red Skull match's coach showed no Table Cooperation block
+because there was no render. This WP renders it: `EndgameCoachPanel.vue` gains a **"Table
+Cooperation"** block leading the coach report (after the model headline) with the shared-win
+team framing — one line per recognition, verbatim, `data-testid="arena-hud-coach-table-cooperation"`,
+reusing `.coach-report-tips`; shown only when the array is non-empty (hides pre-WP-717
+`undefined` cached reports). Added `tableCooperation?: readonly string[]` to the client's
+own `CoachReport` mirror in `coachApi.ts` (no server-type import).
+
+**Verbatim render, no client composition** (D-20105); client-only, strictly additive; no
+engine/server/UIState/hash surface; display-only, off-ranking (NG-1). Ran the **Lightweight
+Lane** (single session, two-commit `EC-755:` + `SPEC:`; no new D — invariants locked by
+D-24540). **Verification:** `EndgameCoachPanel` **11/0** (+3: render / hidden-empty /
+hidden-omitted), arena-client **1864/0**, `vue-tsc --noEmit` clean, `pnpm -r build` 0; `git
+diff` = the 3-file allowlist. **Build-order note:** vue-tsc first surfaced pre-existing
+`EndgameSummary.vue` `synergyContributions` errors from the parallel WP-715/#2196 engine
+change against a stale dist — resolved by `pnpm -r build` (the client typechecks against the
+engine dist). **D-24026 live-verify operator-pending** (open "Get AI coaching" on the real
+Red Skull match; the coach leads with the Table Cooperation block — freshly-generated report).
+
 ### WP-717 — Synergy Realization: Table Cooperation recognition (EC-754 / D-24540) (2026-09-20)
 
 **Phase 3 v1** of `DESIGN-SYNERGY-REALIZATION.md` §3.4 — the final phase of the Synergy
