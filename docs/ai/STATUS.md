@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-713 — Synergy Realization: sequence-tips client render (EC-750 / D-24536) (2026-09-19)
+
+The deferred **Option-B client-render** half of WP-710/D-24533, closing the Synergy
+Realization sequence-teacher loop. WP-710 shipped the server-computed
+`CoachReport.sequenceTips` (served + cached, verified via the coach API) but rendered
+nothing; WP-713 displays it. Arena-client only: `coachApi.ts` gains
+`sequenceTips?: readonly string[]` on its own `CoachReport` mirror (structural — the
+layer rule forbids importing the server type), and `EndgameCoachPanel.vue` renders a
+forward **"Opportunities"** block after the model "Next time" suggestions — one `<li>`
+per tip, verbatim, `data-testid="arena-hud-coach-opportunities"`, reusing the
+`.coach-report-tips` styling. The block renders **only when the array is non-empty**,
+which hides both the no-tip common case and pre-WP-710 cached reports (where the field is
+`undefined`). A **new** coach-panel two-vocabulary copy-lint was added (none existed — the
+only prior one scanned `arena-hud-per-player`).
+
+**Verbatim render, never client composition** (D-20105 — the engine/server own condition
+semantics; the client re-evaluates nothing). **Display-only, off-ranking** (NG-1). No
+engine/server/UIState/persistence/hash surface. Ran the **Lightweight Lane** (single
+session, two-commit `EC-750:` + `SPEC:`; eligibility confirmed at govern-close — strictly
+additive, 3 files, no determinism surface). **Verification:** `EndgameCoachPanel` **8/8**
+(+4: render / hidden-empty / hidden-omitted / copy-lint), arena-client **1859/0**,
+`vue-tsc --noEmit` clean, `pnpm -r build` 0; `git diff` = the 3-file allowlist (a
+build-rewritten `lagn-v1.json` LF/CRLF churn reverted, not committed). Browser-preview
+verification skipped — the coach panel is gated behind a Legendary Pass + a scored match +
+a coach report carrying `sequenceTips`, unreachable in the dev preview; the
+mounted-component test drives all four render states. Landed **D-24536** (Active).
+**D-24026 live-verify operator-pending** (the real Red Skull match's endgame coach panel
+shows the turn-36.2 "play Perfect Teamwork before Marvelous Strength" opportunity and none
+for the turn-33.2 mutually-enabling pairs; a freshly-generated report — a pre-WP-710 cached
+report has no `sequenceTips`).
+
 ### WP-710 — Synergy Realization: play-order sequence teacher (EC-747 / D-24533) (2026-09-19)
 
 Phase 2b of `DESIGN-SYNERGY-REALIZATION.md` §3.3 (Option B — server + engine plumbing; the client
