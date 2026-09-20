@@ -78,6 +78,8 @@
  *   discard-down-to-a-limit choice.
  * - `resolve-put-cards-on-deck` — call the `resolvePutCardsOnDeckChoice` move on a
  *   parked put-exactly-N-cards-on-your-deck-top choice.
+ * - `resolve-reorder` — call the `resolveReorderChoice` move on a parked
+ *   reorder-the-deck-top-remainder choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -100,7 +102,8 @@ export type RulingScenarioAction =
   | 'resolve-put-hand-on-deck-top'
   | 'resolve-undercover'
   | 'resolve-discard-choice'
-  | 'resolve-put-cards-on-deck';
+  | 'resolve-put-cards-on-deck'
+  | 'resolve-reorder';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -128,6 +131,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-undercover',
   'resolve-discard-choice',
   'resolve-put-cards-on-deck',
+  'resolve-reorder',
 ] as const;
 
 // ---------------------------------------------------------------------------

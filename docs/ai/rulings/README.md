@@ -65,6 +65,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-undercover` | `resolveUndercoverChoice` move | the send-a-S.H.I.E.L.D.-Hero-Undercover choice (eligibility gate) |
 | `resolve-discard-choice` | `resolveDiscardChoice` move | the Magneto discard-down-to-a-limit choice (exactly-to-limit) |
 | `resolve-put-cards-on-deck` | `resolvePutCardsOnDeckChoice` move | the Dr. Doom put-exactly-N-cards-on-deck-top choice (selection order) |
+| `resolve-reorder` | `resolveReorderChoice` move | the Amazing Spider-Man reorder-the-deck-top-remainder choice (permutation) |
 
 ### Current expectation kinds
 
