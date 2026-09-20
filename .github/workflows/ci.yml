@@ -235,6 +235,17 @@ jobs:
       - name: Card-data regen reproducibility
         run: pnpm cards:check
 
+      # why (WP-711 / D-24534 follow-up): the per-hero-class count-marker gap gate.
+      # A hero ability that scales "for each other [hc:X] Hero/Ally/card you played
+      # this turn" undercounts as a flat +N unless it carries the matching
+      # attack/recruit-per-count marker (the Arc Reactor bug). The apply pass's
+      # --validate only checks map -> data; nothing checked data -> marker, so an
+      # unmapped count line was invisible. This scans the committed corpus text-only
+      # (no build) and fails on any unmarked, non-deferred count line or a stale
+      # deferred allowlist entry.
+      - name: Hero count-marker gap scan
+        run: pnpm cards:count-markers:check
+
       # why (D-24242): the WP/EC/D number-allocation lock. Fails loudly if two
       # sessions reserved the same number in docs/ai/NUMBER-LEDGER.md (a
       # DUPLICATE), or if a frontier number was used in WORK_INDEX / EC_INDEX /
@@ -473,6 +484,13 @@ jobs:
       # commit-hygiene reward-integrity job would be un-tested.
       - name: Run reward-integrity commit-guard suite
         run: pnpm guard:test
+
+      # why: same reason as roadmap-counts / effect-index — the per-hero-class
+      # count-marker gap gate's helper suite lives at the workspace root, which
+      # `pnpm -r` skips; without this step the classifier (spacing/noun variants,
+      # marker matching) and the corpus no-gap assertion would be un-tested.
+      - name: Run hero count-marker gap-scan suite
+        run: pnpm cards:count-markers:test
 
   # ── 3g. Server DB-gated tests (WP-625) ───────────────────────────────────────
   # why: the `unit-tests` job above runs the whole suite with NO database, so every

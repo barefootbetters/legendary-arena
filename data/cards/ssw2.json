@@ -285,8 +285,8 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "For each other [hc:strength] card you played this turn, you get +1[icon:attack].",
-            "For each other [hc:tech] card you played this turn, you get +1[icon:attack]."
+            "For each other [hc:strength] card you played this turn, you get +1[icon:attack]. [keyword:attack-per-count:strength-heroes-played-this-turn:1]",
+            "For each other [hc:tech] card you played this turn, you get +1[icon:attack]. [keyword:attack-per-count:tech-heroes-played-this-turn:1]"
           ]
         },
         {

@@ -506,7 +506,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "[hc:strength]: You get +3[icon:attack]for each other [hc:strength]card you played this turn."
+            "[hc:strength]: You get +3[icon:attack]for each other [hc:strength]card you played this turn. [keyword:attack-per-count:strength-heroes-played-this-turn:3]"
           ]
         }
       ],

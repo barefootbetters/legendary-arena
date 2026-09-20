@@ -714,6 +714,12 @@
   ],
   "msp1": [
     {
+      "heroSlug": "iron-man",
+      "cardSlug": "arc-reactor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
+    },
+    {
       "heroSlug": "thor",
       "cardSlug": "surge-of-power",
       "abilityIndex": 0,
@@ -789,6 +795,18 @@
     }
   ],
   "ssw2": [
+    {
+      "heroSlug": "beast",
+      "cardSlug": "doctor-of-beatdown",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:strength-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "beast",
+      "cardSlug": "doctor-of-beatdown",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
+    },
     {
       "heroSlug": "arkon-the-magnificent",
       "cardSlug": "quiver-of-thunderbolts",
@@ -1360,6 +1378,12 @@
   ],
   "ff04": [
     {
+      "heroSlug": "thing",
+      "cardSlug": "its-clobberin-time",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:strength-heroes-played-this-turn:3]"
+    },
+    {
       "heroSlug": "human-torch",
       "cardSlug": "call-for-backup",
       "abilityIndex": 0,
@@ -1533,6 +1557,12 @@
     }
   ],
   "vill": [
+    {
+      "heroSlug": "ultron",
+      "cardSlug": "encephalo-ray",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
+    },
     {
       "heroSlug": "juggernaut",
       "cardSlug": "runaway-train",
