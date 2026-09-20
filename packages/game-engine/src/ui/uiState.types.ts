@@ -777,6 +777,20 @@ export interface UIGameOverState {
   // every natural win / loss / tie. Optional + omit-when-absent, so it survives
   // the audience filter's `{ ...uiState.gameOver }` spread with no whitelist edit.
   endedEarly?: boolean;
+  // why: WP-715 / D-24538 — the per-seat Synergy Realization figures (WP-708/709),
+  // projected here from the hash-excluded `G.diagnostics.conditionalClauses` so the
+  // endgame report card can show Synergy Rate / Table Total / Realized Value % on
+  // EVERY match. Before WP-715 these reached the client only inside the ranked
+  // PAR/competitive-score breakdown, so a casual (`par_not_published`) match showed
+  // nothing. Display-only, off-ranking (NG-1); the source rides the hash-excluded
+  // diagnostics channel, so this adds no hashed state and needs no re-pin. Optional +
+  // omit-when-absent, so it survives the audience filter's `{ ...uiState.gameOver }`
+  // spread with no whitelist edit (mirrors `endedEarly` above). Keyed by playerID; the
+  // per-seat shape mirrors `GameDiagnostics.conditionalClauses`.
+  synergyContributions?: Record<
+    string,
+    { played: number; assembled: number; potentialValue: number; realizedValue: number }
+  >;
 }
 
 // why: projected for WP-062 HUD consumption; `bystandersRescued` aggregates

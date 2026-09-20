@@ -183,3 +183,49 @@ describe('UIState PAR breakdown (WP-067, D-6701 safe-skip)', () => {
     assert.equal(second.gameOver?.par, undefined);
   });
 });
+
+describe('UIState gameOver synergyContributions projection (WP-715 / D-24538)', () => {
+  it('projects per-seat synergy from G.diagnostics.conditionalClauses onto gameOver', () => {
+    const gameState = createPlainGameState();
+    tripEndgame(gameState);
+    // why: WP-715 — the hash-excluded synergy tally the endgame report card reads. Two seats,
+    // one with a whiffed clause (played > assembled) so the projection carries real figures.
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: {
+        '0': { played: 3, assembled: 2, potentialValue: 7, realizedValue: 5 },
+        '1': { played: 1, assembled: 1, potentialValue: 2, realizedValue: 2 },
+      },
+    };
+    const ctx = { phase: 'end' as string | null, turn: 1, currentPlayer: '0' };
+
+    const result = buildUIState(gameState, ctx);
+
+    assert.notEqual(result.gameOver, undefined, 'gameOver present at endgame');
+    assert.deepStrictEqual(
+      result.gameOver?.synergyContributions,
+      {
+        '0': { played: 3, assembled: 2, potentialValue: 7, realizedValue: 5 },
+        '1': { played: 1, assembled: 1, potentialValue: 2, realizedValue: 2 },
+      },
+      'per-seat synergy is projected onto gameOver for every match (ranked or casual)',
+    );
+  });
+
+  it('omits synergyContributions when no conditional clauses were recorded', () => {
+    const gameState = createPlainGameState();
+    tripEndgame(gameState);
+    // why: no diagnostics.conditionalClauses (a match with no gated hero clauses, or a
+    // pre-WP-708 record) → omit-when-absent, so the endgame card shows no synergy block.
+    const ctx = { phase: 'end' as string | null, turn: 1, currentPlayer: '0' };
+
+    const result = buildUIState(gameState, ctx);
+
+    assert.notEqual(result.gameOver, undefined);
+    assert.ok(
+      result.gameOver !== undefined && !('synergyContributions' in result.gameOver),
+      'synergyContributions omitted entirely (not present as undefined) when no clauses recorded',
+    );
+  });
+});
