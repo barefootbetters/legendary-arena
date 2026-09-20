@@ -293,4 +293,51 @@ describe('generateOrGetCoachReport (WP-594)', () => {
       ['Next time, play Iron Man before Repulsor Rays — you would have landed its tech synergy bonus.'],
     );
   });
+
+  // -------------------------------------------------------------------------
+  // WP-717 / D-24540 — tableCooperation flows onto the served/persisted CoachReport
+  // -------------------------------------------------------------------------
+
+  test('fresh path: merges a Table Cooperation recognition onto the served report', async () => {
+    const model = makeModelClient();
+    const logic = makeLogic();
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok, true);
+    // Computed deterministically from the summary (no replay read, no model). At minimum
+    // the shared-outcome team line is present, framed cooperatively ("together").
+    assert.ok(
+      result.ok === true && Array.isArray(result.report.report.tableCooperation),
+      'the served report must carry a tableCooperation array',
+    );
+    assert.ok(
+      result.ok === true && (result.report.report.tableCooperation?.length ?? 0) >= 1,
+      'the recognition carries at least the shared-outcome line',
+    );
+    assert.match(
+      (result.ok === true && result.report.report.tableCooperation?.[0]) || '',
+      /together/,
+      'the outcome line frames the shared result as a team achievement',
+    );
+  });
+
+  test('cache path: serves the persisted tableCooperation from the blob', async () => {
+    const model = makeModelClient();
+    const logic = makeLogic({
+      readCoachReport: async () => ({
+        report: { ...REPORT, tableCooperation: ['Your table stopped Magneto together — a shared victory.'] },
+        model: 'cached-model',
+        generatedAt: '2026-08-20T00:00:00.000Z',
+      }),
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok, true);
+    assert.equal(result.ok === true && result.wasCached, true);
+    assert.equal(model.calls, 0);
+    assert.deepEqual(
+      result.ok === true && result.report.report.tableCooperation,
+      ['Your table stopped Magneto together — a shared victory.'],
+    );
+  });
 });
