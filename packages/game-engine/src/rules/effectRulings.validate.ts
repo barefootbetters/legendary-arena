@@ -82,6 +82,8 @@
  *   reorder-the-deck-top-remainder choice.
  * - `resolve-draw-or-empowered` — call the `resolveDrawOrEmpowered` move on a parked
  *   choose-one draw-a-card-or-be-Empowered choice.
+ * - `resolve-put-any-number-bottom-hq` — call the `resolvePutAnyNumberBottomHQ` move on
+ *   a parked put-any-number-of-HQ-cards-on-the-deck-bottom choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -106,7 +108,8 @@ export type RulingScenarioAction =
   | 'resolve-discard-choice'
   | 'resolve-put-cards-on-deck'
   | 'resolve-reorder'
-  | 'resolve-draw-or-empowered';
+  | 'resolve-draw-or-empowered'
+  | 'resolve-put-any-number-bottom-hq';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -136,6 +139,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-put-cards-on-deck',
   'resolve-reorder',
   'resolve-draw-or-empowered',
+  'resolve-put-any-number-bottom-hq',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -172,6 +176,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  * - `city-equal` — `G.city` (the City row) equals an exact occupant list.
  * - `turn-economy-flag` — a named boolean `G.turnEconomy` flag (absent reads as
  *   false) equals an exact boolean.
+ * - `hq-equal` — `G.hq` (the HQ row) equals an exact occupant list (full slots
+ *   only — design the ruling so the refill leaves no `null` gap).
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -185,7 +191,8 @@ export type RulingExpectationKind =
   | 'escaped-pile-equal'
   | 'attached-bystanders-equal'
   | 'city-equal'
-  | 'turn-economy-flag';
+  | 'turn-economy-flag'
+  | 'hq-equal';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -204,6 +211,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'attached-bystanders-equal',
   'city-equal',
   'turn-economy-flag',
+  'hq-equal',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -288,7 +296,7 @@ export interface RulingExpectation {
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal` / `city-equal`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal` / `city-equal` / `hq-equal`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -453,6 +461,11 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (typeof expected.value !== 'boolean') {
         return `Ruling "${rulingId}" has a turn-economy-flag expectation whose "value" is not a boolean.`;
+      }
+      return null;
+    case 'hq-equal':
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has an hq-equal expectation whose "cards" is not an array of HQ occupant ext_id strings.`;
       }
       return null;
     default:
