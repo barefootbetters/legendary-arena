@@ -2342,5 +2342,65 @@
       ]
     },
     "why": "D-24527 anti-loop: a return-on-discard is optional and lower priority than a still-unpaid mandatory discard-to-play cost. While a discard-to-play cost is pending, resolveReturnOnDiscard is a silent no-op that leaves the card in the discard pile — otherwise a multi-discard cost (Ruby Summers's Extinction Blast) could be paid by returning and re-discarding one Unending Energy N times. The card stays in discard until the whole cost is paid, then the return trigger resolves (faithful tabletop timing). A regression removing the guard would move the card to hand and empty the discard, flipping this assertion."
+  },
+  {
+    "id": "hero-choice-discard-moves-revealed-card-to-discard",
+    "mechanic": "reveal-attack-choose",
+    "decision": "D-22001",
+    "scenario": {
+      "action": "resolve-hero-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "cardId": "core/x-men/wolverine#0",
+        "resolve": {
+          "resolution": "discard"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "discard",
+      "cards": [
+        "core/x-men/wolverine#0"
+      ]
+    },
+    "why": "A reveal-attack-choose reveal parks a discard-or-return choice on the top deck card (Wolverine). Resolving with 'discard' moves the revealed card from deck[0] to the discard pile, leaving the rest of the deck intact (D-22001). Paired with the 'return' sibling that proves the card is kept on top when the player declines."
+  },
+  {
+    "id": "hero-choice-return-keeps-revealed-card-on-deck-top",
+    "mechanic": "reveal-attack-choose",
+    "decision": "D-22001",
+    "scenario": {
+      "action": "resolve-hero-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "cardId": "core/x-men/wolverine#0",
+        "resolve": {
+          "resolution": "return"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "deck",
+      "cards": [
+        "core/x-men/wolverine#0",
+        "core/x-men/storm#0",
+        "core/x-men/rogue#0"
+      ]
+    },
+    "why": "Resolving the discard-or-return choice with 'return' leaves the revealed card at deck[0] with no zone mutation — the deck is unchanged (D-22001). The pending choice is cleared either way so it can never wedge the turn-end guard (D-22002). A regression that discarded on 'return' would drop Wolverine from the deck, flipping this assertion; paired with the 'discard' sibling."
   }
 ]

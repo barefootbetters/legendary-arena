@@ -52,6 +52,7 @@ import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
+import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -97,6 +98,7 @@ import type {
   PendingDrawOrEmpowered,
   PendingPutAnyNumberBottomHQ,
   PendingReturnOnDiscard,
+  PendingHeroChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -414,6 +416,13 @@ interface ResolveReturnOnDiscardSetup {
   pendingCardId: string;
   discardToPlayPending?: boolean;
   resolve: { cardId?: string; decline?: boolean };
+}
+
+interface ResolveHeroChoiceSetup {
+  currentPlayer: string;
+  deck: string[];
+  cardId: string;
+  resolve: { resolution: 'discard' | 'return' };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1210,6 +1219,32 @@ function runResolveReturnOnDiscard(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolveHeroChoice` move against a parked discard-or-return choice
+ * (a reveal-attack-choose reveal): 'discard' moves the revealed deck[0] card to the
+ * discard pile; 'return' leaves it at deck[0] (no mutation). The single pending choice
+ * (not a queue) is cleared either way.
+ *
+ * @param rawSetup - The ruling's resolve-hero-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveHeroChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveHeroChoiceSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({ deck: setup.deck as CardExtId[], discard: [] }) };
+  G.pendingHeroChoice = {
+    choiceType: 'discard-or-return',
+    cardId: setup.cardId as CardExtId,
+    playerID: setup.currentPlayer,
+  } satisfies PendingHeroChoice;
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveHeroChoice(moveContext, { resolution: setup.resolve.resolution });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1241,6 +1276,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-draw-or-empowered': runResolveDrawOrEmpowered,
   'resolve-put-any-number-bottom-hq': runResolvePutAnyNumberBottomHq,
   'resolve-return-on-discard': runResolveReturnOnDiscard,
+  'resolve-hero-choice': runResolveHeroChoice,
 };
 
 /**
