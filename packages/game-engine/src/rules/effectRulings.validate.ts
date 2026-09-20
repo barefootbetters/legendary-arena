@@ -90,6 +90,9 @@
  *   discard-or-return-the-revealed-top-card choice.
  * - `resolve-count-scaled-choice` — call the `resolveCountScaledChoice` move on a
  *   parked count-scaled choose-one choice (vnom's Symbiotic Adaptation).
+ * - `resolve-electromagnetic-bubble-choice` — call the
+ *   `resolveElectromagneticBubbleChoice` move on a parked Magneto Electromagnetic
+ *   Bubble in-play-X-Men pick.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -118,7 +121,8 @@ export type RulingScenarioAction =
   | 'resolve-put-any-number-bottom-hq'
   | 'resolve-return-on-discard'
   | 'resolve-hero-choice'
-  | 'resolve-count-scaled-choice';
+  | 'resolve-count-scaled-choice'
+  | 'resolve-electromagnetic-bubble-choice';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -152,6 +156,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-return-on-discard',
   'resolve-hero-choice',
   'resolve-count-scaled-choice',
+  'resolve-electromagnetic-bubble-choice',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -190,6 +195,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  *   false) equals an exact boolean.
  * - `hq-equal` — `G.hq` (the HQ row) equals an exact occupant list (full slots
  *   only — design the ruling so the refill leaves no `null` gap).
+ * - `deferred-hand-injections-equal` — a named player's deferred hand injections
+ *   (`G.deferredHandInjections[player]`, absent = `[]`) equal an exact card list.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -204,7 +211,8 @@ export type RulingExpectationKind =
   | 'attached-bystanders-equal'
   | 'city-equal'
   | 'turn-economy-flag'
-  | 'hq-equal';
+  | 'hq-equal'
+  | 'deferred-hand-injections-equal';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -224,6 +232,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'city-equal',
   'turn-economy-flag',
   'hq-equal',
+  'deferred-hand-injections-equal',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -304,11 +313,11 @@ export interface RulingScenario {
  */
 export interface RulingExpectation {
   kind: RulingExpectationKind;
-  /** `zone-cards-equal`: the player whose zone is asserted. */
+  /** `zone-cards-equal` / `hand-size-override` / `deferred-hand-injections-equal`: the player whose value is asserted. */
   player?: string;
   /** `zone-cards-equal`: the zone whose contents are asserted. */
   zone?: RulingZoneName;
-  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal` / `city-equal` / `hq-equal`: the exact expected card ext_ids. */
+  /** `zone-cards-equal` / `ko-pile-equal` / `villain-attached-heroes` / `escaped-pile-equal` / `attached-bystanders-equal` / `city-equal` / `hq-equal` / `deferred-hand-injections-equal`: the exact expected card ext_ids. */
   cards?: string[];
   /** `pending-queue-length`: which pending queue to measure. */
   queue?: RulingPendingQueue;
@@ -478,6 +487,14 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
     case 'hq-equal':
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has an hq-equal expectation whose "cards" is not an array of HQ occupant ext_id strings.`;
+      }
+      return null;
+    case 'deferred-hand-injections-equal':
+      if (!isNonEmptyString(expected.player)) {
+        return `Ruling "${rulingId}" has a deferred-hand-injections-equal expectation with no "player"; name the player whose deferred hand injections are asserted.`;
+      }
+      if (!isStringArray(expected.cards)) {
+        return `Ruling "${rulingId}" has a deferred-hand-injections-equal expectation whose "cards" is not an array of card ext_id strings.`;
       }
       return null;
     default:
