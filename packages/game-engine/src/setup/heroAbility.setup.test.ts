@@ -848,6 +848,11 @@ describe('buildHeroAbilityHooks — per-hero-class-played count-scaled grants (W
     '[hc:covert]: You get +2[icon:attack] for each other [hc:covert] Hero you played this turn. [keyword:attack-per-count:covert-heroes-played-this-turn:2]';
   const OVERLOADED_UNIBEAM =
     '[hc:tech]: You get +1[icon:attack] for each other [hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]';
+  // why: Arc Reactor's exact generated line (core/iron-man) — note the "other[hc:tech]"
+  // no-space variant, the real printed text. WP-711 shipped the tech-heroes-played-this-turn
+  // source but missed marking this core card, so it undercounted as a flat +1 in live play.
+  const ARC_REACTOR =
+    '[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]';
 
   /** Builds hooks for a single one-card hero from an ability line. */
   function hooksFor(ability: string): ReturnType<typeof buildHeroAbilityHooks> {
@@ -860,6 +865,7 @@ describe('buildHeroAbilityHooks — per-hero-class-played count-scaled grants (W
     { name: 'Ice Slide (dkcy)', ability: ICE_SLIDE, source: 'ranged-heroes-played-this-turn', magnitude: 1, gate: 'ranged' },
     { name: 'Champion of the Winter Guard (bkwd, mag 2)', ability: CHAMPION_WINTER_GUARD, source: 'covert-heroes-played-this-turn', magnitude: 2, gate: 'covert' },
     { name: 'Overloaded Unibeam (co2e)', ability: OVERLOADED_UNIBEAM, source: 'tech-heroes-played-this-turn', magnitude: 1, gate: 'tech' },
+    { name: 'Arc Reactor (core)', ability: ARC_REACTOR, source: 'tech-heroes-played-this-turn', magnitude: 1, gate: 'tech' },
   ];
 
   for (const testCase of attackCases) {

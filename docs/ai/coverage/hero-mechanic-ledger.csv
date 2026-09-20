@@ -196,6 +196,7 @@ core/gambit,Gambit,core,reveal-top-dispose-others,executable,WP-702,D-24521,pack
 core/hawkeye,Hawkeye,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 core/hulk,Hulk,core,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
 core/hulk,Hulk,core,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
+core/iron-man,Iron Man,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,arc-reactor
 core/iron-man,Iron Man,core,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 core/nick-fury,Nick Fury,core,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,high-tech-weaponry
 core/nick-fury,Nick Fury,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,legendary-commander

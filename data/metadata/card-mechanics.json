@@ -98,7 +98,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 16,
+      "cardCount": 17,
       "cardIds": [
         "asrd/thor",
         "bkwd/red-guardian",
@@ -107,6 +107,7 @@
         "core/black-widow",
         "core/captain-america",
         "core/deadpool",
+        "core/iron-man",
         "core/nick-fury",
         "cvwr/goliath",
         "dkcy/iceman",
@@ -2670,6 +2671,7 @@
     },
     "core/iron-man": {
       "mechanics": [
+        "attack-per-count",
         "draw"
       ]
     },
