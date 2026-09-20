@@ -1117,7 +1117,7 @@
           "recruit": "0+",
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:ranged]: You get +1[icon:recruit] for each other [hc:ranged] Hero you played this turn."
+            "[hc:ranged]: You get +1[icon:recruit] for each other [hc:ranged] Hero you played this turn. [keyword:recruit-per-count:ranged-heroes-played-this-turn:1]"
           ]
         },
         {
@@ -1132,7 +1132,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:ranged]: You get +1[icon:attack] for each other [hc:ranged] Hero you played this turn."
+            "[hc:ranged]: You get +1[icon:attack] for each other [hc:ranged] Hero you played this turn. [keyword:attack-per-count:ranged-heroes-played-this-turn:1]"
           ]
         },
         {

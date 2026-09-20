@@ -42876,5 +42876,53 @@ Protect this file.
 **Decision (WP-712/EC-749, engine-only).** Refine the value model recorded at the `evaluateAllConditions` chokepoint (all on the hash-excluded `G.diagnostics.conditionalClauses`, shape unchanged): (1) **pure count-scaled clauses** (no boolean gate, detected by `hookHasCountScaledValueEffect` mirroring `buildCountScaledResolution`'s type check, `conditions.length === 0`, non-hollow) are now recorded with `realized = potential = computedValue` via a new no-condition branch, using a new `countsTowardRate: false` recorder flag so `played`/`assembled` (the WP-708 **Synergy Rate**) do NOT move; (2) a count-scaled boolean-gated **whiff** records `potentialValue = Math.max(heroClauseValue, heroClausePotentialFloor(hook))` — a **floor**, not a replacement: a count-0 whiff (gate class = count source) rises from 0 to the per-each `magnitude` (the minimum meaningful payoff), while a count>0 whiff (gate class ≠ count source, e.g. `[hc:tech]` gate + `cost-four-plus` count) keeps its true current-board value (no regression — the shipped `heroEffects.execute.test.ts:6256` pin stays green with no edit); (3) **flat** boolean clauses unchanged (floor = magnitude = realized); (4) `heroClausePotentialFloor` = Σ flat magnitude + Σ count-scaled per-each magnitude (0 for a count-scaled effect with no `countSource`).
 
 **Invariants.** (1) Display-only — never `finalScore`/`rawScore`/PAR/grade (NG-1). (2) Hash-neutral — all on the hash-excluded `G.diagnostics`; NO re-pin (engine 3911/0, sentinel + `PRE_WP080` byte-identical, no fixture/card-data churn). (3) **Synergy Rate unchanged** — `countsTowardRate` keeps `played`/`assembled` boolean-gated only; the two recording branches are mutually exclusive by `conditions.length` (no double-count). (4) Engine-only — the display fields (`PlayerScoringContribution.conditionalClauses{Realized,Potential}Value` → `CoachPlayerLine` → `EndgameSummary.vue` + client mirrors) already flow from WP-709, so no server/client change. (5) Hero path only. The whiff floor is the point-in-time minimum, NOT a reorder counterfactual — that is the deferred sequence teacher (WP-710/D-24533). Related: D-24532 (WP-709, this refines), D-24531 (WP-708 Synergy Rate, preserved), D-24528 (WP-706 `computedValue`), D-24034/D-24271 (the hash-excluded diagnostics channel). **Reserved by:** NUMBER-LEDGER D-24535.
+### D-24534 — Per-hero-class-played count-source family (WP-711 / EC-748) (Active 2026-09-19)
+
+Adds a **per-hero-class-played** family to the closed `HeroCountSource` union —
+`strength-heroes-played-this-turn`, `ranged-heroes-played-this-turn`,
+`tech-heroes-played-this-turn`, `covert-heroes-played-this-turn` — the hero-class analogue
+of the WP-680/D-24497 `avengers-played-this-turn` / `shield-heroes-played-this-turn` **team**
+sources. Motivation: six printed abilities across four sets ("+N for each other `[hc:X]` Hero
+you played this turn") carried **no** `attack-per-count` / `recruit-per-count` marker, so the
+parser read the inline `[hc:X]` count criterion as a duplicate `heroClassMatch` gate and
+promoted the printed `+N[icon:…]` to a **flat** grant that never scaled (the live 2p Red Skull
+"Marvelous Strength only ever +1" symptom).
+
+**Semantics.** Each source counts the **OTHER** cards played this turn (play-area, **self-EXCLUSIVE**
+via `triggeringCardId`) whose hero class matches, resolved through the shipped
+`cardHasClassWhenPlayed` — so a card counts by its printed `heroClass`, its `heroClass2`
+(D-24523 dual-class), OR a Size-Changing granted class (D-24074). This is the play-area
+"played this turn" reading, **distinct from** the hand+play "Heroes you have" term of art of
+`distinct-hero-classes-played-this-turn` (D-24529). `explainCountSourceInputs` gets a matching
+self-exclusive collector per source (`count === length`, diagnostics-only, gameplay count
+byte-unchanged — the WP-706 invariant).
+
+**Scope discipline.** Exactly **four** classes are added — the ones real cards need
+(strength/ranged/tech/covert). `instinct` has no card in this shape and is NOT added (a fifth
+class is one additive slug + one resolver branch away). Union + `HERO_COUNT_SOURCES` array +
+`resolveCountSource` + `explainCountSourceInputs` updated in lockstep; drift pin bumped **10 → 14**
+as a **RUNTIME** assertion (D-24372 — engine test files are not typechecked, so a bare
+`satisfies` would be documentation only).
+
+**Card-data.** Six markers authored in `hero-ability-markers.json` and applied to
+`data/cards/{ssw1,dkcy,bkwd,co2e}.json` (co2e is the hand-authored outlier, applied directly;
+the other three via the pipeline). No apply-script change (`VALID_TOKEN_PATTERN` already admits
+the token shape). The shipped D-24016/D-24489 Step-4 icon suppression drops the co-located flat
+`[icon:attack|recruit]` — **no new parser suppression**; the inline `[hc:X]` count criterion
+still emits a duplicate `heroClassMatch` gate that collapses to the one leading `[hc:X]:` synergy
+gate the card already prints (accepted **Legendary Commander inline-`[team:shield]` parity** —
+outcome-neutral).
+
+**Invariants.** (1) Game Engine + card-data only; no client, no new grant mechanism (reuses the
+shipped `attack-per-count` / `recruit-per-count` family). (2) Resolvers pure/total — read only
+`G`, never mutate/throw, no registry read, no `.reduce()`; unknown source → 0. (3) Determinism —
+the sources read already-hashed `G` (`playerZones.inPlay` + `cardTraits` + granted classes) and
+add **no new hashed field**; engine suite 3920/0 with every pinned `finalStateHash` /
+`PRE_WP080_HASH` byte-identical — **NO re-pin** (no committed fixture plays these six cards; a
+fixture that did would re-pin honestly). (4) Non-vacuity — stubbing the class helper to 0 fails
+4 resolver assertions. Related: D-24497 (WP-680, the team/class count-source recipe this mirrors),
+D-24523 (hc2 dual-class), D-24074 (Size-Changing granted classes), D-24016/D-24489 (the per-count
+grant family + icon suppression), D-24372 (RUNTIME drift pins), D-24529 (the contrasting hand+play
+`distinct-hero-classes` reading). **Reserved by:** NUMBER-LEDGER D-24534.
 
 Protect this file.

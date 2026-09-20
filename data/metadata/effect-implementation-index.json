@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1881,
+    "totalEntries": 1887,
     "byScope": {
-      "hero": 706,
+      "hero": 712,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 455,
+      "executable": 461,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -3926,6 +3926,23 @@
       "name": "Red Guardian",
       "set": "bkwd",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "champion-of-the-winter-guard",
+          "name": "Champion of the Winter Guard"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/red-guardian",
+      "name": "Red Guardian",
+      "set": "bkwd",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -5970,6 +5987,23 @@
         {
           "slug": "dont-make-me-angry",
           "name": "Don't Make Me Angry"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/iron-man",
+      "name": "Iron Man",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "overloaded-unibeam",
+          "name": "Overloaded Unibeam"
         }
       ]
     },
@@ -10284,11 +10318,45 @@
       "name": "Iceman",
       "set": "dkcy",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "ice-slide",
+          "name": "Ice Slide"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/iceman",
+      "name": "Iceman",
+      "set": "dkcy",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "wp": "WP-022",
       "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "deep-freeze",
+          "name": "Deep Freeze"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/iceman",
+      "name": "Iceman",
+      "set": "dkcy",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
       "designs": [
         {
           "slug": "deep-freeze",
@@ -19319,6 +19387,23 @@
       "name": "Captain Marvel",
       "set": "ssw1",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "marvelous-strength",
+          "name": "Marvelous Strength"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/captain-marvel",
+      "name": "Captain Marvel",
+      "set": "ssw1",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -19328,6 +19413,23 @@
         {
           "slug": "supersonic-flight",
           "name": "Supersonic Flight"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/captain-marvel",
+      "name": "Captain Marvel",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "absorb-energies",
+          "name": "Absorb Energies"
         }
       ]
     },
@@ -27947,6 +28049,7 @@
     "bkwd/red-guardian": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "undercover",
         "unleash",
@@ -28631,6 +28734,7 @@
     "co2e/iron-man": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw"
       ]
     },
@@ -30211,7 +30315,9 @@
     "dkcy/iceman": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "attack-per-count",
+        "draw",
+        "recruit-per-count"
       ]
     },
     "dkcy/iron-fist": {
@@ -33509,7 +33615,9 @@
     "ssw1/captain-marvel": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "attack-per-count",
+        "draw",
+        "recruit-per-count"
       ]
     },
     "ssw1/dr-strange": {

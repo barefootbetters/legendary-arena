@@ -98,18 +98,22 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 12,
+      "cardCount": 16,
       "cardIds": [
         "asrd/thor",
+        "bkwd/red-guardian",
         "co2e/black-widow",
+        "co2e/iron-man",
         "core/black-widow",
         "core/captain-america",
         "core/deadpool",
         "core/nick-fury",
         "cvwr/goliath",
+        "dkcy/iceman",
         "noir/luke-cage-noir",
         "shld/agent-phil-coulson",
         "shld/mockingbird",
+        "ssw1/captain-marvel",
         "vill/juggernaut",
         "vnom/venom"
       ],
@@ -1173,10 +1177,12 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 5,
       "cardIds": [
         "core/captain-america",
+        "dkcy/iceman",
         "noir/luke-cage-noir",
+        "ssw1/captain-marvel",
         "vnom/venom"
       ],
       "hidden": true
@@ -2429,6 +2435,7 @@
     },
     "bkwd/red-guardian": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "undercover",
         "unleash",
@@ -2562,6 +2569,7 @@
     },
     "co2e/iron-man": {
       "mechanics": [
+        "attack-per-count",
         "draw"
       ]
     },
@@ -2954,7 +2962,9 @@
     },
     "dkcy/iceman": {
       "mechanics": [
-        "draw"
+        "attack-per-count",
+        "draw",
+        "recruit-per-count"
       ]
     },
     "dkcy/iron-fist": {
@@ -3599,7 +3609,9 @@
     },
     "ssw1/captain-marvel": {
       "mechanics": [
-        "draw"
+        "attack-per-count",
+        "draw",
+        "recruit-per-count"
       ]
     },
     "ssw1/dr-strange": {

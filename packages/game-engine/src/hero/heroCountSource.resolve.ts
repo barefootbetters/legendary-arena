@@ -31,7 +31,10 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // mirrors countDistinctHeroClassesInPlay's inline Set (printed heroClass/heroClass2 plus
 // the Size-Changing granted classes), so it imports getGrantedClasses to gather the same
 // granted classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
-import { getGrantedClasses } from './sizeChanging.logic.js';
+// why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
+// class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
+// the class analogue of cardCountsAsTeamMember used by the team sources.
+import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -275,6 +278,47 @@ function countTeamCardsPlayedThisTurn(
 }
 
 /**
+ * Counts the OTHER cards a player has played this turn whose hero class matches.
+ *
+ * The class analogue of countTeamCardsPlayedThisTurn (WP-711 / D-24534). "Other"
+ * excludes the triggering card itself — each card's text is "+N for each OTHER
+ * [class] Hero you played this turn" (Marvelous Strength, Absorb Energies, the
+ * dkcy/bkwd/co2e lines). Membership uses cardHasClassWhenPlayed, so a card counts
+ * by its printed heroClass, its heroClass2 (D-24523 dual-class), OR a Size-Changing
+ * granted class (D-24074) — exactly as the heroClassMatch gate reads it. A card
+ * with no matching class never counts.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @param heroClass - The hero-class slug to match (e.g. 'strength', 'ranged').
+ * @returns The number of other cards played this turn of that hero class.
+ */
+function countHeroClassCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+  heroClass: string,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return 0;
+  }
+
+  let classCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    // why: "each OTHER [class] Hero you played this turn" — exclude the triggering card itself.
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    if (cardHasClassWhenPlayed(G, playedCardId as CardExtId, heroClass)) {
+      classCount++;
+    }
+  }
+  return classCount;
+}
+
+/**
  * Counts the OTHER cards a player has played this turn whose printed cost is odd.
  *
  * "Other" excludes the triggering card itself — Deadpool's Oddball reads "+1 attack
@@ -370,6 +414,20 @@ export function resolveCountSource(
     }
     case 'odd-cost-heroes-played-this-turn': {
       return countOddCostCardsPlayedThisTurn(G, playerID, triggeringCardId);
+    }
+    // why: WP-711 / D-24534 — the per-hero-class-played family; each counts OTHER
+    // inPlay cards of that class (cardHasClassWhenPlayed), self-exclusive.
+    case 'strength-heroes-played-this-turn': {
+      return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'strength');
+    }
+    case 'ranged-heroes-played-this-turn': {
+      return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'ranged');
+    }
+    case 'tech-heroes-played-this-turn': {
+      return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'tech');
+    }
+    case 'covert-heroes-played-this-turn': {
+      return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
@@ -532,6 +590,42 @@ function collectOddCostCardsPlayedThisTurn(
 }
 
 /**
+ * Collects the OTHER played-this-turn cards of a given hero class (WP-711 / D-24534).
+ *
+ * Mirrors countHeroClassCardsPlayedThisTurn in ext-id-collecting form, reusing the SAME
+ * cardHasClassWhenPlayed predicate (printed hc OR hc2 OR a Size-Changing granted class).
+ * Self-EXCLUSIVE (skips the triggering card), so count === length.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to scan.
+ * @param triggeringCardId - The resolving card, excluded from the list.
+ * @param heroClass - The hero-class slug to match.
+ * @returns The ext_ids of the other cards played this turn of that hero class.
+ */
+function collectHeroClassCardsPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+  heroClass: string,
+): CardExtId[] {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return [];
+  }
+
+  const matchedCardIds: CardExtId[] = [];
+  for (const playedCardId of playerZones.inPlay) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    if (cardHasClassWhenPlayed(G, playedCardId as CardExtId, heroClass)) {
+      matchedCardIds.push(playedCardId as CardExtId);
+    }
+  }
+  return matchedCardIds;
+}
+
+/**
  * Collects the cards you HAVE (hand + play) that contribute at least one distinct hero class.
  *
  * Mirrors countDistinctHeroClassesYouHave's gathering in ext-id-collecting form: the HAND
@@ -653,6 +747,20 @@ export function explainCountSourceInputs(
     }
     case 'odd-cost-heroes-played-this-turn': {
       return collectOddCostCardsPlayedThisTurn(G, playerID, triggeringCardId);
+    }
+    // why: WP-711 / D-24534 — self-EXCLUSIVE per-hero-class collectors mirroring the
+    // resolveCountSource branches (count === length).
+    case 'strength-heroes-played-this-turn': {
+      return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'strength');
+    }
+    case 'ranged-heroes-played-this-turn': {
+      return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'ranged');
+    }
+    case 'tech-heroes-played-this-turn': {
+      return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'tech');
+    }
+    case 'covert-heroes-played-this-turn': {
+      return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no
