@@ -263,7 +263,7 @@ exports.Revelations = {
             team: 1,
             cards: [
                 {
-                    name: "Infrared Conversation",
+                    name: "Infrared Conversion",
                     imageUrl: "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/photon-04.png",
                     hc: 3,
                     rarity: 1,

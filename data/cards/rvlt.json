@@ -338,16 +338,16 @@
       "slug": "photon",
       "team": "avengers",
       "cardCounts": {
-        "Infrared Conversation": 5,
+        "Infrared Conversion": 5,
         "Ultraviolet Radiation": 5,
         "Light the Way": 3,
         "Coruscating Vengeance": 1
       },
       "cards": [
         {
-          "name": "Infrared Conversation",
-          "displayName": "Infrared Conversation",
-          "slug": "infrared-conversation",
+          "name": "Infrared Conversion",
+          "displayName": "Infrared Conversion",
+          "slug": "infrared-conversion",
           "rarity": 1,
           "rarityLabel": "Common 1",
           "slot": 1,
@@ -410,9 +410,9 @@
         {
           "id": "p1",
           "count": 5,
-          "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hr-photon-infrared-conversation.webp",
+          "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hr-photon-infrared-conversion.webp",
           "sides": [
-            "infrared-conversation"
+            "infrared-conversion"
           ]
         },
         {
