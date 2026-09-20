@@ -411,8 +411,8 @@ describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
                 scenarioSpecificPenalty: 0,
               },
               perPlayer: [
-                { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 12, conditionalClausesAssembled: 7 },
-                { playerId: '1', victoryPoints: 20, bystandersRescued: 4, conditionalClausesPlayed: 4, conditionalClausesAssembled: 4 },
+                { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 12, conditionalClausesAssembled: 7, conditionalClausesPotentialValue: 20, conditionalClausesRealizedValue: 14 },
+                { playerId: '1', victoryPoints: 20, bystandersRescued: 4, conditionalClausesPlayed: 4, conditionalClausesAssembled: 4, conditionalClausesPotentialValue: 8, conditionalClausesRealizedValue: 8 },
               ],
             },
           }),
@@ -427,11 +427,57 @@ describe('EndgameSummary (WP-588 per-player split + PAR basis)', () => {
     const total = wrapper.find('[data-testid="arena-hud-synergy-total"]');
     assert.ok(total.exists(), 'the Table Total renders when a seat carries synergy data');
     assert.ok(total.text().includes('The table assembled 11 synergy clauses'), 'Table Total sums assembled across seats');
-    // why: WP-708 copy-lint — the celebrate-voice surface never uses defeatist words.
+    // why: WP-709 — each seat's Realized Value % line. Seat 0: round(100 × 14 / 20) = 70%;
+    // seat 1: round(100 × 8 / 8) = 100%.
+    const realizedLines = wrapper.findAll('[data-testid="arena-hud-per-player-realized-value"]');
+    assert.equal(realizedLines.length, 2, 'one Realized Value % line per seat with value');
+    assert.ok(realizedLines[0]?.text().includes('realized 70% of synergy value'), 'seat 0 Realized Value %');
+    assert.ok(realizedLines[1]?.text().includes('realized 100% of synergy value'), 'seat 1 Realized Value %');
+    // why: WP-708/709 copy-lint — the celebrate-voice surface never uses defeatist words.
     const block = wrapper.find('[data-testid="arena-hud-per-player"]').text().toLowerCase();
     for (const banned of ['whiff', 'failed', 'error', 'missed', 'wasted']) {
       assert.ok(!block.includes(banned), `synergy copy must not say "${banned}"`);
     }
+  });
+
+  test('omits a seat\'s Realized Value % line when it carries no synergy value (WP-709)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: {
+        gameOver: gameOver(),
+        competitiveScore: score({
+          finalScore: -700,
+          scoreBreakdown: breakdown({
+            inputs: {
+              rounds: 12,
+              victoryPoints: 40,
+              bystandersRescued: 10,
+              escapes: 0,
+              penaltyEventCounts: {
+                villainEscaped: 0,
+                bystanderLost: 0,
+                schemeTwistNegative: 0,
+                mastermindTacticUntaken: 0,
+                scenarioSpecificPenalty: 0,
+              },
+              perPlayer: [
+                // Seat played conditional clauses (a synergy line shows) but none carried
+                // attack/recruit value → potentialValue 0 → the Realized Value % line is hidden.
+                { playerId: '0', victoryPoints: 40, bystandersRescued: 10, conditionalClausesPlayed: 3, conditionalClausesAssembled: 2, conditionalClausesPotentialValue: 0, conditionalClausesRealizedValue: 0 },
+              ],
+            },
+          }),
+        }),
+      },
+    });
+    assert.ok(
+      wrapper.find('[data-testid="arena-hud-per-player-synergy"]').exists(),
+      'the synergy-clause line still renders (the seat played conditional clauses)',
+    );
+    assert.equal(
+      wrapper.findAll('[data-testid="arena-hud-per-player-realized-value"]').length,
+      0,
+      'no Realized Value % line when potentialValue is 0 (guard the divide-by-zero)',
+    );
   });
 
   test('omits a seat\'s synergy line and the Table Total when the record carries no synergy counts (WP-708)', () => {

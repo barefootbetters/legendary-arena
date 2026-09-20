@@ -181,7 +181,15 @@ export interface GameDiagnostics {
   // (both oracles exclude it) → NO re-pin. Display-only: never read by any
   // move/rule/`endIf`/bot/scoring as gameplay input — only `deriveScoringInputs`
   // reads it into a display-only report-card field.
-  conditionalClauses?: Record<string, { played: number; assembled: number }>;
+  // why: WP-709 / D-24532 — Phase 2 adds `potentialValue` / `realizedValue` (the
+  // summed attack/recruit value each countable conditional clause could offer, and
+  // the value actually realized when its condition held) behind the display-only
+  // per-match Realized Value %. Same hash-excluded channel + display-only posture —
+  // NO re-pin, never scored.
+  conditionalClauses?: Record<
+    string,
+    { played: number; assembled: number; potentialValue: number; realizedValue: number }
+  >;
 }
 
 // why: the bound mirrors the arena-client diagnostics ring buffer — large enough

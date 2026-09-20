@@ -143,6 +143,11 @@ export interface WorkedScoreCalc {
     // the report card then omits the Synergy line for that seat.
     readonly conditionalClausesPlayed: number | null;
     readonly conditionalClausesAssembled: number | null;
+    // why: WP-709 / D-24532 — this seat's Realized Value % inputs (attack/recruit value
+    // its clauses could offer vs realized), surfaced as "realized N% of synergy value".
+    // Null when the record predates WP-709 — the report card then omits the line.
+    readonly conditionalClausesPotentialValue: number | null;
+    readonly conditionalClausesRealizedValue: number | null;
   }> | undefined;
   /**
    * How PAR was derived from the scenario baseline (WP-587). Absent when the
@@ -368,6 +373,10 @@ function buildPerPlayerSplit(
     // null so the report card omits the Synergy line rather than showing "0 of 0".
     conditionalClausesPlayed: contribution.conditionalClausesPlayed ?? null,
     conditionalClausesAssembled: contribution.conditionalClausesAssembled ?? null,
+    // why: WP-709 — pre-WP-709 records carry no value sums; map absent fields to null
+    // so the report card omits the Realized Value % line rather than showing "0%".
+    conditionalClausesPotentialValue: contribution.conditionalClausesPotentialValue ?? null,
+    conditionalClausesRealizedValue: contribution.conditionalClausesRealizedValue ?? null,
   }));
 }
 

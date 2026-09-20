@@ -244,6 +244,17 @@ export interface PlayerScoringContribution {
   readonly conditionalClausesPlayed: number;
   /** Conditional Hero clauses this player assembled — condition met (numerator). */
   readonly conditionalClausesAssembled: number;
+  // why: WP-709 / D-24532 — the per-match Realized Value % inputs, read from the same
+  // hash-excluded `G.diagnostics.conditionalClauses` tally. Display-only, exactly like
+  // the fields above — NEVER summed into `finalScore`/PAR/grade (NG-1). Value currency
+  // is attack + recruit magnitude. `...PotentialValue` is the total value this seat's
+  // conditional clauses could have offered; `...RealizedValue` is the value actually
+  // realized (only assembled clauses). The player-facing Realized Value % =
+  // round(100 × realized / potential) is derived at render (hidden when potential is 0).
+  /** Attack/recruit value this player's conditional clauses could have offered (denominator). */
+  readonly conditionalClausesPotentialValue: number;
+  /** Attack/recruit value this player's conditional clauses actually realized (numerator). */
+  readonly conditionalClausesRealizedValue: number;
 }
 
 export interface ScoringInputs {

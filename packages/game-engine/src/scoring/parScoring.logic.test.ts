@@ -891,7 +891,10 @@ describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
     (state as unknown as { diagnostics: unknown }).diagnostics = {
       hollowEffects: [],
       hollowEffectsDropped: 0,
-      conditionalClauses: { '0': { played: 3, assembled: 2 }, '1': { played: 1, assembled: 0 } },
+      conditionalClauses: {
+        '0': { played: 3, assembled: 2, potentialValue: 9, realizedValue: 7 },
+        '1': { played: 1, assembled: 0, potentialValue: 6, realizedValue: 0 },
+      },
     };
     const inputs = deriveScoringInputs(makeReplayResult(12), state);
     const byPlayer = Object.fromEntries(
@@ -901,6 +904,11 @@ describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
     assert.equal(byPlayer['0']?.conditionalClausesAssembled, 2);
     assert.equal(byPlayer['1']?.conditionalClausesPlayed, 1);
     assert.equal(byPlayer['1']?.conditionalClausesAssembled, 0);
+    // why: WP-709 — the Realized Value % inputs ride the same tally.
+    assert.equal(byPlayer['0']?.conditionalClausesPotentialValue, 9);
+    assert.equal(byPlayer['0']?.conditionalClausesRealizedValue, 7);
+    assert.equal(byPlayer['1']?.conditionalClausesPotentialValue, 6);
+    assert.equal(byPlayer['1']?.conditionalClausesRealizedValue, 0);
   });
 
   it('defaults to 0 when the record carries no diagnostics tally', () => {
@@ -909,6 +917,9 @@ describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
     const zero = inputs.perPlayer?.[0];
     assert.equal(zero?.conditionalClausesPlayed, 0);
     assert.equal(zero?.conditionalClausesAssembled, 0);
+    // why: WP-709 — the value sums also default to 0 for records with no tally.
+    assert.equal(zero?.conditionalClausesPotentialValue, 0);
+    assert.equal(zero?.conditionalClausesRealizedValue, 0);
   });
 
   it('is display-only: the synergy tally changes NO score term (NG-1)', () => {
@@ -926,12 +937,31 @@ describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
     (withSynergy as unknown as { diagnostics: unknown }).diagnostics = {
       hollowEffects: [],
       hollowEffectsDropped: 0,
-      conditionalClauses: { '0': { played: 9, assembled: 9 }, '1': { played: 9, assembled: 0 } },
+      conditionalClauses: {
+        '0': { played: 9, assembled: 9, potentialValue: 40, realizedValue: 40 },
+        '1': { played: 9, assembled: 0, potentialValue: 40, realizedValue: 0 },
+      },
     };
     const config = makeReferenceConfig();
     const withoutBreakdown = buildScoreBreakdown(deriveScoringInputs(makeReplayResult(10), withoutSynergy), config);
     const withBreakdown = buildScoreBreakdown(deriveScoringInputs(makeReplayResult(10), withSynergy), config);
     assert.equal(withoutBreakdown.rawScore, withBreakdown.rawScore, 'rawScore unaffected by synergy');
     assert.equal(withoutBreakdown.finalScore, withBreakdown.finalScore, 'finalScore unaffected by synergy');
+  });
+
+  it('the Realized Value % sums survive buildScoreBreakdown deep-copy (WP-709)', () => {
+    // why: WP-709 — the value fields must ride the buildScoreBreakdown per-player
+    // deep-copy or they never reach competitionApi/the client (the manual-copy
+    // whitelist class). Assert they arrive on the copied breakdown, not 0.
+    const state = makeTwoPlayerTerminalState({ '0': ['vil-0'] }, { 'vil-0': 'villain' });
+    (state as unknown as { diagnostics: unknown }).diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: { '0': { played: 2, assembled: 1, potentialValue: 8, realizedValue: 2 } },
+    };
+    const breakdown = buildScoreBreakdown(deriveScoringInputs(makeReplayResult(10), state), makeReferenceConfig());
+    const seat = breakdown.inputs.perPlayer?.find((contribution) => contribution.playerId === '0');
+    assert.equal(seat?.conditionalClausesPotentialValue, 8, 'potentialValue survives the deep-copy');
+    assert.equal(seat?.conditionalClausesRealizedValue, 2, 'realizedValue survives the deep-copy');
   });
 });

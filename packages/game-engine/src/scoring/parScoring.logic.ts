@@ -133,6 +133,10 @@ export function deriveScoringInputs(
       henchmenDefeated: playerHenchmenDefeated,
       conditionalClausesPlayed: synergy?.played ?? 0,
       conditionalClausesAssembled: synergy?.assembled ?? 0,
+      // why: WP-709 / D-24532 — the per-seat Realized Value % inputs from the same
+      // hash-excluded tally (absent → 0). Display-only; never summed into any score term.
+      conditionalClausesPotentialValue: synergy?.potentialValue ?? 0,
+      conditionalClausesRealizedValue: synergy?.realizedValue ?? 0,
     });
   }
 
@@ -426,6 +430,10 @@ export function buildScoreBreakdown(
         // copied breakdown reads it, not 0. Display-only (never scored below).
         conditionalClausesPlayed: contribution.conditionalClausesPlayed,
         conditionalClausesAssembled: contribution.conditionalClausesAssembled,
+        // why: WP-709 — carry the per-seat Realized Value % inputs through the deep
+        // copy too, or they never reach competitionApi/the client. Display-only.
+        conditionalClausesPotentialValue: contribution.conditionalClausesPotentialValue,
+        conditionalClausesRealizedValue: contribution.conditionalClausesRealizedValue,
       }))
     : undefined;
 

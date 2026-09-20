@@ -100,6 +100,11 @@ export interface CompetitivePlayerContribution {
   // before WP-708 carry none, and the report card then omits the Synergy line.
   readonly conditionalClausesPlayed?: number;
   readonly conditionalClausesAssembled?: number;
+  // why: WP-709 / D-24532 — this seat's per-match Realized Value % inputs (display-only,
+  // mirrors the engine PlayerScoringContribution). Optional: records persisted before
+  // WP-709 carry none, and the report card then omits the Realized Value % line.
+  readonly conditionalClausesPotentialValue?: number;
+  readonly conditionalClausesRealizedValue?: number;
 }
 
 /**

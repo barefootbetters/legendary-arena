@@ -27,6 +27,7 @@ import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hol
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import { recordConditionalClause } from '../diagnostics/synergyCount.record.js';
+import { heroClauseValue } from './heroClauseValue.derive.js';
 import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
@@ -708,8 +709,15 @@ export function executeHeroEffects(
 
       // why: WP-708 / D-24531 — a hard-blocked conditional clause (the condition was
       // genuinely unmet) counts as PLAYED but not assembled.
+      // why: WP-709 / D-24532 — its clause value still accrues to potentialValue (the
+      // value it COULD have offered had the condition held). heroClauseValue reads the
+      // count source from settled zones, which are independent of the failed boolean
+      // condition, so the ceiling is well-defined on this whiff branch too.
       if (isCountableConditionalClause) {
-        recordConditionalClause(G, playerID, { assembled: false });
+        recordConditionalClause(G, playerID, {
+          assembled: false,
+          clauseValue: heroClauseValue(G, playerID, cardId, hook),
+        });
       }
       // why: WP-702 live-verify follow-up — a card with MORE THAN ONE ability hook (e.g. Gambit's
       // Hypnotic Charm: an unconditional reveal-top clause PLUS an `[hc:instinct]`-gated each-other
@@ -731,8 +739,16 @@ export function executeHeroEffects(
     // was ASSEMBLED (the player met the synergy condition). Recorded before
     // runHookEffects: "assembled" is the player's decision (the condition was met),
     // independent of whether the downstream handler then no-ops.
+    // why: WP-709 / D-24532 — an assembled clause realizes its full value; clauseValue
+    // accrues to BOTH realizedValue and potentialValue. Computed before runHookEffects
+    // (like the Phase-1 count) — the grant only mutates turnEconomy, so this count-source
+    // read equals the value the grant produces (== the WP-706 computedValue for a single
+    // count-scaled effect: the AC-3 cross-check).
     if (isCountableConditionalClause) {
-      recordConditionalClause(G, playerID, { assembled: true });
+      recordConditionalClause(G, playerID, {
+        assembled: true,
+        clauseValue: heroClauseValue(G, playerID, cardId, hook),
+      });
     }
     // why: effects is optional on HeroAbilityHook. A hook may carry legacy `effects`,
     // composition `primitiveEffects`, or both — run whichever are present. (The former

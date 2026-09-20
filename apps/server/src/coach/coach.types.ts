@@ -43,6 +43,12 @@ export interface CoachPlayerLine {
   // scored term (NG-1). The player-facing Synergy Rate = assembled / played.
   readonly conditionalClausesPlayed: number;
   readonly conditionalClausesAssembled: number;
+  // why: WP-709 / D-24532 — this seat's per-match Realized Value % inputs (display-only,
+  // attack/recruit value the seat's conditional clauses could offer vs actually
+  // realized). Default 0 for records persisted before WP-709. NEVER a scored term
+  // (NG-1). The player-facing Realized Value % = round(100 × realized / potential).
+  readonly conditionalClausesPotentialValue: number;
+  readonly conditionalClausesRealizedValue: number;
   /** Acquired hero cards as "Display Name ×N" strings, most-acquired first. */
   readonly acquiredCards: readonly string[];
 }

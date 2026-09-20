@@ -158,6 +158,10 @@ function buildPerPlayerLines(
       // counts), the same truthful-default pattern as the WP-622 defeat counts above.
       conditionalClausesPlayed: contribution?.conditionalClausesPlayed ?? 0,
       conditionalClausesAssembled: contribution?.conditionalClausesAssembled ?? 0,
+      // why: WP-709 — default 0 when the record predates WP-709 (no per-seat value
+      // sums), the same truthful-default pattern as the WP-708 synergy counts above.
+      conditionalClausesPotentialValue: contribution?.conditionalClausesPotentialValue ?? 0,
+      conditionalClausesRealizedValue: contribution?.conditionalClausesRealizedValue ?? 0,
       acquiredCards: formatAcquiredCards(
         countAcquiredCards(finalState.playerZones[playerId]),
         resolveCardName,

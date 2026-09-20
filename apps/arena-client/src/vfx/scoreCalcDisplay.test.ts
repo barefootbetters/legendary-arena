@@ -312,6 +312,8 @@ describe('per-player split (WP-588)', () => {
     // the "defeated" line for that seat).
     // why: WP-708 — the same record carries no synergy counts either, so the two
     // conditional-clause fields also map to null (the Synergy line is then omitted).
+    // why: WP-709 — likewise the two Realized Value % fields map to null (the Realized
+    // Value % line is then omitted).
     assert.deepEqual(calc.perPlayer?.[0], {
       label: 'Player 1',
       victoryPoints: 34,
@@ -321,6 +323,8 @@ describe('per-player split (WP-588)', () => {
       mastermindTacticsDefeated: null,
       conditionalClausesPlayed: null,
       conditionalClausesAssembled: null,
+      conditionalClausesPotentialValue: null,
+      conditionalClausesRealizedValue: null,
     });
     assert.deepEqual(calc.perPlayer?.[1], {
       label: 'Player 2',
@@ -331,6 +335,8 @@ describe('per-player split (WP-588)', () => {
       mastermindTacticsDefeated: null,
       conditionalClausesPlayed: null,
       conditionalClausesAssembled: null,
+      conditionalClausesPotentialValue: null,
+      conditionalClausesRealizedValue: null,
     });
     // The per-player VP + bystanders reconcile with the team totals shown in the raw calc.
     const summedVp = (calc.perPlayer ?? []).reduce((total, row) => total + row.victoryPoints, 0);
@@ -382,6 +388,41 @@ describe('per-player team-contribution split (WP-621)', () => {
     assert.equal(calc.perPlayer?.[0]?.mastermindTacticsDefeated, 2);
     assert.equal(calc.perPlayer?.[1]?.villainsDefeated, 2);
     assert.equal(calc.perPlayer?.[1]?.mastermindTacticsDefeated, 2);
+  });
+});
+
+describe('per-player Realized Value % split (WP-709)', () => {
+  test('carries the potential/realized value sums through to each row when present', () => {
+    const calc = buildWorkedScoreCalc(
+      breakdown({
+        inputs: {
+          rounds: 20,
+          victoryPoints: 56,
+          bystandersRescued: 17,
+          escapes: 0,
+          penaltyEventCounts: {
+            villainEscaped: 0,
+            bystanderLost: 0,
+            schemeTwistNegative: 0,
+            mastermindTacticUntaken: 0,
+            scenarioSpecificPenalty: 0,
+          },
+          perPlayer: [
+            {
+              playerId: '0',
+              victoryPoints: 36,
+              bystandersRescued: 13,
+              conditionalClausesPlayed: 5,
+              conditionalClausesAssembled: 4,
+              conditionalClausesPotentialValue: 18,
+              conditionalClausesRealizedValue: 15,
+            },
+          ],
+        },
+      }),
+    );
+    assert.equal(calc.perPlayer?.[0]?.conditionalClausesPotentialValue, 18);
+    assert.equal(calc.perPlayer?.[0]?.conditionalClausesRealizedValue, 15);
   });
 });
 

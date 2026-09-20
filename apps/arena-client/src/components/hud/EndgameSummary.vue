@@ -62,6 +62,31 @@ function synergyPhrase(row: {
   return `assembled ${assembled} of ${row.conditionalClausesPlayed} ${noun}`;
 }
 
+/**
+ * Builds this seat's celebratory Realized Value % line for the report card
+ * (WP-709 / D-24532) — "realized N% of synergy value" — or null when the seat's
+ * conditional clauses offered no attack/recruit value (nothing to weigh) or the
+ * record predates WP-709. Value-weights the synergy so landing a big swing reads
+ * higher than a chip; the surface never says "whiff", "failed", or "missed".
+ *
+ * @param row - One per-player row from `workedCalc.perPlayer`.
+ * @returns The Realized Value % phrase, or null to omit the line.
+ */
+function realizedValuePhrase(row: {
+  readonly conditionalClausesPotentialValue: number | null;
+  readonly conditionalClausesRealizedValue: number | null;
+}): string | null {
+  const potential = row.conditionalClausesPotentialValue;
+  // why: WP-709 — no line when the seat's clauses offered no value (guard the
+  // divide-by-zero); nothing was set up to realize, so there is no percentage.
+  if (potential === null || potential <= 0) {
+    return null;
+  }
+  const realized = row.conditionalClausesRealizedValue ?? 0;
+  const percent = Math.round((100 * realized) / potential);
+  return `realized ${percent}% of synergy value`;
+}
+
 // why: the four literal leaf-name `aria-label`s on the PAR breakdown
 // (`rawScore`, `parScore`, `finalScore`, `scoringConfigVersion`) bind the
 // HUD directly to the WP-067 drift test at
@@ -222,6 +247,7 @@ export default defineComponent({
       scoringKey,
       contributionPhrases,
       synergyPhrase,
+      realizedValuePhrase,
       synergyTableTotal,
       seatLabel,
     };
@@ -384,6 +410,16 @@ export default defineComponent({
                 data-testid="arena-hud-per-player-synergy"
                 aria-label="synergy"
               >{{ synergyPhrase(row) }}</span>
+              <!-- why: WP-709 — this seat's celebratory Realized Value % line
+                   ("realized N% of synergy value"), below the synergy-clause line.
+                   Omitted when the seat's clauses offered no attack/recruit value or
+                   the record predates WP-709. Never "whiff/failed/missed". -->
+              <span
+                v-if="realizedValuePhrase(row) !== null"
+                class="per-player-stat per-player-realized-value"
+                data-testid="arena-hud-per-player-realized-value"
+                aria-label="realized value"
+              >{{ realizedValuePhrase(row) }}</span>
             </div>
           </div>
         </div>
@@ -925,6 +961,14 @@ dd {
    footnote (the surface celebrates what was assembled). */
 .per-player-synergy {
   margin-top: 0.2rem;
+  opacity: 0.85;
+  font-size: 0.78rem;
+}
+
+/* why: WP-709 — the per-seat Realized Value % line, directly below the synergy
+   line; same muted treatment (display-only skill signal, never a scored term). */
+.per-player-realized-value {
+  margin-top: 0.15rem;
   opacity: 0.85;
   font-size: 0.78rem;
 }

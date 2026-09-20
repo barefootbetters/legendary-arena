@@ -167,9 +167,9 @@ describe('buildCoachMatchSummary (WP-594)', () => {
           scenarioSpecificPenalty: 0,
         },
         perPlayer: [
-          { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 8, conditionalClausesAssembled: 6 },
-          // why: seat 1 carries NO synergy counts (a pre-WP-708 record) → the coach
-          // line must default both to 0, not undefined.
+          { playerId: '0', victoryPoints: 36, bystandersRescued: 13, conditionalClausesPlayed: 8, conditionalClausesAssembled: 6, conditionalClausesPotentialValue: 22, conditionalClausesRealizedValue: 15 },
+          // why: seat 1 carries NO synergy counts (a pre-WP-708/709 record) → the coach
+          // line must default all of them to 0, not undefined.
           { playerId: '1', victoryPoints: 20, bystandersRescued: 4 },
         ],
         matchLost: false,
@@ -180,6 +180,12 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     assert.equal(summary.perPlayer[0]?.conditionalClausesAssembled, 6);
     assert.equal(summary.perPlayer[1]?.conditionalClausesPlayed, 0);
     assert.equal(summary.perPlayer[1]?.conditionalClausesAssembled, 0);
+    // why: WP-709 — the Realized Value % inputs carry through the coach line too, and
+    // default 0 for a seat with no value sums.
+    assert.equal(summary.perPlayer[0]?.conditionalClausesPotentialValue, 22);
+    assert.equal(summary.perPlayer[0]?.conditionalClausesRealizedValue, 15);
+    assert.equal(summary.perPlayer[1]?.conditionalClausesPotentialValue, 0);
+    assert.equal(summary.perPlayer[1]?.conditionalClausesRealizedValue, 0);
   });
 
   test('defaults the defeat counts to 0 for a record predating WP-616', () => {
