@@ -416,6 +416,12 @@
       "markupToken": "[keyword:draw:2]"
     },
     {
+      "heroSlug": "iron-man",
+      "cardSlug": "arc-reactor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
+    },
+    {
       "heroSlug": "storm",
       "cardSlug": "gathering-stormclouds",
       "abilityIndex": 0,

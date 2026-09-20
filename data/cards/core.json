@@ -924,7 +924,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn."
+            "[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]"
           ]
         },
         {
