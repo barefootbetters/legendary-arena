@@ -669,3 +669,114 @@ export function describeFailedCondition(
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Sequence-teacher predicate (WP-710 / D-24533) — a pure Runtime-Safe read
+// ---------------------------------------------------------------------------
+
+/**
+ * The closed set of "snapshot-gate" HeroCondition types the play-order sequence
+ * teacher reasons about (WP-710 / D-24533): the class / team / keyword gates that
+ * read `playerZones.inPlay` at play time and are therefore reorder-fixable.
+ *
+ * why: `firstHeroPlayedThisTurn` / `playedThisTurn` are excluded (a "play earliest"
+ * / raw-count gate does not fit "play E before C"), and the numeric wait-and-see
+ * thresholds (`WAIT_AND_SEE_CONDITION_TYPES`) are excluded because the engine already
+ * retro-fires them — a reorder cannot "land" what auto-rescues. Kept as a runtime
+ * array (not a compile-time union) because `HeroCondition.type` is a bare string; the
+ * drift-parity assertions live in the test (disjoint from `WAIT_AND_SEE_CONDITION_TYPES`,
+ * and every member has an `evaluateCondition` case).
+ */
+export const SEQUENCE_GATE_CONDITION_TYPES: readonly string[] = [
+  'heroClassMatch',
+  'requiresTeam',
+  'requiresKeyword',
+];
+
+/**
+ * The setup-static card data slice the sequence-teacher predicate needs — exactly
+ * the maps `evaluateCondition`'s class / team / keyword gates read. The server passes
+ * these from the reduced final match state.
+ */
+export type HeroConditionCardData = Pick<
+  LegendaryGameState,
+  'cardTraits' | 'cardSizeChangingClasses' | 'cardCopiedTeams' | 'heroAbilityHooks'
+>;
+
+/**
+ * Whether a card carries a size-changing or copy-powers hook (WP-710 / D-24533).
+ *
+ * why: those two mechanics grant a class / team at RUNTIME (`cardSizeChangingClasses`
+ * is setup-static but `cardCopiedTeams` is filled by the copy-powers handler mid-play),
+ * and the sequence teacher never captures the per-play grant maps — so a card whose
+ * class/team match could depend on such a grant is scoped OUT (the predicate returns
+ * `unsupported`, and the teacher skips the whiff), keeping every emitted tip faithful.
+ *
+ * @param cardData - The setup-static card-data slice.
+ * @param cardId - The card to classify.
+ * @returns Whether the card has a size-changing or copy-powers hook.
+ */
+function isSizeChangingOrCopyPowers(cardData: HeroConditionCardData, cardId: CardExtId): boolean {
+  const hooks = cardData.heroAbilityHooks ? getHooksForCard(cardData.heroAbilityHooks, cardId) : [];
+  for (const hook of hooks) {
+    if ((hook.sizeChangingClasses?.length ?? 0) > 0) {
+      return true;
+    }
+    for (const keyword of hook.keywords) {
+      if (keyword === 'copy-powers') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Pure Runtime-Safe predicate: does a snapshot-gate `HeroCondition` hold for a played
+ * card given a candidate set of same-turn in-play cards? (WP-710 / D-24533.)
+ *
+ * why: the play-order sequence teacher (a server-layer read over the D-24119 replay)
+ * calls this to (a) reproduce whether a clause whiffed over the captured real `inPlay`,
+ * and (b) test whether an unconditional later-played hero would have satisfied it. It
+ * REUSES the engine's `evaluateCondition` over a reconstructed minimal `G` slice — the
+ * engine stays the sole authority on condition semantics (D-20105); the server never
+ * re-implements them. Returns `unsupported` (teacher skips) when the played card or any
+ * candidate is size-changing/copy-powers (uncaptured runtime grants could silently
+ * satisfy the gate → a false whiff → a wrong tip). No `G` mutation; no `boardgame.io`.
+ *
+ * @param condition - The gate to evaluate (should be a `SEQUENCE_GATE_CONDITION_TYPES` member).
+ * @param playedCardId - The played card that owns the clause (the self-exclusion trigger).
+ * @param candidateInPlayIds - The in-play card ids to evaluate the gate over.
+ * @param cardData - The setup-static card-data slice from the reduced final state.
+ * @returns `'holds'` | `'fails'` | `'unsupported'`.
+ */
+export function heroConditionHoldsForInPlay(
+  condition: HeroCondition,
+  playedCardId: CardExtId,
+  candidateInPlayIds: readonly CardExtId[],
+  cardData: HeroConditionCardData,
+): 'holds' | 'fails' | 'unsupported' {
+  // why: fidelity scope-out — a size-changing/copy-powers card in the played card or
+  // any candidate could satisfy the gate via a grant this read never captured.
+  if (isSizeChangingOrCopyPowers(cardData, playedCardId)) {
+    return 'unsupported';
+  }
+  for (const candidateId of candidateInPlayIds) {
+    if (isSizeChangingOrCopyPowers(cardData, candidateId)) {
+      return 'unsupported';
+    }
+  }
+  // why: reconstruct the minimal G slice evaluateCondition's class/team/keyword gates
+  // read (the four card-data maps + one seat's inPlay), then delegate to the real
+  // evaluator — the engine owns the semantics (D-20105), including each type's own
+  // self-exclusion of the triggering card.
+  const seat = '0';
+  const minimalGameState = {
+    cardTraits: cardData.cardTraits,
+    cardSizeChangingClasses: cardData.cardSizeChangingClasses,
+    cardCopiedTeams: cardData.cardCopiedTeams,
+    heroAbilityHooks: cardData.heroAbilityHooks,
+    playerZones: { [seat]: { inPlay: [...candidateInPlayIds] } },
+  } as unknown as LegendaryGameState;
+  return evaluateCondition(minimalGameState, seat, condition, playedCardId) ? 'holds' : 'fails';
+}

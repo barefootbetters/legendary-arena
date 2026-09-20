@@ -43,7 +43,7 @@
 import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
 
 import { computeStateHash, LegendaryGame } from '@legendary-arena/game-engine';
-import type { LegendaryGameState } from '@legendary-arena/game-engine';
+import type { LegendaryGameState, CardExtId } from '@legendary-arena/game-engine';
 
 import type { DatabaseClient } from '../identity/identity.types.js';
 
@@ -264,6 +264,101 @@ export function reduceMatchToFinalState(
   const finalState = state.G;
   const turnCount = computeTurnCount(maxPlayTurn);
   return { finalState, stateHash: computeStateHash(finalState), turnCount };
+}
+
+/**
+ * One hero `playCard` captured from a replay re-execution (WP-710 / D-24533):
+ * the acting seat, the live turn, the played card, and the seat's `inPlay`
+ * immediately after the play resolved (so the just-played card is included —
+ * matching the engine's self-exclusion contract keyed on `triggeringCardId`).
+ */
+export interface CapturedHeroPlay {
+  readonly seat: string;
+  readonly turn: number;
+  readonly cardId: CardExtId;
+  readonly inPlay: readonly CardExtId[];
+}
+
+/**
+ * Extracts a `playCard` move's `{ seat, cardId }` from a re-dispatched action, or
+ * `null` when the action is not a hero play (WP-710 / D-24533).
+ *
+ * why: the move payload is `{ type, args, playerID }` and a card play carries its
+ * `PlayCardArgs` as a positional array — the card id is `payload.args[0].cardId`
+ * (NOT `payload.args.cardId`). Read defensively (payload is `unknown`).
+ *
+ * @param action - A re-dispatched `MAKE_MOVE` action.
+ * @returns `{ seat, cardId }` for a hero play, else `null`.
+ */
+function readPlayCard(action: BgioAction): { seat: string; cardId: CardExtId } | null {
+  const payload = action.payload;
+  if (payload === null || typeof payload !== 'object') {
+    return null;
+  }
+  const move = payload as { type?: unknown; args?: unknown; playerID?: unknown };
+  if (move.type !== 'playCard' || typeof move.playerID !== 'string' || !Array.isArray(move.args)) {
+    return null;
+  }
+  const firstArg = move.args[0];
+  if (firstArg === null || typeof firstArg !== 'object') {
+    return null;
+  }
+  const cardId = (firstArg as { cardId?: unknown }).cardId;
+  if (typeof cardId !== 'string') {
+    return null;
+  }
+  return { seat: move.playerID, cardId };
+}
+
+/**
+ * Reproduce a completed match's final `G` AND capture, per hero `playCard`, the
+ * seat's real `inPlay` at that play (WP-710 / D-24533) — the input the play-order
+ * sequence teacher reasons over.
+ *
+ * why: re-executes the REAL log order through boardgame.io's own reducer (a single
+ * D-24119 fold — deterministic, seed-faithful) and only CAPTURES a projection after
+ * each `playCard`; it never reorders or re-simulates (a reordered re-run would consume
+ * the `alea` PRNG in a different order and diverge on reveals/shuffles). Returns the
+ * final state too, so the caller folds the log once (not twice). `reduceMatchToFinalState`
+ * is left byte-unchanged. Pure: no I/O; fails closed on a null initial state.
+ *
+ * @param artifact - The persisted `{ initialState, log }`.
+ * @returns `{ finalState, heroPlays }`.
+ */
+export function reduceMatchCapturingHeroPlays(
+  artifact: MatchReplayArtifact,
+): { readonly finalState: LegendaryGameState; readonly heroPlays: readonly CapturedHeroPlay[] } {
+  if (artifact.initialState === null || artifact.initialState === undefined) {
+    throw new Error(
+      'Cannot replay a match with no persisted initial state; the bgio.matches ' +
+        'row has a null initial_state and is not replayable.',
+    );
+  }
+  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  let state = artifact.initialState as BgioReducerState;
+  const heroPlays: CapturedHeroPlay[] = [];
+  for (const entry of artifact.log) {
+    const { turn } = readEntryTurnPhase(entry);
+    const action = extractAction(entry);
+    if (!isPlayerMove(action)) {
+      continue;
+    }
+    state = reducer(state, action);
+    const play = readPlayCard(action);
+    if (play !== null) {
+      // why: capture AFTER applying — the seat's inPlay now includes the just-played
+      // card (the self-exclusion trigger), so the teacher's predicate reproduces the
+      // engine's real evaluation faithfully.
+      const seatZones = state.G.playerZones[play.seat];
+      heroPlays.push({
+        seat: play.seat,
+        turn,
+        cardId: play.cardId,
+        inPlay: seatZones ? [...seatZones.inPlay] : [],
+      });
+    }
+  }
+  return { finalState: state.G, heroPlays };
 }
 
 /**

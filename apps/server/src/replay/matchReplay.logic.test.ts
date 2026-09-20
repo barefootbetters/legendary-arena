@@ -31,6 +31,7 @@ import {
 
 import {
   reduceMatchToFinalState,
+  reduceMatchCapturingHeroPlays,
   readMatchForReplay,
   readReplayArtifactByHash,
   readReplayHashByMatchId,
@@ -415,6 +416,115 @@ describe('reduceMatchToFinalState (WP-334)', () => {
           log: [{ _stateID: 0, turn: 1, phase: 'lobby' }],
         }),
       /missing its `action`/,
+    );
+  });
+});
+
+/**
+ * Manufacture a real short match that plays ONE real hero card (WP-710 / D-24533).
+ * Drives lobby → play → the first turn's `main` stage, then dispatches a genuine
+ * `playCard` for a card in the active seat's drawn starting hand — so the log holds
+ * a real `MAKE_MOVE`/`playCard` deltalog entry in the true reducer shape
+ * (`payload.args[0].cardId`), never a hand-crafted one.
+ *
+ * @returns The artifact plus the played seat/card/turn for assertions.
+ */
+function manufactureMatchWithAPlay(): {
+  initialState: { G: unknown; ctx: unknown };
+  log: unknown[];
+  playedSeat: string;
+  playedCardId: string;
+  playedTurn: number;
+} {
+  const initialState = InitializeGame({
+    game: SEEDED_GAME,
+    numPlayers: 2,
+    setupData: MOCK_SETUP_DATA,
+  });
+  const reducer = CreateGameReducer({ game: SEEDED_GAME, isClient: false });
+  const log: unknown[] = [];
+
+  let state: { G: unknown; ctx: unknown; deltalog?: unknown[] } = initialState;
+  const dispatch = (moveName: string, args: unknown[], playerID: string): void => {
+    const next = reducer(state, { type: MAKE_MOVE, payload: { type: moveName, args, playerID } });
+    if (Array.isArray(next.deltalog)) {
+      log.push(...next.deltalog);
+    }
+    state = next as typeof state;
+  };
+  const currentPlayer = (): string => String((state.ctx as { currentPlayer: unknown }).currentPlayer);
+  const currentTurn = (): number => Number((state.ctx as { turn: unknown }).turn);
+
+  dispatch('setPlayerReady', [{ ready: true }], '0');
+  dispatch('setPlayerReady', [{ ready: true }], '1');
+  dispatch('startMatchIfReady', [], '0');
+  dispatch('revealVillainCard', [], currentPlayer()); // start: mandatory reveal (D-24515)
+  dispatch('advanceStage', [], currentPlayer()); // start → main
+
+  const seat = currentPlayer();
+  const turn = currentTurn();
+  const zones = (state.G as { playerZones: Record<string, { hand: string[] }> }).playerZones[seat];
+  assert.ok(zones && zones.hand.length > 0, 'the active seat should have a drawn starting hand to play from');
+  const cardId = zones.hand[0]!;
+  dispatch('playCard', [{ cardId }], seat); // main: a real hero play
+
+  return { initialState, log, playedSeat: seat, playedCardId: cardId, playedTurn: turn };
+}
+
+describe('reduceMatchCapturingHeroPlays (WP-710 / D-24533)', () => {
+  before(() => {
+    setRegistryForSetup(FAT_TEST_REGISTRY as never);
+  });
+  after(() => {
+    clearRegistryForSetup();
+  });
+
+  test('captures each real playCard with the seat, turn, cardId, and post-play inPlay', () => {
+    const { initialState, log, playedSeat, playedCardId, playedTurn } = manufactureMatchWithAPlay();
+
+    const { heroPlays } = reduceMatchCapturingHeroPlays({ initialState, log });
+
+    // The capture found the real play in the true reducer shape (args[0].cardId).
+    assert.equal(heroPlays.length, 1, 'exactly one playCard was dispatched, so one capture');
+    const captured = heroPlays[0]!;
+    assert.equal(captured.seat, playedSeat, 'captured seat must be the acting player');
+    assert.equal(captured.cardId, playedCardId, 'captured cardId must be the played card (args[0].cardId)');
+    assert.equal(captured.turn, playedTurn, 'captured turn must be the live turn the play was stamped with');
+    // Captured AFTER the play applies → the seat's inPlay includes the just-played card
+    // (the engine's self-exclusion trigger), which is what the teacher predicate needs.
+    assert.ok(
+      captured.inPlay.includes(playedCardId),
+      'captured inPlay must include the just-played card (captured after apply)',
+    );
+  });
+
+  test('produces the SAME final G as reduceMatchToFinalState (single faithful fold)', () => {
+    const { initialState, log } = manufactureMatchWithAPlay();
+
+    const { finalState } = reduceMatchCapturingHeroPlays({ initialState, log });
+    const plain = reduceMatchToFinalState({ initialState, log });
+
+    // why: the capture fold must be byte-faithful to the plain fold — same reducer,
+    // same log order, only an extra read per play. A divergence here would mean the
+    // capture path re-seeded or re-ordered.
+    assert.equal(
+      computeStateHash(finalState),
+      plain.stateHash,
+      'the capturing fold must reproduce the same final G hash as reduceMatchToFinalState',
+    );
+    assert.deepEqual(finalState, plain.finalState);
+  });
+
+  test('a match with no plays captures zero hero plays', () => {
+    const { initialState, log } = manufactureMatch();
+    const { heroPlays } = reduceMatchCapturingHeroPlays({ initialState, log });
+    assert.equal(heroPlays.length, 0, 'a lobby→play manufacture dispatches no playCard');
+  });
+
+  test('fails closed on a null initial state', () => {
+    assert.throws(
+      () => reduceMatchCapturingHeroPlays({ initialState: null, log: [] }),
+      /no persisted initial state/,
     );
   });
 });

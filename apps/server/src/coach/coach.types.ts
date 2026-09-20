@@ -107,6 +107,13 @@ export interface CoachReport {
   readonly purchases: string;
   /** 2-3 concrete "next time" suggestions. */
   readonly suggestions: readonly string[];
+  // why: WP-710 / D-24533 — deterministic play-order "opportunity" tips computed
+  // server-side (NOT model-authored) and merged onto the report before persistence, so
+  // they ride the persisted/served jsonb blob (and the cache-hit path serves them).
+  // Optional so the model-client boundary (CoachModelClient.generate) is untouched;
+  // coach.logic.ts always sets it (default []).
+  /** Play-order sequence-teacher opportunity tips (WP-710); server-computed, verbatim. */
+  readonly sequenceTips?: readonly string[];
 }
 
 /**
