@@ -64,6 +64,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-put-hand-on-deck-top` | `resolvePutHandOnDeckTop` move | the Stack the Deck put-a-hand-card-on-deck-top choice |
 | `resolve-undercover` | `resolveUndercoverChoice` move | the send-a-S.H.I.E.L.D.-Hero-Undercover choice (eligibility gate) |
 | `resolve-discard-choice` | `resolveDiscardChoice` move | the Magneto discard-down-to-a-limit choice (exactly-to-limit) |
+| `resolve-put-cards-on-deck` | `resolvePutCardsOnDeckChoice` move | the Dr. Doom put-exactly-N-cards-on-deck-top choice (selection order) |
 
 ### Current expectation kinds
 
