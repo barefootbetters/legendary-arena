@@ -2546,5 +2546,126 @@
       "cards": []
     },
     "why": "The pick must be one of the front entry's eligibleCardIds snapshot (the round-trip rule): the client may only submit an X-Men the engine projected. Rogue is not among the eligible in-play X-Men, so the resolve is a silent no-op that records no deferred injection and leaves the queue intact for resubmit (D-24512). A regression dropping the eligibility scan would record Rogue, flipping this assertion; paired with the eligible-pick sibling."
+  },
+  {
+    "id": "ruthless-dictator-ko-disposition-kos-deck-top-card",
+    "mechanic": "ruthless-dictator",
+    "decision": "D-24512",
+    "scenario": {
+      "action": "resolve-ruthless-dictator-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0",
+          "core/x-men/gambit#0"
+        ],
+        "revealedCardIds": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "availableDispositions": [
+          "ko",
+          "discard",
+          "top"
+        ],
+        "resolve": {
+          "cardId": "core/x-men/wolverine#0",
+          "disposition": "ko"
+        }
+      }
+    },
+    "expected": {
+      "kind": "ko-pile-equal",
+      "cards": [
+        "core/x-men/wolverine#0"
+      ]
+    },
+    "why": "Red Skull's Ruthless Dictator looks at the top 3 of the defeating player's deck and assigns each a disposition. The 'ko' disposition removes that deck-top card and adds it to the general KO pile (WP-695 / D-24512). Part of the three-disposition set (ko / discard / top) proving the closed vocabulary."
+  },
+  {
+    "id": "ruthless-dictator-discard-disposition-moves-deck-top-card-to-discard",
+    "mechanic": "ruthless-dictator",
+    "decision": "D-24512",
+    "scenario": {
+      "action": "resolve-ruthless-dictator-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0",
+          "core/x-men/gambit#0"
+        ],
+        "revealedCardIds": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "availableDispositions": [
+          "ko",
+          "discard",
+          "top"
+        ],
+        "resolve": {
+          "cardId": "core/x-men/storm#0",
+          "disposition": "discard"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "discard",
+      "cards": [
+        "core/x-men/storm#0"
+      ]
+    },
+    "why": "The 'discard' disposition moves the revealed deck-top card to the player's discard pile via the zone helper — NOT discardFromHand, since this is a deck-top card, not a hand card (WP-695 non-negotiable / D-24512). Part of the three-disposition set (ko / discard / top)."
+  },
+  {
+    "id": "ruthless-dictator-top-disposition-leaves-deck-unchanged",
+    "mechanic": "ruthless-dictator",
+    "decision": "D-24512",
+    "scenario": {
+      "action": "resolve-ruthless-dictator-choice",
+      "setup": {
+        "currentPlayer": "0",
+        "deck": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0",
+          "core/x-men/gambit#0"
+        ],
+        "revealedCardIds": [
+          "core/x-men/wolverine#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "availableDispositions": [
+          "ko",
+          "discard",
+          "top"
+        ],
+        "resolve": {
+          "cardId": "core/x-men/rogue#0",
+          "disposition": "top"
+        }
+      }
+    },
+    "expected": {
+      "kind": "zone-cards-equal",
+      "player": "0",
+      "zone": "deck",
+      "cards": [
+        "core/x-men/wolverine#0",
+        "core/x-men/storm#0",
+        "core/x-men/rogue#0",
+        "core/x-men/gambit#0"
+      ]
+    },
+    "why": "The 'top' disposition leaves the revealed card face-up on top of the deck with no zone mutation (the look-at never removed it) — only the pending bookkeeping records the decision (WP-695 / D-24512). A regression that ko'd or discarded on 'top' would drop the card from the deck, flipping this assertion; part of the three-disposition set with the ko / discard siblings."
   }
 ]
