@@ -71,6 +71,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-return-on-discard` | `resolveReturnOnDiscard` move | the Cyclops Unending Energy optional return-the-discarded-card choice (incl. the D-24527 discard-to-play priority deferral) |
 | `resolve-hero-choice` | `resolveHeroChoice` move | the reveal-attack-choose discard-or-return-the-revealed-top-card choice |
 | `resolve-count-scaled-choice` | `resolveCountScaledChoice` move | the vnom Symbiotic Adaptation count-scaled choose-one (option index selects resource; grant = magnitude × count) |
+| `resolve-electromagnetic-bubble-choice` | `resolveElectromagneticBubbleChoice` move | the Magneto Electromagnetic Bubble in-play-X-Men pick (records a deferred seventh-card injection; round-trip eligibility gate) |
 
 ### Current expectation kinds
 
@@ -89,6 +90,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `city-equal` | the City row (`G.city`) equals an exact occupant list | `cards` |
 | `turn-economy-flag` | a named boolean `G.turnEconomy` flag (absent = false) equals a boolean | `economyFlag`, `value` |
 | `hq-equal` | the HQ row (`G.hq`) equals an exact occupant list (full slots only) | `cards` |
+| `deferred-hand-injections-equal` | a player's deferred hand injections (`G.deferredHandInjections[player]`, absent = `[]`) equal an exact card list | `player`, `cards` |
 
 ## How to add a ruling
 

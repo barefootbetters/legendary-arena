@@ -54,6 +54,7 @@ import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomH
 import { resolveReturnOnDiscard } from '../moves/resolveReturnOnDiscard.js';
 import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
+import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -101,6 +102,7 @@ import type {
   PendingReturnOnDiscard,
   PendingHeroChoice,
   PendingCountScaledChoice,
+  PendingElectromagneticBubbleChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { ChooseOneOption } from '../rules/heroCountSource.js';
@@ -435,6 +437,12 @@ interface ResolveCountScaledChoiceSetup {
   cardStats: Record<string, { isShieldOrHydra?: boolean }>;
   options: ChooseOneOption[];
   resolve: { optionIndex: number };
+}
+
+interface ResolveElectromagneticBubbleChoiceSetup {
+  currentPlayer: string;
+  eligibleCardIds: string[];
+  resolve: { cardId: string };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1291,6 +1299,33 @@ function runResolveCountScaledChoice(rawSetup: Record<string, unknown>): Outcome
   return { G };
 }
 
+/**
+ * Fires the real `resolveElectromagneticBubbleChoice` move against a parked Magneto
+ * pick: a chosen in-play X-Men Hero (one of the eligible snapshot) is recorded into
+ * `G.deferredHandInjections[playerID]` to be added as a seventh card next play phase.
+ * An ineligible pick is a silent no-op (round-trip rule) that records nothing.
+ *
+ * @param rawSetup - The ruling's resolve-electromagnetic-bubble-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveElectromagneticBubbleChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveElectromagneticBubbleChoiceSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({}) };
+  const pending: PendingElectromagneticBubbleChoice = {
+    choiceType: 'electromagnetic-bubble',
+    playerID: setup.currentPlayer,
+    eligibleCardIds: setup.eligibleCardIds as CardExtId[],
+  };
+  G.pendingElectromagneticBubbleChoices = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolveElectromagneticBubbleChoice(moveContext, { cardId: setup.resolve.cardId as CardExtId });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1324,6 +1359,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-return-on-discard': runResolveReturnOnDiscard,
   'resolve-hero-choice': runResolveHeroChoice,
   'resolve-count-scaled-choice': runResolveCountScaledChoice,
+  'resolve-electromagnetic-bubble-choice': runResolveElectromagneticBubbleChoice,
 };
 
 /**
@@ -1441,6 +1477,13 @@ function checkHqEqual(outcome: Outcome, expected: RulingExpectation): void {
   assert.deepStrictEqual(outcome.G.hq, expected.cards, 'HQ row mismatch');
 }
 
+/** Asserts a named player's deferred hand injections (`G.deferredHandInjections[player]`, absent = []) equal the expected cards. */
+function checkDeferredHandInjectionsEqual(outcome: Outcome, expected: RulingExpectation): void {
+  const player = expected.player as string;
+  const actual = outcome.G.deferredHandInjections?.[player] ?? [];
+  assert.deepStrictEqual(actual, expected.cards, `deferredHandInjections.${player} mismatch`);
+}
+
 // why: a boolean `G.turnEconomy` flag is lazily materialized (absent when unset), so read
 // it as `=== true` — the same absent-is-false posture the economy helpers use. A perturbed
 // value still flips the assertion (the actual boolean never changes), so non-vacuity holds.
@@ -1464,6 +1507,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'city-equal': checkCityEqual,
   'turn-economy-flag': checkTurnEconomyFlag,
   'hq-equal': checkHqEqual,
+  'deferred-hand-injections-equal': checkDeferredHandInjectionsEqual,
 };
 
 /**
@@ -1502,6 +1546,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'city-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'turn-economy-flag': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
   'hq-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
+  'deferred-hand-injections-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
 };
 
 /**

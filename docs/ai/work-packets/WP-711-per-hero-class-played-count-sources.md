@@ -1,6 +1,6 @@
 # WP-711 — Per-hero-class-played count sources (Game Engine + card-data)
 
-**Status:** Draft 2026-09-19 (EC-747; D-24533 reserved)
+**Status:** Draft 2026-09-19 (EC-748; D-24534 reserved)
 **Layer:** Game Engine (runtime count sources) + card-data markers
 **Hard-deps:** WP-247 (attack-per-count / D-24016) ✅, WP-674 (recruit-per-count family + count-source recipe / D-24489) ✅, WP-680 (per-team/per-class count-source recipe + `cardHasClassWhenPlayed` reuse / D-24497) ✅
 **Baseline:** `origin/main` @ 67299144 (2026-09-19)
@@ -137,7 +137,7 @@ cleanup if ever wanted); it changes no outcome here.
 
 ## Files Expected to Change
 
-See EC-747 §Files to Produce (authoritative allowlist). Primarily:
+See EC-748 §Files to Produce (authoritative allowlist). Primarily:
 `packages/game-engine/src/rules/heroCountSource.ts` (four slugs, union + array + drift pin),
 `packages/game-engine/src/hero/heroCountSource.resolve.ts` (+ its `.test.ts`) with the shared
 class helper, four resolver branches, four explain branches; the card-data generator input
@@ -212,13 +212,13 @@ arena-client change (no UI), no new hashed field, no parser change, no apply-scr
 ## Definition of Done
 
 Engine suite green, `pnpm -r build` 0, `cards:check` reproducible, six markers live + all
-derived feeds regenerated, D-24533 Active, WORK_INDEX + EC_INDEX rows flipped, roadmap mindmap
+derived feeds regenerated, D-24534 Active, WORK_INDEX + EC_INDEX rows flipped, roadmap mindmap
 node flipped, PR squash-merged. Marvelous Strength / Absorb Energies (ssw1), the dkcy ranged
 pair, the bkwd covert line, and the co2e tech line each scale per other Hero of the class.
 
 ## Reserved Decision (lands at execution)
 
-D-24533 — per-hero-class-played count-source family (`strength-` / `ranged-` / `tech-` /
+D-24534 — per-hero-class-played count-source family (`strength-` / `ranged-` / `tech-` /
 `covert-heroes-played-this-turn`) reusing the shipped attack/recruit-per-count grant family and
 `cardHasClassWhenPlayed`; self-exclusive, play-area "played this turn"; four classes only
 (instinct unneeded); no new hashed field; six card-data marker backfills; existing D-24016 /

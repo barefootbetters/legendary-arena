@@ -1,4 +1,4 @@
-# EC-747 — Per-hero-class-played count sources (Execution Checklist)
+# EC-748 — Per-hero-class-played count sources (Execution Checklist)
 
 **Source:** docs/ai/work-packets/WP-711-per-hero-class-played-count-sources.md
 **Layer:** Game Engine + card-data
@@ -29,7 +29,7 @@
 - [ ] Card markers authored via the generator + full multi-stage regen — NEVER edit `data/cards/*.json` by hand; NO apply-script change (`VALID_TOKEN_PATTERN` already admits the token shape)
 
 ## Required `// why:` Comments
-- [ ] Each new `heroCountSource.ts` union + array entry cites WP-711 / D-24533
+- [ ] Each new `heroCountSource.ts` union + array entry cites WP-711 / D-24534
 - [ ] The shared `countHeroClassCardsPlayedThisTurn` self-exclusion (the "each OTHER" text) + `cardHasClassWhenPlayed` reuse
 - [ ] The `explainCountSourceInputs` class branches' `count === length` self-exclusive mirror
 
@@ -46,7 +46,7 @@
 - [ ] engine suite green; `pnpm -r build` 0
 - [ ] `pnpm cards:check` reproducible; `ledger:heroes:check` + `mechanics:metadata:check` + `effect-index:check` + `sim:runtime-observed:check` + `sim:coverage --check` green
 - [ ] confirm re-pin status: no state-hash fixture diff, OR an honest re-record of a complete-game fixture whose play legitimately changed (stated in the PR body)
-- [ ] D-24533 Active; WORK_INDEX `[x]` row + EC_INDEX row flipped; roadmap mindmap 📝→✅
+- [ ] D-24534 Active; WORK_INDEX `[x]` row + EC_INDEX row flipped; roadmap mindmap 📝→✅
 - [ ] PR squash-merged when green
 
 ## Common Failure Smells
