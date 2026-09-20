@@ -43019,4 +43019,47 @@ Related: D-24533 (WP-710, the server field this renders), D-24531 (WP-708 Synerg
 D-24532 (WP-709 Realized Value %), D-20105 (UI renders projections, never interprets engine
 semantics). **Reserved by:** NUMBER-LEDGER D-24536.
 
+### D-24538 — Synergy report card on all matches (WP-715 / EC-752) (Active 2026-09-20)
+
+The WP-708/709 endgame synergy lines — per-seat **Synergy Rate** ("assembled N of M
+synergy clauses"), the cross-seat **Table Total**, and **Realized Value %** — rendered
+**only on ranked-gauntlet matches**. Root cause: the per-seat synergy contribution
+(`conditionalClauses` Played/Assembled + realized/potential value) reached the client only
+inside the PAR/competitive-score breakdown (`parScoring` → `competitionApi` / the coach
+`/scores/` endpoint → `EndgameSummary.vue` under `v-if="workedCalc"`, where `workedCalc`
+derives from `competitiveScore.scoreBreakdown`). A casual match is `par_not_published`
+(WP-465): no `competitiveScore` → no `workedCalc` → the whole block, synergy included, was
+omitted — so the operator's first casual-match live check (2026-09-20 Red Skull/Midtown)
+showed no synergy at all, and the WP-708/709 D-24026 live-verify had stayed operator-pending.
+
+**Decision.** Deliver the per-seat synergy through the **always-available endgame projection**
+and render it **outside** the competitive-score gate:
+
+1. **Channel** — a display-only per-seat `synergyContributions`
+   (`{played, assembled, potentialValue, realizedValue}`) is projected onto `UIGameOverState`
+   in `buildUIState` from the hash-excluded `G.diagnostics.conditionalClauses`, omit-when-absent.
+   `UIState.gameOver` is delivered on every match (the same payload that carries the casual VP
+   recap), so casual matches now carry synergy. Rejected: (a) a new casual-only endpoint (more
+   surface); (b) reusing the coach endpoint (itself on the ranked `/scores/` path).
+2. **Filter** — the field rides the `filterUIStateForAudience` `{ ...uiState.gameOver }` spread
+   with **no** whitelist edit (public endgame data — same for owner/opponent/spectator; mirrors
+   `endedEarly`); asserted by an audience-filter survives-test.
+3. **Render** — `EndgameSummary.vue` renders the Table Total + per-seat Synergy Rate + Realized
+   Value % in the **always-shown co-op VP recap** block (`v-if="!competitiveScore"`), sourced
+   from `gameOver.synergyContributions`, delegating to the ranked `synergyPhrase` /
+   `realizedValuePhrase` helpers for **byte-identical wording**. The ranked `workedCalc` synergy
+   block is untouched; the two blocks are mutually exclusive (`competitiveScore` present or not),
+   so there is **no double-render** (a refinement of the EC's original "single ungated renderer"
+   framing — the mutually-exclusive blocks make the lower-risk keep-ranked-as-is approach correct).
+
+**Invariants.** (1) Display-only, off-ranking (NG-1) — never enters `finalScore`/`rawScore`/PAR/
+grade. (2) Hash-neutral — the figures ride the hash-excluded `G.diagnostics` (D-24034/D-24271
+exclude it from both oracles); engine 3950/0 with sentinel `finalStateHash` + `PRE_WP080_HASH`
+byte-identical (**NO re-pin**). (3) Copy/vocabulary unchanged from WP-708/709 (celebrate-first;
+two-vocabulary copy-lint — no whiff/failed/missed, asserted). (4) Layer boundary held — the
+engine projects display-only data, the client only renders (no client re-derivation, D-20105).
+Closes the WP-708/709 D-24026 live-verify gap. Related: D-24531 (WP-708), D-24532 (WP-709),
+D-24034/D-24271 (hash-excluded diagnostics), WP-465 (par_not_published). **Reserved by:**
+NUMBER-LEDGER D-24538.
+
 Protect this file.
