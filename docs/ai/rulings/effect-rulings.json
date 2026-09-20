@@ -2195,5 +2195,96 @@
     },
     "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 2 },
     "why": "Picking 'empowered' grants +Attack equal to the count of the empowered class in the HQ (Empowered by [hc:tech] = +1 per Tech Hero in the HQ): two Tech Heroes (Iron Man, Nick Fury) among a Strength Hulk → +2 attack (D-24069, count-cards-by-class-in-zone over the HQ). Paired with the draw sibling."
+  },
+  {
+    "id": "put-any-number-bottom-hq-selected-cards-leave-and-refill",
+    "mechanic": "put-any-number-bottom-hq",
+    "decision": "D-24132",
+    "scenario": {
+      "action": "resolve-put-any-number-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": [
+          "core/avengers/iron-man#0",
+          "core/spider-man/spider-man#0",
+          "core/hulk/hulk#0",
+          "core/x-men/wolverine#0",
+          "core/x-men/cyclops#0"
+        ],
+        "heroDeck": [
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0",
+          "core/x-men/gambit#0"
+        ],
+        "resolve": {
+          "cardIds": [
+            "core/spider-man/spider-man#0",
+            "core/x-men/wolverine#0"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "kind": "hq-equal",
+      "cards": [
+        "core/avengers/iron-man#0",
+        "core/x-men/storm#0",
+        "core/hulk/hulk#0",
+        "core/x-men/rogue#0",
+        "core/x-men/cyclops#0"
+      ]
+    },
+    "why": "Wonder Man's 8th Wonder of the World / Sunspot's Empyreal Force 'Choose any number of cards from the HQ; put them on the bottom of the Hero Deck' - each chosen HQ card is pushed to the Hero Deck bottom and its vacated slot refills from the deck top (the recruitHero refill path), never leaving a permanent gap. Selecting Spider-Man (slot 1) then Wolverine (slot 3) refills those slots with Storm then Rogue, in submitted order (D-24132)."
+  },
+  {
+    "id": "put-any-number-bottom-hq-empowered-counts-reshaped-hq",
+    "mechanic": "put-any-number-bottom-hq",
+    "decision": "D-24132",
+    "scenario": {
+      "action": "resolve-put-any-number-bottom-hq",
+      "setup": {
+        "currentPlayer": "0",
+        "hq": [
+          "core/avengers/iron-man#0",
+          "core/shield/nick-fury#0",
+          "core/spider-man/spider-man#0",
+          "core/x-men/wolverine#0",
+          "core/x-men/cyclops#0"
+        ],
+        "heroDeck": [
+          "core/hulk/hulk#0",
+          "core/x-men/storm#0",
+          "core/x-men/rogue#0"
+        ],
+        "empoweredClasses": [
+          "tech"
+        ],
+        "cardTraits": {
+          "core/avengers/iron-man#0": {
+            "heroClass": "tech",
+            "team": "avengers"
+          },
+          "core/shield/nick-fury#0": {
+            "heroClass": "tech",
+            "team": "shield"
+          },
+          "core/hulk/hulk#0": {
+            "heroClass": "strength",
+            "team": "avengers"
+          }
+        },
+        "resolve": {
+          "cardIds": [
+            "core/avengers/iron-man#0"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "kind": "turn-economy-value",
+      "economyField": "attack",
+      "amount": 1
+    },
+    "why": "The trailing 'Then you get Empowered by [hc:tech]' grant fires AFTER the HQ is reshaped, so it counts the reshaped HQ, not the original (D-24132, printed order). Putting the Tech Iron Man (slot 0) on the deck bottom refills slot 0 with the Strength Hulk from the deck top, dropping the HQ Tech count from two (Iron Man + Nick Fury) to one (Nick Fury) - so Empowered by Tech grants +1 attack, not +2. Had the count run before the move it would read +2; this ruling pins the after-the-reshape ordering."
   }
 ]

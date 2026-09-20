@@ -67,6 +67,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-put-cards-on-deck` | `resolvePutCardsOnDeckChoice` move | the Dr. Doom put-exactly-N-cards-on-deck-top choice (selection order) |
 | `resolve-reorder` | `resolveReorderChoice` move | the Amazing Spider-Man reorder-the-deck-top-remainder choice (permutation) |
 | `resolve-draw-or-empowered` | `resolveDrawOrEmpowered` move | the One-Hit Wonder choose-one draw-or-Empowered choice |
+| `resolve-put-any-number-bottom-hq` | `resolvePutAnyNumberBottomHQ` move | the Wonder Man / Sunspot put-any-number-of-HQ-cards-on-deck-bottom choice (multi-select + refill, then trailing Empowered) |
 
 ### Current expectation kinds
 
@@ -84,6 +85,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `attached-bystanders-equal` | a card's attached-bystander list (`G.attachedBystanders[id]`) equals an exact card list | `villainCardId`, `cards` |
 | `city-equal` | the City row (`G.city`) equals an exact occupant list | `cards` |
 | `turn-economy-flag` | a named boolean `G.turnEconomy` flag (absent = false) equals a boolean | `economyFlag`, `value` |
+| `hq-equal` | the HQ row (`G.hq`) equals an exact occupant list (full slots only) | `cards` |
 
 ## How to add a ruling
 

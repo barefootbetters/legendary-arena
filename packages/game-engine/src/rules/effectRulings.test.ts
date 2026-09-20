@@ -50,6 +50,7 @@ import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { resolvePutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
 import { resolveReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { resolvePutAnyNumberBottomHQ } from '../moves/resolvePutAnyNumberBottomHQ.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -93,6 +94,7 @@ import type {
   PendingPutCardsOnDeckChoice,
   PendingReorderChoice,
   PendingDrawOrEmpowered,
+  PendingPutAnyNumberBottomHQ,
   MelterRevealedTop,
 } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -393,6 +395,15 @@ interface ResolveDrawOrEmpoweredSetup {
   hq?: (string | null)[];
   cardTraits?: Record<string, TraitOverride>;
   resolve: { choice: 'draw' | 'empowered' };
+}
+
+interface ResolvePutAnyNumberBottomHQSetup {
+  currentPlayer: string;
+  hq: (string | null)[];
+  heroDeck: string[];
+  empoweredClasses?: string[];
+  cardTraits?: Record<string, TraitOverride>;
+  resolve: { cardIds: string[] };
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1111,6 +1122,42 @@ function runResolveDrawOrEmpowered(rawSetup: Record<string, unknown>): Outcome {
   return { G };
 }
 
+/**
+ * Fires the real `resolvePutAnyNumberBottomHQ` move against a parked choose-any-number
+ * choice (Wonder Man / Sunspot / Star-Lord): each selected HQ card moves to the BOTTOM
+ * of the shared Hero Deck and its vacated slot refills from the deck top, then any
+ * trailing "Then you get Empowered by [classes]" grant fires AFTER the reshape (printed
+ * order — the class count reflects the reshaped HQ).
+ *
+ * @param rawSetup - The ruling's resolve-put-any-number-bottom-hq setup payload.
+ * @returns The mutated game state.
+ */
+function runResolvePutAnyNumberBottomHq(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolvePutAnyNumberBottomHQSetup;
+  const G = buildBaseState(1);
+
+  G.playerZones = { [setup.currentPlayer]: makePlayerZones({}) };
+  G.hq = setup.hq as LegendaryGameState['hq'];
+  G.heroDeck = setup.heroDeck as CardExtId[];
+  // why: the trailing Empowered grant counts the reshaped HQ by class
+  // (count-cards-by-class-in-zone reads G.hq + G.cardTraits), so seed traits when the
+  // ruling exercises that branch; the pure move (no Empowered) ignores them.
+  if (setup.cardTraits !== undefined) {
+    G.cardTraits = setup.cardTraits as LegendaryGameState['cardTraits'];
+  }
+  const pending: PendingPutAnyNumberBottomHQ = {
+    playerID: setup.currentPlayer,
+    sourceCardId: 'ruling-put-any-number-source' as CardExtId,
+    ...(setup.empoweredClasses !== undefined ? { empoweredClasses: setup.empoweredClasses } : {}),
+  };
+  G.pendingPutAnyNumberBottomHQ = [pending];
+
+  const moveContext = makeMockMoveContext(G, { playerID: setup.currentPlayer });
+  resolvePutAnyNumberBottomHQ(moveContext, { cardIds: setup.resolve.cardIds as CardExtId[] });
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1140,6 +1187,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-put-cards-on-deck': runResolvePutCardsOnDeck,
   'resolve-reorder': runResolveReorder,
   'resolve-draw-or-empowered': runResolveDrawOrEmpowered,
+  'resolve-put-any-number-bottom-hq': runResolvePutAnyNumberBottomHq,
 };
 
 /**
@@ -1252,6 +1300,11 @@ function checkCityEqual(outcome: Outcome, expected: RulingExpectation): void {
   assert.deepStrictEqual(outcome.G.city, expected.cards, 'City row mismatch');
 }
 
+/** Asserts the HQ row (`G.hq`) equals the expected exact occupant list (full slots only). */
+function checkHqEqual(outcome: Outcome, expected: RulingExpectation): void {
+  assert.deepStrictEqual(outcome.G.hq, expected.cards, 'HQ row mismatch');
+}
+
 // why: a boolean `G.turnEconomy` flag is lazily materialized (absent when unset), so read
 // it as `=== true` — the same absent-is-false posture the economy helpers use. A perturbed
 // value still flips the assertion (the actual boolean never changes), so non-vacuity holds.
@@ -1274,6 +1327,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'attached-bystanders-equal': checkAttachedBystandersEqual,
   'city-equal': checkCityEqual,
   'turn-economy-flag': checkTurnEconomyFlag,
+  'hq-equal': checkHqEqual,
 };
 
 /**
@@ -1311,6 +1365,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'attached-bystanders-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'city-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'turn-economy-flag': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
+  'hq-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
 };
 
 /**
