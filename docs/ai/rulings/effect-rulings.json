@@ -2667,5 +2667,107 @@
       ]
     },
     "why": "The 'top' disposition leaves the revealed card face-up on top of the deck with no zone mutation (the look-at never removed it) — only the pending bookkeeping records the decision (WP-695 / D-24512). A regression that ko'd or discarded on 'top' would drop the card from the deck, flipping this assertion; part of the three-disposition set with the ko / discard siblings."
+  },
+  {
+    "id": "seat-choice-partial-submission-keeps-choice-open",
+    "mechanic": "seat-choice",
+    "decision": "D-24501",
+    "scenario": {
+      "action": "resolve-seat-choice",
+      "setup": {
+        "numPlayers": 2,
+        "addressedSeats": [
+          "0",
+          "1"
+        ],
+        "seatPrompts": {
+          "0": {
+            "options": [
+              {
+                "label": "Option A"
+              },
+              {
+                "label": "Option B"
+              }
+            ]
+          },
+          "1": {
+            "options": [
+              {
+                "label": "Option A"
+              },
+              {
+                "label": "Option B"
+              }
+            ]
+          }
+        },
+        "defaultOptionIndex": 0,
+        "submissions": [
+          {
+            "seat": "0",
+            "optionIndex": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "kind": "pending-seat-choice-open",
+      "value": true
+    },
+    "why": "A simultaneous multi-seat choice blocks turn progress until EVERY addressed seat submits: with only seat 0 resolved and seat 1 still outstanding, the choice stays open (G.pendingSeatChoice is not cleared) and no apply fires (WP-684 / D-24501, the atomic all-submit gate). Paired with the all-seats-submitted sibling that proves the apply-and-clear."
+  },
+  {
+    "id": "seat-choice-all-seats-submitted-applies-and-clears",
+    "mechanic": "seat-choice",
+    "decision": "D-24501",
+    "scenario": {
+      "action": "resolve-seat-choice",
+      "setup": {
+        "numPlayers": 2,
+        "addressedSeats": [
+          "0",
+          "1"
+        ],
+        "seatPrompts": {
+          "0": {
+            "options": [
+              {
+                "label": "Option A"
+              },
+              {
+                "label": "Option B"
+              }
+            ]
+          },
+          "1": {
+            "options": [
+              {
+                "label": "Option A"
+              },
+              {
+                "label": "Option B"
+              }
+            ]
+          }
+        },
+        "defaultOptionIndex": 0,
+        "submissions": [
+          {
+            "seat": "0",
+            "optionIndex": 0
+          },
+          {
+            "seat": "1",
+            "optionIndex": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "kind": "pending-seat-choice-open",
+      "value": false
+    },
+    "why": "Once every addressed seat has submitted, the multi-seat choice applies atomically (ascending-seat-order, replay-identical) and G.pendingSeatChoice is cleared (WP-684 / D-24501). With both seats 0 and 1 resolved, the choice is gone. A regression that applied before all seats submitted, or failed to clear, would flip this against the partial-submission sibling."
   }
 ]

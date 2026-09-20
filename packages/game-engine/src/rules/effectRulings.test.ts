@@ -56,6 +56,7 @@ import { resolveHeroChoice } from '../moves/heroChoice.resolve.js';
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { resolveElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { resolveRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { executeRuleHooks } from './ruleRuntime.execute.js';
@@ -106,6 +107,7 @@ import type {
   PendingElectromagneticBubbleChoice,
   PendingRuthlessDictatorChoice,
   RuthlessDictatorDisposition,
+  PendingSeatChoice,
   MelterRevealedTop,
 } from '../types.js';
 import type { ChooseOneOption } from '../rules/heroCountSource.js';
@@ -454,6 +456,14 @@ interface ResolveRuthlessDictatorChoiceSetup {
   revealedCardIds: string[];
   availableDispositions: RuthlessDictatorDisposition[];
   resolve: { cardId: string; disposition: RuthlessDictatorDisposition };
+}
+
+interface ResolveSeatChoiceSetup {
+  numPlayers: number;
+  addressedSeats: string[];
+  seatPrompts: Record<string, { options: { label: string }[] }>;
+  defaultOptionIndex: number;
+  submissions: { seat: string; optionIndex: number }[];
 }
 
 /** The result a scenario runner returns: the mutated G plus any query boolean. */
@@ -1369,6 +1379,36 @@ function runResolveRuthlessDictatorChoice(rawSetup: Record<string, unknown>): Ou
   return { G };
 }
 
+/**
+ * Fires the real `resolveSeatChoice` move (one submission per entry, in order) against
+ * a parked foundational multi-seat choice (WP-684 / D-24501, `generic` kind). The
+ * choice stays open until EVERY addressed seat has submitted, then applies atomically
+ * and clears — so a partial submission leaves `G.pendingSeatChoice` open, and the last
+ * submission clears it.
+ *
+ * @param rawSetup - The ruling's resolve-seat-choice setup payload.
+ * @returns The mutated game state.
+ */
+function runResolveSeatChoice(rawSetup: Record<string, unknown>): Outcome {
+  const setup = rawSetup as unknown as ResolveSeatChoiceSetup;
+  const G = buildBaseState(setup.numPlayers);
+
+  G.pendingSeatChoice = {
+    kind: 'generic',
+    addressedSeats: setup.addressedSeats,
+    seatPrompts: setup.seatPrompts as PendingSeatChoice['seatPrompts'],
+    submissions: {},
+    defaultOptionIndex: setup.defaultOptionIndex,
+  };
+
+  for (const submission of setup.submissions) {
+    const moveContext = makeMockMoveContext(G, { playerID: submission.seat });
+    resolveSeatChoice(moveContext, { optionIndex: submission.optionIndex });
+  }
+
+  return { G };
+}
+
 // why: D-24524 — the harness dispatch map is the runtime binding of the closed
 // RULING_SCENARIO_ACTIONS vocabulary to real handlers. The drift-pin describe below
 // asserts its keys equal the canonical array exactly (D-24372: a runtime assertion, not
@@ -1404,6 +1444,7 @@ const SCENARIO_RUNNERS: Record<RulingScenarioAction, (setup: Record<string, unkn
   'resolve-count-scaled-choice': runResolveCountScaledChoice,
   'resolve-electromagnetic-bubble-choice': runResolveElectromagneticBubbleChoice,
   'resolve-ruthless-dictator-choice': runResolveRuthlessDictatorChoice,
+  'resolve-seat-choice': runResolveSeatChoice,
 };
 
 /**
@@ -1528,6 +1569,11 @@ function checkDeferredHandInjectionsEqual(outcome: Outcome, expected: RulingExpe
   assert.deepStrictEqual(actual, expected.cards, `deferredHandInjections.${player} mismatch`);
 }
 
+/** Asserts whether a seat choice is still open (`G.pendingSeatChoice !== undefined`) equals the expected boolean. */
+function checkPendingSeatChoiceOpen(outcome: Outcome, expected: RulingExpectation): void {
+  assert.equal(outcome.G.pendingSeatChoice !== undefined, expected.value, 'pendingSeatChoice open-state mismatch');
+}
+
 // why: a boolean `G.turnEconomy` flag is lazily materialized (absent when unset), so read
 // it as `=== true` — the same absent-is-false posture the economy helpers use. A perturbed
 // value still flips the assertion (the actual boolean never changes), so non-vacuity holds.
@@ -1552,6 +1598,7 @@ const EXPECTATION_CHECKERS: Record<RulingExpectationKind, (outcome: Outcome, exp
   'turn-economy-flag': checkTurnEconomyFlag,
   'hq-equal': checkHqEqual,
   'deferred-hand-injections-equal': checkDeferredHandInjectionsEqual,
+  'pending-seat-choice-open': checkPendingSeatChoiceOpen,
 };
 
 /**
@@ -1591,6 +1638,7 @@ const PERTURBERS: Record<RulingExpectationKind, (expected: RulingExpectation) =>
   'turn-economy-flag': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
   'hq-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
   'deferred-hand-injections-equal': (expected) => ({ ...expected, cards: [...(expected.cards ?? []), PERTURB_SENTINEL] }),
+  'pending-seat-choice-open': (expected) => ({ ...expected, value: !(expected.value ?? false) }),
 };
 
 /**
