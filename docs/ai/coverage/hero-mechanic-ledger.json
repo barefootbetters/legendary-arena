@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 725,
+    "totalRows": 727,
     "byStatus": {
-      "executable": 322,
+      "executable": 324,
       "deferred": 16,
       "condition": 28,
       "unsupported": 322,
@@ -13331,6 +13331,22 @@
       "extId": "xmen/x-23",
       "heroName": "X-23",
       "set": "xmen",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "adamantium-foot-claws",
+          "name": "Adamantium Foot Claws"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "heroName": "X-23",
+      "set": "xmen",
       "mechanic": "ko-wound",
       "status": "executable",
       "wp": "",
@@ -13340,6 +13356,22 @@
         {
           "slug": "healing-factor-genome",
           "name": "Healing Factor Genome"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "heroName": "X-23",
+      "set": "xmen",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "bioengineered-assassin",
+          "name": "Bioengineered Assassin"
         }
       ]
     },

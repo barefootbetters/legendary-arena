@@ -1662,7 +1662,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:X-Gene] [hc:instinct]: Draw a card."
+            "[keyword:X-Gene] [hc:instinct]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -1694,7 +1694,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Berserk]",
-            "[keyword:X-Gene] [hc:instinct]: You may KO a card from your hand or discard pile."
+            "[keyword:X-Gene] [hc:instinct]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {

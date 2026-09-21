@@ -6605,3 +6605,136 @@ describe('executeHeroEffects — Realized Value % refinement (WP-712)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// X-Gene — end-to-end behavior gated on heroClassInDiscardPile (WP-723 / D-24544)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('Adamantium Foot Claws draws a card WHEN an Instinct card is in the discard pile', () => {
+    const gameState = makeTestState({
+      deck: ['deck-card'],
+      hand: [],
+      discard: ['instinct-in-discard'],
+      inPlay: ['foot-claws'],
+      cardTraits: { 'instinct-in-discard': { heroClass: 'instinct', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'foot-claws' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          conditions: [{ type: 'heroClassInDiscardPile', value: 'instinct' }],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'foot-claws' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 1,
+      'a card is drawn because an Instinct card sits in the discard pile');
+  });
+
+  it('Adamantium Foot Claws draws NOTHING when no Instinct card is in the discard pile (no crash)', () => {
+    const gameState = makeTestState({
+      deck: ['deck-card'],
+      hand: [],
+      discard: ['tech-in-discard'],
+      inPlay: ['foot-claws'],
+      cardTraits: { 'tech-in-discard': { heroClass: 'tech', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'foot-claws' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          conditions: [{ type: 'heroClassInDiscardPile', value: 'instinct' }],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'foot-claws' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 0,
+      'no card is drawn — the discard-pile condition failed');
+  });
+
+  it('does NOT fire on "another Instinct Hero played this turn" — an Instinct card in PLAY is not the discard-pile gate', () => {
+    const gameState = makeTestState({
+      deck: ['deck-card'],
+      hand: [],
+      discard: [],
+      inPlay: ['foot-claws', 'instinct-in-play'],
+      cardTraits: { 'instinct-in-play': { heroClass: 'instinct', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'foot-claws' as string,
+          timing: 'onPlay',
+          keywords: ['draw'],
+          conditions: [{ type: 'heroClassInDiscardPile', value: 'instinct' }],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'foot-claws' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 0,
+      'a played Instinct Hero does not satisfy the discard-pile gate');
+  });
+
+  it('Bioengineered Assassin parks the optional-KO choice WHEN an Instinct card is in the discard pile', () => {
+    const gameState = makeTestState({
+      hand: ['hand-card'],
+      discard: ['instinct-in-discard'],
+      inPlay: ['assassin'],
+      cardTraits: { 'instinct-in-discard': { heroClass: 'instinct', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'assassin' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-hand-discard'],
+          conditions: [{ type: 'heroClassInDiscardPile', value: 'instinct' }],
+          effects: [{ type: 'optional-ko-hand-discard' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'assassin' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1,
+      'the optional-KO-from-hand-or-discard choice parks because an Instinct card is in discard');
+  });
+
+  it('Bioengineered Assassin parks NOTHING when no Instinct card is in the discard pile', () => {
+    const gameState = makeTestState({
+      hand: ['hand-card'],
+      discard: ['tech-in-discard'],
+      inPlay: ['assassin'],
+      cardTraits: { 'tech-in-discard': { heroClass: 'tech', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'assassin' as string,
+          timing: 'onPlay',
+          keywords: ['optional-ko-hand-discard'],
+          conditions: [{ type: 'heroClassInDiscardPile', value: 'instinct' }],
+          effects: [{ type: 'optional-ko-hand-discard' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'assassin' as string);
+
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0,
+      'the optional-KO choice does not park — the discard-pile condition failed');
+  });
+
+  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 45', () => {
+    // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
+    // it registers no handler. The count must stay 45.
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 45,
+      'HERO_EFFECT_HANDLERS stays 45 (X-Gene is not an effect handler)');
+  });
+});

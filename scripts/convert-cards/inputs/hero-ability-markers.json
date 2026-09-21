@@ -1780,6 +1780,18 @@
       "cardSlug": "healing-factor-genome",
       "abilityIndex": 1,
       "markupToken": "[keyword:ko-wound]"
+    },
+    {
+      "heroSlug": "x-23",
+      "cardSlug": "adamantium-foot-claws",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "x-23",
+      "cardSlug": "bioengineered-assassin",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:optional-ko-hand-discard]"
     }
   ],
   "_deferred": [
@@ -2118,6 +2130,14 @@
       "abilityIndex": 1,
       "abilityText": "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again.",
       "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
+    },
+    {
+      "setAbbr": "xmen",
+      "heroSlug": "x-23",
+      "cardSlug": "heir-to-wolverine",
+      "abilityIndex": 1,
+      "abilityText": "[keyword:X-Gene] [hc:instinct]: Count the[hc:instinct] cards in your discard pile. [keyword:Berserk] that many times.",
+      "reason": "WP-723 / D-24544 — X-Gene deferred: the effect is a COUNT-SCALED re-trigger ('Berserk that many times', once per Instinct card in the discard pile). Modeling it needs a discard-class HeroCountSource plus a count-scaled Berserk re-trigger primitive node, neither of which exists. NOT added to X_GENE_CARDS, so its [keyword:X-Gene] stays an honest parse-unrecognized hollow (the two tractable X-Gene cards, adamantium-foot-claws + bioengineered-assassin, are marked in the xmen block above)."
     }
   ]
 }
