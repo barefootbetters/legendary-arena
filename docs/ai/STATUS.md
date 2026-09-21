@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-722 — War Machine "Overwhelming Firepower" onDefeat reward (EC-759 / D-24543) (2026-09-20)
+
+Resolved the `hero-ability-markers.json` `_deferred` entry for
+`rvlt/war-machine/overwhelming-firepower` — *"Whenever you defeat a Villain or
+Mastermind this turn, draw a card and rescue a Bystander."* The card now fires: on
+play the ability waits, and each qualifying Villain or Mastermind (tactic) defeat
+that turn draws the active player one card and rescues one Bystander.
+
+**Marker-only, no new engine handler.** The onDefeat reactive trigger already exists
+— WP-656 / D-24467 (Emma Frost's Diamond Form) landed it generically: the
+`[keyword:defeated-villain-or-mastermind]` marker → a `defeatedVillainOrMastermindThisTurn`
+wait-and-see condition, the edge flag set at the fight-move tails, and
+`resolveDeferredHeroGrants` re-firing the hook's effects per defeat with re-arm. War
+Machine's ability is the identical shape, differing only in reward (draw + rescue vs
++3 recruit), and both `draw`/`rescue` are already-handled hero keywords. The audit
+that deferred this card cited the stale D-21602 "fight-win trigger not wired" reason
+(predating WP-656). Three curated-map entries append
+`[keyword:defeated-villain-or-mastermind] [keyword:draw:1] [keyword:rescue:1]` to the
+line (the WP-667 multi-marker-per-line precedent); the marker→condition gate defers
+the draw + rescue reward.
+
+**Verified.** Focused test `warMachineOverwhelmingFirepower.test.ts` 4/4 (parse +
+negative + positive + edge-per-defeat, driving the real parsed hook end-to-end);
+game-engine suite **3954/0** with the sentinel `finalStateHash` byte-identical (no
+committed fixture plays rvlt War Machine — **no re-pin**); `cards:check`,
+`ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`,
+`sim:coverage --check`, `sim:runtime-observed:check` all exit 0. The ledger flips
+`overwhelming-firepower` from fully-hollow to `draw`/`rescue` executable +
+`defeated-villain-or-mastermind` condition. Moon Knight golden-ankh (Rooftops /
+VP-scaled) and Werewolf-by-Night track-the-captives (Moonlight) stay `_deferred` as
+named follow-ups. **D-24026 live-verify operator-pending** on
+`play.legendary-arena.com`.
 ### WP-721 — Rewardless `ko-wound` Hero Keyword: auto-resolve "You may KO a Wound" (EC-758 / D-24542) (2026-09-20)
 
 Resolves the two WP-382/D-24183 rewardless `_deferred` "KO a Wound" hollows — **xmen/x-23/healing-factor-genome**
