@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2743,
+    "executable": 2803,
     "heroes": 324,
-    "hooks": 6185,
-    "noEffect": 2797,
-    "parsedNotExecuted": 645
+    "hooks": 6333,
+    "noEffect": 2648,
+    "parsedNotExecuted": 882
   },
   "perSet": {
     "2099": {
@@ -25,7 +25,7 @@
     "anni": {
       "executable": 73,
       "hooks": 127,
-      "noEffect": 54
+      "noEffect": 49
     },
     "antm": {
       "executable": 52,
@@ -43,9 +43,9 @@
       "noEffect": 76
     },
     "bkwd": {
-      "executable": 22,
-      "hooks": 125,
-      "noEffect": 24
+      "executable": 30,
+      "hooks": 138,
+      "noEffect": 29
     },
     "ca75": {
       "executable": 57,
@@ -60,12 +60,12 @@
     "co2e": {
       "executable": 150,
       "hooks": 241,
-      "noEffect": 67
+      "noEffect": 62
     },
     "core": {
-      "executable": 132,
+      "executable": 127,
       "hooks": 229,
-      "noEffect": 53
+      "noEffect": 22
     },
     "cosm": {
       "executable": 44,
@@ -73,9 +73,9 @@
       "noEffect": 149
     },
     "cvwr": {
-      "executable": 123,
-      "hooks": 300,
-      "noEffect": 127
+      "executable": 167,
+      "hooks": 400,
+      "noEffect": 152
     },
     "dead": {
       "executable": 41,
@@ -88,14 +88,14 @@
       "noEffect": 64
     },
     "dkcy": {
-      "executable": 172,
+      "executable": 167,
       "hooks": 298,
       "noEffect": 121
     },
     "dstr": {
       "executable": 40,
       "hooks": 76,
-      "noEffect": 31
+      "noEffect": 23
     },
     "fear": {
       "executable": 43,
@@ -110,7 +110,7 @@
     "gotg": {
       "executable": 17,
       "hooks": 92,
-      "noEffect": 75
+      "noEffect": 70
     },
     "mdns": {
       "executable": 64,
@@ -118,14 +118,14 @@
       "noEffect": 59
     },
     "mgtg": {
-      "executable": 39,
-      "hooks": 76,
-      "noEffect": 37
+      "executable": 51,
+      "hooks": 99,
+      "noEffect": 48
     },
     "msis": {
-      "executable": 64,
-      "hooks": 94,
-      "noEffect": 30
+      "executable": 68,
+      "hooks": 101,
+      "noEffect": 33
     },
     "msmc": {
       "executable": 51,
@@ -135,7 +135,7 @@
     "msp1": {
       "executable": 82,
       "hooks": 109,
-      "noEffect": 23
+      "noEffect": 20
     },
     "nmut": {
       "executable": 37,
@@ -143,7 +143,7 @@
       "noEffect": 61
     },
     "noir": {
-      "executable": 21,
+      "executable": 16,
       "hooks": 71,
       "noEffect": 35
     },
@@ -158,14 +158,14 @@
       "noEffect": 75
     },
     "rvlt": {
-      "executable": 55,
+      "executable": 56,
       "hooks": 172,
-      "noEffect": 117
+      "noEffect": 108
     },
     "shld": {
-      "executable": 37,
-      "hooks": 107,
-      "noEffect": 33
+      "executable": 31,
+      "hooks": 95,
+      "noEffect": 22
     },
     "smhc": {
       "executable": 26,
@@ -173,44 +173,44 @@
       "noEffect": 75
     },
     "ssw1": {
-      "executable": 123,
+      "executable": 118,
       "hooks": 221,
       "noEffect": 85
     },
     "ssw2": {
       "executable": 128,
       "hooks": 271,
-      "noEffect": 90
+      "noEffect": 84
     },
     "vill": {
       "executable": 130,
       "hooks": 288,
-      "noEffect": 87
+      "noEffect": 84
     },
     "vnom": {
-      "executable": 47,
-      "hooks": 106,
-      "noEffect": 59
+      "executable": 41,
+      "hooks": 100,
+      "noEffect": 56
     },
     "wpnx": {
       "executable": 53,
-      "hooks": 83,
-      "noEffect": 30
+      "hooks": 88,
+      "noEffect": 27
     },
     "wtif": {
       "executable": 81,
       "hooks": 140,
-      "noEffect": 59
+      "noEffect": 53
     },
     "wwhk": {
       "executable": 126,
       "hooks": 336,
-      "noEffect": 196
+      "noEffect": 120
     },
     "xmen": {
-      "executable": 142,
-      "hooks": 332,
-      "noEffect": 185
+      "executable": 165,
+      "hooks": 350,
+      "noEffect": 166
     }
   },
   "schemaVersion": 1,
@@ -223,7 +223,19 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
+    "attack-per-count:attack-icon-played-this-turn": 1,
+    "attack-per-count:avengers-played-this-turn": 1,
+    "attack-per-count:cost-four-plus-played-this-turn": 3,
+    "attack-per-count:covert-heroes-played-this-turn": 1,
+    "attack-per-count:distinct-hero-classes-played-this-turn": 1,
+    "attack-per-count:odd-cost-heroes-played-this-turn": 1,
+    "attack-per-count:ranged-heroes-played-this-turn": 1,
+    "attack-per-count:shield-heroes-played-this-turn": 1,
+    "attack-per-count:shield-levels:1": 2,
+    "attack-per-count:strength-heroes-played-this-turn": 3,
+    "attack-per-count:tech-heroes-played-this-turn": 5,
     "attack-per-count:victory-bystanders": 2,
+    "attack-per-count:worthy-cards-played-this-turn": 1,
     "blood-frenzy": 6,
     "bridge": 3,
     "bridge-conqueror": 3,
@@ -247,7 +259,7 @@
     "cyber-mod-wound": 2,
     "danger-sense": 18,
     "dark-memories": 10,
-    "defeated-villain-or-mastermind": 1,
+    "defeated-villain-or-mastermind": 2,
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
@@ -260,6 +272,7 @@
     "explore": 2,
     "fated-future": 6,
     "feast": 7,
+    "first-hero-condition": 1,
     "focus": 25,
     "fortify": 1,
     "heist": 3,
@@ -267,6 +280,7 @@
     "hunt-for-victims": 1,
     "hyperspeed": 14,
     "indigestion": 5,
+    "kidnap-per-count:tech-heroes-played-this-turn": 1,
     "ko-wound-reward:attack": 5,
     "ko-wound-reward:draw": 3,
     "ko-wound-reward:recruit": 2,
@@ -295,6 +309,10 @@
     "patrol-your-victory-pile": 1,
     "phasing": 12,
     "piercing-energy": 11,
+    "recruit-per-count:cost-four-plus-played-this-turn": 1,
+    "recruit-per-count:distinct-hero-classes-played-this-turn": 1,
+    "recruit-per-count:ranged-heroes-played-this-turn": 2,
+    "recruit-per-count:recruit-icon-played-this-turn": 1,
     "recruit-threshold": 9,
     "reveal-count": 2,
     "reveal-multi-take": 1,
@@ -311,7 +329,6 @@
     "shatter": 7,
     "shuffle-discard-empty-reward:attack": 1,
     "shuffle-discard-empty-reward:recruit": 1,
-    "smash": 19,
     "soaring-flight": 17,
     "soulbind": 5,
     "soulbind-a-bystander-or-villain": 1,
