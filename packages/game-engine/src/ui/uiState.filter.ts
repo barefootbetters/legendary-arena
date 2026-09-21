@@ -1049,6 +1049,23 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-719 / D-24541 — the pending Covering Fire choose-one (Hawkeye) is private to the
+  // chooser (only the active player may resolve it). Present only when the audience is the
+  // choosing player; omitted (conditional assignment, never an `undefined` literal) for
+  // opponents AND spectators — mirroring the pendingDrawOrEmpowered posture. otherPlayerCount is
+  // a derived count carrying no private identity. A field that reaches build but not this
+  // whitelist is dropped at the filter (the shipped board-visible-field failure mode).
+  if (
+    uiState.pendingCoveringFireChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingCoveringFireChoice.playerID
+  ) {
+    result.pendingCoveringFireChoice = {
+      playerID: uiState.pendingCoveringFireChoice.playerID,
+      otherPlayerCount: uiState.pendingCoveringFireChoice.otherPlayerCount,
+    };
+  }
+
   // why: WP-675 / D-24490 — the pending count-scaled choose-one (vnom Symbiotic Adaptation)
   // is private to the chooser (only they may resolve it). Present only when the audience is a
   // player whose playerId equals the chooser's playerID; omitted (conditional assignment, never

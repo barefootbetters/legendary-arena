@@ -1085,6 +1085,30 @@ export interface PendingDrawOrEmpowered {
 }
 
 /**
+ * Pending Covering Fire choose-one player choice state (WP-719 / D-24541 — Hawkeye's
+ * "Covering Fire").
+ *
+ * Created when the `covering-fire` hero effect is played (`onPlay`, after the `[hc:tech]`
+ * heroClassMatch gate passes) — the printed "Choose one: each other player draws a card or
+ * each other player discards a card". Appended to G.pendingCoveringFireChoices[] (FIFO
+ * queue). Removed (front-popped) by resolveCoveringFireChoice after the ACTIVE player picks
+ * 'draw' or 'discard'. Must be undefined or empty at every turn-end (enforced by the
+ * block-all guards).
+ *
+ * // why: D-24541 — the CHOICE is made by the active player (freeze-safe D-24284 scoping);
+ * both resolved branches iterate EACH OTHER seat (Object.keys(G.playerZones).sort(), skipping
+ * the active player). The pending entry records only the choosing player and the source card
+ * (for log attribution) — non-active seats never choose (the discard branch auto-picks their
+ * card deterministically, D-24284), so no per-seat data is stored.
+ */
+export interface PendingCoveringFireChoice {
+  /** The active player who must pick 'draw' or 'discard'. */
+  playerID: string;
+  /** The Covering Fire card that parked this choice, for log attribution. */
+  sourceCardId: CardExtId;
+}
+
+/**
  * Pending count-scaled choose-one player choice state (WP-675 / D-24490).
  *
  * Created when a `count-scaled-choose` hero effect is played (`onPlay`) — the
@@ -1869,6 +1893,17 @@ export interface LegendaryGameState {
   // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending draw-or-empowered choices awaiting resolution (WP-286). */
   pendingDrawOrEmpowered?: PendingDrawOrEmpowered[] | undefined;
+
+  // why: WP-719 / D-24541 — FIFO queue of pending Covering Fire choices (one per played
+  // Hawkeye "Covering Fire" ability whose [hc:tech] gate passed — the "Choose one: each
+  // other player draws a card or each other player discards a card" form). Entries are
+  // appended by the heroEffectCoveringFire park case; front-popped by
+  // resolveCoveringFireChoice after the ACTIVE player picks 'draw' or 'discard'. Must be
+  // undefined or empty at every turn-end. Optional so existing test state literals do not
+  // need updating; **lazily initialized at the park site, never in Game.setup** (D-24541).
+  // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Covering Fire choose-one choices awaiting resolution (WP-719). */
+  pendingCoveringFireChoices?: PendingCoveringFireChoice[] | undefined;
 
   /** FIFO queue of pending count-scaled choose-one choices awaiting resolution (WP-675 / D-24490). */
   pendingCountScaledChoice?: PendingCountScaledChoice[] | undefined;

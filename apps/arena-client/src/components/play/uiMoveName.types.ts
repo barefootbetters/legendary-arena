@@ -92,6 +92,9 @@ export type UiMoveName =
   | 'resolveDefeatChoice'
   | 'resolveOptionalKoReward'
   | 'resolveDrawOrEmpowered'
+  // why: WP-719 / D-24541 — unblocks the Covering Fire choose-one prompt (Hawkeye's "Covering Fire";
+  // each other player draws or discards a card).
+  | 'resolveCoveringFireChoice'
   // why: WP-675 / D-24490 — unblocks the count-scaled choose-one prompt (vnom Symbiotic Adaptation).
   | 'resolveCountScaledChoice'
   // why: WP-678/679 / D-24494/D-24495 — unblocks the Undercover target pick (the nested pick
