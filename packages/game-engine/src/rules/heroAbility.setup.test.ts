@@ -179,11 +179,12 @@ describe('buildHeroAbilityHooks', () => {
     assert.ok(serialized.length > 2, 'serialized output must contain data');
   });
 
-  it('resolves ability text from the canonical face (sides[0]) only', () => {
-    // why: WP-191 / D-18705 — for a split physical card, only the canonical
-    // face (sides[0]) is keyed; the back side's ability text is out of scope
-    // (safe-skip). Here the back side 'venom-symbiote' carries an ability, but
-    // no hook is emitted for it because it is never a canonical face.
+  it('resolves ability text from BOTH faces of a split card (WP-724 / D-24545 un-defers D-14101)', () => {
+    // why: WP-724 / D-24545 — for a split physical card, BOTH faces are now keyed so the CHOSEN
+    // face's ability is resolvable from G at play time. Before this WP only the canonical face
+    // (sides[0]) got hooks and the back side's ability was unreachable (the D-14101 stand-in).
+    // Here both faces carry an icon-effect ability; each of the 2 physical copies emits one hook
+    // per face → 2 front-face + 2 back-face = 4 hooks.
     const setData = {
       abbr: 'core',
       heroes: [
@@ -191,9 +192,9 @@ describe('buildHeroAbilityHooks', () => {
           slug: 'spider-man',
           cards: [
             { slug: 'front-face', rarityLabel: 'Common 1', abilities: ['You get +1[icon:attack].'] },
-            { slug: 'venom-symbiote', rarityLabel: 'Common 1', abilities: ['[keyword:ko] this card.'] },
+            { slug: 'back-face', rarityLabel: 'Common 1', abilities: ['You get +1[icon:recruit].'] },
           ],
-          physicalCards: [{ id: 'p0', count: 2, sides: ['front-face', 'venom-symbiote'] }],
+          physicalCards: [{ id: 'p0', count: 2, sides: ['front-face', 'back-face'] }],
         },
       ],
       villains: [],
@@ -210,14 +211,12 @@ describe('buildHeroAbilityHooks', () => {
 
     const hooks = buildHeroAbilityHooks(registry, config);
 
-    for (const hook of hooks) {
-      assert.ok(
-        hook.cardId.startsWith('core/spider-man/front-face#'),
-        `only the canonical face is keyed; got '${hook.cardId}'`,
-      );
-    }
-    // Two physical copies of the canonical face → two hooks (one per copy).
-    assert.equal(hooks.length, 2, 'both copies of the canonical face are keyed');
+    const frontHooks = hooks.filter((h) => h.cardId.startsWith('core/spider-man/front-face#'));
+    const backHooks = hooks.filter((h) => h.cardId.startsWith('core/spider-man/back-face#'));
+    // Two physical copies → one hook per face per copy.
+    assert.equal(frontHooks.length, 2, 'both copies of the primary face (sides[0]) are keyed');
+    assert.equal(backHooks.length, 2, 'WP-724: both copies of the ALTERNATE face (sides[1]) are keyed too');
+    assert.equal(hooks.length, 4, 'split card keys both faces per copy — 2 + 2 = 4 hooks');
   });
 
   it('returns an empty array when the registry exposes no getSet (narrow mock)', () => {

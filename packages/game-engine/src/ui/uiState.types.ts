@@ -242,6 +242,12 @@ export interface UIState {
   // chooser (the D-24011 hand-privacy analog — keyed on .playerID). Absent (undefined) means
   // no pending Covering Fire choice; the client must not render the prompt in that case.
   pendingCoveringFireChoice?: UIPendingCoveringFireChoice;
+  // why: WP-724 / D-24546 — projects the FRONT of G.pendingSplitFaceChoices so the active
+  // (choosing) player can render the split / dual-faced hero "choose a side" picker (both faces'
+  // name / ability / cost / economy). Redacted (omitted) for every audience except the chooser
+  // (keyed on .playerID). Absent (undefined) means no pending split-face choice; the client must
+  // not render the picker in that case.
+  pendingSplitFaceChoice?: UIPendingSplitFaceChoice;
   // why: WP-675 / D-24490 — projects the FRONT of G.pendingCountScaledChoice with each option's
   // RESOLVED count/total so the choosing player can render vnom's "Choose one: +N Recruit / +N
   // Attack" prompt. Redacted (omitted) for every audience except the chooser (keyed on .playerID).
@@ -1416,6 +1422,54 @@ export interface UIPendingCoveringFireChoice {
   playerID: string;
   /** The number of OTHER seats each branch affects, for the prompt label ("each of N players"). */
   otherPlayerCount: number;
+}
+
+/**
+ * One rendered face of a split / dual-faced hero card (WP-724 / D-24545).
+ *
+ * The name / cost / abilityText are resolved from G.cardDisplayData and the attack / recruit
+ * from G.cardStats at projection time (both faces' entries live in G per D-24545), so the client
+ * can render each option's full identity without re-deriving it. The single whole-card image
+ * (physicalCard.imageUrl, showing both halves) is not carried here — the client already has it
+ * via the played card's display entry.
+ */
+export interface UISplitFaceOption {
+  /** The face's instance ext_id (the arg the client would bind). */
+  extId: string;
+  /** The face's display name. */
+  name: string;
+  /** The face's printed ability text (raw marker syntax; the client routes it through AbilityText). Omitted when the face has no ability. */
+  abilityText?: string;
+  /** The face's printed cost, or null when the card has no cost. */
+  cost: number | null;
+  /** The face's base attack contribution. */
+  attack: number;
+  /** The face's base recruit contribution. */
+  recruit: number;
+}
+
+/**
+ * Pending split / dual-faced hero "choose a side" choice, projected for the client (WP-724 /
+ * D-24546).
+ *
+ * A binary choice between the two faces of a split card that was just PLAYED. The active player
+ * picks a side and the client submits `resolveSplitFaceChoice({ face: 'a' })` or `({ face: 'b' })`.
+ * Both faces' full identity (name / ability / cost / attack / recruit) is carried so the picker
+ * renders without a registry lookup. Only visible to the choosing player; redacted for opponents
+ * and spectators (keyed on .playerID).
+ *
+ * @see WP-724 §Scope (In) — projection
+ * @see EC-761 Locked Values
+ * @see DECISIONS.md D-24546
+ */
+export interface UIPendingSplitFaceChoice {
+  // why: D-24546 — the redaction key; the chooser-only filter compares audience.playerId against
+  // this, mirroring UIPendingCoveringFireChoice.playerID.
+  playerID: string;
+  /** The primary face (sides[0], `face: 'a'`). */
+  faceA: UISplitFaceOption;
+  /** The alternate face (sides[1], `face: 'b'`). */
+  faceB: UISplitFaceOption;
 }
 
 /**

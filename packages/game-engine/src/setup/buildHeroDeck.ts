@@ -407,6 +407,17 @@ export interface HeroCardInstance {
    * D-24468.
    */
   isTransform: boolean;
+  /**
+   * True for the PRIMARY face of a physical card (`sides[0]`, or the only face
+   * of a solo card / the rarity-fallback card); false for the ALTERNATE face
+   * (`sides[1]`) of a split / dual-faced physical card (WP-724 / D-24545).
+   * Consumers split on this flag: buildHeroDeckCards keeps only primary-face
+   * instances in the shuffled reservoir (so deck composition is byte-unchanged
+   * — one physical copy = one draw); buildCardStats §1b and buildHeroAbilityHooks
+   * ignore the flag and consume every instance (both faces need stats +
+   * abilities so the CHOSEN face is resolvable from G at play time).
+   */
+  isPrimaryFace: boolean;
 }
 
 /**
@@ -470,21 +481,40 @@ export function heroCardInstanceExtIds(
   }
 
   // why: D-14101 / D-14102 — when physicalCards is present, emit `count` ids
-  // per physical card using sides[0] as the canonical face slug. Split heroes
-  // (2 sides) emit one id per physical copy using the first side; solo heroes
-  // (1 side) are unchanged because sides[0] === the only card slug.
+  // per physical card using sides[0] as the canonical (primary) face slug. Solo
+  // heroes (1 side) emit one primary id per copy — unchanged.
+  // why: WP-724 / D-24545 — for a split / dual-faced physical card (2 sides), ALSO
+  // emit one ALTERNATE-face id per copy (sides[1], isPrimaryFace:false) so both
+  // faces' stats/hooks/display are resolvable from G. Only primary faces enter the
+  // shuffled reservoir (buildHeroDeckCards filters !isPrimaryFace), so deck
+  // composition — one physical copy = one draw — is byte-unchanged; the alternate
+  // is bound only when the player chooses it at play time (resolveSplitFaceChoice).
   const physicalCards = parsePhysicalCards(heroEntry.physicalCards);
   if (physicalCards.length > 0) {
     for (const physicalCard of physicalCards) {
-      const canonicalSlug = physicalCard.sides[0]!;
-      const baseExtId = `${setAbbr}/${heroSlug}/${canonicalSlug}`;
-      const isTransform = transformSlugs.has(canonicalSlug);
+      const primarySlug = physicalCard.sides[0]!;
+      const primaryBaseExtId = `${setAbbr}/${heroSlug}/${primarySlug}`;
+      const primaryIsTransform = transformSlugs.has(primarySlug);
+      // why: sides.length is 1 (solo) or 2 (split), locked by the registry's
+      // PhysicalCardSchema `.min(1).max(2)` (D-13802). Read the second side once.
+      const alternateSlug = physicalCard.sides.length > 1 ? physicalCard.sides[1]! : null;
+      const alternateBaseExtId = alternateSlug !== null ? `${setAbbr}/${heroSlug}/${alternateSlug}` : null;
+      const alternateIsTransform = alternateSlug !== null ? transformSlugs.has(alternateSlug) : false;
       for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
         instances.push({
-          cardSlug: canonicalSlug,
-          extId: `${baseExtId}#${copyIndex}` as CardExtId,
-          isTransform,
+          cardSlug: primarySlug,
+          extId: `${primaryBaseExtId}#${copyIndex}` as CardExtId,
+          isTransform: primaryIsTransform,
+          isPrimaryFace: true,
         });
+        if (alternateSlug !== null && alternateBaseExtId !== null) {
+          instances.push({
+            cardSlug: alternateSlug,
+            extId: `${alternateBaseExtId}#${copyIndex}` as CardExtId,
+            isTransform: alternateIsTransform,
+            isPrimaryFace: false,
+          });
+        }
       }
     }
     return instances;
@@ -526,6 +556,9 @@ export function heroCardInstanceExtIds(
         cardSlug: card.slug,
         extId: `${baseExtId}#${copyIndex}` as CardExtId,
         isTransform,
+        // why: WP-724 — the rarity-fallback path has no physicalCards, so every
+        // card is its own primary face (no split faces reach this branch).
+        isPrimaryFace: true,
       });
     }
   }
@@ -587,6 +620,13 @@ export function buildHeroDeckCards(
       // reservoir (before this partition they were recruited/played as ordinary
       // heroes). The base card stays; only its transform second-form is skipped.
       if (instance.isTransform) continue;
+      // why: WP-724 / D-24545 — a split physical card contributes exactly ONE draw
+      // per copy (one physical card), so only its PRIMARY face (sides[0]) enters the
+      // reservoir; the alternate face (sides[1]) is resolvable from G.cardStats /
+      // heroAbilityHooks / cardDisplayData but is never drawn on its own — it is
+      // bound only when the player chooses that side at play time. Keeping only
+      // primary faces here makes the reservoir byte-identical to before this WP.
+      if (!instance.isPrimaryFace) continue;
       cards.push(instance.extId);
     }
   }
@@ -828,4 +868,78 @@ export function buildTransformTargets(
   }
 
   return targets;
+}
+
+// ---------------------------------------------------------------------------
+// buildSplitFaces — split-hero primary→alternate face-key map (D-24545)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the per-match primary→alternate face-key map (G.splitFaces) for split /
+ * dual-faced hero cards (WP-724 / D-24545, un-deferring D-14101).
+ *
+ * Walks the same registry path as buildTransformTargets over the SAME hero set,
+ * but records, for every physical card with two sides, a copy-agnostic card-key
+ * entry mapping the PRIMARY face to the ALTERNATE face:
+ *
+ *   `{setAbbr}/{heroSlug}/{sides[0]}` → `{setAbbr}/{heroSlug}/{sides[1]}`
+ *
+ * (e.g. `cvwr/peter-parker/hot-bowl-of-soup` → `cvwr/peter-parker/protect-my-family`).
+ * One entry per split physical card — every copy shares the key, so playCard strips
+ * the `#copy` suffix off the played primary-face instance to look the alternate base
+ * up, then reattaches the same `#copy` to offer faceB. Solo cards (one side) are not
+ * recorded — the map holds only split cards.
+ *
+ * Returns an empty object when no hero in heroDeckIds has split cards (the core
+ * sentinel and most sets). The caller (buildInitialGameState) omits the field from `G`
+ * entirely when the map is empty, so a no-split game serializes byte-identically and no
+ * hash oracle re-pins (contrast buildTransformTargets, which is always seeded). No
+ * ctx.random, no I/O — pure setup-time registry walk. Malformed ids / missing heroes are
+ * soft-skipped identically to buildTransformTargets.
+ *
+ * @param heroDeckIds - Array of qualified hero deck IDs `<setAbbr>/<heroSlug>`.
+ * @param registry - Setup-time registry reader. Accepts unknown to support narrow test
+ *   mocks; returns {} when it does not satisfy RegistryReader.
+ * @returns Primary-face-key → alternate-face-key map as Record<CardExtId, CardExtId>.
+ */
+export function buildSplitFaces(
+  heroDeckIds: string[],
+  registry: unknown,
+): Record<CardExtId, CardExtId> {
+  const splitFaces: Record<CardExtId, CardExtId> = {};
+
+  if (!isRegistryReader(registry)) {
+    return splitFaces;
+  }
+
+  for (const heroDeckId of heroDeckIds) {
+    const parsed = parseQualifiedIdForSetup(heroDeckId);
+    if (parsed === null) continue;
+
+    const setData = registry.getSet(parsed.setAbbr);
+    if (!setData || typeof setData !== 'object') continue;
+
+    const candidate = setData as { heroes?: unknown };
+    if (!Array.isArray(candidate.heroes)) continue;
+
+    let heroEntry: HeroEntry | null = null;
+    for (const hero of candidate.heroes as HeroEntry[]) {
+      if (hero && typeof hero === 'object' && hero.slug === parsed.slug) {
+        heroEntry = hero;
+        break;
+      }
+    }
+    if (heroEntry === null) continue;
+
+    const physicalCards = parsePhysicalCards(heroEntry.physicalCards);
+    for (const physicalCard of physicalCards) {
+      // why: only 2-sided physical cards are split; solo cards contribute nothing.
+      if (physicalCard.sides.length < 2) continue;
+      const primaryKey = `${parsed.setAbbr}/${parsed.slug}/${physicalCard.sides[0]!}` as CardExtId;
+      const alternateKey = `${parsed.setAbbr}/${parsed.slug}/${physicalCard.sides[1]!}` as CardExtId;
+      splitFaces[primaryKey] = alternateKey;
+    }
+  }
+
+  return splitFaces;
 }

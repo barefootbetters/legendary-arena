@@ -47,6 +47,7 @@ import {
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
+import { hasPendingSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import {
@@ -163,6 +164,10 @@ export const SIMULATION_MOVE_NAMES = [
   // (block-all pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn
   // loop hangs on a parked Covering Fire choice.
   'resolveCoveringFireChoice',
+  // why: WP-724 / D-24546 — resolveSplitFaceChoice is a getLegalMoves short-circuit (block-all
+  // pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn loop hangs on
+  // a parked split-face "choose a side".
+  'resolveSplitFaceChoice',
   'resolveCountScaledChoice',
   'resolveUndercoverChoice',
   'resolveSmashDiscard',
@@ -410,6 +415,13 @@ export function getLegalMoves(
   // a list of length EXACTLY 1.
   if (hasPendingCoveringFireChoice(gameState)) {
     return [{ name: 'resolveCoveringFireChoice', args: { choice: 'draw' } }];
+  }
+  // why: WP-724 / D-24546 — a split-face "choose a side" blocks every other move; the bot resolves
+  // it first with a deterministic default of 'a' (the primary face — the only face reachable before
+  // this WP; a smarter expected-value default is deferred, mirroring the defaults above). Returns a
+  // list of length EXACTLY 1.
+  if (hasPendingSplitFaceChoice(gameState)) {
+    return [{ name: 'resolveSplitFaceChoice', args: { face: 'a' } }];
   }
   // why: WP-675 / D-24490 — a count-scaled choose-one blocks every other move; the bot resolves
   // it first with a deterministic default of option 0 (an expected-value default is deferred,

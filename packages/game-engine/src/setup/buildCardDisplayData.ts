@@ -404,25 +404,31 @@ export function buildCardDisplayData(
     const physicalCards = parseDisplayDataPhysicalCards(heroEntry.physicalCards);
     if (physicalCards.length > 0) {
       for (const physicalCard of physicalCards) {
-        const canonicalSlug = physicalCard.sides[0] as string;
-        const cardEntry = findCardEntryBySlug(heroEntry.cards, canonicalSlug);
-        const name = cardEntry !== null && typeof cardEntry.name === 'string' ? cardEntry.name : '';
-        const cost = cardEntry !== null ? parseCostNullable(cardEntry.cost ?? null) : null;
-        const abilityText = resolveHeroAbilityText(cardEntry);
-        const imageUrl = physicalCard.imageUrl;
-        const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${canonicalSlug}`;
-        for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
-          const extId = `${baseExtId}#${copyIndex}` as CardExtId;
-          // why: per-copy fresh object literal — no aliasing across keys
-          // (WP-028 D-2802 aliasing prevention extended to setup-time
-          // sibling-snapshot fan-out).
-          const display: UICardDisplay = { extId, name, imageUrl, cost };
-          // why: WP-315 — omit abilityText when the card has no printed ability
-          // (never an empty string) so the optional-field contract holds.
-          if (abilityText !== undefined) {
-            display.abilityText = abilityText;
+        // why: WP-724 / D-24545 — emit a display entry for EACH face of the physical
+        // card (sides[0] primary, and sides[1] when the card is split), so the picker
+        // and the played-card projection can render the CHOSEN face's name / cost /
+        // ability. The whole-card imageUrl (physicalCard.imageUrl shows both halves) is
+        // reused for both faces. Solo cards have a single side and emit one face.
+        for (const sideSlug of physicalCard.sides) {
+          const cardEntry = findCardEntryBySlug(heroEntry.cards, sideSlug);
+          const name = cardEntry !== null && typeof cardEntry.name === 'string' ? cardEntry.name : '';
+          const cost = cardEntry !== null ? parseCostNullable(cardEntry.cost ?? null) : null;
+          const abilityText = resolveHeroAbilityText(cardEntry);
+          const imageUrl = physicalCard.imageUrl;
+          const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${sideSlug}`;
+          for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
+            const extId = `${baseExtId}#${copyIndex}` as CardExtId;
+            // why: per-copy fresh object literal — no aliasing across keys
+            // (WP-028 D-2802 aliasing prevention extended to setup-time
+            // sibling-snapshot fan-out).
+            const display: UICardDisplay = { extId, name, imageUrl, cost };
+            // why: WP-315 — omit abilityText when the card has no printed ability
+            // (never an empty string) so the optional-field contract holds.
+            if (abilityText !== undefined) {
+              display.abilityText = abilityText;
+            }
+            result[extId] = display;
           }
-          result[extId] = display;
         }
       }
     } else {

@@ -916,7 +916,7 @@ describe('buildCardDisplayData — WP-135 / WP-137 hero card-instance walk (slas
 // ===========================================================================
 
 describe('buildCardDisplayData — physicalCards (D-14102 / D-14103)', () => {
-  it('split hero: uses physicalCard.imageUrl and sides[0] as canonical slug', () => {
+  it('split hero: emits a display entry for BOTH faces, sharing the physicalCard image (WP-724 / D-24545)', () => {
     const setData = {
       abbr: 'bkwd',
       villains: [],
@@ -964,9 +964,18 @@ describe('buildCardDisplayData — physicalCards (D-14102 / D-14103)', () => {
     assert.equal(entry0.name, 'Attune', 'name from card entry via sides[0] lookup');
     assert.equal(entry0.cost, 2, 'cost from card entry via sides[0] lookup');
 
-    // why: 5 copies of p1 + 1 copy of p2 = 6 total
+    // why: WP-724 / D-24545 — BOTH faces get display entries so the picker + the played-card
+    // projection can render the CHOSEN face: 5 attune + 5 atone (p1) + 1 solo-card (p2) = 11.
     const allKeys = Object.keys(result).filter((k) => k.startsWith('bkwd/falcon-winter-soldier/'));
-    assert.equal(allKeys.length, 6, 'split hero: 5 attune + 1 solo-card = 6 entries');
+    assert.equal(allKeys.length, 11, 'split hero: 5 attune + 5 atone + 1 solo-card = 11 entries');
+
+    // why: WP-724 / D-24545 — the ALTERNATE face (sides[1]) now has its own display, keyed by its
+    // own ext_id, with ITS name + cost, and the SAME whole-card image (both halves on one card).
+    const atoneEntry = result['bkwd/falcon-winter-soldier/atone#0'];
+    assert.ok(atoneEntry, 'atone#0 (alternate face) must exist — the D-14101 un-defer');
+    assert.equal(atoneEntry.name, 'Atone', 'alternate-face name from the sides[1] card entry');
+    assert.equal(atoneEntry.cost, 3, 'alternate-face cost from the sides[1] card entry');
+    assert.equal(atoneEntry.imageUrl, 'https://img/attune-atone.webp', 'alternate face reuses the whole-card image');
 
     const soloEntry = result['bkwd/falcon-winter-soldier/solo-card#0'];
     assert.ok(soloEntry, 'solo-card#0 must exist');

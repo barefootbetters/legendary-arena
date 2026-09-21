@@ -1109,6 +1109,34 @@ export interface PendingCoveringFireChoice {
 }
 
 /**
+ * Pending split / dual-faced hero "choose a side" state (WP-724 / D-24546 — the split
+ * hero card mechanic that un-defers D-14101).
+ *
+ * Created when a split physical card (`physicalCards[].sides.length === 2`) is PLAYED: the
+ * card enters `inPlay` as its primary face (`sides[0]` instance), its own economy + ability
+ * are DEFERRED, and this entry is appended to G.pendingSplitFaceChoices[] (FIFO). The ACTIVE
+ * player then picks a side via resolveSplitFaceChoice; the chosen face's attack/recruit is
+ * granted and its ability fires (the other face does nothing). Must be undefined or empty at
+ * every turn-end (enforced by the block-all guards).
+ *
+ * // why: D-24546 — the side is chosen at PLAY time (faithful Marvel Legendary), and the
+ * choice is the ACTIVE player's alone (D-24284). Both faces' per-copy stats / ability hooks /
+ * display are enumerated into `G` at setup (D-24545), so resolving either face is a pure state
+ * read. `faceA` is the played (primary, `sides[0]`) instance ext_id; `faceB` is the alternate
+ * (`sides[1]`) instance ext_id for the SAME physical copy (same `#copyIndex`).
+ */
+export interface PendingSplitFaceChoice {
+  /** The active player who must pick a side ('a' or 'b'). */
+  playerID: string;
+  /** The split card instance that parked this choice, for log attribution (equals faceA). */
+  sourceCardId: CardExtId;
+  /** The primary-face (sides[0]) instance ext_id — the card as it currently sits in inPlay. */
+  faceA: CardExtId;
+  /** The alternate-face (sides[1]) instance ext_id for the same physical copy. */
+  faceB: CardExtId;
+}
+
+/**
  * Pending count-scaled choose-one player choice state (WP-675 / D-24490).
  *
  * Created when a `count-scaled-choose` hero effect is played (`onPlay`) — the
@@ -1905,6 +1933,16 @@ export interface LegendaryGameState {
   /** FIFO queue of pending Covering Fire choose-one choices awaiting resolution (WP-719). */
   pendingCoveringFireChoices?: PendingCoveringFireChoice[] | undefined;
 
+  // why: WP-724 / D-24546 — a split / dual-faced hero card parks a "choose a side" pick here
+  // when PLAYED (the card is in inPlay as its primary face; its economy + ability are deferred
+  // until the side is chosen). Front-popped by resolveSplitFaceChoice after the ACTIVE player
+  // picks a side. Must be undefined or empty at every turn-end. Optional so existing test state
+  // literals do not need updating; **lazily initialized at the park site, never in Game.setup**
+  // (mirrors pendingCoveringFireChoices). Absent (undefined) or empty [] both mean "no pending
+  // choice" (guards test `.length`).
+  /** FIFO queue of pending split-hero "choose a side" picks awaiting resolution (WP-724). */
+  pendingSplitFaceChoices?: PendingSplitFaceChoice[] | undefined;
+
   /** FIFO queue of pending count-scaled choose-one choices awaiting resolution (WP-675 / D-24490). */
   pendingCountScaledChoice?: PendingCountScaledChoice[] | undefined;
 
@@ -2121,6 +2159,17 @@ export interface LegendaryGameState {
   // re-pin (the same sanctioned no-behaviour-change new-field class as D-24468).
   /** Transform base→second-form card-key map (D-24469). */
   transformTargets: Record<CardExtId, CardExtId>;
+
+  // why: WP-724 / D-24545 — the split-hero base→alternate-face card-key map the "choose a side"
+  // runtime reads at play time. Moves have no registry, so buildSplitFaces captures it into G at
+  // Game.setup() as a copy-agnostic CARD-KEY map: `{setAbbr}/{heroSlug}/{sides[0]}` →
+  // `{setAbbr}/{heroSlug}/{sides[1]}` (one entry per 2-sided physical card; all copies share it).
+  // playCard strips the `#copy` suffix off the played instance to look up the alternate base, then
+  // reattaches the same `#copy` to offer faceB. UNLIKE transformTargets (always present → re-pins
+  // the hash), this field is ABSENT when empty (the schemeTransformFields precedent): a game with
+  // no split heroes — incl. the core sentinel — serializes byte-identically, so NO hash re-pin.
+  /** Split-hero base→alternate-face card-key map (D-24545). Absent when no split heroes are in play. */
+  splitFaces?: Readonly<Record<CardExtId, CardExtId>> | undefined;
 
   // why: KO pile stores cards permanently removed from the game. Destination-only
   // zone — cards enter via koCard helper and never return in MVP. Initialized

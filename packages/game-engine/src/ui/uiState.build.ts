@@ -66,6 +66,8 @@ import type {
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCoveringFireChoice,
+  UIPendingSplitFaceChoice,
+  UISplitFaceOption,
   UIPendingCountScaledChoice,
   UIPendingUndercoverChoice,
   UIPendingSeatChoice,
@@ -1479,6 +1481,45 @@ export function buildUIState(
     };
   }
 
+  // why: WP-724 / D-24546 — project the FRONT entry of G.pendingSplitFaceChoices as the two-face
+  // "choose a side" picker. Each face's name/cost/abilityText comes from G.cardDisplayData and its
+  // attack/recruit from G.cardStats (both faces' entries live in G per D-24545), recomputed fresh
+  // from current G (no snapshot). Redaction to the chooser-only audience is enforced by
+  // filterUIStateForAudience (keyed on .playerID). The two faces are inlined (duplicate-first, not
+  // abstracted — only two uses) per the 00.6 no-premature-abstraction rule.
+  let pendingSplitFaceChoice: UIPendingSplitFaceChoice | undefined;
+  if (
+    gameState.pendingSplitFaceChoices !== undefined &&
+    gameState.pendingSplitFaceChoices.length > 0
+  ) {
+    const frontSplit = gameState.pendingSplitFaceChoices[0]!;
+    const faceADisplay = gameState.cardDisplayData[frontSplit.faceA];
+    const faceAStats = gameState.cardStats[frontSplit.faceA];
+    const faceA: UISplitFaceOption = {
+      extId: frontSplit.faceA,
+      name: faceADisplay?.name ?? '',
+      cost: faceADisplay?.cost ?? null,
+      attack: faceAStats?.attack ?? 0,
+      recruit: faceAStats?.recruit ?? 0,
+    };
+    if (faceADisplay?.abilityText !== undefined) {
+      faceA.abilityText = faceADisplay.abilityText;
+    }
+    const faceBDisplay = gameState.cardDisplayData[frontSplit.faceB];
+    const faceBStats = gameState.cardStats[frontSplit.faceB];
+    const faceB: UISplitFaceOption = {
+      extId: frontSplit.faceB,
+      name: faceBDisplay?.name ?? '',
+      cost: faceBDisplay?.cost ?? null,
+      attack: faceBStats?.attack ?? 0,
+      recruit: faceBStats?.recruit ?? 0,
+    };
+    if (faceBDisplay?.abilityText !== undefined) {
+      faceB.abilityText = faceBDisplay.abilityText;
+    }
+    pendingSplitFaceChoice = { playerID: frontSplit.playerID, faceA, faceB };
+  }
+
   // why: WP-675 / D-24490 — project the FRONT entry of G.pendingCountScaledChoice, resolving
   // each option's count/total from the live G (resolveCountSource, excluding the triggering
   // card) so the chooser sees each button's concrete grant. Recomputed fresh from current G
@@ -2135,6 +2176,9 @@ export function buildUIState(
     // why: WP-719 / D-24541 — conditional spread so an absent choice omits the field (no
     // `pendingCoveringFireChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingCoveringFireChoice !== undefined ? { pendingCoveringFireChoice } : {}),
+    // why: WP-724 / D-24546 — conditional spread (omit-when-undefined under
+    // exactOptionalPropertyTypes), mirroring pendingCoveringFireChoice above.
+    ...(pendingSplitFaceChoice !== undefined ? { pendingSplitFaceChoice } : {}),
     // why: WP-675 / D-24490 — conditional spread so an absent choice omits the field.
     ...(pendingCountScaledChoice !== undefined ? { pendingCountScaledChoice } : {}),
     // why: WP-678 / D-24494 — conditional spread so an absent choice omits the field.

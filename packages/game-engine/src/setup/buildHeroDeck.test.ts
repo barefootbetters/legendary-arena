@@ -707,7 +707,7 @@ describe('buildHeroDeckCards — physicalCards (D-14101 / D-14102)', () => {
 // ===========================================================================
 
 describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', () => {
-  it('physicalCards path: returns one instance per copy with cardSlug = sides[0]', () => {
+  it('physicalCards path: emits BOTH faces per copy (WP-724 / D-24545); primary + alternate interleaved', () => {
     const heroEntry = {
       slug: 'falcon-winter-soldier',
       cards: [
@@ -723,14 +723,20 @@ describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', 
 
     const instances = heroCardInstanceExtIds('bkwd', 'falcon-winter-soldier', heroEntry);
 
+    // why: WP-724 / D-24545 — a split physical card emits a PRIMARY (sides[0]) AND an ALTERNATE
+    // (sides[1]) instance per copy so both faces are resolvable from G; a solo card emits one
+    // primary. Primary then alternate, per copy, copy order ascending. buildHeroDeckCards filters
+    // to isPrimaryFace so the reservoir stays one-draw-per-copy (asserted separately above).
     assert.deepStrictEqual(
       instances,
       [
-        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#0', isTransform: false },
-        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#1', isTransform: false },
-        { cardSlug: 'solo', extId: 'bkwd/falcon-winter-soldier/solo#0', isTransform: false },
+        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#0', isTransform: false, isPrimaryFace: true },
+        { cardSlug: 'atone', extId: 'bkwd/falcon-winter-soldier/atone#0', isTransform: false, isPrimaryFace: false },
+        { cardSlug: 'attune', extId: 'bkwd/falcon-winter-soldier/attune#1', isTransform: false, isPrimaryFace: true },
+        { cardSlug: 'atone', extId: 'bkwd/falcon-winter-soldier/atone#1', isTransform: false, isPrimaryFace: false },
+        { cardSlug: 'solo', extId: 'bkwd/falcon-winter-soldier/solo#0', isTransform: false, isPrimaryFace: true },
       ],
-      'canonical face = sides[0]; back-side slugs never appear; copy order ascending',
+      'split card emits both faces per copy; solo card emits one primary; copy order ascending',
     );
   });
 
@@ -748,6 +754,8 @@ describe('heroCardInstanceExtIds — shared hero instance-id emitter (WP-191)', 
         cardSlug: 'astonishing-strength',
         extId: `core/spider-man/astonishing-strength#${copyIndex}`,
         isTransform: false,
+        // why: WP-724 — the rarity-fallback path has no split faces; every card is a primary face.
+        isPrimaryFace: true,
       });
     }
   });

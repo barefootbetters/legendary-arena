@@ -396,6 +396,8 @@ export type {
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCoveringFireChoice,
+  UIPendingSplitFaceChoice,
+  UISplitFaceOption,
   UIPendingCountScaledChoice,
   UIPendingCountScaledChoiceOption,
   UIPendingUndercoverChoice,

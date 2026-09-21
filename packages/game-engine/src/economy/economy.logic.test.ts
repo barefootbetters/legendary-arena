@@ -440,15 +440,26 @@ describe('buildCardStats — physicalCards (D-14102)', () => {
 
     const stats = buildCardStats(registry, config);
 
-    // why: D-14102 — 5 copies of p1 (attune) + 1 copy of p2 (solo-card) = 6
+    // why: WP-724 / D-24545 — BOTH faces of a split physical card now get cardStats entries so
+    // the CHOSEN face is resolvable from G at play time: p1 (attune/atone) count 5 → 5 attune + 5
+    // atone = 10, plus p2 (solo-card) count 1 = 11. (Before D-14101 was un-deferred only sides[0]
+    // was emitted — 6 entries — and the alternate face was unreachable.)
     const slashKeys = Object.keys(stats).filter((k) => k.startsWith('bkwd/falcon-winter-soldier/'));
-    assert.equal(slashKeys.length, 6, 'split hero: 5 attune + 1 solo-card = 6 cardStats entries');
+    assert.equal(slashKeys.length, 11, 'split hero: 5 attune + 5 atone + 1 solo-card = 11 cardStats entries');
 
-    // why: stat values come from card entry for sides[0]
+    // why: primary face (sides[0]) stats come from the attune card entry.
     const attuneEntry = stats['bkwd/falcon-winter-soldier/attune#0'];
-    assert.ok(attuneEntry, 'attune#0 must exist');
+    assert.ok(attuneEntry, 'attune#0 (primary face) must exist');
     assert.equal(attuneEntry.attack, 2, 'attack from card entry for sides[0]');
     assert.equal(attuneEntry.cost, 2, 'cost from card entry for sides[0]');
+
+    // why: WP-724 / D-24545 — the ALTERNATE face (sides[1]) now exists with ITS OWN economy
+    // (atone: attack 0 / recruit 2 / cost 3), so choosing that side grants the right resources.
+    const atoneEntry = stats['bkwd/falcon-winter-soldier/atone#0'];
+    assert.ok(atoneEntry, 'atone#0 (alternate face) must exist — the D-14101 un-defer');
+    assert.equal(atoneEntry.attack, 0, 'attack from card entry for sides[1]');
+    assert.equal(atoneEntry.recruit, 2, 'recruit from card entry for sides[1]');
+    assert.equal(atoneEntry.cost, 3, 'cost from card entry for sides[1]');
   });
 
   // ===========================================================================

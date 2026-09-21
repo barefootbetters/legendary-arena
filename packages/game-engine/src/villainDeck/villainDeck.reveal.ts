@@ -55,6 +55,7 @@ import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.
 import { hasPendingVictoryPileCardPick } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
+import { hasPendingSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import { hasPendingSeatChoice } from '../moves/seatChoice.resolve.js';
@@ -156,6 +157,8 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
   if (hasPendingDrawOrEmpowered(G)) return;
   // why: block-all guard (WP-719 / D-24541) — a pending Covering Fire choice freezes the board.
   if (hasPendingCoveringFireChoice(G)) return;
+  // why: block-all guard (WP-724 / D-24546) — a pending split-face "choose a side" freezes the board.
+  if (hasPendingSplitFaceChoice(G)) return;
   if (hasPendingCountScaledChoice(G)) return;
   // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
   if (hasPendingUndercoverChoice(G)) return;

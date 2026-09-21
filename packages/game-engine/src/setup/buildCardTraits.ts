@@ -196,21 +196,26 @@ export function buildCardTraits(
 
     if (physicalCards.length > 0) {
       for (const physicalCard of physicalCards) {
-        const canonicalSlug = physicalCard.sides[0] as string;
-        const cardEntry = findCardEntryBySlug(heroEntry.cards, canonicalSlug);
-        const heroClass = (cardEntry !== null && typeof cardEntry.hc === 'string' && cardEntry.hc.length > 0)
-          ? normalizeTraitSlug(cardEntry.hc)
-          : null;
-        // why: WP-703 / D-24523 — the dual-class card's second printed class, omitted
-        // from the entry when absent so single-class cards serialize byte-identically.
-        const heroClass2 = (cardEntry !== null && typeof cardEntry.hc2 === 'string' && cardEntry.hc2.length > 0)
-          ? normalizeTraitSlug(cardEntry.hc2)
-          : null;
-        const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${canonicalSlug}`;
+        // why: WP-724 / D-24545 — emit a traits entry for EACH face (sides[0] primary,
+        // and sides[1] when split), so a class-gated effect fired by the CHOSEN face reads
+        // that face's printed class (heroClass / heroClass2) from G.cardTraits. Solo cards
+        // have one side and emit one entry — byte-unchanged.
+        for (const sideSlug of physicalCard.sides) {
+          const cardEntry = findCardEntryBySlug(heroEntry.cards, sideSlug);
+          const heroClass = (cardEntry !== null && typeof cardEntry.hc === 'string' && cardEntry.hc.length > 0)
+            ? normalizeTraitSlug(cardEntry.hc)
+            : null;
+          // why: WP-703 / D-24523 — the dual-class card's second printed class, omitted
+          // from the entry when absent so single-class cards serialize byte-identically.
+          const heroClass2 = (cardEntry !== null && typeof cardEntry.hc2 === 'string' && cardEntry.hc2.length > 0)
+            ? normalizeTraitSlug(cardEntry.hc2)
+            : null;
+          const baseExtId = `${parsed.setAbbr}/${parsed.slug}/${sideSlug}`;
 
-        for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
-          const extId = `${baseExtId}#${copyIndex}` as CardExtId;
-          traits[extId] = heroClass2 !== null ? { heroClass, heroClass2, team } : { heroClass, team };
+          for (let copyIndex = 0; copyIndex < physicalCard.count; copyIndex++) {
+            const extId = `${baseExtId}#${copyIndex}` as CardExtId;
+            traits[extId] = heroClass2 !== null ? { heroClass, heroClass2, team } : { heroClass, team };
+          }
         }
       }
     } else {

@@ -1066,6 +1066,24 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-724 / D-24546 — the pending split-face "choose a side" picker is private to the chooser
+  // (only the active player may resolve it). Present only when the audience is the choosing player;
+  // omitted (conditional assignment, never an `undefined` literal) for opponents AND spectators —
+  // mirroring the pendingCoveringFireChoice posture above. Both faces carry only public card display
+  // + economy (no private identity). A field that reaches build but not this whitelist is dropped at
+  // the filter (the shipped board-visible-field failure mode) — fresh face objects avoid aliasing.
+  if (
+    uiState.pendingSplitFaceChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingSplitFaceChoice.playerID
+  ) {
+    result.pendingSplitFaceChoice = {
+      playerID: uiState.pendingSplitFaceChoice.playerID,
+      faceA: { ...uiState.pendingSplitFaceChoice.faceA },
+      faceB: { ...uiState.pendingSplitFaceChoice.faceB },
+    };
+  }
+
   // why: WP-675 / D-24490 — the pending count-scaled choose-one (vnom Symbiotic Adaptation)
   // is private to the chooser (only they may resolve it). Present only when the audience is a
   // player whose playerId equals the chooser's playerID; omitted (conditional assignment, never
