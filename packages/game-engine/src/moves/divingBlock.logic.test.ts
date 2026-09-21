@@ -144,6 +144,25 @@ describe('Diving Block — reveal / decline resolution (WP-682 / D-24499)', () =
     assert.equal(G.pendingSeatChoice, undefined);
   });
 
+  it('D-24544: an ACTIVE-player wave opens the choice WITHOUT a stage ride (start-stage freeze fix)', () => {
+    // why: a Diving Block on the active player's OWN Wound (e.g. a start-stage villain-escape
+    // wound) must not stage-ride them — they already accept moves as ctx.currentPlayer, and
+    // the extra setActivePlayers open→revert frame is what a client dropped, freezing the turn
+    // until reload. The choice still opens; only the redundant framework transition is removed.
+    const G = makeState({ hands: { '0': [DIVING_BLOCK_ID] }, decks: { '0': ['draw-card#0'] }, woundCount: 1 });
+    gainWoundForPlayer(G, '0');
+    let setActivePlayersCalled = false;
+    const events = { setActivePlayers: () => { setActivePlayersCalled = true; } };
+    openDivingBlockSeatChoiceIfNeeded(G, events, '0');
+    assert.equal(G.pendingSeatChoice!.kind, DIVING_BLOCK_SEAT_CHOICE_KIND, 'the choice still opens');
+    assert.deepEqual(G.pendingSeatChoice!.addressedSeats, ['0']);
+    assert.equal(setActivePlayersCalled, false, 'the active player is not stage-ridden — no frame to drop');
+    // And it still resolves normally against G.
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    assert.equal(G.playerZones['0']!.hand.includes('draw-card#0'), true, 'reveal still draws');
+    assert.equal(hasPendingDivingBlockWounds(G), false, 'FIFO drained');
+  });
+
   it('decline lands the Wound (stays in discard), draws nothing, keeps Diving Block in hand', () => {
     const G = makeState({ hands: { '0': [DIVING_BLOCK_ID] }, decks: { '0': ['draw-card#0'] }, woundCount: 1 });
     gainWoundForPlayer(G, '0');

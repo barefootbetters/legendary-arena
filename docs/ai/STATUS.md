@@ -7,6 +7,30 @@
 
 ## Current State
 
+### Diving Block start-stage freeze fix (D-24544) (2026-09-20)
+
+A start-stage villain-escape Wound that opened a Diving Block reveal/decline seat choice for
+the ACTIVE player froze the turn at `currentStage: start` until the player reloaded (operator
+report, Red Skull / Midtown 2p turn 25). The engine + saved state were clean and advanceable —
+the freeze was on the client.
+
+**Primary (client) cause + fix:** the reveal one-click auto-advance watcher
+(`TurnActionBar.vue maybeAutoAdvanceReveal`) is gated on `anyPendingChoice()`, which OMITTED
+`hasPendingSeatChoice`. So the watcher fired `advanceStage` while the Diving Block choice was
+open, the engine block-all rejected it, and `isAutoAdvancing` latched — never re-advancing once
+the choice cleared. Added `hasPendingSeatChoice` to `anyPendingChoice()` (the auto-advance now
+waits for the seat choice, exactly like a Master-Strike KO) + gated End Turn / Pass Priority /
+Heal on it in `useTurnActions`; threaded through `PlayDesktop.vue` / `PlayMobile.vue`.
+
+**Secondary (engine) robustness:** the WP-684 seat-choice `setActivePlayers` stage-ride no
+longer rides the ACTIVE player (they already accept moves as `currentPlayer`); when they are the
+only addressed seat the framework call is skipped entirely. Non-active recipients still ride.
+Determinism-safe (framework event, not `G`/hash).
+
+**Verified:** game-engine 3973/0, arena-client 1873/0 (both with non-vacuous regression tests),
+`vue-tsc --noEmit` 0, `pnpm -r build` 0. Fix-forward (no WP); D-24544. D-24026 live-verify
+operator-pending on `play.legendary-arena.com`.
+
 ### WP-721 — Rewardless `ko-wound` Hero Keyword: auto-resolve "You may KO a Wound" (EC-758 / D-24542) (2026-09-20)
 
 Resolves the two WP-382/D-24183 rewardless `_deferred` "KO a Wound" hollows — **xmen/x-23/healing-factor-genome**

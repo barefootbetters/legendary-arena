@@ -219,10 +219,16 @@ function seatsForNextWave(G: LegendaryGameState): string[] {
  *
  * @param G - The game state, mutated in place (G.pendingSeatChoice set).
  * @param events - The move context's boardgame.io events (for the stage ride).
+ * @param currentPlayer - The active player id (ctx.currentPlayer). When the wave
+ *   addresses the active player's own Wound, that seat is NOT stage-ridden — they
+ *   already accept moves as the currentPlayer, and the extra stage-ride frame froze
+ *   a start-stage escape-wound Diving Block until reload (D-24544). Omit in a
+ *   unit/replay context (no stage ride is applied there anyway).
  */
 export function openDivingBlockSeatChoiceIfNeeded(
   G: LegendaryGameState,
   events: SeatChoiceEvents | undefined,
+  currentPlayer?: string,
 ): void {
   if (!hasPendingDivingBlockWounds(G)) {
     return;
@@ -255,7 +261,7 @@ export function openDivingBlockSeatChoiceIfNeeded(
     // free draw; the reveal is optional pure-upside a present player opts into.
     defaultOptionIndex: DIVING_BLOCK_DECLINE_OPTION_INDEX,
   };
-  parkSeatChoice(G, events, choice);
+  parkSeatChoice(G, events, choice, currentPlayer);
 }
 
 /**

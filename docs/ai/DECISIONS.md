@@ -43199,4 +43199,25 @@ Resolves the two `_deferred` entries in `hero-ability-markers.json` (surfaced by
 (`selectDefaultSmashDiscardTarget`), D-24521 (each-other-seat iteration + park). **Reserved by:**
 NUMBER-LEDGER D-24541.
 
+### D-24544 — Diving Block on the active player's own start-stage Wound froze the turn: the client reveal auto-advance omitted the seat choice; the engine also redundantly stage-rode the active player (fix-forward, cf. D-24467 / D-24496 / D-24515)
+
+**Status:** Active — bug fix, no WP (fix-forward). Landed 2026-09-20.
+
+**Context.** An operator start-stage villain-escape Wound opened a WP-682 Diving Block reveal/decline seat choice for the ACTIVE player (their own Wound) on `play.legendary-arena.com` (Red Skull / Midtown 2p, turn 25). After resolving it the turn was frozen at `currentStage: 'start'` — the player could not advance to main until they reloaded, after which the already-correct server state let them continue. The saved diagnostics showed a clean, advanceable ENGINE state (`villainRevealedThisTurn: true`, no pending choice, `activePlayers` reverted), so the freeze was on the client.
+
+**Root cause (client — primary).** The arena-client one-click reveal auto-advances start→main via a watcher (`TurnActionBar.vue maybeAutoAdvanceReveal`) gated on `anyPendingChoice()` — an OR of every pending-choice flag. It OMITTED `hasPendingSeatChoice`. So when the reveal opened a Diving Block seat choice, the watcher saw `!anyPendingChoice()` = true and fired `advanceStage`, which the engine block-all guard rejected (`hasPendingSeatChoice`), while latching `isAutoAdvancing`. That latch resets only when the stage leaves `start`; the rejected advance never changed the stage, so once the player resolved the seat choice the watcher's `!isAutoAdvancing` guard blocked every re-advance. Deterministic freeze until a reload re-ran the watcher against fresh state.
+
+**Root cause (engine — secondary / robustness).** The WP-684 seat-choice stage-ride (`admitSeatsForPendingSeatChoice` -> `setActivePlayers`) admitted EVERY addressed seat, including the active player. The active player is already `ctx.currentPlayer` in the `{ currentPlayer: 'playTurn' }` turn with empty stages, so they already accept `resolveSeatChoice` — the ride's extra open->resolve->revert framework frames are unnecessary and add transport surface.
+
+**Decision.** Fix both, client-first:
+
+1. **Client (the freeze fix).** Add `hasPendingSeatChoice` (from `UIState.pendingSeatChoice !== undefined`) to `anyPendingChoice()` so the reveal auto-advance WAITS for a seat choice and fires exactly once it clears — the same contract that already handles a Master-Strike KO choice. Also gate End Turn / Pass Priority / Heal on it in `useTurnActions` (the seat prompt renders in normal flow, not a modal, so the bar was reachable). Threaded through `TurnActionBar.vue` + `PlayDesktop.vue` + `PlayMobile.vue`.
+2. **Engine (robustness).** `buildSeatChoiceActivePlayersValue` / `admitSeatsForPendingSeatChoice` / `parkSeatChoice` / `openDivingBlockSeatChoiceIfNeeded` take an optional active-player id; that seat is not stage-ridden, and when it is the only addressed seat `setActivePlayers` is skipped entirely. `game.ts` onMove passes `ctx?.currentPlayer`. Non-active recipients (Random Acts, Monarch's Decree, Diving Block on someone else's Wound) still ride. Determinism-safe: `setActivePlayers` is a framework event, not `G`/hash.
+
+**Gates.** game-engine 3973/0 (+ seat-choice active-skip + Diving-Block-active-wave tests); arena-client 1873/0 (+ the auto-advance-waits-for-seat-choice regression, which fails without the `anyPendingChoice` fix, + the End-Turn/Pass-Priority gate test); `vue-tsc --noEmit` 0; `pnpm -r build` 0. No `finalStateHash` change (framework-level only).
+
+**D-24026 live-on-surface:** PENDING deploy — reproduce a start-stage Diving Block (active player's own escape Wound), resolve it, and confirm the turn advances to main with no reload.
+
+**Reported by:** operator, 2026-09-20 (Red Skull / Midtown 2p, turn 25). **Reserved by:** NUMBER-LEDGER D-24544.
+
 Protect this file.

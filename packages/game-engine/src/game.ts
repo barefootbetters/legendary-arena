@@ -782,7 +782,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // WP-684 stage-ride) to admit a NON-active wound recipient. Early no-op when no
           // Diving-Block Wound is pending or another seat choice is already open, so a
           // normal game does no work here and stays byte-identical.
-          openDivingBlockSeatChoiceIfNeeded(G, events);
+          // why: D-24544 — pass ctx.currentPlayer so a Diving-Block wave addressing the
+          // active player's own Wound does NOT stage-ride them (they already accept moves
+          // as the currentPlayer). The removed open→resolve→revert frame is what froze a
+          // start-stage escape-wound Diving Block until reload.
+          // why: ctx?. — some unit tests invoke this onMove with only { G } (no ctx);
+          // an absent ctx yields currentPlayer=undefined, which admits every addressed
+          // seat exactly as before (the pre-D-24544 behaviour), never a throw.
+          openDivingBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent

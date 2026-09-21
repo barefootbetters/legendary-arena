@@ -263,6 +263,13 @@ export function useTurnActions(
   // Heal at ANY stage (the engine's full block-all guard set freezes the board). Mandatory — the
   // active player must pick draw or discard for each other seat.
   hasPendingCoveringFireChoice: boolean = false,
+  // why: WP-682 / D-24544 — appended LAST (after hasPendingCoveringFireChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a WP-684 pending seat choice (Diving Block reveal/decline, Random Acts,
+  // Monarch's Decree) is open; blocks End Turn / Pass Priority / Heal at ANY stage, matching
+  // the engine's hasPendingSeatChoice block-all guard. The seat prompt renders in normal flow
+  // (not a modal), so without this the action bar stayed live over an engine-frozen board.
+  hasPendingSeatChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -490,6 +497,17 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
+        };
+      }
+      // why: WP-682 / D-24544 — End Turn / Pass Priority blocked at any stage while a WP-684
+      // seat choice (Diving Block reveal/decline, Random Acts, Monarch's Decree) is pending
+      // (the engine's block-all guard returns early on hasPendingSeatChoice). The prompt
+      // renders in normal flow, not a modal, so without this the bar stayed live over a
+      // frozen board.
+      if (hasPendingSeatChoice) {
+        return {
+          allowed: false,
+          reason: 'Resolve the pending seat choice before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -725,6 +743,15 @@ export function useTurnActions(
           reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
         };
       }
+      if (hasPendingSeatChoice) {
+        // why: WP-682 / D-24544 — the engine's block-all guards block endTurn while
+        // G.pendingSeatChoice is set (Diving Block / Random Acts / Monarch's Decree);
+        // surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Resolve the pending seat choice before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -894,7 +921,10 @@ export function useTurnActions(
         hasPendingPutHandOnDeckTop ||
         // why: WP-719 / D-24541 — mirror the engine healWounds block-all guard, which returns
         // early while a Covering Fire choose-one is pending.
-        hasPendingCoveringFireChoice
+        hasPendingCoveringFireChoice ||
+        // why: WP-682 / D-24544 — mirror the engine healWounds block-all guard, which returns
+        // early while a WP-684 seat choice (Diving Block / Random Acts / Monarch's Decree) is pending.
+        hasPendingSeatChoice
       ) {
         return {
           allowed: false,
