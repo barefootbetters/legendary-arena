@@ -43110,4 +43110,59 @@ D-24532 (WP-709 Realized Value %), D-24427 (WP-616 the per-seat contribution spl
 (server derives, client renders — no re-interpretation). Renumbered from D-24538 (a parallel
 session reserved that number first). **Reserved by:** NUMBER-LEDGER D-24540.
 
+### D-24542 — Rewardless `ko-wound` hero keyword: auto-resolve "You may KO a Wound" (the two WP-382 rewardless deferrals) (WP-721 / EC-758) (Active 2026-09-20)
+
+**Context.** WP-382 / D-24183 shipped `ko-wound-reward`, the Wound-restricted auto-resolving
+variant of `optional-ko-reward` for the *"You may KO a Wound from your hand or discard pile.
+If you do, `<reward>`."* family, and **deferred two candidate cards** that print the same
+KO-a-Wound clause but carry **no** "if you do, `<reward>`" follow-on: **xmen/x-23/healing-factor-genome**
+(abilityIndex 1) and **cvwr/peter-parker/hot-bowl-of-soup** (abilityIndex 0). The `_deferred`
+reason (D-24183): `ko-wound-reward` is a *reward* keyword; "a bare optional heal grants nothing
+to dispatch, so there is no keyword to attach." Those two lines were hollow (unmarked prose that
+logs and does nothing). This decision resolves the deferral with a rewardless sibling keyword.
+
+**Decision.**
+
+1. **New rewardless `ko-wound` `HeroKeyword`** — the auto-resolving, reward-less sibling of
+   `ko-wound-reward`. Added to the `HeroKeyword` union AND `HERO_KEYWORDS` in lockstep
+   (`rules/heroKeywords.ts`; drift count 59→60, RUNTIME assertion per D-24372).
+2. **Executor `heroEffectKoWound`** (`hero/heroEffects.execute.ts`) KOs exactly one Wound —
+   `WOUND_EXT_ID`, hand first, else discard — to `G.ko` via `moveCardFromZone` + `koCard`, and
+   grants **nothing further** (no `executeSingleEffect` reward dispatch — the sole structural
+   difference from `heroEffectKoWoundReward`). With no Wound in either zone it logs a no-op
+   (D-24017) and returns. The KO target is filtered to `WOUND_EXT_ID` only — a valuable Hero is
+   never KO'd. Registered in `HERO_EFFECT_HANDLERS` (43→44) + `HANDLED_KEYWORDS` (bidirectional
+   parity) + `NO_MAGNITUDE_KEYWORDS`.
+3. **Auto-resolve, not a pending choice** (mirrors `ko-wound-reward`): KO'ing a Wound is a
+   fungible dead card and strictly-beneficial deck-thinning, so the "you may" decline + the
+   hand/discard target choice are strategically inert. No `Pending*`, no resolve move, no bgio
+   move, no `UIState` field, no arena-client surface.
+4. **`IN NO_MAGNITUDE_KEYWORDS`** — the OPPOSITE of `ko-wound-reward` (which carries the reward
+   magnitude and is therefore NOT in that set). `ko-wound` carries no magnitude and no reward, so
+   the `executeSingleEffect` magnitude pre-gate must not drop it.
+5. **No dedicated parser branch.** The bare single-segment `[keyword:ko-wound]` token is
+   recognized by the generic Step-2 `KEYWORD_PATTERN` + `isValidHeroKeyword` scan and emitted as
+   `{ type: 'ko-wound' }` by the effect-builder fallback (`setup/heroAbility.setup.ts`), unlike
+   the three-segment `ko-wound-reward` token which needs its own extraction step. The apply-script
+   `VALID_TOKEN_PATTERN` gains `^\[keyword:ko-wound\]$`.
+6. **Marker application.** Two apply rows added to `inputs/hero-ability-markers.json`
+   (xmen/x-23/healing-factor-genome idx1, cvwr/peter-parker/hot-bowl-of-soup idx0) and the two
+   rewardless `_deferred` entries removed; `data/cards/{xmen,cvwr}.json` regenerated (token
+   appended to the two ability lines only). The four card-derived feeds (effect-index,
+   card-mechanics, hero-mechanic-ledger, runtime-observed-hollows) regenerated; both cards now
+   read `ko-wound`/`executable`.
+
+**Determinism.** KO'ing a Wound is a normal hashed-`G` zone mutation. The sole committed sentinel
+replay (`sentinel-core-doom-2p`) is **core-only**, and X-23 (`xmen`) and this Peter Parker
+(`cvwr`) are non-core, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged (verified — no
+re-pin). A future real-registry fixture that plays a marked card would re-pin honestly.
+
+**Out of scope (stays deferred).** `wpnx/weapon-x-wolverine/raging-regeneration` (a rewardless
+KO-a-Wound gated by `[hc:instinct]` with a `[keyword:Berserk]`-again reward) remains in
+`_deferred` — a different WP-382 candidate (a gate + an out-of-vocabulary re-trigger reward).
+
+Related: D-24183 (the reward-bearing `ko-wound-reward` sibling), D-24017 (empty-supply no-op
+logging), D-24019 (`optional-ko-reward` — the KO-a-card ancestor), D-24372 (runtime drift-pin
+requirement). **Reserved by:** NUMBER-LEDGER D-24542.
+
 Protect this file.

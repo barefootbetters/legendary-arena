@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-721 — Rewardless `ko-wound` Hero Keyword: auto-resolve "You may KO a Wound" (EC-758 / D-24542) (2026-09-20)
+
+Resolves the two WP-382/D-24183 rewardless `_deferred` "KO a Wound" hollows — **xmen/x-23/healing-factor-genome**
+(abilityIndex 1) and **cvwr/peter-parker/hot-bowl-of-soup** (abilityIndex 0), both printing *"You may
+KO a Wound from your hand or discard pile."* with **no** "if you do, `<reward>`" clause. `ko-wound-reward`
+could not express them (a reward keyword; a bare heal has nothing to dispatch), so WP-382 deferred them.
+
+New rewardless **`ko-wound`** `HeroKeyword` — the auto-resolving reward-less sibling of `ko-wound-reward`.
+Executor `heroEffectKoWound` KOs one `WOUND_EXT_ID` (hand first, else discard) to `G.ko` via
+`moveCardFromZone` + `koCard` with **no** reward dispatch; no Wound → D-24017 no-op log; the Wound filter
+means a Hero is never KO'd. **Auto-resolve** (no pending choice / move / UIState / client) — KO'ing a Wound
+is strictly-beneficial deck-thinning, so the WP-382 rationale applies. The bare `[keyword:ko-wound]` marker
+rides the generic `KEYWORD_PATTERN` + `isValidHeroKeyword` scan → `{type:'ko-wound'}` fallback (**no
+dedicated parser branch**); `IN NO_MAGNITUDE_KEYWORDS` (unlike `ko-wound-reward`). Drift pins `HERO_KEYWORDS`
+**59→60** (RUNTIME) + `HANDLED_KEYWORDS`↔`HERO_EFFECT_HANDLERS` **43→44** parity.
+
+Ran the **Lightweight Lane** (single session, two-commit `EC-758:` + `SPEC:`). **Verification:** engine
+**3950→3957/0** (+7: 5 behavior tests — hand-KO / discard-KO / hand-first / no-Wound no-op / never-KO-a-Hero — plus 2 registration tests),
+`apply-hero-ability-markers.mjs` updated exactly 2 lines (idempotent), `cards:check` / `effect-index:check`
+/ `mechanics:metadata:check` / `ledger:heroes:check` / `sim:runtime-observed:check` all 0 (both cards now
+`ko-wound`/`executable`), `roadmap:counts:check` 0, `pnpm -r build` 0. `finalStateHash` **unchanged** (the
+sentinel replay is core-only; X-23 + this Peter Parker are non-core); `lagn-v1.json` CRLF build-churn
+reverted. Engine + card-data + apply script; no client. Out of scope: the `wpnx/weapon-x-wolverine/raging-regeneration`
+deferral (`[hc:instinct]` gate + `Berserk`-again reward) stays deferred. `User-Visible Surface =
+play.legendary-arena.com` — **D-24026 live-verify operator-pending** (Healing Factor Genome / Hot Bowl of
+Soup KOs a Wound on the deployed build).
+
 ### WP-718 — Synergy Realization: Table Cooperation client render (EC-755) (2026-09-20)
 
 The deferred client-render half of WP-717/D-24540 (mirrors WP-710→WP-713), closing the
