@@ -885,6 +885,18 @@
       "hidden": true
     },
     {
+      "slug": "ko-wound",
+      "label": "Ko Wound",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "cvwr/peter-parker",
+        "xmen/x-23"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ko-wound-reward",
       "label": "Ko Wound Reward",
       "scope": "hero",
@@ -2847,6 +2859,7 @@
     },
     "cvwr/peter-parker": {
       "mechanics": [
+        "ko-wound",
         "rescue",
         "reveal"
       ]
@@ -4208,6 +4221,7 @@
     "xmen/x-23": {
       "mechanics": [
         "berserk",
+        "ko-wound",
         "x-gene"
       ]
     }

@@ -1236,7 +1236,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "You may KO a Wound from your hand or discard pile."
+            "You may KO a Wound from your hand or discard pile. [keyword:ko-wound]"
           ]
         },
         {

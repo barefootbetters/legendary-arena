@@ -557,7 +557,7 @@ describe('teleport-on-discard resolver (WP-705 / D-24526)', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 59 canonical keyword values', () => {
+  it('contains exactly the 61 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -578,6 +578,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'optional-ko-reward',
       'optional-ko-hand-discard', // why: WP-667 / D-24480 — "you may KO a card from your hand or discard pile" (no reward, Radioactive Riot)
       'ko-wound-reward', // why: WP-382 / D-24183 — Wound-restricted auto-resolving variant of optional-ko-reward
+      'ko-wound', // why: WP-721 / D-24542 — rewardless auto-resolving sibling of ko-wound-reward ("You may KO a Wound from your hand or discard pile." with NO reward clause)
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
       'undercover', // why: WP-678 / D-24494 (supersedes D-24060) — Undercover descriptive token; bare form is an honest hollow (no source zone → no handler)
@@ -623,8 +624,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      60,
-      'HERO_KEYWORDS must have exactly 60 entries',
+      61,
+      'HERO_KEYWORDS must have exactly 61 entries',
     );
 
     assert.deepStrictEqual(

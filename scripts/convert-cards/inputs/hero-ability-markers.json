@@ -598,6 +598,12 @@
       "cardSlug": "being-big-is-best",
       "abilityIndex": 1,
       "markupToken": "[keyword:attack-per-count:cost-four-plus-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "peter-parker",
+      "cardSlug": "hot-bowl-of-soup",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-wound]"
     }
   ],
   "dkcy": [
@@ -1750,6 +1756,12 @@
       "cardSlug": "intangible-qualities",
       "abilityIndex": 0,
       "markupToken": "[keyword:put-bottom-hq-icon-reward:2]"
+    },
+    {
+      "heroSlug": "x-23",
+      "cardSlug": "healing-factor-genome",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:ko-wound]"
     }
   ],
   "_deferred": [
@@ -2096,22 +2108,6 @@
       "abilityIndex": 1,
       "abilityText": "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again.",
       "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
-    },
-    {
-      "setAbbr": "xmen",
-      "heroSlug": "x-23",
-      "cardSlug": "healing-factor-genome",
-      "abilityIndex": 1,
-      "abilityText": "You may KO a Wound from your hand or discard pile.",
-      "reason": "WP-382 / D-24183 — rewardless: 'KO a Wound' with no 'If you do, <reward>' clause. ko-wound-reward is a reward keyword; a bare optional heal grants nothing to dispatch, so there is no keyword to attach."
-    },
-    {
-      "setAbbr": "cvwr",
-      "heroSlug": "peter-parker",
-      "cardSlug": "hot-bowl-of-soup",
-      "abilityIndex": 0,
-      "abilityText": "You may KO a Wound from your hand or discard pile.",
-      "reason": "WP-382 / D-24183 — rewardless: same as x-23/healing-factor-genome; no reward clause, so no ko-wound-reward token."
     }
   ]
 }

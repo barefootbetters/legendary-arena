@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1895,
+    "totalEntries": 1897,
     "byScope": {
-      "hero": 720,
+      "hero": 722,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 469,
+      "executable": 471,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -8921,6 +8921,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "cvwr/peter-parker",
+      "name": "Peter Parker",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "ko-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "hot-bowl-of-soup",
+          "name": "Hot Bowl of Soup"
+        }
+      ]
     },
     {
       "extId": "cvwr/peter-parker",
@@ -26882,6 +26899,23 @@
       "name": "X-23",
       "set": "xmen",
       "scope": "hero",
+      "mechanic": "ko-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "healing-factor-genome",
+          "name": "Healing Factor Genome"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "name": "X-23",
+      "set": "xmen",
+      "scope": "hero",
       "mechanic": "x-gene",
       "status": "unsupported",
       "handler": "",
@@ -29897,6 +29931,7 @@
     "cvwr/peter-parker": {
       "scope": "hero",
       "mechanics": [
+        "ko-wound",
         "rescue",
         "reveal"
       ]
@@ -36217,6 +36252,7 @@
       "scope": "hero",
       "mechanics": [
         "berserk",
+        "ko-wound",
         "x-gene"
       ]
     }
