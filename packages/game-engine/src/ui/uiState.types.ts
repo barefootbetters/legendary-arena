@@ -236,6 +236,12 @@ export interface UIState {
   // (undefined) means no pending draw-or-empowered choice; the client must not render
   // the prompt in that case.
   pendingDrawOrEmpowered?: UIPendingDrawOrEmpowered;
+  // why: WP-719 / D-24541 — projects the FRONT of G.pendingCoveringFireChoices so the active
+  // (choosing) player can render Hawkeye's "Covering Fire" prompt ("Choose one: each other
+  // player draws a card / discards a card"). Redacted (omitted) for every audience except the
+  // chooser (the D-24011 hand-privacy analog — keyed on .playerID). Absent (undefined) means
+  // no pending Covering Fire choice; the client must not render the prompt in that case.
+  pendingCoveringFireChoice?: UIPendingCoveringFireChoice;
   // why: WP-675 / D-24490 — projects the FRONT of G.pendingCountScaledChoice with each option's
   // RESOLVED count/total so the choosing player can render vnom's "Choose one: +N Recruit / +N
   // Attack" prompt. Redacted (omitted) for every audience except the chooser (keyed on .playerID).
@@ -1387,6 +1393,29 @@ export interface UIPendingDrawOrEmpowered {
   // why: D-24071 — derived once in uiState.build.ts by a single deterministic
   // empoweredClass→display mapping; never an ad-hoc or per-card string.
   empoweredLabel: string;
+}
+
+/**
+ * UI contract for resolving a pending Covering Fire choose-one choice (WP-719 / D-24541 —
+ * Hawkeye's "Covering Fire").
+ *
+ * A binary choice with NO eligible-card list (the printed "Choose one: each other player draws
+ * a card or each other player discards a card") — the active player picks a branch and it
+ * applies to every OTHER seat. The client renders a Draw button (`resolveCoveringFireChoice({
+ * choice: 'draw' })`) and a Discard button (`resolveCoveringFireChoice({ choice: 'discard' })`).
+ * `otherPlayerCount` is the number of other seats affected, for the prompt label. Only visible
+ * to the choosing player; redacted for opponents and spectators (keyed on .playerID).
+ *
+ * @see WP-719 §Scope (In) — projection + prompt
+ * @see EC-756 Locked Values
+ * @see DECISIONS.md D-24541
+ */
+export interface UIPendingCoveringFireChoice {
+  // why: D-24541 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingDrawOrEmpowered.playerID.
+  playerID: string;
+  /** The number of OTHER seats each branch affects, for the prompt label ("each of N players"). */
+  otherPlayerCount: number;
 }
 
 /**

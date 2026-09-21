@@ -257,6 +257,12 @@ export function useTurnActions(
   // full block-all guard set freezes the board). Mandatory — the player must disposition
   // every revealed deck top before another action.
   hasPendingRevealTopDispose: boolean = false,
+  // why: WP-719 / D-24541 — appended LAST (after hasPendingRevealTopDispose) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a Hawkeye Covering Fire choose-one is pending; blocks End Turn / Pass Priority /
+  // Heal at ANY stage (the engine's full block-all guard set freezes the board). Mandatory — the
+  // active player must pick draw or discard for each other seat.
+  hasPendingCoveringFireChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -475,6 +481,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Discard or keep each revealed deck top before taking another action.',
+        };
+      }
+      // why: WP-719 / D-24541 — End Turn / Pass Priority blocked at any stage while a Covering
+      // Fire choose-one is pending (the engine's full block-all guard set freezes the board). The
+      // choice is mandatory — no decline exit to name.
+      if (hasPendingCoveringFireChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -702,6 +717,14 @@ export function useTurnActions(
           reason: 'Discard or keep each revealed deck top before taking another action.',
         };
       }
+      if (hasPendingCoveringFireChoice) {
+        // why: WP-719 / D-24541 — the engine's block-all guards block endTurn while
+        // pendingCoveringFireChoices is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -868,7 +891,10 @@ export function useTurnActions(
         hasPendingElectromagneticBubbleChoice ||
         // why: WP-700 / D-24519 — mirror the engine healWounds block-all guard, which returns
         // early while a put-a-hand-card-on-deck-top choice is pending.
-        hasPendingPutHandOnDeckTop
+        hasPendingPutHandOnDeckTop ||
+        // why: WP-719 / D-24541 — mirror the engine healWounds block-all guard, which returns
+        // early while a Covering Fire choose-one is pending.
+        hasPendingCoveringFireChoice
       ) {
         return {
           allowed: false,

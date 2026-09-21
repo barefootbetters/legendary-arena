@@ -62,15 +62,19 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 59 entries after the WP-714 addition', () => {
+  it('HERO_KEYWORDS array has exactly 60 entries after the WP-719 addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      59,
-      'HERO_KEYWORDS must have exactly 59 entries (58 + kidnap-per-count (WP-714 / D-24537))',
+      60,
+      'HERO_KEYWORDS must have exactly 60 entries (59 + covering-fire (WP-719 / D-24541))',
     );
     assert.ok(
       HERO_KEYWORDS.includes('kidnap-per-count'),
       'kidnap-per-count must be in HERO_KEYWORDS array',
+    );
+    assert.ok(
+      HERO_KEYWORDS.includes('covering-fire'),
+      'covering-fire must be in HERO_KEYWORDS array',
     );
   });
 });

@@ -279,6 +279,18 @@
       "hidden": true
     },
     {
+      "slug": "covering-fire",
+      "label": "Covering Fire",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "core/hawkeye",
+        "msp1/hawkeye"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "cross-dimensional-rampage",
       "label": "Cross Dimensional Rampage",
       "scope": "hero",
@@ -2675,6 +2687,7 @@
     },
     "core/hawkeye": {
       "mechanics": [
+        "covering-fire",
         "draw"
       ]
     },
@@ -3307,6 +3320,7 @@
     },
     "msp1/hawkeye": {
       "mechanics": [
+        "covering-fire",
         "draw"
       ]
     },

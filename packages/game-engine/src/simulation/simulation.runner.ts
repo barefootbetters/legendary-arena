@@ -62,6 +62,9 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 // resolveDrawOrEmpowered (block-all guard), so this MUST be dispatchable here or the per-turn
 // loop spins forever — maxTurns bounds TURNS, not within-turn move-steps.
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+// why: WP-719 / D-24541 — a parked Covering Fire choice makes resolveCoveringFireChoice the only
+// legal move; this MUST be dispatchable here or the per-turn loop spins. Pinned by the drift guard.
+import { resolveCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
 // why: WP-675 / D-24490 — resolveCountScaledChoice is a getLegalMoves short-circuit (block-all
 // guard), so it MUST be dispatchable here or a parked count-scaled choice hangs the per-turn loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
@@ -313,6 +316,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  resolveCoveringFireChoice: (context, args) => resolveCoveringFireChoice(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
   // why: WP-684 / D-24501 — getLegalMoves short-circuits to resolveSeatChoice when a

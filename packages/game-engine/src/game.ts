@@ -32,6 +32,7 @@ import { resolveGiveHqHeroChoice, hasPendingGiveHqHeroChoice } from './moves/giv
 import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/copyPowersChoice.resolve.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
+import { resolveCoveringFireChoice, hasPendingCoveringFireChoice } from './moves/coveringFireChoice.resolve.js';
 import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
@@ -195,6 +196,8 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
   if (hasPendingVictoryPileCardPick(G)) { return; }
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) { return; }
+  // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
+  if (hasPendingCoveringFireChoice(G)) { return; }
   // why: block-all — pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) { return; }
   // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
@@ -616,6 +619,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     resolvePutAnyNumberBottomHQ: { move: resolvePutAnyNumberBottomHQ, client: false },
     resolveVictoryPileCardPick: { move: resolveVictoryPileCardPick, client: false },
     resolveDrawOrEmpowered: { move: resolveDrawOrEmpowered, client: false },
+    // why: WP-719 / D-24541 — resolveCoveringFireChoice resolves Hawkeye's Covering Fire
+    // choose-one (each other player draws or discards a card). Server-only (client: false) —
+    // it mutates real G (each other seat's hand/deck/discard), absent on UIState.
+    resolveCoveringFireChoice: { move: resolveCoveringFireChoice, client: false },
     resolveCountScaledChoice: { move: resolveCountScaledChoice, client: false },
     // why: WP-678 / D-24494 — resolveUndercoverChoice resolves the pending Undercover
     // target pick (send a chosen [team:shield] Hero from hand to the Victory Pile).

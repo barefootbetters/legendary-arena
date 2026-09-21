@@ -46,6 +46,7 @@ import {
   getEligibleVictoryVillains,
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+import { hasPendingCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import {
@@ -158,6 +159,10 @@ export const SIMULATION_MOVE_NAMES = [
   'resolvePlayVillainTopChoice',
   'resolveVictoryPileCardPick',
   'resolveDrawOrEmpowered',
+  // why: WP-719 / D-24541 — resolveCoveringFireChoice is a getLegalMoves short-circuit
+  // (block-all pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn
+  // loop hangs on a parked Covering Fire choice.
+  'resolveCoveringFireChoice',
   'resolveCountScaledChoice',
   'resolveUndercoverChoice',
   'resolveSmashDiscard',
@@ -397,6 +402,14 @@ export function getLegalMoves(
   if (hasPendingDrawOrEmpowered(gameState)) {
     // why: deterministic bot default — always empowered; an expected-value default is deferred (D-24069)
     return [{ name: 'resolveDrawOrEmpowered', args: { choice: 'empowered' } }];
+  }
+  // why: WP-719 / D-24541 — a Covering Fire choose-one blocks every other move; the bot resolves
+  // it first with a deterministic default of 'draw' — in the cooperative ruleset giving every
+  // teammate a card is strictly beneficial, whereas the discard branch is a downside (an
+  // expected-value default is deferred, mirroring the draw-or-empowered default above). Returns
+  // a list of length EXACTLY 1.
+  if (hasPendingCoveringFireChoice(gameState)) {
+    return [{ name: 'resolveCoveringFireChoice', args: { choice: 'draw' } }];
   }
   // why: WP-675 / D-24490 — a count-scaled choose-one blocks every other move; the bot resolves
   // it first with a deterministic default of option 0 (an expected-value default is deferred,

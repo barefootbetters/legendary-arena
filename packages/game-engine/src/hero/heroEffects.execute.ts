@@ -211,6 +211,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // that snapshots each OTHER seat's deck top and parks one shared PendingRevealTopDispose, so it
   // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'reveal-top-dispose-others',
+  // why: WP-719 / D-24541 — Hawkeye's "Covering Fire" ([hc:tech]-gated "Choose one: each other
+  // player draws a card or each other player discards a card"); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectCoveringFire) that parks a PendingCoveringFireChoice for the active player, so it
+  // belongs here. Carries NO magnitude (a choose-one branch, not a count) → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'covering-fire',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -439,6 +445,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // never parks its choice.
   'reveal-top-dispose',
   'reveal-top-dispose-others',
+  // why: WP-719 / D-24541 — covering-fire carries NO magnitude: the outcome is a choose-one
+  // branch (each other player draws OR discards), not a count. The per-seat effect is applied at
+  // resolve time, so the magnitude pre-gate must not drop it, or heroEffectCoveringFire never
+  // parks its choice.
+  'covering-fire',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2755,6 +2766,43 @@ function heroEffectDoOver(
 }
 
 /**
+ * Park handler for the `covering-fire` hero keyword (WP-719 / D-24541).
+ *
+ * Hawkeye's "Covering Fire", `[hc:tech]`-gated ("[hc:tech]: Choose one: each other player
+ * draws a card or each other player discards a card."). The `[hc:tech]` prefix already parsed
+ * as a heroClassMatch condition that gates this hook (so it runs only when another tech Hero
+ * was played this turn); this handler parks ONE PendingCoveringFireChoice onto the FIFO
+ * G.pendingCoveringFireChoices queue for the ACTIVE player. resolveCoveringFireChoice then
+ * applies the chosen 'draw'/'discard' branch to EACH OTHER seat.
+ *
+ * // why: D-24541 — the choose-one is a genuine either/or (a table-wide draw vs. a table-wide
+ * discard, neither dominant in the cooperative ruleset), so it parks an interactive choice for
+ * the active player rather than auto-resolving. The park is SILENT (no G.messages line); the
+ * resolve move logs the per-seat outcomes. Lazy-init at the park site — NEVER in Game.setup —
+ * so a game that never plays Covering Fire carries no new field and both hash oracles stay
+ * byte-unchanged.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the draw/discard happen at resolve time).
+ * @param playerID - The active player who played the Covering Fire card.
+ * @param cardId - The played card, recorded on the choice for log attribution.
+ * @param _effect - The `{ type: 'covering-fire' }` descriptor (no magnitude).
+ */
+function heroEffectCoveringFire(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: D-24541 — lazy-init at the park site (mirrors the Do-Over park) — never in Game.setup,
+  // so a game that never plays Covering Fire carries no new field and both hash oracles stay
+  // byte-unchanged. The park is SILENT; resolveCoveringFireChoice logs the per-seat outcomes.
+  if (!G.pendingCoveringFireChoices) { G.pendingCoveringFireChoices = []; }
+  G.pendingCoveringFireChoices.push({ playerID, sourceCardId: cardId });
+}
+
+/**
  * Handler for the `here-hold-this` hero keyword (WP-683 / D-24500).
  *
  * Deadpool's "Here, Hold This for a Second" — "A Villain of your choice captures a
@@ -4610,6 +4658,11 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'put-hand-on-deck-top': heroEffectPutHandOnDeckTop,
   'reveal-top-dispose': heroEffectRevealTopDispose,
   'reveal-top-dispose-others': heroEffectRevealTopDisposeOthers,
+  // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player
+  // draws a card or each other player discards a card"): parks a PendingCoveringFireChoice for
+  // the active player, resolved by resolveCoveringFireChoice (draw/discard applied to each other
+  // seat). Carries NO magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'covering-fire': heroEffectCoveringFire,
 };
 
 // ---------------------------------------------------------------------------
