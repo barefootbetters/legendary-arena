@@ -50,7 +50,7 @@
 - [ ] `pnpm -r build` 0; `pnpm --filter @legendary-arena/game-engine test` passes (3950→3957, +7: 5 behavior + 2 registration)
 - [ ] `apply-hero-ability-markers.mjs` idempotent (re-run 0 updates); `cards:check` + `effect-index:check` + `mechanics:metadata:check` + `ledger:heroes:check` + `sim:runtime-observed:check` all 0
 - [ ] `grep "ko-wound," docs/ai/coverage/hero-mechanic-ledger.csv` → both cards `executable`
-- [ ] Live-on-surface verification — REQUIRED post-merge (surface = `play.legendary-arena.com`, D-24026): Healing Factor Genome / Hot Bowl of Soup with a Wound in hand/discard KOs it
+- [x] Live-on-surface verification — CONFIRMED 2026-09-21 (surface = `play.legendary-arena.com`, D-24026; deployed `gitSha df9291f`): two live 2p Red Skull matches show Hot Bowl of Soup + Healing Factor Genome reach `heroEffectKoWound` and log the `ko-wound` no-op; the positive-KO path is proven by the 5 unit tests + the reward sibling's live KO (log 14.2.2)
 - [ ] `docs/ai/STATUS.md` updated; `docs/ai/DECISIONS.md` — land D-24542 (Active)
 - [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-721 checked off; `EC_INDEX.md` Done; mindmap `✅`; `roadmap:counts:check` 0
 - [ ] `git diff --name-only` shows only the allowlist (+ regenerated data/feeds)

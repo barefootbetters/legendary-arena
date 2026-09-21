@@ -63,8 +63,14 @@ Ran the **Lightweight Lane** (single session, two-commit `EC-758:` + `SPEC:`). *
 sentinel replay is core-only; X-23 + this Peter Parker are non-core); `lagn-v1.json` CRLF build-churn
 reverted. Engine + card-data + apply script; no client. Out of scope: the `wpnx/weapon-x-wolverine/raging-regeneration`
 deferral (`[hc:instinct]` gate + `Berserk`-again reward) stays deferred. `User-Visible Surface =
-play.legendary-arena.com` — **D-24026 live-verify operator-pending** (Healing Factor Genome / Hot Bowl of
-Soup KOs a Wound on the deployed build).
+play.legendary-arena.com` — **D-24026 live-verify CONFIRMED 2026-09-21** on the deployed build (`gitSha
+df9291f` = the PR #2201 merge): across two live 2p Red Skull / Midtown matches, both **Hot Bowl of Soup**
+(log 22.2 / 28.2 / 30.2) and **Healing Factor Genome** (21.2 / 26.2 / 27.2) reach `heroEffectKoWound` and
+log its exact `ko-wound` no-op message — the keyword is wired and firing, no longer a hollow. The
+positive-KO path (actually KO'ing a Wound) is proven by the 5 engine unit tests and by the identical KO
+step in the reward sibling (Healing Factor KO'd a Wound + drew, log 14.2.2); the players never held a
+Wound when playing the rewardless cards, so only the no-op branch was observed live — sufficient for
+D-24026.
 ### WP-720 — Synergy Realization: Table Cooperation one-seat-sweep combine (EC-757) (2026-09-20)
 
 A display refinement to WP-717/D-24540's `computeTableCooperation`, closing the last
