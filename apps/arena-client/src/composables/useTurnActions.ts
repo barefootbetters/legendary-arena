@@ -263,6 +263,10 @@ export function useTurnActions(
   // Heal at ANY stage (the engine's full block-all guard set freezes the board). Mandatory — the
   // active player must pick draw or discard for each other seat.
   hasPendingCoveringFireChoice: boolean = false,
+  // True while a split / dual-faced hero "choose a side" pick is pending; blocks End Turn / Pass
+  // Priority / Heal at ANY stage (the engine's block-all guard set freezes the board). Mandatory —
+  // the active player must bind a side (WP-725 / D-24546).
+  hasPendingSplitFaceChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -490,6 +494,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
+        };
+      }
+      // why: WP-725 / D-24546 — End Turn / Pass Priority blocked at any stage while a split-face
+      // "choose a side" pick is pending (the engine's block-all guard set freezes the board). The
+      // choice is mandatory — no decline exit to name.
+      if (hasPendingSplitFaceChoice) {
+        return {
+          allowed: false,
+          reason: 'Choose a side of the split hero card before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -725,6 +738,14 @@ export function useTurnActions(
           reason: 'Choose Covering Fire — each other player draws or discards a card — before taking another action.',
         };
       }
+      if (hasPendingSplitFaceChoice) {
+        // why: WP-725 / D-24546 — the engine's block-all guards block endTurn/heal while
+        // pendingSplitFaceChoices is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Choose a side of the split hero card before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -894,7 +915,10 @@ export function useTurnActions(
         hasPendingPutHandOnDeckTop ||
         // why: WP-719 / D-24541 — mirror the engine healWounds block-all guard, which returns
         // early while a Covering Fire choose-one is pending.
-        hasPendingCoveringFireChoice
+        hasPendingCoveringFireChoice ||
+        // why: WP-725 / D-24546 — mirror the engine healWounds block-all guard, which returns
+        // early while a split / dual-faced hero "choose a side" pick is pending.
+        hasPendingSplitFaceChoice
       ) {
         return {
           allowed: false,

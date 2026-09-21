@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-725 — Split / dual-faced hero "choose a side": arena-client picker (EC-762) (2026-09-21)
+
+The client half of WP-724 (mirrors WP-717 → WP-718) — completes the split-hero "choose a side"
+mechanic on-screen. When a player plays a split / dual-faced hero card, a new
+`SplitFaceChoicePrompt.vue` shows the two halves — each with its name, ability text (routed through
+`AbilityText.vue`, never raw marker syntax), cost and base economy — and submitting
+`resolveSplitFaceChoice({ face })` binds the chosen side; the engine grants that face's economy and
+fires its ability (WP-724). The picker renders only for the chooser (`pendingSplitFaceChoice !==
+undefined && viewerPlayerId === playerID`; the field is already server-redacted, so the client
+double-gates), is non-dismissible, and guards against a double submit — mirroring
+`CoveringFireChoicePrompt`.
+
+Client-only, consuming the engine's served field verbatim (D-20105 — no rule re-evaluation, no
+engine/server/`packages/**` change). `UiMoveName` gains `resolveSplitFaceChoice`; `useTurnActions`
+gains a `hasPendingSplitFaceChoice` param wired into both End-Turn/Pass gates and the heal aggregate;
+`TurnActionBar` threads the prop into both `useTurnActions` calls; `PlayDesktop` + `PlayMobile` mount
+the picker and pass the flag.
+
+vue-tsc clean; arena-client suite **1878/0** (+7 `SplitFaceChoicePrompt` tests: render gates,
+both-face render, `AbilityText` routing, face-a / face-b dispatch, double-submit guard); whole-repo
+build 0. **D-24026 live-verify is operator-pending** post-deploy (play `cvwr/peter-parker`'s split
+card on the deployed play surface, pick each face, confirm the right economy + ability + no freeze —
+the picker is gated behind a live match, unreachable in the dev preview, per the WP-719 precedent).
+
 ### WP-724 — Split / dual-faced hero "choose a side": engine + setup (EC-761 / D-24545 + D-24546) (2026-09-21)
 
 Un-defers **D-14101**. A split / dual-faced hero card — one printable card with two halves
