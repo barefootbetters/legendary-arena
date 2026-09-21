@@ -96,7 +96,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // standalone family — snapshot the deck top(s) then park the discard-or-keep choice (40 → 42).
     // WP-714 / D-24537 added the kidnap-per-count handler (Ultron's Genetic Experimentation —
     // count-scaled bystander capture) (42 → 43).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 43);
+    // WP-721 / D-24542 added the ko-wound handler (rewardless "You may KO a Wound" — X-23's
+    // Healing Factor Genome, Peter Parker's Hot Bowl of Soup) (43 → 44).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 44);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -3997,6 +3999,105 @@ describe('executeHeroEffects optional-ko-hand-discard park (WP-667 / D-24480)', 
     executeHeroEffects(gameState, mockCtx, '0', 'radioactive-riot' as string);
 
     assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'nothing parked — hand+discard empty (inPlay is NOT a KO source here)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-721 — ko-wound (rewardless auto-resolving KO-a-Wound) (D-24542)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects ko-wound auto-resolve (WP-721 / D-24542)', () => {
+  const mockCtx = makeMockCtx();
+
+  // why: the rewardless "You may KO a Wound from your hand or discard pile." family
+  // (X-23's Healing Factor Genome, Peter Parker's Hot Bowl of Soup). Auto-resolves —
+  // KOs one Wound (hand-first-else-discard) with NO reward, no pending choice.
+  function koWoundHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['ko-wound'], effects: [{ type: 'ko-wound' }] };
+  }
+
+  it('KOs a Wound from the HAND (hand-first) and grants no reward', () => {
+    const gameState = makeTestState({
+      hand: [WOUND_EXT_ID, 'other-hand-card'],
+      discard: ['card-d'],
+      inPlay: ['healing-factor-genome'],
+      turnEconomyAttack: 0,
+      turnEconomyRecruit: 0,
+      heroAbilityHooks: [koWoundHook('healing-factor-genome')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'healing-factor-genome' as string);
+
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the Wound was KO\'d to the global KO pile');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['other-hand-card'], 'the Wound left the hand; the other card stays');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['card-d'], 'the discard pile is untouched (hand-first)');
+    assert.equal(gameState.turnEconomy.attack, 0, 'no attack reward');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit reward');
+    const koLog = gameState.messages.find((entry) => entry.text.includes("KO'd a Wound from their hand"));
+    assert.ok(koLog !== undefined, 'a KO log line names the hand as the source');
+  });
+
+  it('KOs a Wound from the DISCARD pile when the hand holds none', () => {
+    const gameState = makeTestState({
+      hand: ['non-wound-card'],
+      discard: [WOUND_EXT_ID, 'card-d'],
+      inPlay: ['hot-bowl-of-soup'],
+      heroAbilityHooks: [koWoundHook('hot-bowl-of-soup')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hot-bowl-of-soup' as string);
+
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'the discard-pile Wound was KO\'d');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['non-wound-card'], 'the hand is untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['card-d'], 'exactly one Wound left the discard pile');
+    const koLog = gameState.messages.find((entry) => entry.text.includes("KO'd a Wound from their discard"));
+    assert.ok(koLog !== undefined, 'a KO log line names the discard pile as the source');
+  });
+
+  it('prefers the HAND when a Wound is in both hand and discard', () => {
+    const gameState = makeTestState({
+      hand: [WOUND_EXT_ID],
+      discard: [WOUND_EXT_ID],
+      inPlay: ['healing-factor-genome'],
+      heroAbilityHooks: [koWoundHook('healing-factor-genome')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'healing-factor-genome' as string);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, [], 'the hand Wound was removed (hand-first)');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [WOUND_EXT_ID], 'the discard Wound is left in place');
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID], 'exactly one Wound was KO\'d');
+  });
+
+  it('is a logged no-op when neither hand nor discard holds a Wound', () => {
+    const gameState = makeTestState({
+      hand: ['hero-a'],
+      discard: ['hero-b'],
+      inPlay: ['healing-factor-genome'],
+      heroAbilityHooks: [koWoundHook('healing-factor-genome')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'healing-factor-genome' as string);
+
+    assert.deepStrictEqual(gameState.ko, [], 'nothing was KO\'d');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-a'], 'the hand is untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-b'], 'the discard is untouched');
+    const noOpLog = gameState.messages.find((entry) => entry.text.includes('had no Wound in hand or discard pile'));
+    assert.ok(noOpLog !== undefined, 'a no-op log line explains the ability found no Wound');
+  });
+
+  it('never KOs a non-Wound card (a Hero in hand is safe)', () => {
+    const gameState = makeTestState({
+      hand: ['valuable-hero'],
+      discard: [],
+      inPlay: ['healing-factor-genome'],
+      heroAbilityHooks: [koWoundHook('healing-factor-genome')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'healing-factor-genome' as string);
+
+    assert.deepStrictEqual(gameState.ko, [], 'no card was KO\'d — the Wound filter must never KO a Hero');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['valuable-hero'], 'the Hero stays in hand');
   });
 });
 

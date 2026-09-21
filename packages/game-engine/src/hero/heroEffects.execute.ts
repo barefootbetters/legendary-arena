@@ -117,6 +117,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'shuffle-discard-empty-reward',
   // why: WP-382 / D-24183 — auto-resolving Wound-restricted KO-a-Wound-then-reward (Healing Factor family); has a HERO_EFFECT_HANDLERS entry (heroEffectKoWoundReward), so it belongs here.
   'ko-wound-reward',
+  // why: WP-721 / D-24542 — the REWARDLESS sibling of ko-wound-reward ("You may KO a Wound from
+  // your hand or discard pile." with no "if you do" clause); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectKoWound) that KOs one Wound hand-first-else-discard with NO reward dispatch, so it
+  // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS (unlike ko-wound-reward).
+  'ko-wound',
   // why: WP-383 / D-24184 — mandatory discard-to-play COST; has a HERO_EFFECT_HANDLERS entry (heroEffectDiscardToPlay) that parks the PendingDiscardToPlay, so it belongs here.
   'discard-to-play',
   // why: WP-486 / D-24291 — Silent Sniper's "Defeat a Villain or Mastermind that has a Bystander."; has a HERO_EFFECT_HANDLERS entry (heroEffectDefeatWithBystander) that defeats one eligible target via the shared fight-defeat path or parks a PendingDefeatChoice, so it belongs here.
@@ -365,6 +370,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: D-24156 — "gain a Wound" is exactly one Wound; the tokens carry no
   // magnitude segment, so the magnitude pre-gate must not drop them.
   'gain-wound-self', 'gain-wound-each',
+  // why: WP-721 / D-24542 — ko-wound carries NO magnitude (it KOs exactly one Wound, no reward);
+  // the Wound target is read from hand/discard at play time, so the magnitude pre-gate must not
+  // drop it, or heroEffectKoWound never fires. (ko-wound-reward is NOT here — it carries the
+  // reward magnitude.)
+  'ko-wound',
   // why: victory-villain-attack parks a pending pick; the attack amount is read
   // from the chosen villain's fightCost at resolve time, not from a static magnitude
   'victory-villain-attack',
@@ -3065,6 +3075,67 @@ function heroEffectKoWoundReward(
 }
 
 /**
+ * Handler for the `ko-wound` hero keyword (WP-721 / D-24542).
+ *
+ * The REWARDLESS sibling of `ko-wound-reward` (the "You may KO a Wound from your
+ * hand or discard pile." family with NO "if you do, <reward>" clause — X-23's
+ * Healing Factor Genome, Peter Parker's Hot Bowl of Soup). It immediately KOs one
+ * Wound to `G.ko` — preferring hand, else discard — and grants nothing further.
+ * With no Wound in either zone it logs a no-op (D-24017) and returns.
+ *
+ * Auto-resolves — no `Pending*`, no resolve move, no `UIState` projection, no
+ * client prompt (mirrors `ko-wound-reward`). KO'ing a Wound is a fungible dead
+ * card and pure deck-thinning upside, so an auto-resolve captures optimal play.
+ * Moves/effects never throw.
+ *
+ * @param G - Game state (mutated: KOs one Wound).
+ * @param _ctx - Move context (unused — there is no reward that needs `ctx.random`).
+ * @param playerID - The player who played the card.
+ * @param _cardId - The source hero card's ext_id (unused — no reward to attribute).
+ * @param _effect - The descriptor (carries no magnitude / reward for this keyword).
+ */
+function heroEffectKoWound(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+
+  // why: D-24542 — KO a Wound, hand first (removes the currently-held Wound), else
+  // discard. The KO target is filtered to WOUND_EXT_ID — a valuable Hero is never
+  // KO'd (the same reason the reward variant could not reuse the KO-any-card keyword).
+  let targetZone: 'hand' | 'discard' | null = null;
+  if (playerZones.hand.includes(WOUND_EXT_ID)) {
+    targetZone = 'hand';
+  } else if (playerZones.discard.includes(WOUND_EXT_ID)) {
+    targetZone = 'discard';
+  }
+  if (targetZone === null) {
+    // why: D-24017 — no Wound to KO means the optional effect does nothing; log the
+    // no-op so the player and the replay inspector can see the ability found no target.
+    pushLog(G,
+      `Player ${playerID} had no Wound in hand or discard pile to KO for a hero ability, so nothing was KO'd.`,
+    );
+    return;
+  }
+
+  // why: D-24542 — remove exactly one Wound from the chosen zone and KO it.
+  // moveCardFromZone removes the first matching WOUND_EXT_ID; koCard appends it.
+  // There is NO reward dispatch (the rewardless variant), so unlike ko-wound-reward
+  // this handler ends here.
+  const moveResult = moveCardFromZone(playerZones[targetZone], [], WOUND_EXT_ID);
+  if (!moveResult.found) { return; }
+  playerZones[targetZone] = moveResult.from;
+  G.ko = koCard(G.ko, WOUND_EXT_ID);
+  pushLog(G,
+    `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
+  );
+}
+
+/**
  * Park handler for the `optional-put-bottom-hq` hero keyword.
  *
  * Checks whether there are any cards in the HQ. If yes, parks a
@@ -4519,6 +4590,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'optional-ko-reward': heroEffectOptionalKoReward,
   'optional-ko-hand-discard': heroEffectOptionalKoHandDiscard,
   'ko-wound-reward': heroEffectKoWoundReward,
+  // why: WP-721 / D-24542 — the rewardless sibling of ko-wound-reward (X-23's Healing
+  // Factor Genome, Peter Parker's Hot Bowl of Soup): KOs one Wound (hand-first-else-discard)
+  // with NO reward dispatch; auto-resolves (pure deck-thinning upside).
+  'ko-wound': heroEffectKoWound,
   'optional-put-bottom-hq': heroEffectOptionalPutBottomHq,
   'put-any-number-bottom-hq': heroEffectPutAnyNumberBottomHq,
   'put-bottom-hq-icon-reward': heroEffectPutBottomHqIconReward,

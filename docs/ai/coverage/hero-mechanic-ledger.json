@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 718,
+    "totalRows": 720,
     "byStatus": {
-      "executable": 316,
+      "executable": 318,
       "deferred": 16,
       "condition": 27,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 145
+    "distinctMechanics": 146
   },
   "rows": [
     {
@@ -4499,6 +4499,22 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "cvwr/peter-parker",
+      "heroName": "Peter Parker",
+      "set": "cvwr",
+      "mechanic": "ko-wound",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
+      "designs": [
+        {
+          "slug": "hot-bowl-of-soup",
+          "name": "Hot Bowl of Soup"
+        }
+      ]
     },
     {
       "extId": "cvwr/peter-parker",
@@ -13228,6 +13244,22 @@
         {
           "slug": "heir-to-wolverine",
           "name": "Heir to Wolverine"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "heroName": "X-23",
+      "set": "xmen",
+      "mechanic": "ko-wound",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
+      "designs": [
+        {
+          "slug": "healing-factor-genome",
+          "name": "Healing Factor Genome"
         }
       ]
     },

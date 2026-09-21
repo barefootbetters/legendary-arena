@@ -62,16 +62,32 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 59 entries after the WP-714 addition', () => {
+  it('HERO_KEYWORDS array has exactly 60 entries after the WP-721 addition', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      59,
-      'HERO_KEYWORDS must have exactly 59 entries (58 + kidnap-per-count (WP-714 / D-24537))',
+      60,
+      'HERO_KEYWORDS must have exactly 60 entries (59 + ko-wound (WP-721 / D-24542))',
     );
     assert.ok(
       HERO_KEYWORDS.includes('kidnap-per-count'),
       'kidnap-per-count must be in HERO_KEYWORDS array',
     );
+  });
+});
+
+describe('ko-wound keyword (WP-721 / EC-758 / D-24542)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('ko-wound'),
+      'ko-wound must be in HERO_KEYWORDS array',
+    );
+  });
+
+  it('is distinct from ko-wound-reward (rewardless sibling)', () => {
+    // why: WP-721 / D-24542 — the rewardless variant is a SEPARATE keyword from the
+    // reward-bearing ko-wound-reward; both must be present and not conflated.
+    assert.ok(HERO_KEYWORDS.includes('ko-wound'), 'ko-wound must be registered');
+    assert.ok(HERO_KEYWORDS.includes('ko-wound-reward'), 'ko-wound-reward must still be registered');
   });
 });
 

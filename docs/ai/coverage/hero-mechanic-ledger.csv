@@ -244,6 +244,7 @@ cvwr/hulkling,Hulkling,cvwr,size-changing,executable,WP-290,D-24074,packages/gam
 cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,,unbreakable-skin
 cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,reckless
 cvwr/patriot,Patriot,cvwr,(unmarked),unmarked,,,,
+cvwr/peter-parker,Peter Parker,cvwr,ko-wound,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound,hot-bowl-of-soup
 cvwr/peter-parker,Peter Parker,cvwr,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,protect-my-family
 cvwr/peter-parker,Peter Parker,cvwr,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,conflicted-loyalties
 cvwr/speedball,Speedball,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,double-down
@@ -716,4 +717,5 @@ xmen/psylocke,Psylocke,xmen,draw,executable,WP-022,D-2201,packages/game-engine/s
 xmen/psylocke,Psylocke,xmen,piercing-energy,unsupported,,,,butterfly-effect|psychic-knife|telepathic-ninjutsu
 xmen/psylocke,Psylocke,xmen,x-gene,unsupported,,,,butterfly-effect
 xmen/x-23,X-23,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bioengineered-assassin|healing-factor-genome|heir-to-wolverine
+xmen/x-23,X-23,xmen,ko-wound,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound,healing-factor-genome
 xmen/x-23,X-23,xmen,x-gene,unsupported,,,,adamantium-foot-claws|bioengineered-assassin|heir-to-wolverine
