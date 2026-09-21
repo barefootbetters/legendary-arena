@@ -43199,4 +43199,66 @@ Resolves the two `_deferred` entries in `hero-ability-markers.json` (surfaced by
 (`selectDefaultSmashDiscardTarget`), D-24521 (each-other-seat iteration + park). **Reserved by:**
 NUMBER-LEDGER D-24541.
 
+---
+
+### D-24543 — X-Gene hero keyword: discard-pile class-presence condition (WP-722 / EC-759) (Drafted 2026-09-21; not yet landed)
+
+**Context.** X-23's printed **X-Gene** ability (`[keyword:X-Gene] [hc:instinct]:`
+on adamantium-foot-claws, bioengineered-assassin, heir-to-wolverine) surfaced as
+a `hero / x-gene / onPlay / parse-unrecognized` hollow in a live 2p Red Skull /
+Midtown Bank Robbery match on the deployed `df9291f0` build (turns 27/30/31). The
+universal-rules glossary (`keywords-full.json` `key: "xgene"`) locks the meaning:
+*"'X-Gene Ranged: You get +2 Attack' means 'If you have a Ranged card in your
+discard pile, you get +2 Attack.'"* — a discard-pile class-**presence** condition.
+The parser today mis-reads the co-located `[hc:instinct]` as a `heroClassMatch`
+*play-this-turn* gate ("needs another instinct Hero played this turn") and leaves
+the `[keyword:X-Gene]` marker unrecognized. Marking only the trailing effect (the
+WP-721-style reflex) would gate it on the wrong condition.
+
+**Decision.**
+
+1. **X-Gene is a new `HeroCondition` (`heroClassInDiscardPile`) plus a parser
+   directive — NOT a new `HeroKeyword`.** `HeroCondition` is a bare-string type
+   with no closed union and no drift array, so this adds **zero**
+   `HERO_KEYWORDS` / `HERO_EFFECT_HANDLERS` drift surface (they stay 61 / 45).
+   The condition is true iff the acting player's discard pile holds ≥1 card whose
+   printed `heroClass`/`heroClass2` equals the condition value (printed class
+   only — Size-Changing grants are in-play-only). It reads `G` and never mutates it.
+
+2. **The X-Gene marker suppresses the spurious `heroClassMatch` and injects the
+   discard condition,** reusing the `reveal-from-hand` / D-24470 `lineHas*`
+   suppression allow-list at Step 1a. The injected condition's `value` is read
+   from the co-located `[hc:X]` token (never hardcoded), so the mechanic is
+   general across classes.
+
+3. **Recognition is per-card allowlisted** (`X_GENE_CARDS` + an `xGeneSupported`
+   option threaded from `buildHeroAbilityHooks`, the `transform` / D-24469 and
+   `teleport-on-discard` / D-24526 precedent). Only adamantium-foot-claws and
+   bioengineered-assassin are recognized; **heir-to-wolverine's `[keyword:X-Gene]`
+   stays an honest `parse-unrecognized` hollow.** Recognizing X-Gene globally
+   (e.g. via `RECOGNIZED_NON_KEYWORD_MARKERS`) is rejected — it would clear
+   heir-to-wolverine's hollow while the card still did the wrong thing, silencing
+   the honest signal.
+
+4. **Honest-Partial split.** Resolve adamantium-foot-claws (trailing
+   `[keyword:draw:1]`) and bioengineered-assassin (trailing
+   `[keyword:optional-ko-hand-discard]`, the shipped WP-667 / D-24480 keyword,
+   reused unchanged); **defer** heir-to-wolverine ("Count the instinct cards in
+   your discard pile. Berserk that many times.") — a count-scaled Berserk
+   re-trigger needs both a discard-class `HeroCountSource` (none reads discard)
+   and a count-scaled primitive re-trigger node (the effect-primitive AST has no
+   `repeat`/`for-each` node, and Berserk is a composition marker, not a keyword).
+   Same class as the wpnx raging-regeneration deferral.
+
+5. **Determinism.** The condition reads the already-hashed discard zone; it adds
+   no hashed `G` field. The sentinel replay board is core-only and X-23 is `xmen`
+   (non-core), so `finalStateHash` is byte-unchanged — no re-pin (confirm
+   empirically; re-pin only an actually-affected committed fixture). Marking the
+   two cards regenerates the four card-derived feeds; `runtime-observed-hollows.json`
+   clears the two resolved cards' X-Gene entries and keeps heir-to-wolverine's.
+
+Builds on D-24470 (reveal-from-hand co-located-token suppression), D-24480
+(optional-ko-hand-discard), D-24074 (printed-class model), D-24469 / D-24526
+(per-card allowlist gating). **Reserved by:** NUMBER-LEDGER D-24543.
+
 Protect this file.
