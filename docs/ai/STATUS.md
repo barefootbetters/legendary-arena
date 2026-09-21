@@ -7,6 +7,41 @@
 
 ## Current State
 
+### WP-723 — X-Gene discard-pile class-presence condition (EC-760 / D-24544) (2026-09-21)
+
+Un-hollows X-23's printed **X-Gene** on the two tractable cards. Per the
+`keywords-full.json` glossary, *"X-Gene [class]: <effect>"* means *"If you have a
+[class] card in your discard pile, <effect>."* — a discard-pile class-**presence**
+condition, NOT the play-this-turn `heroClassMatch` the co-located `[hc:instinct]`
+was wrongly parsed as. Playing **Adamantium Foot Claws** with an Instinct card in
+the discard pile now draws a card; **Bioengineered Assassin** offers the optional
+KO-from-hand-or-discard; with none in discard, neither fires (a `blocked` log line,
+not a crash).
+
+**Design (D-24544): a new bare-string `HeroCondition` `heroClassInDiscardPile` plus
+a parser directive — NOT a new `HeroKeyword`.** Drift counts UNCHANGED
+(`HERO_KEYWORDS` **61**, `HERO_EFFECT_HANDLERS` **45**). The X-Gene marker
+suppresses the spurious `heroClassMatch` (the reveal-from-hand / D-24470 `lineHas*`
+precedent) and injects `{type:'heroClassInDiscardPile', value:<class read from the
+co-located token>}`; the discard scan reads **printed** class only
+(`G.cardTraits.heroClass`/`heroClass2`), no `.reduce()`. Recognition is **per-card
+allowlisted** (`X_GENE_CARDS` + `xGeneSupported`, the transform / teleport
+precedent): **adamantium-foot-claws** (`[keyword:draw:1]`) and **bioengineered-assassin**
+(`[keyword:optional-ko-hand-discard]`, the shipped WP-667 keyword reused) resolve;
+**heir-to-wolverine** stays an honest `parse-unrecognized` hollow (count-scaled
+"Berserk that many times" needs a discard-class `HeroCountSource` + a count-scaled
+re-trigger node, neither of which exists) → `_deferred`.
+
+**Verified.** game-engine suite **3971→3987/0** (+16: 5 condition +
+5 parser + 6 end-to-end behavior tests), `apply-hero-ability-markers.mjs` updated
+exactly 2 lines (idempotent re-run 0), `cards:check` / `effect-index:check` /
+`mechanics:metadata:check` / `ledger:heroes:check` / `sim:runtime-observed:check` /
+`roadmap:counts:check` / `ledger:numbers:check` / `workindex:rows:check` all exit 0.
+Sentinel `finalStateHash` byte-identical (sentinel core-only, X-23 non-core — **no
+re-pin**); the ledger flips the two cards to `draw` / `optional-ko-hand-discard`
+executable while heir-to-wolverine's X-Gene stays hollow. **D-24026 live-verify
+operator-pending** on `play.legendary-arena.com`.
+
 ### WP-722 — War Machine "Overwhelming Firepower" onDefeat reward (EC-759 / D-24543) (2026-09-20)
 
 Resolved the `hero-ability-markers.json` `_deferred` entry for

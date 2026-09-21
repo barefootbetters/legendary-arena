@@ -308,6 +308,17 @@ export function evaluateCondition(
       return G.villainOrMastermindDefeatedSinceResolve === true;
     }
 
+    case 'heroClassInDiscardPile': {
+      // why: D-24544 — X-Gene glossary ("X-Gene [class]: <effect>" means "If you have a
+      // [class] card in your discard pile, <effect>."): true iff the acting player's
+      // discard pile holds >=1 card whose PRINTED class equals condition.value. Printed
+      // class only — Size-Changing grants are an in-play-only effect and never apply to a
+      // discarded card, mirroring the hand-half of countDistinctHeroClassesYouHave.
+      // condition.value is the class read from the co-located [hc:X] token at parse time,
+      // never a hardcoded literal.
+      return discardHasHeroClass(G, playerID, condition.value);
+    }
+
     default: {
       // why: unsupported condition types are safely skipped — same pattern
       // as WP-022 for unsupported keywords. Future WPs will add new
@@ -547,6 +558,43 @@ function countBystandersInVictory(G: LegendaryGameState, playerID: string): numb
 }
 
 /**
+ * Whether a player's discard pile holds at least one card whose PRINTED hero class
+ * (`heroClass` or `heroClass2`) equals the given class slug — the scan behind the
+ * `heroClassInDiscardPile` condition (D-24544 / WP-723, X-23's X-Gene).
+ *
+ * why: reads PRINTED class only (`G.cardTraits`), never Size-Changing grants (an
+ * in-play-only effect that cannot apply to a discarded card), mirroring the hand-half
+ * of `countDistinctHeroClassesYouHave`. Explicit `for...of`, no `.reduce()`
+ * (.claude/rules/code-style.md). A discarded token with no `cardTraits` row (a
+ * Wound / S.H.I.E.L.D. basic) carries no class and is skipped.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @param heroClassSlug - The normalized class slug to look for (from the X-Gene [hc:X] token).
+ * @returns Whether the discard pile holds a card of that printed class.
+ */
+function discardHasHeroClass(
+  G: LegendaryGameState,
+  playerID: string,
+  heroClassSlug: string,
+): boolean {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones || !G.cardTraits) {
+    return false;
+  }
+  for (const discardCardId of playerZones.discard) {
+    const traitEntry = G.cardTraits[discardCardId as CardExtId];
+    if (traitEntry === undefined) {
+      continue;
+    }
+    if (traitEntry.heroClass === heroClassSlug || traitEntry.heroClass2 === heroClassSlug) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Counts a player's cards (hand + in-play) that cost 1-2 and/or are
  * Size-Changing — each qualifying card once — mirroring the
  * `cheapOrSizeChangingAtLeast` gate.
@@ -664,6 +712,11 @@ export function describeFailedCondition(
       // to quote. The line is the wait-and-see "not yet" phrasing (the ability applies
       // the moment a qualifying defeat lands this turn), matching the recorded log text.
       return 'it needs you to defeat a Villain or Mastermind this turn';
+
+    case 'heroClassInDiscardPile':
+      // why: D-24544 — X-Gene's discard-pile class-presence gate; a boolean existence
+      // gate over the discard pile, so there is no running count to quote.
+      return `it needs a ${condition.value} card in your discard pile`;
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

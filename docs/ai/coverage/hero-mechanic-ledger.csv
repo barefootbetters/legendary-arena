@@ -722,5 +722,7 @@ xmen/psylocke,Psylocke,xmen,draw,executable,WP-022,D-2201,packages/game-engine/s
 xmen/psylocke,Psylocke,xmen,piercing-energy,unsupported,,,,butterfly-effect|psychic-knife|telepathic-ninjutsu
 xmen/psylocke,Psylocke,xmen,x-gene,unsupported,,,,butterfly-effect
 xmen/x-23,X-23,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bioengineered-assassin|healing-factor-genome|heir-to-wolverine
+xmen/x-23,X-23,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,adamantium-foot-claws
 xmen/x-23,X-23,xmen,ko-wound,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound,healing-factor-genome
+xmen/x-23,X-23,xmen,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,bioengineered-assassin
 xmen/x-23,X-23,xmen,x-gene,unsupported,,,,adamantium-foot-claws|bioengineered-assassin|heir-to-wolverine

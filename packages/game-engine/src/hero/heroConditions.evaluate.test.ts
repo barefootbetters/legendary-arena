@@ -38,9 +38,10 @@ import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 function makeTestState(overrides?: {
   inPlay?: string[];
   hand?: string[];
+  discard?: string[];
   victory?: string[];
   heroAbilityHooks?: HeroAbilityHook[];
-  cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
+  cardTraits?: Record<string, { heroClass: string | null; heroClass2?: string | null; team: string | null }>;
   cardStatCosts?: Record<string, number>;
   cardSizeChangingClasses?: Record<string, string[]>;
   cardCopiedTeams?: Record<string, string[]>;
@@ -70,7 +71,7 @@ function makeTestState(overrides?: {
       '0': { ...makePlayerZones(),
         deck: [],
         hand: overrides?.hand ?? [],
-        discard: [],
+        discard: overrides?.discard ?? [],
         inPlay: overrides?.inPlay ?? [],
         victory: overrides?.victory ?? [],
       },
@@ -1376,6 +1377,105 @@ describe('heroConditionHoldsForInPlay (WP-710 / D-24533)', () => {
 // ---------------------------------------------------------------------------
 // SEQUENCE_GATE_CONDITION_TYPES — drift-parity assertions (WP-710 RS-1)
 // ---------------------------------------------------------------------------
+
+describe('evaluateCondition heroClassInDiscardPile (WP-723 / D-24544 — X-Gene)', () => {
+  // -------------------------------------------------------------------------
+  // true: a matching-class card in the discard pile satisfies the gate
+  // -------------------------------------------------------------------------
+  it('returns true when a card of the given printed class is in the discard pile', () => {
+    const gameState = makeTestState({
+      discard: ['instinct-card'],
+      cardTraits: {
+        'instinct-card': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'heroClassInDiscardPile',
+      value: 'instinct',
+    });
+
+    assert.equal(result, true,
+      'heroClassInDiscardPile is met when a card of that class sits in the discard pile.');
+  });
+
+  // -------------------------------------------------------------------------
+  // false: no matching-class card in the discard pile
+  // -------------------------------------------------------------------------
+  it('returns false when no card of the given class is in the discard pile', () => {
+    const gameState = makeTestState({
+      discard: ['tech-card'],
+      cardTraits: {
+        'tech-card': { heroClass: 'tech', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'heroClassInDiscardPile',
+      value: 'instinct',
+    });
+
+    assert.equal(result, false,
+      'heroClassInDiscardPile fails when no discard-pile card has that class.');
+  });
+
+  // -------------------------------------------------------------------------
+  // discard-scope: a same-class card in PLAY (not discard) does NOT satisfy it
+  // (this is the "another Instinct Hero played this turn" trap the gate avoids)
+  // -------------------------------------------------------------------------
+  it('is NOT satisfied by a same-class card in play — the gate is discard-pile presence', () => {
+    const gameState = makeTestState({
+      inPlay: ['instinct-in-play'],
+      discard: [],
+      cardTraits: {
+        'instinct-in-play': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'heroClassInDiscardPile',
+      value: 'instinct',
+    });
+
+    assert.equal(result, false,
+      'a played Instinct card does not satisfy the discard-pile condition (not a play-this-turn gate).');
+  });
+
+  // -------------------------------------------------------------------------
+  // reads heroClass2: a dual-class card counts on its SECOND printed class
+  // -------------------------------------------------------------------------
+  it('reads heroClass2 — a dual-class discard card satisfies the gate on its second class', () => {
+    const gameState = makeTestState({
+      discard: ['dual-card'],
+      cardTraits: {
+        'dual-card': { heroClass: 'tech', heroClass2: 'instinct', team: null },
+      },
+    });
+
+    const result = evaluateCondition(gameState, '0', {
+      type: 'heroClassInDiscardPile',
+      value: 'instinct',
+    });
+
+    assert.equal(result, true,
+      'a dual-class card in discard counts on either printed class.');
+  });
+
+  // -------------------------------------------------------------------------
+  // describeFailedCondition wording
+  // -------------------------------------------------------------------------
+  it('describeFailedCondition names the required class in the discard pile', () => {
+    const gameState = makeTestState({ discard: [] });
+
+    const message = describeFailedCondition(gameState, '0', {
+      type: 'heroClassInDiscardPile',
+      value: 'instinct',
+    });
+
+    assert.equal(message, 'it needs a instinct card in your discard pile',
+      'the failure line names the class the discard pile must hold.');
+  });
+});
 
 describe('SEQUENCE_GATE_CONDITION_TYPES drift parity (WP-710 / D-24533)', () => {
   it('is disjoint from WAIT_AND_SEE_CONDITION_TYPES', () => {
