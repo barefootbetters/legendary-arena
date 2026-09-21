@@ -209,6 +209,15 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-719 / D-24541 — derived from UIState.pendingCoveringFireChoice !== undefined at
+    // the page level; passed down so TurnActionBar blocks end-turn / pass-priority / heal at
+    // EVERY stage while a Hawkeye Covering Fire choose-one is pending (the engine's block-all
+    // guard set freezes the board).
+    hasPendingCoveringFireChoice: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     // why: WP-380 — derived at the page level: hasWoundInHand from scanning the
     // viewer's handCards for the Wound ext_id (Healing KOs Wounds from hand
     // specifically); hasActedThisTurn / hasHealedThisTurn read from UIState.game.
@@ -346,7 +355,9 @@ export default defineComponent({
         props.hasPendingGiveHqHeroChoice ||
         props.hasPendingCopyPowersChoice ||
         props.hasPendingPutCardsOnDeckChoice ||
-        props.hasPendingPutHandOnDeckTop
+        props.hasPendingPutHandOnDeckTop ||
+        // why: WP-719 / D-24541 — a pending Covering Fire choose-one must also block auto-advance.
+        props.hasPendingCoveringFireChoice
       );
     }
 
@@ -358,7 +369,7 @@ export default defineComponent({
     // why: the positional list reaches every pending-choice param canEndTurn reads;
     // the heal trio (positions 13–15) only gate canHealWounds and are harmless here.
     function endTurnGate(): GatingResult {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain, props.hasPendingPutHandOnDeckTop, props.hasPendingRevealTopDispose).canEndTurn();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain, props.hasPendingPutHandOnDeckTop, props.hasPendingRevealTopDispose, props.hasPendingCoveringFireChoice).canEndTurn();
     }
 
     // why (Jeff feedback): highlight is STAGE-BASED — exactly one Step box is active
@@ -378,7 +389,7 @@ export default defineComponent({
     // gate reads has to reach it — omitting this one let Healing stay a live-but-dead click
     // while a return-on-discard choice (D-24301) was unresolved.
     function healGate(): { allowed: boolean; reason: string | null } {
-      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain, props.hasPendingPutHandOnDeckTop, props.hasPendingRevealTopDispose).canHealWounds();
+      return useTurnActions(props.currentStage, props.isViewerTurn, props.hasPendingChoice, props.hasPendingKoChoice, props.hasPendingOptionalKoReward, props.hasPendingDrawOrEmpowered, props.hasPendingVictoryPileCardPick, props.hasPendingOptionalPutBottomHQ, props.hasPendingPutAnyNumberBottomHQ, props.hasPendingReturnZeroCostDiscard, props.hasPendingDiscardToPlay, props.hasPendingScryKoChoice, props.hasWoundInHand, props.hasActedThisTurn, props.hasHealedThisTurn, props.hasPendingDiscardChoice, props.hasPendingReorderChoice, props.hasPendingDefeatChoice, props.hasPendingReturnOnDiscard, props.hasPendingGiveHqHeroChoice, props.hasPendingCopyPowersChoice, props.hasPendingPutCardsOnDeckChoice, props.hasPendingMelterKoChoice, props.hasPendingPlayVillainTop, props.hasPendingSmashDiscard, props.hasPendingDoOver, props.hasPendingKoDiscardChoice, props.hasPendingRuthlessDictatorChoice, props.hasPendingElectromagneticBubbleChoice, props.hasRevealedVillain, props.hasPendingPutHandOnDeckTop, props.hasPendingRevealTopDispose, props.hasPendingCoveringFireChoice).canHealWounds();
     }
 
     // why: a turn-action button that fires a move keeps native DOM focus after the

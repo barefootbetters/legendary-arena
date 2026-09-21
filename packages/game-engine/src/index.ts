@@ -395,6 +395,7 @@ export type {
   UIPendingPutHandOnDeckTop,
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
+  UIPendingCoveringFireChoice,
   UIPendingCountScaledChoice,
   UIPendingCountScaledChoiceOption,
   UIPendingUndercoverChoice,

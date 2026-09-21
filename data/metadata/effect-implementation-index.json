@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1895,
+    "totalEntries": 1897,
     "byScope": {
-      "hero": 720,
+      "hero": 722,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 469,
+      "executable": 471,
       "deferred": 16,
       "condition": 27,
       "unsupported": 323,
@@ -7107,6 +7107,23 @@
         {
           "slug": "hypnotic-charm",
           "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "name": "Hawkeye",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "covering-fire",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#covering-fire",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "covering-fire",
+          "name": "Covering Fire"
         }
       ]
     },
@@ -15338,6 +15355,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "name": "Hawkeye",
+      "set": "msp1",
+      "scope": "hero",
+      "mechanic": "covering-fire",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#covering-fire",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "covering-fire",
+          "name": "Covering Fire"
+        }
+      ]
     },
     {
       "extId": "msp1/hawkeye",
@@ -29242,6 +29276,7 @@
     "core/hawkeye": {
       "scope": "hero",
       "mechanics": [
+        "covering-fire",
         "draw"
       ]
     },
@@ -32252,6 +32287,7 @@
     "msp1/hawkeye": {
       "scope": "hero",
       "mechanics": [
+        "covering-fire",
         "draw"
       ]
     },

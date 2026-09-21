@@ -43164,5 +43164,39 @@ KO-a-Wound gated by `[hc:instinct]` with a `[keyword:Berserk]`-again reward) rem
 Related: D-24183 (the reward-bearing `ko-wound-reward` sibling), D-24017 (empty-supply no-op
 logging), D-24019 (`optional-ko-reward` — the KO-a-card ancestor), D-24372 (runtime drift-pin
 requirement). **Reserved by:** NUMBER-LEDGER D-24542.
+### D-24541 — Covering Fire choose-one each-other-player hero effect (WP-719 / EC-756) (Active 2026-09-20)
+
+**Decision.** Implement Hawkeye's **Covering Fire** — `[hc:tech]: Choose one: each other
+player draws a card or each other player discards a card.` — for both identical printings
+(`core/hawkeye/covering-fire` idx0 + `msp1/hawkeye/covering-fire` idx0) as a new `covering-fire`
+HeroKeyword whose park handler pushes ONE `PendingCoveringFireChoice { playerID, sourceCardId }`
+for the **active player**, resolved by a new server-only
+`resolveCoveringFireChoice({ choice: 'draw' | 'discard' })` move.
+
+**Rationale / locked invariants:**
+
+1. **The `[hc:tech]` prefix is unchanged** — it already parses as a `heroClassMatch` play-gate
+   condition on the hook (the effect fires only when another tech Hero was played this turn).
+   The new keyword marker only feeds the choose-one; it does not alter the gate.
+2. **The choice is ACTIVE-player-scoped** (freeze-safe, per D-24284). Both resolved branches
+   iterate every OTHER seat (`Object.keys(G.playerZones).sort()`, skipping the chooser): draw =
+   each other seat draws 1 (`drawCardsIntoHand`); discard = each other seat **auto-discards** its
+   deterministic default (`selectDefaultSmashDiscardTarget` — lowest cost, ext_id asc) through
+   the `discardFromHand` chokepoint. Non-active seats never choose interactively (D-24284) —
+   making them choose is a deferred turn-engine change, not this WP.
+3. **It parks an interactive choice, not an oracle-max** — in the cooperative ruleset a
+   table-wide draw (a gift) vs. a table-wide discard (a shared downside) is a genuine either/or,
+   neither dominant. Bot default: `'draw'`.
+4. **Determinism:** `G.pendingCoveringFireChoices` is runtime-only, lazy-init at the park site,
+   never written in `Game.setup`; snapshots stay counts-only. The sentinel replay board is
+   core-2p-Doom (never plays Hawkeye), so `finalStateHash` is byte-unchanged — **no re-pin**.
+5. **`covering-fire` ∈ `NO_MAGNITUDE_KEYWORDS` ∩ `HANDLED_KEYWORDS`.** Drift pins: `HERO_KEYWORDS`
+   59→60, `HERO_EFFECT_HANDLERS` 43→44, moves 41→42 (all runtime assertions per D-24372).
+
+Resolves the two `_deferred` entries in `hero-ability-markers.json` (surfaced by the
+2026-07-16 Red Skull live-game review, match `TYB2-jQuUc_` turn 18). Builds on D-24069
+(draw-or-empowered choose-one), D-24284 (each-player active-scoped auto-resolve), D-24492
+(`selectDefaultSmashDiscardTarget`), D-24521 (each-other-seat iteration + park). **Reserved by:**
+NUMBER-LEDGER D-24541.
 
 Protect this file.

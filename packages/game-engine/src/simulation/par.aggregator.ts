@@ -75,6 +75,9 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 // choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
 // plays it sees resolveDrawOrEmpowered as the only legal move and must dispatch it or spin.
 import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
+// why: WP-719 / D-24541 — same as resolveDrawOrEmpowered: a parked Covering Fire choice must be
+// dispatchable in the PAR aggregator's MOVE_MAP or its per-turn loop spins. Pinned by the drift guard.
+import { resolveCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
 // why: WP-675 / D-24490 — resolveCountScaledChoice can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked count-scaled choice hangs the PAR loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
@@ -471,6 +474,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
+  resolveCoveringFireChoice: (context, args) => resolveCoveringFireChoice(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),
   // why: WP-684 / D-24501 — dispatch-completeness parity with the runner MOVE_MAP:

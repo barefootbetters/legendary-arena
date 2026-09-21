@@ -59,6 +59,7 @@ import OptionalKoRewardPrompt from '../components/play/OptionalKoRewardPrompt.vu
 import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
+import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
 import PendingSeatChoicePrompt from '../components/play/PendingSeatChoicePrompt.vue';
@@ -145,6 +146,7 @@ export default defineComponent({
     SmashDiscardPrompt,
     DoOverPrompt,
     DrawOrEmpoweredPrompt,
+    CoveringFireChoicePrompt,
     CountScaledChoicePrompt,
     UndercoverChoicePrompt,
     PendingSeatChoicePrompt,
@@ -505,6 +507,12 @@ export default defineComponent({
     const hasPendingDoOver = computed<boolean>(
       () => snapshot.value?.pendingDoOver !== undefined,
     );
+    // why: WP-719 / D-24541 — derived from UIState.pendingCoveringFireChoice !== undefined.
+    // Passed to TurnActionBar to block end-turn / pass-priority / heal at EVERY stage while a
+    // Hawkeye Covering Fire choose-one is pending (board frozen, mirrors hasPendingDoOver).
+    const hasPendingCoveringFireChoice = computed<boolean>(
+      () => snapshot.value?.pendingCoveringFireChoice !== undefined,
+    );
     const hasPendingSmashDiscard = computed<boolean>(
       () => snapshot.value?.pendingSmashDiscard !== undefined,
     );
@@ -667,6 +675,7 @@ export default defineComponent({
       hasPendingPlayVillainTop,
       hasPendingSmashDiscard,
       hasPendingDoOver,
+      hasPendingCoveringFireChoice,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -1023,6 +1032,14 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-719 / D-24541 — the Covering Fire choose-one prompt (Hawkeye); appears
+               only for the choosing (active) player when pendingCoveringFireChoice is set. Same
+               block-all posture as the draw-or-empowered prompt above. NOT a modal; normal flow. -->
+          <CoveringFireChoicePrompt
+            :pending-covering-fire-choice="snapshot.pendingCoveringFireChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-675 / D-24490 — the count-scaled choose-one prompt (vnom Symbiotic
                Adaptation); appears only for the choosing player when pendingCountScaledChoice
                is set. Same block-all posture as the draw-or-empowered prompt above. -->
@@ -1169,6 +1186,7 @@ export default defineComponent({
             :has-pending-scry-ko-choice="hasPendingScryKoChoice"
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
             :has-pending-reveal-top-dispose="hasPendingRevealTopDispose"
+            :has-pending-covering-fire-choice="hasPendingCoveringFireChoice"
             :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
             :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"

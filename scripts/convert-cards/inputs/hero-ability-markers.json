@@ -158,6 +158,12 @@
   ],
   "core": [
     {
+      "heroSlug": "hawkeye",
+      "cardSlug": "covering-fire",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:covering-fire]"
+    },
+    {
       "heroSlug": "gambit",
       "cardSlug": "hypnotic-charm",
       "abilityIndex": 0,
@@ -719,6 +725,12 @@
     }
   ],
   "msp1": [
+    {
+      "heroSlug": "hawkeye",
+      "cardSlug": "covering-fire",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:covering-fire]"
+    },
     {
       "heroSlug": "iron-man",
       "cardSlug": "arc-reactor",
@@ -2096,22 +2108,6 @@
       "abilityIndex": 1,
       "abilityText": "[hc:instinct]: You may KO a Wound from your hand or discard pile. If you do, [keyword:Berserk] again.",
       "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred on two counts: an [hc:instinct]: condition prefix, and the reward is [keyword:Berserk] again (a re-trigger effect) which is outside the seeded {draw,attack,recruit} reward vocabulary."
-    },
-    {
-      "setAbbr": "core",
-      "heroSlug": "hawkeye",
-      "cardSlug": "covering-fire",
-      "abilityIndex": 0,
-      "abilityText": "[hc:tech]: Choose one: each other player draws a card or each other player discards a card.",
-      "reason": "choose-one-each-other-player: a conditional choose-one whose BOTH branches act on every OTHER player. Requires a pendingHeroChoice two-option prompt PLUS each-other-player draw/discard executors — a compound not expressible with current executors. Surfaced by the 2026-07-16 Red Skull live-game review (match TYB2-jQuUc_, turn 18: the [hc:tech] condition was met and the effect silently no-oped; previously untracked hollow)."
-    },
-    {
-      "setAbbr": "msp1",
-      "heroSlug": "hawkeye",
-      "cardSlug": "covering-fire",
-      "abilityIndex": 0,
-      "abilityText": "[hc:tech]: Choose one: each other player draws a card or each other player discards a card.",
-      "reason": "choose-one-each-other-player: identical reprint of core/hawkeye/covering-fire (see that entry); deferred for the same reason."
     }
   ]
 }

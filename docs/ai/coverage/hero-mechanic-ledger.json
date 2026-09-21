@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 720,
+    "totalRows": 722,
     "byStatus": {
-      "executable": 318,
+      "executable": 320,
       "deferred": 16,
       "condition": 27,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 146
+    "distinctMechanics": 147
   },
   "rows": [
     {
@@ -3606,6 +3606,22 @@
         {
           "slug": "hypnotic-charm",
           "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "core",
+      "mechanic": "covering-fire",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#covering-fire",
+      "designs": [
+        {
+          "slug": "covering-fire",
+          "name": "Covering Fire"
         }
       ]
     },
@@ -7420,6 +7436,22 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "msp1",
+      "mechanic": "covering-fire",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#covering-fire",
+      "designs": [
+        {
+          "slug": "covering-fire",
+          "name": "Covering Fire"
+        }
+      ]
     },
     {
       "extId": "msp1/hawkeye",

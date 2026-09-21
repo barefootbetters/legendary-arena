@@ -96,9 +96,11 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // standalone family — snapshot the deck top(s) then park the discard-or-keep choice (40 → 42).
     // WP-714 / D-24537 added the kidnap-per-count handler (Ultron's Genetic Experimentation —
     // count-scaled bystander capture) (42 → 43).
+    // WP-719 / D-24541 added the covering-fire handler (Hawkeye's Covering Fire — parks the
+    // choose-one each-other-player draw/discard choice) (43 → 44).
     // WP-721 / D-24542 added the ko-wound handler (rewardless "You may KO a Wound" — X-23's
-    // Healing Factor Genome, Peter Parker's Hot Bowl of Soup) (43 → 44).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 44);
+    // Healing Factor Genome, Peter Parker's Hot Bowl of Soup) (44 → 45).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 45);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);

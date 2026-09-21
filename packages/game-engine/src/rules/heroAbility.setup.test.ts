@@ -557,7 +557,7 @@ describe('teleport-on-discard resolver (WP-705 / D-24526)', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 60 canonical keyword values', () => {
+  it('contains exactly the 61 canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -619,12 +619,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'reveal-top-dispose', // why: WP-702 / D-24521 — "Reveal the top card of your deck. Discard it or put it back." (Gambit's Hypnotic Charm entry 1 + standalone family) — snapshot own deck top + block-all discard-or-keep pending choice
     'reveal-top-dispose-others', // why: WP-702 / D-24521 — "Do the same thing to each other player's deck." (Hypnotic Charm entry 2, [hc:instinct]-gated) — snapshot each OTHER seat's deck top into one shared discard-or-keep pending choice
     'kidnap-per-count', // why: WP-714 / D-24537 — Ultron's Genetic Experimentation ("[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn.") — count-scaled bystander-capture sibling of attack/recruit-per-count (captures N to the first City villain, Mastermind fallback)
+    'covering-fire', // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card.") — parks a choose-one for the active player; each branch acts on every other seat (draw / auto-discard)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      60,
-      'HERO_KEYWORDS must have exactly 60 entries',
+      61,
+      'HERO_KEYWORDS must have exactly 61 entries',
     );
 
     assert.deepStrictEqual(

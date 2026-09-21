@@ -65,6 +65,7 @@ import type {
   UIPendingPutHandOnDeckTop,
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
+  UIPendingCoveringFireChoice,
   UIPendingCountScaledChoice,
   UIPendingUndercoverChoice,
   UIPendingSeatChoice,
@@ -1455,6 +1456,29 @@ export function buildUIState(
     };
   }
 
+  // why: WP-719 / D-24541 — project the FRONT entry of G.pendingCoveringFireChoices as a binary
+  // Covering Fire choice. otherPlayerCount is derived from the live G (all seats minus the
+  // chooser), so the prompt can label "each of N other players". Recomputed fresh from current G
+  // (WP-719 stores no snapshot). Redaction to the chooser-only audience is enforced by
+  // filterUIStateForAudience (D-24011 analog — the choice is private to the chooser, keyed on
+  // .playerID).
+  let pendingCoveringFireChoice: UIPendingCoveringFireChoice | undefined;
+  if (
+    gameState.pendingCoveringFireChoices !== undefined &&
+    gameState.pendingCoveringFireChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingCoveringFireChoices[0]!;
+    // why: count OTHER seats (all players minus the chooser) for the prompt label; never a
+    // hardcoded player count (a match may be 1..N players).
+    const otherPlayerCount = Object.keys(gameState.playerZones).filter(
+      (seatId) => seatId !== frontChoice.playerID,
+    ).length;
+    pendingCoveringFireChoice = {
+      playerID: frontChoice.playerID,
+      otherPlayerCount,
+    };
+  }
+
   // why: WP-675 / D-24490 — project the FRONT entry of G.pendingCountScaledChoice, resolving
   // each option's count/total from the live G (resolveCountSource, excluding the triggering
   // card) so the chooser sees each button's concrete grant. Recomputed fresh from current G
@@ -2108,6 +2132,9 @@ export function buildUIState(
     // why: WP-287 — conditional spread so an absent choice omits the field (no
     // `pendingDrawOrEmpowered: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingDrawOrEmpowered !== undefined ? { pendingDrawOrEmpowered } : {}),
+    // why: WP-719 / D-24541 — conditional spread so an absent choice omits the field (no
+    // `pendingCoveringFireChoice: undefined` literal under exactOptionalPropertyTypes).
+    ...(pendingCoveringFireChoice !== undefined ? { pendingCoveringFireChoice } : {}),
     // why: WP-675 / D-24490 — conditional spread so an absent choice omits the field.
     ...(pendingCountScaledChoice !== undefined ? { pendingCountScaledChoice } : {}),
     // why: WP-678 / D-24494 — conditional spread so an absent choice omits the field.

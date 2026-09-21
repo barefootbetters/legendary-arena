@@ -37,6 +37,7 @@ import { hasPendingDoOver } from './doOver.resolve.js';
 import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
+import { hasPendingCoveringFireChoice } from './coveringFireChoice.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
@@ -174,6 +175,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
 
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) {
+    return;
+  }
+  // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
+  if (hasPendingCoveringFireChoice(G)) {
     return;
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
@@ -423,6 +428,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingDrawOrEmpowered(G)) {
     return;
   }
+  // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
+  if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) {
     return;
@@ -634,6 +643,10 @@ export function endTurn({ G, playerID, events, random }: MoveContext): void {
 
   // why: block-all — pendingDrawOrEmpowered must be resolved before any other action (D-24069)
   if (hasPendingDrawOrEmpowered(G)) {
+    return;
+  }
+  // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
+  if (hasPendingCoveringFireChoice(G)) {
     return;
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)

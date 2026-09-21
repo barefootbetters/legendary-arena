@@ -707,7 +707,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[hc:tech]: Choose one: each other player draws a card or each other player discards a card."
+            "[hc:tech]: Choose one: each other player draws a card or each other player discards a card. [keyword:covering-fire]"
           ]
         },
         {
