@@ -368,9 +368,10 @@
       "label": "Defeated Villain Or Mastermind",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
-        "core/emma-frost"
+        "core/emma-frost",
+        "rvlt/war-machine"
       ],
       "hidden": true
     },
@@ -499,7 +500,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 91,
+      "cardCount": 92,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -563,6 +564,7 @@
         "rlmk/crystal",
         "rvlt/darkhawk",
         "rvlt/ronin",
+        "rvlt/war-machine",
         "shld/deathlok",
         "shld/mockingbird",
         "smhc/high-tech-spider-man",
@@ -1247,7 +1249,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 13,
+      "cardCount": 14,
       "cardIds": [
         "3dtc/black-widow",
         "ca75/captain-america-1941",
@@ -1261,7 +1263,8 @@
         "cosm/ronan-the-accuser",
         "cvwr/peter-parker",
         "dkcy/jean-grey",
-        "msp1/black-widow"
+        "msp1/black-widow",
+        "rvlt/war-machine"
       ],
       "hidden": false
     },
@@ -3526,7 +3529,10 @@
     },
     "rvlt/war-machine": {
       "mechanics": [
-        "hyperspeed"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "hyperspeed",
+        "rescue"
       ]
     },
     "shld/agent-phil-coulson": {

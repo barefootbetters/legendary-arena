@@ -1,10 +1,10 @@
-# EC-759 — X-Gene discard-pile class-presence condition (Execution Checklist)
+# EC-760 — X-Gene discard-pile class-presence condition (Execution Checklist)
 
-**Source:** docs/ai/work-packets/WP-722-x-gene-instinct-discard-condition.md
+**Source:** docs/ai/work-packets/WP-723-x-gene-instinct-discard-condition.md
 **Layer:** Game Engine (setup parser + condition) + Card Data
 
 ## Before Starting
-- [ ] Baseline: `origin/main` @ `df9291f0` (or later); working tree clean, synced. Reserve line WP-722/EC-759/D-24543 already on `main` (PR #2207).
+- [ ] Baseline: `origin/main` @ `df9291f0` (or later); working tree clean, synced. Reserve line WP-723/EC-760/D-24544 already on `main` (PR #2207).
 - [ ] WP-659 / D-24470 landed: `reveal-from-hand` `lineHas*` suppression of a co-located `[hc:X]`/`[team:X]` at Step 1a/1b (`setup/heroAbility.setup.ts` ~660–706 flags, ~762 consult).
 - [ ] WP-667 / D-24480 landed: `optional-ko-hand-discard` keyword + `heroEffectOptionalKoHandDiscard` (parks `PendingOptionalKoReward`, `koZones ['hand','discard']`, no reward) + `[keyword:optional-ko-hand-discard]` in `VALID_TOKEN_PATTERN`.
 - [ ] WP-179 / D-24074 landed: printed class on `G.cardTraits[id].heroClass`/`.heroClass2`; `cardHasClassWhenPlayed` (`hero/sizeChanging.logic.ts`); hand-half printed-class read in `countDistinctHeroClassesYouHave` (`hero/heroConditions.evaluate.ts`).
@@ -31,9 +31,9 @@
 - **Sim-outcome cascade:** marking the two cards changes what the balance sweep does, so `runtime-observed-hollows.json` regenerates; the two cards' X-Gene hollow entries clear, heir-to-wolverine's stays. Sentinel replay is core-only, X-23 non-core → `finalStateHash` unchanged; if it moves, investigate WHY — never hand-edit.
 
 ## Required `// why:` Comments
-- `heroClassInDiscardPile` evaluator case: D-24543 — X-Gene glossary = "a [class] card in your discard pile"; printed class only (Size-Changing is in-play-only).
-- Step 1a suppression branch: D-24543 — X-Gene reinterprets the co-located `[hc:X]` as the discard-condition class, NOT a play-this-turn `heroClassMatch` (the reveal-from-hand / D-24470 precedent).
-- `X_GENE_CARDS` allowlist: D-24543 — per-card recognition; heir-to-wolverine stays an honest hollow (count-scaled Berserk unmodeled).
+- `heroClassInDiscardPile` evaluator case: D-24544 — X-Gene glossary = "a [class] card in your discard pile"; printed class only (Size-Changing is in-play-only).
+- Step 1a suppression branch: D-24544 — X-Gene reinterprets the co-located `[hc:X]` as the discard-condition class, NOT a play-this-turn `heroClassMatch` (the reveal-from-hand / D-24470 precedent).
+- `X_GENE_CARDS` allowlist: D-24544 — per-card recognition; heir-to-wolverine stays an honest hollow (count-scaled Berserk unmodeled).
 
 ## Files to Produce
 - `packages/game-engine/src/hero/heroConditions.evaluate.ts` — **modified** — `heroClassInDiscardPile` case + discard-scan helper + `describeFailedCondition` wording
@@ -50,8 +50,8 @@
 - [ ] `apply-hero-ability-markers.mjs` idempotent (re-run 0 updates); all five card/feed `:check` gates 0
 - [ ] `grep -n "heir-to-wolverine" docs/ai/coverage/runtime-observed-hollows.json` → still present (honest hollow); the two resolved cards `draw`/`optional-ko-hand-discard` `executable` in `hero-mechanic-ledger.csv`
 - [ ] Live-on-surface verification — REQUIRED post-merge (surface = `play.legendary-arena.com`, D-24026): Adamantium Foot Claws / Bioengineered Assassin with an Instinct card in discard fires the effect
-- [ ] `docs/ai/STATUS.md` updated; `docs/ai/DECISIONS.md` — land D-24543 (Active)
-- [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-722 checked off; `EC_INDEX.md` Done; mindmap `✅`; `roadmap:counts:check` 0
+- [ ] `docs/ai/STATUS.md` updated; `docs/ai/DECISIONS.md` — land D-24544 (Active)
+- [ ] `docs/ai/work-packets/WORK_INDEX.md` WP-723 checked off; `EC_INDEX.md` Done; mindmap `✅`; `roadmap:counts:check` 0
 - [ ] `git diff --name-only` shows only the allowlist (+ regenerated data/feeds)
 
 ## Common Failure Smells

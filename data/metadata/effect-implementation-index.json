@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1897,
+    "totalEntries": 1900,
     "byScope": {
-      "hero": 722,
+      "hero": 725,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 471,
+      "executable": 473,
       "deferred": 16,
-      "condition": 27,
+      "condition": 28,
       "unsupported": 323,
       "unmarked": 1056,
       "subsystem": 4
@@ -17804,6 +17804,40 @@
       "name": "War Machine",
       "set": "rvlt",
       "scope": "hero",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "name": "War Machine",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "name": "War Machine",
+      "set": "rvlt",
+      "scope": "hero",
       "mechanic": "hyperspeed",
       "status": "unsupported",
       "handler": "",
@@ -17813,6 +17847,23 @@
         {
           "slug": "hypersonic-cannon",
           "name": "Hypersonic Cannon"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "name": "War Machine",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
         }
       ]
     },
@@ -33185,7 +33236,10 @@
     "rvlt/war-machine": {
       "scope": "hero",
       "mechanics": [
-        "hyperspeed"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "hyperspeed",
+        "rescue"
       ]
     },
     "shld-mastermind-hydra-high-council-arnim-zola": {

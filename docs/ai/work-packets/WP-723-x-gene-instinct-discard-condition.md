@@ -1,4 +1,4 @@
-# WP-722 — X-Gene Hero Keyword: discard-pile class-presence condition (Engine + Data)
+# WP-723 — X-Gene Hero Keyword: discard-pile class-presence condition (Engine + Data)
 
 **Status:** Ready
 **Primary Layer:** Game Engine / Setup Parser + Card Data
@@ -6,7 +6,7 @@
 **User-Visible Surface:** `play.legendary-arena.com`
 **Lane:** Standard two-session (a new parser directive + a new `HeroCondition` type — a new code category, so `01.6`-adjacent; not lightweight).
 
-> Baseline: `origin/main` at commit `df9291f0` (WP-721 rewardless ko-wound), fetched 2026-09-21. Reserve line for WP-722 / EC-759 / D-24543 landed on `main` via the reserve-first SPEC PR #2207.
+> Baseline: `origin/main` at commit `df9291f0` (WP-721 rewardless ko-wound), fetched 2026-09-21. Reserve line for WP-723 / EC-760 / D-24544 landed on `main` via the reserve-first SPEC PR #2207.
 
 ---
 
@@ -49,9 +49,9 @@ Read before writing:
 - `packages/game-engine/src/hero/sizeChanging.logic.ts` — `cardHasClassWhenPlayed` (~62–79).
 - `packages/game-engine/src/hero/heroEffects.execute.ts` — the hook-level condition gate (`executeHeroEffects` ~line 687); `heroEffectDraw` (~1297); `heroEffectOptionalKoHandDiscard` (~2430).
 - `docs/ai/work-packets/WP-659-*.md` + `WP-667-*.md` — the suppression precedent + the optional-ko-hand-discard keyword.
-- `docs/ai/DECISIONS.md` — D-24470 (reveal-from-hand suppression), D-24480 (optional-ko-hand-discard), D-24074 (printed-class model), and the reserved D-24543 tail.
+- `docs/ai/DECISIONS.md` — D-24470 (reveal-from-hand suppression), D-24480 (optional-ko-hand-discard), D-24074 (printed-class model), and the reserved D-24544 tail.
 
-**Design decision (recorded in D-24543).** X-Gene is modeled as a **new `HeroCondition` (`heroClassInDiscardPile`) plus a parser directive**, NOT as a new `HeroKeyword`. Rationale: X-Gene carries no effect of its own — it only *conditions* a separately-marked trailing effect. `HeroCondition` is a bare-string type, so this adds **zero** `HERO_KEYWORDS` / `HERO_EFFECT_HANDLERS` drift surface. Rejected alternatives, with reasons:
+**Design decision (recorded in D-24544).** X-Gene is modeled as a **new `HeroCondition` (`heroClassInDiscardPile`) plus a parser directive**, NOT as a new `HeroKeyword`. Rationale: X-Gene carries no effect of its own — it only *conditions* a separately-marked trailing effect. `HeroCondition` is a bare-string type, so this adds **zero** `HERO_KEYWORDS` / `HERO_EFFECT_HANDLERS` drift surface. Rejected alternatives, with reasons:
 - **X-Gene as a no-handler HeroKeyword** (the `size-changing` shape): adds a 61→62 union/array bump, an `HERO_EFFECT_HANDLERS`/`MVP_KEYWORDS` lockstep, and misrepresents a *condition* as an *effect*. More drift surface for no gain.
 - **Recognize `[keyword:X-Gene]` globally** (via `RECOGNIZED_NON_KEYWORD_MARKERS`): would clear heir-to-wolverine's hollow while the card still does the *wrong* thing (a single, ungated-by-count Berserk) — silencing the honest signal, the exact failure the hollow-detection initiative prevents. Recognition is therefore **per-card allowlisted** (the `transform` / `teleport-on-discard` precedent), so heir-to-wolverine stays an honest `parse-unrecognized` hollow.
 - **Hardcode `instinct`**: X-Gene is general ("X-Gene [class]"). The condition value is read from the co-located `[hc:X]` token so the mechanic works for any class.
@@ -141,7 +141,7 @@ Read before writing:
 
 - [ ] All Acceptance Criteria pass.
 - [ ] `git diff --name-only` = the allowlist only.
-- [ ] D-24543 flipped Active in `DECISIONS.md`; WORK_INDEX row checked; EC_INDEX Done; mindmap node `✅`; `roadmap:counts:check` 0.
+- [ ] D-24544 flipped Active in `DECISIONS.md`; WORK_INDEX row checked; EC_INDEX Done; mindmap node `✅`; `roadmap:counts:check` 0.
 - [ ] **D-24026 live-verify (post-merge, REQUIRED):** in a live match on `play.legendary-arena.com`, playing Adamantium Foot Claws or Bioengineered Assassin with an Instinct card in the discard pile fires the effect (verified against the deployed `/api/version` gitSha). Inherently post-deploy; recorded as a follow-up STATUS-flip, not a merge blocker.
 
 ---
@@ -160,7 +160,7 @@ This WP touches none of the §20.1 trigger surfaces: it is a card-semantics pars
 All 21 sections resolved:
 
 - **§1–3 (identity / status / layer):** `## Goal`, `## Assumes`, `## Context (Read First)` present; `**User-Visible Surface:**` + `## User-Visible Impact` present. Layer = Game Engine (setup parser + condition) + Card Data.
-- **§4 (scope closed):** `## Scope (In)/(Out)` is a closed enumeration; the allowlist matches EC-759 `Files to Produce`.
+- **§4 (scope closed):** `## Scope (In)/(Out)` is a closed enumeration; the allowlist matches EC-760 `Files to Produce`.
 - **§5 (output completeness):** `## Files Expected to Change` lists every touched file incl. regenerated feeds.
 - **§6 (naming):** `heroClassInDiscardPile`, `X_GENE_CARDS`, `lineHasXGene` — full words; card field names (`heroClass`, `heroClass2`, `abilities`) match 00.2.
 - **§7 (dependencies):** WP-659/D-24470, WP-667/D-24480, WP-179/D-24074 all landed on `df9291f0` (verified — `reveal-from-hand` suppression, `optional-ko-hand-discard` handler + token, printed-class `cardTraits` all present).
@@ -184,7 +184,7 @@ All 21 sections resolved:
 - **Cited authority/contracts on `main`:** D-24470 / D-24480 / D-24074 present in `DECISIONS.md`; the glossary `xgene` entry present in `keywords-full.json`.
 - **Scope locked:** the allowlist is closed (5 engine files incl. tests + curated map + regenerated `xmen.json` + 4 feeds); no `HeroKeyword`/handler drift; no client.
 - **Validation-tightening?** No — this is additive card-semantics resolution, not a stricter guard on an existing input path. The scaffold-first empirical gate (01.4 §Empirical Scaffold) is therefore not mandatory; the executor still runs the engine suite before govern-close.
-- **Ambiguities resolved:** the design fork (new condition vs new keyword vs global recognition) is decided and recorded in D-24543; the Honest-Partial split (2 resolved, heir-to-wolverine deferred) is locked.
+- **Ambiguities resolved:** the design fork (new condition vs new keyword vs global recognition) is decided and recorded in D-24544; the Honest-Partial split (2 resolved, heir-to-wolverine deferred) is locked.
 
 **Verdict: READY TO EXECUTE.**
 

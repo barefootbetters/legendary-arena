@@ -43199,9 +43199,28 @@ Resolves the two `_deferred` entries in `hero-ability-markers.json` (surfaced by
 (`selectDefaultSmashDiscardTarget`), D-24521 (each-other-seat iteration + park). **Reserved by:**
 NUMBER-LEDGER D-24541.
 
+### D-24543 — War Machine's "Overwhelming Firepower" onDefeat reward rides the existing D-24467 defeat-trigger infrastructure — marker-only, no new engine handler (WP-722 / EC-759) (Active 2026-09-20)
+
+**Status:** Active — landed 2026-09-20 (WP-722 / EC-759; Lightweight Lane, single session).
+
+**Context.** `rvlt/war-machine/overwhelming-firepower` prints *"Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander."* It sat in the `hero-ability-markers.json` `_deferred` array with the stale reason *"D-21602 — fight-win trigger: not wired to executeHeroEffects"* — a reason predating WP-656. D-24467 (Emma Frost's Diamond Form) has since landed the full onDefeat reactive-trigger mechanism generically: the `[keyword:defeated-villain-or-mastermind]` marker → a `defeatedVillainOrMastermindThisTurn` wait-and-see condition (`setup/heroAbility.setup.ts`), the `G.villainOrMastermindDefeatedSinceResolve` edge flag set at both fight-move tails (henchman-gated per the `fightVillain` contract), and `resolveDeferredHeroGrants` (run from the play-phase `turn.onMove` hook) re-firing the hook's effects via `runHookEffects` once per qualifying defeat with re-arm. Overwhelming Firepower is the identical shape as Diamond Form, differing only in reward — draw + rescue instead of +3 recruit, both already-implemented hero-effect keywords. The audit that populated `_deferred` (2026-09-20) cited the memory that documents this very mechanism but read it as "where a new hook should go" rather than "the hook already exists."
+
+**Decision.** Resolve the `_deferred` entry MARKER-ONLY, reusing the D-24467 infrastructure. NO new engine handler, NO new keyword, NO drift-array change (building one would be a forbidden parallel mechanism per `.claude/rules/architecture.md`, and violate duplicate-first). Locks:
+
+1. **Three curated-map entries on one ability line.** `apply-hero-ability-markers.mjs` appends multiple markers to a single line (the WP-667 Radioactive Riot precedent). The line gains `[keyword:defeated-villain-or-mastermind] [keyword:draw:1] [keyword:rescue:1]` — the condition gate plus the draw + rescue reward. All three token forms already pass `VALID_TOKEN_PATTERN`; no validation change.
+2. **No engine source change.** The parser's keyword-loop already recognizes all three tokens; `draw`/`rescue` are handled `HERO_EFFECT_HANDLERS` keywords, so the reward rides the existing dispatch. Scaffold-confirmed: the real card parses to `conditions:[defeatedVillainOrMastermindThisTurn]`, `effects:[draw:1, rescue:1]`, no `unresolvedMarkers` (not a hollow).
+3. **Reward gated by the condition — fires per defeat, not on play.** On play the condition fails (no defeat yet) → the hook defers; each qualifying Villain/Mastermind (tactic) defeat re-fires draw + rescue, edge-triggered and re-armed exactly as Diamond Form. Rooftops/Moonlight/VP-scaled siblings (Moon Knight golden-ankh, Werewolf-by-Night track-the-captives) stay `_deferred` — they need a location/day-night/scaled-rescue extension out of scope here.
+4. **Determinism — no re-pin.** The sentinel replay/PAR fixtures are core-only (`core/dr-doom` board); no committed fixture plays rvlt War Machine, so `finalStateHash` is byte-unchanged and `sim:runtime-observed:check` is current with no regeneration. Full engine suite 3954/0.
+5. **Honest ledger flip.** `rvlt/war-machine/overwhelming-firepower` was a fully-hollow (unmarked) line; it now resolves to `draw`/`rescue` (executable) + `defeated-villain-or-mastermind` (condition) rows. All derived-artifact `:check` gates (`cards:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:coverage --check`, `sim:runtime-observed:check`) pass.
+
+**Gates.** Lightweight Lane: scaffold-first satisfied by the focused engine test (4/4, exercising the real parsed hook end-to-end); full game-engine suite 3954/0; `pnpm -r build` green; all six derived-artifact `:check` gates exit 0; `git diff` bounded to the marker map + regenerated data + the new test.
+
+**D-24026 live-on-surface:** PENDING deploy — verify on `play.legendary-arena.com` in a real match with War Machine's Overwhelming Firepower in play: no draw/rescue on play (the ability logs "… is waiting …"), then +1 draw and +1 Bystander rescue per Villain- or Mastermind-tactic defeat that turn.
+
+**Packet:** WP-722 / EC-759. **Drafted + landed:** 2026-09-20. **Reserved by:** NUMBER-LEDGER D-24543. Related: D-24467 (the reused mechanism), D-22501 (the "draw-another" marker-only-resolves-a-deferral precedent), D-24016 (Arc Reactor marker-only precedent).
 ---
 
-### D-24543 — X-Gene hero keyword: discard-pile class-presence condition (WP-722 / EC-759) (Drafted 2026-09-21; not yet landed)
+### D-24544 — X-Gene hero keyword: discard-pile class-presence condition (WP-723 / EC-760) (Drafted 2026-09-21; not yet landed)
 
 **Context.** X-23's printed **X-Gene** ability (`[keyword:X-Gene] [hc:instinct]:`
 on adamantium-foot-claws, bioengineered-assassin, heir-to-wolverine) surfaced as
@@ -43259,6 +43278,6 @@ WP-721-style reflex) would gate it on the wrong condition.
 
 Builds on D-24470 (reveal-from-hand co-located-token suppression), D-24480
 (optional-ko-hand-discard), D-24074 (printed-class model), D-24469 / D-24526
-(per-card allowlist gating). **Reserved by:** NUMBER-LEDGER D-24543.
+(per-card allowlist gating). **Reserved by:** NUMBER-LEDGER D-24544.
 
 Protect this file.

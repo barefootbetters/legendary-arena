@@ -2,11 +2,11 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 722,
+    "totalRows": 725,
     "byStatus": {
-      "executable": 320,
+      "executable": 322,
       "deferred": 16,
-      "condition": 27,
+      "condition": 28,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
@@ -8594,6 +8594,38 @@
       "extId": "rvlt/war-machine",
       "heroName": "War Machine",
       "set": "rvlt",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "heroName": "War Machine",
+      "set": "rvlt",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "heroName": "War Machine",
+      "set": "rvlt",
       "mechanic": "hyperspeed",
       "status": "unsupported",
       "wp": "",
@@ -8603,6 +8635,22 @@
         {
           "slug": "hypersonic-cannon",
           "name": "Hypersonic Cannon"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/war-machine",
+      "heroName": "War Machine",
+      "set": "rvlt",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "overwhelming-firepower",
+          "name": "Overwhelming Firepower"
         }
       ]
     },
