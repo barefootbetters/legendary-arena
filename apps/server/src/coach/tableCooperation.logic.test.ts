@@ -45,6 +45,20 @@ function assertCopyClean(lines: readonly string[]): void {
   }
 }
 
+// why: WP-719 no-seat-named-twice guardrail — a seat that wins multiple roles is grouped
+// into ONE line, so no "Seat N" / "Player N" label leads more than one line.
+function assertNoSeatNamedTwice(lines: readonly string[]): void {
+  const seen = new Set<string>();
+  for (const line of lines) {
+    const match = /^((?:Seat|Player) \d+) /.exec(line);
+    if (match !== null) {
+      const label = match[1]!;
+      assert.ok(!seen.has(label), `seat "${label}" named in more than one line:\n${lines.join('\n')}`);
+      seen.add(label);
+    }
+  }
+}
+
 /** Builds a per-seat contribution line with zero defaults, overridable per field. */
 function makeSeat(overrides: Partial<CoachPlayerLine> & { label: string }): CoachPlayerLine {
   return {
@@ -104,7 +118,7 @@ describe('computeTableCooperation (WP-717 / D-24540)', () => {
     assertCopyClean(lines);
   });
 
-  test('names the standout co-op roles from perPlayer', () => {
+  test('groups roles by seat: a one-role seat keeps its voice, a multi-role seat combines', () => {
     const summary = makeSummary({
       team: { victoryPoints: 0, bystandersRescued: 5 },
       perPlayer: [
@@ -114,11 +128,60 @@ describe('computeTableCooperation (WP-717 / D-24540)', () => {
     });
     const lines = computeTableCooperation(summary);
 
+    // Seat 1 wins only combat → its specific single-role line, unchanged.
     assert.ok(lines.some((line) => /Seat 1 carried the combat — 5 enemies defeated\./.test(line)), lines.join('\n'));
-    assert.ok(lines.some((line) => /Seat 2 assembled the most synergy — 6 conditional clauses landed\./.test(line)), lines.join('\n'));
-    assert.ok(lines.some((line) => /Seat 2 carried the rescue — 5 Bystanders saved\./.test(line)), lines.join('\n'));
+    // Seat 2 wins synergy + rescue → ONE combined line (not named twice).
+    assert.ok(
+      lines.some((line) => /Seat 2 anchored the table — 6 conditional clauses landed and 5 Bystanders saved\./.test(line)),
+      lines.join('\n'),
+    );
     assert.ok(lines.some((line) => /Together your table defeated 5 enemies and rescued 5 Bystanders\./.test(line)), lines.join('\n'));
+    assertNoSeatNamedTwice(lines);
     assertCopyClean(lines);
+  });
+
+  test('one-seat sweep: a seat that wins all three roles gets one combined line', () => {
+    const summary = makeSummary({
+      team: { victoryPoints: 0, bystandersRescued: 12 },
+      perPlayer: [
+        makeSeat({ label: 'Player 1', villainsDefeated: 1 }),
+        makeSeat({
+          label: 'Player 2',
+          villainsDefeated: 6,
+          conditionalClausesAssembled: 3,
+          bystandersRescued: 12,
+        }),
+      ],
+    });
+    const lines = computeTableCooperation(summary);
+
+    const roleLines = lines.filter((line) => /anchored the table|carried the|assembled the most synergy/.test(line));
+    assert.equal(roleLines.length, 1, 'a full sweep by one seat yields exactly one role line');
+    assert.match(
+      roleLines[0]!,
+      /Player 2 anchored the table — 6 enemies defeated, 3 conditional clauses landed, and 12 Bystanders saved\./,
+    );
+    assertNoSeatNamedTwice(lines);
+    assertCopyClean(lines);
+  });
+
+  test('all-distinct: three seats each win one role → three specific single-role lines', () => {
+    const summary = makeSummary({
+      team: { victoryPoints: 0, bystandersRescued: 3 },
+      playerCount: 3,
+      perPlayer: [
+        makeSeat({ label: 'Seat 1', villainsDefeated: 5 }),
+        makeSeat({ label: 'Seat 2', conditionalClausesAssembled: 4 }),
+        makeSeat({ label: 'Seat 3', bystandersRescued: 3 }),
+      ],
+    });
+    const lines = computeTableCooperation(summary);
+
+    assert.ok(lines.some((line) => /Seat 1 carried the combat — 5 enemies defeated\./.test(line)), lines.join('\n'));
+    assert.ok(lines.some((line) => /Seat 2 assembled the most synergy — 4 conditional clauses landed\./.test(line)), lines.join('\n'));
+    assert.ok(lines.some((line) => /Seat 3 carried the rescue — 3 Bystanders saved\./.test(line)), lines.join('\n'));
+    assert.ok(!lines.some((line) => /anchored the table/.test(line)), 'no combined line when each seat wins one role');
+    assertNoSeatNamedTwice(lines);
   });
 
   test('omits a role line when its metric is zero across the table', () => {
