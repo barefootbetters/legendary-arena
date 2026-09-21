@@ -43280,4 +43280,94 @@ Builds on D-24470 (reveal-from-hand co-located-token suppression), D-24480
 (optional-ko-hand-discard), D-24074 (printed-class model), D-24469 / D-24526
 (per-card allowlist gating). **Reserved by:** NUMBER-LEDGER D-24544.
 
+---
+
+### D-24545 — Split-hero deck-instance dual-face identity (WP-724 / EC-761) (Active 2026-09-21)
+
+**Context.** A **split / dual-faced** hero physical card is one printable card with two
+halves (`physicalCards[].sides.length === 2`), e.g. `cvwr/peter-parker` `p1` =
+`["hot-bowl-of-soup","protect-my-family"]`. **39 such cards across 5 sets** (cvwr 20,
+mgtg 8, xmen 5, msis 3, bkwd 3; 26 heroes). D-14101 ("Single-Side ext_id Stand-In for
+Split Heroes", Option A of the D-13804 three-option deferral) made `G.heroDeck` carry one
+ext_id per physical copy using `sides[0]`, dropping the second face entirely — so the
+alternate face had **no ext_id / stats / hooks / display anywhere in `G`** and was
+unreachable. Operator-confirmed live on the deployed `df9291f` build: Peter Parker's
+`p1` card always resolved Hot Bowl of Soup and Protect My Family could never be played.
+This decision **un-defers D-14101**.
+
+**Decision.**
+
+1. **Both faces are enumerated into `G` at setup; the deck reservoir is unchanged.**
+   `heroCardInstanceExtIds` (the single emitter) now emits, per copy of a 2-sided physical
+   card, a **primary** instance (`sides[0]`, `isPrimaryFace: true`) AND an **alternate**
+   instance (`sides[1]`, `isPrimaryFace: false`), each keyed by the D-13502 grammar
+   `<setAbbr>/<heroSlug>/<cardSlug>#<copyIndex>` (unchanged). `buildHeroDeckCards` keeps
+   only primary-face instances in the shuffled reservoir, so deck composition — one physical
+   copy = one draw, D-14102 arithmetic preserved — is **byte-identical** to before. The four
+   sibling snapshots pick up both faces: `buildCardStats` + `buildHeroAbilityHooks` via the
+   shared emitter automatically; `buildCardDisplayData` + `buildCardTraits` gain a parallel
+   alternate-face pass (the alternate face reuses the single whole-card `physicalCard.imageUrl`).
+   No registry schema change — the orphan-side `superRefine` already guarantees every
+   `sides[]` slug is a full `cards[]` entry.
+
+2. **A copy-agnostic `G.splitFaces` map,** built by `buildSplitFaces` (mirroring
+   `buildTransformTargets`): `{setAbbr}/{heroSlug}/{sides[0]}` → `{setAbbr}/{heroSlug}/{sides[1]}`,
+   one entry per split physical card. playCard strips the `#copy` suffix off the played
+   primary instance to look up the alternate base, then reattaches the same `#copy` to offer
+   faceB (D-24546).
+
+3. **`G.splitFaces` is present ONLY when non-empty** (a conditional spread, the
+   `schemeTransformFields` precedent) — UNLIKE `transformTargets`, which is always seeded and
+   re-pinned the hash. `computeStateHash` serializes all of `G` (minus diagnostics), so a game
+   with no split heroes — **including the core-2p-Doom sentinel** — serializes byte-identically
+   and `finalStateHash` is unchanged (**no re-pin**, confirmed empirically: engine suite green
+   with the sentinel pin unedited).
+
+Zones still store `CardExtId` strings only. Both faces cannot be in play from one copy; the
+face is bound at PLAY time (D-24546). A per-physical-instance identity channel
+(`physicalInstanceId`) remains deferred per D-13804. **Supersedes/extends D-14101.**
+Builds on D-13502 (ext_id grammar), D-14102 (deck-size arithmetic), D-13804 (physical-card
+identity is a registry concept), D-24468/D-24469 (Transform partition + strip-and-map).
+**Reserved by:** NUMBER-LEDGER D-24545.
+
+---
+
+### D-24546 — Split-hero play-time "choose a side" interaction (WP-724 / EC-761) (Active 2026-09-21)
+
+**Context.** With both faces resolvable from `G` (D-24545), the split card must let the player
+pick which half applies. Marvel Legendary binds the side **when the card is played** (not at
+recruit time), and the chosen half's economy AND ability apply while the other does nothing.
+
+**Decision.**
+
+1. **The side is chosen at PLAY time.** Playing a split instance (`isSplitCardInstance`, i.e.
+   its base is in `G.splitFaces`) places it in `inPlay` as its primary face, **defers** the
+   card's own base economy + onPlay ability, and parks ONE `PendingSplitFaceChoice
+   { playerID, sourceCardId, faceA, faceB }` for the ACTIVE player (`faceA` = played primary
+   instance; `faceB` = alternate instance at the same `#copyIndex`). This is distinct from the
+   covering-fire / reveal-top post-commit park because a split card's **own** economy is gated
+   by the choice.
+
+2. **The choice is active-player-scoped** (D-24284) and **block-all**: `hasPendingSplitFaceChoice`
+   guards every action move (coreMoves ×3, fightVillain/fightMastermind, recruitHero/recruitOfficer,
+   dodgeCard, healWounds, villainDeck.reveal, the game.ts move gate) and short-circuits
+   getLegalMoves; the bot default is `{ face: 'a' }` (the primary face — the only reachable face
+   before this WP; a smarter default is deferred).
+
+3. **`resolveSplitFaceChoice({ face: 'a' | 'b' })` is a server-only bgio move** (`client: false`).
+   It validates the front entry (active player), and for `face: 'b'` relabels the `inPlay` entry
+   from `faceA` to `faceB` (the Transform `strip-#copy`-and-map idiom), then grants the CHOSEN
+   face's `G.cardStats` attack/recruit and fires its ability via `executeHeroEffects` against the
+   chosen ext_id — the deferred half of the play. Invalid face / wrong player / empty queue are
+   silent no-ops. Moves never throw. Adds moves count 42→43 (RUNTIME drift pin); **no new
+   `HeroKeyword`/handler** — split is a structural property of a physical card, not a marker.
+
+4. **Determinism.** `G.pendingSplitFaceChoices` is runtime-only, lazy-initialised at the park
+   site, and never written in `Game.setup()`. The sentinel plays no split hero, so `finalStateHash`
+   is unchanged (no re-pin); `sim:runtime-observed:check` current with no regen.
+
+The client-facing picker (`SplitFaceChoicePrompt.vue`) is **WP-725**. Builds on D-24545
+(dual-face identity), WP-719/D-24541 + WP-702/D-24521 (block-all pending-choice pattern),
+D-24284 (active-only interactive choice). **Reserved by:** NUMBER-LEDGER D-24546.
+
 Protect this file.

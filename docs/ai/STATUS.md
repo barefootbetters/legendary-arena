@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-724 — Split / dual-faced hero "choose a side": engine + setup (EC-761 / D-24545 + D-24546) (2026-09-21)
+
+Un-defers **D-14101**. A split / dual-faced hero card — one printable card with two halves
+(`physicalCards[].sides.length === 2`, e.g. `cvwr/peter-parker`'s Hot Bowl of Soup / Protect
+My Family; **39 such cards across 5 sets**, 26 heroes) — is now playable as **either face,
+chosen when the card is PLAYED**. Before this WP the engine collapsed every split card to
+`sides[0]` and the second face had no ext_id / stats / hooks / display anywhere in `G` — it was
+unreachable (operator-confirmed live on the deployed `df9291f` build: Peter Parker always
+resolved Hot Bowl of Soup; Protect My Family could never be played).
+
+**Setup (D-24545):** the shared emitter `heroCardInstanceExtIds` now emits BOTH faces per copy
+(primary `sides[0]` + alternate `sides[1]`, tagged `isPrimaryFace`); `buildHeroDeckCards` keeps
+only primary faces so `G.heroDeck` composition is byte-unchanged (one draw per physical copy,
+D-14102 preserved). `buildCardStats` + `buildHeroAbilityHooks` pick up both faces through the
+shared emitter automatically; `buildCardDisplayData` + `buildCardTraits` gained a parallel
+alternate-face pass (the alternate reuses the single whole-card image). A new `buildSplitFaces`
+builds a copy-agnostic primary→alternate map into `G.splitFaces`, spread into `G` **only when
+non-empty** so a no-split game — including the core sentinel — serializes byte-identically
+(**`finalStateHash` unchanged, no re-pin**). No registry schema change, no card-data regen
+(both faces already authored).
+
+**Play-time (D-24546):** playing a split card parks a block-all `PendingSplitFaceChoice` for the
+active player and **defers** the card's own economy + ability; the new server-only
+`resolveSplitFaceChoice({ face: 'a' | 'b' })` relabels the in-play instance to the chosen face
+(the Transform strip-and-map idiom) then grants that face's attack/recruit and fires its ability
+(the other face does nothing). Full pending-choice file set: block-all guard on every action move
++ sim short-circuit + both `MOVE_MAP`s + `SIMULATION_MOVE_NAMES`, `UIPendingSplitFaceChoice`
+projection + audience-filter chooser-redaction + `index.ts` re-export. No new `HeroKeyword`/handler
+(split is structural) — drift = moves count **42→43** (RUNTIME pin).
+
+Engine suite **3995/0**; whole-repo build 0; `cards:check` + `sim:runtime-observed:check` green;
+sentinel `finalStateHash` byte-identical. The player-facing picker (`SplitFaceChoicePrompt.vue`)
+and the **D-24026 live-verify** are **WP-725**.
+
 ### WP-723 — X-Gene discard-pile class-presence condition (EC-760 / D-24544) (2026-09-21)
 
 Un-hollows X-23's printed **X-Gene** on the two tractable cards. Per the
