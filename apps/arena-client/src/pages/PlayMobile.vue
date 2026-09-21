@@ -48,6 +48,7 @@ import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
+import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
 import PendingSeatChoicePrompt from '../components/play/PendingSeatChoicePrompt.vue';
@@ -133,6 +134,7 @@ export default defineComponent({
     DoOverPrompt,
     DrawOrEmpoweredPrompt,
     CoveringFireChoicePrompt,
+    SplitFaceChoicePrompt,
     CountScaledChoicePrompt,
     UndercoverChoicePrompt,
     PendingSeatChoicePrompt,
@@ -311,6 +313,11 @@ export default defineComponent({
     const hasPendingCoveringFireChoice = computed<boolean>(
       () => snapshot.value?.pendingCoveringFireChoice !== undefined,
     );
+    // why: WP-725 / D-24546 — derived from UIState.pendingSplitFaceChoice !== undefined; blocks
+    // end-turn / pass-priority / heal at EVERY stage while a split-face "choose a side" is pending.
+    const hasPendingSplitFaceChoice = computed<boolean>(
+      () => snapshot.value?.pendingSplitFaceChoice !== undefined,
+    );
 
     // why: WP-313 / D-24099 — derived from UIState.pendingVictoryPileCardPick !== undefined;
     // blocks end-turn / pass-priority at EVERY stage while a victory-pile pick is pending.
@@ -450,6 +457,7 @@ export default defineComponent({
       hasPendingSmashDiscard,
       hasPendingDoOver,
       hasPendingCoveringFireChoice,
+      hasPendingSplitFaceChoice,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -752,6 +760,13 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-725 / D-24546 — the split / dual-faced hero "choose a side" picker; appears
+               only for the choosing player when pendingSplitFaceChoice is set. NOT a modal. -->
+          <SplitFaceChoicePrompt
+            :pending-split-face-choice="snapshot.pendingSplitFaceChoice"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-675 / D-24490 — the count-scaled choose-one prompt (vnom Symbiotic
                Adaptation); appears only for the choosing player when pendingCountScaledChoice
                is set. Same block-all posture as the draw-or-empowered prompt above. -->
@@ -882,6 +897,7 @@ export default defineComponent({
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
             :has-pending-reveal-top-dispose="hasPendingRevealTopDispose"
             :has-pending-covering-fire-choice="hasPendingCoveringFireChoice"
+            :has-pending-split-face-choice="hasPendingSplitFaceChoice"
             :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
             :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"
