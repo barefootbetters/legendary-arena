@@ -1510,6 +1510,24 @@
       "markupToken": "[keyword:draw:1]"
     },
     {
+      "heroSlug": "war-machine",
+      "cardSlug": "overwhelming-firepower",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:defeated-villain-or-mastermind]"
+    },
+    {
+      "heroSlug": "war-machine",
+      "cardSlug": "overwhelming-firepower",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "war-machine",
+      "cardSlug": "overwhelming-firepower",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:rescue:1]"
+    },
+    {
       "heroSlug": "ronin",
       "cardSlug": "storm-of-arrows",
       "abilityIndex": 1,
@@ -1940,14 +1958,6 @@
       "abilityIndex": 0,
       "abilityText": "Choose a Hero Class. ([hc:strength],[hc:instinct],[hc:covert],[hc:tech] or [hc:ranged]) Reveal the top card of your deck. If it's the Hero Class you named, draw it. Otherwise, put it back on the top or bottom.",
       "reason": "reveal-player-named-class-draw: Player declares a hero class at activation time (before the reveal); draw if the revealed card matches the declared class. Requires ability-activation flow changes not present in the current design."
-    },
-    {
-      "setAbbr": "rvlt",
-      "heroSlug": "war-machine",
-      "cardSlug": "overwhelming-firepower",
-      "abilityIndex": 0,
-      "abilityText": "Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander.",
-      "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vill",

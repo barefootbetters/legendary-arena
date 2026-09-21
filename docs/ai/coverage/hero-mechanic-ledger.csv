@@ -460,7 +460,10 @@ rvlt/ronin,Ronin,rvlt,hyperspeed,unsupported,,,,storm-of-arrows
 rvlt/scarlet-witch,Scarlet Witch,rvlt,dark-memories,unsupported,,,,alter-reality|warp-time-and-space
 rvlt/scarlet-witch,Scarlet Witch,rvlt,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,alter-reality
 rvlt/speed,Speed,rvlt,hyperspeed,unsupported,,,,accelerate|break-the-sound-barrier
+rvlt/war-machine,War Machine,rvlt,defeated-villain-or-mastermind,condition,,,,overwhelming-firepower
+rvlt/war-machine,War Machine,rvlt,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,overwhelming-firepower
 rvlt/war-machine,War Machine,rvlt,hyperspeed,unsupported,,,,hypersonic-cannon
+rvlt/war-machine,War Machine,rvlt,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,overwhelming-firepower
 shld/agent-phil-coulson,Agent Phil Coulson,shld,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,approve-orbital-strike
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-level,unsupported,,,,fake-but-inspiring-death|impeccable-planning
 shld/agent-phil-coulson,Agent Phil Coulson,shld,s.h.i.e.l.d.-levels,unsupported,,,,approve-orbital-strike

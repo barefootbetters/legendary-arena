@@ -952,7 +952,7 @@
           "attack": "5",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander."
+            "Whenever you defeat a Villain or Mastermind this turn, draw a card and rescue a Bystander. [keyword:defeated-villain-or-mastermind] [keyword:draw:1] [keyword:rescue:1]"
           ]
         }
       ],
