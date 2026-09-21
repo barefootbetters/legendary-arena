@@ -513,6 +513,13 @@ export default defineComponent({
     const hasPendingCoveringFireChoice = computed<boolean>(
       () => snapshot.value?.pendingCoveringFireChoice !== undefined,
     );
+    // why: WP-682 / D-24544 — derived from UIState.pendingSeatChoice !== undefined. Passed to
+    // TurnActionBar to block end-turn / pass-priority / heal AND (load-bearing) to feed
+    // anyPendingChoice() so the reveal auto-advance waits for a WP-684 seat choice (Diving
+    // Block / Random Acts / Monarch's Decree) instead of freezing the turn at 'start'.
+    const hasPendingSeatChoice = computed<boolean>(
+      () => snapshot.value?.pendingSeatChoice !== undefined,
+    );
     const hasPendingSmashDiscard = computed<boolean>(
       () => snapshot.value?.pendingSmashDiscard !== undefined,
     );
@@ -676,6 +683,7 @@ export default defineComponent({
       hasPendingSmashDiscard,
       hasPendingDoOver,
       hasPendingCoveringFireChoice,
+      hasPendingSeatChoice,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
       hasPendingPutAnyNumberBottomHQ,
@@ -1187,6 +1195,7 @@ export default defineComponent({
             :has-pending-melter-ko-choice="hasPendingMelterKoChoice"
             :has-pending-reveal-top-dispose="hasPendingRevealTopDispose"
             :has-pending-covering-fire-choice="hasPendingCoveringFireChoice"
+            :has-pending-seat-choice="hasPendingSeatChoice"
             :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
             :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"
             :has-pending-discard-choice="hasPendingDiscardChoice"

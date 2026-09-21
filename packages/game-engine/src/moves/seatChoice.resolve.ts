@@ -145,13 +145,29 @@ export function allSeatsSubmitted(choice: PendingSeatChoice): boolean {
  * addressed seat into the seat-choice stage with a one-move budget.
  *
  * @param choice - The open pending seat choice.
- * @returns A per-seat { stage, moveLimit } map.
+ * @param activePlayerToSkip - The active player id (ctx.currentPlayer), omitted from
+ *   the map so the already-active player is never redundantly stage-ridden (D-24544).
+ * @returns A per-seat { stage, moveLimit } map (may be empty when every addressed seat
+ *   is the active player).
  */
 export function buildSeatChoiceActivePlayersValue(
   choice: PendingSeatChoice,
+  activePlayerToSkip?: string,
 ): Record<string, { stage: string; moveLimit: number }> {
   const value: Record<string, { stage: string; moveLimit: number }> = {};
   for (const seat of choice.addressedSeats) {
+    // why: D-24544 — never stage-ride the ACTIVE player. They are already the
+    // ctx.currentPlayer of the { currentPlayer: 'playTurn' } turn, and the stages are
+    // empty ({}), so every move (including resolveSeatChoice) is already accepted from
+    // them — setActivePlayers is only needed to admit a NON-active seat. Riding the
+    // active player adds an open→resolve→revert framework frame sequence that a client can
+    // drop, which hard-froze a Diving-Block-on-your-own-turn start-stage escape wound
+    // until the player reloaded (spectator-stale resync). Skipping the active seat removes
+    // the unnecessary transition. Non-active seats (Random Acts / Monarch's Decree /
+    // Diving Block on someone else's wound) still ride.
+    if (seat === activePlayerToSkip) {
+      continue;
+    }
     value[seat] = { stage: SEAT_CHOICE_STAGE, moveLimit: 1 };
   }
   return value;
@@ -173,17 +189,26 @@ export function buildSeatChoiceActivePlayersValue(
  *
  * @param events - The move/park context's boardgame.io events (may lack setActivePlayers).
  * @param choice - The pending seat choice whose seats to admit.
+ * @param activePlayerToSkip - The active player id; that seat is not stage-ridden, and
+ *   when it is the only addressed seat setActivePlayers is skipped entirely (D-24544).
  */
 export function admitSeatsForPendingSeatChoice(
   events: SeatChoiceEvents | undefined,
   choice: PendingSeatChoice,
+  activePlayerToSkip?: string,
 ): void {
-  if (typeof events?.setActivePlayers === 'function') {
-    events.setActivePlayers({
-      value: buildSeatChoiceActivePlayersValue(choice),
-      revert: true,
-    });
+  if (typeof events?.setActivePlayers !== 'function') {
+    return;
   }
+  const value = buildSeatChoiceActivePlayersValue(choice, activePlayerToSkip);
+  // why: D-24544 — when every addressed seat is the active player (the common
+  // Diving-Block-on-your-own-turn case), the value is empty. Skip setActivePlayers
+  // entirely so no stage transition (and no revert frame) is generated — the active
+  // player resolves the choice as the normal currentPlayer.
+  if (Object.keys(value).length === 0) {
+    return;
+  }
+  events.setActivePlayers({ value, revert: true });
 }
 
 /**
@@ -198,14 +223,18 @@ export function admitSeatsForPendingSeatChoice(
  * @param G - The game state to mutate.
  * @param events - The move context's boardgame.io events (for the stage ride).
  * @param choice - The pending seat choice to open.
+ * @param activePlayerToSkip - The active player id (ctx.currentPlayer); that seat is not
+ *   stage-ridden (D-24544). Omit when no active seat is addressed or in a unit/replay
+ *   context (no stage ride is applied there).
  */
 export function parkSeatChoice(
   G: LegendaryGameState,
   events: SeatChoiceEvents | undefined,
   choice: PendingSeatChoice,
+  activePlayerToSkip?: string,
 ): void {
   G.pendingSeatChoice = choice;
-  admitSeatsForPendingSeatChoice(events, choice);
+  admitSeatsForPendingSeatChoice(events, choice, activePlayerToSkip);
 }
 
 /**

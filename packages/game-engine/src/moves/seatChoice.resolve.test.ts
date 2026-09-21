@@ -230,6 +230,44 @@ describe('boardgame.io stage-ride admission', () => {
     assert.equal(hasPendingSeatChoice(gameState), true);
     assert.ok(captured !== undefined, 'seats admitted via the framework ride');
   });
+
+  // why: D-24544 — the active player is already ctx.currentPlayer in an empty-stage turn,
+  // so stage-riding them is unnecessary AND the extra open/revert framework frame froze a
+  // Diving-Block-on-your-own-turn start-stage escape wound until reload.
+  it('buildSeatChoiceActivePlayersValue skips the active player', () => {
+    const value = buildSeatChoiceActivePlayersValue(multiSeatChoice(['1', '2']), '1');
+    assert.deepEqual(value, { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } });
+  });
+
+  it('buildSeatChoiceActivePlayersValue returns empty when the only addressed seat is the active player', () => {
+    const value = buildSeatChoiceActivePlayersValue(singleSeatChoice('1'), '1');
+    assert.deepEqual(value, {});
+  });
+
+  it('admitSeatsForPendingSeatChoice SKIPS setActivePlayers when only the active player is addressed', () => {
+    let called = false;
+    const events = { setActivePlayers: () => { called = true; } };
+    admitSeatsForPendingSeatChoice(events, singleSeatChoice('1'), '1');
+    assert.equal(called, false, 'no stage transition for the active player alone — no frame to drop');
+  });
+
+  it('admitSeatsForPendingSeatChoice still rides a NON-active seat while skipping the active one', () => {
+    let captured: unknown;
+    const events = { setActivePlayers: (arg: unknown) => { captured = arg; } };
+    admitSeatsForPendingSeatChoice(events, multiSeatChoice(['1', '2']), '1');
+    assert.deepEqual(captured, {
+      value: { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } },
+      revert: true,
+    });
+  });
+
+  it('parkSeatChoice still opens the choice for the active player, without a stage ride', () => {
+    const gameState = makeState(undefined);
+    let called = false;
+    parkSeatChoice(gameState, { setActivePlayers: () => { called = true; } }, singleSeatChoice('1'), '1');
+    assert.equal(hasPendingSeatChoice(gameState), true, 'the pending choice is still opened');
+    assert.equal(called, false, 'the active player is not stage-ridden');
+  });
 });
 
 describe('getLegalMoves short-circuit', () => {

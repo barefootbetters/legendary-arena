@@ -68,6 +68,40 @@ describe('TurnActionBar — Step 1 Reveal (one click, watcher auto-advance)', ()
     assert.equal(calls[0]!.name, 'advanceStage');
   });
 
+  test('D-24544: the auto-advance waits for a pending SEAT choice (Diving Block) and fires once it clears — the start-stage freeze fix', async () => {
+    // why: a start-stage villain-escape Wound opens a Diving Block seat choice AFTER the
+    // reveal. Before the fix, anyPendingChoice() omitted hasPendingSeatChoice, so the reveal
+    // watcher fired advanceStage into the engine's block-all, latched isAutoAdvancing, and
+    // never re-advanced once the choice cleared — the turn froze at 'start' until reload.
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'start',
+        hasRevealedVillain: true,
+        hasPendingSeatChoice: true,
+        submitMove,
+      },
+    });
+    // revealed but a seat choice is pending → must NOT advance (no latch, no rejected move)
+    assert.equal(calls.length, 0, 'no advance while the Diving Block seat choice is pending');
+    // the player resolves the Diving Block → the choice clears
+    await wrapper.setProps({ hasPendingSeatChoice: false });
+    assert.equal(calls.length, 1, 'advance fires once the seat choice clears (no freeze)');
+    assert.equal(calls[0]!.name, 'advanceStage');
+  });
+
+  test('D-24544: End Turn / Pass Priority are blocked while a seat choice is pending', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: { currentStage: 'main', hasRevealedVillain: true, hasPendingSeatChoice: true, submitMove },
+    });
+    // The action bar exposes the gate reasons; the buttons must be disabled (not silently live).
+    assert.ok(
+      wrapper.html().includes('Resolve the pending seat choice'),
+      'the disabled-reason tooltip names the pending seat choice',
+    );
+  });
+
   test('the auto-advance never fires when it is not the viewer’s turn', async () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
