@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1900,
+    "totalEntries": 1902,
     "byScope": {
-      "hero": 725,
+      "hero": 727,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 473,
+      "executable": 475,
       "deferred": 16,
       "condition": 28,
       "unsupported": 323,
@@ -26950,6 +26950,23 @@
       "name": "X-23",
       "set": "xmen",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "adamantium-foot-claws",
+          "name": "Adamantium Foot Claws"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "name": "X-23",
+      "set": "xmen",
+      "scope": "hero",
       "mechanic": "ko-wound",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
@@ -26959,6 +26976,23 @@
         {
           "slug": "healing-factor-genome",
           "name": "Healing Factor Genome"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/x-23",
+      "name": "X-23",
+      "set": "xmen",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "bioengineered-assassin",
+          "name": "Bioengineered Assassin"
         }
       ]
     },
@@ -36306,7 +36340,9 @@
       "scope": "hero",
       "mechanics": [
         "berserk",
+        "draw",
         "ko-wound",
+        "optional-ko-hand-discard",
         "x-gene"
       ]
     }

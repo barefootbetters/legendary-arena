@@ -14,6 +14,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildHeroAbilityHooks } from './heroAbility.setup.js';
+import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
 // ---------------------------------------------------------------------------
@@ -1295,5 +1296,138 @@ describe('buildHeroAbilityHooks — condition-gate keywords (WP-653)', () => {
     for (const keyword of ['outwit', 'worthy', 'savior', 'antics']) {
       assert.ok(!hook.keywords.includes(keyword), `${keyword} is a condition, never a hook keyword`);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// X-Gene — discard-pile class-presence condition + per-card recognition
+// (WP-723 / D-24544)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
+  /** Collects every condition across a card's hooks. */
+  function allConditions(hooks: ReturnType<typeof buildHeroAbilityHooks>) {
+    const conditions = [];
+    for (const hook of hooks) {
+      for (const condition of hook.conditions ?? []) {
+        conditions.push(condition);
+      }
+    }
+    return conditions;
+  }
+
+  /** Collects every unresolved marker across a card's hooks. */
+  function allUnresolvedMarkers(hooks: ReturnType<typeof buildHeroAbilityHooks>) {
+    const markers: string[] = [];
+    for (const hook of hooks) {
+      for (const marker of hook.unresolvedMarkers ?? []) {
+        markers.push(marker);
+      }
+    }
+    return markers;
+  }
+
+  it('adamantium-foot-claws (allowlisted): emits heroClassInDiscardPile, NO heroClassMatch, and consumes the X-Gene marker', () => {
+    const registry = makeRegistry('xmen', 'x-23', [
+      { slug: 'adamantium-foot-claws', abilities: ['[keyword:X-Gene] [hc:instinct]: Draw a card. [keyword:draw:1]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('xmen/x-23'));
+    const conditions = allConditions(hooks);
+
+    assert.ok(
+      conditions.some((c) => c.type === 'heroClassInDiscardPile' && c.value === 'instinct'),
+      'the co-located [hc:instinct] becomes a heroClassInDiscardPile condition with value instinct',
+    );
+    assert.ok(
+      !conditions.some((c) => c.type === 'heroClassMatch'),
+      'the spurious heroClassMatch play-this-turn gate is suppressed on an X-Gene line',
+    );
+    assert.ok(
+      !allUnresolvedMarkers(hooks).includes('x-gene'),
+      'the [keyword:X-Gene] marker is consumed (not a parse-unrecognized hollow) for an allowlisted card',
+    );
+    // why: the trailing effect stays intact — the discard condition gates the draw.
+    assert.ok(
+      hooks.some((hook) => hook.keywords.includes('draw')),
+      'the trailing [keyword:draw:1] effect is still parsed',
+    );
+  });
+
+  it('bioengineered-assassin (allowlisted): X-Gene hook carries heroClassInDiscardPile + optional-ko-hand-discard, no heroClassMatch', () => {
+    const registry = makeRegistry('xmen', 'x-23', [
+      {
+        slug: 'bioengineered-assassin',
+        abilities: [
+          '[keyword:Berserk]',
+          '[keyword:X-Gene] [hc:instinct]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]',
+        ],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('xmen/x-23'));
+    const conditions = allConditions(hooks);
+
+    assert.ok(
+      conditions.some((c) => c.type === 'heroClassInDiscardPile' && c.value === 'instinct'),
+      'the co-located [hc:instinct] becomes a heroClassInDiscardPile condition',
+    );
+    assert.ok(
+      !conditions.some((c) => c.type === 'heroClassMatch'),
+      'no spurious heroClassMatch gate is emitted',
+    );
+    assert.ok(
+      !allUnresolvedMarkers(hooks).includes('x-gene'),
+      'the X-Gene marker is consumed for an allowlisted card',
+    );
+    assert.ok(
+      hooks.some((hook) => hook.keywords.includes('optional-ko-hand-discard')),
+      'the trailing optional-ko-hand-discard effect is still parsed',
+    );
+  });
+
+  it('heir-to-wolverine (NOT allowlisted): X-Gene stays an unresolved hollow and [hc:instinct] stays a heroClassMatch gate', () => {
+    const registry = makeRegistry('xmen', 'x-23', [
+      {
+        slug: 'heir-to-wolverine',
+        abilities: [
+          '[keyword:Berserk], [keyword:Berserk]',
+          '[keyword:X-Gene] [hc:instinct]: Count the[hc:instinct] cards in your discard pile. [keyword:Berserk] that many times.',
+        ],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('xmen/x-23'));
+    const conditions = allConditions(hooks);
+
+    assert.ok(
+      allUnresolvedMarkers(hooks).includes('x-gene'),
+      'a non-allowlisted card keeps [keyword:X-Gene] as an honest parse-unrecognized hollow',
+    );
+    assert.ok(
+      conditions.some((c) => c.type === 'heroClassMatch' && c.value === 'instinct'),
+      'the [hc:instinct] stays a heroClassMatch gate (X-Gene suppression does not fire off-allowlist)',
+    );
+    assert.ok(
+      !conditions.some((c) => c.type === 'heroClassInDiscardPile'),
+      'no heroClassInDiscardPile condition is injected for a non-allowlisted card',
+    );
+  });
+
+  it('reads the condition class from the co-located token — a synthetic [hc:ranged] X-Gene line yields value ranged', () => {
+    const registry = makeRegistry('xmen', 'x-23', [
+      { slug: 'adamantium-foot-claws', abilities: ['[keyword:X-Gene] [hc:ranged]: Draw a card. [keyword:draw:1]'] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('xmen/x-23'));
+    const conditions = allConditions(hooks);
+
+    assert.ok(
+      conditions.some((c) => c.type === 'heroClassInDiscardPile' && c.value === 'ranged'),
+      'the condition value is read from the [hc:X] token, not hardcoded to instinct',
+    );
+  });
+
+  it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays 61', () => {
+    // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
+    // it must not appear in the canonical keyword array nor bump its count.
+    assert.equal(HERO_KEYWORDS.length, 61, 'HERO_KEYWORDS stays 61 (X-Gene is not a keyword)');
+    assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });

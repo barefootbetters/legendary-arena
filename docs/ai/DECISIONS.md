@@ -43220,7 +43220,7 @@ NUMBER-LEDGER D-24541.
 **Packet:** WP-722 / EC-759. **Drafted + landed:** 2026-09-20. **Reserved by:** NUMBER-LEDGER D-24543. Related: D-24467 (the reused mechanism), D-22501 (the "draw-another" marker-only-resolves-a-deferral precedent), D-24016 (Arc Reactor marker-only precedent).
 ---
 
-### D-24544 — X-Gene hero keyword: discard-pile class-presence condition (WP-723 / EC-760) (Drafted 2026-09-21; not yet landed)
+### D-24544 — X-Gene hero keyword: discard-pile class-presence condition (WP-723 / EC-760) (Active 2026-09-21)
 
 **Context.** X-23's printed **X-Gene** ability (`[keyword:X-Gene] [hc:instinct]:`
 on adamantium-foot-claws, bioengineered-assassin, heir-to-wolverine) surfaced as

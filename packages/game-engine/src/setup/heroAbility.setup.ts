@@ -475,6 +475,27 @@ const TELEPORT_ON_DISCARD_CARDS: ReadonlySet<string> = new Set<string>([
   'ssw2/ruby-summers/guerrilla-warfare',
 ]);
 
+// why: WP-723 / D-24544 — cards whose printed [keyword:X-Gene] is RECOGNIZED (per-card
+// allowlisted, keyed by canonical `{setAbbr}/{heroSlug}/{cardSlug}`). On an allowlisted
+// card the marker's co-located [hc:X] becomes the heroClassInDiscardPile condition (Step
+// 1a) and the trailing effect is separately marked. Only the two cards whose trailing
+// effect is expressible today (draw / optional-ko-hand-discard) are listed; heir-to-
+// wolverine's count-scaled "Berserk that many times" is UNMODELED, so it is deliberately
+// NOT here — its [keyword:X-Gene] stays an honest parse-unrecognized hollow. Recognizing
+// X-Gene globally would silence that signal; the per-card allowlist is the transform /
+// teleport-on-discard precedent (Honest-Partial Invariant).
+const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
+  'xmen/x-23/adamantium-foot-claws',
+  'xmen/x-23/bioengineered-assassin',
+]);
+
+// why: WP-723 / D-24544 — detects an X-Gene line. On such a line (for an allowlisted card)
+// the leading [hc:X] is the discard-condition class ("a [class] card in your discard pile"),
+// NOT a heroClassMatch play-this-turn gate, so Step 1a reroutes it (mirrors the reveal-from-
+// hand / D-24470 co-located-token suppression). Non-global, stateless `.test`; case-insensitive
+// to match the [keyword:X] lowercasing.
+const X_GENE_MARKER_PATTERN = /\[keyword:x-gene\]/i;
+
 // why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
 // keyword. On such a line the same-line `[hc:...]` tokens are the GRANTED classes (the
 // card gains them when played), not `heroClassMatch` play-conditions — so Step 1a routes
@@ -630,7 +651,7 @@ function parseAbilityText(
   // the card id), so the support decision is threaded in. Defaults false so every
   // other caller/test keeps the pre-WP-658 behaviour (a [keyword:Transform] on a
   // non-supported card stays an unresolved marker).
-  options: { transformSupported?: boolean; teleportOnDiscardSupported?: boolean } = {},
+  options: { transformSupported?: boolean; teleportOnDiscardSupported?: boolean; xGeneSupported?: boolean } = {},
 ): {
   keywords: HeroKeyword[];
   conditions: HeroCondition[];
@@ -647,6 +668,11 @@ function parseAbilityText(
   // never sees the card id). Defaults false so a [keyword:Teleport] on any non-listed
   // card stays an honest unresolved marker.
   const teleportOnDiscardSupported = options.teleportOnDiscardSupported === true;
+  // why: WP-723 / D-24544 — the caller resolves whether this card is in X_GENE_CARDS and
+  // threads it in (parseAbilityText is text-only and never sees the card id). Defaults false
+  // so a [keyword:X-Gene] on any non-allowlisted card (heir-to-wolverine) stays an honest
+  // unresolved marker and its co-located [hc:X] stays a heroClassMatch gate — both unchanged.
+  const xGeneSupported = options.xGeneSupported === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -678,6 +704,12 @@ function parseAbilityText(
   // X-Men Hero this turn" gate.
   const revealFromHandCriterion = tryResolveRevealFromHandCriterion(abilityText);
   const lineHasRevealFromHand = revealFromHandCriterion !== undefined;
+  // why: WP-723 / D-24544 — an X-Gene line fires the Step 1a reroute + Step 2 consume ONLY
+  // for an allowlisted card (xGeneSupported AND the marker present). On such a line the leading
+  // [hc:X] is the discard-condition class, not a heroClassMatch play-gate; on any non-allowlisted
+  // card the flag is false, so [hc:X] stays a heroClassMatch and [keyword:X-Gene] stays an
+  // unresolved marker (heir-to-wolverine's honest hollow) — recognition is per-card.
+  const lineHasXGene = xGeneSupported && X_GENE_MARKER_PATTERN.test(abilityText);
   // why: WP-681 / D-24498 — on a Battlefield Promotion line ([keyword:optional-ko-shield-officer])
   // the co-located `[team:shield]` describes the KO TARGET ("KO a [team:shield] Hero"), NOT a
   // requiresTeam play-gate. Suppress it from Step 1b so the card fires unconditionally (mirrors
@@ -732,6 +764,10 @@ function parseAbilityText(
   // silently break superpowers.
   let heroClassMatch: RegExpExecArray | null = null;
   const heroClassRegex = new RegExp(HERO_CLASS_PATTERN.source, 'g');
+  // why: WP-723 / D-24544 — on an X-Gene line only the LEADING [hc:X] is the discard-
+  // condition class; this guard ensures exactly one heroClassInDiscardPile condition is
+  // emitted even if a line ever carried a second [hc:X] (allowlisted cards carry one).
+  let xGeneConditionPushed = false;
   heroClassMatch = heroClassRegex.exec(abilityText);
   while (heroClassMatch !== null) {
     const normalizedClass = normalizeTraitSlug(heroClassMatch[1]!);
@@ -759,6 +795,21 @@ function parseAbilityText(
       // ("reveal another [hc:X] Hero"), NOT a play gate. Already captured in
       // revealFromHandCriterion; emit NO heroClassMatch condition (mirrors the investigate
       // exclusion above — this is the mid-sentence-token-is-not-a-gate fix for Psychic Link).
+    } else if (lineHasXGene) {
+      // why: WP-723 / D-24544 — on an X-Gene line the co-located [hc:X] is the discard-
+      // condition CLASS ("a [class] card in your discard pile"), NOT a heroClassMatch
+      // play-this-turn gate. Drop the heroClassMatch it would otherwise emit and push a
+      // heroClassInDiscardPile condition carrying the class read from the token (never a
+      // hardcoded 'instinct'), so the trailing effect gates on discard-pile presence. Only
+      // the leading token drives the condition (xGeneConditionPushed) — mirrors the reveal-
+      // from-hand / D-24470 co-located-token reinterpretation.
+      if (!xGeneConditionPushed) {
+        heroClassConditions.push({
+          type: 'heroClassInDiscardPile',
+          value: normalizedClass,
+        });
+        xGeneConditionPushed = true;
+      }
     } else {
       heroClassConditions.push({
         type: 'heroClassMatch',
@@ -1170,6 +1221,19 @@ function parseAbilityText(
         resolvedMarkers.push('teleport');
       } else {
         unresolvedMarkers.push('teleport');
+      }
+    } else if (normalizedKeyword === 'x-gene') {
+      // why: WP-723 / D-24544 — X-Gene is a parser directive, NOT a HeroKeyword (it carries no
+      // effect of its own — it only conditions a separately-marked trailing effect). For an
+      // allowlisted card (xGeneSupported) the marker is CONSUMED: Step 1a already turned its
+      // co-located [hc:X] into the heroClassInDiscardPile condition, so record NOTHING here (no
+      // keyword, no unresolved marker) — nothing is left hollow. For any other card it stays an
+      // unresolved marker (honest parse-unrecognized hollow) so heir-to-wolverine's unmodeled
+      // count-scaled Berserk keeps its truthful signal. Per-card allowlisted (transform /
+      // teleport precedent); recognizing it globally via RECOGNIZED_NON_KEYWORD_MARKERS would
+      // silence that signal. Checked before the generic unresolved-marker fallback.
+      if (!xGeneSupported) {
+        unresolvedMarkers.push('x-gene');
       }
     } else if (!RECOGNIZED_NON_KEYWORD_MARKERS.has(normalizedKeyword)) {
       // why: WP-257 / D-24034 — a `[keyword:X]` token that is NOT a valid keyword,
@@ -2821,7 +2885,14 @@ export function buildHeroAbilityHooks(
         const teleportOnDiscardSupported = TELEPORT_ON_DISCARD_CARDS.has(
           `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
         );
-        const parsedAbility = parseAbilityText(abilityText, { transformSupported, teleportOnDiscardSupported });
+        // why: WP-723 / D-24544 — resolve whether this card's [keyword:X-Gene] is recognized
+        // (X_GENE_CARDS), from the same canonical key, and thread it in so parseAbilityText
+        // reroutes the co-located [hc:X] into the heroClassInDiscardPile condition and consumes
+        // the marker only for allowlisted cards (all others keep an honest unresolved marker).
+        const xGeneSupported = X_GENE_CARDS.has(
+          `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+        );
+        const parsedAbility = parseAbilityText(abilityText, { transformSupported, teleportOnDiscardSupported, xGeneSupported });
 
         // why: freshly-constructed hook per instance — copies never alias a
         // shared object or arrays (D-13502).

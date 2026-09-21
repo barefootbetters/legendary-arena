@@ -500,7 +500,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 92,
+      "cardCount": 93,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -593,7 +593,8 @@
         "xmen/legion",
         "xmen/phoenix",
         "xmen/polaris",
-        "xmen/psylocke"
+        "xmen/psylocke",
+        "xmen/x-23"
       ],
       "hidden": false
     },
@@ -995,9 +996,10 @@
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
-        "wwhk/she-hulk"
+        "wwhk/she-hulk",
+        "xmen/x-23"
       ],
       "hidden": true
     },
@@ -4227,7 +4229,9 @@
     "xmen/x-23": {
       "mechanics": [
         "berserk",
+        "draw",
         "ko-wound",
+        "optional-ko-hand-discard",
         "x-gene"
       ]
     }
