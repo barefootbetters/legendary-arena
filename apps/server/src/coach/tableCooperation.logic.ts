@@ -131,9 +131,29 @@ function combinedTotalLine(summary: CoachMatchSummary): string | null {
 }
 
 /**
+ * Joins achievement fragments into a natural list ("a" / "a and b" / "a, b, and c").
+ *
+ * why: the combined multi-role line (WP-719 / EC-757) lists a seat's achievements; up to
+ * three here (combat / synergy / rescue), with an Oxford comma for three.
+ *
+ * @param fragments - The fragments (at least one).
+ * @returns The joined list.
+ */
+function joinFragments(fragments: readonly string[]): string {
+  if (fragments.length === 1) {
+    return fragments[0]!;
+  }
+  if (fragments.length === 2) {
+    return `${fragments[0]} and ${fragments[1]}`;
+  }
+  return `${fragments.slice(0, -1).join(', ')}, and ${fragments[fragments.length - 1]}`;
+}
+
+/**
  * Computes the deterministic, celebration-only Table Cooperation recognition (WP-717 /
- * D-24540): the shared outcome as a team achievement, each seat's standout co-op role, and
- * the combined-table total. Solo / single-seat matches return just the outcome line (no
+ * D-24540, grouped per WP-719): the shared outcome as a team achievement, each seat's
+ * standout co-op role (grouped by seat so a sweeping seat is named once), and the
+ * combined-table total. Solo / single-seat matches return just the outcome line (no
  * cross-seat roles); an all-zero table returns the outcome line alone.
  *
  * @param summary - The already-built `CoachMatchSummary` (outcome + team + perPlayer).
@@ -148,31 +168,59 @@ export function computeTableCooperation(summary: CoachMatchSummary): readonly st
     return lines;
   }
 
+  // why: the three standout role winners (unchanged pickTopSeat — deterministic
+  // first-max-wins). synergy tie breaks toward the seat that realized more attack/recruit
+  // value; a full tie still resolves to the earlier seat via pickTopSeat.
   const combat = pickTopSeat(summary.perPlayer, seatEnemiesDefeated);
-  if (combat !== null) {
-    lines.push(
-      `${combat.label} carried the combat — ${withCount(seatEnemiesDefeated(combat), 'enemy', 'enemies')} defeated.`,
-    );
-  }
-
   const synergy = pickTopSeat(
     summary.perPlayer,
     (seat) => seat.conditionalClausesAssembled,
-    // why: a synergy tie breaks toward the seat that realized more attack/recruit value;
-    // a full tie (value equal too) still resolves to the earlier seat via pickTopSeat.
     (seat) => seat.conditionalClausesRealizedValue,
   );
+  const rescue = pickTopSeat(summary.perPlayer, (seat) => seat.bystandersRescued);
+
+  // why: each non-null winner carries its single-role line (the specific voice, unchanged)
+  // and a self-describing achievement fragment for the combined multi-role line. Built in
+  // combat → synergy → rescue order so grouping preserves first-appearance.
+  const roleEntries: { readonly seat: CoachPlayerLine; readonly singleLine: string; readonly fragment: string }[] = [];
+  if (combat !== null) {
+    const fragment = `${withCount(seatEnemiesDefeated(combat), 'enemy', 'enemies')} defeated`;
+    roleEntries.push({ seat: combat, singleLine: `${combat.label} carried the combat — ${fragment}.`, fragment });
+  }
   if (synergy !== null) {
-    lines.push(
-      `${synergy.label} assembled the most synergy — ${withCount(synergy.conditionalClausesAssembled, 'conditional clause', 'conditional clauses')} landed.`,
-    );
+    const fragment = `${withCount(synergy.conditionalClausesAssembled, 'conditional clause', 'conditional clauses')} landed`;
+    roleEntries.push({ seat: synergy, singleLine: `${synergy.label} assembled the most synergy — ${fragment}.`, fragment });
+  }
+  if (rescue !== null) {
+    const fragment = `${withCount(rescue.bystandersRescued, 'Bystander', 'Bystanders')} saved`;
+    roleEntries.push({ seat: rescue, singleLine: `${rescue.label} carried the rescue — ${fragment}.`, fragment });
   }
 
-  const rescue = pickTopSeat(summary.perPlayer, (seat) => seat.bystandersRescued);
-  if (rescue !== null) {
-    lines.push(
-      `${rescue.label} carried the rescue — ${withCount(rescue.bystandersRescued, 'Bystander', 'Bystanders')} saved.`,
-    );
+  // why: group by seat IDENTITY (the pickTopSeat-returned CoachPlayerLine reference, keyed
+  // on object identity in the Map), NOT the display label — robust against any future label
+  // change at zero cost — preserving first-appearance order. One line per distinct winning
+  // seat: a single-role seat keeps its specific voice; a multi-role seat combines into one
+  // line ("anchored the table — ...") so a seat that sweeps is never named twice.
+  const seatsInOrder: CoachPlayerLine[] = [];
+  const fragmentsBySeat = new Map<CoachPlayerLine, string[]>();
+  const singleLineBySeat = new Map<CoachPlayerLine, string>();
+  for (const entry of roleEntries) {
+    const existing = fragmentsBySeat.get(entry.seat);
+    if (existing === undefined) {
+      seatsInOrder.push(entry.seat);
+      fragmentsBySeat.set(entry.seat, [entry.fragment]);
+      singleLineBySeat.set(entry.seat, entry.singleLine);
+    } else {
+      existing.push(entry.fragment);
+    }
+  }
+  for (const seat of seatsInOrder) {
+    const fragments = fragmentsBySeat.get(seat)!;
+    if (fragments.length === 1) {
+      lines.push(singleLineBySeat.get(seat)!);
+    } else {
+      lines.push(`${seat.label} anchored the table — ${joinFragments(fragments)}.`);
+    }
   }
 
   const combined = combinedTotalLine(summary);

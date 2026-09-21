@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-720 — Synergy Realization: Table Cooperation one-seat-sweep combine (EC-757) (2026-09-20)
+
+A display refinement to WP-717/D-24540's `computeTableCooperation`, closing the last
+arc-polish item from the live 2p Red Skull match: the coach's Table Cooperation block named
+the sweeping seat ("Player 2") three times in a row, once per co-op role. Now the role
+attributions are **grouped by winning seat** — one line per distinct winning seat. A
+single-role seat keeps its specific voice ("carried the combat — 5 enemies defeated"); a
+multi-role seat combines into one line ("Player 2 anchored the table — 8 enemies defeated, 3
+conditional clauses landed, and 12 Bystanders saved"). Same winners, same counts, same
+outcome + combined-total lines — only the grouping changes.
+
+Grouped by seat **object identity** (a `Map` keyed on the `pickTopSeat`-returned
+`CoachPlayerLine` reference, not the display label — robust against any future label change),
+preserving combat→synergy→rescue first-appearance order; a new `joinFragments` helper (Oxford
+comma); no `.reduce()`. **Server-only, deterministic, display-only, off-ranking** (NG-1); no
+engine/`G`/hash/replay/client change (WP-718 renders the field verbatim; shape unchanged); not
+model-authored. Two vocabularies preserved (word-boundary lint). **Verification:**
+`tableCooperation` **12/0** (+3: groups-by-seat / one-seat-sweep → 1 line / all-distinct → 3
+lines, plus a no-seat-named-twice assertion; the existing role-line test updated to the grouped
+shape — an intended behavior change), server **1352/0**, `pnpm -r build` 0; `git diff` = the
+2-file allowlist. Ran the standard two-session lane (`EC-757:` impl + `SPEC:` close; no new D —
+refines D-24540). Renumbered from WP-719 (a parallel session took those numbers). **D-24026
+live-verify operator-pending** (the real Red Skull match's coach shows one combined line for
+the sweeping seat).
+
 ### WP-718 — Synergy Realization: Table Cooperation client render (EC-755) (2026-09-20)
 
 The deferred client-render half of WP-717/D-24540 (mirrors WP-710→WP-713), closing the
