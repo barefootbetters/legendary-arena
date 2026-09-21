@@ -38,6 +38,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from './coveringFireChoice.resolve.js';
+import { hasPendingSplitFaceChoice, isSplitCardInstance, parkSplitFaceChoice } from './splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
@@ -179,6 +180,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
+  if (hasPendingSplitFaceChoice(G)) {
     return;
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
@@ -432,6 +437,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   if (hasPendingCoveringFireChoice(G)) {
     return;
   }
+  // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
+  if (hasPendingSplitFaceChoice(G)) {
+    return;
+  }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
   if (hasPendingCountScaledChoice(G)) {
     return;
@@ -523,6 +532,25 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
   playerZones.hand = removal.from;
+
+  // why: WP-724 / D-24546 — a split / dual-faced card binds its side at PLAY time. Enter it in
+  // inPlay as its primary face, DEFER its base economy + ability, and park a "choose a side"
+  // choice; resolveSplitFaceChoice then grants the CHOSEN face's economy and fires its ability
+  // (the other face does nothing). A non-split card resolves immediately via applyCardPlay below.
+  // The block-all guards above keep the board frozen until the side is chosen.
+  if (isSplitCardInstance(G, args.cardId)) {
+    playerZones.inPlay = [...playerZones.inPlay, args.cardId];
+    parkSplitFaceChoice(G, playerID, args.cardId);
+    pushLog(
+      G,
+      // why: WP-417 — empty economy clause: no base attack/recruit is granted yet (deferred to
+      // the choice), so the line must not imply otherwise.
+      `Player ${playerID} played ${formatPlayedCardLabel(G.cardDisplayData, args.cardId, '')} — choose a side.`,
+      'neutral',
+      args.cardId,
+    );
+    return;
+  }
 
   applyCardPlay(G, context, playerID, args.cardId);
 }
@@ -647,6 +675,10 @@ export function endTurn({ G, playerID, events, random }: MoveContext): void {
   }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
+  if (hasPendingSplitFaceChoice(G)) {
     return;
   }
   // why: block-all -- pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)

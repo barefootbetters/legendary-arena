@@ -45,7 +45,7 @@ import {
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets } from './buildHeroDeck.js';
+import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
@@ -536,6 +536,16 @@ export function buildInitialGameState(
   // so a new top-level G field re-pins the two hash oracles (D-24468 precedent).
   const transformTargets = buildTransformTargets(effectiveHeroDeckIds, registry);
 
+  // why: WP-724 / D-24545 — capture the split-hero primary→alternate face link the
+  // "choose a side" runtime (resolveSplitFaceChoice) needs at play time, off the SAME
+  // effective hero set. Moves have no registry, so buildSplitFaces resolves it once here.
+  // Pure registry walk (no ctx.random). Empty {} for non-split hero sets (incl. the core
+  // sentinel); the conditional spread below keeps the field ABSENT when empty so a no-split
+  // game serializes byte-identically → NO hash re-pin (the schemeTransformFields precedent;
+  // contrast transformTargets, which is always-seeded and DID re-pin).
+  const splitFaces = buildSplitFaces(effectiveHeroDeckIds, registry);
+  const splitFacesFields = Object.keys(splitFaces).length > 0 ? { splitFaces } : {};
+
   // why: WP-670 / D-24484 — Scheme Transform. For a scheme in SCHEME_TRANSFORM_TARGETS,
   // capture its Great Old One flip target + that face's ability text (read the same way as
   // the base scheme's gameText) so the runtime flip is a pure state read. A conditional
@@ -676,6 +686,10 @@ export function buildInitialGameState(
     // card's `transform` field; empty {} for non-wwhk games. Always present
     // (mirrors transformDeck), so the two engine hash oracles re-pin.
     transformTargets,
+    // why: WP-724 / D-24545 — split-hero primary→alternate face-key map, present ONLY when
+    // the loadout has split heroes (conditional spread), so a no-split game (incl. the
+    // sentinel) serializes byte-identically → no re-pin.
+    ...splitFacesFields,
     // why: mastermind state built at setup from registry; tactics deck
     // shuffled deterministically; base card fightCost in G.cardStats
     mastermind: mastermindState,

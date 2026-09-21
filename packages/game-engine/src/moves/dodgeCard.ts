@@ -38,6 +38,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from './coveringFireChoice.resolve.js';
+import { hasPendingSplitFaceChoice } from './splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from './undercover.resolve.js';
 import { hasPendingReturnZeroCostDiscard } from './resolveReturnZeroCostDiscard.js';
@@ -122,6 +123,8 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   if (hasPendingDrawOrEmpowered(G)) return;
   // why: block-all guard (WP-719 / D-24541) — a pending Covering Fire choice freezes the board.
   if (hasPendingCoveringFireChoice(G)) return;
+  // why: block-all guard (WP-724 / D-24546) — a pending split-face "choose a side" freezes the board.
+  if (hasPendingSplitFaceChoice(G)) return;
   if (hasPendingCountScaledChoice(G)) return;
   // why: block-all — pendingUndercoverChoice must be resolved before any other action (WP-678 / D-24494)
   if (hasPendingUndercoverChoice(G)) return;
