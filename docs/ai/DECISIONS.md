@@ -44076,7 +44076,7 @@ collision). **D-24026 live-verify:** operator-manual, post-deploy — closes the
 
 **Gates.** Focused test `hero/hawkeyeImpossibleTrickShot.test.ts` (4/4: parse wiring, no-fire-on-play, 3-per-defeat edge-triggered and repeatable, short-supply clamp); `pnpm -r build` green; `cards:check`, `ledger:heroes:check` (regenerated: +4 honest rows), `effect-index:check` + `mechanics:metadata:check` (both regenerated: Trick Shot rows only), `sim:runtime-observed:check`, `sim:coverage --check` all exit 0.
 
-**D-24026 live-on-surface:** PENDING deploy — verify on `play.legendary-arena.com` with Impossible Trick Shot in play: the play logs "… is waiting …", then each Villain or Mastermind-tactic defeat that turn rescues three Bystanders.
+**D-24026 live-on-surface:** CONFIRMED live 2026-09-22 — an operator `play.legendary-arena.com` Red Skull / Midtown Bank Robbery 1p match (Iron Man / Hawkeye / Thor, build `a634636`) played Impossible Trick Shot on turn 21: no rescue on play (the ability logged "… is waiting …"); two Red Skull tactic defeats that turn each rescued three Bystanders via the hero ability (edge-triggered, repeatable); a later Sentinel (henchman) defeat the same turn rescued nothing, per the D-24467 henchman gate.
 
 **Reserved by:** NUMBER-LEDGER D-24565 (renumbered from D-24564 after a parallel collision with #2278). Related: D-24467 (the reused mechanism), D-24543 (the marker-only precedent).
 
