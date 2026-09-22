@@ -1759,6 +1759,18 @@
     },
     {
       "heroSlug": "venompool",
+      "cardSlug": "play-to-the-crowd",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:victory-bystanders:1:2]"
+    },
+    {
+      "heroSlug": "venompool",
+      "cardSlug": "play-to-the-crowd",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:rescue:2]"
+    },
+    {
+      "heroSlug": "venompool",
       "cardSlug": "digest-that-chimichanga",
       "abilityIndex": 1,
       "markupToken": "[keyword:rescue:1]"
@@ -2142,14 +2154,6 @@
       "abilityIndex": 0,
       "abilityText": "[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack].",
       "reason": "reveal-discard-attack: Similar to reveal-ko-attack but discards the card instead of KO-ing it when cost = 0. Discard vs. KO is a meaningful gameplay difference; a reveal-discard-attack executor (or a mode parameter on reveal-ko-attack) would be needed."
-    },
-    {
-      "setAbbr": "vnom",
-      "heroSlug": "venompool",
-      "cardSlug": "play-to-the-crowd",
-      "abilityIndex": 1,
-      "abilityText": "[keyword:Indigestion]: “Rescue“ two Bystanders.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "wtif",

@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-740 — Venompool "Play to the Crowd" (EC-777 / D-24562) (2026-09-22)
+
+Play to the Crowd (`vnom/venompool/play-to-the-crowd`) now resolves as printed through the WP-735
+`digest-indigestion` fusion. It had been granting a flat +1 plus an Indigestion hollow.
+- **Digest 7:** +1 Attack per TWO Victory-Pile Bystanders.
+- **Indigestion:** rescue two Bystanders.
+- **Doubled `[team:venomverse]`:** both, in order, only after TWO other Venomverse Heroes (the
+  rulebook two-icon rule). The Digest grant counts Bystanders before the rescues.
+
+Live turn-30 case (VP 10 / 4 Bystanders, one other Venomverse Hero) → +2.
+
+Changes:
+- The standalone `COUNT_SCALED_PATTERN` accepts the optional `:<perEach>` divisor.
+- New digest-scoped `bothConditionCount` field plus a pure `countOtherInPlayMatchingCondition`
+  helper. The general evaluator is untouched; the repo-wide doubled-icon gap is a separate
+  follow-up.
+- Two curated markers; the `_deferred` row is removed.
+
+Engine 4117/0 (+16 tests); `pnpm -r build` 0; the six card/coverage checks exit 0; no
+`finalStateHash` re-pin. **D-24562 Active.** D-24026 live-verify is pending (post-deploy).
+
 ### WP-739 — Project `economy.excessiveViolenceAvailable` onto UIState (EC-776 / D-24560) (2026-09-22)
 
 Adds a read-only, active-player-only, omit-when-absent `UIState.economy.excessiveViolenceAvailable`

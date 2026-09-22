@@ -197,6 +197,13 @@ export interface HeroEffectDescriptor {
   // (the printed "Instead … both" overrides the Digest threshold gate). Absent when the card has
   // no upgrade line. Other keywords ignore it.
   bothCondition?: HeroCondition;
+  // why: WP-740 / D-24562 — for a 'digest-indigestion' effect, bothConditionCount is how many OTHER
+  // in-play cards must satisfy bothCondition. The fusion sets it only when the printed "both" line
+  // repeats one identical condition (e.g. "[team:venomverse][team:venomverse]") — the rulebook's
+  // "Critical Hit" two-icon rule needs two other matching cards, not one. Absent ≡ 1 (the Core-4's
+  // single-condition behavior, unchanged). Read ONLY by heroEffectDigestIndigestion; the general
+  // condition evaluator is untouched. Other keywords ignore it.
+  bothConditionCount?: number;
   // why: WP-736 / D-24556 — for an 'excessive-violence' effect, excessiveViolenceEffects is the
   // enrolled EV ability's already-parsed inner effects (the draw / +recruit / rescue / optional-ko
   // on the printed [keyword:Excessive Violence] line). It is FIRED at fight time (fireExcessiveViolencePlays),

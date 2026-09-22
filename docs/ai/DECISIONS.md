@@ -43992,4 +43992,44 @@ D-24556 (the EV ledger it reads), D-24557 (the fight-move arg the client submits
 audience-filter redaction matrix), D-24372 (the built-projection keyset-pin requirement).
 **Reserved by:** NUMBER-LEDGER D-24560 (renumbered from D-24558 after a parallel collision).
 
+### D-24562 — Play to the Crowd: standalone `perEach` + a digest-scoped doubled-condition count (Active 2026-09-22 — WP-740 / EC-777)
+
+Un-defers the D-24555 §5 hollow on `vnom/venompool/play-to-the-crowd`. Live Dr. Doom / Legacy Virus 2p,
+turn 30: the card granted a flat +1 (its Digest line's `+1[icon:attack]` parsed unfused) and logged a
+parse-unrecognized Indigestion. The faithful result was **+2**: Victory Pile 10 cards / 4 Bystanders,
+with one other Venomverse Hero, so Digest only.
+
+**Locks:**
+1. **Field.** `HeroEffectDescriptor.bothConditionCount?: number` is read ONLY by `digest-indigestion`
+   (`isDigestBothConditionMet`). Absent ≡ 1. The fusion sets it only when the "both" line prints ≥ 2
+   conditions, all identical to the first. A doubled `[team:X][team:X]` / `[hc:X][hc:X]` then needs
+   that many OTHER in-play matching cards (the rulebook's "Critical Hit" two-icon rule,
+   `legendary-universal-rules-v23.md` ~L683).
+2. **Helper.** `countOtherInPlayMatchingCondition` (`hero/heroConditions.evaluate.ts`) is the pure
+   counting primitive. It self-excludes by exact instance id (a second copy counts), uses the same
+   membership helpers as `evaluateCondition` (`cardCountsAsTeamMember` / `cardHasClassWhenPlayed`),
+   guards a missing `cardTraits` before its loop, and returns 0 for other condition types.
+3. **Parser.** `COUNT_SCALED_PATTERN` gains an optional 4th `:<perEach>` segment (attack only;
+   recruit/kidnap untouched). A standalone marker now carries the D-24493 divisor; a 3-segment marker
+   emits no `perEach` key, so it stays byte-identical.
+4. **Future path.** The repo-wide doubled-icon under-gate (~95 printed lines) stays OUT of scope:
+   `evaluateCondition` / `evaluateAllConditions` are untouched. A later global fix builds on the
+   same helper. Because the fusion collapses duplicates to ONE `bothCondition` plus a count, a
+   duplicate-aware `evaluateAllConditions` cannot double-gate this card. That fix may keep
+   `bothConditionCount` or retire it; either way no data migration is needed (the field is
+   setup-derived hook data, never persisted).
+5. **Scope limit.** A mixed "both" line (`[hc:X][hc:Y]`) never gets a count, and allowlisting such
+   a card needs its own WP.
+
+**Card (allowlisted):** Digest 7 → `attack-per-count` / `victory-bystanders` / magnitude 1 / perEach 2.
+Indigestion → `rescue` 2. `bothCondition` requiresTeam venomverse ×2. "Instead, do both (in order)"
+runs Digest first, on the pre-rescue Bystander count, then the rescue. It overrides the Digest 7
+gate, matching D-24555. The WP-735 negative fusion test is retargeted to `insatiable-hunger` with
+unchanged assertions.
+
+**Determinism:** setup-built hook data for one `vnom` card plus a pure read-only count. No new G
+field. `finalStateHash` / sentinel pins are unchanged (engine 4117/0). Related D-24555 (the fusion
+this extends), D-24016 (`victory-bystanders`), D-24493 (`perEach`), D-24095 (JSON-plain hooks).
+**Reserved by:** NUMBER-LEDGER D-24562 (renumbered from D-24561 after a parallel collision).
+
 Protect this file.

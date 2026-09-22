@@ -515,8 +515,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile.",
-            "[keyword:Indigestion]: “Rescue“ two Bystanders.",
+            "[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]",
+            "[keyword:Indigestion]: “Rescue“ two Bystanders. [keyword:rescue:2]",
             "[team:venomverse][team:venomverse]: Instead, do both (in order)."
           ]
         }

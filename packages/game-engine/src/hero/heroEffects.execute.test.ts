@@ -7251,6 +7251,142 @@ describe('digest-indigestion (WP-735 / D-24555)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// play-to-the-crowd — Digest 7 per-two Bystanders / rescue 2 / doubled-Venomverse both (WP-740 / D-24562)
+// ---------------------------------------------------------------------------
+
+describe('play-to-the-crowd digest-indigestion (WP-740 / D-24562)', () => {
+  const crowdCtx = makeMockCtx();
+  const BYSTANDER = 'pile-bystander';
+
+  // why: the exact fused descriptor buildHeroAbilityHooks produces for Play to the Crowd.
+  function crowdHook(): HeroAbilityHook {
+    return {
+      cardId: 'crowd#0', timing: 'onPlay', keywords: ['digest-indigestion'],
+      effects: [{
+        type: 'digest-indigestion',
+        digestThreshold: 7,
+        digestEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 }],
+        indigestionEffects: [{ type: 'rescue', magnitude: 2 }],
+        bothCondition: { type: 'requiresTeam', value: 'venomverse' },
+        bothConditionCount: 2,
+      }],
+    };
+  }
+
+  /** Builds a Victory Pile of `bystanders` Bystanders padded with villains to `total` cards. */
+  function victoryPile(total: number, bystanders: number): string[] {
+    const pile: string[] = [];
+    for (let i = 0; i < bystanders; i++) {
+      pile.push(BYSTANDER);
+    }
+    for (let i = bystanders; i < total; i++) {
+      pile.push(`villain-${String(i)}`);
+    }
+    return pile;
+  }
+
+  /** Card traits: the crowd card and every listed ally are Venomverse; x-ally is X-Men. */
+  function venomverseTraits(allies: string[]): Record<string, { heroClass: string; team: string }> {
+    const traits: Record<string, { heroClass: string; team: string }> = {
+      'crowd#0': { heroClass: 'strength', team: 'venomverse' },
+      'x-ally': { heroClass: 'covert', team: 'x-men' },
+    };
+    for (const ally of allies) {
+      traits[ally] = { heroClass: 'strength', team: 'venomverse' };
+    }
+    return traits;
+  }
+
+  it('turn-30 regression: 10-card pile / 4 Bystanders, ONE other Venomverse → Digest only, +2', () => {
+    const pile = victoryPile(10, 4);
+    const g = makeTestState({
+      inPlay: ['x-ally', 'chimi#0', 'crowd#0'],
+      victory: [...pile],
+      bystanders: [BYSTANDER, BYSTANDER, BYSTANDER],
+      cardTraits: venomverseTraits(['chimi#0']),
+      heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(g, crowdCtx, '0', 'crowd#0');
+    assert.equal(g.turnEconomy.attack, 2, 'floor(4 / 2) = +2 (not a flat +1)');
+    assert.deepEqual(g.playerZones['0']!.victory, pile, 'no rescue; the Victory Pile is byte-identical');
+    assert.equal(g.piles.bystanders.length, 3, 'the Bystander stack is untouched');
+  });
+
+  it('Digest floors the per-two count: 5 Bystanders → +2, 1 Bystander → +0', () => {
+    const five = makeTestState({
+      inPlay: ['crowd#0'], victory: victoryPile(8, 5), cardTraits: venomverseTraits([]), heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(five, crowdCtx, '0', 'crowd#0');
+    assert.equal(five.turnEconomy.attack, 2);
+    const one = makeTestState({
+      inPlay: ['crowd#0'], victory: victoryPile(8, 1), cardTraits: venomverseTraits([]), heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(one, crowdCtx, '0', 'crowd#0');
+    assert.equal(one.turnEconomy.attack, 0);
+  });
+
+  it('Indigestion below 7 cards rescues two Bystanders and grants no attack', () => {
+    const g = makeTestState({
+      inPlay: ['crowd#0'], victory: victoryPile(6, 4), bystanders: [BYSTANDER, BYSTANDER, BYSTANDER],
+      cardTraits: venomverseTraits([]), heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(g, crowdCtx, '0', 'crowd#0');
+    assert.equal(g.turnEconomy.attack, 0, 'the Digest grant does not fire below threshold');
+    assert.equal(g.playerZones['0']!.victory.length, 8, 'two Bystanders were rescued');
+    assert.equal(g.piles.bystanders.length, 1);
+  });
+
+  it('Indigestion with one Bystander left rescues one and does not throw', () => {
+    const g = makeTestState({
+      inPlay: ['crowd#0'], victory: [], bystanders: [BYSTANDER],
+      cardTraits: venomverseTraits([]), heroAbilityHooks: [crowdHook()],
+    });
+    assert.doesNotThrow(() => executeHeroEffects(g, crowdCtx, '0', 'crowd#0'));
+    assert.deepEqual(g.playerZones['0']!.victory, [BYSTANDER]);
+    assert.deepEqual(g.piles.bystanders, []);
+  });
+
+  it('BOTH in order with two other Venomverse: Digest on the pre-rescue count (+2, not +3), then rescue 2, below the threshold', () => {
+    const g = makeTestState({
+      inPlay: ['venom-a#0', 'venom-b#0', 'crowd#0'],
+      victory: victoryPile(5, 4), // 5 < 7 — the "Instead" upgrade overrides the gate
+      bystanders: [BYSTANDER, BYSTANDER, BYSTANDER],
+      cardTraits: venomverseTraits(['venom-a#0', 'venom-b#0']),
+      heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(g, crowdCtx, '0', 'crowd#0');
+    assert.equal(g.turnEconomy.attack, 2, 'the Digest grant counts 4 Bystanders BEFORE the rescues');
+    assert.equal(g.playerZones['0']!.victory.filter((id) => id === BYSTANDER).length, 6, 'then two Bystanders were rescued');
+  });
+
+  it('ONE other Venomverse is not enough for both — the card itself never counts toward the two', () => {
+    const g = makeTestState({
+      inPlay: ['venom-a#0', 'crowd#0'],
+      victory: victoryPile(5, 4),
+      bystanders: [BYSTANDER, BYSTANDER, BYSTANDER],
+      cardTraits: venomverseTraits(['venom-a#0']),
+      heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(g, crowdCtx, '0', 'crowd#0');
+    assert.equal(g.turnEconomy.attack, 0, 'no both → below threshold runs Indigestion only');
+    assert.equal(g.playerZones['0']!.victory.length, 7, 'Indigestion alone rescued two');
+  });
+
+  it('a second in-play copy of Play to the Crowd counts toward the two', () => {
+    const g = makeTestState({
+      inPlay: ['venom-a#0', 'crowd#1', 'crowd#0'],
+      victory: victoryPile(5, 4),
+      bystanders: [BYSTANDER, BYSTANDER],
+      cardTraits: { ...venomverseTraits(['venom-a#0']), 'crowd#1': { heroClass: 'strength', team: 'venomverse' } },
+      heroAbilityHooks: [crowdHook()],
+    });
+    executeHeroEffects(g, crowdCtx, '0', 'crowd#0');
+    assert.equal(g.turnEconomy.attack, 2, 'venom-a + the other copy = two other Venomverse → both');
+    assert.equal(g.playerZones['0']!.victory.length, 7);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // excessive-violence — Venomverse fight-overspend keyword (WP-736 / D-24556)
 // ---------------------------------------------------------------------------
 

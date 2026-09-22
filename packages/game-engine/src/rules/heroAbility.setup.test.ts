@@ -2417,14 +2417,18 @@ describe('buildHeroAbilityHooks — digest-indigestion fusion (WP-735 / D-24555)
     assert.equal(effect.bothCondition, undefined, 'a single-branch card carries no bothCondition');
   });
 
+  // why: WP-740 / D-24562 — retargeted from play-to-the-crowd (now allowlisted) to
+  // insatiable-hunger, which stays deferred and still prints an Indigestion line. Both
+  // assertions are unchanged.
   it('does NOT fuse a non-allowlisted Digest card — its [keyword:Indigestion] stays an honest hollow', () => {
-    const registry = makeHeroRegistry('vnom', 'venompool', [
-      { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
-        '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile.',
-        '[keyword:Indigestion]: "Rescue" two Bystanders.',
+    const registry = makeHeroRegistry('vnom', 'venom', [
+      { slug: 'insatiable-hunger', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 8]: KO a card from your Victory Pile. You get +6[icon:attack].',
+        '[keyword:Indigestion]: KO a card from your hand or discard pile. You get +6[icon:recruit].',
+        '[team:venomverse][team:venomverse]: Instead, do both.',
       ]},
     ]);
-    const hooks = buildHeroAbilityHooks(registry, digestConfig('venompool'));
+    const hooks = buildHeroAbilityHooks(registry, digestConfig('venom'));
     assert.ok(
       !hooks.some((hook) => (hook.keywords ?? []).includes('digest-indigestion')),
       'a non-allowlisted Digest card produces NO digest-indigestion hook',
@@ -2433,6 +2437,73 @@ describe('buildHeroAbilityHooks — digest-indigestion fusion (WP-735 / D-24555)
       hooks.some((hook) => (hook.unresolvedMarkers ?? []).some((marker) => /indigestion/i.test(marker))),
       'the Indigestion line stays a parse-unrecognized hollow',
     );
+  });
+});
+
+describe('buildHeroAbilityHooks — play-to-the-crowd fusion + standalone perEach (WP-740 / D-24562)', () => {
+  function venompoolConfig(): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: ['vnom/venompool'] };
+  }
+
+  it('fuses Play to the Crowd into ONE hook: per-two Bystanders Digest, rescue-2 Indigestion, doubled Venomverse both', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]',
+        '[keyword:Indigestion]: “Rescue“ two Bystanders. [keyword:rescue:2]',
+        '[team:venomverse][team:venomverse]: Instead, do both (in order).',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, venompoolConfig());
+
+    assert.equal(hooks.length, 1, 'the three printed lines fuse into exactly one hook — no stray flat attack hook');
+    const hook = hooks[0]!;
+    assert.deepEqual(hook.keywords, ['digest-indigestion']);
+    assert.equal(hook.unresolvedMarkers, undefined, 'no Digest/Indigestion hollow survives');
+    assert.deepEqual(hook.effects, [{
+      type: 'digest-indigestion',
+      digestThreshold: 7,
+      digestEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 }],
+      indigestionEffects: [{ type: 'rescue', magnitude: 2 }],
+      bothCondition: { type: 'requiresTeam', value: 'venomverse' },
+      bothConditionCount: 2,
+    }]);
+  });
+
+  it('leaves bothConditionCount unset for a mixed "both" line (D-24562 lock 5)', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]',
+        '[keyword:Indigestion]: “Rescue“ two Bystanders. [keyword:rescue:2]',
+        '[hc:strength][team:venomverse]: Instead, do both (in order).',
+      ]},
+    ]);
+    const effect = buildHeroAbilityHooks(registry, venompoolConfig())[0]!.effects![0]!;
+    assert.equal(effect.bothConditionCount, undefined, 'a mixed line is never counted');
+    assert.deepEqual(effect.bothCondition, { type: 'heroClassMatch', value: 'strength' });
+  });
+
+  it('parses a standalone 4-segment attack-per-count marker with perEach', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'test-card', rarityLabel: 'Common 1', abilities: [
+        'You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, venompoolConfig());
+    assert.equal(hooks.length, 1);
+    assert.deepEqual(hooks[0]!.effects, [
+      { type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 },
+    ], 'the printed icon is subsumed; perEach is carried');
+  });
+
+  it('keeps a 3-segment attack-per-count marker byte-identical (no perEach key)', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'test-card', rarityLabel: 'Common 1', abilities: [
+        'You get +1[icon:attack] for each Bystander in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1]',
+      ]},
+    ]);
+    const effects = buildHeroAbilityHooks(registry, venompoolConfig())[0]!.effects!;
+    assert.deepEqual(effects, [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders' }]);
+    assert.equal(Object.prototype.hasOwnProperty.call(effects[0], 'perEach'), false, 'perEach is omitted when absent');
   });
 });
 
