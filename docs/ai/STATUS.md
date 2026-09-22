@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-733 — Spider-Man bare-`[keyword:reveal]` → `[keyword:reveal:2]` cost-draw parity (EC-770 / no new D) (2026-09-22)
+
+Fixes 5 core+co2e Spider-Man hero cards that print "Reveal the top card of your deck. If it costs 2
+or less, draw it." but carried a **bare `[keyword:reveal]`** marker → `revealRulesForLegacyKeyword('reveal',
+undefined)` returns EMPTY `revealRules` → a silent no-op (the reveal fires, matches no branch, draws
+nothing even at cost ≤ 2). Fix = the `[keyword:reveal:2]` parameterized marker their 7 correctly-working
+siblings use, which translates to `{predicate: cost-lte 2, actions:[draw]}`. The 5:
+`core/spider-man/{great-responsibility#0, astonishing-strength#0, web-shooters#1}`,
+`co2e/spider-man/{astonishing-strength#0, web-shooters#0}`.
+
+**SURGICAL recipe** (full-pipeline regen FORBIDDEN — reflows ~38 hand-compacted sets): 3 `core` rows in
+`hero-ability-markers.json` `[keyword:reveal]`→`[keyword:reveal:2]` AND the same 3 `core.json` lines
+edited together (`cards:check` reproducibility); 2 `co2e.json` lines hand-edited directly (co2e is
+regen-excluded, hand-authored, absent from the marker map — append-only apply would double the token).
+`git diff` = exactly the 4 allowlist files (marker map + core.json + co2e.json + the engine test);
+`lagn-v1.json` CRLF build churn reverted. **No engine/keyword/canonical-array/new-D change** (D-24024 /
+D-21601 / D-21503 own the token + behavior).
+
+Engine **4040/0** (+2 tests: `great-responsibility`'s `[keyword:reveal:2]` builds a non-empty cost-lte-2
+draw rule, plus a bare-marker control pinned empty so a bare-reveal reintroduction fails loudly). All
+card-data `:check` (`cards` / `effect-index` / `mechanics:metadata` / `ledger:heroes` /
+`sim:runtime-observed`) + `sim:coverage --check` **0, no regen** (keyword-neutral). `pnpm -r build` 0.
+**Determinism: NO re-pin** — the full committed replay/hash/PAR/fixture suite stays byte-green with the
+fix (verified empirically on the whole 4040-test engine suite). Two-commit topology (EC-770 impl + SPEC
+close).
+
+**D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match; not run here). Repro on
+`play.legendary-arena.com`: play a 2p match with core Spider-Man, play **Great Responsibility** (or
+**Astonishing Strength** / **Web-Shooters**); a revealed cost-≤2 top card is now **drawn**, not left on
+top. Verify against the deployed `/api/version` gitSha.
+
 ### WP-734 — co2e Card Shark 2e: reveal team-draw + choose-discard-or-return (EC-771 / D-24554) (2026-09-22)
 
 Un-hollows the WP-729-deferred co2e "Card Shark 2e" (`co2e/gambit/kinetic-card` idx 0: "Reveal the

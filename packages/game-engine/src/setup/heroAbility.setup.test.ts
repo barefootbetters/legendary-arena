@@ -1484,3 +1484,62 @@ describe('WP-729 — Card Shark reveal-rule trait predicate + co-located-token s
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Spider-Man bare-[keyword:reveal] → [keyword:reveal:2] cost-draw parity
+// (WP-733 / EC-770). The five core+co2e Spider-Man cards printing "Reveal the
+// top card of your deck. If it costs 2 or less, draw it." carried a BARE
+// [keyword:reveal] marker, which revealRulesForLegacyKeyword('reveal', undefined)
+// translates to EMPTY revealRules — the reveal fires, matches no branch, and
+// draws nothing (a silent dead half-ability). The fix gives them the
+// parameterized [keyword:reveal:2] their seven working siblings use.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — Spider-Man reveal cost-draw parity (WP-733 / EC-770)', () => {
+  // why: WP-733 — the exact generated core.json line for great-responsibility. A bare
+  // [keyword:reveal] yielded empty revealRules (a silent no-op, documented at
+  // rules/heroAbility.setup.test.ts:855); [keyword:reveal:2] restores the cost-lte-2 draw.
+  // Pinned non-empty so a bare-reveal reintroduction fails loudly.
+  const GREAT_RESPONSIBILITY_MARKED =
+    'Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal:2]';
+  const GREAT_RESPONSIBILITY_BARE =
+    'Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal]';
+
+  it('[keyword:reveal:2] on great-responsibility builds a cost-lte-2 → draw reveal rule (non-empty)', () => {
+    const registry = makeRegistry('core', 'spider-man', [
+      { slug: 'great-responsibility', abilities: [GREAT_RESPONSIBILITY_MARKED] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/spider-man'));
+
+    const revealHook = hooks.find((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'reveal'),
+    );
+    assert.ok(revealHook !== undefined, 'a hook carrying a reveal effect is built');
+    const revealEffect = revealHook!.effects!.find((effect) => effect.type === 'reveal');
+    assert.deepStrictEqual(
+      revealEffect!.revealRules,
+      [{ predicate: { kind: 'cost-lte', threshold: 2 }, actions: [{ kind: 'draw' }] }],
+      'the [keyword:reveal:2] marker builds a single cost-lte 2 → draw rule (the printed effect)',
+    );
+  });
+
+  it('control: the BARE [keyword:reveal] yields EMPTY revealRules — proves the :2 parameter is load-bearing', () => {
+    // why: WP-733 — this is the pre-fix state. If this ever becomes non-empty on its own,
+    // the assertion above would pass vacuously; pinning the bare form empty keeps the fix honest.
+    const registry = makeRegistry('core', 'spider-man', [
+      { slug: 'great-responsibility', abilities: [GREAT_RESPONSIBILITY_BARE] },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/spider-man'));
+
+    const revealHook = hooks.find((hook) =>
+      (hook.effects ?? []).some((effect) => effect.type === 'reveal'),
+    );
+    assert.ok(revealHook !== undefined, 'a hook carrying a reveal effect is still built for the bare marker');
+    const revealEffect = revealHook!.effects!.find((effect) => effect.type === 'reveal');
+    assert.deepStrictEqual(
+      revealEffect!.revealRules,
+      [],
+      'a bare [keyword:reveal] yields empty reveal rules (the silent no-op this WP fixes)',
+    );
+  });
+});

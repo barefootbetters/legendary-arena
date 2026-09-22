@@ -287,7 +287,7 @@
       "heroSlug": "spider-man",
       "cardSlug": "web-shooters",
       "abilityIndex": 1,
-      "markupToken": "[keyword:reveal]"
+      "markupToken": "[keyword:reveal:2]"
     },
     {
       "heroSlug": "thor",
@@ -383,13 +383,13 @@
       "heroSlug": "spider-man",
       "cardSlug": "astonishing-strength",
       "abilityIndex": 0,
-      "markupToken": "[keyword:reveal]"
+      "markupToken": "[keyword:reveal:2]"
     },
     {
       "heroSlug": "spider-man",
       "cardSlug": "great-responsibility",
       "abilityIndex": 0,
-      "markupToken": "[keyword:reveal]"
+      "markupToken": "[keyword:reveal:2]"
     },
     {
       "heroSlug": "black-widow",
