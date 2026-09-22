@@ -599,7 +599,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it."
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it. [keyword:reveal:team-x-men:draw]"
           ]
         },
         {

@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 727,
+    "totalRows": 731,
     "byStatus": {
-      "executable": 324,
+      "executable": 328,
       "deferred": 16,
       "condition": 28,
       "unsupported": 322,
@@ -3565,6 +3565,22 @@
       "extId": "core/gambit",
       "heroName": "Gambit",
       "set": "core",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "card-shark",
+          "name": "Card Shark"
+        }
+      ]
+    },
+    {
+      "extId": "core/gambit",
+      "heroName": "Gambit",
+      "set": "core",
       "mechanic": "reveal-cost-attack",
       "status": "executable",
       "wp": "WP-253",
@@ -4793,6 +4809,22 @@
         {
           "slug": "epic-middle-manager",
           "name": "Epic Middle Manager"
+        }
+      ]
+    },
+    {
+      "extId": "dead/bob-agent-of-hydra",
+      "heroName": "Bob, Agent of HYDRA",
+      "set": "dead",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "hydra-half-wit",
+          "name": "HYDRA Half-Wit"
         }
       ]
     },
@@ -7919,6 +7951,22 @@
       "extId": "pttr/moon-knight",
       "heroName": "Moon Knight",
       "set": "pttr",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "crescent-moon-darts",
+          "name": "Crescent Moon Darts"
+        }
+      ]
+    },
+    {
+      "extId": "pttr/moon-knight",
+      "heroName": "Moon Knight",
+      "set": "pttr",
       "mechanic": "wall-crawl",
       "status": "executable",
       "wp": "WP-273",
@@ -9849,6 +9897,22 @@
         {
           "slug": "upside-down-thinking",
           "name": "Upside-down Thinking"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/beast",
+      "heroName": "Beast",
+      "set": "ssw2",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "balanced-attack",
+          "name": "Balanced Attack"
         }
       ]
     },

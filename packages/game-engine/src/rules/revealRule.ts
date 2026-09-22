@@ -20,25 +20,36 @@ import type { HeroKeyword } from './heroKeywords.js';
 // ---------------------------------------------------------------------------
 
 /**
- * Closed canonical union of reveal predicate kinds. A predicate is tested against
- * the revealed deck-top card's cost.
+ * Closed canonical union of reveal predicate kinds. A `cost-*` predicate is tested
+ * against the revealed deck-top card's cost; a `team` / `hero-class` predicate is
+ * tested against the revealed card's projected traits (`G.cardTraits`).
  */
 export type RevealPredicateKind =
   | 'always'
   | 'cost-lte'
   | 'cost-gte'
   | 'cost-zero'
-  | 'cost-odd';
+  | 'cost-odd'
+  // why: WP-729 / D-24550 — trait predicates are the faithful home for "reveal top,
+  // if it's a [team/hc:X] Hero draw it" (Card Shark + siblings): the reveal-rule
+  // handler leaves a non-match ON TOP, matching the printed card, whereas investigate
+  // sends a non-match to the BOTTOM. `team` / `hero-class` match the peeked card's
+  // projected traits, not its cost.
+  | 'team'
+  | 'hero-class';
 
 // why: canonical drift array (D-24024) — adding a predicate kind requires updating
-// THIS array, the RevealPredicateKind union, AND a DECISIONS.md entry together
-// (code-style §Drift Detection). The drift test in revealRule.test.ts pins parity.
+// THIS array, the RevealPredicateKind union, the revealRule.test.ts drift assertion,
+// AND a DECISIONS.md entry (D-24550) together (code-style §Drift Detection). The
+// drift test in revealRule.test.ts pins parity.
 export const REVEAL_PREDICATE_KINDS: readonly RevealPredicateKind[] = [
   'always',
   'cost-lte',
   'cost-gte',
   'cost-zero',
   'cost-odd',
+  'team',
+  'hero-class',
 ] as const;
 
 /**
@@ -68,12 +79,14 @@ export const REVEAL_ACTION_KINDS: readonly RevealActionKind[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * A cost predicate evaluated against the revealed deck-top card's cost.
- * `threshold` applies to `cost-lte` / `cost-gte` only.
+ * A predicate evaluated against the revealed deck-top card. `threshold` applies to
+ * `cost-lte` / `cost-gte` only; `traitValue` (a `normalizeTraitSlug` slug) applies to
+ * the `team` / `hero-class` kinds only (WP-729 / D-24550).
  */
 export interface RevealPredicate {
   kind: RevealPredicateKind;
   threshold?: number;
+  traitValue?: string;
 }
 
 /**

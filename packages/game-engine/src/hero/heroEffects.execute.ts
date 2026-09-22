@@ -1659,7 +1659,7 @@ function applyRevealRules(
   // fired and mutated nothing, so the line can say what did not actually happen.
   const unappliedActionKinds: RevealActionKind[] = [];
   for (const rule of rules) {
-    if (!revealPredicateMatches(G, rule.predicate, cost)) {
+    if (!revealPredicateMatches(G, rule.predicate, cost, topCardId)) {
       continue;
     }
     if (matchedPredicateText === undefined) {
@@ -1755,6 +1755,7 @@ function revealPredicateMatches(
   G: LegendaryGameState,
   predicate: RevealPredicate,
   cost: number,
+  topCardId: CardExtId,
 ): boolean {
   if (predicate.kind === 'always') {
     return true;
@@ -1764,6 +1765,27 @@ function revealPredicateMatches(
   }
   if (predicate.kind === 'cost-odd') {
     return cost % 2 !== 0;
+  }
+  // why: WP-729 / D-24550 — trait predicates read the peeked card's projected traits
+  // from G.cardTraits (never mutated), mirroring investigateCardMatchesCriteria's
+  // projection: `team` matches the single printed team; `hero-class` matches either
+  // printed class (heroClass / heroClass2, the WP-703 dual-class rule). traitValue is
+  // the normalizeTraitSlug slug from the marker — never a hardcoded literal.
+  if (predicate.kind === 'team') {
+    if (predicate.traitValue === undefined) {
+      pushLog(G, 'A reveal rule used a team predicate with no team value and was skipped. Check the reveal rule markup.');
+      return false;
+    }
+    const traits = G.cardTraits ? G.cardTraits[topCardId] : undefined;
+    return traits?.team !== undefined && traits.team !== null && traits.team === predicate.traitValue;
+  }
+  if (predicate.kind === 'hero-class') {
+    if (predicate.traitValue === undefined) {
+      pushLog(G, 'A reveal rule used a hero-class predicate with no class value and was skipped. Check the reveal rule markup.');
+      return false;
+    }
+    const traits = G.cardTraits ? G.cardTraits[topCardId] : undefined;
+    return traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
   }
   if (predicate.kind === 'cost-lte') {
     // why: a threshold of 0 is legitimate (reveal M=0 → cost-lte 0), so test for

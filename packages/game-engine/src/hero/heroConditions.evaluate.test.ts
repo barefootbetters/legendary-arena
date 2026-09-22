@@ -985,6 +985,17 @@ describe('describeFailedCondition (WP-566 / D-24375)', () => {
     assert.match(teamText, /another x-men Hero/);
   });
 
+  it('WP-729 Part B: heroClassInDiscardPile message is article-aware (an instinct / a strength)', () => {
+    const G = makeTestState();
+    const instinct = describeFailedCondition(G, '0', { type: 'heroClassInDiscardPile', value: 'instinct' });
+    const strength = describeFailedCondition(G, '0', { type: 'heroClassInDiscardPile', value: 'strength' });
+    assert.match(instinct, /an instinct card in your discard pile/);
+    assert.match(strength, /a strength card in your discard pile/);
+    // why: guard against the "a instinct" regression AND a consonant class wrongly flipping to "an".
+    assert.equal(/\ba instinct\b/.test(instinct), false, 'vowel class must not read "a instinct"');
+    assert.equal(/\ban strength\b/.test(strength), false, 'consonant class must not read "an strength"');
+  });
+
   it('describes the two types handled but never constructed from card data', () => {
     const G = makeTestState({ inPlay: ['a', 'b'] });
     assert.match(
@@ -1472,8 +1483,10 @@ describe('evaluateCondition heroClassInDiscardPile (WP-723 / D-24544 — X-Gene)
       value: 'instinct',
     });
 
-    assert.equal(message, 'it needs a instinct card in your discard pile',
-      'the failure line names the class the discard pile must hold.');
+    // why: WP-729 Part B — the X-Gene failed-condition line is now article-aware; a
+    // vowel-initial class ("instinct") reads "an instinct", correcting the WP-723 "a instinct".
+    assert.equal(message, 'it needs an instinct card in your discard pile',
+      'the failure line names the class the discard pile must hold, article-correct.');
   });
 });
 

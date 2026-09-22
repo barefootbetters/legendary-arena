@@ -716,7 +716,10 @@ export function describeFailedCondition(
     case 'heroClassInDiscardPile':
       // why: D-24544 — X-Gene's discard-pile class-presence gate; a boolean existence
       // gate over the discard pile, so there is no running count to quote.
-      return `it needs a ${condition.value} card in your discard pile`;
+      // why: WP-729 / D-24544 copy fix — article-aware so a vowel-initial hero class
+      // ("instinct") reads "an instinct card", not the ungrammatical "a instinct card";
+      // consonant classes (strength/covert/tech/ranged) keep "a". Copy-only, no behavior change.
+      return `it needs a${/^[aeiou]/i.test(condition.value) ? 'n' : ''} ${condition.value} card in your discard pile`;
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

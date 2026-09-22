@@ -1881,6 +1881,93 @@ describe('executeHeroEffects', () => {
   });
 
   // -------------------------------------------------------------------------
+  // WP-729 / D-24550 — reveal-rule team / hero-class trait predicate (Card Shark).
+  // The faithful home: a matching reveal draws; a NON-match stays ON TOP (leave-on-top),
+  // never sent to the bottom (that would be the investigate disposition).
+  // -------------------------------------------------------------------------
+  it('team reveal predicate draws a matching top card and leaves the deck otherwise unchanged (WP-729)', () => {
+    const gameState = makeTestState({
+      inPlay: ['card-shark'],
+      deck: ['x-hero'],
+      hand: [],
+      cardStats: {
+        'x-hero': { attack: 0, recruit: 0, cost: 5, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      cardTraits: { 'x-hero': { heroClass: 'ranged', team: 'x-men' } },
+      heroAbilityHooks: [
+        {
+          cardId: 'card-shark' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 1, revealRules: [{ predicate: { kind: 'team', traitValue: 'x-men' }, actions: [{ kind: 'draw' }] }] }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'card-shark' as string);
+
+    assert.ok(gameState.playerZones['0']!.hand.includes('x-hero'),
+      'a matching X-Men top card is drawn into hand.');
+    assert.equal(gameState.playerZones['0']!.deck.length, 0, 'the drawn card left the deck.');
+  });
+
+  it('team reveal predicate leaves a NON-matching top card ON TOP — never to the bottom (WP-729 leave-on-top)', () => {
+    const gameState = makeTestState({
+      inPlay: ['card-shark'],
+      deck: ['non-xmen-top', 'second-card'],
+      hand: [],
+      cardStats: {
+        'non-xmen-top': { attack: 0, recruit: 0, cost: 5, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        'second-card': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      cardTraits: { 'non-xmen-top': { heroClass: 'tech', team: 'shield' } },
+      heroAbilityHooks: [
+        {
+          cardId: 'card-shark' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 1, revealRules: [{ predicate: { kind: 'team', traitValue: 'x-men' }, actions: [{ kind: 'draw' }] }] }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'card-shark' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 0, 'a non-matching reveal draws nothing.');
+    // the load-bearing faithfulness assertion: the non-match stays on TOP, deck order intact
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['non-xmen-top', 'second-card'],
+      'a non-matching revealed card stays on top of the deck (leave-on-top), not sent to the bottom.');
+  });
+
+  it('hero-class reveal predicate matches either printed class (WP-729)', () => {
+    const gameState = makeTestState({
+      inPlay: ['crescent'],
+      deck: ['tech-hero'],
+      hand: [],
+      cardStats: {
+        'tech-hero': { attack: 0, recruit: 0, cost: 4, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      cardTraits: { 'tech-hero': { heroClass: 'tech', team: null } },
+      heroAbilityHooks: [
+        {
+          cardId: 'crescent' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 1, revealRules: [
+            { predicate: { kind: 'hero-class', traitValue: 'instinct' }, actions: [{ kind: 'draw' }] },
+            { predicate: { kind: 'hero-class', traitValue: 'tech' }, actions: [{ kind: 'draw' }] },
+          ] }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'crescent' as string);
+
+    assert.ok(gameState.playerZones['0']!.hand.includes('tech-hero'),
+      'a tech card is drawn by the second (hc-tech) first-match-wins rule.');
+  });
+
+  // -------------------------------------------------------------------------
   // Test 42: reveal-odd-draw — cost-1 top card is drawn; exact topCardId in hand (AC-9, AC-26)
   // -------------------------------------------------------------------------
   it('reveal-odd-draw draws top card to hand when cost is odd (cost 1)', () => {

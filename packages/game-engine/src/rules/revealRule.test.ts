@@ -29,10 +29,12 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 // ---------------------------------------------------------------------------
 
 describe('reveal predicate/action canonical-array drift (D-24024)', () => {
-  it('REVEAL_PREDICATE_KINDS has exactly the 5 canonical kinds, in order, no duplicates', () => {
+  it('REVEAL_PREDICATE_KINDS has exactly the 7 canonical kinds, in order, no duplicates', () => {
+    // why: WP-729 / D-24550 — the trait predicates 'team' + 'hero-class' join the five
+    // cost predicates. Union ↔ array ↔ this assertion ↔ D-24550 move together.
     assert.deepStrictEqual(
       [...REVEAL_PREDICATE_KINDS],
-      ['always', 'cost-lte', 'cost-gte', 'cost-zero', 'cost-odd'],
+      ['always', 'cost-lte', 'cost-gte', 'cost-zero', 'cost-odd', 'team', 'hero-class'],
       'REVEAL_PREDICATE_KINDS must match the canonical predicate kinds in order',
     );
     assert.equal(new Set(REVEAL_PREDICATE_KINDS).size, REVEAL_PREDICATE_KINDS.length, 'no duplicate predicate kinds');
