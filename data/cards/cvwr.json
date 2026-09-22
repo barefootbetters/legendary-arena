@@ -2036,7 +2036,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:covert]: Draw another card."
+            "[hc:covert]: Draw another card. [keyword:draw:1]"
           ]
         },
         {

@@ -423,6 +423,18 @@
     },
     {
       "heroSlug": "iron-man",
+      "cardSlug": "endless-invention",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "iron-man",
+      "cardSlug": "quantum-breakthrough",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "iron-man",
       "cardSlug": "arc-reactor",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
@@ -573,6 +585,12 @@
       "heroSlug": "wiccan",
       "cardSlug": "supersonic-speed",
       "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wiccan",
+      "cardSlug": "supersonic-speed",
+      "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
     },
     {
@@ -783,6 +801,18 @@
       "heroSlug": "iron-man",
       "cardSlug": "quantum-breakthrough",
       "abilityIndex": 0,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "iron-man",
+      "cardSlug": "endless-invention",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "iron-man",
+      "cardSlug": "quantum-breakthrough",
+      "abilityIndex": 1,
       "markupToken": "[keyword:draw:2]"
     },
     {
@@ -2058,14 +2088,6 @@
       "abilityIndex": 0,
       "abilityText": "Whenever you recruit a Hero that costs 5 or more this turn, reveal the top card of your deck and you may KO it.",
       "reason": "D-21602 — recruit-event trigger: not wired to executeHeroEffects"
-    },
-    {
-      "setAbbr": "core",
-      "heroSlug": "iron-man",
-      "cardSlug": "endless-invention",
-      "abilityIndex": 1,
-      "abilityText": "[hc:tech]: Draw another card.",
-      "reason": "D-22501 — cumulative 'another/more/extra' conditional draw: the count is unambiguous but 'another' reads as an additive top-up on a sibling ability line; marking it correctly requires confirming each card's intended total. Deferred for a focused follow-up."
     },
     {
       "setAbbr": "2099",

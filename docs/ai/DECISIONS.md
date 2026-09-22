@@ -43476,4 +43476,52 @@ Board-Visible Field Rule 5-step) is a named follow-up, not this slice. Extends D
 (the `heroEffectResolved` overlay); reads the WP-325/D-24237 reveal-outcome data.
 **Reserved by:** NUMBER-LEDGER D-24547.
 
+### D-24551 — Cumulative conditional draw ("Draw another / N more cards") gets a `[keyword:draw:N]` marker; resolves the D-22501 deferral (Active 2026-09-21 — direct fix, no WP)
+
+**Rule:** A class/team-gated cumulative-draw line (`[hc:X]:`/`[team:X]:` prefix
++ "Draw another card." / "Draw N more cards.") carries a `[keyword:draw:N]`
+marker like any other draw line. Without it the conditional hook is **hollow**:
+the gate is still recognized (so an unmet gate logs `[blocked] … needs another
+<class> Hero`), but a **met** gate runs an empty effect list — it draws nothing
+and logs nothing.
+
+**Why:** D-22501 deliberately deferred the cumulative "another/more/extra" draw
+phrasings from the `apply-hero-ability-markers.mjs` draw detector (its `^…$`
+whole-line anchor matches only fixed-count `Draw a|one|two|three cards.`). That
+left Iron Man's core draw engine silently broken — Quantum Breakthrough's
+"Tech: Draw two more cards" and Endless Invention's "Tech: Draw another card"
+never drew, even with the tech gate satisfied (observed live:
+magneto Portals-Dark-Dim 2p, Player 0 turn 32 played 4 Tech heroes, the
+conditional draws produced nothing while High-Tech Weaponry's `[keyword:attack:1]`
+tech grant fired). This is the "focused follow-up" the D-22501 `_deferred` stub
+named.
+
+**Scope:** 7 clean class/team-gated lines marked — `iron-man/endless-invention`
+idx1 (`draw:1`) and `iron-man/quantum-breakthrough` idx1 (`draw:2`) across
+`core` + `msp1` + `co2e`, plus `cvwr/wiccan/supersonic-speed` idx1 (`draw:1`).
+Curated-map (`hero-ability-markers.json`) entries drive `core`/`msp1`/`cvwr`
+(regen-gated); `co2e` is hand-edited in `co2e.json` (it is excluded from the
+`cards:check` regen diff — the same convention as its existing base-line draw
+markers). The stale `core/endless-invention` `_deferred` stub is removed.
+
+**Not engine work.** The parser already builds the `[hc:X]:`/`[team:X]:` prefix
+as a `heroClassMatch`/`requiresTeam` condition and attaches `[keyword:draw:N]`
+as a draw effect on the same hook — proven live by Frenzied Slashing
+(`[hc:instinct]: Draw two cards. [keyword:draw:2]`) firing in the same log. No
+engine, keyword, or drift-array change; verified by building the hooks
+(`quantum-breakthrough#0` conditional hook now `cond=[heroClassMatch:tech]
+eff=[draw:2]`, previously `eff=[]`).
+
+**Deferred (genuinely different mechanics):** `cvwr/wiccan/clairvoyance`
+(compound reveal-then-draw — reveal family) and `vnom/venompool/shenanigans`
+("Draw two cards. But you can't draw any more cards…" — a draw *restriction*,
+whose base draw-2 is separately hollow). Both stay for a later focused pass.
+
+**Determinism / gates:** card-data only. `cards:check` (regen reproducibility,
+40 sets), `ledger:heroes:check` (727 rows), and `sim:coverage --check` (no
+regression) all green; no coverage-baseline bump (the conditional hooks already
+existed — they only gained an effect payload).
+
+**Reserved by:** NUMBER-LEDGER D-24551.
+
 Protect this file.
