@@ -25,10 +25,14 @@ no engine / server / `packages/**` change); reuses the WP-690 board-VFX / tile-o
 
 vue-tsc clean; arena-client suite **1886/0** (+8: the marker renders the served bonus / `+1` /
 aria-label, `MastermindTile` show + hide, `CityRow` occupied + empty + empty-only + no-portal);
-`pnpm -r build` 0. **D-24026 live-verify is operator-pending** post-deploy (a live Core Portals
-match via `?match=`: confirm the Mastermind marker at twist 1 and a city-space marker each
-subsequent twist, each `+N attack`, no freeze — the overlay only appears under a live Portals match,
-so it is unreachable in the dev preview; the mounted-component tests drive every render state).
+`pnpm -r build` 0. **D-24026 live-verify CONFIRMED 2026-09-21** on the deployed
+`play.legendary-arena.com` (server + client bundle both `c0d9d4e6`; the deployed
+`index-*.js` contains the overlay code). Verified on real bot-watched Core Portals matches
+(`POST /api/match/autoplay` with a Portals `setupData`): at **Twist 1** the `🌀 +1 attack`
+marker rendered inside the Mastermind tile (operator-confirmed visually); at **Twist 2** a second
+marker rendered above the **empty Bridge** city space (`city:Bridge EMPTY`, index 4 first per the
+`6 − K` fill order) — confirming the distinctive design that a Dark Portal buffs the *space*, not
+the occupant; at **Twist 0** no marker rendered (the conditional-spread omit case). No freeze.
 Display-only / off-ranking (NG-1). Completes the WP-728 → WP-727 arc.
 
 ### WP-728 — Portals to the Dark Dimension: Dark-Portal UIState projection (EC-765 / D-24549) (2026-09-21)
