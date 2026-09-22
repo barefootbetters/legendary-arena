@@ -636,7 +636,7 @@ export function getLegalMoves(
           args: {
             ownerPlayerID: next.ownerPlayerID,
             cardId: next.cardId,
-            disposition: selectDefaultRevealTopDisposition(next.cardId),
+            disposition: selectDefaultRevealTopDisposition(next.cardId, next.isKoAllowed === true),
           },
         },
       ];

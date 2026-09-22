@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1913,
+    "totalEntries": 1916,
     "byScope": {
-      "hero": 738,
+      "hero": 741,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 490,
+      "executable": 493,
       "deferred": 16,
       "condition": 28,
       "unsupported": 319,
@@ -5970,6 +5970,57 @@
         {
           "slug": "high-stakes-jackpot",
           "name": "High-Stakes Jackpot"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "name": "Gambit",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "name": "Gambit",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-ko",
+      "wp": "",
+      "decision": "D-24558",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "name": "Gambit",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal-top-dispose-others",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
         }
       ]
     },
@@ -29167,7 +29218,10 @@
       "mechanics": [
         "put-hand-on-deck-top",
         "reveal",
-        "reveal-cost-attack"
+        "reveal-cost-attack",
+        "reveal-top-dispose",
+        "reveal-top-dispose-ko",
+        "reveal-top-dispose-others"
       ]
     },
     "co2e/hawkeye": {

@@ -494,8 +494,8 @@
           "attack": null,
           "recruit": "3",
           "abilities": [
-            "For each player, reveal the top card of their deck and you decide if that player discards it or puts it back.",
-            "[hc:covert]: You may KO the card you revealed from your own deck."
+            "For each player, reveal the top card of their deck and you decide if that player discards it or puts it back. [keyword:reveal-top-dispose] [keyword:reveal-top-dispose-others]",
+            "[hc:covert]: You may KO the card you revealed from your own deck. [keyword:reveal-top-dispose-ko]"
           ]
         },
         {

@@ -43918,4 +43918,48 @@ line 0 (the passive rescue-doubler) is a separate reactive mechanic and stays ho
 Related D-24556 (the EV mechanic), D-24555 (Honest-Partial precedent), D-24185 (validation-phase
 silent-return precedent for the affordability decline). **Reserved by:** NUMBER-LEDGER D-24557.
 
+### D-24558 — co2e Hypnotic Charm: reveal each player's deck top + an optional covert `ko` disposition (`reveal-top-dispose-ko`) (Active 2026-09-22 — direct fix, no WP)
+
+**Context.** Jeff feedback (Dr. Doom / Legacy Virus 2p, turns 20 / 22 / 26): the 2nd-edition
+Gambit **Hypnotic Charm** (`co2e/gambit/hypnotic-charm`) never did anything — including the
+"[hc:covert]: You may KO the card you revealed from your own deck." clause on turns where
+Stack the Deck (covert) had been played first. Root cause: co2e is hand-authored and the card
+carried **no effect markers at all**; WP-702 / D-24521 wired only the core printing
+("Reveal the top card of your deck…" + "[hc:instinct]: Do the same thing to each other
+player's deck"). The co2e text differs: "For each player, reveal the top card of their deck and
+you decide if that player discards it or puts it back." + the covert KO.
+
+**Decision.**
+
+1. **Ability 1 reuses D-24521 unchanged.** It is marked
+   `[keyword:reveal-top-dispose] [keyword:reveal-top-dispose-others]` — own deck, then each other
+   seat's deck (that is exactly "for each player"), the active player deciding every one. The two
+   hooks park two queue entries resolved front-first by the shared `resolveRevealTopDispose`.
+2. **A new no-magnitude `reveal-top-dispose-ko` HeroKeyword** marks ability 2. Its `[hc:covert]:`
+   prefix is the free `heroClassMatch` gate (D-24354: another covert Hero played this turn). Its
+   onPlay handler reveals nothing: because `executeHeroEffects` runs a card's abilities in order,
+   the ability-1 parks already exist, so it flags the active player's OWN revealed top in the most
+   recent pending reveal-top choice with `isKoAllowed: true`. The keyword joins `HERO_KEYWORDS`
+   (63 → 64), `HERO_EFFECT_HANDLERS` (47 → 48), `HANDLED_KEYWORDS`, and `NO_MAGNITUDE_KEYWORDS`.
+3. **`RevealTopDisposition` gains `'ko'`** (was `'discard' | 'top'`, D-24521 §1 had dropped it).
+   `resolveRevealTopDispose` accepts `'ko'` ONLY on an entry whose `isKoAllowed` is true (owner's
+   deck top → `G.ko` via `koCard`); `'ko'` anywhere else is a silent no-op that leaves the queue
+   byte-identical. "You may" stays optional — Discard / Keep remain available on the unlocked entry.
+   Only the own-deck entry is ever unlocked (the printed KO is "from your own deck").
+4. **UIState five-step contract:** `RevealedTopEntry.isKoAllowed?` → `UIRevealedTopEntry.isKoAllowed?`,
+   populated omit-when-off in `buildUIState`, passed through `filterUIStateForAudience` (chooser-only,
+   as before), pinned by an audience-filter test. The client `PendingRevealTopDisposePrompt` shows
+   a KO button only on an unlocked entry.
+5. **Bot/sim default:** `selectDefaultRevealTopDisposition(cardId, isKoAllowed)` — a cullable card
+   (Wound / basic starter) is KO'd when unlocked, otherwise discarded; everything else is kept.
+
+**Determinism.** The flag and the `'ko'` disposition only exist after a co2e Hypnotic Charm play;
+no committed sentinel / PRE_WP080 fixture plays it → `finalStateHash` + `PRE_WP080_HASH` verified
+byte-unchanged (full engine suite green, no re-pin). `ledger:heroes`, `mechanics:metadata`, and
+`effect-index` regenerated (the three co2e Gambit rows become executable); `sim:coverage --check`
+and `sim:runtime-observed:check` stay green.
+
+Related D-24521 (the reveal-top machinery this extends), D-24354 (heroClassMatch gate), D-24413
+(Melter `ko` precedent). **Reserved by:** NUMBER-LEDGER D-24558.
+
 Protect this file.

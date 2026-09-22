@@ -817,7 +817,9 @@ function createRevealTopDisposeUIState(): UIState {
       choiceType: 'reveal-top-dispose',
       playerID: '0',
       revealedTops: [
-        { ownerPlayerID: '0', cardId: 'reveal-secret-p0' as CardExtId },
+        // why: D-24558 — the own top is KO-unlocked (co2e Hypnotic Charm's covert clause)
+        // so the filter test can pin the isKoAllowed pass-through.
+        { ownerPlayerID: '0', cardId: 'reveal-secret-p0' as CardExtId, isKoAllowed: true },
         { ownerPlayerID: '1', cardId: 'reveal-secret-p1' as CardExtId },
       ],
     },
@@ -838,6 +840,14 @@ describe('filterUIStateForAudience — pendingRevealTopDispose redaction (D-2452
       ['0', '1'],
       'owners carried through for disambiguation + labelling',
     );
+  });
+
+  it('D-24558: the isKoAllowed unlock survives the whitelist for the chooser, and only where set', () => {
+    const uiState = createRevealTopDisposeUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    const tops = result.pendingRevealTopDispose!.revealedTops;
+    assert.equal(tops[0]!.isKoAllowed, true, 'the KO-unlocked own top keeps isKoAllowed');
+    assert.equal('isKoAllowed' in tops[1]!, false, 'an un-unlocked entry omits the field');
   });
 
   it('an opponent does NOT see pendingRevealTopDispose, nor another player revealed deck ext_id', () => {

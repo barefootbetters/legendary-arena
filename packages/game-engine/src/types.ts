@@ -622,15 +622,19 @@ export interface PendingRuthlessDictatorChoice {
 }
 
 /**
- * One of the two dispositions the acting player may assign to a revealed deck-top card
- * in a reveal-top discard-or-keep choice (WP-702 / D-24521):
+ * One of the dispositions the acting player may assign to a revealed deck-top card
+ * in a reveal-top discard-or-keep choice (WP-702 / D-24521, extended by D-24558):
  *   'discard' — move the revealed deck-top card to its owner's discard pile.
  *   'top'     — leave the card on top of its owner's deck (a no-op; it was only revealed).
+ *   'ko'      — KO the revealed card (owner's deck top → G.ko). Accepted ONLY for an entry
+ *               whose `isKoAllowed` is true (D-24558).
  *
- * // why: D-24521 — the printed "Discard it or put it back." has exactly these two
- * outcomes (no KO), so the vocabulary is narrower than RuthlessDictatorDisposition.
+ * // why: D-24521 — the printed "Discard it or put it back." has only 'discard' / 'top'.
+ * D-24558 adds 'ko' for co2e Hypnotic Charm's "[hc:covert]: You may KO the card you revealed
+ * from your own deck." — an OPTIONAL third disposition unlocked per entry by the
+ * `reveal-top-dispose-ko` keyword, never available by default.
  */
-export type RevealTopDisposition = 'discard' | 'top';
+export type RevealTopDisposition = 'discard' | 'top' | 'ko';
 
 /**
  * One revealed deck top awaiting a discard-or-keep decision in a reveal-top-dispose
@@ -647,6 +651,13 @@ export interface RevealedTopEntry {
   ownerPlayerID: string;
   /** The revealed deck-top card's ext_id (snapshotted at park time). */
   cardId: CardExtId;
+  /**
+   * D-24558 — true when the chooser may also KO this card (co2e Hypnotic Charm's
+   * "[hc:covert]: You may KO the card you revealed from your own deck."). Set by the
+   * `reveal-top-dispose-ko` handler on the active player's OWN revealed top only; omitted
+   * (never `false`) otherwise, so a game that never unlocks it serializes byte-identically.
+   */
+  isKoAllowed?: boolean;
 }
 
 /**

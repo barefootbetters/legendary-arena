@@ -1424,10 +1424,10 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
     );
   });
 
-  it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays 64', () => {
+  it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 64, 'HERO_KEYWORDS stays 64 (X-Gene is not a keyword; WP-736 excessive-violence added)');
+    assert.equal(HERO_KEYWORDS.length, 65, 'HERO_KEYWORDS stays 65 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });

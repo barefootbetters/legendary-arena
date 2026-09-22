@@ -13,6 +13,8 @@ import type { SubmitMove } from "./uiMoveName.types";
  * `resolveRevealTopDispose({ ownerPlayerID, cardId, disposition })` — 'discard' moves the
  * card to that player's discard pile, 'top' leaves it on top. One card resolves per click;
  * the server returns a new frame with the resolved card dropped until every top is decided.
+ * D-24558: an entry with `isKoAllowed` (co2e Hypnotic Charm's covert "You may KO the card
+ * you revealed from your own deck") also gets a KO button submitting `disposition: 'ko'`.
  *
  * NOT a modal — the choice is game-blocking and cannot be dismissed.
  * NOT position:fixed. NOT <Teleport>. Renders in normal document flow.
@@ -67,7 +69,7 @@ export default defineComponent({
       );
     }
 
-    function onDecide(ownerPlayerID: string, cardId: string, disposition: "discard" | "top"): void {
+    function onDecide(ownerPlayerID: string, cardId: string, disposition: "discard" | "top" | "ko"): void {
       if (isSubmitting.value) return;
       isSubmitting.value = true;
       props.submitMove("resolveRevealTopDispose", { ownerPlayerID, cardId, disposition });
@@ -135,6 +137,20 @@ export default defineComponent({
         >
           Keep
         </button>
+        <!-- why: D-24558 — the KO option is OPTIONAL ("You may KO") and only offered on
+             the entry the engine unlocked (the chooser's own revealed top after the covert
+             gate held); the engine refuses 'ko' anywhere else. -->
+        <button
+          v-if="entry.isKoAllowed === true"
+          type="button"
+          class="pending-reveal-top-dispose-prompt__ko-btn"
+          :data-testid="`pending-reveal-top-dispose-ko-${entry.ownerPlayerID}-${entry.cardId}`"
+          :disabled="isSubmitting"
+          :aria-disabled="isSubmitting ? 'true' : undefined"
+          @click="onDecide(entry.ownerPlayerID, entry.cardId, 'ko')"
+        >
+          KO
+        </button>
       </li>
     </ul>
   </div>
@@ -196,7 +212,8 @@ export default defineComponent({
 }
 
 .pending-reveal-top-dispose-prompt__discard-btn,
-.pending-reveal-top-dispose-prompt__keep-btn {
+.pending-reveal-top-dispose-prompt__keep-btn,
+.pending-reveal-top-dispose-prompt__ko-btn {
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--color-border, #ddd);
   cursor: pointer;
@@ -210,8 +227,15 @@ export default defineComponent({
   background: var(--color-button-bg, #f5f5f5);
 }
 
+.pending-reveal-top-dispose-prompt__ko-btn {
+  background: var(--color-danger, #b91c1c);
+  color: #fff;
+  font-weight: 700;
+}
+
 .pending-reveal-top-dispose-prompt__discard-btn:disabled,
-.pending-reveal-top-dispose-prompt__keep-btn:disabled {
+.pending-reveal-top-dispose-prompt__keep-btn:disabled,
+.pending-reveal-top-dispose-prompt__ko-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
