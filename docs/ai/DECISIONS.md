@@ -43616,6 +43616,109 @@ turn-scoped-flag precedent), D-24551 (the deferral + marker pipeline).
 
 **Reserved by:** NUMBER-LEDGER D-24552.
 
+### D-24553 — Defeating the Mastermind finishes the turn: a victory-assured latch promoted heroes-win at turn end (Active 2026-09-22 — WP-732 / EC-769)
+
+**Rule.** Defeating the Mastermind no longer ends the match immediately mid-turn.
+Per Universal Rules v23 §"End of the Game: Players Win", when the final Tactic (or,
+under the optional Final Blow rule, the Mastermind card itself) is defeated,
+**victory is assured** but the current player still resolves that Fight ability and
+"may finish the rest of their turn in case they want to fight a few more Villains"
+— accruing more Victory Points. The game actually ends **heroes-win at the end of
+the winning player's turn**. "Evil Wins" is unchanged and remains immediate ("Don't
+finish the turn").
+
+**Mechanism.** A new non-terminal `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING`
+counter (mirroring `FINAL_TURN_TRIGGERED`) is latched at the vanquish — at **both**
+`defeatMastermindTacticCore`'s non–Final-Blow branch **and**
+`awardMastermindOnFinalBlow` — **instead of** the terminal `MASTERMIND_DEFEATED`.
+`evaluateEndgame` precedence is `MATCH_ENDED_EARLY` → `MASTERMIND_DEFEATED`
+(heroes-win) → `MASTERMIND_DEFEATED_PENDING` (**return null, suppress the loss/tie
+branches below**) → `SCHEME_LOSS` (scheme-wins) → `FINAL_TURN_TIE` (tie). While the
+pending latch is set the game continues and a scheme-loss or deck-out during the
+rest of that turn is suppressed — the rulebook's "victory is assured even if the
+final Tactic's Fight ability would achieve the Scheme's Evil Wins condition" clause.
+A new pure helper `promoteMastermindVictoryIfPending(G)` in
+`endgame/mastermindVictory.logic.ts` (no boardgame.io import; `finalTurn.logic.ts`
+precedent) promotes pending → terminal at the true end of game. The terminal
+`MASTERMIND_DEFEATED` is now set at exactly one place — the promotion — so it is
+checked **before** `SCHEME_LOSS` (an assured win beats a same-turn scheme-loss); the
+pre-WP-732 `endgame.evaluate.test.ts` "loss takes priority" pin is **inverted** to
+heroes-win with this rationale (an intentional product-behaviour change, not
+grader-gaming — Reward Integrity).
+
+**Relocated D-24518 drop.** The vanquish-site `dropAllPendingPlayerChoices` drop is
+**moved** into `mastermindVictory.logic.ts` (kept pure, not exported from the move
+module) and now runs at the turn-end promotion. A choice parked by the final
+Tactic's Fight ability legitimately **survives the vanquish** (resolvable during the
+finished turn) and is cleared only at true end of game — curing a latent bug where
+it was silently dropped mid-turn.
+
+**Turn-loop-harness parity (PS-1 — FOUR loops, not three).** Every bgio-bypassing
+turn loop that decides termination from `evaluateEndgame` must promote at its
+turn-end boundary or it disagrees on the single most common outcome (a Mastermind
+win). The WP/EC identified **three** (`simulation.runner.ts`,
+`test/fixtures/runFixture.ts`, `replay/replay.execute.ts`); execution found a
+**fourth** — `simulation/par.aggregator.ts`'s own `simulateOneGame` loop (it already
+mirrors `applyPileDepletionResourceLoss`, so it is a full turn-loop peer). Without
+its promotion, Mastermind-win games ran to `MAX_TURNS_PER_GAME` and were mis-recorded
+as **stuck**, under-reporting wins in the PAR profile. All four now promote
+(`replay.execute` post-move-loop before the hash, as it has no rotation site); a
+real-registry Mastermind-win round-trip in `simulation.captureMoves.test.ts` proves
+the sim, `runFixture`, and the replay harness agree on `heroes-win`.
+
+**Determinism — EMPIRICAL result.** No committed replay/sentinel fixture defeats a
+Mastermind, so the sentinel `finalStateHash` + `PRE_WP080_HASH` are **byte-unchanged
+— NO re-pin** (verified: full engine suite 4051/0, whole repo green). The Mastermind-
+win **distribution** in the PAR sweep does shift — verified by regenerating the
+deterministic generator (`scripts/generate-par-profiles.mjs`, fixed seed + timestamp)
+for a representative scenario (Legacy Virus, Dr. Doom, Brotherhood + Enemies of
+Asgard + Masters of Evil): `win 1 / loss 199 / stuck 0` → `win 7 / loss 193 /
+stuck 0`. The 6 extra wins are games where the mastermind vanquish now correctly
+suppresses a **same-turn** scheme-loss that previously robbed the assured win (the
+rulebook fix made observable); the 7th is the game the fourth-loop promotion rescued
+from being mis-recorded as stuck. Win/loss/stuck is an **engine-outcome** measure
+(`evaluateEndgame`), independent of the scoring config, so this delta is genuinely
+WP-732's.
+
+**PAR profile FILES are deliberately NOT re-committed here (scope discipline).** The
+committed `data/par/profile/v1/**` are **already stale from a pre-existing, unrelated
+drift**: WP-599 / D-24409 (EC-634, "remove invented bystander reward") bumped every
+scenario's scoring config to **v5**, but the committed profiles are still at
+**v4** — nobody regenerated them when that landed. A full regen therefore folds a
+large scoring-v5 recalibration (RawScores change ~7×) into the diff alongside this
+WP's win-distribution shift, misattributing WP-599's drift to WP-732. Since these
+profiles are `authoritative: false` derived diagnostics — never competitive PAR,
+never read by the server gate, and NOT CI-regenerated-and-diffed (the dashboard's
+`prebuild:par` only *copies* `fidelity-report.json`) — leaving them stale breaks
+nothing, and bundling WP-599's scoring delta into an engine WP would violate scope.
+The clean re-pin (folding both the overdue scoring-v5 catch-up and this win-timing
+shift, in a dedicated data commit) is a **flagged follow-up**. No coop-win-rate
+committed baseline exists (`coopWinRate.test.ts` is relational: `winRate ===
+wins/games`), so nothing to re-pin there.
+
+**Runtime-observed hollows re-pin (CI-gated, honest).** The CI-gated
+`docs/ai/coverage/runtime-observed-hollows.json` (`sim:runtime-observed:check`, via
+`sweep.runner` → the patched `simulation.runner` loop) IS regenerated: Mastermind-win
+games now play a few more moves (the finished winning turn), so total observations go
+`2512 → 2529` (+17; same 312 games, same 29 distinct mechanics, none added/dropped) —
+deterministic (byte-identical re-run). This is scoring-independent (an observed-mechanic
+count, not a score), so unlike the PAR profiles it carries no WP-599 contamination and
+is committed here.
+
+**Pre-existing dashboard drift surfaced (NOT WP-732).** The `apps/dashboard`
+`useInPlayCoverage` "reads the real committed seed + ledger" test is **already red on
+`main`** (`3012 !== 3006` locally / `3004 !== 3006` in CI) — its expected in-play-coverage
+count went stale when **WP-735** regenerated the hero-mechanic ledger without updating it.
+WP-732's runtime-observed re-pin does NOT move this number (verified: 3012 with or without
+the change), so this WP does not touch that test; the stale expectation is a **flagged
+WP-735 follow-up**, and Dashboard Gates stays red on it independent of WP-732.
+
+**Non-negotiables held.** No `Math.random()`; moves never throw; the new latch is a
+`G.counters` integer (snapshots stay counts-only); the pure helper imports no
+boardgame.io; no `.reduce()`.
+
+**Reserved by:** NUMBER-LEDGER D-24553.
+
 ### D-24554 — co2e Card Shark 2e resolves as a two-rule reveal (team-draw + choose-discard-or-return), no engine change (Active 2026-09-22 — WP-734 / EC-771)
 
 The WP-729/D-24550-deferred co2e "Card Shark 2e" — the actual card is
