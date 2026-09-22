@@ -682,6 +682,34 @@ export interface UISchemeState {
   twistPile: UIDisplayEntry[];
   display?: UICardDisplay;
   gameText?: readonly string[];
+  // why: WP-728 / D-24549 — the Portals Dark-Portal descriptor. Present only under
+  // the Portals scheme, omitted otherwise (the `gameText?` conditional-spread
+  // precedent). A field populated in buildUIState but not passed through the
+  // audience filter is silently dropped (the EC-206 failure mode) — see
+  // uiState.filter.ts.
+  darkPortals?: UIDarkPortalState;
+}
+
+/**
+ * Dark-Portal projection for the Portals to the Dark Dimension scheme
+ * (WP-728 / D-24549).
+ *
+ * Display-only: the Dark-Portal LOCATIONS + their +N attack buffs, derived from
+ * `G.counters[DARK_PORTAL_COUNT]` (never a `G` field of its own). The board
+ * overlay (WP-727) renders a marker above the Mastermind and each portal'd city
+ * space; the +N attack is WP-539's existing combat behavior, surfaced here.
+ * Present only under the Portals scheme (omitted otherwise), so the whole object
+ * is absent for every other scheme.
+ */
+export interface UIDarkPortalState {
+  /** True once the twist-1 Dark Portal opens above the Mastermind. */
+  onMastermind: boolean;
+  /** The +N attack the Mastermind portal grants (0 when `onMastermind` is false). */
+  mastermindAttackBonus: number;
+  /** City space indices (0..4, ascending) that have a Dark Portal. */
+  citySpaceIndices: number[];
+  /** The +N attack a Dark Portal grants Villains in a portal'd city space. */
+  citySpaceAttackBonus: number;
 }
 
 /**

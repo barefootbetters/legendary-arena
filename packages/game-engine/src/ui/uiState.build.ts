@@ -115,7 +115,11 @@ import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
-import { resolveFightCost } from '../economy/economy.resolve.js';
+import {
+  resolveFightCost,
+  darkPortalLocations,
+  DARK_PORTAL_ATTACK_BONUS,
+} from '../economy/economy.resolve.js';
 import { resolveCountSource } from '../hero/heroCountSource.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -883,12 +887,32 @@ export function buildUIState(
     }
   }
 
+  // why: WP-728 / D-24549 — project the Portals Dark-Portal locations + their +N
+  // attack buffs for the board overlay (WP-727). darkPortalLocations is the single
+  // source (same predicate combat reads); the descriptor is omitted for every
+  // non-Portals scheme (the gameText? / finalBlowPending? conditional-spread
+  // precedent), so `hasDarkPortals` is false whenever no portal has opened.
+  const portalLocations = darkPortalLocations(gameState);
+  const hasDarkPortals =
+    portalLocations.onMastermind || portalLocations.citySpaceIndices.length > 0;
   const scheme = {
     id: gameState.selection.schemeId,
     twistCount,
     twistPile: schemeTwistPile,
     display: schemeDisplay,
     gameText: gameState.scheme.gameText ?? [],
+    ...(hasDarkPortals
+      ? {
+          darkPortals: {
+            onMastermind: portalLocations.onMastermind,
+            mastermindAttackBonus: portalLocations.onMastermind
+              ? DARK_PORTAL_ATTACK_BONUS
+              : 0,
+            citySpaceIndices: portalLocations.citySpaceIndices,
+            citySpaceAttackBonus: DARK_PORTAL_ATTACK_BONUS,
+          },
+        }
+      : {}),
   };
 
   // --- 7. Project economy ---

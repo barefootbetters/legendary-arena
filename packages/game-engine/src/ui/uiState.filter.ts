@@ -517,6 +517,21 @@ export function filterUIStateForAudience(
       ...(uiState.scheme.gameText !== undefined
         ? { gameText: [...uiState.scheme.gameText] }
         : {}),
+      // why: WP-728 / D-24549 — the Dark-Portal descriptor is public shared-board
+      // (portal locations are public, like the scheme display / gameText above);
+      // it must survive this whitelist or the board overlay (WP-727) renders
+      // nothing — the EC-206 drop-at-filter mode. citySpaceIndices is copied to a
+      // fresh array to avoid aliasing with the input UIState.
+      ...(uiState.scheme.darkPortals !== undefined
+        ? {
+            darkPortals: {
+              onMastermind: uiState.scheme.darkPortals.onMastermind,
+              mastermindAttackBonus: uiState.scheme.darkPortals.mastermindAttackBonus,
+              citySpaceIndices: [...uiState.scheme.darkPortals.citySpaceIndices],
+              citySpaceAttackBonus: uiState.scheme.darkPortals.citySpaceAttackBonus,
+            },
+          }
+        : {}),
     },
     economy,
     log: [...uiState.log],
