@@ -23,6 +23,7 @@
     "put-hand-on-deck-top": { "wp": "WP-700", "decision": "D-24519" },
     "reveal-top-dispose": { "wp": "WP-702", "decision": "D-24521" },
     "reveal-top-dispose-others": { "wp": "WP-702", "decision": "D-24521" },
+    "reveal-top-dispose-ko": { "wp": "", "decision": "D-24558" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "D-24019" },
     "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },

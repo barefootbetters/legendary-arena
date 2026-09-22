@@ -107,7 +107,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-736 / D-24556 added the excessive-violence enroll handler (Venomverse fight-overspend —
     // enrolls the played EV card into the turn-scoped ledger; the inner effects fire at fight time
     // from fireExcessiveViolencePlays, which is NOT a HERO_EFFECT_HANDLERS entry) (47 → 48).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 48);
+    // D-24558 added the reveal-top-dispose-ko handler (co2e Hypnotic Charm's covert "You may
+    // KO the card you revealed from your own deck") (48 → 49).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 49);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7123,12 +7125,12 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
       'the optional-KO choice does not park — the discard-pile condition failed');
   });
 
-  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 48', () => {
+  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count stays at the current total (48 after WP-736's
-    // excessive-violence enroll handler, D-24556).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 48,
-      'HERO_EFFECT_HANDLERS stays 48 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (49 after WP-736's
+    // excessive-violence enroll handler, D-24556, and D-24558's reveal-top-dispose-ko handler).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 49,
+      'HERO_EFFECT_HANDLERS stays 49 (X-Gene is not an effect handler)');
   });
 });
 

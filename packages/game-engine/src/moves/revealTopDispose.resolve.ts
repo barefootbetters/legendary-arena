@@ -29,6 +29,7 @@ import { moveCardFromZone } from './zoneOps.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
+import { koCard } from '../board/ko.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -39,7 +40,8 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  * ownerPlayerID + cardId — identify WHICH revealed deck top the decision targets
  * (both required because starter ext_ids repeat across players' decks). Must match a
  * `{ ownerPlayerID, cardId }` entry in the front pending choice's `revealedTops`.
- * disposition — 'discard' moves it to the owner's discard pile; 'top' keeps it on top (no-op).
+ * disposition — 'discard' moves it to the owner's discard pile; 'top' keeps it on top (no-op);
+ * 'ko' KOs it — accepted only when the targeted entry's `isKoAllowed` is true (D-24558).
  */
 export interface ResolveRevealTopDisposeArgs {
   ownerPlayerID: string;
@@ -49,7 +51,7 @@ export interface ResolveRevealTopDisposeArgs {
 
 // why: the closed disposition vocabulary, written out so the arg validation is a
 // boring explicit membership check (no dynamic key access, code-style).
-const VALID_DISPOSITIONS: readonly RevealTopDisposition[] = ['discard', 'top'];
+const VALID_DISPOSITIONS: readonly RevealTopDisposition[] = ['discard', 'top', 'ko'];
 
 /**
  * Whether any reveal-top discard-or-keep choice is currently pending.
@@ -131,6 +133,10 @@ export function resolveRevealTopDispose(
     }
   }
   if (targetIndex === -1) { return; }
+  // why: D-24558 — 'ko' is an OPTIONAL disposition unlocked per entry (co2e Hypnotic Charm's
+  // covert clause). A 'ko' on an entry that was not unlocked is a silent no-op that leaves the
+  // queue byte-identical, so the player can resubmit a legal disposition.
+  if (args.disposition === 'ko' && front.revealedTops[targetIndex]!.isKoAllowed !== true) { return; }
 
   // Step 4: Apply the disposition. This entry is ALWAYS cleared below (Step 5) — the choice
   // resolves whether or not the card is still on top — so a revealed card a co-resolved
@@ -160,6 +166,19 @@ export function resolveRevealTopDispose(
       'neutral',
       args.cardId,
     );
+  } else if (args.disposition === 'ko') {
+    const moveResult = moveCardFromZone(ownerZones.deck, [], args.cardId);
+    // why: cardIsStillTop guarantees found; the guard keeps the move total-function-safe.
+    if (moveResult.found) {
+      ownerZones.deck = moveResult.from;
+      G.ko = koCard(G.ko, args.cardId);
+      pushLog(
+        G,
+        `Player ${playerID} KO'd ${cardName} (${args.cardId}) from the top of their deck (reveal-top).`,
+        'applied',
+        args.cardId,
+      );
+    }
   } else if (args.disposition === 'discard') {
     const moveResult = moveCardFromZone(ownerZones.deck, ownerZones.discard, args.cardId);
     // why: cardIsStillTop guarantees found; the guard keeps the move total-function-safe.
@@ -206,9 +225,23 @@ export function resolveRevealTopDispose(
  * shape would carry two unused params, which code-style forbids; WP intent — a cull-tier default —
  * governs).
  *
+ * D-24558: when the entry is KO-unlocked (`isKoAllowed`, co2e Hypnotic Charm's covert clause),
+ * a cullable card is KO'd instead of discarded — thinning it out of the deck for good is
+ * strictly better than cycling it through the discard pile.
+ *
  * @param cardId - The revealed deck-top card's ext_id.
- * @returns 'discard' for a cullable card, 'top' otherwise.
+ * @param isKoAllowed - Whether the entry allows the optional 'ko' disposition (D-24558).
+ * @returns 'ko' / 'discard' for a cullable card (by isKoAllowed), 'top' otherwise.
  */
-export function selectDefaultRevealTopDisposition(cardId: CardExtId): RevealTopDisposition {
-  return isCullableDeckTopCard(cardId) ? 'discard' : 'top';
+export function selectDefaultRevealTopDisposition(
+  cardId: CardExtId,
+  isKoAllowed: boolean,
+): RevealTopDisposition {
+  if (!isCullableDeckTopCard(cardId)) {
+    return 'top';
+  }
+  if (isKoAllowed) {
+    return 'ko';
+  }
+  return 'discard';
 }

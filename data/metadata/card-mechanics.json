@@ -1473,8 +1473,9 @@
       "label": "Reveal Top Dispose",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 11,
+      "cardCount": 12,
       "cardIds": [
+        "co2e/gambit",
         "core/gambit",
         "cvwr/tigra",
         "dstr/vishanti-the",
@@ -1490,12 +1491,24 @@
       "hidden": true
     },
     {
-      "slug": "reveal-top-dispose-others",
-      "label": "Reveal Top Dispose Others",
+      "slug": "reveal-top-dispose-ko",
+      "label": "Reveal Top Dispose Ko",
       "scope": "hero",
       "source": "keyword",
       "cardCount": 1,
       "cardIds": [
+        "co2e/gambit"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "reveal-top-dispose-others",
+      "label": "Reveal Top Dispose Others",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 2,
+      "cardIds": [
+        "co2e/gambit",
         "core/gambit"
       ],
       "hidden": true
@@ -2621,7 +2634,10 @@
       "mechanics": [
         "put-hand-on-deck-top",
         "reveal",
-        "reveal-cost-attack"
+        "reveal-cost-attack",
+        "reveal-top-dispose",
+        "reveal-top-dispose-ko",
+        "reveal-top-dispose-others"
       ]
     },
     "co2e/hawkeye": {

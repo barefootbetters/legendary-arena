@@ -293,8 +293,39 @@ describe('resolveRevealTopDispose (WP-702 / D-24521)', () => {
 
 describe('selectDefaultRevealTopDisposition (WP-702 / D-24521)', () => {
   it("discards a Wound or a basic S.H.I.E.L.D. starter, keeps a recruited Hero", () => {
-    assert.equal(selectDefaultRevealTopDisposition(WOUND), 'discard', 'Wound is thinned');
-    assert.equal(selectDefaultRevealTopDisposition(AGENT), 'discard', 'basic S.H.I.E.L.D. starter is thinned');
-    assert.equal(selectDefaultRevealTopDisposition(HERO_A), 'top', 'a recruited Hero is kept on top');
+    assert.equal(selectDefaultRevealTopDisposition(WOUND, false), 'discard', 'Wound is thinned');
+    assert.equal(selectDefaultRevealTopDisposition(AGENT, false), 'discard', 'basic S.H.I.E.L.D. starter is thinned');
+    assert.equal(selectDefaultRevealTopDisposition(HERO_A, false), 'top', 'a recruited Hero is kept on top');
+  });
+
+  it("D-24558: KOs a cullable card when the entry is KO-unlocked, still keeps a recruited Hero", () => {
+    assert.equal(selectDefaultRevealTopDisposition(WOUND, true), 'ko', 'a KO-unlocked Wound is KOed');
+    assert.equal(selectDefaultRevealTopDisposition(AGENT, true), 'ko', 'a KO-unlocked starter is KOed');
+    assert.equal(selectDefaultRevealTopDisposition(HERO_A, true), 'top', 'a recruited Hero is kept even when KO is allowed');
+  });
+});
+
+describe("resolveRevealTopDispose 'ko' disposition (D-24558)", () => {
+  it("KOs a KO-unlocked own revealed top (deck top → G.ko), dropping the entry", () => {
+    const G = makeTestGameState({
+      decks: { '0': [WOUND, HERO_A] },
+      pendingRevealTopDispose: [revealChoice([{ ownerPlayerID: '0', cardId: WOUND, isKoAllowed: true }])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.deepStrictEqual(G.ko, [WOUND], 'the card went to the KO pile');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A], 'removed from the deck top');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'a KO is not a discard');
+    assert.equal(G.pendingRevealTopDispose?.length, 0, 'resolved → queue front-popped');
+  });
+
+  it("'ko' on an entry that is NOT KO-unlocked is a silent no-op (queue intact)", () => {
+    const G = makeTestGameState({
+      decks: { '0': [WOUND] },
+      pendingRevealTopDispose: [revealChoice([{ ownerPlayerID: '0', cardId: WOUND }])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.deepStrictEqual(G.ko, [], 'nothing KOed');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND], 'deck untouched');
+    assert.equal(G.pendingRevealTopDispose![0]!.revealedTops.length, 1, 'the entry is still pending');
   });
 });

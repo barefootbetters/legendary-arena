@@ -219,6 +219,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // that snapshots each OTHER seat's deck top and parks one shared PendingRevealTopDispose, so it
   // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'reveal-top-dispose-others',
+  // why: D-24558 — co2e Hypnotic Charm's "[hc:covert]: You may KO the card you revealed from
+  // your own deck."; has a HERO_EFFECT_HANDLERS entry (heroEffectRevealTopDisposeKo) that flags
+  // the own revealed top of the pending reveal-top choice, so it belongs here. Carries NO
+  // magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'reveal-top-dispose-ko',
   // why: WP-719 / D-24541 — Hawkeye's "Covering Fire" ([hc:tech]-gated "Choose one: each other
   // player draws a card or each other player discards a card"); has a HERO_EFFECT_HANDLERS entry
   // (heroEffectCoveringFire) that parks a PendingCoveringFireChoice for the active player, so it
@@ -474,6 +479,9 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // never parks its choice.
   'reveal-top-dispose',
   'reveal-top-dispose-others',
+  // why: D-24558 — reveal-top-dispose-ko carries NO magnitude (it unlocks a disposition on an
+  // already-parked reveal); the magnitude pre-gate must not drop it, or the KO never unlocks.
+  'reveal-top-dispose-ko',
   // why: WP-719 / D-24541 — covering-fire carries NO magnitude: the outcome is a choose-one
   // branch (each other player draws OR discards), not a count. The per-seat effect is applied at
   // resolve time, so the magnitude pre-gate must not drop it, or heroEffectCoveringFire never
@@ -2834,6 +2842,57 @@ function heroEffectRevealTopDisposeOthers(
 }
 
 /**
+ * Handler for the `reveal-top-dispose-ko` hero keyword (D-24558).
+ *
+ * co2e Gambit Hypnotic Charm's "[hc:covert]: You may KO the card you revealed from your own
+ * deck." The card's first ability (`reveal-top-dispose` + `reveal-top-dispose-others`) has
+ * already parked the reveal-top choice(s) — executeHeroEffects runs a card's abilities in
+ * order — so this handler reveals nothing itself: it finds the MOST RECENT pending reveal-top
+ * choice of the active player holding the active player's OWN revealed top and flags that
+ * entry `isKoAllowed`, unlocking the optional 'ko' disposition on resolveRevealTopDispose. The
+ * [hc:covert] gate rides this ability's own `abilities[]` entry (the free heroClassMatch
+ * condition, D-24354), so an unmet gate never reaches here.
+ *
+ * // why: newest-first scan — the flag belongs to THIS play's reveal, not an older parked one.
+ * "You may" stays optional: the flag only ADDS 'ko' to the existing discard / keep choice. Only
+ * the own-deck entry is flagged — the printed KO is "from your own deck", never an opponent's.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Move context (unused; nothing is revealed or shuffled here).
+ * @param playerID - The active player who played the card.
+ * @param _cardId - The played card (unused).
+ * @param _effect - The `{ type: 'reveal-top-dispose-ko' }` descriptor (no magnitude).
+ */
+function heroEffectRevealTopDisposeKo(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const queue = G.pendingRevealTopDispose ?? [];
+  for (let queueIndex = queue.length - 1; queueIndex >= 0; queueIndex--) {
+    const choice = queue[queueIndex]!;
+    if (choice.playerID !== playerID) { continue; }
+    for (const entry of choice.revealedTops) {
+      if (entry.ownerPlayerID === playerID) {
+        entry.isKoAllowed = true;
+        pushLog(
+          G,
+          `Player ${playerID} may also KO the revealed ${formatCardRef(G.cardDisplayData, entry.cardId)} from their own deck (reveal-top).`,
+          'applied',
+          entry.cardId,
+        );
+        return;
+      }
+    }
+  }
+  // why: reachable no-op — the own-deck reveal parked nothing (deck + discard exhausted), so
+  // there is no revealed card to KO. G.messages is hash-excluded (D-24081).
+  pushLog(G, `Player ${playerID} had no revealed card of their own to KO (reveal-top).`, 'blocked');
+}
+
+/**
  * Park handler for the `do-over` hero keyword (WP-681 / D-24498).
  *
  * Deadpool's "Hey, Can I Get a Do-Over?" — "If this is the first Hero you played this
@@ -5039,6 +5098,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   'put-hand-on-deck-top': heroEffectPutHandOnDeckTop,
   'reveal-top-dispose': heroEffectRevealTopDispose,
   'reveal-top-dispose-others': heroEffectRevealTopDisposeOthers,
+  // why: D-24558 — co2e Hypnotic Charm's "[hc:covert]: You may KO the card you revealed from your
+  // own deck.": flags the active player's own revealed top (isKoAllowed) in the most recent pending
+  // reveal-top choice so resolveRevealTopDispose accepts the optional 'ko'. NO magnitude.
+  'reveal-top-dispose-ko': heroEffectRevealTopDisposeKo,
   // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player
   // draws a card or each other player discards a card"): parks a PendingCoveringFireChoice for
   // the active player, resolved by resolveCoveringFireChoice (draw/discard applied to each other

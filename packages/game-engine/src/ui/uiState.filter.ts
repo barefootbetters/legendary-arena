@@ -733,6 +733,9 @@ export function filterUIStateForAudience(
         ownerPlayerID: entry.ownerPlayerID,
         cardId: entry.cardId,
         display: { ...entry.display },
+        // why: D-24558 — pass the KO unlock through the whitelist (the five-step field
+        // contract); dropping it here would silently hide the covert KO button.
+        ...(entry.isKoAllowed === true ? { isKoAllowed: true } : {}),
       });
     }
     result.pendingRevealTopDispose = {

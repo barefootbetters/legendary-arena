@@ -1174,6 +1174,8 @@ export function buildUIState(
         ownerPlayerID: entry.ownerPlayerID,
         cardId: entry.cardId,
         display: { ...resolveDisplay(entry.cardId, gameState) },
+        // why: D-24558 — omit-when-off so an un-unlocked entry projects byte-identically.
+        ...(entry.isKoAllowed === true ? { isKoAllowed: true } : {}),
       });
     }
     pendingRevealTopDispose = {

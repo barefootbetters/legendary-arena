@@ -1052,6 +1052,10 @@ export interface UIRevealedTopEntry {
   ownerPlayerID: string;
   cardId: string;
   display: UICardDisplay;
+  // why: D-24558 — present (true) only when the chooser may also KO this card (co2e Hypnotic
+  // Charm's covert clause on the chooser's OWN revealed top); the client then offers a KO
+  // button beside Discard / Keep. Omitted otherwise.
+  isKoAllowed?: boolean;
 }
 
 /**

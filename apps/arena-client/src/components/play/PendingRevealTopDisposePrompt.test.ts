@@ -100,6 +100,33 @@ describe('PendingRevealTopDisposePrompt (WP-702 / EC-739)', () => {
     assert.deepEqual(calls[0]!.args, { ownerPlayerID: 'player-0', cardId: 'test-wound', disposition: 'discard' });
   });
 
+  test("D-24558: a KO button appears only on an isKoAllowed entry and dispatches { disposition:'ko' }", async () => {
+    const { calls, submitMove } = recorder();
+    const koChoice: UIPendingRevealTopDispose = {
+      ...mockChoice,
+      revealedTops: [{ ...mockChoice.revealedTops[0]!, isKoAllowed: true }, mockChoice.revealedTops[1]!],
+    };
+    const wrapper = mount(PendingRevealTopDisposePrompt, {
+      props: { pendingRevealTopDispose: koChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="pending-reveal-top-dispose-ko-player-1-test-hero"]').exists(),
+      false,
+      'no KO button on an entry the engine did not unlock',
+    );
+    await wrapper.find('[data-testid="pending-reveal-top-dispose-ko-player-0-test-wound"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]!.args, { ownerPlayerID: 'player-0', cardId: 'test-wound', disposition: 'ko' });
+  });
+
+  test('no KO button renders when no entry is KO-unlocked', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(PendingRevealTopDisposePrompt, {
+      props: { pendingRevealTopDispose: mockChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.findAll('.pending-reveal-top-dispose-prompt__ko-btn').length, 0);
+  });
+
   test("clicking Keep dispatches resolveRevealTopDispose with { disposition:'top' } for the right owner", async () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(PendingRevealTopDisposePrompt, {

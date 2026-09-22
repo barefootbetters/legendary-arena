@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 738,
+    "totalRows": 741,
     "byStatus": {
-      "executable": 339,
+      "executable": 342,
       "deferred": 16,
       "condition": 28,
       "unsupported": 318,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 148
+    "distinctMechanics": 149
   },
   "rows": [
     {
@@ -3029,6 +3029,54 @@
         {
           "slug": "high-stakes-jackpot",
           "name": "High-Stakes Jackpot"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
+      "mechanic": "reveal-top-dispose",
+      "status": "executable",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
+      "mechanic": "reveal-top-dispose-ko",
+      "status": "executable",
+      "wp": "",
+      "decision": "D-24558",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-ko",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
+      "mechanic": "reveal-top-dispose-others",
+      "status": "executable",
+      "wp": "WP-702",
+      "decision": "D-24521",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others",
+      "designs": [
+        {
+          "slug": "hypnotic-charm",
+          "name": "Hypnotic Charm"
         }
       ]
     },
