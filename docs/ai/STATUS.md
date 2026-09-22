@@ -98,7 +98,12 @@ exactly 2 lines (idempotent re-run 0), `cards:check` / `effect-index:check` /
 Sentinel `finalStateHash` byte-identical (sentinel core-only, X-23 non-core — **no
 re-pin**); the ledger flips the two cards to `draw` / `optional-ko-hand-discard`
 executable while heir-to-wolverine's X-Gene stays hollow. **D-24026 live-verify
-operator-pending** on `play.legendary-arena.com`.
+VERIFIED 2026-09-21** — a real 1p Magneto / Portals to the Dark Dimension deployed
+match (X-23 + Wolverine + Gambit): Adamantium Foot Claws with an Instinct card in
+the discard pile drew a card (log 14.2.3–14.2.4), and correctly did nothing when no
+Instinct card was in discard (log 11.2.2, 15.2.20 — "it needs an instinct card in
+your discard pile"). heir-to-wolverine's X-Gene stayed inert (deferred hollow), as
+designed.
 
 ### WP-722 — War Machine "Overwhelming Firepower" onDefeat reward (EC-759 / D-24543) (2026-09-20)
 
