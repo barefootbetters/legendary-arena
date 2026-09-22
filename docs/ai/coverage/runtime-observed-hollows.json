@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 2549,
+    "totalObservations": 2551,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 488,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2061
+      "parse-unrecognized": 2063
     }
   },
   "byMechanic": {
@@ -491,12 +491,12 @@
       ]
     },
     "indigestion": {
-      "hitCount": 38,
-      "lastSeenTurn": 28,
+      "hitCount": 40,
+      "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 38
+        "parse-unrecognized": 40
       },
       "examples": [
         {
@@ -506,13 +506,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "vnom/venompool/digest-that-chimichanga#0",
+          "cardId": "vnom/venompool/digest-that-chimichanga#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "vnom/venompool/digest-that-chimichanga#0",
+          "cardId": "vnom/venompool/digest-that-chimichanga#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

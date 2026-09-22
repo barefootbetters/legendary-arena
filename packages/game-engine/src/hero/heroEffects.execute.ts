@@ -46,7 +46,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
@@ -131,6 +131,8 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'copy-powers',
   // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."; has a HERO_EFFECT_HANDLERS entry (heroEffectRecruitAsAttack) that sets the turn-scoped conversion flag, so it belongs here.
   'recruit-as-attack',
+  // why: WP-731 / D-24552 — Venompool's Shenanigans "you can't draw any more cards this turn"; has a HERO_EFFECT_HANDLERS entry (heroEffectNoMoreDraws) that sets the turn-scoped drawsLocked flag, so it belongs here.
+  'no-more-draws',
   // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of their deck. Play a copy of each of those cards."; has a HERO_EFFECT_HANDLERS entry (heroEffectStealAbilities) that runs the deterministic discard-then-copy phases, so it belongs here.
   'steal-abilities',
   // why: WP-564 / D-24373 — "Investigate for <criterion>" (static-criterion + draw); has a
@@ -404,6 +406,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // conversion flag, grants no resource total); the magnitude pre-gate must not drop it,
   // or the handler never fires and the flag is never set (the live-verify defect).
   'recruit-as-attack',
+  // why: WP-731 / D-24552 — no-more-draws carries no magnitude (it sets the turn-scoped
+  // drawsLocked flag, moves no card); the magnitude pre-gate must not drop it, or the
+  // handler never fires and the lock never arms.
+  'no-more-draws',
   // why: WP-592 / D-24401 — steal-abilities carries no magnitude (it discards each deck top
   // and copies each discarded card); the target set is computed from G at play time, so the
   // magnitude pre-gate must not drop it, or the handler never fires (the silent-no-op defect).
@@ -1302,10 +1308,23 @@ function heroEffectDraw(
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
+  // why: WP-731 / D-24552 — Venompool's Shenanigans locks further draws for the
+  // rest of this turn. When the flag is set, a hero `draw`-keyword effect draws
+  // NOTHING and logs `blocked`. This guards ONLY the hero-effect draw path; the
+  // end-of-turn hand refill / setup deal / other-seat draws use
+  // `drawCardsIntoHand` directly, so the lock lifts at turn end as printed.
+  const requestedCount = effect.magnitude as number;
+  if (G.turnEconomy.drawsLocked === true) {
+    pushLog(G,
+      `Player ${playerID} can't draw ${requestedCount} card(s) from ${formatCardRef(G.cardDisplayData, cardId)} — no more draws this turn.`,
+      'blocked',
+      cardId, // why: WP-438.
+    );
+    return;
+  }
   // why: ctx is narrowed to ShuffleProvider here because deck reshuffle
   // needs ctx.random.Shuffle. boardgame.io ctx satisfies ShuffleProvider
   // structurally — this is the established pattern from WP-005B/008B.
-  const requestedCount = effect.magnitude as number;
   const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
   // why: WP-665 / D-24476 — count the REALIZED effect-draw toward the current
   // player's per-turn draw total, which the `cardsDrawnThisTurnAtLeast` gate reads
@@ -4247,6 +4266,34 @@ function heroEffectRecruitAsAttack(
   );
 }
 
+/**
+ * Hero handler for the `no-more-draws` keyword (WP-731 / D-24552).
+ *
+ * Venompool's "Shenanigans" — "But you can't draw any more cards until the end
+ * of this turn." Sets the turn-scoped `drawsLocked` flag on `G.turnEconomy`;
+ * `heroEffectDraw` then draws 0 and logs `blocked` for the rest of this player's
+ * turn. The end-of-turn hand refill, setup deal, and other-seat draws use
+ * `drawCardsIntoHand` directly (not this handler's `draw` path), so the lock
+ * lifts at turn end exactly as printed. No magnitude, no pending choice, no
+ * resource total moved.
+ */
+function heroEffectNoMoreDraws(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  G.turnEconomy = enableDrawLock(G.turnEconomy);
+  // why: WP-434 — the restriction is `applied` (green): it changed turn state
+  // (further draws are now barred) even though no card moved.
+  pushLog(G,
+    `Player ${playerID} can't draw any more cards this turn (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Investigate handler (static-criterion + draw subset; WP-564 / D-24373)
 // ---------------------------------------------------------------------------
@@ -4722,6 +4769,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-580 / D-24389 — God of Thunder's "You can use Recruit as Attack this turn."
   // (sets the turn-scoped conversion flag; fights then draw on unspent recruit).
   'recruit-as-attack': heroEffectRecruitAsAttack,
+  // why: WP-731 / D-24552 — Venompool's Shenanigans "you can't draw any more cards this
+  // turn." (sets the turn-scoped drawsLocked flag; heroEffectDraw then draws 0 while set).
+  'no-more-draws': heroEffectNoMoreDraws,
   // why: WP-592 / D-24401 — Rogue's Steal Abilities "Each player discards the top card of
   // their deck. Play a copy of each of those cards." (each player discards their deck top,
   // then the Steal Abilities player copies each = economy + reentrant executeHeroEffects

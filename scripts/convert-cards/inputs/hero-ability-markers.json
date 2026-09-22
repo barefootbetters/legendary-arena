@@ -1720,6 +1720,18 @@
       "cardSlug": "symbiotic-adaptation",
       "abilityIndex": 2,
       "markupToken": "[keyword:attack-per-count:attack-icon-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "venompool",
+      "cardSlug": "shenanigans",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "venompool",
+      "cardSlug": "shenanigans",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:no-more-draws]"
     }
   ],
   "wpnx": [

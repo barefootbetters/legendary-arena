@@ -48,6 +48,23 @@ export interface TurnEconomy {
    * spread, so a later same-turn spend cannot silently drop it.
    */
   recruitSpendableAsAttack?: boolean;
+  /**
+   * WP-731 / D-24552 — whether the current player is BARRED from drawing more
+   * cards this turn ("But you can't draw any more cards until the end of this
+   * turn", Venompool's Shenanigans). Checked by `heroEffectDraw` (the hero
+   * `draw`-keyword path), which draws 0 and logs `blocked` while it is set; the
+   * end-of-turn hand refill / setup deal / other-seat draws use
+   * `drawCardsIntoHand` directly and are unaffected, so the lock lifts at turn
+   * end as printed.
+   *
+   * LAZILY MATERIALIZED, exactly like `recruitSpendableAsAttack`: absent until a
+   * `no-more-draws` hero effect sets it (via `enableDrawLock`), dropped again by
+   * `resetTurnEconomy` at turn start, and carried across every rebuild by the
+   * conditional spread in `carryConversionFlag`. An absent field is omitted by
+   * `JSON.stringify`, so a turn that never locks draws serializes byte-identically
+   * and neither state-hash oracle moves.
+   */
+  drawsLocked?: boolean;
 }
 
 // why: stats resolved at setup time from registry so moves never query

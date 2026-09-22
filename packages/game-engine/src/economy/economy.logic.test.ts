@@ -19,6 +19,8 @@ import {
   addResources,
   resetTurnEconomy,
   buildCardStats,
+  enableRecruitSpendableAsAttack,
+  enableDrawLock,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -614,5 +616,60 @@ describe('buildCardStats — physicalCards (D-14102)', () => {
     // Common 1 (5) + Rare (3) = 8 via rarity fallback
     const slashKeys = Object.keys(stats).filter((k) => k.startsWith('core/test-hero/'));
     assert.equal(slashKeys.length, 8, 'fallback: 5 c1 + 3 rare = 8 entries');
+  });
+});
+
+// ===========================================================================
+// WP-731 / D-24552 — turn-scoped draw-lock flag (Venompool's Shenanigans).
+// enableDrawLock sets G.turnEconomy.drawsLocked (omit-when-off, mirroring
+// recruitSpendableAsAttack); the single carry chokepoint (carryConversionFlag)
+// keeps it alive across same-turn rebuilds and never drops a coexisting flag.
+// ===========================================================================
+
+describe('enableDrawLock (WP-731 / D-24552)', () => {
+  it('sets drawsLocked true; the base economy leaves it absent (omit-when-off)', () => {
+    const base = resetTurnEconomy();
+    // why: absent (not false) so JSON.stringify omits it and the hash oracles stay byte-stable.
+    assert.strictEqual(base.drawsLocked, undefined);
+    assert.ok(!('drawsLocked' in JSON.parse(JSON.stringify(base))),
+      'a turn that never locks draws must serialize with NO drawsLocked key');
+
+    const locked = enableDrawLock(base);
+    assert.strictEqual(locked.drawsLocked, true);
+    assert.notStrictEqual(locked, base, 'returns a new object (input not mutated)');
+    assert.strictEqual(base.drawsLocked, undefined, 'input economy is not mutated');
+  });
+
+  it('carries drawsLocked across a same-turn rebuild (addResources)', () => {
+    const locked = enableDrawLock(resetTurnEconomy());
+    const afterGrant = addResources(locked, 2, 1);
+    assert.strictEqual(afterGrant.drawsLocked, true,
+      'a later same-turn resource grant must not silently drop the draw lock');
+  });
+
+  it('an unlocked economy stays absent across a rebuild (no phantom flag)', () => {
+    const afterGrant = addResources(resetTurnEconomy(), 2, 1);
+    assert.strictEqual(afterGrant.drawsLocked, undefined);
+    assert.ok(!('drawsLocked' in JSON.parse(JSON.stringify(afterGrant))));
+  });
+
+  it('resetTurnEconomy drops the draw lock at the turn boundary', () => {
+    // why: resetTurnEconomy rebuilds fresh with no lazy flags, so the lock lifts each turn.
+    const fresh = resetTurnEconomy();
+    assert.strictEqual(fresh.drawsLocked, undefined);
+  });
+
+  it('both setters coexist — drawsLocked then recruit-as-attack keeps both', () => {
+    const both = enableRecruitSpendableAsAttack(enableDrawLock(resetTurnEconomy()));
+    assert.strictEqual(both.drawsLocked, true,
+      'setting recruit-as-attack must not drop a draw lock set earlier this turn');
+    assert.strictEqual(both.recruitSpendableAsAttack, true);
+  });
+
+  it('both setters coexist — recruit-as-attack then drawsLocked keeps both', () => {
+    const both = enableDrawLock(enableRecruitSpendableAsAttack(resetTurnEconomy()));
+    assert.strictEqual(both.recruitSpendableAsAttack, true,
+      'setting the draw lock must not drop a recruit-as-attack conversion set earlier this turn');
+    assert.strictEqual(both.drawsLocked, true);
   });
 });
