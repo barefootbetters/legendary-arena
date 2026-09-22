@@ -10,10 +10,15 @@
  * change, not a code edit, and keep model-specific behaviour at the routing layer
  * instead of baked into `coachClient.ts`.
  *
- * Swapping the coach's model is now setting `COACH_MODEL` in the environment. A
- * model with no quirk row uses the safe default profile (no thinking directive,
- * the standard bounded-report cap); a model that needs its own quirks gets one row
- * added below and never re-inherits another model's workaround.
+ * Swapping the coach's model is setting `COACH_MODEL` in the environment, to a
+ * model that has a quirk row below. The registry is an ALLOWLIST (D-24559): an
+ * unregistered `COACH_MODEL` (a typo, an unvetted model, or a prototype key such
+ * as `constructor`) is never sent to the API. It falls back to
+ * `DEFAULT_COACH_MODEL` with that model's own quirk row, and the resolved config
+ * carries `fallbackFromModel` so `server.mjs` logs one startup warning naming the
+ * refused id. The fallback inherits the default model's quirks by design. Adding a
+ * model means adding its row here, gated by the operator-run `coach:eval` pack
+ * (`scripts/coach-eval.mjs`), which refuses an unregistered model outright.
  *
  * Layer/boundary: server layer only — imports nothing from `boardgame.io`, the
  * engine, the registry, or any UI package.
@@ -53,6 +58,12 @@ export interface CoachModelQuirks {
 export interface CoachModelConfig {
   readonly model: string;
   readonly quirks: CoachModelQuirks;
+  /**
+   * The configured `COACH_MODEL` that was refused because it has no quirk row.
+   * Set only when the resolution fell back to `DEFAULT_COACH_MODEL`; absent for a
+   * registered, unset, or empty `COACH_MODEL`.
+   */
+  readonly fallbackFromModel?: string;
 }
 
 /**
@@ -71,9 +82,11 @@ const BOUNDED_REPORT_MAX_OUTPUT_TOKENS = 2048;
 const THINKING_ON_MAX_OUTPUT_TOKENS = 4096;
 
 /**
- * Per-model quirk registry. One row per model that needs model-specific request
- * config; a model absent from this map uses `DEFAULT_COACH_MODEL_QUIRKS`. Model
- * ids and their thinking behaviour are per the `claude-api` skill (2026-08).
+ * Per-model quirk registry — the allowlist of models the coach may call. One row
+ * per model the coach is vetted against; a model absent from this map is not
+ * called at all (it falls back to `DEFAULT_COACH_MODEL`, see
+ * `resolveCoachModelConfig`). Model ids and their thinking behaviour are per the
+ * `claude-api` skill (2026-08).
  */
 const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
   // why: Sonnet 5 runs adaptive extended thinking BY DEFAULT and those thinking
@@ -82,7 +95,7 @@ const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
   // `coach_unavailable` on every real call). For a bounded structured-JSON report
   // we disable thinking so the whole budget is the answer (the EC-629 hotfix).
   // This is exactly the model-specific config the routing layer should own, not
-  // the feature client — swapping to another model must not re-inherit it.
+  // the feature client — another registered model keeps its own row instead.
   'claude-sonnet-5': {
     thinking: { type: 'disabled' },
     maxOutputTokens: BOUNDED_REPORT_MAX_OUTPUT_TOKENS,
@@ -100,8 +113,7 @@ const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
   },
   // why: Sonnet 4.6 does NOT run thinking unless asked — omitting the directive
   // leaves it off — so a bounded call needs no thinking directive at all. Pinned
-  // here (identical to the safe default) so the model is a known, env-only swap
-  // target rather than relying on the fallback.
+  // here so the model is a known, env-only swap target on the allowlist.
   'claude-sonnet-4-6': {
     maxOutputTokens: BOUNDED_REPORT_MAX_OUTPUT_TOKENS,
   },
@@ -112,30 +124,69 @@ const COACH_MODEL_QUIRKS_BY_MODEL: Record<string, CoachModelQuirks> = {
 };
 
 /**
- * The quirks used for any model without its own row: no thinking directive (use
- * the model's own default) and the standard bounded-report output cap. A new model
- * that needs different handling gets a row in `COACH_MODEL_QUIRKS_BY_MODEL`.
+ * Look up a model's own quirk row in the registry.
+ *
+ * @param model The model id to look up.
+ * @returns The model's registered quirks, or undefined when it has no row.
  */
-const DEFAULT_COACH_MODEL_QUIRKS: CoachModelQuirks = {
-  maxOutputTokens: BOUNDED_REPORT_MAX_OUTPUT_TOKENS,
-};
+export function lookupCoachModelQuirks(model: string): CoachModelQuirks | undefined {
+  // why: a plain bracket lookup would resolve prototype keys — `constructor` or
+  // `toString` would come back as a function and be treated as quirks. Only the
+  // registry's own rows count as registered models.
+  if (!Object.hasOwn(COACH_MODEL_QUIRKS_BY_MODEL, model)) {
+    return undefined;
+  }
+  return COACH_MODEL_QUIRKS_BY_MODEL[model];
+}
 
 /**
  * Resolve the coach's model + quirks from the environment. Reads `COACH_MODEL`
- * (falling back to `DEFAULT_COACH_MODEL` when unset or empty) and looks up that
- * model's quirks, using the default profile for an unregistered model.
+ * (using `DEFAULT_COACH_MODEL` when unset or empty) and looks up that model's
+ * quirk row. An unregistered model is refused: the result is the default model
+ * with the default's quirks, plus `fallbackFromModel` naming the refused id.
+ * Never returns an unregistered model id.
  *
  * @param environment The process environment to read `COACH_MODEL` from.
- * @returns The resolved model id and the quirks to apply when calling it.
+ * @returns The resolved model id, the quirks to apply, and any refused model id.
  */
 export function resolveCoachModelConfig(
   environment: Record<string, string | undefined>,
 ): CoachModelConfig {
   const configuredModel = environment.COACH_MODEL;
-  const model =
-    configuredModel === undefined || configuredModel === ''
-      ? DEFAULT_COACH_MODEL
-      : configuredModel;
-  const quirks = COACH_MODEL_QUIRKS_BY_MODEL[model] ?? DEFAULT_COACH_MODEL_QUIRKS;
-  return { model, quirks };
+  if (configuredModel === undefined || configuredModel === '') {
+    return {
+      model: DEFAULT_COACH_MODEL,
+      quirks: getDefaultCoachModelQuirks(),
+    };
+  }
+  const quirks = lookupCoachModelQuirks(configuredModel);
+  if (quirks !== undefined) {
+    return { model: configuredModel, quirks };
+  }
+  // why: an unregistered model sent with no thinking directive is the EC-629
+  // failure class — a thinking-by-default model spends the whole output budget
+  // thinking, returns an empty text block, and every paid coach call becomes
+  // coach_unavailable. Falling back to the known-good default keeps the
+  // Legendary-Pass feature up; server.mjs warns so the operator sees the refusal.
+  return {
+    model: DEFAULT_COACH_MODEL,
+    quirks: getDefaultCoachModelQuirks(),
+    fallbackFromModel: configuredModel,
+  };
+}
+
+/**
+ * The default model's own quirk row. The default model is always registered, so
+ * a missing row is a programming error in this file, not a configuration error.
+ *
+ * @returns The quirks registered for `DEFAULT_COACH_MODEL`.
+ */
+function getDefaultCoachModelQuirks(): CoachModelQuirks {
+  const quirks = lookupCoachModelQuirks(DEFAULT_COACH_MODEL);
+  if (quirks === undefined) {
+    throw new Error(
+      `The default coach model ${DEFAULT_COACH_MODEL} has no quirk row; add it to COACH_MODEL_QUIRKS_BY_MODEL in coachModelConfig.ts.`,
+    );
+  }
+  return quirks;
 }
