@@ -55,8 +55,10 @@ All verified at baseline `5b608fc2`:
   - is fully server-generated, with no player free-text
   - `outcome` includes `'tie'`
   - `adversityExpected` is optional
-  - per-player `label` is always `Player N` (`coachSummary.logic.ts:145`); there is
-    no bot-seat marker
+  - per-player `label` is always `Player N` (`coachSummary.logic.ts`,
+    `buildPerPlayerLines`). WP-742 adds an optional `isBotAlly` flag without
+    changing the label, so this holds in either execution order. Scenario
+    fixtures may omit the flag, which means a human seat.
   - the engine's `maxPlayers` is 5 (`game.ts:331`)
 - The server test script globs `scripts/**/*.test.ts` and `src/**/*.test.ts` under
   `node --import tsx --test`. An `.mjs` file under `apps/server/scripts/` run with
@@ -225,8 +227,8 @@ ask.
      `mustMentionAny: [<luck-language>]`.
   4. `two-seat-contribution`: 2 seats labelled `Player 1` and `Player 2`, with
      different defeat counts. `mustMentionAny: [["Player 1","P1"], ["Player 2","P2"]]`.
-     A bot-seat signal is absent from `CoachMatchSummary` and is a follow-up, not
-     this WP.
+     A bot-ally eval category is a follow-up once WP-742 (the `isBotAlly` seat
+     marker) ships, not this WP.
   5. `solo`: 1 player.
   6. `hallucination-guard`: `mustNotMention` lists ≥3 real Legendary hero names
      that appear nowhere in the summary (heroes, every `acquiredCards` string,
@@ -296,9 +298,8 @@ ask.
 - **No LLM-as-judge or cross-model scoring.** The rubric is deterministic only.
 - **No change to** the system prompt, summary builder, report shape, routes,
   entitlement, cache table, or `coach_unavailable` semantics.
-- **No bot-seat signal in `CoachMatchSummary`.** The system prompt already mentions
-  bot-ally games, but the summary cannot mark a bot seat. That is a separate
-  follow-up.
+- **No bot-seat work.** The `isBotAlly` seat marker is WP-742. A bot-ally eval
+  category is a follow-up once WP-742 ships.
 - **No LiteLLM or gateway work.** Option B stays the routing layer (ewiki Open
   Question 5).
 - **No new quirk rows** (e.g. `claude-opus-5-5`). Adding a model is a separate
