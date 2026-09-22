@@ -10,6 +10,7 @@ import { useCardCostGating, type GatingResult } from '../../composables/useCardC
 import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
+import DarkPortalMarker from './DarkPortalMarker.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -36,11 +37,24 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'CityRow',
-  components: { CardTile, EscapedPile },
+  components: { CardTile, EscapedPile, DarkPortalMarker },
   props: {
     city: {
       type: Object as PropType<UICityState>,
       required: true,
+    },
+    // why: WP-727 / D-24548 — the city-space indices that have a Portals Dark
+    // Portal (from scheme.darkPortals.citySpaceIndices) + the +N attack each
+    // grants. Derived by the parent; empty / 0 for a non-Portals scheme.
+    darkPortalIndices: {
+      type: Array as PropType<number[]>,
+      required: false,
+      default: () => [],
+    },
+    darkPortalBonus: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     decks: {
       type: Object as PropType<UIDecksState>,
@@ -88,7 +102,13 @@ export default defineComponent({
       props.submitMove('fightVillain', { cityIndex });
     }
 
-    return { buildCells, gateForCell, onFight };
+    function hasDarkPortal(cityIndex: number): boolean {
+      // why: a Dark Portal buffs the SPACE, so the marker renders on a portal'd
+      // city index whether or not a villain currently occupies it.
+      return props.darkPortalIndices.includes(cityIndex);
+    }
+
+    return { buildCells, gateForCell, onFight, hasDarkPortal };
   },
 });
 </script>
@@ -111,6 +131,15 @@ export default defineComponent({
           <EscapedPile :pile="cell.entries" />
         </template>
         <template v-else-if="cell.kind === 'slot'">
+          <!-- why: WP-727 / D-24548 — the Portals Dark Portal over this city space
+               (twists 2-6). Rendered even when the space is EMPTY, because the
+               portal buffs the space, not a specific villain; the +N is
+               prop-driven, never hardcoded. -->
+          <DarkPortalMarker
+            v-if="hasDarkPortal(cell.cityIndex)"
+            class="city-space__portal"
+            :attack-bonus="darkPortalBonus"
+          />
           <!-- why (Jeff feedback): the slot name (Bridge / Streets / …) sits on the
                LEFT SIDE of the card, rotated vertical, for EVERY slot (occupied or
                empty). We have more horizontal than vertical space on the mat, so a
@@ -230,11 +259,23 @@ export default defineComponent({
    are shorter than the old stacked column, which lets the scale-to-fit board
    (D-24505) scale larger. */
 .city-space {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: stretch;
   gap: 0.15rem;
   min-width: 0;
+}
+
+/* why: WP-727 — the Dark Portal marker sits at the top of the space, centered,
+   overlapping the cell. Kept inside the cell's top edge (not above it) so the
+   `.city-spaces` overflow-x scroll container never clips it. */
+.city-space__portal {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
 }
 
 /* why (Jeff feedback): the slot name rotated 90° on the LEFT side of the card.

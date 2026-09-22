@@ -805,11 +805,15 @@ export default defineComponent({
             <section class="play-desktop__adversary-band">
               <div class="play-desktop__mastermind-zone">
                 <!-- why: D-12901 — Mastermind sits top-left of the board. -->
+                <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
+                     non-Portals scheme, so the optional chain yields 0 and the
+                     tile's marker (shown only when > 0) stays hidden. -->
                 <MastermindTile
                   :mastermind="snapshot.mastermind"
                   :current-stage="snapshot.game.currentStage"
                   :is-viewer-turn="isViewerTurn"
                   :economy="snapshot.economy"
+                  :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
                   :submit-move="submitMove"
                   @read="onCardRead"
                 />
@@ -834,12 +838,17 @@ export default defineComponent({
               />
               <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
             </section>
+            <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
+                 non-Portals scheme, so the optional chains yield [] / 0 and no
+                 city marker renders. -->
             <CityRow
               :city="snapshot.city"
               :decks="snapshot.decks"
               :current-stage="snapshot.game.currentStage"
               :is-viewer-turn="isViewerTurn"
               :economy="snapshot.economy"
+              :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
+              :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
               :submit-move="submitMove"
             />
             <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the

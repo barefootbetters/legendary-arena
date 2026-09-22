@@ -272,3 +272,58 @@ describe('CityRow — captured cards under villains (WP-505)', () => {
     assert.equal(wrapper.find('[data-testid="play-city-captured"]').exists(), false);
   });
 });
+
+describe('CityRow — Dark Portal markers (WP-727 / D-24548)', () => {
+  test("renders a marker on each portal'd space, including an EMPTY one", () => {
+    // why: fullCity() has villains at engine indices 0/2/4 and empties at 1/3.
+    // darkPortalIndices [3,4] covers one empty space (3) + one occupied (4) —
+    // both must show a marker, because a Dark Portal buffs the SPACE.
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy(),
+        darkPortalIndices: [3, 4],
+        darkPortalBonus: 1,
+        submitMove,
+      },
+    });
+    const markers = wrapper.findAll('[data-testid="dark-portal-marker"]');
+    assert.equal(markers.length, 2, "one marker per portal'd space (empty + occupied)");
+    for (const marker of markers) {
+      assert.match(marker.text(), /\+1/, 'shows the served +N attack');
+    }
+  });
+
+  test("renders the marker over an EMPTY portal'd space", () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy(),
+        darkPortalIndices: [3],
+        darkPortalBonus: 1,
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.findAll('[data-testid="dark-portal-marker"]').length, 1);
+  });
+
+  test('renders no markers when there are no portals (non-Portals scheme default)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy(),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.findAll('[data-testid="dark-portal-marker"]').length, 0);
+  });
+});

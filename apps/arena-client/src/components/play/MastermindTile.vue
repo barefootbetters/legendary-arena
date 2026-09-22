@@ -7,6 +7,7 @@ import type {
 import { useTurnActions } from '../../composables/useTurnActions';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
+import DarkPortalMarker from './DarkPortalMarker.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -41,12 +42,20 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile },
+  components: { CardTile, DarkPortalMarker },
   emits: ['read'],
   props: {
     mastermind: {
       type: Object as PropType<UIMastermindState>,
       required: true,
+    },
+    // why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind, as a
+    // +N attack. Derived by the parent from scheme.darkPortals (0 = no portal /
+    // non-Portals scheme); the marker renders only when it is > 0.
+    darkPortalBonus: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     currentStage: {
       type: String,
@@ -127,6 +136,10 @@ export default defineComponent({
     data-testid="play-mastermind-tile"
     aria-label="Mastermind"
   >
+    <!-- why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind
+         (twist 1). Shown only when darkPortalBonus > 0 (0 = no portal / a
+         non-Portals scheme); the +N is prop-driven, never hardcoded. -->
+    <DarkPortalMarker v-if="darkPortalBonus > 0" :attack-bonus="darkPortalBonus" />
     <button
       type="button"
       data-testid="play-mastermind-button"

@@ -43411,4 +43411,30 @@ Builds on WP-539/D-24348 (the `portals` resolver + `DARK_PORTAL_COUNT` + the com
 WP-128/D-12803 (the audience-filter redaction matrix + Board-Visible Field Rule), and
 WP-489/D-24295 (the City space index binding). **Reserved by:** NUMBER-LEDGER D-24549.
 
+---
+
+### D-24548 — Portals to the Dark Dimension: Dark-Portal board overlay (WP-727 / EC-764) (Active 2026-09-21)
+
+The on-board Dark-Portal visualization is a **client-side overlay** driven **entirely** by
+WP-728's `scheme.darkPortals` descriptor — no engine change, no client-side rule
+re-evaluation (D-20105). Locks:
+
+1. **Where the markers render.** A new `DarkPortalMarker.vue` renders above the Mastermind
+   tile when `scheme.darkPortals.onMastermind` (via `MastermindTile`'s `darkPortalBonus`
+   prop) and above **each** city space whose index is in `scheme.darkPortals.citySpaceIndices`
+   (via `CityRow`'s `darkPortalIndices` prop) — **including an empty space**, because a Dark
+   Portal buffs the *space* (the Villains that occupy it), not a specific occupant. The play
+   pages (`PlayDesktop` / `PlayMobile`) derive the props from `snapshot.scheme.darkPortals`,
+   guarding `undefined` (a non-Portals scheme yields `0` / `[]`, so nothing renders).
+2. **The `+N` is prop-driven.** Each marker shows the descriptor's bonus
+   (`mastermindAttackBonus` / `citySpaceAttackBonus`), **never a hardcoded `1`**, so a future
+   multi-stack Dark-Portal buff renders faithfully.
+3. **Purely presentational (off-ranking, NG-1).** The overlay dispatches no move, holds no
+   game logic, and changes no outcome; it reuses the established board-VFX / tile-overlay
+   layering (WP-690) rather than a new positioning system. The `+1` attack itself remains
+   WP-539's existing combat behavior.
+
+Consumes WP-728/D-24549's `scheme.darkPortals` verbatim. Builds on WP-690/D-24507 (the
+board-VFX overlay precedent). **Reserved by:** NUMBER-LEDGER D-24548.
+
 Protect this file.
