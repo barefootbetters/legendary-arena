@@ -345,3 +345,38 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     );
   });
 });
+
+describe('MastermindTile — Dark Portal marker (WP-727 / D-24548)', () => {
+  test('renders the Dark Portal marker with +N attack when darkPortalBonus > 0', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy(),
+        darkPortalBonus: 1,
+        submitMove,
+      },
+    });
+    const marker = wrapper.find('[data-testid="dark-portal-marker"]');
+    assert.ok(marker.exists(), 'the marker renders when a Dark Portal is above the Mastermind');
+    assert.match(marker.text(), /\+1/, 'shows the served +N attack');
+  });
+
+  test('hides the Dark Portal marker when darkPortalBonus is 0 (no portal / non-Portals scheme)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy(),
+        submitMove,
+      },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="dark-portal-marker"]').exists(),
+      false,
+      'no marker without a portal',
+    );
+  });
+});

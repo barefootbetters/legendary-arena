@@ -514,11 +514,15 @@ export default defineComponent({
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />
       <main v-if="isPlayPhase && viewer !== null" class="play-mobile__scroll">
         <section class="play-mobile__band">
+          <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
+               non-Portals scheme, so the optional chain yields 0 and the tile's
+               marker stays hidden. -->
           <MastermindTile
             :mastermind="snapshot.mastermind"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :economy="snapshot.economy"
+            :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
             :submit-move="submitMove"
             @read="onCardRead"
           />
@@ -535,12 +539,17 @@ export default defineComponent({
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">
+          <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
+               non-Portals scheme, so the optional chains yield [] / 0 and no
+               city marker renders. -->
           <CityRow
             :city="snapshot.city"
             :decks="snapshot.decks"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :economy="snapshot.economy"
+            :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
+            :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
             :submit-move="submitMove"
           />
         </section>
