@@ -1131,7 +1131,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal:2]",
             "[hc:tech]: You get +1[icon:attack]."
           ]
         },
@@ -1147,7 +1147,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal]",
+            "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal:2]",
             "[hc:strength]: If that card costs 0, you may KO it instead."
           ]
         },
