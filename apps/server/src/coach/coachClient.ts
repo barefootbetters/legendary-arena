@@ -85,8 +85,61 @@ function buildUserMessage(summary: CoachMatchSummary): string {
 }
 
 /**
+ * Escape one raw control character (U+0000–U+001F) as its JSON string escape.
+ *
+ * @param character A single control character.
+ * @returns The escaped form (`\n`, `\r`, `\t`, or `\uXXXX`).
+ */
+function escapeControlCharacter(character: string): string {
+  if (character === '\n') {
+    return '\\n';
+  }
+  if (character === '\r') {
+    return '\\r';
+  }
+  if (character === '\t') {
+    return '\\t';
+  }
+  return '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0');
+}
+
+/**
+ * Escape raw control characters that appear INSIDE JSON string literals, leaving
+ * structural whitespace between tokens untouched. A small string-aware scanner:
+ * it tracks whether it is inside a `"…"` literal and honours backslash escapes so
+ * an escaped quote (`\"`) does not end the string.
+ *
+ * @param jsonText Candidate JSON text.
+ * @returns The same text with in-string control characters escaped.
+ */
+function escapeControlCharactersInStrings(jsonText: string): string {
+  let output = '';
+  let isInsideString = false;
+  let isEscaping = false;
+  for (const character of jsonText) {
+    if (isInsideString) {
+      if (isEscaping) {
+        isEscaping = false;
+      } else if (character === '\\') {
+        isEscaping = true;
+      } else if (character === '"') {
+        isInsideString = false;
+      } else if (character.charCodeAt(0) < 0x20) {
+        output += escapeControlCharacter(character);
+        continue;
+      }
+    } else if (character === '"') {
+      isInsideString = true;
+    }
+    output += character;
+  }
+  return output;
+}
+
+/**
  * Extract the first JSON object from the model's text response. Returns the
- * parsed value, or throws a full-sentence error when no JSON object is present.
+ * parsed value, or throws a full-sentence error when no JSON object is present
+ * or the object is not valid JSON.
  *
  * @param text The model's raw text output.
  * @returns The parsed JSON value.
@@ -99,7 +152,20 @@ function extractJsonObject(text: string): unknown {
       'The coach model response contained no JSON object; expected a single JSON object with headline/heroFit/purchases/suggestions.',
     );
   }
-  return JSON.parse(text.slice(start, end + 1));
+  // why: models occasionally emit a literal newline/tab inside a string value
+  // (WP-737 eval: 1 of 16 Sonnet 5 calls). Strict JSON.parse rejects that with
+  // "Bad control character in string literal", which surfaced to a paying player
+  // as coach_unavailable. Escaping in-string control characters recovers the
+  // report without loosening anything else about the JSON grammar.
+  const sanitized = escapeControlCharactersInStrings(text.slice(start, end + 1));
+  try {
+    return JSON.parse(sanitized);
+  } catch (caughtError) {
+    throw new Error(
+      'The coach model response contained a JSON object that could not be parsed; expected valid JSON with headline/heroFit/purchases/suggestions. Underlying error: ' +
+        (caughtError instanceof Error ? caughtError.message : String(caughtError)),
+    );
+  }
 }
 
 /**

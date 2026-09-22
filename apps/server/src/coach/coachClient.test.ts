@@ -8,7 +8,9 @@
  * no thinking quirk sends NO thinking directive (the model-independence claim at
  * the client layer — a swapped model never re-inherits Sonnet 5's workaround); and
  * (3) a thinking-only / no-text response THROWS (the orchestrator maps that to
- * coach_unavailable) rather than silently returning a malformed report.
+ * coach_unavailable) rather than silently returning a malformed report; and
+ * (4) a raw newline/tab inside a JSON string value is escaped and recovered, not
+ * surfaced as coach_unavailable (the WP-737 eval failure).
  */
 
 import { test } from 'node:test';
@@ -151,6 +153,44 @@ test('throws when the response has only a thinking block and no text (the prod b
   try {
     const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
     await assert.rejects(client.generate(SUMMARY));
+  } finally {
+    stub.restore();
+  }
+});
+
+test('recovers a report whose string values contain a raw newline and tab (WP-737 eval failure)', async () => {
+  // Hand-built text, NOT JSON.stringify: the literal \n and \t characters sit
+  // inside string values, which strict JSON.parse rejects ("Bad control
+  // character in string literal"). Structural newlines between keys stay raw.
+  const rawText =
+    '{\n  "headline": "Sharp win.",\n' +
+    '  "heroFit": "Line one.\nLine two.",\n' +
+    '  "purchases": "Buy\tbigger.",\n' +
+    '  "suggestions": ["Tip \\"one\\"", "Tip two"]\n}';
+  const stub = installFetch(() => ({
+    status: 200,
+    body: { content: [{ type: 'text', text: rawText }] },
+  }));
+  try {
+    const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
+    const report = await client.generate(SUMMARY);
+    assert.equal(report.headline, 'Sharp win.');
+    assert.equal(report.heroFit, 'Line one.\nLine two.');
+    assert.equal(report.purchases, 'Buy\tbigger.');
+    assert.deepEqual(report.suggestions, ['Tip "one"', 'Tip two']);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('throws a full-sentence error when the JSON object is genuinely invalid', async () => {
+  const stub = installFetch(() => ({
+    status: 200,
+    body: { content: [{ type: 'text', text: '{ "headline": "Sharp win.", }' }] },
+  }));
+  try {
+    const client = createAnthropicCoachClient('sk-test', SONNET5_CONFIG);
+    await assert.rejects(client.generate(SUMMARY), /could not be parsed/);
   } finally {
     stub.restore();
   }
