@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-727 — Portals to the Dark Dimension: Dark-Portal board overlay (EC-764 / D-24548) (2026-09-21)
+
+The client half of the Portals Dark-Portal visualization arc — completes it on-screen. Renders
+WP-728's served `scheme.darkPortals` descriptor as a board overlay: a new `DarkPortalMarker.vue`
+(a compact pill showing the served `+N attack`) appears above the Mastermind tile once the first
+Scheme Twist opens the Mastermind portal, and above each city space that gains a portal on
+subsequent twists — matching the game-log lines the operator originally saw. The city marker
+renders on a portal'd space **even when it is empty**, because a Dark Portal buffs the space, not a
+specific villain. The `+N` is bound from the descriptor's bonus, never a hardcoded `1`.
+
+`MastermindTile` gains a `darkPortalBonus` prop (marker when `> 0`); `CityRow` gains
+`darkPortalIndices` / `darkPortalBonus` props (a per-cell marker). `PlayDesktop` / `PlayMobile`
+derive the props from `snapshot.scheme.darkPortals`, guarding `undefined` (a non-Portals scheme
+yields `0` / `[]`, so nothing renders). Client-only, consuming the served field verbatim (D-20105 —
+no engine / server / `packages/**` change); reuses the WP-690 board-VFX / tile-overlay layering.
+
+vue-tsc clean; arena-client suite **1886/0** (+8: the marker renders the served bonus / `+1` /
+aria-label, `MastermindTile` show + hide, `CityRow` occupied + empty + empty-only + no-portal);
+`pnpm -r build` 0. **D-24026 live-verify is operator-pending** post-deploy (a live Core Portals
+match via `?match=`: confirm the Mastermind marker at twist 1 and a city-space marker each
+subsequent twist, each `+N attack`, no freeze — the overlay only appears under a live Portals match,
+so it is unreachable in the dev preview; the mounted-component tests drive every render state).
+Display-only / off-ranking (NG-1). Completes the WP-728 → WP-727 arc.
+
 ### WP-728 — Portals to the Dark Dimension: Dark-Portal UIState projection (EC-765 / D-24549) (2026-09-21)
 
 **No user-observable change — infrastructure only.** The engine half of the Portals Dark-Portal
