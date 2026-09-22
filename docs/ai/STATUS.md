@@ -7,6 +7,21 @@
 
 ## Current State
 
+### WP-739 — Project `economy.excessiveViolenceAvailable` onto UIState (EC-776 / D-24560) (2026-09-22)
+
+Adds a read-only, active-player-only, omit-when-absent `UIState.economy.excessiveViolenceAvailable`
+boolean = true iff the active player has enrolled ≥1 Excessive Violence card this turn
+(`G.turnEconomy.excessiveViolencePlayedCards`) AND has not yet used EV (`excessiveViolenceUsedThisTurn`).
+An exact mirror of the WP-581 / D-24390 `recruitSpendableAsAttack` cue via the 5-step Board-Visible
+Field contract — declared on `UITurnEconomyState`, conditional-spread in `buildUIState`, passed
+through `filterUIStateForAudience` for the active player only (`REDACTED_ECONOMY` omits it), covered by
+an audience-filter test + a built-projection keyset drift pin (the only drift protection an
+omit-when-absent optional field has, D-24372). Surfaces WHETHER EV is available, never the ledger's
+card identities. First half of the paired client-EV arc; the WP-738 client control consumes it and
+closes the WP-736 D-24026 fire-payoff. Read-only `playerView` projection (not hashed) →
+`finalStateHash` + `PRE_WP080_HASH` byte-unchanged, NO re-pin. Engine 4101/0 (+4 tests); `pnpm -r build`
+0; `git diff` = the 5-file allowlist. **D-24560 Active.** Engine-only; no rendered change in this WP.
+
 ### WP-736 — "Excessive Violence" fight-overspend hero keyword (`excessive-violence`; EC-773 / D-24556 / D-24557) (2026-09-22)
 
 Un-hollows the D-21602-deferred Venomverse "Excessive Violence" family (`keywords-full` id 30,

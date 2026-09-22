@@ -43962,4 +43962,34 @@ and `sim:runtime-observed:check` stay green.
 Related D-24521 (the reveal-top machinery this extends), D-24354 (heroClassMatch gate), D-24413
 (Melter `ko` precedent). **Reserved by:** NUMBER-LEDGER D-24558.
 
+### D-24560 — Project `economy.excessiveViolenceAvailable` onto UIState (Active 2026-09-22 — WP-739 / EC-776)
+
+**Decision.** The client-visible `UIState` carries a new read-only, active-player-only,
+omit-when-absent boolean `economy.excessiveViolenceAvailable`, projected from `G.turnEconomy`
+so the WP-738 client affordance can offer "Fight using Excessive Violence" only when it would
+do something. It is an exact structural mirror of the WP-581 / D-24390 `recruitSpendableAsAttack`
+cue.
+
+1. **Semantics.** `excessiveViolenceAvailable === true` iff the active player has enrolled at
+   least one Excessive Violence card this turn (`G.turnEconomy.excessiveViolencePlayedCards.length > 0`,
+   the WP-736 / D-24556 ledger) AND has not yet used EV (`excessiveViolenceUsedThisTurn !== true`).
+   It surfaces WHETHER EV is available — never the ledger's card identities (no `CardExtId` in UIState).
+2. **Projection (5-step Board-Visible Field contract).** Declared on `UITurnEconomyState`
+   (`ui/uiState.types.ts`); populated in `buildUIState` by a conditional spread (present only when
+   true); passed through `filterUIStateForAudience` in the ACTIVE-player economy rebuild only —
+   `REDACTED_ECONOMY` (non-active players + spectators) never carries it; covered by an audience-filter
+   test (owner-visible / redacted for others / absent when unavailable) and a built-projection keyset
+   drift pin (`ui/uiState.types.drift.test.ts`, the only drift protection an omit-when-absent optional
+   field has — D-24372).
+3. **Omit-when-absent.** The field is spread in only when true (never `false`/`undefined`), so a
+   non-EV turn's economy block serializes byte-identically to before this WP.
+4. **Determinism.** A read-only `playerView` projection (not part of `finalStateHash`/`PRE_WP080_HASH`);
+   reads `G.turnEconomy`, mutates nothing. Both hashes verified byte-unchanged (engine 4101/0, no re-pin).
+
+Engine-only; renders nothing itself. Consumed by WP-738 / D-24561 (the "Fight using Excessive
+Violence" client control). Related D-24390 (the `recruitSpendableAsAttack` projection precedent),
+D-24556 (the EV ledger it reads), D-24557 (the fight-move arg the client submits), D-12803 (the
+audience-filter redaction matrix), D-24372 (the built-projection keyset-pin requirement).
+**Reserved by:** NUMBER-LEDGER D-24560 (renumbered from D-24558 after a parallel collision).
+
 Protect this file.
