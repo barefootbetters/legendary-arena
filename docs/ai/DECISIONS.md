@@ -43564,4 +43564,56 @@ concern bundled here): the WP-723 / D-24544 X-Gene failed-condition message is n
 article-aware ("an instinct card"). Extends D-24024 (the reveal-rule grammar).
 **Reserved by:** NUMBER-LEDGER D-24550.
 
+### D-24552 — Turn-scoped draw lock (`no-more-draws` keyword) for Venompool's Shenanigans (Active 2026-09-21 — WP-731 / EC-768)
+
+**Rule:** A hero card that prints "you can't draw any more cards this turn" is
+modeled by a new `no-more-draws` `HeroKeyword` whose onPlay handler
+(`heroEffectNoMoreDraws`) sets a lazily-materialized, omit-when-off turn-scoped
+flag `G.turnEconomy.drawsLocked`. The hero-effect draw chokepoint `heroEffectDraw`
+checks it: while set, a `draw`-keyword effect draws **0** cards and logs a
+`blocked` line. The lock is dropped by `resetTurnEconomy` at the next turn start.
+
+**Scope of the lock (guard breadth).** The guard is at `heroEffectDraw` **only** —
+the active player's own subsequent hero-card `[keyword:draw:N]` plays. The
+end-of-turn hand refill (`endOfTurnCleanup`), the setup deal, and other-seat
+draws (Covering Fire, villain "each player draws") all call `drawCardsIntoHand`
+directly, so they are **structurally exempt** — which is exactly the printed
+boundary "until the end of this turn" (the lock lifts at turn end, so the refill
+still happens). **Deferred (a named faithfulness gap):** Dodge (`dodgeCard`),
+Do-Over (`doOver`), and a tactic/villain effect that draws *for* the active
+player also route through `drawCardsIntoHand` and are NOT blocked by this slice; a
+comprehensive per-seat chokepoint guard (larger surface, likely a hash re-pin) is
+a possible future WP. The dominant real interaction (play Shenanigans, then play
+another draw hero) IS covered.
+
+**Card marking.** Shenanigans is marked `[keyword:draw:2] [keyword:no-more-draws]`
+in that order on the one ability line. The parser preserves marker order and the
+hook's effects execute in order, so the draw-2 fires **before** the lock arms —
+the card is not hollow and never self-blocks its own draw. `draw:2` was already a
+legal marker (D-24551); `no-more-draws` was added to `VALID_TOKEN_PATTERN`.
+
+**Single carry chokepoint (correctness).** `drawsLocked` mirrors the WP-580 /
+D-24389 `recruitSpendableAsAttack` lazy-flag pattern. Adding a SECOND turn-scoped
+flag exposed that the two `TurnEconomy` setters rebuilt from an explicit literal
+and bypassed the `carryConversionFlag` carry helper — harmless with one flag, but
+a silent cross-flag drop with two (Venompool + God of Thunder is a legal loadout,
+either play order). Fixed: `carryConversionFlag` now carries **both** flags and
+**both** setters (`enableDrawLock`, `enableRecruitSpendableAsAttack`) route
+through it, so setting one flag can never drop the other. A setter-coexistence
+test (both directions) pins it.
+
+**Determinism.** `drawsLocked` is omit-when-off (absent until set, never seeded in
+`Game.setup`, never written as a present `false`) and dropped each turn by
+`resetTurnEconomy`, so a turn that never locks draws serializes byte-identically.
+The core-only sentinel replay and the empty PRE_WP080 replay play no Venompool, so
+`finalStateHash` + `PRE_WP080_HASH` are **byte-unchanged — NO re-pin** (verified:
+full engine suite 4036/0). Card-data only otherwise; `cards:check` /
+`effect-index:check` / `mechanics:metadata:check` / `ledger:heroes:check` /
+`sim:runtime-observed:check` / `sim:coverage --check` all green (no coverage
+baseline bump — `no-more-draws` is a supported handler, not a new unsupported
+mechanic). Resolves the D-24551 Shenanigans deferral. Related D-24389 (the
+turn-scoped-flag precedent), D-24551 (the deferral + marker pipeline).
+
+**Reserved by:** NUMBER-LEDGER D-24552.
+
 Protect this file.
