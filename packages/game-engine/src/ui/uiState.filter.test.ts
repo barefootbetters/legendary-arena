@@ -2584,6 +2584,39 @@ describe('filterUIStateForAudience — recruit-as-attack cue flag (WP-581 / D-24
   });
 });
 
+describe('filterUIStateForAudience — Excessive Violence availability cue (WP-739 / D-24560)', () => {
+  // why: the availability cue rides the active-player-only economy block. It must
+  // survive the whitelist for the active player, be omitted when unset, and NEVER
+  // reach a non-active player or a spectator (REDACTED_ECONOMY) — a non-active
+  // audience must not learn whether another player could fight using EV.
+  it('passes excessiveViolenceAvailable through for the active player when set', () => {
+    const uiState = createTestUIState();
+    uiState.economy.excessiveViolenceAvailable = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.excessiveViolenceAvailable, true);
+  });
+
+  it('omits excessiveViolenceAvailable for the active player when unset (omit-when-absent)', () => {
+    const uiState = createTestUIState();
+    // why: a fresh economy never sets the cue; the field must be absent, not false.
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.excessiveViolenceAvailable, undefined);
+    assert.ok(!('excessiveViolenceAvailable' in result.economy));
+  });
+
+  it('never exposes excessiveViolenceAvailable to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.excessiveViolenceAvailable = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.economy.excessiveViolenceAvailable, undefined,
+        'non-active audiences see REDACTED_ECONOMY without the EV availability cue',
+      );
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // gameOver survives the audience filter for EVERY seat (report-card delivery)
 // ---------------------------------------------------------------------------

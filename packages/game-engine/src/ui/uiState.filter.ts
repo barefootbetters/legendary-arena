@@ -425,6 +425,14 @@ export function filterUIStateForAudience(
       ...(uiState.economy.recruitSpendableAsAttack === true
         ? { recruitSpendableAsAttack: true as const }
         : {}),
+      // why: WP-739 / D-24560 — pass the Excessive Violence availability cue
+      // through for the ACTIVE player only, omit-when-absent (conditional, never
+      // an `excessiveViolenceAvailable: undefined` literal). A field that reaches
+      // buildUIState but not this whitelist is silently dropped (the EC-206
+      // failure). REDACTED_ECONOMY (non-active players + spectators) never carries it.
+      ...(uiState.economy.excessiveViolenceAvailable === true
+        ? { excessiveViolenceAvailable: true as const }
+        : {}),
     };
   } else {
     // why: non-active players and spectators do not see economy details
