@@ -43825,4 +43825,97 @@ vnom precedent), D-24469 (`SUPPORTED_TRANSFORM_BASES` per-card allowlist), D-243
 (reentrant `executeHeroEffects`), D-24095 (the JSON-serialized framework store), D-24552
 (Venompool viability). **Reserved by:** NUMBER-LEDGER D-24555.
 
+### D-24556 — Venomverse "Excessive Violence" resolves as a fight-time overspend firing a play-time-enrolled ledger (`excessive-violence` keyword) (Active 2026-09-22 — WP-736 / EC-773)
+
+Un-hollows the D-21602-deferred Venomverse "Excessive Violence" hero-keyword family
+(`keywords-full` id 30, parse-unrecognized). Semantics locked from id 30: **once per turn**
+a player may spend **1 extra `[attack]`** beyond a Villain/Mastermind's fight cost "using
+Excessive Violence"; if they do, **every** Excessive Violence ability on cards they played
+**this turn** resolves (any order — the engine picks a fixed enrolment order). A turn with no
+fight, or no extra `+1` spent, fires nothing; EV cards drawn/played AFTER the EV fight miss the
+window (the once-per-turn guard has closed it); duplicate copies each fire. This is a NEW
+**fire-at-fight-time** execution path — distinct from and bigger than the WP-735 Digest onPlay
+branch — because `executeHeroEffects` fires all a card's hooks at PLAY time and does NOT filter
+by timing, so an `onFight` EV hook must at play time **enrol** the card and defer firing.
+
+**Locks:**
+1. A new `excessive-violence` `HeroKeyword` (NO top-level magnitude → in `NO_MAGNITUDE_KEYWORDS`;
+   the inner effects ride their own inline markers) in the union + `HERO_KEYWORDS` array +
+   drift tests; default timing `onFight` in `KEYWORD_TIMING_DEFAULTS`.
+2. An additive optional `excessiveViolenceEffects?: HeroEffectDescriptor[]` wrapper field on the
+   shared `HeroEffectDescriptor` (`heroAbility.types.ts`) — the second SELF-RECURSIVE nesting
+   (after WP-735's `digestEffects?`); the fused hook lives in the JSON-serialized
+   `G.heroAbilityHooks` (D-24095), so it stays plain data (pinned by a JSON-roundtrip test).
+3. A per-card allowlist `EXCESSIVE_VIOLENCE_CARDS` + `EXCESSIVE_VIOLENCE_PATTERN` (the
+   `DIGEST_INDIGESTION_CARDS` / `SUPPORTED_TRANSFORM_BASES` precedent) — `buildExcessiveViolenceFusion`
+   runs INSIDE `buildHeroAbilityHooks` where the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key
+   exists, parses the EV line's inline effects via the shared `parseAbilityText`, emits ONE
+   `excessive-violence` `onFight` hook, and CONSUMES the source line (no leftover
+   draw/recruit/rescue/ko hook that would fire at play, no residual unresolved marker).
+4. Two lazily-materialized, omit-when-off, turn-cleared `TurnEconomy` fields —
+   `excessiveViolencePlayedCards?: CardExtId[]` (the ordered enrolment ledger, duplicates kept)
+   and `excessiveViolenceUsedThisTurn?: boolean` (the once-per-turn guard) — dropped by
+   `resetTurnEconomy`, carried across same-turn rebuilds by the single `carryConversionFlag`
+   chokepoint (extended to carry both), set by the `enrollExcessiveViolenceCard` /
+   `markExcessiveViolenceUsed` setters (the `enableDrawLock` / D-24389 / D-24552 precedent).
+5. Play-time handler `heroEffectExcessiveViolence` ENROLS the card (`enrollExcessiveViolenceCard`)
+   and applies NO inner effect (safe-skips a wrapper with no `excessiveViolenceEffects`); the
+   fight-time driver `fireExcessiveViolencePlays(G, ctx, playerID)` dispatches each enrolled card's
+   `excessiveViolenceEffects` through the reentrant `executeSingleEffect`, in ledger order
+   (`for...of`, no `.reduce()`, never throws).
+6. **Scope = infra + 4 `vnom` cards** whose EV ability reduces to a shipped executor:
+   `carnage/rending-claws` (draw 1), `venom/razor-teeth` (+2 recruit — `[icon:recruit]` already
+   parses, no marker), `venom-rocket/serious-overkill` (`optional-ko-hand-discard`, WP-667),
+   `venompool/can-i-get-a-little-gratitude` line 1 (rescue 1). DEFERRED as honest hollows (the
+   WP-735 Honest-Partial precedent): `carnage/gruesome-feast` (reveal-top-may-KO), `feast-or-famine`
+   (reveal-KO loop), `can-i-get` line 0 (passive rescue-doubler), `dead/slapstick` (other set).
+7. **Per-hero-aggregation honesty (WP-735 AC #8):** `excessive-violence` joins the hero-mechanic
+   ledger's `BY_HOOK_KEYWORDS` (with `transform`), so a card is `executable` only when ITS hook
+   resolved the keyword — the all-deferred EV heroes (`dead/*`, `mgtg/*`) read `unsupported`, not
+   a by-name blanket `executable`. A mixed hero (`carnage`: wired `rending-claws` + deferred
+   siblings) aggregates to `executable`; the un-hollow is verified by each wired card's resolution,
+   not by claiming the deferred siblings green.
+8. **Determinism:** the ledger + guard are omit-when-off and dropped every turn; the fire is a
+   fixed-order dispatch of already-parsed effects; no `Math.random`. All four cards are `vnom`
+   (non-core) and no committed sentinel / PRE_WP080 replay plays them, so `finalStateHash` /
+   `PRE_WP080_HASH` are byte-unchanged (verified empirically — NO re-pin). `sim:coverage` recognizes
+   the keyword with no regression (no baseline change needed).
+
+Related D-21602 (the deferral this resolves), D-24555 (the Digest sibling + wrapper/fusion/Honest-Partial
+precedent), D-24389 / D-24552 (omit-when-off turn-scoped-flag + `carryConversionFlag` precedent),
+D-24480 / WP-667 (`optional-ko-hand-discard` executor), D-24345 / D-24401 (reentrant `executeSingleEffect`),
+D-24095 (the JSON-serialized framework store), D-24557 (the paired fight-move-arg + Honest-Partial deferral
+decision). **Reserved by:** NUMBER-LEDGER D-24556.
+
+### D-24557 — Excessive Violence fight-move opt-in arg + Honest-Partial reveal-KO deferral (Active 2026-09-22 — WP-736 / EC-773)
+
+Paired with D-24556. Locks two separable decisions:
+
+**(A) The fight-move contract extension.** `fightVillain` and `fightMastermind` gain an OPTIONAL
+`useExcessiveViolence?: boolean` arg (additive; absent/false = today's exact fight behavior,
+byte-identical — every existing fight test passes unmodified). When true AND the player can afford
+`requiredFightCost + 1` (via `getSpendableAttack`, pre-spend) AND has not yet used EV this turn, the
+move settles the defeat (`defeatCityVillainCore` / `defeatMastermindTacticCore`), then debits a SINGLE
+`spendFightCost(requiredFightCost + 1)` (never a double-spend), sets `markExcessiveViolenceUsed`, and
+calls `fireExcessiveViolencePlays`. An unaffordable `+1` or an already-used EV turn declines the branch
+SILENTLY and fights normally (validation-phase silent behavior — moves never throw; the D-24185
+precedent). The fire is placed STRICTLY after the `spendFightCost` debit (so an EV recruit grant cannot
+alter what the fight pulls under a `recruit-as-attack` loadout) and is called from the MOVE BODY only —
+NEVER from the shared `defeatCityVillainCore` / `defeatMastermindTacticCore`, which non-fight defeat
+paths (Silent Sniper's free defeat, `resolveDefeatChoice`) reach without the `useExcessiveViolence` arg
+(firing there would leak EV to an unpaid defeat). The `+1` opt-in is ENGINE-only — the client "Fight
+using Excessive Violence" affordance is a DEFERRED sibling client WP; bots/sim reach the branch through
+the explicit arg, and `getLegalMoves` still offers the plain fight (optional arg defaults to a normal
+fight → no legalMoves↔guard divergence).
+
+**(B) The Honest-Partial deferral** (the WP-735 allowlist precedent). The `EXCESSIVE_VIOLENCE_CARDS`
+allowlist gates which EV members resolve: `carnage/gruesome-feast` (reveal-top-may-KO — needs a
+reveal-KO executor) and `carnage/feast-or-famine` (reveal-top-if-cost-0-KO-and-REPEAT — needs loop
+infra) stay honest hollows with updated `_deferred` reasons; `venompool/can-i-get-a-little-gratitude`
+line 0 (the passive rescue-doubler) is a separate reactive mechanic and stays hollow;
+`dead/slapstick/saturday-morning-harpoons` (a different set) stays deferred to a later cross-set sweep.
+
+Related D-24556 (the EV mechanic), D-24555 (Honest-Partial precedent), D-24185 (validation-phase
+silent-return precedent for the affordability decline). **Reserved by:** NUMBER-LEDGER D-24557.
+
 Protect this file.
