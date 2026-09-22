@@ -28,8 +28,12 @@ off-ranking (NG-1); the reveal grant, deck order, and the WP-325 log line are by
 Engine **4018/0**; arena-client **1887/0** + vue-tsc clean; `pnpm -r build` 0. `G.notableEvents` is
 hashed by both oracles, but the core-only sentinel plays no deck-top-reveal hero, so the sentinel
 `finalStateHash` + `PRE_WP080_HASH` are **byte-unchanged — NO re-pin** (the WP-697 outcome, verified).
-Two-commit topology (EC-763 impl + SPEC close). **D-24026 live-verify operator-pending** post-deploy
-(play Gambit *High Stakes Jackpot* → the "Hero Ability" overlay names the revealed card + outcome).
+Two-commit topology (EC-763 impl + SPEC close). **D-24026 live-verify VERIFIED 2026-09-21** — a real 2p
+Magneto / Portals match on the deployed bundle (`gitSha 33b2623`): Player 1's **High Stakes Jackpot**
+(`reveal-cost-attack`, the origin-bug card) surfaced the `heroEffectResolved` entry `"High Stakes Jackpot"
+revealed "S.H.I.E.L.D. Officer" (cost 3) — gained attack.` in `uiStateSnapshot.notableEvents`. The
+auto-resolve gate held live: exactly 1 `heroEffectResolved`; the parking Hypnotic Charm (`reveal-top-dispose`,
+3×) correctly did not emit (it surfaces via its pending-choice prompt).
 Rendering the flipped card's **image** (an optional `revealedCardId` field + the full Board-Visible
 Field Rule 5-step) is a named follow-up.
 
