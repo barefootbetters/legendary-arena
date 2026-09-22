@@ -29,6 +29,9 @@ source:
   - ../packages/game-engine/src/mastermind/mastermind.types.ts
   - ../packages/game-engine/src/mastermind/mastermind.logic.ts
   - ../packages/game-engine/src/moves/fightMastermind.ts
+  - ../packages/game-engine/src/endgame/mastermindVictory.logic.ts
+  - ../packages/game-engine/src/endgame/endgame.evaluate.ts
+  - ../packages/game-engine/src/endgame/endgame.types.ts
   - ../packages/game-engine/src/board/ko.logic.ts
   - ../data/cards/co2e.json
   - ../docs/ai/ARCHITECTURE.md
@@ -36,7 +39,7 @@ source:
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
   - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-15
+last-reviewed: 2026-09-22
 ---
 
 # Master Strike
@@ -193,25 +196,53 @@ share the same Mastermind entity.
   beat on the play surface (WP-690 — an ember burst off the projected
   `tacticsDefeated` count, `hit1` spark → `hit4` impact; see
   [Visual Effects → mastermind-hit](visual-effects.md#shipped-mastermind-hit)).
-  **Under Final Blow (WP-687)** a defeat of the *last* Tactic does not win —
-  it sets `finalBlowPending`, and a distinct 5th fight (`fightMastermind`'s
-  `isFinalBlowAvailable` branch, `awardMastermindOnFinalBlow`) moves the
-  **Mastermind base card itself** into the winning player's Victory Pile and sets
-  `MASTERMIND_DEFEATED` — which fires the shipped **VICTORY! finale**
-  ([Visual Effects → victory finale](visual-effects.md#shipped-victory-finale)).
-- **Endgame.** The strike handler writes to
-  `G.counters.masterStrikeCount`. This key is **not** in
-  `ENDGAME_CONDITIONS` and is not consumed by `evaluateEndgame`.
-  Victory resolves through `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED`.
-  In the default game that counter is set the moment `areAllTacticsDefeated`
-  returns true (the 4th Tactic falls). **Under the optional Final Blow rule
-  (WP-687 / D-24504, `G.finalBlow === true`)** the 4th-Tactic defeat no longer
-  wins: `defeatMastermindTacticCore` instead latches the new optional
-  `MastermindState.finalBlowPending`, and `MASTERMIND_DEFEATED` is set only by the
-  **5th, final fight** against the Mastermind card itself (see [the combat note
-  below](#interactions) and `awardMastermindOnFinalBlow` in `fightMastermind.ts`).
-  Either way the win still flows through the same `MASTERMIND_DEFEATED` counter —
-  Final Blow only changes *when* it is set (no new endgame condition).
+  A defeat of the *last* Tactic does **not** end the match on the spot — since
+  **WP-732 / D-24553** it latches victory-assured (`MASTERMIND_DEFEATED_PENDING`)
+  and the win resolves at `turn.onEnd`, so the player finishes their turn first
+  (see [Endgame](#interactions) above). **Under Final Blow (WP-687)** the last
+  Tactic instead only sets `finalBlowPending`, and a distinct 5th fight
+  (`fightMastermind`'s `isFinalBlowAvailable` branch, `awardMastermindOnFinalBlow`)
+  moves the **Mastermind base card itself** into the winning player's Victory Pile.
+  Whichever way it is reached, the terminal `MASTERMIND_DEFEATED` fires the shipped
+  **VICTORY! finale** ([Visual Effects → victory finale](visual-effects.md#shipped-victory-finale))
+  at end of turn.
+- **Endgame — defeating the Mastermind finishes the turn (WP-732 / D-24553).**
+  The strike handler writes `G.counters.masterStrikeCount`, which is **not** in
+  `ENDGAME_CONDITIONS` and is not consumed by `evaluateEndgame`. Victory resolves
+  through `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED` — but **defeating the Mastermind
+  no longer ends the match immediately.** Per Universal Rules v23 *"End of the
+  Game: Players Win,"* when the last Tactic falls **victory is assured but the
+  current player finishes the rest of their turn** — they may keep fighting
+  Villains and rescuing Bystanders to earn more Victory Points — and the match ends
+  `heroes-win` at the **end of that turn**. Mechanically, the vanquish
+  (`defeatMastermindTacticCore`; and `awardMastermindOnFinalBlow` under Final Blow)
+  latches the non-terminal `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING` instead
+  of the terminal counter. `evaluateEndgame` does **not** end the game on that latch
+  and, while it is set, **suppresses** a scheme-loss or deck-exhaustion tie — the
+  *"victory is assured even if the final Tactic's Fight ability would achieve the
+  Scheme's Evil Wins condition or cause a deck to run out"* clause. Then at
+  play-phase `turn.onEnd`, `promoteMastermindVictoryIfPending`
+  (`endgame/mastermindVictory.logic.ts`) promotes the latch to the terminal
+  `MASTERMIND_DEFEATED` → `heroes-win`, mirroring the deck-exhaustion final-turn
+  latch (`endgame/finalTurn.logic.ts`). The full `evaluateEndgame` precedence is
+  `MATCH_ENDED_EARLY` → `MASTERMIND_DEFEATED` (heroes-win) →
+  `MASTERMIND_DEFEATED_PENDING` (continue; suppress below) → `SCHEME_LOSS`
+  (scheme-wins) → `FINAL_TURN_TIE` (tie).
+  - **Contrast "Evil Wins."** A scheme-loss with **no** Mastermind latch still ends
+    the game **immediately** ("Don't finish the turn"). The asymmetry is deliberate:
+    a loss is instant; the Mastermind win finishes the turn.
+  - **Under the optional Final Blow rule (WP-687 / D-24504, `G.finalBlow === true`)**
+    the 4th-Tactic defeat instead latches `MastermindState.finalBlowPending` (the
+    Mastermind stays fightable), and the **5th, final fight** against the Mastermind
+    card is what latches `MASTERMIND_DEFEATED_PENDING` and awards the Mastermind base
+    card; the finish-the-turn deferral then applies to that 5th blow the same way.
+    Either path resolves through the same `MASTERMIND_DEFEATED` counter — Final Blow
+    and WP-732 each change only *when* it is set, never the condition itself.
+  - **Live-verified 2026-09-22** on the deployed server: a Magneto / Midtown Bank
+    Robbery match's log shows the last-Tactic vanquish → *"Victory is assured; finish
+    your turn"* → the player recruits more Heroes → *"The turn ends — the Mastermind
+    is vanquished and the heroes win the game!"* (the win lands at turn end, not the
+    vanquish).
 
 ## Edge Cases
 
@@ -294,9 +325,18 @@ share the same Mastermind entity.
   helpers `isFinalBlowAvailable` / `setFinalBlowPending` (WP-687)
 - [`packages/game-engine/src/moves/fightMastermind.ts`](../packages/game-engine/src/moves/fightMastermind.ts)
   — `fightMastermind` (the Final Blow `isFinalBlowAvailable` branch),
-  `defeatMastermindTacticCore` (defers the win under `G.finalBlow`; and
-  `dropAllPendingPlayerChoices` — clears every `pending*` choice on the vanquish,
-  D-24518), `awardMastermindOnFinalBlow` (the 5th-fight Mastermind-card award, WP-687)
+  `defeatMastermindTacticCore` (the vanquish; latches `MASTERMIND_DEFEATED_PENDING`
+  since WP-732, and `finalBlowPending` under `G.finalBlow`),
+  `awardMastermindOnFinalBlow` (the 5th-fight Mastermind-card award, WP-687)
+- [`packages/game-engine/src/endgame/mastermindVictory.logic.ts`](../packages/game-engine/src/endgame/mastermindVictory.logic.ts)
+  — `promoteMastermindVictoryIfPending` (turn-end promotion of the victory-assured
+  latch → terminal `MASTERMIND_DEFEATED`, WP-732) and the relocated
+  `dropAllPendingPlayerChoices` (clears every `pending*` choice at the **turn-end**
+  win, not at the vanquish — the D-24518 invariant, moved by WP-732 so a choice
+  parked by the final Tactic's Fight ability stays resolvable during the turn)
+- [`packages/game-engine/src/endgame/endgame.evaluate.ts`](../packages/game-engine/src/endgame/endgame.evaluate.ts)
+  — `evaluateEndgame` (the endgame precedence, incl. the pending-latch continue +
+  scheme-loss/tie suppression, WP-732)
 
 ## History
 
@@ -314,6 +354,7 @@ share the same Mastermind entity.
 - WP-687 / D-24504 (2026-09-10): the optional **Final Blow** rule (Universal Rules v23 "Final Blow (Optional)"). With `G.finalBlow` on (WP-686's setup flag), the 4th-Tactic defeat no longer wins — `defeatMastermindTacticCore` latches `MastermindState.finalBlowPending` and defers, and a distinct 5th fight (`fightMastermind` / `awardMastermindOnFinalBlow`) moves the Mastermind base card into the winner's Victory Pile and sets `MASTERMIND_DEFEATED`. Off-path byte-identical (no hashed-G re-pin). The WP-690 VICTORY! finale fires on that 5th blow with no rework. New `UIMastermindState.finalBlowPending` + a `MastermindTile.vue` "⚔ Final blow" affordance + a lobby toggle
 - D-24518 (2026-09-15, bug fix, no WP): a Tactic that **vanquishes** the Mastermind no longer leaves its Fight ability's parked **pending choice** dangling on the won game. `defeatMastermindTacticCore` drops every `pending*` field when `MASTERMIND_DEFEATED === 1` (the true vanquish — not `areAllTacticsDefeated`, so a deferred Final Blow 4th-Tactic defeat is unaffected), after immediate VP effects apply. Audit-hardened from an initial six-queue drop to all pending fields after a reactive-park gap (a Tactic Wound → Diving Block parks a companion `pendingDivingBlockWounds` queue). No hash re-pin. Surfaced by a real `play.legendary-arena.com` heroes-win (Magneto / Cosmic Cube) whose diagnostics carried an active `pendingElectromagneticBubbleChoice`
 - WP-651 / D-24463 (2026-09-05): **completes the reveal-to-avoid family** (no new *Master Strike* producer). The same `reveal-or-wound` villain handler (`villainEffectRevealOrWound`, WP-646) now emits `strikeBlocked` at its `onFight` + `onEscape` timings too, adding the `fight` (amber, *"The villain's attack was blocked."*) and `escape` (teal, *"The Escape penalty was blocked."* — the villain still escapes; only the Wound is dodged) `threatKind`s. These are villain **Fight/Escape abilities**, not master strikes, so `mastermindHandlers.ts` is untouched — but the shield-block VFX now recolours across all **five** threat classes (Master Strike red / Scheme Twist purple / Ambush green / Fight amber / Escape teal). Surfaced by a live playtest where a Frost-Giant Fight reveal-block rendered no shield beside an identical Ambush block
+- WP-732 / D-24553 (2026-09-22): **defeating the Mastermind finishes the turn.** Per Universal Rules v23 *"End of the Game: Players Win,"* the vanquish no longer ends the match immediately — the current player finishes their turn (accruing Victory Points) and the game ends `heroes-win` at `turn.onEnd`. The vanquish latches the new non-terminal `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING` (victory assured); `evaluateEndgame` suppresses a scheme-loss / deck-tie while it is set; `promoteMastermindVictoryIfPending` (`endgame/mastermindVictory.logic.ts`) promotes it to terminal `MASTERMIND_DEFEATED` at turn end — mirroring the deck-exhaustion final-turn latch (`endgame/finalTurn.logic.ts`). *"Evil Wins"* stays immediate ("Don't finish the turn") — the asymmetry is deliberate. The D-24518 pending-choice drop moved from the vanquish to the turn-end promotion (a choice the final Tactic's Fight ability parks stays resolvable during the turn — a latent bug this also cured). Applies to both the default 4th-Tactic vanquish and the optional Final Blow 5th fight. Live-verified 2026-09-22 (Magneto / Midtown: vanquish → *"Victory is assured; finish your turn"* → the player recruits more → *"The turn ends — … the heroes win"*)
 
 ## References
 
