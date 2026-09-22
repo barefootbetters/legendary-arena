@@ -102,13 +102,37 @@ export default defineComponent({
       props.submitMove('fightVillain', { cityIndex });
     }
 
+    function showEvFight(cell: CityCell): boolean {
+      // why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
+      // is offered only when the villain is fightable AND the player has EV
+      // available (WP-739 economy.excessiveViolenceAvailable) and can afford the
+      // cost + 1 overspend. The engine still validates; this gate only decides
+      // whether to SHOW the control, never the outcome. Absent field = false.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      if (!gateForCell(cell).allowed) {
+        return false;
+      }
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(cell.card.display);
+    }
+
+    function onFightEV(cityIndex: number): void {
+      // why: WP-738 / D-24561 — the client submits INTENT (useExcessiveViolence);
+      // the engine decides the outcome — it overspends +1 attack and fires the
+      // enrolled EV abilities, or silently fights normally if it cannot. Once-per-
+      // turn is enforced engine-side: after the EV fight the availability field
+      // goes absent and this affordance disappears on the next projection.
+      props.submitMove('fightVillain', { cityIndex, useExcessiveViolence: true });
+    }
+
     function hasDarkPortal(cityIndex: number): boolean {
       // why: a Dark Portal buffs the SPACE, so the marker renders on a portal'd
       // city index whether or not a villain currently occupies it.
       return props.darkPortalIndices.includes(cityIndex);
     }
 
-    return { buildCells, gateForCell, onFight, hasDarkPortal };
+    return { buildCells, gateForCell, onFight, showEvFight, onFightEV, hasDarkPortal };
   },
 });
 </script>
@@ -190,6 +214,22 @@ export default defineComponent({
             :data-city-index="cell.cityIndex"
             :data-slot-name="cell.slotName"
           ></div>
+          <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence"
+               affordance. A SEPARATE opt-in button (the normal Fight click above
+               is unchanged); shown only when the villain is fightable AND the
+               player has EV available and can afford cost + 1. Submitting it sends
+               the useExcessiveViolence intent; the engine decides the outcome. -->
+          <button
+            v-if="showEvFight(cell)"
+            type="button"
+            class="city-space__ev-fight"
+            data-testid="play-city-villain-ev"
+            :data-city-index="cell.cityIndex"
+            title="Spend 1 extra attack to fire every Excessive Violence ability on cards you played this turn."
+            @click="onFightEV(cell.cityIndex)"
+          >
+            ⚔ Excessive Violence
+          </button>
           <!-- why: WP-505 + Jeff feedback — captured cards render to the SIDE of the
                villain tile (was underneath), saving vertical space. Face-up captured
                heroes (attachedHeroDisplay) show as card art; face-down captured
@@ -374,5 +414,27 @@ export default defineComponent({
 
 .city-space__captured-bystanders-icon {
   font-size: 0.7rem;
+}
+
+/* why: WP-738 / D-24561 — the per-villain "Fight using Excessive Violence" opt-in.
+   A compact accent button by the villain tile, visually distinct from the normal
+   Fight click so it reads as the extra-attack overspend, not the default fight. */
+.city-space__ev-fight {
+  align-self: center;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid #b4462e;
+  border-radius: 0.35rem;
+  background: rgba(180, 70, 46, 0.15);
+  color: #b4462e;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.city-space__ev-fight:hover {
+  background: rgba(180, 70, 46, 0.28);
 }
 </style>

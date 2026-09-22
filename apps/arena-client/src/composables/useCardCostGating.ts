@@ -98,18 +98,49 @@ export function canFight(
 }
 
 /**
- * Composable wrapper exposing `canRecruit` / `canFight` over the supplied
- * economy. Returned as a plain object so SFC templates can bind directly
- * without further unwrapping.
+ * Decide whether the active player can fight a villain/Mastermind **using
+ * Excessive Violence** — the availability cue is set (WP-739 /
+ * `economy.excessiveViolenceAvailable`) AND they can afford one attack MORE
+ * than the target's fight cost (the WP-736 `+1` overspend). Reuses the same
+ * `display.cost` source `canFight` uses, so the client gate mirrors the engine
+ * gate `getSpendableAttack >= requiredFightCost + 1` exactly and the engine
+ * stays the sole authority. Returns a plain boolean (this is an enable check
+ * for a secondary affordance, not a disabled-tooltip gate).
+ *
+ * // why: WP-738 / D-24561 — per-target enable for the "Fight using Excessive
+ * Violence" control; the omit-when-absent field is treated as false, and a
+ * non-fightable (`cost === null`) target is never EV-fightable.
+ */
+export function canFightWithExcessiveViolence(
+  target: UICardDisplay,
+  economy: UITurnEconomyState,
+): boolean {
+  if (economy.excessiveViolenceAvailable !== true) {
+    return false;
+  }
+  const cost = target.cost;
+  if (cost === null) {
+    return false;
+  }
+  return economy.availableAttack >= cost + 1;
+}
+
+/**
+ * Composable wrapper exposing `canRecruit` / `canFight` /
+ * `canFightWithExcessiveViolence` over the supplied economy. Returned as a
+ * plain object so SFC templates can bind directly without further unwrapping.
  */
 export function useCardCostGating(
   economy: UITurnEconomyState,
 ): {
   canRecruit: (hero: UICardDisplay) => GatingResult;
   canFight: (villain: UICardDisplay) => GatingResult;
+  canFightWithExcessiveViolence: (target: UICardDisplay) => boolean;
 } {
   return {
     canRecruit: (hero) => canRecruit(hero, economy),
     canFight: (villain) => canFight(villain, economy),
+    canFightWithExcessiveViolence: (target) =>
+      canFightWithExcessiveViolence(target, economy),
   };
 }

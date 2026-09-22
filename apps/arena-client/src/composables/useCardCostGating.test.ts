@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
-import { canFight, canRecruit, useCardCostGating } from './useCardCostGating';
+import { canFight, canFightWithExcessiveViolence, canRecruit, useCardCostGating } from './useCardCostGating';
 
 function display(cost: number | null): UICardDisplay {
   return {
@@ -73,5 +73,35 @@ describe('useCardCostGating (WP-129)', () => {
     // count so they understand why their click did not fire.
     const result = canRecruit(display(7), economy({ attack: 0, recruit: 4 }));
     assert.match(result.reason!, /you have 4/);
+  });
+});
+
+describe('canFightWithExcessiveViolence (WP-738 / D-24561)', () => {
+  function evEconomy(availableAttack: number, available: boolean): UITurnEconomyState {
+    const base = economy({ attack: availableAttack, recruit: 0 });
+    return available ? { ...base, excessiveViolenceAvailable: true } : base;
+  }
+
+  test('false when the availability cue is absent, even if cost+1 is affordable', () => {
+    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(9, false)), false);
+  });
+
+  test('false when available but availableAttack is below cost+1', () => {
+    // why: cost 3 needs 4 attack for the +1 overspend; 3 is short by one.
+    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(3, true)), false);
+  });
+
+  test('true when available and availableAttack meets cost+1 exactly', () => {
+    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(4, true)), true);
+  });
+
+  test('false when the target cost is null (non-fightable)', () => {
+    assert.equal(canFightWithExcessiveViolence(display(null), evEconomy(9, true)), false);
+  });
+
+  test('useCardCostGating exposes canFightWithExcessiveViolence bound to the economy', () => {
+    const gating = useCardCostGating(evEconomy(4, true));
+    assert.equal(gating.canFightWithExcessiveViolence(display(3)), true);
+    assert.equal(gating.canFightWithExcessiveViolence(display(4)), false);
   });
 });

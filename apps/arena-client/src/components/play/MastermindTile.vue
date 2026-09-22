@@ -151,7 +151,28 @@ export default defineComponent({
       return props.mastermind.finalBlowPending !== true;
     }
 
-    return { gateForFight, onFight, onRead, isVictoryAssured };
+    function showEvFight(): boolean {
+      // why: WP-738 / D-24561 — offer "Fight using Excessive Violence" against the
+      // Mastermind only when the normal fight is allowed AND the player has EV
+      // available (WP-739 economy.excessiveViolenceAvailable) and can afford the
+      // cost + 1 overspend. The engine still validates; this only decides whether
+      // to SHOW the control. Absent field = false.
+      if (!gateForFight().allowed) {
+        return false;
+      }
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(props.mastermind.display);
+    }
+
+    function onFightEV(): void {
+      // why: WP-738 / D-24561 — the client submits INTENT (useExcessiveViolence);
+      // the engine overspends +1 and fires the enrolled EV abilities, or silently
+      // fights normally if it cannot. Once-per-turn is enforced engine-side — the
+      // availability field goes absent after the EV fight and this affordance
+      // disappears on the next projection.
+      props.submitMove('fightMastermind', { useExcessiveViolence: true });
+    }
+
+    return { gateForFight, onFight, onRead, isVictoryAssured, showEvFight, onFightEV };
   },
 });
 </script>
@@ -215,6 +236,21 @@ export default defineComponent({
       >
         ⚔ Final blow — fight the Mastermind
       </span>
+    </button>
+    <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
+         against the Mastermind. A SEPARATE opt-in button (the normal Fight click
+         above is unchanged); shown only when the fight is allowed AND the player
+         has EV available and can afford cost + 1. Submitting it sends the
+         useExcessiveViolence intent; the engine decides the outcome. -->
+    <button
+      v-if="showEvFight()"
+      type="button"
+      class="mastermind-ev-fight"
+      data-testid="play-mastermind-ev"
+      title="Spend 1 extra attack to fire every Excessive Violence ability on cards you played this turn."
+      @click="onFightEV"
+    >
+      ⚔ Excessive Violence
     </button>
     <!-- why: the full card + Master-Strike / special rules open in the shared
          CardReaderModal instead of rendering inline, so the tile stays short
@@ -334,6 +370,27 @@ export default defineComponent({
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+/* why: WP-738 / D-24561 — the "Fight using Excessive Violence" opt-in against the
+   Mastermind. A compact accent button, visually distinct from the normal Fight
+   click so it reads as the extra-attack overspend, not the default fight. */
+.mastermind-ev-fight {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid #b4462e;
+  border-radius: 0.35rem;
+  background: rgba(180, 70, 46, 0.15);
+  color: #b4462e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.mastermind-ev-fight:hover {
+  background: rgba(180, 70, 46, 0.28);
 }
 
 /* why: the victory-assured banner is the payoff moment of the match, so it uses
