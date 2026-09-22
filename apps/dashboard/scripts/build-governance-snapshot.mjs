@@ -53,6 +53,12 @@ const STATUS_TAIL_LIMIT = 50;
 const GIT_LOG_FETCH_COUNT = 50;
 const MILLIS_PER_DAY = 86_400_000;
 
+// why: squash-merged execution commits on main carry the PR title, which is
+// written as `WP-NNN:`, `EC-NNN / WP-NNN:`, or `WP-NNN / EC-NNN:` (and a bare
+// `EC-NNN:` on branch commits). Matching only `WP-NNN:` dropped most of them,
+// so the Builder lane undercounted shipped work.
+const EXECUTION_COMMIT_PATTERN = /^(?:WP|EC)-\d{3,}(?: \/ (?:WP|EC)-\d{3,})?:/;
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DASHBOARD_DIR = resolve(SCRIPT_DIR, '..');
 const REPO_ROOT = resolve(DASHBOARD_DIR, '..', '..');
@@ -161,10 +167,43 @@ function readFileCommitIso(relativePath) {
 }
 
 /**
+ * Deepen a shallow checkout so `git log -N` can see N commits. A no-op on a
+ * full clone; on failure it warns and leaves the checkout as it was.
+ *
+ * why: the Cloudflare Pages build checks out a shallow clone, so `git log`
+ * saw only the HEAD commit — usually an INFRA: merge — and the snapshot
+ * carried zero commits. The live Pipeline page then read "No recent spec
+ * activity" on days with many SPEC: commits. CI's Dashboard Gates job uses
+ * fetch-depth 0 and never hit this.
+ */
+function ensureCommitHistoryDepth() {
+  let isShallow = false;
+  try {
+    isShallow = gitOutput(['rev-parse', '--is-shallow-repository']) === 'true';
+  } catch {
+    // why: outside a git checkout there is no history to deepen; the log
+    // read below reports that case on its own.
+    return;
+  }
+  if (!isShallow) {
+    return;
+  }
+  try {
+    gitOutput(['fetch', '--quiet', `--deepen=${GIT_LOG_FETCH_COUNT}`]);
+  } catch (fetchError) {
+    const reason = fetchError instanceof Error ? fetchError.message : String(fetchError);
+    console.warn(
+      `The governance snapshot is building from a shallow git clone and could not fetch ${GIT_LOG_FETCH_COUNT} more commits, so the activity feed may be empty. Check the build's network access to origin. Underlying error: ${reason}`,
+    );
+  }
+}
+
+/**
  * Read the last N commit subjects via `git log --oneline -N`. Returns an
  * empty array if git produced no output.
  */
 function readGitLogSubjects() {
+  ensureCommitHistoryDepth();
   const raw = gitOutput(['log', '--oneline', `-${GIT_LOG_FETCH_COUNT}`]);
   if (raw === '') {
     return [];
@@ -829,10 +868,10 @@ function computeGovernanceKpis(workIndexRows, headCommitIso) {
 }
 
 /**
- * Filter git-log output to commit entries with subjects beginning with
- * `WP-NNN:` or `SPEC:`.
+ * Filter git-log output to commit entries that are Work Packet executions
+ * (`EXECUTION_COMMIT_PATTERN`, kind `WP`) or `SPEC:` governance commits.
  *
- * why: WP-198 §D Activity feed source — only `WP-NNN:` and `SPEC:` commits
+ * why: WP-198 §D Activity feed source — only execution and `SPEC:` commits
  * feed the activity feed. Other prefixes (INFRA:, chore:, etc.) are dropped
  * silently. The list preserves git's commit-order-descending sequence.
  */
@@ -846,7 +885,7 @@ function readCommits(rawLines) {
     const sha = line.slice(0, spaceIndex);
     const subject = line.slice(spaceIndex + 1);
     let kind = null;
-    if (/^WP-\d{3}:/.test(subject)) {
+    if (EXECUTION_COMMIT_PATTERN.test(subject)) {
       kind = 'WP';
     } else if (subject.startsWith('SPEC:')) {
       kind = 'SPEC';
