@@ -43437,4 +43437,43 @@ re-evaluation (D-20105). Locks:
 Consumes WP-728/D-24549's `scheme.darkPortals` verbatim. Builds on WP-690/D-24507 (the
 board-VFX overlay precedent). **Reserved by:** NUMBER-LEDGER D-24548.
 
+### D-24547 — Auto-resolving deck-top reveals surface on the `heroEffectResolved` overlay (Active 2026-09-21 — WP-726 / EC-763)
+
+The auto-resolving deck-top **reveal** family (`heroEffectReveal` →
+`applyRevealRules`: `reveal-cost-attack`, `reveal-odd-draw`, `reveal-min`,
+`reveal-ko`, `reveal-ko-or-draw`, `reveal-ko-attack`) is made client-observable by
+**emitting the WP-697/D-24516 `heroEffectResolved` notable event** — NOT by parking a
+pending choice. Before WP-726 the reveal grant was faithful (`applyRevealAttackByCost`
+peeks the deck top and grants `G.turnEconomy.attack += cost`) but INVISIBLE: because
+the reveal auto-resolves, the flipped card reached only `G.messages`, which is not
+projected to clients, so the player saw "nothing happened" (a live 1p Magneto / *Portals
+to the Dark Dimension* match surfaced Gambit *High Stakes Jackpot* this way, with
+`heroEffectResolved: 0`).
+
+1. **Reuse, no new contract.** v1 reuses `HeroEffectResolvedEvent {type,playerId,narrative}`
+   verbatim (card-less, D-20001) with a new pure `composeHeroRevealTopNarrative` (third
+   person, no "Player N" prefix — the sibling composer's voice). No new event type, no new
+   field, no `NOTABLE_EVENT_TYPES` change; the event rides the already-PUBLIC unconditional
+   `UIState.notableEvents` projection (D-12803), so the arena-client overlay renders it with
+   **no client source change**.
+2. **Auto-resolve only.** The emit fires only when the reveal realized work
+   (`revealLogOutcome !== 'blocked'`) AND did NOT park a choice
+   (`!revealRulesContainAnyAction(rules, ['choose-discard-or-return'])`). The parking reveals
+   (`reveal-attack-choose`; `reveal-top-dispose` / Melter, D-24521 / D-24413) surface via their
+   pending-choice UI — an overlay there would double-surface.
+3. **Display-only, off-ranking (NG-1).** A reveal display never alters a game outcome, VP,
+   PAR, or standing. The reveal grant, deck order, and the WP-325 `G.messages` line are
+   byte-identical; only a `heroEffectResolved` event is appended.
+4. **Determinism.** `G.notableEvents` is hashed by BOTH oracles (`computeStateHash` /
+   `hashGameState` — it is explicitly NOT excluded). Emitting from the reveal family would
+   shift both hashes for any pinned fixture that plays a reveal-family card; the core-only
+   sentinel and the empty `PRE_WP080` replay play none, so `finalStateHash` + `PRE_WP080_HASH`
+   are **byte-unchanged** — verified at execution (engine 4018/0). No pin was edited; the event
+   was never routed to a non-hashed channel to dodge a pin.
+
+Rendering the flipped card's **image** (an optional `revealedCardId` field + the full
+Board-Visible Field Rule 5-step) is a named follow-up, not this slice. Extends D-24516
+(the `heroEffectResolved` overlay); reads the WP-325/D-24237 reveal-outcome data.
+**Reserved by:** NUMBER-LEDGER D-24547.
+
 Protect this file.

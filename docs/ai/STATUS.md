@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-726 — Auto-resolving hero-effect reveal observability (EC-763 / D-24547) (2026-09-21)
+
+Closes an on-screen observability gap: a hero whose ability **auto-resolves a deck-top reveal**
+(Gambit *High Stakes Jackpot*, `reveal-cost-attack`, and the `reveal-odd-draw` / `reveal-min` /
+`reveal-ko` / `reveal-ko-or-draw` / `reveal-ko-attack` siblings) now surfaces the flipped card + its
+outcome on the WP-697 `heroEffectResolved` "Hero Ability" overlay. Before this WP the reveal grant
+was faithful but INVISIBLE — the reveal auto-resolves (parks no choice), so the flipped card reached
+only `G.messages` (not client-projected) and the player saw "nothing happened" (surfaced in a live 1p
+Magneto / *Portals to the Dark Dimension* match with `heroEffectResolved: 0`).
+
+Engine-only source: a pure `composeHeroRevealTopNarrative` (third-person, no "Player N" prefix) +
+a guarded `heroEffectResolved` emit in `applyRevealRules` (right after the WP-325 log push), gated to
+auto-resolve only (realized work + no `choose-discard-or-return` action — the parking reveals surface
+via their pending-choice UI). Reuses the WP-697 `HeroEffectResolvedEvent` + `NotableEventOverlay.vue`
+verbatim: **no new event type/field, no client source change** (client touch = a render test + a
+`notableEvents`-survives-`filterUIStateForAudience` regression test absent before this WP). Display-only,
+off-ranking (NG-1); the reveal grant, deck order, and the WP-325 log line are byte-identical.
+
+Engine **4018/0**; arena-client **1887/0** + vue-tsc clean; `pnpm -r build` 0. `G.notableEvents` is
+hashed by both oracles, but the core-only sentinel plays no deck-top-reveal hero, so the sentinel
+`finalStateHash` + `PRE_WP080_HASH` are **byte-unchanged — NO re-pin** (the WP-697 outcome, verified).
+Two-commit topology (EC-763 impl + SPEC close). **D-24026 live-verify operator-pending** post-deploy
+(play Gambit *High Stakes Jackpot* → the "Hero Ability" overlay names the revealed card + outcome).
+Rendering the flipped card's **image** (an optional `revealedCardId` field + the full Board-Visible
+Field Rule 5-step) is a named follow-up.
+
 ### WP-727 — Portals to the Dark Dimension: Dark-Portal board overlay (EC-764 / D-24548) (2026-09-21)
 
 The client half of the Portals Dark-Portal visualization arc — completes it on-screen. Renders
