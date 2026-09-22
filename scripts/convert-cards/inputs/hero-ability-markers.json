@@ -1762,6 +1762,24 @@
       "cardSlug": "digest-that-chimichanga",
       "abilityIndex": 1,
       "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "carnage",
+      "cardSlug": "rending-claws",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "venom-rocket",
+      "cardSlug": "serious-overkill",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "venompool",
+      "cardSlug": "can-i-get-a-little-gratitude",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:rescue:1]"
     }
   ],
   "wpnx": [
@@ -1947,7 +1965,7 @@
       "cardSlug": "saturday-morning-harpoons",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Rescue a Bystander.",
-      "reason": "D-21602 — onFight-timed rescue: '[keyword:Excessive Violence]:' is a card-ability keyword timing prefix analogous to '[keyword:Ambush]:'; executor dispatch for this keyword timing is not wired to executeHeroEffects."
+      "reason": "WP-736 / D-24556 — the Excessive Violence fight-overspend timing now ships (enroll-at-play, fire-at-fight), but this card is in the 'dead' set, out of scope for the vnom-only WP-736 allowlist (EXCESSIVE_VIOLENCE_CARDS). Deferred to a later cross-set EV sweep; its ability (rescue 1) already reduces to a shipped executor."
     },
     {
       "setAbbr": "dims",
@@ -2107,7 +2125,7 @@
       "cardSlug": "feast-or-famine",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Reveal the top card of your deck. If it costs 0, KO it and you may repeat this process.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects; also loop mechanic requires new infrastructure even if timing resolved"
+      "reason": "WP-736 / D-24556 — the Excessive Violence fight-overspend timing now ships, but this ability is deferred: it needs a reveal-top-cost-0-KO LOOP executor that does not exist (the reveal-KO loop infrastructure is out of scope). Not in the WP-736 allowlist (EXCESSIVE_VIOLENCE_CARDS)."
     },
     {
       "setAbbr": "vnom",
@@ -2115,7 +2133,7 @@
       "cardSlug": "gruesome-feast",
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
+      "reason": "WP-736 / D-24556 — the Excessive Violence fight-overspend timing now ships, but this ability is deferred: it needs a reveal-top-may-KO executor that does not exist. Not in the WP-736 allowlist (EXCESSIVE_VIOLENCE_CARDS)."
     },
     {
       "setAbbr": "vnom",
@@ -2124,14 +2142,6 @@
       "abilityIndex": 0,
       "abilityText": "[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack].",
       "reason": "reveal-discard-attack: Similar to reveal-ko-attack but discards the card instead of KO-ing it when cost = 0. Discard vs. KO is a meaningful gameplay difference; a reveal-discard-attack executor (or a mode parameter on reveal-ko-attack) would be needed."
-    },
-    {
-      "setAbbr": "vnom",
-      "heroSlug": "venompool",
-      "cardSlug": "can-i-get-a-little-gratitude",
-      "abilityIndex": 1,
-      "abilityText": "[keyword:Excessive Violence]: “Rescue“ a Bystander.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {
       "setAbbr": "vnom",

@@ -7,6 +7,8 @@
  * All fields are integers >= 0. The parser enforces this at setup time.
  */
 
+import type { CardExtId } from '../state/zones.types.js';
+
 /**
  * Per-turn economy tracking for attack and recruit points.
  *
@@ -65,6 +67,37 @@ export interface TurnEconomy {
    * and neither state-hash oracle moves.
    */
   drawsLocked?: boolean;
+  /**
+   * WP-736 / D-24556 — the ordered ledger of "Excessive Violence" cards the current
+   * player has played this turn (Venomverse's Excessive Violence, keywords-full id 30).
+   * Playing an allowlisted EV card appends its CardExtId here (via
+   * `enrollExcessiveViolenceCard`) instead of firing its ability; a fight the player
+   * takes "using Excessive Violence" (one extra [attack], once per turn) then fires
+   * every enrolled card's ability in this order (`fireExcessiveViolencePlays`).
+   *
+   * Append order = fire order; DUPLICATES are allowed (the glossary's "two cards with
+   * the same name" case — two copies each fire). Strings only (CardExtId), never card
+   * objects — the ledger stays JSON-serializable and G-runtime-only.
+   *
+   * LAZILY MATERIALIZED, exactly like `recruitSpendableAsAttack` / `drawsLocked`: absent
+   * until the first EV card is played, dropped again by `resetTurnEconomy` at turn start,
+   * and carried across every same-turn rebuild by the conditional spread in
+   * `carryConversionFlag`. An absent field is omitted by `JSON.stringify`, so a turn that
+   * never plays an EV card serializes byte-identically and neither state-hash oracle moves.
+   */
+  excessiveViolencePlayedCards?: CardExtId[];
+  /**
+   * WP-736 / D-24556 — whether the current player has already fought "using Excessive
+   * Violence" this turn. Set true the first time a fight resolves with the +1-attack
+   * overspend (via `markExcessiveViolenceUsed`); a second EV fight the same turn is
+   * barred ("Since you can only fight using Excessive Violence once per turn…", id 30).
+   *
+   * LAZILY MATERIALIZED, exactly like `drawsLocked`: absent until set, dropped by
+   * `resetTurnEconomy` at turn start, and carried across every rebuild by
+   * `carryConversionFlag`. Absent ≡ not yet used this turn; omitted by `JSON.stringify`,
+   * so a turn that never overspends serializes byte-identically.
+   */
+  excessiveViolenceUsedThisTurn?: boolean;
 }
 
 // why: stats resolved at setup time from registry so moves never query

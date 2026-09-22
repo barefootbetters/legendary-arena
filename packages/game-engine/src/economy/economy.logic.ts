@@ -477,34 +477,49 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
 // Economy helpers — pure functions, return new objects
 // ---------------------------------------------------------------------------
 
-// why: WP-580 / D-24389 + WP-731 / D-24552 — every lazily-materialized
-// turn-scoped flag (`recruitSpendableAsAttack`, `drawsLocked`) must SURVIVE
-// every TurnEconomy rebuild. addResources/spendAttack/spendRecruit reconstruct
-// the object from an explicit literal (not a spread), so without this a later
-// same-turn spend would silently drop a flag set earlier by God of Thunder or
-// Venompool. This is the SINGLE carry chokepoint — both setters
-// (`enableRecruitSpendableAsAttack`, `enableDrawLock`) spread it too, so setting
-// one flag can never drop the other.
+// why: WP-580 / D-24389 + WP-731 / D-24552 + WP-736 / D-24556 — every
+// lazily-materialized turn-scoped field (`recruitSpendableAsAttack`, `drawsLocked`,
+// and now the Excessive Violence ledger `excessiveViolencePlayedCards` +
+// `excessiveViolenceUsedThisTurn`) must SURVIVE every TurnEconomy rebuild.
+// addResources/spendAttack/spendRecruit reconstruct the object from an explicit literal
+// (not a spread), so without this a later same-turn spend would silently drop a flag set
+// earlier by God of Thunder or Venompool — or, per D-24556, the EV ledger of cards
+// enrolled at play would be dropped by the very fight (`spendFightCost` → the rebuild
+// helpers) that is supposed to fire them, so no enrolled EV ability could ever fire.
+// This is the SINGLE carry chokepoint — the setters (`enableRecruitSpendableAsAttack`,
+// `enableDrawLock`, `enrollExcessiveViolenceCard`, `markExcessiveViolenceUsed`) spread it
+// too, so setting one field can never drop another.
 // Per-field conditional add (not `drawsLocked: economy.drawsLocked`) keeps each
 // field ABSENT when unset under exactOptionalPropertyTypes, preserving the
 // lazy-materialization guarantee that both hash oracles stay byte-stable.
 /**
- * Carries the lazily-materialized turn-scoped flags forward across a
+ * Carries the lazily-materialized turn-scoped fields forward across a
  * TurnEconomy rebuild.
  *
  * @param economy - Current turn economy state.
- * @returns The subset of `{ recruitSpendableAsAttack, drawsLocked }` that is set
- *   (each key present only when its flag is set), else `{}`.
+ * @returns The subset of `{ recruitSpendableAsAttack, drawsLocked,
+ *   excessiveViolencePlayedCards, excessiveViolenceUsedThisTurn }` that is set
+ *   (each key present only when its field is set), else `{}`.
  */
 function carryConversionFlag(
   economy: TurnEconomy,
-): Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked'>> {
-  const carried: Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked'>> = {};
+): Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked' | 'excessiveViolencePlayedCards' | 'excessiveViolenceUsedThisTurn'>> {
+  const carried: Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked' | 'excessiveViolencePlayedCards' | 'excessiveViolenceUsedThisTurn'>> = {};
   if (economy.recruitSpendableAsAttack !== undefined) {
     carried.recruitSpendableAsAttack = economy.recruitSpendableAsAttack;
   }
   if (economy.drawsLocked !== undefined) {
     carried.drawsLocked = economy.drawsLocked;
+  }
+  // why: WP-736 / D-24556 — carry the EV ledger array (not just the two conversion flags):
+  // the ledger is what keeps the enrolled EV cards alive across the addResources /
+  // spendAttack / spendRecruit rebuilds that a play + the firing fight run, so
+  // `fireExcessiveViolencePlays` still sees the cards enrolled earlier this turn.
+  if (economy.excessiveViolencePlayedCards !== undefined) {
+    carried.excessiveViolencePlayedCards = economy.excessiveViolencePlayedCards;
+  }
+  if (economy.excessiveViolenceUsedThisTurn !== undefined) {
+    carried.excessiveViolenceUsedThisTurn = economy.excessiveViolenceUsedThisTurn;
   }
   return carried;
 }
@@ -683,6 +698,74 @@ export function enableDrawLock(economy: TurnEconomy): TurnEconomy {
     // draw lock never drops a `recruitSpendableAsAttack` set earlier this turn.
     ...carryConversionFlag(economy),
     drawsLocked: true,
+  };
+}
+
+/**
+ * Enrolls an "Excessive Violence" card into the current turn's EV ledger
+ * (WP-736 / D-24556).
+ *
+ * Called by the `excessive-violence` enroll handler (heroEffectExcessiveViolence) when an
+ * allowlisted EV card is PLAYED. Appends `cardId` to `excessiveViolencePlayedCards`,
+ * materializing the array on the first call. Append order is fire order; duplicates are
+ * intentionally kept (two copies of the same-named card each fire, per glossary id 30).
+ * Every other field — including a `drawsLocked` / `recruitSpendableAsAttack` set earlier
+ * this turn — is carried unchanged through the single carry chokepoint.
+ * `resetTurnEconomy` drops the ledger at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The played EV card's CardExtId to enrol.
+ * @returns New TurnEconomy with `cardId` appended to the EV ledger.
+ */
+export function enrollExcessiveViolenceCard(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-736 / D-24556 — materialize the ledger on first enrolment (absent until then,
+  // preserving the omit-when-off / hash-stable guarantee), then append. Build the next
+  // array from the carried copy so the rebuild below never aliases the prior turn state.
+  const nextPlayedCards = [...(economy.excessiveViolencePlayedCards ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-736 / D-24556 — spread the single carry chokepoint so enrolling an EV card
+    // never drops a `recruitSpendableAsAttack` / `drawsLocked` / `excessiveViolenceUsedThisTurn`
+    // set earlier this turn. The explicit assignment below then sets THIS setter's own field.
+    ...carryConversionFlag(economy),
+    excessiveViolencePlayedCards: nextPlayedCards,
+  };
+}
+
+/**
+ * Marks that the current player has fought "using Excessive Violence" this turn
+ * (WP-736 / D-24556).
+ *
+ * Called by the fight moves (fightVillain / fightMastermind) the first time a fight
+ * resolves with the +1-attack overspend. Sets `excessiveViolenceUsedThisTurn`; the fight
+ * moves then bar a second EV fight the same turn. Every other field — including the EV
+ * ledger itself — is carried unchanged through the single carry chokepoint.
+ * `resetTurnEconomy` clears it at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `excessiveViolenceUsedThisTurn` set true.
+ */
+export function markExcessiveViolenceUsed(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-736 / D-24556 — spread the single carry chokepoint so setting the once-per-turn
+    // guard never drops the EV ledger (or the two conversion flags) set earlier this turn.
+    ...carryConversionFlag(economy),
+    excessiveViolenceUsedThisTurn: true,
   };
 }
 

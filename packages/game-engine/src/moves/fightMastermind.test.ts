@@ -952,3 +952,79 @@ describe('WP-732 / D-24553 — a vanquishing tactic defers the win and leaves it
       'a non-winning defeat does not clear pending choices');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-736 / D-24556 / D-24557 — Excessive Violence fight-overspend (mastermind)
+// ---------------------------------------------------------------------------
+
+describe('fightMastermind — Excessive Violence overspend (WP-736 / D-24556 / D-24557)', () => {
+  // why: base mastermind fightCost is 8 (test-mastermind-base); the deck has 3 tactics, so a
+  // single fight defeats ONE tactic (not the vanquish), keeping these tests off the endgame path.
+  function withEvMastermind(options: {
+    attack: number;
+    recruit?: number;
+    recruitSpendableAsAttack?: boolean;
+    ledger?: string[];
+    innerEffects?: { type: string; magnitude?: number }[];
+    excessiveViolenceUsedThisTurn?: boolean;
+  }): LegendaryGameState {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({
+        attack: options.attack,
+        recruit: options.recruit ?? 0,
+        ...(options.recruitSpendableAsAttack ? { recruitSpendableAsAttack: true } : {}),
+        ...(options.ledger ? { excessiveViolencePlayedCards: options.ledger } : {}),
+        ...(options.excessiveViolenceUsedThisTurn ? { excessiveViolenceUsedThisTurn: true } : {}),
+      }),
+    });
+    gameState.playerZones['0']!.deck = ['d-1'] as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: (options.innerEffects ?? [{ type: 'draw', magnitude: 1 }]) as never }],
+    }];
+    return gameState;
+  }
+
+  it('fires the enrolled EV ability and debits ONE extra attack on a valid opt-in', () => {
+    const gameState = withEvMastermind({ attack: 10, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext, { useExcessiveViolence: true });
+
+    assert.equal(moveContext.G.mastermind.tacticsDefeated.length, 1, 'one tactic is defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 9, 'debits requiredFightCost + 1 (8 + 1)');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 1, 'the EV draw fired at fight resolution');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true, 'the once-per-turn guard is set');
+  });
+
+  it('does NOT fire EV again the same turn (once-per-turn) and debits no extra attack', () => {
+    const gameState = withEvMastermind({ attack: 10, ledger: ['rc'], excessiveViolenceUsedThisTurn: true });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext, { useExcessiveViolence: true });
+
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'only requiredFightCost is debited (no extra attack)');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'the EV ability does NOT fire a second time this turn');
+  });
+
+  it('declines silently to a normal fight when the extra +1 is unaffordable', () => {
+    const gameState = withEvMastermind({ attack: 8, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext, { useExcessiveViolence: true });
+
+    assert.equal(moveContext.G.mastermind.tacticsDefeated.length, 1, 'the tactic is defeated at the normal cost');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'only requiredFightCost is debited — the unaffordable +1 declines');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'EV did not fire (no extra attack)');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, undefined, 'the guard is not set on a declined opt-in');
+  });
+
+  it('a normal fight (no useExcessiveViolence) is byte-identical — no EV fire, no new fields', () => {
+    const gameState = withEvMastermind({ attack: 10, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'a normal fight debits only requiredFightCost');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'EV does not fire without the opt-in');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, undefined, 'the guard stays absent');
+  });
+});

@@ -46,7 +46,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard } from '../economy/economy.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
@@ -231,6 +231,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // here (the bidirectional handler-completeness authority). Carries NO top-level magnitude → also
   // in NO_MAGNITUDE_KEYWORDS.
   'digest-indigestion',
+  // why: WP-736 / D-24556 — the Venomverse "Excessive Violence" fight-overspend keyword; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectExcessiveViolence) that ENROLLS the played card into the
+  // turn-scoped ledger (the inner effects fire later from the fight move's fireExcessiveViolencePlays),
+  // so it belongs here (the bidirectional handler-completeness authority). Carries NO top-level
+  // magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'excessive-violence',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -478,6 +484,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
   // branch never runs.
   'digest-indigestion',
+  // why: WP-736 / D-24556 — excessive-violence carries NO top-level magnitude (the wrapper only
+  // enrolls the card; the inner draw:N / rescue:N / optional-ko / +recruit effects ride their own
+  // markers inside excessiveViolenceEffects). The magnitude pre-gate must not drop it, or
+  // heroEffectExcessiveViolence never fires and the card is never enrolled.
+  'excessive-violence',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -4823,6 +4834,96 @@ function heroEffectDigestIndigestion(
   }
 }
 
+/**
+ * Hero handler for the `excessive-violence` keyword (WP-736 / D-24556).
+ *
+ * Venomverse's "Excessive Violence" (keywords-full id 30). `executeHeroEffects` fires this at
+ * PLAY time (it does not filter by hook timing), and its ONLY job at play is to ENROL the played
+ * card into the turn-scoped EV ledger (`G.turnEconomy.excessiveViolencePlayedCards`) — it applies
+ * NONE of the inner draw / recruit / rescue / optional-ko effects. Those fire later, and only if
+ * the player fights "using Excessive Violence", from the fight move's `fireExcessiveViolencePlays`.
+ *
+ * Safe-skips (no enrolment, no throw) when the fused wrapper has no inner effects — a malformed or
+ * non-allowlisted descriptor whose `excessiveViolenceEffects` is undefined.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Context (unused — enrolment reads/writes only G.turnEconomy).
+ * @param playerID - Active player ID (unused for enrolment; the ledger is the active player's).
+ * @param cardId - The played EV card's CardExtId to enrol.
+ * @param effect - The 'excessive-violence' wrapper descriptor { excessiveViolenceEffects }.
+ */
+function heroEffectExcessiveViolence(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-736 / D-24556 — safe-skip a wrapper with no inner effects (a malformed or
+  // non-allowlisted descriptor). Enrolling an empty EV card would make it fire nothing at fight
+  // time anyway; skipping keeps the ledger free of no-op cards.
+  if (effect.excessiveViolenceEffects === undefined) {
+    return;
+  }
+  // why: WP-736 / D-24556 — ENROL only. The inner effects fire from the fight-time driver, never
+  // here. enrollExcessiveViolenceCard appends the card to the turn-scoped ledger (materializing it
+  // on the first EV play), carried across same-turn rebuilds by carryConversionFlag.
+  G.turnEconomy = enrollExcessiveViolenceCard(G.turnEconomy, cardId);
+  // why: WP-434 — enrolment is `applied` (green): it changed turn state (the card is now armed to
+  // fire on an Excessive Violence fight) even though no resource total moved and no card was drawn.
+  pushLog(G,
+    `Player ${playerID} readied ${formatCardRef(G.cardDisplayData, cardId)} for Excessive Violence — its ability fires if you fight using Excessive Violence this turn.`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
+/**
+ * Fires every enrolled "Excessive Violence" ability, in play (enrolment) order (WP-736 / D-24556).
+ *
+ * Called from the MOVE BODY of fightVillain / fightMastermind — NEVER from the shared
+ * defeatCityVillainCore / defeatMastermindTacticCore (which non-fight defeat paths reach without
+ * the `useExcessiveViolence` arg) — AFTER the defeat is settled and the extra `[attack]` is debited.
+ * For each `cardId` in the turn-scoped ledger, it finds that card's `excessive-violence` hook in
+ * `G.heroAbilityHooks` and dispatches each descriptor in its `excessiveViolenceEffects` through the
+ * reentrant `executeSingleEffect` (the copy-powers / steal-abilities / digest-indigestion precedent).
+ *
+ * Deterministic: fixed enrolment order, a `for...of` loop (no `.reduce()`), no `ctx.random` beyond
+ * what an inner executor already uses. Never throws (moves never throw); a missing hook or empty
+ * ledger is a silent no-op.
+ *
+ * @param G - Game state (mutated by each fired inner effect).
+ * @param ctx - Context, forwarded to each inner effect's handler.
+ * @param playerID - The fighting player's ID (whose EV ledger is fired).
+ * @returns void.
+ */
+export function fireExcessiveViolencePlays(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+): void {
+  const playedCards = G.turnEconomy.excessiveViolencePlayedCards ?? [];
+  // why: WP-736 / D-24556 — defensive guard mirroring executeHeroEffects: a G state that predates
+  // the hooks (older test fixtures) has no heroAbilityHooks. `?? []` keeps this a silent no-op
+  // (moves never throw) rather than iterating undefined.
+  const allHooks = G.heroAbilityHooks ?? [];
+  for (const cardId of playedCards) {
+    // why: WP-736 / D-24556 — find this enrolled card's fused excessive-violence hook. A copy with
+    // no such hook (defensive: only allowlisted cards enrol) contributes nothing.
+    const hooks = getHooksForCard(allHooks, cardId);
+    for (const hook of hooks) {
+      for (const effect of hook.effects ?? []) {
+        if (effect.type !== 'excessive-violence') {
+          continue;
+        }
+        for (const innerEffect of effect.excessiveViolenceEffects ?? []) {
+          executeSingleEffect(G, ctx, playerID, cardId, innerEffect);
+        }
+      }
+    }
+  }
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -4949,6 +5050,12 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (when the printed "Instead … both" upgrade condition holds) via the reentrant executeSingleEffect.
   // Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
   'digest-indigestion': heroEffectDigestIndigestion,
+  // why: WP-736 / D-24556 — the Venomverse "Excessive Violence" fight-overspend keyword:
+  // heroEffectExcessiveViolence ENROLS the played card into the turn-scoped ledger at play time;
+  // the fight move's fireExcessiveViolencePlays fires each enrolled card's excessiveViolenceEffects
+  // (draw / +recruit / rescue / optional-ko) at fight resolution when the player spends the extra
+  // [attack]. Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'excessive-violence': heroEffectExcessiveViolence,
 };
 
 // ---------------------------------------------------------------------------

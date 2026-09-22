@@ -437,6 +437,14 @@ const KEYWORD_TIMING_DEFAULTS: Partial<Record<HeroKeyword, HeroAbilityTiming>> =
   // chokepoint keys on the keyword — but the hook must carry it for the per-hook
   // timing-membership drift test.
   'teleport-on-discard': 'onDiscard',
+  // why: WP-736 / D-24556 — Excessive Violence resolves at FIGHT time ("Once per turn,
+  // you can spend 1 extra attack to fight … using Excessive Violence."), so its fused hook
+  // lands on onFight (the parser default is onPlay). The hook still fires at PLAY time to
+  // ENROLL the card (executeHeroEffects does not filter by timing); the actual EV abilities
+  // fire from the fight move's fireExcessiveViolencePlays. buildExcessiveViolenceFusion sets
+  // this timing directly on the fused hook, so this entry documents the default and keeps the
+  // keyword→timing map complete.
+  'excessive-violence': 'onFight',
 };
 
 // why: D-24055 — the rulebook value for Spectrum: ≥3 Hero classes.
@@ -518,6 +526,30 @@ const INDIGESTION_MARKER_PATTERN = /\[keyword:Indigestion\]/;
 // [hc:X] / [team:X] condition is parsed separately (Step 1a/1b) into the bothCondition; this
 // pattern only identifies which line is the upgrade so the fusion consumes it. Case-insensitive.
 const DIGEST_BOTH_LINE_PATTERN = /\bInstead\b[^.]*\bboth\b/i;
+
+// why: WP-736 / D-24556 — the printed "[keyword:Excessive Violence]" space-form display token.
+// KEYWORD_PATTERN (`\[keyword:([a-zA-Z][a-zA-Z-]*)(?::(\d+))?\]`) requires `:N` or `]` right
+// after the keyword name, so a SPACE inside "Excessive Violence" means it can never match — the
+// token falls through as an unresolved marker today (the hollow being fixed). This dedicated
+// pattern identifies which ability line carries the EV ability so the fusion consumes it; the
+// printed display token is left in the card text unchanged (AbilityText.vue renders it). Non-global
+// so `.test` is stateless.
+const EXCESSIVE_VIOLENCE_PATTERN = /\[keyword:Excessive Violence\]/;
+
+// why: WP-736 / D-24556 — the allowlist of Venomverse cards whose Excessive Violence ability
+// reduces to a shipped inner executor (draw / recruit / rescue / optional-ko-hand-discard), so
+// their [keyword:Excessive Violence] resolves to an EXECUTABLE fused hook. Keyed by the canonical
+// `{setAbbr}/{heroSlug}/{cardSlug}` key (the DIGEST_INDIGESTION_CARDS / SUPPORTED_TRANSFORM_BASES
+// per-card-allowlist precedent). Every OTHER EV card (carnage/gruesome-feast + feast-or-famine need
+// a reveal-top-may-KO executor that does not exist; the out-of-set dead/slapstick; can-i-get line 0's
+// passive rescue-doubler; any future member) keeps its honest parse-unrecognized hollow — the
+// Honest-Partial Invariant. resolve ONLY these four; every other EV card keeps an honest unresolved marker.
+const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
+  'vnom/carnage/rending-claws',
+  'vnom/venom/razor-teeth',
+  'vnom/venom-rocket/serious-overkill',
+  'vnom/venompool/can-i-get-a-little-gratitude',
+]);
 
 // why: WP-723 / D-24544 — detects an X-Gene line. On such a line (for an allowlisted card)
 // the leading [hc:X] is the discard-condition class ("a [class] card in your discard pile"),
@@ -2927,6 +2959,54 @@ function buildDigestIndigestionFusion(
 }
 
 /**
+ * Fuses an allowlisted Venomverse card's "[keyword:Excessive Violence]" line into one
+ * excessive-violence hook (WP-736 / D-24556).
+ *
+ * Finds the single ability line carrying the EV display token, parses that line's inline
+ * effects via the shared parseAbilityText (the [keyword:draw:1] / [keyword:rescue:1] /
+ * [keyword:optional-ko-hand-discard] / [icon:recruit] marker → the EV ability's inner
+ * effects), and returns ONE fused hook (timing onFight) whose wrapper descriptor carries
+ * those effects in `excessiveViolenceEffects`, plus the index of the consumed line so the
+ * caller skips it. The printed [keyword:Excessive Violence] token is NOT a resolvable
+ * keyword, so it is simply discarded with the rest of the consumed line (no leftover
+ * standalone draw/recruit/rescue/ko hook that would fire at play, no residual unresolved
+ * marker). Non-mutating (returns a new array; the display `abilities[]` is untouched).
+ * Returns undefined when no EV line is present (defensive — every allowlisted card has one).
+ *
+ * @param cardId - The played hero card's CardExtId (the hook's cardId).
+ * @param abilityLines - The card's ability lines (post-coalesce).
+ * @returns The fused hook + consumed line index, or undefined when no EV line is found.
+ */
+function buildExcessiveViolenceFusion(
+  cardId: CardExtId,
+  abilityLines: string[],
+): { hook: HeroAbilityHook; consumedIndices: ReadonlySet<number> } | undefined {
+  const excessiveViolenceIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && EXCESSIVE_VIOLENCE_PATTERN.test(line),
+  );
+  if (excessiveViolenceIndex === -1) {
+    return undefined;
+  }
+  // why: WP-736 / D-24556 — the EV line's inline marker parses to the EV ability's inner
+  // effect(s). The bare [keyword:Excessive Violence] display token is not a resolvable
+  // keyword (KEYWORD_PATTERN cannot match the space form), so parseAbilityText returns only
+  // the inner effect; consuming the whole line below discards the display token so no
+  // unresolved-marker hollow survives.
+  const excessiveViolenceEffects = parseAbilityText(abilityLines[excessiveViolenceIndex]!).effects;
+  const effect: HeroEffectDescriptor = { type: 'excessive-violence', excessiveViolenceEffects };
+  const hook: HeroAbilityHook = {
+    cardId,
+    // why: WP-736 / D-24556 — onFight is the EV keyword's KEYWORD_TIMING_DEFAULTS timing.
+    // The hook still fires at PLAY (executeHeroEffects does not filter by timing) — where its
+    // handler ENROLLS the card; the inner effects fire from the fight move's driver.
+    timing: 'onFight',
+    keywords: ['excessive-violence'],
+    effects: [effect],
+  };
+  return { hook, consumedIndices: new Set<number>([excessiveViolenceIndex]) };
+}
+
+/**
  * Builds hero ability hooks from registry card data at setup time.
  *
  * Called during Game.setup() via buildInitialGameState. Resolves hero
@@ -3017,10 +3097,28 @@ export function buildHeroAbilityHooks(
       if (digestFusion !== undefined) {
         hooks.push(digestFusion.hook);
       }
+      // why: WP-736 / D-24556 — for an allowlisted Venomverse "Excessive Violence" card, fuse its
+      // [keyword:Excessive Violence] line into ONE excessive-violence hook up front (mirroring the
+      // digest fusion above), and record the consumed line index so the per-line loop below SKIPS it
+      // (never emitting a standalone draw/recruit/rescue/ko hook that would fire at play, nor an
+      // unresolved Excessive Violence marker). Same canonical-key allowlist gate.
+      const excessiveViolenceFusion = EXCESSIVE_VIOLENCE_CARDS.has(
+        `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+      )
+        ? buildExcessiveViolenceFusion(instance.extId, abilityLines)
+        : undefined;
+      if (excessiveViolenceFusion !== undefined) {
+        hooks.push(excessiveViolenceFusion.hook);
+      }
       for (let lineIndex = 0; lineIndex < abilityLines.length; lineIndex++) {
         // why: WP-735 / D-24555 — skip the Digest/Indigestion/upgrade lines the fusion already
         // consumed into the single digest-indigestion hook above.
         if (digestFusion !== undefined && digestFusion.consumedIndices.has(lineIndex)) {
+          continue;
+        }
+        // why: WP-736 / D-24556 — skip the [keyword:Excessive Violence] line the EV fusion consumed
+        // into the single excessive-violence hook above.
+        if (excessiveViolenceFusion !== undefined && excessiveViolenceFusion.consumedIndices.has(lineIndex)) {
           continue;
         }
         const abilityText = abilityLines[lineIndex]!;

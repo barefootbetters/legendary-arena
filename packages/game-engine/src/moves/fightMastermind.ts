@@ -17,7 +17,11 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getSpendableAttack, spendFightCost } from '../economy/economy.logic.js';
+import { getSpendableAttack, spendFightCost, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+// why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
+// ability. Called from THIS move body (never the shared defeatMastermindTacticCore, which non-fight
+// defeat paths reach without the useExcessiveViolence arg), after the defeat + the extra-attack debit.
+import { fireExcessiveViolencePlays } from '../hero/heroEffects.execute.js';
 // why: WP-539 / D-24348 — centralized mastermind fight requirement (base fightCost +
 // the Portals Dark-Portal mastermind bonus), so combat / UI / AI never disagree.
 import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
@@ -66,6 +70,18 @@ import { pushLog } from '../log/logPush.js';
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
+/** Arguments for the fightMastermind move. */
+interface FightMastermindArgs {
+  /**
+   * WP-736 / D-24556 — opt-in to fight the Mastermind "using Excessive Violence": spend 1 extra
+   * [attack] beyond the fight cost (at most once per turn) to fire every Excessive Violence ability
+   * enrolled this turn. Optional; absent/false is a normal fight (byte-identical to pre-WP-736). An
+   * unaffordable +1 or an already-used EV fight this turn declines silently to a normal fight
+   * (validation-phase silent decline; moves never throw).
+   */
+  useExcessiveViolence?: boolean;
+}
+
 /**
  * The minimal boardgame.io events surface threaded into dispatchTacticOnFight so a
  * tactic Fight can park a WP-684 multi-seat seat choice (WP-694 / D-24511).
@@ -97,6 +113,7 @@ interface TacticSeatChoiceEvents {
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
   { G, ctx, random, events }: MoveContext,
+  { useExcessiveViolence }: FightMastermindArgs = {},
 ): void {
   // why: WP-687 / D-24504 — the optional Final Blow rule. When available, the
   // Mastermind (with no Tactics left) is fightable a 5th, final time; that fight is
@@ -212,9 +229,27 @@ export function fightMastermind(
     // non-active seats via setActivePlayers.
     defeatMastermindTacticCore(G, ctx, { random }, events);
   }
+  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
+  // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
+  // affordable AND EV has not already been used this turn (once per turn). A false result fights
+  // normally (validation-phase silent decline; moves never throw). The tactic defeat / final blow
+  // does not touch attack/recruit spendable, so reading getSpendableAttack here is still pre-spend.
+  const isExcessiveViolenceActive =
+    useExcessiveViolence === true &&
+    getSpendableAttack(G.turnEconomy) >= requiredFightCost + 1 &&
+    G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
   // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
   // recruit when the conversion is active; identical to spendAttack when unset.
-  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost);
+  // why: WP-736 / D-24557 — a SINGLE debit of requiredFightCost + the EV extra (0 or 1); never a
+  // double-spend. Fire STRICTLY after this debit (RS-1) so a razor-teeth recruit grant cannot
+  // change what spendFightCost pulls under a recruit-as-attack loadout.
+  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost + (isExcessiveViolenceActive ? 1 : 0));
+  if (isExcessiveViolenceActive) {
+    // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
+    // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).
+    G.turnEconomy = markExcessiveViolenceUsed(G.turnEconomy);
+    fireExcessiveViolencePlays(G, ctx, ctx.currentPlayer);
+  }
   // why: D-24180 — this successful mastermind fight marks the player as having
   // acted this turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;
