@@ -2057,6 +2057,65 @@ describe('executeHeroEffects', () => {
   });
 
   // -------------------------------------------------------------------------
+  // WP-734 / D-24554 — co2e Card Shark 2e (kinetic-card): two-rule reveal
+  // {team-x-men → draw} then {always → choose-discard-or-return}. On an X-Men
+  // match rule 1 draws + STOPS (no choice parked); on a non-match rule 2 parks
+  // the discard-or-return choice with the card left on top. makeTestState seeds
+  // turnEconomy, which applyRevealChoose requires (else the park silently no-ops).
+  // -------------------------------------------------------------------------
+  const kineticCardHook = () => ({
+    cardId: 'kinetic-card' as string,
+    timing: 'onPlay' as const,
+    keywords: ['reveal'] as string[],
+    effects: [{ type: 'reveal' as const, revealCount: 1, revealRules: [
+      { predicate: { kind: 'team' as const, traitValue: 'x-men' }, actions: [{ kind: 'draw' as const }] },
+      { predicate: { kind: 'always' as const }, actions: [{ kind: 'choose-discard-or-return' as const }] },
+    ] }],
+  });
+
+  it('kinetic-card: an X-Men match draws + STOPS — no discard-or-return choice parked (WP-734)', () => {
+    const gameState = makeTestState({
+      inPlay: ['kinetic-card'],
+      deck: ['x-hero'],
+      hand: [],
+      cardStats: { 'x-hero': { attack: 0, recruit: 0, cost: 5, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 } },
+      cardTraits: { 'x-hero': { heroClass: 'ranged', team: 'x-men' } },
+      heroAbilityHooks: [kineticCardHook()],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'kinetic-card' as string);
+
+    assert.ok(gameState.playerZones['0']!.hand.includes('x-hero'), 'the X-Men top card is drawn.');
+    assert.equal(gameState.playerZones['0']!.deck.length, 0, 'the drawn card left the deck.');
+    assert.equal(gameState.pendingHeroChoice, undefined,
+      'rule 1 (team-x-men → draw) has no continue, so the always → choose rule is never reached — NO choice parked on a match.');
+  });
+
+  it('kinetic-card: a NON-match parks the discard-or-return choice with the card left on top (WP-734)', () => {
+    const gameState = makeTestState({
+      inPlay: ['kinetic-card'],
+      deck: ['non-xmen-top', 'second-card'],
+      hand: [],
+      cardStats: {
+        'non-xmen-top': { attack: 0, recruit: 0, cost: 5, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+        'second-card': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      cardTraits: { 'non-xmen-top': { heroClass: 'tech', team: 'shield' } },
+      heroAbilityHooks: [kineticCardHook()],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'kinetic-card' as string);
+
+    assert.equal(gameState.playerZones['0']!.hand.length, 0, 'a non-match draws nothing.');
+    assert.equal(gameState.pendingHeroChoice?.choiceType, 'discard-or-return',
+      'rule 2 (always → choose) parks the discard-or-return choice on a non-match.');
+    assert.equal(gameState.pendingHeroChoice?.cardId, 'non-xmen-top',
+      'the parked choice targets the revealed deck-top card.');
+    assert.equal(gameState.playerZones['0']!.deck[0], 'non-xmen-top',
+      'the revealed card stays on top until the choice resolves (leave-on-top).');
+  });
+
+  // -------------------------------------------------------------------------
   // Test 42: reveal-odd-draw — cost-1 top card is drawn; exact topCardId in hand (AC-9, AC-26)
   // -------------------------------------------------------------------------
   it('reveal-odd-draw draws top card to hand when cost is odd (cost 1)', () => {

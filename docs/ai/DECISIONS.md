@@ -43616,4 +43616,37 @@ turn-scoped-flag precedent), D-24551 (the deferral + marker pipeline).
 
 **Reserved by:** NUMBER-LEDGER D-24552.
 
+### D-24554 — co2e Card Shark 2e resolves as a two-rule reveal (team-draw + choose-discard-or-return), no engine change (Active 2026-09-22 — WP-734 / EC-771)
+
+The WP-729/D-24550-deferred co2e "Card Shark 2e" — the actual card is
+`co2e/gambit/kinetic-card` idx 0: *"Reveal the top card of your deck. If it's an
+[team:x-men] Hero, draw it. Otherwise, discard it or put it back."* — is un-hollowed
+**entirely within the existing parameterized reveal-rule grammar**, with **no
+`packages/game-engine/src/**` source change**.
+
+1. **Two-rule reveal, first-match-wins.** Marker
+   `[keyword:reveal:team-x-men:draw][keyword:reveal:always:choose-discard-or-return]`
+   parses to two `RevealRule`s: rule 1 `{team 'x-men' → draw}` (the WP-729/D-24550 team
+   predicate) has no `continue`, so an X-Men match draws + **STOPS** and the choose rule is
+   never reached; rule 2 `{always → choose-discard-or-return}` is reached only on a **non-match**
+   and parks the existing `PendingHeroChoice{choiceType:'discard-or-return'}` via
+   `applyRevealChoose` (the WP-220/D-22003 machinery + its shipped arena-client prompt +
+   `resolveHeroChoice`). This is exactly the printed "X-Men → draw; otherwise → discard-or-return".
+2. **No new engine surface.** No new `RevealPredicateKind` / `RevealActionKind` / `HeroKeyword` /
+   handler; no canonical-array or drift change; no client change (the discard-or-return prompt
+   already ships). The ONLY code change is `VALID_TOKEN_PATTERN` (apply-hero-ability-markers.mjs)
+   gaining the single closed-set alternative `^\[keyword:reveal:always:choose-discard-or-return\]$`
+   (D-21601 lineage) so the marker validates at apply time.
+3. **Determinism.** `co2e/gambit/kinetic-card` is non-core; no committed sentinel/replay fixture
+   plays it → `finalStateHash` + `PRE_WP080_HASH` byte-unchanged — verified (engine 4038/0), NO
+   re-pin. The parked choice is runtime-only. `co2e` is excluded from the `cards:check`
+   regen-reproducibility gate (hand-authored), but the apply script still appends its marker.
+
+Deferred (Honest-Partial): the separate co2e Gambit card carrying `[keyword:reveal-cost-attack]` +
+a trailing "Discard it or put it back" (a reveal-cost-attack + choose shape) stays hollow; and the
+WP-726 `heroEffectResolved` overlay stays suppressed on an X-Men match+draw (the whole-array
+`choose-discard-or-return` check) — display-only, matching the reveal-attack-choose family, a named
+follow-up. Extends D-24550 (team predicate) + D-22003 (choose action). Renumbered from D-24553 after
+a parallel-session collision. **Reserved by:** NUMBER-LEDGER D-24554.
+
 Protect this file.

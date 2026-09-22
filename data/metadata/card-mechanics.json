@@ -1309,8 +1309,9 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 11,
+      "cardCount": 12,
       "cardIds": [
+        "co2e/gambit",
         "co2e/spider-man",
         "core/gambit",
         "core/spider-man",
@@ -2615,6 +2616,7 @@
     "co2e/gambit": {
       "mechanics": [
         "put-hand-on-deck-top",
+        "reveal",
         "reveal-cost-attack"
       ]
     },

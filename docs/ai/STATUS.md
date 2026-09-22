@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-734 — co2e Card Shark 2e: reveal team-draw + choose-discard-or-return (EC-771 / D-24554) (2026-09-22)
+
+Un-hollows the WP-729-deferred co2e "Card Shark 2e" (`co2e/gambit/kinetic-card` idx 0: "Reveal the
+top card of your deck. If it's an [team:x-men] Hero, draw it. Otherwise, discard it or put it
+back."). Resolved **entirely within the existing reveal-rule grammar** — a two-rule marker
+`[keyword:reveal:team-x-men:draw][keyword:reveal:always:choose-discard-or-return]`: rule 1 (WP-729
+team predicate) draws + STOPS on an X-Men match; rule 2 (`always` → the WP-220/D-22003
+`choose-discard-or-return` action) parks the existing discard-or-return pending choice on a non-match.
+**NO `packages/game-engine/src/**` source change** — the only code touch is one closed-set
+`VALID_TOKEN_PATTERN` alternative in the apply script; the rest is card data + 4 regenerated feeds +
+one engine test. Reuses the shipped choose machinery + arena-client prompt — no new predicate/action
+kind, no drift change, no client change.
+
+Engine **4038/0** (+2 tests: match draws + parks no choice / non-match parks discard-or-return +
+leaves on top); all card-data `:check` + `sim:coverage --check` 0; `pnpm -r build` 0. Sentinel
+`finalStateHash` + `PRE_WP080_HASH` **byte-unchanged — NO re-pin** (co2e non-core). Two-commit
+topology (EC-771 impl + SPEC close). `kinetic-card` now `reveal`/`executable` in the ledger.
+Renumbered from WP-732 after a parallel-session collision. **D-24026 live-verify operator-pending.**
+Deferred (Honest-Partial): the separate co2e reveal-cost-attack + trailing choose card; and match-draw
+overlay parity (the WP-726 overlay stays suppressed on a match+draw sharing a choose rule).
+
 ### WP-731 — Venompool "Shenanigans" turn-scoped draw-lock (`no-more-draws` keyword) (EC-768 / D-24552) (2026-09-21)
 
 Resolves the D-24551-deferred `vnom/venompool/shenanigans` — "Draw two cards. But you can't

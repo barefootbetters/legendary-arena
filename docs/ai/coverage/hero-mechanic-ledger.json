@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 733,
+    "totalRows": 734,
     "byStatus": {
-      "executable": 330,
+      "executable": 331,
       "deferred": 16,
       "condition": 28,
       "unsupported": 322,
@@ -2997,6 +2997,22 @@
         {
           "slug": "stack-the-deck",
           "name": "Stack the Deck"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "heroName": "Gambit",
+      "set": "co2e",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "kinetic-card",
+          "name": "Kinetic Card"
         }
       ]
     },
