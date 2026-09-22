@@ -388,8 +388,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // fixed-seed sweep, so its observations move into the resolved/executable set →
   // totalObs 3004 -> 3006 (+2). Deterministic — CI computes the same from the
   // regenerated runtime-observed-hollows feed.
+  // 2026-09-22 (WP-735 / D-24555, re-pin): WP-735 regenerated the runtime-observed-hollows
+  // feed (Venompool digest-indigestion), which shifted the fixed-seed sweep's trajectories
+  // but left this dashboard-test pin stale. The committed feed now nets totalObs 3006 -> 3004
+  // (-2); percentResolved holds at 24.4. This realigns the pin to the committed feed, mirroring
+  // the 3004 -> 3006 bump in commit 8ba5cbc3. Deterministic — CI computes the same from the
+  // regenerated runtime-observed-hollows feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3006);
+  assert.equal(view.totalObs.value, 3004);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
