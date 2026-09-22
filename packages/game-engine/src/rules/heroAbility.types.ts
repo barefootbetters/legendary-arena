@@ -197,6 +197,15 @@ export interface HeroEffectDescriptor {
   // (the printed "Instead … both" overrides the Digest threshold gate). Absent when the card has
   // no upgrade line. Other keywords ignore it.
   bothCondition?: HeroCondition;
+  // why: WP-736 / D-24556 — for an 'excessive-violence' effect, excessiveViolenceEffects is the
+  // enrolled EV ability's already-parsed inner effects (the draw / +recruit / rescue / optional-ko
+  // on the printed [keyword:Excessive Violence] line). It is FIRED at fight time (fireExcessiveViolencePlays),
+  // NOT at play — the play-time handler (heroEffectExcessiveViolence) only enrolls the card into the
+  // turn-scoped ledger. The SECOND self-referential nesting of HeroEffectDescriptor inside itself (after
+  // WP-735's digestEffects); the fused hook lives in the JSON-serialized G.heroAbilityHooks (D-24095),
+  // so this array stays plain data (no functions/Maps, acyclic). The handler safe-skips a
+  // 'excessive-violence' effect that lacks it. Other keywords ignore it.
+  excessiveViolenceEffects?: HeroEffectDescriptor[];
 }
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, fireExcessiveViolencePlays, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -104,7 +104,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // draw lock) (45 → 46).
     // WP-735 / D-24555 added the digest-indigestion handler (Venomverse Victory-Pile-count
     // branch — Digest / Indigestion / both) (46 → 47).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 47);
+    // WP-736 / D-24556 added the excessive-violence enroll handler (Venomverse fight-overspend —
+    // enrolls the played EV card into the turn-scoped ledger; the inner effects fire at fight time
+    // from fireExcessiveViolencePlays, which is NOT a HERO_EFFECT_HANDLERS entry) (47 → 48).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 48);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7120,12 +7123,12 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
       'the optional-KO choice does not park — the discard-pile condition failed');
   });
 
-  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 47', () => {
+  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 48', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count stays at the current total (47 after WP-735's
-    // digest-indigestion handler, D-24555).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 47,
-      'HERO_EFFECT_HANDLERS stays 47 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (48 after WP-736's
+    // excessive-violence enroll handler, D-24556).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 48,
+      'HERO_EFFECT_HANDLERS stays 48 (X-Gene is not an effect handler)');
   });
 });
 
@@ -7242,5 +7245,100 @@ describe('digest-indigestion (WP-735 / D-24555)', () => {
     const roundTripped = JSON.parse(JSON.stringify(hook)) as HeroAbilityHook;
     assert.deepStrictEqual(roundTripped, hook,
       'the self-recursive digestEffects/indigestionEffects nesting must be plain JSON');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// excessive-violence — Venomverse fight-overspend keyword (WP-736 / D-24556)
+// ---------------------------------------------------------------------------
+
+describe('excessive-violence enroll + fire (WP-736 / D-24556)', () => {
+  const evCtx = makeMockCtx();
+
+  // why: a rending-claws-shaped fused hook — the EV ability is draw 1, fired at fight time.
+  function evHook(cardId: string, innerEffects: HeroEffectDescriptor[]): HeroAbilityHook {
+    return {
+      cardId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: innerEffects }],
+    };
+  }
+
+  it('ENROLS the played EV card into the ledger and does NOT fire the inner effect at play', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      deck: ['d-1'],
+      heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])],
+    });
+    executeHeroEffects(g, evCtx, '0', 'rc');
+    assert.deepEqual(g.turnEconomy.excessiveViolencePlayedCards, ['rc'],
+      'playing the EV card enrols it into the turn-scoped ledger');
+    assert.deepEqual(g.playerZones['0']!.hand, [],
+      'the EV draw does NOT fire at play — no immediate draw');
+    assert.deepEqual(g.playerZones['0']!.deck, ['d-1'], 'the deck is untouched at play time');
+  });
+
+  it('fireExcessiveViolencePlays fires each enrolled card\'s inner effect (draw) in ledger order', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      deck: ['d-1'],
+      heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])],
+    });
+    executeHeroEffects(g, evCtx, '0', 'rc'); // enrol
+    assert.deepEqual(g.playerZones['0']!.hand, [], 'still no draw before the fight fires');
+    fireExcessiveViolencePlays(g, evCtx, '0'); // fight-time fire
+    assert.equal(g.playerZones['0']!.hand.length, 1, 'the EV draw fires at fight time');
+    assert.deepEqual(g.playerZones['0']!.deck, [], 'the drawn card left the deck');
+  });
+
+  it('DUPLICATE enrolments both fire (two same-named EV cards → glossary id 30)', () => {
+    const g = makeTestState({
+      inPlay: ['rc#0', 'rc#1'],
+      deck: ['d-1', 'd-2'],
+      heroAbilityHooks: [
+        evHook('rc#0', [{ type: 'draw', magnitude: 1 }]),
+        evHook('rc#1', [{ type: 'draw', magnitude: 1 }]),
+      ],
+    });
+    executeHeroEffects(g, evCtx, '0', 'rc#0');
+    executeHeroEffects(g, evCtx, '0', 'rc#1');
+    assert.deepEqual(g.turnEconomy.excessiveViolencePlayedCards, ['rc#0', 'rc#1'],
+      'both copies enrol in play order');
+    fireExcessiveViolencePlays(g, evCtx, '0');
+    assert.equal(g.playerZones['0']!.hand.length, 2, 'both enrolled copies draw — two cards total');
+  });
+
+  it('a turn that plays no EV card leaves the ledger absent (omit-when-off)', () => {
+    const g = makeTestState({ inPlay: ['x'], heroAbilityHooks: [] });
+    assert.strictEqual(g.turnEconomy.excessiveViolencePlayedCards, undefined);
+    assert.ok(!('excessiveViolencePlayedCards' in JSON.parse(JSON.stringify(g.turnEconomy))),
+      'no EV play → no ledger key in the serialized economy');
+  });
+
+  it('safe-skips an excessive-violence effect with no excessiveViolenceEffects — no enrol, no throw', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      heroAbilityHooks: [{
+        cardId: 'rc', timing: 'onFight', keywords: ['excessive-violence'],
+        effects: [{ type: 'excessive-violence' } as HeroEffectDescriptor],
+      }],
+    });
+    executeHeroEffects(g, evCtx, '0', 'rc');
+    assert.strictEqual(g.turnEconomy.excessiveViolencePlayedCards, undefined,
+      'a wrapper with no inner effects is not enrolled');
+  });
+
+  it('fireExcessiveViolencePlays is a no-op with an empty ledger (never throws)', () => {
+    const g = makeTestState({ inPlay: ['rc'], deck: ['d-1'], heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])] });
+    fireExcessiveViolencePlays(g, evCtx, '0');
+    assert.deepEqual(g.playerZones['0']!.hand, [], 'no enrolled cards → nothing fires');
+  });
+
+  it('a fused excessive-violence hook survives a JSON round-trip (D-24095)', () => {
+    const hook = evHook('rc', [{ type: 'optional-ko-hand-discard' }, { type: 'draw', magnitude: 1 }]);
+    const roundTripped = JSON.parse(JSON.stringify(hook)) as HeroAbilityHook;
+    assert.deepStrictEqual(roundTripped, hook,
+      'the nested excessiveViolenceEffects must be plain JSON (no functions/Maps, acyclic)');
   });
 });

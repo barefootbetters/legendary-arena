@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 63 entries after WP-735 digest-indigestion', () => {
+  it('HERO_KEYWORDS array has exactly 64 entries after WP-736 excessive-violence', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      63,
-      'HERO_KEYWORDS must have exactly 63 entries (62 + digest-indigestion (WP-735 / D-24555))',
+      64,
+      'HERO_KEYWORDS must have exactly 64 entries (63 + excessive-violence (WP-736 / D-24556))',
     );
     assert.ok(
       HERO_KEYWORDS.includes('kidnap-per-count'),

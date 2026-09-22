@@ -738,6 +738,103 @@ describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Dec
 });
 
 // ---------------------------------------------------------------------------
+// WP-736 / D-24556 / D-24557 — Excessive Violence fight-overspend
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Excessive Violence overspend (WP-736 / D-24556 / D-24557)', () => {
+  // why: a rending-claws-shaped fused hook enrolled this turn — the EV ability is draw 1.
+  function withEvVillain(options: {
+    fightCost: number;
+    attack: number;
+    recruit?: number;
+    recruitSpendableAsAttack?: boolean;
+    ledger?: string[];
+    innerEffects?: { type: string; magnitude?: number }[];
+    excessiveViolenceUsedThisTurn?: boolean;
+    deck?: string[];
+  }): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: options.fightCost, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.playerZones['0']!.deck = (options.deck ?? ['d-1']) as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: (options.innerEffects ?? [{ type: 'draw', magnitude: 1 }]) as never }],
+    }];
+    gameState.turnEconomy = makeTurnEconomy({
+      attack: options.attack,
+      recruit: options.recruit ?? 0,
+      ...(options.recruitSpendableAsAttack ? { recruitSpendableAsAttack: true } : {}),
+      ...(options.ledger ? { excessiveViolencePlayedCards: options.ledger } : {}),
+      ...(options.excessiveViolenceUsedThisTurn ? { excessiveViolenceUsedThisTurn: true } : {}),
+    });
+    return gameState;
+  }
+
+  it('fires the enrolled EV ability and debits ONE extra attack on a valid opt-in', () => {
+    const gameState = withEvVillain({ fightCost: 2, attack: 3, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'the villain is defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'debits requiredFightCost + 1 (2 + 1)');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 1, 'the EV draw fired at fight resolution');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true, 'the once-per-turn guard is set');
+  });
+
+  it('does NOT fire EV again the same turn (once-per-turn) and debits no extra attack', () => {
+    const gameState = withEvVillain({ fightCost: 2, attack: 3, ledger: ['rc'], excessiveViolenceUsedThisTurn: true });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'the villain is still defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 2, 'only requiredFightCost is debited (no extra attack)');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'the EV ability does NOT fire a second time this turn');
+  });
+
+  it('declines silently to a normal fight when the extra +1 is unaffordable', () => {
+    const gameState = withEvVillain({ fightCost: 2, attack: 2, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'the villain is defeated at the normal cost');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 2, 'only requiredFightCost is debited — the unaffordable +1 declines');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'EV did not fire (no extra attack)');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, undefined, 'the guard is not set on a declined opt-in');
+  });
+
+  it('a normal fight (no useExcessiveViolence) is byte-identical — no EV fire, no new fields', () => {
+    const gameState = withEvVillain({ fightCost: 2, attack: 3, ledger: ['rc'] });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 2, 'a normal fight debits only requiredFightCost');
+    assert.equal(moveContext.G.playerZones['0']!.hand.length, 0, 'EV does not fire without the opt-in');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, undefined, 'the guard stays absent');
+  });
+
+  it('fires strictly AFTER the debit — a razor-teeth +2 recruit grant does not alter the fight cost (RS-1)', () => {
+    // why: recruit-as-attack loadout; attack 1 + recruit 3 spendable = 4 >= cost+1 = 3. The debit
+    // pulls the fixed 3 attack-first (1 attack + 2 recruit) BEFORE razor-teeth grants +2 recruit,
+    // so the +2 lands on top of the post-debit recruit total, never funding the fight.
+    const gameState = withEvVillain({
+      fightCost: 2, attack: 1, recruit: 3, recruitSpendableAsAttack: true, ledger: ['rc'],
+      innerEffects: [{ type: 'recruit', magnitude: 2 }],
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'the villain is defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 1, 'attack-first: 1 attack pulled toward the cost+1 = 3 debit');
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 2, 'the remaining 2 of the 3 debit came from recruit');
+    assert.equal(moveContext.G.turnEconomy.recruit, 5, 'razor-teeth added +2 recruit AFTER the debit (3 + 2)');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-656 / D-24467 — Diamond Form defeat signal (gated, edge-triggered)
 // ---------------------------------------------------------------------------
 

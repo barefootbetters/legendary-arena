@@ -21,6 +21,8 @@ import {
   buildCardStats,
   enableRecruitSpendableAsAttack,
   enableDrawLock,
+  enrollExcessiveViolenceCard,
+  markExcessiveViolenceUsed,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -671,5 +673,98 @@ describe('enableDrawLock (WP-731 / D-24552)', () => {
     assert.strictEqual(both.recruitSpendableAsAttack, true,
       'setting the draw lock must not drop a recruit-as-attack conversion set earlier this turn');
     assert.strictEqual(both.drawsLocked, true);
+  });
+});
+
+// ===========================================================================
+// WP-736 / D-24556 — Excessive Violence turn-scoped ledger + once-per-turn guard.
+// enrollExcessiveViolenceCard appends to G.turnEconomy.excessiveViolencePlayedCards
+// (omit-when-empty, append order = fire order, duplicates allowed); markExcessiveViolenceUsed
+// sets excessiveViolenceUsedThisTurn. Both spread the single carry chokepoint so no
+// turn-scoped field ever drops another.
+// ===========================================================================
+
+describe('enrollExcessiveViolenceCard / markExcessiveViolenceUsed (WP-736 / D-24556)', () => {
+  it('the base economy leaves both EV fields absent (omit-when-off)', () => {
+    const base = resetTurnEconomy();
+    // why: absent (not [] / false) so JSON.stringify omits them and the hash oracles stay byte-stable.
+    assert.strictEqual(base.excessiveViolencePlayedCards, undefined);
+    assert.strictEqual(base.excessiveViolenceUsedThisTurn, undefined);
+    const serialized = JSON.parse(JSON.stringify(base));
+    assert.ok(!('excessiveViolencePlayedCards' in serialized),
+      'a turn that never plays an EV card must serialize with NO ledger key');
+    assert.ok(!('excessiveViolenceUsedThisTurn' in serialized),
+      'a turn that never fights using EV must serialize with NO guard key');
+  });
+
+  it('enroll materializes the ledger on the first call and appends in order', () => {
+    const base = resetTurnEconomy();
+    const afterFirst = enrollExcessiveViolenceCard(base, 'vnom/carnage/rending-claws#0');
+    assert.deepStrictEqual(afterFirst.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0']);
+    assert.notStrictEqual(afterFirst, base, 'returns a new object (input not mutated)');
+    assert.strictEqual(base.excessiveViolencePlayedCards, undefined, 'input economy is not mutated');
+
+    const afterSecond = enrollExcessiveViolenceCard(afterFirst, 'vnom/venom/razor-teeth#0');
+    assert.deepStrictEqual(afterSecond.excessiveViolencePlayedCards,
+      ['vnom/carnage/rending-claws#0', 'vnom/venom/razor-teeth#0'],
+      'append order = fire order');
+    assert.deepStrictEqual(afterFirst.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0'],
+      'the prior economy is not mutated by a later enrolment');
+  });
+
+  it('enroll keeps DUPLICATE copies (two same-named EV cards each fire — glossary id 30)', () => {
+    let economy = resetTurnEconomy();
+    economy = enrollExcessiveViolenceCard(economy, 'vnom/carnage/rending-claws#0');
+    economy = enrollExcessiveViolenceCard(economy, 'vnom/carnage/rending-claws#1');
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards,
+      ['vnom/carnage/rending-claws#0', 'vnom/carnage/rending-claws#1'],
+      'both copies are kept in the ledger (duplicates allowed)');
+  });
+
+  it('markExcessiveViolenceUsed sets the once-per-turn guard true', () => {
+    const base = resetTurnEconomy();
+    const used = markExcessiveViolenceUsed(base);
+    assert.strictEqual(used.excessiveViolenceUsedThisTurn, true);
+    assert.notStrictEqual(used, base, 'returns a new object');
+    assert.strictEqual(base.excessiveViolenceUsedThisTurn, undefined, 'input economy is not mutated');
+  });
+
+  it('the ledger survives a same-turn rebuild (spendFightCost via addResources/spend path)', () => {
+    // why: a fight debits via spendFightCost, which rebuilds the economy through
+    // spendAttack. carryConversionFlag must keep the ledger alive so the fight that
+    // fires the EV plays still sees the cards enrolled earlier this turn.
+    const enrolled = enrollExcessiveViolenceCard(resetTurnEconomy(), 'vnom/carnage/rending-claws#0');
+    const afterGrant = addResources(enrolled, 3, 0);
+    assert.deepStrictEqual(afterGrant.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0'],
+      'a same-turn resource grant / rebuild must not drop the EV ledger');
+  });
+
+  it('resetTurnEconomy drops both EV fields at the turn boundary', () => {
+    // why: a fresh turn rebuilds with no lazy fields, so the ledger + guard clear each turn.
+    const fresh = resetTurnEconomy();
+    assert.strictEqual(fresh.excessiveViolencePlayedCards, undefined);
+    assert.strictEqual(fresh.excessiveViolenceUsedThisTurn, undefined);
+  });
+
+  it('the EV fields coexist with the two conversion flags — none drops another', () => {
+    // why: Venompool (drawsLocked) + God of Thunder (recruit-as-attack) + an EV play + an EV
+    // fight is a legal same-turn loadout; the single carry chokepoint keeps all four.
+    let economy = resetTurnEconomy();
+    economy = enableDrawLock(economy);
+    economy = enableRecruitSpendableAsAttack(economy);
+    economy = enrollExcessiveViolenceCard(economy, 'vnom/carnage/rending-claws#0');
+    economy = markExcessiveViolenceUsed(economy);
+    assert.strictEqual(economy.drawsLocked, true, 'drawsLocked survives the EV setters');
+    assert.strictEqual(economy.recruitSpendableAsAttack, true, 'recruit-as-attack survives the EV setters');
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0']);
+    assert.strictEqual(economy.excessiveViolenceUsedThisTurn, true);
+  });
+
+  it('enrolling an EV card does not drop a guard/flag set earlier (carry symmetry)', () => {
+    let economy = markExcessiveViolenceUsed(resetTurnEconomy());
+    economy = enrollExcessiveViolenceCard(economy, 'vnom/venom/razor-teeth#0');
+    assert.strictEqual(economy.excessiveViolenceUsedThisTurn, true,
+      'enrolling a card must not drop the once-per-turn guard set earlier this turn');
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/venom/razor-teeth#0']);
   });
 });

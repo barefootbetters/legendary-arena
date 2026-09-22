@@ -621,12 +621,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'covering-fire', // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card.") — parks a choose-one for the active player; each branch acts on every other seat (draw / auto-discard)
     'no-more-draws', // why: WP-731 / D-24552 — Venompool's Shenanigans ("But you can't draw any more cards until the end of this turn.") — sets the turn-scoped G.turnEconomy.drawsLocked flag; heroEffectDraw draws 0 + logs blocked while set
     'digest-indigestion', // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch (fused from the Digest/Indigestion/upgrade lines of an allowlisted card into one hook; handler branches on G.playerZones[pid].victory.length)
+    'excessive-violence', // why: WP-736 / D-24556 — the Venomverse "Excessive Violence" fight-overspend keyword (enroll-at-play, fire-at-fight; fused from the [keyword:Excessive Violence] line of an allowlisted card into one onFight hook)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      63,
-      'HERO_KEYWORDS must have exactly 63 entries',
+      64,
+      'HERO_KEYWORDS must have exactly 64 entries',
     );
 
     assert.deepStrictEqual(
@@ -2430,6 +2431,102 @@ describe('buildHeroAbilityHooks — digest-indigestion fusion (WP-735 / D-24555)
     assert.ok(
       hooks.some((hook) => (hook.unresolvedMarkers ?? []).some((marker) => /indigestion/i.test(marker))),
       'the Indigestion line stays a parse-unrecognized hollow',
+    );
+  });
+});
+
+describe('buildHeroAbilityHooks — excessive-violence fusion (WP-736 / D-24556)', () => {
+  function vnomConfig(heroSlug: string): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: [`vnom/${heroSlug}`] };
+  }
+
+  it('fuses an allowlisted EV card into ONE excessive-violence hook (rending-claws → draw 1)', () => {
+    const registry = makeHeroRegistry('vnom', 'carnage', [
+      { slug: 'rending-claws', rarityLabel: 'Rare', abilities: [
+        '[keyword:Excessive Violence]: Draw a card. [keyword:draw:1]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, vnomConfig('carnage'));
+
+    assert.equal(hooks.length, 1, 'the EV line fuses into exactly one hook');
+    const hook = hooks[0]!;
+    assert.deepEqual(hook.keywords, ['excessive-violence'], 'the fused hook carries only the excessive-violence keyword');
+    assert.equal(hook.timing, 'onFight', 'the fused hook carries the onFight default timing');
+    assert.equal(hook.unresolvedMarkers, undefined, 'the [keyword:Excessive Violence] token is consumed — no unresolved-marker hollow');
+    assert.equal(hook.effects?.length, 1, 'exactly one wrapper effect');
+    const effect = hook.effects![0]!;
+    assert.equal(effect.type, 'excessive-violence');
+    assert.deepEqual(effect.excessiveViolenceEffects, [{ type: 'draw', magnitude: 1 }], 'the inner effect is draw 1');
+  });
+
+  it('fuses razor-teeth (+2 recruit via [icon:recruit], no apply marker) into the wrapper', () => {
+    const registry = makeHeroRegistry('vnom', 'venom', [
+      { slug: 'razor-teeth', rarityLabel: 'Rare', abilities: [
+        '[keyword:Excessive Violence]: You get +2[icon:recruit].',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, vnomConfig('venom'));
+    assert.equal(hooks.length, 1, 'the EV line fuses into exactly one hook (no leftover standalone recruit hook that would fire at play)');
+    const effect = hooks[0]!.effects![0]!;
+    assert.equal(effect.type, 'excessive-violence');
+    assert.deepEqual(effect.excessiveViolenceEffects, [{ type: 'recruit', magnitude: 2 }], 'the inner effect is +2 recruit');
+  });
+
+  it('fuses serious-overkill (optional-ko-hand-discard) into the wrapper', () => {
+    const registry = makeHeroRegistry('vnom', 'venom-rocket', [
+      { slug: 'serious-overkill', rarityLabel: 'Rare', abilities: [
+        '[keyword:Excessive Violence]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, vnomConfig('venom-rocket'));
+    assert.equal(hooks.length, 1);
+    const effect = hooks[0]!.effects![0]!;
+    assert.equal(effect.type, 'excessive-violence');
+    assert.deepEqual(effect.excessiveViolenceEffects, [{ type: 'optional-ko-hand-discard' }], 'the inner effect is the no-reward optional KO');
+  });
+
+  it('fuses can-i-get idx1 (rescue 1) and leaves the idx0 passive line untouched', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'can-i-get-a-little-gratitude', rarityLabel: 'Rare', abilities: [
+        'Whenever you Rescue a Bystander this turn, do any "rescue" ability on it an extra time.',
+        '[keyword:Excessive Violence]: "Rescue" a Bystander. [keyword:rescue:1]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, vnomConfig('venompool'));
+    // why: line 0 (the passive rescue-doubler) is NOT an EV line and stays its own hook; only
+    // the idx1 EV line is fused.
+    const evHook = hooks.find((hook) => (hook.keywords ?? []).includes('excessive-violence'));
+    assert.ok(evHook !== undefined, 'the idx1 EV line fuses into an excessive-violence hook');
+    assert.deepEqual(evHook!.effects![0]!.excessiveViolenceEffects, [{ type: 'rescue', magnitude: 1 }], 'the inner effect is rescue 1');
+    // why: line 0 is untouched — it does not become an EV hook, and the EV fusion did not consume it.
+    assert.ok(
+      hooks.some((hook) => !(hook.keywords ?? []).includes('excessive-violence')),
+      'the idx0 passive line remains its own (non-EV) hook',
+    );
+  });
+
+  it('does NOT fuse a non-allowlisted EV card — its [keyword:Excessive Violence] stays an honest hollow', () => {
+    const registry = makeHeroRegistry('vnom', 'carnage', [
+      { slug: 'gruesome-feast', rarityLabel: 'Rare', abilities: [
+        '[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it.',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, vnomConfig('carnage'));
+    assert.ok(
+      !hooks.some((hook) => (hook.keywords ?? []).includes('excessive-violence')),
+      'a non-allowlisted EV card produces NO excessive-violence hook',
+    );
+    // why: the printed [keyword:Excessive Violence] space-form token is not matched by
+    // KEYWORD_PATTERN and is NOT scanned as an unresolved marker, so a non-allowlisted EV line
+    // yields an EMPTY hook (no keywords, no effects) — a RUNTIME-observed hollow (the hook fires
+    // and does nothing), exactly as it does today. The allowlist gate is what keeps it hollow.
+    assert.ok(
+      !hooks.some((hook) => (hook.effects ?? []).some((effect) => effect.type === 'excessive-violence')),
+      'no excessive-violence effect is produced for a non-allowlisted card',
+    );
+    assert.ok(
+      hooks.every((hook) => (hook.effects?.length ?? 0) === 0 && (hook.keywords?.length ?? 0) === 0),
+      'the EV line stays an empty (runtime-observed) hollow hook — nothing resolved',
     );
   });
 });

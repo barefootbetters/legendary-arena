@@ -17,7 +17,11 @@ import type { LegendaryGameState } from '../types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttack, spendFightCost } from '../economy/economy.logic.js';
+import { getSpendableAttack, spendFightCost, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+// why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
+// ability. Called from THIS move body (never the shared defeatCityVillainCore, which non-fight
+// defeat paths reach without the useExcessiveViolence arg), after the defeat + the extra-attack debit.
+import { fireExcessiveViolencePlays } from '../hero/heroEffects.execute.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import {
@@ -81,6 +85,14 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 interface FightVillainArgs {
   /** 0-based index of the City space to fight (0-4). */
   cityIndex: number;
+  /**
+   * WP-736 / D-24556 — opt-in to fight "using Excessive Violence": spend 1 extra [attack]
+   * beyond the fight cost (at most once per turn) to fire every Excessive Violence ability
+   * enrolled this turn. Optional; absent/false is a normal fight (byte-identical to pre-WP-736).
+   * An unaffordable +1 or an already-used EV fight this turn declines silently to a normal fight
+   * (validation-phase silent decline; moves never throw).
+   */
+  useExcessiveViolence?: boolean;
 }
 
 /**
@@ -94,7 +106,7 @@ interface FightVillainArgs {
  */
 export function fightVillain(
   { G, ctx, random }: MoveContext,
-  { cityIndex }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence }: FightVillainArgs,
 ): void {
   // Step 1: Validate args
   if (
@@ -222,9 +234,27 @@ export function fightVillain(
   // byte-identical to the prior inline order — the unmodified fightVillain tests
   // are the oracle.
   defeatCityVillainCore(G, ctx, cityIndex, { random });
+  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
+  // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
+  // affordable AND EV has not already been used this turn (once per turn). A false result fights
+  // normally (validation-phase silent decline; moves never throw). defeatCityVillainCore does not
+  // touch attack/recruit spendable, so reading getSpendableAttack here is still the pre-spend value.
+  const isExcessiveViolenceActive =
+    useExcessiveViolence === true &&
+    getSpendableAttack(G.turnEconomy) >= requiredFightCost + 1 &&
+    G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
   // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
   // recruit when the conversion is active; identical to spendAttack when unset.
-  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost);
+  // why: WP-736 / D-24557 — a SINGLE debit of requiredFightCost + the EV extra (0 or 1); never a
+  // double-spend. Fire STRICTLY after this debit (RS-1) so a razor-teeth recruit grant cannot
+  // change what spendFightCost pulls under a recruit-as-attack loadout.
+  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost + (isExcessiveViolenceActive ? 1 : 0));
+  if (isExcessiveViolenceActive) {
+    // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
+    // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).
+    G.turnEconomy = markExcessiveViolenceUsed(G.turnEconomy);
+    fireExcessiveViolencePlays(G, ctx, ctx.currentPlayer);
+  }
   // why: D-24180 — this successful fight marks the player as having acted this
   // turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;

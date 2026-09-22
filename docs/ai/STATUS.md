@@ -7,6 +7,64 @@
 
 ## Current State
 
+### WP-736 — "Excessive Violence" fight-overspend hero keyword (`excessive-violence`; EC-773 / D-24556 / D-24557) (2026-09-22)
+
+Un-hollows the D-21602-deferred Venomverse "Excessive Violence" family (`keywords-full` id 30,
+parse-unrecognized). Semantics (id 30): **once per turn** a player may spend **1 extra `[attack]`** beyond a
+Villain/Mastermind's fight cost "using Excessive Violence"; if they do, **every** Excessive Violence ability
+on cards played **this turn** resolves. A turn with no fight, or no extra `+1`, fires nothing; later-played
+EV cards miss the window; duplicate copies each fire. This is a NEW **fire-at-fight-time** path (bigger than
+WP-735's onPlay Digest branch) because `executeHeroEffects` fires all hooks at PLAY time and does NOT filter
+by timing — so an `onFight` EV hook must **enrol** the card at play and defer firing.
+
+New `excessive-violence` `HeroKeyword` (`onFight` default timing) + an additive `excessiveViolenceEffects?`
+wrapper field on `HeroEffectDescriptor` (the second self-recursive nesting, JSON-roundtrip-pinned). A
+per-card allowlist `EXCESSIVE_VIOLENCE_CARDS` gates a **non-mutating fusion** (`buildExcessiveViolenceFusion`,
+mirroring `buildDigestIndigestionFusion`) that folds the `[keyword:Excessive Violence]` line into ONE hook,
+consuming the source token. Two omit-when-off `TurnEconomy` fields — `excessiveViolencePlayedCards?`
+(the ordered ledger, duplicates kept) + `excessiveViolenceUsedThisTurn?` (the once-per-turn guard) — are
+dropped by `resetTurnEconomy` and carried by the single `carryConversionFlag` chokepoint (the
+`drawsLocked`/`recruitSpendableAsAttack` precedent), set by `enrollExcessiveViolenceCard` /
+`markExcessiveViolenceUsed`. Play-time `heroEffectExcessiveViolence` ENROLS only (no inner effect);
+`fireExcessiveViolencePlays` dispatches each enrolled card's effects via the reentrant `executeSingleEffect`
+in ledger order. `fightVillain` / `fightMastermind` gain an OPTIONAL `useExcessiveViolence?` arg — a single
+`spendFightCost(requiredFightCost + 1)`, fire STRICTLY after the debit, from the MOVE BODY only (never the
+shared defeat-core); unaffordable `+1` / already-used declines silently (moves never throw). Scope = infra +
+**4 `vnom` cards** (`rending-claws` draw 1, `razor-teeth` +2 recruit, `serious-overkill`
+optional-ko-hand-discard, `can-i-get-a-little-gratitude` line 1 rescue 1); the reveal-KO members + other
+sets stay honest hollows. Card-data: 2 net-new markers + 1 `_deferred`→active + 3 updated `_deferred`
+reasons via the curated map + `vnom` regen + 4 feeds; **NO client / pending-choice / UIState / new move**.
+
+Engine **4079/0** (+ enroll-not-fire-at-play, fire-at-fight, once-per-turn, unaffordable-decline,
+normal-fight-unchanged, duplicate-enrolment, safe-skip, ledger omit-when-off, fused-hook JSON-roundtrip,
+fusion→one-hook, non-allowlisted→hollow, razor-teeth-under-recruit-as-attack ordering, + economy setter
+tests, across the engine + economy + both fight-move suites). Drift `HERO_KEYWORDS` 63→64,
+`HERO_EFFECT_HANDLERS` 47→48. All card-data `:check` (`cards`/`effect-index`/`mechanics:metadata`/
+`ledger:heroes`/`sim:runtime-observed`) + `sim:coverage --check` + `cards:count-markers:check` **0**;
+`pnpm -r build` 0; `lagn-v1.json` CRLF churn reverted. **Determinism: NO re-pin** — ledger + guard
+omit-when-off + turn-cleared, all four cards `vnom` non-core, `finalStateHash` + `PRE_WP080_HASH` verified
+byte-unchanged. Two-commit topology (EC-773 impl + SPEC close).
+
+**AC #11 (per-hero-aggregation honesty):** `excessive-violence` joins the hero-mechanic ledger's
+`BY_HOOK_KEYWORDS` (with `transform`), so a card is `executable` only when ITS hook resolved the keyword.
+The ~10 non-allowlisted EV heroes (`dead/*`, `mgtg/*`) read **`unsupported`**, not a by-name blanket
+`executable` — the over-claim AC #11 warns about. A mixed hero (`carnage`: wired `rending-claws` + deferred
+`gruesome-feast`/`feast-or-famine`) aggregates to `executable`; the un-hollow is verified by each wired
+card's resolution (fusion + behavior tests + the 4 cards resolving), not by claiming the deferred siblings
+green.
+
+**Proactive observation (out of scope, follow-up):** the Dashboard in-play-coverage baseline
+(`apps/dashboard/scripts/build-in-play-baseline.mjs`, not in this WP's allowlist) likely shifts its
+`totalObs` now that the 4 EV cards resolve in-play — the same inherited Dashboard-Gates churn WP-735 hit
+(a non-required check; fix is an INFRA re-pin of the dashboard test constant, mirroring `8ba5cbc3`). Not
+touched here to hold the engine scope-lock.
+
+**D-24026 live-verify — REQUIRED (post-deploy, follow-up STATUS flip).** Until the sibling client "Fight
+using Excessive Violence" affordance ships, drive `useExcessiveViolence` via the diagnostic / autoplay
+`setupData` path (`reference_autoplay_setupdata_live_verify`): a live match where playing an EV card and
+fighting with the extra attack fires the EV ability (draw / +recruit / KO-choice / rescue), verified against
+the deployed `/api/version` gitSha. Recorded as a follow-up, not a merge blocker.
+
 ### WP-735 — Venompool "Digest N / Indigestion" Victory-Pile branch (`digest-indigestion` keyword; EC-772 / D-24555) (2026-09-22)
 
 Un-hollows the D-21602-deferred Venompool "Digest N / Indigestion" family (parse-unrecognized; ~14

@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 737,
+    "totalRows": 738,
     "byStatus": {
-      "executable": 334,
+      "executable": 339,
       "deferred": 16,
       "condition": 28,
-      "unsupported": 322,
+      "unsupported": 318,
       "unmarked": 35,
       "subsystem": 2
     },
@@ -10744,6 +10744,10 @@
         {
           "slug": "carnivore",
           "name": "Carnivore"
+        },
+        {
+          "slug": "rending-claws",
+          "name": "Rending Claws"
         }
       ]
     },
@@ -10752,10 +10756,10 @@
       "heroName": "Carnage",
       "set": "vnom",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
       "designs": [
         {
           "slug": "feast-or-famine",
@@ -10828,10 +10832,10 @@
       "heroName": "Venom",
       "set": "vnom",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
       "designs": [
         {
           "slug": "razor-teeth",
@@ -10896,10 +10900,26 @@
       "heroName": "Venom Rocket",
       "set": "vnom",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "designs": [
+        {
+          "slug": "serious-overkill",
+          "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "heroName": "Venom Rocket",
+      "set": "vnom",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {
           "slug": "serious-overkill",
@@ -10980,10 +11000,10 @@
       "heroName": "Venompool",
       "set": "vnom",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
       "designs": [
         {
           "slug": "can-i-get-a-little-gratitude",
@@ -11037,6 +11057,10 @@
       "decision": "D-21501",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
       "designs": [
+        {
+          "slug": "can-i-get-a-little-gratitude",
+          "name": "Can I Get a Little Gratitude?"
+        },
         {
           "slug": "digest-that-chimichanga",
           "name": "Digest That Chimichanga"

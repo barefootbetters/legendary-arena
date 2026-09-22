@@ -656,7 +656,7 @@
       "slug": "excessive-violence",
       "label": "Excessive Violence",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 11,
       "cardIds": [
         "dead/bob-agent-of-hydra",
@@ -1010,8 +1010,9 @@
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
+        "vnom/venom-rocket",
         "wwhk/she-hulk",
         "xmen/x-23"
       ],
@@ -3943,7 +3944,8 @@
     "vnom/venom-rocket": {
       "mechanics": [
         "digest",
-        "excessive-violence"
+        "excessive-violence",
+        "optional-ko-hand-discard"
       ]
     },
     "vnom/venomized-dr-strange": {

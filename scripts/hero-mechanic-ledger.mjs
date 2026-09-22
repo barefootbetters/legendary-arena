@@ -143,7 +143,16 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // keyword is in the hook's `keywords`), otherwise it stays `unsupported`. Without this the
 // by-name MVP_KEYWORDS check would falsely mark all 15 transform heroes executable (a
 // coverage over-claim), defeating the Honest-Partial Invariant.
-const BY_HOOK_KEYWORDS = new Set(['transform']);
+// why: WP-736 / D-24556 — excessive-violence is the SECOND by-hook keyword (after transform).
+// Every card bearing the printed `[keyword:Excessive Violence]` text normalizes to the
+// `excessive-violence` mechanic, but only the four EXCESSIVE_VIOLENCE_CARDS resolve it to a fused
+// `excessive-violence` hook; the ~10 other EV cards (carnage's gruesome-feast/feast-or-famine,
+// dead/*, mgtg/*) leave an EMPTY hook (a runtime-observed hollow — the space-form token is not a
+// scannable unresolved marker). So — like transform — classify it by-hook: `executable` only when
+// THIS card's hook actually resolved the keyword, else `unsupported`. Without this the by-name
+// MVP_KEYWORDS check would falsely mark every EV hero executable and over-claim the deferred
+// siblings (the AC #11 / WP-735-AC-#8 reward-integrity over-claim).
+const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword

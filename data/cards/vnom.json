@@ -27,7 +27,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Excessive Violence]: Draw a card."
+            "[keyword:Excessive Violence]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -280,7 +280,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Excessive Violence]: You may KO a card from your hand or discard pile."
+            "[keyword:Excessive Violence]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -500,7 +500,7 @@
           "recruit": null,
           "abilities": [
             "Whenever you Rescue a Bystander this turn, do any “rescue“ ability on it an extra time.",
-            "[keyword:Excessive Violence]: “Rescue“ a Bystander."
+            "[keyword:Excessive Violence]: “Rescue“ a Bystander. [keyword:rescue:1]"
           ]
         },
         {
