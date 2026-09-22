@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 2553,
+    "totalObservations": 2551,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 488,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2065
+      "parse-unrecognized": 2063
     }
   },
   "byMechanic": {
@@ -491,12 +491,12 @@
       ]
     },
     "indigestion": {
-      "hitCount": 42,
+      "hitCount": 40,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 42
+        "parse-unrecognized": 40
       },
       "examples": [
         {

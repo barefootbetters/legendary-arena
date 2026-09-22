@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 734,
     "byStatus": {
-      "executable": 330,
+      "executable": 331,
       "deferred": 16,
       "condition": 28,
-      "unsupported": 323,
+      "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
@@ -10984,10 +10984,10 @@
       "heroName": "Venompool",
       "set": "vnom",
       "mechanic": "no-more-draws",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws",
       "designs": [
         {
           "slug": "shenanigans",

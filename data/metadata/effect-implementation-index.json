@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 481,
+      "executable": 482,
       "deferred": 16,
       "condition": 28,
-      "unsupported": 324,
+      "unsupported": 323,
       "unmarked": 1056,
       "subsystem": 4
     }
@@ -22366,8 +22366,8 @@
       "set": "vnom",
       "scope": "hero",
       "mechanic": "no-more-draws",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws",
       "wp": "",
       "decision": "",
       "designs": [
