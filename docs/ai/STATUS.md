@@ -27,6 +27,23 @@ Changes:
 
 Engine 4117/0 (+16 tests); `pnpm -r build` 0; the six card/coverage checks exit 0; no
 `finalStateHash` re-pin. **D-24562 Active.** D-24026 live-verify is pending (post-deploy).
+### WP-738 — Client "Fight using Excessive Violence" affordance (EC-775 / D-24561) (2026-09-22)
+
+Adds the player-facing control that submits `fightVillain` / `fightMastermind` with
+`{ useExcessiveViolence: true }` (the WP-736 arg) — the client half of the paired arc that finally
+makes the Excessive Violence overspend reachable by a human and closes the WP-736 D-24026 deferred
+fire-payoff. **EC amendment** (EC-775 §Locked Values permits it): implemented as a PER-TARGET opt-in
+rather than an arm-then-fight toggle — a separate "⚔ Excessive Violence" button on each fightable
+City villain (`CityRow.vue`) and on the Mastermind (`MastermindTile.vue`), shown only when
+`economy.excessiveViolenceAvailable` (WP-739) is set AND the target is affordable at `cost + 1`
+(`canFightWithExcessiveViolence` in `useCardCostGating`, reusing the same `display.cost` source as
+`canFight`, so the client gate mirrors the engine gate exactly). The normal Fight click is
+byte-identical (no `useExcessiveViolence` key). The engine stays the sole authority — the client gate
+only decides SHOW/ENABLE + whether to send the arg; a wrong arm → the engine silently fights normally.
+Once-per-turn is engine-enforced and reflected by the field going absent after use (the control then
+disappears; no client "used" tracking). arena-client only — NO engine change, no new UIState field, no
+move-args typing change (`SubmitMove.args` is `unknown`); arena-client 1906/0 (+15 tests); `pnpm -r
+build` 0. NG-safe. **D-24561 Active.** D-24026 live-verify is operator-manual, post-deploy.
 
 ### WP-739 — Project `economy.excessiveViolenceAvailable` onto UIState (EC-776 / D-24560) (2026-09-22)
 
