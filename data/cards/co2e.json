@@ -791,7 +791,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:tech]: Draw another card."
+            "[hc:tech]: Draw another card. [keyword:draw:1]"
           ]
         },
         {
@@ -837,7 +837,7 @@
           "recruit": null,
           "abilities": [
             "Draw two cards. [keyword:draw:2]",
-            "[team:avengers]: Draw two more cards."
+            "[team:avengers]: Draw two more cards. [keyword:draw:2]"
           ]
         }
       ],
