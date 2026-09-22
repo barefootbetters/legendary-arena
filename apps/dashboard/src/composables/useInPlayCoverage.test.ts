@@ -383,8 +383,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // count-scaled grant. Net: totalObs 3003 -> 3004 (+1); percentResolved holds at 24.4
   // (the +1 denominator shift is too small to move the rounded share). Deterministic —
   // CI computes the same from the regenerated runtime-observed-hollows feed.
+  // 2026-09-22 (WP-734 / D-24554, re-pin): un-hollowing co2e/gambit/kinetic-card (the
+  // Card Shark 2e reveal team-draw + choose-discard-or-return) makes it execute in the
+  // fixed-seed sweep, so its observations move into the resolved/executable set →
+  // totalObs 3004 -> 3006 (+2). Deterministic — CI computes the same from the
+  // regenerated runtime-observed-hollows feed.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3004);
+  assert.equal(view.totalObs.value, 3006);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
