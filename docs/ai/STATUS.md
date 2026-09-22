@@ -92,11 +92,16 @@ are `authoritative: false` diagnostics (never competitive PAR, not CI-diffed —
 catch-up + this win-timing shift) is a **flagged follow-up**. No coop-win-rate committed baseline exists
 (its test is relational). The **CI-gated** `docs/ai/coverage/runtime-observed-hollows.json` IS
 regenerated (the finished winning turn adds a few observations: total `2512 → 2529`, same 312 games / 29
-mechanics; deterministic; scoring-independent so no WP-599 contamination). **Surfaced (NOT WP-732):** the
-`apps/dashboard` `useInPlayCoverage` "seed + ledger" test is already red on `main` (`3012 ≠ 3006`) from a
-stale expected-count after **WP-735**'s hero-ledger regen — WP-732's runtime-observed re-pin does not move
-that number, so Dashboard Gates stays red on that pre-existing drift (a flagged WP-735 follow-up).
-Two-commit topology (EC-769 impl + SPEC close).
+mechanics; deterministic; scoring-independent so no WP-599 contamination). **Dashboard `totalObs` re-pinned
+(WP-732 second-order ripple):** because the Mastermind win now finishes the turn, the fixed-seed sweep
+plays those games deeper → the CI-gated `runtime-observed-hollows.json` shifts → the dashboard
+`useInPlayCoverage` `totalObs` moves **3004 → 3012** (VERIFIED empirically: clean `main`'s feed computes
+3004, WP-732's feed computes 3012; `percentResolved` holds at 24.4). Re-pinned
+`apps/dashboard/src/composables/useInPlayCoverage.test.ts` in THIS PR — the same established pattern as the
+prior WP-711/734/735 `totalObs` re-pins; full `apps/dashboard` suite **482/0**. (An earlier draft of this
+entry misattributed the shift to pre-existing WP-735 drift; corrected after verifying it is WP-732's own
+runtime-observed ripple — clean `main` is green at 3004.) Two-commit topology (EC-769 impl + SPEC close)
+plus this dashboard re-pin fix-forward.
 
 **D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match; not runnable from a
 worktree). Repro on `play.legendary-arena.com`: in a match, defeat the final Mastermind Tactic — the

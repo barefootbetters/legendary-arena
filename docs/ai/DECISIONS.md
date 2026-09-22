@@ -43705,13 +43705,20 @@ deterministic (byte-identical re-run). This is scoring-independent (an observed-
 count, not a score), so unlike the PAR profiles it carries no WP-599 contamination and
 is committed here.
 
-**Pre-existing dashboard drift surfaced (NOT WP-732).** The `apps/dashboard`
-`useInPlayCoverage` "reads the real committed seed + ledger" test is **already red on
-`main`** (`3012 !== 3006` locally / `3004 !== 3006` in CI) — its expected in-play-coverage
-count went stale when **WP-735** regenerated the hero-mechanic ledger without updating it.
-WP-732's runtime-observed re-pin does NOT move this number (verified: 3012 with or without
-the change), so this WP does not touch that test; the stale expectation is a **flagged
-WP-735 follow-up**, and Dashboard Gates stays red on it independent of WP-732.
+**Dashboard `totalObs` re-pinned — WP-732 second-order ripple (corrected).** The
+`apps/dashboard` `useInPlayCoverage` "reads the real committed seed + ledger" test pins the
+in-play-coverage `totalObs`, which `apps/dashboard/scripts/build-coverage-ledger.mjs` derives
+from `docs/ai/coverage/runtime-observed-hollows.json`. Because the Mastermind win now finishes
+the turn, the fixed-seed sweep plays those games deeper and observes MORE in-play hollow
+instances, so that CI-gated feed (re-pinned above) shifts and `totalObs` moves **3004 → 3012**.
+This was **verified empirically** by reverting only the feed: clean `main`'s feed computes
+**3004** (green), WP-732's feed computes **3012**; `percentResolved` holds at 24.4. So the shift
+IS WP-732's own ripple — an earlier draft of this entry misattributed it to pre-existing WP-735
+drift (that framing is retracted). The dashboard assertion is re-pinned to 3012 in THIS PR
+(`apps/dashboard/src/composables/useInPlayCoverage.test.ts` — the same established pattern as the
+WP-711/734/735 `totalObs` re-pins; full `apps/dashboard` suite 482/0), added to the changeset as
+an inline second-order-ripple amendment. `#2253` had separately re-pinned the assertion 3006→3004
+for WP-735 on `main`; this WP moves it 3004→3012.
 
 **Non-negotiables held.** No `Math.random()`; moves never throw; the new latch is a
 `G.counters` integer (snapshots stay counts-only); the pure helper imports no

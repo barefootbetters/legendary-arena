@@ -396,8 +396,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // Dashboard Gates RED; this catches it up. percentResolved holds at 24.4.
   // Deterministic — CI's Dashboard Gates computes the same 3004 / 24.4 from the
   // committed source (prebuild:coverage copies docs/ai/coverage/*.json into src/data).
+  // 2026-09-22 (WP-732 / D-24553, re-pin): the Mastermind win now finishes the turn
+  // instead of ending mid-turn, so the fixed-seed sweep plays those games deeper and
+  // observes more in-play hollow instances → the regenerated runtime-observed-hollows
+  // feed shifts and totalObs 3004 -> 3012 (+8). Second-order ripple of WP-732's
+  // runtime-observed re-pin (already validated by Coverage & Ledger Gates, which
+  // regenerates-and-diffs that feed); this catches the dashboard snapshot up.
+  // Deterministic — CI computes the same 3012 from the committed source.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3004);
+  assert.equal(view.totalObs.value, 3012);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
