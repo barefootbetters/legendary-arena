@@ -1050,6 +1050,14 @@ export async function startServer() {
   // model is a config change, not a code edit. The disabled fail-soft client still
   // reports the resolved model, so a swap is reflected even while the coach is dark.
   const coachModelConfig = resolveCoachModelConfig(process.env);
+  // why: D-24559 — an unregistered COACH_MODEL is refused and the coach falls back
+  // to the default model, so the paid feature stays up. Without this line the
+  // refusal would be silent and the operator would believe the swap took effect.
+  if (coachModelConfig.fallbackFromModel !== undefined) {
+    console.warn(
+      `[coach] COACH_MODEL "${coachModelConfig.fallbackFromModel}" has no quirk row, so the endgame coach is using ${coachModelConfig.model} instead; add a quirk row in coachModelConfig.ts or correct COACH_MODEL.`,
+    );
+  }
   const coachModelClient =
     coachApiKey === undefined || coachApiKey === ''
       ? {

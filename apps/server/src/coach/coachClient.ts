@@ -8,10 +8,12 @@
  * orchestrator catches it and returns `coach_unavailable` (fail-soft), so the
  * endgame card is never blocked (D-24403).
  *
- * This module is imported ONLY by `server.mjs` to wire the production client. The
+ * This module is imported by `server.mjs` (production, to wire the live client)
+ * and by `scripts/coach-eval.mjs` (the operator-run model eval, WP-737). The
  * orchestrator, routes, and their tests depend on the injected `CoachModelClient`
  * interface and pass a stub — so the test suite makes ZERO paid calls. The real
- * spend starts only when `ANTHROPIC_API_KEY` is set in the Render environment.
+ * spend starts only when `ANTHROPIC_API_KEY` is set in the Render environment, or
+ * when an operator runs `coach:eval` with the key exported in their shell.
  *
  * Layer-boundary contract: imports nothing from `boardgame.io`,
  * `@legendary-arena/game-engine`, the registry, or any UI package — only the
