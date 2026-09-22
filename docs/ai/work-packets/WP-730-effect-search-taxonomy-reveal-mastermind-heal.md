@@ -1,4 +1,9 @@
-# WP-730 — Effect-search taxonomy: Reveal + Defeat a Mastermind + KO a Wound (heal)
+# WP-730 — Effect-search taxonomy: Reveal + Gain a Hero + KO a Wound (heal)
+
+> **Note (2026-09-21 SPEC swap):** the reserved filename/slug still reads
+> `…reveal-mastermind-heal` (a reservation identifier). The third effect was
+> swapped from **Defeat a Mastermind** (5 cards, too thin) to **Gain a Hero**
+> (46 cards) at operator request before execution; content below is authoritative.
 
 **Status:** Draft 2026-09-21 · **EC:** EC-767 · **Reserves:** (none)
 **Primary Layer:** Registry Viewer (data-only — `data/metadata/card-abilities.json`)
@@ -9,7 +14,7 @@
 
 Add three new effects to the hand-authored **Effects** filter taxonomy on
 `cards.legendary-arena.com` (`data/metadata/card-abilities.json`), taking it from
-11 to 14 entries: **Reveal (top of deck)**, **Defeat a Mastermind**, and **KO a
+11 to 14 entries: **Reveal (top of deck)**, **Gain a Hero**, and **KO a
 Wound (heal)**. Each is a `{ slug, label, emoji, order, matchers }` entry whose
 regex matcher runs against every card's `abilities[]` text; the dropdown gains
 three new filter chips. The matchers are **corpus-validated** (against the 2,970
@@ -21,8 +26,9 @@ code, schema, or engine change.
 
 A visitor to `cards.legendary-arena.com` opening the **Effects** filter sees three
 new options and can filter the card grid by them: **Reveal (top of deck)** (≈119
-cards — the player self-deck scry), **Defeat a Mastermind** (5 cards), **KO a Wound
-(heal)** (22 cards). D-24026 live-verification applies (the effects appear in the
+cards — the player self-deck scry), **Gain a Hero** (≈46 cards — gain/recruit a Hero
+to a zone from the HQ, KO pile, revealed, or captured), **KO a Wound (heal)** (22
+cards). D-24026 live-verification applies (the effects appear in the
 dropdown and filter to the expected counts on the deployed site).
 
 ## Assumes
@@ -93,7 +99,7 @@ may have shifted it) — do not silently ship a different scope.
 |---|---|---|---|---|---|---|
 | `reveal-top-of-deck` | `Reveal (top of deck)` | 👁️ | 12 | `\\breveal the top (card\|(\\d+\|two\|three\|four\|five) cards) of your deck` | `i` | 119 |
 | `ko-a-wound` | `KO a Wound (heal)` | 🩹 | 45 | `\\bKO (a\|one\|two\|\\d+) Wounds?\\b` | `i` | 22 |
-| `defeat-mastermind` | `Defeat a Mastermind` | 👑 | 110 | `\\bdefeat (a\|one\|the\|that\|each\|any\|\\d+) Masterminds?\\b` | `i` | 5 |
+| `gain-a-hero` | `Gain a Hero` | 🦸 | 95 | `\\bgain (a\|an\|the\|that\|any\|each\|one\|two\|\\d+) [^.]{0,26}?Heroe?s?\\b` | `i` | 46 |
 
 ## Scope (In)
 
@@ -114,8 +120,9 @@ may have shifted it) — do not silently ship a different scope.
   **own** deck (`… of your deck`, 119); the Villain/Hero/Bystander/Ally-deck reveals are
   deliberately excluded (they are not a player self-deck effect).
 - **Any `data/cards/*.json` edit** — the corpus is read-only input to matcher validation.
-- **Other candidate effects** (Gain a Hero, Put on top of deck, cost reduction, etc.) —
-  deferred to a future taxonomy WP.
+- **Other candidate effects** (Put on top of deck, cost reduction, Defeat a Mastermind,
+  Each other player, etc.) — deferred to a future taxonomy WP. (Defeat a Mastermind was
+  dropped from this batch — only 5 cards; swapped for Gain a Hero.)
 
 ## Files Expected to Change
 
@@ -130,7 +137,7 @@ PR #2077 / #2078.)
 ## Contract
 
 - The Effects dropdown gains exactly three chips: **Reveal (top of deck)**, **KO a
-  Wound (heal)**, **Defeat a Mastermind**, sorted by `order` (12 / 45 / 110) among the
+  Wound (heal)**, **Gain a Hero**, sorted by `order` (12 / 45 / 95) among the
   existing entries.
 - Filter semantics inherit WP-125 verbatim: OR within selected effects, AND with every
   other filter; matcher `flags` default `"i"`; matchers run against each card's
@@ -142,16 +149,17 @@ PR #2077 / #2078.)
 1. `data/metadata/card-abilities.json` has exactly 14 entries; the 11 pre-existing
    entries are byte-unchanged.
 2. The three new entries match the Locked-values table verbatim (slug, label, emoji,
-   order 12/45/110, matcher pattern, `flags:"i"`).
+   order 12/45/95, matcher pattern, `flags:"i"`).
 3. The file parses and every entry validates under `CardAbilityEntrySchema` (no
    `.strict()` violation, no duplicate slug, no duplicate order).
 4. **Corpus validation:** `reveal-top-of-deck` matches **119** cards, `ko-a-wound`
-   matches **22**, `defeat-mastermind` matches **5** (±a couple if `main` card-data
-   shifted); each spot-checked — Reveal matches only "… of your deck" (not
-   Villain/Hero/Bystander deck reveals), `ko-a-wound` matches the prose "KO a Wound …"
-   (not the `[keyword:ko-wound-reward:…]` marker) and not `ko-from-hand` ("card"),
-   `defeat-mastermind` matches "defeat the/a Mastermind" (not "Mastermind Strike/Tactic"
-   contexts outside the `defeat …` clause).
+   matches **22**, `gain-a-hero` matches **46** (±a couple if `main` card-data shifted);
+   each spot-checked — Reveal matches only "… of your deck" (not Villain/Hero/Bystander
+   deck reveals), `ko-a-wound` matches the prose "KO a Wound …" (not the
+   `[keyword:ko-wound-reward:…]` marker) and not `ko-from-hand` ("card"), `gain-a-hero`
+   matches "gain a/the/that … Hero" where **Hero is the object gained** (HQ / KO pile /
+   revealed / captured / `[hc:]`/`[team:]`-qualified) and NOT "gain a Wound/Bystander …
+   for each Hero" (zero such false positives in the corpus at draft).
 5. The updated file is uploaded to `r2:legendary-images/metadata/card-abilities.json`
    with `Cache-Control: no-cache`.
 6. On the deployed `cards.legendary-arena.com`, the three chips appear in the Effects
@@ -165,9 +173,10 @@ node -e "const a=require('./data/metadata/card-abilities.json'); const s=new Set
 
 # 2. Corpus validation (the scaffold — run BEFORE ship). For each new matcher,
 #    count matching cards across data/cards/*.json <entityType>[].cards[].abilities[]
-#    and spot-check the samples. Expected: reveal 119, ko-a-wound 22, defeat-mastermind 5.
+#    and spot-check the samples. Expected: reveal 119, ko-a-wound 22, gain-a-hero 46.
 #    (A throwaway node/python scan over the corpus; confirm no false positives /
-#    false removals per the Locked-values scoping notes.)
+#    false removals per the Locked-values scoping notes — for gain-a-hero, confirm
+#    Hero is the object gained, not a counting noun in "gain a Wound … for each Hero".)
 
 # 3. Registry build/tests unaffected (data-only, no code change)
 pnpm --filter @legendary-arena/registry build 2>&1 | tail -3
@@ -180,14 +189,14 @@ pnpm --filter registry-viewer build 2>&1 | tail -3
 #    Confirm the working-tree file matches intended live bytes BEFORE upload (clobber gotcha).
 
 # 5. Live (post-upload; D-24026): open cards.legendary-arena.com → Effects dropdown shows
-#    the 3 new chips; selecting each filters the grid to ~119 / 22 / 5 cards.
+#    the 3 new chips; selecting each filters the grid to ~119 / 22 / 46 cards.
 ```
 
 ## Definition of Done (Binary Gate — ALL must pass)
 
 - [ ] 14 entries; the 11 existing byte-unchanged; 3 new entries verbatim per the Locked table
 - [ ] All entries validate under `CardAbilityEntrySchema` (no dup slug/order)
-- [ ] Corpus validation run: 119 / 22 / 5, each spot-checked for FP + FR
+- [ ] Corpus validation run: 119 / 22 / 46, each spot-checked for FP + FR
 - [ ] `pnpm --filter @legendary-arena/registry build` + `pnpm --filter registry-viewer build` exit 0
 - [ ] File uploaded to R2 (`Cache-Control: no-cache`; working-tree file confirmed correct pre-upload)
 - [ ] `docs/ai/STATUS.md` entry names WP-730 + the 3 effects; records the D-24026 live-verify as operator-pending
@@ -248,8 +257,9 @@ Dependencies verified on `main`: the Effects filter (WP-125) — `card-abilities
 (11 entries), `CardAbilityEntrySchema`, the R2-fetch client — are all present. The
 three matchers were **corpus-validated at draft time** against the 2,970-card ability
 corpus: reveal-top-of-your-deck 119 (the broad `reveal the top` = 247 is deliberately
-narrowed to the player's own deck), defeat-a-mastermind 5 (strict, mirrors defeat-villain),
-ko-a-wound 22 (distinct from the marker syntax and from ko-from-hand). **Empirical
+narrowed to the player's own deck), gain-a-hero 46 (0 false positives — Hero is the
+object gained, not a counting noun), ko-a-wound 22 (distinct from the marker syntax and
+from ko-from-hand). **Empirical
 Scaffold DONE at draft** (the counts + FP/FR spot-check above) — this is the required
 scaffold for a matcher change, so execution re-runs it as a confirmation, not a
 discovery. Single layer (registry-viewer data), strictly additive, no schema change →
@@ -262,6 +272,7 @@ Layer boundary (registry-viewer data only; no engine/server/registry-code edge),
 additivity (11 existing entries byte-unchanged; append-only), matcher fidelity (each
 scoped + corpus-validated for false positives AND false removals — the #2078 discard
 lesson is an explicit guardrail), and the R2-upload-is-done + clobber-gotcha discipline
-all clear. Low-cardinality note surfaced and accepted: `defeat-mastermind` is only 5
-cards (operator confirmed the batch with that number known). No pay-to-win / determinism
-/ persistence surface.
+all clear. Third-effect swap (2026-09-21): `defeat-mastermind` (only 5 cards) was
+replaced with `gain-a-hero` (46 cards) at operator request; the new matcher was
+corpus-scanned for the "gain a Wound … for each Hero" false-positive class (zero found).
+No pay-to-win / determinism / persistence surface.
