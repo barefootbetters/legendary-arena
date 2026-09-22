@@ -44062,4 +44062,22 @@ fight-move arg + the deferral this closes), D-24560 (the availability projection
 (the EV mechanic). **Reserved by:** NUMBER-LEDGER D-24561 (renumbered from D-24559 after a parallel
 collision). **D-24026 live-verify:** operator-manual, post-deploy — closes the WP-736 fire-payoff.
 
+---
+
+### D-24565 — Hawkeye’s "Impossible Trick Shot" onDefeat rescue-three rides the D-24467 defeat-trigger infrastructure — marker-only (Active 2026-09-22)
+
+**Status:** Active — landed 2026-09-22 (direct marker fix, no WP; the D-24543 Overwhelming Firepower precedent).
+
+**Context.** `core/hawkeye/impossible-trick-shot` (and its `msp1` reprint) prints *"Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders."* The line carried **no marker at all**, so the hook had no condition and no effect — a silent hollow. Live-observed in an operator Dr. Doom / The Legacy Virus 2p match: Player 1 played it on turns 19 / 26 / 28 / 34, defeating Ultron / Juggernaut / Mystique / a Dr. Doom tactic + Melter, and rescued zero Bystanders from it (`fightResolved.bystandersRescued: 0`; no Bystanders between those villains in the victory pile; turn 34’s single rescue was the tactic’s own captured Bystander).
+
+**Decision.** Mark the line with two curated-map entries (core + msp1 groups): `[keyword:defeated-villain-or-mastermind] [keyword:rescue:3]`. NO engine change — the D-24467 edge-flag + re-arm model and the D-24543 marker-only pattern already cover this exact shape; only the reward magnitude differs. `heroEffectRescue` clamps to the remaining supply (a short supply rescues what is left; an empty one logs, never throws). Per-tactic Mastermind defeats count, per D-24467 RS-1.
+
+**Determinism.** No sentinel replay / PAR fixture plays Hawkeye’s Impossible Trick Shot: engine suite 4121/0 with no hash re-pin, and `sim:runtime-observed:check` is current with no regeneration.
+
+**Gates.** Focused test `hero/hawkeyeImpossibleTrickShot.test.ts` (4/4: parse wiring, no-fire-on-play, 3-per-defeat edge-triggered and repeatable, short-supply clamp); `pnpm -r build` green; `cards:check`, `ledger:heroes:check` (regenerated: +4 honest rows), `effect-index:check` + `mechanics:metadata:check` (both regenerated: Trick Shot rows only), `sim:runtime-observed:check`, `sim:coverage --check` all exit 0.
+
+**D-24026 live-on-surface:** PENDING deploy — verify on `play.legendary-arena.com` with Impossible Trick Shot in play: the play logs "… is waiting …", then each Villain or Mastermind-tactic defeat that turn rescues three Bystanders.
+
+**Reserved by:** NUMBER-LEDGER D-24565 (renumbered from D-24564 after a parallel collision with #2278). Related: D-24467 (the reused mechanism), D-24543 (the marker-only precedent).
+
 Protect this file.

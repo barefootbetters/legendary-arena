@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1917,
+    "totalEntries": 1921,
     "byScope": {
-      "hero": 742,
+      "hero": 746,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 494,
+      "executable": 496,
       "deferred": 16,
-      "condition": 28,
+      "condition": 30,
       "unsupported": 319,
       "unmarked": 1056,
       "subsystem": 4
@@ -7217,6 +7217,23 @@
       "name": "Hawkeye",
       "set": "core",
       "scope": "hero",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "name": "Hawkeye",
+      "set": "core",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -7226,6 +7243,23 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "name": "Hawkeye",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
         }
       ]
     },
@@ -15480,6 +15514,23 @@
       "name": "Hawkeye",
       "set": "msp1",
       "scope": "hero",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "name": "Hawkeye",
+      "set": "msp1",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -15489,6 +15540,23 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "name": "Hawkeye",
+      "set": "msp1",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
         }
       ]
     },
@@ -29634,7 +29702,9 @@
       "scope": "hero",
       "mechanics": [
         "covering-fire",
-        "draw"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "rescue"
       ]
     },
     "core/hulk": {
@@ -32646,7 +32716,9 @@
       "scope": "hero",
       "mechanics": [
         "covering-fire",
-        "draw"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "rescue"
       ]
     },
     "msp1/hulk": {

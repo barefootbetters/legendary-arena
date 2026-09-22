@@ -722,7 +722,7 @@
           "attack": "5",
           "recruit": null,
           "abilities": [
-            "Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders."
+            "Whenever you defeat a Villain or Mastermind this turn, rescue three Bystanders. [keyword:defeated-villain-or-mastermind] [keyword:rescue:3]"
           ]
         }
       ],
