@@ -81,6 +81,7 @@ import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
+  composeHeroRevealTopNarrative,
 } from '../events/notableEvents.compose.js';
 
 // ---------------------------------------------------------------------------
@@ -1523,7 +1524,7 @@ function heroEffectReveal(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
   const playerZones = G.playerZones[playerID];
@@ -1590,7 +1591,7 @@ function heroEffectReveal(
       continue;
     }
     const deckLengthBeforeRules = playerZones.deck.length;
-    applyRevealRules(G, playerID, playerZones, topCardId, cardStats.cost, rules);
+    applyRevealRules(G, playerID, playerZones, cardId, topCardId, cardStats.cost, rules);
     // why: advance the offset ONLY when the deck length is unchanged (the card stayed on the
     // deck). A draw/ko shrank the deck and slid the next card into the same index, so the
     // offset must NOT advance — this is what keeps the WP-253 count=2 test (each iteration
@@ -1633,6 +1634,8 @@ function heroEffectReveal(
  * @param G - Game state (mutated under Immer draft).
  * @param playerID - Active player ID.
  * @param playerZones - The active player's zones (resolved once by the handler).
+ * @param sourceCardId - The played hero card whose ability triggered the reveal
+ *   (WP-726 — names the source in the heroEffectResolved overlay narrative).
  * @param topCardId - The peeked deck-top card's CardExtId.
  * @param cost - The peeked card's cost (the predicate input).
  * @param rules - The ordered RevealRule branch-list.
@@ -1641,6 +1644,7 @@ function applyRevealRules(
   G: LegendaryGameState,
   playerID: string,
   playerZones: PlayerZones,
+  sourceCardId: CardExtId,
   topCardId: CardExtId,
   cost: number,
   rules: RevealRule[],
@@ -1679,6 +1683,22 @@ function applyRevealRules(
   // longer silent (the last silent effect path). G.messages is excluded from
   // finalStateHash (D-24081), so this is replay-safe; the Array.isArray guard tolerates
   // a narrow reveal-test fixture G that omits the messages array.
+  // why: WP-434 — project the reveal result onto a LOG_OUTCOMES colour: no branch
+  // matched → `blocked` (the What-If test failed); matched but some action was
+  // guard-blocked → `partial`; matched and fully applied → `applied`. Hoisted above
+  // the G.messages block (WP-726) because the heroEffectResolved emit below reads it
+  // and must NOT be transitively gated on G.messages being present.
+  let revealLogOutcome: LogOutcome;
+  if (matchedPredicateText === undefined) {
+    revealLogOutcome = 'blocked';
+  } else if (unappliedActionKinds.length > 0) {
+    revealLogOutcome = 'partial';
+  } else {
+    revealLogOutcome = 'applied';
+  }
+  // why: WP-325 — one reveal-outcome line per peeked card. G.messages is excluded from
+  // finalStateHash (D-24081), so this is replay-safe; the Array.isArray guard tolerates
+  // a narrow reveal-test fixture G that omits the messages array.
   if (Array.isArray(G.messages)) {
     const outcome =
       matchedPredicateText === undefined
@@ -1689,23 +1709,37 @@ function applyRevealRules(
             actionsText: matchedActionPhrases.join(', '),
             unappliedActionsText: describeUnappliedRevealActions(unappliedActionKinds),
           };
-    // why: WP-434 — project the reveal result onto a LOG_OUTCOMES colour: no branch
-    // matched → `blocked` (the What-If test failed); matched but some action was
-    // guard-blocked → `partial`; matched and fully applied → `applied`.
-    let revealLogOutcome: LogOutcome;
-    if (matchedPredicateText === undefined) {
-      revealLogOutcome = 'blocked';
-    } else if (unappliedActionKinds.length > 0) {
-      revealLogOutcome = 'partial';
-    } else {
-      revealLogOutcome = 'applied';
-    }
     pushLog(
       G,
       formatRevealOutcomeLine(G.cardDisplayData, playerID, topCardId, cost, outcome),
       revealLogOutcome,
       topCardId, // why: WP-438 — the REVEALED deck-top card (NOT the played What-If card), so the diagnostic does not attribute a reveal to the played card (preserves B.3c non-attribution structurally).
     );
+  }
+  // why: WP-726 / D-24547 — surface the auto-resolving deck-top reveal on the WP-697
+  // heroEffectResolved "Hero Ability" overlay (the deck-top reveal family emitted
+  // nothing observable before — the grant reached only G.messages, which is not
+  // projected to clients). Emit only when the reveal REALIZED work
+  // (revealLogOutcome !== 'blocked' ⇒ a predicate matched) AND did NOT park a choice
+  // (a `choose-discard-or-return` reveal — reveal-attack-choose — surfaces via the
+  // pending-choice UI, so an overlay would double-surface). Guarded on
+  // G.notableEvents (the minimal test builder omits it; a real match seeds []); the
+  // source + revealed names resolve HERE (raw-ext_id fallback) keeping the composer
+  // pure. G.notableEvents IS hashed, but the core-only sentinel plays no deck-top
+  // reveal hero, so this is byte-inert there (WP-697 outcome; verified).
+  if (
+    revealLogOutcome !== 'blocked' &&
+    !revealRulesContainAnyAction(rules, ['choose-discard-or-return']) &&
+    Array.isArray(G.notableEvents)
+  ) {
+    const sourceCardName = resolveTransformCardName(G, sourceCardId);
+    const revealedCardName = resolveTransformCardName(G, topCardId);
+    const outcomeText = matchedActionPhrases.join(', ');
+    G.notableEvents.push({
+      type: 'heroEffectResolved',
+      playerId: playerID,
+      narrative: composeHeroRevealTopNarrative(sourceCardName, revealedCardName, cost, outcomeText),
+    });
   }
 }
 

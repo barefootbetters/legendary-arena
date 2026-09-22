@@ -292,6 +292,23 @@ describe('NotableEventOverlay — locked chip labels (WP-201 §Locked Values)', 
     // the narrative), so eventCardId → '' → cardId null and the card-name row renders empty.
     assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
   });
+
+  test('heroEffectResolved reveal-family narrative renders under the same "Hero Ability" chip, no card row (WP-726)', () => {
+    // why: WP-726 — the auto-resolving deck-top reveal family emits the SAME
+    // heroEffectResolved variant with a reveal-shaped narrative; the overlay is
+    // variant-agnostic, so this renders with NO NotableEventOverlay.vue source change.
+    const revealEvent: NotableGameEvent = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"High Stakes Jackpot" revealed "Sneak Attack" (cost 4) — gained attack.',
+    };
+    const wrapper = mount(NotableEventOverlay, { props: { event: revealEvent } });
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.attributes('data-event-type'), 'heroEffectResolved');
+    assert.match(wrapper.text(), /Hero Ability/);
+    assert.match(wrapper.text(), /"High Stakes Jackpot" revealed "Sneak Attack" \(cost 4\) — gained attack\./);
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), '');
+  });
 });
 
 describe('NotableEventOverlay — card name lookup + fallback (WP-201 §AC)', () => {

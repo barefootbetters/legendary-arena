@@ -1729,6 +1729,158 @@ describe('executeHeroEffects', () => {
   });
 
   // -------------------------------------------------------------------------
+  // WP-726 / D-24547 — heroEffectResolved overlay for the auto-resolving
+  // deck-top reveal family. The emit rides G.notableEvents (public projection);
+  // the reveal grant + log are byte-identical, only an event is appended.
+  // -------------------------------------------------------------------------
+  it('reveal-cost-attack emits one heroEffectResolved naming the revealed card + cost + outcome; grant unchanged (WP-726)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'hero-y': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-cost-attack'],
+          effects: [legacyRevealEffect('reveal-cost-attack', undefined)],
+        },
+      ],
+    });
+    // why: WP-726 — the minimal builder omits notableEvents (a real match seeds [] at
+    // setup); set it so the emit is observable, mirroring what playerView projects.
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    // the reveal grant is byte-identical — the emit only appends an event
+    assert.equal(gameState.turnEconomy.attack, 3, 'attack grant is unchanged by the emit (still +cost).');
+    assert.equal(gameState.playerZones['0']!.deck[0], 'hero-y', 'the peeked card stays on the deck.');
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one heroEffectResolved is emitted.');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'heroEffectResolved', 'the event is a heroEffectResolved.');
+    assert.equal(event.type === 'heroEffectResolved' && event.playerId, '0', 'it carries the acting seat.');
+    // why: cardDisplayData is empty in the mock, so names fall back to the raw ext_ids
+    // (resolveTransformCardName's defensive fallback); no "Player N" prefix (sibling voice).
+    assert.equal(
+      event.narrative,
+      '"hero-x" revealed "hero-y" (cost 3) — gained attack.',
+      'names the source hero, the revealed card + cost, and the outcome, third-person.',
+    );
+  });
+
+  it('reveal-odd-draw emits a heroEffectResolved whose outcome names the draw (WP-726)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      cardStats: {
+        'hero-y': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-odd-draw'],
+          effects: [legacyRevealEffect('reveal-odd-draw', undefined)],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one heroEffectResolved is emitted.');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(
+      event.type === 'heroEffectResolved' && event.narrative,
+      '"hero-x" revealed "hero-y" (cost 3) — drew it.',
+      'the outcome phrase reflects the draw.',
+    );
+  });
+
+  it('does NOT emit for the parking reveal-attack-choose — the pending-choice UI owns it (WP-726)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'hero-y': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-attack-choose'],
+          effects: [legacyRevealEffect('reveal-attack-choose', 1)],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.notableEvents.length, 0,
+      'a reveal that parks a choose-discard-or-return choice emits no overlay event (avoids double-surfacing).');
+  });
+
+  it('does NOT emit on a blocked reveal (predicate did not match) (WP-726)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['starter-agent'],
+      hand: [],
+      cardStats: {
+        // cost 0 is even → reveal-odd-draw's cost-odd predicate fails → blocked outcome
+        'starter-agent': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-odd-draw'],
+          effects: [legacyRevealEffect('reveal-odd-draw', undefined)],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.notableEvents.length, 0, 'a blocked (no-match) reveal emits no overlay event.');
+  });
+
+  it('does not throw when notableEvents is absent — the emit is guarded (WP-726)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      turnEconomyAttack: 0,
+      cardStats: {
+        'hero-y': { attack: 0, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-cost-attack'],
+          effects: [legacyRevealEffect('reveal-cost-attack', undefined)],
+        },
+      ],
+    });
+    // notableEvents intentionally left absent (the minimal-builder default)
+
+    assert.doesNotThrow(() => {
+      executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+    }, 'the guarded emit must not throw when G.notableEvents is absent.');
+    assert.equal(gameState.turnEconomy.attack, 3, 'the reveal grant still fires when the overlay guard skips.');
+  });
+
+  // -------------------------------------------------------------------------
   // Test 42: reveal-odd-draw — cost-1 top card is drawn; exact topCardId in hand (AC-9, AC-26)
   // -------------------------------------------------------------------------
   it('reveal-odd-draw draws top card to hand when cost is odd (cost 1)', () => {
