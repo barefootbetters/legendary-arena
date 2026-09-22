@@ -16,9 +16,18 @@ import type { LegendaryGameState } from '../types.js';
 // why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
 // why: WP-539 / D-24348 — DARK_PORTAL_COUNT drives the Portals Dark-Portal buffs.
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
+// why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
+// location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
+
+// why: WP-728 / D-24549 — the +N attack a single Dark Portal grants (the
+// Mastermind, or Villains in a portal'd city space). A named constant so the
+// combat buffs (below) and the UIState projection (darkPortalLocations
+// consumers) share ONE value and can never disagree.
+export const DARK_PORTAL_ATTACK_BONUS = 1;
 
 /**
  * Resolves the fight cost for a villain at the current game state.
@@ -46,34 +55,68 @@ export function resolveFightCost(
 }
 
 /**
+ * The Portals Dark-Portal locations for the current game state (WP-728 / D-24549).
+ *
+ * The single source of the portal→location mapping: the Dark Portal above the
+ * Mastermind opens on twist 1 (DARK_PORTAL_COUNT >= 1), and city space index K is
+ * portal'd once DARK_PORTAL_COUNT >= 6 - K (twists 2-6 fill the leftmost
+ * portal-less space first; leftmost = Bridge = index 4 per WP-489/D-24295). Both
+ * the combat buffs (darkPortalVillainBonus / resolveMastermindFightCost) and the
+ * UIState projection (uiState.build) read this helper, so combat and the UI can
+ * never disagree on where the portals are. A non-Portals scheme (or a missing
+ * selection/counter) yields no portals.
+ *
+ * @param G - Game state (read-only).
+ * @returns onMastermind + the ascending list of portal'd city space indices.
+ */
+export function darkPortalLocations(
+  G: LegendaryGameState,
+): { onMastermind: boolean; citySpaceIndices: number[] } {
+  // why: defensive `?.` mirrors this module's partial-G tolerance (integration /
+  // unit fixtures may omit selection/counters); a missing field means "not the
+  // Portals scheme" → no portals.
+  if (G.selection?.schemeId !== PORTALS_SCHEME_ID) {
+    return { onMastermind: false, citySpaceIndices: [] };
+  }
+  const portalCount = G.counters?.[DARK_PORTAL_COUNT] ?? 0;
+  const citySpaceIndices: number[] = [];
+  // why: the `6 - K` fill predicate is the SAME one this helper's callers used
+  // inline before; an explicit index loop over the fixed 5 City spaces (no
+  // .reduce()), collecting portal'd indices ascending.
+  for (let cityIndex = 0; cityIndex < CITY_SPACE_NAMES.length; cityIndex++) {
+    if (portalCount >= 6 - cityIndex) {
+      citySpaceIndices.push(cityIndex);
+    }
+  }
+  return { onMastermind: portalCount >= 1, citySpaceIndices };
+}
+
+/**
  * The Portals Dark-Portal attack bonus for a villain (WP-539 / D-24348).
  *
  * Under the Portals scheme, a Villain in a city space that has a Dark Portal
- * attacks for +1. City space index K is portal'd once DARK_PORTAL_COUNT >= 6 - K
- * (twists 2-6 fill the leftmost portal-less space first; leftmost = Bridge = index 4
- * per DESIGN-BOARD-LAYOUT.md §City row + WP-489/D-24295). A Villain not in the City
- * (index not found) and any non-Portals scheme get 0.
+ * attacks for DARK_PORTAL_ATTACK_BONUS more. A Villain not in the City (index not
+ * found) and any non-Portals scheme get 0.
  *
  * @param G - Game state (read-only).
  * @param villainCardId - The villain zone-instance ext_id.
- * @returns 1 when the villain's city space has a Dark Portal, else 0.
+ * @returns DARK_PORTAL_ATTACK_BONUS when the villain's city space has a Dark
+ *   Portal, else 0.
  */
 function darkPortalVillainBonus(
   G: LegendaryGameState,
   villainCardId: CardExtId,
 ): number {
-  // why: defensive `?.` on selection / city / counters mirrors resolveFightCost's
-  // partial-G tolerance (integration/unit fixtures may omit these); a missing field
-  // means "not the Portals scheme / not in the city" → no bonus.
-  if (G.selection?.schemeId !== PORTALS_SCHEME_ID) {
-    return 0;
-  }
+  // why: the villain's own city index gates the buff; darkPortalLocations is the
+  // single source for WHICH spaces are portal'd (it also gates the Portals scheme
+  // + partial-G tolerance, so a non-Portals scheme returns no portal'd indices).
   const cityIndex = G.city?.indexOf(villainCardId) ?? -1;
   if (cityIndex < 0) {
     return 0;
   }
-  const portalCount = G.counters?.[DARK_PORTAL_COUNT] ?? 0;
-  return portalCount >= 6 - cityIndex ? 1 : 0;
+  return darkPortalLocations(G).citySpaceIndices.includes(cityIndex)
+    ? DARK_PORTAL_ATTACK_BONUS
+    : 0;
 }
 
 /**
@@ -152,12 +195,9 @@ function resolveBaseFightCost(
  */
 export function resolveMastermindFightCost(G: LegendaryGameState): number {
   const baseFightCost = G.cardStats[G.mastermind.baseCardId]?.fightCost ?? 0;
-  // why: defensive `?.` on selection / counters mirrors the partial-G tolerance of
-  // this module; a missing field means "not the Portals scheme" → no bonus.
-  const portalBonus =
-    G.selection?.schemeId === PORTALS_SCHEME_ID &&
-    (G.counters?.[DARK_PORTAL_COUNT] ?? 0) >= 1
-      ? 1
-      : 0;
+  // why: the twist-1 Dark Portal above the Mastermind adds DARK_PORTAL_ATTACK_BONUS;
+  // darkPortalLocations is the single source (scheme gate + counter read), so this
+  // combat read and the UIState projection can never disagree.
+  const portalBonus = darkPortalLocations(G).onMastermind ? DARK_PORTAL_ATTACK_BONUS : 0;
   return baseFightCost + portalBonus;
 }

@@ -21,6 +21,7 @@ import type { LegendaryGameState, CardExtId, PendingHeroChoice } from '../types.
 import type { UICardDisplay } from './uiState.types.js';
 import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 
@@ -2234,5 +2235,52 @@ describe('buildUIState — return-on-discard suppressed while discard-to-play pe
 
     assert.equal(result.pendingReturnOnDiscard, undefined, 'the return prompt is deferred until the cost is paid');
     assert.ok(result.pendingDiscardToPlay !== undefined, 'the discard-to-play prompt is the actionable one');
+  });
+});
+
+describe('buildUIState — Portals Dark-Portal descriptor (WP-728 / D-24549)', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  /** A test G switched to the Portals scheme with `count` Dark Portals placed. */
+  function portalsState(count: number): LegendaryGameState {
+    const gameState = createTestGameState();
+    gameState.selection.schemeId = PORTALS;
+    gameState.counters[DARK_PORTAL_COUNT] = count;
+    return gameState;
+  }
+
+  it('omits darkPortals for a non-Portals scheme', () => {
+    const result = buildUIState(createTestGameState(), mockCtx);
+    assert.equal(result.scheme.darkPortals, undefined);
+  });
+
+  it('omits darkPortals under Portals before the first twist (count 0)', () => {
+    const result = buildUIState(portalsState(0), mockCtx);
+    assert.equal(result.scheme.darkPortals, undefined);
+  });
+
+  it('projects only the Mastermind portal at count 1', () => {
+    const result = buildUIState(portalsState(1), mockCtx);
+    assert.deepEqual(result.scheme.darkPortals, {
+      onMastermind: true,
+      mastermindAttackBonus: 1,
+      citySpaceIndices: [],
+      citySpaceAttackBonus: 1,
+    });
+  });
+
+  it("projects the growing city-space portals (count 2 fills Bridge = index 4)", () => {
+    const result = buildUIState(portalsState(2), mockCtx);
+    assert.deepEqual(result.scheme.darkPortals, {
+      onMastermind: true,
+      mastermindAttackBonus: 1,
+      citySpaceIndices: [4],
+      citySpaceAttackBonus: 1,
+    });
+  });
+
+  it('projects all five city spaces at count 6', () => {
+    const result = buildUIState(portalsState(6), mockCtx);
+    assert.deepEqual(result.scheme.darkPortals?.citySpaceIndices, [0, 1, 2, 3, 4]);
   });
 });

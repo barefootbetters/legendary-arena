@@ -447,6 +447,44 @@ describe('filterUIStateForAudience — WP-128 redaction matrix', () => {
     assert.equal(uiState.mastermind.gameText![0], 'Always Leads: Doombot Legion', 'source mastermind.gameText not aliased');
   });
 
+  it('WP-728 Dark-Portal descriptor survives the whitelist for every audience (public shared-board)', () => {
+    // why: the board overlay (WP-727) renders nothing if the audience filter's
+    // field-by-field scheme rebuild drops darkPortals — the optional field is not
+    // flagged by TypeScript, the EC-206 drop-at-filter mode. Portal locations are
+    // public, so the descriptor must survive for every audience.
+    const uiState = createTestUIState();
+    uiState.scheme.darkPortals = {
+      onMastermind: true,
+      mastermindAttackBonus: 1,
+      citySpaceIndices: [3, 4],
+      citySpaceAttackBonus: 1,
+    };
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.deepEqual(
+        result.scheme.darkPortals,
+        {
+          onMastermind: true,
+          mastermindAttackBonus: 1,
+          citySpaceIndices: [3, 4],
+          citySpaceAttackBonus: 1,
+        },
+        `scheme.darkPortals must pass through the whitelist for ${audience.kind}`,
+      );
+    }
+
+    // why: defensive-copy contract — mutating the filtered citySpaceIndices must
+    // not reach back into the source UIState (the WP-128 shared-board aliasing guard).
+    const mutable = filterUIStateForAudience(uiState, SPECTATOR);
+    mutable.scheme.darkPortals!.citySpaceIndices[0] = 99;
+    assert.equal(
+      uiState.scheme.darkPortals!.citySpaceIndices[0],
+      3,
+      'source darkPortals.citySpaceIndices not aliased',
+    );
+  });
+
 });
 
 // ---------------------------------------------------------------------------

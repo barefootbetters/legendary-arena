@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-728 — Portals to the Dark Dimension: Dark-Portal UIState projection (EC-765 / D-24549) (2026-09-21)
+
+**No user-observable change — infrastructure only.** The engine half of the Portals Dark-Portal
+visualization arc: it projects the Dark-Portal *locations* + their +N attack buffs onto `UIState`
+as an optional, display-only `scheme.darkPortals` descriptor so the board overlay (WP-727) can
+render them. The current client ignores the new field, so nothing changes on
+`play.legendary-arena.com` from this WP alone.
+
+The descriptor (`{ onMastermind, mastermindAttackBonus, citySpaceIndices, citySpaceAttackBonus }`)
+is derived **purely** from the existing hashed `G.counters[DARK_PORTAL_COUNT]` counter +
+`G.selection.schemeId` — **no new `G` field, no persistence change, no re-pin** (`finalStateHash`
+byte-unchanged). A new single-source helper `darkPortalLocations(G)` in `economy.resolve.ts` is the
+one place the portal→location mapping lives (Mastermind at `count >= 1`; city index `K` portal'd at
+`count >= 6 - K`, Sewers(0)…Bridge(4)); the combat buffs (`darkPortalVillainBonus` /
+`resolveMastermindFightCost`) now read it, and the `+N` value is the shared
+`DARK_PORTAL_ATTACK_BONUS = 1` constant, so combat and the UI can never disagree. Populated in
+`buildUIState` (conditional-spread — omitted for every non-Portals scheme) and passed through
+`filterUIStateForAudience` as public shared-board (the Board-Visible Field Rule 5-step; the EC-206
+drop-at-filter mode is covered by an audience-survival test).
+
+Engine suite **4008/0**; whole-repo `-r build` + `--no-bail test` green; `finalStateHash` unchanged;
+`git diff` = the 4 source + 3 test files (no `data/cards` / `apps/` change). Display-only /
+off-ranking (NG-1). The on-board dark-portal overlay is **WP-727**.
+
 ### WP-725 — Split / dual-faced hero "choose a side": arena-client picker (EC-762) (2026-09-21)
 
 The client half of WP-724 (mirrors WP-717 → WP-718) — completes the split-hero "choose a side"

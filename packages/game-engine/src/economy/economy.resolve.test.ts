@@ -11,7 +11,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import { resolveFightCost, resolveMastermindFightCost } from './economy.resolve.js';
+import {
+  resolveFightCost,
+  resolveMastermindFightCost,
+  darkPortalLocations,
+  DARK_PORTAL_ATTACK_BONUS,
+} from './economy.resolve.js';
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 
 /**
@@ -311,5 +316,72 @@ describe('resolveMastermindFightCost', () => {
   it('returns base + 1 once the twist-1 Mastermind portal is placed, not stacking', () => {
     assert.equal(resolveMastermindFightCost(makeMastermindG(PORTALS, 1)), 8);
     assert.equal(resolveMastermindFightCost(makeMastermindG(PORTALS, 6)), 8);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// darkPortalLocations — the single-source portal→location mapping (WP-728 / D-24549)
+// ---------------------------------------------------------------------------
+
+describe('darkPortalLocations (WP-728 / D-24549)', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+
+  /** A G under `schemeId` with `count` Dark Portals placed. */
+  function makeLocationsG(schemeId: string, count: number): LegendaryGameState {
+    return {
+      selection: { schemeId },
+      counters: { [DARK_PORTAL_COUNT]: count },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('yields no portals for a non-Portals scheme, whatever the counter', () => {
+    assert.deepEqual(darkPortalLocations(makeLocationsG('core/midtown-bank-robbery', 6)), {
+      onMastermind: false,
+      citySpaceIndices: [],
+    });
+  });
+
+  it('yields no portals under Portals before the first twist (count 0)', () => {
+    assert.deepEqual(darkPortalLocations(makeLocationsG(PORTALS, 0)), {
+      onMastermind: false,
+      citySpaceIndices: [],
+    });
+  });
+
+  it('opens only the Mastermind portal at count 1 (twist 1)', () => {
+    assert.deepEqual(darkPortalLocations(makeLocationsG(PORTALS, 1)), {
+      onMastermind: true,
+      citySpaceIndices: [],
+    });
+  });
+
+  it('fills the leftmost city space (Bridge = index 4) first, at count 2', () => {
+    assert.deepEqual(darkPortalLocations(makeLocationsG(PORTALS, 2)), {
+      onMastermind: true,
+      citySpaceIndices: [4],
+    });
+  });
+
+  it('fills every city space by count 6, ascending (Sewers 0 … Bridge 4)', () => {
+    assert.deepEqual(darkPortalLocations(makeLocationsG(PORTALS, 6)), {
+      onMastermind: true,
+      citySpaceIndices: [0, 1, 2, 3, 4],
+    });
+  });
+
+  it('tolerates a partial G (missing selection/counters) as no portals', () => {
+    assert.deepEqual(darkPortalLocations({} as unknown as LegendaryGameState), {
+      onMastermind: false,
+      citySpaceIndices: [],
+    });
+  });
+});
+
+describe('DARK_PORTAL_ATTACK_BONUS (WP-728 / D-24549)', () => {
+  // why: the single-source bonus value — combat and the UIState projection both
+  // read it, so it must stay 1 (WP-539's printed Dark-Portal buff) or every
+  // portal'd fight requirement and the board overlay shift together.
+  it('is 1 (the printed Dark-Portal +1 attack)', () => {
+    assert.equal(DARK_PORTAL_ATTACK_BONUS, 1);
   });
 });

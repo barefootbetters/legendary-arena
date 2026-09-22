@@ -43370,4 +43370,45 @@ The client-facing picker (`SplitFaceChoicePrompt.vue`) is **WP-725**. Builds on 
 (dual-face identity), WP-719/D-24541 + WP-702/D-24521 (block-all pending-choice pattern),
 D-24284 (active-only interactive choice). **Reserved by:** NUMBER-LEDGER D-24546.
 
+---
+
+### D-24549 — Portals to the Dark Dimension: Dark-Portal UIState projection (WP-728 / EC-765) (Active 2026-09-21)
+
+The "Portals to the Dark Dimension" Dark-Portal **locations + attack buffs** are exposed
+to the client as a **display-only** `UIState` projection, derived **purely** from the
+existing hashed `G.counters[DARK_PORTAL_COUNT]` counter + `G.selection.schemeId`. **No new
+hashed `G` field, no persistence-boundary change, no re-pin** — `finalStateHash` is
+byte-unchanged (the descriptor is not part of `G`). Before this decision the portal
+mechanic (WP-539/D-24348) applied its +1 buffs at combat time but the portal *locations*
+had no on-board projection — they lived only in the game log.
+
+Locks:
+
+1. **Single source.** A pure helper `darkPortalLocations(G)` exported from
+   `economy/economy.resolve.ts` is the ONE place the portal→location mapping lives:
+   the Mastermind portal opens once `DARK_PORTAL_COUNT >= 1`; city space index `K ∈ 0..4`
+   is portal'd once `DARK_PORTAL_COUNT >= 6 - K` (Sewers(0) … Bridge(4), per
+   WP-489/D-24295). The combat buffs (`darkPortalVillainBonus` /
+   `resolveMastermindFightCost`) now read this helper, so combat and the UI can never
+   disagree on where the portals are (the `resolveMastermindFightCost` centralization
+   discipline). The `+N` attack a portal grants is the named constant
+   `DARK_PORTAL_ATTACK_BONUS = 1`, shared by combat and the projection — factoring the
+   prior literal `1` into the constant is value-identical.
+2. **Projection shape.** A new optional `UISchemeState.darkPortals?: UIDarkPortalState`
+   (`{ onMastermind, mastermindAttackBonus, citySpaceIndices, citySpaceAttackBonus }`),
+   populated in `buildUIState` and passed through `filterUIStateForAudience` as **public
+   shared-board** (no redaction — portal locations are public information), following the
+   Board-Visible Field Rule 5-step (`.claude/rules/architecture.md`). It is
+   conditional-spread: present only under the Portals scheme, omitted for every other
+   scheme (the `gameText?` precedent). A field that reaches `buildUIState` but not the
+   audience filter is silently dropped (the EC-206 failure mode) — the filter pass-through
+   is mandatory and covered by an audience-survival test.
+3. **Display-only / off-ranking (NG-1).** The projection changes no game outcome, VP, PAR,
+   or standing; the +1 attack itself remains WP-539's existing combat behavior. The
+   on-board dark-portal overlay that consumes this descriptor is **WP-727**.
+
+Builds on WP-539/D-24348 (the `portals` resolver + `DARK_PORTAL_COUNT` + the combat buffs),
+WP-128/D-12803 (the audience-filter redaction matrix + Board-Visible Field Rule), and
+WP-489/D-24295 (the City space index binding). **Reserved by:** NUMBER-LEDGER D-24549.
+
 Protect this file.
