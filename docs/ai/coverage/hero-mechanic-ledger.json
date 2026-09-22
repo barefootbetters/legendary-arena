@@ -2,11 +2,11 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 742,
+    "totalRows": 746,
     "byStatus": {
-      "executable": 343,
+      "executable": 345,
       "deferred": 16,
-      "condition": 28,
+      "condition": 30,
       "unsupported": 318,
       "unmarked": 35,
       "subsystem": 2
@@ -3709,6 +3709,22 @@
       "extId": "core/hawkeye",
       "heroName": "Hawkeye",
       "set": "core",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "core",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -3718,6 +3734,22 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "core/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "core",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
         }
       ]
     },
@@ -7553,6 +7585,22 @@
       "extId": "msp1/hawkeye",
       "heroName": "Hawkeye",
       "set": "msp1",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "msp1",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -7562,6 +7610,22 @@
         {
           "slug": "quick-draw",
           "name": "Quick Draw"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/hawkeye",
+      "heroName": "Hawkeye",
+      "set": "msp1",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "impossible-trick-shot",
+          "name": "Impossible Trick Shot"
         }
       ]
     },

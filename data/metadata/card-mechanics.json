@@ -369,9 +369,11 @@
       "label": "Defeated Villain Or Mastermind",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 2,
+      "cardCount": 4,
       "cardIds": [
         "core/emma-frost",
+        "core/hawkeye",
+        "msp1/hawkeye",
         "rvlt/war-machine"
       ],
       "hidden": true
@@ -1267,7 +1269,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 15,
+      "cardCount": 17,
       "cardIds": [
         "3dtc/black-widow",
         "ca75/captain-america-1941",
@@ -1277,11 +1279,13 @@
         "chmp/nova",
         "co2e/black-widow",
         "core/black-widow",
+        "core/hawkeye",
         "core/spider-man",
         "cosm/ronan-the-accuser",
         "cvwr/peter-parker",
         "dkcy/jean-grey",
         "msp1/black-widow",
+        "msp1/hawkeye",
         "rvlt/war-machine",
         "vnom/venompool"
       ],
@@ -2745,7 +2749,9 @@
     "core/hawkeye": {
       "mechanics": [
         "covering-fire",
-        "draw"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "rescue"
       ]
     },
     "core/hulk": {
@@ -3380,7 +3386,9 @@
     "msp1/hawkeye": {
       "mechanics": [
         "covering-fire",
-        "draw"
+        "defeated-villain-or-mastermind",
+        "draw",
+        "rescue"
       ]
     },
     "msp1/hulk": {
