@@ -43649,4 +43649,70 @@ WP-726 `heroEffectResolved` overlay stays suppressed on an X-Men match+draw (the
 follow-up. Extends D-24550 (team predicate) + D-22003 (choose action). Renumbered from D-24553 after
 a parallel-session collision. **Reserved by:** NUMBER-LEDGER D-24554.
 
+### D-24555 — Venomverse "Digest N / Indigestion" resolves as a fused Victory-Pile-count branch (`digest-indigestion` keyword) (Active 2026-09-22 — WP-735 / EC-772)
+
+Un-hollows the D-21602-deferred Venompool "Digest N / Indigestion" hero-keyword family
+(parse-unrecognized; ~14 hollow hits/game on `vnom/venompool/digest-that-chimichanga` in
+live 2p). Semantics locked from `keywords-full` ids 54/55: **Digest N** is a READ-ONLY
+Victory-Pile-size threshold ("use only if you have at least N cards in your Victory Pile";
+nothing removed, all card types count, once per play); **Indigestion** is the
+mutually-exclusive FALLBACK used ONLY when the pile holds fewer than N ("you cannot choose
+the Indigestion ability instead" when Digest is available). The printed multi-line card is a
+deterministic onPlay branch: count `G.playerZones[playerID].victory.length`; if ≥ N run the
+Digest branch, else the Indigestion branch; a trailing `[hc:X]: Instead, you get both.`
+upgrade OVERRIDES the threshold gate — when its class condition holds, BOTH branches run
+regardless of count (the standard Legendary "Instead" override; the printed line is the
+primary source, no separate glossary entry).
+
+**Locks:**
+1. A new `digest-indigestion` `HeroKeyword` (NO top-level magnitude → in `NO_MAGNITUDE_KEYWORDS`;
+   branch magnitudes ride the inline `[icon:*]` / `[keyword:draw:N]` / `[keyword:rescue:N]`
+   markers) in the union + `HERO_KEYWORDS` array + drift tests.
+2. Four additive optional fields on the shared `HeroEffectDescriptor` (`heroAbility.types.ts`):
+   `digestThreshold?`, `digestEffects?: HeroEffectDescriptor[]`, `indigestionEffects?`,
+   `bothCondition?: HeroCondition` — the first SELF-RECURSIVE nesting of the descriptor. The
+   fused hook lives in the JSON-serialized `G.heroAbilityHooks` (D-24095), so both arrays stay
+   plain data (no functions/Maps, acyclic) — pinned by a JSON-roundtrip test.
+3. A per-card allowlist `DIGEST_INDIGESTION_CARDS` (`buildHeroAbilityHooks`, the
+   `SUPPORTED_TRANSFORM_BASES` / `X_GENE_CARDS` precedent) — the fusion runs INSIDE the hook
+   builder where the canonical `{setAbbr}/{heroSlug}/{cardSlug}` key exists — parses each
+   branch line's inline effects via the shared `parseAbilityText`, reads the upgrade line's
+   `[hc:X]` as `bothCondition`, emits ONE `digest-indigestion` hook, and CONSUMES the source
+   lines (no leftover attack/rescue/unresolved-`Indigestion` hooks).
+4. Handler `heroEffectDigestIndigestion` reads the Victory-Pile count (NEVER mutates it),
+   safe-skips a malformed effect (missing `digestThreshold`/`digestEffects` → no-op, never
+   `count >= undefined`), and dispatches the selected branch's effects through the reentrant
+   `executeSingleEffect` (the copy-powers / steal-abilities precedent).
+5. **Scope = Core-4** whose branches reduce to shipped executors: `digest-that-chimichanga`
+   (Digest 2 +2 attack / rescue 1 / `[hc:strength]` both), `carnage/carnivore` (Digest 4
+   draw 2 / +2 recruit), `venom/devouring-drool` (Digest 3 +2 attack / +2 recruit /
+   `[hc:instinct]` both), `venomized-dr-strange/cauldron-of-the-cosmos` (Digest 2 draw 1,
+   single-branch). DEFERRED as honest parse-unrecognized hollows: `play-to-the-crowd`
+   (Bystanders-in-VP count-source), `hungry-for-action` (optional discard-then-draw),
+   `insatiable-hunger` (dual KO-with-reward), and the ENTIRE Excessive Violence family (a
+   distinct `onFight` once-per-turn overspend mechanic — its own future WP).
+6. **NO new G field** (the branch reads existing Victory-Pile zone state), NO pending choice /
+   block-all / UIState field / client change (every Core-4 branch auto-resolves). Card-data
+   markers via the curated `hero-ability-markers.json` (3 net-new `[keyword:draw:2]` /
+   `[keyword:draw:1]` / `[keyword:rescue:1]` apply rows — both tokens already legal, no
+   apply-script change — + the single `digest-that-chimichanga` `_deferred` row removed).
+7. **Determinism:** the branch is a ctx-free count read + dispatch; all Core-4 are `vnom`
+   (non-core) and no committed sentinel/PRE_WP080 fixture plays them → `finalStateHash` +
+   `PRE_WP080_HASH` VERIFIED byte-unchanged, NO re-pin. `sim:coverage` recognizes
+   `digest-indigestion` (no coverage regression); the Core-4 drop from
+   `runtime-observed-hollows.json`.
+
+**Amendment (execution):** the raw `digest` / `indigestion` mechanic rows stay `unsupported`
+in the hero mechanic ledger. The ledger aggregates status **per-hero**, and `venom` /
+`venompool` each carry both a fused Core-4 Digest card AND a deferred one, so a by-hook
+"executable" alias would over-claim the deferred sibling (a reward-integrity violation). The
+honest-conservative under-claim stands; the un-hollow is verified by the runtime-observed drop
++ `sim:coverage` recognition + the branch effects reading `executable`, not by the aggregated
+raw-token row. WP-735 AC #8 corrected accordingly.
+
+Related D-21602 (the deferral this resolves), D-24490 (`count-scaled-choose` compound-descriptor
+vnom precedent), D-24469 (`SUPPORTED_TRANSFORM_BASES` per-card allowlist), D-24345 / D-24401
+(reentrant `executeHeroEffects`), D-24095 (the JSON-serialized framework store), D-24552
+(Venompool viability). **Reserved by:** NUMBER-LEDGER D-24555.
+
 Protect this file.

@@ -620,12 +620,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'kidnap-per-count', // why: WP-714 / D-24537 — Ultron's Genetic Experimentation ("[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn.") — count-scaled bystander-capture sibling of attack/recruit-per-count (captures N to the first City villain, Mastermind fallback)
     'covering-fire', // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card.") — parks a choose-one for the active player; each branch acts on every other seat (draw / auto-discard)
     'no-more-draws', // why: WP-731 / D-24552 — Venompool's Shenanigans ("But you can't draw any more cards until the end of this turn.") — sets the turn-scoped G.turnEconomy.drawsLocked flag; heroEffectDraw draws 0 + logs blocked while set
+    'digest-indigestion', // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch (fused from the Digest/Indigestion/upgrade lines of an allowlisted card into one hook; handler branches on G.playerZones[pid].victory.length)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      62,
-      'HERO_KEYWORDS must have exactly 62 entries',
+      63,
+      'HERO_KEYWORDS must have exactly 63 entries',
     );
 
     assert.deepStrictEqual(
@@ -2367,5 +2368,68 @@ describe('buildHeroAbilityHooks Pure Fury [team:shield] is descriptive, not a pl
     // rather than an exact keyword list.
     assert.ok((hooks[0]!.keywords ?? []).includes('pure-fury'), 'the pure-fury keyword is recognized');
     assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'no unresolved marker');
+  });
+});
+
+describe('buildHeroAbilityHooks — digest-indigestion fusion (WP-735 / D-24555)', () => {
+  function digestConfig(heroSlug: string): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: [`vnom/${heroSlug}`] };
+  }
+
+  it('fuses an allowlisted Digest/Indigestion card into ONE digest-indigestion hook', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'digest-that-chimichanga', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 2]: You get +2[icon:attack].',
+        '[keyword:Indigestion]: "Rescue" a Bystander. [keyword:rescue:1]',
+        '[hc:strength]: Instead, you get both.',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, digestConfig('venompool'));
+
+    assert.equal(hooks.length, 1, 'the three printed lines fuse into exactly one hook');
+    const hook = hooks[0]!;
+    assert.deepEqual(hook.keywords, ['digest-indigestion'], 'the fused hook carries only the digest-indigestion keyword');
+    assert.equal(hook.unresolvedMarkers, undefined, 'the [keyword:Indigestion] token is consumed — no unresolved-marker hollow');
+    assert.equal(hook.effects?.length, 1, 'exactly one compound effect');
+    const effect = hook.effects![0]!;
+    assert.equal(effect.type, 'digest-indigestion');
+    assert.equal(effect.digestThreshold, 2, 'the printed Digest 2 threshold is read from the space-form token');
+    assert.deepEqual(effect.digestEffects, [{ type: 'attack', magnitude: 2 }], 'the Digest branch is +2 attack');
+    assert.deepEqual(effect.indigestionEffects, [{ type: 'rescue', magnitude: 1 }], 'the Indigestion branch is rescue 1');
+    assert.deepEqual(effect.bothCondition, { type: 'heroClassMatch', value: 'strength' }, 'the upgrade [hc:strength] is the bothCondition');
+  });
+
+  it('fuses a single-branch Digest card (no Indigestion line) with no indigestionEffects / bothCondition', () => {
+    const registry = makeHeroRegistry('vnom', 'venomized-dr-strange', [
+      { slug: 'cauldron-of-the-cosmos', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 2]: Draw a card. [keyword:draw:1]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, digestConfig('venomized-dr-strange'));
+    assert.equal(hooks.length, 1);
+    const effect = hooks[0]!.effects![0]!;
+    assert.equal(effect.type, 'digest-indigestion');
+    assert.equal(effect.digestThreshold, 2);
+    assert.deepEqual(effect.digestEffects, [{ type: 'draw', magnitude: 1 }]);
+    assert.equal(effect.indigestionEffects, undefined, 'a single-branch card carries no indigestionEffects');
+    assert.equal(effect.bothCondition, undefined, 'a single-branch card carries no bothCondition');
+  });
+
+  it('does NOT fuse a non-allowlisted Digest card — its [keyword:Indigestion] stays an honest hollow', () => {
+    const registry = makeHeroRegistry('vnom', 'venompool', [
+      { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile.',
+        '[keyword:Indigestion]: "Rescue" two Bystanders.',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, digestConfig('venompool'));
+    assert.ok(
+      !hooks.some((hook) => (hook.keywords ?? []).includes('digest-indigestion')),
+      'a non-allowlisted Digest card produces NO digest-indigestion hook',
+    );
+    assert.ok(
+      hooks.some((hook) => (hook.unresolvedMarkers ?? []).some((marker) => /indigestion/i.test(marker))),
+      'the Indigestion line stays a parse-unrecognized hollow',
+    );
   });
 });

@@ -57,7 +57,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     );
   });
 
-  it('has exactly 40 handlers and none for the deferred keywords', () => {
+  it('has exactly 47 handlers and none for the deferred keywords', () => {
     // why: WP-286 / D-24069 added the draw-or-empowered park handler (9 → 10); the
     // Ionic Energy optional-put-bottom-hq fix added its park handler (10 → 11); D-24132
     // added the put-any-number-bottom-hq park handler (11 → 12); D-24133 added the
@@ -102,7 +102,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // Healing Factor Genome, Peter Parker's Hot Bowl of Soup) (44 → 45).
     // WP-731 / D-24552 added the no-more-draws handler (Venompool's Shenanigans turn-scoped
     // draw lock) (45 → 46).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 46);
+    // WP-735 / D-24555 added the digest-indigestion handler (Venomverse Victory-Pile-count
+    // branch — Digest / Indigestion / both) (46 → 47).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 47);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7118,11 +7120,127 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
       'the optional-KO choice does not park — the discard-pile condition failed');
   });
 
-  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 46', () => {
+  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 47', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count stays at the current total (46 after WP-731's
-    // no-more-draws handler, D-24552).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 46,
-      'HERO_EFFECT_HANDLERS stays 46 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (47 after WP-735's
+    // digest-indigestion handler, D-24555).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 47,
+      'HERO_EFFECT_HANDLERS stays 47 (X-Gene is not an effect handler)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// digest-indigestion — Venomverse Victory-Pile-count branch (WP-735 / D-24555)
+// ---------------------------------------------------------------------------
+
+describe('digest-indigestion (WP-735 / D-24555)', () => {
+  const digestCtx = makeMockCtx();
+
+  // why: a digest-that-chimichanga-shaped hook — Digest 2 → +2 attack; Indigestion → rescue 1;
+  // optional [hc:strength] "Instead … both" upgrade.
+  function chimichangaHook(withBoth: boolean): HeroAbilityHook {
+    const effect: HeroEffectDescriptor = {
+      type: 'digest-indigestion',
+      digestThreshold: 2,
+      digestEffects: [{ type: 'attack', magnitude: 2 }],
+      indigestionEffects: [{ type: 'rescue', magnitude: 1 }],
+    };
+    if (withBoth) {
+      effect.bothCondition = { type: 'heroClassMatch', value: 'strength' };
+    }
+    return { cardId: 'digest-hero', timing: 'onPlay', keywords: ['digest-indigestion'], effects: [effect] };
+  }
+
+  it('runs the Digest branch (and NOT Indigestion) when the Victory Pile meets the threshold', () => {
+    const g = makeTestState({
+      inPlay: ['digest-hero'],
+      victory: ['vp-a', 'vp-b'],
+      bystanders: ['b-1'],
+      heroAbilityHooks: [chimichangaHook(false)],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'digest-hero');
+    assert.equal(g.turnEconomy.attack, 2, 'Digest branch grants +2 attack at count >= 2');
+    assert.deepEqual(g.playerZones['0']!.victory, ['vp-a', 'vp-b'],
+      'the Victory-Pile read is READ-ONLY and no rescue fired (Digest, not Indigestion)');
+    assert.deepEqual(g.piles.bystanders, ['b-1'], 'no Bystander was rescued');
+  });
+
+  it('runs the mutually-exclusive Indigestion branch when the Victory Pile is below the threshold', () => {
+    const g = makeTestState({
+      inPlay: ['digest-hero'],
+      victory: ['vp-a'],
+      bystanders: ['b-1'],
+      heroAbilityHooks: [chimichangaHook(false)],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'digest-hero');
+    assert.equal(g.turnEconomy.attack, 0, 'below threshold the Digest attack does NOT fire');
+    assert.deepEqual(g.playerZones['0']!.victory, ['vp-a', 'b-1'], 'Indigestion rescued one Bystander');
+    assert.deepEqual(g.piles.bystanders, [], 'the rescued Bystander left the supply');
+  });
+
+  it('runs BOTH branches regardless of count when the "Instead … both" condition holds', () => {
+    const g = makeTestState({
+      inPlay: ['digest-hero', 'strength-ally'],
+      victory: [], // below threshold, but the upgrade overrides the Digest gate
+      bystanders: ['b-1'],
+      cardTraits: {
+        'strength-ally': { heroClass: 'strength', team: null },
+        'digest-hero': { heroClass: 'covert', team: null },
+      },
+      heroAbilityHooks: [chimichangaHook(true)],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'digest-hero');
+    assert.equal(g.turnEconomy.attack, 2, 'the upgrade runs the Digest branch even at count 0');
+    assert.deepEqual(g.playerZones['0']!.victory, ['b-1'], 'the upgrade also runs the Indigestion rescue');
+  });
+
+  it('single-branch card (no Indigestion) runs NOTHING below the threshold — no phantom effect', () => {
+    const g = makeTestState({
+      inPlay: ['cauldron-hero'],
+      victory: ['vp-a'], // < 2
+      deck: ['d-1', 'd-2'],
+      heroAbilityHooks: [{
+        cardId: 'cauldron-hero', timing: 'onPlay', keywords: ['digest-indigestion'],
+        effects: [{ type: 'digest-indigestion', digestThreshold: 2, digestEffects: [{ type: 'draw', magnitude: 1 }] }],
+      }],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'cauldron-hero');
+    assert.deepEqual(g.playerZones['0']!.hand, [], 'below threshold a single-branch card draws nothing');
+    assert.deepEqual(g.playerZones['0']!.deck, ['d-1', 'd-2'], 'the deck is untouched below threshold');
+  });
+
+  it('single-branch card runs the Digest branch when the threshold is met', () => {
+    const g = makeTestState({
+      inPlay: ['cauldron-hero'],
+      victory: ['vp-a', 'vp-b'], // >= 2
+      deck: ['d-1', 'd-2'],
+      heroAbilityHooks: [{
+        cardId: 'cauldron-hero', timing: 'onPlay', keywords: ['digest-indigestion'],
+        effects: [{ type: 'digest-indigestion', digestThreshold: 2, digestEffects: [{ type: 'draw', magnitude: 1 }] }],
+      }],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'cauldron-hero');
+    assert.equal(g.playerZones['0']!.hand.length, 1, 'at count >= 2 the Digest branch draws one card');
+  });
+
+  it('safe-skips a malformed effect that lacks digestThreshold — never count >= undefined', () => {
+    const g = makeTestState({
+      inPlay: ['digest-hero'],
+      victory: ['vp-a', 'vp-b'],
+      heroAbilityHooks: [{
+        cardId: 'digest-hero', timing: 'onPlay', keywords: ['digest-indigestion'],
+        effects: [{ type: 'digest-indigestion', digestEffects: [{ type: 'attack', magnitude: 2 }] } as HeroEffectDescriptor],
+      }],
+    });
+    executeHeroEffects(g, digestCtx, '0', 'digest-hero');
+    assert.equal(g.turnEconomy.attack, 0, 'a malformed digest-indigestion effect is a no-op');
+    assert.deepEqual(g.playerZones['0']!.victory, ['vp-a', 'vp-b'], 'G is unchanged by the safe-skip');
+  });
+
+  it('a fused hook survives a JSON round-trip (plain data, acyclic — safe for G.heroAbilityHooks, D-24095)', () => {
+    const hook = chimichangaHook(true);
+    const roundTripped = JSON.parse(JSON.stringify(hook)) as HeroAbilityHook;
+    assert.deepStrictEqual(roundTripped, hook,
+      'the self-recursive digestEffects/indigestionEffects nesting must be plain JSON');
   });
 });

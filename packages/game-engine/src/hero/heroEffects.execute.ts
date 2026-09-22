@@ -225,6 +225,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // belongs here. Carries NO magnitude (a choose-one branch, not a count) → also in
   // NO_MAGNITUDE_KEYWORDS.
   'covering-fire',
+  // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch;
+  // has a HERO_EFFECT_HANDLERS entry (heroEffectDigestIndigestion) that branches on the Victory-Pile
+  // count and dispatches the selected branch via the reentrant executeSingleEffect, so it belongs
+  // here (the bidirectional handler-completeness authority). Carries NO top-level magnitude → also
+  // in NO_MAGNITUDE_KEYWORDS.
+  'digest-indigestion',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -467,6 +473,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // resolve time, so the magnitude pre-gate must not drop it, or heroEffectCoveringFire never
   // parks its choice.
   'covering-fire',
+  // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
+  // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
+  // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
+  // branch never runs.
+  'digest-indigestion',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -4724,6 +4735,94 @@ function formatTransformEconomyClause(attack: number, recruit: number): string {
   return ` (${parts.join(', ')})`;
 }
 
+/**
+ * Dispatches each effect of a Digest / Indigestion branch through the reentrant
+ * executeSingleEffect (WP-735 / D-24555), in printed order.
+ *
+ * A `for...of` loop (no `.reduce()` in effect application). Each branch effect is an
+ * already-parsed inline effect (attack / recruit / draw / rescue), so this reuses the
+ * shipped executors — the copy-powers / steal-abilities reentrant precedent.
+ *
+ * @param G - Game state (mutated by each branch effect).
+ * @param ctx - Context, forwarded to each effect's handler.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param branchEffects - The branch's already-parsed inline effects.
+ * @returns void.
+ */
+function runDigestIndigestionBranch(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  branchEffects: HeroEffectDescriptor[],
+): void {
+  for (const branchEffect of branchEffects) {
+    executeSingleEffect(G, ctx, playerID, cardId, branchEffect);
+  }
+}
+
+/**
+ * Executes a 'digest-indigestion' effect (WP-735 / D-24555): the Venomverse
+ * "Digest N / Indigestion" Victory-Pile-count branch for an allowlisted card.
+ *
+ * Reads the player's Victory-Pile card count (READ-ONLY — the pile is never mutated
+ * here) and runs the printed branch: if the "Instead, you get both" upgrade condition
+ * holds, runs BOTH branches; else the Digest branch when the count meets the threshold,
+ * else the mutually-exclusive Indigestion branch (keywords-full ids 54/55). Each branch's
+ * effects dispatch through the reentrant executeSingleEffect.
+ *
+ * @param G - Game state (mutated by the dispatched branch effects).
+ * @param ctx - Context, forwarded to each branch effect's handler.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param effect - The 'digest-indigestion' descriptor { digestThreshold, digestEffects, indigestionEffects?, bothCondition? }.
+ * @returns void.
+ */
+function heroEffectDigestIndigestion(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: WP-735 / D-24555 — safe-skip a malformed effect. digestThreshold/digestEffects are
+  // optional on the shared descriptor type; a 'digest-indigestion' effect that lacks either is
+  // malformed. Return via explicit narrowing BEFORE reading the count so we never evaluate
+  // `count >= undefined` (→ NaN → a silent wrong branch).
+  const { digestThreshold, digestEffects } = effect;
+  if (digestThreshold === undefined || digestEffects === undefined) {
+    return;
+  }
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+  const indigestionEffects = effect.indigestionEffects ?? [];
+  // why: WP-735 / D-24555 — Digest N is a READ-ONLY Victory-Pile-size threshold (glossary id 54):
+  // count the pile, never mutate it. All card types in the Victory Pile count.
+  const victoryPileCount = playerZones.victory.length;
+  // why: WP-735 / D-24555 — the printed "[hc:X]: Instead, you get both." upgrade OVERRIDES the
+  // Digest threshold gate: when its class/team condition holds, BOTH branches run regardless of
+  // count (the standard Legendary "Instead" override; the printed line is the primary source).
+  const runsBoth =
+    effect.bothCondition !== undefined &&
+    evaluateAllConditions(G, playerID, [effect.bothCondition], cardId);
+  if (runsBoth) {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, digestEffects);
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, indigestionEffects);
+    return;
+  }
+  // why: WP-735 / D-24555 — glossary id 55: Indigestion is the MUTUALLY-EXCLUSIVE fallback used
+  // ONLY when the pile holds fewer than N ("you cannot choose Indigestion when Digest is
+  // available"). A single-branch card (empty indigestionEffects) runs nothing below threshold.
+  if (victoryPileCount >= digestThreshold) {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, digestEffects);
+  } else {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, indigestionEffects);
+  }
+}
+
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
   draw: heroEffectDraw,
   attack: heroEffectAttack,
@@ -4844,6 +4943,12 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // the active player, resolved by resolveCoveringFireChoice (draw/discard applied to each other
   // seat). Carries NO magnitude → in NO_MAGNITUDE_KEYWORDS.
   'covering-fire': heroEffectCoveringFire,
+  // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch:
+  // heroEffectDigestIndigestion reads G.playerZones[pid].victory.length (READ-ONLY) and dispatches
+  // the Digest branch (count ≥ threshold), the Indigestion fallback (below threshold), or BOTH
+  // (when the printed "Instead … both" upgrade condition holds) via the reentrant executeSingleEffect.
+  // Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'digest-indigestion': heroEffectDigestIndigestion,
 };
 
 // ---------------------------------------------------------------------------

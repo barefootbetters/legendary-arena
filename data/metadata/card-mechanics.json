@@ -500,7 +500,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 94,
+      "cardCount": 96,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -576,6 +576,8 @@
         "vill/bullseye",
         "vill/dr-octopus",
         "vill/enchantress",
+        "vnom/carnage",
+        "vnom/venomized-dr-strange",
         "vnom/venompool",
         "wtif/apocalyptic-black-widow",
         "wtif/doctor-strange-supreme",
@@ -1263,7 +1265,7 @@
       "label": "Rescue",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 14,
+      "cardCount": 15,
       "cardIds": [
         "3dtc/black-widow",
         "ca75/captain-america-1941",
@@ -1278,7 +1280,8 @@
         "cvwr/peter-parker",
         "dkcy/jean-grey",
         "msp1/black-widow",
-        "rvlt/war-machine"
+        "rvlt/war-machine",
+        "vnom/venompool"
       ],
       "hidden": false
     },
@@ -3923,6 +3926,7 @@
     "vnom/carnage": {
       "mechanics": [
         "digest",
+        "draw",
         "excessive-violence",
         "indigestion"
       ]
@@ -3944,7 +3948,8 @@
     },
     "vnom/venomized-dr-strange": {
       "mechanics": [
-        "digest"
+        "digest",
+        "draw"
       ]
     },
     "vnom/venompool": {
@@ -3953,7 +3958,8 @@
         "draw",
         "excessive-violence",
         "indigestion",
-        "no-more-draws"
+        "no-more-draws",
+        "rescue"
       ]
     },
     "wpnx/fantomex": {

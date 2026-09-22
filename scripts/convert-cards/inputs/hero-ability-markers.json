@@ -1744,6 +1744,24 @@
       "cardSlug": "shenanigans",
       "abilityIndex": 0,
       "markupToken": "[keyword:no-more-draws]"
+    },
+    {
+      "heroSlug": "carnage",
+      "cardSlug": "carnivore",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "cauldron-of-the-cosmos",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "venompool",
+      "cardSlug": "digest-that-chimichanga",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:rescue:1]"
     }
   ],
   "wpnx": [
@@ -2113,14 +2131,6 @@
       "cardSlug": "can-i-get-a-little-gratitude",
       "abilityIndex": 1,
       "abilityText": "[keyword:Excessive Violence]: “Rescue“ a Bystander.",
-      "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
-    },
-    {
-      "setAbbr": "vnom",
-      "heroSlug": "venompool",
-      "cardSlug": "digest-that-chimichanga",
-      "abilityIndex": 1,
-      "abilityText": "[keyword:Indigestion]: “Rescue“ a Bystander.",
       "reason": "D-21602 — keyword timing prefix: not wired to executeHeroEffects"
     },
     {

@@ -489,6 +489,36 @@ const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
   'xmen/x-23/bioengineered-assassin',
 ]);
 
+// why: WP-735 / D-24555 — cards whose printed "Digest N / Indigestion" lines are FUSED into
+// one executable digest-indigestion hook (per-card allowlisted, keyed by canonical
+// `{setAbbr}/{heroSlug}/{cardSlug}`). Scope = the Core-4 whose branches reduce to shipped
+// attack / recruit / draw / rescue executors. Every OTHER Digest card (play-to-the-crowd,
+// hungry-for-action, insatiable-hunger) has a branch the engine does not yet model, so its
+// [keyword:Digest N] / [keyword:Indigestion] stays an honest parse-unrecognized hollow — the
+// Honest-Partial Invariant, mirroring SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS.
+const DIGEST_INDIGESTION_CARDS: ReadonlySet<string> = new Set<string>([
+  'vnom/venompool/digest-that-chimichanga',
+  'vnom/carnage/carnivore',
+  'vnom/venom/devouring-drool',
+  'vnom/venomized-dr-strange/cauldron-of-the-cosmos',
+]);
+
+// why: WP-735 / D-24555 — reads the printed "[keyword:Digest N]" threshold. The space-form
+// token (`Digest<space>N`) is deliberately NOT matched by KEYWORD_PATTERN (which requires `:N`
+// or `]` right after the name), so it needs a dedicated pattern; capture group 1 is the
+// threshold N. The printed display token is left in the card text unchanged (AbilityText.vue
+// renders it). Non-global so `.exec`/`.test` are stateless.
+const DIGEST_MARKER_PATTERN = /\[keyword:Digest (\d+)\]/;
+
+// why: WP-735 / D-24555 — detects the Indigestion branch line (the bare [keyword:Indigestion]
+// display token, which KEYWORD_PATTERN sees as an unrecognized keyword → unresolved marker).
+const INDIGESTION_MARKER_PATTERN = /\[keyword:Indigestion\]/;
+
+// why: WP-735 / D-24555 — detects the "[hc:X]: Instead, you get both." upgrade line. Its
+// [hc:X] / [team:X] condition is parsed separately (Step 1a/1b) into the bothCondition; this
+// pattern only identifies which line is the upgrade so the fusion consumes it. Case-insensitive.
+const DIGEST_BOTH_LINE_PATTERN = /\bInstead\b[^.]*\bboth\b/i;
+
 // why: WP-723 / D-24544 — detects an X-Gene line. On such a line (for an allowlisted card)
 // the leading [hc:X] is the discard-condition class ("a [class] card in your discard pile"),
 // NOT a heroClassMatch play-this-turn gate, so Step 1a reroutes it (mirrors the reveal-from-
@@ -2819,6 +2849,84 @@ export function isHeroAbilityRegistryReader(
 // at runtime.
 
 /**
+ * Fuses an allowlisted Venomverse card's "Digest N / Indigestion" lines into one
+ * digest-indigestion hook (WP-735 / D-24555).
+ *
+ * Reads the printed Digest threshold, parses each branch line's inline effects via the
+ * shared parseAbilityText, reads the optional "Instead … both" upgrade condition, and
+ * returns the single fused hook plus the set of ability-line indices it consumed (so the
+ * caller skips them). Returns undefined when no Digest line is present (defensive — every
+ * allowlisted card has one).
+ *
+ * @param cardId - The played hero card's CardExtId (the hook's cardId).
+ * @param abilityLines - The card's ability lines (post-coalesce).
+ * @returns The fused hook + consumed line indices, or undefined when no Digest line is found.
+ */
+function buildDigestIndigestionFusion(
+  cardId: CardExtId,
+  abilityLines: string[],
+): { hook: HeroAbilityHook; consumedIndices: ReadonlySet<number> } | undefined {
+  const digestIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && DIGEST_MARKER_PATTERN.test(line),
+  );
+  if (digestIndex === -1) {
+    return undefined;
+  }
+  const digestMatch = DIGEST_MARKER_PATTERN.exec(abilityLines[digestIndex]!);
+  // why: findIndex already matched DIGEST_MARKER_PATTERN, so exec cannot be null; the guard keeps
+  // TS narrowing explicit instead of a non-null assertion on the capture group.
+  if (digestMatch === null) {
+    return undefined;
+  }
+  const digestThreshold = Number.parseInt(digestMatch[1]!, 10);
+  const digestEffects = parseAbilityText(abilityLines[digestIndex]!).effects;
+  const consumedIndices = new Set<number>([digestIndex]);
+
+  // why: WP-735 / D-24555 — the Indigestion fallback branch (absent for a single-branch card
+  // such as cauldron-of-the-cosmos). Its inline [keyword:rescue:N] / [icon:recruit] parse to the
+  // branch effects; the bare [keyword:Indigestion] display token is discarded (never emitted as a
+  // hook), so no unresolved-marker hollow survives.
+  const indigestionIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && INDIGESTION_MARKER_PATTERN.test(line),
+  );
+  let indigestionEffects: HeroEffectDescriptor[] | undefined;
+  if (indigestionIndex !== -1) {
+    consumedIndices.add(indigestionIndex);
+    indigestionEffects = parseAbilityText(abilityLines[indigestionIndex]!).effects;
+  }
+
+  // why: WP-735 / D-24555 — the "Instead … both" upgrade line, if present. Its single [hc:X]
+  // condition (Core-4 uses [hc:strength] / [hc:instinct]) is the bothCondition; the double
+  // [team:X][team:X] form belongs only to deferred cards, which are not in DIGEST_INDIGESTION_CARDS.
+  const bothIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
+  );
+  let bothCondition: HeroCondition | undefined;
+  if (bothIndex !== -1) {
+    consumedIndices.add(bothIndex);
+    const firstCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
+    if (firstCondition !== undefined) {
+      bothCondition = firstCondition;
+    }
+  }
+
+  const effect: HeroEffectDescriptor = { type: 'digest-indigestion', digestThreshold, digestEffects };
+  if (indigestionEffects !== undefined) {
+    effect.indigestionEffects = indigestionEffects;
+  }
+  if (bothCondition !== undefined) {
+    effect.bothCondition = bothCondition;
+  }
+  const hook: HeroAbilityHook = {
+    cardId,
+    timing: 'onPlay',
+    keywords: ['digest-indigestion'],
+    effects: [effect],
+  };
+  return { hook, consumedIndices };
+}
+
+/**
  * Builds hero ability hooks from registry card data at setup time.
  *
  * Called during Game.setup() via buildInitialGameState. Resolves hero
@@ -2895,7 +3003,27 @@ export function buildHeroAbilityHooks(
       // two option markers into a single choice. Gated on count-scaled markers → non-count-scaled
       // multi-line choose-ones (S.H.I.E.L.D. undercover/levels) pass through unchanged.
       const abilityLines = coalesceCountScaledChooseOne(cardEntry.abilities);
-      for (const abilityText of abilityLines) {
+      // why: WP-735 / D-24555 — for an allowlisted Venomverse "Digest N / Indigestion" card, fuse
+      // its Digest / Indigestion / "Instead … both" lines into ONE digest-indigestion hook up
+      // front, and record which line indices that consumed so the per-line loop below SKIPS them
+      // (they are subsumed by the fused hook, never emitted as their own attack/rescue hooks or an
+      // unresolved [keyword:Indigestion] marker). The canonical key is the transform / x-gene
+      // per-card-allowlist gate (RS-1: the fusion is gated here, where the card key exists).
+      const digestFusion = DIGEST_INDIGESTION_CARDS.has(
+        `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+      )
+        ? buildDigestIndigestionFusion(instance.extId, abilityLines)
+        : undefined;
+      if (digestFusion !== undefined) {
+        hooks.push(digestFusion.hook);
+      }
+      for (let lineIndex = 0; lineIndex < abilityLines.length; lineIndex++) {
+        // why: WP-735 / D-24555 — skip the Digest/Indigestion/upgrade lines the fusion already
+        // consumed into the single digest-indigestion hook above.
+        if (digestFusion !== undefined && digestFusion.consumedIndices.has(lineIndex)) {
+          continue;
+        }
+        const abilityText = abilityLines[lineIndex]!;
         if (typeof abilityText !== 'string' || abilityText.trim() === '') {
           continue;
         }
