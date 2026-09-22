@@ -42,10 +42,14 @@ is verified by the Core-4 dropping from `runtime-observed-hollows.json` (only de
 `play-to-the-crowd`'s indigestion remains) + `sim:coverage` recognizing `digest-indigestion` (no
 regression) + the branch effects reading `executable`.
 
-**D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match). Repro on
-`play.legendary-arena.com`: play Venompool, play **Digest That Chimichanga** — with < 2 Victory-Pile
-cards it rescues a Bystander, with 2+ it grants +2 Attack, and on a Strength deck it does both. Verify
-against the deployed `/api/version` gitSha.
+**D-24026 live-verify — CONFIRMED 2026-09-22** (operator, 2p Dr. Doom / Legacy Virus, match `ya-oW_JUJ90`,
+deployed `gitSha 0a511f7`). All **7** Digest That Chimichanga plays resolved faithfully: Indigestion
+(rescue) below 2 Victory-Pile cards (turn 5); Digest (+2 attack) at ≥ 2 with no strength ally (turns 7 /
+11 / 13 / 17a); and the `[hc:strength]: Instead, you get both` upgrade — +2 attack AND rescue — with
+correct SELF-EXCLUSION (turn 17: the first chimichanga is Digest-only, the second fires both because the
+first strength ally is now in play; turn 21: both, after strength-class Determination). Zero hollow lines
+(the pre-fix `[blocked] Unhandled … indigestion` is gone). Shenanigans (WP-731) also verified clean in
+the same game.
 
 ### WP-733 — Spider-Man bare-`[keyword:reveal]` → `[keyword:reveal:2]` cost-draw parity (EC-770 / no new D) (2026-09-22)
 
