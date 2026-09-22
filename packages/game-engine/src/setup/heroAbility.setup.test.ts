@@ -1431,3 +1431,56 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
+
+describe('WP-729 — Card Shark reveal-rule trait predicate + co-located-token suppression (D-24550)', () => {
+  // The ability text carries the marker the apply script appends post-curation.
+  const CARD_SHARK = "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it.[keyword:reveal:team-x-men:draw]";
+  const CRESCENT = "Reveal the top card of your deck. If it's [hc:instinct] or [hc:tech], draw it.[keyword:reveal:hc-instinct:draw][keyword:reveal:hc-tech:draw]";
+
+  it('parses the [keyword:reveal:team-x-men:draw] marker into a reveal descriptor with a team predicate', () => {
+    const registry = makeRegistry('core', 'gambit', [{ slug: 'card-shark', abilities: [CARD_SHARK] }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/gambit'));
+    const revealHook = hooks.find((hook) => (hook.effects ?? []).some((effect) => effect.type === 'reveal'));
+    assert.ok(revealHook !== undefined, 'a reveal descriptor is built from the trait marker');
+    const revealEffect = revealHook!.effects!.find((effect) => effect.type === 'reveal')!;
+    const rules = revealEffect.revealRules ?? [];
+    assert.ok(
+      rules.some((rule) => rule.predicate.kind === 'team' && rule.predicate.traitValue === 'x-men'
+        && rule.actions.some((action) => action.kind === 'draw')),
+      'the reveal rule carries a team predicate (x-men) with a draw action',
+    );
+  });
+
+  it('suppresses the co-located [team:x-men] — NO requiresTeam gate (the live "needs another x-men Hero" mis-gate)', () => {
+    const registry = makeRegistry('core', 'gambit', [{ slug: 'card-shark', abilities: [CARD_SHARK] }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/gambit'));
+    for (const hook of hooks) {
+      const conditions = hook.conditions ?? [];
+      assert.equal(
+        conditions.some((condition) => condition.type === 'requiresTeam'),
+        false,
+        'the reveal criterion [team:x-men] must NOT emit a requiresTeam play-gate',
+      );
+    }
+  });
+
+  it('suppresses co-located [hc:X] on a hero-class reveal line — NO heroClassMatch gate; builds two hero-class rules', () => {
+    const registry = makeRegistry('pttr', 'moon-knight', [{ slug: 'crescent-moon-darts', abilities: [CRESCENT] }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('pttr/moon-knight'));
+    for (const hook of hooks) {
+      const conditions = hook.conditions ?? [];
+      assert.equal(
+        conditions.some((condition) => condition.type === 'heroClassMatch'),
+        false,
+        'the reveal criterion [hc:X] must NOT emit a heroClassMatch play-gate',
+      );
+    }
+    const revealHook = hooks.find((hook) => (hook.effects ?? []).some((effect) => effect.type === 'reveal'));
+    const rules = revealHook!.effects!.find((effect) => effect.type === 'reveal')!.revealRules ?? [];
+    assert.equal(
+      rules.filter((rule) => rule.predicate.kind === 'hero-class').length,
+      2,
+      'two hero-class reveal rules (instinct + tech), inclusive-OR by construction',
+    );
+  });
+});

@@ -68,6 +68,14 @@ export function describeRevealPredicate(predicate: RevealPredicate): string {
       ? 'cost ≥ (no threshold)'
       : `cost ≥ ${predicate.threshold}`;
   }
+  // why: WP-729 / D-24550 — name the reveal trait criterion for the outcome log line
+  // ("an instinct card" / "a hydra card"). Article-aware (a vowel-initial slug takes
+  // "an"), consistent with the WP-729 Part B X-Gene message fix.
+  if (predicate.kind === 'team' || predicate.kind === 'hero-class') {
+    const traitValue = predicate.traitValue ?? 'matching';
+    const article = /^[aeiou]/i.test(traitValue) ? 'an' : 'a';
+    return `${article} ${traitValue} card`;
+  }
   return `an unrecognized predicate (${String(predicate.kind)})`;
 }
 

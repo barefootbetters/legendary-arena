@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1902,
+    "totalEntries": 1906,
     "byScope": {
-      "hero": 727,
+      "hero": 731,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 475,
+      "executable": 479,
       "deferred": 16,
       "condition": 28,
       "unsupported": 323,
@@ -7064,6 +7064,23 @@
       "name": "Gambit",
       "set": "core",
       "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "card-shark",
+          "name": "Card Shark"
+        }
+      ]
+    },
+    {
+      "extId": "core/gambit",
+      "name": "Gambit",
+      "set": "core",
+      "scope": "hero",
       "mechanic": "reveal-cost-attack",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack",
@@ -9389,6 +9406,23 @@
         {
           "slug": "epic-middle-manager",
           "name": "Epic Middle Manager"
+        }
+      ]
+    },
+    {
+      "extId": "dead/bob-agent-of-hydra",
+      "name": "Bob, Agent of HYDRA",
+      "set": "dead",
+      "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "hydra-half-wit",
+          "name": "HYDRA Half-Wit"
         }
       ]
     },
@@ -16501,6 +16535,23 @@
       "name": "Moon Knight",
       "set": "pttr",
       "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "crescent-moon-darts",
+          "name": "Crescent Moon Darts"
+        }
+      ]
+    },
+    {
+      "extId": "pttr/moon-knight",
+      "name": "Moon Knight",
+      "set": "pttr",
+      "scope": "hero",
       "mechanic": "wall-crawl",
       "status": "executable",
       "handler": "packages/game-engine/src/moves/recruitHero.ts",
@@ -20410,6 +20461,23 @@
         {
           "slug": "upside-down-thinking",
           "name": "Upside-down Thinking"
+        }
+      ]
+    },
+    {
+      "extId": "ssw2/beast",
+      "name": "Beast",
+      "set": "ssw2",
+      "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "balanced-attack",
+          "name": "Balanced Attack"
         }
       ]
     },
@@ -29353,6 +29421,7 @@
       "scope": "hero",
       "mechanics": [
         "put-hand-on-deck-top",
+        "reveal",
         "reveal-cost-attack",
         "reveal-top-dispose",
         "reveal-top-dispose-others"
@@ -30160,7 +30229,8 @@
     "dead/bob-agent-of-hydra": {
       "scope": "hero",
       "mechanics": [
-        "excessive-violence"
+        "excessive-violence",
+        "reveal"
       ]
     },
     "dead/deadpool": {
@@ -32826,6 +32896,7 @@
     "pttr/moon-knight": {
       "scope": "hero",
       "mechanics": [
+        "reveal",
         "wall-crawl"
       ]
     },
@@ -34213,6 +34284,7 @@
       "mechanics": [
         "attack-per-count",
         "patrol",
+        "reveal",
         "wall-crawl"
       ]
     },

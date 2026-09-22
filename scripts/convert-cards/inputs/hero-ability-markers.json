@@ -158,6 +158,12 @@
   ],
   "core": [
     {
+      "heroSlug": "gambit",
+      "cardSlug": "card-shark",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:team-x-men:draw]"
+    },
+    {
       "heroSlug": "hawkeye",
       "cardSlug": "covering-fire",
       "abilityIndex": 0,
@@ -845,6 +851,18 @@
   "ssw2": [
     {
       "heroSlug": "beast",
+      "cardSlug": "balanced-attack",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:hc-tech:draw]"
+    },
+    {
+      "heroSlug": "beast",
+      "cardSlug": "balanced-attack",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:hc-strength:draw]"
+    },
+    {
+      "heroSlug": "beast",
       "cardSlug": "doctor-of-beatdown",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:strength-heroes-played-this-turn:1]"
@@ -1386,6 +1404,18 @@
   ],
   "dead": [
     {
+      "heroSlug": "bob-agent-of-hydra",
+      "cardSlug": "hydra-half-wit",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:team-hydra:draw]"
+    },
+    {
+      "heroSlug": "bob-agent-of-hydra",
+      "cardSlug": "hydra-half-wit",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:team-shield:draw]"
+    },
+    {
       "heroSlug": "stingray",
       "cardSlug": "deck-chairs-on-the-titanic",
       "abilityIndex": 0,
@@ -1499,6 +1529,18 @@
     }
   ],
   "pttr": [
+    {
+      "heroSlug": "moon-knight",
+      "cardSlug": "crescent-moon-darts",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:hc-instinct:draw]"
+    },
+    {
+      "heroSlug": "moon-knight",
+      "cardSlug": "crescent-moon-darts",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:hc-tech:draw]"
+    },
     {
       "heroSlug": "scarlet-spider",
       "cardSlug": "flip-out",
@@ -1944,14 +1986,6 @@
       "abilityIndex": 0,
       "abilityText": "[hc:instinct]: [keyword:Investigate] the Bystander Stack for a Bystander and rescue it.",
       "reason": "[keyword:Investigate] searches the full Bystander Stack (not just the top card); requires stack-search logic not in the current executor family."
-    },
-    {
-      "setAbbr": "pttr",
-      "heroSlug": "moon-knight",
-      "cardSlug": "crescent-moon-darts",
-      "abilityIndex": 0,
-      "abilityText": "Reveal the top card of your deck. If it's [hc:instinct] or [hc:tech], draw it.",
-      "reason": "reveal-class-conditional-draw: Draw conditional on the revealed card's hero class. No cost evaluation."
     },
     {
       "setAbbr": "pttr",

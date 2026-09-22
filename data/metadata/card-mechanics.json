@@ -1297,14 +1297,18 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 7,
+      "cardCount": 11,
       "cardIds": [
         "co2e/spider-man",
+        "core/gambit",
         "core/spider-man",
         "cvwr/peter-parker",
+        "dead/bob-agent-of-hydra",
+        "pttr/moon-knight",
         "smhc/high-tech-spider-man",
         "smhc/peter-parker-homecoming",
         "ssw1/ultimate-spider-man",
+        "ssw2/beast",
         "ssw2/silk"
       ],
       "hidden": false
@@ -2697,6 +2701,7 @@
     "core/gambit": {
       "mechanics": [
         "put-hand-on-deck-top",
+        "reveal",
         "reveal-cost-attack",
         "reveal-top-dispose",
         "reveal-top-dispose-others"
@@ -2905,7 +2910,8 @@
     },
     "dead/bob-agent-of-hydra": {
       "mechanics": [
-        "excessive-violence"
+        "excessive-violence",
+        "reveal"
       ]
     },
     "dead/deadpool": {
@@ -3428,6 +3434,7 @@
     },
     "pttr/moon-knight": {
       "mechanics": [
+        "reveal",
         "wall-crawl"
       ]
     },
@@ -3738,6 +3745,7 @@
       "mechanics": [
         "attack-per-count",
         "patrol",
+        "reveal",
         "wall-crawl"
       ]
     },

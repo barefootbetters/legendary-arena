@@ -34,6 +34,28 @@ with correct emoji/labels, and selecting **Gain a Hero** filtered the grid to ex
 own `flattenSet` card-count methodology (unique displayed registry cards vs the raw `.cards[]` ability
 scan), NOT a matcher defect — the matchers are correctly scoped (Reveal = your-deck only; KO a Wound =
 the heal prose). WP-730 is complete end-to-end.
+### WP-729 — Card Shark reveal-rule team/hero-class predicate + X-Gene article (EC-766 / D-24550) (2026-09-21)
+
+**Part A** un-hollows Gambit's **Card Shark** and three same-shape siblings (HYDRA Half-Wit,
+Crescent Moon Darts, Balanced Attack): "Reveal the top card of your deck. If it's an
+[team/hc:X] Hero, draw it." now resolves faithfully. It adds `team` and `hero-class` predicate
+kinds to the parameterized reveal-rule grammar — the faithful home, because the reveal-rule
+handler leaves a **non-match on top** of the deck (matching the printed card), whereas
+`investigate` would send it to the bottom. A scoped `lineHasRevealTraitCriterion` suppresses
+the co-located `[team:X]`/`[hc:X]` from the play-gates, removing Card Shark's spurious "needs
+another x-men Hero played this turn" mis-gate (the live bug in the 2p Portals match). **Part B**
+makes the X-Gene failed-condition message article-aware ("an instinct card", correcting the
+WP-723 "a instinct").
+
+Engine **4026/0** (drift `REVEAL_PREDICATE_KINDS` +2; `RevealActionKind`/`HERO_KEYWORDS`/
+`HERO_EFFECT_HANDLERS` unchanged); apply-script idempotent; `cards:check` +
+`effect-index:check` + `mechanics:metadata:check` + `ledger:heroes:check` +
+`sim:runtime-observed:check` + `sim:coverage --check` all 0; `pnpm -r build` 0. Sentinel
+`finalStateHash` + `PRE_WP080_HASH` **byte-unchanged — NO re-pin** (CORE Card Shark, but no
+committed fixture plays it). Two-commit topology (EC-766 impl + SPEC close). All 4 cards show
+`reveal` `executable` in the ledger; the Crescent Moon Darts `_deferred` entry was removed.
+**D-24026 live-verify operator-pending** post-deploy. Deferred (Honest-Partial): the `co2e`
+Card Shark 2e "otherwise" disposition, gated reveals, and Fight/villain reveals stay hollow.
 
 ### WP-726 — Auto-resolving hero-effect reveal observability (EC-763 / D-24547) (2026-09-21)
 

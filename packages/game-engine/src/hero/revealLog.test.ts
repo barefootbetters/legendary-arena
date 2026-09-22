@@ -32,6 +32,15 @@ test('describeRevealPredicate handles a 0 threshold and a missing threshold', ()
   assert.equal(describeRevealPredicate({ kind: 'cost-lte' }), 'cost ≤ (no threshold)');
 });
 
+test('describeRevealPredicate renders the trait predicates article-aware (WP-729)', () => {
+  // why: WP-729 / D-24550 — a vowel-initial slug ("instinct") takes "an"; a consonant
+  // slug ("hydra"/"tech"/"strength"/"x-men") takes "a".
+  assert.equal(describeRevealPredicate({ kind: 'hero-class', traitValue: 'instinct' }), 'an instinct card');
+  assert.equal(describeRevealPredicate({ kind: 'hero-class', traitValue: 'tech' }), 'a tech card');
+  assert.equal(describeRevealPredicate({ kind: 'team', traitValue: 'x-men' }), 'a x-men card');
+  assert.equal(describeRevealPredicate({ kind: 'team', traitValue: 'hydra' }), 'a hydra card');
+});
+
 test('describeRevealActions maps each action kind and comma-joins them', () => {
   assert.equal(describeRevealActions([{ kind: 'draw' }]), 'drew it');
   assert.equal(describeRevealActions([{ kind: 'ko' }]), "KO'd it");

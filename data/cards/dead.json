@@ -42,7 +42,7 @@
           "attack": "1½ ",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's [team:hydra] or [team:shield], draw it."
+            "Reveal the top card of your deck. If it's [team:hydra] or [team:shield], draw it. [keyword:reveal:team-hydra:draw] [keyword:reveal:team-shield:draw]"
           ]
         },
         {

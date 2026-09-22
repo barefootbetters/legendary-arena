@@ -704,6 +704,14 @@ function parseAbilityText(
   // X-Men Hero this turn" gate.
   const revealFromHandCriterion = tryResolveRevealFromHandCriterion(abilityText);
   const lineHasRevealFromHand = revealFromHandCriterion !== undefined;
+  // why: WP-729 / D-24550 — on a reveal-rule line carrying a TRAIT predicate
+  // (`[keyword:reveal:team-X:draw]` / `[keyword:reveal:hc-X:draw]` — Card Shark's
+  // "Reveal the top card. If it's an [team:x-men] Hero, draw it."), the co-located
+  // `[team:X]` / `[hc:X]` is the reveal CRITERION, not a requiresTeam / heroClassMatch
+  // play-gate. Suppress it from Steps 1a / 1b (mirrors the reveal-from-hand / D-24470
+  // precedent). Scoped to the trait-predicate reveal marker only; a cost-only reveal
+  // line (`[keyword:reveal:2]`) does not set the flag and is byte-unaffected.
+  const lineHasRevealTraitCriterion = /\[keyword:reveal:(?:team|hc)-[a-z][a-z0-9-]*:/.test(abilityText);
   // why: WP-723 / D-24544 — an X-Gene line fires the Step 1a reroute + Step 2 consume ONLY
   // for an allowlisted card (xGeneSupported AND the marker present). On such a line the leading
   // [hc:X] is the discard-condition class, not a heroClassMatch play-gate; on any non-allowlisted
@@ -795,6 +803,12 @@ function parseAbilityText(
       // ("reveal another [hc:X] Hero"), NOT a play gate. Already captured in
       // revealFromHandCriterion; emit NO heroClassMatch condition (mirrors the investigate
       // exclusion above — this is the mid-sentence-token-is-not-a-gate fix for Psychic Link).
+    } else if (lineHasRevealTraitCriterion) {
+      // why: WP-729 / D-24550 — on a reveal-rule trait-predicate line the [hc:X] is the reveal
+      // CRITERION ("reveal the top card; if it's an [hc:X] Hero, draw it"), captured by the
+      // [keyword:reveal:hc-X:draw] marker — NOT a heroClassMatch play-gate. Emit NO
+      // heroClassMatch condition (Crescent Moon Darts / Balanced Attack; mirrors the
+      // reveal-from-hand exclusion above).
     } else if (lineHasXGene) {
       // why: WP-723 / D-24544 — on an X-Gene line the co-located [hc:X] is the discard-
       // condition CLASS ("a [class] card in your discard pile"), NOT a heroClassMatch
@@ -832,7 +846,11 @@ function parseAbilityText(
     // the mid-sentence [team:x-men] was wrongly gating the card on "another X-Men played".
     // why: D-24530 — likewise on a Pure Fury line the [team:shield] describes the KO-pile
     // Heroes to count, not a play-gate — so emit NO requiresTeam gate (see lineHasPureFury).
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury) {
+    // why: WP-729 / D-24550 — likewise on a reveal-rule trait-predicate line the [team:X] is
+    // the reveal CRITERION ("if it's an [team:x-men] Hero, draw it"), captured by the
+    // [keyword:reveal:team-X:draw] marker — so emit NO requiresTeam gate (Card Shark / HYDRA
+    // Half-Wit; the live "needs another x-men Hero played this turn" mis-gate this removes).
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury && !lineHasRevealTraitCriterion) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -2606,6 +2624,18 @@ function parseRevealPredicateToken(token: string): RevealPredicate | null {
   if (token.startsWith('cost-gte-')) {
     const threshold = parseRevealTokenInteger(token.slice('cost-gte-'.length));
     return threshold === null ? null : { kind: 'cost-gte', threshold };
+  }
+  // why: WP-729 / D-24550 / D-24281 — trait predicates `team-<slug>` / `hc-<slug>`
+  // (mirroring the villain reveal-or-wound:<team|hc>:<value> convention). `hc` maps to
+  // the 'hero-class' kind at parse; the slug is normalizeTraitSlug-normalized and matched
+  // against G.cardTraits by revealPredicateMatches — never a hardcoded literal.
+  if (token.startsWith('team-')) {
+    const traitValue = normalizeTraitSlug(token.slice('team-'.length));
+    return traitValue.length === 0 ? null : { kind: 'team', traitValue };
+  }
+  if (token.startsWith('hc-')) {
+    const traitValue = normalizeTraitSlug(token.slice('hc-'.length));
+    return traitValue.length === 0 ? null : { kind: 'hero-class', traitValue };
   }
   return null;
 }

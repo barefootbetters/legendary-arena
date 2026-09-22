@@ -170,7 +170,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's [hc:instinct] or [hc:tech], draw it."
+            "Reveal the top card of your deck. If it's [hc:instinct] or [hc:tech], draw it. [keyword:reveal:hc-instinct:draw] [keyword:reveal:hc-tech:draw]"
           ]
         },
         {

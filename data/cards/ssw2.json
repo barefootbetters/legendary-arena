@@ -252,7 +252,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's [hc:tech] or [hc:strength], draw it."
+            "Reveal the top card of your deck. If it's [hc:tech] or [hc:strength], draw it. [keyword:reveal:hc-tech:draw] [keyword:reveal:hc-strength:draw]"
           ]
         },
         {
