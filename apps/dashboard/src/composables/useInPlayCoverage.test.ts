@@ -388,8 +388,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // fixed-seed sweep, so its observations move into the resolved/executable set →
   // totalObs 3004 -> 3006 (+2). Deterministic — CI computes the same from the
   // regenerated runtime-observed-hollows feed.
+  // 2026-09-22 (WP-735 / D-24555, re-pin): the Venompool digest-indigestion keyword
+  // shipped and its ledger regen (docs/ai/coverage/hero-mechanic-ledger.json, now 737
+  // rows) flipped the Venompool cards' status, shifting the fixed-seed sweep's
+  // trajectories / observed-mechanic mix → totalObs 3006 -> 3004 (-2). WP-735 (#2249)
+  // regenerated the source ledger without re-pinning this snapshot, leaving main's
+  // Dashboard Gates RED; this catches it up. percentResolved holds at 24.4.
+  // Deterministic — CI's Dashboard Gates computes the same 3004 / 24.4 from the
+  // committed source (prebuild:coverage copies docs/ai/coverage/*.json into src/data).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3006);
+  assert.equal(view.totalObs.value, 3004);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
