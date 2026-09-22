@@ -3,9 +3,10 @@
  *
  * fightMastermind defeats the top tactic card from the mastermind's
  * tactics deck when the player has sufficient attack points. When all
- * tactics are defeated, the victory counter is set. Follows the
- * three-step validation contract: validate args, check stage gate,
- * mutate G.
+ * tactics are defeated, the victory-assured latch (MASTERMIND_DEFEATED_PENDING)
+ * is set and the win resolves at turn end (WP-732 — the current player finishes
+ * their turn first). Follows the three-step validation contract: validate args,
+ * check stage gate, mutate G.
  *
  * This is a non-core move that gates internally (same pattern as
  * fightVillain and recruitHero from WP-016). It is NOT added to
@@ -349,12 +350,19 @@ export function defeatMastermindTacticCore(
         `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`,
       );
     } else {
-      // why: setting MASTERMIND_DEFEATED counter to 1 triggers the endgame
-      // evaluator from WP-010 — use constant, never string literal
-      G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+      // why: WP-732 / D-24553 — DEFER the win. Per Universal Rules v23 §"Players
+      // Win", defeating the final Tactic assures victory but the current player
+      // still finishes their turn (fighting a few more Villains for VP) before the
+      // game ends. So latch the non-terminal MASTERMIND_DEFEATED_PENDING here (NOT
+      // the terminal MASTERMIND_DEFEATED): evaluateEndgame returns null on it and
+      // suppresses scheme-loss/tie for the rest of this turn, and
+      // promoteMastermindVictoryIfPending sets the terminal counter at turn.onEnd.
+      // The win IS assured — announce it via the log line + notable event below —
+      // but the game does not end at the vanquish.
+      G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING] = 1;
       // why: WP-323 — reuse the mastermind display name resolved above.
       pushLog(G,
-        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished!`,
+        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished! Victory is assured; finish your turn.`,
       );
 
       // why: D-20008 parity with fightVillain's fightResolved event — surface
@@ -398,81 +406,15 @@ export function defeatMastermindTacticCore(
   // park a WP-684 multi-seat seat choice (setActivePlayers admits the non-active seats).
   dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext, events);
 
-  // why: D-24518 — [bug observed on play.legendary-arena.com] a tactic that
-  // VANQUISHES the Mastermind ends the game (endIf fires on MASTERMIND_DEFEATED).
-  // Any pending player choice parked while resolving that final fight can never be
-  // reached — there is no turn or decision window left — so it would dangle as a
-  // prompt on the victory screen (a real heroes-win left an active
-  // pendingElectromagneticBubbleChoice). The final tactic's own Fight ability can
-  // park one (Electromagnetic Bubble, Ruthless Dictator, Maniacal Tyrant, Cruel
-  // Ruler, Dark Technology / Bitter Captor, Monarch's Decree / Vanishing Illusions),
-  // AND a reactive hero keyword the fight triggers can park one too (a tactic Wound
-  // reaching a Diving-Block holder via gainWoundForPlayer). So this drops EVERY
-  // pending choice, not a hand-picked subset — the audit-hardened invariant "a
-  // vanquished-mastermind win carries no pending choice." Every immediate,
-  // self-contained fight effect (Xavier's Nemesis rescue -> victory pile, wounds,
-  // economy, draws) already applied inside dispatchTacticOnFight above; only the
-  // now-unreachable PENDING CHOICES are dropped. Guarded on the true vanquish
-  // (MASTERMIND_DEFEATED === 1), NOT areAllTacticsDefeated — under the optional Final
-  // Blow rule (WP-687) the 4th-Tactic defeat sets finalBlowPending and does NOT set
-  // MASTERMIND_DEFEATED, so a choice parked on that non-winning defeat legitimately
-  // stands. The fightMastermind block-all guards guarantee no pending choice
-  // pre-existed this fight, so this drops exactly what this winning fight parked.
-  if (G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] === 1) {
-    dropAllPendingPlayerChoices(G);
-  }
-}
-
-/**
- * Drops EVERY pending player choice from `G` (D-24518, audit-hardened).
- *
- * Called ONLY on the vanquishing blow (see the call site in
- * defeatMastermindTacticCore): the game is over, so no pending choice can ever be
- * resolved and none must survive as a dangling prompt on the victory screen. Each
- * field is set to `undefined` so the won final state carries no pending choice
- * (JSON-omitted, so the hash oracles stay clean). The `fightMastermind` block-all
- * guards guarantee none of these pre-existed the fight, so this removes exactly what
- * the winning fight (tactic Fight ability + any reactive keyword it triggered)
- * parked — nothing else.
- *
- * This is the COMPLETE `pending*` set on `LegendaryGameState`. If a new pending-choice
- * field is added to the game state, add it here too (and to the `all-pending-choice
- * fields are cleared on the vanquish` drift test in fightMastermind.test.ts), or a
- * choice parked in it on the winning blow will dangle.
- *
- * @param G - Game state (mutated under the move's Immer draft).
- */
-function dropAllPendingPlayerChoices(G: LegendaryGameState): void {
-  G.pendingCopyPowersChoices = undefined;
-  G.pendingCountScaledChoice = undefined;
-  G.pendingDefeatChoices = undefined;
-  G.pendingDiscardChoices = undefined;
-  G.pendingDiscardToPlay = undefined;
-  G.pendingDivingBlockWounds = undefined;
-  G.pendingDoOverChoices = undefined;
-  G.pendingDrawOrEmpowered = undefined;
-  G.pendingElectromagneticBubbleChoices = undefined;
-  G.pendingGiveHqHeroChoices = undefined;
-  G.pendingHeroChoice = undefined;
-  G.pendingKoDiscardChoices = undefined;
-  G.pendingKoHeroChoices = undefined;
-  G.pendingMelterKoChoices = undefined;
-  G.pendingOptionalKoRewards = undefined;
-  G.pendingOptionalPutBottomHQ = undefined;
-  G.pendingPlayVillainTopChoices = undefined;
-  G.pendingPutAnyNumberBottomHQ = undefined;
-  G.pendingPutCardsOnDeckChoices = undefined;
-  G.pendingPutHandOnDeckTop = undefined; // why: WP-700 / D-24519 — the put-a-hand-card-on-deck-top queue joins the vanquish-drop set (D-24518)
-  G.pendingReorderChoices = undefined;
-  G.pendingReturnOnDiscard = undefined;
-  G.pendingReturnZeroCostDiscard = undefined;
-  G.pendingRevealTopDispose = undefined; // why: WP-702 / D-24521 — the reveal-top discard-or-keep queue joins the vanquish-drop set (D-24518)
-  G.pendingRuthlessDictatorChoices = undefined;
-  G.pendingScryKoChoices = undefined;
-  G.pendingSeatChoice = undefined;
-  G.pendingSmashDiscards = undefined;
-  G.pendingUndercoverChoice = undefined;
-  G.pendingVictoryPileCardPick = undefined;
+  // why: WP-732 / D-24553 — the D-24518 pending-choice drop is RELOCATED from this
+  // vanquish site to the turn-end promotion (promoteMastermindVictoryIfPending in
+  // endgame/mastermindVictory.logic.ts). The game no longer ends at the vanquish —
+  // victory is only ASSURED here (MASTERMIND_DEFEATED_PENDING), and the winning
+  // player still finishes their turn — so a choice parked by the final Tactic's
+  // Fight ability is now legitimately resolvable during the rest of that turn (it
+  // was previously silently dropped, a latent bug this fix also cures). The drop
+  // fires exactly once, at the true end of game (turn.onEnd), where a still-parked
+  // choice would genuinely dangle on the victory screen.
 }
 
 /**
@@ -538,10 +480,14 @@ function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
     );
   }
 
-  // why: setting MASTERMIND_DEFEATED to 1 fires the WP-010 endgame evaluator
-  // (heroes-win) — reused, never a new condition (D-24504). On Final Blow this is
-  // the ONLY site that sets it; the deferred 4th-Tactic branch does not.
-  G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED] = 1;
+  // why: WP-732 / D-24553 — DEFER the Final Blow win identically to the normal
+  // vanquish: latch the non-terminal MASTERMIND_DEFEATED_PENDING (NOT the terminal
+  // MASTERMIND_DEFEATED). Per Universal Rules v23 §"Players Win" the fighting
+  // player still finishes their turn before the game ends; the terminal counter is
+  // set by promoteMastermindVictoryIfPending at turn.onEnd. On Final Blow this is
+  // the ONLY site that latches pending; the deferred 4th-Tactic branch latches
+  // finalBlowPending instead.
+  G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING] = 1;
 
   // why: D-20008 parity with the core's vanquish event — surface the player-visible
   // win + any final-blow rescue (G.messages is not projected to clients). Defensive

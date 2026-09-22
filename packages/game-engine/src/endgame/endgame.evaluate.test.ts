@@ -60,13 +60,82 @@ describe('evaluateEndgame', () => {
     });
   });
 
-  // why: Prevents regression on the loss-before-victory evaluation order
-  // decision. If both a loss condition and a victory condition are met
-  // simultaneously, the loss must take priority.
-  it('loss takes priority when both schemeLoss and mastermindDefeated are set', () => {
+  // why: WP-732 / D-24553 — INVERTED from the pre-WP-732 "loss takes priority"
+  // pin. Per Universal Rules v23 §"End of the Game: Players Win", once the
+  // Mastermind has no Tactics left "victory is assured, and players will win the
+  // game even if the final Tactic's Fight ability would achieve the Scheme's Evil
+  // Wins condition." The TERMINAL MASTERMIND_DEFEATED counter is now only ever set
+  // at turn.onEnd (promoteMastermindVictoryIfPending), i.e. only after victory was
+  // already assured, so it must WIN over a SCHEME_LOSS that also latched during the
+  // finished winning turn. This is an intentional product-behavior change (rulebook
+  // fidelity), not grader-gaming — the immediate "Evil Wins / don't finish the turn"
+  // path (SCHEME_LOSS with NO Mastermind latch) is unchanged and pinned below.
+  it('terminal mastermindDefeated takes priority over schemeLoss (assured win — WP-732 / D-24553)', () => {
     const result = evaluateEndgame(makeMinimalState({
       [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
       [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1,
+    }));
+    assert.deepStrictEqual(result, {
+      outcome: 'heroes-win',
+      reason: 'The mastermind has been defeated.',
+    });
+  });
+
+  // why: WP-732 / D-24553 — the victory-assured latch alone must NEVER end the
+  // game. It mirrors FINAL_TURN_TRIGGERED: it only marks that victory is assured;
+  // the current player still finishes their turn, and the win resolves when the
+  // terminal counter is set at turn.onEnd.
+  it('returns null for the pending Mastermind latch alone (win deferred to turn end)', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING]: 1,
+    }));
+    assert.strictEqual(result, null);
+  });
+
+  // why: WP-732 / D-24553 — the assured-win SUPPRESSION window: while the pending
+  // latch is set, a SCHEME_LOSS latched during the rest of the winning turn must
+  // NOT end the game (a deck-out or Evil-Wins during the finished turn does not
+  // take the assured win away). evaluateEndgame returns null, so the turn plays out.
+  it('suppresses schemeLoss while the pending Mastermind latch is set (assured-win window)', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING]: 1,
+      [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
+    }));
+    assert.strictEqual(result, null);
+  });
+
+  // why: WP-732 / D-24553 — the pending latch also suppresses the deck-exhaustion
+  // tie during the winning turn; the win resolves at turn end, never a tie.
+  it('suppresses the finalTurnTie counter while the pending Mastermind latch is set', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING]: 1,
+      [ENDGAME_CONDITIONS.FINAL_TURN_TIE]: 1,
+    }));
+    assert.strictEqual(result, null);
+  });
+
+  // why: WP-732 / D-24553 — MATCH_ENDED_EARLY still supersedes even an assured
+  // win: a player-ended match closes out (tie + endedEarly) regardless of the
+  // pending Mastermind latch.
+  it('MATCH_ENDED_EARLY supersedes the pending Mastermind latch (early end wins)', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1,
+      [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING]: 1,
+    }));
+    assert.deepStrictEqual(result, {
+      outcome: 'tie',
+      reason: 'The players ended the match early.',
+      endedEarly: true,
+    });
+  });
+
+  // why: WP-732 / D-24553 — REGRESSION: "Evil Wins" is NOT deferred. A SCHEME_LOSS
+  // with NO Mastermind latch (neither terminal nor pending) still ends the game
+  // immediately as scheme-wins ("Don't finish the turn"). The deferral applies
+  // only when a Mastermind win is assured.
+  it('a schemeLoss with no Mastermind latch still ends immediately (Evil Wins not deferred)', () => {
+    const result = evaluateEndgame(makeMinimalState({
+      [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1,
     }));
     assert.deepStrictEqual(result, {
       outcome: 'scheme-wins',

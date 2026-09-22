@@ -51,6 +51,65 @@ first strength ally is now in play; turn 21: both, after strength-class Determin
 (the pre-fix `[blocked] Unhandled … indigestion` is gone). Shenanigans (WP-731) also verified clean in
 the same game.
 
+### WP-732 — Mastermind Defeat: Finish the Turn Before the Game Ends (EC-769 / D-24553) (2026-09-22)
+
+Defeating the Mastermind no longer ends the match immediately mid-turn. Per Universal Rules v23
+§"End of the Game: Players Win", the vanquish **assures** victory but the current player finishes
+their turn (fighting a few more Villains for VP); the game ends **heroes-win at the end of that turn**.
+"Evil Wins" is unchanged (immediate — "Don't finish the turn").
+
+**Mechanism.** The vanquish (both `defeatMastermindTacticCore` non–Final-Blow branch AND
+`awardMastermindOnFinalBlow`) latches a new non-terminal `MASTERMIND_DEFEATED_PENDING` counter instead
+of the terminal `MASTERMIND_DEFEATED`. `evaluateEndgame` precedence: `MATCH_ENDED_EARLY` →
+`MASTERMIND_DEFEATED` (heroes-win) → `MASTERMIND_DEFEATED_PENDING` (**return null, suppress
+scheme-loss/tie** for the rest of the winning turn — the "victory assured even if Evil Wins would
+trigger" clause) → `SCHEME_LOSS` → `FINAL_TURN_TIE`. A new pure `promoteMastermindVictoryIfPending(G)`
+in `endgame/mastermindVictory.logic.ts` (no boardgame.io import; also holds the relocated
+`dropAllPendingPlayerChoices`) promotes pending → terminal at turn end. The D-24518 pending-choice drop
+moved from the vanquish to the promotion — a choice parked by the final Tactic's Fight ability now
+survives the vanquish (resolvable during the finished turn) and is cleared only at true end of game.
+
+**Turn-loop parity — FOUR loops (WP under-counted three).** The promotion is called at `game.ts`
+turn.onEnd (before `resolveFinalTurnTieIfUnresolved`), `simulation.runner.ts`, `runFixture.ts`,
+`replay.execute.ts` (post-move-loop; no rotation site) — **and a fourth bgio-bypassing loop the WP/EC
+missed: `simulation/par.aggregator.ts`'s own `simulateOneGame`** (RS/scope amendment). Without it,
+Mastermind-win games ran to `MAX_TURNS_PER_GAME` and were mis-recorded as **stuck**, under-reporting
+wins. A real-registry Mastermind-win round-trip in `simulation.captureMoves.test.ts` proves the sim,
+`runFixture`, and the replay harness all resolve `heroes-win`.
+
+Engine **4051/0** (+11 net; inverted the pre-WP-732 "loss takes priority" pin → heroes-win with a
+D-24553 `// why:` — an intentional product change, not grader-gaming). `pnpm -r build` 0; whole repo
+green. **Determinism:** sentinel `finalStateHash` + `PRE_WP080_HASH` **byte-unchanged — NO re-pin**
+(no committed fixture defeats a Mastermind). The Mastermind-win **distribution** in the PAR sweep
+shifts — verified by regenerating one scenario (Legacy Virus / Dr. Doom / Brotherhood+EoA+MoE:
+`win 1 → 7`; win/loss/stuck is an engine-outcome measure, independent of scoring). **The
+`data/par/profile/v1/**` profile FILES are deliberately NOT re-committed here:** they are already stale
+from a **pre-existing, unrelated** drift — WP-599 / D-24409 bumped scoring to **v5** but the committed
+profiles are still **v4** (nobody regenerated them then), so a full regen folds a large scoring-v5
+recalibration (RawScores ~7×) into the diff and misattributes WP-599's drift to WP-732. These profiles
+are `authoritative: false` diagnostics (never competitive PAR, not CI-diffed — `prebuild:par` only
+*copies* `fidelity-report.json`), so leaving them stale breaks nothing; the clean re-pin (scoring-v5
+catch-up + this win-timing shift) is a **flagged follow-up**. No coop-win-rate committed baseline exists
+(its test is relational). The **CI-gated** `docs/ai/coverage/runtime-observed-hollows.json` IS
+regenerated (the finished winning turn adds a few observations: total `2512 → 2529`, same 312 games / 29
+mechanics; deterministic; scoring-independent so no WP-599 contamination). **Dashboard `totalObs` re-pinned
+(WP-732 second-order ripple):** because the Mastermind win now finishes the turn, the fixed-seed sweep
+plays those games deeper → the CI-gated `runtime-observed-hollows.json` shifts → the dashboard
+`useInPlayCoverage` `totalObs` moves **3004 → 3012** (VERIFIED empirically: clean `main`'s feed computes
+3004, WP-732's feed computes 3012; `percentResolved` holds at 24.4). Re-pinned
+`apps/dashboard/src/composables/useInPlayCoverage.test.ts` in THIS PR — the same established pattern as the
+prior WP-711/734/735 `totalObs` re-pins; full `apps/dashboard` suite **482/0**. (An earlier draft of this
+entry misattributed the shift to pre-existing WP-735 drift; corrected after verifying it is WP-732's own
+runtime-observed ripple — clean `main` is green at 3004.) Two-commit topology (EC-769 impl + SPEC close)
+plus this dashboard re-pin fix-forward.
+
+**D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match; not runnable from a
+worktree). Repro on `play.legendary-arena.com`: in a match, defeat the final Mastermind Tactic — the
+turn does NOT end; keep fighting Villains / rescuing Bystanders to accrue VP; the match ends
+**heroes-win at the end of that turn**. Confirm the client does NOT treat the `mastermindDefeated`
+notable event as end-of-match (no premature freeze / gameover overlay before `ctx.gameover` arrives at
+turn end).
+
 ### WP-733 — Spider-Man bare-`[keyword:reveal]` → `[keyword:reveal:2]` cost-draw parity (EC-770 / no new D) (2026-09-22)
 
 Fixes 5 core+co2e Spider-Man hero cards that print "Reveal the top card of your deck. If it costs 2

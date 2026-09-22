@@ -43,6 +43,7 @@ import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { computeFinalScores } from '../scoring/scoring.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
+import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
@@ -693,6 +694,15 @@ function runPerTurnLoop(
     }
 
     if (endTurnFlag.triggered) {
+      // why: WP-732 / D-24553 — sim endTurn-boundary parity for the deferred
+      // Mastermind win (mirrors the live play-phase turn.onEnd promotion and the
+      // applyPileDepletionResourceLoss turn.onMove mirror above). Promote a pending
+      // Mastermind victory to the terminal win at the end of the winning turn so
+      // the next iteration's evaluateEndgame terminates the game as heroes-win
+      // rather than running it to maxTurns as stuck. Run before the seat rotation
+      // so it settles the ending turn.
+      promoteMastermindVictoryIfPending(gameState);
+
       // why: boardgame.io would fire onTurnEnd hooks and then onBegin on
       // the next turn, resetting currentStage + turnEconomy. Simulation
       // mirrors the critical pieces manually. Rule hook firing is deferred
