@@ -100,7 +100,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // choose-one each-other-player draw/discard choice) (43 → 44).
     // WP-721 / D-24542 added the ko-wound handler (rewardless "You may KO a Wound" — X-23's
     // Healing Factor Genome, Peter Parker's Hot Bowl of Soup) (44 → 45).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 45);
+    // WP-731 / D-24552 added the no-more-draws handler (Venompool's Shenanigans turn-scoped
+    // draw lock) (45 → 46).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 46);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -401,6 +403,93 @@ describe('executeHeroEffects fired-effect count (WP-409 / D-24221)', () => {
     });
     assert.equal(executeHeroEffects(gameState, countCtx, '0', 'hero-x' as string), 2,
       'Fired effects across all matching hooks sum into the count.');
+  });
+});
+
+describe('no-more-draws — turn-scoped draw lock (WP-731 / D-24552)', () => {
+  const lockCtx = makeMockCtx();
+
+  it('Shenanigans draws two cards THEN arms the lock (marker order: draw before lock)', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3', 'c4'],
+      hand: [],
+      inPlay: ['shenanigans'],
+      heroAbilityHooks: [
+        // why: WP-731 — the parser preserves marker order, so the [keyword:draw:2] effect
+        // precedes [keyword:no-more-draws]; the draw MUST land before the lock arms.
+        {
+          cardId: 'shenanigans' as string,
+          timing: 'onPlay',
+          keywords: ['draw', 'no-more-draws'] as HeroKeyword[],
+          effects: [{ type: 'draw', magnitude: 2 }, { type: 'no-more-draws' }],
+        },
+      ],
+    });
+
+    const fired = executeHeroEffects(gameState, lockCtx, '0', 'shenanigans' as string);
+    assert.equal(fired, 2, 'both the draw-2 and the no-more-draws effect fire');
+    assert.equal(gameState.playerZones['0']!.hand.length, 2,
+      'the draw-2 lands (it ran BEFORE the lock armed — the card is not hollow)');
+    assert.equal(gameState.turnEconomy.drawsLocked, true,
+      'the lock is armed after the draw');
+  });
+
+  it('a later same-turn hero draw is blocked (draws 0, logs blocked)', () => {
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3', 'c4', 'c5'],
+      hand: [],
+      inPlay: ['shenanigans', 'later-draw'],
+      heroAbilityHooks: [
+        {
+          cardId: 'shenanigans' as string,
+          timing: 'onPlay',
+          keywords: ['draw', 'no-more-draws'] as HeroKeyword[],
+          effects: [{ type: 'draw', magnitude: 2 }, { type: 'no-more-draws' }],
+        },
+        {
+          cardId: 'later-draw' as string,
+          timing: 'onPlay',
+          keywords: ['draw'] as HeroKeyword[],
+          effects: [{ type: 'draw', magnitude: 1 }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, lockCtx, '0', 'shenanigans' as string);
+    assert.equal(gameState.playerZones['0']!.hand.length, 2, 'Shenanigans drew 2');
+
+    executeHeroEffects(gameState, lockCtx, '0', 'later-draw' as string);
+    assert.equal(gameState.playerZones['0']!.hand.length, 2,
+      'the later same-turn draw is blocked — no card is drawn while drawsLocked');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('no more draws this turn')),
+      'the blocked draw is named in the game log',
+    );
+  });
+
+  it('the end-of-turn refill path (drawCardsIntoHand) is NOT blocked by the lock', () => {
+    // why: WP-731 — the lock guards ONLY heroEffectDraw; the end-of-turn refill / setup /
+    // other-seat draws use drawCardsIntoHand directly, so the lock lifts at turn end as printed.
+    const gameState = makeTestState({
+      deck: ['c1', 'c2', 'c3'],
+      hand: [],
+      inPlay: ['shenanigans'],
+      heroAbilityHooks: [
+        {
+          cardId: 'shenanigans' as string,
+          timing: 'onPlay',
+          keywords: ['no-more-draws'] as HeroKeyword[],
+          effects: [{ type: 'no-more-draws' }],
+        },
+      ],
+    });
+    executeHeroEffects(gameState, lockCtx, '0', 'shenanigans' as string);
+    assert.equal(gameState.turnEconomy.drawsLocked, true, 'the lock is set');
+
+    // The shared refill primitive draws regardless of the lock (it never reads it).
+    drawCardsIntoHand(gameState.playerZones['0']!, 3, lockCtx);
+    assert.equal(gameState.playerZones['0']!.hand.length, 3,
+      'drawCardsIntoHand refills a full hand even while drawsLocked is set');
   });
 });
 
@@ -6970,10 +7059,11 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
       'the optional-KO choice does not park — the discard-pile condition failed');
   });
 
-  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 45', () => {
+  it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays 46', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count must stay 45.
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 45,
-      'HERO_EFFECT_HANDLERS stays 45 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (46 after WP-731's
+    // no-more-draws handler, D-24552).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 46,
+      'HERO_EFFECT_HANDLERS stays 46 (X-Gene is not an effect handler)');
   });
 });

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 731,
+    "totalRows": 733,
     "byStatus": {
-      "executable": 328,
+      "executable": 330,
       "deferred": 16,
       "condition": 28,
       "unsupported": 322,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 147
+    "distinctMechanics": 148
   },
   "rows": [
     {
@@ -10915,6 +10915,22 @@
       "extId": "vnom/venompool",
       "heroName": "Venompool",
       "set": "vnom",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "shenanigans",
+          "name": "Shenanigans"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "heroName": "Venompool",
+      "set": "vnom",
       "mechanic": "excessive-violence",
       "status": "unsupported",
       "wp": "",
@@ -10944,6 +10960,22 @@
         {
           "slug": "play-to-the-crowd",
           "name": "Play to the Crowd"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "heroName": "Venompool",
+      "set": "vnom",
+      "mechanic": "no-more-draws",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws",
+      "designs": [
+        {
+          "slug": "shenanigans",
+          "name": "Shenanigans"
         }
       ]
     },

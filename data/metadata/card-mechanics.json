@@ -500,7 +500,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 93,
+      "cardCount": 94,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -576,6 +576,7 @@
         "vill/bullseye",
         "vill/dr-octopus",
         "vill/enchantress",
+        "vnom/venompool",
         "wtif/apocalyptic-black-widow",
         "wtif/doctor-strange-supreme",
         "wtif/gamora-destroyer-of-thanos",
@@ -988,6 +989,17 @@
         "nmut/sunspot",
         "nmut/warlock",
         "nmut/wolfsbane"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "no-more-draws",
+      "label": "No More Draws",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "vnom/venompool"
       ],
       "hidden": true
     },
@@ -3936,8 +3948,10 @@
     "vnom/venompool": {
       "mechanics": [
         "digest",
+        "draw",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "no-more-draws"
       ]
     },
     "wpnx/fantomex": {

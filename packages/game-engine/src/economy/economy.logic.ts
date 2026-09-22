@@ -477,25 +477,36 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
 // Economy helpers — pure functions, return new objects
 // ---------------------------------------------------------------------------
 
-// why: WP-580 / D-24389 — the recruit-as-attack conversion flag must SURVIVE
+// why: WP-580 / D-24389 + WP-731 / D-24552 — every lazily-materialized
+// turn-scoped flag (`recruitSpendableAsAttack`, `drawsLocked`) must SURVIVE
 // every TurnEconomy rebuild. addResources/spendAttack/spendRecruit reconstruct
 // the object from an explicit literal (not a spread), so without this a later
-// same-turn spend would silently drop a flag set earlier by God of Thunder.
-// Conditional spread (not `recruitSpendableAsAttack: economy.recruitSpendableAsAttack`)
-// keeps the field ABSENT when unset under exactOptionalPropertyTypes, preserving
-// the lazy-materialization guarantee that both hash oracles stay byte-stable.
+// same-turn spend would silently drop a flag set earlier by God of Thunder or
+// Venompool. This is the SINGLE carry chokepoint — both setters
+// (`enableRecruitSpendableAsAttack`, `enableDrawLock`) spread it too, so setting
+// one flag can never drop the other.
+// Per-field conditional add (not `drawsLocked: economy.drawsLocked`) keeps each
+// field ABSENT when unset under exactOptionalPropertyTypes, preserving the
+// lazy-materialization guarantee that both hash oracles stay byte-stable.
 /**
- * Carries the WP-580 conversion flag forward across a TurnEconomy rebuild.
+ * Carries the lazily-materialized turn-scoped flags forward across a
+ * TurnEconomy rebuild.
  *
  * @param economy - Current turn economy state.
- * @returns `{ recruitSpendableAsAttack }` when the flag is set, else `{}`.
+ * @returns The subset of `{ recruitSpendableAsAttack, drawsLocked }` that is set
+ *   (each key present only when its flag is set), else `{}`.
  */
 function carryConversionFlag(
   economy: TurnEconomy,
-): Pick<TurnEconomy, 'recruitSpendableAsAttack'> | Record<string, never> {
-  return economy.recruitSpendableAsAttack !== undefined
-    ? { recruitSpendableAsAttack: economy.recruitSpendableAsAttack }
-    : {};
+): Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked'>> {
+  const carried: Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked'>> = {};
+  if (economy.recruitSpendableAsAttack !== undefined) {
+    carried.recruitSpendableAsAttack = economy.recruitSpendableAsAttack;
+  }
+  if (economy.drawsLocked !== undefined) {
+    carried.drawsLocked = economy.drawsLocked;
+  }
+  return carried;
 }
 
 /**
@@ -637,7 +648,41 @@ export function enableRecruitSpendableAsAttack(economy: TurnEconomy): TurnEconom
     // economy rebuild (mirrors woundsDrawn), so a later same-turn play/spend does
     // not silently reset the "drew N cards this turn" gate.
     cardsDrawn: economy.cardsDrawn,
+    // why: WP-731 / D-24552 — spread the single carry chokepoint so setting the
+    // recruit-as-attack flag never drops a `drawsLocked` set earlier the same
+    // turn (Venompool + God of Thunder is a legal loadout). The explicit
+    // assignment below then sets THIS setter's own flag.
+    ...carryConversionFlag(economy),
     recruitSpendableAsAttack: true,
+  };
+}
+
+/**
+ * Enables the WP-731 turn-scoped draw lock for the current turn.
+ *
+ * Called by the `no-more-draws` hero effect (Venompool's Shenanigans). Sets
+ * `drawsLocked`; every other field — including a `recruitSpendableAsAttack` set
+ * earlier this turn — is carried unchanged through the single carry chokepoint.
+ * `resetTurnEconomy` clears it at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `drawsLocked` set true.
+ */
+export function enableDrawLock(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors
+    // woundsDrawn) so a later same-turn play/spend does not reset the gate.
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-731 / D-24552 — spread the single carry chokepoint so setting the
+    // draw lock never drops a `recruitSpendableAsAttack` set earlier this turn.
+    ...carryConversionFlag(economy),
+    drawsLocked: true,
   };
 }
 
@@ -671,8 +716,9 @@ export function spendFightCost(economy: TurnEconomy, cost: number): TurnEconomy 
  * Returns a fresh TurnEconomy with all values at zero.
  *
  * Called at the start of each player turn and during initial setup. Returns
- * the base six-field shape with NO conversion flag, so the WP-580 lazy field
- * is dropped at every turn boundary (never persisted across turns).
+ * the base shape with NO lazy turn-scoped flags, so both `recruitSpendableAsAttack`
+ * (WP-580) and `drawsLocked` (WP-731) are dropped at every turn boundary (never
+ * persisted across turns).
  *
  * @returns TurnEconomy with all fields set to 0.
  */

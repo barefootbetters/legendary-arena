@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-731 — Venompool "Shenanigans" turn-scoped draw-lock (`no-more-draws` keyword) (EC-768 / D-24552) (2026-09-21)
+
+Resolves the D-24551-deferred `vnom/venompool/shenanigans` — "Draw two cards. But you can't
+draw any more cards until the end of this turn." The base "Draw two cards" was hollow (no
+marker → drew nothing) and the draw restriction was unmodeled.
+
+- **New `no-more-draws` HeroKeyword** — onPlay handler `heroEffectNoMoreDraws` sets a
+  lazily-materialized, omit-when-off `G.turnEconomy.drawsLocked` flag (the WP-580 / D-24389
+  `recruit-as-attack` turn-scoped-flag precedent).
+- **Guard at `heroEffectDraw`** (the hero `draw`-keyword chokepoint): while `drawsLocked` is
+  set, a draw effect draws **0** and logs `blocked`. Guards ONLY this path — the end-of-turn
+  refill, setup deal, and other-seat draws (Covering Fire, villain each-player) call
+  `drawCardsIntoHand` directly and stay exempt, so the lock lifts at turn end, as printed.
+  Dodge / Do-Over / a tactic-or-villain drawing *for* the active player are a named
+  faithfulness gap (Scope Out) — they also route around `heroEffectDraw`.
+- **Single carry chokepoint** — adding a second turn-scoped flag exposed that the `TurnEconomy`
+  setters bypassed `carryConversionFlag` (harmless with one flag, a silent cross-flag drop
+  with two: Venompool + God of Thunder is a legal loadout). Fixed: `carryConversionFlag`
+  carries both flags and both setters (`enableDrawLock`, `enableRecruitSpendableAsAttack`)
+  route through it; a coexistence test (both directions) pins it.
+- **Card marked** `[keyword:draw:2] [keyword:no-more-draws]` in that order (the parser
+  preserves marker order → the draw-2 fires before the lock arms; the card never self-blocks).
+
+**Determinism:** `drawsLocked` is omit-when-off + cleared by `resetTurnEconomy`, and the
+core-only sentinel / empty PRE_WP080 replay play no Venompool, so `finalStateHash` +
+`PRE_WP080_HASH` are **byte-unchanged — NO re-pin**. Engine suite **4036/0**;
+`cards:check` / `effect-index:check` / `mechanics:metadata:check` / `ledger:heroes:check` /
+`sim:runtime-observed:check` / `sim:coverage --check` all green (no coverage baseline bump).
+Two-commit topology (EC-768 impl + SPEC close). **D-24026 live-verify operator-pending**
+(post-deploy: a live `play.legendary-arena.com` match — Shenanigans draws two, then a later
+same-turn hero draw is blocked, verified against the deployed `/api/version` gitSha).
+
 ### WP-730 — Effect-search taxonomy: Reveal + Gain a Hero + KO a Wound (heal) (EC-767 / no new D) (2026-09-21)
 
 Adds three corpus-validated effects to the hand-authored **Effects** filter taxonomy on

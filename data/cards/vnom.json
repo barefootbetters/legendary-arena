@@ -484,7 +484,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Draw two cards. But you can't draw any more cards until the end of this turn."
+            "Draw two cards. But you can't draw any more cards until the end of this turn. [keyword:draw:2] [keyword:no-more-draws]"
           ]
         },
         {

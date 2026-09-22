@@ -593,8 +593,10 @@ vnom/venom-rocket,Venom Rocket,vnom,digest,unsupported,,,,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,unsupported,,,,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venompool,Venompool,vnom,digest,unsupported,,,,digest-that-chimichanga|play-to-the-crowd
+vnom/venompool,Venompool,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shenanigans
 vnom/venompool,Venompool,vnom,excessive-violence,unsupported,,,,can-i-get-a-little-gratitude
 vnom/venompool,Venompool,vnom,indigestion,unsupported,,,,digest-that-chimichanga|play-to-the-crowd
+vnom/venompool,Venompool,vnom,no-more-draws,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws,shenanigans
 wpnx/fantomex,Fantomex,wpnx,weapon-x-sequence,unsupported,,,,misdirection|sentient-bullets|three-brains|weapon-xiii
 wpnx/marrow,Marrow,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bone-shards|hyper-adaptive-skeleton
 wpnx/marrow,Marrow,wpnx,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,osteogenesis

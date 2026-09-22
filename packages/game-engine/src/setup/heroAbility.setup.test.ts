@@ -1427,7 +1427,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays 61', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 61, 'HERO_KEYWORDS stays 61 (X-Gene is not a keyword)');
+    assert.equal(HERO_KEYWORDS.length, 62, 'HERO_KEYWORDS stays 62 (X-Gene is not a keyword; WP-731 no-more-draws added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });

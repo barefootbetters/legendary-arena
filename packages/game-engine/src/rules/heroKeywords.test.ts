@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 61 entries after WP-719 covering-fire + WP-721 ko-wound', () => {
+  it('HERO_KEYWORDS array has exactly 62 entries after WP-731 no-more-draws', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      61,
-      'HERO_KEYWORDS must have exactly 61 entries (59 + covering-fire (WP-719 / D-24541) + ko-wound (WP-721 / D-24542))',
+      62,
+      'HERO_KEYWORDS must have exactly 62 entries (61 + no-more-draws (WP-731 / D-24552))',
     );
     assert.ok(
       HERO_KEYWORDS.includes('kidnap-per-count'),
@@ -219,6 +219,15 @@ describe('shuffle-discard-empty-reward keyword (WP-356 / EC-386 / D-24148)', () 
     assert.ok(
       HERO_KEYWORDS.includes('shuffle-discard-empty-reward'),
       'shuffle-discard-empty-reward must be in HERO_KEYWORDS array',
+    );
+  });
+});
+
+describe('no-more-draws keyword (WP-731 / EC-768 / D-24552)', () => {
+  it('is registered in HERO_KEYWORDS', () => {
+    assert.ok(
+      HERO_KEYWORDS.includes('no-more-draws'),
+      'no-more-draws must be in HERO_KEYWORDS array',
     );
   });
 });

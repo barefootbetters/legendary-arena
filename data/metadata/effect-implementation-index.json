@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1906,
+    "totalEntries": 1908,
     "byScope": {
-      "hero": 731,
+      "hero": 733,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 479,
+      "executable": 481,
       "deferred": 16,
       "condition": 28,
       "unsupported": 323,
@@ -22293,6 +22293,23 @@
       "name": "Venompool",
       "set": "vnom",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "shenanigans",
+          "name": "Shenanigans"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "name": "Venompool",
+      "set": "vnom",
+      "scope": "hero",
       "mechanic": "excessive-violence",
       "status": "unsupported",
       "handler": "",
@@ -22323,6 +22340,23 @@
         {
           "slug": "play-to-the-crowd",
           "name": "Play to the Crowd"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "name": "Venompool",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "no-more-draws",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "shenanigans",
+          "name": "Shenanigans"
         }
       ]
     },
@@ -34922,8 +34956,10 @@
       "scope": "hero",
       "mechanics": [
         "digest",
+        "draw",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "no-more-draws"
       ]
     },
     "wpnx-mastermind-omega-red-carbonadium-tentacles": {

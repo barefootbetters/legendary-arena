@@ -619,12 +619,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'reveal-top-dispose-others', // why: WP-702 / D-24521 — "Do the same thing to each other player's deck." (Hypnotic Charm entry 2, [hc:instinct]-gated) — snapshot each OTHER seat's deck top into one shared discard-or-keep pending choice
     'kidnap-per-count', // why: WP-714 / D-24537 — Ultron's Genetic Experimentation ("[hc:tech]: Kidnap a Bystander for each other [hc:tech] Ally you played this turn.") — count-scaled bystander-capture sibling of attack/recruit-per-count (captures N to the first City villain, Mastermind fallback)
     'covering-fire', // why: WP-719 / D-24541 — Hawkeye's Covering Fire ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card.") — parks a choose-one for the active player; each branch acts on every other seat (draw / auto-discard)
+    'no-more-draws', // why: WP-731 / D-24552 — Venompool's Shenanigans ("But you can't draw any more cards until the end of this turn.") — sets the turn-scoped G.turnEconomy.drawsLocked flag; heroEffectDraw draws 0 + logs blocked while set
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      61,
-      'HERO_KEYWORDS must have exactly 61 entries',
+      62,
+      'HERO_KEYWORDS must have exactly 62 entries',
     );
 
     assert.deepStrictEqual(
