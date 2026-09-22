@@ -43524,4 +43524,44 @@ existed — they only gained an effect payload).
 
 **Reserved by:** NUMBER-LEDGER D-24551.
 
+### D-24550 — Reveal-rule `team` / `hero-class` trait predicate is the faithful home for "reveal top, if [team/hc:X] draw it" (Active 2026-09-21 — WP-729 / EC-766)
+
+"Reveal the top card of your deck. If it's an [team/hc:X] Hero, draw it." (Gambit
+*Card Shark* + HYDRA Half-Wit / Crescent Moon Darts / Balanced Attack) is implemented
+by adding **`team`** and **`hero-class`** predicate kinds to the parameterized
+reveal-rule grammar (WP-479 / D-24024 / D-24286), NOT by routing through `investigate`
+and NOT by a dedicated `reveal-top-draw` HeroKeyword.
+
+1. **Faithful non-match disposition = leave-on-top.** `applyRevealRules` removes a
+   revealed card only on a `draw` / `ko` action; a non-match stays ON TOP — exactly the
+   printed card ("…draw it." with no "otherwise" clause). `investigate` sends a
+   non-match to the BOTTOM (a deck-order change the card does not perform), so it is the
+   wrong home; a dedicated keyword would duplicate reveal-rule's existing reveal-then-act
+   machinery for no gain. Card Shark is structurally its cost-reveal siblings
+   (`[keyword:reveal:2]`) with a **trait** predicate instead of a **cost** predicate.
+2. **Grammar (mirrors the villain `reveal-or-wound:<team|hc>:<value>` convention,
+   D-24281).** Marker `[keyword:reveal:team-<slug>:draw]` / `[keyword:reveal:hc-<slug>:draw]`;
+   `hc` → the `'hero-class'` kind at parse; the slug is `normalizeTraitSlug`-normalized and
+   matched against `G.cardTraits` (`team` = the single printed team; `hero-class` = either
+   printed class, `heroClass` / `heroClass2`, the WP-703 dual-class rule) — never a
+   hardcoded literal. Two tokens on one line = two first-match-wins rules (inclusive OR).
+3. **Co-located-token suppression.** A scoped `lineHasRevealTraitCriterion` flag suppresses
+   the reveal line's `[team:X]` / `[hc:X]` from the Step 1a `heroClassMatch` / Step 1b
+   `requiresTeam` play-gates (the WP-659 / D-24470 reveal-from-hand precedent) — it is the
+   reveal CRITERION, not a play-gate. This removes Card Shark's spurious "needs another
+   x-men Hero played this turn" mis-gate.
+4. **Canonical-array lockstep + determinism.** `RevealPredicateKind` union ↔
+   `REVEAL_PREDICATE_KINDS` array ↔ `revealRule.test.ts` drift assertion ↔ this entry moved
+   together; `RevealActionKind` / `HERO_KEYWORDS` / `HERO_EFFECT_HANDLERS` unchanged. The
+   matcher reads hashed `G.cardTraits` + deck and adds no hashed field; `core/gambit/card-shark`
+   is CORE, but no committed sentinel/fixture plays it, so `finalStateHash` + `PRE_WP080_HASH`
+   are byte-unchanged — verified (engine 4026/0), NO re-pin.
+
+Deferred (Honest-Partial): the `co2e` Card Shark 2e ("…otherwise, discard it or put it
+back." = a `choose-discard-or-return` disposition), any gated (`[hc:X]:` / `[keyword:X]:`)
+reveal, and any Fight/villain reveal stay hollow until a follow-up. Part B (a separate
+concern bundled here): the WP-723 / D-24544 X-Gene failed-condition message is now
+article-aware ("an instinct card"). Extends D-24024 (the reveal-rule grammar).
+**Reserved by:** NUMBER-LEDGER D-24550.
+
 Protect this file.
