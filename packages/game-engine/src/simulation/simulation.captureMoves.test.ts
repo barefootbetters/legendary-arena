@@ -39,8 +39,10 @@ import {
   type CapturedOutcomeSummary,
 } from './simulation.runner.js';
 import { runFixture } from '../test/fixtures/runFixture.js';
+import { replayGame } from '../replay/replay.execute.js';
 import { validateFixture } from '../test/fixtures/fixtureSchema.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 
 /**
  * Builds a valid 9-field MatchSetupConfig fixture for capture tests.
@@ -170,6 +172,189 @@ function buildFixtureFromCapture(
   };
   return validateFixture(skeleton, fixtureName);
 }
+
+/**
+ * Builds a small but real-shaped CardRegistryReader whose Mastermind is
+ * winnable in a single turn: a base card with fightCost 0 (so a fight needs no
+ * attack) and exactly ONE Tactic (so one successful fightMastermind vanquishes
+ * it). Modelled on the villainDeck.reveal.test buildEscapeRegistry pattern — a
+ * hand-built reader, not the @legendary-arena/registry package (engine tests do
+ * not import the registry layer).
+ *
+ * This is the WP-732 PS-1 fixture: it lets a deterministic policy drive an
+ * actual Mastermind win through the sim, then round-trip that win through
+ * runFixture and the replay/hash harness — proving all three turn loops promote
+ * the deferred victory at turn end (rather than the sim running to maxTurns).
+ */
+function buildWinnableRegistry(): CardRegistryReader {
+  const setData = {
+    abbr: 'core',
+    villains: [
+      {
+        slug: 'spider-foes',
+        cards: [
+          { slug: 'green-goblin', copies: 2, vAttack: '5', abilities: [] },
+        ],
+      },
+    ],
+    henchmen: [{ slug: 'doombot-legion', vAttack: '3', abilities: [] }],
+    masterminds: [
+      {
+        slug: 'doc-ock',
+        cards: [
+          // why: fightCost 0 (vAttack '0') makes fightMastermind legal with zero
+          // attack, and a SINGLE Tactic means one fight vanquishes — so the win is
+          // reachable with only structural moves (advanceStage / fightMastermind),
+          // never a card play, keeping the captured trace shuffle-independent and
+          // thus replayable byte-identically through the reverse-shuffle replay harness.
+          { name: 'Doctor Octopus', slug: 'doc-ock-base', tactic: false, vAttack: '0', abilities: [] },
+          { name: 'Tentacle Slam', slug: 'tentacle-slam', tactic: true, vAttack: '5', abilities: [] },
+        ],
+      },
+    ],
+    schemes: [{ slug: 'bank-job', cards: [{ abilities: [] }] }],
+    heroes: [
+      {
+        slug: 'spider-man',
+        cards: [
+          { slug: 'web-strike', name: 'Web Strike', rarityLabel: 'Common 1', attack: '2', recruit: null, cost: 0, abilities: [] },
+          { slug: 'spider-sense', name: 'Spider Sense', rarityLabel: 'Common 2', attack: null, recruit: '2', cost: 3, abilities: [] },
+          { slug: 'wall-crawl', name: 'Wall Crawl', rarityLabel: 'Uncommon', attack: '1', recruit: '1', cost: 4, abilities: [] },
+          { slug: 'the-amazing', name: 'The Amazing Spider-Man', rarityLabel: 'Rare', attack: '4', recruit: null, cost: 6, abilities: [] },
+        ],
+        physicalCards: [
+          { id: 'p1', count: 5, sides: ['web-strike'] },
+          { id: 'p2', count: 3, sides: ['spider-sense'] },
+          { id: 'p3', count: 3, sides: ['wall-crawl'] },
+          { id: 'p4', count: 3, sides: ['the-amazing'] },
+        ],
+      },
+    ],
+    bystanders: [],
+    wounds: [],
+    other: [],
+  };
+
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'core' }],
+    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+  } as unknown as CardRegistryReader;
+}
+
+/** The single-seat match config the WP-732 round-trip fixture builds from. */
+function buildWinnableConfig(): MatchSetupConfig {
+  return {
+    schemeId: 'core/bank-job',
+    mastermindId: 'core/doc-ock',
+    villainGroupIds: ['core/spider-foes'],
+    henchmanGroupIds: ['core/doombot-legion'],
+    heroDeckIds: ['core/spider-man'],
+    bystandersCount: 4,
+    woundsCount: 8,
+    officersCount: 6,
+    sidekicksCount: 4,
+  };
+}
+
+/**
+ * A deterministic policy that drives a Mastermind win with structural moves
+ * only: it fights the Mastermind whenever that is legal, otherwise advances the
+ * turn stage (progressing start → main → cleanup → endTurn), otherwise ends the
+ * turn. It NEVER plays / recruits / fights villains, so the captured trace
+ * carries no card-specific args and replays byte-identically across all three
+ * harnesses regardless of setup-shuffle order.
+ */
+function createFightMastermindPolicy(seed: string): AIPolicy {
+  return {
+    name: `fight-mastermind-${seed}`,
+    decideTurn(playerView: UIState, legalMoves: LegalMove[]): ClientTurnIntent {
+      const base = {
+        matchId: `simulation-${seed}`,
+        playerId: playerView.game.activePlayerId,
+        turnNumber: playerView.game.turn,
+      };
+      const preferenceOrder = ['fightMastermind', 'advanceStage', 'endTurn'];
+      for (const preferred of preferenceOrder) {
+        const match = legalMoves.find((move) => move.name === preferred);
+        if (match !== undefined) {
+          return { ...base, move: { name: match.name, args: match.args } };
+        }
+      }
+      const fallback = legalMoves[0] ?? { name: 'endTurn', args: {} };
+      return { ...base, move: { name: fallback.name, args: fallback.args } };
+    },
+  };
+}
+
+describe('simulateOneGameAndCaptureMoves — real-registry Mastermind-win round-trip (WP-732 / PS-1)', () => {
+  test('a Mastermind win terminates the sim and replays to the SAME heroes-win through runFixture and the replay harness', () => {
+    const setupConfig = buildWinnableConfig();
+    const registry = buildWinnableRegistry();
+    const seed = 'wp732-mastermind-win-roundtrip-seed';
+    const policies: AIPolicy[] = [createFightMastermindPolicy(`${seed}::seat:0`)];
+
+    const captured = simulateOneGameAndCaptureMoves(
+      setupConfig,
+      registry,
+      policies,
+      seed,
+      0,
+    );
+
+    // why: WP-732 / D-24553 — without the sim endTurn-boundary promotion a
+    // Mastermind win would run to maxTurns (stuck); with it the sim terminates at
+    // the end of the winning turn as heroes-win.
+    assert.equal(
+      captured.endgameReached,
+      true,
+      'the sim must terminate a Mastermind-win game (not run to maxTurns) — the endTurn-boundary promotion',
+    );
+    assert.equal(
+      captured.outcome.winner,
+      'heroes-win',
+      'the sim resolves the deferred Mastermind win as heroes-win at the end of the winning turn',
+    );
+
+    // Round-trip through the fixture/record oracle.
+    const fixture = buildFixtureFromCapture(
+      captured.moves,
+      seed,
+      setupConfig,
+      1,
+      'wp732-roundtrip',
+    );
+    const replay = runFixture(fixture, registry);
+    assert.equal(
+      replay.outcome.winner,
+      'heroes-win',
+      'runFixture must resolve the SAME heroes-win — its turn-end-rotation promotion (PS-1)',
+    );
+
+    // Round-trip through the replay/hash harness (no rotation site — the
+    // post-move-loop promotion). Its reverse-shuffle setup differs from the sim,
+    // but the captured trace is structural (advanceStage / fightMastermind only),
+    // so it reconstructs the same terminal Mastermind win.
+    const replayResult = replayGame(
+      {
+        seed,
+        setupConfig,
+        playerOrder: ['0'],
+        moves: captured.moves.map((move) => ({
+          playerId: move.playerId,
+          moveName: move.moveName,
+          args: move.args,
+        })),
+      },
+      registry,
+    );
+    assert.equal(
+      replayResult.finalState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      1,
+      'the replay/hash harness must promote the deferred win to the terminal counter (PS-1)',
+    );
+  });
+});
 
 describe('simulateOneGameAndCaptureMoves (WP-193)', () => {
   test('returns a non-empty moves array for the sentinel-style 2-seat random-policy setup', () => {

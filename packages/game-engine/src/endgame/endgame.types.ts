@@ -50,6 +50,18 @@ export const ENDGAME_CONDITIONS = {
   ESCAPED_VILLAINS: 'escapedVillains',
   SCHEME_LOSS: 'schemeLoss',
   MASTERMIND_DEFEATED: 'mastermindDefeated',
+  // why: WP-732 / D-24553 — the "victory-assured" Mastermind latch, mirroring
+  // FINAL_TURN_TRIGGERED. Set to 1 the instant the last Tactic (or, under the
+  // optional Final Blow rule, the Mastermind card itself) is defeated. Per
+  // Universal Rules v23 §"End of the Game: Players Win", once the Mastermind has
+  // no Tactics left the win is ASSURED but the current player still finishes
+  // their turn (fighting a few more Villains for VP) — so this latch is NOT a
+  // game-ending condition on its own: evaluateEndgame returns null on it and, for
+  // the rest of that turn, SUPPRESSES scheme-loss/tie (a deck-out or an Evil-Wins
+  // that triggers during the finished turn does not take the win away). It is
+  // promoted to the terminal MASTERMIND_DEFEATED at turn.onEnd
+  // (promoteMastermindVictoryIfPending), which is the real end-of-game moment.
+  MASTERMIND_DEFEATED_PENDING: 'mastermindDefeatedPending',
   // why: WP-367 / D-24159 — the deck-exhaustion "final turn" latch. Set to 1 the
   // moment the Hero Deck or Villain Deck first reaches zero cards, and never
   // cleared thereafter (even if a card effect later refills the deck). This

@@ -35,6 +35,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import type { ReplayInput, ReplayResult, ReplayMove } from './replay.types.js';
 import { computeStateHash } from './replay.hash.js';
+import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 
@@ -256,6 +257,15 @@ export function replayGame(
   for (const move of input.moves) {
     gameState = applyReplayStep(gameState, move, numPlayers);
   }
+
+  // why: WP-732 / D-24553 — turn-loop-harness parity (PS-1) for the deferred
+  // Mastermind win. Unlike the sim and runFixture, replayGame is a flat dispatch
+  // loop with NO turn-end rotation site, so promote a pending Mastermind victory
+  // once here, after the move loop and before the hash, so a recorded
+  // Mastermind-win game reconstructs the same terminal state the other two
+  // harnesses produce. This is a no-op on every committed fixture (none defeats a
+  // Mastermind), so PRE_WP080_HASH and every sentinel hash stay byte-unchanged.
+  promoteMastermindVictoryIfPending(gameState);
 
   // Step 3: Compute canonical state hash
   const stateHash = computeStateHash(gameState);

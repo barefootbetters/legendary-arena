@@ -19,6 +19,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
 import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
@@ -217,7 +218,7 @@ describe('fightMastermind', () => {
     );
   });
 
-  it('all tactics defeated: MASTERMIND_DEFEATED counter set to 1', () => {
+  it('all tactics defeated: MASTERMIND_DEFEATED_PENDING latched, terminal NOT set, game not over (WP-732)', () => {
     const gameState = createMockGameState({
       turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
       mastermind: { ...makeMastermindState(),
@@ -231,10 +232,22 @@ describe('fightMastermind', () => {
     const moveContext = createMockMoveContext(gameState);
     fightMastermind(moveContext);
 
+    // why: WP-732 / D-24553 — the vanquish latches the victory-assured PENDING
+    // counter, NOT the terminal one; the current player finishes their turn first.
+    assert.strictEqual(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING],
+      1,
+      'MASTERMIND_DEFEATED_PENDING must be latched on the vanquish',
+    );
     assert.strictEqual(
       moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
-      1,
-      'MASTERMIND_DEFEATED counter must be set to 1',
+      undefined,
+      'the terminal MASTERMIND_DEFEATED must NOT be set at the vanquish (it resolves at turn end)',
+    );
+    assert.strictEqual(
+      evaluateEndgame(moveContext.G),
+      null,
+      'the game is not over right after the vanquish — the win is deferred to turn end',
     );
     assert.strictEqual(
       moveContext.G.mastermind.tacticsDeck.length,
@@ -496,9 +509,9 @@ describe('fightMastermind — integration: Master Strike capture then per-fight 
     // captured bystander (not the one already rescued on the first fight).
     fightMastermind(moveContext);
     assert.equal(
-      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING],
       1,
-      'mastermind must be vanquished after the second attack',
+      'mastermind must be vanquished (victory assured, pending) after the second attack',
     );
     assert.deepStrictEqual(
       moveContext.G.playerZones['0']!.victory,
@@ -661,7 +674,7 @@ function pendingFinalBlowMastermind(): LegendaryGameState['mastermind'] {
 }
 
 describe('fightMastermind — Final Blow (WP-687 / D-24504)', () => {
-  it('OFF (default): the 4th-tactic defeat wins immediately (regression pin)', () => {
+  it('OFF (default): the 4th-tactic defeat latches the assured win, deferred to turn end (WP-732)', () => {
     const gameState = createMockGameState({
       turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
       mastermind: lastTacticMastermind(),
@@ -670,10 +683,18 @@ describe('fightMastermind — Final Blow (WP-687 / D-24504)', () => {
     const moveContext = createMockMoveContext(gameState);
     fightMastermind(moveContext);
 
+    // why: WP-732 / D-24553 — with Final Blow off, defeating the last tactic assures
+    // victory but the win now resolves at turn end (the player finishes their turn),
+    // so the vanquish latches PENDING, not the terminal counter.
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING],
+      1,
+      'with Final Blow off, defeating the last tactic latches the victory-assured PENDING counter',
+    );
     assert.equal(
       moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
-      1,
-      'with Final Blow off, defeating the last tactic wins immediately',
+      undefined,
+      'the terminal counter is NOT set at the vanquish (it resolves at turn end)',
     );
     assert.equal(
       moveContext.G.mastermind.finalBlowPending,
@@ -734,10 +755,17 @@ describe('fightMastermind — Final Blow (WP-687 / D-24504)', () => {
       1,
       'the Mastermind card enters the victory pile EXACTLY once (no double-award)',
     );
+    // why: WP-732 / D-24553 — the Final Blow win defers identically to the normal
+    // vanquish: it latches PENDING, and the terminal win resolves at turn end.
+    assert.equal(
+      moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING],
+      1,
+      'the final blow latches MASTERMIND_DEFEATED_PENDING (assured win, resolved at turn end)',
+    );
     assert.equal(
       moveContext.G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED],
-      1,
-      'the final blow sets MASTERMIND_DEFEATED -> heroes-win',
+      undefined,
+      'the terminal counter is NOT set at the final blow (it resolves at turn end)',
     );
     assert.equal(
       moveContext.G.mastermind.finalBlowPending,
@@ -808,8 +836,8 @@ function seedTwoInPlayXMenHeroes(gameState: LegendaryGameState): void {
   };
 }
 
-describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', () => {
-  it('vanquishing on Electromagnetic Bubble sets the win and parks NO next-hand pick', () => {
+describe('WP-732 / D-24553 — a vanquishing tactic defers the win and leaves its parked choice resolvable', () => {
+  it('vanquishing on Electromagnetic Bubble latches PENDING and the next-hand pick SURVIVES', () => {
     const gameState = createMockGameState({
       mastermind: { ...makeMastermindState(),
         id: 'core/magneto' as CardExtId,
@@ -822,13 +850,19 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
 
     defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
 
-    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
-      'defeating the last tactic vanquishes the mastermind');
-    assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 0,
-      'the next-hand X-Men pick must NOT dangle as a prompt on a won game');
+    // why: WP-732 / D-24553 — the vanquish assures victory (PENDING) but the game
+    // is not over, so a choice the final Tactic's Fight ability parked legitimately
+    // stands and is resolvable during the rest of the winning player's turn. The
+    // D-24518 drop now runs only at the turn-end promotion.
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1,
+      'defeating the last tactic latches the victory-assured PENDING counter');
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], undefined,
+      'the terminal counter is not set at the vanquish');
+    assert.equal(gameState.pendingElectromagneticBubbleChoices?.length ?? 0, 1,
+      'the next-hand X-Men pick survives the vanquish (resolvable during the finished turn)');
   });
 
-  it('vanquishing on Ruthless Dictator sets the win and parks NO deck-scry choice', () => {
+  it('vanquishing on Ruthless Dictator latches PENDING and the deck-scry choice SURVIVES', () => {
     const gameState = createMockGameState({
       mastermind: { ...makeMastermindState(),
         id: 'core/red-skull' as CardExtId,
@@ -841,13 +875,13 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
 
     defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
 
-    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
-      'defeating the last tactic vanquishes the mastermind');
-    assert.equal(gameState.pendingRuthlessDictatorChoices?.length ?? 0, 0,
-      'the deck-scry choice must NOT dangle as a prompt on a won game');
+    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1,
+      'defeating the last tactic latches the victory-assured PENDING counter');
+    assert.equal(gameState.pendingRuthlessDictatorChoices?.length ?? 0, 1,
+      'the deck-scry choice survives the vanquish (resolvable during the finished turn)');
   });
 
-  it('a NON-final Electromagnetic Bubble defeat STILL parks the pick (the drop only fires on the win)', () => {
+  it('a NON-final Electromagnetic Bubble defeat STILL parks the pick (unchanged)', () => {
     const gameState = createMockGameState({
       mastermind: { ...makeMastermindState(),
         id: 'core/magneto' as CardExtId,
@@ -890,61 +924,14 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
       'under Final Blow the game is not over, so the parked pick legitimately stands');
   });
 
-  // why: the audit hardening — the vanquish drops EVERY pending choice, not just the
-  // ones a tactic parks directly, because a reactive keyword the fight triggers (a
-  // tactic Wound reaching a Diving-Block holder) can park one too. This drift guard
-  // seeds a sentinel into every pending* field and asserts the vanquish clears them
-  // all. ALL_PENDING_FIELDS is the complete pending* set on LegendaryGameState; if a
-  // field is added there, add it here and to dropAllPendingPlayerChoices, or a choice
-  // parked in it on the winning blow will dangle.
-  const ALL_PENDING_FIELDS = [
-    'pendingCopyPowersChoices', 'pendingCountScaledChoice', 'pendingDefeatChoices',
-    'pendingDiscardChoices', 'pendingDiscardToPlay', 'pendingDivingBlockWounds',
-    'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices',
-    'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
-    'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
-    'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
-    'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
-    'pendingReturnZeroCostDiscard', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
-    'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',
-    'pendingVictoryPileCardPick',
-  ] as const;
-  const SINGLE_VALUE_PENDING_FIELDS = new Set(['pendingHeroChoice', 'pendingSeatChoice']);
+  // why: WP-732 / D-24553 — the complete-`pending*`-field drift guard (that the
+  // end-of-game drop clears EVERY pending field) MOVED to
+  // endgame/mastermindVictory.logic.test.ts along with dropAllPendingPlayerChoices,
+  // because the drop is now performed at the turn-end promotion, not at the vanquish.
+  // The core no longer touches any pending field, so what remains here is the pin
+  // that a defeat (vanquishing or not) leaves parked choices intact.
 
-  it('clears EVERY pending-choice field on the vanquish (drift guard)', () => {
-    const gameState = createMockGameState({
-      mastermind: { ...makeMastermindState(),
-        id: 'test-mastermind' as CardExtId,
-        baseCardId: 'test-mastermind-base' as CardExtId,
-        // why: a synthetic last tactic with no onFight handler — the vanquish latches
-        // MASTERMIND_DEFEATED without the tactic itself parking anything, so the ONLY
-        // pending state is the sentinels seeded below; every one must be cleared.
-        tacticsDeck: ['synthetic-vanquish-tactic' as CardExtId],
-        tacticsDefeated: [] as CardExtId[],
-      },
-    });
-
-    // why: seed a non-empty sentinel into every pending field. Dynamic access is a
-    // drift-test convenience only; the production helper clears each field explicitly
-    // (00.6 §16.2).
-    const pendingBag = gameState as unknown as Record<string, unknown>;
-    for (const field of ALL_PENDING_FIELDS) {
-      pendingBag[field] = SINGLE_VALUE_PENDING_FIELDS.has(field)
-        ? { sentinel: true }
-        : [{ sentinel: true }];
-    }
-
-    defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);
-
-    assert.equal(gameState.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED], 1,
-      'the synthetic last tactic vanquishes the mastermind');
-    for (const field of ALL_PENDING_FIELDS) {
-      assert.equal(pendingBag[field], undefined,
-        `${field} must be cleared on the vanquishing blow (D-24518 audit-hardened)`);
-    }
-  });
-
-  it('a NON-vanquishing defeat leaves seeded pending fields untouched (the drop is win-only)', () => {
+  it('a NON-vanquishing defeat leaves seeded pending fields untouched (the core never drops)', () => {
     const gameState = createMockGameState({
       mastermind: { ...makeMastermindState(),
         id: 'test-mastermind' as CardExtId,
@@ -953,8 +940,8 @@ describe('D-24518 — a vanquishing tactic leaves no dangling pending choice', (
         tacticsDefeated: [] as CardExtId[],
       },
     });
-    // why: a lone unrelated pending choice pre-existing a non-winning defeat must NOT
-    // be cleared — the drop is strictly the vanquish path.
+    // why: WP-732 — the core no longer drops any pending choice (the D-24518 drop
+    // moved to the turn-end promotion), so a lone pending choice is left untouched.
     gameState.pendingReturnOnDiscard = [{ sentinel: true }] as unknown as LegendaryGameState['pendingReturnOnDiscard'];
 
     defeatMastermindTacticCore(gameState, { currentPlayer: '0' }, REVERSE_SHUFFLE);

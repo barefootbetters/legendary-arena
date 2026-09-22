@@ -46,6 +46,7 @@ import {
   latchFinalTurnIfDeckExhausted,
   resolveFinalTurnTieIfUnresolved,
 } from './endgame/finalTurn.logic.js';
+import { promoteMastermindVictoryIfPending } from './endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from './rules/schemeResourceLoss.js';
 import { resolveDeferredHeroGrants } from './hero/heroEffects.execute.js';
 // why: WP-670 / D-24484 — Scheme Transform. Per-move check that flips a transforming scheme
@@ -909,6 +910,16 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             DEFAULT_IMPLEMENTATION_MAP,
           );
           applyRuleEffects(G, ctx, turnEndEffects);
+
+          // why: WP-732 / D-24553 — promote a pending Mastermind victory to the
+          // terminal win at the end of the winning player's turn (the real
+          // end-of-game moment for the deferred win). Runs AFTER the onTurnEnd rule
+          // pipeline and BEFORE resolveFinalTurnTieIfUnresolved so the now-terminal
+          // MASTERMIND_DEFEATED makes evaluateEndgame !== null and the
+          // deck-exhaustion tie correctly skips (its evaluateEndgame === null
+          // guard). Terminal is order-independent vs SCHEME_LOSS only because
+          // evaluateEndgame checks the terminal Mastermind win before SCHEME_LOSS.
+          promoteMastermindVictoryIfPending(G);
 
           // why: WP-367 / D-24159 — resolve the deck-exhaustion tie at the end of
           // the final turn. Runs AFTER the onTurnEnd effects above so an

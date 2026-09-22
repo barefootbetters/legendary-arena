@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 2512,
+    "totalObservations": 2529,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 488,
+      "no-handler": 490,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2024
+      "parse-unrecognized": 2039
     }
   },
   "byMechanic": {
@@ -58,12 +58,12 @@
       ]
     },
     "ambush": {
-      "hitCount": 118,
+      "hitCount": 119,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 118
+        "parse-unrecognized": 119
       },
       "examples": [
         {
@@ -99,12 +99,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 166,
+      "hitCount": 168,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 166
+        "parse-unrecognized": 168
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 11,
+      "hitCount": 14,
       "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 11
+        "parse-unrecognized": 14
       },
       "examples": [
         {
@@ -249,13 +249,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/transparent-motives#0",
+          "cardId": "anni/super-skrull/rock-solid#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "anni/super-skrull/transparent-motives#1",
+          "cardId": "anni/super-skrull/rock-solid#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -304,12 +304,12 @@
       ]
     },
     "cyber-mod": {
-      "hitCount": 7,
+      "hitCount": 9,
       "lastSeenTurn": 22,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 7
+        "parse-unrecognized": 9
       },
       "examples": [
         {
@@ -508,12 +508,12 @@
       ]
     },
     "investigate": {
-      "hitCount": 207,
+      "hitCount": 210,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 207
+        "parse-unrecognized": 210
       },
       "examples": [
         {
@@ -590,12 +590,12 @@
       ]
     },
     "moonlight": {
-      "hitCount": 273,
+      "hitCount": 274,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 273
+        "parse-unrecognized": 274
       },
       "examples": [
         {
@@ -742,12 +742,12 @@
       ]
     },
     "shatter": {
-      "hitCount": 22,
+      "hitCount": 23,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 22
+        "parse-unrecognized": 23
       },
       "examples": [
         {
@@ -987,12 +987,12 @@
       ]
     },
     "transform": {
-      "hitCount": 142,
+      "hitCount": 143,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 142
+        "parse-unrecognized": 143
       },
       "examples": [
         {
@@ -1028,10 +1028,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 488,
+      "hitCount": 490,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 488,
+        "no-handler": 490,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },
@@ -1069,12 +1069,12 @@
       ]
     },
     "x-gene": {
-      "hitCount": 26,
+      "hitCount": 27,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 26
+        "parse-unrecognized": 27
       },
       "examples": [
         {

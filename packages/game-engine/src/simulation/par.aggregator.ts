@@ -53,6 +53,7 @@ import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { buildUIState } from '../ui/uiState.build.js';
 import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
+import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
@@ -743,6 +744,18 @@ function simulateOneGame(
     }
 
     if (endTurnFlag.triggered) {
+      // why: WP-732 / D-24553 — PAR-aggregator endTurn-boundary parity for the
+      // deferred Mastermind win. This is the FOURTH bgio-bypassing turn loop (the
+      // WP's PS-1 analysis counted three: simulation.runner / runFixture /
+      // replay.execute); like those it decides termination from evaluateEndgame and
+      // mirrors turn.onEnd here, so it must promote a pending Mastermind victory to
+      // the terminal win at the winning turn's end — otherwise a Mastermind-win
+      // game runs to MAX_TURNS_PER_GAME and is mis-recorded as stuck (the sim under-
+      // reports wins and depresses the PAR profile). Mirrors the
+      // applyPileDepletionResourceLoss turn.onMove parity above. Run before the
+      // rotation so it settles the ending turn.
+      promoteMastermindVictoryIfPending(gameState);
+
       // why: boardgame.io would fire onTurnEnd hooks and then onBegin on
       // the next turn, resetting currentStage + turnEconomy. Simulation
       // mirrors the critical pieces manually. Rule hooks are deferred

@@ -33,6 +33,7 @@ import type {
 import { buildInitialGameState } from '../../setup/buildInitialGameState.js';
 import { createSnapshot } from '../../persistence/snapshot.create.js';
 import { evaluateEndgame } from '../../endgame/endgame.evaluate.js';
+import { promoteMastermindVictoryIfPending } from '../../endgame/mastermindVictory.logic.js';
 import { resetTurnEconomy } from '../../economy/economy.logic.js';
 import { TURN_STAGES } from '../../turn/turnPhases.types.js';
 import { CORE_MOVE_NAMES } from '../../moves/coreMoves.types.js';
@@ -298,6 +299,16 @@ function rotateToNextTurn(
   nextRandom: () => number,
   extraTurnNextPlayer?: string,
 ): void {
+  // why: WP-732 / D-24553 — turn-loop-harness parity (PS-1) for the deferred
+  // Mastermind win. This is the fixture/record oracle (record-game-fixture.mjs
+  // re-records THROUGH runFixture), so it must resolve a pending Mastermind
+  // victory at the turn-end rotation exactly as the live turn.onEnd and the sim
+  // do — otherwise a recorded Mastermind-win move list would bake a WRONG
+  // non-terminal finalStateHash. Promote before the seat rotation so it settles
+  // the ending turn; executeOnce's post-move evaluateEndgame then reads the
+  // terminal counter and the loop terminates faithfully.
+  promoteMastermindVictoryIfPending(gameState);
+
   // why: WP-696 / D-24513 — when the ended turn granted an extra turn, the live
   // endTurn move / advanceTurnStage already consumed G.extraTurns and signalled the
   // SAME seat via `{ next }`; keep that seat rather than advancing so the fixture's
