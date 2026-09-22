@@ -25,6 +25,7 @@ import {
   composeStrikeBlockedNarrative,
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
+  composeHeroRevealTopNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -422,6 +423,36 @@ describe('composeHeroRevealAttackNarrative (WP-697)', () => {
     assert.equal(
       composeHeroRevealAttackNarrative('Jade Giantess', 3, 7),
       composeHeroRevealAttackNarrative('Jade Giantess', 3, 7),
+    );
+  });
+});
+
+describe('composeHeroRevealTopNarrative (WP-726)', () => {
+  it('names the source hero, the revealed card + cost, and the outcome (attack grant)', () => {
+    assert.equal(
+      composeHeroRevealTopNarrative('High Stakes Jackpot', 'Sneak Attack', 4, 'gained attack'),
+      '"High Stakes Jackpot" revealed "Sneak Attack" (cost 4) — gained attack.',
+    );
+  });
+
+  it('renders a draw outcome (reveal-odd-draw family)', () => {
+    assert.equal(
+      composeHeroRevealTopNarrative('Gambit', 'Strike', 3, 'drew it'),
+      '"Gambit" revealed "Strike" (cost 3) — drew it.',
+    );
+  });
+
+  it('carries no "Player N" prefix — the acting seat rides on the event playerId', () => {
+    assert.ok(
+      !composeHeroRevealTopNarrative('Gambit', 'Strike', 3, 'drew it').includes('Player '),
+      'the narrative must not embed a player prefix (sibling composer voice).',
+    );
+  });
+
+  it('is pure — identical inputs produce identical output', () => {
+    assert.equal(
+      composeHeroRevealTopNarrative('Gambit', 'Strike', 2, "KO'd it"),
+      composeHeroRevealTopNarrative('Gambit', 'Strike', 2, "KO'd it"),
     );
   });
 });

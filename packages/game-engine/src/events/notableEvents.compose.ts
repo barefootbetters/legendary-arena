@@ -437,3 +437,34 @@ export function composeHeroRevealAttackNarrative(
 ): string {
   return `"${cardName}" revealed ${String(revealedCount)} card(s) from the Hero Deck and gained +${String(totalAttack)} attack.`;
 }
+
+/**
+ * Composes the single-sentence narrative for a `heroEffectResolved` event's
+ * auto-resolving deck-top reveal family (WP-726 / D-24547) — the sibling of
+ * `composeHeroRevealAttackNarrative` for the `heroEffectReveal` handler
+ * (`reveal-cost-attack` / `reveal-odd-draw` / `reveal-min` / `reveal-ko` /
+ * `reveal-ko-or-draw` / `reveal-ko-attack`).
+ *
+ * Pure + byte-stable: given the same inputs, returns identical output. Both
+ * card names are resolved display names (or the raw ext_id when
+ * `cardDisplayData` had no entry) supplied by the fire site, so the composer
+ * keeps its no-`G` purity. `outcomeText` is the fire site's
+ * `describeRevealActions` phrase (e.g. `"gained attack"`, `"drew it"`,
+ * `"KO'd it"`). Voiced in the third person with NO "Player N" prefix (matching
+ * the sibling composer): the acting seat travels on the event's `playerId`,
+ * not in the copy.
+ *
+ * @param sourceCardName - Human-facing name of the hero card whose ability resolved.
+ * @param revealedCardName - Human-facing name of the revealed deck-top card.
+ * @param cost - The revealed card's printed cost (the reveal predicate input).
+ * @param outcomeText - The comma-joined outcome phrase from `describeRevealActions`.
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeHeroRevealTopNarrative(
+  sourceCardName: string,
+  revealedCardName: string,
+  cost: number,
+  outcomeText: string,
+): string {
+  return `"${sourceCardName}" revealed "${revealedCardName}" (cost ${String(cost)}) — ${outcomeText}.`;
+}

@@ -2871,3 +2871,29 @@ describe('filterUIStateForAudience — gameOver.synergyContributions (WP-715 / D
     }
   });
 });
+
+// why: WP-726 / D-24547 — the auto-resolving deck-top reveal overlay rides the
+// existing public `notableEvents` projection (no new field). This regression test
+// (absent before WP-726) pins the Board-Visible Field Rule for the heroEffectResolved
+// reveal event: it must reach EVERY audience value-unchanged, since notableEvents is a
+// public shared-board projection (D-12803), never owner-redacted.
+describe('notableEvents heroEffectResolved reveal event survives every audience (WP-726)', () => {
+  it('a heroEffectResolved reveal event reaches player, opponent, and spectator value-unchanged', () => {
+    const uiState = createTestUIState();
+    const revealNarrative = '"High Stakes Jackpot" revealed "Sneak Attack" (cost 4) — gained attack.';
+    uiState.notableEvents = [
+      { type: 'heroEffectResolved', playerId: '0', narrative: revealNarrative },
+    ];
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.notableEvents.length, 1,
+        `the reveal event must survive the filter for ${audience.kind}`);
+      const event = result.notableEvents[0]!;
+      assert.equal(event.type, 'heroEffectResolved',
+        `the event type is preserved for ${audience.kind}`);
+      assert.equal(event.type === 'heroEffectResolved' && event.narrative, revealNarrative,
+        `the narrative is value-unchanged (no redaction) for ${audience.kind}`);
+    }
+  });
+});
