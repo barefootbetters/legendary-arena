@@ -188,8 +188,12 @@ const EMPOWERED_REVEALED_CLASSES_PATTERN = /by the Hero Classes of the card you 
 // why: D-24016 — the count-scaled attack token has three segments
 // ([keyword:attack-per-count:<source>:<perUnit>]); KEYWORD_PATTERN only captures
 // keyword(:N)?, so the count source and per-unit rate need a dedicated pattern.
-/** Regex for [keyword:attack-per-count:<source>:<perUnit>] count-scaled markup. */
-const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)\]/g;
+// why: WP-740 / D-24562 — an OPTIONAL 4th `:<perEach>` segment carries the "for each N" divisor
+// (D-24493 perEach) on a STANDALONE line (Play to the Crowd's "+1 for each two Bystanders").
+// Before this only the count-scaled-choose pre-pass read it. Absent ≡ 1 and is omitted from the
+// effect, so every existing 3-segment marker parses byte-identically.
+/** Regex for [keyword:attack-per-count:<source>:<perUnit>(:<perEach>)?] count-scaled markup. */
+const COUNT_SCALED_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]*):(\d+)(?::(\d+))?\]/g;
 
 // why: WP-674 / D-24489 — the recruit sibling of COUNT_SCALED_PATTERN. Same
 // three-segment shape, but the marker drives a `recruit-per-count` effect that
@@ -500,15 +504,19 @@ const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
 // why: WP-735 / D-24555 — cards whose printed "Digest N / Indigestion" lines are FUSED into
 // one executable digest-indigestion hook (per-card allowlisted, keyed by canonical
 // `{setAbbr}/{heroSlug}/{cardSlug}`). Scope = the Core-4 whose branches reduce to shipped
-// attack / recruit / draw / rescue executors. Every OTHER Digest card (play-to-the-crowd,
-// hungry-for-action, insatiable-hunger) has a branch the engine does not yet model, so its
-// [keyword:Digest N] / [keyword:Indigestion] stays an honest parse-unrecognized hollow — the
-// Honest-Partial Invariant, mirroring SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS.
+// attack / recruit / draw / rescue executors. Every OTHER Digest card (hungry-for-action,
+// insatiable-hunger) has a branch the engine does not yet model, so its [keyword:Digest N] /
+// [keyword:Indigestion] stays unresolved — the Honest-Partial Invariant, mirroring
+// SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS.
+// why: WP-740 / D-24562 — play-to-the-crowd un-deferred: its Digest branch is attack-per-count
+// over victory-bystanders with perEach 2 (the widened COUNT_SCALED_PATTERN), its Indigestion
+// branch is rescue 2, and its doubled [team:venomverse] "both" line carries bothConditionCount 2.
 const DIGEST_INDIGESTION_CARDS: ReadonlySet<string> = new Set<string>([
   'vnom/venompool/digest-that-chimichanga',
   'vnom/carnage/carnivore',
   'vnom/venom/devouring-drool',
   'vnom/venomized-dr-strange/cauldron-of-the-cosmos',
+  'vnom/venompool/play-to-the-crowd',
 ]);
 
 // why: WP-735 / D-24555 — reads the printed "[keyword:Digest N]" threshold. The space-form
@@ -1365,11 +1373,15 @@ function parseAbilityText(
   // why: D-24016 — count-scaled attack tokens have three segments not matched by
   // KEYWORD_PATTERN; the per-unit rate is the magnitude, the source resolves the count.
   const countSources: Map<HeroKeyword, HeroCountSource> = new Map();
+  // why: WP-740 / D-24562 — the optional "for each N" divisor from the marker's 4th segment.
+  // Stays undefined for a 3-segment marker so the effect build omits perEach (absent ≡ 1).
+  let attackPerEach: number | undefined;
   const countScaledRegex = new RegExp(COUNT_SCALED_PATTERN.source, 'g');
   let countScaledMatch: RegExpExecArray | null = countScaledRegex.exec(abilityText);
   while (countScaledMatch !== null) {
     const countSourceCandidate = countScaledMatch[1]!;
     const perUnitString = countScaledMatch[2]!;
+    const perEachString = countScaledMatch[3];
     // why: WP-675 / D-24490 — on a count-scaled-choose line the per-count markers are the
     // two CHOICE options (folded by the pre-pass), NOT two independent grants; skip the
     // standalone per-count keyword so only the count-scaled-choose effect is emitted.
@@ -1377,6 +1389,9 @@ function parseAbilityText(
       keywords.push('attack-per-count');
       magnitudes.set('attack-per-count', parseInt(perUnitString, 10));
       countSources.set('attack-per-count', countSourceCandidate);
+      if (perEachString !== undefined) {
+        attackPerEach = parseInt(perEachString, 10);
+      }
     }
     countScaledMatch = countScaledRegex.exec(abilityText);
   }
@@ -1790,7 +1805,13 @@ function parseAbilityText(
         // so the guard both narrows the optional Map reads and is defensive.
         const countSource = countSources.get('attack-per-count');
         if (magnitude !== undefined && countSource !== undefined) {
-          effects.push({ type: keyword, magnitude, countSource });
+          // why: WP-740 / D-24562 — perEach is attached ONLY when the marker printed it
+          // (omit-when-absent), so every 3-segment card's effect stays byte-identical.
+          if (attackPerEach !== undefined) {
+            effects.push({ type: keyword, magnitude, countSource, perEach: attackPerEach });
+          } else {
+            effects.push({ type: keyword, magnitude, countSource });
+          }
         }
       } else if (keyword === 'recruit-per-count') {
         // why: WP-674 / D-24489 — the count-scaled recruit effect carries its
@@ -2881,6 +2902,31 @@ export function isHeroAbilityRegistryReader(
 // at runtime.
 
 /**
+ * Returns how many OTHER matching cards a Digest "Instead … both" line requires (WP-740 / D-24562).
+ *
+ * A doubled line such as "[team:venomverse][team:venomverse]" parses to repeated identical
+ * conditions. The count is returned ONLY when there are more than one AND every condition equals
+ * the first (same type + value). A single condition (the Core-4) or a mixed line such as
+ * "[hc:X][hc:Y]" returns undefined, so the fused hook carries no bothConditionCount and keeps
+ * today's any-one-other evaluation (D-24562 lock 5: mixed lines are out of scope).
+ *
+ * @param conditions - The "both" line's parsed conditions, in hook order.
+ * @returns The repeat count (>= 2), or undefined when the line is single or mixed.
+ */
+function countRepeatedBothCondition(conditions: HeroCondition[]): number | undefined {
+  const firstCondition = conditions[0];
+  if (firstCondition === undefined || conditions.length < 2) {
+    return undefined;
+  }
+  for (const condition of conditions) {
+    if (condition.type !== firstCondition.type || condition.value !== firstCondition.value) {
+      return undefined;
+    }
+  }
+  return conditions.length;
+}
+
+/**
  * Fuses an allowlisted Venomverse card's "Digest N / Indigestion" lines into one
  * digest-indigestion hook (WP-735 / D-24555).
  *
@@ -2928,17 +2974,24 @@ function buildDigestIndigestionFusion(
   }
 
   // why: WP-735 / D-24555 — the "Instead … both" upgrade line, if present. Its single [hc:X]
-  // condition (Core-4 uses [hc:strength] / [hc:instinct]) is the bothCondition; the double
-  // [team:X][team:X] form belongs only to deferred cards, which are not in DIGEST_INDIGESTION_CARDS.
+  // condition (Core-4 uses [hc:strength] / [hc:instinct]) is the bothCondition.
+  // why: WP-740 / D-24562 — a DOUBLED "[team:X][team:X]" / "[hc:X][hc:X]" line (Play to the Crowd)
+  // parses to repeated identical conditions; per the rulebook's "Critical Hit" two-icon rule it
+  // needs that many OTHER matching cards, carried as bothConditionCount (see
+  // countRepeatedBothCondition). This replaces the earlier note that the double form belonged only
+  // to deferred cards.
   const bothIndex = abilityLines.findIndex(
     (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
   );
   let bothCondition: HeroCondition | undefined;
+  let bothConditionCount: number | undefined;
   if (bothIndex !== -1) {
     consumedIndices.add(bothIndex);
-    const firstCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
+    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
+    const firstCondition = bothConditions[0];
     if (firstCondition !== undefined) {
       bothCondition = firstCondition;
+      bothConditionCount = countRepeatedBothCondition(bothConditions);
     }
   }
 
@@ -2948,6 +3001,9 @@ function buildDigestIndigestionFusion(
   }
   if (bothCondition !== undefined) {
     effect.bothCondition = bothCondition;
+  }
+  if (bothConditionCount !== undefined) {
+    effect.bothConditionCount = bothConditionCount;
   }
   const hook: HeroAbilityHook = {
     cardId,

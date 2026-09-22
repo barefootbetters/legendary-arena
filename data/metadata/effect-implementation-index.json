@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1916,
+    "totalEntries": 1917,
     "byScope": {
-      "hero": 741,
+      "hero": 742,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 493,
+      "executable": 494,
       "deferred": 16,
       "condition": 28,
       "unsupported": 319,
@@ -22395,6 +22395,23 @@
       "name": "Venompool",
       "set": "vnom",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "play-to-the-crowd",
+          "name": "Play to the Crowd"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "name": "Venompool",
+      "set": "vnom",
+      "scope": "hero",
       "mechanic": "digest",
       "status": "unsupported",
       "handler": "",
@@ -22501,6 +22518,10 @@
         {
           "slug": "digest-that-chimichanga",
           "name": "Digest That Chimichanga"
+        },
+        {
+          "slug": "play-to-the-crowd",
+          "name": "Play to the Crowd"
         }
       ]
     },
@@ -35106,6 +35127,7 @@
     "vnom/venompool": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "digest",
         "draw",
         "excessive-violence",

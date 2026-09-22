@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 741,
+    "totalRows": 742,
     "byStatus": {
-      "executable": 342,
+      "executable": 343,
       "deferred": 16,
       "condition": 28,
       "unsupported": 318,
@@ -11011,6 +11011,22 @@
       "extId": "vnom/venompool",
       "heroName": "Venompool",
       "set": "vnom",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "play-to-the-crowd",
+          "name": "Play to the Crowd"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "heroName": "Venompool",
+      "set": "vnom",
       "mechanic": "digest",
       "status": "unsupported",
       "wp": "",
@@ -11112,6 +11128,10 @@
         {
           "slug": "digest-that-chimichanga",
           "name": "Digest That Chimichanga"
+        },
+        {
+          "slug": "play-to-the-crowd",
+          "name": "Play to the Crowd"
         }
       ]
     },

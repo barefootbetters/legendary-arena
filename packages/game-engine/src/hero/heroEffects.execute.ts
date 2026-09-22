@@ -32,6 +32,7 @@ import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
   evaluateAllConditions,
+  countOtherInPlayMatchingCondition,
   findFailedCondition,
   describeFailedCondition,
 } from './heroConditions.evaluate.js';
@@ -4833,6 +4834,39 @@ function runDigestIndigestionBranch(
 }
 
 /**
+ * Decides whether a 'digest-indigestion' effect's "Instead … both" upgrade holds (WP-740 / D-24562).
+ *
+ * No bothCondition → false. A bothConditionCount above 1 (a doubled "[team:X][team:X]" line) needs
+ * that many OTHER in-play cards matching the condition — the rulebook's "Critical Hit" two-icon rule.
+ * Otherwise (absent / 1, the Core-4) the D-24555 any-one-other evaluateAllConditions path is used.
+ *
+ * why: the count gate is scoped to digest-indigestion on purpose — evaluateCondition /
+ * evaluateAllConditions (and every other doubled-icon card's gating) are deliberately untouched;
+ * the repo-wide doubled-icon under-gate is a separate follow-up (D-24562 lock 4).
+ *
+ * @param G - Game state (read-only here).
+ * @param playerID - Active player ID.
+ * @param cardId - The played card; excluded from the count by exact instance id.
+ * @param effect - The 'digest-indigestion' descriptor.
+ * @returns Whether both branches should run.
+ */
+function isDigestBothConditionMet(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): boolean {
+  if (effect.bothCondition === undefined) {
+    return false;
+  }
+  if (effect.bothConditionCount !== undefined && effect.bothConditionCount > 1) {
+    const matchCount = countOtherInPlayMatchingCondition(G, playerID, effect.bothCondition, cardId);
+    return matchCount >= effect.bothConditionCount;
+  }
+  return evaluateAllConditions(G, playerID, [effect.bothCondition], cardId);
+}
+
+/**
  * Executes a 'digest-indigestion' effect (WP-735 / D-24555): the Venomverse
  * "Digest N / Indigestion" Victory-Pile-count branch for an allowlisted card.
  *
@@ -4846,7 +4880,7 @@ function runDigestIndigestionBranch(
  * @param ctx - Context, forwarded to each branch effect's handler.
  * @param playerID - Active player ID.
  * @param cardId - The played hero card's CardExtId.
- * @param effect - The 'digest-indigestion' descriptor { digestThreshold, digestEffects, indigestionEffects?, bothCondition? }.
+ * @param effect - The 'digest-indigestion' descriptor { digestThreshold, digestEffects, indigestionEffects?, bothCondition?, bothConditionCount? }.
  * @returns void.
  */
 function heroEffectDigestIndigestion(
@@ -4875,9 +4909,7 @@ function heroEffectDigestIndigestion(
   // why: WP-735 / D-24555 — the printed "[hc:X]: Instead, you get both." upgrade OVERRIDES the
   // Digest threshold gate: when its class/team condition holds, BOTH branches run regardless of
   // count (the standard Legendary "Instead" override; the printed line is the primary source).
-  const runsBoth =
-    effect.bothCondition !== undefined &&
-    evaluateAllConditions(G, playerID, [effect.bothCondition], cardId);
+  const runsBoth = isDigestBothConditionMet(G, playerID, cardId, effect);
   if (runsBoth) {
     runDigestIndigestionBranch(G, ctx, playerID, cardId, digestEffects);
     runDigestIndigestionBranch(G, ctx, playerID, cardId, indigestionEffects);

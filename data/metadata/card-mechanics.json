@@ -98,7 +98,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 21,
+      "cardCount": 22,
       "cardIds": [
         "asrd/thor",
         "bkwd/red-guardian",
@@ -120,7 +120,8 @@
         "ssw2/beast",
         "vill/juggernaut",
         "vill/ultron",
-        "vnom/venom"
+        "vnom/venom",
+        "vnom/venompool"
       ],
       "hidden": true
     },
@@ -3972,6 +3973,7 @@
     },
     "vnom/venompool": {
       "mechanics": [
+        "attack-per-count",
         "digest",
         "draw",
         "excessive-violence",

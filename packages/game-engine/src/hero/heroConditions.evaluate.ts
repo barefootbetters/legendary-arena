@@ -329,6 +329,65 @@ export function evaluateCondition(
 }
 
 // ---------------------------------------------------------------------------
+// countOtherInPlayMatchingCondition — how many OTHER played cards match (WP-740)
+// ---------------------------------------------------------------------------
+
+/**
+ * Counts the OTHER cards in the player's play area that satisfy one condition.
+ *
+ * WP-740 / D-24562 — the counting primitive behind a doubled "both" line such as
+ * "[team:venomverse][team:venomverse]" (the rulebook's "Critical Hit" two-icon rule needs two
+ * OTHER matching cards; evaluateCondition answers only "at least one"). Uses the same membership
+ * helpers as evaluateCondition (cardCountsAsTeamMember / cardHasClassWhenPlayed), so Copy-Powers
+ * teams and Size-Changing classes count identically. Only heroClassMatch and requiresTeam are
+ * countable; any other type returns 0 (fails closed).
+ *
+ * why: this deliberately duplicates the module-private played-this-turn counters in
+ * heroCountSource.resolve.ts (duplicate-first, 00.6 Rule 1) — those are count sources for
+ * per-count grants keyed by a fixed team/class, this counts against a parsed HeroCondition.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - Active player ID.
+ * @param condition - The condition each counted card must satisfy.
+ * @param triggeringCardId - The card being evaluated; skipped by exact instance id, so a
+ *   second copy of the same card (a different #N) still counts.
+ * @returns The number of other in-play cards that satisfy the condition.
+ */
+export function countOtherInPlayMatchingCondition(
+  G: LegendaryGameState,
+  playerID: string,
+  condition: HeroCondition,
+  triggeringCardId: CardExtId,
+): number {
+  const playerZones = G.playerZones[playerID];
+  // why: cardHasClassWhenPlayed dereferences G.cardTraits[cardId] unguarded, so a missing
+  // traits map must short-circuit BEFORE the loop (mirrors evaluateCondition's guard).
+  if (!playerZones || !G.cardTraits) {
+    return 0;
+  }
+  if (condition.type !== 'requiresTeam' && condition.type !== 'heroClassMatch') {
+    return 0;
+  }
+  let matchCount = 0;
+  for (const playedCardId of playerZones.inPlay) {
+    if (playedCardId === triggeringCardId) {
+      continue;
+    }
+    const cardId = playedCardId as CardExtId;
+    let isMatch = false;
+    if (condition.type === 'requiresTeam') {
+      isMatch = cardCountsAsTeamMember(G, cardId, condition.value);
+    } else {
+      isMatch = cardHasClassWhenPlayed(G, cardId, condition.value);
+    }
+    if (isMatch) {
+      matchCount += 1;
+    }
+  }
+  return matchCount;
+}
+
+// ---------------------------------------------------------------------------
 // evaluateAllConditions — AND logic over all conditions
 // ---------------------------------------------------------------------------
 

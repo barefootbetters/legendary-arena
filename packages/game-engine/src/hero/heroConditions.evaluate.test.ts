@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import {
   evaluateCondition,
   evaluateAllConditions,
+  countOtherInPlayMatchingCondition,
   findFailedCondition,
   describeFailedCondition,
   heroConditionHoldsForInPlay,
@@ -1527,5 +1528,54 @@ describe('SEQUENCE_GATE_CONDITION_TYPES drift parity (WP-710 / D-24533)', () => 
         `Sequence-gate type "${gateType}" must have a real evaluateCondition case.`,
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// countOtherInPlayMatchingCondition (WP-740 / D-24562)
+// ---------------------------------------------------------------------------
+
+describe('countOtherInPlayMatchingCondition (WP-740 / D-24562)', () => {
+  type CardExtId = import('../state/zones.types.js').CardExtId;
+  const self = 'crowd#0' as unknown as CardExtId;
+  const traits = {
+    'crowd#0': { heroClass: 'strength', team: 'venomverse' },
+    'venom-a#0': { heroClass: 'instinct', team: 'venomverse' },
+    'venom-b#0': { heroClass: 'strength', team: 'venomverse' },
+    'x-ally#0': { heroClass: 'strength', team: 'x-men' },
+  };
+
+  it('counts OTHER in-play team members, skipping the triggering card', () => {
+    const gameState = makeTestState({ inPlay: ['venom-a#0', 'x-ally#0', 'venom-b#0', 'crowd#0'], cardTraits: traits });
+    assert.equal(countOtherInPlayMatchingCondition(gameState, '0', { type: 'requiresTeam', value: 'venomverse' }, self), 2);
+  });
+
+  it('counts OTHER in-play hero-class members', () => {
+    const gameState = makeTestState({ inPlay: ['venom-a#0', 'x-ally#0', 'venom-b#0', 'crowd#0'], cardTraits: traits });
+    assert.equal(countOtherInPlayMatchingCondition(gameState, '0', { type: 'heroClassMatch', value: 'strength' }, self), 2);
+  });
+
+  it('never counts the triggering card itself, but does count a second copy (different #N)', () => {
+    const alone = makeTestState({ inPlay: ['crowd#0'], cardTraits: traits });
+    assert.equal(countOtherInPlayMatchingCondition(alone, '0', { type: 'requiresTeam', value: 'venomverse' }, self), 0);
+    const withCopy = makeTestState({
+      inPlay: ['crowd#1', 'crowd#0'],
+      cardTraits: { ...traits, 'crowd#1': { heroClass: 'strength', team: 'venomverse' } },
+    });
+    assert.equal(countOtherInPlayMatchingCondition(withCopy, '0', { type: 'requiresTeam', value: 'venomverse' }, self), 1);
+  });
+
+  it('returns 0 for an unsupported condition type', () => {
+    const gameState = makeTestState({ inPlay: ['venom-a#0', 'crowd#0'], cardTraits: traits });
+    assert.equal(countOtherInPlayMatchingCondition(gameState, '0', { type: 'requiresKeyword', value: 'attack' }, self), 0);
+  });
+
+  it('returns 0 for a missing player zone or missing cardTraits, without throwing', () => {
+    const gameState = makeTestState({ inPlay: ['venom-a#0', 'crowd#0'], cardTraits: traits });
+    assert.equal(countOtherInPlayMatchingCondition(gameState, '9', { type: 'requiresTeam', value: 'venomverse' }, self), 0);
+    const noTraits = makeTestState({ inPlay: ['venom-a#0', 'crowd#0'], cardTraits: traits });
+    (noTraits as { cardTraits?: unknown }).cardTraits = undefined;
+    assert.doesNotThrow(() => countOtherInPlayMatchingCondition(noTraits, '0', { type: 'heroClassMatch', value: 'strength' }, self));
+    assert.equal(countOtherInPlayMatchingCondition(noTraits, '0', { type: 'heroClassMatch', value: 'strength' }, self), 0);
   });
 });
