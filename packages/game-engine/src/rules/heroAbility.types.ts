@@ -175,6 +175,28 @@ export interface HeroEffectDescriptor {
   // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions. Other
   // keywords ignore it.
   revealCriterion?: InvestigateCriterion;
+  // why: WP-735 / D-24555 — for a 'digest-indigestion' effect, digestThreshold is the printed
+  // "Digest N" Victory-Pile-size threshold (keywords-full id 54): the Digest branch runs only
+  // when G.playerZones[playerID].victory.length >= digestThreshold. Optional on the shared type
+  // (other keywords never set it); the handler safe-skips a 'digest-indigestion' effect that
+  // lacks it (never `count >= undefined`). Other keywords ignore it.
+  digestThreshold?: number;
+  // why: WP-735 / D-24555 — for a 'digest-indigestion' effect, digestEffects is the Digest
+  // branch's already-parsed inline effects (the +attack / draw / etc. on the printed Digest
+  // line), and indigestionEffects is the mutually-exclusive Indigestion branch's effects (the
+  // fallback used only below threshold; absent for a single-branch card such as cauldron). The
+  // handler dispatches the selected branch through the reentrant executeSingleEffect. These are
+  // the FIRST self-referential nesting of HeroEffectDescriptor inside itself; the fused hook
+  // lives in the JSON-serialized G.heroAbilityHooks (D-24095), so both arrays stay plain data
+  // (no functions/Maps, acyclic). Other keywords ignore them.
+  digestEffects?: HeroEffectDescriptor[];
+  indigestionEffects?: HeroEffectDescriptor[];
+  // why: WP-735 / D-24555 — for a 'digest-indigestion' effect, bothCondition is the class/team
+  // condition parsed from the printed "[hc:X]: Instead, you get both." upgrade line. When it is
+  // present and evaluateAllConditions holds, the handler runs BOTH branches regardless of count
+  // (the printed "Instead … both" overrides the Digest threshold gate). Absent when the card has
+  // no upgrade line. Other keywords ignore it.
+  bothCondition?: HeroCondition;
 }
 
 // ---------------------------------------------------------------------------

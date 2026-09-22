@@ -42,7 +42,7 @@
           "attack": null,
           "recruit": "0+",
           "abilities": [
-            "[keyword:Digest 4]: Draw two cards.",
+            "[keyword:Digest 4]: Draw two cards. [keyword:draw:2]",
             "[keyword:Indigestion]: You get +2[icon:recruit]."
           ]
         },
@@ -358,7 +358,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "[keyword:Digest 2]: Draw a card."
+            "[keyword:Digest 2]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -468,7 +468,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Digest 2]: You get +2[icon:attack].",
-            "[keyword:Indigestion]: “Rescue“ a Bystander.",
+            "[keyword:Indigestion]: “Rescue“ a Bystander. [keyword:rescue:1]",
             "[hc:strength]: Instead, you get both."
           ]
         },

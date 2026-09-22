@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 734,
+    "totalRows": 737,
     "byStatus": {
-      "executable": 331,
+      "executable": 334,
       "deferred": 16,
       "condition": 28,
       "unsupported": 322,
@@ -10735,6 +10735,22 @@
       "extId": "vnom/carnage",
       "heroName": "Carnage",
       "set": "vnom",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "carnivore",
+          "name": "Carnivore"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/carnage",
+      "heroName": "Carnage",
+      "set": "vnom",
       "mechanic": "excessive-violence",
       "status": "unsupported",
       "wp": "",
@@ -10908,6 +10924,22 @@
       ]
     },
     {
+      "extId": "vnom/venomized-dr-strange",
+      "heroName": "Venomized Dr. Strange",
+      "set": "vnom",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "cauldron-of-the-cosmos",
+          "name": "Cauldron of the Cosmos"
+        }
+      ]
+    },
+    {
       "extId": "vnom/venompool",
       "heroName": "Venompool",
       "set": "vnom",
@@ -10992,6 +11024,22 @@
         {
           "slug": "shenanigans",
           "name": "Shenanigans"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "heroName": "Venompool",
+      "set": "vnom",
+      "mechanic": "rescue",
+      "status": "executable",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "designs": [
+        {
+          "slug": "digest-that-chimichanga",
+          "name": "Digest That Chimichanga"
         }
       ]
     },

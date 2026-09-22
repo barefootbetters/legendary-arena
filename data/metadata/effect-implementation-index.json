@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1909,
+    "totalEntries": 1912,
     "byScope": {
-      "hero": 734,
+      "hero": 737,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 482,
+      "executable": 485,
       "deferred": 16,
       "condition": 28,
       "unsupported": 323,
@@ -22103,6 +22103,23 @@
       "name": "Carnage",
       "set": "vnom",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "carnivore",
+          "name": "Carnivore"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/carnage",
+      "name": "Carnage",
+      "set": "vnom",
+      "scope": "hero",
       "mechanic": "excessive-violence",
       "status": "unsupported",
       "handler": "",
@@ -22285,6 +22302,23 @@
       ]
     },
     {
+      "extId": "vnom/venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "cauldron-of-the-cosmos",
+          "name": "Cauldron of the Cosmos"
+        }
+      ]
+    },
+    {
       "extId": "vnom/venompool",
       "name": "Venompool",
       "set": "vnom",
@@ -22374,6 +22408,23 @@
         {
           "slug": "shenanigans",
           "name": "Shenanigans"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venompool",
+      "name": "Venompool",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
+      "wp": "WP-215",
+      "decision": "D-21501",
+      "designs": [
+        {
+          "slug": "digest-that-chimichanga",
+          "name": "Digest That Chimichanga"
         }
       ]
     },
@@ -34943,6 +34994,7 @@
       "scope": "hero",
       "mechanics": [
         "digest",
+        "draw",
         "excessive-violence",
         "indigestion"
       ]
@@ -34967,7 +35019,8 @@
     "vnom/venomized-dr-strange": {
       "scope": "hero",
       "mechanics": [
-        "digest"
+        "digest",
+        "draw"
       ]
     },
     "vnom/venompool": {
@@ -34977,7 +35030,8 @@
         "draw",
         "excessive-violence",
         "indigestion",
-        "no-more-draws"
+        "no-more-draws",
+        "rescue"
       ]
     },
     "wpnx-mastermind-omega-red-carbonadium-tentacles": {
