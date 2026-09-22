@@ -828,6 +828,77 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     ]);
   });
 
+  it('UITurnEconomyState.excessiveViolenceAvailable is pinned on a BUILT projection (WP-739)', () => {
+    // why: the OPTIONAL excessiveViolenceAvailable is omit-when-absent, so a
+    // `satisfies`/literal pin gives it NO drift protection (WP-563 / D-24372).
+    // Only a keyset assertion on a REAL built projection — with the EV ledger
+    // materialized so the cue projects — catches buildUIState / the filter
+    // silently dropping it. This also hosts the build-side present/absent check.
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    // why: materialize the WP-736 EV ledger (a played EV card, not yet used) so
+    // the availability cue projects (it is lazily absent otherwise).
+    gameState.turnEconomy.excessiveViolencePlayedCards = ['core/hero-x/card-c1'];
+    const present = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'excessiveViolenceAvailable',
+      'piercing',
+      'recruit',
+      'woundsDrawn',
+    ]);
+
+    // why: an empty ledger (and an already-used-EV turn) must project the key
+    // ABSENT, not false — the omit-when-absent build-side contract.
+    delete gameState.turnEconomy.excessiveViolencePlayedCards;
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(
+      !('excessiveViolenceAvailable' in absent.economy),
+      'a turn with no enrolled EV card must omit the availability cue entirely',
+    );
+  });
+
   it('UIState.game retains phase/turn/activePlayerId/currentStage + hasActedThisTurn/hasHealedThisTurn/lastPlayEffectsFired AND adds villainRevealedThisTurn', () => {
     // why: WP-380 — additive extension of the inline game shape; hasActedThisTurn /
     // hasHealedThisTurn are the WP-379 per-turn flags projected as public booleans so

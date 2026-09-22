@@ -735,6 +735,17 @@ export interface UITurnEconomyState {
    * when the flag is set) and active-player-only (absent from `REDACTED_ECONOMY`).
    */
   recruitSpendableAsAttack?: boolean;
+  /**
+   * WP-739 / D-24560 — true iff the active player could fight "using Excessive
+   * Violence" this turn: they have enrolled at least one Excessive Violence card
+   * (`G.turnEconomy.excessiveViolencePlayedCards`) AND have not yet used EV this
+   * turn (`excessiveViolenceUsedThisTurn`). A read-only availability cue for the
+   * WP-738 client affordance ("Fight using Excessive Violence"); omit-when-absent
+   * (present only when the condition holds) and active-player-only (absent from
+   * `REDACTED_ECONOMY`). Surfaces WHETHER EV is available, never the ledger's
+   * card identities.
+   */
+  excessiveViolenceAvailable?: boolean;
 }
 
 /**

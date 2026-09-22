@@ -939,6 +939,15 @@ export function buildUIState(
     ...(gameState.turnEconomy.recruitSpendableAsAttack === true
       ? { recruitSpendableAsAttack: true as const }
       : {}),
+    // why: WP-739 / D-24560 — project the Excessive Violence availability cue
+    // omit-when-absent (present only when true), so the WP-738 client can offer
+    // "Fight using Excessive Violence" only when it would do something. True iff
+    // the player enrolled >= 1 EV card this turn AND has not yet used EV. Surfaces
+    // WHETHER EV is available, never the ledger contents (no CardExtId leaked).
+    ...((gameState.turnEconomy.excessiveViolencePlayedCards?.length ?? 0) > 0 &&
+    gameState.turnEconomy.excessiveViolenceUsedThisTurn !== true
+      ? { excessiveViolenceAvailable: true as const }
+      : {}),
   };
 
   // --- 8. Project log ---
