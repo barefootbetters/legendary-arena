@@ -74,6 +74,13 @@ export default defineComponent({
       type: Function as PropType<SubmitMove>,
       required: true,
     },
+    // why: the WP-732 / D-24553 "finish your turn" banner is only true while the
+    // match is still live — once the game is over there is no turn left to finish.
+    isGameOver: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props, { emit }) {
     function gateForFight(): GatingResult {
@@ -102,7 +109,7 @@ export default defineComponent({
         }
         return {
           allowed: false,
-          reason: 'All tactics defeated; mastermind already fallen.',
+          reason: 'All tactics defeated — the Mastermind is vanquished and victory is assured. Finish your turn, then End Turn to win.',
         };
       }
       return { allowed: true, reason: null };
@@ -125,7 +132,26 @@ export default defineComponent({
       });
     }
 
-    return { gateForFight, onFight, onRead };
+    /**
+     * Whether the Mastermind is vanquished but the match is still running — the
+     * WP-732 / D-24553 window where the current player finishes their turn
+     * (keeps fighting Villains / rescuing Bystanders) and the heroes win at
+     * End Turn. False under a pending Final Blow (the Mastermind is still
+     * fightable) and once the game is over.
+     *
+     * @returns true while the "victory assured — finish your turn" banner applies.
+     */
+    function isVictoryAssured(): boolean {
+      if (props.isGameOver) {
+        return false;
+      }
+      if (props.mastermind.tacticsRemaining !== 0) {
+        return false;
+      }
+      return props.mastermind.finalBlowPending !== true;
+    }
+
+    return { gateForFight, onFight, onRead, isVictoryAssured };
   },
 });
 </script>
@@ -140,6 +166,22 @@ export default defineComponent({
          (twist 1). Shown only when darkPortalBonus > 0 (0 = no portal / a
          non-Portals scheme); the +N is prop-driven, never hardcoded. -->
     <DarkPortalMarker v-if="darkPortalBonus > 0" :attack-bonus="darkPortalBonus" />
+    <!-- why: Jeff feedback (Dr. Doom / Legacy Virus 2p, turn 26) — after the 4th
+         Tactic fell the only signal was a disabled Fight button + hover tooltip, so
+         a player with attack left read it as "can't attack the Mastermind" and only
+         learned they had won at End Turn. WP-732 / D-24553 lets the player finish
+         the turn, so say so plainly and prominently. role="status" announces it. -->
+    <div
+      v-if="isVictoryAssured()"
+      class="mastermind-vanquished"
+      data-testid="play-mastermind-vanquished"
+      role="status"
+    >
+      <strong class="mastermind-vanquished-title">🏆 Mastermind defeated — victory is assured!</strong>
+      <span class="mastermind-vanquished-body">
+        Finish your turn: fight Villains, rescue Bystanders, and recruit for Victory Points. Press End Turn to win.
+      </span>
+    </div>
     <button
       type="button"
       data-testid="play-mastermind-button"
@@ -292,6 +334,26 @@ export default defineComponent({
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+/* why: the victory-assured banner is the payoff moment of the match, so it uses
+   the same amber/gold as the Final Blow badge but at block size — it must be
+   impossible to miss next to a Fight button that is now (correctly) disabled. */
+.mastermind-vanquished {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--color-warning, #b45309);
+  color: #fff;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.mastermind-vanquished-title {
+  font-size: 0.85rem;
+  font-weight: 800;
 }
 
 /* why: WP-399 — Hypno-Thralls are face-up Heroes stacked next to Loki, so they

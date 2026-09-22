@@ -171,6 +171,56 @@ describe('MastermindTile (WP-129 — extends WP-100)', () => {
     );
   });
 
+  test('vanquished Mastermind (all tactics defeated, no Final Blow) shows the victory-assured banner', () => {
+    // why: Jeff feedback (Dr. Doom / Legacy Virus 2p, turn 26) — a disabled Fight
+    // button + tooltip read as "can't attack"; WP-732 / D-24553 lets the player
+    // finish the turn, so the tile must say so plainly.
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4 }),
+        currentStage: 'main',
+        economy: economy({ availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const banner = wrapper.find('[data-testid="play-mastermind-vanquished"]');
+    assert.equal(banner.exists(), true, 'the victory-assured banner renders');
+    assert.match(banner.text(), /Mastermind defeated/);
+    assert.match(banner.text(), /End Turn to win/);
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.match(button.attributes('title')!, /victory is assured/);
+  });
+
+  test('victory-assured banner is absent while tactics remain, under a pending Final Blow, and once the game is over', () => {
+    const { submitMove } = recorder();
+    const cases: Array<{ label: string; mastermind: UIMastermindState; isGameOver: boolean }> = [
+      { label: 'tactics remain', mastermind: mastermindLive({ tacticsRemaining: 1, tacticsDefeated: 3 }), isGameOver: false },
+      {
+        label: 'Final Blow pending',
+        mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4, finalBlowPending: true }),
+        isGameOver: false,
+      },
+      { label: 'game over', mastermind: mastermindLive({ tacticsRemaining: 0, tacticsDefeated: 4 }), isGameOver: true },
+    ];
+    for (const testCase of cases) {
+      const wrapper = mount(MastermindTile, {
+        props: {
+          mastermind: testCase.mastermind,
+          currentStage: 'main',
+          economy: economy({ availableAttack: 9 }),
+          submitMove,
+          isGameOver: testCase.isGameOver,
+        },
+      });
+      assert.equal(
+        wrapper.find('[data-testid="play-mastermind-vanquished"]').exists(),
+        false,
+        `no victory-assured banner when ${testCase.label}`,
+      );
+    }
+  });
+
   test('renders display name + cost + tactics remaining', () => {
     const { submitMove } = recorder();
     const wrapper = mount(MastermindTile, {

@@ -814,6 +814,7 @@ export default defineComponent({
                   :is-viewer-turn="isViewerTurn"
                   :economy="snapshot.economy"
                   :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
+                  :is-game-over="isGameOver"
                   :submit-move="submitMove"
                   @read="onCardRead"
                 />
