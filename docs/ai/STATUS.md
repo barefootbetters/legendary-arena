@@ -103,12 +103,22 @@ entry misattributed the shift to pre-existing WP-735 drift; corrected after veri
 runtime-observed ripple — clean `main` is green at 3004.) Two-commit topology (EC-769 impl + SPEC close)
 plus this dashboard re-pin fix-forward.
 
-**D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match; not runnable from a
-worktree). Repro on `play.legendary-arena.com`: in a match, defeat the final Mastermind Tactic — the
-turn does NOT end; keep fighting Villains / rescuing Bystanders to accrue VP; the match ends
-**heroes-win at the end of that turn**. Confirm the client does NOT treat the `mastermindDefeated`
-notable event as end-of-match (no premature freeze / gameover overlay before `ctx.gameover` arrives at
-turn end).
+**D-24026 live-verify — CONFIRMED 2026-09-22** on the deployed server (`api.legendary-arena.com`
+`gitSha 1b505f6` = this WP's merge #2250). A guest hands-off competent bot match (`JyuCeShvbk_`,
+Magneto / Midtown Bank Robbery) ended **`heroes-win` — "The mastermind has been defeated."** at
+**Turn 9, CLEANUP stage**, and the game log shows the finish-the-turn behavior exactly:
+`9.2.26 …defeated the tactic "Bitter Captor"` (the 4th/last Tactic) →
+`9.2.27 All tactics defeated — mastermind Magneto is vanquished! Victory is assured; finish your turn.` →
+`9.2.28 Fight effect: … recruit an eligible Hero from the HQ for free (Bitter Captor)` (the final
+Tactic's Fight ability STILL resolves) → `9.2.29 …gained Frenzied Slashing` → `9.2.30 …recruited
+Unstoppable Hulk; HQ slot 2 refilled` (the player KEEPS PLAYING after the vanquish, accruing value) →
+`9.3.1 The turn ends — the Mastermind is vanquished and the heroes win the game!` (the win resolves at
+TURN END / phase 9.3, NOT at the 9.2.27 vanquish). Pre-WP-732 the game would have ended at 9.2.27.
+Final VP 30 (20 from the four defeated Tactics); no hang → the `turn.onEnd` promotion fires in real
+bgio. The endgame panel rendered `heroes-win` correctly (the read-only match-over board). RS-5 (client
+must not treat the `mastermindDefeated` notable event as end-of-match) was not adversely observed — the
+endgame panel is `ctx.gameover`-driven and this WP made no client change; a mid-defeat live client catch
+in a fast bot match was not timed and is low-risk.
 
 ### WP-733 — Spider-Man bare-`[keyword:reveal]` → `[keyword:reveal:2]` cost-draw parity (EC-770 / no new D) (2026-09-22)
 
