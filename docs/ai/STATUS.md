@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-730 — Effect-search taxonomy: Reveal + Gain a Hero + KO a Wound (heal) (EC-767 / no new D) (2026-09-21)
+
+Adds three corpus-validated effects to the hand-authored **Effects** filter taxonomy on
+`cards.legendary-arena.com` (`data/metadata/card-abilities.json`, **11 → 14 entries**), strictly
+additive — the 11 existing entries are byte-unchanged:
+
+- **Reveal (top of deck)** 👁️ (order 12) — `\breveal the top (card|(\d+|two|three|four|five) cards) of your deck` — **119 cards** (the PLAYER self-deck scry; deliberately NOT the broad `reveal the top` = 245, which mostly hits the Villain/Hero/Bystander decks).
+- **KO a Wound (heal)** 🩹 (order 45) — `\bKO (a|one|two|\d+) Wounds?\b` — **22 cards** (the prose "KO a Wound from …", distinct from `ko-from-hand` ("card") and the `[keyword:ko-wound-reward:…]` marker — the matched fragment is always the prose, never the marker).
+- **Gain a Hero** 🦸 (order 95) — `\bgain (a|an|the|that|any|each|one|two|\d+) [^.]{0,26}?Heroe?s?\b` — **46 cards** (Hero as the object gained from HQ / KO pile / revealed / captured / `[hc:]`/`[team:]`-qualified; replaced the 5-card Defeat a Mastermind, too thin).
+
+**Corpus validation (the scaffold — run before ship):** a throwaway scan over `data/cards/*.json`
+`<entityType>[].cards[].abilities[]` (~3,020 cards with abilities on `main`) confirmed **119 / 22 / 46**
+distinct-card matches — matching the WP's locked counts exactly. FP/FR spot-checked: Reveal matches
+only "… of your deck"; `gain-a-hero`'s "gain a Wound/Bystander … for each Hero" false-positive probe
+returned **0**; `ko-a-wound` matches the prose, not the marker. Each entry validates under the existing
+`CardAbilityEntrySchema` (no schema/code/UI change; `registry` + `registry-viewer` builds green).
+
+**Operator-pending — R2 upload + D-24026 live-verify.** The live site reads `card-abilities.json` from
+R2, not the bundle, and this worktree has no `.env`/R2 creds. The operator must upload the file and then
+live-verify the 3 chips filter to ~119 / 22 / 46 on `cards.legendary-arena.com` (D-24026). Upload command
+(export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from `.env` first; no `--progress`):
+`rclone copy data/metadata/card-abilities.json r2:legendary-images/metadata/ --header-upload "Cache-Control: no-cache" --ignore-times`
+
 ### WP-726 — Auto-resolving hero-effect reveal observability (EC-763 / D-24547) (2026-09-21)
 
 Closes an on-screen observability gap: a hero whose ability **auto-resolves a deck-top reveal**
