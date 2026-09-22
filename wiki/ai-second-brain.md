@@ -958,10 +958,13 @@ feature reaching across the network.
 >   to exactly what unset does — do not set it merely to "pin" the current model.
 > - **Swapping = set `COACH_MODEL` in the Render dashboard** to the exact Anthropic
 >   model id (e.g. `claude-opus-5`); Render then redeploys the server. The value is
->   the API id, never a friendly name like "Sonnet 5" — an unrecognized string is
->   sent verbatim as the model and fails the call.
-> - **Pre-seeded swap targets are env-only; other thinking-default models need a
->   quirk row first.** The registry ships rows for `claude-sonnet-5` (disabled
+>   the API id, never a friendly name like "Sonnet 5". Since WP-737 (D-24559) the
+>   registry is an allowlist: an id with no quirk row (a typo, a friendly name, an
+>   unvetted model) is **not** sent — the coach keeps running on the default
+>   `claude-sonnet-5` and the server logs one startup warning naming the refused
+>   id. Check the startup log after a swap.
+> - **Pre-seeded swap targets are env-only; any other model needs a quirk row
+>   first.** The registry ships rows for `claude-sonnet-5` (disabled
 >   thinking), `claude-opus-5` (thinking on at `effort: low` — Opus 5 discourages
 >   disabling thinking), and `claude-sonnet-4-6` (thinking off by default) — those
 >   three are safe to select with `COACH_MODEL` alone. Any *other* Claude 4.6+/5
@@ -969,19 +972,28 @@ feature reaching across the network.
 >   output budget and re-triggers the empty-response failure (the EC-629 bug — see
 >   [Edge Cases](#edge-cases)); before pointing `COACH_MODEL` at one, add its row
 >   to `COACH_MODEL_QUIRKS_BY_MODEL` in the shim (disabled thinking where the model
->   allows it, or `effort: low` where it does not). A non-thinking model needs only
->   the env var.
-> - **Pre-swap check (drafted, WP-737 / D-24559 reserved).** Two changes make a
->   swap safe before it reaches paying players. First, the quirk registry becomes an
->   allowlist: an unregistered `COACH_MODEL` falls back to the default model with a
->   startup warning instead of reaching the API with no thinking directive. Second,
->   an operator-run `coach:eval --model <id>` runs a fixed set of scenario match
->   summaries through the real client and scores each report against a
->   deterministic rubric (structure, required luck / ally / buying language, and a
->   hallucination guard that names heroes absent from the match). It is the
->   *Verification Is Required* principle applied to the coach — an adversarial
->   "mystery-shop" pass over the product's own LLM surface. It is never a required
->   CI check: it costs money per run and model output is nondeterministic.
+>   allows it, or `effort: low` where it does not). A non-thinking model still needs
+>   a row (a one-liner) — without one it is refused and the default runs instead.
+> - **Pre-swap check (shipped, WP-737 / D-24559).** Two changes make a swap safe
+>   before it reaches paying players. First, the quirk registry is an allowlist: an
+>   unregistered `COACH_MODEL` (even a prototype key like `constructor`) falls back
+>   to the default model with a startup warning instead of reaching the API with no
+>   thinking directive. Second, before flipping `COACH_MODEL`, run
+>   `pnpm --filter @legendary-arena/server coach:eval --model <id>` with
+>   `ANTHROPIC_API_KEY` exported in the shell. It sends 10 fixture match summaries
+>   (one per scenario category) through the real client — one paid call each — and
+>   scores every report against a deterministic whole-term rubric (structure, luck
+>   language on lucky/unlucky games, per-seat naming in a two-seat game, buying
+>   language when a seat bought nothing, and a hallucination guard naming heroes
+>   absent from the match). It refuses an unregistered model outright (the eval is
+>   strict where production is forgiving), exits non-zero on any failure, and
+>   `--out <path>` saves the raw reports. It is the *Verification Is Required*
+>   principle applied to the coach — an adversarial "mystery-shop" pass over the
+>   product's own LLM surface. It is never a required CI check: it costs money per
+>   run and model output is nondeterministic. A failing scenario is a prompt or
+>   model finding to record, never a rubric to loosen. First run (2026-09-22,
+>   `claude-sonnet-5`): 9/10, the one failure a malformed-JSON response (a raw
+>   control character inside a string), not a rubric miss.
 
 ### Operating discipline
 
@@ -1385,17 +1397,19 @@ This is the summary index; the individual gotchas and their nuances live in
   tokens draw from the bounded `max_tokens`; on a full match-analysis prompt the
   thinking exhausts the budget before any answer text, so the response caps
   mid-thinking with an empty text block and every real call fails
-  `coach_unavailable` (the EC-629 production bug). A model absent from the shim's
-  quirk registry gets the *default* quirks — **no** disabled-thinking directive —
-  so pointing `COACH_MODEL` at a new thinking-default model *without first adding
-  its quirk row* silently reintroduces exactly that failure. The registry ships
+  `coach_unavailable` (the EC-629 production bug). Before WP-737 a model absent
+  from the shim's quirk registry was sent with **no** disabled-thinking directive,
+  silently reintroducing exactly that failure. Since D-24559 the registry is an
+  allowlist: such a model is refused, the coach stays on the default model, and
+  the startup log warns — so the failure mode is now "the swap did not take", not
+  "the paid panel went dark". Adding a model is one quirk row plus a green
+  `coach:eval` run. The registry ships
   safe rows for `claude-sonnet-5`, `claude-opus-5`, and `claude-sonnet-4-6`, so
   those three are env-only swaps; note the fix is not always "disable thinking" —
   **Opus 5 discourages disabling thinking** (it can leak reasoning into the visible
   text and 400s at high effort levels), so its row keeps thinking on at `effort:
-  low` instead. Non-thinking models are safe with the env var alone. (The value
-  must also be the exact API id — a friendly name like "Sonnet 5" is sent verbatim
-  and fails the call.)
+  low` instead. (The value must also be the exact API id — a friendly name like
+  "Sonnet 5" has no row, so it is refused and the default runs.)
 - **Co-hosting during bootstrap needs real isolation.** Running a model gateway,
   a chat surface, and a vector DB on the live game-server box adds attack surface
   and resource contention to a host whose job is serving matches. It is an

@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-737 — Coach model eval pack + quirk-registry allowlist (EC-774 / D-24559) (2026-09-22)
+
+**No user-observable change — infrastructure only.** Payoff: a `COACH_MODEL` swap is checked before
+it reaches paying Legendary-Pass players, and a misconfigured id falls back to the known-good model
+instead of returning `coach_unavailable` on every call.
+
+- **Allowlist.** An unregistered `COACH_MODEL`, including a prototype key such as `constructor`, now
+  resolves to `DEFAULT_COACH_MODEL` with that model's own quirk row and carries `fallbackFromModel`.
+  `server.mjs` logs one full-sentence startup warning naming the refused id. Before this it reached
+  the API with no thinking directive (the EC-629 empty-response class). `lookupCoachModelQuirks`
+  uses `Object.hasOwn`; `DEFAULT_COACH_MODEL_QUIRKS` is gone.
+- **Eval pack.** `pnpm --filter @legendary-arena/server coach:eval --model <id>` runs 10 fixture
+  match summaries (one per category) through the real client and scores each report with a pure,
+  whole-term rubric. It refuses a missing model, an unregistered model, an unknown scenario and a
+  missing or empty key, all before any network call. Operator-run only; never in CI.
+
+Server suite 1554/1352/0/202 → 1583/1381/0/202 (+29). `pnpm -r build` 0. The one unregistered-model
+test is rewritten (not deleted) under D-24559.
+
+**Operator check (2026-09-22, `coach:eval --model claude-sonnet-5`, real key): 10 scenarios, 9
+passed, 1 failed.** The failure is a **finding, not a rubric miss**: on `baseline-win-core-red-skull`
+Sonnet 5 emitted a raw control character inside a JSON string, and `coachClient.ts`
+(`extractJsonObject` → `JSON.parse`) threw "Bad control character in string literal". In production
+that is an intermittent `coach_unavailable` for a paying player. Frequency: 1 in 16 calls across
+this session (6 re-runs of that scenario and the tie scenario all passed). The rubric is unchanged;
+the fix belongs in the client's JSON parsing and is a separate follow-up. The deployed startup log
+check (no fallback warning with `COACH_MODEL` unset) is pending deploy.
 ### WP-740 — Venompool "Play to the Crowd" (EC-777 / D-24562) (2026-09-22)
 
 Play to the Crowd (`vnom/venompool/play-to-the-crowd`) now resolves as printed through the WP-735

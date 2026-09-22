@@ -44080,4 +44080,45 @@ collision). **D-24026 live-verify:** operator-manual, post-deploy — closes the
 
 **Reserved by:** NUMBER-LEDGER D-24565 (renumbered from D-24564 after a parallel collision with #2278). Related: D-24467 (the reused mechanism), D-24543 (the marker-only precedent).
 
+---
+
+### D-24559 — The coach model registry is an allowlist; model swaps are gated by the operator-run `coach:eval` pack (Active 2026-09-22 — WP-737 / EC-774)
+
+**Status:** Active — landed 2026-09-22 (WP-737 / EC-774).
+
+**Context.** The coach model-independence shim (PR #1619, `apps/server/src/coach/coachModelConfig.ts`)
+made `COACH_MODEL` a config swap, but a model with no quirk row was sent to the API with the
+*default* quirks — no thinking directive. Every Claude 4.6+/5 model thinks by default, so an
+unvetted or mistyped id re-created the EC-629 empty-response bug and took the Legendary-Pass coach
+dark. The model roster moves (`claude-opus-5-5` already exists with no row), so this was one
+Render-dashboard edit away from recurring.
+
+**Decision.**
+1. **Allowlist, not open default.** `resolveCoachModelConfig`: unset or empty → the default;
+   registered → that model's row; **unregistered, including prototype keys → `DEFAULT_COACH_MODEL`
+   + the default's own quirk row + `fallbackFromModel: <configured id>`**. It never returns an
+   unregistered id. `lookupCoachModelQuirks` uses `Object.hasOwn`, so `constructor` / `toString`
+   never resolve as quirks. `server.mjs` logs one full-sentence startup warning on fallback. This
+   supersedes the shim's "any model swaps in with default quirks" behavior; the fallback inherits the
+   default model's quirks by design. The paid feature degrades to the known-good model rather than
+   going dark.
+2. **Swaps are gated by `coach:eval`.** `pnpm --filter @legendary-arena/server coach:eval --model <id>`
+   sends 10 fixed scenario summaries (`coachEval.fixtures.ts`, one per `COACH_EVAL_CATEGORIES`
+   member) through the production client and scores each report with a pure whole-term rubric
+   (`coachEval.logic.ts`: structure; `mustMentionAny` alternative lists; `mustNotMention`;
+   `(?<!\w)term(?!\w)` case-insensitive, inflections enumerated). The eval is **strict where
+   production is forgiving**: it refuses an unregistered model instead of evaluating the fallback
+   under the candidate's name. It is operator-run, costs one paid call per scenario, and is **never a
+   required CI check**; tests construct no live client. A failing scenario is recorded as a prompt or
+   model finding; the rubric is never loosened to get a green run.
+
+**Consequences.** Adding a model is a one-row change plus a green `coach:eval` run. `coachEval.types.ts`
+is a new contract file. The first run (Sonnet 5, 9/10) surfaced an intermittent malformed-JSON
+response (a raw control character inside a string) that `coachClient.ts` cannot parse — recorded in
+STATUS as a follow-up, not a rubric change. No prompt, summary, report shape, route, entitlement,
+cache or score change; NG-1 untouched (the coach stays advisory and off-ranking).
+
+**Reserved by:** NUMBER-LEDGER D-24559. Related: D-24403 (the coach), D-24341 (Model Independence),
+EC-629 (the empty-response hotfix).
+
 Protect this file.
