@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 497,
+      "executable": 490,
       "deferred": 16,
       "condition": 28,
-      "unsupported": 312,
+      "unsupported": 319,
       "unmarked": 1056,
       "subsystem": 4
     }
@@ -9411,8 +9411,8 @@
       "set": "dead",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9449,8 +9449,8 @@
       "set": "dead",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9466,8 +9466,8 @@
       "set": "dead",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9491,8 +9491,8 @@
       "set": "dead",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -9529,8 +9529,8 @@
       "set": "dead",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13319,8 +13319,8 @@
       "set": "mgtg",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13499,8 +13499,8 @@
       "set": "mgtg",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
