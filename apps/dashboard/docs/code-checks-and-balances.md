@@ -49,6 +49,21 @@ Just like the accounting model, the development process is split across distinct
 
 **The key rule:** The person (or AI session) that writes the code should NOT be the same session that reviews it. Fresh eyes catch what familiar eyes miss.
 
+### Running the agents in this repo (slash commands)
+
+Each role is a Claude Code slash command in `.claude/commands/`. Run each one in its **own** session:
+
+| Command | Role | Repo mapping |
+|---|---|---|
+| `/agent-architect <idea \| WP-NNN \| "lite: …">` | Architect (§4) | MEDIUM/HIGH → WP + EC via `docs/ai/REFERENCE/01.0a-wp-drafting-phase.md`. LOW → a lite bullet spec in the PR body. |
+| `/agent-builder <WP-NNN \| "lite: …">` | Builder (§5) | Executes the EC via `01.0b`. Deviations go in the build note. |
+| `/agent-inspector <PR \| branch> [--post]` | Inspector (§6) | Read-only review with P0/P1/P2 findings and a mechanical verdict. Posts to the PR only with `--post`. |
+| `/agent-evaluator [quarterly \| pre-sale]` | Evaluator (§7) | System due diligence. Writes `docs/ai/evaluations/YYYY-MM-DD-evaluator-report.md`. |
+
+Two places where the repo differs from the generic text below:
+- **Where specs live.** They are Work Packets and Execution Checklists (`docs/ai/work-packets/`, `docs/ai/execution-checklists/`), not a `docs/specs/` folder.
+- **Which reports the pipeline records.** The nightly sweep inspection API (`scripts/inspection-submit.mjs`, keyed to a `sweepRunId`) records sweep triage, not code-review verdicts.
+
 ---
 
 ## 2. The Workflow
