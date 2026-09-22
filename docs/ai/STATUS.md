@@ -24,11 +24,16 @@ only "… of your deck"; `gain-a-hero`'s "gain a Wound/Bystander … for each He
 returned **0**; `ko-a-wound` matches the prose, not the marker. Each entry validates under the existing
 `CardAbilityEntrySchema` (no schema/code/UI change; `registry` + `registry-viewer` builds green).
 
-**Operator-pending — R2 upload + D-24026 live-verify.** The live site reads `card-abilities.json` from
-R2, not the bundle, and this worktree has no `.env`/R2 creds. The operator must upload the file and then
-live-verify the 3 chips filter to ~119 / 22 / 46 on `cards.legendary-arena.com` (D-24026). Upload command
-(export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from `.env` first; no `--progress`):
-`rclone copy data/metadata/card-abilities.json r2:legendary-images/metadata/ --header-upload "Cache-Control: no-cache" --ignore-times`
+**R2 upload done + D-24026 live-verify CONFIRMED 2026-09-21.** The merged `card-abilities.json` (14
+entries) was uploaded to `r2:legendary-images/metadata/` (`Cache-Control: no-cache`, `cf-cache-status:
+DYNAMIC`); the live object at `images.legendary-arena.com/metadata/card-abilities.json` serves all 14
+entries. On the deployed `cards.legendary-arena.com` the three new chips appear in the Effects dropdown
+with correct emoji/labels, and selecting **Gain a Hero** filtered the grid to exactly **46 cards**
+(end-to-end confirmed). Live per-effect counts: **Reveal (top of deck) 116**, **KO a Wound (heal) 19**,
+**Gain a Hero 46**. The Reveal/heal deltas from the raw 119/22 corpus counts are the registry viewer's
+own `flattenSet` card-count methodology (unique displayed registry cards vs the raw `.cards[]` ability
+scan), NOT a matcher defect — the matchers are correctly scoped (Reveal = your-deck only; KO a Wound =
+the heal prose). WP-730 is complete end-to-end.
 
 ### WP-726 — Auto-resolving hero-effect reveal observability (EC-763 / D-24547) (2026-09-21)
 
