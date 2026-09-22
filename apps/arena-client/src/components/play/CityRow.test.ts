@@ -128,6 +128,90 @@ describe('CityRow (WP-129 — extends WP-100)', () => {
     assert.deepEqual(calls[0]!.args, { cityIndex: 2 });
   });
 
+  // why: WP-738 / D-24561 — the "Fight using Excessive Violence" per-villain opt-in.
+  // Shown only when the availability cue is set AND the villain is affordable at
+  // cost+1; submits the useExcessiveViolence intent; the normal fight is unchanged.
+  test('no Excessive Violence buttons when the availability cue is absent', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-city-villain-ev"]').length, 0);
+  });
+
+  test('shows an Excessive Violence button on each fightable villain affordable at cost+1', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        // why: availableAttack 9 clears cost+1 for every villain (3/5/2 → 4/6/3).
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-city-villain-ev"]').length, 3);
+  });
+
+  test('hides the Excessive Violence button on a villain unaffordable at cost+1', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        // why: availableAttack 3 clears cost+1 only for thug (cost 2 → needs 3);
+        // doom-bot (3 → needs 4) and electro (5 → needs 6) are not EV-affordable.
+        economy: economy({ attack: 3, availableAttack: 3, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    const evButtons = wrapper.findAll('[data-testid="play-city-villain-ev"]');
+    assert.equal(evButtons.length, 1);
+    assert.equal(evButtons[0]!.attributes('data-city-index'), '4');
+  });
+
+  test('clicking the Excessive Violence button submits fightVillain with useExcessiveViolence', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    // why: visual order is [4, 2, 0]; index [1] is engine cityIndex 2 (electro).
+    void wrapper.findAll('[data-testid="play-city-villain-ev"]')[1]!.trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'fightVillain');
+    assert.deepEqual(calls[0]!.args, { cityIndex: 2, useExcessiveViolence: true });
+  });
+
+  test('the normal fight button omits useExcessiveViolence even when EV is available', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    void wrapper.findAll('[data-testid="play-city-villain"]')[1]!.trigger('click');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]!.args, { cityIndex: 2 });
+  });
+
   test('disables villains with stage tooltip when currentStage is not main', () => {
     const { submitMove } = recorder();
     for (const stage of ['start', 'cleanup'] as const) {

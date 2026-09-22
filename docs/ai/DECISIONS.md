@@ -44031,5 +44031,35 @@ unchanged assertions.
 field. `finalStateHash` / sentinel pins are unchanged (engine 4117/0). Related D-24555 (the fusion
 this extends), D-24016 (`victory-bystanders`), D-24493 (`perEach`), D-24095 (JSON-plain hooks).
 **Reserved by:** NUMBER-LEDGER D-24562 (renumbered from D-24561 after a parallel collision).
+### D-24561 — Client "Fight using Excessive Violence" affordance (Active 2026-09-22 — WP-738 / EC-775)
+
+**Decision.** The arena-client exposes the Excessive Violence overspend to the player as a
+**per-target opt-in** that submits `fightVillain` / `fightMastermind` with
+`{ useExcessiveViolence: true }` (the WP-736 / D-24557 move arg). This is the client half of the
+paired arc and closes the WP-736 D-24026 deferred fire-payoff.
+
+1. **UX (EC amendment).** EC-775 specified an arm-then-fight turn toggle but permits a per-target
+   secondary affordance provided the behaviour holds; the executor chose the per-target form
+   (simpler — no arm state, no parent/cross-surface plumbing, and the control disappears naturally
+   when the availability cue drops). A separate "⚔ Excessive Violence" button renders on each
+   fightable City villain (`CityRow.vue`) and on the Mastermind (`MastermindTile.vue`).
+2. **Gate.** The control is shown ONLY when `uiState.economy.excessiveViolenceAvailable === true`
+   (WP-739 / D-24560, absent = false) AND the target is affordable at `cost + 1`
+   (`canFightWithExcessiveViolence` in `useCardCostGating`, reusing the same `display.cost` source
+   `canFight` uses — so the client gate mirrors the engine gate
+   `getSpendableAttack >= requiredFightCost + 1` exactly).
+3. **Engine owns truth.** The client gate decides only SHOW/ENABLE + whether to send the arg — no
+   client-side rule execution or reconciliation. A wrong arm → the engine silently fights normally.
+   The normal Fight click is byte-identical (submits no `useExcessiveViolence` key).
+4. **Once-per-turn** is enforced engine-side and reflected by the field: after an EV fight the engine
+   sets `used`, the projection drops the cue, and the affordance vanishes on the next projection — the
+   client never tracks "used" itself.
+
+arena-client only; no engine change, no new UIState field (consumes WP-739's projection); no
+move-args typing change (`SubmitMove.args` is `unknown`). NG-safe — the overspend is an in-game
+attack cost available to any player who played an EV card, not purchasable. Related D-24557 (the
+fight-move arg + the deferral this closes), D-24560 (the availability projection it reads), D-24556
+(the EV mechanic). **Reserved by:** NUMBER-LEDGER D-24561 (renumbered from D-24559 after a parallel
+collision). **D-24026 live-verify:** operator-manual, post-deploy — closes the WP-736 fire-payoff.
 
 Protect this file.

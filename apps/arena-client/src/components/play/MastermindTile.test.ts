@@ -430,3 +430,80 @@ describe('MastermindTile — Dark Portal marker (WP-727 / D-24548)', () => {
     );
   });
 });
+
+describe('MastermindTile — Excessive Violence affordance (WP-738 / D-24561)', () => {
+  // why: the "Fight using Excessive Violence" opt-in is shown only when the fight
+  // is allowed AND the availability cue is set AND the player can afford cost+1
+  // (mastermind cost 6 → needs 7). It submits the useExcessiveViolence intent; the
+  // normal Fight button is unchanged.
+  test('no Excessive Violence button when the availability cue is absent', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+  });
+
+  test('shows the Excessive Violence button when available and affordable at cost+1', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 7, availableAttack: 7, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), true);
+  });
+
+  test('hides the Excessive Violence button when available but short of cost+1', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        // why: exactly the normal fight cost (6) — enough to fight, one short of the +1.
+        economy: economy({ attack: 6, availableAttack: 6, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+  });
+
+  test('clicking the Excessive Violence button submits fightMastermind with useExcessiveViolence', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 7, availableAttack: 7, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    void wrapper.find('[data-testid="play-mastermind-ev"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'fightMastermind');
+    assert.deepEqual(calls[0]!.args, { useExcessiveViolence: true });
+  });
+
+  test('the normal fight button omits useExcessiveViolence even when EV is available', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 7, availableAttack: 7, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    void wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]!.args, {});
+  });
+});
