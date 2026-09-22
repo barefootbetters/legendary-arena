@@ -97,5 +97,32 @@
     "matchers": [
       { "type": "regex", "pattern": "\\bdefeat (a|one|the|that|each|any|\\d+) Villains?\\b", "flags": "i" }
     ]
+  },
+  {
+    "slug": "reveal-top-of-deck",
+    "label": "Reveal (top of deck)",
+    "emoji": "👁️",
+    "order": 12,
+    "matchers": [
+      { "type": "regex", "pattern": "\\breveal the top (card|(\\d+|two|three|four|five) cards) of your deck", "flags": "i" }
+    ]
+  },
+  {
+    "slug": "ko-a-wound",
+    "label": "KO a Wound (heal)",
+    "emoji": "🩹",
+    "order": 45,
+    "matchers": [
+      { "type": "regex", "pattern": "\\bKO (a|one|two|\\d+) Wounds?\\b", "flags": "i" }
+    ]
+  },
+  {
+    "slug": "gain-a-hero",
+    "label": "Gain a Hero",
+    "emoji": "🦸",
+    "order": 95,
+    "matchers": [
+      { "type": "regex", "pattern": "\\bgain (a|an|the|that|any|each|one|two|\\d+) [^.]{0,26}?Heroe?s?\\b", "flags": "i" }
+    ]
   }
 ]
