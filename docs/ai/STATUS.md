@@ -7,6 +7,46 @@
 
 ## Current State
 
+### WP-735 — Venompool "Digest N / Indigestion" Victory-Pile branch (`digest-indigestion` keyword; EC-772 / D-24555) (2026-09-22)
+
+Un-hollows the D-21602-deferred Venompool "Digest N / Indigestion" family (parse-unrecognized; ~14
+hollow hits/game on `vnom/venompool/digest-that-chimichanga` in live 2p). Semantics from
+`keywords-full` ids 54/55: **Digest N** = a READ-ONLY Victory-Pile-size threshold; **Indigestion** =
+the mutually-exclusive fallback used only below N; a printed `[hc:X]: Instead, you get both.` upgrade
+overrides the gate → both branches regardless of count.
+
+New `digest-indigestion` `HeroKeyword` + 4 additive optional `HeroEffectDescriptor` fields
+(`digestThreshold`/`digestEffects`/`indigestionEffects`/`bothCondition` — the first self-recursive
+descriptor nesting, JSON-roundtrip-pinned). A per-card allowlist `DIGEST_INDIGESTION_CARDS` gates a
+**non-mutating fusion** inside `buildHeroAbilityHooks` (the transform/x-gene precedent) that folds the
+Digest/Indigestion/upgrade lines into ONE hook, consuming the source tokens. Handler
+`heroEffectDigestIndigestion` reads `G.playerZones[pid].victory.length` (**NO new G field**), safe-skips
+a malformed effect, and dispatches the selected branch via the reentrant `executeSingleEffect`. Scope =
+**Core-4** (`digest-that-chimichanga`, `carnage/carnivore`, `venom/devouring-drool`,
+`venomized-dr-strange/cauldron-of-the-cosmos`); Excessive Violence + the 3 harder Digest cards stay
+honest hollows. Card-data: 3 net-new markers (draw:2 / draw:1 / rescue:1) via the curated map + `vnom`
+regen + 4 feeds; NO client / pending-choice / UIState.
+
+Engine **4050/0** (+11 digest tests: threshold-met/unmet, both-below-threshold, single-branch no-op,
+Victory-Pile-unchanged, safe-skip, JSON-roundtrip, fusion→one-hook, non-allowlisted→hollow). All
+card-data `:check` (`cards`/`effect-index`/`mechanics:metadata`/`ledger:heroes`/`sim:runtime-observed`)
++ `sim:coverage --check` **0**; `pnpm -r build` 0; `lagn-v1.json` CRLF churn reverted. **Determinism: NO
+re-pin** — no new G field, all Core-4 `vnom` non-core, `finalStateHash` + `PRE_WP080_HASH` verified
+byte-unchanged. Two-commit topology (EC-772 impl + SPEC close).
+
+**AC #8 corrected (execution):** the raw `digest`/`indigestion` mechanic rows stay `unsupported` in the
+hero mechanic ledger — the ledger aggregates status **per-hero**, and `venom`/`venompool` each mix a
+fused Core-4 Digest card with a deferred one (`insatiable-hunger`/`play-to-the-crowd`), so a by-hook
+"executable" label would over-claim the deferred sibling (a reward-integrity violation). The un-hollow
+is verified by the Core-4 dropping from `runtime-observed-hollows.json` (only deferred
+`play-to-the-crowd`'s indigestion remains) + `sim:coverage` recognizing `digest-indigestion` (no
+regression) + the branch effects reading `executable`.
+
+**D-24026 live-verify — OPERATOR-PENDING** (needs a deploy + a live match). Repro on
+`play.legendary-arena.com`: play Venompool, play **Digest That Chimichanga** — with < 2 Victory-Pile
+cards it rescues a Bystander, with 2+ it grants +2 Attack, and on a Strength deck it does both. Verify
+against the deployed `/api/version` gitSha.
+
 ### WP-733 — Spider-Man bare-`[keyword:reveal]` → `[keyword:reveal:2]` cost-draw parity (EC-770 / no new D) (2026-09-22)
 
 Fixes 5 core+co2e Spider-Man hero cards that print "Reveal the top card of your deck. If it costs 2
