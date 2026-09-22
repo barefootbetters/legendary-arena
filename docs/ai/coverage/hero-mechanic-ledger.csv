@@ -156,6 +156,7 @@ co2e/captain-america,Captain America,co2e,(unmarked),unmarked,,,,
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
 co2e/emma-frost,Emma Frost,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
+co2e/gambit,Gambit,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,kinetic-card
 co2e/gambit,Gambit,co2e,reveal-cost-attack,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-cost-attack,high-stakes-jackpot
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
@@ -596,7 +597,7 @@ vnom/venompool,Venompool,vnom,digest,unsupported,,,,digest-that-chimichanga|play
 vnom/venompool,Venompool,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shenanigans
 vnom/venompool,Venompool,vnom,excessive-violence,unsupported,,,,can-i-get-a-little-gratitude
 vnom/venompool,Venompool,vnom,indigestion,unsupported,,,,digest-that-chimichanga|play-to-the-crowd
-vnom/venompool,Venompool,vnom,no-more-draws,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws,shenanigans
+vnom/venompool,Venompool,vnom,no-more-draws,unsupported,,,,shenanigans
 wpnx/fantomex,Fantomex,wpnx,weapon-x-sequence,unsupported,,,,misdirection|sentient-bullets|three-brains|weapon-xiii
 wpnx/marrow,Marrow,wpnx,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bone-shards|hyper-adaptive-skeleton
 wpnx/marrow,Marrow,wpnx,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,osteogenesis

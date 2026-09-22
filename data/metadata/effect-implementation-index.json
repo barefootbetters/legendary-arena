@@ -3,9 +3,9 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1908,
+    "totalEntries": 1909,
     "byScope": {
-      "hero": 733,
+      "hero": 734,
       "villain": 719,
       "mastermind": 456
     },
@@ -13,7 +13,7 @@
       "executable": 481,
       "deferred": 16,
       "condition": 28,
-      "unsupported": 323,
+      "unsupported": 324,
       "unmarked": 1056,
       "subsystem": 4
     }
@@ -5936,6 +5936,23 @@
         {
           "slug": "stack-the-deck",
           "name": "Stack the Deck"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/gambit",
+      "name": "Gambit",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "kinetic-card",
+          "name": "Kinetic Card"
         }
       ]
     },
@@ -22349,8 +22366,8 @@
       "set": "vnom",
       "scope": "hero",
       "mechanic": "no-more-draws",
-      "status": "executable",
-      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#no-more-draws",
+      "status": "unsupported",
+      "handler": "",
       "wp": "",
       "decision": "",
       "designs": [
@@ -29073,6 +29090,7 @@
       "scope": "hero",
       "mechanics": [
         "put-hand-on-deck-top",
+        "reveal",
         "reveal-cost-attack"
       ]
     },

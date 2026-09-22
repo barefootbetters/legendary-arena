@@ -121,6 +121,18 @@
   "co2e": [
     {
       "heroSlug": "gambit",
+      "cardSlug": "kinetic-card",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:team-x-men:draw]"
+    },
+    {
+      "heroSlug": "gambit",
+      "cardSlug": "kinetic-card",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:always:choose-discard-or-return]"
+    },
+    {
+      "heroSlug": "gambit",
       "cardSlug": "stack-the-deck",
       "abilityIndex": 0,
       "markupToken": "[keyword:put-hand-on-deck-top:2]"

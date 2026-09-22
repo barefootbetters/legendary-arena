@@ -479,7 +479,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it. Otherwise, discard it or put it back."
+            "Reveal the top card of your deck. If it's an [team:x-men] Hero, draw it. Otherwise, discard it or put it back. [keyword:reveal:team-x-men:draw] [keyword:reveal:always:choose-discard-or-return]"
           ]
         },
         {
