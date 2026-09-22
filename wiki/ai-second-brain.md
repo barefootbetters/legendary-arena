@@ -22,7 +22,7 @@ source:
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
-last-reviewed: 2026-09-08
+last-reviewed: 2026-09-22
 ---
 
 # AI Second Brain
@@ -682,7 +682,10 @@ human operator navigates this wiki.
 operator-controlled repositories. A local viewer/editor (e.g. Obsidian) may be
 used as a convenience layer over those files, but it is **never the system of
 record** — Git, the wikis, and PostgreSQL remain the durable sources. The point
-is local Markdown, not any one app's workflow.
+is local Markdown, not any one app's workflow. A web clipper that saves a page as
+Markdown plus its images to local disk is a good ingest front door for the
+Research domain, provided it lands in the domain's `raw/` or `inbox/` — never an
+Authoritative tree. Clipping is a human act, so it needs no write-jail of its own.
 
 **Voice is split by domain, not universal.** Each domain carries its own tone
 profile — engineering-professional, Legendary Arena product, Barefoot Betters
@@ -699,15 +702,37 @@ Storage, retrieval, and backup are covered above; this is the missing axis —
 *how knowledge enters the system, is promoted, and leaves.* Without it the corpus
 drifts into `research-old/ research-final/ research-revised/` five years on.
 
-**Corpus classes.** Every item is one of three classes, and the class decides how
-it is retrieved — this is the same navigation-vs-vector split, stated as a
-property of the *content* rather than the query:
+**Corpus classes.** Every item is one of three authority classes. Authority and
+*retrieval method* are related but not the same axis — a Reference item may be a
+raw source that is vectorized, or a compiled page that is navigated:
 
 | Class | Examples | Retrieval |
 |---|---|---|
 | **Authoritative** | Decisions, Work Packets, ECs, runbooks, indexes | Navigation / exact only — **never vectorized** |
-| **Reference** | Research PDFs, transcripts, long-form notes | Vectorized (the minority layer) |
+| **Reference — raw source** | Research PDFs, transcripts, long-form notes | Vectorized (the minority layer) |
+| **Reference — compiled page** | Derived concept / summary / comparison pages built from raw sources (the ewiki is the working example) | Navigation (linked from `INDEX.md`) — never vectorized, never cited as policy |
 | **Transient** | Inbox captures, scratch files, session outputs | Not ingested at all |
+
+**Compiled pages are a derived layer, not a second authority.** A compiled page
+summarizes and cross-links raw sources so navigation can answer a question the
+raw archive only answers by semantic search. The rules that keep it honest:
+
+- Every compiled page carries a `source:` list and the `content_hash` (or commit)
+  of each source it summarizes, so staleness is checkable.
+- It may be model-drafted, but it is **human-owned and human-editable** — a page
+  nobody may edit becomes a durable hallucination with backlinks.
+- It may *point at* an Authoritative record (a Decision, a Work Packet); it never
+  paraphrases one into policy. Governance stays exact.
+- **Tier placement is domain-scoped.** In Reference domains (Research, Barefoot
+  Betters studies, transcripts) a compiled page sits at tier 2 of the
+  [query resolution flow](#retrieval-strategy-navigation-first-vector-where-it-earns-its-keep),
+  ahead of full-text and vector search. For a *governed* question the
+  Authoritative record is read first; a compiled page never outranks it.
+
+The ewiki is already this layer for Legendary Arena (`wiki/SCHEMA.md`,
+`wiki/INDEX.md`, pages with `source:` frontmatter). Other domains adopt the same
+shape — a per-domain `raw/` (immutable, human-ingested) beside a compiled
+`wiki/` and its `INDEX.md` — rather than a new mechanism.
 
 **Sensitivity is a separate axis from authority class.** Authority class decides
 *how a thing is retrieved*; **sensitivity** (owner-only vs hosted-OK) decides
@@ -946,6 +971,17 @@ feature reaching across the network.
 >   to `COACH_MODEL_QUIRKS_BY_MODEL` in the shim (disabled thinking where the model
 >   allows it, or `effort: low` where it does not). A non-thinking model needs only
 >   the env var.
+> - **Pre-swap check (drafted, WP-737 / D-24559 reserved).** Two changes make a
+>   swap safe before it reaches paying players. First, the quirk registry becomes an
+>   allowlist: an unregistered `COACH_MODEL` falls back to the default model with a
+>   startup warning instead of reaching the API with no thinking directive. Second,
+>   an operator-run `coach:eval --model <id>` runs a fixed set of scenario match
+>   summaries through the real client and scores each report against a
+>   deterministic rubric (structure, required luck / ally / buying language, and a
+>   hallucination guard that names heroes absent from the match). It is the
+>   *Verification Is Required* principle applied to the coach — an adversarial
+>   "mystery-shop" pass over the product's own LLM surface. It is never a required
+>   CI check: it costs money per run and model output is nondeterministic.
 
 ### Operating discipline
 
@@ -1141,7 +1177,16 @@ as a real pain point justifies it; none is a property the platform must keep:
   running an always-on daemon over Teams chats, email, and scratch notes. The
   *invariant* it protects is authority and provenance, not the trigger: an
   autonomous ingester that lands captures as Transient/Reference with provenance,
-  and cannot self-promote, satisfies the architecture equally.
+  and cannot self-promote, satisfies the architecture equally. The first
+  sanctioned step past manual is a **propose-only scheduled compile**: a job that
+  lists new `raw/` files and drafts compiled pages into a review folder, logs every
+  write, and stops. It never edits `INDEX.md`, governance files, or published
+  compiled pages; moving a draft into place stays a keyboard act.
+- **Weekly corpus lint, operator-read.** A recurring health check (orphans,
+  broken links, stale compiled-page sources, class violations — see runbook §8
+  `audit-index`) produces a report, not a fix. It is the corpus-side half of
+  *Every Failure Upgrades the System*; the eval set in
+  [Success criteria](#success-criteria) is the agent-side half.
 - **Minimal orchestration.** v1 runs few agents and adds layers conservatively
   (skills → checks → hooks → subagents → orchestration). A supervisor/judge/
   planner harness is a later step, not a forbidden one.
@@ -1282,6 +1327,7 @@ a finding: add the row and the mitigation.
 |---|---|
 | **Corpus not indexed** — a document exists but nothing links to it, so navigation never finds it | `INDEX.md` discipline ([Knowledge repositories](#knowledge-repositories)) |
 | **Knowledge duplication** — the same fact lives in two places and they drift apart | *Single Source of Truth* ([Design principles](#design-principles) #6) |
+| **Stale compiled page** — a derived summary outlives a change to the source it paraphrases, and keeps getting cited | Per-source `content_hash` on every compiled page + the weekly lint's stale-source check ([Corpus classes](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority); runbook §8 `audit-index`) |
 | **Agent lock-in** — the platform can no longer function if one model/vendor goes away | *Model Independence* via the LiteLLM gateway ([Design principles](#design-principles) #2; [The agent layer is replaceable](#the-agent-layer-is-replaceable)) |
 | **Hallucinated authority** — a temporary finding is treated as policy | Promotion workflow ([Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)) |
 | **Vendor lock-in** — a proprietary format quietly makes the store unportable | *Open Standards First* ([Design principles](#design-principles) #3; open-formats-only store) |
@@ -1454,6 +1500,11 @@ This is the summary index; the individual gotchas and their nuances live in
   boundary (*Read-Only Connectors First*, the write-jail under
   [Knowledge extraction](#knowledge-extraction-operator-triggered)), so a poisoned
   chunk cannot cause a write, a send, or a promotion.
+- **Hosted "connect every app" connectors are hosted-OK plumbing only.** A
+  hosted aggregator MCP (Zapier-style) that pulls from mail, drives, and chat is
+  convenient for public or hosted-OK Reference (published papers, the operator's
+  own blog). It is not a path for owner-only domains: a hosted connector feeding
+  hosted inference is exactly the leak the `sensitivity` column exists to stop.
 - **Hosted inference must not see owner-only domains.** The knowledge-query surface
   enforces the `sensitivity` column: a hosted model (or hosted STT) never receives
   Engineering or Barefoot Betters material flagged owner-only — those route to a
@@ -1697,6 +1748,30 @@ This is the summary index; the individual gotchas and their nuances live in
   stay Locked. Editorial trims (move the coach section off-page, collapse History,
   a v1 build checklist) and the build artifacts (census, INDEX.md, router spec,
   DDL) are deliberately **not** in this pass.
+- **2026-09-22 — external review: compiled-wiki layer, corpus lint, coach eval
+  (Preferred / Open, no re-lock).** Reviewed a Grok summary of two videos (Paul J
+  Lipsky's Karpathy-style "self-improving knowledge base", and Nate Herk's "one
+  person business with Claude") against this page. **Adopted:** the corpus-class
+  table now separates authority class from retrieval method, adding a
+  **compiled Reference page** row (navigated, never vectorized, never cited as
+  policy) and the rules for it (per-source `content_hash`, human-editable, points
+  at governance but never paraphrases it, tier-2 only in Reference domains). The
+  ewiki is named as the working template for other domains. Also adopted: a
+  propose-only scheduled compile as the first sanctioned step past manual
+  ingestion; a weekly operator-read corpus lint that extends runbook §8
+  `audit-index` (orphans, broken links, stale compiled sources, class violations);
+  a Research web-clipper front door into `raw/` / `inbox/`; a Stale-compiled-page
+  failure-mode row; a hosted-aggregator-connector Edge Case; and a pointer to the
+  coach pre-swap eval (WP-737, D-24559 reserved). **Rejected:** putting a compiled
+  page ahead of the Authoritative record for governed questions (it would
+  contradict *Retrieval Before Generation* and *Single Source of Truth*); copying
+  live coach reports into the brain (they already persist in
+  `legendary.coach_reports`, and the copy would move production player data across
+  the Open Question 6 boundary); coach eval cases that expect WP/Decision
+  citations or check player-note leakage (the coach cites no governance and takes
+  no free text); and gating the live-model eval in CI (a `COACH_MODEL` swap is a
+  Render env change CI never sees). **No Locked row changed**, no `DECISIONS.md`
+  entry for the page; D-24559 belongs to the coach WP.
 
 ## Open Questions
 

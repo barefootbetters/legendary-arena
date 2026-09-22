@@ -362,7 +362,7 @@ Each skill is a folder: `skill.md` (instructions), `templates/`, `examples/`,
 |---|---|
 | `ingest-research-note` | Turn a source / transcript / PDF / notes dump into a structured Markdown research note (front-matter + header structure) under the right domain. |
 | `summarize-source` | Extract facts, limitations, open questions, and citations from a long input — grounded, with provenance. |
-| `audit-index` | Check an `INDEX.md` against its folder: every authoritative doc listed, links resolve, points-only, grouped when large. |
+| `audit-index` | Check an `INDEX.md` against its folder: every authoritative doc listed, links resolve, points-only, grouped when large. Run weekly corpus-wide as the lint pass (see below). |
 | `create-decision-record` | Draft a `D-####`-style decision record from a decided choice (mirrors this repo's DECISIONS discipline). |
 | `retrieve-and-cite` | Answer a question by routing (which domain), navigating the relevant `INDEX.md`, then calling `knowledge_query` only if navigation cannot answer — always returning citations. |
 
@@ -370,6 +370,22 @@ Each `skill.md` names the **voice profile** for its domain (ewiki *voice split b
 domain*) and its verification `checks/`. Skills reference small deterministic CLI
 checks (link-checkers, front-matter validators) rather than improvising — the
 *skills + CLI over monolithic MCP* posture.
+
+**Weekly corpus lint (`audit-index`, corpus-wide).** The same skill, run across
+every domain once a week, reports — never auto-fixes:
+
+- [ ] **Orphans** — any governed or compiled document with no inbound `INDEX.md` link.
+- [ ] **Broken links** — relative links that no longer resolve.
+- [ ] **Stale compiled pages** — a compiled Reference page whose `source:` path is
+      gone, or whose recorded `content_hash` / commit no longer matches the source.
+- [ ] **Class violations** — an Authoritative file under `captures/`, `inbox/`,
+      `raw/`, or a compiled `wiki/`; a capture marked Authoritative; a compiled
+      page with no `source:` list.
+
+The output is a dated verification report under the domain's `handoffs/` folder
+(Transient). Fixes are separate, reviewed changes. Agent behaviour ("should say
+*I don't know*") is not in this lint — it belongs to the eval set that runs on
+every meaningful change (ewiki *Success criteria*).
 
 ---
 
