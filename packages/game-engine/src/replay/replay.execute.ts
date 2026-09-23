@@ -29,6 +29,17 @@
  * run `turn.onMove`. The live sim harnesses (`simulation.runner.ts`,
  * `par.aggregator.ts`) DO mirror `turn.onMove` for pile-depletion losses; this
  * determinism harness deliberately does not.
+ *
+ * why (WP-744 / D-24567, same D-24322 exclusion): for the same reason this path
+ * also does NOT run the deferred-grant lifecycle — neither the per-move
+ * `resolveDeferredHeroGrants` (`turn.onMove`, WP-568 / D-24377 wait-and-see grants
+ * and the WP-656 / D-24467 defeat edge) nor the `turn.onBegin` clear
+ * (`clearDeferredConditionalGrants` + the `villainOrMastermindDefeatedSinceResolve`
+ * delete). It has no turn-rotation site to host the clear, and adding either would
+ * contradict D-24322. The sim, PAR and fixture harnesses (`simulation.runner.ts`,
+ * `par.aggregator.ts`, `runFixture.ts`) DO mirror both halves; the sim <-> runFixture
+ * capture contract (D-24273) is the one that must hold, and this harness is not
+ * asserted equal to either.
  */
 
 import type { LegendaryGameState } from '../types.js';

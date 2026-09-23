@@ -11,7 +11,10 @@
  * (the incoming seat already holds its hand, so the scaffold drawCards move
  * stays a guarded no-op), the hand is left untouched, and a missing seat is a
  * safe no-op that still resets the flags. The end-of-turn draw is covered in
- * moves/endOfTurnCleanup.logic.test.ts. No boardgame.io import — the helper is pure.
+ * moves/endOfTurnCleanup.logic.test.ts. WP-744 / D-24567 adds the deferred-grant
+ * turn-boundary clear: deferredConditionalGrants and the WP-656 defeat edge flag are
+ * left ABSENT, and a G that never had either key gains neither (oracle safety).
+ * No boardgame.io import — the helper is pure.
  */
 
 import { describe, it } from 'node:test';
@@ -124,5 +127,37 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal(gameState.hasDrawnThisTurn, true);
     assert.deepEqual(zones.hand, ['h1']);
     assert.deepEqual(zones.deck, ['c1']);
+  });
+
+  it('drops deferredConditionalGrants and the defeat edge flag at the turn boundary (WP-744 / D-24567)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.deferredConditionalGrants = [
+      { playerId: '0', cardId: 'core-hero-emma-frost-diamond-form', hookIndex: 0 },
+    ];
+    gameState.villainOrMastermindDefeatedSinceResolve = true;
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: WP-744 / D-24567 — mirrors game.ts onBegin. The whole-turn window ends at
+    // the turn boundary, so both keys must be ABSENT (not merely falsy): a present-
+    // but-empty key would change the hashed G shape the live path produces.
+    assert.equal('deferredConditionalGrants' in gameState, false);
+    assert.equal('villainOrMastermindDefeatedSinceResolve' in gameState, false);
+  });
+
+  it('creates neither deferred-grant key on a G that never had them (oracle safety, WP-744 / D-24567)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    // why: precondition — a fresh setup never records a deferred grant or a defeat
+    // edge, so the guarded clears must leave the key set byte-unchanged (this is what
+    // keeps the sentinel finalStateHash and PRE_WP080_HASH oracles stable).
+    assert.equal('deferredConditionalGrants' in gameState, false);
+    assert.equal('villainOrMastermindDefeatedSinceResolve' in gameState, false);
+    const keysBefore = Object.keys(gameState).sort();
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal('deferredConditionalGrants' in gameState, false);
+    assert.equal('villainOrMastermindDefeatedSinceResolve' in gameState, false);
+    assert.deepEqual(Object.keys(gameState).sort(), keysBefore);
   });
 });
