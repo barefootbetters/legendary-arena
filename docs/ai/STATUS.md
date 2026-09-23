@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-743 — Spring the Trap / Grief gate on a Master Strike (or Ambush Villain) this turn (EC-780 / D-24566) (2026-09-22)
+
+**User-visible on `play.legendary-arena.com` (pending live-verify).** Venom Rocket's **Spring the
+Trap** now grants its +1 Attack only in a turn where a Master Strike or a Villain with an Ambush
+ability has been played, and Wanda & Vision's **Grief** grants its +2 Recruit only after a Master
+Strike. Before this, both paid out on every play (live: "+1 attack from Spring the Trap" on
+Bystander-only turns). Played before the event, the card waits and pays out once when the Master
+Strike or Ambush Villain lands later that turn.
+
+- **Engine.** Two markers → two whole-turn wait-and-see conditions (D-24377 shape #1), backed by
+  two gated lazy `G` flags written only in `performVillainReveal` and deleted at turn `onBegin`
+  and in `applyOnBeginParity`. New pure helper `matchReadsConditionType` (reused by WP-745).
+- **Card data.** 2 lines (`vnom.json`, `msis.json`) via the curated marker map; derived feeds
+  regenerated.
+- **Determinism.** Sentinel `finalStateHash` and `PRE_WP080_HASH` byte-unchanged (no re-pin).
+  Runtime-observed sweep 2506 → 2505 observations; dashboard `totalObs` 3011 → 3010.
+
+Engine 4134 → 4149/0; whole repo `pnpm -r --no-bail test` green; every Coverage & Ledger `:check`
+0. **Follow-up:** the committed `sim:coverage` baseline is stale on `main` beyond this WP (a
+regen rewrites hooks 6333 → 6309 across many sets); `--check` passes, so it was not bundled here.
+**D-24026 live-verify pending:** a Venom Rocket match whose log shows Spring the Trap granting only
+on a Master Strike or Ambush turn.
+
 ### WP-746 — Excessive Violence fire feel-beat (EC-783 / D-24569) (2026-09-23)
 
 **User-visible on `play.legendary-arena.com` (pending live-verify).** A Fight "using Excessive

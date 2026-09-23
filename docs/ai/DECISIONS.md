@@ -44272,4 +44272,51 @@ eval category for the WP-737 pack is a follow-up.
 D-24170 (bot-ally seats), D-24122 (`match_id` mapping column), D-24095 (blob carve-outs), D-24533
 (the best-effort precedent).
 
+### D-24566 — "A Master Strike (or Ambush Villain) played this turn" is a whole-turn wait-and-see gate backed by gated lazy per-turn flags (Active 2026-09-22 — WP-743 / EC-780)
+
+**Status:** Active — landed 2026-09-22 (WP-743 / EC-780).
+
+**Context.** Venom Rocket's Spring the Trap ("If a Master Strike or Villain that has an
+Ambush ability was played this turn, you get +1 Attack") and Wanda & Vision's Grief ("If a
+Master Strike was completed this turn, you get +2 Recruit") carried no `[keyword:…]` marker,
+so the Step 2b icon-magnitude read in `setup/heroAbility.setup.ts` granted the bonus
+unconditionally. Found live: a 2p bot game logged "+1 attack from Spring the Trap" on two
+Bystander-only turns.
+
+**Decision.**
+1. **Two conditions, two markers.** `masterStrikePlayedThisTurn` (Grief, marker
+   `[keyword:master-strike-this-turn]`) and `masterStrikeOrAmbushPlayedThisTurn` (Spring the
+   Trap, marker `[keyword:master-strike-or-ambush-this-turn]`), exported as
+   `MASTER_STRIKE_THIS_TURN_CONDITION_TYPE` / `MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE`.
+   The marker arms follow the D-24467 marker→condition precedent; the printed `+N[icon:…]`
+   stays on the same hook.
+2. **Wait-and-see, shape #1.** Both join `WAIT_AND_SEE_CONDITION_TYPES`. The predicate is
+   sticky for the turn (a count ≥ 1 threshold), so it grants once when it turns true, with no
+   re-arm. This extends D-24377's numeric-threshold boundary to sticky event predicates and
+   keeps `[hc:X]` class gates on-play.
+3. **Two gated lazy flags, one write site.** `G.masterStrikePlayedThisTurn` and
+   `G.ambushVillainPlayedThisTurn` are written only in `performVillainReveal`: the ambush flag
+   inside `if (cardHasAmbush)` before The Leader's chained play, the strike flag right after the
+   `strikePile` append. Each is written only when `matchReadsConditionType(G, …)` finds a hook
+   that reads it, never as `false`, and deleted (guarded) in the play-phase turn `onBegin` and
+   in `applyOnBeginParity`.
+4. **"Ambush Villain"** means a villain or henchman card for which `hasAmbush` is true, entering
+   the City from the Villain Deck. A Master Strike is "played" when its card reaches the strike
+   pile; a strike that parks a choice freezes the board until it resolves, so played equals
+   completed.
+
+**Consequences.** Games without these two cards are byte-unchanged: sentinel `finalStateHash`
+and `PRE_WP080_HASH` unchanged, no re-pin. The fixed-seed runtime-observed sweep regenerates
+(2506 → 2505 observations) and the paired dashboard snapshot re-pins (`totalObs` 3011 → 3010,
+`percentResolved` 24.3 → 24.4). With WP-744 (D-24567) in place, a Spring the Trap played before
+a same-turn Master Strike also pays out in the sim, PAR and fixture loops. `matchReadsConditionType`
+is the reusable gate for WP-745 (D-24568). Matches already in flight at deploy keep their
+setup-time hooks and the old free grants until they end.
+
+**Reserved by:** NUMBER-LEDGER D-24566. Related: D-24377 (wait-and-see), D-24467 (event gate +
+lazy field), D-24351 (the villain-deck play loop), D-24372 (runtime drift pins), D-24567 (sim
+parity), D-24568 (the WP-745 sweep).
+
+---
+
 Protect this file.
