@@ -47,7 +47,7 @@ source:
   - ../docs/ai/work-packets/WP-053a-par-artifact-scoring-config.md
   - ../docs/ai/work-packets/WP-422-seed-par-publication.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-08-25
+last-reviewed: 2026-09-23
 ---
 
 # Scoring
@@ -420,9 +420,38 @@ breaks the number down so you can see exactly where it came from:
   for why a scored luck penalty was considered and declined.
 
 The seat identities behind the names are derived at score-submission time and are never
-stored on your score row — they are display metadata only. (An opinionated AI coach that
-recommends heroes and purchases is a planned Legendary-Pass feature, separate from this
-objective card.)
+stored on your score row — they are display metadata only. Beside this objective card,
+Legendary Pass holders get the **AI Coach** (WP-594): opinionated, model-written advice on
+hero fit, purchases, and next-time tips, plus deterministic play-order tips and Table
+Cooperation lines. The coach is advice only — it never changes a score (NG-1).
+
+### Which end-of-match view you get
+
+What the end screen shows depends on whether the match was **scored**. Only a
+**ranked-gauntlet loadout** — a setup with a published PAR baseline — can be scored; any
+other setup is refused with `par_not_published` (WP-465), and a match the players ended
+early is never scored (D-24306). Every finished match, scored or not, shows the **result
+recap**: victory points by player (villains, henchmen, bystanders, tactics), per-seat
+contributions, and the synergy lines (WP-715 / WP-636).
+
+| Match | Result recap | Score report card (grade, PAR, ledger, luck read) | AI Coach (Legendary Pass) | Ranked leaderboard |
+|---|---|---|---|---|
+| **Ranked-gauntlet loadout, signed in** | ✅ | ✅ | ✅ — Pass holders coach; others see the Pass teaser | ✅ only when ranked-eligible (every seat a signed-in human, mutual friends); a bot or guest seat makes the score **Casual** — still scored and shown, never ranked |
+| **Casual setup (not a gauntlet loadout), signed in** | ✅ | ❌ — not scored; the banner says the report card needs a ranked-gauntlet loadout | ❌ today → ✅ **planned** (WP-751 / WP-752, D-24576): coaching without a score, grade, or PAR comparison | ❌ |
+| **Guest (not signed in)** | ✅ | ❌ — guests are never scored; a sign-in prompt is shown | ❌ — guests own no match record (D-24120), so nothing can be coached or claimed later | ❌ |
+| **Ended early** (any account) | ✅ | ❌ — an early end is never a result | ❌ | ❌ |
+
+A **bot-ally** match follows its loadout's row: on a ranked-gauntlet loadout it is scored as
+Casual and the coach knows which seat is the bot (WP-742); on a casual setup it is unscored.
+
+**Planned casual coaching (WP-751 / WP-752 — not yet shipped).** For a signed-in, normally
+finished casual match, the coach will work from the replayed match itself: the outcome,
+rounds, adversity counts, per-seat contribution, hero fit, and purchases — with **no**
+score, grade, or PAR comparison, because those need the scenario's PAR baseline. It reads no
+PAR artifact and writes only the coach's own cache, so casual coaching can never create a
+score, rank, badge, or leaderboard entry (NG-1). The guest sign-in prompt will say what
+signing in gets on future matches: saved results, the score report card on ranked-gauntlet
+loadouts, and AI coaching with the Legendary Pass.
 
 ## Interactions
 
@@ -561,6 +590,7 @@ objective card.)
 - WP-593 + D-24402 (2026-08-23): report card v2 — **named players** (`Player N (Bot)` / `Player N (@handle)`) via a derived, non-persisted `seatIdentities` projection on the submit response, a **raw-score ledger** (penalties vs earned), and an objective, deterministic **luck-of-the-draw** read (actual adversity vs the scenario's PAR expectation). Display + read-path only; no game-state-hash re-pin
 - WP-599 + D-24409 (2026-08-24): rulebook-faithful scoring — removed the invented −200 bystander-rescue reward (a rescued bystander now scores only its 1 VP, ending the double-count) and rescaled penalties to true VP-units (escape 10 / twist 30 / bystander-lost 40, the rulebook 4:3:1); dropped structural invariants 1 & 3, LOSS_PENALTY 6000→800, re-derived grade bands; scoringConfigVersion 4→5 / rawScoreSemanticsVersion 3→4, 128 configs + seed artifacts regenerated, no retroactive invalidation. Supersedes D-24408.
 - Design decision (2026-08-25): a proposal to promote the luck-of-the-draw **read** into a **scored** ±N adjustment ("reward skill over luck") was **declined**. The only available luck signal (actual vs expected adversity) is entangled with tempo/positioning skill — scheme-twist count tracks game length, villain escapes are preventable — so a flat penalty would neutralize skill alongside luck and drive the score toward pure VP-efficiency; turns are no longer a scoring unit (WP-585) and the change would break cross-version comparability (VISION §22) for negative net value. Luck is instead held constant competitively by [Seed Challenges](seed-challenges.md) and isolated properly by simulation-calibrated per-match PAR. Rationale recorded under [Luck of the draw is a read, not a score adjustment](#luck-of-the-draw-is-a-read-not-a-score-adjustment).
+- 2026-09-23 (Jeff feedback): added [Which end-of-match view you get](#which-end-of-match-view-you-get) — the ranked-gauntlet / casual / guest / ended-early matrix for the result recap, the score report card, the AI Coach, and the ranked leaderboard, prompted by a Pass holder finishing a casual bot-ally match and seeing neither the report card nor the coach. Corrected the stale "AI coach is a planned feature" line (it shipped as WP-594). Planned casual coaching is marked as WP-751 / WP-752 (D-24576 reserved). The unscored-match banner now names the ranked-gauntlet requirement (#2308).
 
 ## References
 
