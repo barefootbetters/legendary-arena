@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-744 — Sim / PAR / fixture turn loops resolve and clear deferred conditional grants (EC-781 / D-24567) (2026-09-22)
+
+**No user-observable change — infrastructure only.** The live game already ran `game.ts`; this
+makes the simulation runner, the PAR aggregator and the fixture runner match it for wait-and-see
+hero cards (Surge of Power, Diamond Form, Impossible Trick Shot, Gamma-Draining Nanites, WP-743's
+two), which previously never paid out in those harnesses when their condition came true later in
+the turn.
+
+- **Per-move resolve.** Each loop calls `resolveDeferredHeroGrants` after every dispatched move
+  (after the pile-depletion check in the sim and PAR; before the rotation in `runFixture`).
+- **Turn-boundary clear.** `applyOnBeginParity` drops `deferredConditionalGrants` and the WP-656
+  defeat edge, in `game.ts` `onBegin` order. `replay.execute.ts` stays excluded (D-24322, comment
+  only).
+- **Tests.** New sim ↔ `runFixture` round trip (`deferredGrantParity.test.ts`): Diamond Form waits
+  at play, grants after the Mastermind fight, does not re-fire on a later turn, and the fixture
+  replays the same lines. Mutation-checked against each of the three changes. Two new
+  `onBeginParity` cases.
+
+Engine 4121 → 4124/0 (941 → 942 suites); `pnpm -r build` 0; sentinel `finalStateHash` and
+`PRE_WP080_HASH` byte-unchanged. **The only derived shift:** runtime-observed 2528 → 2506 (all
+`transform` 143 → 121; dropped 0; no non-terminated games) and the dashboard in-play snapshot
+`totalObs` 3012 → 3011 / `percentResolved` 24.4 → 24.3. `sim:runtime-observed:check`,
+`sim:coverage --check`, dashboard test + typecheck all exit 0. `data/par/**` untouched. **D-24567
+Active.** D-24026 live-verify: N/A (infrastructure).
+
 ### WP-737 — Coach model eval pack + quirk-registry allowlist (EC-774 / D-24559) (2026-09-22)
 
 **No user-observable change — infrastructure only.** Payoff: a `COACH_MODEL` swap is checked before

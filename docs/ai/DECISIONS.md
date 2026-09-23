@@ -44121,4 +44121,49 @@ cache or score change; NG-1 untouched (the coach stays advisory and off-ranking)
 **Reserved by:** NUMBER-LEDGER D-24559. Related: D-24403 (the coach), D-24341 (Model Independence),
 EC-629 (the empty-response hotfix).
 
+---
+
+### D-24567 — The observation harnesses mirror the live deferred-grant lifecycle (Active 2026-09-22 — WP-744 / EC-781)
+
+**Status:** Active — landed 2026-09-22 (WP-744 / EC-781).
+
+**Context.** WP-568 (D-24377) and WP-656 (D-24467) wired the wait-and-see deferred
+conditional grants into `game.ts` only: `turn.onMove` runs `resolveDeferredHeroGrants` after
+every play-phase move, and `turn.onBegin` runs `clearDeferredConditionalGrants` plus a guarded
+delete of `villainOrMastermindDefeatedSinceResolve`. The engine's three rebuilt turn loops
+(the simulation runner, the PAR aggregator and the fixture runner) never run those hooks, so a
+wait-and-see card (Surge of Power, Diamond Form, Impossible Trick Shot, Gamma-Draining Nanites,
+WP-743's two) played before its condition was met never paid out there, and
+`G.deferredConditionalGrants` piled up across turns. Found by the WP-743 pre-flight.
+
+**Decision.**
+1. **Per-move resolve.** `simulation.runner.ts`, `par.aggregator.ts` and `runFixture.ts` each
+   call `resolveDeferredHeroGrants(G, <the dispatched move's own context>)` exactly once per
+   successfully dispatched move. In the sim and PAR it runs immediately after
+   `applyPileDepletionResourceLoss` (the live `onMove` relative order) and is skipped on the
+   unknown-move path. In `runFixture` it runs in `dispatchSingleMove` before the turn rotation,
+   in lockstep with the sim (the D-24273 capture → replay contract). The move context's
+   `events` is inert for the resolver (no hero effect calls `endTurn` / `setPhase`;
+   `setActivePlayers` is `typeof`-guarded), matching live's events-less call.
+2. **Turn-boundary clear.** The shared `applyOnBeginParity` (WP-266) runs
+   `clearDeferredConditionalGrants` then the guarded edge-flag delete, in `game.ts` `onBegin`
+   order, so one edit covers all three loops including the initial-turn call. Both are guarded,
+   so a game that never records a deferred grant keeps a byte-unchanged `G`.
+3. **`replay.execute.ts` stays excluded** under D-24322: the reducer-determinism harness runs no
+   `onMove` effect and has no rotation site. Its header records the exclusion.
+4. **Still open, not decided here:** the other unmirrored `onMove` effects (final-turn latch,
+   scheme transform, Diving-Block seat choice, and pile depletion in `runFixture`).
+
+**Consequences.** No live-path change (`game.ts`, `hero/**`, `moves/**`, `setup/**` untouched);
+no new type, field, export or move. Sentinel `finalStateHash` and `PRE_WP080_HASH`
+byte-unchanged. The fixed-seed runtime-observed sweep regenerates (2528 → 2506 observations, all
+from `transform`), and the paired dashboard in-play snapshot re-pins (`totalObs` 3012 → 3011,
+`percentResolved` 24.4 → 24.3). The committed PAR profiles are unaffected (their fixed hero pool
+has no wait-and-see hook) and were not regenerated. Sim, PAR and fixture runs over hero pools
+that include wait-and-see cards now credit those cards as live play does.
+
+**Reserved by:** NUMBER-LEDGER D-24567. Related: D-24377, D-24467 (the live mechanics), D-24322 /
+D-0205 (the replay exclusion), D-24273 (capture → replay lockstep), D-24553 (the loop-parity
+precedent).
+
 Protect this file.

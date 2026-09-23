@@ -357,13 +357,8 @@ Run every `:check` even when it shows no diff.
 - Scheme or mastermind text that says "Master Strike effect" without a Master Strike
   card being played does **not** set the flag.
 - No UIState field, no client change, no bot-valuation change, no new move.
-- **Pre-existing sim gap (not fixed here).** The three rebuilt turn loops never call
-  `resolveDeferredHeroGrants` or `clearDeferredConditionalGrants`. So in the
-  simulation, deferred grants never fire, and `G.deferredConditionalGrants`
-  accumulates across turns. This dates from WP-568/656 and is a separate follow-up.
-  - Consequence here: a sim Spring the Trap played before a same-turn Master Strike
-    does not later grant. That is conservative.
-  - A sim Spring the Trap played after the strike grants on play, as intended.
+- **Fixed by WP-744 / D-24567:** a sim Spring the Trap played before a same-turn
+  Master Strike now grants when the strike arrives, as live does.
 - Refactors not listed in Scope (In).
 
 ---
