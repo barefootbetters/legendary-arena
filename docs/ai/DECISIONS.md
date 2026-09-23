@@ -44233,4 +44233,43 @@ fire path), D-24516 / D-24547 (`heroEffectResolved` notable-event-rides-public-p
 precedent), D-24365 (the WP-556 VFX foundation + VFX determinism exemption), D-24507
 (mastermind-hit VFX beat precedent), D-12803 (the audience-filter redaction matrix).
 
+---
+
+### D-24564 — The endgame coach marks bot-ally seats with an optional `isBotAlly`, sourced by a best-effort lookup (Active 2026-09-22 — WP-742 / EC-779)
+
+**Status:** Active — landed 2026-09-22 (WP-742 / EC-779).
+
+**Context.** In a bot-ally match the coach saw two seats, both labelled `Player N`, with nothing
+marking the bot, yet its system prompt told it that "the bot's line shows what the human was left to
+do". The model was told about a distinction it could not see, so it could grade the bot as a second
+human.
+
+**Decision.**
+1. **Field.** `CoachPlayerLine` gains an optional `isBotAlly?: boolean`. Absent means a human seat, so
+   existing fixtures (the `tableCooperation` tests, the WP-737 eval scenarios) stay valid.
+   `buildPerPlayerLines` always sets it to `botSeatIds.includes(playerId)` (string ids, `"0"`/`"1"`),
+   so the model always sees it. The seat label stays `Player N`.
+2. **Source.** replay hash → `bgio.replay_artifacts.match_id` via the new `readMatchIdByReplayHash`
+   (the app-owned mapping column, D-24122; never the `initial_state`/`log` blob, D-24095) →
+   `readMatchBotSeats` (`legendary.match_bot_ally.bot_seats`, D-24170). A missing artifact row or a
+   match with no bot-ally row yields `[]` silently.
+3. **Best-effort.** The lookup runs through the `CoachLogic.readBotSeatIdsForReplay` seam immediately
+   before the summary build (after the cache miss and the `not_found` checks, so a cache hit never
+   costs a lookup). Any error yields `[]` plus one `[coach]` `console.warn`; the result's `ok` /
+   `reason` never changes (the WP-710 precedent). An advisory marker never turns a paid report into
+   `coach_unavailable`.
+4. **Prompt.** The constant system prompt names the field and tells the model to coach the humans,
+   treat the bot as their ally, and never grade the bot's choices.
+5. **Name.** `isBotAlly`, not D-24402's `isBot`, because the coach's contract is the ally
+   relationship (§23(b)). `MatchSeatIdentity.isBot` stays a display seat-identity fact.
+
+**Consequences.** `buildCoachMatchSummary` takes a 5th `botSeatIds` parameter. `readMatchIdByReplayHash`
+is catalogued `Library-only`. Summary-only: no score, hash, `G`, persistence, cache-table, route or
+client change (NG-1 untouched). Reports cached before this change keep their wording. A bot-ally
+eval category for the WP-737 pack is a follow-up.
+
+**Reserved by:** NUMBER-LEDGER D-24564. Related: D-24403 (the coach), D-24433 (per-seat lines),
+D-24170 (bot-ally seats), D-24122 (`match_id` mapping column), D-24095 (blob carve-outs), D-24533
+(the best-effort precedent).
+
 Protect this file.
