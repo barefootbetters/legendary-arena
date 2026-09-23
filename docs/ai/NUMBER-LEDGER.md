@@ -1092,3 +1092,4 @@ section below) and the allocation protocol in
 - D-24572 — midtown-bank-robbery-villain-attack-per-bystander (RESERVED: locks WP-748 / EC-785. reserved 2026-09-22, claude/draft-bystander-midtown)
 - D-24573 — sim-non-active-seat-choice-dispatch (RESERVED: locks WP-749 / EC-786. reserved 2026-09-22, claude/sim-seat-choice-draft)
 - D-24574 — client-fight-gating-reads-engine-fightcost (RESERVED: locks WP-750 / EC-787. reserved 2026-09-22, claude/draft-bystander-midtown)
+- D-24570 — reward-handler-icon-suppression (direct parser fix, no WP — ko-wound-reward + put-bottom-hq-icon-reward lines drop their printed reward icon; D-24398 precedent. reserved 2026-09-22, claude/festive-albattani-bc4ff6)

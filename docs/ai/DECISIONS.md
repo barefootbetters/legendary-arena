@@ -44272,4 +44272,22 @@ eval category for the WP-737 pack is a follow-up.
 D-24170 (bot-ally seats), D-24122 (`match_id` mapping column), D-24095 (blob carve-outs), D-24533
 (the best-effort precedent).
 
+---
+
+### D-24570 — Reward-handler lines (`ko-wound-reward`, `put-bottom-hq-icon-reward`) suppress their printed reward icon at parse (Active 2026-09-22 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-22 (direct parser fix, no WP; the D-24398 optional-ko-reward precedent).
+
+**Context.** A reward-handler marker line prints its reward as an icon ("If you do, you get +2[icon:attack]"). `buildHeroAbilityHooks`' icon-magnitude read (Step 2b) and icon→keyword read (Step 3) promoted that icon to a plain `attack` / `recruit` effect **beside** the handler, and the executor has no handler-side suppression — every effect in the hook fires. Found in the WP-745 drafting sweep and confirmed empirically against the built dist with the real card data: `core/hulk/unstoppable-hulk` granted **+2 attack with no Wound** to KO and **+4 with one** (printed: 0 / +2). Wonder Man's Absorb Ambient Power granted a free **+3 recruit and +3 attack on every play**, on top of the real resolve-time icon reward from `resolveOptionalPutBottomHQ`. D-24398 (optional-ko-reward) and D-24148 (shuffle-discard-empty-reward) already had this suppression; these two handler families did not. A whole-corpus sweep found 9 affected cards: `ko-wound-reward` — core / 3dtc / msp1 hulk/unstoppable-hulk, co2e hulk/dont-make-me-angry, cvwr hulkling/cellular-regeneration, ff04 human-torch/call-for-backup, msis bruce-banner/hulkbuster-armor; `put-bottom-hq-icon-reward` — antm wonder-man/absorb-ambient-power, xmen kitty-pryde/intangible-qualities. `shuffle-discard-empty-reward` (antm Jocasta) was already correct.
+
+**Decision.** In `heroAbility.setup.ts`, after the D-24398 block: (1) when a line carries a seeded `ko-wound-reward`, drop the plain keyword matching its `rewardType` and its magnitude (a no-op for the `draw` reward, which prints no icon); (2) when a line carries `put-bottom-hq-icon-reward`, drop BOTH plain `attack` and `recruit` and their magnitudes — the resolve move grants whichever icon(s) the moved card had (the D-24490 two-icon precedent). No marker, card-data, executor, or contract change.
+
+**Determinism.** No sentinel replay / PAR fixture plays these cards: engine suite green with no `finalStateHash` / `PRE_WP080_HASH` re-pin. The fixed-seed runtime-observed sweep does play them, so `docs/ai/coverage/runtime-observed-hollows.json` was regenerated (`pnpm sim:runtime-observed`; totalObservations 2528 → 2523, a trajectory shift from the removed free resource) and the dashboard in-play pin re-pinned 3012 → 3007 (percentResolved holds at 24.4).
+
+**Gates.** Focused test `hero/rewardHandlerIconSuppression.test.ts` (8/8; 7 of them fail against the unfixed parser): parse pins on the real marked lines, Unstoppable Hulk 0 / +2 / +2 (no Wound / hand / discard), Call for Backup 0 / +1, draw-reward unchanged, Absorb Ambient Power grants nothing on play and parks `iconRewardMagnitude: 3`. `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check`, `ledger:numbers:check` all pass.
+
+**D-24026 live-on-surface:** pending — play Unstoppable Hulk with no Wound in hand/discard on the deployed client and confirm the attack total rises only by the printed 2+ base, not +2 more.
+
+**Reserved by:** NUMBER-LEDGER D-24570. Related: D-24183 (ko-wound-reward), D-24133 (put-bottom-hq-icon-reward), D-24398 / D-24148 / D-24490 (the sibling suppressions), D-24568 / WP-745 (the unmarked-conditional sweep that surfaced this).
+
 Protect this file.

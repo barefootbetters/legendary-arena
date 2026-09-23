@@ -1752,6 +1752,57 @@ function parseAbilityText(
     magnitudes.delete(optionalKoRewardType);
   }
 
+  // Icon-suppression (sibling): a ko-wound-reward effect whose reward is an icon
+  // resource (attack/recruit) subsumes the printed reward icon on the same line.
+  // Without this, Unstoppable Hulk's "You may KO a Wound ... If you do, you get
+  // +2[icon:attack]" emits BOTH a plain 'attack' effect (Steps 2b/3 — granted
+  // UNCONDITIONALLY, even with no Wound to KO) AND the Wound-gated reward — +2
+  // with no Wound, +4 with one. Drop the plain keyword matching the seeded
+  // rewardType and its magnitude so only the Wound-gated reward remains. A no-op
+  // for the draw reward (its prose emits no plain icon keyword).
+  // why: D-24570 — the Wound-gated reward subsumes the printed reward icon (the
+  // ko-wound-reward analog of the D-24398 optional-ko-reward suppression above).
+  const koWoundRewardIconType = rewardTypes.get('ko-wound-reward');
+  if (koWoundRewardIconType !== undefined) {
+    const keywordsWithoutRewardIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== koWoundRewardIconType) {
+        keywordsWithoutRewardIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutRewardIcon;
+    magnitudes.delete(koWoundRewardIconType);
+  }
+
+  // Icon-suppression (sibling): a put-bottom-hq-icon-reward effect subsumes BOTH
+  // printed reward icons on the same line. Wonder Man's Absorb Ambient Power reads
+  // "If that card had a [icon:recruit] icon, you get +3[icon:recruit]. If that card
+  // had an [icon:attack] icon, you get +3[icon:attack]." — both grants are applied
+  // at resolve time by resolveOptionalPutBottomHQ from the moved card's icons
+  // (iconRewardMagnitude). Without this, Steps 2b/3 also emit plain 'recruit' and
+  // 'attack' effects granted UNCONDITIONALLY on every play — a free +N/+N on top of
+  // the real reward. Drop both plain keywords and their magnitudes.
+  // why: D-24570 — the resolve-time icon reward subsumes both printed reward icons
+  // (mirrors the D-24490 count-scaled-choose two-icon suppression above).
+  let lineHasPutBottomHqIconReward = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'put-bottom-hq-icon-reward') {
+      lineHasPutBottomHqIconReward = true;
+      break;
+    }
+  }
+  if (lineHasPutBottomHqIconReward) {
+    const keywordsWithoutResourceIcons: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack' && keyword !== 'recruit') {
+        keywordsWithoutResourceIcons.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutResourceIcons;
+    magnitudes.delete('attack');
+    magnitudes.delete('recruit');
+  }
+
   // Icon-suppression (sibling): an optional-play-villain-top effect subsumes the printed
   // attack icon on the same line. Without this, Shadowed Thoughts' "[hc:covert]: You may play
   // the top card of the Villain Deck. If you do, +2[icon:attack]." would emit BOTH a plain
