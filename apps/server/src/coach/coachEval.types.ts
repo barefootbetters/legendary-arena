@@ -31,7 +31,11 @@ export type CoachEvalCategory =
   // why: WP-751 / D-24576 — a casual (unscored) match: the summary carries no
   // rawScore, finalScore, grade or adversityExpected, and the report must not
   // invent a score or grade.
-  | 'casual-match';
+  | 'casual-match'
+  // why: D-24575 — WP-742 (D-24564) gave seat lines an `isBotAlly` marker and told the
+  // model to coach the human and treat the bot as their ally; this category checks a
+  // candidate model actually reads that marker before it serves bot-ally matches.
+  | 'bot-ally';
 
 /** The canonical readonly array of `CoachEvalCategory` members (drift-tested). */
 export const COACH_EVAL_CATEGORIES: readonly CoachEvalCategory[] = [
@@ -46,6 +50,7 @@ export const COACH_EVAL_CATEGORIES: readonly CoachEvalCategory[] = [
   'tie',
   'five-players',
   'casual-match',
+  'bot-ally',
 ];
 
 /**

@@ -195,6 +195,7 @@ test('COACH_EVAL_CATEGORIES matches the CoachEvalCategory union exactly', () => 
     tie: true,
     'five-players': true,
     'casual-match': true,
+    'bot-ally': true,
   };
   assert.deepEqual([...COACH_EVAL_CATEGORIES].sort(), Object.keys(categoryPresence).sort());
   assert.equal(new Set(COACH_EVAL_CATEGORIES).size, COACH_EVAL_CATEGORIES.length);
@@ -238,6 +239,25 @@ test('each category-specific scenario has the shape its category promises', () =
       assert.equal(summary.playerCount, 2, scenario.id);
       assert.notEqual(summary.perPlayer[0].villainsDefeated, summary.perPlayer[1].villainsDefeated, scenario.id);
     }
+    if (scenario.category === 'bot-ally') {
+      assert.equal(summary.playerCount, 2, scenario.id);
+      assert.equal(summary.perPlayer[0].isBotAlly, false, `${scenario.id} seat 1 must be the human.`);
+      assert.equal(summary.perPlayer[1].isBotAlly, true, `${scenario.id} seat 2 must be the bot ally.`);
+    }
+  }
+});
+
+test('every fixture seat carries an explicit isBotAlly, as production summaries do', () => {
+  for (const scenario of COACH_EVAL_SCENARIOS) {
+    let botSeatCount = 0;
+    for (const seat of scenario.summary.perPlayer) {
+      assert.equal(typeof seat.isBotAlly, 'boolean', `${scenario.id} ${seat.label} is missing isBotAlly.`);
+      if (seat.isBotAlly === true) {
+        botSeatCount += 1;
+      }
+    }
+    const expectedBotSeats = scenario.category === 'bot-ally' ? 1 : 0;
+    assert.equal(botSeatCount, expectedBotSeats, `${scenario.id} has an unexpected number of bot seats.`);
   }
 });
 
