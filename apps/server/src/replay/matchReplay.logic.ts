@@ -521,6 +521,34 @@ export async function readReplayHashByMatchId(
 }
 
 /**
+ * Resolve a captured replay's boardgame.io `match_id` from the durable WP-335
+ * `bgio.replay_artifacts` store by its `replayHash` — the reverse of
+ * `readReplayHashByMatchId`. The endgame coach (WP-742) uses it to find the match's
+ * bot-ally seats. Reads the app-owned `match_id` mapping column only (D-24122),
+ * never the replay blob. Returns `null` when no artifact carries the hash.
+ *
+ * @param replayHash The captured replay's canonical hash.
+ * @param database The caller-injected `pg` pool.
+ * @returns The stored `match_id`, or `null` when no artifact for the hash exists.
+ */
+export async function readMatchIdByReplayHash(
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<string | null> {
+  // why: LIMIT 1 — mirrors readReplayHashByMatchId: the capture step writes exactly
+  // one artifact per finished match (keyed by replay_hash), so at most one row
+  // matches; the limit documents that one-row expectation.
+  const result = await database.query(
+    'SELECT match_id FROM bgio.replay_artifacts WHERE replay_hash = $1 LIMIT 1',
+    [replayHash],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return result.rows[0].match_id as string;
+}
+
+/**
  * Look up a submitted replay's durable artifact by `replayHash` and reduce it
  * to its final state. This is the faithful-path replacement for the WP-053
  * verifier's old `loadReplay` + `replayGame` pair (WP-336): a single call that

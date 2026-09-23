@@ -35,6 +35,7 @@ import {
   readMatchForReplay,
   readReplayArtifactByHash,
   readReplayHashByMatchId,
+  readMatchIdByReplayHash,
   isMatchFinished,
   reduceReplayByHash,
 } from './matchReplay.logic.js';
@@ -724,6 +725,46 @@ describe('readReplayHashByMatchId / isMatchFinished (WP-338)', () => {
         [MATCH_ID],
       );
       assert.equal(await isMatchFinished(MATCH_ID, database), true);
+    },
+  );
+});
+
+describe('readMatchIdByReplayHash (WP-742)', () => {
+  const hasTestDatabase = process.env.TEST_DATABASE_URL !== undefined;
+  const MATCH_ID = 'wp742-helper-match';
+  const HASH = 'wp742-helper-hash';
+
+  let pool: InstanceType<typeof Pool> | undefined;
+
+  before(async () => {
+    if (!hasTestDatabase) {
+      return;
+    }
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE replay_hash = $1', [HASH]);
+  });
+
+  after(async () => {
+    if (pool === undefined) {
+      return;
+    }
+    await pool.query('DELETE FROM bgio.replay_artifacts WHERE replay_hash = $1', [HASH]);
+    await pool.end();
+  });
+
+  test(
+    'readMatchIdByReplayHash returns the stored match_id; null for an unknown hash',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const database = pool as unknown as DatabaseClient;
+      assert.equal(await readMatchIdByReplayHash(HASH, database), null);
+      await pool!.query(
+        'INSERT INTO bgio.replay_artifacts (replay_hash, match_id, scenario_key, initial_state, log) ' +
+          "VALUES ($1, $2, 'k', '{}'::jsonb, '[]'::jsonb)",
+        [HASH, MATCH_ID],
+      );
+      assert.equal(await readMatchIdByReplayHash(HASH, database), MATCH_ID);
+      assert.equal(await readMatchIdByReplayHash('wp742-unknown-hash', database), null);
     },
   );
 });

@@ -25,13 +25,19 @@ import { evaluateEndgame } from '@legendary-arena/game-engine';
 import { getEntitlementsForAccount } from '../entitlements/entitlements.logic.js';
 import { findReplayOwnershipForAccount } from '../identity/replayOwnership.logic.js';
 import { findCompetitiveScore } from '../competition/competition.logic.js';
-import { reduceReplayByHash, readReplayArtifactByHash, reduceMatchCapturingHeroPlays } from '../replay/matchReplay.logic.js';
+import {
+  reduceReplayByHash,
+  readReplayArtifactByHash,
+  reduceMatchCapturingHeroPlays,
+  readMatchIdByReplayHash,
+} from '../replay/matchReplay.logic.js';
+import { readMatchBotSeats } from '../match/seatAccount.logic.js';
 import { readCoachReport, writeCoachReport } from './coachReport.persistence.js';
 import { buildCoachMatchSummary } from './coachSummary.logic.js';
 import { computeSequenceTips } from './sequenceTeacher.logic.js';
 import { computeTableCooperation } from './tableCooperation.logic.js';
 
-import type { AccountId } from '../identity/identity.types.js';
+import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
 import type { CoachDependencies, CoachResult } from './coach.types.js';
 
 // why: the Legendary Pass entitlement key (WP-594 / D-24403). A distinct product
@@ -55,6 +61,33 @@ export interface CoachLogic {
   // (not just the reduced final state) to re-run the capturing fold; injectable so the
   // DB-free coach tests can supply a canned artifact.
   readonly readReplayArtifactByHash: typeof readReplayArtifactByHash;
+  // why: WP-742 / D-24564 — the match's bot-ally seat ids, so the summary can mark
+  // the bot seat; injectable so the DB-free coach tests can supply canned seats.
+  readonly readBotSeatIdsForReplay: (
+    replayHash: string,
+    database: DatabaseClient,
+  ) => Promise<string[]>;
+}
+
+/**
+ * Resolves a replay's bot-ally seat ids (WP-742 / D-24564): replay hash → the
+ * artifact's `match_id` column → the match's `legendary.match_bot_ally` seats.
+ * Returns `[]` for a replay with no artifact row or a match with no bot ally —
+ * the normal human-only case.
+ *
+ * @param replayHash The scored match's replay hash.
+ * @param database The caller-injected `pg` pool.
+ * @returns The bot seat ids (e.g. `['1']`), or `[]`.
+ */
+export async function readBotSeatIdsForReplay(
+  replayHash: string,
+  database: DatabaseClient,
+): Promise<string[]> {
+  const matchId = await readMatchIdByReplayHash(replayHash, database);
+  if (matchId === null) {
+    return [];
+  }
+  return readMatchBotSeats(matchId, database);
 }
 
 const PRODUCTION_COACH_LOGIC: CoachLogic = {
@@ -65,6 +98,7 @@ const PRODUCTION_COACH_LOGIC: CoachLogic = {
   readCoachReport,
   writeCoachReport,
   readReplayArtifactByHash,
+  readBotSeatIdsForReplay,
 };
 
 /**
@@ -138,11 +172,28 @@ export async function generateOrGetCoachReport(
       scoreRecord.scoreBreakdown.inputs.matchLost === true ? 'scheme-wins' : 'heroes-win';
   }
 
+  // why: WP-742 / D-24564 — the bot-ally marker is advisory; a failed lookup must
+  // never turn a paid report into coach_unavailable (the WP-710 best-effort
+  // precedent), so any error yields no markers and one warning.
+  let botSeatIds: string[];
+  try {
+    botSeatIds = await logic.readBotSeatIdsForReplay(replayHash, deps.database);
+  } catch (caughtError) {
+    console.warn(
+      '[coach] Bot-seat lookup failed for replay ' +
+        replayHash +
+        '; coaching without bot markers. Underlying error: ' +
+        (caughtError instanceof Error ? caughtError.message : String(caughtError)),
+    );
+    botSeatIds = [];
+  }
+
   const summary = buildCoachMatchSummary(
     reduced.finalState,
     scoreRecord.scoreBreakdown,
     outcome,
     deps.resolveCardName,
+    botSeatIds,
   );
 
   // Model call — fail-soft: any transport/parse/shape failure returns

@@ -66,6 +66,25 @@ Engine 4121 → 4124/0 (941 → 942 suites); `pnpm -r build` 0; sentinel `finalS
 `sim:coverage --check`, dashboard test + typecheck all exit 0. `data/par/**` untouched. **D-24567
 Active.** D-24026 live-verify: N/A (infrastructure).
 
+### WP-742 — Coach marks the bot-ally seat (EC-779 / D-24564) (2026-09-22)
+
+**User-visible:** in a bot-ally match, the end-of-match AI Coach now knows which seat is the bot. It
+coaches the human and treats the bot as their ally, instead of grading the bot as a second human.
+Human-only matches are unchanged. Reports cached before this change keep their wording.
+
+- **Marker.** Each `CoachPlayerLine` carries `isBotAlly` (optional on the type, always set by the
+  builder; absent means human). Labels stay `Player N`.
+- **Lookup.** replay hash → `bgio.replay_artifacts.match_id` (new `readMatchIdByReplayHash`, the
+  mapping column only, catalogued `Library-only`) → `readMatchBotSeats`. It runs only on a cache
+  miss, after the `not_found` checks. Best-effort: any failure means no markers plus one `[coach]`
+  warning, never `coach_unavailable`.
+- **Prompt.** The system prompt names `isBotAlly` and tells the model to coach the humans, treat the
+  bot as their ally and never grade the bot's choices. The old "bot's line shows" sentence is gone.
+
+Server suite 1585/1383/0/202 → 1591/1388/0/203 (+6: 2 summary, 3 orchestrator, 1 DB-gated). DB-wired
+replay + coach files 114/114, 0 skipped. `pnpm -r build` 0. **D-24564 Active.** D-24026 live-verify
+(finish a bot-ally match on play.legendary-arena.com, open the AI Coach) is pending deploy.
+
 ### WP-737 — Coach model eval pack + quirk-registry allowlist (EC-774 / D-24559) (2026-09-22)
 
 **No user-observable change — infrastructure only.** Payoff: a `COACH_MODEL` swap is checked before
