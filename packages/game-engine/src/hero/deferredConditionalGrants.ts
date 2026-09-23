@@ -18,7 +18,9 @@
  *     on-play evaluation); the boundary is "is it a numeric threshold", not "does
  *     it read inPlay" — `distinctHeroClassesAtLeast` reads inPlay and is in scope.
  *     Converting the class gates would change every `[hc:X]` card and remove
- *     play-ordering skill from class synergy.
+ *     play-ordering skill from class synergy. Sticky per-turn EVENT predicates
+ *     (`masterStrikePlayedThisTurn` / `masterStrikeOrAmbushPlayedThisTurn`, WP-743 /
+ *     D-24566) are shape #1 too: once the event happens it stays true for the turn.
  *
  *  2. EDGE-TRIGGERED, REPEATABLE-PER-EVENT (WP-656 / D-24467).
  *     `defeatedVillainOrMastermindThisTurn` (Diamond Form: "Whenever you defeat a
@@ -44,6 +46,10 @@
 
 import type { LegendaryGameState, DeferredConditionalGrant } from '../types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
+import {
+  MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
+  MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+} from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
 // Its grant re-arms per defeat rather than firing once (see shape #2 above), which
@@ -69,6 +75,13 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Has an evaluateCondition case (heroConditions.evaluate.ts) — the lockstep the
   // drift pin below enforces.
   'cardsDrawnThisTurnAtLeast',
+  // why: WP-743 / D-24566 — "a Master Strike (or an Ambush Villain) was played this
+  // turn" (Grief / Spring the Trap) is a STICKY per-turn predicate — once true it stays
+  // true for the turn — so it behaves as a count >= 1 threshold: shape #1, one-shot, no
+  // re-arm. Extends D-24377's numeric-threshold boundary to sticky event predicates.
+  // Both have evaluateCondition cases (the lockstep the drift pin enforces).
+  MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
+  MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
 ];
 
 /**

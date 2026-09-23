@@ -413,9 +413,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // one, moving percentResolved 24.4 -> 24.3 (733 / 3011). Second-order ripple of
   // WP-744's runtime-observed re-pin (validated by Coverage & Ledger Gates).
   // Deterministic — CI computes the same 3011 / 24.3 from the committed source.
+  // 2026-09-22 (WP-743 / D-24566, re-pin): Spring the Trap and Grief now gate on a
+  // Master Strike (or Ambush Villain) played this turn instead of granting for free, so
+  // the fixed-seed sweep's games play out differently and the regenerated
+  // runtime-observed-hollows feed shifts (totalObservations 2506 -> 2505). One unresolved
+  // mechanic's peakObs drops by one: totalObs 3011 -> 3010 with resolvedObs unchanged at
+  // 733, moving percentResolved 24.3 -> 24.4 (733 / 3010). Second-order ripple of
+  // WP-743's runtime-observed re-pin (validated by Coverage & Ledger Gates).
+  // Deterministic — CI computes the same 3010 / 24.4 from the committed source.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3011);
-  assert.equal(view.percentResolved.value, 24.3);
+  assert.equal(view.totalObs.value, 3010);
+  assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
 

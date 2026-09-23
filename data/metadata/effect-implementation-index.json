@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1921,
+    "totalEntries": 1923,
     "byScope": {
-      "hero": 746,
+      "hero": 748,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
       "executable": 496,
       "deferred": 16,
-      "condition": 30,
+      "condition": 32,
       "unsupported": 319,
       "unmarked": 1056,
       "subsystem": 4
@@ -14123,6 +14123,23 @@
       "name": "Wanda & Vision",
       "set": "msis",
       "scope": "hero",
+      "mechanic": "master-strike-this-turn",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "grief",
+          "name": "Grief"
+        }
+      ]
+    },
+    {
+      "extId": "msis/wanda-vision",
+      "name": "Wanda & Vision",
+      "set": "msis",
+      "scope": "hero",
       "mechanic": "reveal-odd-draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-odd-draw",
@@ -22404,6 +22421,23 @@
         {
           "slug": "serious-overkill",
           "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "name": "Venom Rocket",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "master-strike-or-ambush-this-turn",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "spring-the-trap",
+          "name": "Spring the Trap"
         }
       ]
     },
@@ -32244,6 +32278,7 @@
     "msis/wanda-vision": {
       "scope": "hero",
       "mechanics": [
+        "master-strike-this-turn",
         "reveal-odd-draw",
         "sacrifice"
       ]
@@ -35186,6 +35221,7 @@
       "mechanics": [
         "digest",
         "excessive-violence",
+        "master-strike-or-ambush-this-turn",
         "optional-ko-hand-discard"
       ]
     },

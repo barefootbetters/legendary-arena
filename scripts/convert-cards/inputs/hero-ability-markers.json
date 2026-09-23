@@ -770,6 +770,12 @@
       "cardSlug": "infused-by-the-tesseract",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wanda-vision",
+      "cardSlug": "grief",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:master-strike-this-turn]"
     }
   ],
   "msp1": [
@@ -1816,6 +1822,12 @@
       "cardSlug": "can-i-get-a-little-gratitude",
       "abilityIndex": 1,
       "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "venom-rocket",
+      "cardSlug": "spring-the-trap",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:master-strike-or-ambush-this-turn]"
     }
   ],
   "wpnx": [

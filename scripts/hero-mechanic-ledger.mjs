@@ -180,6 +180,10 @@ const KNOWN_CONDITIONS = {
   // so the row reads `condition`, not `unsupported`. Registered here at landing to avoid the
   // false-`unsupported` drag on an implemented condition (PR #1865 pattern).
   'first-hero-condition': 'firstHeroPlayedThisTurn',             // Deadpool "Do-Over": the first Hero played this turn
+  // why: WP-743 / D-24566 — Grief / Spring the Trap gate on a Master Strike (or an Ambush
+  // Villain) played this turn: shipped wait-and-see conditions, so the rows read `condition`.
+  'master-strike-this-turn': 'masterStrikePlayedThisTurn',                     // Wanda & Vision "Grief"
+  'master-strike-or-ambush-this-turn': 'masterStrikeOrAmbushPlayedThisTurn',   // Venom Rocket "Spring the Trap"
 };
 
 /** Error type signalling a probe failure (exit code 2). */
