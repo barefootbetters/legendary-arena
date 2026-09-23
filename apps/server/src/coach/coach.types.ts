@@ -51,6 +51,11 @@ export interface CoachPlayerLine {
   readonly conditionalClausesRealizedValue: number;
   /** Acquired hero cards as "Display Name ×N" strings, most-acquired first. */
   readonly acquiredCards: readonly string[];
+  // why: WP-742 / D-24564 — marks a bot-ally seat so the coach can treat the bot as
+  // the humans' ally instead of grading it as a second human. Optional so existing
+  // fixtures (and any line built without a bot lookup) read as "human seat";
+  // buildPerPlayerLines always sets it explicitly, so the model always sees it.
+  readonly isBotAlly?: boolean;
 }
 
 /**

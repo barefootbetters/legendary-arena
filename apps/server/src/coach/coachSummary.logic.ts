@@ -127,12 +127,14 @@ function formatAcquiredCards(
  * @param finalState The reduced final game state.
  * @param breakdown The stored score breakdown.
  * @param resolveCardName Resolver from ext_id to display name.
+ * @param botSeatIds The match's bot-ally seat ids (e.g. `['1']`); `[]` when none.
  * @returns One line per player, in seat order.
  */
 function buildPerPlayerLines(
   finalState: LegendaryGameState,
   breakdown: ScoreBreakdown,
   resolveCardName: ResolveCardName,
+  botSeatIds: readonly string[],
 ): CoachPlayerLine[] {
   const contributionByPlayer = new Map<string, PlayerScoringContribution>();
   for (const contribution of breakdown.inputs.perPlayer ?? []) {
@@ -166,6 +168,9 @@ function buildPerPlayerLines(
         countAcquiredCards(finalState.playerZones[playerId]),
         resolveCardName,
       ),
+      // why: WP-742 — both the bot seat ids and the playerZones keys are
+      // String(seatIndex), so a string compare matches them.
+      isBotAlly: botSeatIds.includes(playerId),
     });
   }
   return lines;
@@ -189,6 +194,7 @@ function resolveNames(extIds: readonly string[], resolveCardName: ResolveCardNam
  * @param breakdown The stored competitive score breakdown.
  * @param outcome The match outcome (heroes-win / scheme-wins / tie).
  * @param resolveCardName Resolver from ext_id to display name.
+ * @param botSeatIds The match's bot-ally seat ids (WP-742); `[]` for a human-only match.
  * @returns The compact, name-resolved summary for the model.
  */
 export function buildCoachMatchSummary(
@@ -196,6 +202,7 @@ export function buildCoachMatchSummary(
   breakdown: ScoreBreakdown,
   outcome: CoachMatchSummary['outcome'],
   resolveCardName: ResolveCardName,
+  botSeatIds: readonly string[],
 ): CoachMatchSummary {
   const configuration = finalState.matchConfiguration;
   const counts = breakdown.inputs.penaltyEventCounts;
@@ -224,7 +231,7 @@ export function buildCoachMatchSummary(
       villainsEscaped: counts.villainEscaped,
       bystandersLost: counts.bystanderLost,
     },
-    perPlayer: buildPerPlayerLines(finalState, breakdown, resolveCardName),
+    perPlayer: buildPerPlayerLines(finalState, breakdown, resolveCardName, botSeatIds),
   };
 
   // why: WP-591 PAR baselines carry the expected adversity; older scored rows do

@@ -15,6 +15,7 @@ import { generateOrGetCoachReport, type CoachLogic } from './coach.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import type {
   CoachDependencies,
+  CoachMatchSummary,
   CoachModelClient,
   CoachReport,
   StoredCoachReport,
@@ -147,6 +148,8 @@ function makeLogic(
       base.writes += 1;
       return { report, model, generatedAt: '2026-08-23T00:00:00.000Z' };
     },
+    // why: WP-742 — a human-only match by default (no bot-ally seats).
+    readBotSeatIdsForReplay: async () => [],
     ...over,
   };
   return base as unknown as CoachLogic & { writes: number; artifactReads: number };
@@ -339,5 +342,92 @@ describe('generateOrGetCoachReport (WP-594)', () => {
       result.ok === true && result.report.report.tableCooperation,
       ['Your table stopped Magneto together — a shared victory.'],
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // WP-742 / D-24564 — the summary sent to the model marks the bot-ally seat
+  // -------------------------------------------------------------------------
+
+  test('fresh path: the summary sent to the model marks the bot-ally seat', async () => {
+    const twoSeatState = {
+      ...makeState(),
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    } as unknown as LegendaryGameState;
+    const capturedSummaries: CoachMatchSummary[] = [];
+    const capturingModel: CoachModelClient = {
+      model: 'stub-model',
+      async generate(summary: CoachMatchSummary) {
+        capturedSummaries.push(summary);
+        return REPORT;
+      },
+    };
+    const logic = makeLogic({
+      reduceReplayByHash: async () => ({ finalState: twoSeatState, stateHash: REPLAY, turnCount: 12 }),
+      readBotSeatIdsForReplay: async () => ['1'],
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(capturingModel), logic);
+
+    assert.equal(result.ok, true);
+    assert.equal(capturedSummaries.length, 1);
+    const perPlayer = capturedSummaries[0]?.perPlayer ?? [];
+    assert.deepEqual(
+      perPlayer.map((line) => ({ label: line.label, isBotAlly: line.isBotAlly })),
+      [
+        { label: 'Player 1', isBotAlly: false },
+        { label: 'Player 2', isBotAlly: true },
+      ],
+    );
+  });
+
+  test('fail-soft: a throwing bot-seat lookup still coaches, with no markers and one warning', async (context) => {
+    const warnSpy = context.mock.method(console, 'warn', () => {});
+    const capturedSummaries: CoachMatchSummary[] = [];
+    const capturingModel: CoachModelClient = {
+      model: 'stub-model',
+      async generate(summary: CoachMatchSummary) {
+        capturedSummaries.push(summary);
+        return REPORT;
+      },
+    };
+    const logic = makeLogic({
+      readBotSeatIdsForReplay: async () => {
+        throw new Error('simulated bot-seat read failure');
+      },
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(capturingModel), logic);
+
+    assert.equal(result.ok, true);
+    assert.equal(logic.writes, 1);
+    for (const line of capturedSummaries[0]?.perPlayer ?? []) {
+      assert.equal(line.isBotAlly, false);
+    }
+    const coachWarnings = warnSpy.mock.calls.filter((call) =>
+      String(call.arguments[0]).startsWith('[coach] Bot-seat lookup failed'),
+    );
+    assert.equal(coachWarnings.length, 1);
+    assert.equal(warnSpy.mock.callCount(), 1, 'exactly one [coach] warning is logged');
+  });
+
+  test('cache path: a cache hit never calls the bot-seat lookup', async () => {
+    let lookupCalls = 0;
+    const model = makeModelClient();
+    const logic = makeLogic({
+      readCoachReport: async () => ({
+        report: REPORT,
+        model: 'cached-model',
+        generatedAt: '2026-08-20T00:00:00.000Z',
+      }),
+      readBotSeatIdsForReplay: async () => {
+        lookupCalls += 1;
+        return ['1'];
+      },
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok === true && result.wasCached, true);
+    assert.equal(lookupCalls, 0);
   });
 });

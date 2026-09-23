@@ -98,7 +98,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
         victory: ['core/villain/hydra-agent', 'core/bystander/hostage'],
       },
     });
-    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     const line = summary.perPlayer[0];
     assert.ok(line);
     // acquired = 2× Spider Man, 1× Rogue, 1× Gambit; starters + wound + victory excluded.
@@ -142,7 +142,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
         matchLost: false,
       },
     } as unknown as Partial<ScoreBreakdown>);
-    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName);
+    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName, []);
     assert.equal(summary.perPlayer[0]?.villainsDefeated, 3);
     assert.equal(summary.perPlayer[0]?.henchmenDefeated, 1);
     assert.equal(summary.perPlayer[0]?.mastermindTacticsDefeated, 2);
@@ -175,7 +175,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
         matchLost: false,
       },
     } as unknown as Partial<ScoreBreakdown>);
-    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName);
+    const summary = buildCoachMatchSummary(state, breakdown, 'heroes-win', resolveName, []);
     assert.equal(summary.perPlayer[0]?.conditionalClausesPlayed, 8);
     assert.equal(summary.perPlayer[0]?.conditionalClausesAssembled, 6);
     assert.equal(summary.perPlayer[1]?.conditionalClausesPlayed, 0);
@@ -193,7 +193,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     });
     // The default makeBreakdown() perPlayer carries no WP-616 defeat counts.
-    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     assert.equal(summary.perPlayer[0]?.villainsDefeated, 0);
     assert.equal(summary.perPlayer[0]?.henchmenDefeated, 0);
     assert.equal(summary.perPlayer[0]?.mastermindTacticsDefeated, 0);
@@ -203,19 +203,19 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     });
-    const won = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
+    const won = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     assert.equal(won.outcome, 'heroes-win');
     assert.equal(won.scheme, 'Midtown Bank Robbery');
     assert.equal(won.mastermind, 'Red Skull');
     assert.deepEqual(won.heroes, ['Spider Man', 'Rogue']);
     assert.deepEqual(won.villainGroups, ['Hydra']);
 
-    const lost = buildCoachMatchSummary(state, makeBreakdown(), 'scheme-wins', resolveName);
+    const lost = buildCoachMatchSummary(state, makeBreakdown(), 'scheme-wins', resolveName, []);
     assert.equal(lost.outcome, 'scheme-wins');
 
     // why: a tie (a deck ran out with no winner) is carried through, no longer
     // mislabeled as a heroes-win.
-    const tied = buildCoachMatchSummary(state, makeBreakdown(), 'tie', resolveName);
+    const tied = buildCoachMatchSummary(state, makeBreakdown(), 'tie', resolveName, []);
     assert.equal(tied.outcome, 'tie');
   });
 
@@ -223,7 +223,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     const state = makeState({
       '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     });
-    const noBaseline = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName);
+    const noBaseline = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     assert.deepEqual(noBaseline.adversity, {
       schemeTwists: 6,
       villainsEscaped: 1,
@@ -244,11 +244,42 @@ describe('buildCoachMatchSummary (WP-594)', () => {
       }),
       'heroes-win',
       resolveName,
+      [],
     );
     assert.deepEqual(withBaseline.adversityExpected, {
       schemeTwists: 3,
       villainsEscaped: 1,
       bystandersLost: 2,
     });
+  });
+
+  // why: WP-742 / D-24564 — the bot-ally marker rides a separate field; the seat
+  // labels stay `Player N` either way.
+  test('marks only the bot-ally seat isBotAlly and leaves the labels unchanged', () => {
+    const state = makeState({
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    });
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, ['1']);
+    assert.equal(summary.perPlayer[0]?.label, 'Player 1');
+    assert.equal(summary.perPlayer[0]?.isBotAlly, false);
+    assert.equal(summary.perPlayer[1]?.label, 'Player 2');
+    assert.equal(summary.perPlayer[1]?.isBotAlly, true);
+  });
+
+  test('marks every seat isBotAlly false in a human-only match', () => {
+    const state = makeState({
+      '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    });
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
+    assert.equal(summary.perPlayer.length, 2);
+    for (const line of summary.perPlayer) {
+      assert.equal(line.isBotAlly, false);
+    }
+    assert.deepEqual(
+      summary.perPlayer.map((line) => line.label),
+      ['Player 1', 'Player 2'],
+    );
   });
 });
