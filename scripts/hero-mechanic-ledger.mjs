@@ -194,6 +194,10 @@ const KNOWN_CONDITIONS = {
   // shipped day/night conditions (the D-24055 posture), so the rows read `condition`.
   'sunlight': 'sunlightInEffect',                                 // most HQ Heroes have even printed costs
   'moonlight': 'moonlightInEffect',                               // most HQ Heroes have odd printed costs
+  // why: WP-743 / D-24566 — Grief / Spring the Trap gate on a Master Strike (or an Ambush
+  // Villain) played this turn: shipped wait-and-see conditions, so the rows read `condition`.
+  'master-strike-this-turn': 'masterStrikePlayedThisTurn',                     // Wanda & Vision "Grief"
+  'master-strike-or-ambush-this-turn': 'masterStrikeOrAmbushPlayedThisTurn',   // Venom Rocket "Spring the Trap"
 };
 
 /** Error type signalling a probe failure (exit code 2). */

@@ -7,7 +7,9 @@
  * `hasActedThisTurn` / `hasHealedThisTurn`), drops every wait-and-see
  * deferred conditional grant (`deferredConditionalGrants`, WP-568 / D-24377)
  * and clears the WP-656 defeat edge flag
- * (`villainOrMastermindDefeatedSinceResolve`, D-24467), and stamps the per-turn
+ * (`villainOrMastermindDefeatedSinceResolve`, D-24467), deletes the WP-743 per-turn
+ * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
+ * `ambushVillainPlayedThisTurn`, D-24566), and stamps the per-turn
  * log numbering (`logMeta`, WP-328) and `lastPlayEffectsFired` (WP-409). None of the engine's
  * three non-framework per-turn loops run that hook, so each mirrors it manually
  * through this helper:
@@ -37,9 +39,10 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
 /**
  * Mirrors the play-phase onBegin hook for one turn start: resets the
  * once-per-turn allowance flags (including the WP-379 heal lock), drops every
- * deferred conditional grant, clears the WP-656 defeat edge flag, and stamps the
- * play-relative `logMeta` turn + `lastPlayEffectsFired` — in the same order
- * `game.ts` `onBegin` runs them. No draw (D-24520 — the draw is at end of turn).
+ * deferred conditional grant, clears the WP-656 defeat edge flag, deletes the
+ * WP-743 Master Strike / Ambush Villain flags, and stamps the play-relative
+ * `logMeta` turn + `lastPlayEffectsFired` — in the same order `game.ts` `onBegin`
+ * runs them. No draw (D-24520 — the draw is at end of turn).
  *
  * why: rule-hook firing (onTurnStart) is intentionally NOT mirrored — the three
  * callers are observation-only and defer rule hooks (D-0205). Stage/economy
@@ -47,8 +50,9 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  * flag resets and the deferred-grant turn-boundary clear of onBegin.
  *
  * @param gameState - the live per-game state; the allowance flags are
- *   mutated in place, and `deferredConditionalGrants` /
- *   `villainOrMastermindDefeatedSinceResolve` are deleted when present.
+ *   mutated in place, and `deferredConditionalGrants`,
+ *   `villainOrMastermindDefeatedSinceResolve`, `masterStrikePlayedThisTurn` and
+ *   `ambushVillainPlayedThisTurn` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
  *   the flags are global-per-turn, not per-seat, but kept for call-site clarity).
  */
@@ -90,6 +94,17 @@ export function applyOnBeginParity(
   // a never-set G stays byte-unchanged (no key is created or removed).
   if (gameState.cardsDiscardedThisTurn !== undefined) {
     delete gameState.cardsDiscardedThisTurn;
+  }
+  // why: WP-743 / D-24566 — mirrors game.ts onBegin's guarded deletes of the per-turn
+  // Master Strike / Ambush Villain flags. The simulation runner, PAR aggregator and
+  // fixture runner never run game.ts onBegin; without this a Master Strike would carry
+  // into every later turn and re-open the Spring the Trap over-grant in the sim and PAR.
+  // Guarded so a never-set G stays byte-unchanged.
+  if (gameState.masterStrikePlayedThisTurn !== undefined) {
+    delete gameState.masterStrikePlayedThisTurn;
+  }
+  if (gameState.ambushVillainPlayedThisTurn !== undefined) {
+    delete gameState.ambushVillainPlayedThisTurn;
   }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the
