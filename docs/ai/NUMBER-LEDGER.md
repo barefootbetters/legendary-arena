@@ -389,6 +389,8 @@ high-water: 422
 - WP-748 — midtown-bank-robbery-villain-attack-per-bystander (Engine. Midtown Bank Robbery special rule "Each Villain gets +1 attack for each Bystander it has" is unimplemented in resolveFightCost. reserved 2026-09-22, claude/draft-bystander-midtown)
 - WP-749 — sim-non-active-seat-choice-dispatch (Engine — simulation. The sim/PAR/fixture turn loops only drive the current player, so a pendingSeatChoice addressed to a NON-ACTIVE seat (Loki Vanishing Illusions) is never resolved and the game is flagged stuck. reserved 2026-09-22, claude/sim-seat-choice-draft)
 - WP-750 — client-fight-gating-reads-engine-fightcost (App arena-client. The Fight button and City tile cost read printed display.cost (CityRow.vue canFight / useCardCostGating) instead of the engine's projected UICityCard.fightCost, so dynamic N+, Portals, Killbots, Skrull and — after WP-748 — Midtown-family villains show an enabled Fight that the engine silently refuses. Hard prerequisite of WP-748. reserved 2026-09-22, claude/draft-bystander-midtown)
+- WP-751 — casual-match-coach-server (Server. The Legendary-Pass AI Coach works on signed-in matches that were never scored (non-gauntlet / par_not_published): a matchId-keyed coach route for an owned, captured match; the summary is built from the replayed match via deriveScoringInputs with the PAR-dependent score/grade omitted; cached in coach_reports; never touches competitive_scores or any leaderboard. reserved 2026-09-23, claude/casual-report-draft)
+- WP-752 — casual-match-coach-client (Arena Client. Shows the AI Coach panel on unscored signed-in matches (Pass holders coach; others see the Pass teaser), and rewrites the guest endgame prompt to promise the report card and AI coaching on future signed-in matches. reserved 2026-09-23, claude/casual-report-draft)
 
 ## EC
 
@@ -739,6 +741,8 @@ high-water: 457
 - EC-785 — midtown-bank-robbery-villain-attack-per-bystander (WP-748; Engine. reserved 2026-09-22, claude/draft-bystander-midtown)
 - EC-786 — sim-non-active-seat-choice-dispatch (WP-749; Engine. reserved 2026-09-22, claude/sim-seat-choice-draft)
 - EC-787 — client-fight-gating-reads-engine-fightcost (WP-750; App arena-client. reserved 2026-09-22, claude/draft-bystander-midtown)
+- EC-788 — casual-match-coach-server (WP-751; Server. reserved 2026-09-23, claude/casual-report-draft)
+- EC-789 — casual-match-coach-client (WP-752; Arena Client. reserved 2026-09-23, claude/casual-report-draft)
 
 ## D
 
@@ -1093,3 +1097,4 @@ section below) and the allocation protocol in
 - D-24573 — sim-non-active-seat-choice-dispatch (RESERVED: locks WP-749 / EC-786. reserved 2026-09-22, claude/sim-seat-choice-draft)
 - D-24574 — client-fight-gating-reads-engine-fightcost (RESERVED: locks WP-750 / EC-787. reserved 2026-09-22, claude/draft-bystander-midtown)
 - D-24570 — reward-handler-icon-suppression (direct parser fix, no WP — ko-wound-reward + put-bottom-hq-icon-reward lines drop their printed reward icon; D-24398 precedent. reserved 2026-09-22, claude/festive-albattani-bc4ff6)
+- D-24576 — casual-match-coach (RESERVED: locks WP-751 / EC-788 — the coach on unscored matches: matchId-keyed route, PAR-free summary with score/grade optional on CoachMatchSummary, cache reuse, and the hard rule that casual coaching never writes competitive_scores or reaches a leaderboard (NG-1). reserved 2026-09-23, claude/casual-report-draft)
