@@ -413,9 +413,18 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // one, moving percentResolved 24.4 -> 24.3 (733 / 3011). Second-order ripple of
   // WP-744's runtime-observed re-pin (validated by Coverage & Ledger Gates).
   // Deterministic — CI computes the same 3011 / 24.3 from the committed source.
+  // 2026-09-22 (D-24570, re-pin on top of WP-744): the reward-handler icon suppression
+  // drops the plain UNCONDITIONAL attack/recruit grant that ko-wound-reward (Unstoppable
+  // Hulk + 6 siblings) and put-bottom-hq-icon-reward (Absorb Ambient Power, Intangible
+  // Qualities) lines emitted beside their handler, so the fixed-seed sweep's players hold
+  // less free attack/recruit and its trajectories shift → the regenerated
+  // runtime-observed-hollows feed moves and totalObs 3011 -> 3006 (-5); resolvedObs stays
+  // 733, so percentResolved 24.3 -> 24.4 (733 / 3006). A sweep-trajectory artifact of the
+  // over-grant fix, not a regression. Deterministic — CI computes the same 3006 / 24.4
+  // from the committed source.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3011);
-  assert.equal(view.percentResolved.value, 24.3);
+  assert.equal(view.totalObs.value, 3006);
+  assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });
 
