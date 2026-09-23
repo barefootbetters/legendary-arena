@@ -55,6 +55,7 @@ import { filterUIStateForAudience } from '../ui/uiState.filter.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
+import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -699,6 +700,12 @@ function simulateOneGame(
     // dispatched move / advanceTurnStage forwarded, honored by the manual rotation.
     const endTurnFlag: { triggered: boolean; nextPlayer?: string } = { triggered: false };
 
+    // why: WP-744 / D-24567 — the context of the move dispatched THIS iteration, kept
+    // so the deferred-grant resolve below receives the same object the move received.
+    // Stays undefined on the unknown-move path, where no move ran and there is nothing
+    // to resolve.
+    let dispatchedMoveContext: AggregatorMoveContext | undefined = undefined;
+
     if (moveFn === undefined) {
       pushLog(
         gameState,
@@ -715,6 +722,7 @@ function simulateOneGame(
         nextRandom,
       );
       moveFn(moveContext, intent.move.args);
+      dispatchedMoveContext = moveContext;
     }
     movesDispatched += 1;
 
@@ -726,6 +734,19 @@ function simulateOneGame(
     // the SCHEME_LOSS this sets. Idempotent + pile-agnostic (mirrors the
     // simulation.runner.ts placement).
     applyPileDepletionResourceLoss(gameState);
+
+    // why: WP-744 / D-24567 — mirror game.ts turn.onMove's resolveDeferredHeroGrants
+    // (WP-568 / D-24377 wait-and-see grants, WP-656 / D-24467 defeat edge), exactly as
+    // the simulation.runner.ts loop does. Without it a card played before its
+    // condition is met never pays out in a PAR sweep. Placed AFTER the pile-depletion
+    // check to keep the live onMove relative order. Receives the dispatched move's own
+    // context so a grant that draws uses this loop's seeded Shuffle and the real
+    // ctx.turn. The context's `events` is inert for the resolver: no hero effect calls
+    // endTurn / setPhase, and setActivePlayers is typeof-guarded (absent here), which
+    // matches live passing an events-less `{ G, ctx, random }`.
+    if (dispatchedMoveContext !== undefined) {
+      resolveDeferredHeroGrants(gameState, dispatchedMoveContext);
+    }
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would

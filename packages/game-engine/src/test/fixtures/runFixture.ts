@@ -39,6 +39,7 @@ import { TURN_STAGES } from '../../turn/turnPhases.types.js';
 import { CORE_MOVE_NAMES } from '../../moves/coreMoves.types.js';
 import { drawCards, playCard, endTurn } from '../../moves/coreMoves.impl.js';
 import { applyOnBeginParity } from '../../simulation/onBeginParity.js';
+import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../../moves/fightVillain.js';
@@ -367,6 +368,21 @@ function dispatchSingleMove(
     nextRandom,
   );
   moveDispatch(moveContext, move.args);
+
+  // why: WP-744 / D-24567 — mirror game.ts turn.onMove's resolveDeferredHeroGrants
+  // (WP-568 / D-24377 wait-and-see grants, WP-656 / D-24467 defeat edge) after every
+  // dispatched move, BEFORE the turn rotation below (live order: move -> onMove ->
+  // onEnd -> next onBegin). This is the LOCKSTEP PARTNER of the simulation.runner.ts
+  // per-move resolve (the D-24273 capture -> replay contract): record-game-fixture.mjs
+  // records through this runner, so a sim-captured trace that fires a deferred grant
+  // must fire it here too, or the recorded messages / finalStateHash would diverge
+  // from the sim that produced the trace. This harness mirrors no other onMove effect
+  // (pile depletion included), so there is no earlier call to order against. Receives
+  // the dispatched move's own context so a grant that draws uses this runner's seeded
+  // Shuffle and the real ctx.turn. The context's `events` is inert for the resolver:
+  // no hero effect calls endTurn / setPhase, and setActivePlayers is typeof-guarded
+  // (absent here), which matches live passing an events-less `{ G, ctx, random }`.
+  resolveDeferredHeroGrants(gameState, moveContext);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

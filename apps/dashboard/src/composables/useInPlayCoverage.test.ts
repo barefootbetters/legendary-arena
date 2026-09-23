@@ -403,9 +403,19 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // runtime-observed re-pin (already validated by Coverage & Ledger Gates, which
   // regenerates-and-diffs that feed); this catches the dashboard snapshot up.
   // Deterministic — CI computes the same 3012 from the committed source.
+  // 2026-09-22 (WP-744 / D-24567, re-pin): the sim / PAR / fixture turn loops now
+  // resolve wait-and-see deferred grants after every move and clear them at the turn
+  // boundary (the game.ts turn.onMove / onBegin mirror), so the fixed-seed sweep's
+  // games play out differently and the regenerated runtime-observed-hollows feed drops
+  // 22 `transform` observations (live 143 -> 121). The baseline peakObs (142) absorbs
+  // most of that, so transform's peakObs is 143 -> 142 and — transform being a
+  // resolved mechanic — both totalObs 3012 -> 3011 and resolvedObs 734 -> 733 drop by
+  // one, moving percentResolved 24.4 -> 24.3 (733 / 3011). Second-order ripple of
+  // WP-744's runtime-observed re-pin (validated by Coverage & Ledger Gates).
+  // Deterministic — CI computes the same 3011 / 24.3 from the committed source.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3012);
-  assert.equal(view.percentResolved.value, 24.4);
+  assert.equal(view.totalObs.value, 3011);
+  assert.equal(view.percentResolved.value, 24.3);
   assert.ok(view.remaining.value.length > 0);
 });
 

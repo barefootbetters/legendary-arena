@@ -45,6 +45,7 @@ import { computeFinalScores } from '../scoring/scoring.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
+import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -632,6 +633,12 @@ function runPerTurnLoop(
     // dispatched move / advanceTurnStage forwarded, honored by the manual rotation.
     const endTurnFlag: { triggered: boolean; nextPlayer?: string } = { triggered: false };
 
+    // why: WP-744 / D-24567 — the context of the move dispatched THIS iteration, kept
+    // so the deferred-grant resolve below receives the same object the move received.
+    // Stays undefined on the unknown-move path, where no move ran and there is nothing
+    // to resolve.
+    let dispatchedMoveContext: SimulationMoveContext | undefined = undefined;
+
     if (moveFn === undefined) {
       pushLog(
         gameState,
@@ -648,6 +655,7 @@ function runPerTurnLoop(
         nextRandom,
       );
       moveFn(moveContext, intent.move.args);
+      dispatchedMoveContext = moveContext;
     }
 
     // why: mirror bgio's play-phase turn.onMove — after each dispatched move,
@@ -659,6 +667,19 @@ function runPerTurnLoop(
     // reads the SCHEME_LOSS this sets). Idempotent + pile-agnostic; a no-op for
     // schemes without a pile-depleted resourceLossCondition.
     applyPileDepletionResourceLoss(gameState);
+
+    // why: WP-744 / D-24567 — mirror game.ts turn.onMove's resolveDeferredHeroGrants
+    // (WP-568 / D-24377 wait-and-see grants, WP-656 / D-24467 defeat edge). Without it
+    // a card played before its condition is met (Surge of Power, Diamond Form,
+    // Impossible Trick Shot) never pays out in the sim. Placed AFTER the pile-depletion
+    // check to keep the live onMove relative order. Receives the dispatched move's own
+    // context so a grant that draws uses this loop's seeded Shuffle and the real
+    // ctx.turn. The context's `events` is inert for the resolver: no hero effect calls
+    // endTurn / setPhase, and setActivePlayers is typeof-guarded (absent here), which
+    // matches live passing an events-less `{ G, ctx, random }`.
+    if (dispatchedMoveContext !== undefined) {
+      resolveDeferredHeroGrants(gameState, dispatchedMoveContext);
+    }
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the
