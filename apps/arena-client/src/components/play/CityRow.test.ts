@@ -160,6 +160,25 @@ describe('CityRow (WP-129 — extends WP-100)', () => {
     assert.equal(wrapper.findAll('[data-testid="play-city-villain-ev"]').length, 3);
   });
 
+  test('the Excessive Violence button renders the crossed-swords SVG icon (not a bare glyph)', () => {
+    // why: graphic fix-forward 2026-09-22 — the button previously used a bare U+2694
+    // codepoint the play-surface font does not carry, so it silently collapsed to
+    // text and operators missed it. Lock the inline SVG in so it cannot regress.
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    const firstEvButton = wrapper.findAll('[data-testid="play-city-villain-ev"]')[0]!;
+    assert.equal(firstEvButton.find('svg.crossed-swords-icon').exists(), true);
+    assert.match(firstEvButton.text(), /\+1/);
+  });
+
   test('hides the Excessive Violence button on a villain unaffordable at cost+1', () => {
     const { submitMove } = recorder();
     const wrapper = mount(CityRow, {

@@ -11,6 +11,7 @@ import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
+import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -37,7 +38,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'CityRow',
-  components: { CardTile, EscapedPile, DarkPortalMarker },
+  components: { CardTile, EscapedPile, DarkPortalMarker, CrossedSwordsIcon },
   props: {
     city: {
       type: Object as PropType<UICityState>,
@@ -228,7 +229,9 @@ export default defineComponent({
             title="Spend 1 extra attack to fire every Excessive Violence ability on cards you played this turn."
             @click="onFightEV(cell.cityIndex)"
           >
-            ⚔ Excessive Violence
+            <CrossedSwordsIcon class="city-space__ev-fight-icon" />
+            <span class="city-space__ev-fight-label">Excessive Violence</span>
+            <span class="city-space__ev-fight-cost">+1</span>
           </button>
           <!-- why: WP-505 + Jeff feedback — captured cards render to the SIDE of the
                villain tile (was underneath), saving vertical space. Face-up captured
@@ -416,25 +419,49 @@ export default defineComponent({
   font-size: 0.7rem;
 }
 
-/* why: WP-738 / D-24561 — the per-villain "Fight using Excessive Violence" opt-in.
-   A compact accent button by the villain tile, visually distinct from the normal
-   Fight click so it reads as the extra-attack overspend, not the default fight. */
+/* why: WP-738 / D-24561, graphic fix-forward 2026-09-22 — the per-villain "Fight
+   using Excessive Violence" opt-in. A filled RED overspend action so it reads as a
+   deliberate, costly extra-attack fight distinct from the normal Fight click — not
+   as card ability-text (the earlier subtle outline + a non-rendering U+2694 glyph
+   made operators miss it entirely). The crossed-swords SVG and the "+1" cost badge
+   spell out the extra-attack price on the button itself. */
 .city-space__ev-fight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   align-self: center;
-  margin-top: 0.15rem;
-  padding: 0.15rem 0.4rem;
-  border: 1px solid #b4462e;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #7a2818;
   border-radius: 0.35rem;
-  background: rgba(180, 70, 46, 0.15);
-  color: #b4462e;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  background: linear-gradient(180deg, #c8452b 0%, #a5361f 100%);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(122, 40, 24, 0.45);
 }
 
 .city-space__ev-fight:hover {
-  background: rgba(180, 70, 46, 0.28);
+  background: linear-gradient(180deg, #d85336 0%, #b53d24 100%);
+}
+
+.city-space__ev-fight:active {
+  transform: translateY(1px);
+}
+
+.city-space__ev-fight-icon {
+  font-size: 0.8rem;
+}
+
+/* why: the "+1" attack-cost badge — a lighter inset pill so the price of the
+   overspend is unmistakable without a separate tooltip read. */
+.city-space__ev-fight-cost {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  font-variant-numeric: tabular-nums;
 }
 </style>

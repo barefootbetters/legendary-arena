@@ -8,6 +8,7 @@ import { useTurnActions } from '../../composables/useTurnActions';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
+import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -42,7 +43,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker },
+  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon },
   emits: ['read'],
   props: {
     mastermind: {
@@ -234,7 +235,8 @@ export default defineComponent({
         class="mastermind-final-blow"
         data-testid="play-mastermind-final-blow"
       >
-        ⚔ Final blow — fight the Mastermind
+        <CrossedSwordsIcon class="mastermind-final-blow-icon" />
+        Final blow — fight the Mastermind
       </span>
     </button>
     <!-- why: WP-738 / D-24561 — the "Fight using Excessive Violence" affordance
@@ -250,7 +252,9 @@ export default defineComponent({
       title="Spend 1 extra attack to fire every Excessive Violence ability on cards you played this turn."
       @click="onFightEV"
     >
-      ⚔ Excessive Violence
+      <CrossedSwordsIcon class="mastermind-ev-fight-icon" />
+      <span class="mastermind-ev-fight-label">Excessive Violence</span>
+      <span class="mastermind-ev-fight-cost">+1</span>
     </button>
     <!-- why: the full card + Master-Strike / special rules open in the shared
          CardReaderModal instead of rendering inline, so the tile stays short
@@ -372,25 +376,55 @@ export default defineComponent({
   font-weight: 700;
 }
 
-/* why: WP-738 / D-24561 — the "Fight using Excessive Violence" opt-in against the
-   Mastermind. A compact accent button, visually distinct from the normal Fight
-   click so it reads as the extra-attack overspend, not the default fight. */
+/* why: WP-738 / D-24561, graphic fix-forward 2026-09-22 — the "Fight using
+   Excessive Violence" opt-in against the Mastermind. A filled RED overspend action
+   so it reads as a deliberate, costly extra-attack fight distinct from the normal
+   Fight click — not as card ability-text (the earlier subtle outline + a
+   non-rendering U+2694 glyph made operators miss it). The crossed-swords SVG and
+   the "+1" cost badge spell out the extra-attack price on the button itself. */
 .mastermind-ev-fight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   align-self: flex-start;
   margin-top: 0.2rem;
-  padding: 0.15rem 0.45rem;
-  border: 1px solid #b4462e;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #7a2818;
   border-radius: 0.35rem;
-  background: rgba(180, 70, 46, 0.15);
-  color: #b4462e;
+  background: linear-gradient(180deg, #c8452b 0%, #a5361f 100%);
+  color: #fff;
   font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(122, 40, 24, 0.45);
 }
 
 .mastermind-ev-fight:hover {
-  background: rgba(180, 70, 46, 0.28);
+  background: linear-gradient(180deg, #d85336 0%, #b53d24 100%);
+}
+
+.mastermind-ev-fight:active {
+  transform: translateY(1px);
+}
+
+.mastermind-ev-fight-icon {
+  font-size: 0.85rem;
+}
+
+/* why: the "+1" attack-cost badge — a lighter inset pill so the price of the
+   overspend is unmistakable without a separate tooltip read. */
+.mastermind-ev-fight-cost {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+/* why: the Final Blow badge shares the crossed-swords SVG so the two "strike"
+   affordances read consistently; it inherits the badge's amber via currentColor. */
+.mastermind-final-blow-icon {
+  font-size: 0.9em;
 }
 
 /* why: the victory-assured banner is the payoff moment of the match, so it uses
