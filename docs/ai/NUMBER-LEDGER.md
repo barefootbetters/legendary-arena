@@ -388,6 +388,7 @@ high-water: 422
 - WP-747 — villain-deck-bystander-captor-closest-to-deck (Engine. A Bystander revealed from the Villain Deck is captured by the frontmost/escape-edge villain; Universal Rules v23 say the Villain closest to the Villain Deck (city entry side). reserved 2026-09-22, claude/draft-bystander-midtown)
 - WP-748 — midtown-bank-robbery-villain-attack-per-bystander (Engine. Midtown Bank Robbery special rule "Each Villain gets +1 attack for each Bystander it has" is unimplemented in resolveFightCost. reserved 2026-09-22, claude/draft-bystander-midtown)
 - WP-749 — sim-non-active-seat-choice-dispatch (Engine — simulation. The sim/PAR/fixture turn loops only drive the current player, so a pendingSeatChoice addressed to a NON-ACTIVE seat (Loki Vanishing Illusions) is never resolved and the game is flagged stuck. reserved 2026-09-22, claude/sim-seat-choice-draft)
+- WP-750 — client-fight-gating-reads-engine-fightcost (App arena-client. The Fight button and City tile cost read printed display.cost (CityRow.vue canFight / useCardCostGating) instead of the engine's projected UICityCard.fightCost, so dynamic N+, Portals, Killbots, Skrull and — after WP-748 — Midtown-family villains show an enabled Fight that the engine silently refuses. Hard prerequisite of WP-748. reserved 2026-09-22, claude/draft-bystander-midtown)
 
 ## EC
 
@@ -737,6 +738,7 @@ high-water: 457
 - EC-784 — villain-deck-bystander-captor-closest-to-deck (WP-747; Engine. reserved 2026-09-22, claude/draft-bystander-midtown)
 - EC-785 — midtown-bank-robbery-villain-attack-per-bystander (WP-748; Engine. reserved 2026-09-22, claude/draft-bystander-midtown)
 - EC-786 — sim-non-active-seat-choice-dispatch (WP-749; Engine. reserved 2026-09-22, claude/sim-seat-choice-draft)
+- EC-787 — client-fight-gating-reads-engine-fightcost (WP-750; App arena-client. reserved 2026-09-22, claude/draft-bystander-midtown)
 
 ## D
 
@@ -1089,3 +1091,4 @@ section below) and the allocation protocol in
 - D-24571 — villain-deck-bystander-captor-closest-to-deck (RESERVED: locks WP-747 / EC-784. reserved 2026-09-22, claude/draft-bystander-midtown)
 - D-24572 — midtown-bank-robbery-villain-attack-per-bystander (RESERVED: locks WP-748 / EC-785. reserved 2026-09-22, claude/draft-bystander-midtown)
 - D-24573 — sim-non-active-seat-choice-dispatch (RESERVED: locks WP-749 / EC-786. reserved 2026-09-22, claude/sim-seat-choice-draft)
+- D-24574 — client-fight-gating-reads-engine-fightcost (RESERVED: locks WP-750 / EC-787. reserved 2026-09-22, claude/draft-bystander-midtown)
