@@ -26,12 +26,26 @@
  * @see DECISIONS.md D-24569 (the excessiveViolenceFired event + the swords-burst VFX beat) + D-24365 (the VFX determinism exemption)
  */
 
-/** The single burst spec for the Excessive Violence beat: the crossed-swords slash colours + count. */
+/** The single burst spec for the Excessive Violence beat: the crossed-swords slash colours + count + blade shape. */
 export interface ExcessiveViolenceVfxSpec {
   /** Non-empty crimson/steel palette for the crossed-swords slash burst. */
   readonly colors: readonly string[];
   /** How many particles the slash-burst throws — under the WP-556 200-particle ceiling. */
   readonly particleCount: number;
+  /**
+   * An SVG path (in a 24×24 box) for a single filled SWORD silhouette. The
+   * overlay feeds this to `canvas-confetti`'s `shapeFromPath` so the particles
+   * are tumbling blades, not round confetti — the difference between "a burst of
+   * crimson swords" and a party popper (operator feedback 2026-09-23). If the
+   * running `canvas-confetti` lacks `shapeFromPath`, the overlay falls back to
+   * round particles in the same palette.
+   */
+  readonly shapePath: string;
+  /**
+   * Particle scale for the blades. Larger than the round-confetti default (1) so
+   * a sword silhouette is legible at burst size.
+   */
+  readonly scalar: number;
 }
 
 /** The constant call-out word for every Excessive Violence beat. */
@@ -51,4 +65,13 @@ export const EXCESSIVE_VIOLENCE_WORD = 'EXCESSIVE VIOLENCE!';
 export const EXCESSIVE_VIOLENCE_VFX: ExcessiveViolenceVfxSpec = {
   colors: ['#b3122b', '#6e7b8b', '#d7dde3'],
   particleCount: 160,
+  // why: a single upward sword silhouette (tip → blade → crossguard → grip →
+  // pommel) in a 24×24 box — canvas-confetti's shapeFromPath fills it, so each
+  // particle tumbles as a blade. Reads as flying swords, on-theme with the
+  // fight-button crossed-swords icon, instead of round celebratory confetti.
+  shapePath:
+    'M12 2 L13 13 L16 14.5 L16 15.5 L13 15.5 L13 18.5 L12 20.5 L11 18.5 L11 15.5 L8 15.5 L8 14.5 L11 13 Z',
+  // why: 1.7 makes the blade legible at burst size; the round-confetti default
+  // (1) would render the sword as an unreadable speck.
+  scalar: 1.7,
 };
