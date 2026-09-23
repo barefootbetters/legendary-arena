@@ -83,6 +83,7 @@ import {
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
+  composeExcessiveViolenceFiredNarrative,
 } from '../events/notableEvents.compose.js';
 
 // ---------------------------------------------------------------------------
@@ -4983,7 +4984,13 @@ function heroEffectExcessiveViolence(
  * what an inner executor already uses. Never throws (moves never throw); a missing hook or empty
  * ledger is a silent no-op.
  *
- * @param G - Game state (mutated by each fired inner effect).
+ * After the drain, when ≥1 enrolled EV card actually fired an inner effect, it emits ONE
+ * `excessiveViolenceFired` notable event + ONE distinct frame log beat (WP-746 / D-24569) — the
+ * overspend MOMENT was otherwise silent (each inner effect logs on its own, but the +1-attack fire
+ * raised no distinct signal, so the payoff read as "nothing happened"). Additive: no game outcome,
+ * zone, `G.counters`, or inner-effect log changes.
+ *
+ * @param G - Game state (mutated by each fired inner effect; the fire beat appends to G.notableEvents / G.messages).
  * @param ctx - Context, forwarded to each inner effect's handler.
  * @param playerID - The fighting player's ID (whose EV ledger is fired).
  * @returns void.
@@ -4998,10 +5005,15 @@ export function fireExcessiveViolencePlays(
   // the hooks (older test fixtures) has no heroAbilityHooks. `?? []` keeps this a silent no-op
   // (moves never throw) rather than iterating undefined.
   const allHooks = G.heroAbilityHooks ?? [];
+  // why: WP-746 / D-24569 — count of enrolled EV CARDS that fired ≥1 inner effect (NOT the
+  // inner-effect count: a card with several inner effects is one "Excessive Violence ability").
+  // A LOCAL variable used only to build the frame narrative — never written to G.counters.
+  let firedCardCount = 0;
   for (const cardId of playedCards) {
     // why: WP-736 / D-24556 — find this enrolled card's fused excessive-violence hook. A copy with
     // no such hook (defensive: only allowlisted cards enrol) contributes nothing.
     const hooks = getHooksForCard(allHooks, cardId);
+    let cardFiredAny = false;
     for (const hook of hooks) {
       for (const effect of hook.effects ?? []) {
         if (effect.type !== 'excessive-violence') {
@@ -5009,8 +5021,36 @@ export function fireExcessiveViolencePlays(
         }
         for (const innerEffect of effect.excessiveViolenceEffects ?? []) {
           executeSingleEffect(G, ctx, playerID, cardId, innerEffect);
+          cardFiredAny = true;
         }
       }
+    }
+    if (cardFiredAny) {
+      firedCardCount += 1;
+    }
+  }
+
+  // why: WP-746 / D-24569 — emit the excessiveViolenceFired beat LAST, once per fight, only when
+  // ≥1 enrolled EV card actually dispatched an inner effect (firedCardCount > 0). A declined EV
+  // fight or an empty ledger fires nothing. The frame log reuses the existing `applied` LogOutcome
+  // (the overspend action did its thing — no new LOG_OUTCOMES member) and is ONE distinct beat over
+  // the inner effects' own lines. G.messages is excluded from finalStateHash (D-24081), so the log
+  // is replay-safe. The notable-event push is guarded on Array.isArray(G.notableEvents) because the
+  // minimal test builder omits it (a real match seeds [] at setup) and moves never throw — the
+  // heroEffectResolved emission precedent (~line 2447). Byte-inert on both pinned hashes: EV is
+  // vnom-only and neither the core-only sentinel nor the empty PRE_WP080 replay plays an EV card,
+  // so no EV fire reaches either pinned trajectory (the WP-697 heroEffectResolved outcome; VERIFIED
+  // at execution). The same composed narrative drives both the frame log and the event so the log
+  // and the overlay read identically.
+  if (firedCardCount > 0) {
+    const narrative = composeExcessiveViolenceFiredNarrative(`Player ${playerID}`, firedCardCount);
+    pushLog(G, narrative, 'applied');
+    if (Array.isArray(G.notableEvents)) {
+      G.notableEvents.push({
+        type: 'excessiveViolenceFired',
+        playerId: playerID,
+        narrative,
+      });
     }
   }
 }

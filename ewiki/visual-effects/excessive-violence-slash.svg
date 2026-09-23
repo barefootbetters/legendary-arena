@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 340" width="460" height="340" role="img" aria-label="Animated mock of the Excessive Violence fire effect: two crossed swords swing in, a crimson slash flash bursts, steel-and-crimson slash streaks fan outward, and the words EXCESSIVE VIOLENCE! pop on-screen. Loops.">
+  <title>Shipped Excessive Violence fire effect — a Fight using Excessive Violence unleashes its abilities</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.aura { opacity: 0; animation: aura 3.0s ease-out infinite; }
+.swords { opacity: 0; animation: swords 3.0s cubic-bezier(0.3,0,0.2,1) infinite; }
+.flash { opacity: 0; animation: flash 3.0s ease-out infinite; }
+.fring { opacity: 0; fill: none; stroke: #b3122b; animation: fring 3.0s ease-out infinite; }
+.spark { opacity: 0; transform: translate(0,0); animation: burst 3.0s ease-out infinite; }
+.lbl { opacity: 0; animation: lbl 3.0s ease-out infinite; }
+@keyframes aura {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+  30.00% { opacity: 0.26; transform: translate(230px,164px) scale(0.9); }
+  36.00% { opacity: 0.85; transform: translate(230px,164px) scale(1.28); }
+  46.00% { opacity: 0.38; transform: translate(230px,164px) scale(1.05); }
+  88.00% { opacity: 0.38; transform: translate(230px,164px) scale(1.05); }
+  96.00% { opacity: 0; transform: translate(230px,164px) scale(0.7); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(0.5); }
+}
+@keyframes swords {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.5) rotate(-18deg); }
+  32.00% { opacity: 0.85; transform: translate(230px,164px) scale(0.9) rotate(-8deg); }
+  36.00% { opacity: 1; transform: translate(230px,164px) scale(1.16) rotate(4deg); }
+  40.00% { opacity: 1; transform: translate(230px,164px) scale(0.98) rotate(0deg); }
+  44.00% { opacity: 1; transform: translate(230px,164px) scale(1.0) rotate(0deg); }
+  90.00% { opacity: 1; transform: translate(230px,164px) scale(1.0) rotate(0deg); }
+  97.00% { opacity: 0; transform: translate(230px,164px) scale(1.06) rotate(0deg); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(0.5) rotate(0deg); }
+}
+@keyframes flash {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0); }
+  36.00% { opacity: 0; transform: translate(230px,164px) scale(0.3); }
+  37.50% { opacity: 0.9; transform: translate(230px,164px) scale(0.8); }
+  52.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); }
+}
+@keyframes fring {
+  0.00% { opacity: 0; transform: translate(230px,164px) scale(0.15); stroke-width: 7; }
+  36.00% { opacity: 0; transform: translate(230px,164px) scale(0.2); stroke-width: 7; }
+  37.00% { opacity: 0.85; }
+  60.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); stroke-width: 1; }
+  100.00% { opacity: 0; transform: translate(230px,164px) scale(2.0); stroke-width: 1; }
+}
+@keyframes burst {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  36.00% { opacity: 0; transform: translate(0,0); }
+  38.00% { opacity: 1; }
+  60.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(230px,300px) scale(0.4); }
+  36.00% { opacity: 0; transform: translate(230px,300px) scale(0.4); }
+  38.00% { opacity: 1; transform: translate(230px,300px) scale(1.16); }
+  40.00% { transform: translate(230px,300px) scale(1.0); }
+  88.00% { opacity: 1; transform: translate(230px,300px) scale(1.0); }
+  95.00% { opacity: 0; transform: translate(230px,300px) scale(1.2); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash, .spark { animation: none; opacity: 0; }
+  .aura { animation: none; opacity: 0.38; transform: translate(230px,164px) scale(1.05); }
+  .swords { animation: none; opacity: 1; transform: translate(230px,164px) scale(1) rotate(0deg); }
+  .fring { animation: none; opacity: 0.35; transform: translate(230px,164px) scale(1.4); }
+  .lbl { animation: none; opacity: 1; transform: translate(230px,300px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="44%" r="82%"><stop offset="0%" stop-color="#171012" stop-opacity="1"/><stop offset="100%" stop-color="#0b0708" stop-opacity="1"/></radialGradient><radialGradient id="aur" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#b3122b" stop-opacity="0.9"/><stop offset="55%" stop-color="#b3122b" stop-opacity="0.32"/><stop offset="100%" stop-color="#b3122b" stop-opacity="0"/></radialGradient><radialGradient id="fla" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff" stop-opacity="1"/><stop offset="45%" stop-color="#b3122b" stop-opacity="0.8"/><stop offset="100%" stop-color="#b3122b" stop-opacity="0"/></radialGradient></defs>
+  <rect width="460" height="340" fill="url(#bg)"/>
+  <ellipse class="aura" rx="150" ry="138" fill="url(#aur)"/><circle class="flash" r="88" fill="url(#fla)"/><circle class="fring" r="60"/><g class="swords"><g transform="rotate(-45.0)"><polygon points="0,-96 7,-78 5,44 -5,44 -7,-78" fill="#6e7b8b"/><polygon points="0,-96 3,-78 2,44 -2,44 -3,-78" fill="#d7dde3"/><rect x="-20" y="44" width="40" height="9" rx="3" fill="#b3122b"/><rect x="-4.5" y="53" width="9" height="26" rx="3" fill="#2b3138"/><circle cx="0" cy="83" r="6.5" fill="#b3122b"/></g><g transform="rotate(45.0)"><polygon points="0,-96 7,-78 5,44 -5,44 -7,-78" fill="#6e7b8b"/><polygon points="0,-96 3,-78 2,44 -2,44 -3,-78" fill="#d7dde3"/><rect x="-20" y="44" width="40" height="9" rx="3" fill="#b3122b"/><rect x="-4.5" y="53" width="9" height="26" rx="3" fill="#2b3138"/><circle cx="0" cy="83" r="6.5" fill="#b3122b"/></g></g><g transform="translate(230 164)"><g class="spark" style="--tx:85px; --ty:-94px;"><rect x="-1.8" y="-8" width="3.6" height="8" rx="1.8" fill="#d7dde3" transform="rotate(42)"/></g><g class="spark" style="--tx:65px; --ty:92px;"><rect x="-1.8" y="-14" width="3.6" height="14" rx="1.8" fill="#b3122b" transform="rotate(144)"/></g><g class="spark" style="--tx:-123px; --ty:75px;"><rect x="-1.8" y="-16" width="3.6" height="16" rx="1.8" fill="#6e7b8b" transform="rotate(239)"/></g><g class="spark" style="--tx:-87px; --ty:-73px;"><rect x="-1.8" y="-12" width="3.6" height="12" rx="1.8" fill="#d7dde3" transform="rotate(-50)"/></g><g class="spark" style="--tx:119px; --ty:-80px;"><rect x="-1.8" y="-13" width="3.6" height="13" rx="1.8" fill="#b3122b" transform="rotate(56)"/></g><g class="spark" style="--tx:80px; --ty:75px;"><rect x="-1.8" y="-11" width="3.6" height="11" rx="1.8" fill="#6e7b8b" transform="rotate(133)"/></g><g class="spark" style="--tx:-106px; --ty:69px;"><rect x="-1.8" y="-13" width="3.6" height="13" rx="1.8" fill="#d7dde3" transform="rotate(237)"/></g><g class="spark" style="--tx:-81px; --ty:-104px;"><rect x="-1.8" y="-12" width="3.6" height="12" rx="1.8" fill="#b3122b" transform="rotate(-38)"/></g><g class="spark" style="--tx:67px; --ty:-98px;"><rect x="-1.8" y="-9" width="3.6" height="9" rx="1.8" fill="#6e7b8b" transform="rotate(34)"/></g><g class="spark" style="--tx:74px; --ty:87px;"><rect x="-1.8" y="-13" width="3.6" height="13" rx="1.8" fill="#d7dde3" transform="rotate(140)"/></g><g class="spark" style="--tx:-88px; --ty:105px;"><rect x="-1.8" y="-9" width="3.6" height="9" rx="1.8" fill="#b3122b" transform="rotate(220)"/></g><g class="spark" style="--tx:-46px; --ty:-95px;"><rect x="-1.8" y="-15" width="3.6" height="15" rx="1.8" fill="#6e7b8b" transform="rotate(-26)"/></g><g class="spark" style="--tx:73px; --ty:-55px;"><rect x="-1.8" y="-14" width="3.6" height="14" rx="1.8" fill="#d7dde3" transform="rotate(53)"/></g><g class="spark" style="--tx:119px; --ty:87px;"><rect x="-1.8" y="-16" width="3.6" height="16" rx="1.8" fill="#b3122b" transform="rotate(126)"/></g><g class="spark" style="--tx:-56px; --ty:60px;"><rect x="-1.8" y="-15" width="3.6" height="15" rx="1.8" fill="#6e7b8b" transform="rotate(223)"/></g><g class="spark" style="--tx:-58px; --ty:-75px;"><rect x="-1.8" y="-10" width="3.6" height="10" rx="1.8" fill="#d7dde3" transform="rotate(-38)"/></g></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="32" fill="#d7dde3">EXCESSIVE VIOLENCE!</text>
+</svg>

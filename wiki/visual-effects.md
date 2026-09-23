@@ -41,9 +41,11 @@ source:
   - ../apps/arena-client/src/components/play/AudioControls.vue
   - ../apps/arena-client/src/vfx/comboVfxManifest.ts
   - ../apps/arena-client/src/vfx/transformVfxManifest.ts
+  - ../apps/arena-client/src/vfx/excessiveViolenceVfxManifest.ts
   - ../apps/arena-client/src/vfx/mastermindHitVfxManifest.ts
   - ../apps/arena-client/src/vfx/victoryFinaleVfxManifest.ts
   - ../apps/arena-client/src/composables/useTransformVfx.ts
+  - ../apps/arena-client/src/composables/useExcessiveViolenceVfx.ts
   - ../apps/arena-client/src/composables/useMastermindHitVfx.ts
   - ../apps/arena-client/src/composables/useVictoryFinaleVfx.ts
   - ../apps/arena-client/src/vfx/effectIntensity.ts
@@ -109,7 +111,7 @@ governance layer** (implemented against, and not free to drift); the
 [Mechanics](#mechanics) are **design detail** (the per-event *character* —
 which flash, which colour — is proposal-level and free to evolve); and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
-**roadmap**. **Six surfaces have shipped** — the [combo VFX
+**roadmap**. **Seven surfaces have shipped** — the [combo VFX
 foundation](#shipped-combo-vfx) (flash + synergy call-out + the accessibility
 gate, WP-556), the [shield-block beat](#surface-block) with the **complete
 reveal-to-avoid family** (the `strikeBlocked` event + the Cap-shield burst,
@@ -117,7 +119,10 @@ recoloured per `threatKind` across all five threat classes — Master Strike /
 Scheme Twist / Ambush / Fight / Escape, WP-644..651), the [wound-gained
 damage vignette](#surface-1b) (its thematic inverse, WP-650), the
 [transform power-surge beat](#surface-transform) (the `transformResolved` event
-+ the gamma-green surge + "TRANSFORMED!" word, WP-672), the [mastermind-hit
++ the gamma-green surge + "TRANSFORMED!" word, WP-672), the [Excessive Violence
+fire beat](#surface-excessive-violence) (the `excessiveViolenceFired` event + a
+crimson/steel crossed-swords slash-burst + "EXCESSIVE VIOLENCE!" word on a Fight
+using Excessive Violence, WP-746), the [mastermind-hit
 beat](#shipped-mastermind-hit) (an escalating ember burst on each Tactic defeat —
 `hit1` spark → `hit4` screen-shaking impact — off the projected `tacticsDefeated`
 count delta, WP-690), and the [heroes-win victory finale](#shipped-victory-finale)
@@ -325,7 +330,7 @@ row by row:
 
 | Surface | Authority | VFX may read |
 |---|---|---|
-| `UIState.notableEvents` (eleven locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
+| `UIState.notableEvents` (twelve locked variants) | Engine (projected) | ✅ — [Surface 1](#surface-1) |
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
@@ -498,7 +503,7 @@ build in this order rather than attempting twenty effects at once:
 | Tier | Priority | Triggers |
 |---|---|---|
 | **1** | Required (the majority of player excitement) | Combo chains (`lastPlayEffectsFired`), `mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved` |
-| **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `heroEffectResolved`, `recruitHero`, `drawCards` |
+| **2** | Recommended | `ambushResolved`, `schemeTwistResolved`, `healResolved`, `heroEffectResolved`, `excessiveViolenceFired`, `recruitHero`, `drawCards` |
 | **3** | Future | `deckReshuffled` juice (the overlay chip + narrative ship today, WP-642; the indigo-riffle character is a proposal); Escape effects — the VFX for a villain *successfully escaping*, blocked on the deferred `escapeResolved` event (see [Edge Cases](#edge-cases)); **distinct** from the shipped Escape reveal-**block** teal shield (WP-651), which fires when a player *dodges* an escaping villain's reveal-or-wound; narrative-lens variants (see [Future direction](#playstyle-lens)); per-target sub-effect visuals (blocked on richer `appliedEffects`) |
 
 ### The trigger surface
@@ -512,7 +517,7 @@ candidate signals, in decreasing order of readiness:
 #### Surface 1 — Notable events (the primary, ready-made hook) {#surface-1}
 
 `NotableGameEvent` is the engine's append-only record of high-level
-player-visible outcomes. Eleven variants are locked, and — unlike the game
+player-visible outcomes. Twelve variants are locked, and — unlike the game
 log — they **are** projected as `UIState.notableEvents`. The arena client
 already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
@@ -535,6 +540,7 @@ stream — one effect per event type — with zero new engine work.
 | `strikeBlocked` | T2 | A player **avoids** a threat by revealing a Hero — a Magneto/Dr. Doom/**Loki** Master Strike skip, the reveal-or-punish Scheme Twist matched-Hero dodge, a villain **Ambush** dodge, or a villain **Fight**/**Escape** ability reveal-or-wound dodge (one per blocking player; `threatKind: masterStrike \| schemeTwist \| ambush \| fight \| escape`) | A Captain-America-blue **shield intercept** + a **"Blocked!"** chip — the defensive mirror of the Strike jolt. **Shipped (complete):** the engine event + overlay chip and the shield `VfxOverlay` burst ([`#surface-block`](#surface-block), `block-shield.svg`) — a threat-coloured deflection burst (Master Strike **red** / Scheme Twist **purple** / Ambush **green** / Fight **amber** / Escape **teal** per `threatKind`) + the "BLOCKED!" word (WP-644..651; all five reveal-to-avoid classes) |
 | `transformResolved` | T2 | A Hero base card meets its printed [Transform](transform.md) condition and swaps into its stronger second form (the World War Hulk signature mechanic; She-Hulk / Amadeus Cho are the supported bases today) — one per completed swap, `{ playerId, narrative }` | A gamma-green **power surge** — a centre-out radial bloom + a gamma particle burst + a **"TRANSFORMED!"** word, plus a **"Transformed!"** chip. The *positive* counterpart to the shield block: the hero powering up, not deflecting. **Shipped:** the engine event + overlay chip + the `VfxOverlay` transform beat ([`#surface-transform`](#surface-transform), `transform-surge.svg`) — the surge bloom (gated `'shake'`), the gamma burst (gated `'particles'`), the "TRANSFORMED!" word (gated `'word'`) (WP-672). Hero surface only; the Mastermind (General Ross) + Scheme (Chthon) transforms do not yet emit the event — named follow-ups |
 | `heroEffectResolved` | T2 | A Hero card's ability does **invisible work** — work whose result the player cannot already see on the board. v1: the reveal-top-of-Hero-Deck-for-attack family (Jade Giantess *Astonishing Strength*, keyword `reveal-herodeck-attack`), where the revealed cards rotate to the **bottom** of the Hero Deck (transient — never shown) and the summed printed attack is added silently, so it otherwise reads as "nothing happened". One per **realized** reveal (`revealedCount > 0`), `{ playerId, narrative }` (card-less; the source card name + realized count + magnitude travel in the narrative) | A warm **hero-amber** glow — the player's own ability paying off. **Shipped:** the engine event + a **"Hero Ability"** overlay chip (`--color-hero-ability` `#f5a623`) rendering the verbatim narrative, e.g. `"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +6 attack.` (WP-697 / D-24516). A **general bucket** — future invisible-work hero-effect families reuse this same event type with their own narrative composer, so the chip/accent stay constant and only the narrative differs. A `VfxOverlay` beat is a named follow-up (v1 is the overlay chip only) |
+| `excessiveViolenceFired` | T2 | A player takes a Fight **"using Excessive Violence"** and it fires ≥1 enrolled Excessive Violence card's inner abilities (the Venomverse fight-overspend mechanic). The +1-attack overspend *moment* was otherwise silent — each inner effect logs on its own, but nothing framed the fire — so it read as "nothing happened". One per fight (only when ≥1 EV **card** fired), `{ playerId, narrative }` (card-less; the player + the fired-card count travel in the narrative) | A crimson/steel **crossed-swords slash-burst** — the overspend unleashed. **Shipped:** the engine event + a crimson **"Excessive Violence!"** overlay chip (`--color-excessive-violence` `#b3122b`) rendering the verbatim narrative, e.g. `Player 0 unleashes Excessive Violence, firing 3 abilities.`, *and* the `VfxOverlay` slash beat ([`#surface-excessive-violence`](#surface-excessive-violence), `excessive-violence-slash.svg`) — the crimson slash bloom (gated `'shake'`), the crossed-swords particle burst (gated `'particles'`), the "EXCESSIVE VIOLENCE!" word (gated `'word'`) (WP-746 / D-24569) |
 
 *Animated mocks of the earlier rows — CSS-only, non-normative — are in
 [Appendix A.1](#appendix-surface-1).* The `bystanderRevealed` (WP-602) and
@@ -903,6 +909,60 @@ transformed card + **TRANSFORMED!** as a static frame under
 stand-in (the live beat plays over the real played card). Animation source:
 [transform-surge.py](../ewiki/visual-effects/transform-surge.py)
 — regenerate with `python transform-surge.py`.*
+
+#### Shipped — the Excessive Violence fire (an "overspend unleashed" beat) {#surface-excessive-violence}
+
+Where the transform beat celebrates a hero *ascending*, this one lands a hero
+*cutting loose*: a player takes a Fight **"using Excessive Violence"** and the
+enrolled Excessive Violence abilities all fire at once —
+the Venomverse fight-overspend mechanic (Venompool's *Rending Claws*, *Serious
+Overkill*, and the rest of the enrolled-then-fire family). Thematically it is a
+violent flourish: two crossed swords swing through the board in a crimson slash. It
+is the aggressive cousin of the [`transformResolved`](#surface-1) power-up — steel
+and blood rather than gamma green — so it earns its own one-shot flourish.
+
+> **Shipped — the `excessiveViolenceFired` engine event lands in WP-746 (D-24569).**
+> Adding the twelfth `NotableGameEventType` `excessiveViolenceFired`, emitted by
+> `fireExcessiveViolencePlays` at the end of the fight-time ledger drain (a minimal
+> `{ playerId, narrative }` payload, emitted **once per fight** and only when ≥1
+> enrolled EV **card** actually fired an inner effect), gave the client the signal
+> an EV VFX had to ride (Invariant #6 — VFX never invents an event). Before it, the
+> ledger drained silently — each inner effect logged on its own, but the +1-attack
+> overspend *moment* raised no distinct event, log, or visual, so the payoff read as
+> "nothing happened" (operator-confirmed 2026-09-22). It rides the existing
+> `UIState.notableEvents` projection, so WP-746 raises the [Surface-1](#surface-1)
+> `NotableEventOverlay` **"Excessive Violence!"** chip (`--color-excessive-violence`
+> `#b3122b`) *and* the `VfxOverlay` **Excessive Violence beat**: a crimson
+> **slash bloom** swelling from the centre (a `useExcessiveViolenceVfx` consumer — an
+> append-only `notableEvents` cursor, the transform-beat consumer pattern) + a
+> **crimson/steel crossed-swords particle burst** (`excessiveViolenceVfxManifest.ts`'s
+> `EXCESSIVE_VIOLENCE_VFX.colors = ['#b3122b', '#6e7b8b', '#d7dde3']`, a
+> manifest-carried particle count of 160 under the [200-particle
+> ceiling](#performance-budget)) + the constant **"EXCESSIVE VIOLENCE!"** word. Every
+> element is gated by the WP-556 `effectIntensity` `shouldRender` contract: the slash
+> bloom is the full-screen `'shake'` class (full intensity only, off under
+> reduced-motion — the [wound vignette](#surface-1b) precedent), the burst is
+> `'particles'`, and the word survives at `low` / reduced-motion (`'word'`). The fire
+> has **no sub-kind**, so the VFX event is a plain `{ seq }` and the manifest is a
+> single spec, not a `Record`. It is the standard per-event centre chip every fight
+> already raises, **not** the victory full-takeover. **Pure presentation** — reads
+> `UIState` only, no `G`/`ctx`, absent from the determinism hash (the `src/vfx/`
+> D-24365 exemption; the emission is byte-inert on both pinned hashes because EV is
+> vnom-only and no core sentinel / PRE_WP080 replay plays an EV card). The audio half —
+> an `excessive-violence.mp3` overspend hit — plays on the same `notableEvents` frame
+> ([Sound Effects](sound-effects.md#surface-1)); the clip byte is an operator R2
+> follow-up (the URL ships, a 404 no-ops).
+
+![Animated mock of the Excessive Violence fire effect: two crossed swords swing in, a crimson slash flash bursts, steel-and-crimson slash streaks fan outward, and the words EXCESSIVE VIOLENCE! pop on-screen. Loops.](/visual-effects/excessive-violence-slash.svg "width=58%")
+
+*Illustrative mock of the shipped Excessive Violence beat — a CSS-only animated SVG
+(no JavaScript, so it animates on the JS-free wiki) that loops and holds the crossed
+swords + **EXCESSIVE VIOLENCE!** as a static frame under `prefers-reduced-motion`.
+The crimson/steel palette is the shipped one (`excessiveViolenceVfxManifest.ts`'s
+`EXCESSIVE_VIOLENCE_VFX.colors`); the crossed swords are a stylised stand-in (the
+live beat plays over the real board). Animation source:
+[excessive-violence-slash.py](../ewiki/visual-effects/excessive-violence-slash.py)
+— regenerate with `python excessive-violence-slash.py`.*
 
 ### Card-interaction & hand feel (the Hearthstone-feel pass) {#card-interaction-feel}
 

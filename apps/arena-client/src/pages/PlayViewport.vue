@@ -33,6 +33,7 @@ import { useComboVfx } from '../composables/useComboVfx';
 import { useStrikeBlockedVfx } from '../composables/useStrikeBlockedVfx';
 import { useWoundVfx } from '../composables/useWoundVfx';
 import { useTransformVfx } from '../composables/useTransformVfx';
+import { useExcessiveViolenceVfx } from '../composables/useExcessiveViolenceVfx';
 import { useMastermindHitVfx } from '../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfx } from '../composables/useVictoryFinaleVfx';
 import { useWoundCue } from '../composables/useWoundCue';
@@ -188,6 +189,15 @@ export default defineComponent({
     // <VfxOverlay> renders as a gamma-green surge + "TRANSFORMED!" word. Pure
     // presentation — reads UIState only, never writes G/ctx, absent from the hash.
     useTransformVfx(audioSnapshot);
+
+    // why: WP-746 — the Excessive Violence fire beat (a Fight "using Excessive
+    // Violence" firing its enrolled EV abilities), mounted at the SAME shared
+    // composable root beside the other notable-event feel consumers, reading the
+    // SAME useUiStateStore snapshot. It keeps an append-only cursor over
+    // UIState.notableEvents and emits a signal the <VfxOverlay> renders as a
+    // crimson/steel crossed-swords slash-burst + "EXCESSIVE VIOLENCE!" word. Pure
+    // presentation — reads UIState only, never writes G/ctx, absent from the hash.
+    useExcessiveViolenceVfx(audioSnapshot);
 
     // why: the mastermind-hit beat + the heroes-win victory finale, mounted at the
     // SAME shared composable root beside the other feel consumers, reading the SAME

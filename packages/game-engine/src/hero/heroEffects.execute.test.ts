@@ -7479,4 +7479,116 @@ describe('excessive-violence enroll + fire (WP-736 / D-24556)', () => {
     assert.deepStrictEqual(roundTripped, hook,
       'the nested excessiveViolenceEffects must be plain JSON (no functions/Maps, acyclic)');
   });
+
+  // -------------------------------------------------------------------------
+  // WP-746 / D-24569 — the excessiveViolenceFired feel-beat: one notable event
+  // + one frame log per fire, only when ≥1 enrolled EV card fired an inner
+  // effect. The event rides G.notableEvents (public projection); the inner
+  // effects + their own log lines are byte-identical, only the beat is added.
+  // -------------------------------------------------------------------------
+  it('emits exactly one excessiveViolenceFired event + one applied frame log when ≥1 EV card fires', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      deck: ['d-1'],
+      heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])],
+    });
+    // why: WP-746 — the minimal builder omits notableEvents (a real match seeds [] at
+    // setup); set it so the emit is observable, mirroring what playerView projects.
+    g.notableEvents = [];
+    executeHeroEffects(g, evCtx, '0', 'rc'); // enrol
+    const messagesBeforeFire = g.messages.length;
+    fireExcessiveViolencePlays(g, evCtx, '0');
+
+    assert.equal(g.playerZones['0']!.hand.length, 1, 'the inner EV draw still fires (beat is additive)');
+    assert.equal(g.notableEvents.length, 1, 'exactly one excessiveViolenceFired event is emitted');
+    const event = g.notableEvents[0]!;
+    assert.equal(event.type, 'excessiveViolenceFired', 'the event is an excessiveViolenceFired');
+    assert.equal(event.type === 'excessiveViolenceFired' && event.playerId, '0', 'it carries the fighting seat');
+    assert.equal(
+      event.type === 'excessiveViolenceFired' && event.narrative,
+      'Player 0 unleashes Excessive Violence, firing 1 ability.',
+      'names the player + the single fired-card count (singular noun)',
+    );
+    // why: WP-746 — exactly one distinct frame beat, coloured `applied`; makeTestState
+    // omits logMeta so pushLog records the bare (unprefixed) narrative.
+    const frameLogs = g.messages
+      .slice(messagesBeforeFire)
+      .filter((entry) => entry.text.includes('unleashes Excessive Violence'));
+    assert.equal(frameLogs.length, 1, 'exactly one frame log beat is pushed');
+    assert.equal(frameLogs[0]!.outcome, 'applied', 'the frame beat reuses the existing applied LogOutcome');
+    assert.equal(
+      frameLogs[0]!.text,
+      'Player 0 unleashes Excessive Violence, firing 1 ability.',
+      'the frame log and the event narrative read identically',
+    );
+  });
+
+  it('counts fired CARDS, not inner effects — a card with two inner effects is one ability', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      deck: ['d-1', 'd-2'],
+      heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }, { type: 'draw', magnitude: 1 }])],
+    });
+    g.notableEvents = [];
+    executeHeroEffects(g, evCtx, '0', 'rc');
+    fireExcessiveViolencePlays(g, evCtx, '0');
+
+    assert.equal(g.playerZones['0']!.hand.length, 2, 'both inner draws fire (two cards drawn)');
+    assert.equal(g.notableEvents.length, 1, 'still exactly one event');
+    assert.equal(
+      g.notableEvents[0]!.type === 'excessiveViolenceFired' && g.notableEvents[0]!.narrative,
+      'Player 0 unleashes Excessive Violence, firing 1 ability.',
+      'one enrolled card = a count of 1, regardless of its inner-effect count',
+    );
+  });
+
+  it('counts each enrolled card that fired — two cards → a plural count of 2', () => {
+    const g = makeTestState({
+      inPlay: ['rc#0', 'rc#1'],
+      deck: ['d-1', 'd-2'],
+      heroAbilityHooks: [
+        evHook('rc#0', [{ type: 'draw', magnitude: 1 }]),
+        evHook('rc#1', [{ type: 'draw', magnitude: 1 }]),
+      ],
+    });
+    g.notableEvents = [];
+    executeHeroEffects(g, evCtx, '0', 'rc#0');
+    executeHeroEffects(g, evCtx, '0', 'rc#1');
+    fireExcessiveViolencePlays(g, evCtx, '0');
+
+    assert.equal(g.notableEvents.length, 1, 'exactly one event even for multiple fired cards');
+    assert.equal(
+      g.notableEvents[0]!.type === 'excessiveViolenceFired' && g.notableEvents[0]!.narrative,
+      'Player 0 unleashes Excessive Violence, firing 2 abilities.',
+      'two enrolled cards fired = a count of 2 (plural noun)',
+    );
+  });
+
+  it('emits NOTHING when zero EV cards fire (empty ledger)', () => {
+    const g = makeTestState({ inPlay: ['rc'], deck: ['d-1'], heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])] });
+    g.notableEvents = [];
+    // no executeHeroEffects → the ledger is empty, nothing enrolled
+    fireExcessiveViolencePlays(g, evCtx, '0');
+    assert.equal(g.notableEvents.length, 0, 'no fire → no excessiveViolenceFired event');
+    assert.ok(
+      !g.messages.some((entry) => entry.text.includes('unleashes Excessive Violence')),
+      'no fire → no frame log beat',
+    );
+  });
+
+  it('guarded builder: an absent notableEvents array is a silent skip — no throw, no push', () => {
+    const g = makeTestState({
+      inPlay: ['rc'],
+      deck: ['d-1'],
+      heroAbilityHooks: [evHook('rc', [{ type: 'draw', magnitude: 1 }])],
+    });
+    // why: WP-746 — leave notableEvents absent (the minimal builder omits it); the
+    // Array.isArray guard must skip the push without throwing (moves never throw).
+    assert.strictEqual(g.notableEvents, undefined, 'the builder omits notableEvents');
+    executeHeroEffects(g, evCtx, '0', 'rc');
+    assert.doesNotThrow(() => fireExcessiveViolencePlays(g, evCtx, '0'),
+      'the guarded emission does not throw when notableEvents is absent');
+    assert.strictEqual(g.notableEvents, undefined, 'no notableEvents array was created');
+    assert.equal(g.playerZones['0']!.hand.length, 1, 'the inner EV draw still fired');
+  });
 });
