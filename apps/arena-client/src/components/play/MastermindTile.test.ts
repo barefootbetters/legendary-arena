@@ -462,6 +462,24 @@ describe('MastermindTile — Excessive Violence affordance (WP-738 / D-24561)', 
     assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), true);
   });
 
+  test('the Excessive Violence button renders the crossed-swords SVG icon (not a bare glyph)', () => {
+    // why: graphic fix-forward 2026-09-22 — the button previously used a bare U+2694
+    // codepoint the play-surface font does not carry, so it silently collapsed to
+    // text and operators missed it. Lock the inline SVG in so it cannot regress.
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({ attack: 7, availableAttack: 7, excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    const evButton = wrapper.find('[data-testid="play-mastermind-ev"]');
+    assert.equal(evButton.find('svg.crossed-swords-icon').exists(), true);
+    assert.match(evButton.text(), /\+1/);
+  });
+
   test('hides the Excessive Violence button when available but short of cost+1', () => {
     const { submitMove } = recorder();
     const wrapper = mount(MastermindTile, {
