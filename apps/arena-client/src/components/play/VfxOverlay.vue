@@ -3,6 +3,7 @@ import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { comboVfxManifest } from '../../vfx/comboVfxManifest';
 import { STRIKE_BLOCKED_VFX, BLOCKED_WORD } from '../../vfx/strikeBlockedVfxManifest';
 import { TRANSFORM_VFX, TRANSFORM_WORD } from '../../vfx/transformVfxManifest';
+import { EXCESSIVE_VIOLENCE_VFX, EXCESSIVE_VIOLENCE_WORD } from '../../vfx/excessiveViolenceVfxManifest';
 import {
   MASTERMIND_HIT_VFX,
   MASTERMIND_HIT_BURST_COLORS,
@@ -17,6 +18,7 @@ import {
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 import { useTransformVfxSignal } from '../../composables/useTransformVfx';
+import { useExcessiveViolenceVfxSignal } from '../../composables/useExcessiveViolenceVfx';
 import {
   useMastermindHitVfxSignal,
   type MastermindHitVfxEvent,
@@ -74,9 +76,19 @@ import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx
  *     treatment separate from the transient combo word). Forward-compatible with
  *     Final Blow: the finale fires on the projected win, whichever fight lands it.
  *
- * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge"
+ * WP-746 adds a SEVENTH consumer — the Excessive Violence fire beat (a Fight
+ * "using Excessive Violence" firing its enrolled EV abilities). A
+ * `useExcessiveViolenceVfx` signal (an `excessiveViolenceFired` notable event)
+ * fires a crimson/steel crossed-swords slash-burst + a crimson "slash" bloom +
+ * the "EXCESSIVE VIOLENCE!" word, gated by the same accessibility contract: the
+ * word shows unless intensity is `off`, the burst at `low`/`full` (not
+ * reduced-motion), the slash bloom only at `full` (like the impact pulse /
+ * surge). Public — it fires for every viewer when any player unleashes Excessive
+ * Violence, mirroring the transform consumer.
+ *
+ * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge" / WP-746 §H "the render"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
- * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst)
+ * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst) + D-24569 (the Excessive Violence burst)
  */
 
 // why: how long the call-out word stays on screen before it fades out.
@@ -102,6 +114,12 @@ const SURGE_MS = 480;
 // why: WP-672 — the transform burst's particle count; a lively gamma throw, in the
 // same band as the shield burst and under the WP-556 200-particle ceiling.
 const TRANSFORM_BURST_PARTICLES = 130;
+// why: WP-746 — the Excessive Violence "slash" bloom duration. A brief crimson
+// centre-out radial flash (opacity/transform only), matched to the surge/impact
+// pulse and within the 500ms screen-shake performance budget. The burst's particle
+// count is carried by the manifest (EXCESSIVE_VIOLENCE_VFX.particleCount), not a
+// const here — the WP-746 §F manifest-carried-count shape.
+const SLASH_MS = 480;
 // why: the heroes-win victory banner hold — longer than the transient combo word
 // (WORD_DISPLAY_MS) because the finale is the game's biggest, one-per-match moment
 // and earns a sustained beat. The banner is opacity/transform only.
@@ -156,6 +174,7 @@ export default defineComponent({
     const strikeBlockedSignal = useStrikeBlockedVfxSignal();
     const woundSignal = useWoundVfxSignal();
     const transformSignal = useTransformVfxSignal();
+    const excessiveViolenceSignal = useExcessiveViolenceVfxSignal();
     const mastermindHitSignal = useMastermindHitVfxSignal();
     const victoryFinaleSignal = useVictoryFinaleVfxSignal();
 
@@ -184,6 +203,11 @@ export default defineComponent({
     const isSurging = ref(false);
     const surgeKey = ref(0);
 
+    // why: WP-746 — the Excessive Violence "slash" bloom state. isSlashing shows the
+    // crimson bloom; slashKey re-mounts it so a repeat fire re-runs it.
+    const isSlashing = ref(false);
+    const slashKey = ref(0);
+
     // why: the heroes-win victory finale state. isCelebrating shows the gold power
     // bloom; currentVictoryWord holds the "VICTORY!" banner (its OWN slot, distinct
     // from the transient combo `currentWord`, so a coincident mastermind-hit word
@@ -200,6 +224,7 @@ export default defineComponent({
     let shieldTimer: ReturnType<typeof setTimeout> | null = null;
     let woundTimer: ReturnType<typeof setTimeout> | null = null;
     let surgeTimer: ReturnType<typeof setTimeout> | null = null;
+    let slashTimer: ReturnType<typeof setTimeout> | null = null;
     let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
     let victoryWordTimer: ReturnType<typeof setTimeout> | null = null;
     // why: the victory confetti STORM is several staggered bursts (setTimeout-
@@ -392,6 +417,41 @@ export default defineComponent({
       renderTransform();
     });
 
+    // why: WP-746 — flash the crimson "slash" bloom. The monotonic key re-mounts
+    // the element so a repeat Excessive Violence fire re-runs the CSS bloom from the start.
+    function pulseSlash(): void {
+      isSlashing.value = true;
+      slashKey.value += 1;
+      if (slashTimer !== null) clearTimeout(slashTimer);
+      slashTimer = setTimeout(() => {
+        isSlashing.value = false;
+        slashTimer = null;
+      }, SLASH_MS);
+    }
+
+    // why: WP-746 — the Excessive Violence fire beat. The WORD shows whenever the word
+    // shows (shouldRender('word'), i.e. unless intensity is off), the crimson/steel
+    // crossed-swords burst renders at low/full (shouldRender('particles'), not
+    // reduced-motion) with the manifest-carried particle count, and the slash bloom —
+    // the heaviest, full-screen colour flash — only at full intensity
+    // (shouldRender('shake'), like the impact pulse / surge bloom).
+    function renderExcessiveViolence(): void {
+      if (shouldRender('word')) {
+        showWord(EXCESSIVE_VIOLENCE_WORD);
+      }
+      if (shouldRender('particles')) {
+        fireBurst(EXCESSIVE_VIOLENCE_VFX.particleCount, EXCESSIVE_VIOLENCE_VFX.colors);
+      }
+      if (shouldRender('shake')) {
+        pulseSlash();
+      }
+    }
+
+    watch(excessiveViolenceSignal, (event) => {
+      if (event === null) return;
+      renderExcessiveViolence();
+    });
+
     // why: the mastermind-hit beat — an escalating ember burst on each Tactic
     // defeat, reusing the combo word / burst / impact slots. The manifest maps the
     // running `tacticsDefeated` count to a tier (hit 1 spark → hit 4 top impact);
@@ -487,6 +547,7 @@ export default defineComponent({
       if (shieldTimer !== null) clearTimeout(shieldTimer);
       if (woundTimer !== null) clearTimeout(woundTimer);
       if (surgeTimer !== null) clearTimeout(surgeTimer);
+      if (slashTimer !== null) clearTimeout(slashTimer);
       if (celebrateTimer !== null) clearTimeout(celebrateTimer);
       if (victoryWordTimer !== null) clearTimeout(victoryWordTimer);
       // why: clear any confetti-storm bursts still pending so a mid-storm unmount
@@ -513,6 +574,8 @@ export default defineComponent({
       woundKey,
       isSurging,
       surgeKey,
+      isSlashing,
+      slashKey,
       isCelebrating,
       celebrateKey,
       currentVictoryWord,
@@ -541,6 +604,12 @@ export default defineComponent({
       :key="surgeKey"
       class="vfx-overlay__surge"
       data-testid="play-vfx-surge"
+    ></div>
+    <div
+      v-if="isSlashing"
+      :key="slashKey"
+      class="vfx-overlay__slash"
+      data-testid="play-vfx-slash"
     ></div>
     <div
       v-if="isCelebrating"
@@ -722,6 +791,39 @@ export default defineComponent({
   100% {
     opacity: 0;
     transform: scale(1.14);
+  }
+}
+
+/* why: WP-746 — the Excessive Violence "slash" bloom: a crimson radial flash
+   swelling from the centre outward (the overspend unleashed), the violent-red
+   counterpart to the gamma-green transform surge. Animates opacity/transform only
+   (GPU-composited), never a layout property, and clears under SLASH_MS (within the
+   500ms budget). */
+.vfx-overlay__slash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 56%,
+    rgba(179, 18, 43, 0.5),
+    rgba(110, 123, 139, 0.2) 42%,
+    rgba(179, 18, 43, 0) 70%
+  );
+  animation: vfx-slash 480ms ease-out;
+  will-change: opacity, transform;
+}
+
+@keyframes vfx-slash {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
   }
 }
 
@@ -927,6 +1029,16 @@ export default defineComponent({
      the JS shouldRender('shake') gate that already withholds it. The "TRANSFORMED!"
      word still shows (a plain fade) — the reward survives without the bloom. */
   .vfx-overlay__surge {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* why: WP-746 — under reduced-motion the full-screen crimson slash bloom is
+     suppressed (same photosensitivity class as the surge / wound flash),
+     belt-and-braces to the JS shouldRender('shake') gate that already withholds it.
+     The "EXCESSIVE VIOLENCE!" word still shows (a plain fade) — the reward survives
+     without the bloom. */
+  .vfx-overlay__slash {
     animation: none;
     opacity: 0;
   }

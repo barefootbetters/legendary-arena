@@ -1,7 +1,7 @@
 /**
  * Drift-detection + JSON-serialisability tests for notable game event types.
  *
- * Pins the ten-variant `NOTABLE_EVENT_TYPES` array against the
+ * Pins the twelve-variant `NOTABLE_EVENT_TYPES` array against the
  * `NotableGameEventType` union, the eight-entry `SCHEME_TWIST_RESOLVER_KEYS`
  * array against the `SchemeTwistResolverKey` union, and the two-entry
  * `STRIKE_BLOCK_THREAT_KINDS` array against the `StrikeBlockThreatKind` union
@@ -33,11 +33,12 @@ import type {
   StrikeBlockedEvent,
   TransformResolvedEvent,
   HeroEffectResolvedEvent,
+  ExcessiveViolenceFiredEvent,
   NotableGameEvent,
 } from './notableEvents.types.js';
 
 describe('NOTABLE_EVENT_TYPES drift detection', () => {
-  it('contains exactly eleven entries in canonical order', () => {
+  it('contains exactly twelve entries in canonical order', () => {
     assert.deepStrictEqual(
       [...NOTABLE_EVENT_TYPES],
       [
@@ -52,6 +53,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
         'strikeBlocked',
         'transformResolved',
         'heroEffectResolved',
+        'excessiveViolenceFired',
       ],
     );
   });
@@ -77,6 +79,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
       'strikeBlocked',
       'transformResolved',
       'heroEffectResolved',
+      'excessiveViolenceFired',
     ];
     for (const member of unionMembers) {
       assert.ok(
@@ -304,6 +307,16 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
       narrative: '"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +10 attack.',
     };
     const cloned = JSON.parse(JSON.stringify(original)) as HeroEffectResolvedEvent;
+    assert.deepStrictEqual(cloned, original);
+  });
+
+  it('ExcessiveViolenceFiredEvent round-trips through JSON.stringify/parse', () => {
+    const original: ExcessiveViolenceFiredEvent = {
+      type: 'excessiveViolenceFired',
+      playerId: '0',
+      narrative: 'Player 0 unleashes Excessive Violence, firing 3 abilities.',
+    };
+    const cloned = JSON.parse(JSON.stringify(original)) as ExcessiveViolenceFiredEvent;
     assert.deepStrictEqual(cloned, original);
   });
 

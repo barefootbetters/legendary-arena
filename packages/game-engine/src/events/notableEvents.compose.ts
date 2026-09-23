@@ -468,3 +468,32 @@ export function composeHeroRevealTopNarrative(
 ): string {
   return `"${sourceCardName}" revealed "${revealedCardName}" (cost ${String(cost)}) — ${outcomeText}.`;
 }
+
+// ---------------------------------------------------------------------------
+// Excessive Violence fire narrative (WP-746)
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the single-sentence narrative for an `excessiveViolenceFired` event
+ * (WP-746 / D-24569).
+ *
+ * Pure + byte-stable: given the same inputs, returns identical output. Unlike the
+ * sibling reveal composers, this one NAMES the player (the fire is a
+ * whole-turn overspend beat framed around the acting player, not a single card),
+ * so the fire site passes the resolved `playerLabel` (e.g. `"Player 0"`) and the
+ * composer keeps its no-`G` purity. `firedCount` is the number of enrolled EV
+ * cards that fired ≥1 inner effect (NOT the inner-effect count) — a single
+ * non-nested ternary picks the singular/plural noun (the `composeFightNarrative`
+ * clause style; no chained ternary per the code-style rules).
+ *
+ * @param playerLabel - Human-facing label of the fighting player (e.g. "Player 0").
+ * @param firedCount - Count of enrolled EV cards that fired ≥1 inner effect (>= 1).
+ * @returns A single English sentence for the notable-event overlay + frame log.
+ */
+export function composeExcessiveViolenceFiredNarrative(
+  playerLabel: string,
+  firedCount: number,
+): string {
+  const abilityWord = firedCount === 1 ? 'ability' : 'abilities';
+  return `${playerLabel} unleashes Excessive Violence, firing ${String(firedCount)} ${abilityWord}.`;
+}

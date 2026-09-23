@@ -26,6 +26,7 @@ import {
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
+  composeExcessiveViolenceFiredNarrative,
 } from './notableEvents.compose.js';
 
 describe('composeFightNarrative (WP-319 — names the effect targets)', () => {
@@ -453,6 +454,36 @@ describe('composeHeroRevealTopNarrative (WP-726)', () => {
     assert.equal(
       composeHeroRevealTopNarrative('Gambit', 'Strike', 2, "KO'd it"),
       composeHeroRevealTopNarrative('Gambit', 'Strike', 2, "KO'd it"),
+    );
+  });
+});
+
+describe('composeExcessiveViolenceFiredNarrative (WP-746)', () => {
+  it('renders the singular noun for a single fired card', () => {
+    assert.equal(
+      composeExcessiveViolenceFiredNarrative('Player 0', 1),
+      'Player 0 unleashes Excessive Violence, firing 1 ability.',
+    );
+  });
+
+  it('renders the plural noun for two or more fired cards', () => {
+    assert.equal(
+      composeExcessiveViolenceFiredNarrative('Player 1', 3),
+      'Player 1 unleashes Excessive Violence, firing 3 abilities.',
+    );
+  });
+
+  it('names the player (the fire is framed around the acting seat)', () => {
+    assert.ok(
+      composeExcessiveViolenceFiredNarrative('Player 0', 2).startsWith('Player 0 '),
+      'the narrative leads with the player label.',
+    );
+  });
+
+  it('is pure — identical inputs produce identical output', () => {
+    assert.equal(
+      composeExcessiveViolenceFiredNarrative('Player 0', 2),
+      composeExcessiveViolenceFiredNarrative('Player 0', 2),
     );
   });
 });

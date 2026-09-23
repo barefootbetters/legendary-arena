@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-746 — Excessive Violence fire feel-beat (EC-783 / D-24569) (2026-09-23)
+
+**User-visible on `play.legendary-arena.com` (pending live-verify).** A Fight "using Excessive
+Violence" now *reads* as an event: it raises a crimson **"Excessive Violence!"** center chip, writes
+one distinct **frame log** beat ("Player N unleashes Excessive Violence, firing N abilit(y/ies)."),
+and plays a **crimson/steel crossed-swords slash-burst** VFX over the board. Before this the
+`fireExcessiveViolencePlays` ledger drain was silent — each inner effect logged on its own, but the
++1-attack overspend MOMENT raised nothing, so the payoff read as "nothing happened" (operator-
+confirmed 2026-09-22).
+
+- **Engine.** New `excessiveViolenceFired` `NotableGameEventType` (union + `NOTABLE_EVENT_TYPES`
+  array + the runtime types-drift assertion) + a card-less `ExcessiveViolenceFiredEvent` + a pure
+  `composeExcessiveViolenceFiredNarrative` (singular/plural). `fireExcessiveViolencePlays` emits
+  exactly ONE event + ONE `applied`-outcome frame log per fight, only when ≥1 enrolled EV **card**
+  fired, guarded on `Array.isArray(G.notableEvents)` (the `heroEffectResolved` precedent). The
+  fired-card count is a local variable — no `G.counters` write; inner-effect logs unchanged.
+- **Determinism.** `G.notableEvents` is hashed by both oracles, but EV is vnom-only and no core
+  sentinel / PRE_WP080 replay plays an EV card, so **both pinned hashes are byte-unchanged**
+  (finalStateHash + `PRE_WP080_HASH = '4b119265'`) — verified empirically, **no re-pin**.
+- **Client (exhaustive consumers, compiler-forced).** `sfxManifest` 12th row
+  `excessiveViolenceFired` + `EXPECTED_EVENT_KEYS` (audio byte an operator R2 follow-up, a 404
+  no-ops); `NotableEventOverlay` `CHIP_LABELS 'Excessive Violence!'` + a crimson accent (rides the
+  standard auto-consumed center chip, no stream filter); new `excessiveViolenceVfxManifest` (crimson/
+  steel crossed-swords, lead `#b3122b`, 160 particles under the 200 ceiling) + `useExcessiveViolenceVfx`
+  wired into `VfxOverlay` and **mounted in `PlayViewport.vue`** (the required producer mount — one
+  file beyond the WP Files-Expected list; without it the signal never fires in production).
+- **ewiki.** A `#surface-excessive-violence` entry in `wiki/visual-effects.md` + the
+  `excessive-violence-slash.svg` mock (+ its `.py` generator).
+
+Engine 4131/0, arena-client 1924/0, whole-repo `--no-bail` green, engine + arena-client typecheck
+green, `sim:coverage --check` unaffected (no hero-hook growth), `pnpm -r build` 0. Display-only /
+off-ranking (NG-1). **D-24026 live-verify: operator-manual pending** (seated match, Fight using
+Excessive Violence, observe the swords-burst + frame log on the deployed client).
+
 ### WP-744 — Sim / PAR / fixture turn loops resolve and clear deferred conditional grants (EC-781 / D-24567) (2026-09-22)
 
 **No user-observable change — infrastructure only.** The live game already ran `game.ts`; this

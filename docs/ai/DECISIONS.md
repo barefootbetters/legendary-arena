@@ -44166,4 +44166,71 @@ that include wait-and-see cards now credit those cards as live play does.
 D-0205 (the replay exclusion), D-24273 (capture → replay lockstep), D-24553 (the loop-parity
 precedent).
 
+---
+
+### D-24569 — Excessive Violence fire feel-beat: a card-less `excessiveViolenceFired` notable event + a frame log + a crossed-swords slash VFX (Active 2026-09-23 — WP-746 / EC-783)
+
+**Context.** The WP-736 Excessive Violence fire (`fireExcessiveViolencePlays`,
+`packages/game-engine/src/hero/heroEffects.execute.ts`) drained the turn-scoped EV
+ledger via reentrant `executeSingleEffect` but emitted no distinct EV-frame event,
+log, or VFX — each inner effect logged on its own, but the +1-attack OVERSPEND
+moment raised nothing, so the payoff read as "nothing happened" (operator-confirmed
+2026-09-22). Presentation-only closure of that gap; no rules/VP/PAR/standing change.
+
+**Decision.**
+1. **A new `excessiveViolenceFired` `NotableGameEventType`**, added to the union +
+   the `NOTABLE_EVENT_TYPES` canonical array + the `notableEvents.types.test.ts`
+   runtime drift assertion in the same change (canonical-array lockstep), with a
+   card-less `ExcessiveViolenceFiredEvent { type; playerId; narrative }` (D-20001)
+   and a pure `composeExcessiveViolenceFiredNarrative(playerLabel, firedCount)`
+   (singular/plural). It rides the already-PUBLIC unconditional
+   `UIState.notableEvents` projection (D-12803) — no new Board-Visible Field 5-step
+   (the D-24547 `heroEffectResolved` precedent).
+2. **Emission.** `fireExcessiveViolencePlays` pushes exactly ONE such event + ONE
+   distinct frame `pushLog` beat per fight, only when ≥1 enrolled EV **card**
+   actually fired ≥1 inner effect, guarded on `Array.isArray(G.notableEvents)` (the
+   minimal test builder omits it; a real match seeds `[]`). The frame log reuses the
+   existing `applied` `LogOutcome` — no new `LOG_OUTCOMES` member. The fired-card
+   count is a LOCAL variable (never a `G.counters` write); inner-effect dispatch +
+   logs are byte-unchanged.
+3. **Determinism.** `G.notableEvents` IS hashed by both oracles, but EV is vnom-only
+   and neither the core-only sentinel nor the empty PRE_WP080 replay plays an EV
+   card, so the emission is byte-inert on both pinned hashes — VERIFIED empirically
+   at execution (finalStateHash + `PRE_WP080_HASH = '4b119265'` byte-unchanged, no
+   re-pin owed). Had a pin shifted it would have been dual re-pinned HONESTLY per
+   `reference_hashed_g_field_dual_repin`, never edited to force green, never
+   re-routed off the hashed channel.
+4. **Type-coupled exhaustive client consumers**, updated in the same change or
+   `arena-client` typecheck/drift goes red: (a) `sfxManifest` (`SfxEventKey =
+   NotableGameEvent['type']`) gains a 12th row
+   `excessiveViolenceFired: ${SFX_BASE_URL}excessive-violence.mp3` + the
+   `EXPECTED_EVENT_KEYS` key (audio byte operator-pending; a 404 no-ops, the
+   WP-602/644/672/697 URL-ships-first posture); (b) `NotableEventOverlay.CHIP_LABELS`
+   gains `'Excessive Violence!'` + a crimson `--color-excessive-violence` accent —
+   the beat rides the standard auto-consumed centre chip every fight already raises,
+   NOT the victory full-takeover, so no stream filter is added; (c) a client
+   `excessiveViolenceVfxManifest` (a crimson/steel crossed-swords slash-burst,
+   lead `#b3122b` distinct from Master-Strike red / mastermind-hit amber / transform
+   gamma-green / wound dull-red, a manifest-carried 160-particle count under the
+   WP-556 200-particle ceiling) + a `useExcessiveViolenceVfx` composable (a
+   `notableEvents`-delta consumer, the `useTransformVfx` pattern) wired into
+   `VfxOverlay` and **mounted in `PlayViewport.vue`** (the required producer mount —
+   without it the signal never fires in production). Display-only / off-ranking
+   (NG-1): a VFX never alters an outcome/VP/PAR/standing; no committed visual bytes.
+5. **ewiki.** A `#surface-excessive-violence` entry in `wiki/visual-effects.md` +
+   the `ewiki/visual-effects/excessive-violence-slash.svg` mock (+ its `.py`
+   generator).
+
+**Consequences.** `NOTABLE_EVENT_TYPES` grows to twelve; the client sfx/chip/VFX
+consumers are lockstep-updated. Whole-repo build + tests green, engine + arena-client
+typecheck green, `sim:coverage --check` unaffected (no hero-hook universe growth —
+this WP adds no keyword). D-24026 live-verify is operator-manual pending (seated
+match, Fight using Excessive Violence, observe the swords-burst + frame log on
+play.legendary-arena.com).
+
+**Reserved by:** NUMBER-LEDGER D-24569. Related: D-24556 / D-24557 (the EV mechanic +
+fire path), D-24516 / D-24547 (`heroEffectResolved` notable-event-rides-public-projection
+precedent), D-24365 (the WP-556 VFX foundation + VFX determinism exemption), D-24507
+(mastermind-hit VFX beat precedent), D-12803 (the audience-filter redaction matrix).
+
 Protect this file.

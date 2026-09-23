@@ -3,11 +3,12 @@
  *
  * `NotableGameEvent` is the engine-emitted, JSON-serialisable, append-only
  * record of high-level player-visible outcomes. The discriminated union
- * carries eleven locked variants — `fightResolved`, `ambushResolved`,
+ * carries twelve locked variants — `fightResolved`, `ambushResolved`,
  * `schemeTwistResolved`, `mastermindStrikeResolved`, `mastermindDefeated`,
  * `healResolved`, `bystanderRevealed`, `deckReshuffled`, `strikeBlocked`,
- * `transformResolved`, `heroEffectResolved` — each composed at its fire site
- * via a pure narrative helper from `notableEvents.compose.ts`.
+ * `transformResolved`, `heroEffectResolved`, `excessiveViolenceFired` — each
+ * composed at its fire site via a pure narrative helper from
+ * `notableEvents.compose.ts`.
  *
  * Consumed by `UIState.notableEvents` for descriptive "what happened"
  * overlays in the arena client. WP-200 ships the engine half; WP-201
@@ -27,19 +28,21 @@ import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
 /**
  * Closed canonical union of notable game event types.
  *
- * Eleven variants in fixed canonical order: a Fight resolution, an Ambush
+ * Twelve variants in fixed canonical order: a Fight resolution, an Ambush
  * resolution at city entry, a Scheme Twist resolution, a Mastermind
  * Strike resolution, a Mastermind defeat, a Wound heal, a Bystander
  * reveal-and-capture, a hero-deck reshuffle, a blocked/avoided threat, a
- * Hero-card Transform, and an invisible-work Hero-effect resolution.
+ * Hero-card Transform, an invisible-work Hero-effect resolution, and an
+ * Excessive Violence fight-overspend fire.
  * `'mastermindDefeated'` was added per D-20008 (citing D-20001),
  * `'healResolved'` per WP-381 / D-24182, `'bystanderRevealed'` per
  * WP-602 / D-24412, `'deckReshuffled'` per WP-642 / D-24454, `'strikeBlocked'`
- * per WP-644 / D-24456, `'transformResolved'` per WP-672 / D-24487, and
- * `'heroEffectResolved'` per WP-697 / D-24516 so the arena-client overlay can
- * report those outcomes — G.messages is not projected to clients. Adding a
- * twelfth variant requires a new `DECISIONS.md` entry (e.g., WP-186's eventual
- * `'escapeResolved'` per D-20001).
+ * per WP-644 / D-24456, `'transformResolved'` per WP-672 / D-24487,
+ * `'heroEffectResolved'` per WP-697 / D-24516, and `'excessiveViolenceFired'`
+ * per WP-746 / D-24569 so the arena-client overlay can report those outcomes —
+ * G.messages is not projected to clients. Adding a thirteenth variant requires
+ * a new `DECISIONS.md` entry (e.g., WP-186's eventual `'escapeResolved'` per
+ * D-20001).
  */
 export type NotableGameEventType =
   | 'fightResolved'
@@ -52,7 +55,8 @@ export type NotableGameEventType =
   | 'deckReshuffled'
   | 'strikeBlocked'
   | 'transformResolved'
-  | 'heroEffectResolved';
+  | 'heroEffectResolved'
+  | 'excessiveViolenceFired';
 
 // why: drift-detection array — must match `NotableGameEventType` exactly
 // (the `notableEvents.types.test.ts` drift test asserts bidirectional
@@ -72,7 +76,11 @@ export type NotableGameEventType =
 // `heroEffectResolved` (an invisible-work Hero effect — v1 the
 // heroEffectRevealHeroDeckAttack reveal-for-attack fire site, where revealed
 // cards rotate to the deck bottom and the attack magnitude is derived, so the
-// work is otherwise unobservable, WP-697 / D-24516).
+// work is otherwise unobservable, WP-697 / D-24516), and `excessiveViolenceFired`
+// (the fireExcessiveViolencePlays fight-overspend fire site — a Fight "using
+// Excessive Violence" drains the turn-scoped EV ledger, firing ≥1 enrolled EV
+// card's inner effects; the +1-attack overspend moment was otherwise silent,
+// WP-746 / D-24569).
 // Adding `'escapeResolved'` for WP-186's onEscape fire site requires a
 // new DECISIONS entry per D-20001.
 /**
@@ -90,6 +98,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
   'strikeBlocked',
   'transformResolved',
   'heroEffectResolved',
+  'excessiveViolenceFired',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -431,6 +440,34 @@ export interface HeroEffectResolvedEvent {
 }
 
 /**
+ * Emitted by `fireExcessiveViolencePlays` (`hero/heroEffects.execute.ts`) when a
+ * player takes a Fight "using Excessive Violence" and it fires at least one
+ * enrolled Excessive Violence card's inner effects (WP-746 / D-24569). Fires as
+ * the LAST step of the ledger drain, once per fight, only when ≥1 enrolled EV
+ * card actually dispatched an inner effect (the fired-card count travels inside
+ * the composed `narrative`) — observing settled state, the `heroEffectResolved`
+ * emission precedent. NOT emitted when zero EV cards fired (a Fight that spent
+ * no Excessive Violence, or an empty ledger). The +1-attack overspend was
+ * previously silent — each inner effect logged on its own, but the overspend
+ * MOMENT raised no distinct event, so the payoff read as "nothing happened"
+ * (operator-confirmed 2026-09-22). Card-less payload per D-20001 (no `eventId` /
+ * `seq` / `timestamp` / card id — like `healResolved` / `transformResolved` /
+ * `heroEffectResolved`): the acting seat travels on `playerId`, the fired-card
+ * count inside `narrative`. Public and rendered verbatim by the client (D-20002);
+ * presentation parity only, not a new mechanic or reward — the fire already
+ * happens (WP-736), this announces it so the arena-client can raise the center
+ * chip + the crossed-swords slash-burst VFX beat.
+ */
+export interface ExcessiveViolenceFiredEvent {
+  /** Discriminator. */
+  type: 'excessiveViolenceFired';
+  /** boardgame.io player-index string ("0", "1", ...) of the fighting player. */
+  playerId: string;
+  /** Engine-composed single-sentence English narrative (names the player + the fired-card count). */
+  narrative: string;
+}
+
+/**
  * Closed discriminated union of every notable game event variant.
  *
  * Append-only on `G.notableEvents` at runtime. JSON-serialisable. Event
@@ -448,4 +485,5 @@ export type NotableGameEvent =
   | DeckReshuffledEvent
   | StrikeBlockedEvent
   | TransformResolvedEvent
-  | HeroEffectResolvedEvent;
+  | HeroEffectResolvedEvent
+  | ExcessiveViolenceFiredEvent;

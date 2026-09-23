@@ -15,6 +15,7 @@ import {
 } from '../../composables/useStrikeBlockedVfx';
 import { useWoundVfxSignal } from '../../composables/useWoundVfx';
 import { useTransformVfxSignal } from '../../composables/useTransformVfx';
+import { useExcessiveViolenceVfxSignal } from '../../composables/useExcessiveViolenceVfx';
 import { useMastermindHitVfxSignal } from '../../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
 import {
@@ -45,6 +46,12 @@ function emitWound(): void {
 function emitTransform(): void {
   seq += 1;
   useTransformVfxSignal().value = { seq };
+}
+
+/** Pushes an Excessive Violence fire event onto the shared EV signal. */
+function emitExcessiveViolence(): void {
+  seq += 1;
+  useExcessiveViolenceVfxSignal().value = { seq };
 }
 
 /** Pushes a mastermind-hit event (the running defeated-tactic count) onto its signal. */
@@ -322,6 +329,72 @@ describe('VfxOverlay — transform beat (WP-672)', () => {
     await nextTick();
     assert.ok(wrapper.find('[data-testid="play-vfx-callout"]').exists());
     assert.equal(wrapper.find('[data-testid="play-vfx-surge"]').exists(), false);
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — Excessive Violence beat (WP-746)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useStrikeBlockedVfxSignal().value = null;
+    useWoundVfxSignal().value = null;
+    useTransformVfxSignal().value = null;
+    useExcessiveViolenceVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+  });
+
+  test('an Excessive Violence signal flashes the crimson slash + the "EXCESSIVE VIOLENCE!" word at full intensity', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitExcessiveViolence();
+    await nextTick();
+
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-slash"]').exists(),
+      'the crimson slash bloom shows',
+    );
+    const callout = wrapper.find('[data-testid="play-vfx-callout"]');
+    assert.ok(callout.exists(), 'the call-out word shows');
+    assert.equal(callout.text(), 'EXCESSIVE VIOLENCE!');
+    wrapper.unmount();
+  });
+
+  test('intensity off renders nothing (the master kill-switch)', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitExcessiveViolence();
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-slash"]').exists(), false);
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('low intensity keeps the word but suppresses the slash (gated on shake — full only)', async () => {
+    useEffectIntensity().setIntensity('low');
+    const wrapper = mount(VfxOverlay);
+    emitExcessiveViolence();
+    await nextTick();
+    assert.ok(
+      wrapper.find('[data-testid="play-vfx-callout"]').exists(),
+      'the word survives at low intensity',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-vfx-slash"]').exists(),
+      false,
+      'the full-screen slash is full-intensity only',
+    );
+    wrapper.unmount();
+  });
+
+  test('reduced-motion keeps the word but suppresses the full-screen slash (photosensitivity)', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitExcessiveViolence();
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-callout"]').exists());
+    assert.equal(wrapper.find('[data-testid="play-vfx-slash"]').exists(), false);
     wrapper.unmount();
   });
 });
