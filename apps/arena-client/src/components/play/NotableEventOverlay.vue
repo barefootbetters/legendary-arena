@@ -1,6 +1,7 @@
 <script lang="ts">
 import { computed, defineComponent, type PropType } from 'vue';
 import type { UICardDisplay } from '@legendary-arena/game-engine';
+import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import {
   eventCardId,
   type NotableGameEvent,
@@ -104,6 +105,7 @@ function effectLabel(keyword: string): string {
 
 export default defineComponent({
   name: 'NotableEventOverlay',
+  components: { CrossedSwordsIcon },
   props: {
     event: {
       type: Object as PropType<NotableGameEvent | null>,
@@ -193,7 +195,13 @@ export default defineComponent({
       role="status"
       aria-atomic="true"
     >
-      <span class="notable-event-overlay__chip">{{ chipText }}</span>
+      <span class="notable-event-overlay__chip">
+        <CrossedSwordsIcon
+          v-if="event.type === 'excessiveViolenceFired'"
+          class="notable-event-overlay__chip-icon"
+        />
+        {{ chipText }}
+      </span>
       <p class="notable-event-overlay__card-name">{{ cardName }}</p>
       <p class="notable-event-overlay__narrative">{{ event.narrative }}</p>
       <ul
@@ -301,7 +309,9 @@ export default defineComponent({
 }
 
 .notable-event-overlay__chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -309,6 +319,15 @@ export default defineComponent({
   text-transform: uppercase;
   letter-spacing: 0.06em;
   background: rgba(255, 255, 255, 0.12);
+}
+
+/* why: WP-746 fix-forward — the crossed-swords icon on the Excessive Violence
+   chip (same motif as the fight button + the blade-particle burst), so the beat
+   reads as violence at a glance, not a bare "Excessive Violence!" text label
+   (operator feedback 2026-09-23). Tinted to the crimson accent. */
+.notable-event-overlay__chip-icon {
+  font-size: 0.9rem;
+  color: var(--color-excessive-violence, #b3122b);
 }
 
 .notable-event-overlay__card-name {

@@ -3,7 +3,11 @@ import { defineComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { comboVfxManifest } from '../../vfx/comboVfxManifest';
 import { STRIKE_BLOCKED_VFX, BLOCKED_WORD } from '../../vfx/strikeBlockedVfxManifest';
 import { TRANSFORM_VFX, TRANSFORM_WORD } from '../../vfx/transformVfxManifest';
-import { EXCESSIVE_VIOLENCE_VFX, EXCESSIVE_VIOLENCE_WORD } from '../../vfx/excessiveViolenceVfxManifest';
+import {
+  EXCESSIVE_VIOLENCE_VFX,
+  EXCESSIVE_VIOLENCE_WORD,
+  type ExcessiveViolenceVfxSpec,
+} from '../../vfx/excessiveViolenceVfxManifest';
 import {
   MASTERMIND_HIT_VFX,
   MASTERMIND_HIT_BURST_COLORS,
@@ -166,6 +170,45 @@ export function buildBurstOptions(
   return options;
 }
 
+/**
+ * Builds the `canvas-confetti` options for the Excessive Violence SWORD burst.
+ * Exported and pure so its shape is unit-testable — under jsdom `canvas-confetti`
+ * never actually renders (no 2D context), so a spy on the burst is impossible;
+ * the test asserts this options object instead (the WP-647 buildBurstOptions
+ * pattern). Distinct from `buildBurstOptions`: the motion is faster and sharper
+ * (higher velocity, wider spread, heavier gravity, fewer ticks) so the blades
+ * read as a violent slash, not a floaty confetti puff, and `shapes` carries the
+ * sword silhouette when the running library supports it.
+ *
+ * @param spec - the Excessive Violence manifest spec (colours, count, scalar).
+ * @param shapes - the sword shape(s) to throw, or `undefined` to fall back to
+ *   round particles (older canvas-confetti without shapeFromPath).
+ * @returns the confetti options object.
+ */
+export function buildSwordBurstOptions(
+  spec: ExcessiveViolenceVfxSpec,
+  shapes?: readonly unknown[],
+): Record<string, unknown> {
+  const options: Record<string, unknown> = {
+    particleCount: spec.particleCount,
+    spread: 112,
+    startVelocity: 55,
+    gravity: 1.15,
+    ticks: 100,
+    scalar: spec.scalar,
+    origin: { x: 0.5, y: 0.6 },
+    colors: [...spec.colors],
+    disableForReducedMotion: true,
+  };
+  // why: omit `shapes` entirely (not `shapes: undefined`) when the library has
+  // no shapeFromPath, so canvas-confetti keeps its default round particle — a
+  // graceful degrade to a crimson/steel round burst rather than an error.
+  if (shapes !== undefined && shapes.length > 0) {
+    options.shapes = [...shapes];
+  }
+  return options;
+}
+
 export default defineComponent({
   name: 'VfxOverlay',
   setup() {
@@ -239,6 +282,13 @@ export default defineComponent({
     // may depend on canvas-confetti (which uses Math.random + requestAnimationFrame).
     let confettiFire: ((options: Record<string, unknown>) => void) | null = null;
     let confettiLoading = false;
+    // why: canvas-confetti's shapeFromPath, captured at load so the Excessive
+    // Violence burst can render sword-silhouette particles. A build without it
+    // (older bundle) leaves this null and the EV burst falls back to round
+    // particles in the same palette — never a throw.
+    let confettiShapeFromPath: ((options: { path: string }) => unknown) | null = null;
+    // why: the sword shape, built once from the manifest path on first EV fire.
+    let swordShape: unknown = null;
 
     async function ensureConfetti(): Promise<void> {
       const canvas = canvasEl.value;
@@ -263,6 +313,11 @@ export default defineComponent({
         // canvas of the performance budget), rather than letting the library
         // append its own global canvas.
         confettiFire = module.default.create(canvas, { resize: true, useWorker: false });
+        // why: capture shapeFromPath (added in canvas-confetti 1.6) so the EV
+        // burst can throw blades; guarded so an older bundle degrades to round.
+        const shapeFromPath = (module.default as { shapeFromPath?: (options: { path: string }) => unknown })
+          .shapeFromPath;
+        confettiShapeFromPath = typeof shapeFromPath === 'function' ? shapeFromPath : null;
       } catch {
         // why: a failed dynamic import (offline chunk, CSP) degrades to no
         // particles — the word + impact still render. Pure presentation never
@@ -280,6 +335,22 @@ export default defineComponent({
       void ensureConfetti().then(() => {
         if (confettiFire === null) return;
         confettiFire(buildBurstOptions(particleCount, colors));
+      });
+    }
+
+    // why: the Excessive Violence blade burst — builds the sword shape once (lazy,
+    // after canvas-confetti loads) and throws crimson/steel blades with sharper
+    // motion than the shared round burst. If the library has no shapeFromPath,
+    // `swordShape` stays null and the burst degrades to round particles in the
+    // same palette (buildSwordBurstOptions omits `shapes`), never a throw.
+    function fireSwordBurst(spec: ExcessiveViolenceVfxSpec): void {
+      void ensureConfetti().then(() => {
+        if (confettiFire === null) return;
+        if (swordShape === null && confettiShapeFromPath !== null) {
+          swordShape = confettiShapeFromPath({ path: spec.shapePath });
+        }
+        const shapes = swordShape !== null ? [swordShape] : undefined;
+        confettiFire(buildSwordBurstOptions(spec, shapes));
       });
     }
 
@@ -440,7 +511,7 @@ export default defineComponent({
         showWord(EXCESSIVE_VIOLENCE_WORD);
       }
       if (shouldRender('particles')) {
-        fireBurst(EXCESSIVE_VIOLENCE_VFX.particleCount, EXCESSIVE_VIOLENCE_VFX.colors);
+        fireSwordBurst(EXCESSIVE_VIOLENCE_VFX);
       }
       if (shouldRender('shake')) {
         pulseSlash();

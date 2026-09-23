@@ -31,6 +31,26 @@ describe('excessiveViolenceVfxManifest (WP-746)', () => {
     );
   });
 
+  test('carries a non-empty sword shape path and a legible blade scalar', () => {
+    // why: the fix-forward that turns the round confetti into blade particles —
+    // the overlay feeds shapePath to canvas-confetti's shapeFromPath. Assert it is
+    // a non-empty SVG path (starts with a move command) and the scalar is above
+    // the round-confetti default so the sword is legible, not a speck.
+    assert.ok(
+      typeof EXCESSIVE_VIOLENCE_VFX.shapePath === 'string' && EXCESSIVE_VIOLENCE_VFX.shapePath.length > 0,
+      'the Excessive Violence burst must carry a non-empty sword shape path',
+    );
+    assert.match(
+      EXCESSIVE_VIOLENCE_VFX.shapePath,
+      /^M/,
+      'the sword shape path must begin with a move command',
+    );
+    assert.ok(
+      EXCESSIVE_VIOLENCE_VFX.scalar > 1,
+      `the blade scalar (${EXCESSIVE_VIOLENCE_VFX.scalar}) must exceed the round-confetti default so the sword is legible`,
+    );
+  });
+
   test('the palette leads with the crimson lead colour, distinct from every other effect', () => {
     // why: the lead colour is the Excessive Violence beat's identity — a crimson
     // used by no other effect. Pins it so a future recolour is a deliberate,

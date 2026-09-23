@@ -7,7 +7,8 @@ import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import VfxOverlay, { buildBurstOptions } from './VfxOverlay.vue';
+import VfxOverlay, { buildBurstOptions, buildSwordBurstOptions } from './VfxOverlay.vue';
+import { EXCESSIVE_VIOLENCE_VFX } from '../../vfx/excessiveViolenceVfxManifest';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
   useStrikeBlockedVfxSignal,
@@ -564,5 +565,31 @@ describe('VfxOverlay — buildBurstOptions (combo path unchanged, WP-647)', () =
     const options = buildBurstOptions(120, palette);
     assert.deepEqual(options.colors, palette);
     assert.equal(options.particleCount, 120);
+  });
+});
+
+describe('VfxOverlay — buildSwordBurstOptions (Excessive Violence blade burst, WP-746 fix-forward)', () => {
+  test('carries the manifest count/colours/scalar and sharper-than-round motion', () => {
+    const options = buildSwordBurstOptions(EXCESSIVE_VIOLENCE_VFX);
+    assert.equal(options.particleCount, EXCESSIVE_VIOLENCE_VFX.particleCount);
+    assert.deepEqual(options.colors, [...EXCESSIVE_VIOLENCE_VFX.colors]);
+    assert.equal(options.scalar, EXCESSIVE_VIOLENCE_VFX.scalar);
+    // why: the blade burst is sharper than the shared round burst (spread 78,
+    // startVelocity 42, gravity 0.9) so it reads as a violent slash, not a puff.
+    assert.ok((options.startVelocity as number) > 42, 'faster than the round burst');
+    assert.ok((options.gravity as number) > 0.9, 'heavier gravity than the round burst');
+    assert.equal(options.disableForReducedMotion, true);
+  });
+
+  test('OMITS shapes when the library has no shapeFromPath (round fallback), threads them when present', () => {
+    const noShapes = buildSwordBurstOptions(EXCESSIVE_VIOLENCE_VFX);
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(noShapes, 'shapes'),
+      false,
+      'no shapes key when none supplied — canvas-confetti keeps round particles (graceful degrade)',
+    );
+    const sword = { __swordShape: true };
+    const withShapes = buildSwordBurstOptions(EXCESSIVE_VIOLENCE_VFX, [sword]);
+    assert.deepEqual(withShapes.shapes, [sword]);
   });
 });
