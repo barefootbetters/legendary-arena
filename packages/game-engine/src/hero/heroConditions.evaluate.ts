@@ -20,6 +20,43 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
+// Master Strike / Ambush this-turn condition types (WP-743 / D-24566)
+// ---------------------------------------------------------------------------
+
+// why: WP-743 / D-24566 — named so the setup marker arm, the evaluator case, the
+// describe case, the wait-and-see list and the reveal write-site gate all reference one
+// literal (no cross-file drift).
+/** Grief: a Master Strike was played this turn. */
+export const MASTER_STRIKE_THIS_TURN_CONDITION_TYPE = 'masterStrikePlayedThisTurn';
+
+/** Spring the Trap: a Master Strike or an Ambush Villain was played this turn. */
+export const MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE = 'masterStrikeOrAmbushPlayedThisTurn';
+
+/**
+ * Reports whether any hero ability hook in this match carries a condition of the
+ * given type.
+ *
+ * why: WP-743 / D-24566 — gates the lazy per-turn flag writes in performVillainReveal,
+ * so a match whose hooks never read a flag never gains that key on G and both hash
+ * oracles stay byte-unchanged (the D-24467 posture). Pure read; setup-built hooks are
+ * immutable, so the answer is stable for the match.
+ *
+ * @param G - Current game state (read-only).
+ * @param conditionType - The HeroCondition type to look for.
+ * @returns True iff some hook in G.heroAbilityHooks has a condition of that type.
+ */
+export function matchReadsConditionType(G: LegendaryGameState, conditionType: string): boolean {
+  for (const hook of G.heroAbilityHooks ?? []) {
+    for (const condition of hook.conditions ?? []) {
+      if (condition.type === conditionType) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
 // ---------------------------------------------------------------------------
 
@@ -306,6 +343,21 @@ export function evaluateCondition(
       // after a qualifying defeat — never sticky. Ignores condition.value (a boolean
       // gate, no threshold). Safe-skip parity: an absent flag reads false, never throws.
       return G.villainOrMastermindDefeatedSinceResolve === true;
+    }
+
+    case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn". A
+      // sticky per-turn predicate (a count >= 1 threshold) read from the gated lazy flag
+      // performVillainReveal sets when a Master Strike reaches the strike pile. Ignores
+      // condition.value. An absent flag reads false, so this never throws.
+      return G.masterStrikePlayedThisTurn === true;
+    }
+
+    case MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-743 / D-24566 — Spring the Trap's "If a Master Strike or Villain that has
+      // an Ambush ability was played this turn". Either sticky flag satisfies it; the
+      // ambush flag alone never satisfies Grief's case above. Ignores condition.value.
+      return G.masterStrikePlayedThisTurn === true || G.ambushVillainPlayedThisTurn === true;
     }
 
     case 'heroClassInDiscardPile': {
@@ -771,6 +823,14 @@ export function describeFailedCondition(
       // to quote. The line is the wait-and-see "not yet" phrasing (the ability applies
       // the moment a qualifying defeat lands this turn), matching the recorded log text.
       return 'it needs you to defeat a Villain or Mastermind this turn';
+
+    case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
+      // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
+      return 'it needs a Master Strike played this turn';
+
+    case MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE:
+      // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
+      return 'it needs a Master Strike or a Villain with an Ambush ability played this turn';
 
     case 'heroClassInDiscardPile':
       // why: D-24544 — X-Gene's discard-pile class-presence gate; a boolean existence

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 746,
+    "totalRows": 748,
     "byStatus": {
       "executable": 345,
       "deferred": 16,
-      "condition": 30,
+      "condition": 32,
       "unsupported": 318,
       "unmarked": 35,
       "subsystem": 2
     },
-    "distinctMechanics": 149
+    "distinctMechanics": 151
   },
   "rows": [
     {
@@ -6930,6 +6930,22 @@
       "extId": "msis/wanda-vision",
       "heroName": "Wanda & Vision",
       "set": "msis",
+      "mechanic": "master-strike-this-turn",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "grief",
+          "name": "Grief"
+        }
+      ]
+    },
+    {
+      "extId": "msis/wanda-vision",
+      "heroName": "Wanda & Vision",
+      "set": "msis",
       "mechanic": "reveal-odd-draw",
       "status": "executable",
       "wp": "WP-253",
@@ -11020,6 +11036,22 @@
         {
           "slug": "serious-overkill",
           "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "heroName": "Venom Rocket",
+      "set": "vnom",
+      "mechanic": "master-strike-or-ambush-this-turn",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "spring-the-trap",
+          "name": "Spring the Trap"
         }
       ]
     },

@@ -817,6 +817,16 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.villainOrMastermindDefeatedSinceResolve;
           }
 
+          // why: WP-743 / D-24566 — the Master Strike / Ambush Villain flags are THIS
+          // turn only (Grief / Spring the Trap). Guarded deletes, so a game that never set
+          // them is byte-unchanged; applyOnBeginParity mirrors these for the rebuilt loops.
+          if (G.masterStrikePlayedThisTurn !== undefined) {
+            delete G.masterStrikePlayedThisTurn;
+          }
+          if (G.ambushVillainPlayedThisTurn !== undefined) {
+            delete G.ambushVillainPlayedThisTurn;
+          }
+
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
           // helper push sites have no ctx) and reset the per-step action counter, so
           // pushLog can number every log line {turn}.{step}.{action}. NOTE (WP-337):

@@ -6,7 +6,9 @@
  * (`villainRevealedThisTurn`, `hasDrawnThisTurn`), drops every wait-and-see
  * deferred conditional grant (`deferredConditionalGrants`, WP-568 / D-24377)
  * and clears the WP-656 defeat edge flag
- * (`villainOrMastermindDefeatedSinceResolve`, D-24467). None of the engine's
+ * (`villainOrMastermindDefeatedSinceResolve`, D-24467) and the WP-743 per-turn
+ * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
+ * `ambushVillainPlayedThisTurn`, D-24566). None of the engine's
  * three non-framework per-turn loops run that hook, so each mirrors it manually
  * through this helper:
  *
@@ -35,8 +37,9 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
 /**
  * Mirrors the play-phase onBegin hook for one turn start: resets the two
  * once-per-turn allowance flags for the incoming seat, drops every deferred
- * conditional grant, and clears the WP-656 defeat edge flag — in the same order
- * `game.ts` `onBegin` runs them. No draw (D-24520 — the draw is at end of turn).
+ * conditional grant, clears the WP-656 defeat edge flag, and deletes the WP-743
+ * Master Strike / Ambush Villain flags — in the same order `game.ts` `onBegin` runs
+ * them. No draw (D-24520 — the draw is at end of turn).
  *
  * why: rule-hook firing (onTurnStart) is intentionally NOT mirrored — the three
  * callers are observation-only and defer rule hooks (D-0205). Stage/economy
@@ -44,8 +47,9 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  * flag resets and the deferred-grant turn-boundary clear of onBegin.
  *
  * @param gameState - the live per-game state; the two allowance flags are
- *   mutated in place, and `deferredConditionalGrants` /
- *   `villainOrMastermindDefeatedSinceResolve` are deleted when present.
+ *   mutated in place, and `deferredConditionalGrants`,
+ *   `villainOrMastermindDefeatedSinceResolve`, `masterStrikePlayedThisTurn` and
+ *   `ambushVillainPlayedThisTurn` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
  *   the flags are global-per-turn, not per-seat, but kept for call-site clarity).
  */
@@ -75,6 +79,17 @@ export function applyOnBeginParity(
   // keeps the sentinel finalStateHash and PRE_WP080_HASH oracles stable.
   if (gameState.villainOrMastermindDefeatedSinceResolve !== undefined) {
     delete gameState.villainOrMastermindDefeatedSinceResolve;
+  }
+  // why: WP-743 / D-24566 — mirrors game.ts onBegin's guarded deletes of the per-turn
+  // Master Strike / Ambush Villain flags. The simulation runner, PAR aggregator and
+  // fixture runner never run game.ts onBegin; without this a Master Strike would carry
+  // into every later turn and re-open the Spring the Trap over-grant in the sim and PAR.
+  // Guarded so a never-set G stays byte-unchanged.
+  if (gameState.masterStrikePlayedThisTurn !== undefined) {
+    delete gameState.masterStrikePlayedThisTurn;
+  }
+  if (gameState.ambushVillainPlayedThisTurn !== undefined) {
+    delete gameState.ambushVillainPlayedThisTurn;
   }
   // why: playerId retained in the signature for call-site symmetry with the live
   // onBegin (which reads ctx.currentPlayer); referenced here so lint does not flag

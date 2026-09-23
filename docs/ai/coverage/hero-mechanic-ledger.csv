@@ -375,6 +375,7 @@ msis/captain-marvel,Captain Marvel,msis,draw,executable,WP-022,D-2201,packages/g
 msis/captain-marvel,Captain Marvel,msis,endgame,unsupported,,,,infused-by-the-tesseract|return-from-the-stars|time-to-end-it|turning-point
 msis/doctor-strange,Doctor Strange,msis,phasing,unsupported,,,,invoke-the-time-stone|open-portals|sift-futures
 msis/doctor-strange,Doctor Strange,msis,sacrifice,unsupported,,,,1-in-14-000-065|invoke-the-time-stone
+msis/wanda-vision,Wanda & Vision,msis,master-strike-this-turn,condition,,,,grief
 msis/wanda-vision,Wanda & Vision,msis,reveal-odd-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-odd-draw,witchcraft
 msis/wanda-vision,Wanda & Vision,msis,sacrifice,unsupported,,,,let-go|we-have-to-destroy-it
 msmc/m,M,msmc,clone,unsupported,,,,interweaving-powers|penance-form|three-sisters-combined|uncover-family-secrets
@@ -600,6 +601,7 @@ vnom/venom,Venom,vnom,indigestion,unsupported,,,,devouring-drool|insatiable-hung
 vnom/venom,Venom,vnom,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,symbiotic-adaptation
 vnom/venom-rocket,Venom Rocket,vnom,digest,unsupported,,,,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,serious-overkill
+vnom/venom-rocket,Venom Rocket,vnom,master-strike-or-ambush-this-turn,condition,,,,spring-the-trap
 vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos

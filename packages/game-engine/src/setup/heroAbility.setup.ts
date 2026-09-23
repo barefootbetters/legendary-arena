@@ -38,6 +38,10 @@ import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // ability text from the canonical face (sides[0]). The shared emitter is the
 // single source of those instance ids (import-not-duplicate, D-13702 RS-4).
 import { heroCardInstanceExtIds } from './buildHeroDeck.js';
+import {
+  MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
+  MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+} from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
 // HeroAbilityRegistryReader — local structural interface
@@ -1283,6 +1287,19 @@ function parseAbilityText(
       // on play). A boolean gate — `value` is unused by the evaluator; '1' is a stable
       // placeholder. Placed before the unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' });
+    } else if (normalizedKeyword === 'master-strike-this-turn') {
+      // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
+      // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn
+      // wait-and-see gate onto the same hook as the line's printed +2[icon:recruit], so the
+      // recruit fires only once a Master Strike has been played this turn. A boolean gate;
+      // '1' is a stable placeholder. Placed before the unresolved-marker fallback.
+      conditions.push({ type: MASTER_STRIKE_THIS_TURN_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'master-strike-or-ambush-this-turn') {
+      // why: WP-743 / D-24566 — Spring the Trap's "If a Master Strike or Villain that has an
+      // Ambush ability was played this turn, you get +1 Attack." Same marker→condition
+      // precedent (D-24467); the +1[icon:attack] stays on this hook via Step 2b. A boolean
+      // gate; '1' is a stable placeholder. Placed before the unresolved-marker fallback.
+      conditions.push({ type: MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'first-hero-condition') {
       // why: WP-681 / D-24498 — Deadpool's "Hey, Can I Get a Do-Over?" gates its
       // optional discard-and-redraw on "if this is the first Hero you played this turn".

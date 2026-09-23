@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 28,
-    "totalObservations": 2506,
+    "totalObservations": 2505,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 490,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2016
+      "parse-unrecognized": 2015
     }
   },
   "byMechanic": {
@@ -614,12 +614,12 @@
       ]
     },
     "phasing": {
-      "hitCount": 101,
+      "hitCount": 102,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 101
+        "parse-unrecognized": 102
       },
       "examples": [
         {
@@ -684,12 +684,12 @@
       ]
     },
     "sacrifice": {
-      "hitCount": 16,
-      "lastSeenTurn": 25,
+      "hitCount": 14,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 16
+        "parse-unrecognized": 14
       },
       "examples": [
         {
@@ -699,12 +699,6 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "msis/black-panther/great-many-lives-lost#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "msis/black-panther/great-many-lives-lost#1",
           "cardType": "hero",
           "timing": "onPlay",
@@ -718,6 +712,12 @@
         },
         {
           "cardId": "msis/black-panther/great-many-lives-lost#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msis/bruce-banner/reverse-the-snap#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

@@ -966,6 +966,28 @@
       "hidden": true
     },
     {
+      "slug": "master-strike-or-ambush-this-turn",
+      "label": "Master Strike Or Ambush This Turn",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "vnom/venom-rocket"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "master-strike-this-turn",
+      "label": "Master Strike This Turn",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "msis/wanda-vision"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "microscopic-size-changing",
       "label": "Microscopic Size Changing",
       "scope": "hero",
@@ -3309,6 +3331,7 @@
     },
     "msis/wanda-vision": {
       "mechanics": [
+        "master-strike-this-turn",
         "reveal-odd-draw",
         "sacrifice"
       ]
@@ -3970,6 +3993,7 @@
       "mechanics": [
         "digest",
         "excessive-violence",
+        "master-strike-or-ambush-this-turn",
         "optional-ko-hand-discard"
       ]
     },

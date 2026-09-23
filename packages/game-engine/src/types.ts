@@ -2271,6 +2271,21 @@ export interface LegendaryGameState {
   /** Edge signal: a Villain/Mastermind was defeated this move, awaiting credit; absent otherwise. */
   villainOrMastermindDefeatedSinceResolve?: boolean;
 
+  // why: WP-743 / D-24566 — a Master Strike card was played (revealed from the Villain
+  // Deck and routed to the strike pile) this turn. Read by the Grief and Spring the Trap
+  // wait-and-see conditions. Written GATED in performVillainReveal — only when some hero
+  // hook in the match reads it — and never written as false, so a game without those
+  // cards carries no such key and both hash oracles stay byte-unchanged (the D-24467
+  // lazy-field posture). Sticky for the turn; deleted at the play-phase turn onBegin.
+  /** A Master Strike was played this turn; absent otherwise. */
+  masterStrikePlayedThisTurn?: boolean;
+
+  // why: WP-743 / D-24566 — a Villain or Henchman with an Ambush ability entered the
+  // City from the Villain Deck this turn. Read only by the Spring the Trap condition.
+  // Same gated, lazy, sticky-for-the-turn lifecycle as masterStrikePlayedThisTurn.
+  /** An Ambush Villain was played this turn; absent otherwise. */
+  ambushVillainPlayedThisTurn?: boolean;
+
   // why: per-turn attack/recruit point accumulation and spend tracking.
   // Reset at start of each player turn. Values are integers >= 0.
   /** Per-turn economy tracking (attack/recruit points accumulated and spent). */

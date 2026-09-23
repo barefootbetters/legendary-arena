@@ -30,6 +30,11 @@ import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import {
+  MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
+  MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  matchReadsConditionType,
+} from '../hero/heroConditions.evaluate.js';
+import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
@@ -464,6 +469,13 @@ export function performVillainReveal(
     // edge (a contract violation the move never hits in production but
     // the emission must remain defensive).
     if (cardHasAmbush) {
+      // why: WP-743 / D-24566 — record the Ambush Villain for Spring the Trap's
+      // this-turn gate. Written only when a hero hook in this match reads that
+      // condition (games without it stay byte-unchanged, the D-24467 posture), and
+      // BEFORE The Leader's chained play below, so a card that chain reveals sees it.
+      if (matchReadsConditionType(G, MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE)) {
+        G.ambushVillainPlayedThisTurn = true;
+      }
       // why: WP-478 / D-24285 — pass the reveal move's shuffle source (uniform with
       // the Fight/Escape fire sites) so a future Ambush-timed scry could reshuffle.
       // why: WP-489 / D-24295 — the Ambush fire site has no fought City space, so
@@ -670,6 +682,17 @@ export function performVillainReveal(
     // why: mastermind-strike cards route to G.mastermind.strikePile (not
     // discard) so the game tracks resolved strikes for UI projection
     G.mastermind.strikePile = [...G.mastermind.strikePile, cardId];
+    // why: WP-743 / D-24566 — record the Master Strike for the Grief and Spring the
+    // Trap this-turn gates, gated on either condition being read in this match (games
+    // without them stay byte-unchanged, the D-24467 posture). Their readers run at the
+    // next onMove resolution or a later play, so setting this after the strike's
+    // effects have applied is safe.
+    if (
+      matchReadsConditionType(G, MASTER_STRIKE_THIS_TURN_CONDITION_TYPE) ||
+      matchReadsConditionType(G, MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE)
+    ) {
+      G.masterStrikePlayedThisTurn = true;
+    }
   }
 }
 
