@@ -382,6 +382,7 @@ high-water: 422
 - WP-741 — doubled-superpower-icon-condition-count (Game Engine. Duplicate-aware superpower condition evaluation: a printed doubled icon ([hc:X][hc:X] / [team:X][team:X]) requires TWO other matching in-play cards. reserved 2026-09-22, claude/happy-franklin-e86459)
 - WP-742 — coach-bot-ally-seat-marker (Server. The endgame coach cannot tell which seat is a bot ally: every per-seat line is labelled `Player N` and nothing marks a bot, yet COACH_SYSTEM_PROMPT tells the model about bot-ally games. Adds `isBotAlly` to CoachPlayerLine, resolved replayHash -> bgio.replay_artifacts.match_id -> readMatchBotSeats (the ranked-guard / seat-identity precedent), fail-soft to no markers, and points the prompt sentence at the field. Label unchanged. reserved 2026-09-22, claude/coach-bot-seat-draft)
 - WP-743 — spring-the-trap-master-strike-or-ambush-condition (Engine. Spring the Trap grants its +1 Attack unconditionally; gate it on a Master Strike or Ambush Villain played this turn. reserved 2026-09-22, claude/spring-trap-draft)
+- WP-744 — unmarked-conditional-icon-grants (Engine. Unmarked "If <condition>, you get +N[icon:…]" lines grant unconditionally; gate Rage, first-card, eighth-card and siblings on their printed condition. reserved 2026-09-22, claude/mystifying-kapitsa-616a16)
 
 ## EC
 
@@ -725,6 +726,7 @@ high-water: 457
 - EC-778 — doubled-superpower-icon-condition-count (WP-741; Game Engine. reserved 2026-09-22, claude/happy-franklin-e86459)
 - EC-779 — coach-bot-ally-seat-marker (WP-742; Server. Locks the isBotAlly field, the replayHash->matchId->bot-seats read + its fail-soft, and the prompt wording. reserved 2026-09-22, claude/coach-bot-seat-draft)
 - EC-780 — spring-the-trap-master-strike-or-ambush-condition (WP-743; Engine. reserved 2026-09-22, claude/spring-trap-draft)
+- EC-781 — unmarked-conditional-icon-grants (WP-744; Engine. reserved 2026-09-22, claude/mystifying-kapitsa-616a16)
 
 ## D
 
@@ -1071,3 +1073,4 @@ section below) and the allocation protocol in
 - D-24564 — coach-bot-ally-seat-marker (RESERVED: locks WP-742 / EC-779. CoachPlayerLine gains isBotAlly, sourced from legendary.match_bot_ally via the replay artifact match_id; a lookup failure yields no markers rather than coach_unavailable. reserved 2026-09-22, claude/coach-bot-seat-draft)
 - D-24565 — impossible-trick-shot-ondefeat-rescue-marker (direct marker fix, no WP — marks core+msp1 hawkeye/impossible-trick-shot with [keyword:defeated-villain-or-mastermind] [keyword:rescue:3] on the D-24467 infrastructure; D-24543 precedent. Renumbered from D-24564 after a parallel collision with #2278. reserved 2026-09-22, claude/jovial-torvalds-eb3acc)
 - D-24566 — spring-the-trap-master-strike-or-ambush-condition (RESERVED: locks WP-743 / EC-780. reserved 2026-09-22, claude/spring-trap-draft)
+- D-24567 — unmarked-conditional-icon-grants (RESERVED: locks WP-744 / EC-781. reserved 2026-09-22, claude/mystifying-kapitsa-616a16)
