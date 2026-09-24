@@ -500,4 +500,41 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
     },
     rubric: {},
   },
+  {
+    id: 'casual-match-core-red-skull',
+    category: 'casual-match',
+    description:
+      'A casual (unscored) two-seat heroes win: no rawScore, finalScore, grade or PAR expectation, so the report must coach the play without inventing a score.',
+    summary: {
+      outcome: 'heroes-win',
+      playerCount: 2,
+      rounds: 13,
+      scheme: 'Negative Zone Prison Breakout',
+      mastermind: 'Red Skull',
+      villainGroups: ['HYDRA', 'Masters of Evil'],
+      henchmanGroups: ['Savage Land Mutates'],
+      heroes: ['Captain America', 'Wolverine', 'Storm', 'Hawkeye', 'Thor'],
+      team: { victoryPoints: 35, bystandersRescued: 5 },
+      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 2 },
+      perPlayer: [
+        buildSeat(1, {
+          victoryPoints: 19,
+          bystandersRescued: 3,
+          villainsDefeated: 5,
+          henchmenDefeated: 2,
+          mastermindTacticsDefeated: 2,
+          acquiredCards: ['Keen Senses ×2', 'Perfect Teamwork', 'Covering Fire'],
+        }),
+        buildSeat(2, {
+          victoryPoints: 16,
+          bystandersRescued: 2,
+          villainsDefeated: 4,
+          henchmenDefeated: 3,
+          mastermindTacticsDefeated: 2,
+          acquiredCards: ['Lightning Bolt ×2', 'Spinning Cyclone', 'Healing Factor'],
+        }),
+      ],
+    },
+    rubric: { mustNotMention: ['grade', 'final score', 'PAR'] },
+  },
 ];

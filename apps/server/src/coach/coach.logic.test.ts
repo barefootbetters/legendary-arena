@@ -5,13 +5,20 @@
  * client via CoachDependencies, so every path is exercised with fakes: NO real
  * database, ZERO paid model calls. Covers the entitlement gate, ownership,
  * cache hit, fresh generation (model called once + cached), the not-found paths,
- * and the fail-soft model-failure path.
+ * and the fail-soft model-failure path. WP-751 / D-24576 adds the casual
+ * (unscored) path and the matchId entry `generateOrGetCoachReportForMatch`.
  */
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { generateOrGetCoachReport, type CoachLogic } from './coach.logic.js';
+import { ENDGAME_CONDITIONS } from '@legendary-arena/game-engine';
+
+import {
+  generateOrGetCoachReport,
+  generateOrGetCoachReportForMatch,
+  type CoachLogic,
+} from './coach.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import type {
   CoachDependencies,
@@ -83,6 +90,49 @@ function makeState(): LegendaryGameState {
   } as unknown as LegendaryGameState;
 }
 
+// why: WP-751 — a casual match's summary is derived from the reduced state itself
+// (evaluateEndgame + deriveScoringInputs), so it needs the fields those engine calls
+// read: the endgame counters, the escaped pile, the villain-deck card types, the
+// per-card VP table, and the mastermind's defeated tactics. `counters` selects the
+// ending: a mastermind defeat (a normal heroes win) or an early end.
+function makeEvaluableState(counters: Record<string, number>): LegendaryGameState {
+  return {
+    ...makeState(),
+    counters,
+    escapedPile: [],
+    villainDeckCardTypes: {},
+    cardVictoryPoints: {},
+    mastermind: { baseCardId: 'm', tacticsDefeated: [] },
+  } as unknown as LegendaryGameState;
+}
+
+// A casual (unscored) match: no score row, and a reduced state that evaluates as a
+// normally finished heroes win.
+function makeCasualLogic(over: Partial<CoachLogic> = {}): ReturnType<typeof makeLogic> {
+  return makeLogic({
+    findCompetitiveScore: async () => null,
+    reduceReplayByHash: async () => ({
+      finalState: makeEvaluableState({ [ENDGAME_CONDITIONS.MASTERMIND_DEFEATED]: 1 }),
+      stateHash: REPLAY,
+      turnCount: 12,
+    }),
+    ...over,
+  });
+}
+
+// A model client that records every summary it is handed.
+function makeCapturingModel(): CoachModelClient & { summaries: CoachMatchSummary[] } {
+  const summaries: CoachMatchSummary[] = [];
+  return {
+    model: 'stub-model',
+    summaries,
+    async generate(summary: CoachMatchSummary) {
+      summaries.push(summary);
+      return REPORT;
+    },
+  };
+}
+
 // A model client spy: records call count, returns REPORT (or throws when armed).
 function makeModelClient(over: { throws?: boolean } = {}): CoachModelClient & { calls: number } {
   return {
@@ -150,6 +200,8 @@ function makeLogic(
     },
     // why: WP-742 — a human-only match by default (no bot-ally seats).
     readBotSeatIdsForReplay: async () => [],
+    // why: WP-751 — the matchId entry resolves to REPLAY by default.
+    captureMatchForCoach: async () => REPLAY,
     ...over,
   };
   return base as unknown as CoachLogic & { writes: number; artifactReads: number };
@@ -224,14 +276,22 @@ describe('generateOrGetCoachReport (WP-594)', () => {
     assert.equal(logic.writes, 1);
   });
 
-  test('not_found when the match is not scored or not replayable', async () => {
-    const noScore = await generateOrGetCoachReport(
+  // why: WP-751 / D-24576 — INTENTIONAL behavior change. Before WP-751 a missing
+  // score row alone meant not_found; an unscored match is now coached from its
+  // replay, so the no-score half asserts the case that is still not_found: an
+  // unscored match whose reduced state cannot be evaluated.
+  test('not_found when an unscored match cannot be evaluated, or the match is not replayable', async (context) => {
+    context.mock.method(console, 'warn', () => {});
+    const model = makeModelClient();
+    const unevaluable = await generateOrGetCoachReport(
       ACCOUNT,
       REPLAY,
-      makeDeps(makeModelClient()),
+      makeDeps(model),
+      // makeState() carries no endgame counters, so evaluateEndgame cannot read it.
       makeLogic({ findCompetitiveScore: async () => null }),
     );
-    assert.deepEqual(noScore, { ok: false, reason: 'not_found' });
+    assert.deepEqual(unevaluable, { ok: false, reason: 'not_found' });
+    assert.equal(model.calls, 0);
 
     const noReplay = await generateOrGetCoachReport(
       ACCOUNT,
@@ -429,5 +489,139 @@ describe('generateOrGetCoachReport (WP-594)', () => {
 
     assert.equal(result.ok === true && result.wasCached, true);
     assert.equal(lookupCalls, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-751 / D-24576 — casual (unscored) coaching + the matchId entry
+// ---------------------------------------------------------------------------
+
+describe('generateOrGetCoachReport — casual (unscored) match (WP-751)', () => {
+  test('an unscored, normally finished match is coached with no score fields in the summary', async () => {
+    const model = makeCapturingModel();
+    const logic = makeCasualLogic();
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.equal(result.ok, true);
+    assert.equal(result.ok === true && result.wasCached, false);
+    assert.equal(model.summaries.length, 1);
+    const summary = model.summaries[0];
+    assert.ok(summary);
+    for (const field of ['rawScore', 'finalScore', 'grade', 'adversityExpected']) {
+      assert.equal(field in summary, false, 'the casual summary must omit ' + field);
+    }
+    assert.equal(summary.outcome, 'heroes-win');
+    assert.equal(summary.rounds, 12);
+    assert.equal(summary.perPlayer.length, 1);
+  });
+
+  test('an early-ended unscored match is not_found and the model is never called', async () => {
+    const model = makeModelClient();
+    const logic = makeCasualLogic({
+      reduceReplayByHash: async () => ({
+        finalState: makeEvaluableState({ [ENDGAME_CONDITIONS.MATCH_ENDED_EARLY]: 1 }),
+        stateHash: REPLAY,
+        turnCount: 3,
+      }),
+    });
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(model), logic);
+
+    assert.deepEqual(result, { ok: false, reason: 'not_found' });
+    assert.equal(model.calls, 0);
+    assert.equal(logic.writes, 0);
+  });
+
+  test('not_entitled and not_owner still refuse before the casual path runs', async () => {
+    let reductions = 0;
+    const countingReduce: CoachLogic['reduceReplayByHash'] = async () => {
+      reductions += 1;
+      return null;
+    };
+    const noPass = await generateOrGetCoachReport(
+      ACCOUNT,
+      REPLAY,
+      makeDeps(makeModelClient()),
+      makeCasualLogic({
+        getEntitlementsForAccount: async () => ({ ok: true, value: [] }),
+        reduceReplayByHash: countingReduce,
+      }),
+    );
+    assert.deepEqual(noPass, { ok: false, reason: 'not_entitled' });
+
+    const notOwner = await generateOrGetCoachReport(
+      ACCOUNT,
+      REPLAY,
+      makeDeps(makeModelClient()),
+      makeCasualLogic({
+        findReplayOwnershipForAccount: async () => null,
+        reduceReplayByHash: countingReduce,
+      }),
+    );
+    assert.deepEqual(notOwner, { ok: false, reason: 'not_owner' });
+    assert.equal(reductions, 0, 'neither refusal may reduce the replay');
+  });
+
+  test('the casual path writes only through writeCoachReport', async () => {
+    const logic = makeCasualLogic();
+    const result = await generateOrGetCoachReport(ACCOUNT, REPLAY, makeDeps(makeModelClient()), logic);
+
+    assert.equal(result.ok, true);
+    // The seam's only write member ran exactly once; every other member is a read.
+    assert.equal(logic.writes, 1);
+  });
+});
+
+describe('generateOrGetCoachReportForMatch (WP-751)', () => {
+  test('without the Pass it is not_entitled and never resolves or captures the match', async () => {
+    let captureCalls = 0;
+    const logic = makeCasualLogic({
+      getEntitlementsForAccount: async () => ({ ok: true, value: [] }),
+      captureMatchForCoach: async () => {
+        captureCalls += 1;
+        return REPLAY;
+      },
+    });
+    const result = await generateOrGetCoachReportForMatch(
+      ACCOUNT,
+      'match-1',
+      makeDeps(makeModelClient()),
+      logic,
+    );
+
+    assert.deepEqual(result, { ok: false, reason: 'not_entitled' });
+    assert.equal(captureCalls, 0);
+  });
+
+  test('an unresolvable match is not_found', async () => {
+    const model = makeModelClient();
+    const result = await generateOrGetCoachReportForMatch(
+      ACCOUNT,
+      'match-1',
+      makeDeps(model),
+      makeCasualLogic({ captureMatchForCoach: async () => null }),
+    );
+
+    assert.deepEqual(result, { ok: false, reason: 'not_found' });
+    assert.equal(model.calls, 0);
+  });
+
+  test('a resolvable, owned, unscored match is coached through the replay pipeline', async () => {
+    const resolvedMatchIds: string[] = [];
+    const logic = makeCasualLogic({
+      captureMatchForCoach: async (matchId: string) => {
+        resolvedMatchIds.push(matchId);
+        return REPLAY;
+      },
+    });
+    const result = await generateOrGetCoachReportForMatch(
+      ACCOUNT,
+      'match-1',
+      makeDeps(makeModelClient()),
+      logic,
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(resolvedMatchIds, ['match-1']);
+    assert.equal(logic.writes, 1);
   });
 });

@@ -27,7 +27,11 @@ export type CoachEvalCategory =
   | 'no-purchases'
   | 'pre-par-summary'
   | 'tie'
-  | 'five-players';
+  | 'five-players'
+  // why: WP-751 / D-24576 — a casual (unscored) match: the summary carries no
+  // rawScore, finalScore, grade or adversityExpected, and the report must not
+  // invent a score or grade.
+  | 'casual-match';
 
 /** The canonical readonly array of `CoachEvalCategory` members (drift-tested). */
 export const COACH_EVAL_CATEGORIES: readonly CoachEvalCategory[] = [
@@ -41,6 +45,7 @@ export const COACH_EVAL_CATEGORIES: readonly CoachEvalCategory[] = [
   'pre-par-summary',
   'tie',
   'five-players',
+  'casual-match',
 ];
 
 /**

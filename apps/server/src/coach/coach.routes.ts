@@ -1,11 +1,15 @@
 /**
  * Endgame AI Coach — HTTP Route (WP-594 / EC-629 / D-24403)
  *
- * Registers one authenticated, Legendary-Pass-gated read endpoint:
+ * Registers two authenticated, Legendary-Pass-gated read endpoints:
  *
  *   * `GET /api/me/scores/:replayHash/coach` — the endgame AI coaching for a
- *     scored match the caller owns. Lazy + cached: the paid model runs at most
- *     once per match; every later view is a cache hit.
+ *     finished match the caller owns (scored, or casual since WP-751). Lazy +
+ *     cached: the paid model runs at most once per match; every later view is a
+ *     cache hit.
+ *   * The matchId coach route (WP-751 / D-24576) — the same coaching addressed by
+ *     boardgame.io match id, for a casual match whose client never received a
+ *     replay hash. Same auth, statuses, and envelopes.
  *
  * Mirrors the WP-332 `competition.routes.ts` authenticated-read pattern: local
  * structural `KoaRouter` / context interfaces (no `@koa/router` import),
@@ -25,7 +29,7 @@
 
 import type { CardRegistry } from '@legendary-arena/registry';
 
-import { generateOrGetCoachReport } from './coach.logic.js';
+import { generateOrGetCoachReport, generateOrGetCoachReportForMatch } from './coach.logic.js';
 import { buildNameResolver } from '../match/matchLagn.logic.js';
 
 import type { AccountId, DatabaseClient } from '../identity/identity.types.js';
@@ -37,6 +41,7 @@ import type {
 } from '../auth/sessionToken.types.js';
 import type { RequireUnsuspendedAccountResult } from '../auth/requireUnsuspendedAccount.js';
 import type {
+  CoachDependencies,
   CoachModelClient,
   CoachRefusalReason,
   CoachResult,
@@ -86,16 +91,18 @@ export interface CoachRouteDependencies {
  */
 export interface CoachRouteLogic {
   readonly generateOrGetCoachReport: typeof generateOrGetCoachReport;
+  readonly generateOrGetCoachReportForMatch: typeof generateOrGetCoachReportForMatch;
 }
 
 const PRODUCTION_COACH_ROUTE_LOGIC: CoachRouteLogic = {
   generateOrGetCoachReport,
+  generateOrGetCoachReportForMatch,
 };
 
 /** Minimal structural shape of the Koa context this module touches. */
 interface KoaCoachContext {
   readonly req: SessionTokenRequest;
-  params: { replayHash?: string };
+  params: { replayHash?: string; matchId?: string };
   status: number;
   body: unknown;
   set(field: string, value: string): void;
@@ -137,7 +144,79 @@ function statusForRefusalReason(reason: CoachRefusalReason): number {
 }
 
 /**
- * Register the endgame-coach read route on the supplied Koa router. The router is
+ * Run the shared auth chain for a coach request: session → suspension. On any
+ * failure it writes the locked status + envelope onto the context and returns
+ * `null`; on success it returns the caller's account id.
+ *
+ * @param koaContext The request context (status/body are written on failure).
+ * @param database The long-lived `pg` pool.
+ * @param deps The route dependency bundle (auth deps).
+ * @returns The authenticated, unsuspended caller, or `null` when refused.
+ */
+async function authenticateCoachCaller(
+  koaContext: KoaCoachContext,
+  database: DatabaseClient,
+  deps: CoachRouteDependencies,
+): Promise<AccountId | null> {
+  const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
+    verifier: deps.verifier,
+    accountResolver: deps.accountResolver,
+    database,
+  });
+  if (sessionResult.ok !== true) {
+    koaContext.status = statusForSessionValidationCode(sessionResult.code);
+    koaContext.body = { error: sessionResult.code };
+    return null;
+  }
+  const accountId = sessionResult.value;
+
+  const suspensionResult = await deps.requireUnsuspendedAccount(database, accountId);
+  if (suspensionResult.ok !== true) {
+    if (suspensionResult.code === 'suspended') {
+      koaContext.status = 403;
+      koaContext.body = { error: 'forbidden' };
+    } else {
+      koaContext.status = 500;
+      koaContext.body = { error: 'internal_error' };
+    }
+    return null;
+  }
+  return accountId;
+}
+
+/**
+ * Write a coach result onto the context: 200 `{ report, wasCached }`, or the
+ * refusal's locked status with `{ error: <reason> }`.
+ *
+ * @param koaContext The request context.
+ * @param result The typed coach result.
+ */
+function respondWithCoachResult(koaContext: KoaCoachContext, result: CoachResult): void {
+  if (result.ok === true) {
+    koaContext.status = 200;
+    koaContext.body = { report: result.report, wasCached: result.wasCached };
+    return;
+  }
+  koaContext.status = statusForRefusalReason(result.reason);
+  koaContext.body = { error: result.reason };
+}
+
+/**
+ * Write the locked 500 envelope for an unexpected throw from the coach logic.
+ *
+ * @param koaContext The request context.
+ * @param caughtError The thrown value (deliberately not surfaced).
+ */
+function respondWithInternalError(koaContext: KoaCoachContext, caughtError: unknown): void {
+  // why: never re-throw — an uncaught throw would surface as a bodyless 500.
+  // The 500 envelope is locked (no leaked internals).
+  void caughtError;
+  koaContext.status = 500;
+  koaContext.body = { error: 'internal_error' };
+}
+
+/**
+ * Register the endgame-coach read routes on the supplied Koa router. The router is
  * mutated in place; the function returns `void`. Production callers in
  * `server.mjs` pass the Koa router, the long-lived `pg.Pool`, and the dependency
  * bundle. The optional `coachLogic` 4th parameter is a test-only injection seam.
@@ -150,7 +229,11 @@ export function registerCoachRoutes(
 ): void {
   // why: resolve the name resolver once (the registry is frozen for the process
   // lifetime), not per request — mirrors matchLagn.routes.
-  const resolveCardName = buildNameResolver(deps.registry);
+  const coachDependencies: CoachDependencies = {
+    database,
+    modelClient: deps.modelClient,
+    resolveCardName: buildNameResolver(deps.registry),
+  };
 
   router.get('/api/me/scores/:replayHash/coach', async (koaContext) => {
     // why: Cache-Control MUST be the first statement (D-11504) so it is set on
@@ -158,27 +241,8 @@ export function registerCoachRoutes(
     // cacheable.
     koaContext.set('Cache-Control', 'no-store');
 
-    const sessionResult = await deps.requireAuthenticatedSession(koaContext.req, {
-      verifier: deps.verifier,
-      accountResolver: deps.accountResolver,
-      database,
-    });
-    if (sessionResult.ok !== true) {
-      koaContext.status = statusForSessionValidationCode(sessionResult.code);
-      koaContext.body = { error: sessionResult.code };
-      return;
-    }
-    const accountId = sessionResult.value;
-
-    const suspensionResult = await deps.requireUnsuspendedAccount(database, accountId);
-    if (suspensionResult.ok !== true) {
-      if (suspensionResult.code === 'suspended') {
-        koaContext.status = 403;
-        koaContext.body = { error: 'forbidden' };
-      } else {
-        koaContext.status = 500;
-        koaContext.body = { error: 'internal_error' };
-      }
+    const accountId = await authenticateCoachCaller(koaContext, database, deps);
+    if (accountId === null) {
       return;
     }
 
@@ -190,28 +254,45 @@ export function registerCoachRoutes(
     }
 
     try {
-      const result: CoachResult = await coachLogic.generateOrGetCoachReport(
+      const result = await coachLogic.generateOrGetCoachReport(
         accountId,
         replayHash,
-        {
-          database,
-          modelClient: deps.modelClient,
-          resolveCardName,
-        },
+        coachDependencies,
       );
-      if (result.ok === true) {
-        koaContext.status = 200;
-        koaContext.body = { report: result.report, wasCached: result.wasCached };
-        return;
-      }
-      koaContext.status = statusForRefusalReason(result.reason);
-      koaContext.body = { error: result.reason };
+      respondWithCoachResult(koaContext, result);
     } catch (caughtError) {
-      // why: never re-throw — an uncaught throw would surface as a bodyless 500.
-      // The 500 envelope is locked (no leaked internals).
-      void caughtError;
-      koaContext.status = 500;
-      koaContext.body = { error: 'internal_error' };
+      respondWithInternalError(koaContext, caughtError);
+    }
+  });
+
+  // why: WP-751 / D-24576 — a casual (unscored) match never hands the client a
+  // replay hash, only its match id; this route resolves the id to the replay
+  // (Pass first, then an idempotent on-demand capture) and serves the same coaching.
+  router.get('/api/me/matches/:matchId/coach', async (koaContext) => {
+    // why: Cache-Control MUST be the first statement (D-11504), as above.
+    koaContext.set('Cache-Control', 'no-store');
+
+    const accountId = await authenticateCoachCaller(koaContext, database, deps);
+    if (accountId === null) {
+      return;
+    }
+
+    const matchId = koaContext.params.matchId;
+    if (matchId === undefined || matchId === '') {
+      koaContext.status = 400;
+      koaContext.body = { error: 'invalid_request' };
+      return;
+    }
+
+    try {
+      const result = await coachLogic.generateOrGetCoachReportForMatch(
+        accountId,
+        matchId,
+        coachDependencies,
+      );
+      respondWithCoachResult(koaContext, result);
+    } catch (caughtError) {
+      respondWithInternalError(koaContext, caughtError);
     }
   });
 }
