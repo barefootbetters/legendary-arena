@@ -266,11 +266,16 @@ export default defineComponent({
     );
     const submissionMessage = computed<string>(() => {
       const status = submissionStatus.value;
-      // why: WP-465 — 'idle' has no banner (rendered only when status !== 'idle')
-      // and no message entry; narrowing it out lets SUBMISSION_MESSAGES be the
-      // exhaustive Record<Exclude<SubmissionStatus, 'idle'>, string> (a missing
-      // status is now a compile error, not a silent '').
-      return status === 'idle' ? '' : SUBMISSION_MESSAGES[status];
+      // why: WP-465 — 'idle' has no status line and no message entry; narrowing it
+      // out lets SUBMISSION_MESSAGES be the exhaustive
+      // Record<Exclude<SubmissionStatus, 'idle'>, string> (a missing status is a
+      // compile error, not a silent ''). WP-339 — 'guest' also renders no status
+      // line: guests get the richer in-card sign-in prompt (EndgameSummary
+      // showGuestSignIn), so a second sign-in message would be redundant.
+      if (status === 'idle' || status === 'guest') {
+        return '';
+      }
+      return SUBMISSION_MESSAGES[status];
     });
 
     // why: a guest (no account) is never submitted, so submissionStatus latches to
@@ -605,27 +610,11 @@ export default defineComponent({
       :can-play-again="canPlayAgain"
       :is-relaunching="isRelaunching"
       :error-message="playAgainError"
+      :status-message="submissionMessage"
+      :status-variant="submissionStatus"
       :on-play-again="playAgain"
       :on-return-to-lobby="returnToLobby"
     />
-    <!--
-      // why: WP-339 — a small, non-blocking post-match submission status for
-      // SIGNED-IN players (submitting/submitted/already/failed/ineligible), plus
-      // 'ended-early' (any viewer, since the early-end check precedes the guest one). Shown
-      // only once a submission is in flight or resolved, so it never appears during
-      // play. The 'guest' case is intentionally excluded here: guests get the richer
-      // in-card sign-in prompt (EndgameSummary showGuestSignIn) instead, so this
-      // toast would be a redundant second sign-in message.
-    -->
-    <div
-      v-if="submissionStatus !== 'idle' && submissionStatus !== 'guest'"
-      class="score-submission-status"
-      :class="`score-submission-status--${submissionStatus}`"
-      role="status"
-      data-testid="score-submission-status"
-    >
-      {{ submissionMessage }}
-    </div>
   </div>
 </template>
 
@@ -680,42 +669,5 @@ export default defineComponent({
   width: max-content;
   max-width: min(92vw, 40rem);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-}
-
-.score-submission-status {
-  position: fixed;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
-  max-width: min(90vw, 32rem);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  background: rgba(20, 20, 28, 0.92);
-  color: #f4f4f5;
-  font-size: 0.875rem;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-}
-
-.score-submission-status--submitted {
-  background: rgba(21, 94, 61, 0.94);
-}
-
-.score-submission-status--failed {
-  background: rgba(120, 40, 40, 0.94);
-}
-
-.score-submission-status--guest {
-  background: rgba(60, 52, 20, 0.94);
-}
-
-/* why: WP-465 — ineligible is neither success nor error, so it uses a neutral
-   blue/slate (shared by ended-early, likewise unscored-not-failed), deliberately distinct from --submitted (green), --failed (red), and
-   --guest (amber) so it never reads as a score being recorded or a failure. */
-.score-submission-status--ineligible,
-.score-submission-status--ended-early {
-  background: rgba(40, 52, 78, 0.94);
 }
 </style>

@@ -9,7 +9,9 @@ import { defineComponent, type PropType } from 'vue';
  * (relaunch the same loadout — "insert another quarter") and a "Back to Lobby"
  * escape. All behaviour lives in the host (PlayViewport): this component only
  * renders the buttons and calls the injected handlers, mirroring the pure-banner
- * pattern of BotAllyStallBanner / UpdateAvailableBanner.
+ * pattern of BotAllyStallBanner / UpdateAvailableBanner. It also carries the
+ * post-match score-submission status line (the host passes the message + variant),
+ * so the two end-of-match messages are one card instead of two fixed toasts.
  *
  * Per the vue-sfc-loader separate-compile constraint (D-6512), this SFC uses the
  * `defineComponent({ ... })` form, not `<script setup>`.
@@ -46,6 +48,23 @@ export default defineComponent({
     },
     // why: a launch failure message; empty string renders nothing.
     errorMessage: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    // why: INFRA (endgame banner overlap) — the score-submission status line used to
+    // be its own fixed toast at bottom:1rem, where it collided with the bottom-right
+    // audio controls (and, before that, with this panel). It only ever shows at game
+    // over, exactly when this panel does, so it renders here as one stacked card.
+    // Empty string renders nothing (idle / guest — guests get the in-card prompt).
+    statusMessage: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    // why: the SubmissionStatus value ('submitted', 'failed', 'ineligible', …),
+    // used only to pick the status line's colour variant.
+    statusVariant: {
       type: String,
       required: false,
       default: '',
@@ -95,6 +114,15 @@ export default defineComponent({
       </button>
     </div>
     <p
+      v-if="statusMessage !== ''"
+      class="endgame-actions__status"
+      :class="statusVariant !== '' ? `endgame-actions__status--${statusVariant}` : ''"
+      role="status"
+      data-testid="score-submission-status"
+    >
+      {{ statusMessage }}
+    </p>
+    <p
       v-if="errorMessage !== ''"
       class="endgame-actions__error"
       role="alert"
@@ -108,18 +136,17 @@ export default defineComponent({
 <style scoped>
 /* why: WP-502 — a fixed, prominent call-to-action anchored bottom-center so it is
    the obvious next step on match end across both the desktop and mobile surfaces.
-   It stacks above the score-submission status toast (z-index 41 > 40).
-   why (Jeff feedback): bottom is 5rem, not 3.25rem — the score toast sits at
-   bottom:1rem and is ~2.5rem tall (reaching ~3.5rem), so the old 3.25rem left this
-   panel's lower edge overlapping the toast. 5rem clears the toast's top with a
-   visible gap so "Match over" and "Score submitted…" no longer collide. */
+   why (Jeff feedback): bottom is 5rem so the panel clears the bottom-right audio
+   controls and the bottom-left endgame pills (bottom:1rem) with a visible gap. The
+   score-submission status now renders INSIDE this panel (INFRA, endgame banner
+   overlap), so there is no separate bottom toast left to collide with. */
 .endgame-actions {
   position: fixed;
   bottom: 5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 41;
-  max-width: min(92vw, 26rem);
+  max-width: min(92vw, 28rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,6 +195,31 @@ export default defineComponent({
   background: rgba(60, 66, 82, 0.96);
   color: #f4f4f5;
   border: 1px solid rgba(90, 96, 115, 0.9);
+}
+
+.endgame-actions__status {
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  background: rgba(60, 66, 82, 0.9);
+}
+
+.endgame-actions__status--submitted {
+  background: rgba(21, 94, 61, 0.94);
+}
+
+.endgame-actions__status--failed {
+  background: rgba(120, 40, 40, 0.94);
+}
+
+/* why: WP-465 — ineligible (and ended-early, likewise unscored-not-failed) is
+   neither success nor error, so it uses a neutral blue/slate, distinct from
+   --submitted (green) and --failed (red). */
+.endgame-actions__status--ineligible,
+.endgame-actions__status--ended-early {
+  background: rgba(40, 52, 78, 0.94);
 }
 
 .endgame-actions__error {
