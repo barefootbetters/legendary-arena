@@ -30,6 +30,7 @@ import {
   SEQUENCE_GATE_CONDITION_TYPES,
 } from '@legendary-arena/game-engine';
 import type { CapturedHeroPlay } from '../replay/matchReplay.logic.js';
+import { resolveMatchCardName } from './coachSummary.logic.js';
 
 /** A hero condition as read off a hook (structural — `HeroCondition` shape). */
 interface HookCondition {
@@ -157,9 +158,11 @@ function firstTeachableTip(
         }
         const enabler = findUnconditionalEnabler(seatPlays, index, condition, cardData, finalState);
         if (enabler !== null) {
+          // why: D-24579 — tip text names the cards as players see them: the
+          // per-copy ids resolve through the match's own cardDisplayData first.
           return formatSequenceTip(
-            resolveCardName(enabler.cardId),
-            resolveCardName(played.cardId),
+            resolveMatchCardName(enabler.cardId, finalState, resolveCardName),
+            resolveMatchCardName(played.cardId, finalState, resolveCardName),
             condition,
           );
         }
