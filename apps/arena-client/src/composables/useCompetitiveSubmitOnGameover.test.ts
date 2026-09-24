@@ -153,8 +153,10 @@ test('submittedScore stays null for a guest and for a failed submit', async () =
 // why: WP-502 / D-24306 — a match the players ended early (the endedEarly gameover
 // marker) is never a ranked result, so an authenticated player is NOT submitted:
 // the POST is skipped entirely and the status is the permanent, non-error
-// 'ineligible' (the same disposition as par_not_published), never 'failed'.
-test('an early-ended match is never submitted; status becomes ineligible', async () => {
+// 'ended-early' — its own status, NOT 'ineligible' (whose par_not_published copy
+// says "isn't part of a ranked gauntlet", false for an early-ended gauntlet match),
+// and never 'failed'.
+test('an early-ended match is never submitted; status becomes ended-early', async () => {
   setActivePinia(createPinia());
   const stub = installFetchStub(200, { record: {}, wasExisting: false });
   try {
@@ -170,7 +172,29 @@ test('an early-ended match is never submitted; status becomes ineligible', async
     const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
     await flush();
 
-    assert.equal(submissionStatus.value, 'ineligible');
+    assert.equal(submissionStatus.value, 'ended-early');
+    assert.equal(stub.calls.length, 0, 'an early-ended match must never POST');
+  } finally {
+    stub.restore();
+  }
+});
+
+// why: the early-end check precedes the guest check, so a guest's early-ended match
+// is 'ended-early' (not 'guest') — the honest reason it is unscored, and the status
+// the banner renders for every viewer.
+test('a guest early-ended match is ended-early, not guest', async () => {
+  setActivePinia(createPinia());
+  const stub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    // Auth store left unauthenticated (token === null).
+    const snapshot = structuredClone(loadUiStateFixture('endgame-win'));
+    snapshot.gameOver = { ...snapshot.gameOver!, endedEarly: true };
+    useUiStateStore().setSnapshot(snapshot);
+
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+
+    assert.equal(submissionStatus.value, 'ended-early');
     assert.equal(stub.calls.length, 0, 'an early-ended match must never POST');
   } finally {
     stub.restore();

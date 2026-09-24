@@ -34,6 +34,10 @@ import { submitCompetitiveScore, type MyCompetitiveScore } from '../lib/api/comp
  * - `guest` — the player is not signed in; nothing was submitted.
  * - `ineligible` — the match is permanently not eligible to be scored (not a
  *   ranked-gauntlet loadout); NOT an error and NOT retriable (WP-465).
+ * - `ended-early` — the players ended the match early (the `endedEarly` gameover
+ *   marker, WP-502 / D-24306), so it is never scored whatever its loadout; NOT an
+ *   error and NOT retriable. Distinct from `ineligible` so the UI never claims an
+ *   early-ended ranked-gauntlet match "isn't part of a ranked gauntlet".
  */
 export type SubmissionStatus =
   | 'idle'
@@ -42,7 +46,8 @@ export type SubmissionStatus =
   | 'already'
   | 'failed'
   | 'guest'
-  | 'ineligible';
+  | 'ineligible'
+  | 'ended-early';
 
 /**
  * Watch for gameover and submit the match's competitive score once.
@@ -90,12 +95,14 @@ export function useCompetitiveSubmitOnGameover(matchId: Ref<string>): {
     // why: WP-502 / D-24306 — a match the players ended early (the endedEarly
     // gameover marker) is never a ranked result, so skip the submission entirely.
     // The server is the authority and also rejects it (ended_early); this client
-    // skip avoids a doomed POST. Permanent + non-retriable, so it maps to
-    // 'ineligible' (mirrors the par_not_published disposition), never 'failed'.
+    // skip avoids a doomed POST. Permanent + non-retriable, so never 'failed';
+    // its own 'ended-early' status (not 'ineligible') because the loadout may well
+    // be a ranked gauntlet — the par_not_published copy would be false here.
+    // Checked before the guest check, so a guest's early end also lands here.
     if (uiStateStore.snapshot?.gameOver?.endedEarly === true) {
       hasSubmitted = true;
       submittedForMatch = currentMatchId;
-      submissionStatus.value = 'ineligible';
+      submissionStatus.value = 'ended-early';
       return;
     }
 

@@ -76,6 +76,10 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   // so the old “It may still be counted shortly.” was a false promise for the permanent
   // ones; this line is honest for both without implying a retry that does not happen.
   failed: 'Couldn’t submit your score to the leaderboard.',
+  // why: WP-502 / D-24306 — an early-ended match is never scored, whatever its
+  // loadout (a ranked-gauntlet match included), so it gets its own honest line rather
+  // than the par_not_published `ineligible` copy, which would be false for a gauntlet.
+  'ended-early': 'This match ended early, so it isn’t scored to the leaderboard.',
 };
 
 /**
@@ -573,7 +577,8 @@ export default defineComponent({
     />
     <!--
       // why: WP-339 — a small, non-blocking post-match submission status for
-      // SIGNED-IN players (submitting/submitted/already/failed/ineligible). Shown
+      // SIGNED-IN players (submitting/submitted/already/failed/ineligible), plus
+      // 'ended-early' (any viewer, since the early-end check precedes the guest one). Shown
       // only once a submission is in flight or resolved, so it never appears during
       // play. The 'guest' case is intentionally excluded here: guests get the richer
       // in-card sign-in prompt (EndgameSummary showGuestSignIn) instead, so this
@@ -674,9 +679,10 @@ export default defineComponent({
 }
 
 /* why: WP-465 — ineligible is neither success nor error, so it uses a neutral
-   blue/slate, deliberately distinct from --submitted (green), --failed (red), and
+   blue/slate (shared by ended-early, likewise unscored-not-failed), deliberately distinct from --submitted (green), --failed (red), and
    --guest (amber) so it never reads as a score being recorded or a failure. */
-.score-submission-status--ineligible {
+.score-submission-status--ineligible,
+.score-submission-status--ended-early {
   background: rgba(40, 52, 78, 0.94);
 }
 </style>
