@@ -13,14 +13,15 @@
   - `EndgameCoachPanel.vue`
   - `useEndgameCoach.ts` and its test
   - `coachApi.ts` and its test
-  - `PlayViewport.vue` (`isEndedEarly` L303, `isGuestResult` L246, the banner copy) and its test
+  - `PlayViewport.vue` (`isGuestResult` L255, the banner copy, `<PlayDesktop>` matchId forward L440) and its test
   - `PlayDesktop.vue:751`, `PlayMobile.vue:507`
-  - `useCompetitiveSubmitOnGameover.ts` L95–128
+  - `useCompetitiveSubmitOnGameover.ts` L102–135 (`ended-early` L105; `ineligible` L135)
 - [ ] Scope lock: the 12 files in Files to Produce, plus govern-close. Any other edit → STOP.
 
 ## Locked Values (do not re-derive)
-- **Eligibility helper.** `export function computeCasualCoachMatchId(matchId: string, submissionStatus: SubmissionStatus, isEndedEarly: boolean): string | null`, exported from `PlayViewport.vue`.
-  - Returns `matchId` iff `matchId !== ''` && `submissionStatus === 'ineligible'` && `!isEndedEarly`.
+- **Eligibility helper.** `export function computeCasualCoachMatchId(matchId: string, submissionStatus: SubmissionStatus): string | null`, exported from `PlayViewport.vue`.
+  - Returns `matchId` iff `matchId !== ''` && `submissionStatus === 'ineligible'`.
+  - No `isEndedEarly` input: since #2312 an early end (guests included) is `'ended-early'`, never `ineligible`.
   - Otherwise returns `null`.
 - **Coach target.** `export type CoachTarget = { kind: 'replay'; replayHash: string } | { kind: 'match'; matchId: string }`.
   - `useEndgameCoach(target: Readonly<Ref<CoachTarget | null>>, deps)`.
@@ -38,8 +39,9 @@
 
 ## Guardrails
 - **Scored path unchanged.** The panel with a `replayHash` still calls `/api/me/scores/:replayHash/coach`.
-- **The casual panel never shows for** guest, `failed`, `submitting`, `submitted`, ended-early, or scored matches.
-  - An ended-early guest match gets `ineligible`. The `isEndedEarly` check is what keeps it out.
+- **The casual panel never shows for** guest, `failed`, `submitting`, `submitted`, `ended-early`, or scored matches.
+  - Truth table covers all 8 `SubmissionStatus` members; `ended-early` → `null`.
+- **Do not touch** the `'ended-early'` banner or status (#2312).
 - **Casual coaching is requested only after submit settles as `ineligible`.** This is D-24576's cache-order rule.
 - **Guest copy promises only future signed-in matches** (D-24120).
 - **No visual redesign**, and **no server edits** (WP-751 owns the server).
@@ -48,7 +50,7 @@
 - `computeCasualCoachMatchId`:
   - `ineligible` is the only permanent, non-scoring status.
   - It honors the D-24576 cache order.
-  - `isEndedEarly` excludes early ends, including guests' (D-24306).
+  - Early ends, including guests', are `'ended-early'` and so excluded by the status alone (D-24306, #2312).
 - `CoachTarget`: an unscored match has no `replayHash` on the client (D-24576).
 - Guest copy: it promises only future signed-in matches (D-24120).
 
@@ -86,7 +88,7 @@
   - `wiki/scoring.md` casual row, with wiki gates
 
 ## Common Failure Smells (Optional)
-- **Casual panel shows on an early end.** `isEndedEarly` wasn't passed; `ineligible` also covers early ends.
+- **Casual panel shows on an early end.** The helper matched something broader than `=== 'ineligible'` (e.g. "not scored"); `ended-early` must map to `null`.
 - **Casual panel missing on mobile.** PlayMobile never received the prop (D-16501 forwards `matchId` to desktop only).
 - **The scored panel hits the match route.** Target precedence is wrong.
 - **`useEndgameCoach` tests stop fetching.** Call sites still pass a bare string ref, so `target.kind` is undefined.

@@ -4,7 +4,7 @@
 **Primary Layer:** Arena Client (`apps/arena-client/src/**`)
 **Dependencies:** **WP-751** (the matchId coach route) — this WP is **BLOCKED until WP-751 is Done**. Also WP-594/595 (coach + panel) ✅, WP-465 (submission statuses) ✅, WP-636 (guest recap) ✅.
 **User-Visible Surface:** play.legendary-arena.com
-**Baseline:** `origin/main` @ `fbdbea57` (+ the #2309 reservation)
+**Baseline:** `origin/main` @ `fbdbea57` (+ the #2309 reservation); rebaselined to `2b5c651b` for #2308 (banner copy) and #2312 (`ended-early` status)
 
 ---
 
@@ -34,7 +34,7 @@ Scored matches are unchanged.
 
 ## Assumes
 
-Verified at `fbdbea57` by the WP-752 pre-flight:
+Verified at `fbdbea57` by the WP-752 pre-flight; `PlayViewport` / submit-hook lines re-verified at `2b5c651b`:
 
 - **Coach panel.** `EndgameCoachPanel.vue` takes a `replayHash` prop and drives
   `useEndgameCoach(replayHash, deps)`.
@@ -56,21 +56,26 @@ Verified at `fbdbea57` by the WP-752 pre-flight:
   - Mounted at `PlayDesktop.vue:751` and `PlayMobile.vue:507`.
 - **`PlayViewport.vue`.**
   - Holds `matchId` and `submissionStatus`.
-  - Forwards `matchId` to **PlayDesktop only** (L418–431; D-16501).
-  - Already has `isEndedEarly` (L303–305) and `isGuestResult` (L246).
+  - Forwards `matchId` to **PlayDesktop only** (L437–441; D-16501).
+  - Already has `isEndedEarly` (L312) and `isGuestResult` (L255). This WP does not use
+    `isEndedEarly` (see below).
   - Its test file is `pages/PlayViewport.test.ts`.
-- **Where `ineligible` comes from (`useCompetitiveSubmitOnGameover`).** It is set only at
-  L95–98 (an early end) and L120–128 (`par_not_published`).
-  - The early-end check runs **before** the guest check. A guest who ends early therefore
-    gets `ineligible`, not `guest`, and the `isEndedEarly` condition is what keeps them
-    out of the casual panel.
+- **Where `ineligible` comes from (`useCompetitiveSubmitOnGameover`).** Since #2312 it is
+  set only at L127–135 (`par_not_published`).
+  - An early end (L102–105) gets its own `'ended-early'` status. The check runs **before**
+    the guest check, so a guest who ends early also gets `ended-early`, never `ineligible`
+    or `guest`.
+  - So `submissionStatus === 'ineligible'` alone excludes every early end, and the helper
+    needs no `isEndedEarly` input. `SubmissionStatus` now has 8 members.
 - **SFC named exports are testable.** Named exports from a `.vue` file work in tests
   through vue-sfc-loader (`VfxOverlay.vue:151` `buildBurstOptions`, imported in
   `VfxOverlay.test.ts:10`).
 - **No test pins the copy being replaced.** None asserts the current guest copy or the
   `ineligible` string.
-- **The `ineligible` banner text is whatever `main` holds at execution.** Open PR #2308
-  may or may not have landed; this WP replaces the string either way.
+- **The `ineligible` banner text on `main`** is #2308's (merged): "…The score report card
+  and AI Coach are available on ranked-gauntlet loadouts." This WP replaces it with the
+  Contract text, which drops the AI Coach clause because the coach now reaches unscored
+  matches. The `'ended-early'` banner (#2312) is untouched.
 - **ewiki #2310 is merged**, so the `wiki/scoring.md` "Which end-of-match view you get"
   table exists for the govern-close edit. If #2310 still isn't merged at govern-close,
   merge it first. Never hand-author the table in the `SPEC:` commit.
@@ -167,9 +172,9 @@ only render it.
 
 ### E) `pages/PlayViewport.vue` (**modified**)
 - **Named export**
-  `computeCasualCoachMatchId(matchId: string, submissionStatus: SubmissionStatus, isEndedEarly: boolean): string | null`,
+  `computeCasualCoachMatchId(matchId: string, submissionStatus: SubmissionStatus): string | null`,
   per the Contract rule, with a `// why:`.
-- Computed from `matchId`, `submissionStatus` and the existing `isEndedEarly`.
+- Computed from `matchId` and `submissionStatus`.
 - Passed to both PlayDesktop and PlayMobile.
 - The `ineligible` message is replaced with the Contract text, whatever it currently says.
 
@@ -193,9 +198,9 @@ only render it.
   - It is hidden when there is a score, and when `casualCoachMatchId` is null.
   - The new guest headline, detail and aria-label render.
 - **`pages/PlayViewport.test.ts`**: the `computeCasualCoachMatchId` truth table.
-  - `ineligible` + not ended early → the id.
-  - `ineligible` + ended early → `null`.
-  - `guest`, `failed`, `submitted`, `already`, `submitting` and `idle` → `null`.
+  - `ineligible` → the id.
+  - `ended-early`, `guest`, `failed`, `submitted`, `already`, `submitting` and `idle` →
+    `null`.
   - An empty `matchId` → `null`.
 
 ---
@@ -206,9 +211,8 @@ only render it.
 - New casual report-card numbers (no score, grade or PAR).
 - The recap's content (WP-715/636 unchanged).
 - Guest coaching, and any retroactive claim of a guest match.
-- **Existing issue, not fixed here:** an early-ended ranked-gauntlet match also maps to
-  `ineligible`, so its banner wrongly says "isn't part of a ranked gauntlet". This needs
-  a separate follow-up (an early-end-specific message).
+- The `'ended-early'` status and banner. #2312 already split early ends out of
+  `ineligible` with their own honest message; this WP leaves both alone.
 - Refactors not listed in Scope (In) are out of scope.
 
 ---
@@ -241,8 +245,8 @@ The govern-close `SPEC:` commit edits:
 ## Contract
 
 - **`computeCasualCoachMatchId`**
-  - Returns `matchId` when `matchId !== ''` && `submissionStatus === 'ineligible'` &&
-    `isEndedEarly === false`.
+  - Returns `matchId` when `matchId !== ''` && `submissionStatus === 'ineligible'`.
+    Early ends are `'ended-early'` (#2312), so they never match.
   - Otherwise returns `null`.
 - **`CoachTarget`** = `{ kind: 'replay'; replayHash: string } | { kind: 'match'; matchId: string }`.
   `replayHash` wins when both are present.
@@ -394,6 +398,13 @@ RS-1..RS-6 were applied:
 
 **Round 2: READY once WP-751 is Done.** Every cited line was re-verified. The truth table
 covers all 7 `SubmissionStatus` members.
+
+**Post-verdict amendment (2026-09-23, after #2308 + #2312 merged).** #2312 added an 8th
+status, `'ended-early'`, so `ineligible` now means `par_not_published` only. The helper
+drops its `isEndedEarly` parameter, and the truth table covers all 8 members (`ended-early`
+→ `null`). The #2308 assumption is resolved (merged), and the Out of Scope early-end
+follow-up is done. `PlayViewport` / submit-hook line cites were re-verified at `2b5c651b`.
+Text-only; the scope, file list and copy are unchanged.
 
 ## Copilot Check (01.7)
 
