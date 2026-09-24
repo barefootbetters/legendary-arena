@@ -250,3 +250,62 @@ describe('EndgameCoachPanel (WP-595)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-752 / D-24576 — the matchId prop (casual match) vs the replayHash prop
+// ---------------------------------------------------------------------------
+
+// A fetch stub that records every coach URL it serves (entitlements → the Pass).
+function installRecordingFetch(coachUrls: string[]): () => void {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string | URL) => {
+    const href = String(url);
+    if (href.includes('/entitlements')) {
+      return { status: 200, json: async () => PASS_ENTITLEMENTS } as Response;
+    }
+    if (href.includes('/coach')) {
+      coachUrls.push(href);
+      return { status: 200, json: async () => COACH_BODY } as Response;
+    }
+    throw new Error('unexpected url: ' + href);
+  }) as typeof globalThis.fetch;
+  return () => {
+    globalThis.fetch = originalFetch;
+  };
+}
+
+/**
+ * Mount the panel as a signed-in Pass holder, click the coaching button, and
+ * return the coach URLs fetched.
+ */
+async function clickCoachAndCollectUrls(props: Record<string, string | null>): Promise<string[]> {
+  const coachUrls: string[] = [];
+  restoreFetch = installRecordingFetch(coachUrls);
+  useAuthStore().setSession('token-abc', null);
+  const wrapper = mount(EndgameCoachPanel, { props });
+  await flushPromises();
+  await wrapper.find('[data-testid="arena-hud-coach-button"]').trigger('click');
+  await flushPromises();
+  assert.ok(wrapper.find('[data-testid="arena-hud-coach-report"]').exists(), 'the report renders');
+  return coachUrls;
+}
+
+describe('EndgameCoachPanel — coach target (WP-752)', () => {
+  test('the matchId prop fetches through the matchId coach route', async () => {
+    const coachUrls = await clickCoachAndCollectUrls({ matchId: 'match-1' });
+    assert.equal(coachUrls.length, 1);
+    assert.ok(coachUrls[0]!.endsWith('/api/me/matches/match-1/coach'), coachUrls[0]);
+  });
+
+  test('the replayHash prop still fetches through the replay-hash route', async () => {
+    const coachUrls = await clickCoachAndCollectUrls({ replayHash: 'replay-1' });
+    assert.equal(coachUrls.length, 1);
+    assert.ok(coachUrls[0]!.endsWith('/api/me/scores/replay-1/coach'), coachUrls[0]);
+  });
+
+  test('replayHash wins when both props are set', async () => {
+    const coachUrls = await clickCoachAndCollectUrls({ replayHash: 'replay-1', matchId: 'match-1' });
+    assert.equal(coachUrls.length, 1);
+    assert.ok(coachUrls[0]!.endsWith('/api/me/scores/replay-1/coach'), coachUrls[0]);
+  });
+});

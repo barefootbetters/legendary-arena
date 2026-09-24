@@ -1,11 +1,13 @@
 /**
  * Coach API Client — Arena Client (WP-595 / EC-630 / D-24404)
  *
- * Typed `fetch` wrapper for the endgame AI coach read endpoint:
+ * Typed `fetch` wrappers for the endgame AI coach read endpoints:
  *   - `GET /api/me/scores/:replayHash/coach` — the Legendary-Pass endgame
  *     coaching for a scored match the caller owns (WP-594). Lazy + cached
  *     server-side; the client calls it on demand when a Pass holder opens the
  *     coach.
+ *   - `GET /api/me/matches/:matchId/coach` — the same coaching for a casual
+ *     (unscored) match, addressed by match id (WP-751 / WP-752 / D-24576).
  *
  * Layer-boundary contract: imports nothing from `apps/server/`,
  * `@legendary-arena/*`, `boardgame.io`, or `vue-sfc-loader`. The wire shapes are
@@ -83,30 +85,25 @@ async function readErrorCode(response: Response): Promise<string | null> {
 }
 
 /**
- * Fetch the endgame coaching for a scored match by its `replayHash`. The server
- * enforces the Legendary-Pass gate + ownership; the client calls this only for a
- * Pass holder who opened the coach. Never throws (`status: 0` on network failure).
+ * GET one coach endpoint and map the response to a `FetchCoachResult`. Shared by
+ * the replay-hash and matchId fetchers so both parse and report errors
+ * identically. Never throws (`status: 0` on network failure).
  *
  * @param authToken The bearer token, or `null` for an unauthenticated caller.
- * @param replayHash The scored match's replay hash.
+ * @param path The already-encoded API path.
  * @returns The fetch result (never throws).
  */
-export async function fetchCoachReport(
+async function fetchCoachAtPath(
   authToken: string | null,
-  replayHash: string,
+  path: string,
 ): Promise<FetchCoachResult> {
   let response: Response;
   try {
-    response = await fetch(
-      // why: encode the path segment — a replay hash is hex today, but encoding
-      // keeps the URL well-formed if the id format ever widens.
-      buildApiUrl(`/api/me/scores/${encodeURIComponent(replayHash)}/coach`),
-      {
-        method: 'GET',
-        headers:
-          authToken === null ? {} : { Authorization: `Bearer ${authToken}` },
-      },
-    );
+    response = await fetch(buildApiUrl(path), {
+      method: 'GET',
+      headers:
+        authToken === null ? {} : { Authorization: `Bearer ${authToken}` },
+    });
   } catch {
     return { status: 0, report: null, wasCached: null, error: null };
   }
@@ -128,4 +125,41 @@ export async function fetchCoachReport(
     wasCached: null,
     error: await readErrorCode(response),
   };
+}
+
+/**
+ * Fetch the endgame coaching for a scored match by its `replayHash`. The server
+ * enforces the Legendary-Pass gate + ownership; the client calls this only for a
+ * Pass holder who opened the coach. Never throws (`status: 0` on network failure).
+ *
+ * @param authToken The bearer token, or `null` for an unauthenticated caller.
+ * @param replayHash The scored match's replay hash.
+ * @returns The fetch result (never throws).
+ */
+export async function fetchCoachReport(
+  authToken: string | null,
+  replayHash: string,
+): Promise<FetchCoachResult> {
+  // why: encode the path segment — a replay hash is hex today, but encoding
+  // keeps the URL well-formed if the id format ever widens.
+  return fetchCoachAtPath(authToken, `/api/me/scores/${encodeURIComponent(replayHash)}/coach`);
+}
+
+/**
+ * Fetch the endgame coaching for a casual (unscored) match by its boardgame.io
+ * `matchId` (WP-752 / D-24576). The client never receives a replay hash for an
+ * unscored match, so the server resolves the id to the replay itself. Same
+ * parsing and errors as `fetchCoachReport`. Never throws.
+ *
+ * @param authToken The bearer token, or `null` for an unauthenticated caller.
+ * @param matchId The finished match's boardgame.io id.
+ * @returns The fetch result (never throws).
+ */
+export async function fetchCoachReportForMatch(
+  authToken: string | null,
+  matchId: string,
+): Promise<FetchCoachResult> {
+  // why: encode the path segment — a match id is URL-safe today, but encoding
+  // keeps the URL well-formed if the id format ever widens.
+  return fetchCoachAtPath(authToken, `/api/me/matches/${encodeURIComponent(matchId)}/coach`);
 }

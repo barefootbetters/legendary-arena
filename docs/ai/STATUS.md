@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-752 — AI Coach panel on unscored matches + guest prompt copy (EC-789 / D-24576) (2026-09-24)
+
+**User-visible on `play.legendary-arena.com` (pending live-verify).** A signed-in player who
+finishes a casual (non-gauntlet) match now gets the AI Coach panel after the result recap: Pass
+holders click "Get AI coaching for this match" and get coaching with no score or grade (via
+WP-751's `GET /api/me/matches/:matchId/coach`); everyone else sees the existing Legendary Pass
+teaser. Scored matches are unchanged.
+
+- **Eligibility.** `computeCasualCoachMatchId(matchId, submissionStatus)` in `PlayViewport` returns
+  the match id only for `ineligible` (the one permanent, non-scoring status — D-24576's cache order).
+  Early ends are `'ended-early'` since #2312, so no `isEndedEarly` input is needed. Forwarded to
+  BOTH play surfaces (unlike `matchId`, which is desktop-only).
+- **Panel.** `useEndgameCoach` takes a `CoachTarget` (replay hash or match id); the panel takes
+  `replayHash` and `matchId` props (replay hash wins). The casual panel is a sibling after the
+  recap, so it renders even without `gameOver.scores`.
+- **Copy.** The `ineligible` banner drops the "AI Coach" clause ("…The score report card is
+  available on ranked-gauntlet loadouts."). The guest prompt now reads "Sign in to save your
+  results" and promises only future signed-in matches (D-24120).
+- **ewiki.** #2310 merged first (per the WP's Assumes); `wiki/scoring.md`'s casual row now shows the
+  AI Coach as shipped.
+
+arena-client 1928/0 → 1945/0; `vue-tsc` 0; `pnpm -r build` 0. **D-24576 Active** (landed by
+WP-751; no new entry). **D-24026 live-verify: operator-manual pending** — as a Pass holder, finish
+a casual (non-gauntlet) signed-in match on the deployed client and confirm the AI Coach panel
+appears and coaches with no score or grade; as a guest, confirm the new sign-in prompt.
+
 ### WP-751 — AI Coach on unscored matches (EC-788 / D-24576) (2026-09-23)
 
 **Server-side only; user-visible once WP-752 ships the client.** A Legendary Pass holder's AI Coach

@@ -2,11 +2,12 @@ import '../../testing/jsdom-setup';
 
 import { describe, test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { UIGameOverState } from '@legendary-arena/game-engine';
 import type { MyCompetitiveScore, CompetitiveScoreBreakdown, CompetitiveSeatIdentity } from '../../lib/api/competitionApi';
 import EndgameSummary from './EndgameSummary.vue';
+import EndgameCoachPanel from './EndgameCoachPanel.vue';
 
 // why: WP-595 — EndgameSummary now renders the child EndgameCoachPanel, which
 // reads the auth store (needs an active Pinia) and, on mount, calls the
@@ -111,6 +112,56 @@ describe('EndgameSummary — guest sign-in prompt', () => {
       props: { gameOver: gameOver(), competitiveScore: null },
     });
     assert.ok(!wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+  });
+
+  // why: WP-752 / D-24120 — the locked guest copy promises only what signing in gets
+  // on FUTURE matches (saved results, the gauntlet report card, Pass coaching).
+  test('renders the WP-752 guest headline, detail and aria-label', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, showGuestSignIn: true },
+    });
+    const prompt = wrapper.find('[data-testid="arena-hud-guest-sign-in"]');
+    assert.equal(prompt.attributes('aria-label'), 'sign in to save your results');
+    assert.equal(wrapper.find('.guest-score-prompt-headline').text(), 'Sign in to save your results');
+    assert.equal(
+      wrapper.find('.guest-score-prompt-detail').text(),
+      'You played this match as a guest, so it wasn’t saved. Signed-in matches keep your results, ranked-gauntlet loadouts earn a full score report card, and Legendary Pass holders get AI coaching on every match played to the end.',
+    );
+    assert.ok(!wrapper.text().includes('competitive grade and track your results'));
+  });
+});
+
+describe('EndgameSummary — casual (unscored) coach panel (WP-752)', () => {
+  test('shows the coach panel keyed by match id when unscored and casualCoachMatchId is set', async () => {
+    // gameOver() carries no `scores`, so this also proves the panel is a sibling of
+    // the recap div (it renders even when the recap does not).
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, casualCoachMatchId: 'match-1' },
+    });
+    const panels = wrapper.findAllComponents(EndgameCoachPanel);
+    assert.equal(panels.length, 1);
+    assert.equal(panels[0]!.props('matchId'), 'match-1');
+    assert.equal(panels[0]!.props('replayHash'), null);
+    // The benign stub resolves to "no Pass", so the panel settles on the teaser.
+    await flushPromises();
+    assert.ok(wrapper.find('[data-testid="arena-hud-coach-locked"]').exists());
+  });
+
+  test('hides the casual panel when a competitive score is present (the scored panel keeps its replay hash)', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score(), casualCoachMatchId: 'match-1' },
+    });
+    const panels = wrapper.findAllComponents(EndgameCoachPanel);
+    assert.equal(panels.length, 1, 'only the scored panel renders');
+    assert.equal(panels[0]!.props('replayHash'), 'hash-1');
+    assert.equal(panels[0]!.props('matchId'), null);
+  });
+
+  test('hides the casual panel when casualCoachMatchId is null', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, casualCoachMatchId: null },
+    });
+    assert.equal(wrapper.findAllComponents(EndgameCoachPanel).length, 0);
   });
 });
 

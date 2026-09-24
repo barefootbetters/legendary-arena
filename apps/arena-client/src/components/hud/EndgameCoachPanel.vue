@@ -1,10 +1,10 @@
 <script lang="ts">
-import { defineComponent, computed, onMounted, toRef, type Ref } from 'vue';
+import { defineComponent, computed, onMounted } from 'vue';
 
 import { useAuthStore } from '../../stores/auth';
 import { fetchEntitlements } from '../../lib/api/billingApi';
-import { fetchCoachReport } from '../../lib/api/coachApi';
-import { useEndgameCoach } from '../../composables/useEndgameCoach';
+import { fetchCoachReport, fetchCoachReportForMatch } from '../../lib/api/coachApi';
+import { useEndgameCoach, type CoachTarget } from '../../composables/useEndgameCoach';
 
 // why: defineComponent form (not <script setup>) so the template's computed
 // bindings reach `_ctx` under vue-sfc-loader's separate-compile pipeline
@@ -19,15 +19,36 @@ export default defineComponent({
       type: String as () => string | null,
       default: null,
     },
+    // why: WP-752 / D-24576 — a casual (unscored) match's id, for the matchId coach
+    // route; the client has no replay hash for an unscored match. Null for a scored
+    // match (which passes replayHash) and whenever the match is not coachable.
+    matchId: {
+      type: String as () => string | null,
+      default: null,
+    },
   },
   setup(props) {
     const authStore = useAuthStore();
+
+    // why: WP-752 — replayHash wins when both are set, so a scored match always
+    // keeps its WP-594 replay-hash route and cached report.
+    const target = computed<CoachTarget | null>(() => {
+      if (props.replayHash !== null && props.replayHash !== '') {
+        return { kind: 'replay', replayHash: props.replayHash };
+      }
+      if (props.matchId !== null && props.matchId !== '') {
+        return { kind: 'match', matchId: props.matchId };
+      }
+      return null;
+    });
+
     // why: wire the production deps (auth token + real API wrappers) into the
     // store-free composable; tests inject fakes directly.
-    const controller = useEndgameCoach(toRef(props, 'replayHash') as Ref<string | null>, {
+    const controller = useEndgameCoach(target, {
       getToken: () => authStore.token,
       fetchEntitlements,
       fetchCoachReport,
+      fetchCoachReportForMatch,
     });
 
     // why: resolve Pass status once on mount so the panel shows the coaching

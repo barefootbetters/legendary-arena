@@ -150,7 +150,8 @@ function coopRealizedValuePhrase(entry: CoopSynergyEntry | undefined): string | 
 export default defineComponent({
   name: 'EndgameSummary',
   // why: WP-595 — the Legendary-Pass AI coach panel, rendered inside the
-  // competitive-score section when a scored record with a replay hash exists.
+  // competitive-score section when a scored record with a replay hash exists, and
+  // (WP-752) after the recap for a casual match keyed by its match id.
   components: { EndgameCoachPanel },
   props: {
     gameOver: {
@@ -184,6 +185,14 @@ export default defineComponent({
     // for a failed/unavailable read; the recap then falls back to plain "Player N".
     seatIdentities: {
       type: Array as PropType<readonly CompetitiveSeatIdentity[] | null>,
+      default: null,
+    },
+    // why: WP-752 / D-24576 — the match id to coach when this match is unscored
+    // (computed once in PlayViewport by computeCasualCoachMatchId: signed in,
+    // submit settled as `ineligible`). Null for scored, guest, pending, failed and
+    // ended-early matches, so the casual coach panel renders only when it is set.
+    casualCoachMatchId: {
+      type: String as () => string | null,
       default: null,
     },
   },
@@ -631,18 +640,18 @@ export default defineComponent({
     <!-- why: guest conversion prompt shown in the (otherwise empty) competitive-
          score slot — only when the viewer has NO competitive score AND played as a
          guest. Forward-looking copy on purpose: a guest cannot save THIS match
-         (seat→account ownership is fixed at join time, D-24119), so the CTA sells
-         ranking future matches rather than promising a retroactive save. -->
+         (seat→account ownership is fixed at join time, D-24119), and a guest owns
+         no replay (D-24120), so the copy promises only what signing in gets on
+         FUTURE matches (saved results, the gauntlet report card, Pass coaching). -->
     <section
       v-if="showGuestSignIn && !competitiveScore"
       class="guest-score-prompt"
       data-testid="arena-hud-guest-sign-in"
-      aria-label="sign in to save your score"
+      aria-label="sign in to save your results"
     >
-      <p class="guest-score-prompt-headline">Sign in to save your score</p>
+      <p class="guest-score-prompt-headline">Sign in to save your results</p>
       <p class="guest-score-prompt-detail">
-        You played this match as a guest, so it wasn’t ranked. Sign in to earn a
-        competitive grade and track your results on the leaderboard.
+        You played this match as a guest, so it wasn’t saved. Signed-in matches keep your results, ranked-gauntlet loadouts earn a full score report card, and Legendary Pass holders get AI coaching on every match played to the end.
       </p>
       <!-- why: `?route=login` is the app's sign-in surface (App.vue, D-16008); an
            explicit route=login always wins the route resolution, so the link works
@@ -726,6 +735,16 @@ export default defineComponent({
         Final scores recorded ({{ gameOver.scores.players.length }} players).
       </p>
     </div>
+
+    <!-- why: WP-752 / D-24576 — the AI coach for a casual (unscored) match, keyed by
+         match id (the client has no replay hash without a score record). A SIBLING
+         after the recap div, not inside it, so it still renders when gameOver.scores
+         is absent. The panel resolves Pass status itself: Pass holders get coaching,
+         everyone else the existing teaser. -->
+    <EndgameCoachPanel
+      v-if="!competitiveScore && casualCoachMatchId !== null"
+      :match-id="casualCoachMatchId"
+    />
   </section>
 </template>
 
