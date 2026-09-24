@@ -10,7 +10,7 @@
  *
  * SUBMITTABLE-ONLY: capture does NOT score (the WP-332 submission pipeline scores),
  * does NOT gate on PAR (the submission gates `par_not_published`), does NOT flip
- * ownership visibility (private by default; WP-5 flips before submit), and does NOT
+ * ownership visibility (private by default; an ACCEPTED submission flips it, D-24577), and does NOT
  * call `storeReplay` (which stores a ReplayInput, not the bgio artifact — the
  * artifact table replaces it for the faithful path, D-24122).
  *

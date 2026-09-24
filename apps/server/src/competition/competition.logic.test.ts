@@ -1613,6 +1613,117 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
   );
 
   test(
+    'a par_not_published submit leaves the replay private and writes no score (D-24577)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp338-casual-no-par';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+
+      // A non-gauntlet (casual) loadout: no PAR is published for any scenario.
+      const noParDeps = { checkParPublished: () => null };
+      const result = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        noParDeps,
+      );
+      assert.deepEqual(result, { ok: false, reason: 'par_not_published' });
+
+      // The match was captured (ownership exists) but was NOT publicized.
+      const ownership = await testPool.query(
+        'SELECT ro.visibility FROM legendary.replay_ownership ro ' +
+          'JOIN legendary.players p ON ro.player_id = p.player_id ' +
+          'WHERE p.ext_id = $1 AND ro.replay_hash = $2',
+        [owner.accountId, expectedHash],
+      );
+      assert.equal(ownership.rows.length, 1);
+      assert.equal(ownership.rows[0]?.visibility, 'private');
+      const scores = await testPool.query(
+        'SELECT 1 FROM legendary.competitive_scores WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.equal(scores.rows.length, 0);
+
+      // A later accepted submit (PAR now published) still flips it to public.
+      const scored = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(scored.ok === true, `expected ok, got ${JSON.stringify(scored)}`);
+      const afterScore = await testPool.query(
+        'SELECT ro.visibility FROM legendary.replay_ownership ro ' +
+          'JOIN legendary.players p ON ro.player_id = p.player_id ' +
+          'WHERE p.ext_id = $1 AND ro.replay_hash = $2',
+        [owner.accountId, expectedHash],
+      );
+      assert.equal(afterScore.rows[0]?.visibility, 'public');
+
+      await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+      await testPool.query(
+        'DELETE FROM legendary.player_badges pb USING legendary.players p ' +
+          'WHERE pb.player_id = p.player_id AND p.ext_id = $1',
+        [owner.accountId],
+      );
+      await testPool.query('DELETE FROM legendary.players WHERE ext_id = $1', [owner.accountId]);
+    },
+  );
+
+  test(
+    'an idempotent re-submit re-publishes a scored replay the owner made private (D-24577)',
+    { skip: hasTestDatabase ? false : 'requires test database' },
+    async () => {
+      const testPool = pool as pg.Pool;
+      const matchId = 'wp338-republish';
+      const { owner, expectedHash } = await seedMatch(testPool, matchId, true);
+
+      const first = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(first.ok === true, `expected ok, got ${JSON.stringify(first)}`);
+      await testPool.query(
+        "UPDATE legendary.replay_ownership SET visibility = 'private' WHERE replay_hash = $1",
+        [expectedHash],
+      );
+
+      const again = await submitCompetitiveScoreByMatchIdForRequest(
+        owner,
+        matchId,
+        testPool as unknown as DatabaseClient,
+        WP338_PROD_DEPS,
+      );
+      assert.ok(again.ok === true);
+      assert.strictEqual(again.wasExisting, true);
+      const ownership = await testPool.query(
+        'SELECT visibility FROM legendary.replay_ownership WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.equal(ownership.rows[0]?.visibility, 'public');
+
+      await testPool.query('DELETE FROM legendary.competitive_scores WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM legendary.replay_ownership WHERE replay_hash = $1', [expectedHash]);
+      await testPool.query('DELETE FROM bgio.replay_artifacts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM legendary.match_seat_accounts WHERE match_id = $1', [matchId]);
+      await testPool.query('DELETE FROM bgio.matches WHERE match_id = $1', [matchId]);
+      await testPool.query(
+        'DELETE FROM legendary.player_badges pb USING legendary.players p ' +
+          'WHERE pb.player_id = p.player_id AND p.ext_id = $1',
+        [owner.accountId],
+      );
+      await testPool.query('DELETE FROM legendary.players WHERE ext_id = $1', [owner.accountId]);
+    },
+  );
+
+  test(
     'rejects a caller who was not an authenticated seat with not_owner',
     { skip: hasTestDatabase ? false : 'requires test database' },
     async () => {
