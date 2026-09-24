@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-751 — AI Coach on unscored matches (EC-788 / D-24576) (2026-09-23)
+
+**Server-side only; user-visible once WP-752 ships the client.** A Legendary Pass holder's AI Coach
+used to refuse every match without a competitive score, so casual matches (any loadout that isn't a
+ranked gauntlet) got no coaching. The coach now coaches any owned, normally finished match.
+
+- **Casual path.** With no score row, the summary comes from `deriveScoringInputs` over the replayed
+  final state: outcome, rounds, adversity, team and per-seat contribution, hero fit, purchases, plus
+  the usual sequence tips and Table Cooperation lines. It has **no** score, grade or PAR comparison;
+  `rawScore` / `finalScore` / `grade` are now optional on `CoachMatchSummary` and omitted (never 0).
+  The prompt tells the model to coach the play and never invent a score or grade.
+- **New route** `GET /api/me/matches/:matchId/coach`: Pass check first (no writes without the Pass),
+  then `matchId` → replay the way submit does (idempotent on-demand capture), then the same pipeline.
+  Same auth, statuses and envelopes as the replay-hash route; catalogued `Wired`.
+- **Refusals.** Early-ended (D-24306) or unevaluable matches → `404 not_found`, never a 500.
+- **NG-1.** Reads no PAR, computes no score, writes only the coach cache (+ harvester-equivalent
+  capture rows on the matchId route); never the private → public flip.
+- **Eval pack** gains a `casual-match` scenario (rubric forbids "grade", "final score", "PAR").
+
+Server suite 1591/1388/0/203 → 1605/1402/0/203; coach suite 98 → 112; DB-wired coach + replay files
+139/139, 0 skipped; `pnpm -r build` 0. The old "not_found when not scored" test's no-score half was
+intentionally rewritten (D-24576). **D-24576 Active.** D-24026: the full live check needs WP-752;
+the server-side proof (an authenticated `GET /api/me/matches/<matchId>/coach` → 200 for an owned,
+finished casual match) is pending deploy. Follow-up still open: a `par_not_published` submit flips
+the caller's ownership public before the PAR check refuses it (`competition.logic.ts`).
+
 ### WP-746 — Excessive Violence fire feel-beat (EC-783 / D-24569) (2026-09-23)
 
 **User-visible on `play.legendary-arena.com` (pending live-verify).** A Fight "using Excessive

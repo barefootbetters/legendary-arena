@@ -44290,4 +44290,54 @@ D-24170 (bot-ally seats), D-24122 (`match_id` mapping column), D-24095 (blob car
 
 **Reserved by:** NUMBER-LEDGER D-24570. Related: D-24183 (ko-wound-reward), D-24133 (put-bottom-hq-icon-reward), D-24398 / D-24148 / D-24490 (the sibling suppressions), D-24568 / WP-745 (the unmarked-conditional sweep that surfaced this).
 
+---
+
+### D-24576 — The AI Coach works on unscored (casual) matches (Active 2026-09-23 — WP-751 / EC-788)
+
+**Status:** Active — landed 2026-09-23 (WP-751 / EC-788). The client half is WP-752 / EC-789.
+
+**Context.** The Legendary-Pass coach (D-24403) returned `not_found` for any match without a
+`competitive_scores` row. A casual match (any loadout that is not a ranked gauntlet) is refused at
+submit as `par_not_published`, so it never gets a score row, and a Pass holder got no coaching for
+most of the matches they play. The scored summary reads only `rawScore`, `finalScore`, `grade` and
+`parBaseline` from outside `ScoreBreakdown.inputs`, and `deriveScoringInputs` produces those inputs
+from the replay with no PAR input.
+
+**Decision.**
+1. **Casual coaching.** When there is no score row, `generateOrGetCoachReport` coaches an owned,
+   normally finished match. Its summary comes from `deriveScoringInputs` over the replayed final
+   state (`buildCasualCoachMatchSummary`); `rawScore`, `finalScore`, `grade` and `adversityExpected`
+   are omitted (never faked as `0` or `''`), and the three score fields become optional on
+   `CoachMatchSummary`. The constant system prompt tells the model to coach the play itself and
+   never invent a score or grade when they are absent.
+2. **New route.** `GET /api/me/matches/:matchId/coach` checks the Pass first, then resolves
+   `matchId` → `replayHash` the way submit does (finish gate → `readReplayHashByMatchId` →
+   idempotent on-demand `captureMatch`), then delegates to the replay-hash pipeline (ownership →
+   cache → numbers).
+3. **Exclusions.** Ended-early (D-24306) and unevaluable matches are never coached: `evaluateEndgame`
+   and `deriveScoringInputs` share one `try/catch`, and a throw, a null evaluation, or
+   `endedEarly === true` returns `not_found`, so a malformed state can never 500.
+4. **Writes (NG-1).** The casual path reads no PAR artifact and computes no score. It writes only
+   the `coach_reports` cache, plus — on the matchId route — the harvester-equivalent replay-artifact
+   and ownership rows. It never flips visibility and never creates a score, rank, badge or
+   leaderboard entry.
+5. **Cache order.** A casual report cached for a `replayHash` is served even if a score row lands
+   later, so the client requests casual coaching only after submit has settled as permanently
+   unscored (WP-752's `ineligible` rule; since #2312 an early end is `'ended-early'`, not
+   `ineligible`).
+6. **Existence signal.** Returning 404 for an unknown match and 403 for someone else's finished
+   match is accepted; submit already does the same.
+7. **Eval pack.** `CoachEvalCategory` / `COACH_EVAL_CATEGORIES` gain `casual-match` (D-24559's
+   contract file), with one scenario whose rubric forbids "grade", "final score" and "PAR".
+
+**Consequences.** The scored path is unchanged: same gates, same summary, same outcome fallback.
+`buildPerPlayerLines` now takes `ScoringInputs` (the scored builder passes `breakdown.inputs`,
+value-identical). The replay-hash route's catalog row widens to casual matches; the matchId route is
+a new `Wired` row. The existing public flip on a `par_not_published` submit
+(`competition.logic.ts`) is not changed here and needs its own follow-up.
+
+**Reserved by:** NUMBER-LEDGER D-24576. Related: D-24403 (the coach), D-24559 (eval pack), D-24564
+(`isBotAlly`), D-24306 (early ends), D-24120 (guests own nothing), D-24199 (casual stays free; this
+is a Pass feature on casual matches, nothing ranked).
+
 Protect this file.
