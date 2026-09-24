@@ -2,8 +2,9 @@
  * Endgame coach composable — Arena Client (WP-595 / EC-630 / D-24404)
  *
  * Drives the endgame coach panel's state: resolves the caller's Legendary-Pass
- * status (via `/api/me/entitlements`) and lazily fetches the coaching report (via
- * `/api/me/scores/:replayHash/coach`, WP-594) on demand. Store-free: its
+ * status (via `/api/me/entitlements`) and lazily fetches the coaching report on
+ * demand — via `/api/me/scores/:replayHash/coach` (WP-594) for a scored match, or
+ * `/api/me/matches/:matchId/coach` (WP-751 / WP-752) for a casual one. Store-free: its
  * dependencies (token getter + the two API fns) are injected, so it is unit-
  * testable without Pinia or a real network. `EndgameCoachPanel.vue` wires the
  * production deps (the auth store token + the real API wrappers).
@@ -11,7 +12,7 @@
  * Layer-boundary: talks to the server only through the injected API wrappers;
  * imports no engine/server runtime.
  *
- * Authority: WP-595 §Scope; EC-630; D-24404.
+ * Authority: WP-595 §Scope; EC-630; D-24404; WP-752 / EC-789 / D-24576.
  */
 
 import { ref, type Ref } from 'vue';
@@ -42,6 +43,17 @@ export type CoachPassStatus = 'unknown' | 'guest' | 'none' | 'has';
  */
 export type CoachFetchStatus = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
 
+/**
+ * What the coach fetches for: a scored match by its replay hash, or a casual
+ * (unscored) match by its boardgame.io id.
+ */
+// why: WP-752 / D-24576 — an unscored match never gives the client a replay hash
+// (the hash rides only on a competitive score record), so a casual match is
+// addressed by its match id and the server resolves the replay.
+export type CoachTarget =
+  | { kind: 'replay'; replayHash: string }
+  | { kind: 'match'; matchId: string };
+
 /** Injected dependencies (production values are wired by the panel). */
 export interface EndgameCoachDependencies {
   readonly getToken: () => string | null;
@@ -51,6 +63,10 @@ export interface EndgameCoachDependencies {
   readonly fetchCoachReport: (
     authToken: string | null,
     replayHash: string,
+  ) => Promise<FetchCoachResult>;
+  readonly fetchCoachReportForMatch: (
+    authToken: string | null,
+    matchId: string,
   ) => Promise<FetchCoachResult>;
 }
 
@@ -66,12 +82,12 @@ export interface EndgameCoachController {
 /**
  * Create the endgame coach controller for a match.
  *
- * @param replayHash A ref to the scored match's replay hash (`null` when absent).
+ * @param target A ref to what to coach (`null` when there is nothing to coach).
  * @param deps The injected token getter + API wrappers.
  * @returns The reactive state + `initialize` / `requestCoaching` actions.
  */
 export function useEndgameCoach(
-  replayHash: Ref<string | null>,
+  target: Readonly<Ref<CoachTarget | null>>,
   deps: EndgameCoachDependencies,
 ): EndgameCoachController {
   const passStatus: Ref<CoachPassStatus> = ref('unknown');
@@ -101,6 +117,33 @@ export function useEndgameCoach(
   }
 
   /**
+   * The id a target is fetched by: its replay hash or its match id.
+   *
+   * @param currentTarget The coach target.
+   * @returns The replay hash (replay target) or match id (match target).
+   */
+  function targetKey(currentTarget: CoachTarget): string {
+    if (currentTarget.kind === 'replay') {
+      return currentTarget.replayHash;
+    }
+    return currentTarget.matchId;
+  }
+
+  /**
+   * Fetch the report for a target: a replay target through `fetchCoachReport`, a
+   * match target through `fetchCoachReportForMatch`.
+   *
+   * @param currentTarget The coach target.
+   * @returns The fetch result (the wrappers never throw).
+   */
+  function fetchForTarget(currentTarget: CoachTarget): Promise<FetchCoachResult> {
+    if (currentTarget.kind === 'replay') {
+      return deps.fetchCoachReport(deps.getToken(), currentTarget.replayHash);
+    }
+    return deps.fetchCoachReportForMatch(deps.getToken(), currentTarget.matchId);
+  }
+
+  /**
    * Fetch the coaching report on demand (Pass holders only). A `503` /
    * `coach_unavailable` maps to the retriable `unavailable` state; a
    * server-side `not_entitled` (defensive — should not happen once `has`) drops
@@ -110,12 +153,12 @@ export function useEndgameCoach(
     if (passStatus.value !== 'has') {
       return;
     }
-    const hash = replayHash.value;
-    if (hash === null || hash === '') {
+    const currentTarget = target.value;
+    if (currentTarget === null || targetKey(currentTarget) === '') {
       return;
     }
     coachStatus.value = 'loading';
-    const result = await deps.fetchCoachReport(deps.getToken(), hash);
+    const result = await fetchForTarget(currentTarget);
     if (result.status === 200 && result.report !== null) {
       report.value = result.report;
       coachStatus.value = 'ready';

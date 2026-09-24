@@ -208,6 +208,14 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    // why: WP-752 / D-24576 — prop-drilled PlayViewport → here → EndgameSummary: the
+    // match id for the casual (unscored) AI coach panel, computed once in PlayViewport
+    // (computeCasualCoachMatchId). Forwarded to BOTH play surfaces, unlike matchId
+    // itself (desktop-only, D-16501), so the casual coach also appears on mobile.
+    casualCoachMatchId: {
+      type: String as () => string | null,
+      default: null,
+    },
   },
   setup(props) {
     const store = useUiStateStore();
@@ -754,6 +762,7 @@ export default defineComponent({
         :competitive-score="competitiveScore"
         :seat-identities="seatIdentities"
         :show-guest-sign-in="showGuestSignIn"
+        :casual-coach-match-id="casualCoachMatchId"
       />
       <!-- why (Jeff feedback): at game over the outcome panel above is the primary
            view; the now-inert board is collapsed by default and revealed on demand.

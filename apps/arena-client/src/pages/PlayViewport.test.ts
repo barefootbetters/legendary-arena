@@ -4,10 +4,11 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setActivePinia, createPinia } from 'pinia';
 import { mount } from '@vue/test-utils';
-import PlayViewport from './PlayViewport.vue';
+import PlayViewport, { computeCasualCoachMatchId } from './PlayViewport.vue';
 import { useUiStateStore } from '../stores/uiState';
 import { loadUiStateFixture } from '../fixtures/uiState/index';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
+import type { SubmissionStatus } from '../composables/useCompetitiveSubmitOnGameover';
 
 function installMatchMedia(matches: boolean): void {
   Object.defineProperty(window, 'matchMedia', {
@@ -71,5 +72,35 @@ describe('PlayViewport (WP-129)', () => {
       wrapper.find('[data-testid="arena-hud-final-turn"]').exists(),
       false,
     );
+  });
+});
+
+describe('computeCasualCoachMatchId (WP-752 / D-24576)', () => {
+  // why: a Record over the union makes vue-tsc fail if a SubmissionStatus is added
+  // without a row here, so the truth table always covers every status.
+  const EXPECTED_BY_STATUS: Record<SubmissionStatus, string | null> = {
+    idle: null,
+    submitting: null,
+    submitted: null,
+    already: null,
+    failed: null,
+    guest: null,
+    ineligible: 'match-1',
+    'ended-early': null,
+  };
+
+  test('only ineligible yields the match id, for every SubmissionStatus', () => {
+    for (const status of Object.keys(EXPECTED_BY_STATUS) as SubmissionStatus[]) {
+      assert.equal(
+        computeCasualCoachMatchId('match-1', status),
+        EXPECTED_BY_STATUS[status],
+        status,
+      );
+    }
+    assert.equal(Object.keys(EXPECTED_BY_STATUS).length, 8);
+  });
+
+  test('an empty match id yields null even when ineligible', () => {
+    assert.equal(computeCasualCoachMatchId('', 'ineligible'), null);
   });
 });

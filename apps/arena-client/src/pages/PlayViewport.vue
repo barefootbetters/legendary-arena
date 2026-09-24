@@ -65,12 +65,11 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   // why: WP-465 — `par_not_published`: the match is not a ranked-gauntlet loadout, so
   // it is permanently not eligible to be scored. An honest, non-alarming line (not an
   // error — the player did nothing wrong).
-  // why: the score report card and the Legendary-Pass AI Coach both render only for a
-  // scored match (EndgameSummary gates on competitiveScore), so an unscored match shows
-  // neither. Say so here, where the player is told the match isn't scored, so a Pass
-  // holder isn't left wondering where the coach went (Jeff feedback, 2026-09-23).
+  // why: the score report card renders only for a scored match (EndgameSummary gates on
+  // competitiveScore), so say where it lives. The AI Coach is no longer named here:
+  // WP-752 / D-24576 brings it to unscored matches (the casual coach panel below).
   ineligible:
-    'This match isn’t part of a ranked gauntlet, so it isn’t scored to the leaderboard. The score report card and AI Coach are available on ranked-gauntlet loadouts.',
+    'This match isn’t part of a ranked gauntlet, so it isn’t scored to the leaderboard. The score report card is available on ranked-gauntlet loadouts.',
   // why: WP-465 — retry-NEUTRAL. The failed bucket mixes transient (network, 500) and
   // permanent (not_owner, visibility_not_eligible, replay_verification_failed) reasons,
   // so the old “It may still be counted shortly.” was a false promise for the permanent
@@ -81,6 +80,31 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   // than the par_not_published `ineligible` copy, which would be false for a gauntlet.
   'ended-early': 'This match ended early, so it isn’t scored to the leaderboard.',
 };
+
+/**
+ * The match id to coach as a casual (unscored) match, or `null` when this match
+ * gets no casual coach panel (WP-752 / D-24576).
+ *
+ * @param matchId The live match id (`''` when there is no live match).
+ * @param submissionStatus The post-match submission status.
+ * @returns `matchId` when the match is signed-in and permanently unscored; else `null`.
+ */
+export function computeCasualCoachMatchId(
+  matchId: string,
+  submissionStatus: SubmissionStatus,
+): string | null {
+  // why: `ineligible` is the only permanent, non-scoring status for a signed-in
+  // player (`failed` may still be a transient error; `submitting` has not settled;
+  // `submitted` / `already` are scored and use the replay-hash coach). Waiting for it
+  // honors D-24576's cache order: casual coaching is requested only once submit has
+  // settled as permanently unscored, so a casual report is never cached for a match
+  // about to be scored. Early ends, including guests', are `'ended-early'` (D-24306,
+  // #2312), and guests are `'guest'`, so the status alone excludes both.
+  if (matchId === '' || submissionStatus !== 'ineligible') {
+    return null;
+  }
+  return matchId;
+}
 
 /**
  * Viewport discriminator. Renders `<PlayDesktop>` when the viewport is
@@ -254,6 +278,12 @@ export default defineComponent({
     // otherwise-empty competitive-score slot, instead of leaving dead space.
     const isGuestResult = computed<boolean>(() => submissionStatus.value === 'guest');
 
+    // why: WP-752 — computed once here (the only place that holds both matchId and
+    // submissionStatus) and passed down to both play surfaces, which only render it.
+    const casualCoachMatchId = computed<string | null>(() =>
+      computeCasualCoachMatchId(props.matchId, submissionStatus.value),
+    );
+
     // why: WP-415 — mounted ONCE at this 01.5 play-root host (the WP-410/412
     // precedent), so the bot-ally stall banner covers BOTH the <PlayMobile> and
     // <PlayDesktop> surfaces. Probes WP-414's status surface once; a non-bot-ally
@@ -395,6 +425,7 @@ export default defineComponent({
       seatIdentities,
       submissionMessage,
       isGuestResult,
+      casualCoachMatchId,
       isBotAllyStopped,
       botAllyMessage,
       returnToLobby,
@@ -433,6 +464,7 @@ export default defineComponent({
       :competitive-score="submittedScore"
       :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
+      :casual-coach-match-id="casualCoachMatchId"
     />
     <PlayDesktop
       v-else
@@ -444,6 +476,7 @@ export default defineComponent({
       :competitive-score="submittedScore"
       :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
+      :casual-coach-match-id="casualCoachMatchId"
     />
     <DiagnosticExportButton />
     <!--

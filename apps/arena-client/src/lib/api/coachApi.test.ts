@@ -5,12 +5,17 @@
  * path (report + wasCached), the typed non-200 error mapping, and the
  * network-failure path (`status: 0`). Asserts the URL encodes the replay hash and
  * that `Authorization: Bearer` is attached only for an authenticated caller.
+ * WP-752 adds `fetchCoachReportForMatch` (the matchId route, same parsing).
  */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fetchCoachReport, type StoredCoachReport } from './coachApi';
+import {
+  fetchCoachReport,
+  fetchCoachReportForMatch,
+  type StoredCoachReport,
+} from './coachApi';
 
 interface CapturedRequest {
   readonly url: string;
@@ -90,6 +95,69 @@ test('fetchCoachReport returns status 0 on a network failure (never throws)', as
   }) as typeof globalThis.fetch;
   try {
     const result = await fetchCoachReport('token-abc', 'replay-xyz');
+    assert.equal(result.status, 0);
+    assert.equal(result.report, null);
+    assert.equal(result.error, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// WP-752 / D-24576 — fetchCoachReportForMatch (GET /api/me/matches/:matchId/coach)
+// ---------------------------------------------------------------------------
+
+test('fetchCoachReportForMatch hits the encoded matchId URL and returns the report on 200', async () => {
+  const stub = installFetchStub(200, { report: STORED, wasCached: true });
+  try {
+    const result = await fetchCoachReportForMatch('token-abc', 'match 1/x');
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.report, STORED);
+    assert.equal(result.wasCached, true);
+    assert.equal(result.error, null);
+    const call = stub.calls[0]!;
+    assert.ok(call.url.endsWith('/api/me/matches/match%201%2Fx/coach'), call.url);
+    assert.equal(call.init.method, 'GET');
+    assert.equal(
+      (call.init.headers as Record<string, string>).Authorization,
+      'Bearer token-abc',
+    );
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchCoachReportForMatch maps a non-200 to a typed error code', async () => {
+  const stub = installFetchStub(404, { error: 'not_found' });
+  try {
+    const result = await fetchCoachReportForMatch('token-abc', 'match-1');
+    assert.equal(result.status, 404);
+    assert.equal(result.report, null);
+    assert.equal(result.wasCached, null);
+    assert.equal(result.error, 'not_found');
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchCoachReportForMatch omits Authorization for a null token', async () => {
+  const stub = installFetchStub(200, { report: STORED, wasCached: false });
+  try {
+    await fetchCoachReportForMatch(null, 'match-1');
+    const call = stub.calls[0]!;
+    assert.equal((call.init.headers as Record<string, string>).Authorization, undefined);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('fetchCoachReportForMatch returns status 0 on a network failure (never throws)', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error('network down');
+  }) as typeof globalThis.fetch;
+  try {
+    const result = await fetchCoachReportForMatch('token-abc', 'match-1');
     assert.equal(result.status, 0);
     assert.equal(result.report, null);
     assert.equal(result.error, null);
