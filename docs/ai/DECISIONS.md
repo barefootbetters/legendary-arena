@@ -44340,4 +44340,36 @@ a new `Wired` row. The existing public flip on a `par_not_published` submit
 (`isBotAlly`), D-24306 (early ends), D-24120 (guests own nothing), D-24199 (casual stays free; this
 is a Pass feature on casual matches, nothing ranked).
 
+---
+
+### D-24577 — By-matchId competitive submit publishes the replay only on ACCEPT (Active 2026-09-23 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-23 (direct server fix, no WP).
+
+**Context.** D-24126 made a competitive submission consent-by-action to publish the replay. `submitCompetitiveScoreByMatchIdForRequest` implemented that by flipping the caller's `replay_ownership` private → public at its step 5 — BEFORE delegating to `submitCompetitiveScoreImpl`, whose PAR gate (`checkParPublished`) rejects every non-gauntlet loadout with `par_not_published`. The arena-client submits on every finished signed-in match (`useCompetitiveSubmitOnGameover`), so every casual match's replay was silently made public while never producing a score. The same pre-flip also publicized `ended_early` and `replay_verification_failed` rejections.
+
+**Decision.** The flip moves inside the impl, behind a `publishOnAccept` flag that only the by-matchId entry sets (threaded as a new trailing `submitCompetitiveScoreForRequest` parameter, default `false`). With the flag set, a private ownership passes the step-4 visibility gate and is promoted to public only when a score row exists: (a) the step-4b idempotent fast path (a row already exists — re-publishes a replay the owner later made private, exactly as the old pre-flip did on a resubmit) or (b) after the step-15 INSERT returns a row (fresh insert or race-lost retry), before badge issuance. Every rejection leaves the ownership private. The by-hash path is unchanged: a private ownership still returns `visibility_not_eligible` (D-5302). Scored matches end in the same state as before — public, so the leaderboard / gauntlet reads (`ro.visibility IN ('link','public')`) see them.
+
+**Proposed backfill (NOT run).** `submitCompetitiveScoreByMatchIdForRequest` was the only production writer of `visibility = 'public'` (no user-facing visibility endpoint calls `updateReplayVisibility`; capture inserts `'private'`), so a public ownership with no matching score row was necessarily publicized by a refused submission. Count, then revert under operator approval:
+
+```sql
+SELECT count(*) FROM legendary.replay_ownership ro
+WHERE ro.visibility = 'public'
+  AND NOT EXISTS (SELECT 1 FROM legendary.competitive_scores cs
+                  WHERE cs.player_id = ro.player_id AND cs.replay_hash = ro.replay_hash);
+
+UPDATE legendary.replay_ownership ro SET visibility = 'private'
+WHERE ro.visibility = 'public'
+  AND NOT EXISTS (SELECT 1 FROM legendary.competitive_scores cs
+                  WHERE cs.player_id = ro.player_id AND cs.replay_hash = ro.replay_hash);
+```
+
+Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer" premise before running if a visibility-toggle endpoint has shipped since.
+
+**Gates.** `competition.logic.test.ts` (DB-wired, 33/33, 0 skipped): new "par_not_published submit leaves the replay private and writes no score" (fails against the unfixed code with `actual: 'public'`) — then a PAR-published re-submit scores and flips to public; new "idempotent re-submit re-publishes a scored replay the owner made private"; the existing WP-338 "captures on-demand, auto-publishes, and scores" still asserts public after a scored submit.
+
+**D-24026 live-on-surface:** N/A — no rendered-surface change; the effect is a DB visibility value (verify post-deploy by finishing a casual signed-in match and confirming its `replay_ownership.visibility` stays `private`).
+
+**Reserved by:** NUMBER-LEDGER D-24577. Related: D-24126 (submission = consent-to-publish), D-5302 (visibility checked at submission time), D-5304 (idempotency fast path), D-5103 (PAR fail-closed), D-24128 (caller's own ownership row).
+
 Protect this file.

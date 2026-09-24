@@ -587,9 +587,11 @@ The end-to-end chain, in order:
    **resolve `replayHash` by `match_id`** (capturing **on-demand** if the
    5-minute harvester scan has not run yet) → confirm the caller's ownership
    (a **by-account** lookup, so a co-owner of a two-authenticated-seat match
-   is not mis-rejected — WP-340 / D-24128) → **auto-publish** that ownership
-   `private → public` (submitting is consent-to-publish) → delegate to the
-   verify+score core. The core re-reduces the artifact and rejects the
+   is not mis-rejected — WP-340 / D-24128) → delegate to the verify+score
+   core, which **auto-publishes** that ownership `private → public`
+   (submitting is consent-to-publish) **only once a score row exists** — a
+   refused submission such as a casual match's `par_not_published` leaves the
+   replay private (D-24577). The core re-reduces the artifact and rejects the
    submission unless the recomputed `computeStateHash` equals the stored
    `replayHash` (`replay_verification_failed`); it never trusts a
    client-supplied number (D-5301). Then it scores server-side with

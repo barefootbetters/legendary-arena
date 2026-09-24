@@ -190,6 +190,14 @@ interface SubmissionDependencies {
   // HUMAN seat (bots never submit) rather than every `playerCount` seat. Optional:
   // the by-hash path leaves it undefined → the gate falls back to `playerCount`.
   readonly humanSeatCount?: number | null;
+  // why: D-24577 — submission-as-consent (D-24126) applied only on ACCEPT. The
+  // by-matchId caller sets this so a still-private ownership is not rejected at
+  // the visibility gate; instead it is promoted private → public only once the
+  // submission yields a score row (fresh insert, race-lost insert, or the
+  // idempotent fast path). A rejection (par_not_published, ended_early,
+  // replay_verification_failed, …) leaves the replay private. Optional: the
+  // by-hash path leaves it undefined → the D-5302 private-rejects gate applies.
+  readonly publishOnAccept?: boolean;
 }
 
 // why: production defaults wire the real faithful-reducer lookup. The
@@ -392,6 +400,9 @@ export async function submitCompetitiveScoreForRequest(
   // Defaulted null so the by-hash path and existing tests keep the full-playerCount
   // completeness gate.
   humanSeatCount: number | null = null,
+  // why: D-24577 — publish-on-accept, set only by the by-matchId caller. Defaulted
+  // false so the by-hash path keeps the D-5302 private-rejects gate.
+  publishOnAccept: boolean = false,
 ): Promise<SubmissionResult> {
   return submitCompetitiveScoreImpl(identity, replayHash, database, {
     reduceReplay: reduceReplayByHash,
@@ -399,6 +410,7 @@ export async function submitCompetitiveScoreForRequest(
     isRankedEligible,
     submitterSeatId,
     humanSeatCount,
+    publishOnAccept,
   });
 }
 
@@ -412,8 +424,9 @@ export async function submitCompetitiveScoreForRequest(
  * Flow: guest guard → gameover gate (unfinished → `match_not_finished`; scoring is
  * end-of-match only, D-4804) → resolve `replayHash` by `match_id` (capturing
  * on-demand if the harvester scan has not run) → confirm the caller's ownership
- * (by-account) → auto-publish that ownership (submission = consent-to-publish,
- * D-24126) → delegate.
+ * (by-account) → delegate with publish-on-accept (submission = consent-to-publish,
+ * D-24126; the ownership flips private → public only once a score row exists,
+ * D-24577 — a refused submission leaves the replay private).
  *
  * @param identity The authenticated (or guest) player identity.
  * @param matchId The finished match's boardgame.io id.
@@ -471,11 +484,10 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
   }
 
   // why: step 5 — auto-publish. Submitting a score to the public competitive
-  // leaderboard is consent-by-action to publish the replay (D-24126); promote the
-  // caller's ownership private → public so the downstream visibility gate passes.
-  if (ownership.visibility === 'private') {
-    await updateReplayVisibility(ownership.ownershipId, 'public', database);
-  }
+  // leaderboard is consent-by-action to publish the replay (D-24126), but only for
+  // a submission that is ACCEPTED (D-24577): the impl promotes the caller's
+  // ownership private → public after the score row exists (publishOnAccept), never
+  // before the PAR gate — a par_not_published casual match stays private.
 
   // why: step 5b (WP-354 / D-24146) — compute ranked eligibility over the
   // match's authenticated human roster ONCE, before the terminal
@@ -521,6 +533,7 @@ export async function submitCompetitiveScoreByMatchIdForRequest(
     isRankedEligible,
     submitterSeatId,
     humanSeatCount,
+    true,
   );
 
   // why: step 7 (WP-593 / D-24402) — attach the derived per-seat identity roster
@@ -740,7 +753,8 @@ export async function submitCompetitiveScoreImpl(
   // D-5302. Once accepted, a competitive record is immutable; a
   // later visibility change does NOT retroactively invalidate the
   // record. There is no recheck after insert.
-  if (ownership.visibility === 'private') {
+  const isPublishPending = ownership.visibility === 'private';
+  if (isPublishPending && deps.publishOnAccept !== true) {
     return { ok: false, reason: 'visibility_not_eligible' };
   }
 
@@ -760,6 +774,12 @@ export async function submitCompetitiveScoreImpl(
     database,
   );
   if (existing !== null) {
+    // why: D-24577 — a score row already exists, so the consent-to-publish
+    // promotion applies (re-publishes a replay the owner later made private,
+    // exactly as the pre-D-24577 pre-flip did on a resubmit).
+    if (isPublishPending) {
+      await updateReplayVisibility(ownership.ownershipId, 'public', database);
+    }
     return { ok: true, record: existing, wasExisting: true };
   }
 
@@ -1013,6 +1033,15 @@ export async function submitCompetitiveScoreImpl(
   const row: CompetitiveScoreRow & { was_inserted: boolean; player_id: number | string } =
     insertResult.rows[0];
   const record = mapCompetitiveScoreRow(row);
+
+  // why: D-24577 — the score row now exists; promote the caller's ownership
+  // private → public (submission = consent-to-publish, D-24126) so the
+  // leaderboard reads (`ro.visibility IN ('link','public')`) see it. Deferred to
+  // here — not before the PAR gate — so a refused submission never publicizes a
+  // casual match's replay.
+  if (isPublishPending) {
+    await updateReplayVisibility(ownership.ownershipId, 'public', database);
+  }
 
   // why: badge issuance is fire-and-forget relative to the submission
   // pipeline. The competitive submission is the authoritative record;
