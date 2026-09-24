@@ -44366,6 +44366,8 @@ WHERE ro.visibility = 'public'
 
 Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer" premise before running if a visibility-toggle endpoint has shipped since.
 
+**Backfill run (2026-09-24).** Run on production after the #2313 deploy was confirmed live (`/version` → `gitSha 25f59cf`). The "only writer" premise was re-checked on `main` first: the only `'public'` writes are the two accepted-submit paths. Before: 43 public ownerships with no score row (6 players, 34 replays, created 2026-08-29 → 2026-09-23). The `UPDATE` reverted exactly 43 rows in one transaction with a 60-row abort cap. After: 0 public ownerships without a score row. All 195 remaining public rows have one, and the table totals are 236 private / 195 public.
+
 **Gates.** `competition.logic.test.ts` (DB-wired, 33/33, 0 skipped): new "par_not_published submit leaves the replay private and writes no score" (fails against the unfixed code with `actual: 'public'`) — then a PAR-published re-submit scores and flips to public; new "idempotent re-submit re-publishes a scored replay the owner made private"; the existing WP-338 "captures on-demand, auto-publishes, and scores" still asserts public after a scored submit.
 
 **D-24026 live-on-surface:** N/A — no rendered-surface change; the effect is a DB visibility value (verify post-deploy by finishing a casual signed-in match and confirming its `replay_ownership.visibility` stays `private`).
