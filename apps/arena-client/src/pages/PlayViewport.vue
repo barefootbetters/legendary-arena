@@ -65,7 +65,12 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   // why: WP-465 — `par_not_published`: the match is not a ranked-gauntlet loadout, so
   // it is permanently not eligible to be scored. An honest, non-alarming line (not an
   // error — the player did nothing wrong).
-  ineligible: 'This match isn’t part of a ranked gauntlet, so it isn’t scored to the leaderboard.',
+  // why: the score report card and the Legendary-Pass AI Coach both render only for a
+  // scored match (EndgameSummary gates on competitiveScore), so an unscored match shows
+  // neither. Say so here, where the player is told the match isn't scored, so a Pass
+  // holder isn't left wondering where the coach went (Jeff feedback, 2026-09-23).
+  ineligible:
+    'This match isn’t part of a ranked gauntlet, so it isn’t scored to the leaderboard. The score report card and AI Coach are available on ranked-gauntlet loadouts.',
   // why: WP-465 — retry-NEUTRAL. The failed bucket mixes transient (network, 500) and
   // permanent (not_owner, visibility_not_eligible, replay_verification_failed) reasons,
   // so the old “It may still be counted shortly.” was a false promise for the permanent
