@@ -88,4 +88,37 @@ describe('EndgameActions (WP-502 / D-24306)', () => {
       /Failed to create and join/,
     );
   });
+
+  // why: INFRA (endgame banner overlap) — the score-submission status renders inside
+  // this panel, not as a separate fixed toast that collided with the audio controls.
+  test('renders the score-submission status line inside the panel with its variant', () => {
+    const wrapper = mount(EndgameActions, {
+      props: {
+        ...baseProps,
+        endedEarly: true,
+        statusMessage: 'This match ended early, so it isn’t scored to the leaderboard.',
+        statusVariant: 'ended-early',
+      },
+    });
+    const panel = wrapper.find('[data-testid="play-endgame-actions"]');
+    const status = panel.find('[data-testid="score-submission-status"]');
+    assert.ok(status.exists(), 'the status line renders inside the panel');
+    assert.equal(status.attributes('role'), 'status');
+    assert.ok(status.classes().includes('endgame-actions__status--ended-early'));
+    assert.match(status.text(), /ended early/);
+  });
+
+  test('renders no status line when the message is empty (idle / guest)', () => {
+    const wrapper = mount(EndgameActions, {
+      props: { ...baseProps, statusMessage: '', statusVariant: 'guest' },
+    });
+    assert.equal(wrapper.find('[data-testid="score-submission-status"]').exists(), false);
+  });
+
+  test('the status line hides with the panel before the match is over', () => {
+    const wrapper = mount(EndgameActions, {
+      props: { ...baseProps, visible: false, statusMessage: 'Submitting your score…', statusVariant: 'submitting' },
+    });
+    assert.equal(wrapper.find('[data-testid="score-submission-status"]').exists(), false);
+  });
 });
