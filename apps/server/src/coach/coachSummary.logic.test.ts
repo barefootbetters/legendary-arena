@@ -82,28 +82,54 @@ function resolveName(extId: string): string {
 }
 
 describe('buildCoachMatchSummary (WP-594)', () => {
-  test('derives acquired cards: nets out the starting deck and Wounds', () => {
+  // why: D-24579 — INTENTIONAL behavior change. Zone ids are per-copy
+  // (`set/hero/card#N`), which the registry resolver does not map; the summary now
+  // names cards from the match's cardDisplayData, groups copies by name, and appends
+  // the hero. The ids here are the real production shape.
+  test('derives acquired cards: nets out starters and Wounds, groups copies, names the hero', () => {
     // Player 0 ends with the 12 starters (8 agents + 4 troopers), a Wound, and
-    // acquired hero cards spread across zones.
+    // acquired cards spread across zones: two copies of one hero card, one of
+    // another, and a S.H.I.E.L.D. Officer (not a hero card, so no hero name).
     const starters = [
       ...Array(8).fill('starting-shield-agent'),
       ...Array(4).fill('starting-shield-trooper'),
     ];
-    const state = makeState({
-      '0': {
-        deck: [...starters.slice(0, 6), 'core/hero/rogue', 'pile-wound'],
-        hand: [...starters.slice(6, 9), 'core/hero/spider-man'],
-        discard: [...starters.slice(9), 'core/hero/spider-man'],
-        inPlay: ['core/hero/gambit'],
-        // why: victory holds KO'd enemies + rescued bystanders — must be excluded.
-        victory: ['core/villain/hydra-agent', 'core/bystander/hostage'],
+    const state = {
+      ...makeState({
+        '0': {
+          deck: [...starters.slice(0, 6), 'core/spider-man/astonishing-strength#0', 'pile-wound'],
+          hand: [...starters.slice(6, 9), 'core/spider-man/astonishing-strength#1'],
+          discard: [...starters.slice(9), 'core/rogue/borrowed-brawn#0'],
+          inPlay: ['pile-shield-officer'],
+          // why: victory holds KO'd enemies + rescued bystanders — must be excluded.
+          victory: ['core/villain/hydra-agent', 'core/bystander/hostage'],
+        },
+      }),
+      cardDisplayData: {
+        'core/spider-man/astonishing-strength#0': { name: 'Astonishing Strength' },
+        'core/spider-man/astonishing-strength#1': { name: 'Astonishing Strength' },
+        'core/rogue/borrowed-brawn#0': { name: 'Borrowed Brawn' },
+        'pile-shield-officer': { name: 'S.H.I.E.L.D. Officer' },
       },
-    });
+    } as unknown as LegendaryGameState;
     const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     const line = summary.perPlayer[0];
     assert.ok(line);
-    // acquired = 2× Spider Man, 1× Rogue, 1× Gambit; starters + wound + victory excluded.
-    assert.deepEqual(line.acquiredCards, ['Spider Man ×2', 'Gambit', 'Rogue']);
+    // Hero names come from the registry resolver on `set/hero` (resolveName
+    // title-cases the slug); starters, the Wound and the victory pile are excluded.
+    assert.deepEqual(line.acquiredCards, [
+      'Astonishing Strength ×2 (Spider Man)',
+      'Borrowed Brawn (Rogue)',
+      'S.H.I.E.L.D. Officer',
+    ]);
+  });
+
+  test('falls back to the registry resolver for a card missing from cardDisplayData', () => {
+    const state = makeState({
+      '0': { deck: ['core/gambit/card-shark#0'], hand: [], discard: [], inPlay: [], victory: [] },
+    });
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
+    assert.deepEqual(summary.perPlayer[0]?.acquiredCards, ['Card Shark#0 (Gambit)']);
   });
 
   test('carries each seat\'s WP-616 defeat counts into the coach line', () => {
@@ -342,12 +368,18 @@ describe('buildCasualCoachMatchSummary (WP-751)', () => {
 
   // why: D-24578 — the bot's buys are never sent, so the coach cannot grade them.
   test('omits acquiredCards for the bot-ally seat and keeps them for the human seat', () => {
-    const state = makeState({
-      '0': { deck: ['core/hero/rogue'], hand: [], discard: [], inPlay: [], victory: [] },
-      '1': { deck: ['core/hero/gambit'], hand: [], discard: [], inPlay: [], victory: [] },
-    });
+    const state = {
+      ...makeState({
+        '0': { deck: ['core/rogue/borrowed-brawn#0'], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: ['core/gambit/card-shark#0'], hand: [], discard: [], inPlay: [], victory: [] },
+      }),
+      cardDisplayData: {
+        'core/rogue/borrowed-brawn#0': { name: 'Borrowed Brawn' },
+        'core/gambit/card-shark#0': { name: 'Card Shark' },
+      },
+    } as unknown as LegendaryGameState;
     const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, ['1']);
-    assert.deepEqual(summary.perPlayer[0]?.acquiredCards, ['Rogue']);
+    assert.deepEqual(summary.perPlayer[0]?.acquiredCards, ['Borrowed Brawn (Rogue)']);
     assert.equal(summary.perPlayer[1]?.isBotAlly, true);
     assert.equal('acquiredCards' in (summary.perPlayer[1] ?? {}), false);
   });

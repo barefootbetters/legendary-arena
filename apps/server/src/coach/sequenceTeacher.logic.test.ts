@@ -319,4 +319,40 @@ describe('computeSequenceTips (WP-710 / D-24533)', () => {
       "Next time, play avenger-enabler before team-card — you'd have landed its avengers synergy bonus.",
     );
   });
+
+  // why: D-24579 — production card ids are per-copy (`set/hero/card#N`) and the
+  // registry resolver does not map them, so tip text must come from the match's
+  // own cardDisplayData, or players would read raw ids.
+  test('tip text names cards from the match cardDisplayData, not raw per-copy ids', () => {
+    const finalState = {
+      ...makeFinalState({
+        cardTraits: {
+          'core/iron-man/arc-reactor#0': { heroClass: 'tech', team: null },
+          'core/iron-man/repulsor-rays#1': { heroClass: 'tech', team: null },
+        },
+        heroAbilityHooks: [
+          hook({ cardId: 'core/iron-man/arc-reactor#0', conditions: [{ type: 'heroClassMatch', value: 'tech' }] }),
+        ],
+      }),
+      cardDisplayData: {
+        'core/iron-man/arc-reactor#0': { name: 'Arc Reactor' },
+        'core/iron-man/repulsor-rays#1': { name: 'Repulsor Rays' },
+      },
+    } as unknown as LegendaryGameState;
+    const heroPlays: CapturedHeroPlay[] = [
+      { seat: '0', turn: 1, cardId: 'core/iron-man/arc-reactor#0', inPlay: ['core/iron-man/arc-reactor#0'] },
+      {
+        seat: '0',
+        turn: 1,
+        cardId: 'core/iron-man/repulsor-rays#1',
+        inPlay: ['core/iron-man/arc-reactor#0', 'core/iron-man/repulsor-rays#1'],
+      },
+    ];
+
+    const tips = computeSequenceTips(heroPlays, finalState, identityName);
+
+    assert.deepEqual(tips, [
+      "Next time, play Repulsor Rays before Arc Reactor — you'd have landed its tech synergy bonus.",
+    ]);
+  });
 });

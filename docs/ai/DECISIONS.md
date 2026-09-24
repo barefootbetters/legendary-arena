@@ -44406,4 +44406,21 @@ Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer"
 
 **Reserved by:** NUMBER-LEDGER D-24578. Related: D-24564 (`isBotAlly`), D-24575 (bot-ally eval scenario), D-24559 (eval pack), D-24576 (casual coaching), D-24403 (the coach).
 
+---
+
+### D-24579 — The coach names cards from the match's own display data, groups copies, and names each card's hero (Active 2026-09-24 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-24 (direct server fix, no WP; the D-24575 precedent).
+
+**Context.** Hero cards in the zones are per-copy ids (`set/hero/card#N`, built in `buildHeroDeck` / `buildCardDisplayData`). The coach resolved them with the registry name resolver (`buildNameResolver`), which maps only set-level ids (hero decks, masterminds, villains, schemes, henchmen). So in production `acquiredCards` was a list of raw ids (`vnom/venom/devouring-drool#2`), each copy a separate entry (the `×N` grouping never fired), and the model was reading slugs. The sequence teacher used the same resolver, so any play-order tip would have shown raw ids to players (latent: 0 of 11 production coach reports carried a tip on 2026-09-24). Separately, the eval fixtures used clean names without heroes, and the model misattributed a Captain America card ("neither player touched Captain America" when Player 1 bought Perfect Teamwork).
+
+**Decision.**
+1. **Card names from the match.** New `resolveMatchCardName(extId, finalState, resolveCardName)` reads `finalState.cardDisplayData[extId].name` (keyed by exactly those per-copy ids) and falls back to the registry resolver. Both the summary and the sequence teacher use it.
+2. **Copies grouped, hero named.** `acquiredCards` entries are grouped by label and read `Card Name ×N (Hero)`; the hero is the registry name of the card's `set/hero` deck. Non-hero cards (e.g. S.H.I.E.L.D. Officer) carry no hero. The prompt describes the format.
+3. **Eval fixtures match production.** Every fixture card carries its hero, taken from `data/cards/core.json` (43 names, each resolving to exactly one core hero).
+
+**Consequences.** Summary shape is unchanged (still `readonly string[]`); only the strings change. Cached reports keep their wording. No score, route, cache-key, engine or client change. The tip text shown to players now uses card display names.
+
+**Reserved by:** NUMBER-LEDGER D-24579. Related: D-24533 (sequence teacher), D-24578 (bot buys / twists), D-24575 (eval fixtures), D-24403 (the coach).
+
 Protect this file.

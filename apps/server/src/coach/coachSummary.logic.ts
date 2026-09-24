@@ -96,30 +96,98 @@ function removeFromCount(counts: Map<string, number>, extId: string, amount: num
 }
 
 /**
- * Render an acquired-card count map as "Display Name ×N" strings (or just the
- * name when N is 1), most-acquired first, ties broken by name for stable output.
+ * Resolve a card id from a match to its display name (D-24579). Hero cards in the
+ * zones are per-copy ids (`set/hero/card#N`) that the registry name resolver does
+ * not map, so the match's own setup-time `cardDisplayData` (keyed by exactly those
+ * ids) is read first; anything it lacks falls back to the registry resolver.
  *
- * @param counts The acquired-card count map.
- * @param resolveCardName Resolver from ext_id to display name.
+ * @param extId The card id as it appears in the match's zones.
+ * @param finalState The reduced final game state (carries `cardDisplayData`).
+ * @param resolveCardName The registry resolver (set-level ids, fallback).
+ * @returns The card's display name, or whatever the fallback resolver returns.
+ */
+export function resolveMatchCardName(
+  extId: string,
+  finalState: LegendaryGameState,
+  resolveCardName: ResolveCardName,
+): string {
+  // why: a reduced state from an older or partial replay may lack the table, so
+  // read it defensively and fall back rather than throw.
+  const displayByExtId = finalState.cardDisplayData as
+    | Readonly<Record<string, { readonly name?: string }>>
+    | undefined;
+  const displayName = displayByExtId?.[extId]?.name;
+  if (typeof displayName === 'string' && displayName !== '') {
+    return displayName;
+  }
+  return resolveCardName(extId);
+}
+
+/**
+ * The hero deck a hero card belongs to, as a display name, or `null` when the id
+ * is not a `set/hero/card` hero-card id or the hero deck does not resolve.
+ *
+ * @param extId The card id (a copy suffix `#N` is ignored).
+ * @param resolveCardName The registry resolver (maps `set/hero` deck ids).
+ * @returns The hero's display name, or `null`.
+ */
+function heroNameForCard(extId: string, resolveCardName: ResolveCardName): string | null {
+  const hashIndex = extId.indexOf('#');
+  const baseExtId = hashIndex === -1 ? extId : extId.slice(0, hashIndex);
+  const segments = baseExtId.split('/');
+  if (segments.length !== 3) {
+    return null;
+  }
+  const heroDeckId = `${segments[0]}/${segments[1]}`;
+  const heroName = resolveCardName(heroDeckId);
+  // why: the registry resolver returns its input unchanged when it has no entry.
+  return heroName === heroDeckId ? null : heroName;
+}
+
+/**
+ * Render an acquired-card count map as "Card Name ×N (Hero)" strings (the count
+ * only when N > 1, the hero only for a hero card), most-acquired first, ties broken
+ * by label for stable output. Copies of the same card (`#0`, `#2`, …) are distinct
+ * ids, so counts are grouped by label, not by id (D-24579).
+ *
+ * @param counts The acquired-card count map, keyed by per-copy id.
+ * @param finalState The reduced final game state (card display names).
+ * @param resolveCardName The registry resolver (hero deck names, fallback).
  * @returns The formatted acquired-card lines.
  */
 function formatAcquiredCards(
   counts: Map<string, number>,
+  finalState: LegendaryGameState,
   resolveCardName: ResolveCardName,
 ): string[] {
-  const entries = Array.from(counts.entries()).map(([extId, count]) => ({
-    name: resolveCardName(extId),
-    count,
-  }));
+  const countByLabel = new Map<string, number>();
+  for (const [extId, count] of counts) {
+    const cardName = resolveMatchCardName(extId, finalState, resolveCardName);
+    const heroName = heroNameForCard(extId, resolveCardName);
+    // why: D-24579 — name the hero beside each card so the coach knows which hero
+    // a purchase came from (it misread "Perfect Teamwork" as not a Captain America
+    // buy when the hero was absent).
+    const label = heroName === null ? cardName : `${cardName} (${heroName})`;
+    countByLabel.set(label, (countByLabel.get(label) ?? 0) + count);
+  }
+  const entries = Array.from(countByLabel.entries()).map(([label, count]) => ({ label, count }));
   entries.sort((left, right) => {
     if (right.count !== left.count) {
       return right.count - left.count;
     }
-    return left.name.localeCompare(right.name);
+    return left.label.localeCompare(right.label);
   });
-  return entries.map((entry) =>
-    entry.count === 1 ? entry.name : `${entry.name} ×${entry.count}`,
-  );
+  return entries.map((entry) => {
+    if (entry.count === 1) {
+      return entry.label;
+    }
+    // why: keep the count beside the card name, before the hero: "Name ×2 (Hero)".
+    const heroStart = entry.label.lastIndexOf(' (');
+    if (heroStart === -1 || !entry.label.endsWith(')')) {
+      return `${entry.label} ×${entry.count}`;
+    }
+    return `${entry.label.slice(0, heroStart)} ×${entry.count}${entry.label.slice(heroStart)}`;
+  });
 }
 
 /**
@@ -182,6 +250,7 @@ function buildPerPlayerLines(
         ...line,
         acquiredCards: formatAcquiredCards(
           countAcquiredCards(finalState.playerZones[playerId]),
+          finalState,
           resolveCardName,
         ),
       });
