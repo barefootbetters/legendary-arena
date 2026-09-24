@@ -233,7 +233,10 @@ test('each category-specific scenario has the shape its category promises', () =
       }
     }
     if (scenario.category === 'no-purchases') {
-      assert.ok(summary.perPlayer.some((seat) => seat.acquiredCards.length === 0), scenario.id);
+      assert.ok(
+        summary.perPlayer.some((seat) => seat.acquiredCards !== undefined && seat.acquiredCards.length === 0),
+        scenario.id,
+      );
     }
     if (scenario.category === 'two-seat-contribution') {
       assert.equal(summary.playerCount, 2, scenario.id);
@@ -254,6 +257,10 @@ test('every fixture seat carries an explicit isBotAlly, as production summaries 
       assert.equal(typeof seat.isBotAlly, 'boolean', `${scenario.id} ${seat.label} is missing isBotAlly.`);
       if (seat.isBotAlly === true) {
         botSeatCount += 1;
+        // why: D-24578 — production never sends a bot seat's buys.
+        assert.equal('acquiredCards' in seat, false, `${scenario.id} ${seat.label} is a bot seat and must omit acquiredCards.`);
+      } else {
+        assert.ok(Array.isArray(seat.acquiredCards), `${scenario.id} ${seat.label} is a human seat and must carry acquiredCards.`);
       }
     }
     const expectedBotSeats = scenario.category === 'bot-ally' ? 1 : 0;
@@ -277,7 +284,7 @@ test('every hallucination-guard decoy is absent from its own summary', () => {
       ...summary.heroes,
     ];
     for (const seat of summary.perPlayer) {
-      summaryNames.push(...seat.acquiredCards);
+      summaryNames.push(...(seat.acquiredCards ?? []));
     }
     const summaryText = summaryNames.join('\n');
     for (const decoy of decoys) {

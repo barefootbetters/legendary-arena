@@ -150,7 +150,10 @@ function buildPerPlayerLines(
     const index = Number(playerId);
     const label = Number.isInteger(index) ? `Player ${index + 1}` : `Player ${playerId}`;
     const contribution = contributionByPlayer.get(playerId);
-    lines.push({
+    // why: WP-742 — both the bot seat ids and the playerZones keys are
+    // String(seatIndex), so a string compare matches them.
+    const isBotAlly = botSeatIds.includes(playerId);
+    const line: CoachPlayerLine = {
       label,
       victoryPoints: contribution?.victoryPoints ?? 0,
       bystandersRescued: contribution?.bystandersRescued ?? 0,
@@ -168,14 +171,21 @@ function buildPerPlayerLines(
       // sums), the same truthful-default pattern as the WP-708 synergy counts above.
       conditionalClausesPotentialValue: contribution?.conditionalClausesPotentialValue ?? 0,
       conditionalClausesRealizedValue: contribution?.conditionalClausesRealizedValue ?? 0,
-      acquiredCards: formatAcquiredCards(
-        countAcquiredCards(finalState.playerZones[playerId]),
-        resolveCardName,
-      ),
-      // why: WP-742 — both the bot seat ids and the playerZones keys are
-      // String(seatIndex), so a string compare matches them.
-      isBotAlly: botSeatIds.includes(playerId),
-    });
+      isBotAlly,
+    };
+    // why: D-24578 — a bot-ally seat's buys are never sent, so the coach cannot
+    // grade them (D-24564); every human seat keeps its acquired-card list.
+    if (isBotAlly) {
+      lines.push(line);
+    } else {
+      lines.push({
+        ...line,
+        acquiredCards: formatAcquiredCards(
+          countAcquiredCards(finalState.playerZones[playerId]),
+          resolveCardName,
+        ),
+      });
+    }
   }
   return lines;
 }
@@ -231,7 +241,7 @@ export function buildCoachMatchSummary(
       bystandersRescued: breakdown.inputs.bystandersRescued,
     },
     adversity: {
-      schemeTwists: counts.schemeTwistNegative,
+      schemeTwistsFromVillainDeck: counts.schemeTwistNegative,
       villainsEscaped: counts.villainEscaped,
       bystandersLost: counts.bystanderLost,
     },
@@ -250,7 +260,7 @@ export function buildCoachMatchSummary(
     return {
       ...summary,
       adversityExpected: {
-        schemeTwists: baseline.schemeTwistsPar,
+        schemeTwistsFromVillainDeck: baseline.schemeTwistsPar,
         villainsEscaped: baseline.escapesPar,
         bystandersLost: baseline.bystandersLostPar,
       },
@@ -299,7 +309,7 @@ export function buildCasualCoachMatchSummary(
       bystandersRescued: inputs.bystandersRescued,
     },
     adversity: {
-      schemeTwists: counts.schemeTwistNegative,
+      schemeTwistsFromVillainDeck: counts.schemeTwistNegative,
       villainsEscaped: counts.villainEscaped,
       bystandersLost: counts.bystanderLost,
     },

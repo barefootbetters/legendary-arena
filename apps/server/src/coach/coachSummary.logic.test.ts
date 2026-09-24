@@ -226,7 +226,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
     });
     const noBaseline = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, []);
     assert.deepEqual(noBaseline.adversity, {
-      schemeTwists: 6,
+      schemeTwistsFromVillainDeck: 6,
       villainsEscaped: 1,
       bystandersLost: 2,
     });
@@ -248,7 +248,7 @@ describe('buildCoachMatchSummary (WP-594)', () => {
       [],
     );
     assert.deepEqual(withBaseline.adversityExpected, {
-      schemeTwists: 3,
+      schemeTwistsFromVillainDeck: 3,
       villainsEscaped: 1,
       bystandersLost: 2,
     });
@@ -338,5 +338,17 @@ describe('buildCasualCoachMatchSummary (WP-751)', () => {
     void grade;
     void adversityExpected;
     assert.deepEqual(casual, scoredWithoutParFields);
+  });
+
+  // why: D-24578 — the bot's buys are never sent, so the coach cannot grade them.
+  test('omits acquiredCards for the bot-ally seat and keeps them for the human seat', () => {
+    const state = makeState({
+      '0': { deck: ['core/hero/rogue'], hand: [], discard: [], inPlay: [], victory: [] },
+      '1': { deck: ['core/hero/gambit'], hand: [], discard: [], inPlay: [], victory: [] },
+    });
+    const summary = buildCoachMatchSummary(state, makeBreakdown(), 'heroes-win', resolveName, ['1']);
+    assert.deepEqual(summary.perPlayer[0]?.acquiredCards, ['Rogue']);
+    assert.equal(summary.perPlayer[1]?.isBotAlly, true);
+    assert.equal('acquiredCards' in (summary.perPlayer[1] ?? {}), false);
   });
 });

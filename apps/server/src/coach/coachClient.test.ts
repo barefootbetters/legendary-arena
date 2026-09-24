@@ -41,7 +41,7 @@ const SUMMARY = {
   finalScore: 640,
   grade: 'b',
   team: { victoryPoints: 50, bystandersRescued: 11 },
-  adversity: { schemeTwists: 3, villainsEscaped: 0, bystandersLost: 0 },
+  adversity: { schemeTwistsFromVillainDeck: 3, villainsEscaped: 0, bystandersLost: 0 },
   perPlayer: [],
 } as unknown as CoachMatchSummary;
 

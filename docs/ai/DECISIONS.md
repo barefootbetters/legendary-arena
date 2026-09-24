@@ -44390,4 +44390,20 @@ Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer"
 
 **Reserved by:** NUMBER-LEDGER D-24575. Related: D-24559 (the eval pack), D-24564 (the `isBotAlly` marker), D-24570 (the no-WP contract-change precedent).
 
+---
+
+### D-24578 — The coach summary omits a bot-ally seat's buys and names twists as villain-deck draws (Active 2026-09-24 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-24 (direct server fix, no WP; the D-24575 contract-change precedent).
+
+**Context.** #2318 tightened the coach prompt after the live casual bot-ally report (match `tpol7bM38J1`) graded the bot's purchases and blamed the hero lineup for Scheme Twists. The 2026-09-24 `coach:eval` run against `claude-sonnet-5` passed 12/12, but reading the casual-match and bot-ally reports showed the prompt alone did not hold: the model still praised the bot's buys ("The bot's Hulk Smash! x2 pickups were the right call") and still advised purchases "to keep the villain deck under control" against 5 twists. (The synergy-number rule did hold.)
+
+**Decision.** Change the data, not just the instructions:
+1. **Bot buys are not sent.** `CoachPlayerLine.acquiredCards` becomes optional and `buildPerPlayerLines` omits it for a bot-ally seat. The coach cannot grade purchases it never sees (D-24564). The bot's combat counts and `isBotAlly` stay, as context for what the human was left to do. Human seats always carry the list.
+2. **Twists are labelled in the data.** `adversity.schemeTwists` and `adversityExpected.schemeTwists` are renamed `schemeTwistsFromVillainDeck`, so the number the model reads says where it comes from. The prompt names the field, says twists come from the shuffle, and forbids suggesting a purchase or play to get fewer of them.
+
+**Consequences.** `CoachMatchSummary` / `CoachPlayerLine` change shape (the coach contract, `coach.types.ts`); the eval fixtures follow the production shape (a bot seat has no `acquiredCards`; the renamed key everywhere), with a shape test pinning both. Cached `coach_reports` keep their wording; only new reports see the new summary. No score, route, cache-key, engine or client change (the client never receives the summary). Verify with the next `coach:eval` run plus a read of the bot-ally and casual-match reports.
+
+**Reserved by:** NUMBER-LEDGER D-24578. Related: D-24564 (`isBotAlly`), D-24575 (bot-ally eval scenario), D-24559 (eval pack), D-24576 (casual coaching), D-24403 (the coach).
+
 Protect this file.
