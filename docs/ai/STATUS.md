@@ -29,9 +29,16 @@ teaser. Scored matches are unchanged.
   AI Coach as shipped.
 
 arena-client 1928/0 → 1945/0; `vue-tsc` 0; `pnpm -r build` 0. **D-24576 Active** (landed by
-WP-751; no new entry). **D-24026 live-verify: operator-manual pending** — as a Pass holder, finish
-a casual (non-gauntlet) signed-in match on the deployed client and confirm the AI Coach panel
-appears and coaches with no score or grade; as a guest, confirm the new sign-in prompt.
+WP-751; no new entry). **D-24026 live-verify: CONFIRMED 2026-09-24** on the deployed client
+(play + server at `25f59cf`):
+- **Pass holder, casual match.** Match `tpol7bM38J1`, Red Skull / Midtown Bank Robbery, all-Venom,
+  2 players (one bot ally), heroes win. The `ineligible` banner showed the new copy. The AI Coach
+  panel appeared below the recap and coached (headline, Table Cooperation, hero fit, purchases,
+  next time) with no score, grade or PAR comparison. A `coach_reports` row exists for the match's
+  replay, and its ownership stayed `private` with no score row (D-24577).
+- **Guest.** Bot-watched guest match `7_eOOnjEdGr` (Magneto / Midtown, heroes win, turn 20). The
+  sign-in prompt rendered the locked headline, detail, aria-label and `?route=login` link, with the
+  recap and no coach panel.
 
 ### WP-751 — AI Coach on unscored matches (EC-788 / D-24576) (2026-09-23)
 
@@ -54,10 +61,11 @@ ranked gauntlet) got no coaching. The coach now coaches any owned, normally fini
 
 Server suite 1591/1388/0/203 → 1605/1402/0/203; coach suite 98 → 112; DB-wired coach + replay files
 139/139, 0 skipped; `pnpm -r build` 0. The old "not_found when not scored" test's no-score half was
-intentionally rewritten (D-24576). **D-24576 Active.** D-24026: the full live check needs WP-752;
-the server-side proof (an authenticated `GET /api/me/matches/<matchId>/coach` → 200 for an owned,
-finished casual match) is pending deploy. Follow-up still open: a `par_not_published` submit flips
-the caller's ownership public before the PAR check refuses it (`competition.logic.ts`).
+intentionally rewritten (D-24576). **D-24576 Active.** **D-24026 live-verify: CONFIRMED
+2026-09-24** through the WP-752 client (match `tpol7bM38J1` coached from the matchId route; see
+WP-752 above). An unauthenticated `GET /api/me/matches/<id>/coach` on `api.legendary-arena.com`
+returns `401 missing_token` with `Cache-Control: no-store`. The `par_not_published` public-flip
+follow-up shipped as #2313 (D-24577), and its backfill reverted 43 rows (see D-24577).
 
 ### WP-746 — Excessive Violence fire feel-beat (EC-783 / D-24569) (2026-09-23)
 
