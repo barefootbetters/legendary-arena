@@ -91,7 +91,7 @@ function makeSummary(overrides: Partial<CoachMatchSummary>): CoachMatchSummary {
     finalScore: 0,
     grade: 'b',
     team: { victoryPoints: 0, bystandersRescued: 0 },
-    adversity: { schemeTwists: 0, villainsEscaped: 0, bystandersLost: 0 },
+    adversity: { schemeTwistsFromVillainDeck: 0, villainsEscaped: 0, bystandersLost: 0 },
     perPlayer: [],
     ...overrides,
   };

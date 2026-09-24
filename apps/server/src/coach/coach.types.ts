@@ -50,7 +50,11 @@ export interface CoachPlayerLine {
   readonly conditionalClausesPotentialValue: number;
   readonly conditionalClausesRealizedValue: number;
   /** Acquired hero cards as "Display Name ×N" strings, most-acquired first. */
-  readonly acquiredCards: readonly string[];
+  // why: D-24578 — ABSENT for a bot-ally seat. The coach must never grade the bot's
+  // purchases (D-24564), and a prompt rule alone did not stop it (the live
+  // tpol7bM38J1 report and the 2026-09-24 eval both praised the bot's buys), so the
+  // bot's buys are simply not sent. Its combat counts stay, as context.
+  readonly acquiredCards?: readonly string[];
   // why: WP-742 / D-24564 — marks a bot-ally seat so the coach can treat the bot as
   // the humans' ally instead of grading it as a second human. Optional so existing
   // fixtures (and any line built without a bot lookup) read as "human seat";
@@ -90,14 +94,18 @@ export interface CoachMatchSummary {
     readonly bystandersRescued: number;
   };
   /** The adversity the match actually dealt (for the model's luck read). */
+  // why: D-24578 — `schemeTwistsFromVillainDeck` (was `schemeTwists`) names where the
+  // twists come from IN the data the model reads: they are villain-deck draws, not a
+  // result of hero choice or purchases. The prompt rule alone did not stop the model
+  // advising purchases "to keep the twists under control".
   readonly adversity: {
-    readonly schemeTwists: number;
+    readonly schemeTwistsFromVillainDeck: number;
     readonly villainsEscaped: number;
     readonly bystandersLost: number;
   };
   /** What this scenario's PAR expects (absent for pre-WP-591 scored rows). */
   readonly adversityExpected?: {
-    readonly schemeTwists: number;
+    readonly schemeTwistsFromVillainDeck: number;
     readonly villainsEscaped: number;
     readonly bystandersLost: number;
   };

@@ -59,7 +59,8 @@ interface FixtureSeatCounts {
   readonly villainsDefeated: number;
   readonly henchmenDefeated: number;
   readonly mastermindTacticsDefeated: number;
-  readonly acquiredCards: readonly string[];
+  /** A human seat's buys; omitted for a bot-ally seat (D-24578). */
+  readonly acquiredCards?: readonly string[];
   /** True only for a bot-ally seat; every other seat is a human seat. */
   readonly isBotAlly?: boolean;
 }
@@ -73,7 +74,7 @@ interface FixtureSeatCounts {
  * @returns The seat line.
  */
 function buildSeat(seatNumber: number, counts: FixtureSeatCounts): CoachPlayerLine {
-  return {
+  const line: CoachPlayerLine = {
     label: `Player ${seatNumber}`,
     // why: D-24575 — since WP-742 (D-24564) `buildPerPlayerLines` always sets
     // `isBotAlly` explicitly, so every fixture seat carries it too; the eval measures
@@ -88,8 +89,13 @@ function buildSeat(seatNumber: number, counts: FixtureSeatCounts): CoachPlayerLi
     conditionalClausesAssembled: 0,
     conditionalClausesPotentialValue: 0,
     conditionalClausesRealizedValue: 0,
-    acquiredCards: counts.acquiredCards,
   };
+  // why: D-24578 — `buildPerPlayerLines` never sends a bot-ally seat's buys, so a
+  // fixture bot seat carries none either; the eval measures the production shape.
+  if (counts.isBotAlly === true) {
+    return line;
+  }
+  return { ...line, acquiredCards: counts.acquiredCards ?? [] };
 }
 
 /** The eval scenario set. At least 10 scenarios, at least one per category. */
@@ -111,8 +117,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1180,
       grade: 'b',
       team: { victoryPoints: 38, bystandersRescued: 6 },
-      adversity: { schemeTwists: 4, villainsEscaped: 2, bystandersLost: 2 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 4, villainsEscaped: 2, bystandersLost: 2 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 21,
@@ -151,8 +157,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 3920,
       grade: 'e',
       team: { victoryPoints: 14, bystandersRescued: 1 },
-      adversity: { schemeTwists: 8, villainsEscaped: 9, bystandersLost: 7 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 8, villainsEscaped: 9, bystandersLost: 7 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 8,
@@ -191,8 +197,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 610,
       grade: 'a',
       team: { victoryPoints: 44, bystandersRescued: 9 },
-      adversity: { schemeTwists: 1, villainsEscaped: 0, bystandersLost: 0 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 1, villainsEscaped: 0, bystandersLost: 0 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 23,
@@ -231,8 +237,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1540,
       grade: 'c',
       team: { victoryPoints: 35, bystandersRescued: 5 },
-      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 29,
@@ -271,8 +277,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1320,
       grade: 'c',
       team: { victoryPoints: 27, bystandersRescued: 5 },
-      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 2 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 2 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 27,
@@ -303,8 +309,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 2610,
       grade: 'd',
       team: { victoryPoints: 19, bystandersRescued: 2 },
-      adversity: { schemeTwists: 6, villainsEscaped: 4, bystandersLost: 4 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 6, villainsEscaped: 4, bystandersLost: 4 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 11,
@@ -343,8 +349,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1720,
       grade: 'c',
       team: { victoryPoints: 31, bystandersRescued: 4 },
-      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 27,
@@ -383,7 +389,7 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1450,
       grade: 'c',
       team: { victoryPoints: 33, bystandersRescued: 5 },
-      adversity: { schemeTwists: 5, villainsEscaped: 4, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 4, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 18,
@@ -422,8 +428,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 2050,
       grade: 'd',
       team: { victoryPoints: 26, bystandersRescued: 3 },
-      adversity: { schemeTwists: 6, villainsEscaped: 3, bystandersLost: 4 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 6, villainsEscaped: 3, bystandersLost: 4 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 14,
@@ -462,8 +468,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1260,
       grade: 'b',
       team: { victoryPoints: 58, bystandersRescued: 11 },
-      adversity: { schemeTwists: 4, villainsEscaped: 3, bystandersLost: 3 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 4, bystandersLost: 4 },
+      adversity: { schemeTwistsFromVillainDeck: 4, villainsEscaped: 3, bystandersLost: 3 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 4, bystandersLost: 4 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 15,
@@ -524,7 +530,7 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       henchmanGroups: ['Savage Land Mutates'],
       heroes: ['Captain America', 'Wolverine', 'Storm', 'Hawkeye', 'Thor'],
       team: { victoryPoints: 35, bystandersRescued: 5 },
-      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 2 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 2 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 19,
@@ -564,8 +570,8 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       finalScore: 1490,
       grade: 'c',
       team: { victoryPoints: 34, bystandersRescued: 5 },
-      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
-      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversity: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversityExpected: { schemeTwistsFromVillainDeck: 5, villainsEscaped: 3, bystandersLost: 3 },
       perPlayer: [
         buildSeat(1, {
           victoryPoints: 12,
@@ -581,7 +587,6 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
           villainsDefeated: 7,
           henchmenDefeated: 3,
           mastermindTacticsDefeated: 3,
-          acquiredCards: ['Hulk Smash! ×2', 'Covert Operation', 'Web-Shooters'],
           isBotAlly: true,
         }),
       ],
