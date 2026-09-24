@@ -3,13 +3,14 @@
  *
  * Pure function; no database, no model call. Verifies the acquired-card
  * derivation (starters + Wounds netted out), loadout name resolution, adversity,
- * outcome from matchLost, and the WP-591 expected-adversity block.
+ * outcome from matchLost, and the WP-591 expected-adversity block. WP-751 adds the
+ * casual (unscored) builder, which omits every score field.
  */
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildCoachMatchSummary } from './coachSummary.logic.js';
+import { buildCasualCoachMatchSummary, buildCoachMatchSummary } from './coachSummary.logic.js';
 import type { LegendaryGameState, ScoreBreakdown } from '@legendary-arena/game-engine';
 
 // why: the assembler reads only matchConfiguration + playerZones off the state,
@@ -281,5 +282,61 @@ describe('buildCoachMatchSummary (WP-594)', () => {
       summary.perPlayer.map((line) => line.label),
       ['Player 1', 'Player 2'],
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-751 / D-24576 — the casual (unscored) summary
+// ---------------------------------------------------------------------------
+
+describe('buildCasualCoachMatchSummary (WP-751)', () => {
+  // A state with acquired cards and two seats, so the per-player lines carry data.
+  function makeTwoSeatState(): LegendaryGameState {
+    return makeState({
+      '0': { deck: ['core/hero/rogue'], hand: [], discard: ['core/hero/spider-man'], inPlay: [], victory: [] },
+      '1': { deck: [], hand: ['core/hero/gambit'], discard: [], inPlay: [], victory: [] },
+    });
+  }
+
+  // A breakdown whose PAR baseline carries expected adversity, so the scored summary
+  // has all four PAR fields the casual one must omit.
+  function makeBreakdownWithBaseline(): ScoreBreakdown {
+    return makeBreakdown({
+      parBaseline: { schemeTwistsPar: 5, escapesPar: 3, bystandersLostPar: 3 },
+    } as unknown as Partial<ScoreBreakdown>);
+  }
+
+  test('omits rawScore, finalScore, grade and adversityExpected', () => {
+    const summary = buildCasualCoachMatchSummary(
+      makeTwoSeatState(),
+      makeBreakdown().inputs,
+      'heroes-win',
+      resolveName,
+      [],
+    );
+    for (const field of ['rawScore', 'finalScore', 'grade', 'adversityExpected']) {
+      assert.equal(field in summary, false, 'the casual summary must omit ' + field);
+    }
+  });
+
+  test('every other field equals the scored summary built from the same inputs', () => {
+    const state = makeTwoSeatState();
+    const breakdown = makeBreakdownWithBaseline();
+    const scored = buildCoachMatchSummary(state, breakdown, 'scheme-wins', resolveName, ['1']);
+    const casual = buildCasualCoachMatchSummary(state, breakdown.inputs, 'scheme-wins', resolveName, ['1']);
+
+    // The scored summary really does carry the four PAR fields (so the comparison
+    // below proves they are the ONLY difference).
+    assert.notEqual(scored.rawScore, undefined);
+    assert.notEqual(scored.finalScore, undefined);
+    assert.notEqual(scored.grade, undefined);
+    assert.notEqual(scored.adversityExpected, undefined);
+
+    const { rawScore, finalScore, grade, adversityExpected, ...scoredWithoutParFields } = scored;
+    void rawScore;
+    void finalScore;
+    void grade;
+    void adversityExpected;
+    assert.deepEqual(casual, scoredWithoutParFields);
   });
 });

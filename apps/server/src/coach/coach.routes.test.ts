@@ -3,8 +3,8 @@
  *
  * Logic-pure: fake CoachRouteDependencies + a fake CoachRouteLogic are injected,
  * so no real pg.Pool, no HTTP listener, no model call. A mock router captures the
- * registered GET handler; the mock context records header/status/body ordering
- * for the Cache-Control-first assertion.
+ * registered GET handlers; the mock context records header/status/body ordering
+ * for the Cache-Control-first assertion. WP-751 adds the matchId route.
  */
 
 import { describe, test } from 'node:test';
@@ -24,12 +24,15 @@ type RegisteredHandler = (koaContext: MockKoaContext) => Promise<void> | void;
 
 interface MockKoaContext {
   readonly req: SessionTokenRequest;
-  params: { replayHash?: string };
+  params: { replayHash?: string; matchId?: string };
   status: number;
   body: unknown;
   set(field: string, value: string): void;
   readonly callOrder: string[];
 }
+
+const REPLAY_ROUTE = '/api/me/scores/:replayHash/coach';
+const MATCH_ROUTE = '/api/me/matches/:matchId/coach';
 
 function makeMockRouter(): {
   router: { get: (path: string, handler: RegisteredHandler) => void };
@@ -117,26 +120,39 @@ function makeDeps(
 function makeLogic(result: CoachResult): CoachRouteLogic {
   return {
     generateOrGetCoachReport: async () => result,
+    generateOrGetCoachReportForMatch: async () => result,
   };
 }
 
 function registerAndGetHandler(
   deps: CoachRouteDependencies,
   logic: CoachRouteLogic,
+  path: string = REPLAY_ROUTE,
 ): RegisteredHandler {
   const { router, routes } = makeMockRouter();
   registerCoachRoutes(router as never, {} as never, deps, logic);
-  const route = routes.find((entry) => entry.path === '/api/me/scores/:replayHash/coach');
-  assert.ok(route, 'the coach route is registered');
+  const route = routes.find((entry) => entry.path === path);
+  assert.ok(route, 'the coach route is registered: ' + path);
   return route.handler;
 }
 
+// A match-route context: the matchId param set, no replayHash.
+function makeMatchContext(matchId: string | undefined): MockKoaContext {
+  const context = makeMockContext();
+  context.params = matchId === undefined ? {} : { matchId };
+  return context;
+}
+
 describe('registerCoachRoutes (WP-594)', () => {
-  test('registers GET /api/me/scores/:replayHash/coach', () => {
+  // why: WP-751 — the registered-route set grew from one to two (the new matchId
+  // route); the replayHash route is unchanged.
+  test('registers GET /api/me/scores/:replayHash/coach and GET /api/me/matches/:matchId/coach', () => {
     const { router, routes } = makeMockRouter();
     registerCoachRoutes(router as never, {} as never, makeDeps(), makeLogic({ ok: false, reason: 'not_found' }));
-    assert.equal(routes.length, 1);
-    assert.equal(routes[0]?.path, '/api/me/scores/:replayHash/coach');
+    assert.deepEqual(
+      routes.map((route) => route.path),
+      [REPLAY_ROUTE, MATCH_ROUTE],
+    );
   });
 
   test('200 with { report, wasCached } and Cache-Control set first', async () => {
@@ -155,6 +171,10 @@ describe('registerCoachRoutes (WP-594)', () => {
     let called = false;
     const logic: CoachRouteLogic = {
       generateOrGetCoachReport: async () => {
+        called = true;
+        return { ok: false, reason: 'not_found' };
+      },
+      generateOrGetCoachReportForMatch: async () => {
         called = true;
         return { ok: false, reason: 'not_found' };
       },
@@ -228,8 +248,131 @@ describe('registerCoachRoutes (WP-594)', () => {
       generateOrGetCoachReport: async () => {
         throw new Error('boom');
       },
+      generateOrGetCoachReportForMatch: async () => {
+        throw new Error('boom');
+      },
     });
     const context = makeMockContext();
+    await handler(context);
+    assert.equal(context.status, 500);
+    assert.deepEqual(context.body, { error: 'internal_error' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-751 / D-24576 — GET /api/me/matches/:matchId/coach
+// ---------------------------------------------------------------------------
+
+describe('GET /api/me/matches/:matchId/coach (WP-751)', () => {
+  test('200 with { report, wasCached }, Cache-Control first, and the matchId passed through', async () => {
+    const receivedMatchIds: string[] = [];
+    const handler = registerAndGetHandler(
+      makeDeps(),
+      {
+        generateOrGetCoachReport: async () => ({ ok: false, reason: 'not_found' }),
+        generateOrGetCoachReportForMatch: async (_accountId, matchId) => {
+          receivedMatchIds.push(matchId);
+          return { ok: true, report: STORED, wasCached: false };
+        },
+      },
+      MATCH_ROUTE,
+    );
+    const context = makeMatchContext('match-1');
+    await handler(context);
+    assert.equal(context.status, 200);
+    assert.deepEqual(context.body, { report: STORED, wasCached: false });
+    assert.equal(context.callOrder[0], 'set:Cache-Control');
+    assert.deepEqual(receivedMatchIds, ['match-1']);
+  });
+
+  test('400 on a missing or empty matchId', async () => {
+    for (const matchId of [undefined, '']) {
+      const handler = registerAndGetHandler(
+        makeDeps(),
+        makeLogic({ ok: true, report: STORED, wasCached: false }),
+        MATCH_ROUTE,
+      );
+      const context = makeMatchContext(matchId);
+      await handler(context);
+      assert.equal(context.status, 400, String(matchId));
+      assert.deepEqual(context.body, { error: 'invalid_request' });
+    }
+  });
+
+  test('401 on a failed session and 403 on a suspended account; the logic is never called', async () => {
+    let called = false;
+    const logic: CoachRouteLogic = {
+      generateOrGetCoachReport: async () => ({ ok: false, reason: 'not_found' }),
+      generateOrGetCoachReportForMatch: async () => {
+        called = true;
+        return { ok: true, report: STORED, wasCached: false };
+      },
+    };
+
+    const unauthenticated = registerAndGetHandler(
+      makeDeps({
+        requireAuthenticatedSession: async () => ({
+          ok: false,
+          reason: 'no token',
+          code: 'missing_token',
+        }),
+      }),
+      logic,
+      MATCH_ROUTE,
+    );
+    const unauthenticatedContext = makeMatchContext('match-1');
+    await unauthenticated(unauthenticatedContext);
+    assert.equal(unauthenticatedContext.status, 401);
+    assert.deepEqual(unauthenticatedContext.body, { error: 'missing_token' });
+
+    const suspended = registerAndGetHandler(
+      makeDeps({
+        requireUnsuspendedAccount: async () =>
+          ({ ok: false, code: 'suspended' }) as never,
+      }),
+      logic,
+      MATCH_ROUTE,
+    );
+    const suspendedContext = makeMatchContext('match-1');
+    await suspended(suspendedContext);
+    assert.equal(suspendedContext.status, 403);
+    assert.deepEqual(suspendedContext.body, { error: 'forbidden' });
+
+    assert.equal(called, false);
+  });
+
+  test('each refusal reason maps to its locked status', async () => {
+    const expectations: { reason: 'not_entitled' | 'not_owner' | 'not_found' | 'coach_unavailable'; status: number }[] = [
+      { reason: 'not_entitled', status: 403 },
+      { reason: 'not_owner', status: 403 },
+      { reason: 'not_found', status: 404 },
+      { reason: 'coach_unavailable', status: 503 },
+    ];
+    for (const expectation of expectations) {
+      const handler = registerAndGetHandler(
+        makeDeps(),
+        makeLogic({ ok: false, reason: expectation.reason }),
+        MATCH_ROUTE,
+      );
+      const context = makeMatchContext('match-1');
+      await handler(context);
+      assert.equal(context.status, expectation.status, expectation.reason);
+      assert.deepEqual(context.body, { error: expectation.reason });
+    }
+  });
+
+  test('500 with a locked envelope when the coach logic throws', async () => {
+    const handler = registerAndGetHandler(
+      makeDeps(),
+      {
+        generateOrGetCoachReport: async () => ({ ok: false, reason: 'not_found' }),
+        generateOrGetCoachReportForMatch: async () => {
+          throw new Error('boom');
+        },
+      },
+      MATCH_ROUTE,
+    );
+    const context = makeMatchContext('match-1');
     await handler(context);
     assert.equal(context.status, 500);
     assert.deepEqual(context.body, { error: 'internal_error' });

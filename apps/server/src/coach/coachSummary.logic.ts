@@ -2,10 +2,12 @@
  * Endgame AI Coach — Match Summary Assembler (WP-594 / EC-629 / D-24403)
  *
  * Turns the reduced final state + the stored score breakdown into the compact,
- * display-name-resolved `CoachMatchSummary` handed to the model. Pure and
- * side-effect-free (no I/O), so it is unit-testable without a database or a model
- * call. Every field is server-generated — no player free-text enters it, so there
- * is no prompt-injection surface (D-24403).
+ * display-name-resolved `CoachMatchSummary` handed to the model. A casual
+ * (unscored) match has no breakdown; `buildCasualCoachMatchSummary` builds the same
+ * summary from the scoring inputs derived from the replay, minus every score field
+ * (WP-751 / D-24576). Pure and side-effect-free (no I/O), so it is unit-testable
+ * without a database or a model call. Every field is server-generated — no player
+ * free-text enters it, so there is no prompt-injection surface (D-24403).
  *
  * The `acquiredCards` per player are the hero cards that entered that player's
  * DECK during the match: deck + hand + discard + in-play, minus the fixed
@@ -31,6 +33,7 @@ import type {
   LegendaryGameState,
   PlayerScoringContribution,
   ScoreBreakdown,
+  ScoringInputs,
 } from '@legendary-arena/game-engine';
 
 import type {
@@ -121,23 +124,24 @@ function formatAcquiredCards(
 
 /**
  * Build the per-player lines: each player's VP + rescued bystanders (from the
- * breakdown) joined with their acquired cards (from the reduced zones). Falls back
- * to a zone-only line for a player the breakdown has no per-player entry for.
+ * scoring inputs) joined with their acquired cards (from the reduced zones). Falls
+ * back to a zone-only line for a player the inputs have no per-player entry for.
  *
  * @param finalState The reduced final game state.
- * @param breakdown The stored score breakdown.
+ * @param inputs The scoring inputs — a stored breakdown's `inputs`, or the inputs
+ *   derived from the replay for a casual match (WP-751).
  * @param resolveCardName Resolver from ext_id to display name.
  * @param botSeatIds The match's bot-ally seat ids (e.g. `['1']`); `[]` when none.
  * @returns One line per player, in seat order.
  */
 function buildPerPlayerLines(
   finalState: LegendaryGameState,
-  breakdown: ScoreBreakdown,
+  inputs: ScoringInputs,
   resolveCardName: ResolveCardName,
   botSeatIds: readonly string[],
 ): CoachPlayerLine[] {
   const contributionByPlayer = new Map<string, PlayerScoringContribution>();
-  for (const contribution of breakdown.inputs.perPlayer ?? []) {
+  for (const contribution of inputs.perPlayer ?? []) {
     contributionByPlayer.set(contribution.playerId, contribution);
   }
   const playerIds = Object.keys(finalState.playerZones).sort();
@@ -231,7 +235,7 @@ export function buildCoachMatchSummary(
       villainsEscaped: counts.villainEscaped,
       bystandersLost: counts.bystanderLost,
     },
-    perPlayer: buildPerPlayerLines(finalState, breakdown, resolveCardName, botSeatIds),
+    perPlayer: buildPerPlayerLines(finalState, breakdown.inputs, resolveCardName, botSeatIds),
   };
 
   // why: WP-591 PAR baselines carry the expected adversity; older scored rows do
@@ -253,4 +257,52 @@ export function buildCoachMatchSummary(
     };
   }
   return summary;
+}
+
+/**
+ * Assemble the coach match summary for a casual (unscored) match from the reduced
+ * final state + the scoring inputs derived from its replay (WP-751 / D-24576).
+ * Every field matches what `buildCoachMatchSummary` produces for the same inputs,
+ * except that `rawScore`, `finalScore`, `grade` and `adversityExpected` are omitted.
+ *
+ * @param finalState The reduced final game state (loadout + zones).
+ * @param inputs The scoring inputs derived from the replay (`deriveScoringInputs`).
+ * @param outcome The match outcome (heroes-win / scheme-wins / tie).
+ * @param resolveCardName Resolver from ext_id to display name.
+ * @param botSeatIds The match's bot-ally seat ids (WP-742); `[]` for a human-only match.
+ * @returns The compact, name-resolved summary for the model, with no score fields.
+ */
+export function buildCasualCoachMatchSummary(
+  finalState: LegendaryGameState,
+  inputs: ScoringInputs,
+  outcome: CoachMatchSummary['outcome'],
+  resolveCardName: ResolveCardName,
+  botSeatIds: readonly string[],
+): CoachMatchSummary {
+  const configuration = finalState.matchConfiguration;
+  const counts = inputs.penaltyEventCounts;
+
+  // why: NG-1 — a casual match has no PAR artifact, so there are no scoring weights,
+  // no raw/final score, no grade, and no PAR-expected adversity. Those fields are
+  // left out entirely (never faked as 0 or '') so the model cannot read a score.
+  return {
+    outcome,
+    playerCount: Object.keys(finalState.playerZones).length,
+    rounds: inputs.rounds,
+    scheme: resolveCardName(configuration.schemeId),
+    mastermind: resolveCardName(configuration.mastermindId),
+    villainGroups: resolveNames(configuration.villainGroupIds, resolveCardName),
+    henchmanGroups: resolveNames(configuration.henchmanGroupIds, resolveCardName),
+    heroes: resolveNames(configuration.heroDeckIds, resolveCardName),
+    team: {
+      victoryPoints: inputs.victoryPoints,
+      bystandersRescued: inputs.bystandersRescued,
+    },
+    adversity: {
+      schemeTwists: counts.schemeTwistNegative,
+      villainsEscaped: counts.villainEscaped,
+      bystandersLost: counts.bystanderLost,
+    },
+    perPlayer: buildPerPlayerLines(finalState, inputs, resolveCardName, botSeatIds),
+  };
 }

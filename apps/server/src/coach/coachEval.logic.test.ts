@@ -194,6 +194,7 @@ test('COACH_EVAL_CATEGORIES matches the CoachEvalCategory union exactly', () => 
     'pre-par-summary': true,
     tie: true,
     'five-players': true,
+    'casual-match': true,
   };
   assert.deepEqual([...COACH_EVAL_CATEGORIES].sort(), Object.keys(categoryPresence).sort());
   assert.equal(new Set(COACH_EVAL_CATEGORIES).size, COACH_EVAL_CATEGORIES.length);
@@ -222,6 +223,13 @@ test('each category-specific scenario has the shape its category promises', () =
     }
     if (scenario.category === 'pre-par-summary') {
       assert.equal(summary.adversityExpected, undefined, scenario.id);
+    }
+    // why: WP-751 / D-24576 — a casual summary has none of the four PAR fields (they
+    // are omitted, never zeroed), exactly as buildCasualCoachMatchSummary emits it.
+    if (scenario.category === 'casual-match') {
+      for (const field of ['rawScore', 'finalScore', 'grade', 'adversityExpected']) {
+        assert.equal(field in summary, false, `${scenario.id} must omit ${field}`);
+      }
     }
     if (scenario.category === 'no-purchases') {
       assert.ok(summary.perPlayer.some((seat) => seat.acquiredCards.length === 0), scenario.id);

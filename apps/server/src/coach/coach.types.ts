@@ -61,8 +61,8 @@ export interface CoachPlayerLine {
 /**
  * The compact, display-name-resolved match summary handed to the model. Every
  * field is server-generated from the registry + the reduced final state + the
- * stored score breakdown — NO player free-text enters it, so there is no
- * prompt-injection surface.
+ * stored score breakdown (or, for a casual match, the derived scoring inputs) —
+ * NO player free-text enters it, so there is no prompt-injection surface.
  */
 export interface CoachMatchSummary {
   readonly outcome: 'heroes-win' | 'scheme-wins' | 'tie';
@@ -75,10 +75,15 @@ export interface CoachMatchSummary {
   readonly henchmanGroups: readonly string[];
   /** The hero decks available in this match (the selection being critiqued). */
   readonly heroes: readonly string[];
-  readonly rawScore: number;
-  readonly finalScore: number;
+  // why: WP-751 / D-24576 — the three score fields are present for a scored match and
+  // ABSENT for a casual (unscored) one. A casual match has no PAR artifact, so there
+  // are no scoring weights to compute a raw score from; omitting the fields (never 0
+  // or '') keeps the model from reading a fake score, and the prompt tells it to
+  // coach the play itself when they are missing.
+  readonly rawScore?: number;
+  readonly finalScore?: number;
   /** Lower-is-better grade token for the final score (e.g. "a", "b"). */
-  readonly grade: string;
+  readonly grade?: string;
   /** Team totals across all players (a shared-team score). */
   readonly team: {
     readonly victoryPoints: number;
@@ -142,7 +147,7 @@ export interface StoredCoachReport {
 /**
  * The reasons a coach request is refused, mapped to HTTP by the route.
  * `not_entitled` → 403 (no Legendary Pass); `not_owner` → 403; `not_found` →
- * 404 (no such scored replay for this caller); `coach_unavailable` → 503
+ * 404 (no replayable, normally finished match for this caller); `coach_unavailable` → 503
  * (the model call failed — a fail-soft, retriable signal, never a card blocker).
  */
 export type CoachRefusalReason =
