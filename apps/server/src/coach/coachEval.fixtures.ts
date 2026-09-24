@@ -49,6 +49,9 @@ const PURCHASE_LANGUAGE_TERMS: readonly string[] = [
   'acquiring',
 ];
 
+/** Words that acknowledge the bot seat as an ally, with inflections listed. */
+const ALLY_LANGUAGE_TERMS: readonly string[] = ['ally', 'allies', 'bot', 'bots'];
+
 /** The per-seat counts a fixture seat varies; the synergy counts default to 0. */
 interface FixtureSeatCounts {
   readonly victoryPoints: number;
@@ -57,6 +60,8 @@ interface FixtureSeatCounts {
   readonly henchmenDefeated: number;
   readonly mastermindTacticsDefeated: number;
   readonly acquiredCards: readonly string[];
+  /** True only for a bot-ally seat; every other seat is a human seat. */
+  readonly isBotAlly?: boolean;
 }
 
 /**
@@ -70,6 +75,10 @@ interface FixtureSeatCounts {
 function buildSeat(seatNumber: number, counts: FixtureSeatCounts): CoachPlayerLine {
   return {
     label: `Player ${seatNumber}`,
+    // why: D-24575 — since WP-742 (D-24564) `buildPerPlayerLines` always sets
+    // `isBotAlly` explicitly, so every fixture seat carries it too; the eval measures
+    // the production summary shape, not the pre-WP-742 one.
+    isBotAlly: counts.isBotAlly === true,
     victoryPoints: counts.victoryPoints,
     bystandersRescued: counts.bystandersRescued,
     villainsDefeated: counts.villainsDefeated,
@@ -536,5 +545,51 @@ export const COACH_EVAL_SCENARIOS: readonly CoachEvalScenario[] = [
       ],
     },
     rubric: { mustNotMention: ['grade', 'final score', 'PAR'] },
+  },
+  {
+    id: 'bot-ally-core-red-skull',
+    category: 'bot-ally',
+    description:
+      'A human (Player 1) and a bot ally (Player 2) beat Red Skull; the bot carried most of the combat while the human bought well.',
+    summary: {
+      outcome: 'heroes-win',
+      playerCount: 2,
+      rounds: 15,
+      scheme: 'Midtown Bank Robbery',
+      mastermind: 'Red Skull',
+      villainGroups: ['HYDRA', 'Spider-Foes'],
+      henchmanGroups: ['Hand Ninjas'],
+      heroes: ['Captain America', 'Spider-Man', 'Iron Man', 'Black Widow', 'Hulk'],
+      rawScore: 1490,
+      finalScore: 1490,
+      grade: 'c',
+      team: { victoryPoints: 34, bystandersRescued: 5 },
+      adversity: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      adversityExpected: { schemeTwists: 5, villainsEscaped: 3, bystandersLost: 3 },
+      perPlayer: [
+        buildSeat(1, {
+          victoryPoints: 12,
+          bystandersRescued: 4,
+          villainsDefeated: 2,
+          henchmenDefeated: 1,
+          mastermindTacticsDefeated: 1,
+          acquiredCards: ['Avengers Assemble! ×2', 'Repulsor Rays ×2', 'Great Responsibility', 'Arc Reactor'],
+        }),
+        buildSeat(2, {
+          victoryPoints: 22,
+          bystandersRescued: 1,
+          villainsDefeated: 7,
+          henchmenDefeated: 3,
+          mastermindTacticsDefeated: 3,
+          acquiredCards: ['Hulk Smash! ×2', 'Covert Operation', 'Web-Shooters'],
+          isBotAlly: true,
+        }),
+      ],
+    },
+    // why: deliberately loose, like the other rubrics — it catches a report that
+    // never acknowledges the bot ally or never addresses the human seat, not the
+    // quality of the coaching. Whether the model grades the bot's choices cannot be
+    // checked by string matching; that stays an operator read of the report.
+    rubric: { mustMentionAny: [ALLY_LANGUAGE_TERMS, ['Player 1', 'P1']] },
   },
 ];

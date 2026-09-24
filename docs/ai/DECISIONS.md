@@ -44282,7 +44282,7 @@ D-24170 (bot-ally seats), D-24122 (`match_id` mapping column), D-24095 (blob car
 
 **Decision.** In `heroAbility.setup.ts`, after the D-24398 block: (1) when a line carries a seeded `ko-wound-reward`, drop the plain keyword matching its `rewardType` and its magnitude (a no-op for the `draw` reward, which prints no icon); (2) when a line carries `put-bottom-hq-icon-reward`, drop BOTH plain `attack` and `recruit` and their magnitudes — the resolve move grants whichever icon(s) the moved card had (the D-24490 two-icon precedent). No marker, card-data, executor, or contract change.
 
-**Determinism.** No sentinel replay / PAR fixture plays these cards: engine suite green with no `finalStateHash` / `PRE_WP080_HASH` re-pin. The fixed-seed runtime-observed sweep does play them, so `docs/ai/coverage/runtime-observed-hollows.json` was regenerated (`pnpm sim:runtime-observed`; totalObservations 2528 → 2523, a trajectory shift from the removed free resource) and the dashboard in-play pin re-pinned 3012 → 3007 (percentResolved holds at 24.4).
+**Determinism.** No sentinel replay / PAR fixture plays these cards: engine suite green with no `finalStateHash` / `PRE_WP080_HASH` re-pin. The fixed-seed runtime-observed sweep does play them, so `docs/ai/coverage/runtime-observed-hollows.json` was regenerated (`pnpm sim:runtime-observed`; totalObservations 2506 → 2501 on the landed base, a trajectory shift from the removed free resource) and the dashboard in-play pin re-pinned 3011 → 3006, percentResolved 24.3 → 24.4 (733 / 3006). The PR was first measured against a pre-WP-744 base (2528 → 2523, 3012 → 3007); it was rebased onto WP-744 and the feed and pin were regenerated with both changes before merge.
 
 **Gates.** Focused test `hero/rewardHandlerIconSuppression.test.ts` (8/8; 7 of them fail against the unfixed parser): parse pins on the real marked lines, Unstoppable Hulk 0 / +2 / +2 (no Wound / hand / discard), Call for Backup 0 / +1, draw-reward unchanged, Absorb Ambient Power grants nothing on play and parks `iconRewardMagnitude: 3`. `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check`, `ledger:numbers:check` all pass.
 
@@ -44373,5 +44373,21 @@ Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer"
 **D-24026 live-on-surface:** N/A — no rendered-surface change; the effect is a DB visibility value (verify post-deploy by finishing a casual signed-in match and confirming its `replay_ownership.visibility` stays `private`).
 
 **Reserved by:** NUMBER-LEDGER D-24577. Related: D-24126 (submission = consent-to-publish), D-5302 (visibility checked at submission time), D-5304 (idempotency fast path), D-5103 (PAR fail-closed), D-24128 (caller's own ownership row).
+
+---
+
+### D-24575 — The coach eval pack covers bot-ally matches: a `bot-ally` category, and every fixture seat carries `isBotAlly` (Active 2026-09-23 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-23 (direct fix, no WP; the D-24570 precedent for a contract-file change outside a Work Packet).
+
+**Context.** WP-742 (D-24564) gave `CoachPlayerLine` an `isBotAlly` marker that `buildPerPlayerLines` always sets, and changed the coach prompt to tell the model to coach the human seat and treat the bot as its ally. The WP-737 (D-24559) eval pack predates that: its fixture seats carried no `isBotAlly`, so it measured a pre-WP-742 summary shape, and no scenario exercised a bot-ally match. WP-737 and WP-742 both named this as the follow-up once both shipped. A model swap could therefore pass the pack while ignoring the bot marker.
+
+**Decision.** (1) `CoachEvalCategory` and the canonical `COACH_EVAL_CATEGORIES` array gain `bot-ally` (contract file `coachEval.types.ts`; the drift test updated in lockstep). (2) One scenario, `bot-ally-core-red-skull`: a two-seat heroes win where `Player 1` is the human (bought well, defeated little) and `Player 2` is the bot ally (carried the combat). Its rubric requires ally language (`ally` / `allies` / `bot` / `bots`) and a mention of the human seat (`Player 1` / `P1`) — deliberately loose like the other rubrics; whether the model grades the bot's choices is not string-checkable and stays an operator read. (3) The fixture seat builder sets `isBotAlly` explicitly on every seat (`false` unless marked), matching the production summary shape. Two new tests: the `bot-ally` scenario's shape (seat 1 human, seat 2 bot), and every fixture seat carrying a boolean `isBotAlly` with exactly one bot seat in `bot-ally` scenarios and none elsewhere.
+
+**Scope.** Eval-pack files only (`coachEval.types.ts`, `coachEval.fixtures.ts`, `coachEval.logic.test.ts`); no production coach path, prompt, route, cache, score, or engine change. The pack stays operator-run and never a required CI check (D-24559).
+
+**Gates.** Coach suite 99/99 (`src/coach/*.test.ts`). Mutation check: removing the bot seat's `isBotAlly: true` fails both new assertions ("seat 2 must be the bot ally", "unexpected number of bot seats"); restoring it passes 25/25 in `coachEval.logic.test.ts`. A live `coach:eval` run against the current `COACH_MODEL` is the operator's next pack run; it now includes this scenario.
+
+**Reserved by:** NUMBER-LEDGER D-24575. Related: D-24559 (the eval pack), D-24564 (the `isBotAlly` marker), D-24570 (the no-WP contract-change precedent).
 
 Protect this file.
