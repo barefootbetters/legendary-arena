@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-17
+last-reviewed: 2026-09-24
 ---
 
 # Soul of Legendary Arena
@@ -1320,6 +1320,122 @@ is not the Scheme failing to explain itself — the fog *is* the Scheme. This is
 the root: not policing which answers are allowed, but keeping the question too
 shapeless to ask.
 
+#### The Mastermind Lens — five questions
+
+The [five tells](#five-tells-for-naming-the-mastermind) catch a Scheme by its
+conduct. The lens below does the same job from the other end: it reads the
+*shape of an arrangement* — an inquiry, an institution, a program, a movement —
+without ever naming a villain. It came out of one of Jeff's working
+conversations with Claude and is set down here as the page's own diagnostic.
+
+**The discipline: judge by effect, not motive.** Almost nobody experiences
+himself as the villain. Hitler thought he was saving a civilisation; Lenin
+thought he was ending exploitation. Motive is unknowable and a bad instrument.
+Ask what the arrangement *does*.
+
+The five questions run upstream to downstream:
+
+1. **Who decides what gets investigated?** Controlling the inquiry is upstream
+   of controlling the story.
+2. **Who is trusted to report it?** Credibility is a lever. The Sanhedrin did
+   not need a better argument; they needed to be the ones speaking.
+3. **Who controls the story?** The Mastermind never wins by argument. He wins
+   by making the counter-argument unsayable.
+4. **What happens to the person who says no?** The enforcement layer.
+5. **What does it cost to leave?** The door lock.
+
+**The two locks.** The **hard lock** is the physical door — the wall, the
+gulag, the bullet. The **soft lock** is the social door: you may walk out, but
+you walk out unemployable, labelled, or ruined. A regime confident in its soft
+lock does not need the hard one. If leaving costs your livelihood and your name,
+almost nobody tests the wall — and it is cheaper, and it looks like freedom from
+the outside.
+
+**Supporting mechanisms.**
+
+- **The rotating seat.** Pareto's *circulation of elites*: "history is a
+  graveyard of aristocracies." The Mastermind slot stays fixed while the
+  occupant rotates. Each arrives promising to end the last one's tyranny, and
+  each keeps the machinery that made it possible — Robespierre to Napoleon, Tsar
+  to Lenin to Stalin, Batista to Castro, the Shah to Khomeini.
+- **The cost of checking is the lock.** No one forbids you to verify the claim;
+  it simply costs more time than anyone has. Manufacturing a claim takes a press
+  release. Refuting it takes months in an archive.
+- **Authority laundering.** "The commission found" ends arguments. The
+  endorsement does work no argument could — the
+  [borrowed seal](#the-masterminds-common-tactics-the-grammar-of-manipulation)
+  in its institutional form.
+- **The manufactured choice.** Barabbas or Jesus, framed as if that were the
+  whole menu — the false dilemma, the
+  [two-box choice](#how-heroes-beat-it--the-difficulty-knobs) the heroes must
+  learn to refuse.
+- **Manipulation runs on virtues, not vices.** Compassion, fairness, loyalty,
+  protecting children. Those are the handles, because they are the ones you will
+  not want to let go of.
+
+**Worked examples.**
+
+- **Katyn.** The Soviets investigated their own massacre of Polish officers,
+  staffed the commission themselves, and blamed the Germans. The investigation
+  was not a search; it was an instrument.
+- **The Warren Commission.** Allen Dulles sat on it — the CIA director Kennedy
+  had fired after the Bay of Pigs — and the Commission depended for its evidence
+  on the very agencies it was examining. Compare the Church Committee, which had
+  subpoena power and independent staff, and found real things. The difference
+  lies in who set the scope.
+- **The Reichstag fire.** Who actually set the fire is still argued; what is not
+  argued is that the crisis, the named culprit, and the cure — the emergency
+  decree suspending civil liberties the next day — arrived as one package from
+  the same hand. Questions 1 and 3 answered at once.
+- **Pilate and the Sanhedrin.** Pilate runs the honest inquiry and finds no
+  fault, but he does not control the scope. "If thou let this man go, thou art
+  not Caesar's friend" is the soft lock closing on the judge himself.
+- **Bamatabois and Fantine** (*Les Misérables*). The same facts, and the outcome
+  is decided entirely by whose testimony counts. Javert does not investigate,
+  because he does not need to.
+- **The benefits cliff.** A soft lock with no henchman at the door. The
+  arithmetic does the work: the recipient locks himself in by correctly
+  calculating that leaving — taking the raise, the extra hours, the marriage —
+  costs more than staying. It is the hardest kind to break, because there is no
+  oppressor to point at. The fix is tapering, not cliffing. The diagnostic:
+  watch who opposes the reform, not who claims to care.
+
+**Scheme and Twist sketches** *(illustrative, not cards — per the
+[design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
+authored through the pipeline):*
+
+- **Scheme: "The Door Locks Behind You."** Entry is voluntary; exit is not.
+- **Twist: "Terms Subject to Change."** The moment the terms flip.
+- **Candidate Scheme: "Investigate Yourself, Find Yourself Innocent."**
+
+**What the lens does and does not do.** It will **not** name a person, and that
+is a feature. The moment a lens promises to identify the Mastermind, it becomes a
+tool for confirming whatever suspicion someone brought with them. What it gives
+instead is a verdict on the *structure*: who is protected from scrutiny, what
+dissent costs, and why nobody is testing the door. It is a filter, not an
+accusation — it strips the noise down to a few structural facts you can actually
+check, so you can decide whether to join this, stay in it, or believe this
+report. It holds to the same faction-blind rule as the tells: the five questions
+are asked of every arrangement, including the ones you like.
+
+**The inversion.** Jesus addressed both locks. The soft one He named rather than
+hid — "they shall put you out of the synagogues" — and bid His disciples come
+anyway. The hard one He broke from the inside, because the tomb is the wall that
+did not hold. And He does not only get you out; He gets you adopted into a
+family — "ye have received the Spirit of adoption, whereby we cry, Abba,
+Father."
+
+**Closing: the circle.** Boys stand in a ring. One punches the next and says
+*pass it on*. Everyone in the circle is both hit and hitter, which is why the
+victim framing cannot get anyone out: if you are only counting what was done to
+you, you never notice you are still swinging. The exit is the apology, not the
+pardon. Waiting to be released keeps you standing there, because it depends on
+the man behind you. Taking responsibility is the one move available without
+anyone's permission — then you leave the circle, and you do not pick it back up.
+
+> Forgive personally; remember institutionally. Release without responsibility
+> is drift. Responsibility without release is bitterness with a work ethic.
+
 #### The tiers of a Scheme — and why negotiation only works downward
 
 The [believers-and-beneficiaries tell](#five-tells-for-naming-the-mastermind)
@@ -1969,6 +2085,18 @@ claim at a safe distance — it stands on it.
   [the Mastermind's-tactics section](#the-masterminds-common-tactics-the-grammar-of-manipulation).
   Attributed as Hughes's framework and used as a design lens for antagonist
   design; not adjudicated by this page, and never mentions the game.
+- Scriptures behind [The Mastermind Lens](#the-mastermind-lens--five-questions)
+  (KJV) — [John 19:12](https://www.churchofjesuschrist.org/study/scriptures/nt/john/19?lang=eng&id=p12#p12)
+  ("thou art not Caesar's friend"),
+  [Matthew 27:17](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/27?lang=eng&id=p17#p17)
+  (Barabbas or Jesus),
+  [John 16:2](https://www.churchofjesuschrist.org/study/scriptures/nt/john/16?lang=eng&id=p2#p2)
+  ("they shall put you out of the synagogues"), and
+  [Romans 8:15](https://www.churchofjesuschrist.org/study/scriptures/nt/rom/8?lang=eng&id=p15#p15)
+  ("the Spirit of adoption"). The historical cases (Katyn and the Burdenko
+  Commission, the Warren and Church committees, the Reichstag Fire Decree,
+  Pareto's *circulation of elites*) are cited as illustrations of structure,
+  not adjudicated by this page.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
   Rights Movement Was A Lie*) — the attributed source behind
