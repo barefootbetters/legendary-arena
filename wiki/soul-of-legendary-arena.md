@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-24
+last-reviewed: 2026-09-25
 ---
 
 # Soul of Legendary Arena
@@ -1388,6 +1388,15 @@ looks like freedom.
   Compassion, fairness, loyalty, protecting children. Those are the handles,
   because they are the ones you will not want to let go of. A vice can be
   refused; a virtue used as a lever is much harder to drop.
+- **The subsidy is the lock** *(question 5)*. A ban says *you may not*. A
+  subsidy says *we will pay you not to*. The second is quieter and usually
+  stronger: no one has to patrol the door if the money arrives only while you
+  stay inside. The test: if an arrangement claims to reduce a condition, and
+  eligibility requires that the condition persist, the payment is not a remedy.
+  It is a retainer. It leans on two of the mechanisms above — the
+  *manufactured choice* (keep the aid, or form the household, as if those were
+  the only two boxes) and *virtues as handles* (compassion for a mother and
+  child holds the price in place; drop the virtue and the lock is just a price).
 
 **Worked examples** — each read as *architecture*, not as a courtroom verdict:
 
@@ -1401,6 +1410,26 @@ looks like freedom.
   Committee, which had subpoena power and independent staff, and found things
   the earlier inquiry did not. The lens does not need a theory of who killed
   Kennedy; it only asks who set the scope.
+
+  ![Official White House portrait of President John F. Kennedy, 1963.](/soul-of-legendary-arena/jfk-white-house-portrait-1963.jpg "width=30%")
+
+  *President John F. Kennedy, White House portrait, 11 July 1963. Photo by
+  Cecil Stoughton, White House; public domain.*
+
+  ![The Warren Commission presents its report to President Lyndon Johnson in the White House Cabinet Room; Allen Dulles, in a bow tie, stands to Johnson's left.](/soul-of-legendary-arena/warren-commission-report-1964.jpg "width=60%")
+
+  *The Warren Commission presents its report to President Johnson, 24
+  September 1964. Left to right: John McCloy, J. Lee Rankin (general counsel),
+  Sen. Richard Russell, Rep. Gerald Ford, Chief Justice Earl Warren, President
+  Johnson, **Allen Dulles**, Sen. John Sherman Cooper, Rep. Hale Boggs. The
+  man Kennedy fired from the CIA stands among the commissioners examining his
+  death. Photo by Cecil Stoughton, White House; public domain.*
+
+  ![Title page of the Church Committee's final report, Book II: Intelligence Activities and the Rights of Americans, April 1976.](/soul-of-legendary-arena/church-committee-report-book-ii.jpg "width=30%")
+
+  *The Church Committee's final report, Book II — "Intelligence Activities and
+  the Rights of Americans" (S. Rep. No. 94-755, 26 April 1976): what an inquiry
+  with subpoena power and its own staff found. U.S. Senate; public domain.*
 - **The Reichstag fire** *(questions 1 and 3)*. Who actually set the fire is
   still argued; what is not argued is the package — crisis, named culprit, and
   cure arrived together, with the emergency decree suspending civil liberties
@@ -1417,9 +1446,59 @@ looks like freedom.
   with no henchman guarding it. The arithmetic does the work: the recipient
   locks himself in by correctly calculating that leaving — taking the raise, the
   extra hours, the marriage — costs more than staying. It is the hardest kind to
-  break, because there is no oppressor to point at. The fix is tapering, not
-  cliffing. The diagnostic: watch who opposes the reform, not who claims to
-  care.
+  break, because there is no oppressor to point at.
+
+  The same lock can be built out of *eligibility* instead of earnings. For most
+  of its history AFDC was built around a missing parent: a child qualified
+  through a parent's death, incapacity, or continued absence, and aid to
+  two-parent families stayed optional for the states until 1990. Some states
+  went further with "man-in-the-house" rules — Alabama cut off the children of
+  any mother who cohabited with an able-bodied man, until the Supreme Court
+  struck its rule down in *King v. Smith* (1968). Marriage was never forbidden.
+  It was simply the option that turned the tap off. The mother who does that
+  arithmetic correctly is not being wicked; she is reading the price — which is
+  why this lock is so hard to see: the one at the door is the recipient, doing
+  the sums. If the check requires the problem to remain in place — no second
+  adult in the house, no extra hours, no rise in wages — the arrangement is not
+  relieving the condition. It is renting it, and people will sell what is being
+  bought. (Today's rules are messier than that clean shape: some benefits
+  penalize marriage, some do not, and the EITC cuts both ways depending on
+  income. The lens uses the clean shape *as* a shape. The statute can change
+  and the seat remain.)
+
+  The fix is tapering, not cliffing — and it has been tried, twice at national
+  scale.
+
+  **Nixon's Family Assistance Plan (1969)** would have replaced AFDC with a
+  floor of $1,600 for a family of four, let the family keep its first $720 of
+  earnings untouched, and withdrawn benefits at fifty cents per dollar earned
+  after that — a taper, not a cliff. It passed the House twice (1970 and 1971)
+  and died in the Senate Finance Committee both times; the 1972 bill was signed
+  with FAP stripped out. The opposition came from both flanks at once. The
+  **National Welfare Rights Organization** under George Wiley called it too
+  stingy, demanded $5,500 with no work requirement, and campaigned against it.
+  **Senate Finance chairman Russell Long** (D-La.) and the committee's
+  conservatives called it a drain on the treasury and replaced it with a
+  workfare plan. And, on the account of Daniel Patrick Moynihan, the plan's
+  architect (*The Politics of a Guaranteed Income*, 1973), the **welfare
+  professionals** who ran the system it would have replaced resisted it too.
+
+  **Britain's Universal Credit** is the taper that got built. Iain Duncan Smith
+  took it from his Centre for Social Justice report *Dynamic Benefits* (2009)
+  into government, announced it in 2010, and folded six benefits into one
+  payment withdrawn at a single 65% rate. It was squeezed from inside first:
+  **Chancellor George Osborne's Treasury** announced a £3.2 billion annual cut
+  in 2015, largely by shrinking the *work allowances* — the earnings a claimant
+  keeps before the taper starts, the very part that makes work pay. The
+  **Labour Party's 2019 manifesto** pledged to scrap Universal Credit
+  altogether. The taper survived both: cut to 63% (announced 2016), then to 55%
+  in 2021, the rate Duncan Smith said he had wanted a decade earlier. (In
+  fairness, most of the criticism from charities such as the **Trussell Trust**
+  targeted the five-week wait for a first payment, not the taper itself.)
+
+  The diagnostic: watch who opposes the reform, not who claims to care — and
+  when a rule that stops pricing marriage or work is called cruel, watch who
+  defends the old rule, and which virtue they hold up while doing it.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
