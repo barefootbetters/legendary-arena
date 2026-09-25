@@ -1664,8 +1664,19 @@ dispute.
   (question 1, and the candidate Scheme almost word for word: *investigate
   yourself, find yourself innocent*; Fleming denied the account, and the finding
   was insufficient evidence, not falsity). Then the prices. Associate head coach
-  Melissa Batie-Smoose filed a Title IX complaint on 29 October 2024, was
-  suspended three days later, and saw her contract end in January 2025. Boise
+  Melissa Batie-Smoose filed a Title IX complaint on 29 October 2024 over
+  Fleming's place on the team and the alleged plan against Slusser, and spoke to
+  OutKick. On 2 November, just before a match against New Mexico, the university
+  pulled her from the team, saying only that she was "not with the team at this
+  time." The ground later given was a student-privacy (FERPA) breach for
+  identifying a player's sex; her lawyer, Vernadette Broyles, denies any breach.
+  She was told in December her contract would not be renewed, it ended in
+  January 2025, and she has sued the California State University system for
+  retaliation. Head coach Todd Kress stayed. The federal findings, as reported,
+  note that both coaches faced Title IX complaints in 2024 but only Batie-Smoose
+  was penalized — and that Kress had himself discussed the matter in an ESPN
+  interview. The same privacy rule, enforced on one coach and not the other:
+  question 4 with the seam showing. Boise
   State, Wyoming, Utah State, Nevada and Southern Utah refused to play, and each
   refusal went into the standings as a loss — San José State entered the
   conference tournament as the second seed on six forfeit wins (question 4:
@@ -2451,6 +2462,9 @@ claim at a safe distance — it stands on it.
   (D. Colo., filed 13 November 2024; [docket summary](https://clearinghouse.net/case/46255/));
   Batie-Smoose's retaliation suit as
   [reported by Athletic Business](https://www.athleticbusiness.com/operations/legal/article/15768458/former-sjsu-volleyball-coach-lawsuit-claims-retaliation-for-filing-title-ix-complaint-against-trans-athlete);
+  [The College Fix on the suspension](https://www.thecollegefix.com/coach-suspended-after-filing-complaint-about-transgender-athlete-on-womens-volleyball-team/)
+  and [Fox News on the FERPA ground and Broyles's denial](https://www.foxnews.com/sports/ex-sjsu-volleyball-coach-opens-up-lawsuit-against-school-after-losing-job-amid-trans-athlete-scandal);
+  [OutKick on the federal findings' treatment of the two coaches](https://www.foxnews.com/outkick-sports/sjsu-didnt-penalize-volleyball-coach-trans-scandal-amid-title-ix-complaints-federal-findings-allege);
   and San José State's own
   [statement on suing the Department of Education](https://blogs.sjsu.edu/newsroom/2026/ocr-titleix-lawsuit/)
   (6 March 2026).
