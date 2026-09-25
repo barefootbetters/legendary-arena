@@ -1708,6 +1708,40 @@ dispute.
   law and cannot be punished for doing so" — and was given ten days to comply
   or face referral to the Justice Department and loss of federal funding. The
   same funding lever as Penn, this time resisted.
+- **The WNBA's undefined word** *(questions 1, 2 and 3)*. The league's 2026
+  collective bargaining agreement says only that "only players who are women are
+  eligible to play in the WNBA." It does not define "woman," and it sets no
+  process for deciding. On 7 August 2026 two former NBA players tested the gap on
+  purpose. Enes Kanter Freedom (6'10") posted that "if simply declaring who you
+  are is all that's required, then I meet every single requirement," and
+  declared for the 2027 draft — "Rules are rules! #LetFreedomPlay." Royce White
+  followed within hours, then filed a formal declaration signed by his lawyer,
+  Matt Gaetz, citing the agreement's own text. Both were plainly protest stunts,
+  but a stunt can still expose a real hole. The league's answer ran questions 1
+  and 2 at once: Commissioner Cathy Engelbert sent the matter to a task force of
+  the league's own team presidents and general managers, which met on 12 August;
+  the league then said there were "no immediate eligibility matters" and declined
+  to say how it had reached that conclusion. There was no third-party review and
+  no published test. Its statement did not answer the question; it characterized
+  the askers: "we strongly denounce the bad-faith efforts to use these topics to
+  demean or marginalize others" — judging by motive, the thing this lens refuses
+  to do. That is question 3 in its purest form, the
+  [keep-them-ignorant tell](#five-tells-for-naming-the-mastermind): a rule vague
+  enough that no one can argue with it. It also cuts the other way. Brittney
+  Griner (6'9") has for years been the target of online claims that she is not a
+  woman; there is no evidence for them, and without a stated standard there is
+  also no way to settle them. A published test, applied to every player and
+  checked by someone other than the league, would clear Griner as surely as it
+  would rule on White — which is the point: whatever defines "woman" should be
+  applied to all, not to the players a rumor or a stunt happens to target. The
+  league has run a Pride campaign since 2014 — the first US professional league
+  to do so — and says it has no eligibility question; those two facts do not contradict each other. What is missing is the
+  method. Then the seat turned over: on 4 September 2026 Engelbert announced she
+  will retire at year's end, with no successor named. (She also denied, in
+  October 2025, remarks that Napheesa Collier attributed to her about Caitlin
+  Clark — a separate labor dispute, one word against another.) The test for the
+  next commissioner is the Church Committee's, not the Warren Commission's: write
+  the definition down, and let someone outside the league check it.
 - **The anthem protests** *(questions 2 and 3)*. Colin Kaepernick sat during
   the anthem in August 2016 and first knelt on 1 September. After President
   Trump told a rally on 22 September 2017 that owners should say "Get that son
@@ -2503,6 +2537,16 @@ claim at a safe distance — it stands on it.
   not evolved since 1983," *Journal of Sports Science and Medicine* (2010), for
   the performance gap (10.0% mean across 82 events; 8.9% swimming, 10.7%
   running).
+  For the WNBA: ESPN on the
+  [2026 CBA eligibility clause and the Kanter Freedom declaration](https://www.espn.com/wnba/story/_/id/49957874/discrimination-law-transgender-athlete-enes-kanter-freedom-wnba-policy)
+  and on [Engelbert's task-force memo](https://www.espn.com/wnba/story/_/id/49561324/engelbert-wnba-continue-transgender-discussion)
+  (August 2026); the *Washington Times* on
+  [White's Gaetz-signed filing](https://www.washingtontimes.com/news/2026/aug/19/royce-white-files-formal-wnba-draft-declaration-matt-gaetz-counsel/);
+  the WNBA's [announcement of Engelbert's retirement](https://www.wnba.com/news/commissioner-cathy-engelbert-to-retire-at-end-of-year)
+  (4 September 2026); and ESPN on
+  [Collier's remarks](https://www.espn.com/wnba/story/_/id/46437911/napheesa-collier-blasts-wnba-engelbert-worst-leadership)
+  and [Engelbert's denial](https://www.espn.com/wnba/story/_/id/46480629/wnba-engelbert-collier-remarks-do-better)
+  (2025); ESPN on the [2014 launch of WNBA Pride](https://www.espn.com/wnba/story/_/id/10963103/wnba-launches-marketing-campaign-directed-lgbt-community).
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the
