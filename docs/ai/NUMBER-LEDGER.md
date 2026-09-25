@@ -395,6 +395,9 @@ high-water: 422
 - WP-754 — optional-discard-draw + reveal-top-may-ko (Game Engine + Arena Client. Two hollow hero executors: "You may discard a card. If you do, draw a card." (vnom Hungry for Action via Digest, gotg Gritty Scavenger, asrd Bio-Engineered Cyborg, shld GW Bridge, antm Risky Science) and "Reveal the top card of your deck. You may KO it." (vnom Gruesome Feast + mgtg Remove His Spine via Excessive Violence, vill Electroshock Therapy). reserved 2026-09-25, claude/reserve-discard-draw-reveal-ko)
 - WP-755 — villain-slash-vfx (App arena-client. A Fruit Ninja-style villain-defeat beat on the VfxOverlay: on each fightResolved notable event the defeated card splits along a slash streak into two tumbling halves with a droplet spray, stains and a takedown-streak word; client-only, rides the existing public notableEvents projection. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
 - WP-756 — slash-gesture-fight (App arena-client. A pointer swipe across City villains fights each villain it fully crosses (chained, engine-confirmed), with a blade trail on the VfxOverlay and the WP-755 slash following the swipe direction; tap-to-fight unchanged; touch only when the City row fits without scrolling; a persisted Swipe-to-fight toggle. BLOCKED on WP-755. reserved 2026-09-25, claude/reserve-swipe-to-fight)
+- WP-757 — haunt-keyword-engine (Game Engine. The Haunt mechanic: per-HQ-slot haunter state in G, recruit/free-recruit blocked on a haunted Hero, haunting Villain unfightable, new exorcise move (spend the Hero's cost → KO it or a chosen player gains it → haunter enters the City ignoring Ambush), haunter persists through HQ refill; The Fallen Ambush Haunt lines + Blood Frenzy wired. reserved 2026-09-25, claude/wp-zarathos-draft)
+- WP-758 — zarathos-mastermind (Game Engine. Zarathos + Epic Zarathos Master Strikes and the four tactic Fight effects on the WP-757 Haunt state; Zarathos-haunting blocks fighting the Mastermind, exorcising his Hero returns him to the Mastermind space. BLOCKED on WP-757. reserved 2026-09-25, claude/wp-zarathos-draft)
+- WP-759 — haunt-client-ui (App arena-client. Haunted HQ cards show the haunting Villain/Zarathos, Recruit disabled, an Exorcise action + KO-or-give choice UI. BLOCKED on WP-757. reserved 2026-09-25, claude/wp-zarathos-draft)
 
 ## EC
 
@@ -751,6 +754,9 @@ high-water: 457
 - EC-791 — optional-discard-draw + reveal-top-may-ko (WP-754; Game Engine + Arena Client. reserved 2026-09-25, claude/reserve-discard-draw-reveal-ko)
 - EC-792 — villain-slash-vfx (WP-755; App arena-client. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
 - EC-793 — slash-gesture-fight (WP-756; App arena-client. reserved 2026-09-25, claude/reserve-swipe-to-fight)
+- EC-794 — haunt-keyword-engine (WP-757; Game Engine. reserved 2026-09-25, claude/wp-zarathos-draft)
+- EC-795 — zarathos-mastermind (WP-758; Game Engine. reserved 2026-09-25, claude/wp-zarathos-draft)
+- EC-796 — haunt-client-ui (WP-759; App arena-client. reserved 2026-09-25, claude/wp-zarathos-draft)
 
 ## D
 
@@ -1117,3 +1123,5 @@ section below) and the allocation protocol in
 - D-24584 — villain-slash-vfx (RESERVED: locks WP-755 / EC-792 — the villain-defeat slash beat: DOM-rendered halves/streak/stains beside the single confetti canvas, the last-frame city display cache for the defeated card art, the intensity-gate mapping and the takedown-streak window. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
 - D-24585 — slash-gesture-fight (RESERVED: locks WP-756 / EC-793 — full-crossing hit rule with no clock, the engine-confirmed fight chain + abandon timeout, the touch-only-when-row-fits rule, the blade-trail rendering on the VfxOverlay slice layer, and the persisted toggle. reserved 2026-09-25, claude/reserve-swipe-to-fight)
 - D-24586 — wiki-entity-cap-150 (direct fix, no WP — the wiki flat-structure cap rises 75 → 150 entity pages; SCHEMA.md + wiki-lint ENTITY_PAGE_CAP; partitioning deferred. reserved 2026-09-25, infra/evaluator-coach-eval-and-wiki-cap)
+- D-24587 — haunt-state-model (RESERVED: locks WP-757 / EC-794 — Haunt G shape keyed by HQ slot, exorcise cost/outcome semantics, refill inheritance, recruit + free-recruit + fight blocks. reserved 2026-09-25, claude/wp-zarathos-draft)
+- D-24588 — zarathos-haunting-mastermind (RESERVED: locks WP-758 / EC-795 — Zarathos-as-haunter representation, Mastermind-fight block while haunting, exorcise-returns-to-mastermind. reserved 2026-09-25, claude/wp-zarathos-draft)
