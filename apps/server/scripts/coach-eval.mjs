@@ -12,6 +12,12 @@
  * table and totals; exits 0 only when every scenario passes. Run it before
  * changing `COACH_MODEL` in Render.
  *
+ * To surface the run on the dashboard's Evaluator lane, write it to the committed
+ * report path and commit that file (`INFRA:`):
+ *   pnpm --filter @legendary-arena/server coach:eval --model <id> --out docs/ai/evaluations/coach-eval-latest.json
+ * The dashboard build copies a slim summary of it (model, date, totals, failed
+ * scenarios) — never the model-written reports.
+ *
  * COST: every run makes ONE PAID Anthropic API call per selected scenario. This
  * script is operator-run only — never wired into `test`, CI, or any workflow.
  *
@@ -24,8 +30,8 @@
  */
 
 import { parseArgs } from 'node:util';
-import { writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 
 import { lookupCoachModelQuirks } from '../src/coach/coachModelConfig.js';
 import { createAnthropicCoachClient } from '../src/coach/coachClient.js';
@@ -189,10 +195,14 @@ async function main() {
     // why: pnpm --filter runs this script from apps/server; INIT_CWD is the shell
     // directory the operator ran pnpm from, so a relative --out lands where expected.
     const resolvedOutPath = resolve(process.env.INIT_CWD ?? process.cwd(), outPath);
+    // why: the dashboard Evaluator lane shows when the latest run happened and
+    // flags a stale one, so the report records its own completion time.
+    const generatedAt = new Date().toISOString();
     try {
+      await mkdir(dirname(resolvedOutPath), { recursive: true });
       await writeFile(
         resolvedOutPath,
-        `${JSON.stringify({ model, summary, results, reports }, null, 2)}\n`,
+        `${JSON.stringify({ model, generatedAt, summary, results, reports }, null, 2)}\n`,
         'utf8',
       );
       console.log(`Wrote the eval results to ${resolvedOutPath}.`);
