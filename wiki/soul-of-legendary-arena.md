@@ -1553,6 +1553,78 @@ looks like freedom.
   when a rule that stops pricing marriage or work is called cruel, watch who
   defends the old rule, and which virtue they hold up while doing it.
 
+**Recent cases** — the same five questions, within living memory. Each is read
+as architecture; none needs a theory of who was right about the underlying
+dispute.
+
+- **"Proximal Origin"** *(questions 1, 2 and 3)*. On 1 February 2020 Jeremy
+  Farrar convened a call with Anthony Fauci, Francis Collins and the virologists
+  who then wrote *The proximal origin of SARS-CoV-2*, published in *Nature
+  Medicine* on 17 March 2020: "we do not believe that any type of
+  laboratory-based scenario is plausible." Facebook removed claims that the virus was "man-made or manufactured"
+  from February 2021 until 26 May 2021. The authors' private Slack messages,
+  released by a House select subcommittee in July 2023, show them taking a lab
+  origin far more seriously than the paper did — one wrote that an "accidental
+  escape is in fact highly likely." That subcommittee's final report (December
+  2024) concluded a lab leak was most likely; its Democrats disputed that any
+  suppression campaign took place. The lens does not need to pick an origin. It
+  asks who defined the question in the first month, whose seal ended the
+  argument — a journal's, which no blog could match — and what it cost to say
+  the other sentence in 2020.
+- **The 51 former intelligence officials** *(questions 2 and 3)*. The *New York
+  Post* published the Hunter Biden laptop story on 14 October 2020; Twitter
+  blocked links to it and Facebook reduced its distribution. On 19 October,
+  fifty-one former officials signed a letter saying it had "all the classic
+  earmarks of a Russian information operation," while stating they did not know
+  whether the emails were genuine and had no evidence of Russian involvement.
+  Politico ran the seal as the headline, and at the final debate the candidate
+  cited "50 former national intelligence folks." In 2023 Michael Morell, who
+  organised the letter, testified that a call from Antony Blinken, then with the
+  Biden campaign, "triggered" it — and, asked why he wanted to help, answered:
+  "Because I wanted him to win the election." A CBS forensic review in 2022 found no evidence the data had
+  been tampered with, and federal prosecutors used the laptop as evidence in
+  2024. The lens needs no theory of the son's business. "Former intelligence
+  officials" is the borrowed seal: the Sanhedrin did not need a better
+  argument; they needed to be the ones speaking.
+- **Canada's frozen accounts** *(questions 4 and 5)*. On 14 February 2022
+  Ottawa invoked the Emergencies Act against the trucker convoy. Banks were
+  empowered to freeze accounts of people tied to the protests without a court
+  order, and crowdfunding platforms were brought under anti-money-laundering
+  rules; about 200 accounts holding some $7.8 million were frozen within a week.
+  The protest ended. In January 2024 the Federal Court held the invocation
+  unreasonable and the financial measures a breach of the Charter's guarantees
+  of free expression and against unreasonable search and seizure; on 16 January
+  2026 the Federal Court of Appeal dismissed the government's appeal, calling
+  the freezing "ad hoc and fraught with confusion," done "without a warrant or
+  specific procedures." (Ottawa has sought leave to appeal to the Supreme
+  Court.) You may still judge the occupation of downtown Ottawa a public-order
+  problem. The lens only needs the lock: leaving the protest was not argued, it
+  was priced — and the door looked like a banking app.
+- **Penn women's swimming** *(questions 1, 2 and 4)*. Lia Thomas swam three
+  seasons on the University of Pennsylvania men's team (2017–2020), beginning
+  hormone therapy in May 2019, then joined the women's team for 2021–22 under
+  the NCAA's rules of the day and won the NCAA 500-yard freestyle title in March
+  2022. The institutions reported first: Penn and the Ivy League issued
+  statements of support in January 2022. The dissent came next and came
+  masked — sixteen teammates sent their objection through an intermediary,
+  Nancy Hogshead-Makar, anonymously, reportedly for fear of retaliation.
+  Teammate Paula Scanlan later testified to Congress that swimmers were offered
+  psychological services and told they would regret speaking to the media. At
+  the championships, Riley Gaines tied Thomas for fifth in the 200 freestyle;
+  the one trophy went to Thomas, and hers "will be coming in the mail." That is
+  question 4 in miniature: not a ban on objecting, a price on objecting under
+  your own name. Then the face moved. The NCAA restricted the women's category
+  in February 2025; the Department of Education found in April that Penn had
+  violated Title IX; and on 1 July 2025 Penn agreed to restore records and titles
+  to the female swimmers, send each an apology, and adopt biology-based
+  definitions of "male" and "female" — with Thomas's records footnoted as set
+  "under eligibility rules in effect at the time." Two lessons, both the lens's:
+  the outcome was fully legal under the rules as written, which is why the
+  question was always who wrote the rules (question 1); and the reversal came
+  when $175 million in federal funding was paused and then restored — the same
+  [subsidy lever](#the-mastermind-lens--five-questions), pulled in the other
+  direction.
+
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
 authored through the pipeline):*
@@ -2274,6 +2346,18 @@ claim at a safe distance — it stands on it.
   Talbot and RFK Jr. are attributed, contested accounts; the page uses them for
   the scope point only and does not adjudicate their claims about the
   assassination.
+- Sources behind [the recent cases](#the-mastermind-lens--five-questions) —
+  [*The proximal origin of SARS-CoV-2*](https://www.nature.com/articles/s41591-020-0820-9)
+  (*Nature Medicine*, 17 March 2020) and the House Select Subcommittee on the
+  Coronavirus Pandemic's [final report](https://oversight.house.gov/release/final-report-covid-select-concludes-2-year-investigation-issues-500-page-final-report-on-lessons-learned-and-the-path-forward/)
+  (2 December 2024); the [19 October 2020 public statement](https://turner.house.gov/_cache/files/6/8/6865ec1a-7d72-4a25-af9d-dce2c7895b6c/3A3F0615B79651FAF05E434BB4F52AE2.10.19.20-public-statement-on-the-hunter-biden-emails.pdf)
+  of the 51 former officials and House Judiciary's [release of the Morell testimony](https://judiciary.house.gov/media/press-releases/new-testimony-reveals-secretary-blinken-and-biden-campaign-behind-infamous)
+  (20 April 2023); the Federal Court's [23 January 2024 decision](https://www.fct-cf.ca/Content/assets/pdf/base/2024-01-23-News-Bulletin-Public-Order-Emergency.pdf)
+  and the Federal Court of Appeal's [2026 FCA 6 summary](https://www.fca-caf.ca/en/pages/decisions/plain-language-decision-summaries/2026-fca-6)
+  (16 January 2026); the Ivy League's [6 January 2022 statement](https://ivyleague.com/news/2022/1/6/general-the-ivy-league-releases-statement-of-support-regarding-penns-lia-thomas-participation-in-womens-swimming-diving.aspx),
+  the NCAA's [6 February 2025 policy change](https://www.ncaa.org/news/2025/2/6/media-center-ncaa-announces-transgender-student-athlete-participation-policy-change.aspx),
+  and the *Daily Pennsylvanian*'s [report on the 1 July 2025 Title IX resolution](https://www.thedp.com/article/2025/07/penn-federal-government-title-ix-settlement).
+  Cited for structure; the page does not adjudicate the underlying disputes.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
   Rights Movement Was A Lie*) — the attributed source behind
