@@ -1462,12 +1462,13 @@ looks like freedom.
   The architectural point survives even if every theory in them is wrong: a man
   Kennedy had removed from the CIA sat on the commission that had to ask what
   the CIA knew. But neither source stays on scope. Both name the occupant and
-  then load the seat with the crime — the publisher's own description has
-  Dulles's methods culminating in the deaths of John and Robert Kennedy — and
-  that is the exact move this lens is built to refuse. Even a sympathetic reviewer,
-  Glenn C. Altschuler, wrote that Talbot's "speculations and accusations …
-  often run far ahead of the evidence, even for those of us inclined to believe
-  the worst about Allen Dulles." Keep the columns apart:
+  then load the seat with the crime. Talbot's book does not end with Dulles's
+  seat on the Commission; its closing chapters argue that the network he built
+  was behind the deaths of both John and Robert Kennedy. That is the exact move
+  this lens is built to refuse — and the page will not borrow a reviewer's
+  verdict to refuse it, because a borrowed seal is
+  [authority laundering](#the-mastermind-lens--five-questions) too. Read the
+  book itself and sort each claim into one of two columns:
 
   | Settled enough to use | Talbot / RFK Jr. inference |
   |---|---|
@@ -2262,8 +2263,7 @@ claim at a safe distance — it stands on it.
 - Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
   — David Talbot, *The Devil's Chessboard: Allen Dulles, the CIA, and the Rise
   of America's Secret Government* (Harper, 2015; audiobook narrated by Peter
-  Altschuler); Glenn C. Altschuler's review in the *San Francisco Chronicle*
-  ([16 October 2015](https://www.sfgate.com/books/article/The-Devil-s-Chessboard-by-David-Talbot-6574578.php));
+  Altschuler) — the primary source for the Dulles reading;
   [*Did the CIA assassinate JFK? Robert F. Kennedy Jr. drops explosive details*](https://www.theblaze.com/shows/the-glenn-beck-program/jfk)
   (BlazeTV, *The Glenn Beck Program*, 6 May 2024); the Church Committee's
   Book V, *The Investigation of the Assassination of President John F.
