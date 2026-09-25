@@ -421,7 +421,7 @@ mindmap
         ["WP-743 📝 Spring the Trap and Grief gate on a Master Strike or Ambush Villain played this turn game engine plus card-data DRAFTED. Two whole-turn wait-and-see conditions backed by gated lazy per-turn flags written at the villain reveal chokepoint, hash oracles unchanged. EC-780 D-24566 reserved"]
         ["WP-746 ✅ Excessive Violence fire feel-beat notable event plus frame log plus swords-burst VFX game engine plus arena-client plus ewiki DONE 2026-09-23 engine 4131 of 0 arena-client 1924 of 0 whole-repo no-bail green both pinned hashes finalStateHash and PRE_WP080_HASH byte-unchanged NO re-pin sim coverage check unaffected no hero-hook growth two-commit topology EC-783 impl plus SPEC close D-24569 Active D-24026 operator-manual pending PlayViewport producer mount one file beyond Files-Expected required or the signal never fires. The WP-736 fire drains the ledger silently so the plus-one overspend moment raises no distinct event log or VFX and reads as nothing happened operator-confirmed. Adds a new excessiveViolenceFired notable-event type union plus NOTABLE_EVENT_TYPES array plus drift test plus pure narrative composer emitted once per fire guarded on Array isArray G notableEvents byte-inert on both pinned hashes vnom-only the heroEffectResolved WP-697 precedent verify no re-pin expected plus a distinct frame log beat rides the already-public UIState notableEvents projection D-12803 so no new Board-Visible Field 5-step. Client a new excessiveViolenceVfxManifest red crossed-swords slash-burst plus useExcessiveViolenceVfx WP-556 confetti foundation no committed bytes wired into VfxOverlay display-only off-ranking NG-1. Plus an ewiki visual-effects entry. Hard-deps WP-736 D-24556 WP-556 D-24365 WP-697 D-24516 plus WP-726 D-24547 WP-690 D-24507. EC-783 D-24569 Active"]
         ["WP-755 ✅ Villain slash VFX Fruit Ninja-style defeat beat arena-client plus ewiki EC-792 D-24584 Active DONE 2026-09-25. On each fightResolved the defeated City space plays a slash streak, the card art splits into two tumbling halves, a villain-purple droplet spray and stains, plus a takedown-streak word. Client-only, no engine change, rides the public notableEvents projection. Live-verify operator-pending"]
-        ["WP-756 📝 Slash gesture to fight arena-client plus ewiki DRAFTED 2026-09-25 EC-793 D-24585 reserved Extends WP-755. A stroke that fully crosses an enabled City villain fights it; several chain one fight at a time keyed by extId and confirmed by the engine; taps stay clicks; SVG blade trail on the VfxOverlay and the WP-755 slice follows the stroke; persisted Slash to fight toggle"]
+        ["WP-756 ✅ Slash gesture to fight arena-client plus ewiki EC-793 D-24585 Active DONE 2026-09-25 Extends WP-755. A stroke that fully crosses an enabled City villain fights it; several chain one fight at a time keyed by extId and confirmed by the engine; taps stay clicks; SVG blade trail on the VfxOverlay and the WP-755 slice follows the stroke; persisted Slash to fight toggle"]
         ["WP-744 ✅ Sim PAR and fixture turn loops resolve and clear deferred conditional grants game engine simulation DONE 2026-09-22 engine 4124 of 0. The three rebuilt turn loops now fire wait-and-see hero grants after every move and drop them at the turn boundary, mirroring game.ts, replay harness excluded, oracles unchanged. EC-781 D-24567 Active"]
         ["WP-745 📝 Unmarked If-condition you get plus N grants gate 17 free conditional hero cards game engine plus card-data DRAFTED. Rage waits for a Hero KO this turn via a gated KO-pile turn-start snapshot, first eighth and N-other-cards plus cost and distinct-Hero gates read a gated per-turn play history on play, draw and Bystander lines reuse existing conditions, hash oracles unchanged, blocked on WP-743. EC-782 D-24568 reserved"]
         ["WP-747 📝 Villain-Deck Bystander captured by the Villain closest to the Villain Deck game engine plus ewiki DRAFTED. The lowest occupied City space captures per Universal Rules v23 instead of the escape-edge villain, Mastermind fallback unchanged, hash oracles unchanged. EC-784 D-24571 reserved"]
@@ -919,7 +919,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 154/162 | 8 open |
+| Hero Ability Coverage & Markup Pipeline | 155/162 | 7 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 54/54 | — |
@@ -939,9 +939,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **741/750 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 8 open |
+| **Total** | **742/750 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 7 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 9):** WP-756 open; WP-749 open; WP-745 open; WP-747 open; WP-748 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 8):** WP-749 open; WP-745 open; WP-747 open; WP-748 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
