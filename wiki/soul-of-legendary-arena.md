@@ -1388,6 +1388,15 @@ looks like freedom.
   Compassion, fairness, loyalty, protecting children. Those are the handles,
   because they are the ones you will not want to let go of. A vice can be
   refused; a virtue used as a lever is much harder to drop.
+- **The subsidy is the lock** *(question 5)*. A ban says *you may not*. A
+  subsidy says *we will pay you not to*. The second is quieter and usually
+  stronger: no one has to patrol the door if the money arrives only while you
+  stay inside. The test: if an arrangement claims to reduce a condition, and
+  eligibility requires that the condition persist, the payment is not a remedy.
+  It is a retainer. It leans on two of the mechanisms above — the
+  *manufactured choice* (keep the aid, or form the household, as if those were
+  the only two boxes) and *virtues as handles* (compassion for a mother and
+  child holds the price in place; drop the virtue and the lock is just a price).
 
 **Worked examples** — each read as *architecture*, not as a courtroom verdict:
 
@@ -1437,8 +1446,28 @@ looks like freedom.
   with no henchman guarding it. The arithmetic does the work: the recipient
   locks himself in by correctly calculating that leaving — taking the raise, the
   extra hours, the marriage — costs more than staying. It is the hardest kind to
-  break, because there is no oppressor to point at. The fix is tapering, not
-  cliffing — and it has been tried, twice at national scale.
+  break, because there is no oppressor to point at.
+
+  The same lock can be built out of *eligibility* instead of earnings. For most
+  of its history AFDC was built around a missing parent: a child qualified
+  through a parent's death, incapacity, or continued absence, and aid to
+  two-parent families stayed optional for the states until 1990. Some states
+  went further with "man-in-the-house" rules — Alabama cut off the children of
+  any mother who cohabited with an able-bodied man, until the Supreme Court
+  struck its rule down in *King v. Smith* (1968). Marriage was never forbidden.
+  It was simply the option that turned the tap off. The mother who does that
+  arithmetic correctly is not being wicked; she is reading the price — which is
+  why this lock is so hard to see: the one at the door is the recipient, doing
+  the sums. If the check requires the problem to remain in place — no second
+  adult in the house, no extra hours, no rise in wages — the arrangement is not
+  relieving the condition. It is renting it, and people will sell what is being
+  bought. (Today's rules are messier than that clean shape: some benefits
+  penalize marriage, some do not, and the EITC cuts both ways depending on
+  income. The lens uses the clean shape *as* a shape. The statute can change
+  and the seat remain.)
+
+  The fix is tapering, not cliffing — and it has been tried, twice at national
+  scale.
 
   **Nixon's Family Assistance Plan (1969)** would have replaced AFDC with a
   floor of $1,600 for a family of four, let the family keep its first $720 of
@@ -1467,7 +1496,9 @@ looks like freedom.
   fairness, most of the criticism from charities such as the **Trussell Trust**
   targeted the five-week wait for a first payment, not the taper itself.)
 
-  The diagnostic: watch who opposes the reform, not who claims to care.
+  The diagnostic: watch who opposes the reform, not who claims to care — and
+  when a rule that stops pricing marriage or work is called cruel, watch who
+  defends the old rule, and which virtue they hold up while doing it.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
