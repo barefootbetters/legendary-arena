@@ -57,6 +57,11 @@ test('abilityTextToPlainText title-cases hero-class tokens and spaces hyphens', 
 // machine-readable marker to the printed line; before this it was humanized into
 // the player-facing log ("Draw a card. draw:1."). These pin the drop.
 test('abilityTextToPlainText drops engine effect markers from the printed text', () => {
+  // D-24582 — See Future Timelines' `+`-joined reveal marker is dropped, not humanized.
+  assert.equal(
+    abilityTextToPlainText('[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack]. [keyword:reveal:cost-zero:discard+attack-fixed-2]'),
+    'Ranged: Reveal the top card of your deck. If it costs 0, discard it and you get +2 attack.',
+  );
   assert.equal(
     abilityTextToPlainText('Draw a card. [keyword:draw:1]'),
     'Draw a card.',
@@ -95,6 +100,9 @@ test('isEngineEffectMarker splits machine markers from printed keywords', () => 
   // why: markers for mechanics that are not HeroKeyword members yet must also drop —
   // the shape test covers them where a keyword allowlist would not.
   assert.equal(isEngineEffectMarker('reveal-multi-take'), true);
+  // D-24582 — a `+`-joined multi-action reveal payload is still engine plumbing.
+  assert.equal(isEngineEffectMarker('reveal:cost-zero:discard+attack-fixed-2'), true);
+  assert.equal(isEngineEffectMarker('reveal:cost-zero:ko+attack-fixed-1'), true);
   assert.equal(isEngineEffectMarker('Undercover'), false);
   assert.equal(isEngineEffectMarker('What If...?'), false);
   assert.equal(isEngineEffectMarker('Danger Sense 2'), false);
