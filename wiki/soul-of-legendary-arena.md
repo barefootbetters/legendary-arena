@@ -1624,6 +1624,59 @@ dispute.
   when $175 million in federal funding was paused and then restored — the same
   [subsidy lever](#the-mastermind-lens--five-questions), pulled in the other
   direction.
+- **San José State volleyball** *(questions 1, 2 and 4)*. Blaire Fleming,
+  who transitioned at 14, transferred to San José State in 2022. The university
+  told its coaching staff not to tell the players and cited student-privacy law
+  when asked, so teammates who shared rooms and road trips were the last to
+  know (question 2 — here the institution did not merely report first; it
+  controlled who was allowed to know at all). When allegations surfaced in
+  October 2024 that Fleming had discussed with an opposing player a plan to get
+  co-captain Brooke Slusser hit, the Mountain West investigated through Willkie
+  Farr — the firm already defending the conference in Slusser's lawsuit — found
+  "insufficient evidence to corroborate the allegations," and closed the matter
+  (question 1, and the candidate Scheme almost word for word: *investigate
+  yourself, find yourself innocent*; Fleming denied the account, and the finding
+  was insufficient evidence, not falsity). Then the prices. Associate head coach
+  Melissa Batie-Smoose filed a Title IX complaint on 29 October 2024, was
+  suspended three days later, and saw her contract end in January 2025. Boise
+  State, Wyoming, Utah State, Nevada and Southern Utah refused to play, and each
+  refusal went into the standings as a loss — San José State entered the
+  conference tournament as the second seed on six forfeit wins (question 4:
+  nobody banned objecting; the standings charged for it). A federal court denied
+  the players an emergency injunction in November 2024, and the appeals court
+  affirmed the next day. In January 2026 the Department of Education found a
+  Title IX violation and proposed that the university restore records and
+  apologize, as Penn had; San José State sued instead — "We have followed the
+  law and cannot be punished for doing so" — and was given ten days to comply
+  or face referral to the Justice Department and loss of federal funding. The
+  same funding lever as Penn, this time resisted.
+- **The anthem protests** *(questions 2 and 3)*. Colin Kaepernick sat during
+  the anthem in August 2016 and first knelt on 1 September. After President
+  Trump told a rally on 22 September 2017 that owners should say "Get that son
+  of a bitch off the field," more than 200 players knelt or sat that Sunday. In
+  the stadiums, much of the crowd booed — "a chorus of boos" in Indianapolis,
+  boos in Foxborough, and boos in Arizona after the Cowboys knelt before the
+  anthem. The country was split, not unanimous: ESPN's poll that week found 51%
+  disapproving and 39% approving, avid fans nearly even at 48–47, and 55% saying
+  the media focused too much on the protests. So the stadium and the broadcast
+  were two different events, and television chose which one became *the* event.
+  CBS and Fox aired the anthem live that Sunday, which they normally did not; by
+  2018 the networks had stopped showing it at all. The kneel became the national
+  picture, and then the picture — and the boos — went away. The league's line
+  moved with the politics: a May 2018 rule that players on the field must stand
+  (put on hold that July), then in June 2020 "We, the NFL, admit we were wrong
+  for not listening to NFL players earlier," and end-zone stencils reading "End
+  Racism." Brands turned the broadcast version into a seal. Nike's September 2018
+  ad — "Believe in something. Even if it means sacrificing everything." — recast
+  a quarterback who had opted out of his contract and gone unsigned (his
+  collusion grievance was settled confidentially in 2019) as a martyr; the stock
+  fell 3% the next day and online sales rose 31% over the holiday weekend. Ben &
+  Jerry's 2020 flavor carried his stated hope that it would "amplify calls to
+  defund and abolish the police." That is the manufactured choice with a virtue
+  for a handle — kneel with us, or stand for brutality — while the argument much
+  of the crowd was actually making, about the ritual it had paid to see, was
+  never on the menu. The lens takes no side on policing; Kaepernick's claim
+  stands or falls on its own evidence. It reads who got to define the Sunday.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
@@ -2357,6 +2410,26 @@ claim at a safe distance — it stands on it.
   (16 January 2026); the Ivy League's [6 January 2022 statement](https://ivyleague.com/news/2022/1/6/general-the-ivy-league-releases-statement-of-support-regarding-penns-lia-thomas-participation-in-womens-swimming-diving.aspx),
   the NCAA's [6 February 2025 policy change](https://www.ncaa.org/news/2025/2/6/media-center-ncaa-announces-transgender-student-athlete-participation-policy-change.aspx),
   and the *Daily Pennsylvanian*'s [report on the 1 July 2025 Title IX resolution](https://www.thedp.com/article/2025/07/penn-federal-government-title-ix-settlement).
+  For San José State: the Mountain West investigation outcome as
+  [reported by Fox News](https://www.foxnews.com/sports/mountain-west-closes-investigation-allegations-against-san-jose-state-trans-player-without-discipline)
+  (16 November 2024); *Slusser v. Mountain West Conference*, No. 1:24-cv-03155
+  (D. Colo., filed 13 November 2024; [docket summary](https://clearinghouse.net/case/46255/));
+  Batie-Smoose's retaliation suit as
+  [reported by Athletic Business](https://www.athleticbusiness.com/operations/legal/article/15768458/former-sjsu-volleyball-coach-lawsuit-claims-retaliation-for-filing-title-ix-complaint-against-trans-athlete);
+  and San José State's own
+  [statement on suing the Department of Education](https://blogs.sjsu.edu/newsroom/2026/ocr-titleix-lawsuit/)
+  (6 March 2026).
+  For the anthem protests: UPI's
+  [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
+  (24 September 2017); the
+  [ESPN survey](https://www.espn.com/nfl/story/_/id/20858557/espn-survey-shows-americans-interested-divided-nfl-protests-national-anthem)
+  (29 September 2017); Bloomberg on
+  [CBS and Fox airing the anthem live](https://www.bloomberg.com/news/articles/2017-09-24/cbs-fox-will-air-national-anthem-live-ahead-of-nfl-games-sunday);
+  the NFL's [May 2018 anthem policy](https://www.nfl.com/news/nfl-owners-approve-national-anthem-policy-for-2018-0ap3000000933971)
+  and [Goodell's June 2020 statement](https://www.nfl.com/news/roger-goodell-nfl-wrong-for-not-listening-to-protesting-players-earlier);
+  ESPN on the [2019 grievance settlement](https://www.espn.com/nfl/story/_/id/26004715/colin-kaepernick-eric-reid-settle-grievance-case-nfl);
+  *Time* on [Nike's post-ad sales](https://time.com/5390884/nike-sales-go-up-kaepernick-ad/);
+  and [Ben & Jerry's own post](https://www.benjerry.com/whats-new/2022/02/kaepernick-law-enforcement-budgets).
   Cited for structure; the page does not adjudicate the underlying disputes.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
