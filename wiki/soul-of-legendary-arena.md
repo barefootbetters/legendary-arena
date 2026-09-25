@@ -1622,6 +1622,11 @@ dispute.
   and San José State below: the picture set in the Astrodome met the data, and
   the institutions defended the picture. The lens can show a picture carrying
   further than its evidence; it does not claim 1973 caused what came after.
+
+  {{< youtube id="-AptRn1YFks" start="580" title="FOUR TIMES that Men and Women Faced Off in Tennis" >}}
+
+  *CULT TENNIS, ["FOUR TIMES that Men and Women Faced Off in Tennis"](https://www.youtube.com/watch?v=-AptRn1YFks&t=580s)
+  — starts at 9:40.*
 - **Penn women's swimming** *(questions 1, 2 and 4)*. Lia Thomas swam three
   seasons on the University of Pennsylvania men's team (2017–2020), beginning
   hormone therapy in May 2019, then joined the women's team for 2021–22 under
