@@ -625,12 +625,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'excessive-violence', // why: WP-736 / D-24556 — the Venomverse "Excessive Violence" fight-overspend keyword (enroll-at-play, fire-at-fight; fused from the [keyword:Excessive Violence] line of an allowlisted card into one onFight hook)
     'reveal-three-assign', // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." (Crystal of Kadavus, Interplanetary Visitor)
     'reveal-three-assign-again', // why: WP-753 / D-24580 — Crystal of Kadavus's "[team:venomverse][team:venomverse]: Do this ability again." (repeat counter)
+    'optional-discard-draw', // why: WP-754 / D-24581 — "You may discard a card. If you do, draw a card." (Hungry for Action's Digest 3 + four standalone cards) — a draw-reward entry on the Smash queue
+    'reveal-top-may-ko', // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it." (Gruesome Feast / Remove His Spine via EV + Electroshock Therapy) — a KO-or-keep entry on the reveal-top-dispose queue
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      67,
-      'HERO_KEYWORDS must have exactly 67 entries',
+      69,
+      'HERO_KEYWORDS must have exactly 69 entries',
     );
 
     assert.deepStrictEqual(
@@ -2580,9 +2582,11 @@ describe('buildHeroAbilityHooks — excessive-violence fusion (WP-736 / D-24556)
   });
 
   it('does NOT fuse a non-allowlisted EV card — its [keyword:Excessive Violence] stays an honest hollow', () => {
+    // why: WP-754 / D-24581 — gruesome-feast is now allowlisted; feast-or-famine (a cost-0 KO
+    // LOOP, no executor) is still deferred, so it is the non-allowlisted fixture.
     const registry = makeHeroRegistry('vnom', 'carnage', [
-      { slug: 'gruesome-feast', rarityLabel: 'Rare', abilities: [
-        '[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it.',
+      { slug: 'feast-or-famine', rarityLabel: 'Rare', abilities: [
+        '[keyword:Excessive Violence]: Reveal the top card of your deck. If it costs 0, KO it and you may repeat this process.',
       ]},
     ]);
     const hooks = buildHeroAbilityHooks(registry, vnomConfig('carnage'));
@@ -2660,4 +2664,102 @@ describe('buildHeroAbilityHooks — reveal-three-assign markers (WP-753 / D-2458
       'abilities[1] keeps its Venomverse requiresTeam gate',
     );
   });
+});
+
+describe('buildHeroAbilityHooks — optional-discard-draw + reveal-top-may-ko markers (WP-754 / D-24581)', () => {
+  /** A config whose hero deck is the given hero of the given set. */
+  function heroConfig(setAbbr: string, heroSlug: string): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: [`${setAbbr}/${heroSlug}`] };
+  }
+
+  // why: the session-protocol check — each plain marked line must yield EXACTLY one hook with
+  // EXACTLY one effect of the new keyword; a stray auto-detected effect (e.g. a `draw` read from
+  // "draw a card", a `reveal` read from "Reveal the top card") would be a second effect.
+  const plainLines: { setAbbr: string; heroSlug: string; cardSlug: string; text: string; effect: { type: string; magnitude?: number } }[] = [
+    { setAbbr: 'gotg', heroSlug: 'rocket-raccoon', cardSlug: 'gritty-scavenger',
+      text: 'You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]',
+      effect: { type: 'optional-discard-draw', magnitude: 1 } },
+    { setAbbr: 'asrd', heroSlug: 'beta-ray-bill', cardSlug: 'bio-engineered-cyborg',
+      text: 'You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]',
+      effect: { type: 'optional-discard-draw', magnitude: 1 } },
+    { setAbbr: 'shld', heroSlug: 'gw-bridge', cardSlug: 'gw-bridge',
+      text: 'You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]',
+      effect: { type: 'optional-discard-draw', magnitude: 1 } },
+    { setAbbr: 'vill', heroSlug: 'electro', cardSlug: 'electroshock-therapy',
+      text: 'Reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]',
+      effect: { type: 'reveal-top-may-ko' } },
+  ];
+
+  for (const line of plainLines) {
+    it(`resolves ${line.setAbbr}/${line.heroSlug}/${line.cardSlug} to exactly one ${line.effect.type} effect, ungated`, () => {
+      const registry = makeHeroRegistry(line.setAbbr, line.heroSlug, [
+        { slug: line.cardSlug, rarityLabel: 'Rare', abilities: [line.text] },
+      ]);
+      const hooks = buildHeroAbilityHooks(registry, heroConfig(line.setAbbr, line.heroSlug));
+      assert.equal(hooks.length, 1, 'one hook — one ability line');
+      const hook = hooks[0]!;
+      assert.deepStrictEqual(hook.effects, [line.effect], 'exactly one effect of the new keyword, no stray auto-detected effect');
+      assert.deepStrictEqual(hook.keywords, [line.effect.type], 'only the new keyword resolves');
+      assert.equal((hook.conditions ?? []).length, 0, 'the line is not gated');
+      assert.equal(hook.unresolvedMarkers, undefined, 'no unresolved-marker hollow');
+    });
+  }
+
+  it("gates Risky Science's discard-to-draw on [hc:tech] (abilities[1])", () => {
+    const registry = makeHeroRegistry('antm', 'ant-man', [
+      { slug: 'risky-science', rarityLabel: 'Rare', abilities: [
+        '[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]',
+        '[hc:tech]: You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, heroConfig('antm', 'ant-man'));
+    const drawHooks = hooks.filter((hook) => (hook.keywords ?? []).includes('optional-discard-draw'));
+    assert.equal(drawHooks.length, 1, 'exactly one discard-to-draw hook');
+    assert.deepStrictEqual(drawHooks[0]!.effects, [{ type: 'optional-discard-draw', magnitude: 1 }], 'exactly one effect, no stray draw');
+    assert.ok(
+      (drawHooks[0]!.conditions ?? []).some(
+        (condition) => condition.type === 'heroClassMatch' && condition.value === 'tech',
+      ),
+      'the [hc:tech] prefix stays the class gate',
+    );
+  });
+
+  it("fuses Hungry for Action's Digest 3 line to digestEffects [optional-discard-draw] with no Indigestion", () => {
+    const registry = makeHeroRegistry('vnom', 'venom-rocket', [
+      { slug: 'hungry-for-action', rarityLabel: 'Rare', abilities: [
+        '[keyword:Digest 3]: You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]',
+      ]},
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, heroConfig('vnom', 'venom-rocket'));
+    assert.equal(hooks.length, 1, 'the Digest line fuses into exactly one hook');
+    assert.deepEqual(hooks[0]!.keywords, ['digest-indigestion']);
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'no unresolved-marker hollow');
+    const effect = hooks[0]!.effects![0]!;
+    assert.equal(effect.type, 'digest-indigestion');
+    assert.equal(effect.digestThreshold, 3, 'the printed Digest 3 threshold');
+    assert.deepEqual(effect.digestEffects, [{ type: 'optional-discard-draw', magnitude: 1 }], 'the fused marker yields the inner effect');
+    assert.equal(effect.indigestionEffects, undefined, 'no Indigestion branch');
+  });
+
+  const excessiveViolenceCards: { setAbbr: string; heroSlug: string; cardSlug: string }[] = [
+    { setAbbr: 'vnom', heroSlug: 'carnage', cardSlug: 'gruesome-feast' },
+    { setAbbr: 'mgtg', heroSlug: 'drax', cardSlug: 'remove-his-spine' },
+  ];
+
+  for (const card of excessiveViolenceCards) {
+    it(`fuses ${card.setAbbr}/${card.heroSlug}/${card.cardSlug} into one excessive-violence hook whose inner effect is reveal-top-may-ko`, () => {
+      const registry = makeHeroRegistry(card.setAbbr, card.heroSlug, [
+        { slug: card.cardSlug, rarityLabel: 'Rare', abilities: [
+          '[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]',
+        ]},
+      ]);
+      const hooks = buildHeroAbilityHooks(registry, heroConfig(card.setAbbr, card.heroSlug));
+      assert.equal(hooks.length, 1, 'the EV line fuses into exactly one hook');
+      assert.deepEqual(hooks[0]!.keywords, ['excessive-violence']);
+      assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'no unresolved-marker hollow');
+      const effect = hooks[0]!.effects![0]!;
+      assert.equal(effect.type, 'excessive-violence');
+      assert.deepEqual(effect.excessiveViolenceEffects, [{ type: 'reveal-top-may-ko' }], 'the fused marker yields exactly the inner reveal, nothing stray');
+    });
+  }
 });

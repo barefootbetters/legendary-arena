@@ -504,10 +504,12 @@ const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
 // why: WP-735 / D-24555 — cards whose printed "Digest N / Indigestion" lines are FUSED into
 // one executable digest-indigestion hook (per-card allowlisted, keyed by canonical
 // `{setAbbr}/{heroSlug}/{cardSlug}`). Scope = the Core-4 whose branches reduce to shipped
-// attack / recruit / draw / rescue executors. Every OTHER Digest card (hungry-for-action,
-// insatiable-hunger) has a branch the engine does not yet model, so its [keyword:Digest N] /
-// [keyword:Indigestion] stays unresolved — the Honest-Partial Invariant, mirroring
-// SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS.
+// attack / recruit / draw / rescue executors. Every OTHER Digest card (insatiable-hunger) has a
+// branch the engine does not yet model, so its [keyword:Digest N] / [keyword:Indigestion] stays
+// unresolved — the Honest-Partial Invariant, mirroring SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS.
+// why: WP-754 / D-24581 — hungry-for-action un-deferred: its single Digest 3 branch ("You may
+// discard a card. If you do, draw a card.") is the optional-discard-draw executor; it has no
+// Indigestion line (the Cauldron of the Cosmos single-branch shape).
 // why: WP-740 / D-24562 — play-to-the-crowd un-deferred: its Digest branch is attack-per-count
 // over victory-bystanders with perEach 2 (the widened COUNT_SCALED_PATTERN), its Indigestion
 // branch is rescue 2, and its doubled [team:venomverse] "both" line carries bothConditionCount 2.
@@ -517,6 +519,7 @@ const DIGEST_INDIGESTION_CARDS: ReadonlySet<string> = new Set<string>([
   'vnom/venom/devouring-drool',
   'vnom/venomized-dr-strange/cauldron-of-the-cosmos',
   'vnom/venompool/play-to-the-crowd',
+  'vnom/venom-rocket/hungry-for-action',
 ]);
 
 // why: WP-735 / D-24555 — reads the printed "[keyword:Digest N]" threshold. The space-form
@@ -548,15 +551,21 @@ const EXCESSIVE_VIOLENCE_PATTERN = /\[keyword:Excessive Violence\]/;
 // reduces to a shipped inner executor (draw / recruit / rescue / optional-ko-hand-discard), so
 // their [keyword:Excessive Violence] resolves to an EXECUTABLE fused hook. Keyed by the canonical
 // `{setAbbr}/{heroSlug}/{cardSlug}` key (the DIGEST_INDIGESTION_CARDS / SUPPORTED_TRANSFORM_BASES
-// per-card-allowlist precedent). Every OTHER EV card (carnage/gruesome-feast + feast-or-famine need
-// a reveal-top-may-KO executor that does not exist; the out-of-set dead/slapstick; can-i-get line 0's
+// per-card-allowlist precedent). Every OTHER EV card (carnage/feast-or-famine needs a reveal-top
+// cost-0 KO LOOP executor that does not exist; the out-of-set dead/slapstick; can-i-get line 0's
 // passive rescue-doubler; any future member) keeps its honest parse-unrecognized hollow — the
-// Honest-Partial Invariant. resolve ONLY these four; every other EV card keeps an honest unresolved marker.
+// Honest-Partial Invariant. Resolve ONLY the listed cards; every other EV card keeps an honest
+// unresolved marker.
+// why: WP-754 / D-24581 — carnage/gruesome-feast and mgtg drax/remove-his-spine un-deferred: their
+// "Reveal the top card of your deck. You may KO it." is the reveal-top-may-ko executor, fired at
+// fight time like the other inner effects.
 const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
   'vnom/carnage/rending-claws',
   'vnom/venom/razor-teeth',
   'vnom/venom-rocket/serious-overkill',
   'vnom/venompool/can-i-get-a-little-gratitude',
+  'vnom/carnage/gruesome-feast',
+  'mgtg/drax/remove-his-spine',
 ]);
 
 // why: WP-723 / D-24544 — detects an X-Gene line. On such a line (for an allowlisted card)

@@ -15,6 +15,9 @@ import type { SubmitMove } from "./uiMoveName.types";
  * the server returns a new frame with the resolved card dropped until every top is decided.
  * D-24558: an entry with `isKoAllowed` (co2e Hypnotic Charm's covert "You may KO the card
  * you revealed from your own deck") also gets a KO button submitting `disposition: 'ko'`.
+ * WP-754 / D-24581: an entry with `isDiscardAllowed === false` ("Reveal the top card of your
+ * deck. You may KO it.") hides the Discard button; when every entry is KO-or-keep the heading
+ * reads "Reveal the top card — KO it or keep it". Rendering only — the engine rejects a discard.
  *
  * NOT a modal — the choice is game-blocking and cannot be dismissed.
  * NOT position:fixed. NOT <Teleport>. Renders in normal document flow.
@@ -75,10 +78,25 @@ export default defineComponent({
       props.submitMove("resolveRevealTopDispose", { ownerPlayerID, cardId, disposition });
     }
 
+    /**
+     * Whether every revealed entry is KO-or-keep (WP-754 / D-24581) — no Discard option at all.
+     *
+     * @returns true when each entry carries `isDiscardAllowed === false`.
+     */
+    function isKoOrKeepOnly(): boolean {
+      const revealedTops = props.pendingRevealTopDispose?.revealedTops ?? [];
+      if (revealedTops.length === 0) return false;
+      for (const entry of revealedTops) {
+        if (entry.isDiscardAllowed !== false) return false;
+      }
+      return true;
+    }
+
     return {
       isSubmitting,
       shouldRender,
       onDecide,
+      isKoOrKeepOnly,
     };
   },
 });
@@ -92,7 +110,14 @@ export default defineComponent({
     role="region"
     aria-label="Reveal-top discard or keep choice"
   >
-    <h3 class="pending-reveal-top-dispose-prompt__heading">
+    <h3
+      v-if="isKoOrKeepOnly()"
+      class="pending-reveal-top-dispose-prompt__heading"
+      data-testid="pending-reveal-top-dispose-ko-or-keep-heading"
+    >
+      Reveal the top card — KO it or keep it
+    </h3>
+    <h3 v-else class="pending-reveal-top-dispose-prompt__heading">
       Reveal the top card — discard it or put it back
     </h3>
     <p class="pending-reveal-top-dispose-prompt__hint">
@@ -117,7 +142,10 @@ export default defineComponent({
           :alt="entry.display.name"
           class="pending-reveal-top-dispose-prompt__card-image"
         />
+        <!-- why: WP-754 / D-24581 — a KO-or-keep entry prints no discard option; the engine
+             refuses 'discard' on it, so the button is not offered. -->
         <button
+          v-if="entry.isDiscardAllowed !== false"
           type="button"
           class="pending-reveal-top-dispose-prompt__discard-btn"
           :data-testid="`pending-reveal-top-dispose-discard-${entry.ownerPlayerID}-${entry.cardId}`"

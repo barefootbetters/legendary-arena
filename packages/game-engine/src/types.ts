@@ -652,12 +652,21 @@ export interface RevealedTopEntry {
   /** The revealed deck-top card's ext_id (snapshotted at park time). */
   cardId: CardExtId;
   /**
-   * D-24558 — true when the chooser may also KO this card (co2e Hypnotic Charm's
-   * "[hc:covert]: You may KO the card you revealed from your own deck."). Set by the
-   * `reveal-top-dispose-ko` handler on the active player's OWN revealed top only; omitted
-   * (never `false`) otherwise, so a game that never unlocks it serializes byte-identically.
+   * D-24558 — true when the chooser may also KO this card. Set by two handlers: the
+   * `reveal-top-dispose-ko` handler (co2e Hypnotic Charm's "[hc:covert]: You may KO the card
+   * you revealed from your own deck.") on the active player's OWN revealed top, and the
+   * `reveal-top-may-ko` handler (WP-754 / D-24581, "Reveal the top card of your deck. You may
+   * KO it.") on the entry it parks. Omitted (never `false`) otherwise, so a game that never
+   * unlocks it serializes byte-identically.
    */
   isKoAllowed?: boolean;
+  /**
+   * WP-754 / D-24581 — `false` when the chooser may NOT discard this card (a KO-or-keep entry
+   * parked by `reveal-top-may-ko`, whose printed text offers no discard). Omitted means discard
+   * is allowed — every shipped reveal-top-dispose entry. Only `false` is ever written, so a game
+   * that never plays a KO-or-keep card serializes byte-identically.
+   */
+  isDiscardAllowed?: boolean;
 }
 
 /**
@@ -673,8 +682,12 @@ export interface RevealedTopEntry {
  *
  * // why: D-24521 mirrors the WP-603 / D-24413 Melter SNAPSHOT + sequential-resolution
  * discipline (not the ko-hero recompute): the block-all guard freezes every targeted deck
- * top while the choice is pending, so the snapshot cannot drift, and a discard removes the
- * card by owner+ext_id (outcome-identical). "Top" is a no-op — the reveal never removed the
+ * top while the choice is pending, so the snapshot does not drift between moves, and a discard
+ * removes the card by owner+ext_id (outcome-identical). WP-754 / D-24581 amends this for
+ * KO-or-keep entries only (`isDiscardAllowed === false`): a synchronous sibling effect (a later
+ * Excessive Violence draw in the same fight, a second reveal of the same top) or a queue advance
+ * can move the snapshotted card off the top, so refreshStaleKoOrKeepFront re-reveals a stale
+ * KO-or-keep front entry. Shipped entries keep the no-drift snapshot unchanged. "Top" is a no-op — the reveal never removed the
  * card, so putting it back is leaving it on top.
  */
 export interface PendingRevealTopDispose {
@@ -1026,8 +1039,17 @@ export interface PendingOptionalKoReward {
 export interface PendingSmashDiscard {
   /** The player who must discard a hand card or decline. */
   playerID: string;
-  /** The Attack granted iff the player discards a hand card. */
+  /**
+   * The Attack granted iff the player discards a hand card — or, when `reward` is 'draw', the
+   * number of cards drawn iff the player discards (WP-754 / D-24581).
+   */
   magnitude: number;
+  /**
+   * WP-754 / D-24581 — 'draw' for an `optional-discard-draw` entry ("You may discard a card. If
+   * you do, draw a card."): a discard draws `magnitude` cards and grants no Attack. Omitted for a
+   * Smash entry (never written as `undefined`), so Smash serializes byte-identically.
+   */
+  reward?: 'draw';
 }
 
 /**

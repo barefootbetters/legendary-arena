@@ -429,9 +429,18 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 733, so percentResolved holds at 24.4 (733 / 3010). A sweep-trajectory artifact of the
   // new park, not a regression. Deterministic — CI computes the same 3010 / 24.4 from the
   // committed source (prebuild:coverage copies docs/ai/coverage/*.json into src/data).
+  // 2026-09-25 (WP-754 / D-24581, re-pin): the eight optional-discard-draw /
+  // reveal-top-may-ko cards (Hungry for Action, Gruesome Feast, Remove His Spine,
+  // Electroshock Therapy, Gritty Scavenger, Bio-Engineered Cyborg, GW Bridge, Risky
+  // Science) now park a discard-to-draw or KO-or-keep choice instead of doing nothing, so
+  // the fixed-seed sweep's games that play them take different trajectories → the
+  // regenerated runtime-observed-hollows feed moves and totalObs 3010 -> 3017 (+7);
+  // resolvedObs stays 733, so percentResolved 24.4 -> 24.3 (733 / 3017). A sweep-trajectory
+  // artifact of the new parks, not a regression. Deterministic — CI computes the same
+  // 3017 / 24.3 from the committed source.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3010);
-  assert.equal(view.percentResolved.value, 24.4);
+  assert.equal(view.totalObs.value, 3017);
+  assert.equal(view.percentResolved.value, 24.3);
   assert.ok(view.remaining.value.length > 0);
 });
 

@@ -3018,3 +3018,71 @@ describe('notableEvents heroEffectResolved reveal event survives every audience 
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — the two optional discriminators survive the whitelist
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — WP-754 optional fields (D-24581)', () => {
+  /** A UIState whose front Smash-queue entry is a draw-reward (optional-discard-draw) entry. */
+  function createDiscardDrawUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.hand = ['draw-hand-a', 'draw-hand-b'];
+    gameState.pendingSmashDiscards = [{ playerID: '0', magnitude: 1, reward: 'draw' }];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  /** A UIState whose front reveal-top entry is a KO-or-keep (reveal-top-may-ko) entry. */
+  function createKoOrKeepUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.deck = ['ko-or-keep-top' as CardExtId, 'ko-or-keep-deep' as CardExtId];
+    gameState.pendingRevealTopDispose = [{
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [{ ownerPlayerID: '0', cardId: 'ko-or-keep-top' as CardExtId, isKoAllowed: true, isDiscardAllowed: false }],
+    }];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it("pendingSmashDiscard.reward survives for the chooser and in the serialized snapshot", () => {
+    const result = filterUIStateForAudience(createDiscardDrawUIState(), PLAYER_0);
+    assert.equal(result.pendingSmashDiscard!.reward, 'draw');
+    assert.equal(result.pendingSmashDiscard!.magnitude, 1);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.pendingSmashDiscard!.reward, 'draw', 'the diagnostics uiStateSnapshot carries the reward');
+  });
+
+  it('a Smash entry projects no reward key (omit-when-absent)', () => {
+    const result = filterUIStateForAudience(createSmashDiscardUIState(), PLAYER_0);
+    assert.equal('reward' in result.pendingSmashDiscard!, false);
+  });
+
+  it('the draw-reward choice is still chooser-only', () => {
+    const uiState = createDiscardDrawUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingSmashDiscard, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingSmashDiscard, undefined);
+  });
+
+  it('revealedTops[].isDiscardAllowed survives for the chooser and in the serialized snapshot', () => {
+    const result = filterUIStateForAudience(createKoOrKeepUIState(), PLAYER_0);
+    const top = result.pendingRevealTopDispose!.revealedTops[0]!;
+    assert.equal(top.isDiscardAllowed, false, 'the discard lock passes the whitelist');
+    assert.equal(top.isKoAllowed, true);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.pendingRevealTopDispose!.revealedTops[0]!.isDiscardAllowed, false,
+      'the diagnostics uiStateSnapshot carries the discard lock');
+  });
+
+  it('a shipped reveal-top entry projects no isDiscardAllowed key (omit-when-absent)', () => {
+    const result = filterUIStateForAudience(createRevealTopDisposeUIState(), PLAYER_0);
+    for (const top of result.pendingRevealTopDispose!.revealedTops) {
+      assert.equal('isDiscardAllowed' in top, false);
+    }
+  });
+
+  it('the KO-or-keep choice is still chooser-only', () => {
+    const uiState = createKoOrKeepUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingRevealTopDispose, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingRevealTopDispose, undefined);
+  });
+});

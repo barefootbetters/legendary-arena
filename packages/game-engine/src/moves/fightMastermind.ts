@@ -113,9 +113,16 @@ interface TacticSeatChoiceEvents {
 // text effects are WP-024" note was stale (WP-024 did scheme + mastermind STRIKE
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
-  { G, ctx, random, events }: MoveContext,
+  { G, ...context }: MoveContext,
   { useExcessiveViolence }: FightMastermindArgs = {},
 ): void {
+  // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
+  // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
+  // bgio's bare `ctx` (no `random`) made any EV inner effect that reshuffles an empty deck (Rending
+  // Claws' draw, Gruesome Feast's reveal) call `.random.Shuffle` on undefined and throw in a move.
+  const ctx = context.ctx;
+  const random = context.random;
+  const events = context.events;
   // why: WP-687 / D-24504 — the optional Final Blow rule. When available, the
   // Mastermind (with no Tactics left) is fightable a 5th, final time; that fight is
   // a DISTINCT branch in Step 3 that awards the Mastermind card itself and does NOT
@@ -250,7 +257,7 @@ export function fightMastermind(
     // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
     // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).
     G.turnEconomy = markExcessiveViolenceUsed(G.turnEconomy);
-    fireExcessiveViolencePlays(G, ctx, ctx.currentPlayer);
+    fireExcessiveViolencePlays(G, context, ctx.currentPlayer);
   }
   // why: D-24180 — this successful mastermind fight marks the player as having
   // acted this turn, which bars the Wound Healing ability for the rest of the turn.

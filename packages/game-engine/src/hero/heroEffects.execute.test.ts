@@ -10,7 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { executeHeroEffects, fireExcessiveViolencePlays, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -111,7 +111,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // KO the card you revealed from your own deck") (48 → 49).
     // WP-753 / D-24580 added the reveal-three-assign + reveal-three-assign-again handlers
     // (Crystal of Kadavus / Interplanetary Visitor draw / discard / KO + the repeat) (49 → 51).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 51);
+    // WP-754 / D-24581 added the optional-discard-draw + reveal-top-may-ko handlers (a draw-reward
+    // Smash-queue entry and a KO-or-keep reveal-top entry) (51 → 53).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 53);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7129,11 +7131,12 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
 
   it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count stays at the current total (51 after WP-736's
-    // excessive-violence enroll handler, D-24556, D-24558's reveal-top-dispose-ko handler, and
-    // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 51,
-      'HERO_EFFECT_HANDLERS stays 51 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (after WP-736's
+    // excessive-violence enroll handler, D-24556, D-24558's reveal-top-dispose-ko handler,
+    // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580, and WP-754's
+    // optional-discard-draw + reveal-top-may-ko handlers, D-24581 — 53).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 53,
+      'HERO_EFFECT_HANDLERS stays 53 (X-Gene is not an effect handler)');
   });
 });
 
@@ -7748,5 +7751,199 @@ describe('executeHeroEffects reveal-three-assign (WP-753 / D-24580)', () => {
     assert.deepEqual(gameState.pendingRevealThreeAssign![0]!.revealedCardIds, ['deck-a', 'deck-b']);
     assert.equal(gameState.pendingRevealThreeAssign![0]!.remainingRepeats, 0);
     assert.equal(gameState.pendingRevealThreeAssign![0]!.sourceCardId, 'crystal');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — optional-discard-draw + reveal-top-may-ko handlers
+// ---------------------------------------------------------------------------
+
+describe('optional-discard-draw handler (WP-754 / D-24581)', () => {
+  const discardDrawCtx = makeMockCtx();
+
+  /** A Gritty Scavenger-shaped hook: "You may discard a card. If you do, draw a card." */
+  function discardDrawHook(cardId: string, conditions?: HeroAbilityHook['conditions']): HeroAbilityHook {
+    return {
+      cardId,
+      timing: 'onPlay',
+      keywords: ['optional-discard-draw'],
+      effects: [{ type: 'optional-discard-draw', magnitude: 1 }],
+      ...(conditions !== undefined ? { conditions } : {}),
+    };
+  }
+
+  it('parks a draw-reward entry on the Smash queue (silent, nothing drawn at play)', () => {
+    const g = makeTestState({ hand: ['card-h'], deck: ['d-1'], inPlay: ['scavenger'], heroAbilityHooks: [discardDrawHook('scavenger')] });
+    executeHeroEffects(g, discardDrawCtx, '0', 'scavenger');
+    assert.deepStrictEqual(g.pendingSmashDiscards, [{ playerID: '0', magnitude: 1, reward: 'draw' }]);
+    assert.deepStrictEqual(g.playerZones['0']!.hand, ['card-h'], 'nothing drawn or discarded at play');
+    assert.equal(g.messages.length, 0, 'the park is silent');
+  });
+
+  it('with an empty hand it parks nothing and logs the no-op', () => {
+    const g = makeTestState({ hand: [], deck: ['d-1'], inPlay: ['scavenger'], heroAbilityHooks: [discardDrawHook('scavenger')] });
+    executeHeroEffects(g, discardDrawCtx, '0', 'scavenger');
+    assert.equal(g.pendingSmashDiscards, undefined, 'no queue materialized');
+    assert.ok(g.messages.some((line) => line.text.includes('their hand was empty, so nothing was drawn')));
+  });
+
+  it('Risky Science parks only when another Tech Hero was played this turn ([hc:tech])', () => {
+    const techGate: HeroAbilityHook['conditions'] = [{ type: 'heroClassMatch', value: 'tech' }];
+    const withoutAlly = makeTestState({
+      hand: ['card-h'],
+      inPlay: ['risky-science'],
+      cardTraits: { 'risky-science': { heroClass: 'tech', team: null } },
+      heroAbilityHooks: [discardDrawHook('risky-science', techGate)],
+    });
+    executeHeroEffects(withoutAlly, discardDrawCtx, '0', 'risky-science');
+    assert.equal(withoutAlly.pendingSmashDiscards, undefined, 'its own Tech class does not satisfy the gate');
+
+    const withAlly = makeTestState({
+      hand: ['card-h'],
+      inPlay: ['risky-science', 'tech-ally'],
+      cardTraits: {
+        'risky-science': { heroClass: 'tech', team: null },
+        'tech-ally': { heroClass: 'tech', team: null },
+      },
+      heroAbilityHooks: [discardDrawHook('risky-science', techGate)],
+    });
+    executeHeroEffects(withAlly, discardDrawCtx, '0', 'risky-science');
+    assert.deepStrictEqual(withAlly.pendingSmashDiscards, [{ playerID: '0', magnitude: 1, reward: 'draw' }]);
+  });
+
+  /** A Hungry for Action-shaped fused Digest 3 hook with no Indigestion branch. */
+  function hungryForActionHook(): HeroAbilityHook {
+    return {
+      cardId: 'hungry',
+      timing: 'onPlay',
+      keywords: ['digest-indigestion'],
+      effects: [{
+        type: 'digest-indigestion',
+        digestThreshold: 3,
+        digestEffects: [{ type: 'optional-discard-draw', magnitude: 1 }],
+      }],
+    };
+  }
+
+  it('Hungry for Action with 3+ cards in the Victory Pile parks the draw-reward entry', () => {
+    const g = makeTestState({ hand: ['card-h'], inPlay: ['hungry'], victory: ['vp-1', 'vp-2', 'vp-3'], heroAbilityHooks: [hungryForActionHook()] });
+    executeHeroEffects(g, discardDrawCtx, '0', 'hungry');
+    assert.deepStrictEqual(g.pendingSmashDiscards, [{ playerID: '0', magnitude: 1, reward: 'draw' }]);
+    assert.ok(!g.messages.some((line) => line.text.includes('not met')), 'no not-met line when the Digest holds');
+  });
+
+  it('Hungry for Action below the threshold parks nothing and logs one neutral "Digest 3 not met" line', () => {
+    const g = makeTestState({ hand: ['card-h'], inPlay: ['hungry'], victory: ['vp-1', 'vp-2'], heroAbilityHooks: [hungryForActionHook()] });
+    executeHeroEffects(g, discardDrawCtx, '0', 'hungry');
+    assert.equal(g.pendingSmashDiscards, undefined, 'nothing parked below the threshold');
+    const notMetLines = g.messages.filter((line) => line.text.includes('not met'));
+    assert.equal(notMetLines.length, 1, 'exactly one not-met line');
+    assert.equal(notMetLines[0]!.text, "Player 0's hungry — Digest 3 not met (2 in Victory Pile); no effect.");
+    assert.equal(notMetLines[0]!.outcome, 'neutral');
+  });
+});
+
+describe('reveal-top-may-ko handler + stale KO-or-keep refresh (WP-754 / D-24581)', () => {
+  const revealCtx = makeMockCtx();
+
+  /** An EV-fused hook with the given inner effects (the fireExcessiveViolencePlays input). */
+  function evHook(cardId: string, innerEffects: HeroEffectDescriptor[]): HeroAbilityHook {
+    return {
+      cardId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: innerEffects }],
+    };
+  }
+
+  it('parks one KO-or-keep entry for the deck top and logs it (Electroshock Therapy)', () => {
+    const g = makeTestState({
+      deck: ['d-1', 'd-2'],
+      inPlay: ['electroshock'],
+      heroAbilityHooks: [{ cardId: 'electroshock', timing: 'onPlay', keywords: ['reveal-top-may-ko'], effects: [{ type: 'reveal-top-may-ko' }] }],
+    });
+    executeHeroEffects(g, revealCtx, '0', 'electroshock');
+    assert.deepStrictEqual(g.pendingRevealTopDispose, [{
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [{ ownerPlayerID: '0', cardId: 'd-1', isKoAllowed: true, isDiscardAllowed: false }],
+    }]);
+    assert.deepStrictEqual(g.playerZones['0']!.deck, ['d-1', 'd-2'], 'the reveal removes nothing');
+    const revealLine = g.messages.find((line) => line.text.includes('KO it or keep it'));
+    assert.equal(revealLine?.text, 'Player 0 revealed d-1 (d-1) from the top of their deck — KO it or keep it (reveal-top).');
+    assert.equal(revealLine?.outcome, 'neutral');
+  });
+
+  it('with an empty deck and discard it parks nothing and logs the no-op', () => {
+    const g = makeTestState({
+      deck: [], discard: [], inPlay: ['electroshock'],
+      heroAbilityHooks: [{ cardId: 'electroshock', timing: 'onPlay', keywords: ['reveal-top-may-ko'], effects: [{ type: 'reveal-top-may-ko' }] }],
+    });
+    executeHeroEffects(g, revealCtx, '0', 'electroshock');
+    assert.equal(g.pendingRevealTopDispose, undefined, 'no queue materialized');
+    assert.ok(g.messages.some((line) => line.text.includes('had no card to reveal')));
+  });
+
+  it('Gruesome Feast enrolled BEFORE Rending Claws: after the fire the choice shows the post-draw top', () => {
+    const g = makeTestState({
+      deck: ['d-1', 'd-2'],
+      inPlay: ['feast', 'claws'],
+      heroAbilityHooks: [
+        evHook('feast', [{ type: 'reveal-top-may-ko' }]),
+        evHook('claws', [{ type: 'draw', magnitude: 1 }]),
+      ],
+    });
+    executeHeroEffects(g, revealCtx, '0', 'feast');
+    executeHeroEffects(g, revealCtx, '0', 'claws');
+    fireExcessiveViolencePlays(g, revealCtx, '0');
+
+    assert.deepStrictEqual(g.playerZones['0']!.hand, ['d-1'], 'Rending Claws drew the snapshotted card');
+    assert.deepStrictEqual(g.pendingRevealTopDispose![0]!.revealedTops,
+      [{ ownerPlayerID: '0', cardId: 'd-2', isKoAllowed: true, isDiscardAllowed: false }],
+      'the KO-or-keep choice was re-revealed to the post-draw top, not left to clear as moot');
+    assert.ok(g.messages.some((line) => line.text.includes('reveals the new top card of their deck')));
+  });
+
+  it('two Gruesome Feasts in one fight park two KO-or-keep choices on the same top', () => {
+    const g = makeTestState({
+      deck: ['d-1', 'd-2'],
+      inPlay: ['feast#0', 'feast#1'],
+      heroAbilityHooks: [evHook('feast#0', [{ type: 'reveal-top-may-ko' }]), evHook('feast#1', [{ type: 'reveal-top-may-ko' }])],
+    });
+    executeHeroEffects(g, revealCtx, '0', 'feast#0');
+    executeHeroEffects(g, revealCtx, '0', 'feast#1');
+    fireExcessiveViolencePlays(g, revealCtx, '0');
+    assert.equal(g.pendingRevealTopDispose!.length, 2, 'two choices parked');
+    assert.equal(g.pendingRevealTopDispose![0]!.revealedTops[0]!.cardId, 'd-1');
+    assert.equal(g.pendingRevealTopDispose![1]!.revealedTops[0]!.cardId, 'd-1',
+      'both snapshot the same top; the second is refreshed when the first resolves');
+  });
+
+  it('resolveDeferredHeroGrants re-reveals a stale KO-or-keep front', () => {
+    const g = makeTestState({ deck: ['d-2'], heroAbilityHooks: [] });
+    g.pendingRevealTopDispose = [{
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [{ ownerPlayerID: '0', cardId: 'd-1', isKoAllowed: true, isDiscardAllowed: false }],
+    }];
+    resolveDeferredHeroGrants(g, revealCtx);
+    assert.deepStrictEqual(g.pendingRevealTopDispose[0]!.revealedTops,
+      [{ ownerPlayerID: '0', cardId: 'd-2', isKoAllowed: true, isDiscardAllowed: false }]);
+  });
+
+  it('resolveDeferredHeroGrants leaves a shipped entry and a game with no queue untouched', () => {
+    const noQueue = makeTestState({ deck: ['d-2'], heroAbilityHooks: [] });
+    resolveDeferredHeroGrants(noQueue, revealCtx);
+    assert.ok(!('pendingRevealTopDispose' in noQueue), 'no queue field materialized');
+
+    const shipped = makeTestState({ deck: ['d-2'], heroAbilityHooks: [] });
+    shipped.pendingRevealTopDispose = [{
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [{ ownerPlayerID: '0', cardId: 'd-1' }],
+    }];
+    resolveDeferredHeroGrants(shipped, revealCtx);
+    assert.deepStrictEqual(shipped.pendingRevealTopDispose[0]!.revealedTops, [{ ownerPlayerID: '0', cardId: 'd-1' }],
+      'a discard-allowed entry keeps its snapshot');
   });
 });

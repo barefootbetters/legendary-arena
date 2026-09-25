@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1923,
+    "totalEntries": 1930,
     "byScope": {
-      "hero": 748,
+      "hero": 755,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 500,
+      "executable": 509,
       "deferred": 16,
       "condition": 30,
-      "unsupported": 319,
-      "unmarked": 1054,
+      "unsupported": 318,
+      "unmarked": 1053,
       "subsystem": 4
     }
   },
@@ -2305,6 +2305,23 @@
       "name": "Ant-Man",
       "set": "antm",
       "scope": "hero",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "risky-science",
+          "name": "Risky Science"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "name": "Ant-Man",
+      "set": "antm",
+      "scope": "hero",
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
@@ -2834,6 +2851,23 @@
         {
           "slug": "hope-of-the-korbinites",
           "name": "Hope of the Korbinites"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "name": "Beta Ray Bill",
+      "set": "asrd",
+      "scope": "hero",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "bio-engineered-cyborg",
+          "name": "Bio-Engineered Cyborg"
         }
       ]
     },
@@ -12107,6 +12141,23 @@
       ]
     },
     {
+      "extId": "gotg/rocket-raccoon",
+      "name": "Rocket Raccoon",
+      "set": "gotg",
+      "scope": "hero",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "gritty-scavenger",
+          "name": "Gritty Scavenger"
+        }
+      ]
+    },
+    {
       "extId": "gotg/star-lord",
       "name": "Star-Lord",
       "set": "gotg",
@@ -13416,8 +13467,8 @@
       "set": "mgtg",
       "scope": "hero",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13440,6 +13491,23 @@
         {
           "slug": "revenge-for-my-family",
           "name": "Revenge for my Family"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/drax",
+      "name": "Drax",
+      "set": "mgtg",
+      "scope": "hero",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "remove-his-spine",
+          "name": "Remove his Spine"
         }
       ]
     },
@@ -18445,11 +18513,17 @@
       "name": "G.W. Bridge",
       "set": "shld",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "gw-bridge",
+          "name": "G.W. Bridge"
+        }
+      ]
     },
     {
       "extId": "shld/leo-fitz-and-jemma-simmons",
@@ -21724,6 +21798,23 @@
       ]
     },
     {
+      "extId": "vill/electro",
+      "name": "Electro",
+      "set": "vill",
+      "scope": "hero",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "electroshock-therapy",
+          "name": "Electroshock Therapy"
+        }
+      ]
+    },
+    {
       "extId": "vill/enchantress",
       "name": "Enchantress",
       "set": "vill",
@@ -22293,6 +22384,23 @@
       ]
     },
     {
+      "extId": "vnom/carnage",
+      "name": "Carnage",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "gruesome-feast",
+          "name": "Gruesome Feast"
+        }
+      ]
+    },
+    {
       "extId": "vnom/venom",
       "name": "Venom",
       "set": "vnom",
@@ -22416,6 +22524,23 @@
         {
           "slug": "serious-overkill",
           "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "name": "Venom Rocket",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "hungry-for-action",
+          "name": "Hungry for Action"
         }
       ]
     },
@@ -28230,6 +28355,7 @@
       "mechanics": [
         "draw",
         "microscopic-size-changing",
+        "optional-discard-draw",
         "size-changing"
       ]
     },
@@ -28392,6 +28518,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "optional-discard-draw",
         "thrown-artifact",
         "worthy"
       ]
@@ -31535,7 +31662,8 @@
     "gotg/rocket-raccoon": {
       "scope": "hero",
       "mechanics": [
-        "artifact"
+        "artifact",
+        "optional-discard-draw"
       ]
     },
     "gotg/star-lord": {
@@ -32082,6 +32210,7 @@
       "scope": "hero",
       "mechanics": [
         "excessive-violence",
+        "reveal-top-may-ko",
         "triggered-artifact"
       ]
     },
@@ -33797,7 +33926,7 @@
     "shld/gw-bridge": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "optional-discard-draw"
       ]
     },
     "shld/leo-fitz-and-jemma-simmons": {
@@ -34998,7 +35127,8 @@
     "vill/electro": {
       "scope": "hero",
       "mechanics": [
-        "dodge"
+        "dodge",
+        "reveal-top-may-ko"
       ]
     },
     "vill/enchantress": {
@@ -35214,7 +35344,8 @@
         "digest",
         "draw",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "reveal-top-may-ko"
       ]
     },
     "vnom/venom": {
@@ -35232,6 +35363,7 @@
       "mechanics": [
         "digest",
         "excessive-violence",
+        "optional-discard-draw",
         "optional-ko-hand-discard"
       ]
     },

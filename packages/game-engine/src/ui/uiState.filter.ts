@@ -744,6 +744,9 @@ export function filterUIStateForAudience(
         // why: D-24558 — pass the KO unlock through the whitelist (the five-step field
         // contract); dropping it here would silently hide the covert KO button.
         ...(entry.isKoAllowed === true ? { isKoAllowed: true } : {}),
+        // why: WP-754 / D-24581 — pass the discard lock through the whitelist; dropping it here
+        // would offer a Discard button the engine rejects on a KO-or-keep entry.
+        ...(entry.isDiscardAllowed === false ? { isDiscardAllowed: false } : {}),
       });
     }
     result.pendingRevealTopDispose = {
@@ -1039,6 +1042,9 @@ export function filterUIStateForAudience(
     result.pendingSmashDiscard = {
       playerID: uiState.pendingSmashDiscard.playerID,
       magnitude: uiState.pendingSmashDiscard.magnitude,
+      // why: WP-754 / D-24581 — pass the draw reward through the whitelist; dropping it here
+      // would label a discard-to-draw choice as Smash (+N attack).
+      ...(uiState.pendingSmashDiscard.reward === 'draw' ? { reward: 'draw' as const } : {}),
       eligibleHand: eligibleHandCopy,
     };
   }

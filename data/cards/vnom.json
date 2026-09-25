@@ -58,7 +58,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it."
+            "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]"
           ]
         },
         {
@@ -250,7 +250,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Digest 3]: You may discard a card. If you do, draw a card."
+            "[keyword:Digest 3]: You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]"
           ]
         },
         {

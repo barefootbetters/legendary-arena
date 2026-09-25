@@ -15,6 +15,10 @@ import type { SubmitMove } from "./uiMoveName.types";
  * `resolveSmashDiscard({ decline: true })`. The client submits INTENT only — the
  * engine computes and applies the Attack grant.
  *
+ * WP-754 / D-24581 — the same queue carries "You may discard a card. If you do, draw a
+ * card." entries (`reward: 'draw'`); for those the prompt reads "Discard a card to draw N"
+ * with neutral (non-Smash) labels. Rendering only — the engine performs the draw.
+ *
  * // why: D-24492 — NON-DISMISSIBLE while the choice is pending. The choice is
  * game-blocking (WP-676's block-all guard freezes turn-end until it resolves); the
  * only exits are discarding a card or pressing Decline. NOT a modal, NOT
@@ -82,11 +86,21 @@ export default defineComponent({
       props.submitMove("resolveSmashDiscard", { decline: true });
     }
 
+    /**
+     * Whether the pending entry is a discard-to-draw choice (WP-754 / D-24581) rather than Smash.
+     *
+     * @returns true when the front entry carries `reward: 'draw'`.
+     */
+    function isDrawReward(): boolean {
+      return props.pendingSmashDiscard?.reward === "draw";
+    }
+
     return {
       isSubmitting,
       shouldRender,
       onSelectCard,
       onDecline,
+      isDrawReward,
     };
   },
 });
@@ -98,9 +112,18 @@ export default defineComponent({
     class="smash-discard-prompt"
     data-testid="smash-discard-prompt"
     role="region"
-    aria-label="Smash discard-for-attack choice"
+    :aria-label="isDrawReward() ? 'Discard-to-draw choice' : 'Smash discard-for-attack choice'"
   >
-    <h3 class="smash-discard-prompt__heading">
+    <!-- why: WP-754 / D-24581 — a draw-reward entry ("You may discard a card. If you do, draw a
+         card.") is not Smash, so it gets its own heading with no Smash / attack wording. -->
+    <h3
+      v-if="isDrawReward()"
+      class="smash-discard-prompt__heading"
+      data-testid="smash-discard-draw-heading"
+    >
+      Discard a card to draw {{ pendingSmashDiscard!.magnitude }}
+    </h3>
+    <h3 v-else class="smash-discard-prompt__heading">
       Discard a card for
       <span class="smash-discard-prompt__reward">+{{ pendingSmashDiscard!.magnitude }} attack</span>
       (Smash)

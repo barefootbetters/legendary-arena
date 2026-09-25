@@ -44,7 +44,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "[hc:tech]: You may discard a card. If you do, draw a card."
+            "[hc:tech]: You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]"
           ]
         },
         {

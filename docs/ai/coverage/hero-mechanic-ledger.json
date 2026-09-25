@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 748,
+    "totalRows": 755,
     "byStatus": {
-      "executable": 349,
+      "executable": 358,
       "deferred": 16,
       "condition": 30,
-      "unsupported": 318,
-      "unmarked": 33,
+      "unsupported": 317,
+      "unmarked": 32,
       "subsystem": 2
     },
-    "distinctMechanics": 151
+    "distinctMechanics": 153
   },
   "rows": [
     {
@@ -1050,6 +1050,22 @@
       "extId": "antm/ant-man",
       "heroName": "Ant-Man",
       "set": "antm",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "designs": [
+        {
+          "slug": "risky-science",
+          "name": "Risky Science"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
       "wp": "WP-290",
@@ -1343,6 +1359,22 @@
         {
           "slug": "hope-of-the-korbinites",
           "name": "Hope of the Korbinites"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "heroName": "Beta Ray Bill",
+      "set": "asrd",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "designs": [
+        {
+          "slug": "bio-engineered-cyborg",
+          "name": "Bio-Engineered Cyborg"
         }
       ]
     },
@@ -6181,6 +6213,22 @@
       ]
     },
     {
+      "extId": "gotg/rocket-raccoon",
+      "heroName": "Rocket Raccoon",
+      "set": "gotg",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "designs": [
+        {
+          "slug": "gritty-scavenger",
+          "name": "Gritty Scavenger"
+        }
+      ]
+    },
+    {
       "extId": "gotg/star-lord",
       "heroName": "Star-Lord",
       "set": "gotg",
@@ -6505,10 +6553,10 @@
       "heroName": "Drax",
       "set": "mgtg",
       "mechanic": "excessive-violence",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
       "decision": "",
-      "handler": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence",
       "designs": [
         {
           "slug": "i-am-invisible",
@@ -6529,6 +6577,22 @@
         {
           "slug": "revenge-for-my-family",
           "name": "Revenge for my Family"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/drax",
+      "heroName": "Drax",
+      "set": "mgtg",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "designs": [
+        {
+          "slug": "remove-his-spine",
+          "name": "Remove his Spine"
         }
       ]
     },
@@ -9016,12 +9080,17 @@
       "extId": "shld/gw-bridge",
       "heroName": "G.W. Bridge",
       "set": "shld",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "designs": [
+        {
+          "slug": "gw-bridge",
+          "name": "G.W. Bridge"
+        }
+      ]
     },
     {
       "extId": "shld/grant-ward",
@@ -10602,6 +10671,22 @@
       ]
     },
     {
+      "extId": "vill/electro",
+      "heroName": "Electro",
+      "set": "vill",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "designs": [
+        {
+          "slug": "electroshock-therapy",
+          "name": "Electroshock Therapy"
+        }
+      ]
+    },
+    {
       "extId": "vill/enchantress",
       "heroName": "Enchantress",
       "set": "vill",
@@ -10914,6 +10999,22 @@
       ]
     },
     {
+      "extId": "vnom/carnage",
+      "heroName": "Carnage",
+      "set": "vnom",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "designs": [
+        {
+          "slug": "gruesome-feast",
+          "name": "Gruesome Feast"
+        }
+      ]
+    },
+    {
       "extId": "vnom/venom",
       "heroName": "Venom",
       "set": "vnom",
@@ -11030,6 +11131,22 @@
         {
           "slug": "serious-overkill",
           "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "heroName": "Venom Rocket",
+      "set": "vnom",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "designs": [
+        {
+          "slug": "hungry-for-action",
+          "name": "Hungry for Action"
         }
       ]
     },

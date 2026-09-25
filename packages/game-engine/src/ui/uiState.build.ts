@@ -1171,8 +1171,10 @@ export function buildUIState(
   // why: WP-702 / D-24521 — project the FRONT entry of G.pendingRevealTopDispose with each
   // revealed deck top (the snapshot captured at park time) resolved to display data, in
   // reveal (sorted player-id) order. Reads the SNAPSHOT, not the live zone (the Melter
-  // precedent): the block-all guard freezes every revealed deck top while pending, so it
-  // cannot drift, and it is exactly what resolveRevealTopDispose validates the client's
+  // precedent): the block-all guard freezes every revealed deck top between moves (a stale
+  // KO-or-keep snapshot is re-revealed engine-side by refreshStaleKoOrKeepFront, WP-754 /
+  // D-24581, so the projected snapshot is current), and it is exactly what resolveRevealTopDispose
+  // validates the client's
   // { ownerPlayerID, cardId } against (the round-trip rule). resolveDisplay is spread fresh
   // per entry so the projection holds no reference into G.cardDisplayData (WP-111 D-11105).
   // Redaction to the chooser-only audience is enforced by filterUIStateForAudience.
@@ -1187,6 +1189,8 @@ export function buildUIState(
         display: { ...resolveDisplay(entry.cardId, gameState) },
         // why: D-24558 — omit-when-off so an un-unlocked entry projects byte-identically.
         ...(entry.isKoAllowed === true ? { isKoAllowed: true } : {}),
+        // why: WP-754 / D-24581 — omit-when-absent: only a KO-or-keep entry projects `false`.
+        ...(entry.isDiscardAllowed === false ? { isDiscardAllowed: false } : {}),
       });
     }
     pendingRevealTopDispose = {
@@ -1873,6 +1877,8 @@ export function buildUIState(
     pendingSmashDiscard = {
       playerID: frontChoice.playerID,
       magnitude: frontChoice.magnitude,
+      // why: WP-754 / D-24581 — omit-when-absent so a Smash entry projects byte-identically.
+      ...(frontChoice.reward === 'draw' ? { reward: 'draw' as const } : {}),
       eligibleHand,
     };
   }

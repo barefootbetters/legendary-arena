@@ -329,3 +329,99 @@ describe("resolveRevealTopDispose 'ko' disposition (D-24558)", () => {
     assert.equal(G.pendingRevealTopDispose![0]!.revealedTops.length, 1, 'the entry is still pending');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — KO-or-keep entries (reveal-top-may-ko) on the reveal-top queue
+// ---------------------------------------------------------------------------
+
+/** A KO-or-keep entry (isKoAllowed: true, isDiscardAllowed: false) for player "0". */
+function koOrKeep(cardId: CardExtId): RevealedTopEntry {
+  return { ownerPlayerID: '0', cardId, isKoAllowed: true, isDiscardAllowed: false };
+}
+
+describe('resolveRevealTopDispose — KO-or-keep entries (WP-754 / D-24581)', () => {
+  it("'ko' KOs the revealed top of a KO-or-keep entry", () => {
+    const G = makeTestGameState({
+      decks: { '0': [WOUND, HERO_A] },
+      pendingRevealTopDispose: [revealChoice([koOrKeep(WOUND)])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.deepStrictEqual(G.ko, [WOUND]);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A]);
+    assert.equal(G.pendingRevealTopDispose!.length, 0, 'resolved → queue front-popped');
+  });
+
+  it("'top' keeps the revealed card on top", () => {
+    const G = makeTestGameState({
+      decks: { '0': [HERO_A, HERO_B] },
+      pendingRevealTopDispose: [revealChoice([koOrKeep(HERO_A)])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: HERO_A, disposition: 'top' });
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [HERO_A, HERO_B], 'the card stays on top');
+    assert.deepStrictEqual(G.ko, []);
+    assert.equal(G.pendingRevealTopDispose!.length, 0);
+  });
+
+  it("'discard' on a KO-or-keep entry is a silent no-op that leaves the queue byte-identical", () => {
+    const G = makeTestGameState({
+      decks: { '0': [WOUND, HERO_A] },
+      pendingRevealTopDispose: [revealChoice([koOrKeep(WOUND)])],
+    });
+    const queueBefore = JSON.stringify(G.pendingRevealTopDispose);
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'discard' });
+    assert.equal(JSON.stringify(G.pendingRevealTopDispose), queueBefore, 'queue byte-identical');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND, HERO_A], 'deck untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'nothing discarded');
+    assert.equal(G.messages.length, 0, 'silent');
+  });
+
+  it('two KO-or-keep reveals of the same top: after the first KO, the second shows the new top', () => {
+    // why: two Gruesome Feasts fired in one fight snapshot the SAME deck top (D-24521 §6).
+    const G = makeTestGameState({
+      decks: { '0': [WOUND, HERO_A] },
+      pendingRevealTopDispose: [revealChoice([koOrKeep(WOUND)]), revealChoice([koOrKeep(WOUND)])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.equal(G.pendingRevealTopDispose!.length, 1, 'the second choice is still pending');
+    assert.deepStrictEqual(G.pendingRevealTopDispose![0]!.revealedTops, [koOrKeep(HERO_A)],
+      'the second choice was re-revealed to the new top, not left stale');
+    assert.ok(
+      G.messages.some((line) => line.text.includes('reveals the new top card of their deck') && line.text.includes(HERO_A)),
+      'the re-reveal is logged',
+    );
+
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: HERO_A, disposition: 'ko' });
+    assert.deepStrictEqual(G.ko, [WOUND, HERO_A], 'the second KO took the new top');
+    assert.equal(G.pendingRevealTopDispose!.length, 0);
+  });
+
+  it('the refresh chains past a KO-or-keep entry with nothing left to reveal and stops at a shipped entry', () => {
+    const shipped: RevealedTopEntry = { ownerPlayerID: '1', cardId: HERO_B };
+    const G = makeTestGameState({
+      decks: { '0': [WOUND], '1': [HERO_B] },
+      pendingRevealTopDispose: [
+        revealChoice([koOrKeep(WOUND)]),
+        revealChoice([koOrKeep(WOUND)]),
+        revealChoice([shipped]),
+      ],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.equal(G.pendingRevealTopDispose!.length, 1, 'the exhausted KO-or-keep choice was dropped');
+    assert.deepStrictEqual(G.pendingRevealTopDispose![0]!.revealedTops, [shipped], 'the shipped entry is untouched');
+    assert.ok(
+      G.messages.some((line) => line.text.includes('has no card left to reveal')),
+      'the drop is logged',
+    );
+  });
+
+  it('never re-reveals a shipped (discard-allowed) entry whose card left the top', () => {
+    const staleShipped: RevealedTopEntry = { ownerPlayerID: '0', cardId: HERO_B };
+    const G = makeTestGameState({
+      decks: { '0': [WOUND, HERO_A] },
+      pendingRevealTopDispose: [revealChoice([koOrKeep(WOUND)]), revealChoice([staleShipped])],
+    });
+    resolveRevealTopDispose(makeMoveContext(G), { ownerPlayerID: '0', cardId: WOUND, disposition: 'ko' });
+    assert.deepStrictEqual(G.pendingRevealTopDispose![0]!.revealedTops, [staleShipped],
+      'the shipped entry keeps its snapshot (it still clears as moot on resolve, as before)');
+  });
+});

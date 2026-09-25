@@ -26,6 +26,8 @@
     "reveal-top-dispose-ko": { "wp": "", "decision": "D-24558" },
     "reveal-three-assign": { "wp": "WP-753", "decision": "D-24580" },
     "reveal-three-assign-again": { "wp": "WP-753", "decision": "D-24580" },
+    "optional-discard-draw": { "wp": "WP-754", "decision": "D-24581" },
+    "reveal-top-may-ko": { "wp": "WP-754", "decision": "D-24581" },
     "optional-ko-reward": { "wp": "WP-248", "decision": "D-24019" },
     "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },

@@ -244,7 +244,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Dodge]",
-            "Reveal the top card of your deck. You may KO it."
+            "Reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]"
           ]
         },
         {

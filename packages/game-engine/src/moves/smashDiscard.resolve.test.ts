@@ -19,6 +19,7 @@ import {
   getEligibleSmashDiscardCards,
 } from './smashDiscard.resolve.js';
 import { drawCards } from './coreMoves.impl.js';
+import { getLegalMoves } from '../simulation/ai.legalMoves.js';
 import type { LegendaryGameState, PendingSmashDiscard } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -330,5 +331,149 @@ describe('block-all guard — a parked Smash choice freezes other moves (WP-676 
 
     assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-a'], 'no card drawn — board frozen');
     assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-top'], 'deck untouched');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — optional-discard-draw entries ride the Smash queue
+// ---------------------------------------------------------------------------
+
+/** A pending "discard a card to draw N" choice for player "0" (reward: 'draw'). */
+const discardDrawPending = (magnitude = 1, playerID = '0'): PendingSmashDiscard => ({
+  playerID,
+  magnitude,
+  reward: 'draw',
+});
+
+/**
+ * Builds a Smash-queue game state with a live cardsDrawn counter (the minimal fixture omits it,
+ * a real match seeds it at turn start).
+ */
+function makeDiscardDrawState(overrides: Parameters<typeof makeTestGameState>[0]): LegendaryGameState {
+  const gameState = makeTestGameState(overrides);
+  gameState.turnEconomy.cardsDrawn = 0;
+  return gameState;
+}
+
+describe('resolveSmashDiscard — draw reward (WP-754 / D-24581)', () => {
+  it('discards the chosen card, draws one, counts it, and grants no Attack', () => {
+    const gameState = makeDiscardDrawState({
+      hand: ['card-a' as CardExtId, 'card-b' as CardExtId],
+      deck: ['deck-top' as CardExtId, 'deck-second' as CardExtId],
+      attack: 3,
+      pendingSmashDiscards: [discardDrawPending(1)],
+    });
+
+    resolveSmashDiscard(makeMoveContext(gameState), { cardId: 'card-a' as CardExtId });
+
+    const zones = gameState.playerZones['0']!;
+    assert.deepStrictEqual(zones.discard, ['card-a'], 'the chosen card was discarded');
+    assert.deepStrictEqual(zones.hand, ['card-b', 'deck-top'], 'the deck top was drawn');
+    assert.deepStrictEqual(zones.deck, ['deck-second']);
+    assert.equal(gameState.turnEconomy.cardsDrawn, 1, 'the realized draw counts toward cardsDrawn');
+    assert.equal(gameState.turnEconomy.attack, 3, 'no Attack is granted for a draw reward');
+    assert.equal(gameState.pendingSmashDiscards!.length, 0, 'queue front-popped');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('discarded') && line.text.includes('drew 1 card(s)')),
+      'the discard-and-draw is logged',
+    );
+  });
+
+  it('reshuffles the discard (including the just-discarded card) into an empty deck to draw', () => {
+    const gameState = makeDiscardDrawState({
+      hand: ['card-a' as CardExtId],
+      deck: [],
+      discard: ['old-discard' as CardExtId],
+      pendingSmashDiscards: [discardDrawPending(1)],
+    });
+
+    resolveSmashDiscard(makeMoveContext(gameState), { cardId: 'card-a' as CardExtId });
+
+    const zones = gameState.playerZones['0']!;
+    // why: the mock Shuffle reverses — the discard ['old-discard', 'card-a'] becomes the deck
+    // ['card-a', 'old-discard'], so the draw takes card-a back.
+    assert.deepStrictEqual(zones.hand, ['card-a'], 'drew from the reshuffled discard');
+    assert.deepStrictEqual(zones.deck, ['old-discard']);
+    assert.deepStrictEqual(zones.discard, []);
+    assert.equal(gameState.turnEconomy.cardsDrawn, 1);
+    assert.equal(gameState.pendingSmashDiscards!.length, 0);
+  });
+
+  it('under the draw lock, the discard stands but the draw is blocked and not counted', () => {
+    const gameState = makeDiscardDrawState({
+      hand: ['card-a' as CardExtId],
+      deck: ['deck-top' as CardExtId],
+      pendingSmashDiscards: [discardDrawPending(1)],
+    });
+    gameState.turnEconomy.drawsLocked = true;
+
+    resolveSmashDiscard(makeMoveContext(gameState), { cardId: 'card-a' as CardExtId });
+
+    const zones = gameState.playerZones['0']!;
+    assert.deepStrictEqual(zones.discard, ['card-a'], 'the discard still applied');
+    assert.deepStrictEqual(zones.hand, [], 'nothing drawn');
+    assert.deepStrictEqual(zones.deck, ['deck-top'], 'deck untouched');
+    assert.equal(gameState.turnEconomy.cardsDrawn, 0, 'a blocked draw is not counted');
+    assert.equal(gameState.pendingSmashDiscards!.length, 0, 'the choice still resolves');
+    assert.ok(gameState.messages.some((line) => line.text.includes("can't draw")), 'the block is logged');
+  });
+
+  it('decline pops the entry with no discard and no draw', () => {
+    const gameState = makeDiscardDrawState({
+      hand: ['card-a' as CardExtId],
+      deck: ['deck-top' as CardExtId],
+      pendingSmashDiscards: [discardDrawPending(1)],
+    });
+
+    resolveSmashDiscard(makeMoveContext(gameState), { decline: true });
+
+    const zones = gameState.playerZones['0']!;
+    assert.deepStrictEqual(zones.hand, ['card-a']);
+    assert.deepStrictEqual(zones.deck, ['deck-top']);
+    assert.deepStrictEqual(zones.discard, []);
+    assert.equal(gameState.turnEconomy.cardsDrawn, 0);
+    assert.equal(gameState.pendingSmashDiscards!.length, 0);
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('declined to discard a card, so no card was drawn')),
+      'the decline is logged in draw terms, not Smash terms',
+    );
+  });
+
+  it('a Smash entry behind a draw entry still grants Attack and draws nothing', () => {
+    const gameState = makeDiscardDrawState({
+      hand: ['card-a' as CardExtId, 'card-b' as CardExtId],
+      deck: ['deck-top' as CardExtId, 'deck-second' as CardExtId],
+      pendingSmashDiscards: [discardDrawPending(1), smashPending(2)],
+    });
+
+    resolveSmashDiscard(makeMoveContext(gameState), { cardId: 'card-a' as CardExtId });
+    resolveSmashDiscard(makeMoveContext(gameState), { cardId: 'card-b' as CardExtId });
+
+    const zones = gameState.playerZones['0']!;
+    assert.deepStrictEqual(zones.hand, ['deck-top'], 'only the draw entry drew');
+    assert.equal(gameState.turnEconomy.attack, 2, 'the Smash entry granted +2 Attack');
+    assert.equal(gameState.turnEconomy.cardsDrawn, 1);
+    assert.equal(gameState.pendingSmashDiscards!.length, 0);
+  });
+});
+
+describe('bot default for a draw-reward entry (WP-754 / D-24581)', () => {
+  const lifecycle = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
+
+  it('declines under the draw lock (a discard with no draw is pure loss)', () => {
+    const gameState = makeDiscardDrawState({ hand: ['card-a' as CardExtId], pendingSmashDiscards: [discardDrawPending(1)] });
+    gameState.turnEconomy.drawsLocked = true;
+    assert.deepStrictEqual(getLegalMoves(gameState, lifecycle), [{ name: 'resolveSmashDiscard', args: { decline: true } }]);
+  });
+
+  it('discards the default target when draws are not locked', () => {
+    const gameState = makeDiscardDrawState({ hand: ['card-a' as CardExtId], pendingSmashDiscards: [discardDrawPending(1)] });
+    assert.deepStrictEqual(getLegalMoves(gameState, lifecycle), [{ name: 'resolveSmashDiscard', args: { cardId: 'card-a' } }]);
+  });
+
+  it('a Smash entry under the draw lock still discards for Attack (the lock only blocks draws)', () => {
+    const gameState = makeDiscardDrawState({ hand: ['card-a' as CardExtId], pendingSmashDiscards: [smashPending(2)] });
+    gameState.turnEconomy.drawsLocked = true;
+    assert.deepStrictEqual(getLegalMoves(gameState, lifecycle), [{ name: 'resolveSmashDiscard', args: { cardId: 'card-a' } }]);
   });
 });

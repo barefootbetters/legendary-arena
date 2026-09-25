@@ -448,6 +448,13 @@ export function getLegalMoves(
   // hand is empty the target is null, so it declines (the block-all guard still requires the
   // move). Returns a list of length EXACTLY 1.
   if (hasPendingSmashDiscard(gameState)) {
+    // why: WP-754 / D-24581 — a draw-reward entry ("You may discard a card. If you do, draw a
+    // card.") under Shenanigans' draw lock would discard with the draw blocked — a discard with
+    // no draw is pure loss, so the bot declines instead. Every other entry keeps the default.
+    const smashFront = gameState.pendingSmashDiscards![0]!;
+    if (smashFront.reward === 'draw' && gameState.turnEconomy.drawsLocked === true) {
+      return [{ name: 'resolveSmashDiscard', args: { decline: true } }];
+    }
     const smashTarget = selectDefaultSmashDiscardTarget(gameState, activePlayer);
     if (smashTarget !== null) {
       return [{ name: 'resolveSmashDiscard', args: { cardId: smashTarget } }];
