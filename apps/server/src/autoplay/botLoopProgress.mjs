@@ -90,6 +90,43 @@ export function findPendingChoiceMove(legalMoves) {
 }
 
 /**
+ * Legal moves the spend step never offers the policy, because another part of
+ * the loop drives them: playCard (playHandCards), revealVillainCard (the start
+ * stage), and endTurn (the cleanup stage). Parked `resolve…` choices are also
+ * excluded (drained first, see findPendingChoiceMove).
+ *
+ * // why: D-24591 — the spend filter used to be an allow-list (recruitHero /
+ * fightVillain / fightMastermind / advanceStage). An allow-list silently drops
+ * every spend move the engine adds later, so autoplay would never choose WP-757's
+ * exorciseHauntedHero even though engine bots score it at 75. Excluding the moves
+ * the loop drives elsewhere yields the same four moves today and keeps any new
+ * spend move in the policy's choice set, as the engine sim/PAR bots already see it.
+ */
+const LOOP_DRIVEN_MOVE_NAMES = Object.freeze(['playCard', 'revealVillainCard', 'endTurn']);
+
+/**
+ * Selects the main-stage spend moves the policy chooses among: every legal move
+ * except the loop-driven lifecycle moves and parked resolve choices.
+ *
+ * @param {ReadonlyArray<{ name: string, args?: unknown }>} legalMoves - The
+ *   getLegalMoves(G, ctx) result for the active player.
+ * @returns {Array<{ name: string, args?: unknown }>} The spend moves, in legal-move order.
+ */
+export function selectSpendMoves(legalMoves) {
+  const spendMoves = [];
+  for (const legalMove of legalMoves) {
+    if (LOOP_DRIVEN_MOVE_NAMES.includes(legalMove.name)) {
+      continue;
+    }
+    if (legalMove.name.startsWith(PENDING_CHOICE_MOVE_NAME_PREFIX)) {
+      continue;
+    }
+    spendMoves.push(legalMove);
+  }
+  return spendMoves;
+}
+
+/**
  * Picks the seat that must act next on an open non-active / multi-seat seat
  * choice (`G.pendingSeatChoice`, WP-684 / D-24501), or null when the loop should
  * enumerate the current player as usual.

@@ -44624,4 +44624,27 @@ The drain loops until the choice clears, so a multi-seat choice resolves every s
 
 ---
 
+### D-24591 — The autoplay spend step offers every legal move except the loop-driven ones (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct `apps/server` autoplay fix, no WP; the D-24590 follow-up).
+
+**Context.** The autoplay spend step filtered `getLegalMoves` to a hard-coded allow-list: `recruitHero` / `fightVillain` / `fightMastermind` / `advanceStage`. Any spend move the engine adds later is silently dropped. The first one due is WP-757's `exorciseHauntedHero`, which engine bots score at 75. WP-757 leaves autoplay to "a separate server follow-up", and D-24590 recorded the gap as blocked on WP-757.
+
+**Decision.** The allow-list becomes an exclusion. `selectSpendMoves(legalMoves)` (`autoplay/botLoopProgress.mjs`, pure) returns every legal move except:
+- the moves the loop drives itself: `playCard` (hand play), `revealVillainCard` (start stage) and `endTurn` (cleanup);
+- parked `resolve…` choices, which are drained first (the D-24038 prefix rule).
+
+Today's `getLegalMoves` emits exactly the four allow-listed moves plus those, so behaviour is unchanged now. A new spend move reaches the policy with no server edit, as it already does for the engine sim / PAR bots. This removes the WP-757 dependency: autoplay will exorcise as soon as WP-757 ships.
+
+**Gates.** `apps/server/src/autoplay/spendMoveFilter.test.ts` passes 3/3:
+- against the real `getLegalMoves` (a main-stage fixture emitting `playCard`, `recruitHero`, `fightVillain`, `fightMastermind` and `advanceStage`), the result is identical to the old allow-list;
+- the exclusions hold;
+- a future `exorciseHauntedHero` passes through. This case fails with the allow-list restored.
+
+Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skipped. There is no engine, endpoint or `G` change.
+
+**Reserved by:** NUMBER-LEDGER D-24591. Related: D-24590 (non-active seat-choice drain; this closes its blocked follow-up), D-24587 (WP-757 Haunt), D-24038 (drain-in-every-stage).
+
+---
+
 Protect this file.

@@ -23,6 +23,7 @@ import { createPlaybackController } from './playbackController.mjs';
 import {
   findPendingChoiceMove,
   findSeatChoiceActingSeat,
+  selectSpendMoves,
   hasProgressed,
   classifyDispatch,
   buildAbortReason,
@@ -931,13 +932,7 @@ async function spendResources(loop, state, policy, turnCount) {
     const current = drainResult.state;
     const player = current.ctx.currentPlayer;
     const legalMoves = getLegalMoves(current.G, lifecycleContextFor(current));
-    const spendMoves = legalMoves.filter(
-      (legalMove) =>
-        legalMove.name === 'recruitHero' ||
-        legalMove.name === 'fightVillain' ||
-        legalMove.name === 'fightMastermind' ||
-        legalMove.name === 'advanceStage',
-    );
+    const spendMoves = selectSpendMoves(legalMoves);
     if (spendMoves.length === 0) {
       return { kind: 'progressed', state: current };
     }
