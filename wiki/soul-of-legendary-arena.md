@@ -1446,13 +1446,14 @@ looks like freedom.
   The answers to questions 1 and 2 did not. That is the seat.
 
   **Two sources that tell the harder version — useful for question 1,
-  dangerous as a verdict.** David Talbot's *The Devil's Chessboard* (2015)
+  dangerous as a verdict.** David Talbot's
+  [*The Devil's Chessboard*](https://www.harpercollins.ca/9780062276179/the-devils-chessboard/) (2015)
   reads Dulles not as a civil servant but as the builder of a second
   government: Iran (1953) and Guatemala (1954) as coups with a corporate client
   behind them, MKUltra and the Castro plots, the Bay of Pigs as a trap meant to
   force Kennedy into a full invasion, and Dulles steering the Warren inquiry
-  onto Oswald. Robert F. Kennedy Jr., on Glenn Beck's BlazeTV program (May
-  2024), tells it as family memory: his father's first question on 22 November
+  onto Oswald. Robert F. Kennedy Jr., on
+  [Glenn Beck's BlazeTV program](https://www.theblaze.com/shows/the-glenn-beck-program/jfk) (May 2024), tells it as family memory: his father's first question on 22 November
   1963, put to CIA Director John McCone, was whether "your people" had done it;
   his first suspects were the CIA-linked Cuban exiles in Miami who thought
   Kennedy a traitor over the Bay of Pigs; and both brothers, he says, meant to
@@ -2261,8 +2262,8 @@ claim at a safe distance — it stands on it.
   Pareto's *circulation of elites*) are cited as illustrations of structure,
   not adjudicated by this page.
 - Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
-  — David Talbot, *The Devil's Chessboard: Allen Dulles, the CIA, and the Rise
-  of America's Secret Government* (Harper, 2015; audiobook narrated by Peter
+  — David Talbot, [*The Devil's Chessboard: Allen Dulles, the CIA, and the Rise
+  of America's Secret Government*](https://www.harpercollins.ca/9780062276179/the-devils-chessboard/) (Harper, 2015; audiobook narrated by Peter
   Altschuler) — the primary source for the Dulles reading;
   [*Did the CIA assassinate JFK? Robert F. Kennedy Jr. drops explosive details*](https://www.theblaze.com/shows/the-glenn-beck-program/jfk)
   (BlazeTV, *The Glenn Beck Program*, 6 May 2024); the Church Committee's
