@@ -1323,82 +1323,103 @@ shapeless to ask.
 #### The Mastermind Lens — five questions
 
 The [five tells](#five-tells-for-naming-the-mastermind) catch a Scheme by its
-conduct. The lens below does the same job from the other end: it reads the
-*shape of an arrangement* — an inquiry, an institution, a program, a movement —
-without ever naming a villain. It came out of one of Jeff's working
-conversations with Claude and is set down here as the page's own diagnostic.
+conduct. The lens below comes at it from the other end: it reads the *shape of
+an arrangement* — an inquiry, an institution, a program, a movement — without
+needing a villain. It treats the Mastermind as a **seat**, not a man: a position
+in a structure that someone occupies for a while. The questions find the seat;
+they never have to name whoever is sitting in it.
 
 **The discipline: judge by effect, not motive.** Almost nobody experiences
 himself as the villain. Hitler thought he was saving a civilisation; Lenin
 thought he was ending exploitation. Motive is unknowable and a bad instrument.
 Ask what the arrangement *does*.
 
-The five questions run upstream to downstream:
+The five questions run upstream to downstream, and each covers one separate
+lever:
 
-1. **Who decides what gets investigated?** Controlling the inquiry is upstream
-   of controlling the story.
-2. **Who is trusted to report it?** Credibility is a lever. The Sanhedrin did
-   not need a better argument; they needed to be the ones speaking.
-3. **Who controls the story?** The Mastermind never wins by argument. He wins
-   by making the counter-argument unsayable.
-4. **What happens to the person who says no?** The enforcement layer.
-5. **What does it cost to leave?** The door lock.
+1. **Who decides what gets investigated?** Control of the question comes before
+   control of the answer. An inquiry that is not allowed to look in one
+   direction has already chosen what it will find.
+2. **Who is trusted to report it?** Credibility is a lever. The question is not
+   whether the reporter is truthful but who holds the standing to define what
+   happened for everyone else. The Sanhedrin did not need a better argument;
+   they needed to be the ones speaking.
+3. **Who controls what may be said?** The Mastermind seldom wins by argument. He
+   wins by making the counter-argument unsayable — not refuted, *unsayable*.
+4. **What happens to the person who says no?** The enforcement layer — legal,
+   economic, social, or merely reputational. Watch the first person who
+   declines, not the official who explains.
+5. **What does it cost to leave?** The door lock. A healthy arrangement can
+   survive people walking out. An unhealthy one makes leaving steadily more
+   expensive. If exit is formally allowed and practically ruinous, the lock is
+   working.
 
 **The two locks.** The **hard lock** is the physical door — the wall, the
 gulag, the bullet. The **soft lock** is the social door: you may walk out, but
 you walk out unemployable, labelled, or ruined. A regime confident in its soft
 lock does not need the hard one. If leaving costs your livelihood and your name,
-almost nobody tests the wall — and it is cheaper, and it looks like freedom from
-the outside.
+almost nobody tests the wall. It is cheaper than force, and from the outside it
+looks like freedom.
 
-**Supporting mechanisms.**
+**Supporting mechanisms** — each one a way of working one of the five levers:
 
-- **The rotating seat.** Pareto's *circulation of elites*: "history is a
-  graveyard of aristocracies." The Mastermind slot stays fixed while the
-  occupant rotates. Each arrives promising to end the last one's tyranny, and
-  each keeps the machinery that made it possible — Robespierre to Napoleon, Tsar
-  to Lenin to Stalin, Batista to Castro, the Shah to Khomeini.
-- **The cost of checking is the lock.** No one forbids you to verify the claim;
-  it simply costs more time than anyone has. Manufacturing a claim takes a press
-  release. Refuting it takes months in an archive.
-- **Authority laundering.** "The commission found" ends arguments. The
-  endorsement does work no argument could — the
+- **The rotating seat** *(why the lens looks for a seat, not a man)*. Pareto's
+  *circulation of elites*: "history is a graveyard of aristocracies." The
+  Mastermind seat stays fixed while the occupant rotates. Each arrives promising
+  to end the last one's tyranny, and each keeps the machinery that made it
+  possible — Robespierre to Napoleon, Tsar to Lenin to Stalin, Batista to
+  Castro, the Shah to Khomeini. Change the face; keep the seat.
+- **The cost of checking is the lock** *(questions 1 and 3)*. No one forbids
+  you to verify the claim; it simply costs more time than anyone has.
+  Manufacturing a claim takes a press release. Refuting it takes months in an
+  archive. That imbalance is censorship that never has to say "forbidden."
+- **Authority laundering** *(question 2)*. "The commission found" ends
+  arguments. Sometimes the finding is sound. The test is how much of the work
+  is being done by the evidence and how much by the
   [borrowed seal](#the-masterminds-common-tactics-the-grammar-of-manipulation)
-  in its institutional form.
-- **The manufactured choice.** Barabbas or Jesus, framed as if that were the
-  whole menu — the false dilemma, the
+  stamped on it. Once a finding is institutional, disagreeing with it gets
+  treated as a character flaw rather than a reading of the evidence.
+- **The manufactured choice** *(question 3)*. Barabbas or Jesus, framed as if
+  that were the whole menu. A false dilemma is not a debate; it narrows the
+  field until every visible option serves the same hand — the
   [two-box choice](#how-heroes-beat-it--the-difficulty-knobs) the heroes must
   learn to refuse.
-- **Manipulation runs on virtues, not vices.** Compassion, fairness, loyalty,
-  protecting children. Those are the handles, because they are the ones you will
-  not want to let go of.
+- **Manipulation runs on virtues, not vices** *(questions 4 and 5)*.
+  Compassion, fairness, loyalty, protecting children. Those are the handles,
+  because they are the ones you will not want to let go of. A vice can be
+  refused; a virtue used as a lever is much harder to drop.
 
-**Worked examples.**
+**Worked examples** — each read as *architecture*, not as a courtroom verdict:
 
-- **Katyn.** The Soviets investigated their own massacre of Polish officers,
-  staffed the commission themselves, and blamed the Germans. The investigation
-  was not a search; it was an instrument.
-- **The Warren Commission.** Allen Dulles sat on it — the CIA director Kennedy
-  had fired after the Bay of Pigs — and the Commission depended for its evidence
-  on the very agencies it was examining. Compare the Church Committee, which had
-  subpoena power and independent staff, and found real things. The difference
-  lies in who set the scope.
-- **The Reichstag fire.** Who actually set the fire is still argued; what is not
-  argued is that the crisis, the named culprit, and the cure — the emergency
-  decree suspending civil liberties the next day — arrived as one package from
-  the same hand. Questions 1 and 3 answered at once.
-- **Pilate and the Sanhedrin.** Pilate runs the honest inquiry and finds no
-  fault, but he does not control the scope. "If thou let this man go, thou art
-  not Caesar's friend" is the soft lock closing on the judge himself.
-- **Bamatabois and Fantine** (*Les Misérables*). The same facts, and the outcome
-  is decided entirely by whose testimony counts. Javert does not investigate,
-  because he does not need to.
-- **The benefits cliff.** A soft lock with no henchman at the door. The
-  arithmetic does the work: the recipient locks himself in by correctly
-  calculating that leaving — taking the raise, the extra hours, the marriage —
-  costs more than staying. It is the hardest kind to break, because there is no
-  oppressor to point at. The fix is tapering, not cliffing. The diagnostic:
-  watch who opposes the reform, not who claims to care.
+- **Katyn** *(questions 1 and 2)*. The Soviets investigated their own massacre
+  of Polish officers, staffed the commission themselves, and blamed the Germans.
+  The investigation was not a search; it was an instrument, its answers settled
+  before it sat.
+- **The Warren Commission** *(question 1)*. Allen Dulles sat on it — the CIA
+  director Kennedy had fired after the Bay of Pigs — and the Commission depended
+  for its evidence on the very agencies it was examining. Compare the Church
+  Committee, which had subpoena power and independent staff, and found things
+  the earlier inquiry did not. The lens does not need a theory of who killed
+  Kennedy; it only asks who set the scope.
+- **The Reichstag fire** *(questions 1 and 3)*. Who actually set the fire is
+  still argued; what is not argued is the package — crisis, named culprit, and
+  cure arrived together, with the emergency decree suspending civil liberties
+  the next day.
+- **Pilate and the Sanhedrin** *(question 4, closing on the judge)*. Pilate
+  runs the honest inquiry and finds no fault, but he does not control the scope.
+  "If thou let this man go, thou art not Caesar's friend" is the soft lock
+  closing on the judge himself: the man with the power to acquit discovers that
+  acquittal has a price.
+- **Bamatabois and Fantine** (*Les Misérables*) *(question 2)*. The same
+  facts, and the outcome is decided entirely by whose testimony counts. Javert
+  does not investigate, because he does not need to.
+- **The benefits cliff** *(question 5, with no one at the door)*. A soft lock
+  with no henchman guarding it. The arithmetic does the work: the recipient
+  locks himself in by correctly calculating that leaving — taking the raise, the
+  extra hours, the marriage — costs more than staying. It is the hardest kind to
+  break, because there is no oppressor to point at. The fix is tapering, not
+  cliffing. The diagnostic: watch who opposes the reform, not who claims to
+  care.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
@@ -1413,10 +1434,21 @@ is a feature. The moment a lens promises to identify the Mastermind, it becomes 
 tool for confirming whatever suspicion someone brought with them. What it gives
 instead is a verdict on the *structure*: who is protected from scrutiny, what
 dissent costs, and why nobody is testing the door. It is a filter, not an
-accusation — it strips the noise down to a few structural facts you can actually
-check, so you can decide whether to join this, stay in it, or believe this
-report. It holds to the same faction-blind rule as the tells: the five questions
-are asked of every arrangement, including the ones you like.
+accusation. It holds to the same faction-blind rule as the tells: the five
+questions are asked of every arrangement, including the ones you like.
+
+**How to use it.** Ask the five questions in order, and read the answers
+together:
+
+- If the first three answers converge on the same seat, you are looking at
+  design, not weather.
+- If question 5 is expensive and question 4 is quiet, the soft lock is already
+  doing the hard lock's job.
+- If the arrangement can replace its occupants without changing any of the five
+  answers, you have found the seat, not the man.
+
+The lens is working when it can describe a gulag and a benefits schedule with
+the same five questions, and does not have to raise its voice for either.
 
 **The inversion.** Jesus addressed both locks. The soft one He named rather than
 hid — "they shall put you out of the synagogues" — and bid His disciples come
