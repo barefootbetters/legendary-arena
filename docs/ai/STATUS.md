@@ -9,7 +9,7 @@
 
 ### WP-754 — Optional discard-to-draw + reveal-top-may-KO hero keywords (EC-791 / D-24581) (2026-09-25)
 
-**User-visible on `play.legendary-arena.com` (D-24026: discard-to-draw CONFIRMED live 2026-09-25 in guest autoplay match `AtAN1Xky0Nx` — Hungry for Action rendered "Discard a card to draw 1" and resolved "discarded S.H.I.E.L.D. Agent … and drew 1 card(s)" on 8.2.5 and 9.2.13, and the Digest-not-met log fired for Cauldron of the Cosmos; Gruesome Feast KO-or-keep still operator-pending — the bot never fights using Excessive Violence).** Eight hero
+**User-visible on `play.legendary-arena.com` (D-24026: discard-to-draw CONFIRMED live 2026-09-25 in guest autoplay match `AtAN1Xky0Nx` — Hungry for Action rendered "Discard a card to draw 1" and resolved "discarded S.H.I.E.L.D. Agent … and drew 1 card(s)" on 8.2.5 and 9.2.13, and the Digest-not-met log fired for Cauldron of the Cosmos; Gruesome Feast KO-or-keep CONFIRMED live 2026-09-25 in the operator's 2-player match — round 28: Gruesome Feast readied, the Excessive Violence fight revealed Cauldron of the Cosmos with a KO-or-keep prompt (no Discard), fired alongside Serious Overkill, and the kept card stayed on top. WP-754 is fully live-verified).** Eight hero
 cards that did nothing now do what they print. "You may discard a card. If you do, draw a card." —
 Hungry for Action (vnom, with 3+ cards in the Victory Pile), Gritty Scavenger (gotg),
 Bio-Engineered Cyborg (asrd), GW Bridge (shld) and Risky Science (antm, with another Tech Hero
