@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 746,
+    "totalRows": 748,
     "byStatus": {
-      "executable": 345,
+      "executable": 349,
       "deferred": 16,
       "condition": 30,
       "unsupported": 318,
-      "unmarked": 35,
+      "unmarked": 33,
       "subsystem": 2
     },
-    "distinctMechanics": 149
+    "distinctMechanics": 151
   },
   "rows": [
     {
@@ -345,12 +345,17 @@
       "extId": "3dtc/howard-the-duck",
       "heroName": "Howard the Duck",
       "set": "3dtc",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "designs": [
+        {
+          "slug": "interplanetary-visitor",
+          "name": "Interplanetary Visitor"
+        }
+      ]
     },
     {
       "extId": "3dtc/hulk",
@@ -5020,12 +5025,17 @@
       "extId": "dims/howard-the-duck",
       "heroName": "Howard the Duck",
       "set": "dims",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "designs": [
+        {
+          "slug": "interplanetary-visitor",
+          "name": "Interplanetary Visitor"
+        }
+      ]
     },
     {
       "extId": "dims/jessica-jones",
@@ -11068,6 +11078,38 @@
         {
           "slug": "cauldron-of-the-cosmos",
           "name": "Cauldron of the Cosmos"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "heroName": "Venomized Dr. Strange",
+      "set": "vnom",
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "designs": [
+        {
+          "slug": "crystal-of-kadavus",
+          "name": "Crystal of Kadavus"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "heroName": "Venomized Dr. Strange",
+      "set": "vnom",
+      "mechanic": "reveal-three-assign-again",
+      "status": "executable",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign-again",
+      "designs": [
+        {
+          "slug": "crystal-of-kadavus",
+          "name": "Crystal of Kadavus"
         }
       ]
     },

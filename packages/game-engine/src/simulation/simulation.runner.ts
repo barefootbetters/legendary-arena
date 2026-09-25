@@ -86,6 +86,10 @@ import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 // mandatory choice); it must be a MOVE_MAP key here or a sim that plays a reveal-top-dispose
 // card hangs (the drift-pinned dual-dispatch invariant).
 import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
+// why: WP-753 / D-24580 — resolveRevealThreeAssign is a getLegalMoves short-circuit (block-all
+// assignment); it must be a MOVE_MAP key here or a sim that plays a reveal-three-assign card hangs
+// (the drift-pinned dual-dispatch invariant). Its context carries `random` for the repeat top-up.
+import { resolveRevealThreeAssign } from '../moves/revealThreeAssign.resolve.js';
 // why: WP-681 / D-24498 — resolveDoOver can be the only legal move (block-all); it must be
 // dispatchable in the runner MOVE_MAP or the per-turn loop hangs.
 import { resolveDoOver } from '../moves/doOver.resolve.js';
@@ -332,6 +336,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   resolvePutHandOnDeckTop: (context, args) => resolvePutHandOnDeckTop(context as never, args as never),
   resolveRevealTopDispose: (context, args) => resolveRevealTopDispose(context as never, args as never),
+  resolveRevealThreeAssign: (context, args) => resolveRevealThreeAssign(context as never, args as never),
   // why: WP-681 / D-24498 — getLegalMoves short-circuits to resolveDoOver when a Do-Over
   // accept/decline choice is parked; a missing dispatch entry spins the per-turn loop.
   resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),

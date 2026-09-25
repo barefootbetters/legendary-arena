@@ -49,6 +49,8 @@ import type {
   UIRevealedTopEntry,
   UIPendingRuthlessDictatorChoice,
   UIRuthlessDictatorRevealedCard,
+  UIPendingRevealThreeAssign,
+  UIRevealThreeAssignCard,
   UIPendingElectromagneticBubbleChoice,
   UIElectromagneticBubbleEligibleCard,
   UIMelterRevealedTop,
@@ -1225,6 +1227,41 @@ export function buildUIState(
     };
   }
 
+  // --- 13b.3b2 Project pending reveal-three assignment (front of queue) ---
+  // why: WP-753 / D-24580 — project the FRONT entry of G.pendingRevealThreeAssign with its
+  // remaining revealed deck-top cards (the snapshot captured at reveal time, shrinking as each is
+  // assigned) resolved to display data, the unused disposition slots, the source card and the
+  // repeat counter. Reads the SNAPSHOT, not the live zone: the block-all guard freezes the deck top
+  // while pending, and it is exactly what resolveRevealThreeAssign validates the client's
+  // { cardId, disposition } against (the round-trip rule). resolveDisplay is spread fresh per entry
+  // (aliasing defense, WP-111 D-11105). Chooser-only redaction is enforced by
+  // filterUIStateForAudience.
+  let pendingRevealThreeAssign: UIPendingRevealThreeAssign | undefined;
+  if (
+    gameState.pendingRevealThreeAssign !== undefined &&
+    gameState.pendingRevealThreeAssign.length > 0
+  ) {
+    const frontEntry = gameState.pendingRevealThreeAssign[0]!;
+    const revealedCards: UIRevealThreeAssignCard[] = [];
+    for (const cardId of frontEntry.revealedCardIds) {
+      revealedCards.push({
+        cardId,
+        display: { ...resolveDisplay(cardId, gameState) },
+      });
+    }
+    pendingRevealThreeAssign = {
+      choiceType: frontEntry.choiceType,
+      playerID: frontEntry.playerID,
+      sourceCard: {
+        cardId: frontEntry.sourceCardId,
+        display: { ...resolveDisplay(frontEntry.sourceCardId, gameState) },
+      },
+      revealedCards,
+      availableDispositions: [...frontEntry.availableDispositions],
+      remainingRepeats: frontEntry.remainingRepeats,
+    };
+  }
+
   // --- 13b.3c Project pending Electromagnetic Bubble X-Men pick (front of queue) ---
   // why: WP-695 / D-24512 — project the FRONT entry of G.pendingElectromagneticBubbleChoices
   // with its eligible in-play X-Men Heroes (the snapshot captured at park time) resolved to
@@ -2183,6 +2220,9 @@ export function buildUIState(
     // why: WP-695 / D-24512 — spread-in only when present (no `undefined` literal under
     // exactOptionalPropertyTypes).
     ...(pendingRuthlessDictatorChoice !== undefined ? { pendingRuthlessDictatorChoice } : {}),
+    // why: WP-753 / D-24580 — spread-in only when present (no `undefined` literal under
+    // exactOptionalPropertyTypes).
+    ...(pendingRevealThreeAssign !== undefined ? { pendingRevealThreeAssign } : {}),
     ...(pendingElectromagneticBubbleChoice !== undefined ? { pendingElectromagneticBubbleChoice } : {}),
     // why: WP-476 / D-24284 — conditional spread so an absent choice omits the field
     // (no `pendingDiscardChoice: undefined` literal under exactOptionalPropertyTypes).

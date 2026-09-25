@@ -14,7 +14,7 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose } from '../types.js';
+import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose, PendingRevealThreeAssign } from '../types.js';
 import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
@@ -62,6 +62,10 @@ import {
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+import {
+  revealTopThreeForAssign,
+  buildAllRevealThreeAssignDispositions,
+} from '../moves/revealThreeAssign.resolve.js';
 import {
   buildHereHoldThisTargets,
   attachBystanderToCityVillain,
@@ -244,6 +248,17 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // so it belongs here (the bidirectional handler-completeness authority). Carries NO top-level
   // magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence',
+  // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
+  // one, and KO one." (Crystal of Kadavus, Interplanetary Visitor); has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectRevealThreeAssign) that snapshots the top three and parks a
+  // PendingRevealThreeAssign, so it belongs here. Carries NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'reveal-three-assign',
+  // why: WP-753 / D-24580 — Crystal of Kadavus's "[team:venomverse][team:venomverse]: Do this
+  // ability again."; has a HERO_EFFECT_HANDLERS entry (heroEffectRevealThreeAssignAgain) that
+  // bumps the just-parked entry's repeat counter, so it belongs here. Carries NO magnitude → also
+  // in NO_MAGNITUDE_KEYWORDS.
+  'reveal-three-assign-again',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -499,6 +514,12 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // markers inside excessiveViolenceEffects). The magnitude pre-gate must not drop it, or
   // heroEffectExcessiveViolence never fires and the card is never enrolled.
   'excessive-violence',
+  // why: WP-753 / D-24580 — both reveal-three-assign keywords carry NO magnitude: the outcome is
+  // a per-card draw / discard / KO assignment (and a repeat counter), not a count. The revealed
+  // set is snapshotted from the deck top at play time, so the magnitude pre-gate must not drop
+  // them, or the reveal never parks its choice and the repeat never arms.
+  'reveal-three-assign',
+  'reveal-three-assign-again',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2895,6 +2916,138 @@ function heroEffectRevealTopDisposeKo(
 }
 
 /**
+ * Finds the LAST queued reveal-three assignment of `playerID`, optionally restricted to one
+ * source card.
+ *
+ * @param G - Game state (read-only here).
+ * @param playerID - The player whose entry to find.
+ * @param sourceCardId - When given, only an entry opened by this card matches.
+ * @returns the newest matching entry, or undefined when none is queued.
+ */
+function findLastRevealThreeAssignEntry(
+  G: LegendaryGameState,
+  playerID: string,
+  sourceCardId: CardExtId | undefined,
+): PendingRevealThreeAssign | undefined {
+  const queue = G.pendingRevealThreeAssign ?? [];
+  for (let queueIndex = queue.length - 1; queueIndex >= 0; queueIndex--) {
+    const entry = queue[queueIndex]!;
+    if (entry.playerID !== playerID) { continue; }
+    if (sourceCardId !== undefined && entry.sourceCardId !== sourceCardId) { continue; }
+    return entry;
+  }
+  return undefined;
+}
+
+/**
+ * Park handler for the `reveal-three-assign` hero keyword (WP-753 / D-24580).
+ *
+ * "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." —
+ * Crystal of Kadavus (vnom) and Interplanetary Visitor (3dtc, dims). Tops the active player's
+ * deck up from the discard when it holds fewer than three cards, snapshots the top three and
+ * parks a block-all PendingRevealThreeAssign offering all three dispositions; the resolve move
+ * assigns one card per call.
+ *
+ * // why: reveal-three-assign carries NO magnitude (a per-card assignment, not a count), so it
+ * is in NO_MAGNITUDE_KEYWORDS — a magnitude pre-gate would wrongly safe-skip it. The ability says
+ * "Reveal", so a short deck tops up from the discard first (D-24285), unlike Ruthless Dictator's
+ * "Look at" which never reshuffles.
+ *
+ * // why: an entry already queued for the player means a reveal is still waiting — sibling
+ * abilities run synchronously after a block-all park (D-24521 §6), e.g. Steal Abilities
+ * re-firing two reveal-three cards in one run. A second snapshot now would capture the SAME
+ * deck top, so the handler bumps that entry's repeat counter instead: the repeat reveals a
+ * fresh top three once the queued one is assigned.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context, narrowed to ShuffleProvider for the top-up reshuffle.
+ * @param playerID - The active player who played the card.
+ * @param cardId - The played card (recorded as the entry's source for the repeat marker).
+ * @param _effect - The `{ type: 'reveal-three-assign' }` descriptor (no magnitude).
+ */
+function heroEffectRevealThreeAssign(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const queuedEntry = findLastRevealThreeAssignEntry(G, playerID, undefined);
+  if (queuedEntry !== undefined) {
+    queuedEntry.remainingRepeats += 1;
+    pushLog(G,
+      `Player ${playerID} will reveal three more cards after the current reveal is assigned (${formatCardRef(G.cardDisplayData, cardId)}).`,
+      'neutral',
+      cardId,
+    );
+    return;
+  }
+  // why: ctx narrows to ShuffleProvider structurally for the top-up reshuffle (ctx.random),
+  // exactly as heroEffectRevealTopDispose does (the WP-005B/008B pattern).
+  const revealedCardIds = revealTopThreeForAssign(G, playerID, ctx as ShuffleProvider);
+  if (revealedCardIds.length === 0) {
+    // why: reachable no-op — the deck and discard were both empty, so nothing was revealed and
+    // no choice is parked. G.messages is hash-excluded (D-24081).
+    pushLog(G, `Player ${playerID} had no cards to reveal on top of their deck (reveal three).`, 'blocked', cardId);
+    return;
+  }
+  if (!G.pendingRevealThreeAssign) { G.pendingRevealThreeAssign = []; }
+  G.pendingRevealThreeAssign.push({
+    choiceType: 'reveal-three-assign',
+    playerID,
+    sourceCardId: cardId,
+    revealedCardIds,
+    availableDispositions: buildAllRevealThreeAssignDispositions(),
+    remainingRepeats: 0,
+  } satisfies PendingRevealThreeAssign);
+  // why: self-narrate the park; the resolve move narrates each draw / discard / KO.
+  pushLog(G,
+    `Player ${playerID} revealed the top ${String(revealedCardIds.length)} card(s) of their deck — assign draw / discard / KO (reveal three).`,
+    'neutral',
+    cardId,
+  );
+}
+
+/**
+ * Handler for the `reveal-three-assign-again` hero keyword (WP-753 / D-24580).
+ *
+ * Crystal of Kadavus's "[team:venomverse][team:venomverse]: Do this ability again." The Venomverse
+ * gate is the ability entry's own requiresTeam condition, so an unmet gate never reaches here.
+ *
+ * // why: "again" is a COUNTER, not a second park. The card's first ability has already parked
+ * its reveal (executeHeroEffects runs a card's abilities in order, synchronously after the park —
+ * D-24521 §6); parking a second choice now would snapshot the SAME three cards. Instead this bumps
+ * `remainingRepeats` on that entry (newest-first, matched by player AND source card), and the
+ * resolve move reveals a fresh top three once the first set is assigned. When the first reveal
+ * parked nothing (deck + discard empty) there is no entry, so it runs a fresh reveal.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context (forwarded for the fresh-reveal fallback's top-up reshuffle).
+ * @param playerID - The active player who played the card.
+ * @param cardId - The played card (matches the entry its first ability parked).
+ * @param effect - The `{ type: 'reveal-three-assign-again' }` descriptor (no magnitude).
+ */
+function heroEffectRevealThreeAssignAgain(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const sourceEntry = findLastRevealThreeAssignEntry(G, playerID, cardId);
+  if (sourceEntry === undefined) {
+    heroEffectRevealThreeAssign(G, ctx, playerID, cardId, effect);
+    return;
+  }
+  sourceEntry.remainingRepeats += 1;
+  pushLog(G,
+    `Player ${playerID} will do ${formatCardRef(G.cardDisplayData, cardId)}'s reveal again on the next three cards.`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
  * Park handler for the `do-over` hero keyword (WP-681 / D-24498).
  *
  * Deadpool's "Hey, Can I Get a Do-Over?" — "If this is the first Hero you played this
@@ -5191,6 +5344,13 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (draw / +recruit / rescue / optional-ko) at fight resolution when the player spends the extra
   // [attack]. Carries NO top-level magnitude → in NO_MAGNITUDE_KEYWORDS.
   'excessive-violence': heroEffectExcessiveViolence,
+  // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard
+  // one, and KO one.": tops up (D-24285), snapshots the top three and parks a block-all
+  // PendingRevealThreeAssign resolved by resolveRevealThreeAssign. NO magnitude.
+  'reveal-three-assign': heroEffectRevealThreeAssign,
+  // why: WP-753 / D-24580 — Crystal of Kadavus's "Do this ability again.": bumps the just-parked
+  // entry's remainingRepeats (the resolve move re-reveals). NO magnitude.
+  'reveal-three-assign-again': heroEffectRevealThreeAssignAgain,
 };
 
 // ---------------------------------------------------------------------------

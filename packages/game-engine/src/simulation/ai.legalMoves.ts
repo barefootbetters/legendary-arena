@@ -24,6 +24,7 @@ import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from '../moves/melterKoChoice.resolve.js';
 import { hasPendingRuthlessDictatorChoice } from '../moves/ruthlessDictatorChoice.resolve.js';
+import { hasPendingRevealThreeAssign, selectDefaultRevealThreeAssignment } from '../moves/revealThreeAssign.resolve.js';
 import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
@@ -176,6 +177,10 @@ export const SIMULATION_MOVE_NAMES = [
   // pending reveal-top discard-or-keep). ONE shared move for both reveal-top-dispose keywords;
   // it MUST be dispatchable in both sim MOVE_MAPs or the per-turn loop hangs.
   'resolveRevealTopDispose',
+  // why: WP-753 / D-24580 — resolveRevealThreeAssign is a getLegalMoves short-circuit (block-all
+  // pending reveal-three draw / discard / KO assignment); it MUST be dispatchable in both sim
+  // MOVE_MAPs or the per-turn loop hangs on a parked Crystal of Kadavus / Interplanetary Visitor.
+  'resolveRevealThreeAssign',
   // why: WP-681 / D-24498 — resolveDoOver is a getLegalMoves short-circuit (block-all
   // pending Do-Over accept/decline), so it MUST be dispatchable in both sim MOVE_MAPs or
   // the per-turn loop hangs. optional-ko-shield-officer (Battlefield Promotion) reuses the
@@ -668,6 +673,30 @@ export function getLegalMoves(
     }
     // why: defensive — an empty snapshot is an engine-invariant violation (the park requires
     // ≥1 revealed card and ≥1 disposition slot); fail closed rather than emit an unresolvable move.
+    return legalMoves;
+  }
+
+  // why: WP-753 / D-24580 — pending reveal-three draw / discard / KO short-circuit, beside the
+  // Ruthless Dictator one (the same scry-and-assign shape). When the assignment is parked the
+  // block-all guard freezes every other move, so the bot resolves it first. The single legal move
+  // assigns ONE card with the deterministic default (selectDefaultRevealThreeAssignment: KO a
+  // Wound / basic starter, draw the highest-cost card, discard the rest), replay-stable — only
+  // live human play gets the prompt. getLegalMoves re-enters until the entry completes (including
+  // any repeat re-reveal). Returns a list of length EXACTLY 1 — omitting this path (or the
+  // MOVE_MAP entries) hangs the per-turn loop.
+  if (hasPendingRevealThreeAssign(gameState)) {
+    const front = gameState.pendingRevealThreeAssign![0]!;
+    const assignment = selectDefaultRevealThreeAssignment(gameState, front);
+    if (assignment !== null) {
+      return [
+        {
+          name: 'resolveRevealThreeAssign',
+          args: { cardId: assignment.cardId, disposition: assignment.disposition },
+        },
+      ];
+    }
+    // why: defensive — an empty snapshot is an engine-invariant violation (the park and the
+    // repeat re-reveal require ≥1 revealed card); fail closed rather than emit an unresolvable move.
     return legalMoves;
   }
 

@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1921,
+    "totalEntries": 1923,
     "byScope": {
-      "hero": 746,
+      "hero": 748,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 496,
+      "executable": 500,
       "deferred": 16,
       "condition": 30,
       "unsupported": 319,
-      "unmarked": 1056,
+      "unmarked": 1054,
       "subsystem": 4
     }
   },
@@ -676,11 +676,17 @@
       "name": "Howard the Duck",
       "set": "3dtc",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "designs": [
+        {
+          "slug": "interplanetary-visitor",
+          "name": "Interplanetary Visitor"
+        }
+      ]
     },
     {
       "extId": "3dtc/hulk",
@@ -9674,11 +9680,17 @@
       "name": "Howard the Duck",
       "set": "dims",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "designs": [
+        {
+          "slug": "interplanetary-visitor",
+          "name": "Interplanetary Visitor"
+        }
+      ]
     },
     {
       "extId": "dims/jessica-jones",
@@ -22459,6 +22471,40 @@
       ]
     },
     {
+      "extId": "vnom/venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "reveal-three-assign",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "designs": [
+        {
+          "slug": "crystal-of-kadavus",
+          "name": "Crystal of Kadavus"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "reveal-three-assign-again",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign-again",
+      "wp": "WP-753",
+      "decision": "D-24580",
+      "designs": [
+        {
+          "slug": "crystal-of-kadavus",
+          "name": "Crystal of Kadavus"
+        }
+      ]
+    },
+    {
       "extId": "vnom/venompool",
       "name": "Venompool",
       "set": "vnom",
@@ -27582,7 +27628,7 @@
     "3dtc/howard-the-duck": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "reveal-three-assign"
       ]
     },
     "3dtc/hulk": {
@@ -30558,7 +30604,7 @@
     "dims/howard-the-duck": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "reveal-three-assign"
       ]
     },
     "dims/jessica-jones": {
@@ -35193,7 +35239,9 @@
       "scope": "hero",
       "mechanics": [
         "digest",
-        "draw"
+        "draw",
+        "reveal-three-assign",
+        "reveal-three-assign-again"
       ]
     },
     "vnom/venompool": {

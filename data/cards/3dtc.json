@@ -72,7 +72,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one."
+            "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one. [keyword:reveal-three-assign]"
           ]
         }
       ],

@@ -687,6 +687,52 @@ export interface PendingRevealTopDispose {
 }
 
 /**
+ * One of the three dispositions the active player assigns to a revealed deck-top card in a
+ * reveal-three assignment (WP-753 / D-24580):
+ *   'draw'    — move the revealed card from the deck into the player's hand (a printed draw);
+ *   'discard' — move the revealed card from the deck to the player's discard pile;
+ *   'ko'      — KO the revealed card from the deck (to the general KO pile).
+ *
+ * // why: D-24580 — a sibling of RuthlessDictatorDisposition, not a widening of it: the printed
+ * "Draw one of them, discard one, and KO one." has a `draw` slot where Ruthless Dictator has
+ * `top`, and PendingRuthlessDictatorChoice is a shipped contract (D-24512).
+ */
+export type RevealThreeAssignDisposition = 'draw' | 'discard' | 'ko';
+
+/**
+ * Pending reveal-three draw / discard / KO assignment (WP-753 / D-24580).
+ *
+ * Created when a hero plays a `reveal-three-assign` card ("Reveal the top three cards of your
+ * deck. Draw one of them, discard one, and KO one." — Crystal of Kadavus, Interplanetary
+ * Visitor): the handler tops the deck up from the discard when it holds fewer than three cards
+ * (D-24285), snapshots the top `min(3, deck.length)` cards and parks ONE entry for the ACTIVE
+ * player. resolveRevealThreeAssign assigns one revealed card per call, consuming that card and
+ * its disposition slot; once `revealedCardIds` empties the entry either re-reveals a fresh top
+ * three (`remainingRepeats > 0`, Crystal's "Do this ability again.") or front-pops. Must be
+ * undefined or empty at every turn-end (block-all guards).
+ *
+ * // why: D-24580 — `availableDispositions` always starts as all three slots; a short reveal
+ * (1–2 cards) completes when its cards run out, so the player chooses which dispositions to
+ * use ("do as much as you can"). `remainingRepeats` is a counter, not a second queued entry,
+ * because sibling abilities run synchronously after the park (D-24521 §6) — a second snapshot
+ * would capture the SAME three cards before the first set is assigned.
+ */
+export interface PendingRevealThreeAssign {
+  /** Discriminant; always 'reveal-three-assign'. */
+  choiceType: 'reveal-three-assign';
+  /** The active player who assigns every revealed card. */
+  playerID: string;
+  /** The played card whose ability opened this assignment (the repeat counter keys on it). */
+  sourceCardId: CardExtId;
+  /** The revealed deck-top cards still awaiting a disposition (snapshot, in deck order). */
+  revealedCardIds: CardExtId[];
+  /** The disposition slots still unused for this reveal. */
+  availableDispositions: RevealThreeAssignDisposition[];
+  /** How many more fresh reveal-and-assign rounds follow once this reveal is assigned. */
+  remainingRepeats: number;
+}
+
+/**
  * Pending Magneto "Electromagnetic Bubble" X-Men Hero pick (WP-695 / D-24512).
  *
  * Created when the core Magneto mastermind's "Electromagnetic Bubble" tactic Fight is
@@ -1891,6 +1937,19 @@ export interface LegendaryGameState {
   // re-pin). Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending reveal-top discard-or-keep choices awaiting resolution (WP-702). */
   pendingRevealTopDispose?: PendingRevealTopDispose[] | undefined;
+
+  // why: WP-753 / D-24580 — FIFO queue of pending "Reveal the top three cards of your deck.
+  // Draw one of them, discard one, and KO one." assignments (Crystal of Kadavus, Interplanetary
+  // Visitor — the `reveal-three-assign` keyword; Crystal's "Do this ability again." rides the
+  // entry's `remainingRepeats` counter). Entries are appended by heroEffectRevealThreeAssign
+  // AFTER it snapshots the deck top (the reveal does NOT remove the cards); resolveRevealThreeAssign
+  // assigns one card per call and, once the snapshot empties, re-reveals (remainingRepeats > 0)
+  // or front-pops. Must be undefined or empty at every turn-end. Lazily initialized at the park
+  // site, never in Game.setup — a game that never plays one of these cards carries no new field
+  // and serializes byte-identically (no finalStateHash re-pin). Absent (undefined) or empty []
+  // both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending reveal-three draw / discard / KO assignments (WP-753). */
+  pendingRevealThreeAssign?: PendingRevealThreeAssign[] | undefined;
 
   // why: WP-681 / D-24498 — FIFO queue of pending Do-Over accept/decline choices (Deadpool's
   // "Hey, Can I Get a Do-Over?" — "you may discard the rest of your hand and draw four cards",

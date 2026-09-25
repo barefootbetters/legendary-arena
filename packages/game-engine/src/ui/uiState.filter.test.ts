@@ -876,6 +876,84 @@ describe('filterUIStateForAudience — pendingRevealTopDispose redaction (D-2452
 });
 
 // ---------------------------------------------------------------------------
+// WP-753 / EC-790 — pendingRevealThreeAssign redaction (D-24580)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where the active player '0' owes a reveal-three draw / discard / KO
+ * assignment over the top three cards of their own deck (hidden next-draw information).
+ */
+function createRevealThreeAssignUIState(): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+
+  gameState.playerZones['0']!.deck = [
+    'three-secret-a' as CardExtId,
+    'three-secret-b' as CardExtId,
+    'three-deep-c' as CardExtId,
+  ];
+  gameState.pendingRevealThreeAssign = [
+    {
+      choiceType: 'reveal-three-assign',
+      playerID: '0',
+      sourceCardId: 'three-source' as CardExtId,
+      revealedCardIds: ['three-secret-a' as CardExtId, 'three-secret-b' as CardExtId],
+      availableDispositions: ['draw', 'ko'],
+      remainingRepeats: 1,
+    },
+  ];
+
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingRevealThreeAssign redaction (D-24580)', () => {
+  it('the chooser sees every field of pendingRevealThreeAssign (five-step pass-through)', () => {
+    const uiState = createRevealThreeAssignUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    const choice = result.pendingRevealThreeAssign;
+    assert.ok(choice !== undefined, 'chooser sees the reveal-three assignment');
+    // why: runtime keyset pin (D-24372) — an optional field dropped by the filter whitelist
+    // would silently vanish; every projected field must survive for the chooser.
+    assert.deepStrictEqual(
+      Object.keys(choice!).sort(),
+      ['availableDispositions', 'choiceType', 'playerID', 'remainingRepeats', 'revealedCards', 'sourceCard'],
+    );
+    assert.equal(choice!.choiceType, 'reveal-three-assign');
+    assert.equal(choice!.playerID, '0');
+    assert.equal(choice!.sourceCard.cardId, 'three-source');
+    assert.deepStrictEqual(choice!.revealedCards.map((card) => card.cardId), ['three-secret-a', 'three-secret-b']);
+    assert.deepStrictEqual(choice!.availableDispositions, ['draw', 'ko']);
+    assert.equal(choice!.remainingRepeats, 1);
+  });
+
+  it('an opponent does NOT see pendingRevealThreeAssign nor the revealed ext_ids', () => {
+    const uiState = createRevealThreeAssignUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_1);
+    assert.equal(result.pendingRevealThreeAssign, undefined, 'opponent must not see the assignment');
+    const serialized = JSON.stringify(result);
+    assert.equal(serialized.includes('three-secret-a'), false, 'revealed deck ext_id does not leak');
+    assert.equal(serialized.includes('three-deep-c'), false, 'deck ext_id does not leak');
+  });
+
+  it('a spectator does NOT see pendingRevealThreeAssign', () => {
+    const uiState = createRevealThreeAssignUIState();
+    const result = filterUIStateForAudience(uiState, SPECTATOR);
+    assert.equal(result.pendingRevealThreeAssign, undefined, 'spectator must not see the assignment');
+    assert.equal(JSON.stringify(result).includes('three-secret-b'), false, 'no revealed ext_id leaks');
+  });
+
+  it('does not alias the input UIState (the chooser copy is rebuilt field-by-field)', () => {
+    const uiState = createRevealThreeAssignUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.notStrictEqual(result.pendingRevealThreeAssign, uiState.pendingRevealThreeAssign);
+    assert.notStrictEqual(result.pendingRevealThreeAssign!.revealedCards, uiState.pendingRevealThreeAssign!.revealedCards);
+    assert.notStrictEqual(result.pendingRevealThreeAssign!.availableDispositions, uiState.pendingRevealThreeAssign!.availableDispositions);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-476 / EC-511 — pendingDiscardChoice redaction (D-24284, D-24011 analog)
 // ---------------------------------------------------------------------------
 

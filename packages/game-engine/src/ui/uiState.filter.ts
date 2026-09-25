@@ -780,6 +780,37 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-753 / D-24580 — the pending reveal-three assignment is redacted for EVERY audience
+  // except the choosing (active) player, the Ruthless Dictator audience: its revealedCards are
+  // the top of the chooser's OWN deck (their next draws). Present only when the audience is a
+  // player whose playerId equals the chooser's playerID; omitted (conditional assignment, never
+  // an `undefined` literal) for opponents AND spectators. Rebuilt field-by-field; per-entry
+  // display spread prevents aliasing with the input UIState.
+  if (
+    uiState.pendingRevealThreeAssign !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingRevealThreeAssign.playerID
+  ) {
+    const revealedThreeCopy = [];
+    for (const entry of uiState.pendingRevealThreeAssign.revealedCards) {
+      revealedThreeCopy.push({
+        cardId: entry.cardId,
+        display: { ...entry.display },
+      });
+    }
+    result.pendingRevealThreeAssign = {
+      choiceType: uiState.pendingRevealThreeAssign.choiceType,
+      playerID: uiState.pendingRevealThreeAssign.playerID,
+      sourceCard: {
+        cardId: uiState.pendingRevealThreeAssign.sourceCard.cardId,
+        display: { ...uiState.pendingRevealThreeAssign.sourceCard.display },
+      },
+      revealedCards: revealedThreeCopy,
+      availableDispositions: [...uiState.pendingRevealThreeAssign.availableDispositions],
+      remainingRepeats: uiState.pendingRevealThreeAssign.remainingRepeats,
+    };
+  }
+
   // why: WP-695 / D-24512 — the pending Electromagnetic Bubble X-Men pick is redacted for
   // EVERY audience except the choosing (defeating) player (kept owner-only for consistency
   // with the other pending picks — the decision is the chooser's alone). Present only when
