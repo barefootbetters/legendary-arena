@@ -6,8 +6,9 @@
  * reserved, auto-readied, and driven by this driver. It narrows the WP-163
  * autoplay lifecycle (`autoplay.mjs`) to the bot seats of a match that also
  * has a real human: it polls the authoritative match state, and ONLY when it
- * is a bot seat's turn does it submit that seat's moves. The human's seat 0 is
- * never driven here — the human drives it over Socket.IO.
+ * is a bot seat's turn does it submit that seat's moves — plus one exception: a
+ * seat choice owed by a bot seat is answered as that seat on ANY turn (D-24593).
+ * The human's seat 0 is never driven here — the human drives it over Socket.IO.
  *
  * This module holds the ORCHESTRATION only (turn-gating, forced-choice drain,
  * fault fallback, teardown, the poll loop) plus the pure bot-decision pipeline
@@ -299,6 +300,86 @@ export function isBotSeatTurn(state, botSeats) {
 }
 
 /**
+ * Collects the addressed seats of an open `G.pendingSeatChoice` (WP-684 /
+ * D-24501) that have not submitted yet, in `addressedSeats` order. Mirrors the
+ * engine's `getOutstandingSeats`, which the engine does not export (the same
+ * mirror `findSeatChoiceActingSeat` keeps for autoplay, D-24590). Defensive —
+ * a state without `G` has no outstanding seats.
+ *
+ * @param {object} state - The fetched match state.
+ * @returns {string[]} The outstanding seat ids (empty when no choice is open).
+ */
+function outstandingSeatChoiceSeats(state) {
+  const choice = state?.G?.pendingSeatChoice;
+  if (choice === undefined || choice === null) {
+    return [];
+  }
+  const outstandingSeats = [];
+  for (const seat of choice.addressedSeats) {
+    if (!Object.prototype.hasOwnProperty.call(choice.submissions, seat)) {
+      outstandingSeats.push(seat);
+    }
+  }
+  return outstandingSeats;
+}
+
+/**
+ * Reports whether a seat choice is open with at least one seat still owing its
+ * submission. While true, the block-all guard freezes the active player's turn.
+ *
+ * @param {object} state - The fetched match state.
+ * @returns {boolean} true when some addressed seat has not submitted.
+ */
+export function hasOutstandingSeatChoice(state) {
+  return outstandingSeatChoiceSeats(state).length > 0;
+}
+
+/**
+ * Picks the first outstanding addressed seat of an open seat choice that this
+ * driver owns (a bot seat), whether or not it is the active player.
+ *
+ * // why: D-24593 — unlike autoplay's `findSeatChoiceActingSeat` (every seat is a
+ * bot there, so the first outstanding seat always acts), a bot-ally match has a
+ * human seat. The bots must answer their own seats without waiting on the human's
+ * answer — the engine applies the choice atomically once the last seat submits,
+ * so submission order across seats does not matter.
+ *
+ * @param {object} state - The fetched match state.
+ * @param {ReadonlyArray<string>} botSeats - The bot seat ids for this match.
+ * @returns {string | null} The bot seat that owes a submission, or null.
+ */
+export function findBotOwedSeatChoiceSeat(state, botSeats) {
+  for (const seat of outstandingSeatChoiceSeats(state)) {
+    if (botSeats.includes(seat)) {
+      return seat;
+    }
+  }
+  return null;
+}
+
+/**
+ * Decides a bot seat's seat-choice submission: enumerates getLegalMoves AS that
+ * seat and returns its single `resolveSeatChoice` (the engine's
+ * `defaultOptionIndex`), or null when the engine offers that seat no such move.
+ *
+ * // why: D-24593 — getLegalMoves answers for the enumerated seat only, so the
+ * bot seat is enumerated even when it is not `ctx.currentPlayer` (the autoplay
+ * `decidePendingChoiceDispatch` policy, D-24590). The move is the engine's own
+ * default — never a synthesized option, never a policy call.
+ *
+ * @param {object} state - The fetched match state.
+ * @param {string} botSeat - The bot seat that owes a submission.
+ * @returns {{ name: string, args: unknown } | null} The move, or null.
+ */
+export function decideBotSeatChoiceMove(state, botSeat) {
+  const seatLegalMoves = getLegalMoves(state.G, { ...lifecycleContextFor(state), currentPlayer: botSeat });
+  if (seatLegalMoves.length !== 1 || seatLegalMoves[0].name !== 'resolveSeatChoice') {
+    return null;
+  }
+  return { name: seatLegalMoves[0].name, args: seatLegalMoves[0].args };
+}
+
+/**
  * Creates and registers a per-match bot-ally driver.
  *
  * The driver polls the match state and drives the bot seats' turns. All
@@ -473,7 +554,7 @@ async function teardown(driver, deps, status, faultMessage) {
  *
  * @param {object} driver - The driver object.
  * @param {object} deps - The injected capabilities.
- * @param {{ maxTurns: number, maxIdlePolls: number, maxMoveStepsPerTurn: number }} limits
+ * @param {{ maxTurns: number, maxIdlePolls: number, maxMoveStepsPerTurn: number, maxEmptyFetchPolls: number }} limits
  * @returns {Promise<void>}
  */
 async function runTick(driver, deps, limits) {
@@ -538,6 +619,15 @@ async function runTick(driver, deps, limits) {
     return;
   }
 
+  // why: D-24593 — an open seat choice outranks the turn gate. It may be owed by
+  // a bot seat that is NOT the active player (a human defeated Loki's Vanishing
+  // Illusions), and while any seat owes one the block-all guard freezes the
+  // active player's turn, so a bot on turn has nothing to play either.
+  if (hasOutstandingSeatChoice(state)) {
+    await handleSeatChoiceTick(driver, deps, state, limits);
+    return;
+  }
+
   // why: driver turn-gate — the driver acts ONLY on a bot seat's turn. On the
   // human's turn (seat "0"), or during the lobby phase, it waits and tracks
   // idle progress; it NEVER dispatches for the human seat (the human drives
@@ -577,12 +667,110 @@ async function runTick(driver, deps, limits) {
     await teardown(driver, deps, BOT_ALLY_STATUS.faulted, result.message);
     return;
   }
+  if (result.kind === 'yielded') {
+    // why: D-24593 — the bot's own move opened a seat choice mid-turn. The turn
+    // is not over; the next tick answers the bot-owed seats (or waits on the
+    // human's) and then resumes this turn.
+    return;
+  }
 
   driver.turnCount += 1;
   await maybeResetRevivalCount(driver, deps);
   if (driver.turnCount >= limits.maxTurns) {
     await teardown(driver, deps, BOT_ALLY_STATUS.exhausted);
   }
+}
+
+/**
+ * Runs one poll tick while a seat choice is open: answers the first bot-owed
+ * seat's submission, or — when only the human owes one — waits and tracks idle
+ * exactly like the human's own turn.
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} deps - The injected capabilities.
+ * @param {object} state - The fetched match state (a seat choice is open).
+ * @param {{ maxIdlePolls: number, maxEmptyFetchPolls: number }} limits - The idle-abandon and empty-fetch bounds.
+ * @returns {Promise<void>}
+ */
+async function handleSeatChoiceTick(driver, deps, state, limits) {
+  const botSeat = findBotOwedSeatChoiceSeat(state, driver.botSeats);
+  if (botSeat === null) {
+    // why: D-24593 — only the human owes a submission. Never answer for the
+    // human seat; wait, and let the abandon bound cover a human who walked away.
+    trackIdle(driver, state);
+    if (driver.idlePolls >= limits.maxIdlePolls) {
+      await teardown(driver, deps, BOT_ALLY_STATUS.abandoned);
+    }
+    return;
+  }
+
+  driver.idlePolls = 0;
+  const result = await submitBotSeatChoice(driver, deps, state, botSeat);
+  if (driver.stopped) {
+    return;
+  }
+  if (result.kind === 'vanished') {
+    await tolerateEmptyFetch(driver, deps, limits.maxEmptyFetchPolls);
+    return;
+  }
+  if (result.kind === 'game-over') {
+    await teardown(driver, deps, BOT_ALLY_STATUS.completed);
+    return;
+  }
+  if (result.kind === 'faulted') {
+    await teardown(driver, deps, BOT_ALLY_STATUS.faulted, BOT_FAULTED_MESSAGE);
+  }
+}
+
+/**
+ * Submits a bot seat's default `resolveSeatChoice` AS that seat, re-submitting
+ * with back-off when it does not land, and reports the outcome.
+ *
+ * // why: D-24593 — the submission is seat-bound (the bot seat's own
+ * credentials and playerID), and boardgame.io admits it from a non-active seat
+ * because `parkSeatChoice` placed every addressed seat in the
+ * `resolvingSeatChoice` stage. Progress is the seat leaving the outstanding set
+ * (or the choice clearing), not a bare `_stateID` bump. Fail loud, never spin:
+ * a seat the engine offers no resolve move, or a submission that never lands
+ * across the retry budget, faults the match (D-24590 policy).
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} deps - The injected capabilities.
+ * @param {object} state - The fetched match state.
+ * @param {string} botSeat - The bot seat that owes a submission.
+ * @returns {Promise<{ kind: 'resolved' | 'vanished' | 'game-over' | 'faulted' }>}
+ */
+async function submitBotSeatChoice(driver, deps, state, botSeat) {
+  const move = decideBotSeatChoiceMove(state, botSeat);
+  if (move === null) {
+    console.error(
+      `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (owes a seat choice but has no single resolveSeatChoice move): ${summarizeBotTurnState(state, botSeat)}`,
+    );
+    return { kind: 'faulted' };
+  }
+  for (let submitAttempt = 1; submitAttempt <= BOT_MOVE_SUBMIT_ATTEMPTS; submitAttempt++) {
+    await deps.submitMove({ seat: botSeat, moveName: move.name, moveArgs: move.args });
+    const after = await deps.fetchState(driver.matchId);
+    if (after === null || after === undefined) {
+      return { kind: 'vanished' };
+    }
+    if (after.ctx.gameover !== undefined) {
+      return { kind: 'game-over' };
+    }
+    if (!outstandingSeatChoiceSeats(after).includes(botSeat)) {
+      return { kind: 'resolved' };
+    }
+    if (driver.stopped) {
+      return { kind: 'resolved' };
+    }
+    if (submitAttempt < BOT_MOVE_SUBMIT_ATTEMPTS) {
+      await delay(BOT_MOVE_RETRY_BASE_MS * submitAttempt);
+    }
+  }
+  console.error(
+    `[bot-ally] match ${driver.matchId} seat ${botSeat} FAULTED (resolveSeatChoice did not land across ${BOT_MOVE_SUBMIT_ATTEMPTS} attempts): ${summarizeBotTurnState(state, botSeat)}`,
+  );
+  return { kind: 'faulted' };
 }
 
 /**
@@ -687,7 +875,7 @@ function trackIdle(driver, state) {
  * @param {object} deps - The injected capabilities.
  * @param {string} botSeat - The bot seat currently to move.
  * @param {number} maxMoveStepsPerTurn - The per-turn step cap.
- * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted', message?: string }>}
+ * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted' | 'yielded', message?: string }>}
  */
 async function driveBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   let retriedOnce = false;
@@ -900,7 +1088,7 @@ export function dispatchMadeRealProgress(beforeState, afterState, botSeat) {
  * @param {object} deps - The injected capabilities.
  * @param {string} botSeat - The bot seat currently to move.
  * @param {number} maxMoveStepsPerTurn - The per-turn step cap.
- * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted', message?: string }>}
+ * @returns {Promise<{ kind: 'passed' | 'game-over' | 'vanished' | 'faulted' | 'yielded', message?: string }>}
  */
 async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
   let step = 0;
@@ -930,6 +1118,13 @@ async function attemptBotTurn(driver, deps, botSeat, maxMoveStepsPerTurn) {
       // why: the turn moved on (the bot's endTurn passed control to the human /
       // next seat) — the bot's turn is done.
       return { kind: 'passed' };
+    }
+    if (hasOutstandingSeatChoice(state)) {
+      // why: D-24593 — a seat choice is open (typically opened by this bot's own
+      // fight). The turn is frozen until every addressed seat submits, so the
+      // policy has nothing legal to pick; hand back to runTick's seat-choice gate
+      // rather than falling into the fault fallback.
+      return { kind: 'yielded' };
     }
 
     let move;
