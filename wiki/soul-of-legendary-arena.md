@@ -1405,10 +1405,12 @@ looks like freedom.
   The investigation was not a search; it was an instrument, its answers settled
   before it sat.
 - **The Warren Commission** *(question 1)*. Allen Dulles sat on it — the CIA
-  director Kennedy had fired after the Bay of Pigs — and the Commission depended
-  for its evidence on the very agencies it was examining. Compare the Church
-  Committee, which had subpoena power and independent staff, and found things
-  the earlier inquiry did not. The lens does not need a theory of who killed
+  director Kennedy had forced out after the Bay of Pigs — and the Commission
+  depended for its evidence on the very agencies it was examining. Compare the
+  Church Committee, which had subpoena power and independent staff, and found
+  things the earlier inquiry did not: its Book V (1976) concluded that the CIA
+  and FBI had withheld information from the Warren Commission, including the
+  CIA's plots against Castro. The lens does not need a theory of who killed
   Kennedy; it only asks who set the scope.
 
   ![Official White House portrait of President John F. Kennedy, 1963.](/soul-of-legendary-arena/jfk-white-house-portrait-1963.jpg "width=30%")
@@ -1422,14 +1424,63 @@ looks like freedom.
   September 1964. Left to right: John McCloy, J. Lee Rankin (general counsel),
   Sen. Richard Russell, Rep. Gerald Ford, Chief Justice Earl Warren, President
   Johnson, **Allen Dulles**, Sen. John Sherman Cooper, Rep. Hale Boggs. The
-  man Kennedy fired from the CIA stands among the commissioners examining his
-  death. Photo by Cecil Stoughton, White House; public domain.*
+  man Kennedy forced out of the CIA stands among the commissioners examining
+  his death. Photo by Cecil Stoughton, White House; public domain.*
 
   ![Title page of the Church Committee's final report, Book II: Intelligence Activities and the Rights of Americans, April 1976.](/soul-of-legendary-arena/church-committee-report-book-ii.jpg "width=30%")
 
   *The Church Committee's final report, Book II — "Intelligence Activities and
   the Rights of Americans" (S. Rep. No. 94-755, 26 April 1976): what an inquiry
   with subpoena power and its own staff found. U.S. Senate; public domain.*
+
+  **Dulles is the type-case of the rotating seat.** Allen Welsh Dulles
+  (1893–1969) — Sullivan & Cromwell lawyer, OSS station chief in Bern during
+  the war — was Director of Central Intelligence from 1953 to 1961, the first
+  civilian and the longest-serving. After the Bay of Pigs, Kennedy accepted his
+  resignation and, on 28 November 1961, pinned the National Security Medal on
+  him at the new Langley headquarters. "Fired" is looser than the record: the
+  exit was a resignation with an honour. But the seat changed hands and the
+  machine did not. John McCone took the chair; the clandestine operations Dulles
+  had built kept running. Two years later Johnson changed presidents and put the
+  old occupant on the inquiry into the new one's predecessor. The face moved.
+  The answers to questions 1 and 2 did not. That is the seat.
+
+  **Two sources that tell the harder version — useful for question 1,
+  dangerous as a verdict.** David Talbot's *The Devil's Chessboard* (2015)
+  reads Dulles not as a civil servant but as the builder of a second
+  government: Iran (1953) and Guatemala (1954) as coups with a corporate client
+  behind them, MKUltra and the Castro plots, the Bay of Pigs as a trap meant to
+  force Kennedy into a full invasion, and Dulles steering the Warren inquiry
+  onto Oswald. Robert F. Kennedy Jr., on Glenn Beck's BlazeTV program (May
+  2024), tells it as family memory: his father's first question on 22 November
+  1963, put to CIA Director John McCone, was whether "your people" had done it;
+  his first suspects were the CIA-linked Cuban exiles in Miami who thought
+  Kennedy a traitor over the Bay of Pigs; and both brothers, he says, meant to
+  split the CIA's Plans division — coups and covert action — from its
+  intelligence analysis.
+
+  The architectural point survives even if every theory in them is wrong: a man
+  Kennedy had removed from the CIA sat on the commission that had to ask what
+  the CIA knew. But neither source stays on scope. Both name the occupant and
+  then load the seat with the crime — the publisher's own description has
+  Dulles's methods culminating in the deaths of John and Robert Kennedy — and
+  that is the exact move this lens is built to refuse. Even a sympathetic reviewer,
+  Glenn C. Altschuler, wrote that Talbot's "speculations and accusations …
+  often run far ahead of the evidence, even for those of us inclined to believe
+  the worst about Allen Dulles." Keep the columns apart:
+
+  | Settled enough to use | Talbot / RFK Jr. inference |
+  |---|---|
+  | Dulles was DCI 1953–61; Kennedy replaced him after the Bay of Pigs | The invasion was designed to fail and box Kennedy in |
+  | He sat on the Warren Commission | He ran the Commission and wrote its conclusion |
+  | Iran 1953 and Guatemala 1954 were CIA coups with a corporate overlay | Coups as such prove Dallas |
+  | The Church Committee found the agencies withheld material from Warren | Withholding equals authorship of the shooting |
+  | Robert Kennedy asked McCone whether "your people" did it | That question is an answer |
+
+  The clean use of both is the sentence the lens already has: the Commission
+  depended on the agencies it was examining, and one commissioner had just left
+  the most interested of them. That is question 1. It needs no theory of who
+  pulled the trigger.
 - **The Reichstag fire** *(questions 1 and 3)*. Who actually set the fire is
   still argued; what is not argued is the package — crisis, named culprit, and
   cure arrived together, with the emergency decree suspending civil liberties
@@ -2208,6 +2259,20 @@ claim at a safe distance — it stands on it.
   Commission, the Warren and Church committees, the Reichstag Fire Decree,
   Pareto's *circulation of elites*) are cited as illustrations of structure,
   not adjudicated by this page.
+- Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
+  — David Talbot, *The Devil's Chessboard: Allen Dulles, the CIA, and the Rise
+  of America's Secret Government* (Harper, 2015; audiobook narrated by Peter
+  Altschuler); Glenn C. Altschuler's review in the *San Francisco Chronicle*
+  ([16 October 2015](https://www.sfgate.com/books/article/The-Devil-s-Chessboard-by-David-Talbot-6574578.php));
+  [*Did the CIA assassinate JFK? Robert F. Kennedy Jr. drops explosive details*](https://www.theblaze.com/shows/the-glenn-beck-program/jfk)
+  (BlazeTV, *The Glenn Beck Program*, 6 May 2024); the Church Committee's
+  Book V, *The Investigation of the Assassination of President John F.
+  Kennedy: Performance of the Intelligence Agencies* (S. Rep. No. 94-755,
+  1976); and the JFK Library's
+  [photographs of the 28 November 1961 National Security Medal presentation](https://www.jfklibrary.org/asset-viewer/archives/jfkwhp-1961-11-28-a).
+  Talbot and RFK Jr. are attributed, contested accounts; the page uses them for
+  the scope point only and does not adjudicate their claims about the
+  assassination.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
   Rights Movement Was A Lie*) — the attributed source behind
