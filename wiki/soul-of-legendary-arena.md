@@ -1670,12 +1670,20 @@ dispute.
   ad — "Believe in something. Even if it means sacrificing everything." — recast
   a quarterback who had opted out of his contract and gone unsigned (his
   collusion grievance was settled confidentially in 2019) as a martyr; the stock
-  fell 3% the next day and online sales rose 31% over the holiday weekend. Ben &
-  Jerry's 2020 flavor carried his stated hope that it would "amplify calls to
-  defund and abolish the police." That is the manufactured choice with a virtue
-  for a handle — kneel with us, or stand for brutality — while the argument much
-  of the crowd was actually making, about the ritual it had paid to see, was
-  never on the menu. The lens takes no side on policing; Kaepernick's claim
+  fell 3% the next day and online sales rose 31% over the holiday weekend.
+  Ben & Jerry's went a step further. On 10 December 2020 it launched *Change the
+  Whirled*, a vegan flavor honoring Kaepernick, with his proceeds going to his
+  Know Your Rights Camp; the company wrote that he "represents the very best of
+  us," and his own statement hoped the partnership would "amplify calls to
+  defund and abolish the police." In February 2022, Super Bowl week, the two ran
+  Los Angeles billboards challenging police budgets. Nike sold sacrifice; Ben &
+  Jerry's sold a political program and called it ice cream. Watch the menu
+  narrow as it travels: from "police shootings should be scrutinized" — a claim
+  many fans would share — to "abolish the police," which most would not, with no
+  stop in between. That is the manufactured choice with a virtue for a handle —
+  kneel with us, or stand for brutality — while the argument much of the crowd
+  was actually making, about the ritual it had paid to see, was never on the
+  menu. The lens takes no side on policing; Kaepernick's claim
   stands or falls on its own evidence. It reads who got to define the Sunday.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
@@ -2429,7 +2437,9 @@ claim at a safe distance — it stands on it.
   and [Goodell's June 2020 statement](https://www.nfl.com/news/roger-goodell-nfl-wrong-for-not-listening-to-protesting-players-earlier);
   ESPN on the [2019 grievance settlement](https://www.espn.com/nfl/story/_/id/26004715/colin-kaepernick-eric-reid-settle-grievance-case-nfl);
   *Time* on [Nike's post-ad sales](https://time.com/5390884/nike-sales-go-up-kaepernick-ad/);
-  and [Ben & Jerry's own post](https://www.benjerry.com/whats-new/2022/02/kaepernick-law-enforcement-budgets).
+  and Ben & Jerry's own posts on the
+  [2020 flavor](https://www.benjerry.com/whats-new/archive/2020/ben-jerrys-and-colin-kaepernick)
+  and the [2022 billboards](https://www.benjerry.com/whats-new/2022/02/kaepernick-law-enforcement-budgets).
   Cited for structure; the page does not adjudicate the underlying disputes.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
