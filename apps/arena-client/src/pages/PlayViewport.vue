@@ -34,6 +34,7 @@ import { useStrikeBlockedVfx } from '../composables/useStrikeBlockedVfx';
 import { useWoundVfx } from '../composables/useWoundVfx';
 import { useTransformVfx } from '../composables/useTransformVfx';
 import { useExcessiveViolenceVfx } from '../composables/useExcessiveViolenceVfx';
+import { useVillainSlashVfx } from '../composables/useVillainSlashVfx';
 import { useMastermindHitVfx } from '../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfx } from '../composables/useVictoryFinaleVfx';
 import { useWoundCue } from '../composables/useWoundCue';
@@ -231,6 +232,15 @@ export default defineComponent({
     // crimson/steel crossed-swords slash-burst + "EXCESSIVE VIOLENCE!" word. Pure
     // presentation — reads UIState only, never writes G/ctx, absent from the hash.
     useExcessiveViolenceVfx(audioSnapshot);
+
+    // why: WP-755 — the villain-slash beat (a villain or henchman defeated in the
+    // City), mounted at the SAME shared composable root and reading the SAME
+    // useUiStateStore snapshot; an unmounted producer never fires. It keeps an
+    // append-only cursor over UIState.notableEvents and emits a signal the
+    // <VfxOverlay> renders as the card slice + takedown word. Mounted IMMEDIATELY
+    // after useExcessiveViolenceVfx so, on an Excessive Violence fight (both events
+    // in one frame), the "EXCESSIVE VIOLENCE!" word lands in the slot first.
+    useVillainSlashVfx(audioSnapshot);
 
     // why: the mastermind-hit beat + the heroes-win victory finale, mounted at the
     // SAME shared composable root beside the other feel consumers, reading the SAME

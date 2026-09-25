@@ -14,6 +14,24 @@ import {
   mastermindHitTierForCount,
 } from '../../vfx/mastermindHitVfxManifest';
 import { VICTORY_FINALE_VFX, VICTORY_WORD } from '../../vfx/victoryFinaleVfxManifest';
+import {
+  VILLAIN_SLASH_VFX,
+  isTakedownWord,
+  nextTakedownStreak,
+  takedownWordForStreak,
+  villainSlashAngleForSeq,
+  type TakedownStreakState,
+} from '../../vfx/villainSlashVfxManifest';
+import {
+  buildHalfKeyframes,
+  buildStainOffsets,
+  polygonCentroid,
+  resolveCardBox,
+  splitCardAlongCut,
+  toClipPathPolygon,
+  type SliceBox,
+  type SlicePoint,
+} from '../../vfx/villainSlashGeometry';
 import { useEffectIntensity } from '../../vfx/effectIntensity';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
@@ -28,6 +46,10 @@ import {
   type MastermindHitVfxEvent,
 } from '../../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
+import {
+  useVillainSlashVfxSignal,
+  type VillainSlashVfxEvent,
+} from '../../composables/useVillainSlashVfx';
 
 /**
  * VfxOverlay — the single full-bleed VFX layer (WP-556). It hosts ONE shared
@@ -90,9 +112,18 @@ import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx
  * surge). Public — it fires for every viewer when any player unleashes Excessive
  * Violence, mirroring the transform consumer.
  *
- * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge" / WP-746 §H "the render"
+ * WP-755 adds an EIGHTH consumer — the villain slash (a villain or henchman
+ * defeated in the City). A `useVillainSlashVfx` signal (a `fightResolved` notable
+ * event) slices the defeated card AT ITS CITY SPACE: a bright streak along the
+ * cut, the card's art split into two halves that fly apart, a villain-purple
+ * droplet spray, and (full intensity) tumbling halves + fading stains.
+ * Same-player defeats within 4s raise a takedown word (DOUBLE / TRIPLE /
+ * RAMPAGE). The halves / streak / stains are imperative DOM nodes in the
+ * `play-vfx-slice-layer` container — never drawn on the confetti canvas.
+ *
+ * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge" / WP-746 §H "the render" / WP-755 §D "the slice"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
- * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst) + D-24569 (the Excessive Violence burst)
+ * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst) + D-24569 (the Excessive Violence burst) + D-24584 (the villain slash)
  */
 
 // why: how long the call-out word stays on screen before it fades out.
@@ -209,6 +240,44 @@ export function buildSwordBurstOptions(
   return options;
 }
 
+/**
+ * Builds the `canvas-confetti` options for the villain-slash droplet spray.
+ * Exported and pure so its shape is unit-testable (the `buildBurstOptions`
+ * pattern — under jsdom the spray never renders). A tight, fast, heavy spray
+ * from the card centre along the cut, so it reads as ink flung by the blade
+ * rather than a celebratory puff.
+ *
+ * @param colors - the villain-ink palette.
+ * @param particleCount - how many droplets (full or low count).
+ * @param originX - the spray origin, 0..1 of the viewport width.
+ * @param originY - the spray origin, 0..1 of the viewport height.
+ * @param angleDeg - the cut angle in SCREEN convention (y down, clockwise).
+ * @returns the confetti options object.
+ */
+export function buildSliceSprayOptions(
+  colors: readonly string[],
+  particleCount: number,
+  originX: number,
+  originY: number,
+  angleDeg: number,
+): Record<string, unknown> {
+  return {
+    particleCount,
+    spread: 38,
+    startVelocity: 34,
+    gravity: 1.25,
+    ticks: 80,
+    scalar: 0.75,
+    origin: { x: originX, y: originY },
+    // why: canvas-confetti measures its launch angle COUNTER-clockwise with 90 =
+    // straight up, while the cut angle is screen convention (clockwise, y down),
+    // so the spray flies along the cut only when the angle is negated.
+    angle: -angleDeg,
+    colors: [...colors],
+    disableForReducedMotion: true,
+  };
+}
+
 export default defineComponent({
   name: 'VfxOverlay',
   setup() {
@@ -220,8 +289,13 @@ export default defineComponent({
     const excessiveViolenceSignal = useExcessiveViolenceVfxSignal();
     const mastermindHitSignal = useMastermindHitVfxSignal();
     const victoryFinaleSignal = useVictoryFinaleVfxSignal();
+    const villainSlashSignal = useVillainSlashVfxSignal();
 
     const canvasEl = ref<HTMLCanvasElement | null>(null);
+    // why: WP-755 — the template-owned container the slice halves / streak /
+    // stains are appended to. They are imperative DOM nodes (not a reactive
+    // v-for) so `element.animate` has a concrete handle on each one.
+    const sliceLayerEl = ref<HTMLDivElement | null>(null);
     const currentWord = ref<string | null>(null);
     // why: a monotonic key so Vue re-mounts the word span on an equal-string
     // repeat, re-triggering its entrance transition (a second Team-Up! still animates).
@@ -273,6 +347,13 @@ export default defineComponent({
     // why: the victory confetti STORM is several staggered bursts (setTimeout-
     // scheduled); track their handles so onUnmounted clears any still pending.
     const stormTimers: ReturnType<typeof setTimeout>[] = [];
+    // why: WP-755 — the running takedown streak (presentation timing only; it
+    // never reaches G), plus every live slice node and its removal timer so the
+    // 10-half cap and onUnmounted cleanup can find them.
+    let sliceStreak: TakedownStreakState | null = null;
+    const sliceTimers = new Set<ReturnType<typeof setTimeout>>();
+    const liveSliceNodes = new Set<HTMLElement>();
+    const liveSliceHalves: HTMLElement[] = [];
 
     // why: lazy-loaded canvas-confetti launcher, bound to OUR single canvas.
     // Loaded off the first-paint path (dynamic import on first burst), so the
@@ -612,6 +693,266 @@ export default defineComponent({
       renderVictory();
     });
 
+    // why: WP-755 — every slice node is removed by setTimeout (never a bare
+    // requestAnimationFrame) so onUnmounted can cancel it and tests can drive it
+    // with mock.timers.
+    function scheduleSliceRemoval(node: HTMLElement, delayMs: number): void {
+      const timer = setTimeout(() => {
+        sliceTimers.delete(timer);
+        removeSliceNode(node);
+      }, delayMs);
+      sliceTimers.add(timer);
+    }
+
+    /** Detaches one slice node and forgets it. */
+    function removeSliceNode(node: HTMLElement): void {
+      node.remove();
+      liveSliceNodes.delete(node);
+      const halfIndex = liveSliceHalves.indexOf(node);
+      if (halfIndex !== -1) liveSliceHalves.splice(halfIndex, 1);
+    }
+
+    /** Appends a slice node to the layer and tracks it. */
+    function appendSliceNode(layer: HTMLElement, node: HTMLElement): void {
+      layer.appendChild(node);
+      liveSliceNodes.add(node);
+    }
+
+    /** Runs a Web Animation when the browser supports it; static otherwise. */
+    function animateSliceNode(
+      node: HTMLElement,
+      keyframes: Keyframe[],
+      durationMs: number,
+      easing: string,
+    ): void {
+      if (typeof node.animate !== 'function') return;
+      node.animate(keyframes, { duration: durationMs, easing, fill: 'forwards' });
+    }
+
+    // why: WP-755 — one half of the sliced card: a card-box-sized copy of the art
+    // (or a silhouette when the prior-frame cache missed), clipped to its side of
+    // the cut and pivoting on its own centroid. DOM, not canvas: the single
+    // overlay canvas is owned by canvas-confetti, which clears it every frame, so
+    // anything drawn there would be wiped. Styled inline because scoped CSS never
+    // reaches imperatively created nodes.
+    function spawnSliceHalf(
+      layer: HTMLElement,
+      box: SliceBox,
+      polygon: SlicePoint[],
+      side: number,
+      angleDeg: number,
+      imageUrl: string | null,
+      isTumbling: boolean,
+    ): void {
+      // why: the 10-half budget — the oldest half goes first.
+      while (liveSliceHalves.length >= VILLAIN_SLASH_VFX.maxLiveHalves) {
+        const oldest = liveSliceHalves[0];
+        if (oldest === undefined) break;
+        removeSliceNode(oldest);
+      }
+      const pivot = polygonCentroid(polygon);
+      const half = document.createElement('div');
+      half.setAttribute('data-testid', 'play-vfx-slice-half');
+      half.className = 'vfx-overlay__slice-half';
+      half.style.position = 'absolute';
+      half.style.left = `${box.left}px`;
+      half.style.top = `${box.top}px`;
+      half.style.width = `${box.width}px`;
+      half.style.height = `${box.height}px`;
+      half.style.setProperty('clip-path', toClipPathPolygon(polygon));
+      half.style.transformOrigin = `${pivot.x}px ${pivot.y}px`;
+      half.style.willChange = 'transform, opacity';
+      // why: the silhouette is always painted UNDER the art, so a half stays
+      // visible while the image is still loading or if it fails to load.
+      half.style.borderRadius = '6px';
+      half.style.background = 'linear-gradient(160deg, #3a1450, #1a0726)';
+      half.style.boxShadow = `inset 0 0 0 2px ${VILLAIN_SLASH_VFX.colors[0]}`;
+      if (imageUrl !== null) {
+        const art = document.createElement('img');
+        art.src = imageUrl;
+        art.alt = '';
+        art.draggable = false;
+        art.style.display = 'block';
+        art.style.width = '100%';
+        art.style.height = '100%';
+        art.style.objectFit = 'cover';
+        art.style.borderRadius = '6px';
+        half.appendChild(art);
+      }
+      appendSliceNode(layer, half);
+      liveSliceHalves.push(half);
+      animateSliceNode(
+        half,
+        buildHalfKeyframes(side, angleDeg, isTumbling) as unknown as Keyframe[],
+        VILLAIN_SLASH_VFX.halfFlightMs,
+        'linear',
+      );
+      scheduleSliceRemoval(half, VILLAIN_SLASH_VFX.halfFlightMs);
+    }
+
+    // why: WP-755 — the bright blade streak, centred on the card box and rotated
+    // to the cut angle (screen convention, the same angle the halves split on).
+    // It scales in along its length and fades; static when WAAPI is missing.
+    function spawnSliceStreak(layer: HTMLElement, box: SliceBox, angleDeg: number): void {
+      const length = Math.hypot(box.width, box.height) * 1.35;
+      const rotation = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
+      const streak = document.createElement('div');
+      streak.setAttribute('data-testid', 'play-vfx-slice-streak');
+      streak.className = 'vfx-overlay__slice-streak';
+      streak.style.position = 'absolute';
+      streak.style.left = `${box.left + box.width / 2}px`;
+      streak.style.top = `${box.top + box.height / 2}px`;
+      streak.style.width = `${length}px`;
+      streak.style.height = '5px';
+      streak.style.borderRadius = '3px';
+      streak.style.background = `linear-gradient(90deg, rgba(214, 194, 255, 0), ${VILLAIN_SLASH_VFX.streakGlowColor} 22%, ${VILLAIN_SLASH_VFX.streakCoreColor} 50%, ${VILLAIN_SLASH_VFX.streakGlowColor} 78%, rgba(214, 194, 255, 0))`;
+      streak.style.boxShadow = `0 0 14px ${VILLAIN_SLASH_VFX.streakGlowColor}`;
+      streak.style.transform = rotation;
+      streak.style.willChange = 'transform, opacity';
+      appendSliceNode(layer, streak);
+      animateSliceNode(
+        streak,
+        [
+          { transform: `${rotation} scaleX(0.1)`, opacity: 1, offset: 0 },
+          { transform: `${rotation} scaleX(1)`, opacity: 1, offset: 0.45 },
+          { transform: `${rotation} scaleX(1.06)`, opacity: 0, offset: 1 },
+        ],
+        VILLAIN_SLASH_VFX.streakMs,
+        'ease-out',
+      );
+      scheduleSliceRemoval(streak, VILLAIN_SLASH_VFX.streakMs);
+    }
+
+    // why: WP-755 — the full-intensity stains left along the cut. Positions and
+    // sizes come from buildStainOffsets, derived from seq — deterministic, no
+    // Math.random — so the same beat always stains alike.
+    function spawnSliceStains(layer: HTMLElement, box: SliceBox, seq: number, angleDeg: number): void {
+      const offsets = buildStainOffsets(
+        seq,
+        VILLAIN_SLASH_VFX.stainCount,
+        angleDeg,
+        box.width,
+        box.height,
+      );
+      for (const offset of offsets) {
+        const size = 22 * offset.scale;
+        const stain = document.createElement('div');
+        stain.setAttribute('data-testid', 'play-vfx-slice-stain');
+        stain.className = 'vfx-overlay__slice-stain';
+        stain.style.position = 'absolute';
+        stain.style.left = `${box.left + offset.x - size / 2}px`;
+        stain.style.top = `${box.top + offset.y - size / 2}px`;
+        stain.style.width = `${size}px`;
+        stain.style.height = `${size}px`;
+        stain.style.borderRadius = '50%';
+        stain.style.background = `radial-gradient(circle, ${VILLAIN_SLASH_VFX.colors[1]} 0%, ${VILLAIN_SLASH_VFX.colors[0]} 55%, rgba(123, 31, 162, 0) 72%)`;
+        stain.style.opacity = '0.8';
+        appendSliceNode(layer, stain);
+        animateSliceNode(
+          stain,
+          [
+            { opacity: 0.8, offset: 0 },
+            { opacity: 0.65, offset: 0.5 },
+            { opacity: 0, offset: 1 },
+          ],
+          VILLAIN_SLASH_VFX.stainMs,
+          'ease-in',
+        );
+        scheduleSliceRemoval(stain, VILLAIN_SLASH_VFX.stainMs);
+      }
+    }
+
+    /** Fires the villain-ink droplet spray from the card centre along the cut. */
+    function fireSliceSpray(box: SliceBox, particleCount: number, angleDeg: number): void {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      if (viewportWidth <= 0 || viewportHeight <= 0) return;
+      const originX = (box.left + box.width / 2) / viewportWidth;
+      const originY = (box.top + box.height / 2) / viewportHeight;
+      void ensureConfetti().then(() => {
+        if (confettiFire === null) return;
+        confettiFire(
+          buildSliceSprayOptions(VILLAIN_SLASH_VFX.colors, particleCount, originX, originY, angleDeg),
+        );
+      });
+    }
+
+    /**
+     * Finds the defeated City space and sizes a card-shaped box on it.
+     *
+     * @param citySpace - the City index (0..4) from the event.
+     * @returns the box, or `null` when the space is not on screen / has no size.
+     */
+    function locateSliceBox(citySpace: number): SliceBox | null {
+      const spaceEl = document.querySelector(
+        `[data-testid="play-city-villain"][data-city-index="${citySpace}"], [data-testid="play-city-empty"][data-city-index="${citySpace}"]`,
+      );
+      if (spaceEl === null) return null;
+      const referenceEl = document.querySelector(
+        '[data-testid="play-city-row"] [data-testid="play-city-villain"] [data-testid="card-tile"]',
+      );
+      const referenceRect = referenceEl !== null ? referenceEl.getBoundingClientRect() : null;
+      // why: after the defeat the space usually renders as the EMPTY placeholder,
+      // whose box is not card-shaped — resolveCardBox keeps only its centre and
+      // borrows the size from a live villain tile (or falls back to 5:7).
+      return resolveCardBox(spaceEl.getBoundingClientRect(), referenceRect);
+    }
+
+    /** Renders the positional stages (halves, streak, spray, stains) of one slice. */
+    function renderSlicePieces(event: VillainSlashVfxEvent, streak: number): void {
+      const layer = sliceLayerEl.value;
+      if (layer === null) return;
+      const box = locateSliceBox(event.citySpace);
+      if (box === null) return;
+      const angleDeg = villainSlashAngleForSeq(event.seq);
+      const isFull = shouldRender('shake');
+      const [negativeHalf, positiveHalf] = splitCardAlongCut(box.width, box.height, angleDeg);
+      spawnSliceHalf(layer, box, negativeHalf, -1, angleDeg, event.imageUrl, isFull);
+      spawnSliceHalf(layer, box, positiveHalf, 1, angleDeg, event.imageUrl, isFull);
+      spawnSliceStreak(layer, box, angleDeg);
+      fireSliceSpray(
+        box,
+        isFull ? VILLAIN_SLASH_VFX.fullParticleCount : VILLAIN_SLASH_VFX.lowParticleCount,
+        angleDeg,
+      );
+      if (isFull) {
+        spawnSliceStains(layer, box, event.seq, angleDeg);
+        if (streak >= 3) pulseImpact();
+      }
+    }
+
+    // why: WP-755 — the villain-slash beat, in the WP §D order: streak → word →
+    // particles gate → locate → render → full-intensity extras.
+    function renderVillainSlash(event: VillainSlashVfxEvent): void {
+      // why: the ONE performance.now() read for the takedown streak. This file is
+      // inside the D-24365 VFX subsurface; the producer composable (outside it)
+      // reads no clock, and the streak arithmetic stays in the pure helper.
+      sliceStreak = nextTakedownStreak(sliceStreak, event.playerId, performance.now());
+      const word = takedownWordForStreak(sliceStreak.streak);
+      // why: a takedown word may replace a takedown word (DOUBLE escalates to
+      // TRIPLE inside the word hold) but never another beat's word — so on an
+      // Excessive Violence fight "EXCESSIVE VIOLENCE!" keeps the slot.
+      if (
+        word !== null &&
+        shouldRender('word') &&
+        (currentWord.value === null || isTakedownWord(currentWord.value))
+      ) {
+        showWord(word);
+      }
+      if (!shouldRender('particles')) return;
+      try {
+        renderSlicePieces(event, sliceStreak.streak);
+      } catch {
+        // why: fail-soft — the slice is pure presentation; a DOM or animation
+        // failure must never throw into the play surface. The word already showed.
+      }
+    }
+
+    watch(villainSlashSignal, (event) => {
+      if (event === null) return;
+      renderVillainSlash(event);
+    });
+
     onUnmounted(() => {
       if (wordTimer !== null) clearTimeout(wordTimer);
       if (impactTimer !== null) clearTimeout(impactTimer);
@@ -624,6 +965,13 @@ export default defineComponent({
       // why: clear any confetti-storm bursts still pending so a mid-storm unmount
       // (leaving the play surface right after a win) fires nothing after teardown.
       for (const timer of stormTimers) clearTimeout(timer);
+      // why: WP-755 — cancel every pending slice removal and detach every live
+      // slice node so nothing outlives the overlay.
+      for (const timer of sliceTimers) clearTimeout(timer);
+      sliceTimers.clear();
+      for (const node of liveSliceNodes) node.remove();
+      liveSliceNodes.clear();
+      liveSliceHalves.length = 0;
     });
 
     onMounted(() => {
@@ -635,6 +983,7 @@ export default defineComponent({
 
     return {
       canvasEl,
+      sliceLayerEl,
       currentWord,
       wordKey,
       isImpacting,
@@ -658,6 +1007,13 @@ export default defineComponent({
 
 <template>
   <div class="vfx-overlay" data-testid="play-vfx-overlay" aria-hidden="true">
+    <!-- why: WP-755 — the slice layer sits BEFORE the canvas so the droplet
+         spray draws over the flying halves. Its children are imperative nodes. -->
+    <div
+      ref="sliceLayerEl"
+      class="vfx-overlay__slice-layer"
+      data-testid="play-vfx-slice-layer"
+    ></div>
     <canvas ref="canvasEl" class="vfx-overlay__canvas" data-testid="play-vfx-canvas"></canvas>
     <div
       v-if="isImpacting"
@@ -769,6 +1125,16 @@ export default defineComponent({
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+/* why: WP-755 — the container for the villain-slash halves / streak / stains.
+   Those nodes are created imperatively and never carry this component's scoped
+   data-v attribute, so they are styled inline; this rule only positions the
+   template-owned container over the full layer. */
+.vfx-overlay__slice-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 /* why: the peak "impact" pulse — a brief full-bleed radial flash for big /
@@ -1162,6 +1528,13 @@ export default defineComponent({
 
   .vfx-overlay__shield-spin--active {
     animation: none;
+  }
+
+  /* why: WP-755 — belt-and-braces to the JS shouldRender('particles') gate: under
+     reduced-motion no flying halves, streak or stains ever show. The takedown
+     word still renders (a plain fade) in its own slot. */
+  .vfx-overlay__slice-layer {
+    display: none;
   }
 }
 </style>

@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-755 — Villain slash VFX: a Fruit Ninja-style defeat beat (EC-792 / D-24584) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Every villain
+or henchman defeat in the City now slices the card where it stood: a white-and-lavender blade streak
+crosses the space, the card's own art splits along the cut into two halves that hop and fall away
+(tumbling at full intensity), villain-purple droplets spray along the cut, and ink stains fade from the
+mat. Defeating villains back to back (same player, within 4 s) raises **DOUBLE TAKEDOWN!**, then
+**TRIPLE TAKEDOWN!** (with the impact pulse), then **RAMPAGE!**. The "Fought" chip and its sound are
+unchanged.
+
+- **Client-only.** Rides the public `fightResolved` notable event — no engine, registry or server
+  change, no new event type, no UIState field. `useVillainSlashVfx` (append-only cursor) reads the
+  defeated card's art from the previous frame's City, because the engine clears the space in the
+  defeat frame; a miss shows a plain card silhouette.
+- **Overlay.** The eighth `VfxOverlay` beat. Halves, streak and stains are DOM nodes in a
+  `play-vfx-slice-layer` container (transform / opacity only, capped at 10 live halves, removed on a
+  timer and on unmount); only the spray uses the confetti canvas. The card box is centred on the
+  space and sized from a live villain tile. Gates: `off` shows nothing, reduced motion shows the word
+  only, `low` drops the tumble, stains and impact.
+- **ewiki.** `wiki/visual-effects.md` gains the shipped villain-slash section, the `fightResolved`
+  row reads shipped, and `ewiki/visual-effects/villain-slash.{py,svg}` is the animated mock.
+- **Counts.** arena-client 1961/0 → 2019/0 (typecheck 0); whole repo `pnpm -r build && pnpm -r
+  --no-bail test` green (engine 4231/0, server 1611 / 1406 pass / 0 fail). No `packages/**` change,
+  so no hash re-pin.
+- **Verified in the preview** on the fixture board by pushing defeat frames through the store: the
+  halves centre on the post-defeat placeholder at full, low and off, and DOUBLE → TRIPLE escalates
+  with the impact at full.
+- **Pending (D-24026).** Operator live-verify: defeat a villain on play.legendary-arena.com and watch
+  it slice at its City space; defeat two more quickly for DOUBLE / TRIPLE TAKEDOWN!.
+
 ### WP-754 — Optional discard-to-draw + reveal-top-may-KO hero keywords (EC-791 / D-24581) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (D-24026: discard-to-draw CONFIRMED live 2026-09-25 in guest autoplay match `AtAN1Xky0Nx` — Hungry for Action rendered "Discard a card to draw 1" and resolved "discarded S.H.I.E.L.D. Agent … and drew 1 card(s)" on 8.2.5 and 9.2.13, and the Digest-not-met log fired for Cauldron of the Cosmos; Gruesome Feast KO-or-keep still operator-pending — the bot never fights using Excessive Violence).** Eight hero
