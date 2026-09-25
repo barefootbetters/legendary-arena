@@ -44499,4 +44499,34 @@ This is a new variant as a data marker, per D-24024: no new HeroKeyword, handler
 
 ---
 
+### D-24583 — A hero reveal reads a Wound on top of the deck as cost 0 (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct reveal-handler fix, no WP).
+
+**Context.** Found while live-verifying D-24582. The collapsed `reveal` handler (D-24024) reads each revealed card's cost from `G.cardStats` and skips any card without an entry. The S.H.I.E.L.D. starters have synthesized cost-0 stats (`buildInitialGameState.ts` ~L473). A **Wound** has no printed cost and no stats entry. So every "Reveal the top card of your deck. If it costs 0, KO it" (`reveal-ko`, 4 corpus cards), `reveal-ko-attack`, See Future Timelines' discard, and any other cost predicate silently passed over a Wound on top of the deck. KO-ing Wounds is the main tabletop use of the "costs 0, KO it" lines.
+
+**Decision.** `resolveRevealedCardCost(G, cardId)` in `heroEffects.execute.ts` returns the `G.cardStats` cost, or **0 for `WOUND_EXT_ID`**, or undefined (the reveal still skips) for any other uncosted card. It is resolved at read time instead of adding a Wound entry to `G.cardStats`, which is part of every match's hashed initial state.
+
+**Rules basis.** An uncosted card costs 0. The repo's v23 rulebook states it for Enraging Wounds (`docs/legendary-universal-rules-v23.md` L2861–2862: "Enraging Wounds still count as Wounds for all card effects. They cost 0."). It has no separate line for normal Wounds, so applying the rule to them is a reading, not a quoted rule.
+
+**Consequence.** A cost-≤N reveal draw (`reveal:N`) now also draws a Wound on top, as it would at the table. Cost-≥N and trait predicates are unaffected (cost 0, no team or class).
+
+**Determinism.** `G` shape is unchanged: engine suite 4224 → 4228 / 0 with no `finalStateHash` / `PRE_WP080_HASH` re-pin. The fixed-seed runtime-observed sweep now KOs and discards Wounds it used to skip:
+- feed regenerated, totalObservations 2511 → 2514;
+- dashboard in-play pin re-pinned 3017 → 3019, resolvedObs 733, percentResolved unchanged at 24.3.
+
+**Gates.** `hero/revealWoundCost.test.ts` passes 4/4, and the 2 Wound cases fail with the Wound branch removed. It covers:
+- `reveal-ko` KOs a Wound on top;
+- See Future Timelines discards a Wound for +2;
+- a priced card is untouched;
+- an unknown uncosted card is still skipped, never guessed as cost 0.
+
+`sim:runtime-observed:check`, `sim:coverage --check`, the dashboard tests (482 / 0 after `prebuild:coverage`) and `ledger:numbers:check` all pass.
+
+**D-24026 live-on-surface:** pending. On the deployed client, a "costs 0, KO it" reveal (or See Future Timelines with another Ranged Hero) with a Wound on top should KO or discard the Wound.
+
+**Reserved by:** NUMBER-LEDGER D-24583. Related: D-24024 (reveal branch-list), D-24582 (See Future Timelines), D-21502 (the original no-stats skip), D-24285 (reveal reshuffle).
+
+---
+
 Protect this file.

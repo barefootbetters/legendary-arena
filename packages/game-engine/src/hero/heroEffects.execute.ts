@@ -1660,25 +1660,24 @@ function heroEffectReveal(
       }
     }
     const topCardId = playerZones.deck[peekOffset];
-    // why: a peek with no card id OR no cardStats entry (a S.H.I.E.L.D. starter has no
-    // G.cardStats entry, D-21502) SKIPS-AND-ADVANCES — leave the card on the deck and peek
-    // the next — it MUST NOT `return`/abort the rest of the reveal (copilot #22). At count=1
-    // this is observably the same no-op as the WP-253 `return`; at count>1 it stops one
-    // starter in the top N from silently killing the reveal of the cards beneath it (the
-    // exact "the card did nothing" failure D-24017 exists to stamp out). A cost-0 starter in
-    // the window is therefore revealed-but-not-drawn (no stats to evaluate its cost) — the
-    // accepted MVP limitation; aborting would be far worse.
+    // why: a peek with no card id OR no resolvable cost SKIPS-AND-ADVANCES — leave the card on
+    // the deck and peek the next — it MUST NOT `return`/abort the rest of the reveal (copilot
+    // #22). At count=1 this is observably the same no-op as the WP-253 `return`; at count>1 it
+    // stops one uncosted card in the top N from silently killing the reveal of the cards beneath
+    // it (the exact "the card did nothing" failure D-24017 exists to stamp out). The S.H.I.E.L.D.
+    // starters carry synthesized cost-0 stats, and a Wound resolves to cost 0 (D-24583), so the
+    // skip now applies only to a card the engine has no cost for at all.
     if (!topCardId) {
       peekOffset++;
       continue;
     }
-    const cardStats = G.cardStats[topCardId];
-    if (cardStats === undefined) {
+    const revealedCost = resolveRevealedCardCost(G, topCardId);
+    if (revealedCost === undefined) {
       peekOffset++;
       continue;
     }
     const deckLengthBeforeRules = playerZones.deck.length;
-    applyRevealRules(G, playerID, playerZones, cardId, topCardId, cardStats.cost, rules);
+    applyRevealRules(G, playerID, playerZones, cardId, topCardId, revealedCost, rules);
     // why: advance the offset ONLY when the deck length is unchanged (the card stayed on the
     // deck). A draw/ko shrank the deck and slid the next card into the same index, so the
     // offset must NOT advance — this is what keeps the WP-253 count=2 test (each iteration
@@ -1894,6 +1893,31 @@ function revealPredicateMatches(
   // (the rule-execution-pipeline unknown-effect posture). (D-24024)
   pushLog(G, `A reveal rule used an unknown predicate kind "${String(predicate.kind)}" and was skipped. Check the reveal rule markup.`);
   return false;
+}
+
+/**
+ * Resolves the cost a reveal predicate reads for a revealed deck-top card: its
+ * `G.cardStats` cost, or 0 for a Wound, which has no stats entry. Returns undefined
+ * for any other card without stats (the reveal skips it).
+ *
+ * @param G - Game state.
+ * @param cardId - The revealed deck-top card's CardExtId.
+ * @returns The card's cost, or undefined when it cannot be resolved.
+ */
+function resolveRevealedCardCost(G: LegendaryGameState, cardId: CardExtId): number | undefined {
+  const cardStats = G.cardStats[cardId];
+  if (cardStats !== undefined) {
+    return cardStats.cost;
+  }
+  // why: D-24583 — a Wound has no printed cost and no G.cardStats entry, so every "Reveal
+  // the top card … If it costs 0, KO it" skipped a Wound on top, the effect's main tabletop
+  // use. An uncosted card costs 0 (rules v23 L2861-2862: Enraging Wounds "still count as
+  // Wounds … They cost 0"). Resolved here rather than by adding a Wound entry to
+  // G.cardStats, which would change every match's hashed initial state.
+  if (cardId === WOUND_EXT_ID) {
+    return 0;
+  }
+  return undefined;
 }
 
 /**

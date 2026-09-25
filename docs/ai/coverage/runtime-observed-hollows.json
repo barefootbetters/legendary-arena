@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 28,
-    "totalObservations": 2511,
+    "totalObservations": 2514,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 496,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2015
+      "parse-unrecognized": 2018
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "coordinate": {
-      "hitCount": 262,
+      "hitCount": 263,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 262
+        "parse-unrecognized": 263
       },
       "examples": [
         {
@@ -847,12 +847,12 @@
       ]
     },
     "striker": {
-      "hitCount": 18,
+      "hitCount": 19,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 18
+        "parse-unrecognized": 19
       },
       "examples": [
         {
@@ -970,12 +970,12 @@
       ]
     },
     "transform": {
-      "hitCount": 121,
+      "hitCount": 122,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 121
+        "parse-unrecognized": 122
       },
       "examples": [
         {
