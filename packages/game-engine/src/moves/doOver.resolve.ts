@@ -127,9 +127,23 @@ export function resolveDoOver(
   // mid-draw reshuffle.
   // why: D-24498 — the printed text is "draw four cards", a fixed count independent of
   // how many cards were discarded.
+  // why: D-24552 — Venompool's Shenanigans draw lock blocks every draw for the rest of the
+  // turn, a Do-Over's included. The discard above already happened (the player chose it);
+  // only the draw is blocked, and nothing is counted.
+  if (G.turnEconomy.drawsLocked === true) {
+    pushLog(G,
+      `Player ${playerID} took the Do-Over — discarded ${discardedCount} card(s) from their hand, but can't draw any more cards this turn.`,
+      'blocked',
+    );
+    queue.shift();
+    return;
+  }
   const zonesBeforeDraw = playerZones.hand.length;
   drawCardsIntoHand(playerZones, DO_OVER_DRAW_COUNT, context as unknown as ShuffleProvider);
   const drawnCount = playerZones.hand.length - zonesBeforeDraw;
+  // why: a printed "draw four cards" is a realized draw, counted exactly like heroEffectDraw
+  // so the `cardsDrawnThisTurnAtLeast` wait-and-see gate sees it.
+  G.turnEconomy.cardsDrawn += drawnCount;
   pushLog(G,
     `Player ${playerID} took the Do-Over — discarded ${discardedCount} card(s) from their hand and drew ${drawnCount} card(s).`,
     'applied',

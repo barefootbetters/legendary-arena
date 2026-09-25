@@ -150,6 +150,35 @@ describe('resolveDoOver — accept arm (WP-681 / D-24498)', () => {
     assert.equal(gameState.playerZones['0']!.hand.length, 4);
     assert.equal(hasPendingDoOver(gameState), false);
   });
+
+  it('counts the realized draws toward turnEconomy.cardsDrawn', () => {
+    const gameState = makeTestGameState({
+      hand: ['h1'] as CardExtId[],
+      deck: ['d1', 'd2', 'd3'] as CardExtId[],
+      pendingDoOverChoices: [{ playerID: '0' }],
+    });
+    resolveDoOver(makeMoveContext(gameState), { accept: true });
+    // only 3 deck cards + the reshuffled discard (h1) → 4 drawn
+    assert.equal(gameState.playerZones['0']!.hand.length, 4);
+    assert.equal(gameState.turnEconomy.cardsDrawn, 4, 'every realized draw is counted');
+  });
+
+  it('under the Shenanigans draw lock discards the hand but draws nothing (D-24552)', () => {
+    const gameState = makeTestGameState({
+      hand: ['h1', 'h2'] as CardExtId[],
+      deck: ['d1', 'd2', 'd3', 'd4'] as CardExtId[],
+      pendingDoOverChoices: [{ playerID: '0' }],
+    });
+    gameState.turnEconomy.drawsLocked = true;
+    resolveDoOver(makeMoveContext(gameState), { accept: true });
+    const zones = gameState.playerZones['0']!;
+    assert.deepStrictEqual(zones.hand, [], 'the hand was discarded and nothing was drawn');
+    assert.deepStrictEqual(zones.deck, ['d1', 'd2', 'd3', 'd4'], 'the deck is untouched');
+    assert.equal(gameState.turnEconomy.cardsDrawn, 0, 'a blocked draw is not counted');
+    assert.equal(hasPendingDoOver(gameState), false, 'the choice still resolves');
+    const lastMessage = gameState.messages[gameState.messages.length - 1];
+    assert.ok(String(JSON.stringify(lastMessage)).includes("can't draw"), 'the block is logged');
+  });
 });
 
 describe('resolveDoOver — decline arm (WP-681 / D-24498)', () => {
