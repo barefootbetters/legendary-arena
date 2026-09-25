@@ -7,6 +7,7 @@ import {
   type PriorityHorizon,
   type PipelineSweepData,
   type ArchitectGapProjection,
+  type InspectorWikiLintProjection,
 } from './useAgentPipeline.js';
 import type { GovernanceSnapshot } from './useGovernanceSnapshot.js';
 
@@ -1057,6 +1058,68 @@ describe('useAgentPipeline', () => {
       const omitted = useAgentPipeline(snapshot, sweepData);
       const explicitUndefined = useAgentPipeline(snapshot, sweepData, undefined, undefined);
       assert.deepEqual(explicitUndefined, omitted);
+    });
+  });
+  describe('wiki lint fold (Inspector lane)', () => {
+    /** A two-item wiki-lint projection, as the producer would order it. */
+    function makeWikiLintData(): InspectorWikiLintProjection {
+      return {
+        backlog: [
+          {
+            id: 'wiki-lint-not-in-index',
+            label: 'Wiki: 1 page not linked from INDEX.md — orphan',
+            meta: 'Wiki lint',
+          },
+          {
+            id: 'wiki-lint-broken-source',
+            label: 'Wiki: 1 page citing a source path that no longer exists — transform',
+            meta: 'Wiki lint',
+          },
+        ],
+      };
+    }
+
+    it('should_append_wiki_lint_items_to_the_inspector_backlog_when_injected', () => {
+      const snapshot = makeSnapshot();
+      const without = useAgentPipeline(snapshot);
+      const withLint = useAgentPipeline(
+        snapshot,
+        undefined,
+        undefined,
+        undefined,
+        makeWikiLintData(),
+      );
+
+      const backlog = withLint.inspector.backlog;
+      assert.equal(backlog.length, without.inspector.backlog.length + 2);
+      assert.equal(backlog[backlog.length - 2]!.id, 'wiki-lint-not-in-index');
+      assert.equal(backlog[backlog.length - 1]!.id, 'wiki-lint-broken-source');
+      assert.equal(backlog[backlog.length - 1]!.meta, 'Wiki lint');
+    });
+
+    it('should_leave_every_other_lane_unchanged_when_wiki_lint_is_injected', () => {
+      const snapshot = makeSnapshot();
+      const without = useAgentPipeline(snapshot);
+      const withLint = useAgentPipeline(
+        snapshot,
+        undefined,
+        undefined,
+        undefined,
+        makeWikiLintData(),
+      );
+      assert.deepEqual(withLint.architect, without.architect);
+      assert.deepEqual(withLint.builder, without.builder);
+      assert.deepEqual(withLint.evaluator, without.evaluator);
+      assert.deepEqual(withLint.inspector.active, without.inspector.active);
+      assert.deepEqual(withLint.inspector.history, without.inspector.history);
+    });
+
+    it('should_be_identical_to_the_omitted_result_when_wiki_lint_is_undefined', () => {
+      const snapshot = makeSnapshot();
+      assert.deepEqual(
+        useAgentPipeline(snapshot, undefined, undefined, undefined, undefined),
+        useAgentPipeline(snapshot),
+      );
     });
   });
 });

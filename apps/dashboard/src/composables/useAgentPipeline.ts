@@ -74,6 +74,16 @@ export interface ArchitectGapProjection {
 }
 
 /**
+ * The Inspector-lane wiki-lint projection the Pipeline page injects. Declared here
+ * with the consumer for the same one-directional-import reason as
+ * `ArchitectGapProjection` (D-23901); the producer is `useInspectorWikiLint.ts`.
+ * `backlog` is one item per lint rule that has findings.
+ */
+export interface InspectorWikiLintProjection {
+  readonly backlog: readonly PipelineItem[];
+}
+
+/**
  * Urgency levels aligned with the business scorecard action triggers
  * (business-scorecard-metrics.md §7). Critical = score 1.x (stop everything),
  * high = score 2.x (fix in 14 days), moderate = score 3.x (improve in 30 days),
@@ -482,6 +492,7 @@ export function useAgentPipeline(
   sweepData?: PipelineSweepData,
   triageData?: TriageProjection,
   architectGapData?: ArchitectGapProjection,
+  wikiLintData?: InspectorWikiLintProjection,
 ): UseAgentPipelineReturn {
   const snapshot = useGovernanceSnapshot(snapshotOverride);
 
@@ -748,6 +759,15 @@ export function useAgentPipeline(
     inspectorBacklog.unshift(...triageData.backlog);
     inspectorActive.unshift(...triageData.active);
     inspectorHistory.unshift(...triageData.history);
+  }
+
+  // --- Wiki lint projection: corpus health findings for wiki/ ---
+  // why (D-23902 single-lane discipline): wiki-lint findings fold INTO the
+  // Inspector lane backlog only — the Inspector reports, the Builder fixes. They
+  // are appended (push), so sweep triage and blocked WPs keep the lead. Absent ⇒
+  // inspectorBacklog is byte-identical to the result without wiki lint.
+  if (wikiLintData !== undefined) {
+    inspectorBacklog.push(...wikiLintData.backlog);
   }
 
   // --- Evaluator lane: quarterly acquisition-readiness audit ---
