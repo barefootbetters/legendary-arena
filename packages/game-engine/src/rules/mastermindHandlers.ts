@@ -471,7 +471,7 @@ function resolveCoreDoomStrike(
     // revealed card is never removed.
     if (selectLowestCostHero(gameState, playerZones.hand, 'heroClass', HERO_CLASS_TECH) !== null) {
       pushLog(gameState,
-        `[Dr. Doom Master Strike] Player ${playerId} revealed a [hc:tech] Hero — no cards put on deck.`,
+        `[Dr. Doom Master Strike] Player ${playerId} revealed a Tech Hero — no cards put on deck.`,
       );
       // why: WP-645 / D-24457 — announce the avoided Dr. Doom strike (the third
       // reveal-to-avoid Master Strike producer, deferred by WP-644), additive to
@@ -879,8 +879,8 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
     const tookWound = gainWoundToDiscard(gameState, playerId);
     pushLog(gameState,
       tookWound
-        ? `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand and gained a Wound.`
-        : `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero in hand and the Wound supply is empty — no effect.`,
+        ? `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and gained a Wound.`
+        : `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and the Wound supply is empty — no effect.`,
     );
   }
 }
@@ -962,7 +962,7 @@ function resolveLokiStrike(gameState: LegendaryGameState): void {
     // player who can pay neither cost (AC-3). This replaces WP-388's escape,
     // which fired for any player lacking a Strength Hero.
     pushLog(gameState,
-      `[Loki Master Strike] Player ${playerId} has no [hc:strength] Hero and no non-grey Hero in hand — no effect.`,
+      `[Loki Master Strike] Player ${playerId} has no Strength Hero and no non-grey Hero in hand — no effect.`,
     );
   }
 }
@@ -994,8 +994,8 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
       const tookWound = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
         tookWound
-          ? `[Magneto Master Strike] Player ${playerId} has no [team:x-men] Hero in hand and gained a Wound.`
-          : `[Magneto Master Strike] Player ${playerId} has no [team:x-men] Hero in hand and the Wound supply is empty — no effect.`,
+          ? `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and gained a Wound.`
+          : `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and the Wound supply is empty — no effect.`,
       );
       continue;
     }

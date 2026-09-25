@@ -1904,3 +1904,41 @@ describe('mastermindStrikeHandler — General Ross Transform (WP-669 / D-24483)'
     assert.ok(hollow !== undefined && hollow.outcome === 'blocked', 'a blocked hollow line explains the unmodeled transform');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Master Strike log lines never show raw card markup
+// ---------------------------------------------------------------------------
+
+describe('mastermindStrikeHandler — log lines use plain words, not card markup', () => {
+  const strikeContext = { ctx: { currentPlayer: '0' } };
+  const RAW_MARKUP = /\[(hc|team|icon|keyword):/;
+
+  /** Runs one strike and returns every log line it produced. */
+  function strikeMessages(gameState: LegendaryGameState): string[] {
+    mastermindStrikeHandler(gameState, strikeContext, { cardId: 'strike' }, {});
+    return gameState.messages.map((message) => (typeof message === 'string' ? message : message.text));
+  }
+
+  it('core Loki names a Strength Hero in plain words', () => {
+    const messages = strikeMessages(makeCo2eState('core/loki', { '0': ['a'] }));
+    assert.ok(messages.some((text) => text.includes('has no Strength Hero in hand')), 'the Loki line is present');
+    assert.ok(!messages.some((text) => RAW_MARKUP.test(text)), 'no raw [hc:…] markup reaches the log');
+  });
+
+  it('co2e Magneto names an X-Men Hero in plain words', () => {
+    const messages = strikeMessages(makeCo2eState('co2e/magneto', { '0': ['a'] }));
+    assert.ok(messages.some((text) => text.includes('has no X-Men Hero in hand')), 'the Magneto line is present');
+    assert.ok(!messages.some((text) => RAW_MARKUP.test(text)), 'no raw [team:…] markup reaches the log');
+  });
+
+  it('core Dr. Doom names a Tech Hero in plain words', () => {
+    const messages = strikeMessages(makeCo2eState(
+      'core/dr-doom',
+      { '0': ['tech-a', 'b', 'c', 'd', 'e', 'f'] },
+      { 'tech-a': co2eStat(3) },
+      { 'tech-a': TECH },
+    ));
+    assert.ok(messages.some((text) => text.includes('revealed a Tech Hero')), 'the Dr. Doom line is present');
+    assert.ok(!messages.some((text) => RAW_MARKUP.test(text)), 'no raw [hc:…] markup reaches the log');
+  });
+});
