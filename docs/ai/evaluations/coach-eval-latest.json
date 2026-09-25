@@ -1,0 +1,229 @@
+{
+  "model": "claude-sonnet-5",
+  "generatedAt": "2026-09-25T20:05:38.951Z",
+  "summary": {
+    "totalCount": 12,
+    "passedCount": 12,
+    "failedCount": 0
+  },
+  "results": [
+    {
+      "scenarioId": "baseline-win-core-red-skull",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "unlucky-loss-core-magneto",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "lucky-win-core-dr-doom",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "two-seat-contribution-core-loki",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "solo-core-red-skull",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "hallucination-guard-core-loki",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "no-purchases-core-magneto",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "pre-par-summary-core-dr-doom",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "tie-core-red-skull",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "five-players-core-magneto",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "casual-match-core-red-skull",
+      "isPassing": true,
+      "failures": []
+    },
+    {
+      "scenarioId": "bot-ally-core-red-skull",
+      "isPassing": true,
+      "failures": []
+    }
+  ],
+  "reports": [
+    {
+      "scenarioId": "baseline-win-core-red-skull",
+      "report": {
+        "headline": "A clean win with a touch of good fortune — solid combat, thin synergy",
+        "heroFit": "Against Red Skull with HYDRA and Spider-Foes flooding the field, this five-hero pool gave you plenty of combat-oriented tools, and you leaned into that correctly. Captain America and Hulk cover raw damage, while Spider-Man and Black Widow offer rescue and utility to handle the bystander pressure this scheme brings. It's a sensible spread for a fight-heavy scenario like this one — nothing was fighting the scenario, you were just spread a bit thin across five decks instead of concentrating firepower.",
+        "purchases": "Player 1's picks (double Avengers Assemble!, double Repulsor Rays, Hulk Smash!, Great Responsibility) are strong individual cards, and the damage output shows in 5 villains and 3 henchmen defeated. Player 2 spread across Black Widow, Iron Man, Spider-Man and Hulk cards too, but with fewer villain kills and only 2 bystanders rescued despite owning Web-Shooters — a card built for exactly that job. With zero synergy clauses played by either of you all game, you were buying strong standalone cards but never building toward any team or class payoff, which is a missed layer of value across 14 rounds.",
+        "suggestions": [
+          "Player 2: prioritize using Web-Shooters and other rescue tools earlier — 2 bystanders rescued vs Player 1's 4 leaves rescue points on the table.",
+          "Next time, pick one or two heroes to concentrate purchases in rather than touching all five decks lightly — this unlocks synergy clauses (team/class conditions) that scored zero this game.",
+          "You beat expected adversity across the board (fewer twists, escapes, and losses than expected) — a lucky run; don't assume the same safety margin next time and keep pushing tactic defeats to close games out faster."
+        ]
+      }
+    },
+    {
+      "scenarioId": "unlucky-loss-core-magneto",
+      "report": {
+        "headline": "Magneto's Negative Zone chewed through you before your engine ever got moving",
+        "heroFit": "This is a brutal scenario — Magneto plus a Sentinel henchman group and Brotherhood/Radiation villains means heavy, relentless pressure, and the scheme punishes any slowdown hard. Cyclops and Storm bring solid recruit/attack flexibility which is a reasonable start, but with five heroes to pick from, nobody leaned into a dedicated rescue or bystander-protection hero, and that gap shows directly in the 7 bystanders lost against an expected 3. Rogue and Emma Frost were available and can strip enemy cards or control the board, but neither player built around that strength.",
+        "purchases": "Player 1's buys (double Optic Blast, a Lightning Bolt, Determination) are fine generic value but don't scale — nothing here recruits harder or thins the deck, so the engine stayed flat for 11 rounds. Player 2's Energy Drain x2 plus one-ofs from Emma Frost and Gambit is scattered rather than committed; splitting across three different hero identities without doubling down on any one synergy line means neither Rogue's stealing nor Emma's control got meaningfully online. With zero conditional clauses played by either player all game, you never assembled any cross-card synergy at all — a sign purchases stayed too shallow and generic for a fight this heavy.",
+        "suggestions": [
+          "Against a mastermind this aggressive, prioritize your first few buys around ONE hero's synergy engine (e.g. commit to Rogue's card-stealing line or Cyclops's recruit chain) instead of spreading one-ofs across three decks.",
+          "With bystanders being lost at more than double the expected rate, dedicate at least one player's early buys to rescue-support or board-clearing cards so villains don't linger long enough to threaten bystanders.",
+          "Villains escaped at 9 vs an expected 3 — that's a defeat-rate problem, not bad luck; buy toward higher, more reliable attack values earlier instead of accumulating small individual attack boosts like single Lightning Bolts."
+        ]
+      }
+    },
+    {
+      "scenarioId": "lucky-win-core-dr-doom",
+      "report": {
+        "headline": "A near-flawless run against Doom — the Cube stayed capped and the villains never had a chance",
+        "heroFit": "Thor, Iron Man, Nick Fury, Spider-Man and Cyclops give you a great blend of heavy hitters and recruit/utility support, which is exactly what you want against Doom's brutal Master Strikes and a scheme that punishes slow twists. With two players splitting five hero decks you had plenty of flexibility to pivot between combat and rescues, and the results show it — 9 bystanders saved with zero lost is an excellent scheme-management result.",
+        "purchases": "Player 1 leaned into raw power and recruit smoothing with double Surge of Power and double Endless Invention, backed by Legendary Commander — a clean, aggressive buy pattern that shows in their 6 villains and 3 henchmen defeated. Player 2 spread wider across Fury, Spider-Man, Cyclops and Thor without doubling up on anything besides High-Tech Weaponry, which is fine for flexibility but means less deck focus; their combat numbers (5 villains, 2 henchmen) are solid but trail Player 1's a bit. Neither player triggered any synergy clauses this game — with Thor, Iron Man and Fury all in the mix there were team/class synergy opportunities on the table that went unused, so future buys could look for cards that reward having multiple heroes of the same affiliation in play.",
+        "suggestions": [
+          "Player 2 could commit to one or two hero lines more heavily (like Player 1 did with Thor/Iron Man) rather than spreading one-ofs across four decks — deeper decks hit their power spikes more reliably.",
+          "With five heroes in the pool, keep an eye out for team-based synergy cards (Avengers, S.H.I.E.L.D., etc.) since none were assembled this game — even one or two picks that key off your teammates' cards in play could add free value.",
+          "This was already a dominant win (5 expected twists down to just 1, 3 expected escapes down to 0) — no structural changes needed, just keep refining deck focus to push the score even lower next time."
+        ]
+      }
+    },
+    {
+      "scenarioId": "two-seat-contribution-core-loki",
+      "report": {
+        "headline": "A win on the board, but one player carried the whole fight",
+        "heroFit": "Against Loki with Enemies of Asgard and Masters of Evil in the villain deck, Thor and Hulk are exactly the kind of heavy-hitting muscle you want, and Captain America/Emma Frost/Nick Fury round out a pool with both rescue and tactical tools. The pool fit the scheme fine; the issue wasn't the roster, it was how the two players split the work. Civil War rewards a mix of bystander rescue and villain removal, and this pool had both available.",
+        "purchases": "Player 1 leaned hard into Hulk and Thor aggression (Hulk Smash!, Crazed Rampage, Odinson, Call Lightning) and it paid off with 9 villains, 4 henchmen, and 4 mastermind tactics defeated — that's the engine that won this game. Player 2's buys (Perfect Teamwork, Shadowed Thoughts, Battlefield Promotion) are reasonable support/rescue tools, but with only 1 villain and 1 henchman defeated personally, that player was almost entirely a bystander-rescue specialist rather than a contributor to the fight. Neither player triggered any synergy clauses (0 played, 0 assembled) — a sign the buys were made independently rather than built toward working together.",
+        "suggestions": [
+          "Player 2 should pick up at least one or two harder-hitting attack cards to contribute to villain removal, rather than leaning entirely into support/rescue — 6 VP for a full game is low even in a support role.",
+          "Look at your teammate's board before buying: Perfect Teamwork rewards multiple heroes acting together, so coordinate turns with Player 1's Thor/Hulk attacks to actually assemble those synergy conditions instead of leaving them at zero.",
+          "Player 1's aggressive Hulk/Thor package worked well — keep that as the core, but consider splitting a rescue or two so Player 2 isn't the only one covering bystanders and can spend more turns fighting."
+        ]
+      }
+    },
+    {
+      "scenarioId": "solo-core-red-skull",
+      "report": {
+        "headline": "Solo clean sweep against Red Skull — a grade C that undersells a near-flawless run",
+        "heroFit": "Spider-Man, Black Widow, and Iron Man is a strong solo pool against Midtown Bank Robbery: you've got rescue speed, stealth utility, and heavy damage output all in one lineup, and against Red Skull's Hand Ninjas swarm that mix of AoE and single-target power pays off. Going solo against a scheme with escape pressure and a mastermind who punishes slow tactics decks is risky, but you handled it — 7 villains, 3 henchmen, and 4 tactics defeated personally shows you had the combat covered without needing help.",
+        "purchases": "Doubling up on Web-Shooters and Dangerous Rescue tells a clear story: you leaned into rescues and stalling, which fits the scheme's bystander pressure, and you rescued 5 while only losing 2 against an expected 3 — a good outcome. But Repulsor Rays and a single Arc Reactor is a thin combat investment for someone racking up 7 villain kills and 4 tactics defeats; you were clearly doing the heavy lifting with base powers more than your buys. Zero conditional clauses played all game means you never leaned on any synergy text those three decks offer, which is fine but suggests your deck was running on raw stats rather than combos.",
+        "suggestions": [
+          "With Iron Man in the mix, prioritize his higher-cost heavy hitters earlier — Repulsor Rays alone won't scale into late-game villains as well as a second big attack card would.",
+          "Since you were the one clearing villains and tactics, consider buying more recruit/draw power from Black Widow or Spider-Man to smooth out your hand instead of doubling small rescue cards.",
+          "Your luck was right on expectation everywhere except bystanders lost (2 vs 3 expected), so this result came from solid play, not a lucky shuffle — keep pushing tactics defeats since that's clearly your strong suit."
+        ]
+      }
+    },
+    {
+      "scenarioId": "hallucination-guard-core-loki",
+      "report": {
+        "headline": "Killbots won the race — the scheme outpaced a thin, unfocused deck",
+        "heroFit": "Against Loki's shuffle-and-twist chaos and a scheme that punishes slow tempo, Captain America and Black Widow bring recruit/tempo tools while Hulk and Thor bring raw muscle — a reasonable spread on paper. But nobody leaned into Avengers synergy despite having Cap, Thor, Iron Man and Widow all in the mix; zero conditional clauses played all game means that team-up potential just sat on the table unused.",
+        "purchases": "Player 1's Growing Anger ×3 is a fine Hulk beatstick pickup, but grabbing a single Arc Reactor and a single Odinson scattered the deck across three heroes without ever consolidating a real engine. Player 2's Mission Accomplished ×2 plus one-ofs of Avengers Assemble! and Quantum Breakthrough is even thinner — lots of variety, no depth, and neither player pushed hard enough on recruit power to keep pace with a 13-round grind. With only 2 bystanders rescued and 4 lost, board presence clearly took priority over the rescue race, but the scheme punished that trade anyway.",
+        "suggestions": [
+          "Pick a lane and double down: 3x Growing Anger was good instinct — do that again with your best card instead of splitting the rest of the buy across two singletons.",
+          "With Cap, Thor, Iron Man and Widow all available, prioritize any Avengers-synergy cards early so those conditional clauses actually have partners in play.",
+          "Scheme twists and villain escapes were both above expected here — that's the shuffle, not your build, but it means you needed a faster, more consolidated deck to outrun the clock next time."
+        ]
+      }
+    },
+    {
+      "scenarioId": "no-purchases-core-magneto",
+      "report": {
+        "headline": "A win's a win, but this was a one-engine plane",
+        "heroFit": "Against Magneto with Brotherhood and Skrulls in the mix, plus Sentinels swarming, you want steady combat plus board control — Cyclops, Storm, and Hulk all fit that brief well with reliable damage and area effects. Nick Fury and Gambit rounded out the pool with recruit/utility options, but neither got touched, which is a shame since Fury's ally synergy or Gambit's card-cycling could have helped a second player actually get moving. On paper the hero pool was solid for this scheme; the problem wasn't the roster, it was that only one seat used it.",
+        "purchases": "Player 1 built exactly the deck you'd want for this fight: Optic Blast x2 and Hulk Smash! x2 for reliable heavy damage, Tidal Wave for board sweeping, and High Stakes Jackpot for economy — that's a focused, aggressive buy pattern and it shows in the 8 villains and 4 mastermind tactics defeated. Player 2 bought absolutely nothing all game, ending with 4 victory points and just 1 villain defeated. That's not a hero or scheme problem, that's a seat that never engaged with the HQ at all.",
+        "suggestions": [
+          "Player 2 should be buying every turn there's spare recruit — even a cheap S.H.I.E.L.D. Officer or a starter hero card beats sitting on a bare starting deck for 16 rounds.",
+          "With two players, split the workload: let one player lean into big attackers like Hulk/Cyclops while the other grabs Nick Fury or Gambit for rescues and card flow so both decks scale up together.",
+          "Check win conditions early — if one player is dominating combat, the other should pivot to bystander rescues or recruit generation rather than mirroring a role they're not filling."
+        ]
+      }
+    },
+    {
+      "scenarioId": "pre-par-summary-core-dr-doom",
+      "report": {
+        "headline": "A win's a win, but 4 escaped villains and only 5 rescues left points on the table",
+        "heroFit": "Against a Skrulls/Masters of Evil mash-up with Doombots swarming the board and Doom himself waiting, you had five solid heroes to pick from, and both players leaned into the right idea: brawn to trade with a crowded villain area. Rogue, Thor, and Iron Man all bring reliable combat, which matches a scheme where letting villains sit around is dangerous. The gap is nobody built toward rescues or bystander protection specifically, and with 3 bystanders lost and only 5 rescued out of a possible higher count, that side of the scheme quietly bled points.",
+        "purchases": "Both players bought thin, efficient piles rather than going deep on any one engine — Borrowed Brawn x2, Repulsor Rays x2, and a scattering of one-ofs from Thor, Emma Frost, and Spider-Man. That's fine for raw damage but none of it builds toward the kind of synergy payoff Emma Frost or Spider-Man decks can offer (zero conditional clauses played by either player all game means those cross-hero synergy cards never got the setup they wanted). Great Responsibility and Psychic Link are strong recruit/rescue tools but showing up as single copies suggests they were bought late or opportunistically rather than as a plan.",
+        "suggestions": [
+          "Commit a bit earlier to one hero's core engine (e.g. double down on Emma Frost's Psychic Link line or Spider-Man's rescue tools) instead of splitting single buys across four decks — that's what unlocks the synergy clauses you left at zero all game.",
+          "With bystanders being lost and villains escaping, prioritize a recruit-cost or rescue-focused buy early to keep the board clean, then pivot to combat once the scheme pressure eases.",
+          "Split the load more: Player 1 carried most of the villain kills (5 vs 4) and tactics — next game have the lighter combat player lean harder into rescues/recruit support so the team isn't relying on one seat to do the heavy lifting."
+        ]
+      }
+    },
+    {
+      "scenarioId": "tie-core-red-skull",
+      "report": {
+        "headline": "A grinding 17-round war that ended in a fair tie — solid combat, thin deck engines",
+        "heroFit": "Against Red Skull with Super Hero Civil War, you want steady removal and recruit consistency to survive the long haul, and this five-hero pool (Cap, Widow, Storm, Cyclops, Gambit) had the tools for it. Splitting into Cap/Widow/Storm and Gambit/Cyclops gave decent combat spread, but neither player leaned into a focused plan — the picks were scattered across all five decks rather than committing to a core engine that could snowball over 17 rounds.",
+        "purchases": "Player 1's buys (double Perfect Teamwork, Silent Sniper, Lightning Bolt) are fine one-offs but never built toward a repeatable engine — Perfect Teamwork wants a wide board of ally-attacks to boost, and only two copies plus scattered other hero cards isn't enough density to make it hum. Player 2's Stack the Deck x2 is a nice recruit-smoothing pickup, but pairing it with only single copies of Unending Energy and X-Men United means the deck never got deep enough to consistently punch through Red Skull's tactics. Both decks stayed thin — with zero conditional clauses played by either player, none of the team-synergy payoffs (Avengers/X-Men synergy that Cap, Storm, Cyclops, and Gambit can all tap) ever got assembled, which is a missed lever in a 5-hero pool built for exactly that.",
+        "suggestions": [
+          "Commit harder to one or two hero lines each round instead of spreading buys across all five decks — density beats variety in a long 17-round grind.",
+          "With Cap, Storm, Cyclops and Gambit all in the pool, prioritize cards with team-affiliation clauses early so you can actually assemble those synergy bonuses instead of leaving them unused.",
+          "Player 2 rescued only 1 bystander to Player 1's 2 — with 4 bystanders lost against an expected 3, consider dedicating a hero turn or two specifically to rescues when the villain deck isn't threatening an immediate escape."
+        ]
+      }
+    },
+    {
+      "scenarioId": "five-players-core-magneto",
+      "report": {
+        "headline": "Solid win with a slightly lucky draw and undercooked decks",
+        "heroFit": "Six heavy-hitters against Magneto and Midtown Bank Robbery is a reasonable spread — you've got direct damage from Cyclops, Storm and Iron Man, brawn from Thor and Hulk, and flexible utility from Spider-Man, all useful against Brotherhood/HYDRA/Skrull villain pressure and Sentinel henchmen. Nobody leaned on team-synergy cards though, which is fine given the roster (no explicit team clauses fired all game), but it means the deck power came purely from raw stats rather than any combo engine. For a 5-player game against Magneto, more emphasis on recruit/draw smoothing might have kept the bank vault scheme under tighter control.",
+        "purchases": "Every player bought narrowly — one or two card types each, almost entirely combat cards from their own hero line, with zero cross-hero or supply-pile support (no S.H.I.E.L.D. Officers, no Helicarriers, no draw smoothing). That's serviceable when everyone's hitting villains, but it left the team's recruit power thin and nobody diversified into utility that could've helped rescues or hand-cycling. Player 5 in particular bought only Hulk attack cards and ended with the lowest output (8 VP, 1 bystander, 0 tactics) — a bit more balance (a rescue or recruit card) could've spread the load better.",
+        "suggestions": [
+          "Mix in a cheap recruit or bystander-rescue card early so your deck isn't 100% attack-focused — it smooths draws and helps VP even when villains are scarce.",
+          "With 5 players, consider having 1-2 people invest in supply-pile support (S.H.I.E.L.D. Officers, Helicarrier) so the team has consistent recruit power to hit big hero cards faster.",
+          "Player 5's Hulk-only build underperformed — next time pair heavy attackers with at least one utility purchase to stay flexible when the villain deck doesn't cooperate."
+        ]
+      }
+    },
+    {
+      "scenarioId": "casual-match-core-red-skull",
+      "report": {
+        "headline": "Solid, balanced win — but your buys barely scratched the HQ's surface",
+        "heroFit": "Against Red Skull with HYDRA and Masters of Evil crawling the board, you want steady combat plus recruit power to keep pace with the villain deck's pressure, and this five-hero pool (Cap, Wolverine, Storm, Hawkeye, Thor) covers that well. Cap and Thor in particular are strong anchors for a scheme like Negative Zone Prison Breakout where villains escaping is a real threat, and it shows — you only lost 3 villains to escape across 13 rounds. Nobody leaned on Thor at all, which is a missed opportunity given how much raw defeat power he brings to a fight this long.",
+        "purchases": "Both players stayed narrow and mono-hero: Player 1 doubled into Keen Senses, Player 2 doubled into Lightning Bolt, and neither ventured beyond their own three-card shopping list all game. That's fine for consistency, but with zero conditional clauses played by either seat, you left all of this roster's team-synergy upside completely untouched — Cap, Wolverine, Storm, Hawkeye and Thor can combo hard off each other and none of that got assembled. Player 2 in particular bought a lot of card draw/utility (Spinning Cyclone, Healing Factor) but converted that into fewer villain defeats than Player 1 — worth checking if that mana went toward taking down threats or just cycling.",
+        "suggestions": [
+          "Branch out from your starting hero's pile once your engine is running — a Thor or Cap pickup would've added raw defeat power for the long grind through 13 rounds.",
+          "Look for cards with synergy clauses (e.g. 'if you have another Avenger/Hero in play') and try to build toward triggering them — you played zero this game despite a five-hero roster built for it.",
+          "With 3 villains escaping and 2 bystanders lost, prioritize recruiting toward higher-attack or rescue-focused cards earlier so you're not scrambling to keep the board clean late."
+        ]
+      }
+    },
+    {
+      "scenarioId": "bot-ally-core-red-skull",
+      "report": {
+        "headline": "A win's a win — but this bank robbery was cleared on cruise control, not clean tech",
+        "heroFit": "Midtown Bank Robbery with Red Skull pulling from HYDRA and Spider-Foes wants steady bystander rescue plus reliable combat to keep up with escalating twists. The five-hero pool (Cap, Spider-Man, Iron Man, Black Widow, Hulk) covers both needs well, and leaning into Cap's team-support plus Iron Man's damage was a reasonable read on the scenario. Nothing here fights the scheme badly, but the pool's synergy potential (Avengers themes, Spider-Man rescue tricks) went largely untapped.",
+        "purchases": "Player 1's buys were fine but shallow — doubling up on Avengers Assemble! and Repulsor Rays gives raw value without building toward any real engine, and Great Responsibility as a single copy barely gets used. Zero conditional clauses played all game means none of that synergy potential in the Avengers/Cap side of the pool ever got exercised. The bot ally did the heavy lifting on takedowns (7 villains, 3 henchmen, 3 tactics) while Player 1 focused on rescues (4 bystanders) — a reasonable split, but Player 1's own combat output (2 villains, 1 henchman) suggests the deck wasn't built to pull its own weight offensively.",
+        "suggestions": [
+          "Commit harder to one synergy lane next time — if you're buying Avengers Assemble!, pick up more Cap/team-triggered cards so those clauses actually assemble instead of sitting at zero.",
+          "Consider Black Widow or Hulk cards for a stronger standalone attack engine, so you're not leaning entirely on an ally to clear villains and henchmen.",
+          "With bystanders lost at 3 despite 4 personal rescues, prioritize board control earlier — grab rescue-enabling buys before the twist pile starts pressuring bystanders."
+        ]
+      }
+    }
+  ]
+}
