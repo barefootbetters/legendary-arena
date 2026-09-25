@@ -47,7 +47,12 @@ export function resolveCardName(
 // `:`-delimited payload segments. A shape test also covers markers for mechanics
 // that are not yet HeroKeyword members (`demolish`, `reveal-multi-take`), which an
 // allowlist would silently keep leaking.
-const ENGINE_EFFECT_MARKER_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?::[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+// why: D-24582 — a payload segment may join several kebab words with `+` (the
+// parameterized reveal rule's multi-action list, `reveal:cost-zero:discard+attack-fixed-2`).
+// Without the `+` arm that marker failed the shape test and leaked into the play line as
+// "reveal:cost zero:discard+attack fixed 2" (observed live, See Future Timelines).
+const ENGINE_EFFECT_MARKER_SHAPE =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\+[a-z0-9]+(?:-[a-z0-9]+)*)*(?::[a-z0-9]+(?:-[a-z0-9]+)*(?:\+[a-z0-9]+(?:-[a-z0-9]+)*)*)*$/;
 
 /**
  * Returns whether a `[keyword:...]` token value is an engine effect marker
