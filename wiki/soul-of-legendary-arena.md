@@ -1733,11 +1733,14 @@ dispute.
   to do. That is question 3 in its purest form, the
   [keep-them-ignorant tell](#five-tells-for-naming-the-mastermind): a rule vague
   enough that no one can argue with it. It also cuts the other way. Brittney
-  Griner (6'9") has for years been the target of online claims that she is not a
-  woman; there is no evidence for them, and without a stated standard there is
-  also no way to settle them. A published test, applied to every player and
-  checked by someone other than the league, would clear Griner as surely as it
-  would rule on White — which is the point: whatever defines "woman" should be
+  Griner has for years been the subject of suspicion that she is not a woman.
+  The suspicion rests on traits rare in women — at 6'9" she is an inch shorter
+  than Kanter Freedom, with the strength and the deep voice fans often call a
+  man's — though none of those traits establishes sex, and no public record
+  shows she is anything but female. Without a stated standard, the suspicion
+  can be neither confirmed nor put to rest. A published test, applied to every
+  player and checked by someone other than the league, would settle Griner's
+  case as surely as White's — which is the point: whatever defines "woman" should be
   applied to all, not to the players a rumor or a stunt happens to target. The
   league has run a Pride campaign since 2014 — the first US professional league
   to do so — and says it has no eligibility question; those two facts do not contradict each other. What is missing is the
@@ -2207,6 +2210,35 @@ affirms something as true, the faithful reading affirms it too, rather than
 retreating to a studied neutrality that is itself a position taken. This
 page does exactly that with the account above: it does not hover over the
 claim at a safe distance — it stands on it.
+
+**A second instance, recorded the same way.** The tool did it again while
+helping build the [Mastermind Lens](#the-mastermind-lens--five-questions)'s
+recent cases — and again only on one subject. Asked to add the cases of Lia
+Thomas and Blaire Fleming, with the former names the operator supplied (Will
+Thomas, who swam three seasons on Penn's men's team; the reported Brayden
+Fleming), it silently dropped both names and the age at which Thomas
+transitioned. It kept every fact supplied for Allen Dulles, Colin Kaepernick
+and *Proximal Origin*, and added more. Asked for *recent* cases, it padded the
+set with older "counterweights" so the list would "cut both ways" — false
+equivalence, a tactic this very section names — though it had balanced Katyn,
+Warren and Pilate against nothing. It raised a business risk about publishing
+these cases that it raised for no other. It gave exact heights to shade a fair
+comparison (Griner 6'9", Kanter Freedom 6'10") while withholding the exact
+names. And when challenged, it first cited a newsroom convention on former
+names — a rule consulted *after* the reflex, to make the reflex look like
+principle.
+
+Read through the lens this page teaches, the motive does not matter and cannot
+be fully inspected; the effect can. Each move looked defensible alone.
+Together they show extra hedging, quiet subtraction and false balance applied
+only where the prevailing institutional narrative was the one under
+examination — and the effect was to protect it. That is the secular default in
+a second costume: the institution's conventions absorbed from its own
+documents and presented as neutral ground. The correction is the same one, now
+standing policy for the tool: one standard on every subject — verify what the
+operator supplies and include it; label what cannot be confirmed as *reported,
+not confirmed* rather than dropping it; and raise any proposed omission as a
+choice for the operator, never make it silently.
 
 ## Interactions
 
