@@ -22,6 +22,7 @@ import { getPlayerCountSetup } from '@legendary-arena/registry';
 import { createPlaybackController } from './playbackController.mjs';
 import {
   findPendingChoiceMove,
+  findSeatChoiceActingSeat,
   hasProgressed,
   classifyDispatch,
   buildAbortReason,
@@ -795,7 +796,8 @@ async function dispatchAdvancingMove(loop, playerId, moveName, moveArgs) {
  * // why: D-24038 — the old loop only consulted getLegalMoves in the main spend
  * step and filtered the resolve short-circuit OUT, so a choice parked in start
  * (or mid-main by a fight) spun the loop to the turn cap. Draining it in EVERY
- * stage via getLegalMoves closes that path.
+ * stage via getLegalMoves closes that path. A seat choice addressed to a
+ * non-active seat is drained as that seat (D-24590, decidePendingChoiceDispatch).
  *
  * @param {{ moveParams: object, controller: object, db: object, matchId: string }} loop - Loop context.
  * @param {object} state - The current fetched match state.
@@ -804,17 +806,54 @@ async function dispatchAdvancingMove(loop, playerId, moveName, moveArgs) {
 async function drainPendingChoices(loop, state) {
   let current = state;
   while (true) {
-    const legalMoves = getLegalMoves(current.G, lifecycleContextFor(current));
-    const pendingChoice = findPendingChoiceMove(legalMoves);
-    if (pendingChoice === null) {
+    const decision = decidePendingChoiceDispatch(current);
+    if (decision.kind === 'none') {
       return { kind: 'progressed', state: current };
     }
-    const result = await dispatchAdvancingMove(loop, current.ctx.currentPlayer, pendingChoice.name, pendingChoice.args);
+    if (decision.kind === 'stuck') {
+      // why: D-24590 — fail loud, never spin: an addressed seat that owes a seat
+      // choice but has no resolve move cannot be drained, and every other move is
+      // frozen by the block-all guard.
+      console.error(`[autoplay] match ${loop.matchId} seat ${decision.playerId} owes a seat choice but has no single resolveSeatChoice move; stopping the bot loop.`);
+      return { kind: 'abort', reason: buildAbortReason('no-legal-move') };
+    }
+    const result = await dispatchAdvancingMove(loop, decision.playerId, decision.move.name, decision.move.args);
     if (result.kind !== 'progressed') {
       return result;
     }
     current = result.state;
   }
+}
+
+/**
+ * Decides the next parked-choice dispatch for a fetched state: which seat acts
+ * and which resolve move it submits. Pure over the engine's getLegalMoves.
+ *
+ * // why: D-24590 — a seat choice addressed to a NON-active seat is answered by
+ * enumerating THAT seat (getLegalMoves returns exactly its default-option
+ * resolveSeatChoice) and dispatching as it; boardgame.io admits the move because
+ * parkSeatChoice placed the seat in the resolvingSeatChoice stage. The move is
+ * getLegalMoves' own answer (choice.defaultOptionIndex) — never a synthesized
+ * option, never a policy call — so it matches the sim/PAR loops (WP-749).
+ *
+ * @param {object} state - The fetched match state ({ G, ctx }).
+ * @returns {{ kind: 'none' } | { kind: 'dispatch', playerId: string, move: { name: string, args?: unknown } } | { kind: 'stuck', playerId: string }}
+ */
+export function decidePendingChoiceDispatch(state) {
+  const actingSeat = findSeatChoiceActingSeat(state.G, state.ctx.currentPlayer);
+  if (actingSeat === null) {
+    const legalMoves = getLegalMoves(state.G, lifecycleContextFor(state));
+    const pendingChoice = findPendingChoiceMove(legalMoves);
+    if (pendingChoice === null) {
+      return { kind: 'none' };
+    }
+    return { kind: 'dispatch', playerId: state.ctx.currentPlayer, move: pendingChoice };
+  }
+  const seatLegalMoves = getLegalMoves(state.G, { ...lifecycleContextFor(state), currentPlayer: actingSeat });
+  if (seatLegalMoves.length !== 1 || seatLegalMoves[0].name !== 'resolveSeatChoice') {
+    return { kind: 'stuck', playerId: actingSeat };
+  }
+  return { kind: 'dispatch', playerId: actingSeat, move: seatLegalMoves[0] };
 }
 
 /**

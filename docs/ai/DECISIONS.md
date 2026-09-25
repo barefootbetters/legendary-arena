@@ -44601,4 +44601,27 @@ Partitioning into sub-directories would change every page URL. That breaks inbou
 
 ---
 
+### D-24590 — Autoplay drains a seat choice addressed to a non-active seat as that seat (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct `apps/server` autoplay fix, no WP; the D-24582 precedent).
+
+**Context.** The server autoplay loop's `drainPendingChoices` called `getLegalMoves` for `ctx.currentPlayer` only and dispatched as that seat. A `G.pendingSeatChoice` (WP-684 / D-24501) addressed to a **non-active** seat is invisible that way: the active player is blocked by the block-all guard, so its legal list is empty, the drain no-op'd, and the stage handlers found no legal move. Affected today: Loki's Vanishing Illusions and Dr. Doom's Monarch's Decree discard (D-24511). Affected next: Zarathos's Eruption / Corrupted Spirit tactics (WP-758). An all-bot "Watch Bot Play" match against those masterminds stopped with "no legal move". WP-749 / D-24573 closes the same gap in the engine sim / PAR loops and excludes the server.
+
+**Decision.** Same policy as WP-749:
+1. `findSeatChoiceActingSeat(G, currentPlayer)` (`autoplay/botLoopProgress.mjs`, pure) returns the first outstanding addressed seat in `addressedSeats` order, or null when no seat choice is open, none is outstanding, or the current player is itself outstanding (the existing path then drains it first). It mirrors the engine's `getOutstandingSeats`, which the engine does not export.
+2. `decidePendingChoiceDispatch(state)` (`autoplay/autoplay.mjs`, exported) enumerates that seat with `getLegalMoves` and dispatches its single `resolveSeatChoice` result **as that seat**. The move is `getLegalMoves`' own answer (`choice.defaultOptionIndex`): no synthesized option, no policy call. boardgame.io accepts it because `parkSeatChoice` placed the seat in the `resolvingSeatChoice` stage; each seat already has its own credentials.
+3. Fail loud: an outstanding seat whose legal list is not exactly one `resolveSeatChoice` aborts the loop with the existing public-safe `no-legal-move` reason and a server log line. There is no retry and no new cap.
+
+The drain loops until the choice clears, so a multi-seat choice resolves every seat in turn and the engine applies it atomically (ascending seats) on the last one.
+
+**Gates.** `apps/server/src/autoplay/seatChoiceDrain.test.ts` passes 5/5 against a real engine state and the real `resolveSeatChoice` move; 4 fail with the helper neutered to the old behaviour (the fifth pins the stall itself). Server suite 1616 tests / 1411 pass / 0 fail / 205 skipped after `pnpm -r build`. No engine, endpoint, or `G` change, so no hash, PAR, or API-catalog impact.
+
+**Follow-up (blocked).** The autoplay spend step still filters to a hard-coded move list (`recruitHero` / `fightVillain` / `fightMastermind` / `advanceStage`). When WP-757 (Haunt, `exorciseHauntedHero`, drafted in PR #2360) merges, add `exorciseHauntedHero` to that filter, or autoplay will never exorcise even though engine bots score it at 75.
+
+**Out of scope, found in passing.** The bot-ally driver (`apps/server/src/bot-ally/botAllyDriver.mjs`) acts only when a bot seat is `ctx.currentPlayer`. A seat choice addressed to a bot seat while a human is active therefore also goes unresolved, and freezes the human's turn.
+
+**Reserved by:** NUMBER-LEDGER D-24590. Related: D-24501 (seat-choice model), D-24511 (Vanishing Illusions / Monarch's Decree), D-24573 (WP-749 sim / PAR parity), D-24038 (drain-in-every-stage), D-24037 (public-safe abort reasons).
+
+---
+
 Protect this file.

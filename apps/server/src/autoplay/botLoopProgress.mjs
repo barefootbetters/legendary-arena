@@ -90,6 +90,44 @@ export function findPendingChoiceMove(legalMoves) {
 }
 
 /**
+ * Picks the seat that must act next on an open non-active / multi-seat seat
+ * choice (`G.pendingSeatChoice`, WP-684 / D-24501), or null when the loop should
+ * enumerate the current player as usual.
+ *
+ * // why: D-24590 — getLegalMoves answers for the ENUMERATED seat only, and the
+ * loop always enumerated `ctx.currentPlayer`. A seat choice addressed only to
+ * another seat (Loki's Vanishing Illusions, Dr. Doom's Monarch's Decree discard)
+ * left the current player with no legal move, so the drain no-op'd and the match
+ * stalled. Same policy as the engine sim/PAR loops (WP-749 / D-24573): when the
+ * current player is itself outstanding it acts first through the existing path
+ * (null here); otherwise the first outstanding addressed seat acts, in
+ * `addressedSeats` order (the engine's `getOutstandingSeats` order — the builders
+ * address seats ascending, and the apply re-sorts ascending regardless). Mirrors
+ * `getOutstandingSeats` locally because the engine does not export it.
+ *
+ * @param {{ pendingSeatChoice?: { addressedSeats: string[], submissions: Record<string, unknown> } }} gameState
+ *   - The current G.
+ * @param {string} currentPlayer - ctx.currentPlayer.
+ * @returns {string | null} The non-active seat to act as, or null.
+ */
+export function findSeatChoiceActingSeat(gameState, currentPlayer) {
+  const choice = gameState?.pendingSeatChoice;
+  if (choice === undefined || choice === null) {
+    return null;
+  }
+  const outstandingSeats = [];
+  for (const seat of choice.addressedSeats) {
+    if (!Object.prototype.hasOwnProperty.call(choice.submissions, seat)) {
+      outstandingSeats.push(seat);
+    }
+  }
+  if (outstandingSeats.length === 0 || outstandingSeats.includes(currentPlayer)) {
+    return null;
+  }
+  return outstandingSeats[0];
+}
+
+/**
  * Reports whether a stage-advancing dispatch made progress by comparing the
  * engine's _stateID before and after the dispatch. The bot loop captures the
  * pre-dispatch _stateID, re-fetches after dispatching a move expected to
