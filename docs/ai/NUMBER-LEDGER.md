@@ -394,6 +394,7 @@ high-water: 422
 - WP-753 — reveal-three-assign (Game Engine + Arena Client. Implements the unmarked "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." hero ability (vnom Crystal of Kadavus, 3dtc/dims Interplanetary Visitor), which today silently does nothing, plus Crystal's [team:venomverse][team:venomverse] repeat. reserved 2026-09-25, claude/reserve-reveal-three-assign)
 - WP-754 — optional-discard-draw + reveal-top-may-ko (Game Engine + Arena Client. Two hollow hero executors: "You may discard a card. If you do, draw a card." (vnom Hungry for Action via Digest, gotg Gritty Scavenger, asrd Bio-Engineered Cyborg, shld GW Bridge, antm Risky Science) and "Reveal the top card of your deck. You may KO it." (vnom Gruesome Feast + mgtg Remove His Spine via Excessive Violence, vill Electroshock Therapy). reserved 2026-09-25, claude/reserve-discard-draw-reveal-ko)
 - WP-755 — villain-slash-vfx (App arena-client. A Fruit Ninja-style villain-defeat beat on the VfxOverlay: on each fightResolved notable event the defeated card splits along a slash streak into two tumbling halves with a droplet spray, stains and a takedown-streak word; client-only, rides the existing public notableEvents projection. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
+- WP-756 — slash-gesture-fight (App arena-client. A pointer swipe across City villains fights each villain it fully crosses (chained, engine-confirmed), with a blade trail on the VfxOverlay and the WP-755 slash following the swipe direction; tap-to-fight unchanged; touch only when the City row fits without scrolling; a persisted Swipe-to-fight toggle. BLOCKED on WP-755. reserved 2026-09-25, claude/reserve-swipe-to-fight)
 
 ## EC
 
@@ -749,6 +750,7 @@ high-water: 457
 - EC-790 — reveal-three-assign (WP-753; Game Engine + Arena Client. reserved 2026-09-25, claude/reserve-reveal-three-assign)
 - EC-791 — optional-discard-draw + reveal-top-may-ko (WP-754; Game Engine + Arena Client. reserved 2026-09-25, claude/reserve-discard-draw-reveal-ko)
 - EC-792 — villain-slash-vfx (WP-755; App arena-client. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
+- EC-793 — slash-gesture-fight (WP-756; App arena-client. reserved 2026-09-25, claude/reserve-swipe-to-fight)
 
 ## D
 
@@ -1113,3 +1115,4 @@ section below) and the allocation protocol in
 - D-24583 — reveal-wound-cost-zero (direct fix, no WP — a hero reveal reads a Wound on top of the deck as cost 0, so "If it costs 0, KO it" lines stop skipping Wounds; resolved at read time, no G.cardStats entry. reserved 2026-09-25, claude/infra-reveal-wound-cost-zero)
 - D-24575 — coach-eval-bot-ally-scenario (direct fix, no WP — the WP-737 coach eval pack gains a `bot-ally` category + scenario and every fixture seat carries an explicit `isBotAlly`, matching the WP-742 / D-24564 production summary shape; D-24570 precedent. reserved 2026-09-23, infra/coach-eval-bot-ally-scenario)
 - D-24584 — villain-slash-vfx (RESERVED: locks WP-755 / EC-792 — the villain-defeat slash beat: DOM-rendered halves/streak/stains beside the single confetti canvas, the last-frame city display cache for the defeated card art, the intensity-gate mapping and the takedown-streak window. reserved 2026-09-25, claude/reserve-villain-slash-vfx)
+- D-24585 — slash-gesture-fight (RESERVED: locks WP-756 / EC-793 — full-crossing hit rule with no clock, the engine-confirmed fight chain + abandon timeout, the touch-only-when-row-fits rule, the blade-trail rendering on the VfxOverlay slice layer, and the persisted toggle. reserved 2026-09-25, claude/reserve-swipe-to-fight)
