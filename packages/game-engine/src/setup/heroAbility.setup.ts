@@ -273,7 +273,7 @@ const EMPOWERED_MARKER_TOKEN_PATTERN = /\[keyword:empowered\]/i;
 // START WITH A LETTER (so a bare digit magnitude routes to KEYWORD_PATTERN, not
 // here). One token = one RevealRule (mirrors COUNT_SCALED_PATTERN's
 // one-token-one-effect shape). predicate ∈ {always, cost-zero, cost-odd,
-// cost-lte-<n>, cost-gte-<n>}; actions are '+'-joined ∈ {draw, ko, attack-by-cost,
+// cost-lte-<n>, cost-gte-<n>}; actions are '+'-joined ∈ {draw, ko, discard, attack-by-cost,
 // attack-fixed-<n>, choose-discard-or-return}; an optional trailing ':continue'.
 // No card uses this grammar this WP — it makes a new reveal variant data-only.
 /** Regex for [keyword:reveal:<predicate>:<actions>(:continue)?] parameterized reveal markup. */
@@ -1716,6 +1716,26 @@ function parseAbilityText(
     magnitudes.delete('attack');
   }
 
+  // Icon-suppression (sibling): a reveal whose matched rule grants a FIXED attack
+  // subsumes the printed attack icon on the same line. "Reveal the top card of your
+  // deck. If it costs 0, KO it and you get +1[icon:attack]" carries its grant as the
+  // rule's attack-fixed action, applied only when the reveal matches. Without this,
+  // Steps 2b/3 also promote the icon to a plain 'attack' effect granted on EVERY play
+  // — a free +N with no reveal and no cost check, and +2N when the reveal matches.
+  // why: D-24582 — the reveal attack-fixed action subsumes the printed attack icon
+  // (the reveal analog of the D-24570 / D-24016 suppressions above). Covers the legacy
+  // reveal-ko-attack keyword and any parameterized rule carrying attack-fixed.
+  if (lineHasRevealFixedAttack(uniqueKeywords, parameterizedRevealRules)) {
+    const keywordsWithoutAttackIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutAttackIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutAttackIcon;
+    magnitudes.delete('attack');
+  }
+
   // Icon-suppression (sibling): a shuffle-discard-empty-reward effect subsumes
   // the printed reward icon on the same line. Without this, "If your discard
   // pile is empty, you get +2[icon:recruit]..." would emit BOTH a flat
@@ -2786,7 +2806,7 @@ function parseRevealPredicateToken(token: string): RevealPredicate | null {
 /**
  * Parses a parameterized reveal action segment into a RevealAction.
  *
- * Grammar: `draw` | `ko` | `attack-by-cost` | `attack-fixed-<n>` |
+ * Grammar: `draw` | `ko` | `discard` | `attack-by-cost` | `attack-fixed-<n>` |
  * `choose-discard-or-return`.
  *
  * @param token - One action segment (the `+`-joined parts are split by the caller).
@@ -2799,6 +2819,9 @@ function parseRevealActionToken(token: string): RevealAction | null {
   if (token === 'ko') {
     return { kind: 'ko' };
   }
+  if (token === 'discard') {
+    return { kind: 'discard' };
+  }
   if (token === 'attack-by-cost') {
     return { kind: 'attack-by-cost' };
   }
@@ -2810,6 +2833,35 @@ function parseRevealActionToken(token: string): RevealAction | null {
     return amount === null ? null : { kind: 'attack-fixed', amount };
   }
   return null;
+}
+
+/**
+ * Returns whether an ability line's reveal grants a fixed attack from its matched
+ * rule — the legacy `reveal-ko-attack` keyword, or a parameterized reveal rule that
+ * carries an `attack-fixed` action. Such a line's printed attack icon is the rule's
+ * own conditional grant, not a separate flat attack (D-24582).
+ *
+ * @param keywords - The line's normalized keywords.
+ * @param parameterizedRevealRules - The line's parameterized reveal rules (Step 2g).
+ * @returns Whether the printed attack icon must be suppressed.
+ */
+function lineHasRevealFixedAttack(
+  keywords: HeroKeyword[],
+  parameterizedRevealRules: RevealRule[],
+): boolean {
+  for (const keyword of keywords) {
+    if (keyword === 'reveal-ko-attack') {
+      return true;
+    }
+  }
+  for (const rule of parameterizedRevealRules) {
+    for (const action of rule.actions) {
+      if (action.kind === 'attack-fixed') {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

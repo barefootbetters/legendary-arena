@@ -610,6 +610,7 @@ vnom/venom-rocket,Venom Rocket,vnom,optional-discard-draw,executable,WP-754,D-24
 vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos
+vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,see-future-timelines
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,crystal-of-kadavus
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign-again,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign-again,crystal-of-kadavus
 vnom/venompool,Venompool,vnom,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,play-to-the-crowd

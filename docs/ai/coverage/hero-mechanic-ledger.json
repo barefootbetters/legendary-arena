@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 755,
+    "totalRows": 756,
     "byStatus": {
-      "executable": 358,
+      "executable": 359,
       "deferred": 16,
       "condition": 30,
       "unsupported": 317,
@@ -11195,6 +11195,22 @@
         {
           "slug": "cauldron-of-the-cosmos",
           "name": "Cauldron of the Cosmos"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "heroName": "Venomized Dr. Strange",
+      "set": "vnom",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "see-future-timelines",
+          "name": "See Future Timelines"
         }
       ]
     },

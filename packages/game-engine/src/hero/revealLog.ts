@@ -92,6 +92,9 @@ function describeRevealActionKind(kind: RevealActionKind): string {
   if (kind === 'ko') {
     return "KO'd it";
   }
+  if (kind === 'discard') {
+    return 'discarded it';
+  }
   if (kind === 'attack-by-cost' || kind === 'attack-fixed') {
     return 'gained attack';
   }
@@ -128,6 +131,9 @@ function describeUnappliedRevealActionKind(kind: RevealActionKind): string {
   }
   if (kind === 'ko') {
     return 'the KO';
+  }
+  if (kind === 'discard') {
+    return 'the discard';
   }
   if (kind === 'attack-by-cost' || kind === 'attack-fixed') {
     return 'the attack grant';

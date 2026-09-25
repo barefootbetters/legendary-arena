@@ -1333,7 +1333,7 @@
       "label": "Reveal",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 12,
+      "cardCount": 13,
       "cardIds": [
         "co2e/gambit",
         "co2e/spider-man",
@@ -1346,7 +1346,8 @@
         "smhc/peter-parker-homecoming",
         "ssw1/ultimate-spider-man",
         "ssw2/beast",
-        "ssw2/silk"
+        "ssw2/silk",
+        "vnom/venomized-dr-strange"
       ],
       "hidden": false
     },
@@ -4033,6 +4034,7 @@
       "mechanics": [
         "digest",
         "draw",
+        "reveal",
         "reveal-three-assign",
         "reveal-three-assign-again"
       ]
