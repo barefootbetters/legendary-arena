@@ -9,7 +9,7 @@
 
 ### WP-753 — Reveal-three assign (draw / discard / KO) hero keyword (EC-790 / D-24580) (2026-09-25)
 
-**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Crystal of
+**User-visible on `play.legendary-arena.com` (D-24026 live-verify CONFIRMED 2026-09-25, match `a2e01e70`: round 24 Crystal of Kadavus revealed three and assigned KO / draw / discard, then the doubled-Venomverse repeat revealed the next three and assigned all three again).** Crystal of
 Kadavus (vnom) and Interplanetary Visitor (3dtc, dims) now do what they print: "Reveal the top three
 cards of your deck. Draw one of them, discard one, and KO one." Playing either card reveals the top
 three cards and prompts the player to draw one, discard one and KO one; the game waits for the
