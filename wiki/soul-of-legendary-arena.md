@@ -1603,11 +1603,15 @@ dispute.
 - **"The Battle of the Sexes"** *(questions 2 and 3)*. Not the first
   man-against-woman exhibition, but the most famous, most televised, and most
   touted. On 20 September 1973, in the Houston Astrodome, Billie Jean King, 29
-  and among the best players in the world, beat Bobby Riggs 6–4, 6–3, 6–3. Riggs
-  was 55 — a former world No. 1 whose Wimbledon title dated from 1939. ABC
+  and among the best players in the world, beat Bobby Riggs 6–4, 6–3, 6–3, under
+  standard rules — no handicap, best of five sets. Riggs was 55 — a former world
+  No. 1 whose Wimbledon title dated from 1939. Beforehand Chris Evert, then 18 and
+  already among the top women, said she expected Riggs to win, on plain logic: he
+  had just beaten the world No. 1 — "Why would you lose to her when you beat the
+  world no. 1?" — and she was criticized for it. ABC
   carried it with Howard Cosell to a commonly cited 90 million viewers, fifteen
   months after Title IX. King framed the stakes as respect and equal pay; the
-  picture the broadcast left was broader: *no difference*. Two results never
+  picture the broadcast left was broader: *no difference*. Three results never
   became that picture. Four months earlier Riggs had beaten Margaret Court, then
   one of the top two women in the world, 6–2, 6–1 — the "Mother's Day Massacre."
   And at the 1998 Australian Open, after Venus and Serena Williams, then 17 and
@@ -1615,7 +1619,10 @@ dispute.
   ranked 203rd, played each a set after a round of golf and won 6–1 and 6–2. (In
   2013 ESPN aired a claim that Riggs threw the King match to clear gambling
   debts; King disputes it, and it was never proven — which only shows how little
-  weight the match itself could bear.) None of those results was suppressed;
+  weight the match itself could bear.) And on 25 September 1992 at Caesars
+  Palace, Jimmy Connors, 40, played Martina Navratilova, 35, under rules built to
+  even it — Connors got one serve per point, and Navratilova could hit into half
+  of each doubles alley — and still won 7–5, 6–2. None of those results was suppressed;
   none became the national picture — question 3 working by selection, not
   silence. The documented gap in elite performance — about 10% across record
   events since 1983, roughly 9% in swimming and 11% in running — did not move. This is where the thread from 1973 runs into Penn
@@ -1680,9 +1687,22 @@ dispute.
   State, Wyoming, Utah State, Nevada and Southern Utah refused to play, and each
   refusal went into the standings as a loss — San José State entered the
   conference tournament as the second seed on six forfeit wins (question 4:
-  nobody banned objecting; the standings charged for it). A federal court denied
-  the players an emergency injunction in November 2024, and the appeals court
-  affirmed the next day. In January 2026 the Department of Education found a
+  nobody banned objecting; the standings charged for it). Slusser went to court.
+  In September 2024 she joined Riley Gaines's existing suit against the NCAA; on
+  13 November she and eleven other players filed *Slusser v. Mountain West
+  Conference* in Colorado against the conference, San José State and California
+  State University officials, claiming violations of Title IX, equal protection,
+  due process and free speech, and asking that Fleming be barred from the
+  conference tournament. Judge S. Kato Crews denied that emergency injunction on
+  25 November 2024, and the Tenth Circuit affirmed the next day — so the
+  tournament went ahead. In March 2026 the court dismissed the claims against the
+  Mountain West (the players' lawyer, Bill Block, said an appeal was likely) and
+  held the Title IX damages claims against San José State until the Supreme Court
+  decided *West Virginia v. B.P.J.* It did on 30 June 2026, 6–3, upholding state
+  laws that limit girls' and women's teams to biological females. (Where the
+  Slusser claims stand since that ruling, the page has not confirmed.) Question
+  5 in a courtroom: relief arrives after the season it was meant to protect has
+  been played. In January 2026 the Department of Education found a
   Title IX violation and proposed that the university restore records and
   apologize, as Penn had; San José State sued instead — "We have followed the
   law and cannot be punished for doing so" — and was given ten days to comply
@@ -2460,6 +2480,8 @@ claim at a safe distance — it stands on it.
   [reported by Fox News](https://www.foxnews.com/sports/mountain-west-closes-investigation-allegations-against-san-jose-state-trans-player-without-discipline)
   (16 November 2024); *Slusser v. Mountain West Conference*, No. 1:24-cv-03155
   (D. Colo., filed 13 November 2024; [docket summary](https://clearinghouse.net/case/46255/));
+  [*Cowboy State Daily* on the March 2026 partial dismissal](https://cowboystatedaily.com/2026/03/09/judge-tosses-most-claims-in-san-jose-state-trans-volleyball-lawsuit/);
+  [*West Virginia v. B.P.J.*](https://www.supremecourt.gov/opinions/25pdf/24-43_2b35.pdf) (30 June 2026);
   Batie-Smoose's retaliation suit as
   [reported by Athletic Business](https://www.athleticbusiness.com/operations/legal/article/15768458/former-sjsu-volleyball-coach-lawsuit-claims-retaliation-for-filing-title-ix-complaint-against-trans-athlete);
   [The College Fix on the suspension](https://www.thecollegefix.com/coach-suspended-after-filing-complaint-about-transgender-athlete-on-womens-volleyball-team/)
@@ -2469,6 +2491,9 @@ claim at a safe distance — it stands on it.
   [statement on suing the Department of Education](https://blogs.sjsu.edu/newsroom/2026/ocr-titleix-lawsuit/)
   (6 March 2026).
   For the Battle of the Sexes: [*Time*'s 1973 report](https://time.com/4938913/battle-of-the-sexes-1973-report/);
+  Evert's recollection as [reported by EssentiallySports](https://www.essentiallysports.com/wta-tennis-news-chris-everts-common-sense-was-considered-betrayal-to-womens-tennis-in-a-notorious-bobby-riggs-controversy-back-in/)
+  from her PBS interview; UPI on [Connors–Navratilova](https://www.upi.com/Archives/1992/09/26/Connors-triumphs-over-Navratilova-in-battle-of-sexes/9290717480000/)
+  (26 September 1992);
   Tennis Majors on the [Riggs–Court match](https://www.tennismajors.com/others-news/may-13th-1973-the-day-bobby-riggs-massacred-margaret-court-245288.html)
   (13 May 1973); ESPN *Outside the Lines*,
   ["The Match Maker"](https://www.espn.com/espn/feature/story/_/id/9589625/the-match-maker)
