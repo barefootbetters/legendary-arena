@@ -1750,6 +1750,40 @@ dispute.
   Clark — a separate labor dispute, one word against another.) The test for the
   next commissioner is the Church Committee's, not the Warren Commission's: write
   the definition down, and let someone outside the league check it.
+- **The Bout swap** *(questions 1, 2 and 3)*. Two Americans sat in Russian
+  prisons in 2022. Paul Whelan, a former Marine — discharged in 2008 with a
+  bad-conduct discharge after a court-martial on larceny-related charges — had
+  been held since December 2018 and was serving 16 years for espionage.
+  Brittney Griner, arrested in February 2022 with vape cartridges holding 0.702
+  grams of cannabis oil, pleaded guilty and was sentenced to nine years; the
+  State Department declared her "wrongfully detained" in May. On 8 December
+  2022 she was traded in Abu Dhabi for Viktor Bout, the arms dealer known as the
+  "Merchant of Death," a decade into a 25-year sentence for conspiring
+  to kill Americans. Whelan stayed behind. Run question 1 — who decided whose
+  release got bought, and at what price? Russia set the menu, and the
+  administration accepted its framing: an official said the choice was "between
+  bringing home one particular American — Brittney Griner — or bringing home
+  none," and the President said "this was not a choice of which American to
+  bring home." That is the [manufactured choice](#the-mastermind-lens--five-questions)
+  in diplomatic form: one box or the empty box. Question 2 ran through
+  publicity. Griner was a celebrity with a league and a national campaign behind
+  her; Whelan's brother called the result "a catastrophe for Paul," and Whelan
+  asked from prison why "more has not been done to secure my release." Then each
+  side read its own model American into the trade. Donald Trump called Griner "a
+  basketball player who openly hates our Country" — she had said in 2020, "I'm
+  not going to be out there for the national anthem" — and the swap "a stupid
+  and unpatriotic embarrassment"; Kevin McCarthy called it "a gift to Vladimir
+  Putin" and Whelan's omission "unconscionable." Commentators on the right cast
+  it as a Black, gay, outspoken athlete chosen over a Marine veteran; supporters
+  cast it as a wrongfully held woman brought home. The split was not perfectly
+  partisan — Senator Bob Menendez, the Democratic chairman of Foreign Relations,
+  called freeing Bout "a deeply disturbing decision" — and whether the prior
+  administration had passed on a Bout-for-Whelan deal is contested, argued only
+  in rival accounts from John Bolton, Trump and Robert O'Brien, with no document
+  either way. The lens needs none of the symbolism. It asks who chose, what the
+  price taught the seller, and why the other man waited: Whelan came home on 1
+  August 2024 in a sixteen-for-eight exchange whose centerpiece for Moscow was
+  Vadim Krasikov, a convicted assassin.
 - **The anthem protests** *(questions 2 and 3)*. Colin Kaepernick sat during
   the anthem in August 2016 and first knelt on 1 September. After President
   Trump told a rally on 22 September 2017 that owners should say "Get that son
@@ -2589,6 +2623,17 @@ choice for the operator, never make it silently.
   [Collier's remarks](https://www.espn.com/wnba/story/_/id/46437911/napheesa-collier-blasts-wnba-engelbert-worst-leadership)
   and [Engelbert's denial](https://www.espn.com/wnba/story/_/id/46480629/wnba-engelbert-collier-remarks-do-better)
   (2025); ESPN on the [2014 launch of WNBA Pride](https://www.espn.com/wnba/story/_/id/10963103/wnba-launches-marketing-campaign-directed-lgbt-community).
+  For the Bout swap: the Justice Department on
+  [Bout's 2011 conviction](https://www.justice.gov/archives/opa/pr/international-arms-dealer-viktor-bout-convicted-new-york-terrorism-crimes);
+  Al Jazeera on the [wrongful-detention designation](https://www.aljazeera.com/news/2022/5/3/us-state-department-says-griner-wrongfully-detained-by-russia)
+  (3 May 2022); NPR on [Whelan's 2020 sentence](https://www.npr.org/2020/06/15/876966569/american-paul-whelan-held-in-russia-on-spy-charges-is-sentenced-to-16-years);
+  Snopes on [Whelan's discharge](https://www.snopes.com/fact-check/paul-whelan-discharge/);
+  CNN's [8 December 2022 coverage](https://www.cnn.com/europe/live-news/russia-ukraine-war-news-12-08-22/h_b35d7b1fee308a452d0203c9f5902046)
+  and [Whelan interview](https://www.cnn.com/2022/12/08/politics/paul-whelan-cnn-interview-brittney-griner/index.html);
+  Boston.com on [the Whelan family's statement](https://www.boston.com/news/world-news/2022/12/08/paul-whelan-family-on-brittney-griner-deal/);
+  the *Dallas Morning News* on [the divided reaction](https://www.dallasnews.com/news/politics/2022/12/08/texas-reaction-divided-over-us-prisoner-swap-to-release-brittney-griner-from-russia/);
+  the *Washington Examiner* on [Bolton's account](https://www.washingtonexaminer.com/policy/foreign/john-bolton-paul-whelan-viktor-bout-swap-turned-down-trump);
+  and CNN on [the August 2024 exchange](https://www.cnn.com/2024/08/01/politics/russia-us-prisoner-swap/index.html).
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the
