@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-24
+last-reviewed: 2026-09-25
 ---
 
 # Soul of Legendary Arena
@@ -1401,6 +1401,26 @@ looks like freedom.
   Committee, which had subpoena power and independent staff, and found things
   the earlier inquiry did not. The lens does not need a theory of who killed
   Kennedy; it only asks who set the scope.
+
+  ![Official White House portrait of President John F. Kennedy, 1963.](/soul-of-legendary-arena/jfk-white-house-portrait-1963.jpg "width=30%")
+
+  *President John F. Kennedy, White House portrait, 11 July 1963. Photo by
+  Cecil Stoughton, White House; public domain.*
+
+  ![The Warren Commission presents its report to President Lyndon Johnson in the White House Cabinet Room; Allen Dulles, in a bow tie, stands to Johnson's left.](/soul-of-legendary-arena/warren-commission-report-1964.jpg "width=60%")
+
+  *The Warren Commission presents its report to President Johnson, 24
+  September 1964. Left to right: John McCloy, J. Lee Rankin (general counsel),
+  Sen. Richard Russell, Rep. Gerald Ford, Chief Justice Earl Warren, President
+  Johnson, **Allen Dulles**, Sen. John Sherman Cooper, Rep. Hale Boggs. The
+  man Kennedy fired from the CIA stands among the commissioners examining his
+  death. Photo by Cecil Stoughton, White House; public domain.*
+
+  ![Title page of the Church Committee's final report, Book II: Intelligence Activities and the Rights of Americans, April 1976.](/soul-of-legendary-arena/church-committee-report-book-ii.jpg "width=30%")
+
+  *The Church Committee's final report, Book II — "Intelligence Activities and
+  the Rights of Americans" (S. Rep. No. 94-755, 26 April 1976): what an inquiry
+  with subpoena power and its own staff found. U.S. Senate; public domain.*
 - **The Reichstag fire** *(questions 1 and 3)*. Who actually set the fire is
   still argued; what is not argued is the package — crisis, named culprit, and
   cure arrived together, with the emergency decree suspending civil liberties
@@ -1418,8 +1438,36 @@ looks like freedom.
   locks himself in by correctly calculating that leaving — taking the raise, the
   extra hours, the marriage — costs more than staying. It is the hardest kind to
   break, because there is no oppressor to point at. The fix is tapering, not
-  cliffing. The diagnostic: watch who opposes the reform, not who claims to
-  care.
+  cliffing — and it has been tried, twice at national scale.
+
+  **Nixon's Family Assistance Plan (1969)** would have replaced AFDC with a
+  floor of $1,600 for a family of four, let the family keep its first $720 of
+  earnings untouched, and withdrawn benefits at fifty cents per dollar earned
+  after that — a taper, not a cliff. It passed the House twice (1970 and 1971)
+  and died in the Senate Finance Committee both times; the 1972 bill was signed
+  with FAP stripped out. The opposition came from both flanks at once. The
+  **National Welfare Rights Organization** under George Wiley called it too
+  stingy, demanded $5,500 with no work requirement, and campaigned against it.
+  **Senate Finance chairman Russell Long** (D-La.) and the committee's
+  conservatives called it a drain on the treasury and replaced it with a
+  workfare plan. And, on the account of Daniel Patrick Moynihan, the plan's
+  architect (*The Politics of a Guaranteed Income*, 1973), the **welfare
+  professionals** who ran the system it would have replaced resisted it too.
+
+  **Britain's Universal Credit** is the taper that got built. Iain Duncan Smith
+  took it from his Centre for Social Justice report *Dynamic Benefits* (2009)
+  into government, announced it in 2010, and folded six benefits into one
+  payment withdrawn at a single 65% rate. It was squeezed from inside first:
+  **Chancellor George Osborne's Treasury** announced a £3.2 billion annual cut
+  in 2015, largely by shrinking the *work allowances* — the earnings a claimant
+  keeps before the taper starts, the very part that makes work pay. The
+  **Labour Party's 2019 manifesto** pledged to scrap Universal Credit
+  altogether. The taper survived both: cut to 63% (announced 2016), then to 55%
+  in 2021, the rate Duncan Smith said he had wanted a decade earlier. (In
+  fairness, most of the criticism from charities such as the **Trussell Trust**
+  targeted the five-week wait for a first payment, not the taper itself.)
+
+  The diagnostic: watch who opposes the reform, not who claims to care.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
