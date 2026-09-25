@@ -46,6 +46,12 @@
       "cardSlug": "crazed-rampage",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-wound-each]"
+    },
+    {
+      "heroSlug": "howard-the-duck",
+      "cardSlug": "interplanetary-visitor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-three-assign]"
     }
   ],
   "ca75": [
@@ -1816,6 +1822,26 @@
       "cardSlug": "can-i-get-a-little-gratitude",
       "abilityIndex": 1,
       "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "crystal-of-kadavus",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-three-assign]"
+    },
+    {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "crystal-of-kadavus",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:reveal-three-assign-again]"
+    }
+  ],
+  "dims": [
+    {
+      "heroSlug": "howard-the-duck",
+      "cardSlug": "interplanetary-visitor",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-three-assign]"
     }
   ],
   "wpnx": [

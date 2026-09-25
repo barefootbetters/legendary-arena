@@ -162,6 +162,12 @@ export interface UIState {
   // except the chooser — the revealed cards are the top of the chooser's own deck (private
   // next-draw information). Absent (undefined) means no pending Ruthless Dictator choice.
   pendingRuthlessDictatorChoice?: UIPendingRuthlessDictatorChoice;
+  // why: WP-753 / D-24580 — projects the FRONT of G.pendingRevealThreeAssign with the revealed
+  // deck-top cards, the unused disposition slots and the repeat counter so the active player can
+  // render the "draw one / discard one / KO one" prompt. Redacted (omitted) for every audience
+  // except the chooser — the revealed cards are the top of the chooser's own deck (private
+  // next-draw information). Absent (undefined) means no pending reveal-three assignment.
+  pendingRevealThreeAssign?: UIPendingRevealThreeAssign;
   // why: WP-695 / D-24512 — projects the FRONT of G.pendingElectromagneticBubbleChoices with
   // the eligible in-play X-Men Heroes so the defeating player can render the "choose an X-Men
   // Hero to add to your next hand" prompt. Redacted (omitted) for every audience except the
@@ -1123,6 +1129,41 @@ export interface UIPendingRuthlessDictatorChoice {
   playerID: string;
   revealedCards: UIRuthlessDictatorRevealedCard[];
   availableDispositions: ("ko" | "discard" | "top")[];
+}
+
+/**
+ * One card in a pending reveal-three draw / discard / KO assignment (WP-753 / D-24580): a
+ * revealed deck-top card, or the source card that opened the assignment. `cardId` is the ext_id
+ * the engine resolve matches against the front entry's `revealedCardIds` snapshot (the
+ * round-trip rule).
+ */
+export interface UIRevealThreeAssignCard {
+  cardId: string;
+  display: UICardDisplay;
+}
+
+/**
+ * UI contract for resolving a pending reveal-three draw / discard / KO assignment (WP-753 /
+ * D-24580). Only visible to the choosing (active) player; redacted for opponents and
+ * spectators (the revealed cards are the top of the chooser's own deck — their next draws).
+ *
+ * `revealedCards` is the FRONT entry's remaining revealed cards in deck-top order;
+ * `availableDispositions` the slots still unused (all three at the start of every reveal,
+ * shrinking as each card is assigned). `remainingRepeats > 0` means a fresh top three is
+ * revealed once this set is assigned (Crystal of Kadavus's "Do this ability again."). The
+ * client submits `resolveRevealThreeAssign({ cardId, disposition })` per card.
+ *
+ * @see WP-753 §Scope (In)
+ * @see EC-790 Locked Values
+ * @see DECISIONS.md D-24580
+ */
+export interface UIPendingRevealThreeAssign {
+  choiceType: "reveal-three-assign";
+  playerID: string;
+  sourceCard: UIRevealThreeAssignCard;
+  revealedCards: UIRevealThreeAssignCard[];
+  availableDispositions: ("draw" | "discard" | "ko")[];
+  remainingRepeats: number;
 }
 
 /**

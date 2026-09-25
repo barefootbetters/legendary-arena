@@ -109,7 +109,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // from fireExcessiveViolencePlays, which is NOT a HERO_EFFECT_HANDLERS entry) (47 → 48).
     // D-24558 added the reveal-top-dispose-ko handler (co2e Hypnotic Charm's covert "You may
     // KO the card you revealed from your own deck") (48 → 49).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 49);
+    // WP-753 / D-24580 added the reveal-three-assign + reveal-three-assign-again handlers
+    // (Crystal of Kadavus / Interplanetary Visitor draw / discard / KO + the repeat) (49 → 51).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 51);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7127,10 +7129,11 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
 
   it('X-Gene adds NO handler — HERO_EFFECT_HANDLERS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, not a keyword/effect;
-    // it registers no handler. The count stays at the current total (49 after WP-736's
-    // excessive-violence enroll handler, D-24556, and D-24558's reveal-top-dispose-ko handler).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 49,
-      'HERO_EFFECT_HANDLERS stays 49 (X-Gene is not an effect handler)');
+    // it registers no handler. The count stays at the current total (51 after WP-736's
+    // excessive-violence enroll handler, D-24556, D-24558's reveal-top-dispose-ko handler, and
+    // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 51,
+      'HERO_EFFECT_HANDLERS stays 51 (X-Gene is not an effect handler)');
   });
 });
 
@@ -7590,5 +7593,160 @@ describe('excessive-violence enroll + fire (WP-736 / D-24556)', () => {
       'the guarded emission does not throw when notableEvents is absent');
     assert.strictEqual(g.notableEvents, undefined, 'no notableEvents array was created');
     assert.equal(g.playerZones['0']!.hand.length, 1, 'the inner EV draw still fired');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-753 / D-24580 — reveal-three-assign park + reveal-three-assign-again counter
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects reveal-three-assign (WP-753 / D-24580)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** The reveal-three-assign hook for `cardId` (abilities[0] of every marked card). */
+  function revealThreeHook(cardId: string): HeroAbilityHook {
+    return { cardId, timing: 'onPlay', keywords: ['reveal-three-assign'], effects: [{ type: 'reveal-three-assign' }] } as HeroAbilityHook;
+  }
+
+  /** Crystal of Kadavus's gated abilities[1] hook (requiresTeam venomverse + the again marker). */
+  function againHook(cardId: string): HeroAbilityHook {
+    return {
+      cardId,
+      timing: 'onPlay',
+      keywords: ['reveal-three-assign-again'],
+      conditions: [{ type: 'requiresTeam', value: 'venomverse' }],
+      effects: [{ type: 'reveal-three-assign-again' }],
+    } as HeroAbilityHook;
+  }
+
+  it('snapshots the top three (no removal) and parks one entry offering draw / discard / KO', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b', 'deck-c', 'deck-d'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [revealThreeHook('hero-x')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['deck-a', 'deck-b', 'deck-c', 'deck-d'], 'the reveal SNAPSHOTS — nothing removed');
+    assert.equal(gameState.pendingRevealThreeAssign?.length, 1, 'exactly one entry parked');
+    assert.deepEqual(gameState.pendingRevealThreeAssign![0], {
+      choiceType: 'reveal-three-assign',
+      playerID: '0',
+      sourceCardId: 'hero-x',
+      revealedCardIds: ['deck-a', 'deck-b', 'deck-c'],
+      availableDispositions: ['draw', 'discard', 'ko'],
+      remainingRepeats: 0,
+    });
+  });
+
+  it('tops a short deck up from the discard (appended beneath) before the snapshot (D-24285)', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a'],
+      discard: ['disc-1', 'disc-2', 'disc-3'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [revealThreeHook('hero-x')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    // why: makeMockCtx's Shuffle reverses, proving the reshuffle ran; the pre-existing top stays first.
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['deck-a', 'disc-3', 'disc-2', 'disc-1'], 'discard shuffled beneath the remaining top');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [], 'the discard was consumed by the top-up');
+    assert.deepEqual(gameState.pendingRevealThreeAssign![0]!.revealedCardIds, ['deck-a', 'disc-3', 'disc-2']);
+  });
+
+  it('a 2-card reveal (deck + discard total 2) still offers all three dispositions', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a'],
+      discard: ['disc-1'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [revealThreeHook('hero-x')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    const entry = gameState.pendingRevealThreeAssign![0]!;
+    assert.deepEqual(entry.revealedCardIds, ['deck-a', 'disc-1'], 'two cards revealed');
+    assert.deepEqual(entry.availableDispositions, ['draw', 'discard', 'ko'], 'the player chooses which dispositions to use');
+  });
+
+  it('parks nothing (logged no-op) when the deck AND discard are empty', () => {
+    const gameState = makeTestState({
+      deck: [],
+      discard: [],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [revealThreeHook('hero-x')],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+
+    assert.equal(gameState.pendingRevealThreeAssign, undefined, 'the lazy queue is never created');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('no cards to reveal')),
+      'the empty-deck no-op appends a game-log line',
+    );
+  });
+
+  it('a second reveal-three while one is queued bumps remainingRepeats instead of snapshotting again', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b', 'deck-c', 'deck-d'],
+      inPlay: ['hero-x', 'hero-y'],
+      heroAbilityHooks: [revealThreeHook('hero-x'), revealThreeHook('hero-y')],
+    });
+
+    // why: models the synchronous sibling run (e.g. Steal Abilities copying two reveal-three
+    // cards) — the second handler fires before the first entry is assigned.
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-y');
+
+    assert.equal(gameState.pendingRevealThreeAssign?.length, 1, 'still ONE entry — no duplicate snapshot');
+    assert.equal(gameState.pendingRevealThreeAssign![0]!.remainingRepeats, 1, 'the queued reveal owes one repeat');
+    assert.deepEqual(gameState.pendingRevealThreeAssign![0]!.revealedCardIds, ['deck-a', 'deck-b', 'deck-c']);
+  });
+
+  it("Crystal's gated again-ability bumps remainingRepeats on the entry its first ability just parked", () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b', 'deck-c', 'deck-d', 'deck-e', 'deck-f'],
+      inPlay: ['venom-ally', 'crystal'],
+      heroAbilityHooks: [revealThreeHook('crystal'), againHook('crystal')],
+      cardTraits: { 'venom-ally': { heroClass: 'strength', team: 'venomverse' } },
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'crystal');
+
+    assert.equal(gameState.pendingRevealThreeAssign?.length, 1, 'one entry — the again is a counter, not a second park');
+    assert.equal(gameState.pendingRevealThreeAssign![0]!.remainingRepeats, 1, 'the Venomverse repeat is owed');
+    assert.deepEqual(gameState.pendingRevealThreeAssign![0]!.revealedCardIds, ['deck-a', 'deck-b', 'deck-c']);
+  });
+
+  it("without another Venomverse Hero in play Crystal reveals only once", () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b', 'deck-c', 'deck-d'],
+      inPlay: ['crystal'],
+      heroAbilityHooks: [revealThreeHook('crystal'), againHook('crystal')],
+      cardTraits: {},
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'crystal');
+
+    assert.equal(gameState.pendingRevealThreeAssign?.length, 1);
+    assert.equal(gameState.pendingRevealThreeAssign![0]!.remainingRepeats, 0, 'the gate failed — no repeat');
+  });
+
+  it('the again-handler runs a fresh reveal when its card parked nothing', () => {
+    const gameState = makeTestState({
+      deck: ['deck-a', 'deck-b'],
+      inPlay: ['venom-ally', 'crystal'],
+      heroAbilityHooks: [againHook('crystal')],
+      cardTraits: { 'venom-ally': { heroClass: 'strength', team: 'venomverse' } },
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'crystal');
+
+    assert.equal(gameState.pendingRevealThreeAssign?.length, 1, 'a fresh reveal parked');
+    assert.deepEqual(gameState.pendingRevealThreeAssign![0]!.revealedCardIds, ['deck-a', 'deck-b']);
+    assert.equal(gameState.pendingRevealThreeAssign![0]!.remainingRepeats, 0);
+    assert.equal(gameState.pendingRevealThreeAssign![0]!.sourceCardId, 'crystal');
   });
 });

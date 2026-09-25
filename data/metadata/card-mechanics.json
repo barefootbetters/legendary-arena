@@ -1474,6 +1474,30 @@
       "hidden": true
     },
     {
+      "slug": "reveal-three-assign",
+      "label": "Reveal Three Assign",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 3,
+      "cardIds": [
+        "3dtc/howard-the-duck",
+        "dims/howard-the-duck",
+        "vnom/venomized-dr-strange"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "reveal-three-assign-again",
+      "label": "Reveal Three Assign Again",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "vnom/venomized-dr-strange"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "reveal-top-dispose",
       "label": "Reveal Top Dispose",
       "scope": "hero",
@@ -1997,10 +2021,9 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 35,
+      "cardCount": 33,
       "cardIds": [
         "3dtc/deadpool",
-        "3dtc/howard-the-duck",
         "3dtc/man-thing",
         "amwp/scott-lang-cat-burglar",
         "amwp/wasp",
@@ -2013,7 +2036,6 @@
         "cvwr/daredevil",
         "cvwr/falcon",
         "cvwr/patriot",
-        "dims/howard-the-duck",
         "dkcy/angel",
         "dkcy/blade",
         "dkcy/daredevil",
@@ -2299,7 +2321,7 @@
     },
     "3dtc/howard-the-duck": {
       "mechanics": [
-        "unmarked"
+        "reveal-three-assign"
       ]
     },
     "3dtc/hulk": {
@@ -2978,7 +3000,7 @@
     },
     "dims/howard-the-duck": {
       "mechanics": [
-        "unmarked"
+        "reveal-three-assign"
       ]
     },
     "dims/jessica-jones": {
@@ -3976,7 +3998,9 @@
     "vnom/venomized-dr-strange": {
       "mechanics": [
         "digest",
-        "draw"
+        "draw",
+        "reveal-three-assign",
+        "reveal-three-assign-again"
       ]
     },
     "vnom/venompool": {

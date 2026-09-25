@@ -422,8 +422,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 733, so percentResolved 24.3 -> 24.4 (733 / 3006). A sweep-trajectory artifact of the
   // over-grant fix, not a regression. Deterministic — CI computes the same 3006 / 24.4
   // from the committed source.
+  // 2026-09-25 (WP-753 / D-24580, re-pin): Crystal of Kadavus and Interplanetary Visitor now
+  // park a reveal-three assignment instead of doing nothing, so the fixed-seed sweep's games
+  // that play them (vnom / 3dtc / dims) take different trajectories → the regenerated
+  // runtime-observed-hollows feed moves and totalObs 3006 -> 3010 (+4); resolvedObs stays
+  // 733, so percentResolved holds at 24.4 (733 / 3010). A sweep-trajectory artifact of the
+  // new park, not a regression. Deterministic — CI computes the same 3010 / 24.4 from the
+  // committed source (prebuild:coverage copies docs/ai/coverage/*.json into src/data).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3006);
+  assert.equal(view.totalObs.value, 3010);
   assert.equal(view.percentResolved.value, 24.4);
   assert.ok(view.remaining.value.length > 0);
 });

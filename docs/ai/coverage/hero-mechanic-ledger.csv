@@ -17,7 +17,7 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler,designs
 3dtc/black-widow,Black Widow,3dtc,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
 3dtc/black-widow,Black Widow,3dtc,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
 3dtc/deadpool,Deadpool,3dtc,(unmarked),unmarked,,,,
-3dtc/howard-the-duck,Howard the Duck,3dtc,(unmarked),unmarked,,,,
+3dtc/howard-the-duck,Howard the Duck,3dtc,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,interplanetary-visitor
 3dtc/hulk,Hulk,3dtc,gain-wound-each,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-each,crazed-rampage
 3dtc/hulk,Hulk,3dtc,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 3dtc/man-thing,Man-Thing,3dtc,(unmarked),unmarked,,,,
@@ -272,7 +272,7 @@ dead/slapstick,Slapstick,dead,excessive-violence,unsupported,,,,electroplasmic-i
 dead/solo,Solo,dead,excessive-violence,unsupported,,,,mercs-gotta-get-paid
 dead/stingray,Stingray,dead,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,deck-chairs-on-the-titanic|superpowered-swimsuit
 dead/stingray,Stingray,dead,excessive-violence,unsupported,,,,sting-of-the-stingrays-sting
-dims/howard-the-duck,Howard the Duck,dims,(unmarked),unmarked,,,,
+dims/howard-the-duck,Howard the Duck,dims,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,interplanetary-visitor
 dims/jessica-jones,Jessica Jones,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,alias-investigations|crack-the-case|uncover-hidden-evil
 dims/jessica-jones,Jessica Jones,dims,switcheroo,unsupported,,,,alias-investigations|alter-ego|crack-the-case
 dims/man-thing,Man-Thing,dims,teleport,unsupported,,,,form-from-ooze|travel-the-nexus-of-realities
@@ -603,6 +603,8 @@ vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,executable,,,packages/gam
 vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos
+vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,crystal-of-kadavus
+vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal-three-assign-again,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign-again,crystal-of-kadavus
 vnom/venompool,Venompool,vnom,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,play-to-the-crowd
 vnom/venompool,Venompool,vnom,digest,unsupported,,,,digest-that-chimichanga|play-to-the-crowd
 vnom/venompool,Venompool,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shenanigans

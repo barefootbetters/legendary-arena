@@ -110,6 +110,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingReorderChoices = undefined;
   gameState.pendingReturnOnDiscard = undefined;
   gameState.pendingReturnZeroCostDiscard = undefined;
+  gameState.pendingRevealThreeAssign = undefined; // why: WP-753 / D-24580 — the reveal-three draw / discard / KO queue joins the end-of-game drop set (D-24518; cleared at the winning turn's end since WP-732, not at vanquish)
   gameState.pendingRevealTopDispose = undefined; // why: WP-702 / D-24521 — the reveal-top discard-or-keep queue joins the end-of-game drop set (D-24518)
   gameState.pendingRuthlessDictatorChoices = undefined;
   gameState.pendingScryKoChoices = undefined;

@@ -623,12 +623,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'no-more-draws', // why: WP-731 / D-24552 — Venompool's Shenanigans ("But you can't draw any more cards until the end of this turn.") — sets the turn-scoped G.turnEconomy.drawsLocked flag; heroEffectDraw draws 0 + logs blocked while set
     'digest-indigestion', // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch (fused from the Digest/Indigestion/upgrade lines of an allowlisted card into one hook; handler branches on G.playerZones[pid].victory.length)
     'excessive-violence', // why: WP-736 / D-24556 — the Venomverse "Excessive Violence" fight-overspend keyword (enroll-at-play, fire-at-fight; fused from the [keyword:Excessive Violence] line of an allowlisted card into one onFight hook)
+    'reveal-three-assign', // why: WP-753 / D-24580 — "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." (Crystal of Kadavus, Interplanetary Visitor)
+    'reveal-three-assign-again', // why: WP-753 / D-24580 — Crystal of Kadavus's "[team:venomverse][team:venomverse]: Do this ability again." (repeat counter)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      65,
-      'HERO_KEYWORDS must have exactly 65 entries',
+      67,
+      'HERO_KEYWORDS must have exactly 67 entries',
     );
 
     assert.deepStrictEqual(
@@ -2599,6 +2601,63 @@ describe('buildHeroAbilityHooks — excessive-violence fusion (WP-736 / D-24556)
     assert.ok(
       hooks.every((hook) => (hook.effects?.length ?? 0) === 0 && (hook.keywords?.length ?? 0) === 0),
       'the EV line stays an empty (runtime-observed) hollow hook — nothing resolved',
+    );
+  });
+});
+
+describe('buildHeroAbilityHooks — reveal-three-assign markers (WP-753 / D-24580)', () => {
+  /** A config whose hero deck is the given hero of the given set. */
+  function revealThreeConfig(setAbbr: string, heroSlug: string): MatchSetupConfig {
+    return { ...createTestConfig(), heroDeckIds: [`${setAbbr}/${heroSlug}`] };
+  }
+
+  it('resolves Interplanetary Visitor to one ungated reveal-three-assign hook', () => {
+    const registry = makeHeroRegistry('3dtc', 'howard-the-duck', [
+      {
+        slug: 'interplanetary-visitor',
+        rarityLabel: 'Rare',
+        abilities: [
+          'Reveal the top three cards of your deck. Draw one of them, discard one, and KO one. [keyword:reveal-three-assign]',
+        ],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, revealThreeConfig('3dtc', 'howard-the-duck'));
+    const cardHooks = hooks.filter((entry) => entry.cardId === '3dtc/howard-the-duck/interplanetary-visitor#0');
+    assert.equal(cardHooks.length, 1, 'one hook — one ability line');
+    assert.ok(cardHooks[0]!.keywords.includes('reveal-three-assign'), 'the keyword resolves');
+    assert.deepStrictEqual(cardHooks[0]!.effects, [{ type: 'reveal-three-assign' }], 'one no-magnitude effect, no phantom grant');
+    assert.equal((cardHooks[0]!.conditions ?? []).length, 0, 'the reveal is not gated');
+  });
+
+  it("keeps Crystal of Kadavus's Venomverse gate on abilities[1] beside the again marker; abilities[0] stays ungated", () => {
+    // why: the session-protocol check — the [team:venomverse][team:venomverse] gate tokens and
+    // [keyword:reveal-three-assign-again] share abilities[1]; the parser must still emit the
+    // requiresTeam condition on that hook only.
+    const registry = makeHeroRegistry('vnom', 'venomized-dr-strange', [
+      {
+        slug: 'crystal-of-kadavus',
+        rarityLabel: 'Rare',
+        abilities: [
+          'Reveal the top three cards of your deck. Draw one of them, discard one, and KO one. [keyword:reveal-three-assign]',
+          '[team:venomverse][team:venomverse]: Do this ability again. [keyword:reveal-three-assign-again]',
+        ],
+      },
+    ]);
+    const hooks = buildHeroAbilityHooks(registry, revealThreeConfig('vnom', 'venomized-dr-strange'));
+    const cardHooks = hooks.filter((entry) => entry.cardId === 'vnom/venomized-dr-strange/crystal-of-kadavus#0');
+    assert.equal(cardHooks.length, 2, 'two hooks — one per ability line');
+
+    const revealHook = cardHooks.find((hook) => hook.keywords.includes('reveal-three-assign'));
+    const againHook = cardHooks.find((hook) => hook.keywords.includes('reveal-three-assign-again'));
+    assert.ok(revealHook !== undefined, 'the reveal hook exists');
+    assert.ok(againHook !== undefined, 'the again hook exists');
+    assert.equal((revealHook!.conditions ?? []).length, 0, 'abilities[0] is ungated');
+    assert.deepStrictEqual(againHook!.effects, [{ type: 'reveal-three-assign-again' }], 'the again effect carries no magnitude');
+    assert.ok(
+      (againHook!.conditions ?? []).some(
+        (condition) => condition.type === 'requiresTeam' && condition.value === 'venomverse',
+      ),
+      'abilities[1] keeps its Venomverse requiresTeam gate',
     );
   });
 });

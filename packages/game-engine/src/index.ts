@@ -380,6 +380,8 @@ export type {
   UIRevealedTopEntry,
   UIPendingRuthlessDictatorChoice,
   UIRuthlessDictatorRevealedCard,
+  UIPendingRevealThreeAssign,
+  UIRevealThreeAssignCard,
   UIPendingElectromagneticBubbleChoice,
   UIElectromagneticBubbleEligibleCard,
   UIPendingDiscardChoice,

@@ -44423,4 +44423,28 @@ Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer"
 
 **Reserved by:** NUMBER-LEDGER D-24579. Related: D-24533 (sequence teacher), D-24578 (bot buys / twists), D-24575 (eval fixtures), D-24403 (the coach).
 
+---
+
+### D-24580 — "Reveal the top three … draw one, discard one, KO one" is the `reveal-three-assign` hero keyword with its own pending queue (Active 2026-09-25 — WP-753 / EC-790)
+
+**Status:** Active — landed 2026-09-25 (WP-753 / EC-790). Live-on-surface (D-24026) is operator-pending.
+
+**Context.** The printed hero ability "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." (vnom Crystal of Kadavus; 3dtc and dims Howard the Duck's Interplanetary Visitor) carried no marker and no handler, so both cards granted only their printed attack (operator-observed live, match `ZIXtvedI6la`, 2026-09-24: Crystal played on turns 22 and 24 with no reveal, no choice, no log line). Crystal's second line, "[team:venomverse][team:venomverse]: Do this ability again.", was equally inert.
+
+**Decision.**
+1. **A handler-bearing keyword with its own queue.** `reveal-three-assign` (NO_MAGNITUDE) parks a block-all `PendingRevealThreeAssign { choiceType, playerID, sourceCardId, revealedCardIds, availableDispositions, remainingRepeats }` on the lazy `G.pendingRevealThreeAssign?` queue, resolved one card per call by the server-only `resolveRevealThreeAssign({ cardId, disposition })` move. It is a sibling of Ruthless Dictator (D-24512), not a generalisation: the dispositions differ (`draw` vs `top`), the reveal rule differs, and `PendingRuthlessDictatorChoice` stays a shipped contract.
+2. **Reveal tops up (D-24285).** The ability says "Reveal", so a deck holding fewer than three cards is topped up from the shuffled discard (appended beneath) before the snapshot; Ruthless Dictator's "Look at" never reshuffles. Deck + discard empty → logged no-op, no park.
+3. **All three dispositions always offered.** `availableDispositions` starts as `['draw','discard','ko']` for every reveal; the entry completes when its revealed cards run out, so a 1–2 card reveal lets the player choose which dispositions to use.
+4. **"Do this ability again" is a repeat counter.** `reveal-three-assign-again` (NO_MAGNITUDE, on Crystal's gated `abilities[1]` beside its `[team:venomverse][team:venomverse]` tokens — the gate is that entry's own `requiresTeam` condition) bumps `remainingRepeats` on the entry the card's first ability just parked; with nothing parked it runs a fresh reveal. Sibling abilities run synchronously after a block-all park (D-24521 §6), so a second park would snapshot the same three cards. When the entry empties, the resolve move re-reveals via the top-up + snapshot steps only (never by calling the handler) and replaces the front with `remainingRepeats − 1`; an empty re-reveal front-pops.
+5. **A second reveal while one is queued bumps it.** If a `PendingRevealThreeAssign` for the player is already queued (e.g. Steal Abilities re-firing two reveal-three cards in one synchronous run), the handler increments that entry's `remainingRepeats` instead of snapshotting the same deck top again.
+6. **Draw accounting and the draw lock.** A realized `draw` does `turnEconomy.cardsDrawn += 1` (a printed draw, like `heroEffectDraw`, feeding `cardsDrawnThisTurnAtLeast`). With `turnEconomy.drawsLocked` (D-24552) the card stays on the deck with a `[blocked]` log, the draw slot is consumed, nothing is counted. A revealed card a sibling effect already moved is dropped with the submitted slot and a neutral log (never a loop).
+7. **Chooser-only UIState.** `pendingRevealThreeAssign` (five-step, the Ruthless Dictator audience) projects the front entry's revealed cards, source card, unused slots and repeat counter; `PendingRevealThreeAssignPrompt.vue` renders Draw / Discard / KO per card. The queue joins the winning-turn drop (`dropAllPendingPlayerChoices`, D-24518 as relocated by WP-732). Bot/sim default: KO a cullable card, else draw the highest-cost card, else discard, else KO.
+8. **Near-sibling wordings are out of scope** (vill Stealthy Predator, wtif / wwhk draw-KO-top forms, cvwr / nmut / bkwd / anni / xmen variants, and non-hero same-shape text); a third scry-and-assign would justify a shared primitive.
+
+**Short-reveal rationale.** The rulebook's "do as much as you can" (rules-v23 L3328) does not fix WHICH dispositions survive a short reveal. Letting the player choose avoids forcing a lone Wound into hand and keeps the choice with the player (Ruthless Dictator's KO-first truncation reflects a tactic's punitive intent, not a hero's). Operator rules call, reversible by restoring printed-order truncation.
+
+**Consequences.** `HERO_KEYWORDS` 65 → 67, `HERO_EFFECT_HANDLERS` 49 → 51, moves 43 → 44 (runtime drift pins). The optional queue leaves the `finalStateHash` sentinels byte-unchanged. Card data regenerated via marker source (`hero-ability-markers.json`, new `dims` key). Accepted limitation: a sibling reveal from a DIFFERENT queue in the same synchronous run can still snapshot the same deck top (the general D-24521 §6 limitation). WP-741 / D-24563 (doubled-icon count) will tighten Crystal's gate to two other Venomverse cards with no change here.
+
+**Reserved by:** NUMBER-LEDGER D-24580 (WP-753 / EC-790). Related: D-24512 (Ruthless Dictator), D-24521 (reveal-top-dispose recipe), D-24285 (reveal top-up), D-24518 (winning-turn drop), D-24552 (draw lock), D-24563 (doubled icons, pending), D-24026 (live-verify).
+
 Protect this file.

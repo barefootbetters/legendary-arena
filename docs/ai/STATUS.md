@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-753 — Reveal-three assign (draw / discard / KO) hero keyword (EC-790 / D-24580) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Crystal of
+Kadavus (vnom) and Interplanetary Visitor (3dtc, dims) now do what they print: "Reveal the top three
+cards of your deck. Draw one of them, discard one, and KO one." Playing either card reveals the top
+three cards and prompts the player to draw one, discard one and KO one; the game waits for the
+choice (block-all), like Red Skull's Ruthless Dictator prompt. With another Venomverse Hero in play,
+Crystal of Kadavus prompts a second time on the next three cards. Fixes the operator report from
+match `ZIXtvedI6la` (Crystal played twice with no effect).
+
+- **Engine.** Two NO_MAGNITUDE keywords: `reveal-three-assign` parks a `PendingRevealThreeAssign`
+  (tops a short deck up from the discard first, D-24285; all three dispositions always offered);
+  `reveal-three-assign-again` bumps the parked entry's `remainingRepeats`, and the server-only
+  `resolveRevealThreeAssign` move re-reveals a fresh top three once the first set is assigned. A
+  realized draw counts toward `cardsDrawn`; the Shenanigans draw lock blocks the draw slot. Block-all
+  guard at every action move, winning-turn drop, chooser-only UIState five-step, sim dispatch + bot
+  default (KO junk, draw the priciest card, discard the rest).
+- **Client.** `PendingRevealThreeAssignPrompt.vue` (Draw / Discard / KO per revealed card, "then
+  again on the next three cards" when a repeat is owed), wired into both play surfaces, the turn
+  action bar gates and the diagnostics freeze classifier.
+- **Data.** Four markers via `hero-ability-markers.json` (new `dims` key); vnom / 3dtc / dims
+  regenerated; `cards:check` reproduces. Ledger, effect index, mechanics feed and runtime-observed
+  sweep regenerated (sweep `totalObservations` 2501 → 2507, a fixed-seed trajectory shift); the
+  dashboard in-play snapshot re-pins `totalObs` 3006 → 3010 (`resolvedObs` 733, `percentResolved`
+  holds at 24.4).
+- **Counts.** Engine 4142/0 → 4173/0; arena-client 1948/0 → 1955/0 (typecheck 0); dashboard
+  482/0; server 1611 (1406 pass, 205 DB-gated skips, 0 fail). Drift pins: `HERO_KEYWORDS` 65 → 67,
+  `HERO_EFFECT_HANDLERS` 49 → 51, moves 43 → 44. No `finalStateHash` re-pin.
+- **Pending (D-24026).** Operator live-verify: a real match plays Crystal of Kadavus and sees the
+  prompt; with a Venomverse Hero in play, the second prompt on a fresh three.
+
 ### WP-752 — AI Coach panel on unscored matches + guest prompt copy (EC-789 / D-24576) (2026-09-24)
 
 **User-visible on `play.legendary-arena.com` (pending live-verify).** A signed-in player who

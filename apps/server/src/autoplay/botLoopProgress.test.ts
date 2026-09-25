@@ -72,6 +72,7 @@ test('findPendingChoiceMove drains every block-all resolve short-circuit the eng
     'resolveScryKoChoice',
     'resolveMelterKoChoice',
     'resolveRevealTopDispose',
+    'resolveRevealThreeAssign',
     'resolveRuthlessDictatorChoice',
     'resolveElectromagneticBubbleChoice',
     'resolveDiscardChoice',

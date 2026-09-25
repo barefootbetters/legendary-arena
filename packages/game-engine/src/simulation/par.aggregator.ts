@@ -99,6 +99,9 @@ import { resolvePutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 // why: WP-702 / D-24521 — resolveRevealTopDispose can be the only legal move (block-all); it
 // must be a MOVE_MAP key here too or a PAR sweep that plays a reveal-top-dispose card hangs.
 import { resolveRevealTopDispose } from '../moves/revealTopDispose.resolve.js';
+// why: WP-753 / D-24580 — resolveRevealThreeAssign can be the only legal move (block-all); it
+// must be a MOVE_MAP key here too or a PAR sweep that plays a reveal-three-assign card hangs.
+import { resolveRevealThreeAssign } from '../moves/revealThreeAssign.resolve.js';
 // why: WP-681 / D-24498 — resolveDoOver can be the only legal move (block-all); it must be
 // dispatchable in the aggregator MOVE_MAP or the per-turn loop hangs.
 import { resolveDoOver } from '../moves/doOver.resolve.js';
@@ -491,6 +494,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   resolveSmashDiscard: (context, args) => resolveSmashDiscard(context as never, args as never),
   resolvePutHandOnDeckTop: (context, args) => resolvePutHandOnDeckTop(context as never, args as never),
   resolveRevealTopDispose: (context, args) => resolveRevealTopDispose(context as never, args as never),
+  resolveRevealThreeAssign: (context, args) => resolveRevealThreeAssign(context as never, args as never),
   // why: WP-681 / D-24498 — getLegalMoves short-circuits to resolveDoOver when a Do-Over
   // accept/decline choice is parked; a missing dispatch entry stalls the loop.
   resolveDoOver: (context, args) => resolveDoOver(context as never, args as never),

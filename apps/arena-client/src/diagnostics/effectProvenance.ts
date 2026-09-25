@@ -41,6 +41,9 @@ export type AwaitingInputKind =
   // why: WP-702 / D-24521 — a parked reveal-top discard-or-keep choice is a block-all freeze
   // class; surface it so a "froze after I played Hypnotic Charm" report names its own cause.
   | 'revealTopDispose'
+  // why: WP-753 / D-24580 — a parked reveal-three draw / discard / KO assignment is a block-all
+  // freeze class; surface it so a "froze after I played Crystal of Kadavus" report names its cause.
+  | 'revealThreeAssign'
   | 'drawOrEmpowered'
   | 'koHeroChoice';
 
@@ -88,6 +91,7 @@ const PENDING_FIELD_TO_KIND: ReadonlyArray<readonly [string, AwaitingInputKind]>
   ['pendingSmashDiscard', 'smashDiscard'],
   ['pendingPutHandOnDeckTop', 'putHandOnDeckTop'],
   ['pendingRevealTopDispose', 'revealTopDispose'],
+  ['pendingRevealThreeAssign', 'revealThreeAssign'],
   ['pendingDrawOrEmpowered', 'drawOrEmpowered'],
   ['pendingKoHeroChoice', 'koHeroChoice'],
 ];

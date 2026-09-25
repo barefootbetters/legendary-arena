@@ -267,6 +267,12 @@ export function useTurnActions(
   // Priority / Heal at ANY stage (the engine's block-all guard set freezes the board). Mandatory —
   // the active player must bind a side (WP-725 / D-24546).
   hasPendingSplitFaceChoice: boolean = false,
+  // why: WP-753 / D-24580 — appended LAST (after hasPendingSplitFaceChoice) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a reveal-three draw / discard / KO assignment is pending (Crystal of Kadavus,
+  // Interplanetary Visitor); blocks End Turn / Pass Priority / Heal at ANY stage (the engine's
+  // full block-all guard set freezes the board). Mandatory — every revealed card must be assigned.
+  hasPendingRevealThreeAssign: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -503,6 +509,15 @@ export function useTurnActions(
         return {
           allowed: false,
           reason: 'Choose a side of the split hero card before taking another action.',
+        };
+      }
+      // why: WP-753 / D-24580 — End Turn / Pass Priority blocked at any stage while a
+      // reveal-three draw / discard / KO assignment is pending (the engine's full block-all guard
+      // set freezes the board). The assignment is mandatory — no decline exit to name.
+      if (hasPendingRevealThreeAssign) {
+        return {
+          allowed: false,
+          reason: 'Draw, discard or KO each revealed card before taking another action.',
         };
       }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
@@ -746,6 +761,14 @@ export function useTurnActions(
           reason: 'Choose a side of the split hero card before taking another action.',
         };
       }
+      if (hasPendingRevealThreeAssign) {
+        // why: WP-753 / D-24580 — the engine's block-all guards block endTurn while
+        // pendingRevealThreeAssign is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Draw, discard or KO each revealed card before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -918,7 +941,10 @@ export function useTurnActions(
         hasPendingCoveringFireChoice ||
         // why: WP-725 / D-24546 — mirror the engine healWounds block-all guard, which returns
         // early while a split / dual-faced hero "choose a side" pick is pending.
-        hasPendingSplitFaceChoice
+        hasPendingSplitFaceChoice ||
+        // why: WP-753 / D-24580 — mirror the engine healWounds block-all guard, which returns
+        // early while a reveal-three draw / discard / KO assignment is pending.
+        hasPendingRevealThreeAssign
       ) {
         return {
           allowed: false,
