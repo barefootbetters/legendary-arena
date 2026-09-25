@@ -7,6 +7,43 @@
 
 ## Current State
 
+### WP-754 — Optional discard-to-draw + reveal-top-may-KO hero keywords (EC-791 / D-24581) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Eight hero
+cards that did nothing now do what they print. "You may discard a card. If you do, draw a card." —
+Hungry for Action (vnom, with 3+ cards in the Victory Pile), Gritty Scavenger (gotg),
+Bio-Engineered Cyborg (asrd), GW Bridge (shld) and Risky Science (antm, with another Tech Hero
+played) — opens the existing Smash prompt as "Discard a card to draw 1"; declining does nothing.
+"Reveal the top card of your deck. You may KO it." — Gruesome Feast (vnom) and Remove His Spine
+(mgtg) when you fight using Excessive Violence, and Electroshock Therapy (vill) on play — prompts
+**KO it** or **Keep on top**, with no Discard option. Fixes the operator report from match
+`a2e01e70` (Gruesome Feast round 30, Hungry for Action round 32).
+
+- **Engine.** Two keywords riding existing queues (no new move, queue or prompt):
+  `optional-discard-draw` parks `{ reward: 'draw' }` on the Smash queue (`resolveSmashDiscard`
+  discards then draws; the Shenanigans draw lock blocks only the draw; realized draws count toward
+  `cardsDrawn`; the bot declines under the lock); `reveal-top-may-ko` parks a KO-or-keep
+  reveal-top entry (`isDiscardAllowed: false`). `refreshStaleKoOrKeepFront` re-reveals a KO-or-keep
+  choice whose card a later Excessive Violence draw or an earlier KO took (amends D-24521 for
+  KO-or-keep entries only). Hungry for Action joins the Digest allowlist; Gruesome Feast and Remove
+  His Spine join the Excessive Violence allowlist. A single-branch Digest card below threshold now
+  logs "Digest N not met". **Latent crash fixed:** the fight moves passed bgio's bare `ctx` (no
+  `random`) to the Excessive Violence fire, so an EV effect that reshuffled an empty deck (e.g.
+  Rending Claws' draw) threw; they now pass the spread move context.
+- **Client.** The Smash prompt reads "Discard a card to draw N" for a draw-reward entry; the
+  reveal-top prompt hides Discard for a KO-or-keep entry; neutral turn-bar tooltips.
+- **Data.** Eight markers via `hero-ability-markers.json` (two `_deferred` entries removed); vnom /
+  gotg / asrd / shld / antm / mgtg / vill regenerated; `cards:check` reproduces. Ledger (both
+  keywords `executable`), effect index, mechanics feed and runtime-observed sweep regenerated (sweep
+  `totalObservations` 2507 → 2511, a fixed-seed trajectory shift); the dashboard in-play snapshot
+  re-pins `totalObs` 3010 → 3017 and `percentResolved` 24.4 → 24.3 (`resolvedObs` 733).
+- **Counts.** Engine 4173/0 → 4215/0; arena-client 1955/0 → 1961/0 (typecheck 0); dashboard
+  482/0; server 1611 (1406 pass, 205 DB-gated skips, 0 fail). Drift pins: `HERO_KEYWORDS` 67 → 69,
+  `HERO_EFFECT_HANDLERS` 51 → 53, moves unchanged at 44. No `finalStateHash` re-pin.
+- **Pending (D-24026).** Operator live-verify: a real match fights with Excessive Violence after
+  playing Gruesome Feast (KO-or-keep prompt appears), and plays Hungry for Action with 3+ Victory
+  Pile cards (discard-to-draw prompt appears).
+
 ### WP-753 — Reveal-three assign (draw / discard / KO) hero keyword (EC-790 / D-24580) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (D-24026 live-verify CONFIRMED 2026-09-25, match `a2e01e70`: round 24 Crystal of Kadavus revealed three and assigned KO / draw / discard, then the doubled-Venomverse repeat revealed the next three and assigned all three again).** Crystal of
