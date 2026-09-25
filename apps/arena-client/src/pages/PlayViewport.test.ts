@@ -4,7 +4,10 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setActivePinia, createPinia } from 'pinia';
 import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
+import type { UIState } from '@legendary-arena/game-engine';
 import PlayViewport, { computeCasualCoachMatchId } from './PlayViewport.vue';
+import { useVillainSlashVfxSignal } from '../composables/useVillainSlashVfx';
 import { useUiStateStore } from '../stores/uiState';
 import { loadUiStateFixture } from '../fixtures/uiState/index';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
@@ -72,6 +75,33 @@ describe('PlayViewport (WP-129)', () => {
       wrapper.find('[data-testid="arena-hud-final-turn"]').exists(),
       false,
     );
+  });
+
+  test('mounts the villain-slash producer: a new fightResolved reaches the overlay signal (WP-755)', async () => {
+    // why: pins the REQUIRED mount — an injected-renderer unit test cannot catch
+    // a producer that was never mounted (the WP-746 lesson).
+    useVillainSlashVfxSignal().value = null;
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    const store = useUiStateStore();
+    const first = loadUiStateFixture('mid-turn');
+    store.setSnapshot({ ...first, notableEvents: [...(first.notableEvents ?? [])] });
+    const wrapper = mount(PlayViewport, {
+      props: { submitMove: noopSubmitMove },
+    });
+    const defeat = {
+      type: 'fightResolved',
+      playerId: '0',
+      cardId: 'villain-mount-test',
+      citySpace: 3,
+      bystandersRescued: 0,
+      appliedEffects: [],
+      narrative: 'Player 0 defeats a villain.',
+    } as unknown as NonNullable<UIState['notableEvents']>[number];
+    store.setSnapshot({ ...first, notableEvents: [...(first.notableEvents ?? []), defeat] });
+    await nextTick();
+    assert.equal(useVillainSlashVfxSignal().value?.citySpace, 3);
+    wrapper.unmount();
   });
 });
 

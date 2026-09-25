@@ -3,11 +3,15 @@
 // these DOM tests assert the word / canvas / impact without real particles.
 import '../../testing/jsdom-setup';
 
-import { describe, test, beforeEach } from 'node:test';
+import { describe, test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import VfxOverlay, { buildBurstOptions, buildSwordBurstOptions } from './VfxOverlay.vue';
+import VfxOverlay, {
+  buildBurstOptions,
+  buildSliceSprayOptions,
+  buildSwordBurstOptions,
+} from './VfxOverlay.vue';
 import { EXCESSIVE_VIOLENCE_VFX } from '../../vfx/excessiveViolenceVfxManifest';
 import { useComboVfxSignal, type ComboVfxEvent } from '../../composables/useComboVfx';
 import {
@@ -19,6 +23,8 @@ import { useTransformVfxSignal } from '../../composables/useTransformVfx';
 import { useExcessiveViolenceVfxSignal } from '../../composables/useExcessiveViolenceVfx';
 import { useMastermindHitVfxSignal } from '../../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
+import { useVillainSlashVfxSignal } from '../../composables/useVillainSlashVfx';
+import { VILLAIN_SLASH_VFX } from '../../vfx/villainSlashVfxManifest';
 import {
   useEffectIntensity,
   __resetEffectIntensityForTests,
@@ -591,5 +597,283 @@ describe('VfxOverlay — buildSwordBurstOptions (Excessive Violence blade burst,
     const sword = { __swordShape: true };
     const withShapes = buildSwordBurstOptions(EXCESSIVE_VIOLENCE_VFX, [sword]);
     assert.deepEqual(withShapes.shapes, [sword]);
+  });
+});
+
+/** A DOMRect stand-in for a stubbed getBoundingClientRect. */
+function fakeRect(left: number, top: number, width: number, height: number): DOMRect {
+  return {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
+/**
+ * Appends a fake City to document.body: a live villain (with a reference
+ * card-tile) at index 0 and an empty placeholder at index 2 — the space a
+ * defeated villain usually re-renders as. Returns the row for afterEach removal.
+ */
+function installFakeCity(): HTMLElement {
+  const row = document.createElement('div');
+  row.setAttribute('data-testid', 'play-city-row');
+  const villain = document.createElement('button');
+  villain.setAttribute('data-testid', 'play-city-villain');
+  villain.setAttribute('data-city-index', '0');
+  villain.getBoundingClientRect = () => fakeRect(100, 200, 90, 130);
+  const tile = document.createElement('div');
+  tile.setAttribute('data-testid', 'card-tile');
+  tile.getBoundingClientRect = () => fakeRect(105, 205, 80, 112);
+  villain.appendChild(tile);
+  const empty = document.createElement('div');
+  empty.setAttribute('data-testid', 'play-city-empty');
+  empty.setAttribute('data-city-index', '2');
+  empty.getBoundingClientRect = () => fakeRect(300, 200, 90, 40);
+  row.appendChild(villain);
+  row.appendChild(empty);
+  document.body.appendChild(row);
+  return row;
+}
+
+let sliceClockMs = 1000;
+/** Pushes a villain-slash event onto the shared signal at the given overlay time. */
+function emitSlice(citySpace: number, playerId: string, atMs: number): void {
+  seq += 1;
+  sliceClockMs = atMs;
+  useVillainSlashVfxSignal().value = {
+    seq,
+    citySpace,
+    playerId,
+    imageUrl: 'https://images.example/villain.webp',
+  };
+}
+
+describe('VfxOverlay — villain slash beat (WP-755)', () => {
+  let fakeCity: HTMLElement | null = null;
+
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    useComboVfxSignal().value = null;
+    useExcessiveViolenceVfxSignal().value = null;
+    useMastermindHitVfxSignal().value = null;
+    useVillainSlashVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+    // why: mock ONLY setTimeout — setImmediate stays real so the Vue test-utils
+    // flush still works; performance.now is stubbed so the streak window is exact.
+    mock.timers.enable({ apis: ['setTimeout'] });
+    mock.method(performance, 'now', () => sliceClockMs);
+    fakeCity = installFakeCity();
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    mock.restoreAll();
+    if (fakeCity !== null) fakeCity.remove();
+    fakeCity = null;
+  });
+
+  test('the slice layer is mounted', () => {
+    const wrapper = mount(VfxOverlay);
+    assert.ok(wrapper.find('[data-testid="play-vfx-slice-layer"]').exists());
+    wrapper.unmount();
+  });
+
+  test('at full, one signal renders two halves, one streak and five stains', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-half"]').length, 2);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-streak"]').length, 1);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-stain"]').length, 5);
+    // A single defeat has no takedown word.
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('the halves are card-shaped (reference tile size) and centred on the empty space', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    const half = wrapper.find('[data-testid="play-vfx-slice-half"]').element as HTMLElement;
+    // Space centre (345, 220); reference tile 80×112 → left 305, top 164.
+    assert.equal(half.style.width, '80px');
+    assert.equal(half.style.height, '112px');
+    assert.equal(half.style.left, '305px');
+    assert.equal(half.style.top, '164px');
+    assert.ok(half.querySelector('img'), 'the half shows the card art');
+    wrapper.unmount();
+  });
+
+  test('a null imageUrl renders a silhouette half (no img)', async () => {
+    const wrapper = mount(VfxOverlay);
+    seq += 1;
+    useVillainSlashVfxSignal().value = { seq, citySpace: 0, playerId: '0', imageUrl: null };
+    await nextTick();
+    const halves = wrapper.findAll('[data-testid="play-vfx-slice-half"]');
+    assert.equal(halves.length, 2);
+    assert.equal(halves[0]?.element.querySelector('img'), null);
+    wrapper.unmount();
+  });
+
+  test('at low: halves and a streak, but no stains and no impact', async () => {
+    useEffectIntensity().setIntensity('low');
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-half"]').length, 2);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-streak"]').length, 1);
+    emitSlice(2, '0', 1200);
+    await nextTick();
+    emitSlice(2, '0', 1400);
+    await nextTick();
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-stain"]').length, 0);
+    assert.equal(wrapper.find('[data-testid="play-vfx-impact"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('under reduced motion: zero slice nodes, but the word still shows on a double', async () => {
+    useEffectIntensity().prefersReducedMotion.value = true;
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitSlice(2, '0', 1500);
+    await nextTick();
+    const layer = wrapper.find('[data-testid="play-vfx-slice-layer"]').element;
+    assert.equal(layer.children.length, 0);
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').text(), 'DOUBLE TAKEDOWN!');
+    wrapper.unmount();
+  });
+
+  test('at off: nothing', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitSlice(2, '0', 1500);
+    await nextTick();
+    const layer = wrapper.find('[data-testid="play-vfx-slice-layer"]').element;
+    assert.equal(layer.children.length, 0);
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('DOUBLE then TRIPLE inside the word hold (the beat escalates its own word)', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitSlice(2, '0', 2000);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').text(), 'DOUBLE TAKEDOWN!');
+    mock.timers.tick(600);
+    emitSlice(2, '0', 2600);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').text(), 'TRIPLE TAKEDOWN!');
+    wrapper.unmount();
+  });
+
+  test('a different player, or a defeat past the window, does not extend the streak', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitSlice(2, '1', 1500);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    emitSlice(2, '1', 6000);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('at full, a streak of 3 pulses the impact', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitSlice(2, '0', 1500);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-impact"]').exists(), false);
+    emitSlice(2, '0', 2000);
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-impact"]').exists());
+    wrapper.unmount();
+  });
+
+  test('another beat word in the slot is not overwritten', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    emitExcessiveViolence();
+    await nextTick();
+    emitSlice(2, '0', 1500);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').text(), 'EXCESSIVE VIOLENCE!');
+    wrapper.unmount();
+  });
+
+  test('a missing City element skips the pieces without error, and the word still shows', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(4, '0', 1000);
+    await nextTick();
+    emitSlice(4, '0', 1500);
+    await nextTick();
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-half"]').length, 0);
+    assert.equal(wrapper.find('[data-testid="play-vfx-callout"]').text(), 'DOUBLE TAKEDOWN!');
+    wrapper.unmount();
+  });
+
+  test('six rapid signals leave at most 10 live halves', async () => {
+    const wrapper = mount(VfxOverlay);
+    for (let index = 0; index < 6; index += 1) {
+      emitSlice(2, '0', 1000 + index * 100);
+      await nextTick();
+    }
+    const halves = wrapper.findAll('[data-testid="play-vfx-slice-half"]').length;
+    assert.ok(halves <= VILLAIN_SLASH_VFX.maxLiveHalves, `${halves} halves live`);
+    assert.equal(halves, VILLAIN_SLASH_VFX.maxLiveHalves);
+    wrapper.unmount();
+  });
+
+  test('every slice node is removed after its duration (all gone by stainMs)', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    const layer = wrapper.find('[data-testid="play-vfx-slice-layer"]').element;
+    assert.ok(layer.children.length > 0);
+    mock.timers.tick(VILLAIN_SLASH_VFX.halfFlightMs);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-half"]').length, 0);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-streak"]').length, 0);
+    assert.equal(wrapper.findAll('[data-testid="play-vfx-slice-stain"]').length, 5);
+    mock.timers.tick(VILLAIN_SLASH_VFX.stainMs);
+    assert.equal(layer.children.length, 0);
+    wrapper.unmount();
+  });
+
+  test('unmount removes every live slice node', async () => {
+    const wrapper = mount(VfxOverlay);
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    const layer = wrapper.find('[data-testid="play-vfx-slice-layer"]').element;
+    assert.ok(layer.children.length > 0);
+    wrapper.unmount();
+    assert.equal(layer.children.length, 0);
+  });
+});
+
+describe('VfxOverlay — buildSliceSprayOptions (WP-755)', () => {
+  test('carries the palette, count, origin, the NEGATED angle and the reduced-motion guard', () => {
+    const options = buildSliceSprayOptions(VILLAIN_SLASH_VFX.colors, 28, 0.25, 0.4, -28);
+    assert.equal(options.particleCount, 28);
+    assert.deepEqual(options.colors, [...VILLAIN_SLASH_VFX.colors]);
+    assert.deepEqual(options.origin, { x: 0.25, y: 0.4 });
+    assert.equal(options.angle, 28);
+    assert.equal(buildSliceSprayOptions(VILLAIN_SLASH_VFX.colors, 10, 0.5, 0.5, 34).angle, -34);
+    assert.equal(options.disableForReducedMotion, true);
   });
 });

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 340" width="460" height="340" role="img" aria-label="Animated mock of the villain slash: a bright blade streak crosses a villain card, the card splits along the cut into two halves that hop and tumble away, purple droplets spray along the cut, stains fade, and the words DOUBLE TAKEDOWN! pop. Loops.">
+  <title>Shipped villain slash — every villain or henchman defeat slices the card</title>
+  <style>
+text { font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif; font-weight: 900; font-style: italic; letter-spacing: 1px; }
+.whole { opacity: 0; animation: whole 3.2s linear infinite; }
+.halfa { opacity: 0; animation: halfa 3.2s linear infinite; }
+.halfb { opacity: 0; animation: halfb 3.2s linear infinite; }
+.streak { opacity: 0; animation: streak 3.2s ease-out infinite; }
+.drop { opacity: 0; transform-box: fill-box; animation: drops 3.2s ease-out infinite; }
+.stain { opacity: 0; animation: stain 3.2s ease-in infinite; }
+.lbl { opacity: 0; animation: lbl 3.2s ease-out infinite; }
+@keyframes whole {
+  0.00% { opacity: 0; }
+  6.00% { opacity: 1; }
+  22.00% { opacity: 1; }
+  22.01% { opacity: 0; }
+  100.00% { opacity: 0; }
+}
+@keyframes halfa {
+  0.00% { opacity: 1; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+  22.00% { opacity: 1; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+  25.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-6.9px,-24.1px) rotate(-4.2deg); }
+  28.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-13.4px,-36.2px) rotate(-8.4deg); }
+  31.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-19.4px,-36.3px) rotate(-12.6deg); }
+  34.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-25.0px,-24.4px) rotate(-16.8deg); }
+  37.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-30.2px,-0.5px) rotate(-21.0deg); }
+  40.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(-34.9px,35.5px) rotate(-25.2deg); }
+  43.00% { opacity: 0.75; transform: translate(170.0px,72.0px) translate(-39.3px,83.4px) rotate(-29.4deg); }
+  46.00% { opacity: 0.50; transform: translate(170.0px,72.0px) translate(-43.1px,143.4px) rotate(-33.6deg); }
+  49.00% { opacity: 0.25; transform: translate(170.0px,72.0px) translate(-46.6px,215.4px) rotate(-37.8deg); }
+  52.00% { opacity: 0.00; transform: translate(170.0px,72.0px) translate(-49.6px,299.4px) rotate(-42.0deg); }
+  100.00% { opacity: 0; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+}
+@keyframes halfb {
+  0.00% { opacity: 1; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+  22.00% { opacity: 1; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+  25.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(6.9px,-8.7px) rotate(4.2deg); }
+  28.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(13.4px,-7.0px) rotate(8.4deg); }
+  31.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(19.4px,5.1px) rotate(12.6deg); }
+  34.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(25.0px,27.6px) rotate(16.8deg); }
+  37.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(30.2px,60.5px) rotate(21.0deg); }
+  40.00% { opacity: 1.00; transform: translate(170.0px,72.0px) translate(34.9px,103.7px) rotate(25.2deg); }
+  43.00% { opacity: 0.75; transform: translate(170.0px,72.0px) translate(39.3px,157.4px) rotate(29.4deg); }
+  46.00% { opacity: 0.50; transform: translate(170.0px,72.0px) translate(43.1px,221.4px) rotate(33.6deg); }
+  49.00% { opacity: 0.25; transform: translate(170.0px,72.0px) translate(46.6px,295.8px) rotate(37.8deg); }
+  52.00% { opacity: 0.00; transform: translate(170.0px,72.0px) translate(49.6px,380.6px) rotate(42.0deg); }
+  100.00% { opacity: 0; transform: translate(170.0px,72.0px) translate(0px,0px) rotate(0deg); }
+}
+@keyframes streak {
+  0.00% { opacity: 0; transform: translate(230px,156px) rotate(-28deg) scaleX(0.1); }
+  19.00% { opacity: 0; transform: translate(230px,156px) rotate(-28deg) scaleX(0.1); }
+  22.00% { opacity: 1; transform: translate(230px,156px) rotate(-28deg) scaleX(1); }
+  29.00% { opacity: 0; transform: translate(230px,156px) rotate(-28deg) scaleX(1.06); }
+  100.00% { opacity: 0; }
+}
+@keyframes drops {
+  0.00% { opacity: 0; transform: translate(0,0); }
+  22.00% { opacity: 0; transform: translate(0,0); }
+  23.00% { opacity: 1; }
+  48.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+  100.00% { opacity: 0; transform: translate(var(--tx), var(--ty)); }
+}
+@keyframes stain {
+  0.00% { opacity: 0; }
+  22.00% { opacity: 0; }
+  24.00% { opacity: 0.8; }
+  70.00% { opacity: 0.6; }
+  92.00% { opacity: 0; }
+  100.00% { opacity: 0; }
+}
+@keyframes lbl {
+  0.00% { opacity: 0; transform: translate(230px,310px) scale(0.5); }
+  26.00% { opacity: 0; transform: translate(230px,310px) scale(0.5); }
+  29.00% { opacity: 1; transform: translate(230px,310px) scale(1.14); }
+  32.00% { transform: translate(230px,310px) scale(1.0); }
+  86.00% { opacity: 1; transform: translate(230px,310px) scale(1.0); }
+  94.00% { opacity: 0; transform: translate(230px,310px) scale(1.1); }
+  100.00% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .whole, .streak, .drop { animation: none; opacity: 0; }
+  .halfa { animation: none; opacity: 1; transform: translate(170.0px,72.0px) translate(-4.7px,-8.8px); }
+  .halfb { animation: none; opacity: 1; transform: translate(170.0px,72.0px) translate(4.7px,8.8px); }
+  .stain { animation: none; opacity: 0.7; }
+  .lbl { animation: none; opacity: 1; transform: translate(230px,310px) scale(1); }
+}
+  </style>
+  <defs><radialGradient id="bg" cx="50%" cy="44%" r="82%"><stop offset="0%" stop-color="#150d1a"/><stop offset="100%" stop-color="#08060b"/></radialGradient><linearGradient id="cardbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a1450"/><stop offset="100%" stop-color="#1a0726"/></linearGradient><radialGradient id="ink" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a0d67"/><stop offset="60%" stop-color="#7b1fa2" stop-opacity="0.9"/><stop offset="100%" stop-color="#7b1fa2" stop-opacity="0"/></radialGradient><linearGradient id="blade" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d6c2ff" stop-opacity="0"/><stop offset="25%" stop-color="#d6c2ff"/><stop offset="50%" stop-color="#ffffff"/><stop offset="75%" stop-color="#d6c2ff"/><stop offset="100%" stop-color="#d6c2ff" stop-opacity="0"/></linearGradient><clipPath id="cuta"><polygon points="0.0,0.0 120.0,0.0 120.0,52.1 0.0,115.9"/></clipPath><clipPath id="cutb"><polygon points="120.0,52.1 120.0,168.0 0.0,168.0 0.0,115.9"/></clipPath><filter id="glow" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="3"/></filter></defs>
+  <rect width="460" height="340" fill="url(#bg)"/>
+  <circle class="stain" cx="189.7" cy="172.9" r="14.4" fill="url(#ink)"/><circle class="stain" cx="214.5" cy="173.3" r="14.4" fill="url(#ink)"/><circle class="stain" cx="230.0" cy="156.0" r="14.4" fill="url(#ink)"/><circle class="stain" cx="245.5" cy="138.7" r="14.4" fill="url(#ink)"/><circle class="stain" cx="270.3" cy="139.1" r="14.4" fill="url(#ink)"/><g class="whole" transform="translate(170.0 72.0)"><rect x="0" y="0" width="120" height="168" rx="8" fill="url(#cardbg)"/><rect x="4" y="4" width="112" height="160" rx="6" fill="none" stroke="#b44fd6" stroke-width="2"/><circle cx="60" cy="62" r="22" fill="#1a0726"/><path d="M 38 58 q 22 -34 44 0 l 0 10 q -22 -8 -44 0 z" fill="#7b1fa2"/><path d="M 18 150 q 42 -78 84 0 z" fill="#1a0726"/><circle cx="52" cy="64" r="3" fill="#b44fd6"/><circle cx="68" cy="64" r="3" fill="#b44fd6"/><rect x="10" y="140" width="100" height="16" rx="3" fill="#12051b" opacity="0.85"/><rect x="18" y="146" width="84" height="4" rx="2" fill="#b44fd6"/></g><g class="halfa"><g clip-path="url(#cuta)"><rect x="0" y="0" width="120" height="168" rx="8" fill="url(#cardbg)"/><rect x="4" y="4" width="112" height="160" rx="6" fill="none" stroke="#b44fd6" stroke-width="2"/><circle cx="60" cy="62" r="22" fill="#1a0726"/><path d="M 38 58 q 22 -34 44 0 l 0 10 q -22 -8 -44 0 z" fill="#7b1fa2"/><path d="M 18 150 q 42 -78 84 0 z" fill="#1a0726"/><circle cx="52" cy="64" r="3" fill="#b44fd6"/><circle cx="68" cy="64" r="3" fill="#b44fd6"/><rect x="10" y="140" width="100" height="16" rx="3" fill="#12051b" opacity="0.85"/><rect x="18" y="146" width="84" height="4" rx="2" fill="#b44fd6"/></g></g><g class="halfb"><g clip-path="url(#cutb)"><rect x="0" y="0" width="120" height="168" rx="8" fill="url(#cardbg)"/><rect x="4" y="4" width="112" height="160" rx="6" fill="none" stroke="#b44fd6" stroke-width="2"/><circle cx="60" cy="62" r="22" fill="#1a0726"/><path d="M 38 58 q 22 -34 44 0 l 0 10 q -22 -8 -44 0 z" fill="#7b1fa2"/><path d="M 18 150 q 42 -78 84 0 z" fill="#1a0726"/><circle cx="52" cy="64" r="3" fill="#b44fd6"/><circle cx="68" cy="64" r="3" fill="#b44fd6"/><rect x="10" y="140" width="100" height="16" rx="3" fill="#12051b" opacity="0.85"/><rect x="18" y="146" width="84" height="4" rx="2" fill="#b44fd6"/></g></g><g class="streak"><rect x="-139.4" y="-4" width="278.7" height="8" rx="4" fill="#d6c2ff" filter="url(#glow)"/><rect x="-139.4" y="-2.5" width="278.7" height="5" rx="2.5" fill="url(#blade)"/></g><g transform="translate(230.0 156.0)"><circle class="drop" r="4.1" fill="#7b1fa2" style="--tx:114px; --ty:-15px;"/><circle class="drop" r="3.5" fill="#4a0d67" style="--tx:-91px; --ty:117px;"/><circle class="drop" r="3.0" fill="#b44fd6" style="--tx:104px; --ty:-22px;"/><circle class="drop" r="2.2" fill="#7b1fa2" style="--tx:-94px; --ty:76px;"/><circle class="drop" r="4.2" fill="#4a0d67" style="--tx:73px; --ty:-25px;"/><circle class="drop" r="2.8" fill="#b44fd6" style="--tx:-145px; --ty:64px;"/><circle class="drop" r="2.6" fill="#7b1fa2" style="--tx:53px; --ty:-50px;"/><circle class="drop" r="2.9" fill="#4a0d67" style="--tx:-134px; --ty:54px;"/><circle class="drop" r="2.8" fill="#b44fd6" style="--tx:115px; --ty:-94px;"/><circle class="drop" r="3.9" fill="#7b1fa2" style="--tx:-96px; --ty:67px;"/><circle class="drop" r="2.4" fill="#4a0d67" style="--tx:87px; --ty:-23px;"/><circle class="drop" r="3.2" fill="#b44fd6" style="--tx:-129px; --ty:40px;"/><circle class="drop" r="3.9" fill="#7b1fa2" style="--tx:77px; --ty:-39px;"/><circle class="drop" r="3.5" fill="#4a0d67" style="--tx:-117px; --ty:44px;"/><circle class="drop" r="2.1" fill="#b44fd6" style="--tx:102px; --ty:-103px;"/><circle class="drop" r="3.4" fill="#7b1fa2" style="--tx:-91px; --ty:66px;"/><circle class="drop" r="3.6" fill="#4a0d67" style="--tx:87px; --ty:-67px;"/><circle class="drop" r="3.1" fill="#b44fd6" style="--tx:-114px; --ty:75px;"/></g><text class="lbl" x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="30" fill="#ffe082">DOUBLE TAKEDOWN!</text>
+</svg>

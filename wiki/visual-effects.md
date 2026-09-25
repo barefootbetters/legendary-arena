@@ -531,7 +531,7 @@ stream — one effect per event type — with zero new engine work.
 |---|---|---|---|
 | `mastermindStrikeResolved` | T1 | A Mastermind Strike card is revealed and resolved | **Screen-shake** + red edge-vignette pulse + dark shard particles — the signature "uh-oh" jolt |
 | `mastermindDefeated` | T1 | All tactics defeated — the Mastermind is vanquished (win) | **Shipped** as the [heroes-win victory finale](#shipped-victory-finale) — but keyed off the projected `gameOver.outcome`, not this event (so it fires on the Final Blow 5th blow too, WP-690). Separately, each **Tactic hit** on the way there fires the escalating [mastermind-hit beat](#shipped-mastermind-hit) off the `tacticsDefeated` count delta |
-| `fightResolved` | T1 | A player defeats a villain or henchman in the City | **Impact burst** at the card's City space; a coin/star flourish layered on when `bystandersRescued > 0` |
+| `fightResolved` | T1 | A player defeats a villain or henchman in the City | **Shipped** as the [villain slash](#surface-villain-slash) (WP-755 / D-24584): a blade **streak** across the card's City space, the card's own art **split into two halves** that fly apart, a villain-purple **droplet spray** along the cut, and (full intensity) tumbling halves + fading **stains**; same-player defeats within 4 s raise **DOUBLE TAKEDOWN!** → **TRIPLE TAKEDOWN!** → **RAMPAGE!**. The originally proposed coin/star flourish for `bystandersRescued > 0` is not built |
 | `ambushResolved` | T2 | A villain with an `Ambush:` marker enters the City | Menacing **edge-glow** + a hard card-slam settle as the villain drops into its City space |
 | `schemeTwistResolved` | T2 | A Scheme Twist is revealed and resolved | A darker, subtler **desaturation ripple** radiating from the scheme tile; less violent than a Strike |
 | `healResolved` | T2 | A player uses the Wound Healing ability | Soft green **restorative shimmer** rising off the hand |
@@ -970,6 +970,69 @@ The crimson/steel palette is the shipped one (`excessiveViolenceVfxManifest.ts`'
 live beat plays over the real board). Animation source:
 [excessive-violence-slash.py](../ewiki/visual-effects/excessive-violence-slash.py)
 — regenerate with `python excessive-violence-slash.py`.*
+
+#### Shipped — the villain slash (a Fruit Ninja-style defeat beat) {#surface-villain-slash}
+
+The most frequent heroic action in the game — defeating a villain or henchman in
+the City — used to have no board-level visual at all: the card vanished from its
+space and the centre chip said "Fought". The villain slash makes that moment land
+**on the card itself**, Fruit Ninja-style.
+
+> **Shipped — WP-755 (D-24584), client-only.** It rides the existing public
+> `fightResolved` notable event (`{ playerId, cardId, citySpace, … }`), so there is
+> no engine, `UIState`, SFX or chip change — the "Fought" chip and its SFX keep
+> firing alongside. A `useVillainSlashVfx` producer (an append-only
+> `notableEvents` cursor, the D-20104 re-emission gate) emits
+> `{ seq, citySpace, playerId, imageUrl }` per new defeat. Because the engine
+> clears the City space in the **same** frame it raises the event, the defeated
+> card's art comes from a **prior-frame** `extId → imageUrl` city cache; a miss
+> renders a plain card silhouette instead, so the beat never fails for want of art.
+>
+> The `VfxOverlay` then plays the beat **at the defeated City space**:
+>
+> - **Halves** — the card box (centred on the space, sized from a live villain
+>   `card-tile`, or 5:7 from the space height) is cut through its centre at one of
+>   four fixed angles (`[-28, 22, -16, 34]`°, chosen by `seq % 4` — deterministic,
+>   no `Math.random`). Two copies of the art, clipped with complementary
+>   `clip-path` polygons, hop and fall under gravity for 900 ms, tumbling at full
+>   intensity.
+> - **Streak** — a white-core (`#ffffff`) / lavender-glow (`#d6c2ff`) blade line
+>   along the cut, 260 ms.
+> - **Spray** — villain-ink droplets (`['#7b1fa2', '#4a0d67', '#b44fd6']`, the
+>   `--color-villain` lead) thrown along the cut from the card centre: 28 at full,
+>   10 at low.
+> - **Stains** — five ink stains along the cut that fade over 2.4 s (full only).
+> - **Takedown streak** — same-player defeats within 4 s escalate
+>   **DOUBLE TAKEDOWN!** → **TRIPLE TAKEDOWN!** → **RAMPAGE!** (with the impact
+>   pulse from the third on, full only). The takedown word may replace another
+>   takedown word but **never** another beat's word — an Excessive Violence fight
+>   keeps "EXCESSIVE VIOLENCE!".
+>
+> **Gates** (the WP-556 `shouldRender` contract): the word is `'word'`; halves,
+> streak and spray are `'particles'`; tumble, stains, the full spray count and the
+> impact pulse are `'shake'`. So `off` shows nothing, reduced motion shows the word
+> only (a CSS backstop also hides the slice layer), and `low` gets halves + streak
+> + a light spray. **Budget:** halves, streak and stains are DOM nodes (the one
+> overlay canvas belongs to `canvas-confetti`, which clears it every frame),
+> animated with `transform` / `opacity` only, capped at 10 live halves, and removed
+> by `setTimeout`; the spray stays far under the [200-particle
+> ceiling](#performance-budget). **Pure presentation** — the producer reads no clock
+> and no randomness; the one `performance.now()` read (the streak window) lives in
+> the D-24365-exempt `VfxOverlay.vue`. v1 plays one visible beat when several
+> defeats land in one frame (each fight is its own move, so normal play never hits
+> it). Named follow-ups: swipe-to-fight input with a pointer blade trail, and
+> team-coloured splatter.
+
+![Animated mock of the villain slash: a bright blade streak crosses a villain card, the card splits along the cut into two halves that hop and tumble away, purple droplets spray along the cut, stains fade, and the words DOUBLE TAKEDOWN! pop. Loops.](/visual-effects/villain-slash.svg "width=58%")
+
+*Illustrative mock of the shipped villain slash — a CSS-only animated SVG (no
+JavaScript, so it animates on the JS-free wiki) that loops and holds the split card,
+the stains and **DOUBLE TAKEDOWN!** as a static frame under
+`prefers-reduced-motion`. The palette, cut angle and flight are the shipped ones
+(`villainSlashVfxManifest.ts` / `villainSlashGeometry.ts`); the card art is a
+stylised stand-in (the live beat slices the real defeated card). Animation source:
+[villain-slash.py](../ewiki/visual-effects/villain-slash.py) — regenerate with
+`python villain-slash.py`.*
 
 ### Card-interaction & hand feel (the Hearthstone-feel pass) {#card-interaction-feel}
 
