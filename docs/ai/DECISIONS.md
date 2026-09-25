@@ -44529,6 +44529,34 @@ This is a new variant as a data marker, per D-24024: no new HeroKeyword, handler
 
 ---
 
+### D-24584 — Every `fightResolved` plays a client-only villain-slash beat at the defeated City space (Active 2026-09-25 — WP-755 / EC-792)
+
+**Status:** Active — landed 2026-09-25 (WP-755 / EC-792). Live-on-surface (D-24026) is operator-pending.
+
+**Context.** Defeating a villain or henchman — the most frequent heroic action — had no board-level visual: the card left its City space and the centre chip said "Fought". `fightResolved` is already public on `UIState.notableEvents` (D-12803) and carries `playerId`, `cardId` and `citySpace`, so the beat needs no engine change.
+
+**Decision.**
+1. **Client-only.** No engine, registry or server change, no new notable-event type, no UIState field, no `sfxManifest` / `CHIP_LABELS` / `02-CODE-CATEGORIES.md` edit. The "Fought" chip and its SFX keep firing alongside.
+2. **Producer.** `useVillainSlashVfx` (D-20104 append-only cursor; catch-up replays nothing) emits `{ seq, citySpace, playerId, imageUrl }` per new `fightResolved`. It reads **no clock and no randomness**.
+3. **Prior-frame art cache.** The engine nulls the City space in the same frame it pushes the event, so the card's `display.imageUrl` comes from an `extId → imageUrl` cache of the **previous** frame, refreshed after each non-null frame (catch-up included). A miss, an empty URL or a missing `city` yields `null` and a silhouette half — the beat never fails for want of art. The silhouette is also painted under the art, so a half stays visible while the image loads.
+4. **One clock, in the exempt subsurface.** The takedown streak (same player within `TAKEDOWN_STREAK_WINDOW_MS = 4000`) is the pure `nextTakedownStreak`; the single `performance.now()` read lives in `VfxOverlay.vue` (D-24365). Words: 2 → DOUBLE TAKEDOWN!, 3 → TRIPLE TAKEDOWN!, 4+ → RAMPAGE!.
+5. **DOM, not canvas.** Halves, streak and stains are imperative DOM nodes in one template-owned `play-vfx-slice-layer` container (the one overlay canvas belongs to `canvas-confetti`, which clears it every frame). They are styled inline (scoped CSS never reaches imperative nodes), animate `transform` / `opacity` only via `element.animate` when present, are removed by `setTimeout`, capped at **10 live halves** (oldest first), and cleared on unmount. Only the droplet spray uses the canvas.
+6. **Card box.** `resolveCardBox` centres a card-shaped box on the space's centre (the post-defeat placeholder is not card-shaped), sized from a live villain `card-tile`, else 5:7 from the space height; a zero-size space skips the positional stages.
+7. **Angle convention.** Angles `[-28, 22, -16, 34]` by `seq % 4`, in screen convention (y down, clockwise) for the geometry and the streak's `rotate()`; the confetti spray uses `angle = -angleDeg`. Stains derive from `seq` — no `Math.random`.
+8. **Gates.** `'word'` → the takedown word; `'particles'` → halves, streak, spray; `'shake'` → tumble, stains, full spray count (28 vs 10), impact pulse on streak ≥ 3. Reduced motion shows the word only (plus a `display: none` CSS backstop on the layer).
+9. **Word slot.** A takedown word shows when the shared slot is empty or already holds a takedown word (so DOUBLE escalates to TRIPLE inside the 1300 ms hold); it never overwrites another beat's word.
+10. **Naming + mount.** Every new overlay identifier uses the `slice` stem, leaving WP-746's `slash*` identifiers untouched. `useVillainSlashVfx(audioSnapshot)` mounts in `PlayViewport.vue` immediately after `useExcessiveViolenceVfx`, so on an Excessive Violence fight "EXCESSIVE VIOLENCE!" fills the slot first.
+
+**Consequences.** Several `fightResolved` events in ONE frame play one visible beat (the v1 limitation shared with `useExcessiveViolenceVfx`). No determinism footprint: no engine file changed, so `finalStateHash` / `PRE_WP080_HASH` are untouched by construction. Named follow-ups: swipe-to-fight input with a pointer blade trail (WP-756), team-coloured splatter.
+
+**Gates.** arena-client typecheck 0; tests 1961 → 2019 / 0 (the `PlayViewport` mount pin fails with the mount removed). Whole repo `pnpm -r build && pnpm -r --no-bail test` green. Preview-driven on the fixture board at full / low / off (the halves centre on the post-defeat placeholder; DOUBLE → TRIPLE with the impact at full).
+
+**D-24026 live-on-surface:** pending. On play.legendary-arena.com, defeating a villain should slice it at its City space.
+
+**Reserved by:** NUMBER-LEDGER D-24584 (WP-755 / EC-792). Related: D-24365 (VFX determinism exemption), D-20104 (re-emission gate), D-12803 (public notableEvents), D-24569 (Excessive Violence beat), D-24507 (word / impact slots), D-24026 (live-verify).
+
+---
+
 ### D-24586 — The wiki flat-structure cap is raised from 75 to 150 entity pages (Active 2026-09-25 — direct fix, no WP)
 
 **Decision.** `wiki/SCHEMA.md` §Flat-structure cap now allows **150** entity pages in the flat `wiki/` layout, up from 75. `scripts/wiki-lint.mjs` `ENTITY_PAGE_CAP` moves with it.
