@@ -53,6 +53,7 @@ anni/super-skrull,Super-Skrull,anni,rooftops,unsupported,,,,put-to-the-torch
 anni/super-skrull,Super-Skrull,anni,streets,unsupported,,,,put-to-the-torch
 antm/ant-man,Ant-Man,antm,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ride-the-ants
 antm/ant-man,Ant-Man,antm,microscopic-size-changing,unsupported,,,,pym-particles|risky-science
+antm/ant-man,Ant-Man,antm,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,risky-science
 antm/ant-man,Ant-Man,antm,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,giant-ego|pym-particles|ride-the-ants
 antm/black-knight,Black Knight,antm,empowered,executable,WP-267,D-24044,packages/game-engine/src/hero/effectPrimitive.interpret.ts,amulet-of-avalon
 antm/black-knight,Black Knight,antm,return-zero-cost-discard,executable,,D-24139,packages/game-engine/src/hero/heroEffects.execute.ts#return-zero-cost-discard,defend-the-weak
@@ -70,6 +71,7 @@ antm/wonder-man,Wonder Man,antm,put-any-number-bottom-hq,executable,,D-24132,pac
 antm/wonder-man,Wonder Man,antm,put-bottom-hq-icon-reward,executable,,D-24133,packages/game-engine/src/hero/heroEffects.execute.ts#put-bottom-hq-icon-reward,absorb-ambient-power
 antm/wonder-man,Wonder Man,antm,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,8th-wonder-of-the-world
 asrd/beta-ray-bill,Beta Ray Bill,asrd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,hope-of-the-korbinites
+asrd/beta-ray-bill,Beta Ray Bill,asrd,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,bio-engineered-cyborg
 asrd/beta-ray-bill,Beta Ray Bill,asrd,thrown-artifact,unsupported,,,,stormbreaker
 asrd/beta-ray-bill,Beta Ray Bill,asrd,worthy,condition,,,,hope-of-the-korbinites|stormbreaker
 asrd/lady-sif,Lady Sif,asrd,thrown-artifact,unsupported,,,,dimensional-blade|golden-apples-of-idunn|winged-helm
@@ -339,6 +341,7 @@ gotg/drax-the-destroyer,Drax the Destroyer,gotg,reveal-top-dispose,executable,WP
 gotg/gamora,Gamora,gotg,artifact,unsupported,,,,godslayer-blade
 gotg/groot,Groot,gotg,(unmarked),unmarked,,,,
 gotg/rocket-raccoon,Rocket Raccoon,gotg,artifact,unsupported,,,,incoming-detector
+gotg/rocket-raccoon,Rocket Raccoon,gotg,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,gritty-scavenger
 gotg/star-lord,Star-Lord,gotg,artifact,unsupported,,,,element-guns|implanted-memory-chip|sentient-starship
 mdns/blade-daywalker,"Blade, Daywalker",mdns,blood-frenzy,unsupported,,,,creature-of-dawn-and-dusk
 mdns/blade-daywalker,"Blade, Daywalker",mdns,moonlight,unsupported,,,,creature-of-dawn-and-dusk|ride-by-moonlight
@@ -355,7 +358,8 @@ mdns/werewolf-by-night,Werewolf by Night,mdns,moonlight,unsupported,,,,release-t
 mdns/werewolf-by-night,Werewolf by Night,mdns,sunlight,unsupported,,,,release-the-beast|snarling-fangs|starlit-path
 mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,patrol,unsupported,,,,bridge-between-dimensions|seal-the-rift
 mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,sunlight,unsupported,,,,face-your-demons|searing-shards-of-sunlight
-mgtg/drax,Drax,mgtg,excessive-violence,unsupported,,,,i-am-invisible|nothing-goes-over-my-head|prison-riot|remove-his-spine|revenge-for-my-family
+mgtg/drax,Drax,mgtg,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,i-am-invisible|nothing-goes-over-my-head|prison-riot|remove-his-spine|revenge-for-my-family
+mgtg/drax,Drax,mgtg,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,remove-his-spine
 mgtg/drax,Drax,mgtg,triggered-artifact,unsupported,,,,dual-knives
 mgtg/gamora,Gamora,mgtg,artifact,unsupported,,,,sharpen-blades
 mgtg/gamora,Gamora,mgtg,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,forgive|resourceful-fugitive
@@ -484,7 +488,7 @@ shld/deathlok,Deathlok,shld,draw,executable,WP-022,D-2201,packages/game-engine/s
 shld/deathlok,Deathlok,shld,s.h.i.e.l.d.-level,unsupported,,,,authorize-lethal-force|behind-enemy-lines|headlok
 shld/deathlok,Deathlok,shld,undercover,deferred,WP-282,D-24060,,behind-enemy-lines|headlok|reanimate-into-service
 shld/dum-dum-dugan,Dum Dum Dugan,shld,undercover,deferred,WP-282,D-24060,,dum-dum-dugan
-shld/gw-bridge,G.W. Bridge,shld,(unmarked),unmarked,,,,
+shld/gw-bridge,G.W. Bridge,shld,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,gw-bridge
 shld/grant-ward,Grant Ward,shld,undercover,deferred,WP-282,D-24060,,grant-ward
 shld/leo-fitz-and-jemma-simmons,Leo Fitz and Jemma Simmons,shld,(unmarked),unmarked,,,,
 shld/melinda-may,Melinda May,shld,(unmarked),unmarked,,,,
@@ -574,6 +578,7 @@ vill/bullseye,Bullseye,vill,dodge,executable,WP-275,D-24051,packages/game-engine
 vill/bullseye,Bullseye,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,everythings-a-weapon
 vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crazed-experiments
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,electroshock-therapy|shocking-robbery
+vill/electro,Electro,vill,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,electroshock-therapy
 vill/enchantress,Enchantress,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,unending-anguish
 vill/green-goblin,Green Goblin,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,goblin-glider|pumpkin-bombs|unstable-kidnapper
 vill/juggernaut,Juggernaut,vill,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,size-matters
@@ -593,6 +598,7 @@ vnom/carnage,Carnage,vnom,digest,unsupported,,,,carnivore
 vnom/carnage,Carnage,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,carnivore|rending-claws
 vnom/carnage,Carnage,vnom,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,feast-or-famine|gruesome-feast|rending-claws
 vnom/carnage,Carnage,vnom,indigestion,unsupported,,,,carnivore
+vnom/carnage,Carnage,vnom,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,gruesome-feast
 vnom/venom,Venom,vnom,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,symbiotic-adaptation
 vnom/venom,Venom,vnom,digest,unsupported,,,,devouring-drool|insatiable-hunger
 vnom/venom,Venom,vnom,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,razor-teeth
@@ -600,6 +606,7 @@ vnom/venom,Venom,vnom,indigestion,unsupported,,,,devouring-drool|insatiable-hung
 vnom/venom,Venom,vnom,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,symbiotic-adaptation
 vnom/venom-rocket,Venom Rocket,vnom,digest,unsupported,,,,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,serious-overkill
+vnom/venom-rocket,Venom Rocket,vnom,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos

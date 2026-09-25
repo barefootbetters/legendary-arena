@@ -22,7 +22,7 @@ import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -917,5 +917,61 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
       true,
       'a typed villain defeat signals Diamond Form',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — Excessive Violence fires with the spread move context
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Excessive Violence with the real move context (WP-754 / D-24581)', () => {
+  /**
+   * An EV-enrolled fight state: one villain (fight cost 2), 3 attack, the given inner effects on
+   * an enrolled card, and the given deck / discard.
+   */
+  function evFightState(
+    innerEffects: { type: string; magnitude?: number }[],
+    deck: string[],
+    discard: string[],
+  ): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null], discard });
+    gameState.cardStats['villain-a' as CardExtId] = makeCardStatEntry({ fightCost: 2 });
+    gameState.playerZones['0']!.deck = deck as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'ev-card' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: innerEffects as never }],
+    }];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 3, excessiveViolencePlayedCards: ['ev-card'] });
+    return gameState;
+  }
+
+  it("an EV draw (Rending Claws) reshuffles an empty deck from the discard without throwing", () => {
+    // why: makeMockMoveContext is the real boardgame.io shape — its bare `ctx` carries NO `random`.
+    // Before the fix the fight passed that bare ctx to the EV fire, so the reshuffle threw.
+    const gameState = evFightState([{ type: 'draw', magnitude: 1 }], [], ['disc-1']);
+    const moveContext = createMockMoveContext(gameState);
+
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true }));
+
+    const zones = moveContext.G.playerZones['0']!;
+    assert.deepStrictEqual(zones.hand, ['disc-1'], 'the reshuffled discard supplied the EV draw');
+    assert.deepStrictEqual(zones.discard, [], 'the discard was reshuffled into the deck');
+    assert.ok(zones.victory.includes('villain-a'), 'the fight itself resolved');
+  });
+
+  it("Gruesome Feast's EV reveal parks a KO-or-keep choice at fight time, reshuffling an empty deck", () => {
+    const gameState = evFightState([{ type: 'reveal-top-may-ko' }], [], ['disc-1']);
+    const moveContext = createMockMoveContext(gameState);
+
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true }));
+
+    assert.deepStrictEqual(moveContext.G.pendingRevealTopDispose, [{
+      choiceType: 'reveal-top-dispose',
+      playerID: '0',
+      revealedTops: [{ ownerPlayerID: '0', cardId: 'disc-1', isKoAllowed: true, isDiscardAllowed: false }],
+    }], 'one KO-or-keep entry on the reshuffled deck top');
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.deck, ['disc-1'], 'the revealed card stays on top');
   });
 });

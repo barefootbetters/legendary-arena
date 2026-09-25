@@ -1073,6 +1073,10 @@ export interface UIRevealedTopEntry {
   // Charm's covert clause on the chooser's OWN revealed top); the client then offers a KO
   // button beside Discard / Keep. Omitted otherwise.
   isKoAllowed?: boolean;
+  // why: WP-754 / D-24581 — present (false) only on a KO-or-keep entry ("Reveal the top card of
+  // your deck. You may KO it."); the client then hides the Discard button. Omitted means discard
+  // is allowed (every other entry).
+  isDiscardAllowed?: boolean;
 }
 
 /**
@@ -1409,8 +1413,15 @@ export interface UIPendingSmashDiscard {
   // why: D-24492 — the redaction key; the chooser-only filter compares
   // audience.playerId against this, mirroring UIPendingDiscardToPlay.playerID.
   playerID: string;
-  /** The Attack a discard grants (+N), for the prompt label. */
+  /**
+   * The Attack a discard grants (+N), for the prompt label — or, when `reward` is 'draw', the
+   * number of cards a discard draws.
+   */
   magnitude: number;
+  // why: WP-754 / D-24581 — present ('draw') only for an optional-discard-draw entry ("You may
+  // discard a card. If you do, draw a card."); the client then labels the prompt "Discard a card
+  // to draw N". Omitted for a Smash entry.
+  reward?: 'draw';
   eligibleHand: UIEligibleKoHeroCard[];
 }
 

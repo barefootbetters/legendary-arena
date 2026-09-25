@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 28,
-    "totalObservations": 2507,
+    "totalObservations": 2511,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 490,
+      "no-handler": 496,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2017
+      "parse-unrecognized": 2015
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "bridge": {
-      "hitCount": 7,
-      "lastSeenTurn": 27,
+      "hitCount": 10,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 7
+        "parse-unrecognized": 10
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 14,
-      "lastSeenTurn": 25,
+      "hitCount": 15,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 14
+        "parse-unrecognized": 15
       },
       "examples": [
         {
@@ -806,12 +806,12 @@
       ]
     },
     "streets": {
-      "hitCount": 59,
+      "hitCount": 53,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 59
+        "parse-unrecognized": 53
       },
       "examples": [
         {
@@ -1011,10 +1011,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 490,
+      "hitCount": 496,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 490,
+        "no-handler": 496,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },

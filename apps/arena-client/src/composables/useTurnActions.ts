@@ -371,7 +371,7 @@ export function useTurnActions(
       if (hasPendingSmashDiscard) {
         return {
           allowed: false,
-          reason: 'Discard a card for +attack, or Decline, before taking another action.',
+          reason: 'Resolve the discard choice (discard a card or Decline) before taking another action.',
         };
       }
       // why: WP-681 / D-24498 — block turn-end / pass-priority while a Do-Over choice is
@@ -490,7 +490,7 @@ export function useTurnActions(
       if (hasPendingRevealTopDispose) {
         return {
           allowed: false,
-          reason: 'Discard or keep each revealed deck top before taking another action.',
+          reason: 'Resolve each revealed deck top before taking another action.',
         };
       }
       // why: WP-719 / D-24541 — End Turn / Pass Priority blocked at any stage while a Covering
@@ -653,7 +653,7 @@ export function useTurnActions(
         // the player sees a tooltip instead of a silent rejection. OPTIONAL — discard OR decline.
         return {
           allowed: false,
-          reason: 'Discard a card for +attack, or Decline, before taking another action.',
+          reason: 'Resolve the discard choice (discard a card or Decline) before taking another action.',
         };
       }
       if (hasPendingDoOver) {
@@ -742,7 +742,7 @@ export function useTurnActions(
         // pendingRevealTopDispose is non-empty; surface the reason as a tooltip.
         return {
           allowed: false,
-          reason: 'Discard or keep each revealed deck top before taking another action.',
+          reason: 'Resolve each revealed deck top before taking another action.',
         };
       }
       if (hasPendingCoveringFireChoice) {

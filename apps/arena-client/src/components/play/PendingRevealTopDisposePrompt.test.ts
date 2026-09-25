@@ -176,3 +176,49 @@ describe('PendingRevealTopDisposePrompt (WP-702 / EC-739)', () => {
     assert.deepEqual(calls[1]!.args, { ownerPlayerID: 'player-1', cardId: 'test-hero', disposition: 'top' });
   });
 });
+
+describe('PendingRevealTopDisposePrompt — KO-or-keep entries (WP-754 / D-24581)', () => {
+  const koOrKeepChoice: UIPendingRevealTopDispose = {
+    choiceType: 'reveal-top-dispose',
+    playerID: 'player-0',
+    revealedTops: [{
+      ownerPlayerID: 'player-0',
+      cardId: 'test-wound',
+      display: { extId: 'test-wound', name: 'Wound', imageUrl: '', cost: 0 },
+      isKoAllowed: true,
+      isDiscardAllowed: false,
+    }],
+  };
+
+  test('hides Discard, offers KO and Keep, and reads "KO it or keep it"', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(PendingRevealTopDisposePrompt, {
+      props: { pendingRevealTopDispose: koOrKeepChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!wrapper.find('[data-testid="pending-reveal-top-dispose-discard-player-0-test-wound"]').exists(), 'no Discard button');
+    assert.ok(wrapper.find('[data-testid="pending-reveal-top-dispose-ko-player-0-test-wound"]').exists(), 'KO offered');
+    assert.ok(wrapper.find('[data-testid="pending-reveal-top-dispose-keep-player-0-test-wound"]').exists(), 'Keep offered');
+    assert.equal(
+      wrapper.find('[data-testid="pending-reveal-top-dispose-ko-or-keep-heading"]').text(),
+      'Reveal the top card — KO it or keep it',
+    );
+  });
+
+  test('KO submits the ko disposition', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(PendingRevealTopDisposePrompt, {
+      props: { pendingRevealTopDispose: koOrKeepChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    await wrapper.find('[data-testid="pending-reveal-top-dispose-ko-player-0-test-wound"]').trigger('click');
+    assert.deepEqual(calls[0]!.args, { ownerPlayerID: 'player-0', cardId: 'test-wound', disposition: 'ko' });
+  });
+
+  test('a shipped entry keeps the Discard button and the discard-or-keep heading', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(PendingRevealTopDisposePrompt, {
+      props: { pendingRevealTopDispose: mockChoice, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(wrapper.find('[data-testid="pending-reveal-top-dispose-discard-player-0-test-wound"]').exists());
+    assert.ok(!wrapper.find('[data-testid="pending-reveal-top-dispose-ko-or-keep-heading"]').exists());
+  });
+});

@@ -19,12 +19,19 @@
  * byte-identical on every no-op so the player can resubmit — the block-all guard
  * guarantees every revealed deck top still exists while pending.
  *
+ * WP-754 / D-24581 — the same queue carries KO-or-keep entries ("Reveal the top card of your
+ * deck. You may KO it."), marked `isKoAllowed: true, isDiscardAllowed: false`: 'ko' and 'top'
+ * are accepted, 'discard' is not. After the queue advances, a stale KO-or-keep front is
+ * re-revealed (refreshStaleKoOrKeepFront).
+ *
  * No registry imports. No .reduce(). Moves never throw.
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, RevealTopDisposition } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
+import { refreshStaleKoOrKeepFront } from '../hero/heroEffects.execute.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
@@ -102,7 +109,7 @@ function isValidDisposition(disposition: unknown): disposition is RevealTopDispo
  * @param args - the { ownerPlayerID, cardId, disposition } decision for one revealed card.
  */
 export function resolveRevealTopDispose(
-  { G, playerID }: MoveContext,
+  { G, playerID, ...context }: MoveContext,
   args: ResolveRevealTopDisposeArgs,
 ): void {
   // Step 1: Validate args — empty ids or an invalid disposition is a no-op.
@@ -137,6 +144,10 @@ export function resolveRevealTopDispose(
   // covert clause). A 'ko' on an entry that was not unlocked is a silent no-op that leaves the
   // queue byte-identical, so the player can resubmit a legal disposition.
   if (args.disposition === 'ko' && front.revealedTops[targetIndex]!.isKoAllowed !== true) { return; }
+  // why: WP-754 / D-24581 — a KO-or-keep entry ("You may KO it.") prints no discard option, so a
+  // 'discard' on an entry with `isDiscardAllowed === false` is a silent no-op that leaves the queue
+  // byte-identical (the isKoAllowed gate precedent). Omitted means allowed — every shipped entry.
+  if (args.disposition === 'discard' && front.revealedTops[targetIndex]!.isDiscardAllowed === false) { return; }
 
   // Step 4: Apply the disposition. This entry is ALWAYS cleared below (Step 5) — the choice
   // resolves whether or not the card is still on top — so a revealed card a co-resolved
@@ -208,6 +219,11 @@ export function resolveRevealTopDispose(
   front.revealedTops.splice(targetIndex, 1);
   if (front.revealedTops.length === 0) {
     queue.shift();
+    // why: WP-754 / D-24521 §6 sequential reveals — two KO-or-keep reveals in one fight (two
+    // Gruesome Feasts) snapshot the SAME deck top; once the first is KO'd, the next front's
+    // snapshot is stale. Re-reveal a stale KO-or-keep front so the second choice shows the new
+    // top instead of clearing as moot. Never touches a shipped (discard-allowed) entry.
+    refreshStaleKoOrKeepFront(G, context as unknown as ShuffleProvider);
   }
 }
 

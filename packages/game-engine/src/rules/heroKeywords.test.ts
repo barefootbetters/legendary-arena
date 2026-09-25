@@ -62,11 +62,19 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 67 entries after WP-753 reveal-three-assign + reveal-three-assign-again', () => {
+  it('HERO_KEYWORDS array has exactly 69 entries after WP-754 optional-discard-draw + reveal-top-may-ko', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      67,
-      'HERO_KEYWORDS must have exactly 67 entries (65 + reveal-three-assign + reveal-three-assign-again (WP-753 / D-24580))',
+      69,
+      'HERO_KEYWORDS must have exactly 69 entries (67 + optional-discard-draw + reveal-top-may-ko (WP-754 / D-24581))',
+    );
+    assert.ok(
+      HERO_KEYWORDS.includes('optional-discard-draw'),
+      'optional-discard-draw must be in HERO_KEYWORDS array',
+    );
+    assert.ok(
+      HERO_KEYWORDS.includes('reveal-top-may-ko'),
+      'reveal-top-may-ko must be in HERO_KEYWORDS array',
     );
     assert.ok(
       HERO_KEYWORDS.includes('reveal-three-assign'),

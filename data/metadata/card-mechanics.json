@@ -1009,6 +1009,21 @@
       "hidden": true
     },
     {
+      "slug": "optional-discard-draw",
+      "label": "Optional Discard Draw",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 5,
+      "cardIds": [
+        "antm/ant-man",
+        "asrd/beta-ray-bill",
+        "gotg/rocket-raccoon",
+        "shld/gw-bridge",
+        "vnom/venom-rocket"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "optional-ko-hand-discard",
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
@@ -1543,6 +1558,19 @@
       "hidden": true
     },
     {
+      "slug": "reveal-top-may-ko",
+      "label": "Reveal Top May Ko",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 3,
+      "cardIds": [
+        "mgtg/drax",
+        "vill/electro",
+        "vnom/carnage"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ritual-artifact",
       "label": "Ritual Artifact",
       "scope": "hero",
@@ -2021,7 +2049,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 33,
+      "cardCount": 32,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
@@ -2045,7 +2073,6 @@
         "msp1/nick-fury",
         "nmut/karma",
         "rvlt/hellcat",
-        "shld/gw-bridge",
         "shld/leo-fitz-and-jemma-simmons",
         "shld/melinda-may",
         "ssw1/black-bolt",
@@ -2421,6 +2448,7 @@
       "mechanics": [
         "draw",
         "microscopic-size-changing",
+        "optional-discard-draw",
         "size-changing"
       ]
     },
@@ -2458,6 +2486,7 @@
     "asrd/beta-ray-bill": {
       "mechanics": [
         "draw",
+        "optional-discard-draw",
         "thrown-artifact",
         "worthy"
       ]
@@ -3230,7 +3259,8 @@
     },
     "gotg/rocket-raccoon": {
       "mechanics": [
-        "artifact"
+        "artifact",
+        "optional-discard-draw"
       ]
     },
     "gotg/star-lord": {
@@ -3276,6 +3306,7 @@
     "mgtg/drax": {
       "mechanics": [
         "excessive-violence",
+        "reveal-top-may-ko",
         "triggered-artifact"
       ]
     },
@@ -3637,7 +3668,7 @@
     },
     "shld/gw-bridge": {
       "mechanics": [
-        "unmarked"
+        "optional-discard-draw"
       ]
     },
     "shld/leo-fitz-and-jemma-simmons": {
@@ -3905,7 +3936,8 @@
     },
     "vill/electro": {
       "mechanics": [
-        "dodge"
+        "dodge",
+        "reveal-top-may-ko"
       ]
     },
     "vill/enchantress": {
@@ -3976,7 +4008,8 @@
         "digest",
         "draw",
         "excessive-violence",
-        "indigestion"
+        "indigestion",
+        "reveal-top-may-ko"
       ]
     },
     "vnom/venom": {
@@ -3992,6 +4025,7 @@
       "mechanics": [
         "digest",
         "excessive-violence",
+        "optional-discard-draw",
         "optional-ko-hand-discard"
       ]
     },

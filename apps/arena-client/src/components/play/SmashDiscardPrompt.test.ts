@@ -113,3 +113,38 @@ describe('SmashDiscardPrompt (WP-676 / EC-713)', () => {
     assert.equal(calls.length, 1, 'the second click is guarded');
   });
 });
+
+describe('SmashDiscardPrompt — discard-to-draw entries (WP-754 / D-24581)', () => {
+  const drawPending: UIPendingSmashDiscard = { ...mockPending, magnitude: 1, reward: 'draw' };
+
+  test('a draw-reward entry reads "Discard a card to draw 1" with no Smash or attack wording', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SmashDiscardPrompt, {
+      props: { pendingSmashDiscard: drawPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    const heading = wrapper.find('[data-testid="smash-discard-draw-heading"]');
+    assert.ok(heading.exists(), 'the discard-to-draw heading renders');
+    assert.equal(heading.text(), 'Discard a card to draw 1');
+    const promptText = wrapper.find('[data-testid="smash-discard-prompt"]').text();
+    assert.ok(!promptText.includes('Smash'), 'no Smash wording');
+    assert.ok(!promptText.includes('attack'), 'no attack wording');
+  });
+
+  test('a Smash entry keeps the Smash heading', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SmashDiscardPrompt, {
+      props: { pendingSmashDiscard: mockPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.ok(!wrapper.find('[data-testid="smash-discard-draw-heading"]').exists());
+    assert.ok(wrapper.text().includes('(Smash)'));
+  });
+
+  test('a draw-reward entry submits the same intent (card or decline)', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SmashDiscardPrompt, {
+      props: { pendingSmashDiscard: drawPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    await wrapper.find('[data-testid="smash-discard-card-card-a"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSmashDiscard', args: { cardId: 'card-a' } }]);
+  });
+});

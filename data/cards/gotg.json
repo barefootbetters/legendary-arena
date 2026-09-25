@@ -358,7 +358,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may discard a card. If you do, draw a card."
+            "You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]"
           ]
         },
         {

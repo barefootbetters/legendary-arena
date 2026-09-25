@@ -106,9 +106,15 @@ interface FightVillainArgs {
  * @param args - The city space index to fight.
  */
 export function fightVillain(
-  { G, ctx, random }: MoveContext,
+  { G, ...context }: MoveContext,
   { cityIndex, useExcessiveViolence }: FightVillainArgs,
 ): void {
+  // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
+  // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
+  // bgio's bare `ctx` (no `random`) made any EV inner effect that reshuffles an empty deck (Rending
+  // Claws' draw, Gruesome Feast's reveal) call `.random.Shuffle` on undefined and throw in a move.
+  const ctx = context.ctx;
+  const random = context.random;
   // Step 1: Validate args
   if (
     typeof cityIndex !== 'number' ||
@@ -255,7 +261,7 @@ export function fightVillain(
     // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
     // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).
     G.turnEconomy = markExcessiveViolenceUsed(G.turnEconomy);
-    fireExcessiveViolencePlays(G, ctx, ctx.currentPlayer);
+    fireExcessiveViolencePlays(G, context, ctx.currentPlayer);
   }
   // why: D-24180 — this successful fight marks the player as having acted this
   // turn, which bars the Wound Healing ability for the rest of the turn.

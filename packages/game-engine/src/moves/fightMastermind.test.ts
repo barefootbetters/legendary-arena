@@ -1028,3 +1028,33 @@ describe('fightMastermind — Excessive Violence overspend (WP-736 / D-24556 / D
     assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, undefined, 'the guard stays absent');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-754 / D-24581 — Excessive Violence fires with the spread move context (mastermind)
+// ---------------------------------------------------------------------------
+
+describe('fightMastermind — Excessive Violence with the real move context (WP-754 / D-24581)', () => {
+  it('an EV draw (Rending Claws) reshuffles an empty deck from the discard without throwing', () => {
+    // why: makeMockMoveContext is the real boardgame.io shape — its bare `ctx` carries NO `random`.
+    // Before the fix the fight passed that bare ctx to the EV fire, so the reshuffle threw.
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({ attack: 10, excessiveViolencePlayedCards: ['rc'] }),
+    });
+    gameState.playerZones['0']!.deck = [] as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.playerZones['0']!.discard = ['disc-1'] as LegendaryGameState['playerZones']['0']['discard'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: [{ type: 'draw', magnitude: 1 }] }],
+    }];
+    const moveContext = createMockMoveContext(gameState);
+
+    assert.doesNotThrow(() => fightMastermind(moveContext, { useExcessiveViolence: true }));
+
+    const zones = moveContext.G.playerZones['0']!;
+    assert.equal(moveContext.G.mastermind.tacticsDefeated.length, 1, 'the fight itself resolved');
+    assert.deepStrictEqual(zones.hand, ['disc-1'], 'the reshuffled discard supplied the EV draw');
+    assert.deepStrictEqual(zones.discard, [], 'the discard was reshuffled into the deck');
+  });
+});

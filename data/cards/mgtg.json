@@ -659,7 +659,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it."
+            "[keyword:Excessive Violence]: Reveal the top card of your deck. You may KO it. [keyword:reveal-top-may-ko]"
           ]
         },
         {

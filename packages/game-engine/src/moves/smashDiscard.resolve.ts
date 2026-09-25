@@ -15,17 +15,24 @@
  * the player can resubmit (the block-all guard guarantees a valid target still
  * exists while the choice is pending — the park requires a non-empty hand).
  *
+ * WP-754 / D-24581 — the same queue carries `optional-discard-draw` entries ("You may
+ * discard a card. If you do, draw a card."), marked `reward: 'draw'`: a discard draws
+ * `magnitude` cards instead of granting Attack. An entry without `reward` is a Smash
+ * entry and resolves exactly as before.
+ *
  * The move is server-only (registered `client: false` in game.ts): the client
  * submits intent ({ cardId } or { decline: true }), and the ENGINE computes the
- * Attack grant — the client never computes an outcome.
+ * Attack grant or the draw — the client never computes an outcome.
  *
  * No registry imports. No .reduce(). Moves never throw.
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, PendingSmashDiscard } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import { discardFromHand } from './discardFromHand.js';
+import { drawCardsIntoHand } from './drawCards.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
@@ -107,7 +114,7 @@ export function hasPendingSmashDiscard(G: LegendaryGameState): boolean {
  * @param args - the decline flag or the { cardId } to discard from hand.
  */
 export function resolveSmashDiscard(
-  { G, playerID }: MoveContext,
+  { G, playerID, ...context }: MoveContext,
   args: ResolveSmashDiscardArgs,
 ): void {
   // Step 1: Validate args — exactly one of { decline: true } / { cardId }.
@@ -133,9 +140,15 @@ export function resolveSmashDiscard(
   // source-card id, so the line names no specific card — same neutral, untagged
   // outcome the forced no-op uses.
   if (isDecline) {
-    pushLog(G,
-      `Player ${playerID} declined Smash — chose not to discard a card, so no Attack was granted.`,
-    );
+    if (front.reward === 'draw') {
+      pushLog(G,
+        `Player ${playerID} declined to discard a card, so no card was drawn.`,
+      );
+    } else {
+      pushLog(G,
+        `Player ${playerID} declined Smash — chose not to discard a card, so no Attack was granted.`,
+      );
+    }
     queue.shift();
     return;
   }
@@ -153,6 +166,13 @@ export function resolveSmashDiscard(
     return;
   }
 
+  // Step 5 (draw reward, WP-754 / D-24581): THEN draw instead of granting Attack.
+  if (front.reward === 'draw') {
+    applyDiscardDrawReward(G, playerID, front, targetCardId, context as unknown as ShuffleProvider);
+    queue.shift();
+    return;
+  }
+
   // Step 5: THEN grant the Attack (the discard is the paid cost; the Attack is the
   // payoff). The +N Attack rides the front entry's magnitude.
   G.turnEconomy = addResources(G.turnEconomy, front.magnitude, 0);
@@ -163,4 +183,47 @@ export function resolveSmashDiscard(
 
   // Step 6: Front-pop LAST (front-pop = Array.shift), mirroring WP-248.
   queue.shift();
+}
+
+/**
+ * Applies the draw reward of an `optional-discard-draw` entry after its discard landed
+ * (WP-754 / D-24581): draws `front.magnitude` cards, or logs the block under a draw lock.
+ *
+ * @param G - Game state (mutated).
+ * @param playerID - The player who discarded.
+ * @param front - The front pending entry (`reward: 'draw'`).
+ * @param discardedCardId - The card just discarded (named in the log).
+ * @param shuffleProvider - ShuffleProvider (ctx.random) for a reshuffle-on-empty draw.
+ */
+function applyDiscardDrawReward(
+  G: LegendaryGameState,
+  playerID: string,
+  front: PendingSmashDiscard,
+  discardedCardId: CardExtId,
+  shuffleProvider: ShuffleProvider,
+): void {
+  const discardedRef = formatCardRef(G.cardDisplayData, discardedCardId);
+  // why: D-24552 — Venompool's Shenanigans draw lock blocks the DRAW, not the discard. The
+  // discard is the player's paid choice and already happened; only the reward is withheld.
+  if (G.turnEconomy.drawsLocked === true) {
+    pushLog(G,
+      `Player ${playerID} discarded ${discardedRef} from their hand but can't draw — no more draws this turn.`,
+      'blocked',
+    );
+    return;
+  }
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  // why: the baseline is taken AFTER the discard and immediately BEFORE the draw, so the
+  // hand-length delta is exactly the cards drawn (drawCardsIntoHand returns the reshuffle
+  // count, not the draw count — the doOver.resolve idiom). Realized draws count toward
+  // cardsDrawn so the `cardsDrawnThisTurnAtLeast` wait-and-see gate sees them.
+  const handLengthBeforeDraw = playerZones.hand.length;
+  drawCardsIntoHand(playerZones, front.magnitude, shuffleProvider);
+  const drawnCount = playerZones.hand.length - handLengthBeforeDraw;
+  G.turnEconomy.cardsDrawn += drawnCount;
+  pushLog(G,
+    `Player ${playerID} discarded ${discardedRef} from their hand and drew ${drawnCount} card(s).`,
+    'applied',
+  );
 }

@@ -74,7 +74,7 @@ import {
   buildRandomActsWoundChoice,
   buildPassLeftChoice,
 } from '../moves/seatChoiceCards.js';
-import { formatCardRef } from '../log/logDisplay.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
   describeRevealActions,
@@ -259,6 +259,16 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // bumps the just-parked entry's repeat counter, so it belongs here. Carries NO magnitude → also
   // in NO_MAGNITUDE_KEYWORDS.
   'reveal-three-assign-again',
+  // why: WP-754 / D-24581 — "You may discard a card. If you do, draw a card." (Hungry for
+  // Action's Digest 3 branch + four standalone cards); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectOptionalDiscardDraw) that parks a draw-reward entry on the Smash queue, so it
+  // belongs here. Carries a magnitude (the draw count) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'optional-discard-draw',
+  // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it." (Gruesome Feast /
+  // Remove His Spine via Excessive Violence + Electroshock Therapy); has a HERO_EFFECT_HANDLERS
+  // entry (heroEffectRevealTopMayKo) that parks a KO-or-keep entry on the reveal-top-dispose
+  // queue, so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'reveal-top-may-ko',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -520,6 +530,11 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // them, or the reveal never parks its choice and the repeat never arms.
   'reveal-three-assign',
   'reveal-three-assign-again',
+  // why: WP-754 / D-24581 — reveal-top-may-ko carries NO magnitude: the outcome is a single
+  // KO-or-keep disposition of one revealed card, not a count. The deck top is snapshotted at play
+  // (or Excessive Violence fire) time, so the magnitude pre-gate must not drop it, or the reveal
+  // never parks its choice. (optional-discard-draw is NOT here — it carries the draw count.)
+  'reveal-top-may-ko',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2649,6 +2664,58 @@ function heroEffectSmash(
 }
 
 /**
+ * Park handler for the `optional-discard-draw` hero keyword (WP-754 / D-24581).
+ *
+ * "You may discard a card. If you do, draw a card." — vnom Hungry for Action (its Digest 3
+ * branch), gotg Gritty Scavenger, asrd Bio-Engineered Cyborg, shld GW Bridge and antm Risky
+ * Science ([hc:tech]-gated). Parks one draw-reward entry on the existing Smash queue;
+ * resolveSmashDiscard discards the chosen hand card and then draws `magnitude` cards, or the
+ * player declines and nothing happens.
+ *
+ * // why: D-24581 — reuse the Smash queue rather than a sibling pending type. Smash already
+ * models "optionally discard one hand card, then a reward" with the same eligible set (the whole
+ * hand — the played card is already in play), decline path, stale check and prompt; only the
+ * reward differs, carried by the omit-when-absent `reward: 'draw'` discriminator. No new move,
+ * queue, block-all guard or prompt.
+ *
+ * // why: `optional-discard-draw` is NOT in NO_MAGNITUDE_KEYWORDS — the magnitude is the number
+ * of cards drawn, already validated by the executeSingleEffect pre-gate; the ?? 1 is a defensive
+ * default for a direct unit dispatch. An empty hand parks nothing (no card to discard) and logs
+ * the no-op, mirroring heroEffectSmash.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the discard + draw happen at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the no-op log line).
+ * @param effect - The effect descriptor carrying the draw count.
+ */
+function heroEffectOptionalDiscardDraw(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  if (playerZones.hand.length === 0) {
+    pushLog(G,
+      `Player ${playerID} could not discard a card to draw for ${formatCardRef(G.cardDisplayData, cardId)} — their hand was empty, so nothing was drawn.`,
+    );
+    return;
+  }
+  // why: lazy-init at the park site (the heroEffectSmash precedent), never in Game.setup, so a
+  // game that never plays one of these cards carries no new field. The park is silent; the
+  // resolve move logs the discard-and-draw or the decline.
+  if (!G.pendingSmashDiscards) { G.pendingSmashDiscards = []; }
+  G.pendingSmashDiscards.push({
+    playerID,
+    magnitude: effect.magnitude ?? 1,
+    reward: 'draw',
+  });
+}
+
+/**
  * Compound park handler for the `put-hand-on-deck-top` hero keyword (WP-700 / D-24519).
  *
  * Gambit's Stack the Deck / Brainstorm's Time Loop Experiments / the dstr/wpnx/wtif siblings —
@@ -2748,6 +2815,71 @@ function revealDeckTopForDispose(
   }
   if (zones.deck.length === 0) { return null; }
   return { ownerPlayerID, cardId: zones.deck[0]! };
+}
+
+/**
+ * Re-reveals stale KO-or-keep entries at the FRONT of G.pendingRevealTopDispose (WP-754 / D-24581).
+ *
+ * A KO-or-keep entry (`isDiscardAllowed === false`, parked by `reveal-top-may-ko`) snapshots the
+ * owner's deck top, but a synchronous sibling can move that card before the player decides: a
+ * later Excessive Violence draw in the same fight (Rending Claws after Gruesome Feast), a deferred
+ * grant that draws, or a second reveal of the same top whose sibling was KO'd first. Without a
+ * refresh the choice would clear as "moot" — the ability doing nothing again. Each stale front
+ * entry is re-revealed (reshuffle-on-empty) or, with nothing left to reveal, dropped; an emptied
+ * front is shifted and the next front checked, so the helper chains. It stops at the first front
+ * that still holds a card, and it never touches an entry without `isDiscardAllowed === false`, so
+ * shipped reveal-top-dispose entries keep their no-drift snapshot. Terminates: every pass either
+ * stops or shifts one queue entry.
+ *
+ * @param G - Game state (mutated: entry cardIds, the queue, and a possible reshuffle).
+ * @param shuffleProvider - ShuffleProvider (ctx.random) for a reshuffle-on-empty.
+ */
+export function refreshStaleKoOrKeepFront(
+  G: LegendaryGameState,
+  shuffleProvider: ShuffleProvider,
+): void {
+  const queue = G.pendingRevealTopDispose;
+  if (queue === undefined) { return; }
+  while (queue.length > 0) {
+    const front = queue[0]!;
+    refreshStaleKoOrKeepEntries(G, front, shuffleProvider);
+    if (front.revealedTops.length > 0) { return; }
+    queue.shift();
+  }
+}
+
+/**
+ * Refreshes every stale KO-or-keep entry of ONE pending reveal-top choice, dropping an entry
+ * whose owner has no card left to reveal.
+ *
+ * @param G - Game state (mutated).
+ * @param choice - The pending reveal-top choice whose entries are checked.
+ * @param shuffleProvider - ShuffleProvider for a reshuffle-on-empty.
+ */
+function refreshStaleKoOrKeepEntries(
+  G: LegendaryGameState,
+  choice: PendingRevealTopDispose,
+  shuffleProvider: ShuffleProvider,
+): void {
+  // why: iterate from the end so splicing a dropped entry never skips the next one.
+  for (let index = choice.revealedTops.length - 1; index >= 0; index--) {
+    const entry = choice.revealedTops[index]!;
+    if (entry.isDiscardAllowed !== false) { continue; }
+    const ownerDeck = G.playerZones[entry.ownerPlayerID]?.deck ?? [];
+    if (ownerDeck.length > 0 && ownerDeck[0] === entry.cardId) { continue; }
+    const revealed = revealDeckTopForDispose(G, entry.ownerPlayerID, shuffleProvider);
+    if (revealed === null) {
+      choice.revealedTops.splice(index, 1);
+      pushLog(G, `Player ${entry.ownerPlayerID} has no card left to reveal (reveal-top).`, 'blocked');
+      continue;
+    }
+    entry.cardId = revealed.cardId;
+    pushLog(G,
+      `Player ${entry.ownerPlayerID} reveals the new top card of their deck — ${formatCardRef(G.cardDisplayData, revealed.cardId)} — KO it or keep it (reveal-top).`,
+      'neutral',
+      revealed.cardId,
+    );
+  }
 }
 
 /**
@@ -2913,6 +3045,59 @@ function heroEffectRevealTopDisposeKo(
   // why: reachable no-op — the own-deck reveal parked nothing (deck + discard exhausted), so
   // there is no revealed card to KO. G.messages is hash-excluded (D-24081).
   pushLog(G, `Player ${playerID} had no revealed card of their own to KO (reveal-top).`, 'blocked');
+}
+
+/**
+ * Park handler for the `reveal-top-may-ko` hero keyword (WP-754 / D-24581).
+ *
+ * "Reveal the top card of your deck. You may KO it." — vnom Gruesome Feast and mgtg Remove His
+ * Spine (fired from Excessive Violence at fight time) and vill Electroshock Therapy (at play).
+ * Snapshots the active player's deck top (reshuffle-on-empty) and parks ONE PendingRevealTopDispose
+ * whose single entry allows KO and forbids discard, so resolveRevealTopDispose accepts only 'ko'
+ * or 'top' (keep it on top).
+ *
+ * // why: D-24581 — reuse the reveal-top-dispose queue (already modelling a per-card disposition
+ * of a revealed deck top) with the omit-when-absent `isDiscardAllowed: false`, instead of a
+ * sibling pending type. The entry is pushed here rather than via parkRevealTopDispose because
+ * that helper's log says "discard or keep"; this choice is KO-or-keep. No magnitude → in
+ * NO_MAGNITUDE_KEYWORDS. An empty deck + discard parks nothing and logs the no-op.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
+ * @param playerID - The active player who played the card.
+ * @param _cardId - The played card (unused; the choice carries only the revealed top).
+ * @param _effect - The `{ type: 'reveal-top-may-ko' }` descriptor (no magnitude).
+ */
+function heroEffectRevealTopMayKo(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  _cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const revealed = revealDeckTopForDispose(G, playerID, ctx as ShuffleProvider);
+  if (revealed === null) {
+    // why: reachable no-op — deck and discard both empty, nothing revealed, nothing parked.
+    // G.messages is hash-excluded (D-24081).
+    pushLog(G, `Player ${playerID} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
+    return;
+  }
+  if (!G.pendingRevealTopDispose) { G.pendingRevealTopDispose = []; }
+  G.pendingRevealTopDispose.push({
+    choiceType: 'reveal-top-dispose',
+    playerID,
+    revealedTops: [{
+      ownerPlayerID: revealed.ownerPlayerID,
+      cardId: revealed.cardId,
+      isKoAllowed: true,
+      isDiscardAllowed: false,
+    }],
+  } satisfies PendingRevealTopDispose);
+  pushLog(G,
+    `Player ${playerID} revealed ${formatCardRef(G.cardDisplayData, revealed.cardId)} from the top of their deck — KO it or keep it (reveal-top).`,
+    'neutral',
+    revealed.cardId,
+  );
 }
 
 /**
@@ -5074,6 +5259,16 @@ function heroEffectDigestIndigestion(
   // available"). A single-branch card (empty indigestionEffects) runs nothing below threshold.
   if (victoryPileCount >= digestThreshold) {
     runDigestIndigestionBranch(G, ctx, playerID, cardId, digestEffects);
+  } else if (indigestionEffects.length === 0) {
+    // why: WP-754 / D-24581 — a single-branch Digest card (Hungry for Action, Cauldron of the
+    // Cosmos) below its threshold runs nothing; without a line the ability looks silently
+    // dropped. One neutral line names the threshold and the count. G.messages is hash-excluded
+    // (D-24081), so this adds no determinism impact.
+    pushLog(G,
+      `Player ${playerID}'s ${resolveCardName(G.cardDisplayData, cardId)} — Digest ${digestThreshold} not met (${victoryPileCount} in Victory Pile); no effect.`,
+      'neutral',
+      cardId,
+    );
   } else {
     runDigestIndigestionBranch(G, ctx, playerID, cardId, indigestionEffects);
   }
@@ -5206,6 +5401,12 @@ export function fireExcessiveViolencePlays(
       });
     }
   }
+
+  // why: WP-754 / D-24581 — the EV abilities fire synchronously in play order, so a KO-or-keep
+  // reveal (Gruesome Feast) can be followed by an EV draw (Rending Claws) that takes the
+  // snapshotted card. Re-reveal a stale KO-or-keep front so the choice shows the current top
+  // instead of clearing as moot. A no-op when no stale KO-or-keep entry is queued.
+  refreshStaleKoOrKeepFront(G, ctx as ShuffleProvider);
 }
 
 export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler>> = {
@@ -5351,6 +5552,13 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-753 / D-24580 — Crystal of Kadavus's "Do this ability again.": bumps the just-parked
   // entry's remainingRepeats (the resolve move re-reveals). NO magnitude.
   'reveal-three-assign-again': heroEffectRevealThreeAssignAgain,
+  // why: WP-754 / D-24581 — "You may discard a card. If you do, draw a card.": parks a
+  // draw-reward entry on the Smash queue, resolved by resolveSmashDiscard (discard then draw
+  // `magnitude`, or decline).
+  'optional-discard-draw': heroEffectOptionalDiscardDraw,
+  // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it.": parks a KO-or-keep
+  // entry on the reveal-top-dispose queue, resolved by resolveRevealTopDispose ('ko' or 'top').
+  'reveal-top-may-ko': heroEffectRevealTopMayKo,
 };
 
 // ---------------------------------------------------------------------------
@@ -5682,6 +5890,12 @@ export function resolveDeferredHeroGrants(
   if (G.villainOrMastermindDefeatedSinceResolve !== undefined) {
     delete G.villainOrMastermindDefeatedSinceResolve;
   }
+
+  // why: WP-754 / D-24581 — a wait-and-see grant fired above (e.g. crossed by an Excessive
+  // Violence recruit or draw) can draw the card a pending KO-or-keep reveal snapshotted. Re-reveal
+  // a stale KO-or-keep front. A no-op when no stale KO-or-keep entry is queued, so a game that
+  // never plays a KO-or-keep card is byte-unchanged.
+  refreshStaleKoOrKeepFront(G, ctx as ShuffleProvider);
 }
 
 /**
