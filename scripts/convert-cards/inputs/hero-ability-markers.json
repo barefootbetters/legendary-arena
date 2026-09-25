@@ -1872,6 +1872,12 @@
       "markupToken": "[keyword:reveal-three-assign-again]"
     },
     {
+      "heroSlug": "venomized-dr-strange",
+      "cardSlug": "see-future-timelines",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal:cost-zero:discard+attack-fixed-2]"
+    },
+    {
       "heroSlug": "venom-rocket",
       "cardSlug": "hungry-for-action",
       "abilityIndex": 0,
@@ -2228,14 +2234,6 @@
       "abilityIndex": 0,
       "abilityText": "[keyword:Excessive Violence]: Reveal the top card of your deck. If it costs 0, KO it and you may repeat this process.",
       "reason": "WP-736 / D-24556 — the Excessive Violence fight-overspend timing now ships, but this ability is deferred: it needs a reveal-top-cost-0-KO LOOP executor that does not exist (the reveal-KO loop infrastructure is out of scope). Not in the WP-736 allowlist (EXCESSIVE_VIOLENCE_CARDS)."
-    },
-    {
-      "setAbbr": "vnom",
-      "heroSlug": "venomized-dr-strange",
-      "cardSlug": "see-future-timelines",
-      "abilityIndex": 0,
-      "abilityText": "[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack].",
-      "reason": "reveal-discard-attack: Similar to reveal-ko-attack but discards the card instead of KO-ing it when cost = 0. Discard vs. KO is a meaningful gameplay difference; a reveal-discard-attack executor (or a mode parameter on reveal-ko-attack) would be needed."
     },
     {
       "setAbbr": "wtif",

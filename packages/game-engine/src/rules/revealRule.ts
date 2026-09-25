@@ -59,6 +59,7 @@ export const REVEAL_PREDICATE_KINDS: readonly RevealPredicateKind[] = [
 export type RevealActionKind =
   | 'draw'
   | 'ko'
+  | 'discard'
   | 'attack-by-cost'
   | 'attack-fixed'
   | 'choose-discard-or-return';
@@ -66,9 +67,12 @@ export type RevealActionKind =
 // why: canonical drift array (D-24024) — adding an action kind requires updating
 // THIS array, the RevealActionKind union, AND a DECISIONS.md entry together
 // (code-style §Drift Detection). The drift test in revealRule.test.ts pins parity.
+// why: D-24582 — 'discard' (deck top → the player's discard pile) added for See Future
+// Timelines' "If it costs 0, discard it and you get +2[icon:attack]".
 export const REVEAL_ACTION_KINDS: readonly RevealActionKind[] = [
   'draw',
   'ko',
+  'discard',
   'attack-by-cost',
   'attack-fixed',
   'choose-discard-or-return',

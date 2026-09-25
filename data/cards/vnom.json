@@ -373,7 +373,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack]."
+            "[hc:ranged]: Reveal the top card of your deck. If it costs 0, discard it and you get +2[icon:attack]. [keyword:reveal:cost-zero:discard+attack-fixed-2]"
           ]
         },
         {

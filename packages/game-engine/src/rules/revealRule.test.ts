@@ -40,10 +40,10 @@ describe('reveal predicate/action canonical-array drift (D-24024)', () => {
     assert.equal(new Set(REVEAL_PREDICATE_KINDS).size, REVEAL_PREDICATE_KINDS.length, 'no duplicate predicate kinds');
   });
 
-  it('REVEAL_ACTION_KINDS has exactly the 5 canonical kinds, in order, no duplicates', () => {
+  it('REVEAL_ACTION_KINDS has exactly the 6 canonical kinds, in order, no duplicates', () => {
     assert.deepStrictEqual(
       [...REVEAL_ACTION_KINDS],
-      ['draw', 'ko', 'attack-by-cost', 'attack-fixed', 'choose-discard-or-return'],
+      ['draw', 'ko', 'discard', 'attack-by-cost', 'attack-fixed', 'choose-discard-or-return'],
       'REVEAL_ACTION_KINDS must match the canonical action kinds in order',
     );
     assert.equal(new Set(REVEAL_ACTION_KINDS).size, REVEAL_ACTION_KINDS.length, 'no duplicate action kinds');

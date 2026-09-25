@@ -1964,6 +1964,9 @@ function applyRevealAction(
   if (action.kind === 'ko') {
     return applyRevealKo(G, playerZones, topCardId);
   }
+  if (action.kind === 'discard') {
+    return applyRevealDiscard(playerZones, topCardId);
+  }
   if (action.kind === 'attack-by-cost') {
     return applyRevealAttackByCost(G, cost);
   }
@@ -1987,7 +1990,9 @@ function applyRevealAction(
  * @returns Whether the action is deck-mutating.
  */
 function isDeckMutatingRevealAction(kind: RevealActionKind): boolean {
-  return kind === 'draw' || kind === 'ko';
+  // why: D-24582 — 'discard' also moves the deck-top card, so a failed discard aborts the
+  // rule's follow-on attack-fixed grant exactly like a failed KO (See Future Timelines).
+  return kind === 'draw' || kind === 'ko' || kind === 'discard';
 }
 
 /**
@@ -2047,6 +2052,25 @@ function applyRevealKo(G: LegendaryGameState, playerZones: PlayerZones, topCardI
   }
   playerZones.deck = moveResult.from;
   G.ko = koCard(G.ko, topCardId);
+  return true;
+}
+
+/**
+ * Discard action — moves the peeked deck-top card to the player's discard pile
+ * (D-24582; See Future Timelines "If it costs 0, discard it and you get +2 attack").
+ * Mirrors applyRevealDraw with the discard pile as the destination.
+ *
+ * @param playerZones - The active player's zones.
+ * @param topCardId - The peeked deck-top card's CardExtId.
+ * @returns Whether the card was found and discarded (false leaves zones unchanged).
+ */
+function applyRevealDiscard(playerZones: PlayerZones, topCardId: CardExtId): boolean {
+  const moveResult = moveCardFromZone(playerZones.deck, playerZones.discard, topCardId);
+  if (!moveResult.found) {
+    return false;
+  }
+  playerZones.deck = moveResult.from;
+  playerZones.discard = moveResult.to;
   return true;
 }
 

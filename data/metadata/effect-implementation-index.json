@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1930,
+    "totalEntries": 1931,
     "byScope": {
-      "hero": 755,
+      "hero": 756,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 509,
+      "executable": 510,
       "deferred": 16,
       "condition": 30,
       "unsupported": 318,
@@ -22600,6 +22600,23 @@
       "name": "Venomized Dr. Strange",
       "set": "vnom",
       "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "see-future-timelines",
+          "name": "See Future Timelines"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venomized-dr-strange",
+      "name": "Venomized Dr. Strange",
+      "set": "vnom",
+      "scope": "hero",
       "mechanic": "reveal-three-assign",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign",
@@ -35372,6 +35389,7 @@
       "mechanics": [
         "digest",
         "draw",
+        "reveal",
         "reveal-three-assign",
         "reveal-three-assign-again"
       ]
