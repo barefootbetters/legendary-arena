@@ -1600,6 +1600,28 @@ dispute.
   Court.) You may still judge the occupation of downtown Ottawa a public-order
   problem. The lens only needs the lock: leaving the protest was not argued, it
   was priced — and the door looked like a banking app.
+- **"The Battle of the Sexes"** *(questions 2 and 3)*. Not the first
+  man-against-woman exhibition, but the most famous, most televised, and most
+  touted. On 20 September 1973, in the Houston Astrodome, Billie Jean King, 29
+  and among the best players in the world, beat Bobby Riggs 6–4, 6–3, 6–3. Riggs
+  was 55 — a former world No. 1 whose Wimbledon title dated from 1939. ABC
+  carried it with Howard Cosell to a commonly cited 90 million viewers, fifteen
+  months after Title IX. King framed the stakes as respect and equal pay; the
+  picture the broadcast left was broader: *no difference*. Two results never
+  became that picture. Four months earlier Riggs had beaten Margaret Court, then
+  one of the top two women in the world, 6–2, 6–1 — the "Mother's Day Massacre."
+  And at the 1998 Australian Open, after Venus and Serena Williams, then 17 and
+  16, said they could beat any man ranked outside the top 200, Karsten Braasch,
+  ranked 203rd, played each a set after a round of golf and won 6–1 and 6–2. (In
+  2013 ESPN aired a claim that Riggs threw the King match to clear gambling
+  debts; King disputes it, and it was never proven — which only shows how little
+  weight the match itself could bear.) None of those results was suppressed;
+  none became the national picture — question 3 working by selection, not
+  silence. The documented gap in elite performance — about 10% across record
+  events since 1983, roughly 9% in swimming and 11% in running — did not move. This is where the thread from 1973 runs into Penn
+  and San José State below: the picture set in the Astrodome met the data, and
+  the institutions defended the picture. The lens can show a picture carrying
+  further than its evidence; it does not claim 1973 caused what came after.
 - **Penn women's swimming** *(questions 1, 2 and 4)*. Lia Thomas swam three
   seasons on the University of Pennsylvania men's team (2017–2020), beginning
   hormone therapy in May 2019, then joined the women's team for 2021–22 under
@@ -2427,6 +2449,16 @@ claim at a safe distance — it stands on it.
   and San José State's own
   [statement on suing the Department of Education](https://blogs.sjsu.edu/newsroom/2026/ocr-titleix-lawsuit/)
   (6 March 2026).
+  For the Battle of the Sexes: [*Time*'s 1973 report](https://time.com/4938913/battle-of-the-sexes-1973-report/);
+  Tennis Majors on the [Riggs–Court match](https://www.tennismajors.com/others-news/may-13th-1973-the-day-bobby-riggs-massacred-margaret-court-245288.html)
+  (13 May 1973); ESPN *Outside the Lines*,
+  ["The Match Maker"](https://www.espn.com/espn/feature/story/_/id/9589625/the-match-maker)
+  (2013), with [NPR on King's rebuttal](https://www.npr.org/2013/08/26/215838779/was-1973-battle-of-the-sexes-tennis-match-thrown);
+  the [Karsten Braasch record](https://en.wikipedia.org/wiki/Karsten_Braasch);
+  and Thibault et al., "Women and men in sport performance: the gender gap has
+  not evolved since 1983," *Journal of Sports Science and Medicine* (2010), for
+  the performance gap (10.0% mean across 82 events; 8.9% swimming, 10.7%
+  running).
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the
