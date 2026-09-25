@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2803,
+    "executable": 2785,
     "heroes": 324,
-    "hooks": 6333,
-    "noEffect": 2648,
-    "parsedNotExecuted": 882
+    "hooks": 6309,
+    "noEffect": 2521,
+    "parsedNotExecuted": 1003
   },
   "perSet": {
     "2099": {
@@ -13,9 +13,9 @@
       "noEffect": 38
     },
     "3dtc": {
-      "executable": 36,
+      "executable": 31,
       "hooks": 75,
-      "noEffect": 35
+      "noEffect": 34
     },
     "amwp": {
       "executable": 69,
@@ -28,14 +28,14 @@
       "noEffect": 49
     },
     "antm": {
-      "executable": 52,
+      "executable": 47,
       "hooks": 109,
-      "noEffect": 20
+      "noEffect": 15
     },
     "asrd": {
       "executable": 42,
       "hooks": 102,
-      "noEffect": 60
+      "noEffect": 55
     },
     "bkpt": {
       "executable": 59,
@@ -58,14 +58,14 @@
       "noEffect": 67
     },
     "co2e": {
-      "executable": 150,
+      "executable": 156,
       "hooks": 241,
-      "noEffect": 62
+      "noEffect": 45
     },
     "core": {
-      "executable": 127,
+      "executable": 134,
       "hooks": 229,
-      "noEffect": 22
+      "noEffect": 10
     },
     "cosm": {
       "executable": 44,
@@ -73,19 +73,19 @@
       "noEffect": 149
     },
     "cvwr": {
-      "executable": 167,
+      "executable": 165,
       "hooks": 400,
-      "noEffect": 152
+      "noEffect": 149
     },
     "dead": {
-      "executable": 41,
+      "executable": 46,
       "hooks": 82,
-      "noEffect": 41
+      "noEffect": 36
     },
     "dims": {
       "executable": 31,
       "hooks": 105,
-      "noEffect": 64
+      "noEffect": 63
     },
     "dkcy": {
       "executable": 167,
@@ -103,14 +103,14 @@
       "noEffect": 76
     },
     "ff04": {
-      "executable": 64,
+      "executable": 59,
       "hooks": 74,
       "noEffect": 5
     },
     "gotg": {
       "executable": 17,
       "hooks": 92,
-      "noEffect": 70
+      "noEffect": 65
     },
     "mdns": {
       "executable": 64,
@@ -120,10 +120,10 @@
     "mgtg": {
       "executable": 51,
       "hooks": 99,
-      "noEffect": 48
+      "noEffect": 46
     },
     "msis": {
-      "executable": 68,
+      "executable": 65,
       "hooks": 101,
       "noEffect": 33
     },
@@ -133,9 +133,9 @@
       "noEffect": 113
     },
     "msp1": {
-      "executable": 82,
+      "executable": 84,
       "hooks": 109,
-      "noEffect": 20
+      "noEffect": 13
     },
     "nmut": {
       "executable": 37,
@@ -148,9 +148,9 @@
       "noEffect": 35
     },
     "pttr": {
-      "executable": 45,
+      "executable": 48,
       "hooks": 122,
-      "noEffect": 28
+      "noEffect": 25
     },
     "rlmk": {
       "executable": 45,
@@ -165,7 +165,7 @@
     "shld": {
       "executable": 31,
       "hooks": 95,
-      "noEffect": 22
+      "noEffect": 21
     },
     "smhc": {
       "executable": 26,
@@ -178,19 +178,19 @@
       "noEffect": 85
     },
     "ssw2": {
-      "executable": 128,
+      "executable": 133,
       "hooks": 271,
-      "noEffect": 84
+      "noEffect": 79
     },
     "vill": {
       "executable": 130,
       "hooks": 288,
-      "noEffect": 84
+      "noEffect": 79
     },
     "vnom": {
-      "executable": 41,
-      "hooks": 100,
-      "noEffect": 56
+      "executable": 20,
+      "hooks": 76,
+      "noEffect": 6
     },
     "wpnx": {
       "executable": 53,
@@ -208,7 +208,7 @@
       "noEffect": 120
     },
     "xmen": {
-      "executable": 165,
+      "executable": 160,
       "hooks": 350,
       "noEffect": 166
     }
@@ -223,19 +223,6 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
-    "attack-per-count:attack-icon-played-this-turn": 1,
-    "attack-per-count:avengers-played-this-turn": 1,
-    "attack-per-count:cost-four-plus-played-this-turn": 3,
-    "attack-per-count:covert-heroes-played-this-turn": 1,
-    "attack-per-count:distinct-hero-classes-played-this-turn": 1,
-    "attack-per-count:odd-cost-heroes-played-this-turn": 1,
-    "attack-per-count:ranged-heroes-played-this-turn": 1,
-    "attack-per-count:shield-heroes-played-this-turn": 1,
-    "attack-per-count:shield-levels:1": 2,
-    "attack-per-count:strength-heroes-played-this-turn": 3,
-    "attack-per-count:tech-heroes-played-this-turn": 5,
-    "attack-per-count:victory-bystanders": 2,
-    "attack-per-count:worthy-cards-played-this-turn": 1,
     "blood-frenzy": 6,
     "bridge": 3,
     "bridge-conqueror": 3,
@@ -259,7 +246,7 @@
     "cyber-mod-wound": 2,
     "danger-sense": 18,
     "dark-memories": 10,
-    "defeated-villain-or-mastermind": 2,
+    "defeated-villain-or-mastermind": 4,
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
@@ -268,7 +255,6 @@
     "draw-threshold": 1,
     "endgame": 5,
     "excessive-kindness": 7,
-    "excessive-violence": 21,
     "explore": 2,
     "fated-future": 6,
     "feast": 7,
@@ -280,10 +266,6 @@
     "hunt-for-victims": 1,
     "hyperspeed": 14,
     "indigestion": 5,
-    "kidnap-per-count:tech-heroes-played-this-turn": 1,
-    "ko-wound-reward:attack": 5,
-    "ko-wound-reward:draw": 3,
-    "ko-wound-reward:recruit": 2,
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
@@ -291,10 +273,6 @@
     "man/woman-out-of-time": 4,
     "microscopic-size-changing": 13,
     "moonlight": 17,
-    "optional-ko-reward:attack": 1,
-    "optional-ko-reward:draw": 2,
-    "optional-ko-reward:recruit": 4,
-    "optional-ko-reward:rescue": 2,
     "outwit": 13,
     "patrol-any-city-space": 3,
     "patrol-every-city-space": 1,
@@ -309,15 +287,10 @@
     "patrol-your-victory-pile": 1,
     "phasing": 12,
     "piercing-energy": 11,
-    "recruit-per-count:cost-four-plus-played-this-turn": 1,
-    "recruit-per-count:distinct-hero-classes-played-this-turn": 1,
-    "recruit-per-count:ranged-heroes-played-this-turn": 2,
-    "recruit-per-count:recruit-icon-played-this-turn": 1,
     "recruit-threshold": 9,
     "reveal-count": 2,
     "reveal-multi-take": 1,
     "reveal-reorder": 1,
-    "reveal:cost-lte-2:draw": 2,
     "ritual-artifact": 8,
     "rooftops": 1,
     "rooftops-abomination": 1,
@@ -327,8 +300,6 @@
     "savior": 8,
     "sewers-conqueror": 2,
     "shatter": 7,
-    "shuffle-discard-empty-reward:attack": 1,
-    "shuffle-discard-empty-reward:recruit": 1,
     "soaring-flight": 17,
     "soulbind": 5,
     "soulbind-a-bystander-or-villain": 1,

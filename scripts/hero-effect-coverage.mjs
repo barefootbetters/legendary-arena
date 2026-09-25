@@ -158,6 +158,32 @@ function normalizeMechanicToken(rawToken) {
 }
 
 /**
+ * Maps a normalized mechanic token to the name the known-markup check should use.
+ *
+ * A parameterized marker (`reveal:team-x-men:draw`, `optional-ko-reward:attack`,
+ * `attack-per-count:victory-bystanders`) is the head keyword plus arguments the
+ * parser reads; when that head is a known HERO_KEYWORD the token is that supported
+ * mechanic, not a new one. A token whose head is unknown keeps its full name so a
+ * genuinely unmodeled mechanic still surfaces.
+ *
+ * @param {string} normalizedName - the output of normalizeMechanicToken.
+ * @returns {string} the head keyword when known, else the full normalized name.
+ */
+function classifyMechanicName(normalizedName) {
+  const separatorIndex = normalizedName.indexOf(':');
+  if (separatorIndex === -1) {
+    return normalizedName;
+  }
+  const headKeyword = normalizedName.slice(0, separatorIndex);
+  // why: only a KNOWN head collapses — an unknown head keeps the full token so the
+  // warn-only "new unsupported mechanic" signal is not silenced for real gaps.
+  if (KNOWN_MARKUP_KEYWORDS.has(headKeyword)) {
+    return headKeyword;
+  }
+  return normalizedName;
+}
+
+/**
  * Walks the whole hero corpus once and returns the structured coverage report
  * plus human-report extras (the fully-dark heroes with their ability text).
  *
@@ -226,7 +252,7 @@ function analyzeCorpus(registry) {
       const markupPattern = /\[keyword:([^\]]+)\]/g;
       let match;
       while ((match = markupPattern.exec(ability)) !== null) {
-        const name = normalizeMechanicToken(match[1]);
+        const name = classifyMechanicName(normalizeMechanicToken(match[1]));
         if (name !== '' && !KNOWN_MARKUP_KEYWORDS.has(name)) {
           unsupportedMechanics[name] = (unsupportedMechanics[name] ?? 0) + 1;
         }
