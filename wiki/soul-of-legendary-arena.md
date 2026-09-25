@@ -1635,8 +1635,11 @@ dispute.
   *CULT TENNIS, ["FOUR TIMES that Men and Women Faced Off in Tennis"](https://www.youtube.com/watch?v=-AptRn1YFks&t=580s)
   — starts at 9:40.*
 - **Penn women's swimming** *(questions 1, 2 and 4)*. Lia Thomas swam three
-  seasons on the University of Pennsylvania men's team (2017–2020), beginning
-  hormone therapy in May 2019, then joined the women's team for 2021–22 under
+  seasons on the University of Pennsylvania men's team (2017–2020) as Will
+  Thomas — the name on Penn's men's roster and in the 2019 Ivy League results,
+  where Will Thomas finished second in the 500, 1,000 and 1,650 freestyle.
+  Thomas, born in May 1999, began hormone therapy in May 2019, at 19 or 20, then
+  joined the women's team for 2021–22 under
   the NCAA's rules of the day and won the NCAA 500-yard freestyle title in March
   2022. The institutions reported first: Penn and the Ivy League issued
   statements of support in January 2022. The dissent came next and came
@@ -1659,7 +1662,9 @@ dispute.
   [subsidy lever](#the-mastermind-lens--five-questions), pulled in the other
   direction.
 - **San José State volleyball** *(questions 1, 2 and 4)*. Blaire Fleming,
-  who transitioned at 14, transferred to San José State in 2022. The university
+  who began socially transitioning at 14, transferred to San José State in 2022. (Some outlets report
+  a birth name of Brayden; the page found no primary record confirming it, and
+  San José State's materials give none.) The university
   told its coaching staff not to tell the players and cited student-privacy law
   when asked, so teammates who shared rooms and road trips were the last to
   know (question 2 — here the institution did not merely report first; it
@@ -2510,6 +2515,11 @@ claim at a safe distance — it stands on it.
   (16 January 2026); the Ivy League's [6 January 2022 statement](https://ivyleague.com/news/2022/1/6/general-the-ivy-league-releases-statement-of-support-regarding-penns-lia-thomas-participation-in-womens-swimming-diving.aspx),
   the NCAA's [6 February 2025 policy change](https://www.ncaa.org/news/2025/2/6/media-center-ncaa-announces-transgender-student-athlete-participation-policy-change.aspx),
   and the *Daily Pennsylvanian*'s [report on the 1 July 2025 Title IX resolution](https://www.thedp.com/article/2025/07/penn-federal-government-title-ix-settlement).
+  For the former names: Penn Athletics'
+  [men's roster entry for Will Thomas](https://pennathletics.com/sports/mens-swimming-and-diving/roster/will-thomas/14590)
+  and Swimming World's
+  [2019 Ivy League men's championships report](https://www.swimmingworldmagazine.com/news/2019-ivy-league-mens-championships-day-2-harvard-continues-to-dominate/);
+  Fleming's age at transition per [KRON4's interview](https://www.kron4.com/news/bay-area/trans-san-jose-state-u-volleyball-player-blaire-fleming-speaks-out/).
   For San José State: the Mountain West investigation outcome as
   [reported by Fox News](https://www.foxnews.com/sports/mountain-west-closes-investigation-allegations-against-san-jose-state-trans-player-without-discipline)
   (16 November 2024); *Slusser v. Mountain West Conference*, No. 1:24-cv-03155
