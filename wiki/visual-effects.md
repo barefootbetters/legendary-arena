@@ -1020,8 +1020,9 @@ space and the centre chip said "Fought". The villain slash makes that moment lan
 > and no randomness; the one `performance.now()` read (the streak window) lives in
 > the D-24365-exempt `VfxOverlay.vue`. v1 plays one visible beat when several
 > defeats land in one frame (each fight is its own move, so normal play never hits
-> it). Named follow-ups: swipe-to-fight input with a pointer blade trail, and
-> team-coloured splatter.
+> it). Named follow-ups: team-coloured splatter. The slash-to-fight input with a
+> pointer blade trail has **shipped** — see [Slash to fight](#slash-to-fight)
+> (WP-756 / D-24585); a gesture fight's slice follows the stroke's angle.
 
 ![Animated mock of the villain slash: a bright blade streak crosses a villain card, the card splits along the cut into two halves that hop and tumble away, purple droplets spray along the cut, stains fade, and the words DOUBLE TAKEDOWN! pop. Loops.](/visual-effects/villain-slash.svg "width=58%")
 
@@ -1081,6 +1082,53 @@ remains of that item.
 > the multiplayer / lobby work, not the feel layer. (An emote's *per-emote
 > sound* would be the only piece that touches
 > [Sound Effects](sound-effects.md).)
+
+#### Shipped — Slash to fight (the Fruit Ninja input) {#slash-to-fight}
+
+The input half of the [villain slash](#surface-villain-slash): drag across the
+City row and every fightable villain the stroke **fully crosses** is fought, in
+crossing order, while a glowing blade trail follows the pointer and each
+villain's slice follows the stroke's direction (WP-756 / D-24585). Clicking a
+villain still fights it exactly as before.
+
+- **The full-crossing rule.** A villain counts only when the stroke *began
+  outside* its tile, entered it, and later left it — so a press-and-drag that
+  starts on a card never spends attack, and no clock is needed (a speed rule
+  would need one). Only villains the Fight button would allow at the moment the
+  stroke starts are candidates; the gesture never uses Excessive Violence.
+- **Taps stay taps.** A press becomes a stroke only after it moves **8 px**
+  (mouse) or **16 px** (touch / pen — inside the browser's tap slop, so a sloppy
+  tap still fights). After a mouse stroke the trailing click is swallowed once;
+  the flag clears on the next press or key, so it can never eat a later tap. The
+  native image drag is prevented on the row while the setting is on.
+- **Touch and pen only when the row fits.** On a narrow screen the City row
+  scrolls sideways, and there a finger drag must stay a scroll. So touch / pen
+  get the gesture only while the row, every horizontally scrolling ancestor and
+  the viewport show all five spaces without horizontal scrolling (re-measured
+  when villains enter, on resize, and on mount); then `touch-action: pan-y`
+  hands horizontal strokes to the gesture and vertical page scroll keeps working.
+- **The engine confirms every fight.** Fights go out one at a time, keyed by the
+  card, never by position. The next City frame after each fight decides it: the
+  card is gone → confirmed, move on; the card is still there (a Guard, Patrol,
+  defeat requirement or open choice rejected it) → skip it at once. If no frame
+  arrives within **3 s** (below the 4 s move-ack window) the rest are abandoned —
+  nothing is ever sent late. A target that escaped, moved or became unaffordable
+  is re-found by card and skipped when absent or refused.
+- **The blade trail** is a white-core, lavender-glow tapered ribbon (the villain
+  slash streak colours) drawn as one SVG path on the click-through VFX overlay.
+  It fades within 170 ms, is narrower on phones, and — like the particles — is
+  hidden at intensity `off` and under reduced motion. The fight never depends on it.
+- **The angle hint.** Each gesture fight leaves its stroke angle for its City
+  space; the slice beat takes it first thing, so a vertical stroke slices the card
+  vertically. A click-fight keeps the rotating per-defeat angle.
+- **The setting.** A 🗡️ **Slash to fight** toggle beside Effect Intensity in the
+  sound bar turns the gesture off (remembered per browser). It defaults on; with
+  it off the City row behaves exactly as the click-only row did.
+
+Pure presentation and input only: the gesture sends the same `fightVillain`
+intent a click does, reads no clock (the trail's fade stamp lives in the
+D-24365-exempt overlay), and leaves the engine, replays and the determinism
+hash untouched.
 
 ### Future direction — alternate thematic presentations {#playstyle-lens}
 

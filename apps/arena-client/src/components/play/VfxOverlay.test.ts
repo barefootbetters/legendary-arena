@@ -5,9 +5,10 @@ import '../../testing/jsdom-setup';
 
 import { describe, test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextTick } from 'vue';
+import { effectScope, nextTick, ref, type EffectScope } from 'vue';
 import { mount } from '@vue/test-utils';
 import VfxOverlay, {
+  buildBladeTrailPath,
   buildBurstOptions,
   buildSliceSprayOptions,
   buildSwordBurstOptions,
@@ -24,7 +25,14 @@ import { useExcessiveViolenceVfxSignal } from '../../composables/useExcessiveVio
 import { useMastermindHitVfxSignal } from '../../composables/useMastermindHitVfx';
 import { useVictoryFinaleVfxSignal } from '../../composables/useVictoryFinaleVfx';
 import { useVillainSlashVfxSignal } from '../../composables/useVillainSlashVfx';
-import { VILLAIN_SLASH_VFX } from '../../vfx/villainSlashVfxManifest';
+import { VILLAIN_SLASH_VFX, villainSlashAngleForSeq } from '../../vfx/villainSlashVfxManifest';
+import type { UICityState } from '@legendary-arena/game-engine';
+import {
+  useBladeTrailSignal,
+  useSlashGesture,
+  useSliceAngleHints,
+  __resetSlashGestureSignalsForTests,
+} from '../../composables/useSlashGesture';
 import {
   useEffectIntensity,
   __resetEffectIntensityForTests,
@@ -875,5 +883,220 @@ describe('VfxOverlay — buildSliceSprayOptions (WP-755)', () => {
     assert.equal(options.angle, 28);
     assert.equal(buildSliceSprayOptions(VILLAIN_SLASH_VFX.colors, 10, 0.5, 0.5, 34).angle, -34);
     assert.equal(options.disableForReducedMotion, true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-756 — the slash gesture's blade trail and angle hint.
+// ---------------------------------------------------------------------------
+
+const gestureScopes: EffectScope[] = [];
+
+/**
+ * Pushes a REAL angle hint by driving a slash-gesture controller: a one-tile row
+ * at `citySpace`, a stroke across it at the given direction. The controller's
+ * chain submits the fight and queues the hint exactly as production does. Its
+ * scope stays alive (the hint is held in flight) until afterEach stops it.
+ */
+function pushHintViaGesture(citySpace: number, direction: 'vertical' | 'horizontal'): void {
+  const row = document.createElement('ol');
+  const button = document.createElement('button');
+  button.setAttribute('data-testid', 'play-city-villain');
+  button.setAttribute('data-city-index', String(citySpace));
+  button.getBoundingClientRect = () => fakeRect(100, 100, 80, 110);
+  row.appendChild(button);
+  const spaces: UICityState['spaces'] = [null, null, null, null, null];
+  spaces[citySpace] = {
+    extId: `gesture-target-${citySpace}`,
+    type: 'villain',
+    keywords: [],
+    display: { extId: 'x', name: 'x', imageUrl: '', cost: 1 },
+    attachedHeroes: [],
+    attachedHeroDisplay: [],
+    attachedBystanderCount: 0,
+    fightCost: 0,
+  };
+  const city: UICityState = { spaces, escapedPile: [] };
+  const scope = effectScope();
+  gestureScopes.push(scope);
+  const controller = scope.run(() =>
+    useSlashGesture({
+      rowElement: ref(row),
+      city: () => city,
+      gateForCityIndex: () => true,
+      submitFight: () => {},
+      isEnabled: ref(true),
+      capturePointer: () => {},
+    }),
+  );
+  if (controller === undefined) throw new Error('The slash-gesture controller did not start.');
+  const from = direction === 'vertical' ? { x: 140, y: 60 } : { x: 60, y: 150 };
+  const to = direction === 'vertical' ? { x: 140, y: 260 } : { x: 220, y: 150 };
+  controller.handlePointerDown({ ...from, pointerType: 'mouse', button: 0, pointerId: 1 });
+  controller.handlePointerMove({ ...to, pointerType: 'mouse', button: 0, pointerId: 1 });
+  controller.handlePointerUp({ ...to, pointerType: 'mouse', button: 0, pointerId: 1 });
+}
+
+/** The rotate(...) angle on the newest slice streak. */
+function newestStreakAngle(wrapper: ReturnType<typeof mount>): number | null {
+  const streaks = wrapper.findAll('[data-testid="play-vfx-slice-streak"]');
+  const newest = streaks[streaks.length - 1];
+  if (newest === undefined) return null;
+  const match = /rotate\((-?[\d.]+)deg\)/.exec((newest.element as HTMLElement).style.transform);
+  return match === null ? null : Number(match[1]);
+}
+
+let bladeClockMs = 1000;
+
+describe('VfxOverlay — slash-gesture blade trail + angle hint (WP-756)', () => {
+  let fakeCity: HTMLElement | null = null;
+
+  beforeEach(() => {
+    localStorage.clear();
+    __resetEffectIntensityForTests();
+    __resetSlashGestureSignalsForTests();
+    useVillainSlashVfxSignal().value = null;
+    useEffectIntensity().setIntensity('full');
+    useEffectIntensity().prefersReducedMotion.value = false;
+    mock.timers.enable({ apis: ['setTimeout'] });
+    bladeClockMs = 1000;
+    sliceClockMs = 1000;
+    mock.method(performance, 'now', () => Math.max(bladeClockMs, sliceClockMs));
+    fakeCity = installFakeCity();
+  });
+
+  afterEach(() => {
+    while (gestureScopes.length > 0) gestureScopes.pop()?.stop();
+    mock.timers.reset();
+    mock.restoreAll();
+    if (fakeCity !== null) fakeCity.remove();
+    fakeCity = null;
+  });
+
+  test('two published samples render the blade trail with a non-empty path', async () => {
+    const wrapper = mount(VfxOverlay);
+    useBladeTrailSignal().value = { seq: 1, x: 100, y: 150, isStrokeEnd: false };
+    bladeClockMs = 1016;
+    useBladeTrailSignal().value = { seq: 2, x: 160, y: 150, isStrokeEnd: false };
+    await nextTick();
+    const trail = wrapper.find('[data-testid="play-vfx-blade-trail"]');
+    assert.ok(trail.exists());
+    assert.ok((trail.attributes('d') ?? '').startsWith('M '));
+    assert.equal(trail.attributes('fill'), VILLAIN_SLASH_VFX.streakCoreColor);
+    wrapper.unmount();
+  });
+
+  test('the trail is gone one life (170 ms) after the last sample, even with no animation frames', async () => {
+    const wrapper = mount(VfxOverlay);
+    useBladeTrailSignal().value = { seq: 1, x: 100, y: 150, isStrokeEnd: false };
+    bladeClockMs = 1016;
+    useBladeTrailSignal().value = { seq: 2, x: 160, y: 150, isStrokeEnd: true };
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-blade-trail"]').exists());
+    bladeClockMs = 1016 + 169;
+    mock.timers.tick(169);
+    await nextTick();
+    assert.ok(wrapper.find('[data-testid="play-vfx-blade-trail"]').exists());
+    bladeClockMs = 1016 + 170;
+    mock.timers.tick(1);
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-blade-trail"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('at off intensity no trail renders', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    useBladeTrailSignal().value = { seq: 1, x: 100, y: 150, isStrokeEnd: false };
+    useBladeTrailSignal().value = { seq: 2, x: 160, y: 150, isStrokeEnd: false };
+    await nextTick();
+    assert.equal(wrapper.find('[data-testid="play-vfx-blade-trail"]').exists(), false);
+    wrapper.unmount();
+  });
+
+  test('a matching hint overrides the seq angle exactly once', async () => {
+    const wrapper = mount(VfxOverlay);
+    pushHintViaGesture(2, 'vertical');
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    assert.equal(newestStreakAngle(wrapper), 90);
+    emitSlice(2, '1', 1100);
+    await nextTick();
+    assert.equal(newestStreakAngle(wrapper), villainSlashAngleForSeq(seq));
+    wrapper.unmount();
+  });
+
+  test('a vertical (90°) hint renders two halves without NaN', async () => {
+    const wrapper = mount(VfxOverlay);
+    pushHintViaGesture(2, 'vertical');
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    const halves = wrapper.findAll('[data-testid="play-vfx-slice-half"]');
+    assert.equal(halves.length, 2);
+    for (const half of halves) {
+      const style = (half.element as HTMLElement).style;
+      assert.equal(style.getPropertyValue('clip-path').includes('NaN'), false);
+      assert.equal(style.transformOrigin.includes('NaN'), false);
+    }
+    wrapper.unmount();
+  });
+
+  test('at off, a hint is still consumed, so the next matching event uses the seq angle', async () => {
+    useEffectIntensity().setIntensity('off');
+    const wrapper = mount(VfxOverlay);
+    pushHintViaGesture(2, 'vertical');
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    useEffectIntensity().setIntensity('full');
+    emitSlice(2, '1', 1100);
+    await nextTick();
+    assert.equal(newestStreakAngle(wrapper), villainSlashAngleForSeq(seq));
+    wrapper.unmount();
+  });
+
+  test('a hint for another City space is ignored (and stays queued for its own space)', async () => {
+    const wrapper = mount(VfxOverlay);
+    pushHintViaGesture(0, 'vertical');
+    emitSlice(2, '0', 1000);
+    await nextTick();
+    assert.equal(newestStreakAngle(wrapper), villainSlashAngleForSeq(seq));
+    assert.equal(useSliceAngleHints().take(0), 90);
+    wrapper.unmount();
+  });
+});
+
+describe('VfxOverlay — buildBladeTrailPath (WP-756)', () => {
+  test('returns an empty path for fewer than 2 live points', () => {
+    assert.equal(buildBladeTrailPath([], 1000, 170, 14), '');
+    assert.equal(buildBladeTrailPath([{ x: 0, y: 0, atMs: 1000 }], 1000, 170, 14), '');
+    // Two points, but one has expired.
+    assert.equal(
+      buildBladeTrailPath(
+        [
+          { x: 0, y: 0, atMs: 700 },
+          { x: 10, y: 0, atMs: 1000 },
+        ],
+        1000,
+        170,
+        14,
+      ),
+      '',
+    );
+  });
+
+  test('tapers from a full-width head to a pinched tail', () => {
+    const path = buildBladeTrailPath(
+      [
+        { x: 0, y: 0, atMs: 1000 },
+        { x: 10, y: 0, atMs: 1000 },
+        { x: 20, y: 0, atMs: 1000 },
+      ],
+      1000,
+      170,
+      14,
+    );
+    // Left edge tail→head, then right edge head→tail: the head (x=20) is 7 px
+    // either side of the line (half of 14), the tail (x=0) pinches to the line.
+    assert.equal(path, 'M 0 0 L 10 3.5 L 20 7 L 20 -7 L 10 -3.5 L 0 0 Z');
   });
 });

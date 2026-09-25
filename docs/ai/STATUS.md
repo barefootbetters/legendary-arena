@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-756 — Slash to fight: a stroke across City villains fights each one it crosses (EC-793 / D-24585) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Drag across
+the City row and every fightable villain the stroke fully crosses is fought, in crossing order. A
+glowing white-and-lavender blade trail follows the pointer, and each villain's WP-755 slice follows the
+stroke's direction. Clicking a villain still fights it. A 🗡️ **Slash to fight** toggle beside Effect
+Intensity turns the gesture off (default on, remembered per browser).
+
+- **Client-only.** The gesture sends the same `fightVillain({ cityIndex })` a click does, through
+  `CityRow`'s unchanged `gateForCell` — no engine, registry or server change, no new move.
+- **Deliberate, not accidental.** A villain counts only when the stroke began outside its tile,
+  entered and left it (no clock). A press becomes a stroke after 8 px (mouse) / 16 px (touch, pen);
+  shorter presses are ordinary clicks, and the one click a mouse stroke leaves behind is swallowed.
+- **The engine confirms every fight.** Fights go one at a time, keyed by the card. The next City frame
+  decides each: gone → confirmed; still there (Guard, Patrol, an open KO prompt…) → skipped at once.
+  No frame in 3 s → the rest are abandoned; nothing is ever sent late.
+- **Touch / pen** only while the whole row fits without horizontal scrolling (`touch-action: pan-y`,
+  so vertical scroll still works); on a scrolling row a finger drag keeps scrolling.
+- **Counts.** arena-client 2019/0 → 2084/0 (typecheck 0); whole repo `pnpm -r build && pnpm -r
+  --no-bail test` green (engine 4231/0, server 1611 / 1406 pass / 205 skip / 0 fail). No
+  `packages/**` change.
+- **Verified in the preview** (local server + a paused guest autoplay match, playing seat 0): a
+  right-to-left stroke fought Skrull Shapeshifters then a Sentinel in crossing order, both slices at the
+  stroke angle; a stroke whose first fight opened a KO prompt skipped the second at once and nothing
+  fired after the prompt closed; a drag on card art fought nothing (native `dragstart` prevented);
+  setting off → strokes inert; click-fight unchanged; 375 px mobile → touch stroke inert, the row keeps
+  native scroll; fitting row → touch stroke fought. The trail's fade gained a `setTimeout` expiry after
+  the drive showed a paused `requestAnimationFrame` could leave it on screen.
+- **Follow-up observed.** The mobile play surface overflows the viewport horizontally (pre-existing:
+  `turn-action-bar`, `shared-decks__cell`, `brand-nav`), so the touch half of the gesture stays dormant
+  on phones until that is fixed.
+- **Pending (D-24026).** Operator live-verify: on play.legendary-arena.com, slash across two
+  affordable villains and watch both fall in order, with the trail and stroke-angled slices.
+
 ### WP-755 — Villain slash VFX: a Fruit Ninja-style defeat beat (EC-792 / D-24584) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Every villain
