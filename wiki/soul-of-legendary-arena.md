@@ -1624,6 +1624,32 @@ dispute.
   when $175 million in federal funding was paused and then restored — the same
   [subsidy lever](#the-mastermind-lens--five-questions), pulled in the other
   direction.
+- **San José State volleyball** *(questions 1, 2 and 4)*. Blaire Fleming,
+  who transitioned at 14, transferred to San José State in 2022. The university
+  told its coaching staff not to tell the players and cited student-privacy law
+  when asked, so teammates who shared rooms and road trips were the last to
+  know (question 2 — here the institution did not merely report first; it
+  controlled who was allowed to know at all). When allegations surfaced in
+  October 2024 that Fleming had discussed with an opposing player a plan to get
+  co-captain Brooke Slusser hit, the Mountain West investigated through Willkie
+  Farr — the firm already defending the conference in Slusser's lawsuit — found
+  "insufficient evidence to corroborate the allegations," and closed the matter
+  (question 1, and the candidate Scheme almost word for word: *investigate
+  yourself, find yourself innocent*; Fleming denied the account, and the finding
+  was insufficient evidence, not falsity). Then the prices. Associate head coach
+  Melissa Batie-Smoose filed a Title IX complaint on 29 October 2024, was
+  suspended three days later, and saw her contract end in January 2025. Boise
+  State, Wyoming, Utah State, Nevada and Southern Utah refused to play, and each
+  refusal went into the standings as a loss — San José State entered the
+  conference tournament as the second seed on six forfeit wins (question 4:
+  nobody banned objecting; the standings charged for it). A federal court denied
+  the players an emergency injunction in November 2024, and the appeals court
+  affirmed the next day. In January 2026 the Department of Education found a
+  Title IX violation and proposed that the university restore records and
+  apologize, as Penn had; San José State sued instead — "We have followed the
+  law and cannot be punished for doing so" — and was given ten days to comply
+  or face referral to the Justice Department and loss of federal funding. The
+  same funding lever as Penn, this time resisted.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
@@ -2357,6 +2383,15 @@ claim at a safe distance — it stands on it.
   (16 January 2026); the Ivy League's [6 January 2022 statement](https://ivyleague.com/news/2022/1/6/general-the-ivy-league-releases-statement-of-support-regarding-penns-lia-thomas-participation-in-womens-swimming-diving.aspx),
   the NCAA's [6 February 2025 policy change](https://www.ncaa.org/news/2025/2/6/media-center-ncaa-announces-transgender-student-athlete-participation-policy-change.aspx),
   and the *Daily Pennsylvanian*'s [report on the 1 July 2025 Title IX resolution](https://www.thedp.com/article/2025/07/penn-federal-government-title-ix-settlement).
+  For San José State: the Mountain West investigation outcome as
+  [reported by Fox News](https://www.foxnews.com/sports/mountain-west-closes-investigation-allegations-against-san-jose-state-trans-player-without-discipline)
+  (16 November 2024); *Slusser v. Mountain West Conference*, No. 1:24-cv-03155
+  (D. Colo., filed 13 November 2024; [docket summary](https://clearinghouse.net/case/46255/));
+  Batie-Smoose's retaliation suit as
+  [reported by Athletic Business](https://www.athleticbusiness.com/operations/legal/article/15768458/former-sjsu-volleyball-coach-lawsuit-claims-retaliation-for-filing-title-ix-complaint-against-trans-athlete);
+  and San José State's own
+  [statement on suing the Department of Education](https://blogs.sjsu.edu/newsroom/2026/ocr-titleix-lawsuit/)
+  (6 March 2026).
   Cited for structure; the page does not adjudicate the underlying disputes.
 - Matt Walsh, *Real History* (Daily Wire+, 2026), Episode 4 *A New Constitution*
   (and the related monologue *Everything That You Were Told About The Civil
