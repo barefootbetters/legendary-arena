@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, ref, type PropType } from 'vue';
 import type {
   UICityState,
   UIDecksState,
@@ -8,6 +8,8 @@ import type {
 import { useCityRow, type CityCell } from '../../composables/useCityRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import { useTurnActions } from '../../composables/useTurnActions';
+import { useSlashGesture } from '../../composables/useSlashGesture';
+import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
@@ -133,7 +135,42 @@ export default defineComponent({
       return props.darkPortalIndices.includes(cityIndex);
     }
 
-    return { buildCells, gateForCell, onFight, showEvFight, onFightEV, hasDarkPortal };
+    function gateForCityIndex(cityIndex: number): boolean {
+      // why: WP-756 / D-24585 — the slash gesture fights exactly what the Fight
+      // button would: the same gateForCell, looked up by engine City index.
+      for (const cell of buildCells()) {
+        if (cell.kind === 'slot' && cell.cityIndex === cityIndex) {
+          return cell.card !== null && gateForCell(cell).allowed;
+        }
+      }
+      return false;
+    }
+
+    // why: WP-756 / D-24585 — the slash gesture. A stroke that fully crosses
+    // fightable villains submits the same fightVillain({ cityIndex }) a click
+    // does, one at a time, through onFight. With the setting off the row gets no
+    // listeners and no classes — it is byte-identical to the click-only row.
+    const cityRowEl = ref<HTMLElement | null>(null);
+    const { isEnabled: isSlashGestureSettingOn } = useSlashGestureSetting();
+    const { isGestureEnabled, isTouchGestureEnabled } = useSlashGesture({
+      rowElement: cityRowEl,
+      city: () => props.city,
+      gateForCityIndex,
+      submitFight: onFight,
+      isEnabled: isSlashGestureSettingOn,
+    });
+
+    return {
+      buildCells,
+      gateForCell,
+      onFight,
+      showEvFight,
+      onFightEV,
+      hasDarkPortal,
+      cityRowEl,
+      isGestureEnabled,
+      isTouchGestureEnabled,
+    };
   },
 });
 </script>
@@ -144,7 +181,18 @@ export default defineComponent({
     data-testid="play-city-row"
     aria-label="City"
   >
-    <ol class="city-spaces">
+    <!-- why: WP-756 — the gesture classes: `--gesture` (setting on) stops mouse
+         strokes selecting label text; `--gesture-touch` (setting on AND the row
+         fits without horizontal scroll) hands horizontal finger/pen strokes to
+         the gesture while vertical page scroll keeps working. -->
+    <ol
+      ref="cityRowEl"
+      class="city-spaces"
+      :class="{
+        'city-spaces--gesture': isGestureEnabled,
+        'city-spaces--gesture-touch': isTouchGestureEnabled,
+      }"
+    >
       <!-- why: 7-cell visual layout locked per EC-132 §2:
            Escaped Pile | Bridge | Streets | Rooftops | Bank | Sewers | Villain Deck. -->
       <li
@@ -294,6 +342,20 @@ export default defineComponent({
   padding: 0;
   margin: 0;
   overflow-x: auto;
+}
+
+/* why: WP-756 — with the slash gesture on, a mouse stroke across the row must
+   never select the slot labels' text. */
+.city-spaces--gesture {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* why: WP-756 — only while the row fits (no horizontal scroll): horizontal
+   finger / pen strokes go to the gesture, and pan-y keeps vertical page scroll.
+   On a scrolling row this class is absent, so touch keeps native scrolling. */
+.city-spaces--gesture-touch {
+  touch-action: pan-y;
 }
 
 /* why (Jeff feedback): a HORIZONTAL row — the slot label rotated on the left, the

@@ -4,6 +4,7 @@ import { getAudioEngine } from '../../audio/audioEngine';
 import { getMusicEngine } from '../../audio/musicEngine';
 import { useAudioSettings } from '../../composables/useAudioSettings';
 import { useEffectIntensity, type EffectIntensity } from '../../vfx/effectIntensity';
+import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting';
 
 /**
  * Fixed-position mute toggle + master-volume slider for the WP-412 audio
@@ -33,6 +34,16 @@ export default defineComponent({
     const musicEngine = getMusicEngine();
     const { isMuted, volume, isMusicEnabled, musicVolume } = useAudioSettings(engine);
     const { intensity, setIntensity } = useEffectIntensity();
+    // why: WP-756 / D-24585 — the "Slash to fight" toggle lives beside Effect
+    // Intensity so the whole feel layer's switches sit together. It is an INPUT
+    // setting, not a VFX level, so it is its own on/off rather than a fourth
+    // intensity step.
+    const { isEnabled: isSlashGestureEnabled, setEnabled: setSlashGestureEnabled } =
+      useSlashGestureSetting();
+
+    function onToggleSlashGesture(): void {
+      setSlashGestureEnabled(!isSlashGestureEnabled.value);
+    }
 
     /**
      * Arms BOTH audio channels on a user gesture.
@@ -137,6 +148,8 @@ export default defineComponent({
       intensity,
       intensityGlyph,
       onCycleIntensity,
+      isSlashGestureEnabled,
+      onToggleSlashGesture,
       onToggleMute,
       onVolumeInput,
       isMusicEnabled,
@@ -159,6 +172,19 @@ export default defineComponent({
       @click="onCycleIntensity"
     >
       {{ intensityGlyph }}
+    </button>
+    <button
+      type="button"
+      class="audio-controls__slash-gesture"
+      data-testid="slash-gesture-toggle"
+      :aria-pressed="isSlashGestureEnabled"
+      :data-enabled="isSlashGestureEnabled ? 'on' : 'off'"
+      :title="isSlashGestureEnabled
+        ? 'Slash to fight: on — drag across villains to fight them (click to turn off)'
+        : 'Slash to fight: off (click to turn on)'"
+      @click="onToggleSlashGesture"
+    >
+      🗡️
     </button>
     <button
       type="button"
@@ -225,7 +251,8 @@ export default defineComponent({
 }
 
 .audio-controls__mute,
-.audio-controls__intensity {
+.audio-controls__intensity,
+.audio-controls__slash-gesture {
   background: transparent;
   border: none;
   color: inherit;
@@ -242,6 +269,12 @@ export default defineComponent({
 }
 
 .audio-controls__intensity[data-intensity="off"] {
+  opacity: 0.45;
+}
+
+/* why: WP-756 — the Slash-to-fight glyph dims when the gesture is off, the same
+   at-a-glance cue as the intensity glyph at `off`. */
+.audio-controls__slash-gesture[data-enabled="off"] {
   opacity: 0.45;
 }
 

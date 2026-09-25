@@ -1,7 +1,8 @@
 import '../../testing/jsdom-setup';
 
-import { describe, test } from 'node:test';
+import { describe, test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import CityRow from './CityRow.vue';
 import type {
@@ -11,6 +12,11 @@ import type {
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
 import type { SubmitMove, UiMoveName } from './uiMoveName.types';
+import {
+  useSlashGestureSetting,
+  __resetSlashGestureSettingForTests,
+} from '../../composables/useSlashGestureSetting';
+import { __resetSlashGestureSignalsForTests } from '../../composables/useSlashGesture';
 
 interface RecordedCall {
   name: UiMoveName;
@@ -428,5 +434,127 @@ describe('CityRow — Dark Portal markers (WP-727 / D-24548)', () => {
       },
     });
     assert.equal(wrapper.findAll('[data-testid="dark-portal-marker"]').length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-756 / D-24585 — the slash gesture wired through the row's DOM adapter.
+// ---------------------------------------------------------------------------
+
+/** A pointer-shaped MouseEvent (jsdom has no pointer-event class, so the fields are added). */
+function pointerEvent(
+  type: string,
+  clientX: number,
+  clientY: number,
+  pointerType = 'mouse',
+): MouseEvent {
+  const event = new window.MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY,
+    button: 0,
+  });
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  Object.defineProperty(event, 'pointerId', { value: 1 });
+  return event;
+}
+
+/** Stubs each villain button's rect: engine index i → an 80×110 tile at x = 100 + i·100. */
+function stubVillainRects(root: Element): void {
+  for (const button of Array.from(root.querySelectorAll('[data-testid="play-city-villain"]'))) {
+    const cityIndex = Number(button.getAttribute('data-city-index'));
+    const left = 100 + cityIndex * 100;
+    (button as HTMLElement).getBoundingClientRect = () =>
+      ({
+        left,
+        top: 100,
+        width: 80,
+        height: 110,
+        right: left + 80,
+        bottom: 210,
+        x: left,
+        y: 100,
+        toJSON: () => ({}),
+      }) as DOMRect;
+  }
+}
+
+function mountForGesture(submitMove: SubmitMove) {
+  return mount(CityRow, {
+    props: {
+      city: fullCity(),
+      decks: DECKS,
+      currentStage: 'main',
+      economy: economy({ attack: 9, availableAttack: 9 }),
+      submitMove,
+    },
+  });
+}
+
+describe('CityRow — slash gesture (WP-756)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  test('a mouse stroke across a villain submits fightVillain({ cityIndex }) and eats the trailing click', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    row.dispatchEvent(pointerEvent('pointerdown', 60, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 190, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 190, 150));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'fightVillain');
+    assert.deepEqual(calls[0]!.args, { cityIndex: 0 });
+    // The click the browser fires after the stroke's pointerup is swallowed.
+    const villainZero = wrapper.find('[data-testid="play-city-villain"][data-city-index="0"]');
+    (villainZero.element as HTMLButtonElement).click();
+    assert.equal(calls.length, 1);
+    wrapper.unmount();
+  });
+
+  test('a plain click still fights with the gesture on', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    await wrapper.find('[data-testid="play-city-villain"][data-city-index="2"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 2 } }]);
+    wrapper.unmount();
+  });
+
+  test('with the setting on: gesture classes present and dragstart is prevented', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    const row = wrapper.find('ol.city-spaces');
+    assert.ok(row.classes().includes('city-spaces--gesture'));
+    assert.ok(row.classes().includes('city-spaces--gesture-touch'));
+    const drag = new window.Event('dragstart', { bubbles: true, cancelable: true });
+    wrapper.find('[data-testid="play-city-villain"]').element.dispatchEvent(drag);
+    assert.equal(drag.defaultPrevented, true);
+    wrapper.unmount();
+  });
+
+  test('with the setting off: no gesture classes, no dragstart prevention, strokes do nothing', async () => {
+    useSlashGestureSetting().setEnabled(false);
+    const { calls, submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces');
+    assert.equal(row.attributes('class'), 'city-spaces');
+    const drag = new window.Event('dragstart', { bubbles: true, cancelable: true });
+    wrapper.find('[data-testid="play-city-villain"]').element.dispatchEvent(drag);
+    assert.equal(drag.defaultPrevented, false);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150));
+    row.element.dispatchEvent(pointerEvent('pointermove', 190, 150));
+    row.element.dispatchEvent(pointerEvent('pointerup', 190, 150));
+    assert.equal(calls.length, 0);
+    wrapper.unmount();
   });
 });

@@ -50,6 +50,7 @@ import {
   useVillainSlashVfxSignal,
   type VillainSlashVfxEvent,
 } from '../../composables/useVillainSlashVfx';
+import { useBladeTrailSignal, useSliceAngleHints } from '../../composables/useSlashGesture';
 
 /**
  * VfxOverlay — the single full-bleed VFX layer (WP-556). It hosts ONE shared
@@ -121,9 +122,14 @@ import {
  * RAMPAGE). The halves / streak / stains are imperative DOM nodes in the
  * `play-vfx-slice-layer` container — never drawn on the confetti canvas.
  *
- * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge" / WP-746 §H "the render" / WP-755 §D "the slice"
+ * WP-756 adds the slash gesture's two presentation pieces: the **blade trail**
+ * (a template-owned SVG ribbon that follows the pointer during a slash-to-fight
+ * stroke and fades within 170 ms) and the **angle hint** — a gesture-driven
+ * fight's slice follows the stroke's angle instead of the per-`seq` angle.
+ *
+ * @see WP-556 §D "VFX overlay" / WP-647 §C "the render" / WP-650 §C "the vignette" / WP-672 §D "the surge" / WP-746 §H "the render" / WP-755 §D "the slice" / WP-756 §E "the blade trail"
  * @see apps/arena-client/src/components/play/NotableEventOverlay.vue (the overlay precedent)
- * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst) + D-24569 (the Excessive Violence burst) + D-24584 (the villain slash)
+ * @see DECISIONS.md D-24365 (the VFX determinism exemption) + D-24459 (the shield-block burst) + D-24569 (the Excessive Violence burst) + D-24584 (the villain slash) + D-24585 (the slash gesture)
  */
 
 // why: how long the call-out word stays on screen before it fades out.
@@ -163,6 +169,80 @@ const VICTORY_BANNER_MS = 2600;
 // touch longer than the combo impact pulse to seat the celebration, still
 // opacity/transform only (never a layout property).
 const CELEBRATE_MS = 900;
+// why: WP-756 — the blade trail's life: each point fades out 170 ms after it was
+// sampled, so the ribbon trails the pointer by a short, snappy tail.
+const BLADE_TRAIL_LIFE_MS = 170;
+// why: WP-756 — the ribbon's head width, narrower on phone-width viewports so
+// the trail never hides the villains a finger is slashing across.
+const BLADE_TRAIL_MAX_WIDTH_PX = 14;
+const BLADE_TRAIL_NARROW_MAX_WIDTH_PX = 10;
+const BLADE_TRAIL_NARROW_VIEWPORT_PX = 600;
+// why: WP-756 — cap on live trail points so a long, fast stroke stays cheap.
+const BLADE_TRAIL_MAX_POINTS = 64;
+
+/** One stamped blade-trail point: client position + the overlay clock at sampling. */
+export interface BladeTrailPoint {
+  x: number;
+  y: number;
+  atMs: number;
+}
+
+/** Rounds to two decimals so the SVG path string stays short and stable. */
+function roundBladeCoordinate(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Builds the blade trail's SVG path: a tapered ribbon along the live points,
+ * widest at the head (the newest point) and pinched to nothing at the tail.
+ * Each point's half-width also shrinks with its age, so the tail fades away.
+ * Exported and pure so the taper is unit-testable without a browser.
+ *
+ * @param points - the trail points, oldest first.
+ * @param nowMs - the overlay clock now.
+ * @param lifeMs - how long a point lives.
+ * @param maxWidth - the ribbon's full width at a fresh head.
+ * @returns the path `d`, or `''` when fewer than 2 points are still alive.
+ */
+export function buildBladeTrailPath(
+  points: readonly BladeTrailPoint[],
+  nowMs: number,
+  lifeMs: number,
+  maxWidth: number,
+): string {
+  const livePoints: BladeTrailPoint[] = [];
+  for (const point of points) {
+    if (nowMs - point.atMs < lifeMs) livePoints.push(point);
+  }
+  if (livePoints.length < 2) return '';
+  const lastIndex = livePoints.length - 1;
+  const leftEdge: string[] = [];
+  const rightEdge: string[] = [];
+  for (let i = 0; i <= lastIndex; i += 1) {
+    const point = livePoints[i] as BladeTrailPoint;
+    const previous = livePoints[Math.max(0, i - 1)] as BladeTrailPoint;
+    const next = livePoints[Math.min(lastIndex, i + 1)] as BladeTrailPoint;
+    const directionX = next.x - previous.x;
+    const directionY = next.y - previous.y;
+    const length = Math.hypot(directionX, directionY);
+    let normalX = 0;
+    let normalY = 0;
+    if (length > 0) {
+      normalX = -directionY / length;
+      normalY = directionX / length;
+    }
+    const ageFactor = Math.max(0, 1 - (nowMs - point.atMs) / lifeMs);
+    const halfWidth = (maxWidth / 2) * (i / lastIndex) * ageFactor;
+    leftEdge.push(
+      `${roundBladeCoordinate(point.x + normalX * halfWidth)} ${roundBladeCoordinate(point.y + normalY * halfWidth)}`,
+    );
+    rightEdge.push(
+      `${roundBladeCoordinate(point.x - normalX * halfWidth)} ${roundBladeCoordinate(point.y - normalY * halfWidth)}`,
+    );
+  }
+  rightEdge.reverse();
+  return `M ${leftEdge.join(' L ')} L ${rightEdge.join(' L ')} Z`;
+}
 
 /**
  * Builds the `canvas-confetti` options for one burst. Exported and pure so the
@@ -290,6 +370,8 @@ export default defineComponent({
     const mastermindHitSignal = useMastermindHitVfxSignal();
     const victoryFinaleSignal = useVictoryFinaleVfxSignal();
     const villainSlashSignal = useVillainSlashVfxSignal();
+    const bladeTrailSignal = useBladeTrailSignal();
+    const sliceAngleHints = useSliceAngleHints();
 
     const canvasEl = ref<HTMLCanvasElement | null>(null);
     // why: WP-755 — the template-owned container the slice halves / streak /
@@ -335,6 +417,17 @@ export default defineComponent({
     const celebrateKey = ref(0);
     const currentVictoryWord = ref<string | null>(null);
     const victoryKey = ref(0);
+
+    // why: WP-756 — the blade trail. The points are plain data (not reactive);
+    // only the derived path string is reactive, so a fast stroke re-renders one
+    // attribute, not a list. The colours are the WP-755 streak colours.
+    const bladeTrailPath = ref('');
+    const bladeCoreColor = VILLAIN_SLASH_VFX.streakCoreColor;
+    const bladeGlowColor = VILLAIN_SLASH_VFX.streakGlowColor;
+    let bladePoints: BladeTrailPoint[] = [];
+    let isBladeStrokeEnded = true;
+    let bladeFrameHandle: number | null = null;
+    let bladeExpiryTimer: ReturnType<typeof setTimeout> | null = null;
 
     let wordTimer: ReturnType<typeof setTimeout> | null = null;
     let impactTimer: ReturnType<typeof setTimeout> | null = null;
@@ -898,13 +991,16 @@ export default defineComponent({
       return resolveCardBox(spaceEl.getBoundingClientRect(), referenceRect);
     }
 
-    /** Renders the positional stages (halves, streak, spray, stains) of one slice. */
-    function renderSlicePieces(event: VillainSlashVfxEvent, streak: number): void {
+    /**
+     * Renders the positional stages (halves, streak, spray, stains) of one slice.
+     * `angleDeg` is the stroke's hint angle for a slash-gesture fight (WP-756),
+     * otherwise the per-`seq` angle.
+     */
+    function renderSlicePieces(event: VillainSlashVfxEvent, streak: number, angleDeg: number): void {
       const layer = sliceLayerEl.value;
       if (layer === null) return;
       const box = locateSliceBox(event.citySpace);
       if (box === null) return;
-      const angleDeg = villainSlashAngleForSeq(event.seq);
       const isFull = shouldRender('shake');
       const [negativeHalf, positiveHalf] = splitCardAlongCut(box.width, box.height, angleDeg);
       spawnSliceHalf(layer, box, negativeHalf, -1, angleDeg, event.imageUrl, isFull);
@@ -924,6 +1020,11 @@ export default defineComponent({
     // why: WP-755 — the villain-slash beat, in the WP §D order: streak → word →
     // particles gate → locate → render → full-intensity extras.
     function renderVillainSlash(event: VillainSlashVfxEvent): void {
+      const hintAngle = sliceAngleHints.take(event.citySpace);
+      // why: WP-756 — the hint is taken FIRST, before any gate (above). A gated
+      // beat (off / reduced motion / missing element) would otherwise leave it
+      // queued, and a later click-fight at this space would slice at a stale
+      // stroke angle.
       // why: the ONE performance.now() read for the takedown streak. This file is
       // inside the D-24365 VFX subsurface; the producer composable (outside it)
       // reads no clock, and the streak arithmetic stays in the pure helper.
@@ -941,7 +1042,11 @@ export default defineComponent({
       }
       if (!shouldRender('particles')) return;
       try {
-        renderSlicePieces(event, sliceStreak.streak);
+        renderSlicePieces(
+          event,
+          sliceStreak.streak,
+          hintAngle ?? villainSlashAngleForSeq(event.seq),
+        );
       } catch {
         // why: fail-soft — the slice is pure presentation; a DOM or animation
         // failure must never throw into the play surface. The word already showed.
@@ -952,6 +1057,93 @@ export default defineComponent({
       if (event === null) return;
       renderVillainSlash(event);
     });
+
+    /** The ribbon's head width for the current viewport. */
+    function bladeMaxWidth(): number {
+      if (window.innerWidth < BLADE_TRAIL_NARROW_VIEWPORT_PX) {
+        return BLADE_TRAIL_NARROW_MAX_WIDTH_PX;
+      }
+      return BLADE_TRAIL_MAX_WIDTH_PX;
+    }
+
+    /** Drops expired points and recomputes the path at `nowMs`. */
+    function refreshBladeTrail(nowMs: number): void {
+      const livePoints: BladeTrailPoint[] = [];
+      for (const point of bladePoints) {
+        if (nowMs - point.atMs < BLADE_TRAIL_LIFE_MS) livePoints.push(point);
+      }
+      bladePoints = livePoints;
+      bladeTrailPath.value = buildBladeTrailPath(
+        bladePoints,
+        nowMs,
+        BLADE_TRAIL_LIFE_MS,
+        bladeMaxWidth(),
+      );
+    }
+
+    /** Clears the trail and stops its fade loop. */
+    function clearBladeTrail(): void {
+      bladePoints = [];
+      bladeTrailPath.value = '';
+      if (bladeFrameHandle !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(bladeFrameHandle);
+      }
+      bladeFrameHandle = null;
+      if (bladeExpiryTimer !== null) clearTimeout(bladeExpiryTimer);
+      bladeExpiryTimer = null;
+    }
+
+    // why: WP-756 — a setTimeout backstop so the trail is gone one life after
+    // the LAST sample even when requestAnimationFrame is paused or throttled
+    // (a hidden pane, a background tab, jsdom). The rAF loop only makes the fade
+    // smooth; this guarantees the tail never lingers on screen.
+    function scheduleBladeExpiry(): void {
+      if (bladeExpiryTimer !== null) clearTimeout(bladeExpiryTimer);
+      bladeExpiryTimer = setTimeout(() => {
+        bladeExpiryTimer = null;
+        refreshBladeTrail(performance.now());
+      }, BLADE_TRAIL_LIFE_MS);
+    }
+
+    /** One fade-loop frame: runs only while points remain. */
+    function tickBladeTrail(): void {
+      bladeFrameHandle = null;
+      refreshBladeTrail(performance.now());
+      if (bladePoints.length > 0) scheduleBladeFrame();
+    }
+
+    // why: guarded — jsdom has no requestAnimationFrame; there the path is still
+    // correct because every sample recomputes it, it simply does not fade.
+    function scheduleBladeFrame(): void {
+      if (bladeFrameHandle !== null || typeof requestAnimationFrame !== 'function') return;
+      bladeFrameHandle = requestAnimationFrame(tickBladeTrail);
+    }
+
+    // why: WP-756 — `flush: 'sync'` so every sample of a batched pointermove
+    // burst is kept, not just the last one Vue would coalesce to. The
+    // performance.now() stamp is the slash gesture's ONLY clock read, permitted
+    // here because this file is inside the D-24365 VFX subsurface; the gesture
+    // composable itself reads no clock.
+    watch(
+      bladeTrailSignal,
+      (sample) => {
+        if (sample === null) return;
+        if (!shouldRender('particles')) {
+          clearBladeTrail();
+          return;
+        }
+        const nowMs = performance.now();
+        // A new stroke starts a fresh ribbon instead of joining the last one.
+        if (isBladeStrokeEnded) bladePoints = [];
+        isBladeStrokeEnded = sample.isStrokeEnd;
+        bladePoints.push({ x: sample.x, y: sample.y, atMs: nowMs });
+        while (bladePoints.length > BLADE_TRAIL_MAX_POINTS) bladePoints.shift();
+        refreshBladeTrail(nowMs);
+        scheduleBladeFrame();
+        scheduleBladeExpiry();
+      },
+      { flush: 'sync' },
+    );
 
     onUnmounted(() => {
       if (wordTimer !== null) clearTimeout(wordTimer);
@@ -972,6 +1164,8 @@ export default defineComponent({
       for (const node of liveSliceNodes) node.remove();
       liveSliceNodes.clear();
       liveSliceHalves.length = 0;
+      // why: WP-756 — stop the blade-trail fade loop so no frame outlives the overlay.
+      clearBladeTrail();
     });
 
     onMounted(() => {
@@ -1000,6 +1194,9 @@ export default defineComponent({
       celebrateKey,
       currentVictoryWord,
       victoryKey,
+      bladeTrailPath,
+      bladeCoreColor,
+      bladeGlowColor,
     };
   },
 });
@@ -1015,6 +1212,16 @@ export default defineComponent({
       data-testid="play-vfx-slice-layer"
     ></div>
     <canvas ref="canvasEl" class="vfx-overlay__canvas" data-testid="play-vfx-canvas"></canvas>
+    <!-- why: WP-756 — the slash-to-fight blade trail: one template-owned SVG path
+         (a tapered ribbon) above the canvas. The glow is a CSS drop-shadow on this
+         element in the WP-755 streak glow colour. Absent when the path is empty. -->
+    <svg
+      v-if="bladeTrailPath !== ''"
+      class="vfx-overlay__blade"
+      :style="{ filter: `drop-shadow(0 0 6px ${bladeGlowColor})` }"
+    >
+      <path data-testid="play-vfx-blade-trail" :d="bladeTrailPath" :fill="bladeCoreColor" />
+    </svg>
     <div
       v-if="isImpacting"
       class="vfx-overlay__impact"
@@ -1135,6 +1342,16 @@ export default defineComponent({
   position: absolute;
   inset: 0;
   overflow: hidden;
+}
+
+/* why: WP-756 — the blade-trail SVG spans the whole click-through layer, so its
+   path can use client coordinates directly. */
+.vfx-overlay__blade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* why: the peak "impact" pulse — a brief full-bleed radial flash for big /
@@ -1534,6 +1751,12 @@ export default defineComponent({
      reduced-motion no flying halves, streak or stains ever show. The takedown
      word still renders (a plain fade) in its own slot. */
   .vfx-overlay__slice-layer {
+    display: none;
+  }
+
+  /* why: WP-756 — belt-and-braces to the JS shouldRender('particles') gate: no
+     blade trail under reduced motion. The fight itself never depends on it. */
+  .vfx-overlay__blade {
     display: none;
   }
 }

@@ -13,6 +13,10 @@ import {
 } from '../../audio/audioEngine';
 import { AUDIO_MUTED_STORAGE_KEY } from '../../composables/useAudioSettings';
 import { __resetMusicEngineForTests, getMusicEngine } from '../../audio/musicEngine';
+import {
+  useSlashGestureSetting,
+  __resetSlashGestureSettingForTests,
+} from '../../composables/useSlashGestureSetting';
 
 // why: a no-op Howl factory so the seeded singleton constructs no real audio;
 // the component reaches it via getAudioEngine().
@@ -159,5 +163,33 @@ describe('AudioControls — music channel (WP-560)', () => {
           '',
         );
       });
+  });
+});
+
+describe('AudioControls — Slash to fight toggle (WP-756)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetAudioEngineForTests();
+    __setAudioEngineForTests(createAudioEngine(mockFactory));
+    __resetSlashGestureSettingForTests();
+  });
+
+  test('renders the toggle, pressed by default (the gesture defaults on)', () => {
+    const wrapper = mount(AudioControls);
+    const toggle = wrapper.find('[data-testid="slash-gesture-toggle"]');
+    assert.ok(toggle.exists());
+    assert.equal(toggle.attributes('aria-pressed'), 'true');
+  });
+
+  test('clicking flips aria-pressed and persists the setting', async () => {
+    const wrapper = mount(AudioControls);
+    const toggle = wrapper.find('[data-testid="slash-gesture-toggle"]');
+    await toggle.trigger('click');
+    assert.equal(toggle.attributes('aria-pressed'), 'false');
+    assert.equal(localStorage.getItem('arenaClientSlashGesture'), 'off');
+    assert.equal(useSlashGestureSetting().isEnabled.value, false);
+    await toggle.trigger('click');
+    assert.equal(toggle.attributes('aria-pressed'), 'true');
+    assert.equal(localStorage.getItem('arenaClientSlashGesture'), 'on');
   });
 });
