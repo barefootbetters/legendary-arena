@@ -42,6 +42,7 @@ Cite paths for every item. Use subagents to fan out the reading.
 | **C. Debt transparency** | Whether a debt register exists. The §7 doc expects `TECH_DEBT.md` at the root; note if it's absent. Also known gaps in STATUS / DECISIONS, and hollow-effect counts from the coverage ledger. |
 | **D. Onboarding** | The docs-only subagent test above. |
 | **E. Operational readiness** | Monitoring, backups and rehearsed restores (`wiki/disaster-recovery.md`), account ownership, bus factor, deploy runbooks. |
+| **AI coach quality** | The latest coach model eval: `docs/ai/evaluations/coach-eval-latest.json` (model, date, pass/fail per scenario; also on the dashboard Evaluator lane). No report, failures, or a run older than a quarter is a gap. Running `coach:eval` costs one paid call per scenario — report, don't run it unless asked. |
 | **Security posture** | Secret handling, auth boundaries, dependency audit (`pnpm audit`, report only). |
 | **F. Upgrade path** | Roadmap (`docs/05-ROADMAP-MINDMAP.md`), changelog (`docs/09-CHANGELOG.md`; the §7 doc expects a root `CHANGELOG.md`), pinned versions (e.g. boardgame.io locked), migration difficulty. |
 

@@ -84,6 +84,17 @@ export interface InspectorWikiLintProjection {
 }
 
 /**
+ * The Evaluator-lane coach eval projection the Pipeline page injects (producer:
+ * `useEvaluatorCoachEval.ts`; declared here per D-23901). `backlog` holds To Do
+ * items (no run, unreadable report, failed scenarios, stale run); `active` holds
+ * the latest run's summary.
+ */
+export interface EvaluatorCoachEvalProjection {
+  readonly backlog: readonly PipelineItem[];
+  readonly active: readonly PipelineItem[];
+}
+
+/**
  * Urgency levels aligned with the business scorecard action triggers
  * (business-scorecard-metrics.md §7). Critical = score 1.x (stop everything),
  * high = score 2.x (fix in 14 days), moderate = score 3.x (improve in 30 days),
@@ -493,6 +504,7 @@ export function useAgentPipeline(
   triageData?: TriageProjection,
   architectGapData?: ArchitectGapProjection,
   wikiLintData?: InspectorWikiLintProjection,
+  coachEvalData?: EvaluatorCoachEvalProjection,
 ): UseAgentPipelineReturn {
   const snapshot = useGovernanceSnapshot(snapshotOverride);
 
@@ -801,6 +813,20 @@ export function useAgentPipeline(
         label: EVALUATOR_PLACEHOLDER,
       },
     ];
+  }
+
+  // --- Coach eval projection: the AI coach's scenario-pack verdict ---
+  // why (D-23902 single-lane discipline): coach-eval items fold INTO the Evaluator
+  // lane only. Its To Do items are appended after the KPI item. When the projection
+  // has an active item, it replaces the static placeholder (which exists only
+  // because the lane had no data source). Absent ⇒ the Evaluator lane is
+  // byte-identical to the result without coach eval.
+  if (coachEvalData !== undefined) {
+    evaluatorBacklog.push(...coachEvalData.backlog);
+    if (coachEvalData.active.length > 0) {
+      evaluatorActive = evaluatorActive.filter((item) => item.id !== 'evaluator-placeholder');
+      evaluatorActive.push(...coachEvalData.active);
+    }
   }
 
   const evaluatorHistory: PipelineItem[] = [];

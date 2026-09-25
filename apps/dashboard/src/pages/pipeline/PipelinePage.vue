@@ -22,6 +22,7 @@ import {
 import { useCoverageLedger } from '../../composables/useCoverageLedger.js';
 import { useArchitectGapIntake } from '../../composables/useArchitectGapIntake.js';
 import { useInspectorWikiLint } from '../../composables/useInspectorWikiLint.js';
+import { useEvaluatorCoachEval } from '../../composables/useEvaluatorCoachEval.js';
 import { useDateRange } from '../../composables/useDateRange.js';
 import {
   fetchSweepHealth,
@@ -93,12 +94,16 @@ const architectGap = useArchitectGapIntake(coverage.runtimeObservedByMechanic);
 // The wiki lint report (build-time copy, `prebuild:wiki-lint`) folds into the
 // Inspector lane as the fifth argument.
 const wikiLint = useInspectorWikiLint();
+// The coach eval summary (build-time copy, `prebuild:coach-eval`) folds into the
+// Evaluator lane as the sixth argument.
+const coachEval = useEvaluatorCoachEval();
 const pipeline = useAgentPipeline(
   undefined,
   sweepData,
   triage.value,
   architectGap.value,
   wikiLint.value,
+  coachEval.value,
 );
 
 const lanes = computed<readonly PipelineLane[]>(() => [

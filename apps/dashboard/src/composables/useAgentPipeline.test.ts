@@ -8,6 +8,7 @@ import {
   type PipelineSweepData,
   type ArchitectGapProjection,
   type InspectorWikiLintProjection,
+  type EvaluatorCoachEvalProjection,
 } from './useAgentPipeline.js';
 import type { GovernanceSnapshot } from './useGovernanceSnapshot.js';
 
@@ -1118,6 +1119,96 @@ describe('useAgentPipeline', () => {
       const snapshot = makeSnapshot();
       assert.deepEqual(
         useAgentPipeline(snapshot, undefined, undefined, undefined, undefined),
+        useAgentPipeline(snapshot),
+      );
+    });
+  });
+  describe('coach eval fold (Evaluator lane)', () => {
+    /** A coach-eval projection with one To Do item and one Active item. */
+    function makeCoachEvalData(): EvaluatorCoachEvalProjection {
+      return {
+        backlog: [
+          {
+            id: 'coach-eval-failures',
+            label: 'Coach eval: 1 scenario failed on claude-sonnet-5 — tie-core',
+            meta: 'Coach eval',
+          },
+        ],
+        active: [
+          {
+            id: 'coach-eval-latest',
+            label: 'Coach eval: claude-sonnet-5 — 12/13 scenarios passed',
+            meta: '2026-09-24',
+          },
+        ],
+      };
+    }
+
+    it('should_append_coach_eval_to_do_items_and_replace_the_placeholder_when_injected', () => {
+      const snapshot = makeSnapshot();
+      const without = useAgentPipeline(snapshot);
+      assert.equal(without.evaluator.active[0]!.id, 'evaluator-placeholder');
+
+      const withEval = useAgentPipeline(
+        snapshot,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        makeCoachEvalData(),
+      );
+      const backlog = withEval.evaluator.backlog;
+      assert.equal(backlog.length, without.evaluator.backlog.length + 1);
+      assert.equal(backlog[backlog.length - 1]!.id, 'coach-eval-failures');
+      assert.deepEqual(
+        withEval.evaluator.active.map((item) => item.id),
+        ['coach-eval-latest'],
+      );
+    });
+
+    it('should_keep_the_placeholder_when_the_projection_has_no_active_item', () => {
+      const snapshot = makeSnapshot();
+      const missingRun: EvaluatorCoachEvalProjection = {
+        backlog: [
+          { id: 'coach-eval-missing', label: 'Coach eval: no run recorded', meta: 'Coach eval' },
+        ],
+        active: [],
+      };
+      const result = useAgentPipeline(
+        snapshot,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        missingRun,
+      );
+      assert.equal(result.evaluator.active[0]!.id, 'evaluator-placeholder');
+      assert.equal(
+        result.evaluator.backlog[result.evaluator.backlog.length - 1]!.id,
+        'coach-eval-missing',
+      );
+    });
+
+    it('should_leave_the_other_lanes_unchanged_when_coach_eval_is_injected', () => {
+      const snapshot = makeSnapshot();
+      const without = useAgentPipeline(snapshot);
+      const withEval = useAgentPipeline(
+        snapshot,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        makeCoachEvalData(),
+      );
+      assert.deepEqual(withEval.architect, without.architect);
+      assert.deepEqual(withEval.builder, without.builder);
+      assert.deepEqual(withEval.inspector, without.inspector);
+    });
+
+    it('should_be_identical_to_the_omitted_result_when_coach_eval_is_undefined', () => {
+      const snapshot = makeSnapshot();
+      assert.deepEqual(
+        useAgentPipeline(snapshot, undefined, undefined, undefined, undefined, undefined),
         useAgentPipeline(snapshot),
       );
     });

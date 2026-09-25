@@ -44529,4 +44529,21 @@ This is a new variant as a data marker, per D-24024: no new HeroKeyword, handler
 
 ---
 
+### D-24586 — The wiki flat-structure cap is raised from 75 to 150 entity pages (Active 2026-09-25 — direct fix, no WP)
+
+**Decision.** `wiki/SCHEMA.md` §Flat-structure cap now allows **150** entity pages in the flat `wiki/` layout, up from 75. `scripts/wiki-lint.mjs` `ENTITY_PAGE_CAP` moves with it.
+
+**Why.** The wiki passed the old cap before the lint existed: the first `wiki-lint` run (PR #2347) found 79 entity pages, so the Inspector lane has carried a standing `entity-cap-exceeded` item since it went live. The cap exists to stop silent drift into an unmanageable directory. At 79 pages the flat layout still works:
+- every page is reachable from `INDEX.md`, and the lint enforces that;
+- Pagefind search covers every page;
+- the 9 entity types already group pages in the index.
+
+Partitioning into sub-directories would change every page URL. That breaks inbound links from the dashboard, the marketing site and the WPs, and buys nothing at this size.
+
+**Consequence.** `entity-cap-exceeded` no longer fires at today's size. The amendment requirement is unchanged: past 150 pages, a SCHEMA amendment must introduce partitioning before more pages are added. The lint test reads the constant, so it follows the new value with no edit.
+
+**Reserved by:** NUMBER-LEDGER D-24586. Related: PR #2347 (the wiki lint and its Inspector-lane feed).
+
+---
+
 Protect this file.

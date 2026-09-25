@@ -79,8 +79,8 @@ export const REQUIRED_SECTIONS = ['Summary', 'Mechanics', 'Interactions', 'Edge 
 export const PROJECTED_PAGE_NAMES = ['changelog.md'];
 
 // why: SCHEMA.md §Flat-structure cap — beyond this a SCHEMA amendment must
-// introduce partitioning before more pages are added.
-export const ENTITY_PAGE_CAP = 75;
+// introduce partitioning before more pages are added. Raised 75 → 150 by D-24586.
+export const ENTITY_PAGE_CAP = 150;
 
 /**
  * Split a page into its front-matter block and body. Returns `frontMatter: null`

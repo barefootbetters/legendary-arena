@@ -136,8 +136,8 @@ churn when entities cross categories.
 
 ### Flat-structure cap
 
-The flat layout is valid up to **75 entity pages**. Beyond 75, a
-formal SCHEMA amendment must introduce partitioning before any
+The flat layout is valid up to **150 entity pages** (raised from 75 by
+D-24586). Beyond 150, a formal SCHEMA amendment must introduce partitioning before any
 further pages are added. This prevents silent drift into an
 unmanageable directory.
 
@@ -618,7 +618,7 @@ checks every entity page — every `*.md` except the reserved files listed in
   self-reference is skipped, and the projection-generated `changelog.md` counts
   as present;
 - every entity page being linked from `INDEX.md`, since navigation is by index;
-- total entity pages ≤ 75 ([Flat-structure cap](#flat-structure-cap)).
+- total entity pages ≤ 150 ([Flat-structure cap](#flat-structure-cap)).
 
 The lint never edits a page and always exits 0. The dashboard build runs it
 (`prebuild:wiki-lint`) and lists its findings in the **Inspector** lane of the
