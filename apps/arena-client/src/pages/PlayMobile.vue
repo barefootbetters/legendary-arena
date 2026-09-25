@@ -584,13 +584,20 @@ export default defineComponent({
                row; hidden when empty (inert for non-transform games). -->
           <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
         </section>
-        <SharedDecks
-          :piles="snapshot.piles"
-          :current-stage="snapshot.game.currentStage"
-          :is-viewer-turn="isViewerTurn"
-          :economy="snapshot.economy"
-          :submit-move="submitMove"
-        />
+        <!-- why: the five shared-deck cells (≥ 5rem each) are wider than a phone,
+             and outside a scrolling band they widened the whole page — the page
+             then scrolled sideways (and WP-756's touch slash gesture stayed off,
+             D-24585 §5). A scroll-x band, like the HQ and hand rows, keeps the
+             overflow inside the row. -->
+        <section class="play-mobile__band play-mobile__band--scroll-x">
+          <SharedDecks
+            :piles="snapshot.piles"
+            :current-stage="snapshot.game.currentStage"
+            :is-viewer-turn="isViewerTurn"
+            :economy="snapshot.economy"
+            :submit-move="submitMove"
+          />
+        </section>
         <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
         <section
           class="play-mobile__band"
@@ -994,6 +1001,14 @@ export default defineComponent({
   z-index: 10;
   background: var(--color-background, #fff);
   border-top: 1px solid var(--color-foreground, #999);
+}
+
+/* why: TurnActionBar's `margin: 0 -0.75rem` bleeds it across the desktop mat's
+   0.75rem gutter. The mobile sticky footer has no gutter, so the bleed pushed
+   the bar 12px past BOTH screen edges and made the page scroll sideways. The
+   bar's root carries this component's scope attribute, so this reaches it. */
+.play-mobile__sticky-bottom .turn-action-bar {
+  margin: 0;
 }
 
 .play-mobile__scroll {

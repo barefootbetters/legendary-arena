@@ -110,6 +110,23 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: var(--la-space-5);
+  /* why: on a phone the wordmark + Play · Home · Cards · theme · Sign in row is
+     wider than the screen, which made every page scroll sideways. Wrapping the
+     links (and the header, below) keeps the header inside the viewport; on a
+     wide screen nothing wraps, so desktop is unchanged. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .brand-header {
+    flex-wrap: wrap;
+  }
+
+  .brand-nav {
+    gap: var(--la-space-3);
+  }
 }
 
 .brand-nav-link {

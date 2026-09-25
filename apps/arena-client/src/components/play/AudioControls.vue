@@ -248,6 +248,12 @@ export default defineComponent({
   background: rgba(20, 20, 28, 0.9);
   color: #f4f4f5;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  /* why: the bar (intensity, slash toggle, mute, two sliders) is wider than a
+     phone, so its far end ran past the screen edge and hid the music slider.
+     Cap it to the viewport and let the controls wrap onto a second line. */
+  max-width: calc(100vw - 2rem);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .audio-controls__mute,
