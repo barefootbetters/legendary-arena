@@ -391,6 +391,7 @@ high-water: 422
 - WP-750 — client-fight-gating-reads-engine-fightcost (App arena-client. The Fight button and City tile cost read printed display.cost (CityRow.vue canFight / useCardCostGating) instead of the engine's projected UICityCard.fightCost, so dynamic N+, Portals, Killbots, Skrull and — after WP-748 — Midtown-family villains show an enabled Fight that the engine silently refuses. Hard prerequisite of WP-748. reserved 2026-09-22, claude/draft-bystander-midtown)
 - WP-751 — casual-match-coach-server (Server. The Legendary-Pass AI Coach works on signed-in matches that were never scored (non-gauntlet / par_not_published): a matchId-keyed coach route for an owned, captured match; the summary is built from the replayed match via deriveScoringInputs with the PAR-dependent score/grade omitted; cached in coach_reports; never touches competitive_scores or any leaderboard. reserved 2026-09-23, claude/casual-report-draft)
 - WP-752 — casual-match-coach-client (Arena Client. Shows the AI Coach panel on unscored signed-in matches (Pass holders coach; others see the Pass teaser), and rewrites the guest endgame prompt to promise the report card and AI coaching on future signed-in matches. reserved 2026-09-23, claude/casual-report-draft)
+- WP-753 — reveal-three-assign (Game Engine + Arena Client. Implements the unmarked "Reveal the top three cards of your deck. Draw one of them, discard one, and KO one." hero ability (vnom Crystal of Kadavus, 3dtc/dims Interplanetary Visitor), which today silently does nothing, plus Crystal's [team:venomverse][team:venomverse] repeat. reserved 2026-09-25, claude/reserve-reveal-three-assign)
 
 ## EC
 
@@ -743,6 +744,7 @@ high-water: 457
 - EC-787 — client-fight-gating-reads-engine-fightcost (WP-750; App arena-client. reserved 2026-09-22, claude/draft-bystander-midtown)
 - EC-788 — casual-match-coach-server (WP-751; Server. reserved 2026-09-23, claude/casual-report-draft)
 - EC-789 — casual-match-coach-client (WP-752; Arena Client. reserved 2026-09-23, claude/casual-report-draft)
+- EC-790 — reveal-three-assign (WP-753; Game Engine + Arena Client. reserved 2026-09-25, claude/reserve-reveal-three-assign)
 
 ## D
 
@@ -1101,4 +1103,5 @@ section below) and the allocation protocol in
 - D-24577 — competitive-submit-publish-on-accept (direct server fix, no WP — by-matchId submit flips replay ownership private → public only when a score row exists; par_not_published casual matches stay private. reserved 2026-09-23, claude/eloquent-darwin-7f069b)
 - D-24578 — coach-summary-omits-bot-buys-and-labels-twists (direct fix, no WP — the coach summary omits a bot-ally seat's `acquiredCards` and renames `adversity.schemeTwists` → `schemeTwistsFromVillainDeck`; D-24575 precedent. reserved 2026-09-24, claude/coach-summary-bot-and-twists)
 - D-24579 — coach-card-names-from-match-display-data (direct fix, no WP — coach acquiredCards and sequence tips name cards from the match's cardDisplayData, group copies, and append the hero; D-24575 precedent. reserved 2026-09-24, claude/coach-acquired-card-hero-names)
+- D-24580 — reveal-three-assign (RESERVED: locks WP-753 / EC-790 — the "reveal the top three cards; draw one, discard one, KO one" hero ability (Crystal of Kadavus, Interplanetary Visitor ×2) and Crystal's doubled-Venomverse repeat. reserved 2026-09-25, claude/reserve-reveal-three-assign)
 - D-24575 — coach-eval-bot-ally-scenario (direct fix, no WP — the WP-737 coach eval pack gains a `bot-ally` category + scenario and every fixture seat carries an explicit `isBotAlly`, matching the WP-742 / D-24564 production summary shape; D-24570 precedent. reserved 2026-09-23, infra/coach-eval-bot-ally-scenario)
