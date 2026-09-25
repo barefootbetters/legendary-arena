@@ -399,6 +399,8 @@ high-water: 422
 - WP-758 — zarathos-mastermind (Game Engine. Zarathos + Epic Zarathos Master Strikes and the four tactic Fight effects on the WP-757 Haunt state; Zarathos-haunting blocks fighting the Mastermind, exorcising his Hero returns him to the Mastermind space. BLOCKED on WP-757. reserved 2026-09-25, claude/wp-zarathos-draft)
 - WP-759 — haunt-client-ui (App arena-client. Haunted HQ cards show the haunting Villain/Zarathos, Recruit disabled, an Exorcise action + KO-or-give choice UI. BLOCKED on WP-757. reserved 2026-09-25, claude/wp-zarathos-draft)
 
+- WP-760 — fallen-fight-side (Game Engine + card data. The Fallen's non-Haunt lines: Blood Frenzy (+1 fight cost per distinct VP value in the fighting player's Victory Pile) for Metarchus + Salomé, Atrocity Fight rescue, Patriarch Fight reveal-draw, Salomé Fight KO-up-to-two-from-discard; Salomé's Escape ascension scoped at draft. BLOCKED on WP-757 (+ WP-750 client fight-cost sequencing). reserved 2026-09-25, claude/wp-zarathos-draft)
+
 ## EC
 
 high-water: 457
@@ -757,6 +759,8 @@ high-water: 457
 - EC-794 — haunt-keyword-engine (WP-757; Game Engine. reserved 2026-09-25, claude/wp-zarathos-draft)
 - EC-795 — zarathos-mastermind (WP-758; Game Engine. reserved 2026-09-25, claude/wp-zarathos-draft)
 - EC-796 — haunt-client-ui (WP-759; App arena-client. reserved 2026-09-25, claude/wp-zarathos-draft)
+
+- EC-797 — fallen-fight-side (WP-760; Game Engine + card data. reserved 2026-09-25, claude/wp-zarathos-draft)
 
 ## D
 
@@ -1125,3 +1129,4 @@ section below) and the allocation protocol in
 - D-24586 — wiki-entity-cap-150 (direct fix, no WP — the wiki flat-structure cap rises 75 → 150 entity pages; SCHEMA.md + wiki-lint ENTITY_PAGE_CAP; partitioning deferred. reserved 2026-09-25, infra/evaluator-coach-eval-and-wiki-cap)
 - D-24587 — haunt-state-model (RESERVED: locks WP-757 / EC-794 — Haunt G shape keyed by HQ slot, exorcise cost/outcome semantics, refill inheritance, recruit + free-recruit + fight blocks. reserved 2026-09-25, claude/wp-zarathos-draft)
 - D-24588 — zarathos-haunting-mastermind (RESERVED: locks WP-758 / EC-795 — Zarathos-as-haunter representation, Mastermind-fight block while haunting, exorcise-returns-to-mastermind. reserved 2026-09-25, claude/wp-zarathos-draft)
+- D-24589 — fallen-fight-side (RESERVED: locks WP-760 / EC-797 — Blood Frenzy cost term + its player argument in the fight-cost authority, the Fallen Fight-line vocabulary. reserved 2026-09-25, claude/wp-zarathos-draft)
