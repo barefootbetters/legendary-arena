@@ -44493,7 +44493,7 @@ This is a new variant as a data marker, per D-24024: no new HeroKeyword, handler
 - `revealRule.test.ts` action-kind drift pin 5 → 6 (intended contract change).
 - Checks: `apply-hero-ability-markers.mjs --validate`, `cards:check`, `ledger:heroes:check` (See Future Timelines now an `executable` reveal row, 755 → 756), `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, and `sim:coverage --check` (0 regressions). The new parameterized token adds one warn-only "new unsupported mechanic" line: the scanner keys on full parameterized reveal strings, the same pre-existing artifact as the other reveal tokens.
 
-**D-24026 live-on-surface:** pending. Play See Future Timelines with another Ranged Hero on the deployed client. A cost-0 top card should be discarded for +2 attack; a priced top card should give no attack.
+**D-24026 live-on-surface:** CONFIRMED 2026-09-25 on the deployed client (guest autoplay). Match `AtAN1Xky0Nx` 13.2.9 and match `v4CstL_pl8a` 5.2.4 / 10.2.3 / 12.2.6: See Future Timelines without another Ranged Hero "did not activate" — only the printed base +2, no phantom grant. Match `v4CstL_pl8a` 15.2.7: "revealed S.H.I.E.L.D. Agent (cost 0) — cost is 0 matched: discarded it, gained attack." The live play line also exposed the `+`-joined marker leaking into the game log (fixed in the follow-up log-shape INFRA).
 
 **Reserved by:** NUMBER-LEDGER D-24582. Related: D-24024 (reveal branch-list + drift arrays), D-22301 (reveal-ko-attack), D-24570 / D-24398 / D-24016 / D-24481 (the sibling icon suppressions).
 
