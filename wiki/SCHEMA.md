@@ -593,31 +593,42 @@ publish step cannot accidentally become a second authoring surface.
 
 ---
 
-## Lint Targets (Future Tooling, Optional)
+## Lint Targets
 
-The schema is structured so that a future lint script could verify:
+Two tools enforce this schema.
 
-- Every `*.md` (excluding `SCHEMA`/`README`/`INDEX`/`architecture-inventory`)
-  has front-matter with all required fields. The `architecture-inventory.md`
-  page is generated content (sole writer `scripts/architecture-inventory.mjs`,
-  per D-14502) and is exempt from front-matter and required-section
-  conformance.
-- `type` ∈ `{ Mechanic, System, Card-Type, Keyword, Concept }`.
-- `status` ∈ `{ canonical, draft, deprecated }`.
-- `canonical` pages have non-empty `source`.
-- All required sections (`Summary`, `Mechanics`, `Interactions`,
-  `Edge Cases`, `References`) are present, in order.
-- Filename equals the deterministic kebab-case transformation of the
-  front-matter `title` (per [File Naming](#file-naming)).
-- If the front-matter `title` matches a row in
-  [10-GLOSSARY.md](../docs/10-GLOSSARY.md), it matches verbatim
-  (case-sensitive).
-- All paths in `related` and `source` resolve to existing files.
-- All in-body markdown links resolve to existing files / anchors.
-- Total entity pages ≤ 75 (per
-  [Flat-structure cap](#flat-structure-cap)).
+**Link integrity (a build gate).** `apps/wiki-viewer/scripts/check-links.mjs`
+(`pnpm wiki-viewer:check-links`) fails the wiki build when an in-body markdown link
+does not resolve, and validates `canonical-source` (see
+[Link integrity](#link-integrity)).
 
-No such tool exists at v1. The schema is human-enforced.
+**Wiki lint (a report, not a gate).** `scripts/wiki-lint.mjs` (`pnpm wiki:lint`)
+checks every entity page — every `*.md` except the reserved files listed in
+[File Layout](#file-layout) — for:
+
+- front matter with all required fields;
+- `type` in the closed set of [Entity Types](#entity-types-closed-set), including
+  the web and design types;
+- `status` ∈ `{ canonical, draft, deprecated }`;
+- a non-empty `source` on `canonical` pages;
+- the five required sections (`Summary`, `Mechanics`, `Interactions`,
+  `Edge Cases`, `References`), present and in order. A heading may carry an
+  explicit anchor (`## Edge Cases {#edge-cases}`);
+- every `related` path and every relative `source` path resolving. The absolute
+  self-reference is skipped, and the projection-generated `changelog.md` counts
+  as present;
+- every entity page being linked from `INDEX.md`, since navigation is by index;
+- total entity pages ≤ 75 ([Flat-structure cap](#flat-structure-cap)).
+
+The lint never edits a page and always exits 0. The dashboard build runs it
+(`prebuild:wiki-lint`) and lists its findings in the **Inspector** lane of the
+Pipeline page, one item per rule, naming the pages. The Inspector reports; fixing a
+finding is ordinary page work.
+
+**Not yet automated:** filename = kebab-case of `title`
+([File Naming](#file-naming)), and a `title` that names a
+[10-GLOSSARY.md](../docs/10-GLOSSARY.md) row matching it verbatim. Both remain
+human-checked.
 
 ---
 

@@ -21,6 +21,7 @@ import {
 } from '../../composables/useTriageStatus.js';
 import { useCoverageLedger } from '../../composables/useCoverageLedger.js';
 import { useArchitectGapIntake } from '../../composables/useArchitectGapIntake.js';
+import { useInspectorWikiLint } from '../../composables/useInspectorWikiLint.js';
 import { useDateRange } from '../../composables/useDateRange.js';
 import {
   fetchSweepHealth,
@@ -89,7 +90,16 @@ const architectGap = useArchitectGapIntake(coverage.runtimeObservedByMechanic);
 // The projections are sampled once (like `sweepData`) and injected as the third
 // and fourth arguments; the existing lane rendering consumes the `triage-`- and
 // `architect-gap-`-prefixed items.
-const pipeline = useAgentPipeline(undefined, sweepData, triage.value, architectGap.value);
+// The wiki lint report (build-time copy, `prebuild:wiki-lint`) folds into the
+// Inspector lane as the fifth argument.
+const wikiLint = useInspectorWikiLint();
+const pipeline = useAgentPipeline(
+  undefined,
+  sweepData,
+  triage.value,
+  architectGap.value,
+  wikiLint.value,
+);
 
 const lanes = computed<readonly PipelineLane[]>(() => [
   pipeline.architect,
