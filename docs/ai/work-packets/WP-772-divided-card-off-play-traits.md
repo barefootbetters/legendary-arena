@@ -4,7 +4,7 @@
 **Primary Layer:** Game Engine (no registry, server, or client change)
 **User-Visible Surface:** play.legendary-arena.com
 **Lane:** standard two-session (touches a scoring input — Ultron dynamic VP — and a determinism surface — the `sim:runtime-observed` sweep boards include all five split sets; NOT lightweight-eligible per 01.0a criteria #6 / #8)
-**Baseline:** `origin/main` @ `d1a71c1f` (2026-09-26)
+**Baseline:** `origin/main` @ `d1a71c1f` (2026-09-26); re-checked against `cb1e1935` (#2427) — see the WP-725 / #2427 line under Assumes
 
 ## Goal
 
@@ -47,6 +47,13 @@ choice again the next time it is played.
   (`moves/coreMoves.impl.ts` ~L552–563) parks the choice and skips `applyCardPlay`.
 - **WP-725 ✅** — the client picker consumes `UIPendingSplitFaceChoice` verbatim. Its shape
   is **unchanged** by this packet.
+- **#2427 ✅ (INFRA, 2026-09-26)** — the picker renders the printed left half first. The new
+  optional field `G.splitFacesAlternateOnLeft` is keyed by the copy-agnostic **primary**
+  card-key. `ui/uiState.build.ts` (~L1696) derives `UIPendingSplitFaceChoice.leftFace` from
+  `faceA` with its `#copy` suffix stripped. That derivation is correct only while `faceA` is
+  the primary instance. This packet's lock (`faceA` always = `pair.faceA`, even when a face-b
+  id is played) keeps it correct. Without that lock, a replayed face-b card would render its
+  halves in the wrong order.
 - **WP-703 / D-24523 ✅** — `CardTraitEntry { heroClass: string | null; heroClass2?: string | null; team: string | null }`
   (`state/cardTraits.types.ts`). Every class read already matches `heroClass || heroClass2`.
 - **D-24497 → D-24499** — "Heroes you have" = hand + played this turn. Hand cards are
@@ -345,9 +352,10 @@ pnpm --filter @legendary-arena/registry --filter @legendary-arena/game-engine bu
 pnpm --filter @legendary-arena/game-engine test
 
 # Step 3 — no inline splitFaces walks outside the helper + the choice module
-Get-ChildItem packages\game-engine\src -Recurse -Filter *.ts -Exclude *.test.ts | Select-String -Pattern "splitFaces" | Select-Object -ExpandProperty Path -Unique
+# (word-bounded, so #2427's splitFacesAlternateOnLeft field is not matched)
+Get-ChildItem packages\game-engine\src -Recurse -Filter *.ts -Exclude *.test.ts | Select-String -Pattern "\bsplitFaces\b" | Select-Object -ExpandProperty Path -Unique
 # Expected: matches only in hero/splitCard.logic.ts, moves/splitFaceChoice.resolve.ts,
-#           setup/buildHeroDeck.ts, setup/buildInitialGameState.ts, types.ts (the baseline set on d1a71c1f
+#           setup/buildHeroDeck.ts, setup/buildInitialGameState.ts, types.ts (the baseline set on cb1e1935
 #           is buildHeroDeck.ts / buildInitialGameState.ts / types.ts / splitFaceChoice.resolve.ts)
 
 # Step 4 — sentinel hash (core plays no split hero)
@@ -457,7 +465,9 @@ All 21 sections satisfied or N/A:
 
 ## Gate Verdicts
 
-All three gates ran as independent subagents against source (2026-09-26).
+All three gates ran as independent subagents against source (2026-09-26). After #2427 landed,
+the WP was amended: an Assumes line and a word-bounded Step 3 grep. A delta gate re-run
+followed (recorded below).
 
 - **Pre-flight (01.4): READY TO EXECUTE.**
   - The first run was NOT READY on PS-1: the final-score caller `scoring.logic.ts`

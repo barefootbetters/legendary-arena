@@ -3319,3 +3319,52 @@ describe('filterUIStateForAudience — Haunt haunters + isHaunting (WP-757 / D-2
     assert.equal(uiState.hq.haunters![1], null);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-724 / D-24546 — pendingSplitFaceChoice redaction + leftFace pass-through
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a split-card "choose a side" pick. When
+ * `isAlternateOnLeft` is true the card's primary key is recorded in
+ * G.splitFacesAlternateOnLeft (the cvwr Captain America, Secret Avenger shape: sides[0]
+ * "inspire-a-man" is printed on the RIGHT, sides[1] "inspire-a-nation" on the LEFT).
+ */
+function createSplitFaceChoiceUIState(isAlternateOnLeft: boolean): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingSplitFaceChoices = [{
+    playerID: '0',
+    sourceCardId: 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId,
+    faceA: 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId,
+    faceB: 'cvwr/captain-america-secret-avenger/inspire-a-nation#1' as CardExtId,
+  }];
+  if (isAlternateOnLeft) {
+    gameState.splitFacesAlternateOnLeft = {
+      ['cvwr/captain-america-secret-avenger/inspire-a-man' as CardExtId]: true,
+    };
+  }
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingSplitFaceChoice redaction + leftFace (D-24546)', () => {
+  it('the chooser sees leftFace "b" when the alternate face is printed on the left', () => {
+    const result = filterUIStateForAudience(createSplitFaceChoiceUIState(true), PLAYER_0);
+    assert.ok(result.pendingSplitFaceChoice !== undefined, 'chooser sees the split-face choice');
+    assert.equal(result.pendingSplitFaceChoice!.leftFace, 'b', 'leftFace survives the filter whitelist');
+    assert.equal(result.pendingSplitFaceChoice!.faceA.extId, 'cvwr/captain-america-secret-avenger/inspire-a-man#1', 'face a is still sides[0]');
+  });
+
+  it('the chooser sees leftFace "a" when the card is not recorded as alternate-on-left', () => {
+    const result = filterUIStateForAudience(createSplitFaceChoiceUIState(false), PLAYER_0);
+    assert.equal(result.pendingSplitFaceChoice!.leftFace, 'a');
+  });
+
+  it('an opponent and a spectator do NOT see pendingSplitFaceChoice', () => {
+    const uiState = createSplitFaceChoiceUIState(true);
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingSplitFaceChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingSplitFaceChoice, undefined);
+  });
+});

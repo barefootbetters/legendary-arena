@@ -47,6 +47,7 @@
   `applyCardPlay`, Copy Powers, every `heroCountSource` in-play count.
 - Off-play reads call the helper — never an inline walk of the split-face map at a call site.
 - Identity when not split / map absent → non-split games byte-unchanged; sentinel `finalStateHash` NOT re-pinned.
+- `faceA` = primary also keeps #2427's `leftFace` correct (it strips `faceA`'s `#copy`) — covered by the face-b replay test's `faceA` = primary assertion.
 - Mixed `[...hand, ...inPlay]` concatenations (villainEffects, scoring, Blood Frenzy) split by zone; signatures may change.
 - Zone-ambiguous site → STOP and ask; never guess. Team / cost / name reads NOT converted.
 - The `isSplitCardInstance(…FACE_B) === false` test flip is an intentional behavior change — say so in the commit body.
