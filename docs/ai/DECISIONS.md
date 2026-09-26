@@ -44811,6 +44811,245 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 **Reserved by:** NUMBER-LEDGER D-24598. Related: D-24055, D-24354, D-24555, D-24562, D-24570, D-24581, D-24183, D-24464, D-24531, D-24119, D-12803.
 
+### D-24595 — Scheme Evil Wins fidelity: printed twist thresholds, Villain Deck runout, and the last-twist interim rule (Active 2026-09-25 — WP-763 / EC-800)
+
+**Status:** Active — landed 2026-09-25 (WP-763 / EC-800; Game Engine scheme config + loss rules + UIState enum, and one arena-client label file). **Supersedes D-24371 §6 for non-core schemes**: its "the 7-twist fallback remains correct for a genuinely unconfigured scheme" holds for no scheme. Core behaviour is unchanged.
+
+**Context.** Only the 8 core schemes modelled an Evil Wins condition. The other 192 lost on the engine's generic `MVP_SCHEME_TWIST_THRESHOLD = 7` whatever the card printed. A live solo match on `mdns/midnight-massacre` ended "twist threshold reached" at twist 7; that card's printed Evil Wins is "When the Hero Deck or Villain Deck runs out." An independent audit subagent (2026-09-25; full table below) found **144** schemes that can lose falsely at twist 7, **14** that lose early (printed 8–11), and **25** that can never lose (6 or fewer twists in the deck). All three sets are ranked gauntlet legs.
+
+**Operator decision (Jeff, 2026-09-25).** For a scheme whose printed condition is an unmodelled per-scheme counter, the interim Evil Wins is **the last Scheme Twist in that scheme's Villain Deck**, and the danger meter labels it **approximate**. Rejected alternatives: *no twist loss* (unfair free wins would inflate ranked scores) and *pull those schemes from ranked* (shrinks the catalog). Modelling the per-scheme counters (escaped-villain counts, tokens on the scheme, KO-pile counts, …) is a named follow-up **series**, one family per WP.
+
+**Decision.**
+
+1. **Fallback threshold = the deck's twist count.** `resolveTwistLossThreshold` resolves `lossThresholdByPlayerCount` → `lossThreshold` → **the count of `G.villainDeckCardTypes` values `=== 'scheme-twist'`**, derived at read time (no new `G` field). A count of 0 (a test mock, or a scheme missing from the registry) uses `DEFAULT_SCHEME_TWIST_COUNT = 8`, mirroring the `villainDeck.setup.ts` default. `MVP_SCHEME_TWIST_THRESHOLD` is deleted. The count is safe to derive because `'scheme-twist'` is written only at setup, one uniquely-suffixed key per copy; the one runtime write (the Secret Invasion twist) writes `'villain'` for a Hero. Every core scheme sets rung 1 or 2, so no core threshold moves (pinned per scheme in `schemeLossProgress.test.ts`).
+2. **`counter-only` resolver.** `SchemeTwistResolverId` gains `'counter-only'`, a registered **pure no-op** (no log, no notable event, no `G` write, so no `SchemeTwistResolverKey`). It lets a scheme be configured for its Evil Wins without inventing a twist effect. `resolverId` stays required. A configured scheme no longer logs "[Scheme Twist] No resolver configured…"; the generic "…twist count incremented…" line still emits, so PAR anchor extraction is unaffected.
+3. **`villainDeck` pile + the multi-pile form.** `type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck'` with a drift-checked `SCHEME_LOSS_PILES`. `pile-depleted` is the exclusive union `{ kind; pile: SchemeLossPile; piles?: never } | { kind; piles: readonly SchemeLossPile[]; pile?: never }`; the loss fires when **any** named pile is empty. `villainDeck` reads `G.villainDeck.deck.length`. One normaliser (`listConditionPiles`) serves the loss rule, the setup capture and the meter. Core entries keep the single-`pile` form.
+4. **Setup sizes.** `schemeLossPileSetupSize` (hero deck / wound stack) is unchanged, so the sentinel hash is untouched. A new omit-when-absent `G.schemeLossVillainDeckSetupSize` is written only when the condition names `villainDeck`, sized from the built deck (never from the `villainDeckCardTypes` key count). No configured scheme names both the hero deck and the wound stack (pinned).
+5. **Compound schemes.** New config flag `twistFallbackWithResourceLoss?: true` keeps the twist proxy **active** at the fallback threshold alongside a `resourceLossCondition`. Set on the 25 D-compound entries only; without it, D-24315 suppression is unchanged.
+6. **Loss kinds + one selector.** `SchemeLossKind` gains `'villain-deck'` and `'twists-fallback'` (union + canonical array together). `twists-fallback` is the kind whenever the measured twist threshold is the fallback (an unconfigured scheme, or a compound scheme's twist half); a configured printed count stays `'twists'`. `selectActiveLossCondition` is the single place kind, threshold and progress are decided: for a multi-pile or compound scheme it reports the condition with the **highest normalised progress**, and a tie goes to the pile (resource conditions are listed first; strictly greater wins). `resolveSchemeLossKind` maps piles through an exhaustive switch. The legacy pair (a pile-depleted state with no WP-562 capture reads twists and omits `schemeLossThreshold`) is preserved.
+7. **Client copy.** `menaceDisplay.ts` only: `villain-deck` → "Villain Deck", `twists-fallback` → "Twists (approximate)". No label string in `packages/` (D-24367 §2).
+8. **Endgame precedence.** A Villain Deck runout that latches the final turn **and** trips `pile-depleted` in the same `onMove` is a **scheme loss**, not a tie (D-24319 order: latch, then pile check; `evaluateEndgame` reads `SCHEME_LOSS` before `FINAL_TURN_TIE`). Asserted in `endgame.evaluate.test.ts`, with the contrast case (an unconfigured scheme still ties).
+
+**Configuration (WP-763 §Audit, verbatim; all 67 entries use `resolverId: 'counter-only'`).**
+
+- **A — printed twist count** (`lossThreshold` = printed N; 27): N=6 `anni/sneak-attack-the-heroes-homes`, `ca75/unbreakable-enigma-code-the`, `vnom/paralyzing-venom`, `xmen/horror-of-horrors`; N=7 `2099/pull-reality-into-cyberspace`, `bkwd/corrupt-the-spy-agencies`, `co2e/portals-to-the-dark-dimension`, `ff04/invincible-force-field`, `ff04/pull-reality-into-the-negative-zone`, `msp1/invade-asgard`, `pttr/weave-a-web-of-lies`, `ssw1/dark-alliance`, `wwhk/mutating-gamma-rays`; N=8 `co2e/unleash-the-power-of-the-cosmic-cube`, `msp1/unleash-the-power-of-the-cosmic-cube`, `cvwr/avengers-vs-x-men`, `mgtg/inescapable-kyln-space-prison`, `rvlt/korvac-saga-the`, `ssw2/god-emperor-of-battleworld-the` (its "(If any Mastermind still lives)" is a named gap; v1 is plain twist 8), `ssw2/secret-wars`, `wpnx/condition-logan-into-weapon-x`; N=9 `anni/pulse-waves-from-the-negative-zone`, `wwhk/world-war-hulk`; N=10 `msis/the-time-heist`, `rlmk/tornado-of-terrigen-mists`, `shld/hail-hydra`; N=11 `vnom/symbiotic-absorption`. The twist-7 schemes are configured explicitly so the fallback can never move them.
+- **D-pure — only a standard pile running out** (twist proxy suppressed; 15): Hero Deck `ca75/go-back-in-time-to-slay-heroes-ancestors`, `co2e/super-hero-civil-war`, `cvwr/epic-super-hero-civil-war`, `dead/deadpool-kills-the-marvel-universe`, `msp1/super-hero-civil-war`, `wpnx/go-after-heroes-loved-ones`; Wound Stack `msp1/radioactive-palladium-poisoning`, `ssw1/pan-dimensional-plague`, `wwhk/fall-of-the-hulks`; Wound Stack or Villain Deck `bkpt/poison-lakes-with-nanite-microbots`, `co2e/the-legacy-virus`, `xmen/anti-mutant-hatred`, `xmen/televised-deathtraps-of-mojoworld`; Hero Deck or Villain Deck `mdns/midnight-massacre`, `msis/halve-all-life-in-the-universe`.
+- **D-compound — unmodelled counter, or a standard pile** (pile loss + `twistFallbackWithResourceLoss`; 25): escaped-villain count or Villain Deck — `antm/trap-heroes-in-the-microverse`, `bkwd/train-black-widows-in-the-red-room`, `co2e/negative-zone-prison-outbreak`, `dstr/war-for-the-dream-dimension`, `rlmk/devolve-with-xerogen-crystals`, `rvlt/earthquake-drains-the-ocean`, `smhc/scavenge-alien-weaponry`, `wtif/marvel-zombies`, `wwhk/gladiator-pits-of-sakaar`, `pttr/clone-saga-the`, `pttr/splice-humans-with-spider-dna`, `vnom/invasion-of-the-venom-symbiotes`; tokens or cards, or Villain Deck — `bkpt/plunder-wakandas-vibranium`, `co2e/bank-robbery-hostage-crisis`, `co2e/enshrouded-identity`, `cosm/annihilation-conquest`, `dstr/cursed-pages-of-the-darkhold-tome`, `mdns/sire-vampires-at-the-blood-bank`, `msmc/control-the-mutant-messiah`, `msmc/open-rifts-to-future-timelines`; counter, or Villain Deck or Hero Deck — `msmc/reveal-the-heroes-evil-clones`, `msmc/unleash-an-anti-mutant-bioweapon`; counter, or Hero Deck — `2099/befoul-earth-into-a-polluted-wasteland`, `dkcy/detonate-the-helicarrier`; counter, or Wound Stack — `vnom/maximum-carnage`.
+- **Excluded** (no entry; they use the last-twist rule; named follow-ups): the non-standard piles `chmp/clash-of-the-monsters-unleashed` (Monster Pit), `chmp/divide-and-conquer` (all Hero Decks), `noir/five-families-of-crime` (multiple Villain Decks), `rvlt/secret-hydra-corruption` (Officer stack), `wwhk/shoot-hulk-into-space` (Hulk Deck), `gotg/unite-the-shards` (Shards supply); the "Good Wins" schemes (the `vill` set, `fear/fear-itself`, `fear/last-stand-at-avengers-tower`, `fear/traitor-the`). The 8 core entries are untouched.
+
+**Replay and score compatibility.** Core schemes are byte-identical: the sentinel replay and all PAR seed scenarios use only core schemes, and both oracles pass unchanged. A **non-core** replay recorded before WP-763 may end differently when re-executed (a different twist on which Evil Wins fires, or a deck runout that is now a loss rather than a tie). Published non-core gauntlet scores are **not** recomputed (D-5302 score immutability).
+
+**Gates.** After `pnpm -r build`: engine 4235/0 → 4275/0; arena-client 2115/0 → 2116/0 with `vue-tsc` 0; `pnpm -r --no-bail test` 0 failures; `sim:coverage --check` and `sim:runtime-observed:check` 0. The scaffold-predicted pin set moved as expected (7 → derived fallback and `twists` → `twists-fallback` in `schemeHandlers.test.ts`, `schemeLossProgress.test.ts`, `uiState.build.progress.test.ts` and `uiState.filter.test.ts`), with no hash or replay failure.
+
+**Out of scope.** Per-scheme counters (the follow-up series); twist effects (WP-764 for Midnight Massacre); the Excluded piles; PAR keys dropping the set prefix (fixed separately by D-24597).
+
+**Audit table (independent subagent, 2026-09-25; the engine state *before* WP-763).** Category key: A printed twist count; B escaped-villain count; C escaped-card / bystander count; D standard pile runout; E per-scheme tokens / counters; F other (KO pile, transform, Good Wins, none printed).
+
+| scheme | category | twists in deck | engine threshold | suppress | resolver | engine loss | verdict | printed Evil Wins |
+|---|---|---|---|---|---|---|---|---|
+| 2099/pull-reality-into-cyberspace | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| 2099/become-president-of-the-united-states | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind is elected President by having Forty Million more votes than the highest-voted Hero Name. |
+| 2099/subjugate-earth-with-mega-corporations | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When a single Mega-Corp has 3 Dominations. |
+| 2099/befoul-earth-into-a-polluted-wasteland | D+F:KO-pile+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out, or there are 8 Toxic Sludges under the HQ and/or in the river (KO pile). |
+| amwp/auction-shrink-tech-to-highest-bidder | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Shrink Tech cards are Controlled by Arms Dealers. |
+| amwp/safeguard-dark-secrets | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the Mastermind has 5 Secrets. |
+| amwp/escape-an-imprisoning-dimension | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When 3 Escape Routes have been discovered. |
+| amwp/siphon-energy-from-the-quantum-realm | F:KO-pile+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Quantum Realm Villains have been KO'd or there are 9 Quantum Siphons. |
+| anni/pulse-waves-from-the-negative-zone | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 9) | Twist 9: Evil wins! |
+| anni/sneak-attack-the-heroes-homes | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| anni/put-humanity-on-trial | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Jurors vote to Condmen Humanity. |
+| anni/breach-parallel-dimensions | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When at least half of the original Dimensions are destroyed. |
+| antm/age-of-ultron | B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Evolved Ultrons are in the city and/or Escape Pile. |
+| antm/pull-earth-into-medieval-times | B | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| antm/transform-commuters-into-giant-ants | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When ther are 10 Giant Ants next to the Mastermind. |
+| antm/trap-heroes-in-the-microverse | D+B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| asrd/asgardian-test-of-worth | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Moral Failings. |
+| asrd/dark-world-of-svartalfheim-the | E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all city spaces or all HQ spaces are covered in Eternal Darkness. |
+| asrd/war-of-the-frost-giants | B+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Frost Giant Invaders in the city and/or Escape Pile. |
+| asrd/ragnarok-twilight-of-the-gods | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Guardians Defeated. |
+| bkpt/seize-the-wakandan-throne | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When the 5 Tribes of Wakanda have been defeated. |
+| bkpt/poison-lakes-with-nanite-microbots | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| bkpt/plunder-wakandas-vibranium | D+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Vibranium are in the Escape Pile or the Villain Deck runs out. |
+| bkpt/provoke-a-clash-of-nations | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: At 6 International Crises. |
+| bkwd/corrupt-the-spy-agencies | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| bkwd/train-black-widows-in-the-red-room | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| bkwd/sniper-rifle-assassins | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are four non-grey Heroes per player in the KO Pile. |
+| bkwd/frame-heroes-for-murder | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 pieces of Incriminating Evidence. |
+| ca75/brainwash-the-military | C | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 S.H.I.E.L.D. Officers escape. |
+| ca75/change-the-outcome-of-wwii | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 capitals are conquered. |
+| ca75/go-back-in-time-to-slay-heroes-ancestors | D | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| ca75/unbreakable-enigma-code-the | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| chmp/clash-of-the-monsters-unleashed | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Monster Pit Deck runs out. |
+| chmp/divide-and-conquer | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all Hero Decks are gone. |
+| chmp/hypnotize-every-human | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Villains are in the Escape pile. |
+| chmp/steal-all-oxygen-on-earth | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 20 non-grey Heroes are KO'd. |
+| co2e/bank-robbery-hostage-crisis | D+C | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Bystanders are in the Escape Pile or the Villain Deck runs out. |
+| co2e/secret-invasion-of-the-skrull-shapeshifters | C+E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When there are 6 Hero cards in the Escape Pile. |
+| co2e/the-legacy-virus | D | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Deck or the Villain Deck runs out. |
+| co2e/negative-zone-prison-outbreak | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| co2e/portals-to-the-dark-dimension | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| co2e/replace-earths-leaders-with-killbots | C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Bystander cards in the Escape Pile. |
+| co2e/super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| co2e/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| co2e/enshrouded-identity | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 9 Bodyguards or the Villain Deck runs out. |
+| core/midtown-bank-robbery | C | 8 | 8 | true | midtown-bank-robbery | escaped-pile-count bystander>=8 | MATCH | Evil Wins: When 8 Bystanders are carried away by escaping Villains. |
+| core/secret-invasion-of-the-skrull-shapeshifters | C+B | (8 default) | 8 | true | secret-invasion | escaped-converted skrull>=6 | MATCH | Evil Wins: If 6 Heroes get into the Escaped Villains pile. |
+| core/legacy-virus-the | D | (8 default) | 8 | true | reveal-or-punish | pile-depleted wounds | MATCH | Evil Wins: If the Wound stack runs out. |
+| core/negative-zone-prison-breakout | B | (8 default) | 8 | true | chained-reveals | escaped-pile-count villain>=12 | MATCH | Evil Wins: If 12 Villains escape. |
+| core/portals-to-the-dark-dimension | A | 7 | 7 | false | portals | twist 7 | MATCH | Twist 7: Evil Wins! |
+| core/replace-earths-leaders-with-killbots | C | 5 | 5 | true | killbots | escaped-converted killbot>=5 | MATCH | Evil Wins: If 5 “Killbots“ escape. |
+| core/super-hero-civil-war | D | (8 default) | 8/5 by pc | true | ko-from-hq | pile-depleted heroDeck | MATCH | Evil Wins: If the Hero Deck runs out. |
+| core/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 8 | false | wound-all | twist 8 | MATCH | Twist 8: Evil Wins! |
+| cosm/contest-of-champions-the | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Evil Triumphs. |
+| cosm/turn-the-soul-of-adam-warlock | E | 14 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 8 Souls Corruptions. |
+| cosm/destroy-the-nova-corps | F:KO-pile+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 KO'd Nova Centurions per player. |
+| cosm/annihilation-conquest | D+B+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Phalanx-Infected in the city and/or Escape Pile, or the Villain Deck runs out. |
+| cvwr/avengers-vs-x-men | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| cvwr/dark-reign-of-h-a-m-m-e-r-officers | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Officers next to the Mastermind. |
+| cvwr/epic-super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| cvwr/imprison-unregistered-superhumans | F:KO-pile+C | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Bystanders are in the KO pile and/or Escape Pile. |
+| cvwr/nitro-the-supervillain-threatens-crowds | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 15 Bystanders are in the KO pile and/or Escape Pile. |
+| cvwr/predict-future-crime | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When there are 2 Villains per player in the Escape Pile. |
+| cvwr/reveal-heroes-secret-identities | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 5 Heroes are Unmasked. |
+| cvwr/united-states-split-by-civil-war | E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Western Victories or 3 Eastern Victories. |
+| dead/deadpool-kills-the-marvel-universe | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| dead/deadpool-wants-a-chimichanga | C | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 6 Chimichangas are in the Escape Pile. |
+| dead/deadpool-writes-a-scheme | F:none-printed | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | (none) |
+| dead/everybody-hates-deadpool | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| dkcy/capture-baby-hope | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Twists stacked next to the Mastermind. |
+| dkcy/detonate-the-helicarrier | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all HQ spaces are Destroyed or the Hero Deck runs out. |
+| dkcy/massive-earthquake-generator | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non grey Heroes in the KO pile is 3 times the number of players. |
+| dkcy/organized-crime-wave | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Goons escape. |
+| dkcy/save-humanity | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of Bystanders KO'd and/or carried off is 4 times the number of players. |
+| dkcy/steal-the-weaponized-plutonium | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Plutonium have been carried off by Villains. |
+| dkcy/transform-citizens-into-demons | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Goblin Queen cards escape. |
+| dkcy/x-cutioners-song | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: 9 non grey Heroes are KO'd or carried off. |
+| dstr/war-for-the-dream-dimension | D+B | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| dstr/claim-souls-for-demons | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of Tormented Souls is four times the number of players. |
+| dstr/cursed-pages-of-the-darkhold-tome | D+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has 7 Cursed Pages at the end of any player's turn or the Villain Deck runs out. |
+| dstr/duels-of-science-and-magic | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has won 5 Duels. |
+| fear/fear-itself | F:good-wins | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| fear/last-stand-at-avengers-tower | F:good-wins | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | (none) |
+| fear/traitor-the | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| ff04/bathe-the-earth-in-cosmic-rays | F:KO-pile | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is six times the number of players. |
+| ff04/flood-the-planet-with-melted-glaciers | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 20 non-grey Heroes are KO'd. |
+| ff04/invincible-force-field | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| ff04/pull-reality-into-the-negative-zone | A | (8 default) | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| gotg/forge-the-infinity-gauntlet | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Infinity Gem Villains are in the city and/or the Escape Pile. / Evil Wins: When a player controls 4 Infinity Gem Artifacts, that player is corrupted by power. That player wins, Evil wins, and all other players lose. |
+| gotg/intergalactic-kree-nega-bomb | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 16 non-grey Heroes are in the KO pile. |
+| gotg/kree-skrull-war-the | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Kree Conquests or 4 Skrull Conquests. |
+| gotg/unite-the-shards | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has 10 [rule:Shards] or when there are no more [rule:Shards] in the supply. |
+| mdns/sire-vampires-at-the-blood-bank | D+E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Vampire Thralls on the Villain Deck runs out. |
+| mdns/ritual-sacrifice-to-summon-chthon | F:chthon | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| mdns/midnight-massacre | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck or Villain Deck runs out. |
+| mdns/wager-at-blackjack-for-heroes-souls | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Wagered Souls. |
+| mdns/great-old-one-chthon | F:chthon | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| mgtg/inescapable-kyln-space-prison | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| mgtg/provoke-the-sovereign-war-fleet | B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Omnicraft escape. |
+| mgtg/star-lords-awesome-mix-tape | F:KO-pile | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 32 non-grey Heroes in the KO pile. |
+| mgtg/unleash-the-abilisk-space-monster | E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Tentacles. |
+| msis/sacrifice-for-the-soul-stone | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has sacrificed 5 Heroes for the Soul Stone. |
+| msis/halve-all-life-in-the-universe | D | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the Hero Deck or Villain Deck runs out. |
+| msis/warp-reality-into-a-tv-show | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all TV is destroyed. |
+| msis/the-time-heist | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil wins! |
+| msmc/hack-cerebro-servers-to | F:transform | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/control-the-mutant-messiah | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 cards in the Fallen Messiah stack or the Villain Deck runs out. |
+| msmc/drain-mutant-powers-to | F:transform | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/open-rifts-to-future-timelines | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Temporal Rifts or the Villain Deck runs out. |
+| msmc/hire-singularity-investigations-to | F:transform | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/reveal-the-heroes-evil-clones | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Evil Clones in the city and/or Escape Pile, or the Villain Deck or Hero Deck runs out. |
+| msmc/raid-gene-banks-to | F:transform | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/unleash-an-anti-mutant-bioweapon | D+F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 15 non-grey Heroes in the KO pile or the Villain Deck or Hero Deck runs out. |
+| msp1/asgard-under-siege | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If 12 Villains escape. |
+| msp1/destroy-the-cities-of-earth | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Bystanders are carried away by escaping Villains. |
+| msp1/enslave-minds-with-the-chitauri-scepter | C+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If 6 Heroes get into the Escaped Villains pile. |
+| msp1/invade-asgard | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| msp1/radioactive-palladium-poisoning | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If the Wound stack runs out. |
+| msp1/replace-earths-leaders-with-hydra | C | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: If 5 “Infiltrators“ escape. |
+| msp1/super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If the Hero Deck runs out. |
+| msp1/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| nmut/demon-bear-saga-the | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Dream Horrors. |
+| nmut/crash-the-moon-into-the-sun | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Altered Orbits. |
+| nmut/trapped-in-the-insane-asylum | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When a player has 3 Psychotic Breaks. |
+| nmut/superhuman-baseball-game | B+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When Evil has 4 “runs“ (Villains in the Escape Pile) per player. |
+| noir/find-the-split-personality-killer | F:none-printed | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| noir/silence-the-witnesses | C | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 6 Bystanders are in the Escape Pile. |
+| noir/five-families-of-crime | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Villains escape or all Villain Decks run out. |
+| noir/hidden-heart-of-darkness | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 2 Tactics escape. |
+| pttr/clone-saga-the | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 2 Villains with the same card name have escaped or the Villain Deck runs out. |
+| pttr/invade-the-daily-bugle-news-hq | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Villains in the HQ. |
+| pttr/splice-humans-with-spider-dna | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Sinister Six Villains have escaped or the Villain Deck runs out. |
+| pttr/weave-a-web-of-lies | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| rlmk/ruin-the-perfect-wedding | F:KO-pile+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When either Wedding Hero Stack is KO'd. |
+| rlmk/war-of-kings | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Victorious Generals. |
+| rlmk/tornado-of-terrigen-mists | A | 10 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil Wins! |
+| rlmk/devolve-with-xerogen-crystals | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| rvlt/earthquake-drains-the-ocean | D+B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. / Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| rvlt/house-of-m | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is ten plus double the number of players. |
+| rvlt/secret-hydra-corruption | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 15 Officers next to this Scheme or the S.H.I.E.L.D. Officer Stack runs out. |
+| rvlt/korvac-saga-the | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| shld/shield-vs-hydra-war | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the [keyword:Hydra Level] is 11. |
+| shld/hail-hydra | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil Wins! |
+| shld/hydra-helicarriers-hunt-heroes | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 18 non-grey Heroes in the KO pile. |
+| shld/secret-empire-of-betrayal | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Vicious Betrayals next to the Scheme. |
+| smhc/distract-the-hero | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there have been 5 Villainous Interruptions. |
+| smhc/explosion-at-the-washington-monument | F:KO-pile+C+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 10 Bystanders are in the KO pile and/or Escape Pile, or all Floors are KO'd. |
+| smhc/ferry-disaster | F:KO-pile+C | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Bystanders are in the KO pile and/or Escape Pile. |
+| smhc/scavenge-alien-weaponry | D+B | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| ssw1/build-an-army-of-annihilation | E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 10 Annihilation Henchmen next to the Mastermind. |
+| ssw1/corrupt-the-next-generation-of-heroes | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 [rule:Sidekicks] escape. |
+| ssw1/crush-them-with-my-bare-hands | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When 8 Master Strikes have taken effect. |
+| ssw1/dark-alliance | A | (8 default) | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| ssw1/fragmented-realities | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is 5 times the number of players. |
+| ssw1/master-of-tyrants | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Tyrant Villains escape. |
+| ssw1/pan-dimensional-plague | D | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack runs out. |
+| ssw1/smash-two-dimensions-together | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 10 Villains escape. |
+| ssw2/deadlands-hordes-charge-the-wall | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains equals the number of players plus 6. |
+| ssw2/enthrone-the-barons-of-battleworld | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Masterminds. |
+| ssw2/fountain-of-eternal-life-the | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains is 3 times the number of players. |
+| ssw2/god-emperor-of-battleworld-the | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! (If any Mastermind still lives.) |
+| ssw2/mark-of-khonshu-the | B | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Khonshu Guardians escape (includes both Villain and Henchman). |
+| ssw2/master-the-mysteries-of-kung-fu | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains is double the number of players. |
+| ssw2/secret-wars | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| ssw2/sinister-ambitions | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 4 Ambition Villains escape. |
+| vill/build-an-underground-megavault-prison | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/cage-villains-in-power-suppressing-cells | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/crown-thor-king-of-asgard | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/crush-hydra | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/graduation-at-xaviers-x-academy | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/infiltrate-the-lair-with-spies | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/mass-produce-war-machine-armor | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/resurrect-heroes-with-norn-stones | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vnom/invasion-of-the-venom-symbiotes | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Escape Pile has 3 cards per player, or the Villain Deck runs out. |
+| vnom/maximum-carnage | D+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Bystanders in the Escape Pile or the Wound Stack runs out. |
+| vnom/paralyzing-venom | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| vnom/symbiotic-absorption | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 11) | Twist 11: Evil Wins! |
+| wpnx/condition-logan-into-weapon-x | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| wpnx/go-after-heroes-loved-ones | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| wpnx/wipe-heroes-memories | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Total Memory Wipes. |
+| wtif/trash-earth-with-hugest-party-ever | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 5 Wreckages have been Discovered. |
+| wtif/marvel-zombies | D+B | 4 | 7 | false | - | none (deck 4 twists <7) | MISSING-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| wtif/collect-an-interstellar-zoo | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Zoo has 5 heroes. |
+| wtif/breach-the-nexus-of-all-realities | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all Realities have been destroyed. |
+| wwhk/break-the-planet-asunder | F:KO-pile | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 25 non-grey Heroes are KO'd. |
+| wwhk/cytoplasm-spike-invasion | F:KO-pile+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the KO pile and Escape Pile combine to have 18 Bystanders and/or Spikes. |
+| wwhk/fall-of-the-hulks | D | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack runs out. |
+| wwhk/gladiator-pits-of-sakaar | D+B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 2 Villains per player have escaped or the Villain Deck runs out. |
+| wwhk/mutating-gamma-rays | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| wwhk/shoot-hulk-into-space | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 10 cards in the Prison Ship or the Hulk Deck runs out. |
+| wwhk/subjugate-with-obedience-disks | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When each HQ space has 2 Obedience Disks. |
+| wwhk/world-war-hulk | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 9) | Twist 9: Evil Wins! |
+| xmen/alien-brood-encounters | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| xmen/anti-mutant-hatred | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| xmen/dark-phoenix-saga-the | B | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Jean Grey cards have escaped. |
+| xmen/horror-of-horrors | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil wins! |
+| xmen/mutant-hunting-super-sentinels | B | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Sentinels have Escaped. |
+| xmen/nuclear-armageddon | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the city is destroyed. |
+| xmen/televised-deathtraps-of-mojoworld | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| xmen/x-men-danger-room-goes-berserk | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Airborne Neurotoxins. |
+
+**Reserved by:** NUMBER-LEDGER D-24595. Related: D-24178 (MVP threshold), D-24315..D-24320 (resource loss, suppression, precedence), D-24366 / D-24367 (menace signal, client copy boundary), D-24371 (superseded §6 for non-core), D-24319 (loss before tie), D-5302 (score immutability), D-24596 (WP-764 Midnight Massacre consumes the multi-pile condition), D-24597 (PAR keys keep the set qualifier).
+
 ---
 
 Protect this file.
