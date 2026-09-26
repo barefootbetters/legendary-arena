@@ -84,6 +84,12 @@ Coordinated subsystems spanning multiple files / phases.
   Candidate A (a shared `guest01`…`guest05` pool) — D-24437 / D-24438,
   WP-627 / 628 / 629. Scope is host hot-seat / local hand-off; a remote
   device-bound seat-bind link stays deferred.
+- [Bot Ally](bot-ally.md) — *(draft)* player-facing guide to playing a
+  co-op game solo: bots fill the other seats and take their own turns.
+  Covers starting a game (bot count, **Competent** / **Random** skill),
+  how the bot plays (no peeking, default choices, answering "each other
+  player" effects on your turn — D-24593), scoring (never ranked; Casual
+  on a ranked-gauntlet loadout), the stall bar, and the 20-minute idle stop.
 - [Play Board](play-board.md) — The rendered game mat on
   `play.legendary-arena.com`: which board zone reads which `UIState`
   field, and the two-stage projection→render contract (`buildUIState` →
