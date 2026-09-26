@@ -708,7 +708,7 @@
           "name": "Indestructible Man",
           "slug": "indestructible-man",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "0",
           "imageUrl": "https://images.legendary-arena.com/bkwd/bkwd-mm-indestructible-man.webp",
           "abilities": [
             "You can't use [icon:attack] to fight Indestructible Man.",

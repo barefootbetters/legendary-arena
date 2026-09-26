@@ -2338,6 +2338,8 @@
       "id": 7,
       "name": "Asgardian Warriors",
       "slug": "asgardian-warriors",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-asgardian-warriors.webp",
       "abilities": [
         "Fight: Draw a card."
@@ -2347,6 +2349,8 @@
       "id": 8,
       "name": "Cops",
       "slug": "cops",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-cops.webp",
       "abilities": [
         "Fight: Gain a New Recruit."
@@ -2356,6 +2360,8 @@
       "id": 9,
       "name": "Multiple Man",
       "slug": "multiple-man",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-multiple-man.webp",
       "abilities": [
         "Fight: KO one of your Allies for each other Multiple Man in your Victory Pile."
@@ -2365,6 +2371,8 @@
       "id": 10,
       "name": "S.H.I.E.L.D. Assault Squad",
       "slug": "shield-assault-squad",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-shield-assault-squad.webp",
       "abilities": [
         "Fight: Discard the top card of your deck. Then KO an Ally from your discard pile."

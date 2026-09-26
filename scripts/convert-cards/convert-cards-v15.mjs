@@ -589,6 +589,25 @@ function henchmanCardImageUrl(setAbbr, groupSlug, cardSlug) {
 }
 
 /**
+ * Copies the upstream group-level printed attack (`vAttack`, a string such as
+ * "3" or "2+") and victory points (`vp`, a number) onto a converted henchman
+ * group. Fields absent upstream are not emitted.
+ *
+ * why: the henchmen emitter never wrote these fields, so only the 18 groups
+ * carrying a patch overlay (or hand-authored co2e data) had a fight cost; the
+ * rest fought for 0 (D-24594). A patch value still wins because the patch
+ * merge runs after conversion.
+ */
+function copyHenchmanPrintedStats(upstreamGroup, convertedGroup) {
+  if (upstreamGroup.vAttack !== undefined) {
+    convertedGroup.vAttack = upstreamGroup.vAttack;
+  }
+  if (upstreamGroup.vp !== undefined) {
+    convertedGroup.vp = upstreamGroup.vp;
+  }
+}
+
+/**
  * Parses ability arrays into readable strings with slug/label-based placeholders.
  *
  * Replacements:
@@ -799,6 +818,7 @@ function convertSet(jsFilePath, setAbbr) {
   if (setData.masterminds) {
     for (const mm of setData.masterminds) {
       const mmSlug = toSlug(mm.name);
+      let hasAssignedBaseFaceAttack = false;
       const convertedCards = (mm.cards || []).map(card => {
         const cardSlug = toSlug(card.name ?? mm.name);
         const isEpic = (card.name ?? '').toLowerCase().startsWith('epic ');
@@ -818,11 +838,24 @@ function convertSet(jsFilePath, setAbbr) {
         // paths (403). Always use synthesized R2 URLs. Line was removed in
         // 0d962f3, re-introduced by WP-147 regression, removed again by WP-151.
 
+        // why: upstream stores the printed attack at the Mastermind level
+        // (`mm.vAttack`) for 53 Masterminds; the card-level-only read dropped
+        // it, so 14 base cards fought for 0 (D-24594). The fallback applies to
+        // the first non-tactic face only — the face the engine reads (D-24193).
+        // Epic faces are excluded: they carry their own card-level `vAttack`,
+        // and the Mastermind-level value belongs to the base face.
+        let vAttack = card.vAttack ?? null;
+        const isBaseFace = !card.tactic && !isEpic;
+        if (isBaseFace && !hasAssignedBaseFaceAttack) {
+          hasAssignedBaseFaceAttack = true;
+          vAttack = card.vAttack ?? mm.vAttack ?? null;
+        }
+
         return {
           name: card.name ?? mm.name,
           slug: cardSlug,
           tactic: card.tactic ?? false,
-          vAttack: card.vAttack ?? null,
+          vAttack,
           imageUrl: mmImageUrl,
           abilities: parseAbilities(card.abilities),
         };
@@ -880,13 +913,15 @@ function convertSet(jsFilePath, setAbbr) {
 
       if (sourceCards.length <= 1) {
         const onlyCard = sourceCards[0];
-        result.henchmen.push({
+        const singleGroup = {
           id: hm.id,
           name: hm.name,
           slug: hmSlug,
           imageUrl: standaloneImageUrl(setAbbr, 'hm', hmSlug),
           abilities: parseAbilities(onlyCard?.abilities ?? hm.abilities),
-        });
+        };
+        copyHenchmanPrintedStats(hm, singleGroup);
+        result.henchmen.push(singleGroup);
         continue;
       }
 
@@ -901,14 +936,16 @@ function convertSet(jsFilePath, setAbbr) {
         };
       });
 
-      result.henchmen.push({
+      const multiCardGroup = {
         id: hm.id,
         name: hm.name,
         slug: hmSlug,
         imageUrl: convertedCards[0].imageUrl,
         abilities: [],
         cards: convertedCards,
-      });
+      };
+      copyHenchmanPrintedStats(hm, multiCardGroup);
+      result.henchmen.push(multiCardGroup);
     }
   }
 

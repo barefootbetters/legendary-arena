@@ -560,7 +560,7 @@
           "name": "Nightmare",
           "slug": "nightmare",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/dstr/dstr-mm-nightmare.webp",
           "abilities": [
             "When you fight Nightmare in the [keyword:Astral Plane], instead of revealing a Tactic, KO one of your Heroes and Nightmare moves to the Mastermind Space.",
@@ -637,7 +637,7 @@
           "name": "Dormammu",
           "slug": "dormammu",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "11",
           "imageUrl": "https://images.legendary-arena.com/dstr/dstr-mm-dormammu.webp",
           "abilities": [
             "Always Leads: Lords of the Netherworld",

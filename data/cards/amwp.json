@@ -1905,6 +1905,8 @@
       "id": 41,
       "name": "Quantumnauts",
       "slug": "quantumnauts",
+      "vAttack": "2+",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-quantumnauts.webp",
       "abilities": [
         "[keyword:Rooftops Conqueror 1]",
@@ -1916,6 +1918,8 @@
       "id": 42,
       "name": "Quantum Hound",
       "slug": "quantum-hound",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-quantum-hound.webp",
       "abilities": [
         "Fight: Choose [icon:recruit] or [icon:attack]. Then [keyword:Explore]. If the Found Hero has the icon you chose, KO one of your Heroes."
@@ -1925,6 +1929,8 @@
       "id": 43,
       "name": "Tardigrade",
       "slug": "tardigrade",
+      "vAttack": "4",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
       "abilities": [],
       "cards": [

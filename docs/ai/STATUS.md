@@ -7,6 +7,37 @@
 
 ## Current State
 
+### WP-762 — Fill the missing printed attack values: Masterminds and henchmen stop fighting for 0 (EC-799 / D-24594) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** 14 Mastermind
+base cards and 32 henchman groups had no attack value in the data, so the engine and the bot fought
+them for **0**. 13 of those Masterminds and 20 of the groups sit in ranked gauntlet menus. They now
+cost what they print, for example Thanos 24, Dormammu 11, Carnage 9, Mandarin 16, and Hellfire Cult 3.
+This closes the free-fight path before WP-750 removes the client's accidental lock.
+
+- **Converter.** `convert-cards-v15.mjs` changes in two places:
+  - The first non-tactic, non-epic Mastermind face falls back to the upstream Mastermind-level
+    `vAttack`.
+  - Henchman groups emit the upstream `vAttack` / `vp`.
+
+  Five base-card `vAttack: null` patch keys were removed (pttr ×2, gotg ×2, fear ×1).
+- **Data.** Committed `data/cards` edits are surgical: `null` → value on 14 base faces, plus line
+  insertions for the henchman fields. The 6 amwp/wtif groups were transcribed from their R2 card
+  images; D-24594 has the URLs and values. `cards:check` reproduces every fill (18 sets / 66 leaves),
+  and reverting one fill makes it fail.
+- **Counts.** `pnpm -r build && pnpm -r --no-bail test` → 0 fail (engine 4235/0, arena-client
+  2115/0, server 1636 / 1430 pass / 206 skip). The five data gates and `gauntlet:loadouts:check` → 0.
+  The dist one-liner prints `24 11 3`. No engine source change, no feed regenerated, no fixture
+  re-pinned.
+- **Residual exposures** (named engine follow-ups, D-24594 §7):
+  - Indestructible Man (prints 0), Killmonger, and Jameson.
+  - The Thanos / Mandarin modifiers, and the `N+` conditional bonuses.
+  - The four variable-attack villains.
+- **Replay note.** Stored pre-WP-762 replays that fought these cards will not re-execute
+  identically, because `cardStats` / `cardVictoryPoints` changed.
+- **Pending (D-24026).** Operator live-verify after deploy: in a live `gotg/thanos` or
+  `dstr/dormammu` match, fighting the Mastermind must require 24 / 11 attack.
+
 ### WP-761 — Long-press slash: a 350 ms hold arms slash-to-fight on a scrolling City row (EC-798 / D-24592) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (real-device live-verify operator-pending, D-24026).** On

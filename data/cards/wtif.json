@@ -2095,6 +2095,8 @@
       "id": 38,
       "name": "Giants of Jotunheim",
       "slug": "giants-of-jotunheim",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-giants-of-jotunheim.webp",
       "abilities": [
         "Ambush: Each player discards the top three cards of their deck.",
@@ -2105,6 +2107,8 @@
       "id": 39,
       "name": "Vibranium Liberator Drones",
       "slug": "vibranium-liberator-drones",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-vibranium-liberator-drones.webp",
       "abilities": [
         "Ambush: Another Villain captures a Bystander. ",
@@ -2115,6 +2119,8 @@
       "id": 40,
       "name": "Ultron Sentries",
       "slug": "ultron-sentries",
+      "vAttack": "2+",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-covert.webp",
       "abilities": [],
       "cards": [
