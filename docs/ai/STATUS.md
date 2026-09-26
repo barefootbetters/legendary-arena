@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-761 — Long-press slash: a 350 ms hold arms slash-to-fight on a scrolling City row (EC-798 / D-24592) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (real-device live-verify operator-pending, D-24026).** On
+a phone the City row scrolls sideways, so until now the slash gesture was mouse-only there. Now a
+finger or pen held **still for 350 ms** on the City row arms a slash: the row glows (and phones that
+support it give a short buzz), and the next drag slashes instead of scrolling — every fightable villain
+it fully crosses is fought, in order, with the blade trail and stroke-angled slices. A quick drag still
+scrolls and a quick tap still fights. **One trade:** on a scrolling row a press held 350 ms or longer is
+an arm, not a tap.
+
+- **Client-only.** `useSlashGesture` gains the long press (armed state mirrored by one writer,
+  `syncLongPressState()`); `CityRow` gains the hold / armed classes. No engine, registry or server
+  change; the same `fightVillain({ cityIndex })` chain. Mouse, fitting-row touch and setting-off are
+  unchanged — the new listeners and callout CSS attach only while the row scrolls or a long press is live.
+- **Counts.** arena-client 2084/0 → 2115/0 (typecheck 0); whole repo `pnpm -r build && pnpm -r
+  --no-bail test` green (engine 4231/0, server 1625 / 1420 pass / 205 skip / 0 fail). No `packages/**`.
+- **Verified in the preview** at 375 px (local server, paused guest autoplay match, synthetic touch
+  pointer events): quick drag → no arm, `touchmove` not prevented; 350 ms hold → armed, `touchmove` and
+  `contextmenu` prevented, buzz; armed drag fought Hand Ninjas then Skrull Shapeshifters in order with
+  stroke-angled slices; setting off → nothing arms; a quick tap fought.
+- **Environment note.** The local dev database lacks the `legendary.match_guest_access` table, so the
+  local match connection dropped twice during the drive (a reload restored it) — a local migration gap,
+  not this change.
+- **Pending (D-24026).** Operator live-verify on a real iOS phone and a real Android phone: hold, then
+  slash across two affordable villains; the row must not scroll, no context menu / callout may appear,
+  and both villains must fall in order.
+
 ### WP-756 — Slash to fight: a stroke across City villains fights each one it crosses (EC-793 / D-24585) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Drag across
