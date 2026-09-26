@@ -376,7 +376,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
-            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes."
+            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes. [keyword:defeated-villain-or-mastermind] [keyword:optional-ko-your-hero]"
           ]
         },
         {
@@ -810,7 +810,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-metarchus.webp",
           "abilities": [
             "[keyword:Blood Frenzy]",
-            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ.",
+            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:rightmost]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
@@ -822,7 +822,7 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-atrocity.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ.",
+            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:leftmost]",
             "Fight: Rescue a Bystander."
           ],
           "copies": 2
@@ -834,7 +834,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-patriarch.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less.",
+            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less. [effect:haunt-hq-hero:cost-lte-3]",
             "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it."
           ],
           "copies": 3

@@ -595,7 +595,8 @@ const MOONLIGHT_MARKER_PATTERN = /\[keyword:Moonlight\]/i;
 // "+1[icon:attack] for each …" would fire as a flat grant (the D-24570 parsed-grant suppression
 // sibling). They stay visibly hollow (parse-unrecognized) until a named follow-up models them.
 const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
-  'mdns/werewolf-by-night/snarling-fangs:moonlight',
+  // why: WP-767 / D-24600 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
+  // trigger + optional-ko-your-hero markers), so it left this list; eight entries remain.
   'mdns/werewolf-by-night/track-the-captives:moonlight',
   'mdns/morbius/scalded-by-sunlight:sunlight',
   'nmut/sunspot/solar-powered:sunlight',

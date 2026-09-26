@@ -622,6 +622,18 @@ export interface UICityState {
  * matches `slots[i] === null` exactly. Mirrors the handCards / handDisplay
  * parallel-array pattern.
  */
+/**
+ * Who haunts one HQ slot, for display (WP-757 / D-24587, the Haunt keyword).
+ *
+ * // why: a Villain haunter carries an embedded `display` (like UICityCard.display)
+ * because the client has no extId → display resolver; a bare extId would render as a
+ * hyphenated id. The Mastermind kind needs no display — the Mastermind tile already
+ * carries it.
+ */
+export type UIHQHaunter =
+  | { kind: 'villain'; extId: string; display: UICardDisplay }
+  | { kind: 'mastermind' };
+
 export interface UIHQState {
   slots: (string | null)[];
   slotDisplay?: (UIHQCard | null)[];
@@ -632,6 +644,11 @@ export interface UIHQState {
   // Passed through the audience filter explicitly (uiState.filter.ts) — a build-only field is
   // silently dropped at the whitelist (the EC-206 failure mode).
   dayNight?: 'sunlight' | 'moonlight' | 'neither';
+  // why: WP-757 / D-24587 — per-slot haunters, index-aligned with `slots`. Public
+  // shared-board information (a Haunting Villain is tucked face-up beneath the Hero).
+  // Omit-when-absent: present only once G.hqHaunters exists (the first haunt). It is
+  // optional, so a missed filter pass-through is silent — see uiState.filter.ts.
+  haunters?: (UIHQHaunter | null)[];
 }
 
 /**
@@ -688,6 +705,10 @@ export interface UIMastermindState {
   // falls back to display.cost); passed through the audience filter explicitly,
   // because a build-only field is silently dropped at the whitelist (EC-206).
   fightCost?: number;
+  // why: WP-757 / D-24587 — true while the Mastermind haunts an HQ Hero (it can't be
+  // fought until that Hero is exorcised). Public; omit-when-absent (never `false`), so
+  // the key appears only while the Mastermind actually haunts.
+  isHaunting?: true;
 }
 
 /**

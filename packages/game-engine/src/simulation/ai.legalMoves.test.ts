@@ -17,8 +17,15 @@ import { selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
 import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import { makeTurnEconomy } from '../test/fixtureBuilders.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { makeTurnEconomy, makeCardStatEntry, makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
+import { makeMockCtx } from '../test/mockCtx.js';
+import { buildInitialGameState } from '../setup/buildInitialGameState.js';
+import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
+import type { ExorciseHauntedHeroArgs } from '../moves/exorciseHauntedHero.js';
+import { recruitHero } from '../moves/recruitHero.js';
+import type { MatchSetupConfig } from '../matchSetup.types.js';
 
 const CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
 
@@ -191,6 +198,94 @@ describe('getLegalMoves — pending optional-KO-reward short-circuit (WP-248 / D
       'resolveOptionalKoReward',
       'optional-KO-reward takes precedence over resolveKoHeroChoice',
     );
+  });
+
+  /** cardStats with only the cost field the selector reads. */
+  function costsOf(costs: Record<string, number>): LegendaryGameState['cardStats'] {
+    const result: Record<string, { attack: number; recruit: number; cost: number; fightCost: number }> = {};
+    for (const cardId of Object.keys(costs)) {
+      result[cardId] = { attack: 0, recruit: 0, cost: costs[cardId]!, fightCost: 0 };
+    }
+    return result as unknown as LegendaryGameState['cardStats'];
+  }
+
+  test('WP-767: a Snarling Fangs entry picks the lowest-cost HAND Hero — never a cheaper discard card or a Wound', () => {
+    const gameState = makeG({
+      discard: ['free-discard' as CardExtId],
+      hand: [WOUND_EXT_ID as CardExtId, 'hero-cost-3' as CardExtId, 'hero-cost-2' as CardExtId],
+      inPlay: ['played-cost-1' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'fangs' as CardExtId,
+      koZones: ['hand', 'inPlay'], koHeroesOnly: true,
+    }];
+    gameState.cardStats = costsOf({ 'free-discard': 0, 'hero-cost-3': 3, 'hero-cost-2': 2, 'played-cost-1': 1 });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'hand', cardId: 'hero-cost-2' },
+      'hand Heroes are scanned; the discard card and the (cost-0) Wound are skipped');
+  });
+
+  test('WP-767: with only a Wound in hand, the bot falls back to a played-this-turn Hero', () => {
+    const gameState = makeG({
+      discard: ['free-discard' as CardExtId],
+      hand: [WOUND_EXT_ID as CardExtId],
+      inPlay: ['fangs' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'fangs' as CardExtId,
+      koZones: ['hand', 'inPlay'], koHeroesOnly: true,
+    }];
+    gameState.cardStats = costsOf({ 'free-discard': 0, fangs: 3 });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'inPlay', cardId: 'fangs' });
+  });
+
+  test('WP-767: Radioactive Riot and Battlefield Promotion picks are unchanged', () => {
+    // why: WP-767 / D-24600 — the new allowDiscard parameter and the koHeroesOnly filter must not
+    // move an existing entry's pick: Riot (hand/discard, no filter) still takes the cheapest card
+    // discard-first, a Wound included; Battlefield Promotion still takes the cheapest S.H.I.E.L.D. Hero.
+    const riotState = makeG({
+      discard: [WOUND_EXT_ID as CardExtId, 'riot-discard' as CardExtId],
+      hand: ['riot-hand' as CardExtId],
+      inPlay: ['riot-played' as CardExtId],
+      currentStage: 'main',
+    });
+    riotState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'riot' as CardExtId,
+      koZones: ['hand', 'discard'],
+    }];
+    riotState.cardStats = costsOf({ 'riot-discard': 1, 'riot-hand': 1, 'riot-played': 0 });
+    assert.deepStrictEqual(getLegalMoves(riotState, CONTEXT)[0]!.args, { zone: 'discard', cardId: WOUND_EXT_ID },
+      'Riot still KOs the cost-0 discard Wound (discard-first, lowest index)');
+
+    const promotionState = makeG({
+      discard: ['non-shield' as CardExtId, SHIELD_OFFICER_EXT_ID as CardExtId],
+      hand: ['shield-agent' as CardExtId],
+      currentStage: 'main',
+    });
+    promotionState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'gain-officer-hand', rewardMagnitude: 1, sourceCardId: 'promotion' as CardExtId,
+      koZones: ['hand', 'discard'], koTeamFilter: 'shield',
+    }];
+    promotionState.cardStats = costsOf({ 'non-shield': 0, [SHIELD_OFFICER_EXT_ID]: 3, 'shield-agent': 2 });
+    promotionState.cardTraits = {
+      'shield-agent': { heroClass: null, team: 'shield' },
+    } as unknown as LegendaryGameState['cardTraits'];
+    const promotionMoves = getLegalMoves(promotionState, CONTEXT);
+    const expectedPromotion = selectDefaultOptionalKoTarget(
+      promotionState.playerZones['0']!, promotionState.cardStats,
+      (cardId) => cardCountsAsShieldHero(promotionState, cardId), false,
+    );
+    assert.deepStrictEqual(promotionMoves[0]!.args, expectedPromotion, 'Battlefield Promotion pick unchanged');
+    assert.deepStrictEqual(promotionMoves[0]!.args, { zone: 'hand', cardId: 'shield-agent' },
+      'the cheapest S.H.I.E.L.D. Hero; the cost-0 non-S.H.I.E.L.D. discard card is skipped');
   });
 
   test('no resolveOptionalKoReward and normal enumeration when no optional-KO-reward is pending', () => {
@@ -842,5 +937,280 @@ describe('getLegalMoves — recruit-as-attack conversion mirrors the fight guard
       0,
       'without the flag only 3 attack is spendable — the 5-cost fight is not offered, mirroring the move guard',
     );
+  });
+});
+
+describe('getLegalMoves — Haunt mirrors the recruit / exorcise / fightMastermind guards (WP-757 / D-24587)', () => {
+  const HERO_0 = 'hero-slot-0' as CardExtId;
+  const HERO_1 = 'hero-slot-1' as CardExtId;
+  const HERO_2 = 'hero-slot-2' as CardExtId;
+  const HERO_3 = 'hero-slot-3' as CardExtId;
+  const HAUNTER_A = 'villain-haunter-a' as CardExtId;
+  const HAUNTER_B = 'villain-haunter-b' as CardExtId;
+
+  /**
+   * Builds a main-stage state: four HQ Heroes (costs 2 / 3 / 4 / 6), the given
+   * haunters, the given recruit, and an affordable Mastermind with tactics left.
+   */
+  function makeHauntG(
+    haunters: LegendaryGameState['hqHaunters'],
+    recruit: number,
+  ): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    gameState.hq = [HERO_0, HERO_1, HERO_2, HERO_3, null] as LegendaryGameState['hq'];
+    gameState.cardStats = {
+      [HERO_0]: { attack: 0, recruit: 0, cost: 2, fightCost: 0 },
+      [HERO_1]: { attack: 0, recruit: 0, cost: 3, fightCost: 0 },
+      [HERO_2]: { attack: 0, recruit: 0, cost: 4, fightCost: 0 },
+      [HERO_3]: { attack: 0, recruit: 0, cost: 6, fightCost: 0 },
+      'm-base': { attack: 0, recruit: 0, cost: 0, fightCost: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.turnEconomy = makeTurnEconomy({ recruit });
+    // why: a non-empty tactics deck + a 0 fight cost makes fightMastermind otherwise
+    // legal, so only the Haunt gate can remove it.
+    (gameState.mastermind as { tacticsDeck: CardExtId[] }).tacticsDeck = ['tactic-0' as CardExtId];
+    if (haunters !== undefined) {
+      gameState.hqHaunters = haunters;
+    }
+    return gameState;
+  }
+
+  /** Collects the hqIndex of every emitted intent with the given move name. */
+  function slotsFor(gameState: LegendaryGameState, moveName: string): number[] {
+    const slots: number[] = [];
+    for (const move of getLegalMoves(gameState, CONTEXT)) {
+      if (move.name === moveName) {
+        slots.push((move.args as { hqIndex: number }).hqIndex);
+      }
+    }
+    return slots;
+  }
+
+  test('no recruitHero intent is offered for a haunted slot', () => {
+    const gameState = makeHauntG(
+      [null, { kind: 'villain', cardId: HAUNTER_A }, null, null, null],
+      10,
+    );
+    assert.deepStrictEqual(
+      slotsFor(gameState, 'recruitHero'),
+      [0, 2, 3],
+      'slot 1 is haunted and never offered for recruit',
+    );
+  });
+
+  test('one exorcise intent per affordable haunted slot, ascending, after fightMastermind and before advanceStage', () => {
+    const gameState = makeHauntG(
+      [
+        { kind: 'villain', cardId: HAUNTER_A },
+        null,
+        { kind: 'villain', cardId: HAUNTER_B },
+        null,
+        null,
+      ],
+      10,
+    );
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    const names = legalMoves.map((move) => move.name);
+
+    const exorciseMoves = legalMoves.filter((move) => move.name === 'exorciseHauntedHero');
+    assert.deepStrictEqual(
+      exorciseMoves.map((move) => move.args),
+      [
+        { hqIndex: 0, outcome: 'gain', recipientPlayerId: '0' },
+        { hqIndex: 2, outcome: 'gain', recipientPlayerId: '0' },
+      ],
+      'args are exactly { hqIndex, outcome: gain, recipientPlayerId: currentPlayer }',
+    );
+
+    const fightMastermindPosition = names.indexOf('fightMastermind');
+    const firstExorcisePosition = names.indexOf('exorciseHauntedHero');
+    const lastExorcisePosition = names.lastIndexOf('exorciseHauntedHero');
+    const advancePosition = names.indexOf('advanceStage');
+    assert.ok(fightMastermindPosition >= 0, 'fightMastermind is offered (no Mastermind haunter)');
+    assert.ok(fightMastermindPosition < firstExorcisePosition, 'exorcise follows fightMastermind');
+    assert.ok(lastExorcisePosition < advancePosition, 'exorcise precedes advanceStage');
+  });
+
+  test('the recipientPlayerId is the ACTIVE player, not a hard-coded seat', () => {
+    const gameState = makeHauntG(
+      [{ kind: 'villain', cardId: HAUNTER_A }, null, null, null, null],
+      10,
+    );
+    // why: re-key the single seat under '1' so the active player is not '0'.
+    gameState.playerZones = { '1': gameState.playerZones['0']! };
+    const legalMoves = getLegalMoves(gameState, { ...CONTEXT, currentPlayer: '1' });
+    const exorciseMoves = legalMoves.filter((move) => move.name === 'exorciseHauntedHero');
+    assert.deepStrictEqual(exorciseMoves.map((move) => move.args), [
+      { hqIndex: 0, outcome: 'gain', recipientPlayerId: '1' },
+    ]);
+  });
+
+  test('an unaffordable haunted slot produces no exorcise intent', () => {
+    // Slot 3's Hero costs 6; recruit 5 affords slot 0 (cost 2) but not slot 3.
+    const gameState = makeHauntG(
+      [
+        { kind: 'villain', cardId: HAUNTER_A },
+        null,
+        null,
+        { kind: 'villain', cardId: HAUNTER_B },
+        null,
+      ],
+      5,
+    );
+    assert.deepStrictEqual(slotsFor(gameState, 'exorciseHauntedHero'), [0]);
+  });
+
+  test('a haunter on an EMPTY HQ slot produces no exorcise intent', () => {
+    // why: slot 4 is null (hero deck ran dry) but still carries a haunter; the move
+    // refuses an empty slot, so the bot must not be offered it.
+    const gameState = makeHauntG(
+      [null, null, null, null, { kind: 'villain', cardId: HAUNTER_A }],
+      10,
+    );
+    assert.deepStrictEqual(slotsFor(gameState, 'exorciseHauntedHero'), []);
+  });
+
+  test('no exorcise intent outside the main stage', () => {
+    const gameState = makeHauntG(
+      [{ kind: 'villain', cardId: HAUNTER_A }, null, null, null, null],
+      10,
+    );
+    gameState.currentStage = 'cleanup';
+    assert.deepStrictEqual(slotsFor(gameState, 'exorciseHauntedHero'), []);
+  });
+
+  test('no fightMastermind intent while the Mastermind haunts an HQ slot', () => {
+    const haunted = makeHauntG([null, { kind: 'mastermind' }, null, null, null], 10);
+    const hauntedNames = getLegalMoves(haunted, CONTEXT).map((move) => move.name);
+    assert.equal(hauntedNames.includes('fightMastermind'), false, 'fightMastermind withheld while haunting');
+    assert.equal(hauntedNames.includes('exorciseHauntedHero'), true, 'the exorcise is the way out');
+
+    const unhaunted = makeHauntG(undefined, 10);
+    const unhauntedNames = getLegalMoves(unhaunted, CONTEXT).map((move) => move.name);
+    assert.equal(unhauntedNames.includes('fightMastermind'), true, 'control: fightMastermind is offered');
+    assert.equal(unhauntedNames.includes('exorciseHauntedHero'), false, 'control: no haunt, no exorcise');
+  });
+});
+
+describe('getLegalMoves — Haunt guard agreement: every emitted intent commits (WP-757 / D-24587)', () => {
+  // why: the recurring legalMoves / move-guard divergence class. An intent the move
+  // silently refuses wedges the bot (bgio still bumps _stateID on a void return, so the
+  // driver re-picks it until the 100-step cap FAULTS the turn). Dispatch the REAL move
+  // for every emitted exorcise / recruitHero intent on a haunted board and prove it
+  // mutates G.
+
+  const HAUNTER_ID = 'core-villain-fallen-metarchus-00' as CardExtId;
+  const HERO_IDS = ['gh-hero-0', 'gh-hero-1', 'gh-hero-2', 'gh-hero-3'] as CardExtId[];
+  const REAL_CONTEXT = { ...CONTEXT, numPlayers: 1 };
+
+  /**
+   * Builds a real setup G (buildInitialGameState) with a haunted board: slot 0 has a
+   * Villain haunter, slot 2 a Mastermind haunter, slots 1 and 3 are unhaunted.
+   */
+  function makeRealHauntedG(): LegendaryGameState {
+    const config: MatchSetupConfig = {
+      schemeId: 'test-scheme-001',
+      mastermindId: 'test-mastermind-001',
+      villainGroupIds: ['test-villain-group-001'],
+      henchmanGroupIds: ['test-henchman-group-001'],
+      heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    };
+    const registry = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    gameState.hq = [HERO_IDS[0]!, HERO_IDS[1]!, HERO_IDS[2]!, HERO_IDS[3]!, null] as LegendaryGameState['hq'];
+    for (const heroId of HERO_IDS) {
+      gameState.cardStats[heroId] = makeCardStatEntry({ cost: 2 });
+    }
+    gameState.hqHaunters = [
+      { kind: 'villain', cardId: HAUNTER_ID },
+      null,
+      { kind: 'mastermind' },
+      null,
+      null,
+    ];
+    gameState.currentStage = 'main';
+    gameState.turnEconomy = makeTurnEconomy({ recruit: 20 });
+    return gameState;
+  }
+
+  /** Builds a boardgame.io-shaped move context for player 0's turn (no bgio import). */
+  function makeMoveContext(gameState: LegendaryGameState) {
+    return {
+      G: gameState,
+      ctx: {
+        currentPlayer: '0',
+        numPlayers: 1,
+        phase: 'play',
+        turn: 1,
+        playOrder: ['0'],
+        playOrderPos: 0,
+      },
+      playerID: '0',
+      random: makeMockCtx().random,
+      events: { endTurn: () => {}, setPhase: () => {}, endGame: () => {} },
+    } as unknown as Parameters<typeof exorciseHauntedHero>[0];
+  }
+
+  test('precondition: the haunted board emits exorcise for slots 0 and 2 and recruitHero for 1 and 3', () => {
+    const exorciseSlots: number[] = [];
+    const recruitSlots: number[] = [];
+    for (const move of getLegalMoves(makeRealHauntedG(), REAL_CONTEXT)) {
+      if (move.name === 'exorciseHauntedHero') {
+        exorciseSlots.push((move.args as { hqIndex: number }).hqIndex);
+      }
+      if (move.name === 'recruitHero') {
+        recruitSlots.push((move.args as { hqIndex: number }).hqIndex);
+      }
+    }
+    assert.deepStrictEqual(exorciseSlots, [0, 2]);
+    assert.deepStrictEqual(recruitSlots, [1, 3]);
+  });
+
+  test('every emitted exorcise / recruitHero intent mutates G when dispatched to the real move', () => {
+    const intents = getLegalMoves(makeRealHauntedG(), REAL_CONTEXT).filter(
+      (move) => move.name === 'exorciseHauntedHero' || move.name === 'recruitHero',
+    );
+    assert.equal(intents.length, 4, 'precondition: two exorcise + two recruit intents');
+    for (const intent of intents) {
+      // why: a fresh G per intent — each intent is checked against the board it was
+      // enumerated from, never against a board a previous dispatch already changed.
+      const gameState = makeRealHauntedG();
+      const before = JSON.stringify(gameState);
+      if (intent.name === 'exorciseHauntedHero') {
+        exorciseHauntedHero(makeMoveContext(gameState), intent.args as ExorciseHauntedHeroArgs);
+      } else {
+        recruitHero(
+          makeMoveContext(gameState) as unknown as Parameters<typeof recruitHero>[0],
+          intent.args as { hqIndex: number },
+        );
+      }
+      assert.notEqual(
+        JSON.stringify(gameState),
+        before,
+        `${intent.name} ${JSON.stringify(intent.args)} must mutate G (no silent no-op, no bot FAULT)`,
+      );
+      assert.ok(gameState.turnEconomy.spentRecruit > 0, `${intent.name} spent recruit`);
+    }
+  });
+
+  test('the dispatched exorcise clears the haunter and the Villain re-enters the City', () => {
+    const gameState = makeRealHauntedG();
+    exorciseHauntedHero(makeMoveContext(gameState), {
+      hqIndex: 0,
+      outcome: 'gain',
+      recipientPlayerId: '0',
+    });
+    assert.equal(gameState.hqHaunters![0], null, 'the haunter left slot 0');
+    assert.equal(gameState.city.includes(HAUNTER_ID), true, 'the Villain entered the City');
+    assert.equal(gameState.playerZones['0']!.discard.includes(HERO_IDS[0]!), true);
+    // why: after the exorcise the bot must no longer see slot 0 as haunted.
+    const followUp = getLegalMoves(gameState, REAL_CONTEXT).filter(
+      (move) => move.name === 'exorciseHauntedHero',
+    );
+    assert.deepStrictEqual(followUp.map((move) => (move.args as { hqIndex: number }).hqIndex), [2]);
   });
 });

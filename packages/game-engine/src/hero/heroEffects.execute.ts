@@ -51,6 +51,7 @@ import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExc
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
@@ -282,6 +283,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // via the reentrant executeSingleEffect, so it belongs here. Carries NO top-level magnitude →
   // also in NO_MAGNITUDE_KEYWORDS.
   'day-night-both',
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectOptionalKoYourHero) that parks a no-reward entry into
+  // the shared optional-ko-reward queue, so it belongs here. Carries NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'optional-ko-your-hero',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -555,6 +561,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   'blood-frenzy',
   'blood-frenzy-recruit',
   'day-night-both',
+  // why: WP-767 / D-24600 — optional-ko-your-hero carries NO magnitude (it offers exactly one
+  // optional KO, no reward); the eligible Heroes are read from hand + play at park time, so the
+  // magnitude pre-gate must not drop it, or the per-defeat choice never parks.
+  'optional-ko-your-hero',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -2695,6 +2705,61 @@ function heroEffectOptionalKoHandDiscard(
 }
 
 /**
+ * Park handler for the `optional-ko-your-hero` hero keyword (WP-767 / D-24600).
+ *
+ * Snarling Fangs' Moonlight "Whenever you defeat a Villain or Mastermind this turn, you
+ * may KO one of your Heroes." The per-defeat timing and the Moonlight gate ride the hook's
+ * conditions (the D-24467 wait-and-see deferral re-evaluates both at each defeat), so this
+ * handler runs once per qualifying defeat. It parks a NO-REWARD entry into the shared
+ * `G.pendingOptionalKoRewards` queue, reusing the block-all guard, the bot short-circuit,
+ * the resolve move, the projection and the client prompt.
+ *
+ * KO source = hand ∪ played this turn (rules v23 §3439 "your Heroes"), Heroes only. 0
+ * eligible (hand + play hold only Wounds, or nothing) → a logged no-op that parks nothing.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KO happens at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param _effect - The `{ type: 'optional-ko-your-hero' }` descriptor (no magnitude).
+ */
+function heroEffectOptionalKoYourHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  let eligibleCount = 0;
+  for (const handCardId of playerZones.hand) {
+    if (handCardId !== WOUND_EXT_ID) { eligibleCount += 1; }
+  }
+  for (const inPlayCardId of playerZones.inPlay) {
+    if (inPlayCardId !== WOUND_EXT_ID) { eligibleCount += 1; }
+  }
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a Hero for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — they have no Heroes in hand or played this turn.`,
+    );
+    return;
+  }
+  // why: WP-767 / D-24600 — koZones ['hand','inPlay'] excludes the discard pile ("your
+  // Heroes" = hand + played this turn), and koHeroesOnly because a Wound is not a Hero. The
+  // resolve, projection and bot all honour both. Lazy-init the queue; the park is SILENT.
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  G.pendingOptionalKoRewards.push({
+    playerID,
+    rewardType: 'none',
+    rewardMagnitude: 0,
+    sourceCardId: cardId,
+    koZones: ['hand', 'inPlay'],
+    koHeroesOnly: true,
+  });
+}
+
+/**
  * Park handler for the `smash` hero keyword (WP-676 / D-24492).
  *
  * Per universal-rules-v23 §Smash, "Smash N" = "You may discard another card from
@@ -4320,7 +4385,9 @@ export function buildPureFuryTargets(
 
   // why: Masterminds are explicitly eligible (the text names them); a Mastermind with
   // no tactics left is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
-  if (G.mastermind.tacticsDeck.length > 0) {
+  // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so Pure Fury can't
+  // defeat it either (the shared isMastermindHaunting predicate).
+  if (G.mastermind.tacticsDeck.length > 0 && !isMastermindHaunting(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
     if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });
@@ -5764,6 +5831,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite:
   // both branches under the upgrade, else the computeDayNight branch, else nothing. NO magnitude.
   'day-night-both': heroEffectDayNightBoth,
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes": parks a no-reward
+  // optional-ko-reward entry scoped to hand + played this turn, Heroes only. NO magnitude.
+  'optional-ko-your-hero': heroEffectOptionalKoYourHero,
 };
 
 // ---------------------------------------------------------------------------
@@ -5877,6 +5947,9 @@ export interface OptionalKoTarget {
  * @param zones - The player's card zones (discard + hand first; inPlay only as
  *   the empty-hand+discard fallback).
  * @param cardStats - Card stat lookup for the cost tie-break (?.cost ?? 0).
+ * @param isEligible - Target filter (default accept-all).
+ * @param allowInPlay - Whether the inPlay fallback may be returned (default true).
+ * @param allowDiscard - Whether the discard scan runs (default true; WP-767 / D-24600).
  * @returns The default KO target, or null when all three zones are empty.
  */
 export function selectDefaultOptionalKoTarget(
@@ -5884,6 +5957,7 @@ export function selectDefaultOptionalKoTarget(
   cardStats: Record<CardExtId, CardStatEntry>,
   isEligible: (cardId: CardExtId) => boolean = () => true,
   allowInPlay: boolean = true,
+  allowDiscard: boolean = true,
 ): OptionalKoTarget | null {
   // why: iterate discard fully (index ascending) then hand (index ascending),
   // replacing the candidate ONLY on a STRICTLY lower cost. Because the scan
@@ -5902,6 +5976,13 @@ export function selectDefaultOptionalKoTarget(
   let bestCost = Number.POSITIVE_INFINITY;
   const orderedZones: ('discard' | 'hand')[] = ['discard', 'hand'];
   for (const zoneName of orderedZones) {
+    // why: WP-767 / D-24600 — mirrors the allowInPlay gate: a koZones that omits discard
+    // (Snarling Fangs' hand + played-this-turn entry) must never yield a discard target the
+    // resolve rejects (a sim hang). Skipping only the discard scan leaves the hand scan order
+    // and tie-break unchanged, and the default true keeps every existing caller's pick.
+    if (zoneName === 'discard' && !allowDiscard) {
+      continue;
+    }
     const zoneArray = zones[zoneName];
     for (let cardIndex = 0; cardIndex < zoneArray.length; cardIndex++) {
       const cardId = zoneArray[cardIndex]!;

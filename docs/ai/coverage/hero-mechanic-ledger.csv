@@ -357,8 +357,10 @@ mdns/morbius,Morbius,mdns,ko-wound-reward,executable,WP-382,D-24183,packages/gam
 mdns/morbius,Morbius,mdns,moonlight,condition,,,,mesmerize|scalded-by-sunlight
 mdns/morbius,Morbius,mdns,sunlight,condition,,,,scalded-by-sunlight
 mdns/werewolf-by-night,Werewolf by Night,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,release-the-beast
+mdns/werewolf-by-night,Werewolf by Night,mdns,defeated-villain-or-mastermind,condition,,,,snarling-fangs
 mdns/werewolf-by-night,Werewolf by Night,mdns,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,starlit-path
 mdns/werewolf-by-night,Werewolf by Night,mdns,moonlight,condition,,,,release-the-beast|snarling-fangs|starlit-path|track-the-captives
+mdns/werewolf-by-night,Werewolf by Night,mdns,optional-ko-your-hero,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-your-hero,snarling-fangs
 mdns/werewolf-by-night,Werewolf by Night,mdns,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,snarling-fangs
 mdns/werewolf-by-night,Werewolf by Night,mdns,sunlight,condition,,,,release-the-beast|snarling-fangs|starlit-path
 mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,patrol,unsupported,,,,bridge-between-dimensions|seal-the-rift

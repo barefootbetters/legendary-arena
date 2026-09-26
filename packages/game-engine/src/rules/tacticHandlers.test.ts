@@ -943,3 +943,48 @@ describe('multi-seat tactic disconnect/timeout default (WP-694 / D-24511)', () =
     assert.deepEqual(G.ko, ['core-villain-hydra-a#0'], 'the default KO landed in G.ko');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Haunt vs the free-recruit tactics. Rulebook v23 p.27: a
+// Haunted Hero can't be recruited, not even "for free", so collectEligibleHqIndices
+// skips haunted slots — a haunted match is never auto-gained nor counted toward the
+// mandatory 1-vs-≥2 park decision.
+// ---------------------------------------------------------------------------
+
+import { hauntHqSlot } from '../board/haunt.logic.js';
+
+describe('free-recruit tactics skip Haunted HQ Heroes (WP-757 / D-24587)', () => {
+  it('Bitter Captor: the ONLY x-men Hero is haunted → no gain, no park, haunter untouched', () => {
+    const G = makeFreeRecruitState(['hStrength', 'hXmen', null, null, null], ['refill']);
+    assert.equal(hauntHqSlot(G, 1, { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }), true);
+    resolveBitterCaptor(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices, undefined, '0 eligible → no park');
+    assert.deepEqual(G.playerZones['0']!.discard, [], 'haunted Hero is not recruited');
+    assert.equal(G.hq[1], 'hXmen', 'haunted Hero stays in the HQ');
+    assert.deepEqual(G.heroDeck, ['refill'], 'no refill happened');
+    assert.deepEqual(G.hqHaunters![1], { kind: 'villain', cardId: 'villain-ghost#0' });
+  });
+
+  it('Dark Technology: the ONLY tech/ranged Hero is haunted → no park (optional path too)', () => {
+    const G = makeFreeRecruitState(['hTech', 'hStrength', null, null, null]);
+    assert.equal(hauntHqSlot(G, 0, { kind: 'mastermind' }), true);
+    resolveDarkTechnology(G, '0');
+    assert.equal(G.pendingGiveHqHeroChoices, undefined, 'haunted Hero is not an eligible free recruit');
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+  });
+
+  it('Bitter Captor: one haunted + one unhaunted x-men → auto-gains the unhaunted one (not a park)', () => {
+    const G = makeFreeRecruitState(['hXmen', 'hStrength', 'hXmen2', null, null], ['refill']);
+    assert.equal(hauntHqSlot(G, 0, { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }), true);
+    resolveBitterCaptor(G, '0');
+    // why: without the haunt skip there would be 2 eligible → a mandatory park. The
+    // haunted slot drops out of the count, so exactly 1 remains and the gain is forced.
+    assert.equal(G.pendingGiveHqHeroChoices, undefined, 'single unhaunted match → auto-gain, no park');
+    assert.deepEqual(G.playerZones['0']!.discard, ['hXmen2'], 'the unhaunted x-men Hero is gained');
+    assert.equal(G.hq[2], 'refill', 'the gained slot refills from heroDeck');
+    assert.equal(G.hq[0], 'hXmen', 'the haunted slot is untouched');
+    assert.deepEqual(G.hqHaunters![0], { kind: 'villain', cardId: 'villain-ghost#0' }, 'haunter stays');
+    assert.equal(G.hqHaunters![2], null, 'the refilled slot is not haunted');
+    assert.equal(G.turnEconomy.recruit, 0, 'free recruit spends no recruit');
+  });
+});

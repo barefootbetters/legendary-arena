@@ -630,12 +630,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'blood-frenzy', // why: WP-765 / D-24598 — hero Blood Frenzy: +N attack, N = distinct VP values in the Victory Pile (shared economy/bloodFrenzy.logic.ts)
     'blood-frenzy-recruit', // why: WP-765 / D-24598 — Morbius Mesmerize's Blood Frenzy gaining recruit instead of attack
     'day-night-both', // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite (digest-indigestion precedent)
+    'optional-ko-your-hero', // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes" (hand + played this turn, Heroes only, no reward)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      72,
-      'HERO_KEYWORDS must have exactly 72 entries',
+      73,
+      'HERO_KEYWORDS must have exactly 73 entries',
     );
 
     assert.deepStrictEqual(

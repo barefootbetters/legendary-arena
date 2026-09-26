@@ -528,3 +528,46 @@ describe('Bot tuning: skip Wounds + prioritize the clock (2026-07-28)', () => {
     );
   });
 });
+
+describe('Exorcise scoring (WP-757 / D-24587)', () => {
+  const EXORCISE: LegalMove = {
+    name: 'exorciseHauntedHero',
+    args: { hqIndex: 2, outcome: 'gain', recipientPlayerId: '0' },
+  };
+
+  test('the bot exorcises a Haunted Hero over a plain recruit', () => {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    const policy = createCompetentHeuristicPolicy('exorcise-vs-recruit-seed');
+    const intent = policy.decideTurn(view, [
+      { name: 'recruitHero', args: { hqIndex: 0 } },
+      EXORCISE,
+      { name: 'advanceStage', args: {} },
+    ]);
+    assert.deepStrictEqual(intent.move, EXORCISE, 'exorcise (75) outranks recruit (50)');
+  });
+
+  test('the bot fights a plain villain over an exorcise', () => {
+    const villain: UICityCard = { ...makeUICityCard(),
+      extId: 'villain-mid',
+      type: 'villain',
+      keywords: [],
+    };
+    const view = buildSyntheticUIState([null, villain, null, null, null]);
+    const policy = createCompetentHeuristicPolicy('fight-vs-exorcise-seed');
+    const intent = policy.decideTurn(view, [
+      EXORCISE,
+      { name: 'fightVillain', args: { cityIndex: 1 } },
+    ]);
+    assert.equal(intent.move.name, 'fightVillain', 'fight villain (100) outranks exorcise (75)');
+  });
+
+  test('the bot exorcises rather than advancing the stage', () => {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    const policy = createCompetentHeuristicPolicy('exorcise-vs-advance-seed');
+    const intent = policy.decideTurn(view, [
+      { name: 'advanceStage', args: {} },
+      EXORCISE,
+    ]);
+    assert.deepStrictEqual(intent.move, EXORCISE, 'a real decision outranks the lifecycle move');
+  });
+});

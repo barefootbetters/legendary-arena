@@ -16,6 +16,7 @@ import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
+import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
@@ -218,6 +219,10 @@ export const SIMULATION_MOVE_NAMES = [
   // loop (the WP-289 / D-24073 within-turn hang). No card parks one yet, so it is latent until
   // WP-682 / WP-683 wire a consumer. Asserted by simulation.moveDispatch.drift.test.ts.
   'resolveSeatChoice',
+  // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
+  // HQ slot, so it MUST be dispatchable in both sim MOVE_MAPs (and the replay map) or the
+  // per-turn loop spins on "unknown move name". Asserted by simulation.moveDispatch.drift.test.ts.
+  'exorciseHauntedHero',
 ] as const;
 
 // why: type is exported implicitly via the const array above; external
@@ -523,11 +528,21 @@ export function getLegalMoves(
     // default selector must honor both. An absent koTeamFilter/koZones = the unrestricted
     // default (every existing entry unchanged).
     const front = gameState.pendingOptionalKoRewards![0]!;
-    const isEligible = front.koTeamFilter === 'shield'
-      ? (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId)
-      : undefined;
+    // why: WP-767 / D-24600 — a Snarling Fangs entry (koHeroesOnly) excludes Wounds, which
+    // the resolve rejects; the bot must never emit one or the sim hangs. Absent = unchanged.
+    let isEligible: ((cardId: CardExtId) => boolean) | undefined;
+    if (front.koTeamFilter === 'shield') {
+      isEligible = (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId);
+    } else if (front.koHeroesOnly === true) {
+      isEligible = (cardId: CardExtId) => cardId !== WOUND_EXT_ID;
+    }
     const allowInPlay = front.koZones === undefined || front.koZones.includes('inPlay');
-    const defaultTarget = selectDefaultOptionalKoTarget(zones, gameState.cardStats, isEligible, allowInPlay);
+    // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling
+    // Fangs' hand + played-this-turn entry) must not yield a discard target the resolve rejects.
+    const allowDiscard = front.koZones === undefined || front.koZones.includes('discard');
+    const defaultTarget = selectDefaultOptionalKoTarget(
+      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard,
+    );
     if (defaultTarget !== null) {
       return [{ name: 'resolveOptionalKoReward', args: defaultTarget }];
     }
@@ -882,6 +897,9 @@ export function getLegalMoves(
     for (let hqIndex = 0; hqIndex < gameState.hq.length; hqIndex++) {
       const slot: CardExtId | null = gameState.hq[hqIndex] ?? null;
       if (slot === null) continue;
+      // why: WP-757 / D-24587 — mirror recruitHero's Haunted-slot refusal (you can't
+      // recruit a Haunted Hero); offering it would wedge the bot on a no-op recruit.
+      if (isHqSlotHaunted(gameState, hqIndex)) continue;
       const requiredCost = gameState.cardStats[slot]?.cost ?? 0;
       if (availableRecruit >= requiredCost) {
         legalMoves.push({ name: 'recruitHero', args: { hqIndex } });
@@ -933,10 +951,36 @@ export function getLegalMoves(
   }
 
   // 4. fightMastermind — at most one entry (affordable + tactics remain).
-  if (stage === 'main' && gameState.mastermind.tacticsDeck.length > 0) {
+  // why: WP-757 / D-24587 — the Mastermind can't be fought while it haunts an HQ Hero;
+  // the same isMastermindHaunting predicate gates the fightMastermind move.
+  if (
+    stage === 'main' &&
+    gameState.mastermind.tacticsDeck.length > 0 &&
+    !isMastermindHaunting(gameState)
+  ) {
     const mastermindFightCost = resolveMastermindFightCost(gameState);
     if (spendableAttack >= mastermindFightCost) {
       legalMoves.push({ name: 'fightMastermind', args: {} });
+    }
+  }
+
+  // 4b. exorciseHauntedHero — one entry per affordable Haunted HQ slot, hqIndex
+  //     ascending, the bot gaining the Hero itself.
+  // why: WP-757 / D-24587 — mirrors the exorcise move guard (occupied + haunted slot,
+  // recruit >= the Hero's cost, stage main) so every emitted intent commits. Appended
+  // after the fightMastermind step so the locked order of steps 1-4 is unchanged.
+  if (stage === 'main') {
+    for (let hqIndex = 0; hqIndex < gameState.hq.length; hqIndex++) {
+      const slot: CardExtId | null = gameState.hq[hqIndex] ?? null;
+      if (slot === null) continue;
+      if (!isHqSlotHaunted(gameState, hqIndex)) continue;
+      const exorciseCost = gameState.cardStats[slot]?.cost ?? 0;
+      if (availableRecruit >= exorciseCost) {
+        legalMoves.push({
+          name: 'exorciseHauntedHero',
+          args: { hqIndex, outcome: 'gain', recipientPlayerId: activePlayer },
+        });
+      }
     }
   }
 

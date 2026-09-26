@@ -105,6 +105,9 @@ export default defineComponent({
     <!-- why: WP-667 / D-24480 — the no-reward variant (Radioactive Riot) projects an
          empty rewardLabel; show a plain "KO a card" heading (no "for a reward (…)"
          clause) so the empty parentheses never render. -->
+    <!-- why: WP-767 / D-24600 — generic no-reward copy: Snarling Fangs' entry offers hand +
+         played-this-turn Heroes (no discard), so a zone-naming heading would be wrong for it;
+         the per-zone labels below already name each card's source. -->
     <h3 class="optional-ko-reward-prompt__heading">
       <template v-if="pendingOptionalKoReward!.rewardLabel">
         KO a card for a reward
@@ -112,7 +115,7 @@ export default defineComponent({
           ({{ pendingOptionalKoReward!.rewardLabel }})
         </span>
       </template>
-      <template v-else>You may KO a card from your hand or discard pile</template>
+      <template v-else>You may KO a card</template>
     </h3>
     <div
       v-if="pendingOptionalKoReward!.eligibleHand.length > 0"

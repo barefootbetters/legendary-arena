@@ -3184,3 +3184,138 @@ describe('filterUIStateForAudience — hq.dayNight (WP-765 / D-24598)', () => {
     assert.equal(filterUIStateForAudience(uiState, PLAYER_0).hq.dayNight, 'neither');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Haunt: `hq.haunters` and `mastermind.isHaunting` are PUBLIC
+// shared-board fields. Both are optional, so a missed filter pass-through silently
+// drops them (the EC-206 failure mode). Five-step Board-Visible Field contract:
+// declared, built, passed through for every audience, tested here, and carried by the
+// diagnostics uiStateSnapshot (the JSON round-trip).
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Haunt haunters + isHaunting (WP-757 / D-24587)', () => {
+  const HAUNTER_ID = 'core-villain-fallen-metarchus-00';
+  const HAUNTER_NAME = 'Metarchus';
+  const ALL_AUDIENCES: UIAudience[] = [PLAYER_0, PLAYER_1, SPECTATOR];
+
+  /** Builds a G with two seeded HQ Heroes and the given per-slot haunters. */
+  function createHauntedGameState(
+    haunters: LegendaryGameState['hqHaunters'] | undefined,
+  ): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const heroA = gameState.playerZones['0']!.deck[0]!;
+    const heroB = gameState.playerZones['0']!.deck[1]!;
+    gameState.hq = [heroA, heroB, null, null, null] as LegendaryGameState['hq'];
+    // why: the villain haunter's display is resolved from G.cardDisplayData; seed a
+    // real name so the test proves the client gets a name, not a hyphenated id.
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [HAUNTER_ID]: {
+        extId: HAUNTER_ID,
+        name: HAUNTER_NAME,
+        imageUrl: 'https://images.legendary-arena.com/core/metarchus.webp',
+        cost: null,
+      },
+    };
+    if (haunters !== undefined) {
+      gameState.hqHaunters = haunters;
+    }
+    return gameState;
+  }
+
+  /** UIState with a Villain haunter on slot 0 only (no Mastermind haunter). */
+  function createVillainHauntUIState(): UIState {
+    return buildUIState(
+      createHauntedGameState([{ kind: 'villain', cardId: HAUNTER_ID }, null, null, null, null]),
+      mockCtx,
+    );
+  }
+
+  /** UIState with a Mastermind haunter on slot 1 only. */
+  function createMastermindHauntUIState(): UIState {
+    return buildUIState(
+      createHauntedGameState([null, { kind: 'mastermind' }, null, null, null]),
+      mockCtx,
+    );
+  }
+
+  it('hq.haunters survives for every audience with the villain display embedded', () => {
+    const uiState = createVillainHauntUIState();
+    assert.ok(uiState.hq.haunters !== undefined, 'precondition: buildUIState projects haunters');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const haunters = result.hq.haunters;
+      assert.ok(haunters !== undefined, `haunters survive the filter for ${JSON.stringify(audience)}`);
+      assert.equal(haunters!.length, 5, 'index-aligned with the 5 HQ slots');
+      const slotZero = haunters![0]!;
+      assert.equal(slotZero.kind, 'villain');
+      if (slotZero.kind === 'villain') {
+        assert.equal(slotZero.extId, HAUNTER_ID);
+        assert.equal(slotZero.display.name, HAUNTER_NAME, 'a display name, not the hyphenated id');
+      }
+      for (let slotIndex = 1; slotIndex < 5; slotIndex++) {
+        assert.equal(haunters![slotIndex], null);
+      }
+    }
+  });
+
+  it('a Villain-only haunt projects NO mastermind.isHaunting key', () => {
+    const uiState = createVillainHauntUIState();
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal('isHaunting' in result.mastermind, false);
+    }
+  });
+
+  it('a Mastermind haunter projects mastermind.isHaunting === true and a mastermind entry for every audience', () => {
+    const uiState = createMastermindHauntUIState();
+    assert.equal(uiState.mastermind.isHaunting, true, 'precondition: buildUIState projects isHaunting');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.mastermind.isHaunting, true);
+      assert.deepStrictEqual(result.hq.haunters, [null, { kind: 'mastermind' }, null, null, null]);
+    }
+  });
+
+  it('omit-when-absent: no G.hqHaunters → neither hq.haunters nor mastermind.isHaunting is present', () => {
+    const uiState = buildUIState(createHauntedGameState(undefined), mockCtx);
+    assert.equal('haunters' in uiState.hq, false, 'buildUIState omits haunters');
+    assert.equal('isHaunting' in uiState.mastermind, false, 'buildUIState omits isHaunting');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal('haunters' in result.hq, false);
+      assert.equal('isHaunting' in result.mastermind, false);
+    }
+  });
+
+  it('the diagnostics uiStateSnapshot (JSON round-trip) carries haunters and isHaunting', () => {
+    const villainResult = filterUIStateForAudience(createVillainHauntUIState(), SPECTATOR);
+    const villainSerialized = JSON.parse(JSON.stringify(villainResult)) as UIState;
+    const serializedSlot = villainSerialized.hq.haunters![0]!;
+    assert.equal(serializedSlot.kind, 'villain');
+    if (serializedSlot.kind === 'villain') {
+      assert.equal(serializedSlot.display.name, HAUNTER_NAME);
+    }
+
+    const mastermindResult = filterUIStateForAudience(createMastermindHauntUIState(), PLAYER_1);
+    const mastermindSerialized = JSON.parse(JSON.stringify(mastermindResult)) as UIState;
+    assert.equal(mastermindSerialized.mastermind.isHaunting, true);
+    assert.deepStrictEqual(mastermindSerialized.hq.haunters![1], { kind: 'mastermind' });
+  });
+
+  it('no aliasing: mutating a filtered haunter (array, entry, display) leaves the input intact', () => {
+    const uiState = createVillainHauntUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.notStrictEqual(result.hq.haunters, uiState.hq.haunters, 'fresh haunters array');
+    const filteredSlot = result.hq.haunters![0]!;
+    const inputSlot = uiState.hq.haunters![0]!;
+    assert.notStrictEqual(filteredSlot, inputSlot, 'fresh haunter entry');
+    if (filteredSlot.kind === 'villain' && inputSlot.kind === 'villain') {
+      assert.notStrictEqual(filteredSlot.display, inputSlot.display, 'fresh display object');
+      filteredSlot.display.name = 'MUTATED';
+      assert.equal(inputSlot.display.name, HAUNTER_NAME);
+    }
+    result.hq.haunters![1] = { kind: 'mastermind' };
+    assert.equal(uiState.hq.haunters![1], null);
+  });
+});

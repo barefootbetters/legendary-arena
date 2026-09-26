@@ -319,3 +319,35 @@ describe('WP-137 — checkNoCardInMultipleZones holds across 100 RNG orderings f
   });
 });
 
+// ===========================================================================
+// WP-757 / D-24587 — a Villain haunter is a card container for uniqueness
+// ===========================================================================
+
+describe('WP-757 — checkNoCardInMultipleZones visits Villain haunters in G.hqHaunters', () => {
+  const haunterCardId = 'test-injection-unique-haunter-001';
+
+  test('passes with a Villain haunter whose card is in no other zone', () => {
+    const G = buildValidGameState();
+    G.hqHaunters = [null, { kind: 'villain', cardId: haunterCardId }, null, { kind: 'mastermind' }, null];
+    assert.doesNotThrow(() => checkNoCardInMultipleZones(G));
+    assert.doesNotThrow(() => runAllInvariantChecks(G, SETUP_CONTEXT));
+  });
+
+  test('fails with gameRules category when the haunter card is also in G.city', () => {
+    const G = buildValidGameState();
+    // why: models a haunt that recorded the Villain without nulling its City space —
+    // the exact bug class the hqHaunters visit exists to catch.
+    G.city[2] = haunterCardId;
+    G.hqHaunters = [null, { kind: 'villain', cardId: haunterCardId }, null, null, null];
+    assert.throws(
+      () => checkNoCardInMultipleZones(G),
+      (error: Error) =>
+        error instanceof InvariantViolationError &&
+        error.category === 'gameRules' &&
+        error.message.includes(`'${haunterCardId}'`) &&
+        error.message.includes("'city[2]'") &&
+        error.message.includes("'hqHaunters[1]'"),
+    );
+  });
+});
+

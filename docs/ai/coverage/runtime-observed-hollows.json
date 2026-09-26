@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 28,
-    "totalObservations": 2206,
+    "totalObservations": 2184,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 496,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 1710
+      "parse-unrecognized": 1688
     }
   },
   "byMechanic": {
@@ -573,40 +573,40 @@
       ]
     },
     "moonlight": {
-      "hitCount": 44,
-      "lastSeenTurn": 26,
+      "hitCount": 22,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 44
+        "parse-unrecognized": 22
       },
       "examples": [
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "mdns/werewolf-by-night/track-the-captives#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/wolfsbane/night-vision#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/wolfsbane/night-vision#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/wolfsbane/night-vision#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#1",
+          "cardId": "nmut/wolfsbane/night-vision#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

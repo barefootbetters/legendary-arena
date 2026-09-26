@@ -4312,3 +4312,197 @@ describe('play-villain-deck-cards detector + reachable no-op (WP-542 / D-24351)'
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a reachable no-op is not a hollow');
   });
 });
+
+describe('executeVillainAbilities — haunt-hq-hero (WP-757 / D-24587)', () => {
+  const HAUNTER = 'core-villain-fallen-metarchus-00' as CardExtId;
+  const OTHER_HAUNTER = 'core-villain-fallen-atrocity-00' as CardExtId;
+  const HERO_0 = 'core-hero-a-00' as CardExtId;
+  const HERO_1 = 'core-hero-b-00' as CardExtId;
+  const HERO_2 = 'core-hero-c-00' as CardExtId;
+  const HERO_3 = 'core-hero-d-00' as CardExtId;
+  const HERO_4 = 'core-hero-e-00' as CardExtId;
+
+  // why: haunt-hq-hero is keyword-less and parameterized, so the hook() helper (which
+  // reads LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) can't build it — construct directly.
+  function hauntHook(
+    cardId: CardExtId,
+    selector: 'rightmost' | 'leftmost' | 'cost-lte-3',
+  ): VillainAbilityHook {
+    return {
+      cardId,
+      timing: 'onAmbush',
+      keywords: [],
+      effects: [{ primitive: 'haunt-hq-hero', selector }],
+    };
+  }
+
+  interface MakeHauntGOptions {
+    selector: 'rightmost' | 'leftmost' | 'cost-lte-3';
+    hq: (CardExtId | null)[];
+    cardStats?: Record<string, { cost: number }>;
+    hqHaunters?: LegendaryGameState['hqHaunters'];
+  }
+
+  // why: makeG does not model G.city / G.hqHaunters — attach them post-build via cast
+  // (the swap-two-city-villains pattern above). `messages: []` makes pushLog record so
+  // the single self-narrated log line can be counted.
+  function makeHauntG(options: MakeHauntGOptions): LegendaryGameState {
+    const G = makeG({
+      hooks: [hauntHook(HAUNTER, options.selector)],
+      hq: options.hq,
+      cardStats: options.cardStats ?? {},
+      messages: [],
+    });
+    (G as { city?: unknown }).city = [HAUNTER, null, null, null, null];
+    if (options.hqHaunters !== undefined) {
+      G.hqHaunters = options.hqHaunters;
+    }
+    return G;
+  }
+
+  const FULL_HQ = [HERO_0, HERO_1, HERO_2, HERO_3, HERO_4];
+
+  it('rightmost haunts the highest occupied slot, nulls the City space, logs one line', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: FULL_HQ });
+    const results = executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(results, [], 'keyword-less primitive returns no result entry');
+    assert.deepStrictEqual(G.hqHaunters, [null, null, null, null, { kind: 'villain', cardId: HAUNTER }]);
+    assert.equal(G.city[0], null, 'the Haunting Villain left its City space');
+    assert.equal(G.city.includes(HAUNTER), false);
+    assert.deepStrictEqual(G.hq, FULL_HQ, 'the haunted Hero stays in the HQ');
+    assert.equal(G.messages.length, 1, 'exactly one self-narrated log line');
+  });
+
+  it('leftmost haunts the lowest occupied slot', () => {
+    const G = makeHauntG({ selector: 'leftmost', hq: FULL_HQ });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [{ kind: 'villain', cardId: HAUNTER }, null, null, null, null]);
+    assert.equal(G.city[0], null);
+    assert.equal(G.messages.length, 1);
+  });
+
+  it('cost-lte-3 haunts the lowest-index Hero costing 3 or less', () => {
+    const G = makeHauntG({
+      selector: 'cost-lte-3',
+      hq: FULL_HQ,
+      cardStats: {
+        [HERO_0]: { cost: 5 },
+        [HERO_1]: { cost: 4 },
+        [HERO_2]: { cost: 3 },
+        [HERO_3]: { cost: 2 },
+        [HERO_4]: { cost: 6 },
+      },
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [null, null, { kind: 'villain', cardId: HAUNTER }, null, null]);
+    assert.equal(G.city[0], null);
+    assert.equal(G.messages.length, 1);
+  });
+
+  it('skips null and already-haunted slots when selecting (rightmost)', () => {
+    const existing = { kind: 'villain' as const, cardId: OTHER_HAUNTER };
+    const G = makeHauntG({
+      selector: 'rightmost',
+      // why: slot 4 is empty, slot 3 is already haunted → the rightmost ELIGIBLE is 2.
+      hq: [HERO_0, HERO_1, HERO_2, HERO_3, null],
+      hqHaunters: [null, null, null, existing, null],
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      null,
+      null,
+      { kind: 'villain', cardId: HAUNTER },
+      existing,
+      null,
+    ]);
+    assert.equal(G.city[0], null);
+  });
+
+  it('skips null and already-haunted slots when selecting (leftmost)', () => {
+    const G = makeHauntG({
+      selector: 'leftmost',
+      hq: [null, HERO_1, HERO_2, null, null],
+      hqHaunters: [null, { kind: 'mastermind' }, null, null, null],
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      null,
+      { kind: 'mastermind' },
+      { kind: 'villain', cardId: HAUNTER },
+      null,
+      null,
+    ]);
+  });
+
+  it('no eligible slot (empty HQ) is a no-op: Villain stays, no hqHaunters key, one blocked line', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: [null, null, null, null, null] });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal(G.city[0], HAUNTER, 'the Villain stays in the City');
+    assert.equal('hqHaunters' in G, false, 'hqHaunters is never created on a no-op');
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('cost-lte-3 with every Hero costing more than 3 is a no-op', () => {
+    const G = makeHauntG({
+      selector: 'cost-lte-3',
+      hq: FULL_HQ,
+      cardStats: {
+        [HERO_0]: { cost: 4 },
+        [HERO_1]: { cost: 5 },
+        [HERO_2]: { cost: 6 },
+        [HERO_3]: { cost: 7 },
+        [HERO_4]: { cost: 8 },
+      },
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal(G.city[0], HAUNTER);
+    assert.equal('hqHaunters' in G, false);
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('every occupied slot already haunted → no-op; existing haunters are never overwritten', () => {
+    const haunters: LegendaryGameState['hqHaunters'] = [
+      { kind: 'villain', cardId: OTHER_HAUNTER },
+      { kind: 'mastermind' },
+      null,
+      null,
+      null,
+    ];
+    const G = makeHauntG({
+      selector: 'rightmost',
+      hq: [HERO_0, HERO_1, null, null, null],
+      hqHaunters: haunters,
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      { kind: 'villain', cardId: OTHER_HAUNTER },
+      { kind: 'mastermind' },
+      null,
+      null,
+      null,
+    ]);
+    assert.equal(G.city[0], HAUNTER, 'the second haunter stays in the City');
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('a Villain that is no longer in the City haunts nothing', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: FULL_HQ });
+    (G as { city?: unknown }).city = [null, null, null, null, null];
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal('hqHaunters' in G, false);
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+});

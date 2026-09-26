@@ -59,6 +59,7 @@ import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { recruitOfficer } from './moves/recruitOfficer.js';
+import { exorciseHauntedHero } from './moves/exorciseHauntedHero.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
@@ -530,6 +531,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // false) per D-10008 — it mutates real G (G.piles.officers / playerZones /
     // turnEconomy), absent on UIState.
     recruitOfficer: { move: recruitOfficer, client: false },
+    // why: WP-757 / D-24587 — exorciseHauntedHero pays a Haunted Hero's cost, KOs or
+    // gives that Hero, and releases its haunter (a Villain enters the City ignoring
+    // Ambush). Non-core, internally stage-gated (the recruitHero pattern). Server-only
+    // (client: false) per D-10008 — it mutates real G, absent on UIState.
+    exorciseHauntedHero: { move: exorciseHauntedHero, client: false },
     // why: D-24051 — dodgeCard is a non-core, internally-stage-gated move (the
     // recruitHero pattern), NOT a core move; registered here so the player can
     // discard a Dodge card from hand to draw a replacement. Server-only

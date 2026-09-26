@@ -33,6 +33,7 @@ import type {
   PendingOptionalKoReward,
 } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /**
  * Creates a minimal LegendaryGameState for testing the optional-KO-reward flow.
@@ -185,6 +186,106 @@ const noRewardPending = (playerID = '0'): PendingOptionalKoReward => ({
   rewardMagnitude: 0,
   sourceCardId: 'hero-x' as CardExtId,
   koZones: ['hand', 'discard'],
+});
+
+// why: WP-767 / D-24600 — Snarling Fangs' entry: no reward, hand + played this turn (no
+// discard), Heroes only (a Wound is not a Hero).
+const yourHeroPending = (playerID = '0'): PendingOptionalKoReward => ({
+  playerID,
+  rewardType: 'none',
+  rewardMagnitude: 0,
+  sourceCardId: 'mdns/werewolf-by-night/snarling-fangs#0' as CardExtId,
+  koZones: ['hand', 'inPlay'],
+  koHeroesOnly: true,
+});
+
+describe('resolveOptionalKoReward — KO one of your Heroes (WP-767 / D-24600)', () => {
+  it('accepts a hand Hero and grants nothing', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-h' as CardExtId],
+      bystanders: ['by-0' as CardExtId],
+      pendingOptionalKoRewards: [yourHeroPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'hand', cardId: 'hero-h' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['hero-h']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepStrictEqual(gameState.piles.bystanders, ['by-0'], 'no reward dispatched');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it('accepts a Hero played this turn', () => {
+    const gameState = makeTestGameState({
+      inPlay: ['hero-p' as CardExtId],
+      pendingOptionalKoRewards: [yourHeroPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'inPlay', cardId: 'hero-p' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['hero-p']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, []);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it('REJECTS a discard pick (koZones omits discard) — no-op, queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-h' as CardExtId],
+      discard: ['hero-d' as CardExtId],
+      pendingOptionalKoRewards: [yourHeroPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'discard', cardId: 'hero-d' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, []);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d']);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 1);
+  });
+
+  it('REJECTS a Wound in hand or in play (koHeroesOnly) — no-op, queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: [WOUND_EXT_ID as CardExtId, 'hero-h' as CardExtId],
+      inPlay: [WOUND_EXT_ID as CardExtId],
+      pendingOptionalKoRewards: [yourHeroPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'hand', cardId: WOUND_EXT_ID as CardExtId });
+    resolveOptionalKoReward(context, { zone: 'inPlay', cardId: WOUND_EXT_ID as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, [], 'a Wound is not a Hero');
+    assert.equal(gameState.playerZones['0']!.hand.length, 2);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 1);
+  });
+
+  it('decline pops with no KO', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-h' as CardExtId],
+      pendingOptionalKoRewards: [yourHeroPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { decline: true });
+
+    assert.deepStrictEqual(gameState.ko, []);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it('an entry WITHOUT koHeroesOnly still accepts a Wound (Radioactive Riot unchanged)', () => {
+    const gameState = makeTestGameState({
+      hand: [WOUND_EXT_ID as CardExtId],
+      pendingOptionalKoRewards: [noRewardPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveOptionalKoReward(context, { zone: 'hand', cardId: WOUND_EXT_ID as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, [WOUND_EXT_ID]);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
 });
 
 describe('resolveOptionalKoReward — no-reward hand/discard variant (WP-667 / D-24480)', () => {

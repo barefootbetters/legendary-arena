@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1943,
+    "totalEntries": 1946,
     "byScope": {
-      "hero": 768,
-      "villain": 719,
+      "hero": 770,
+      "villain": 720,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 525,
+      "executable": 529,
       "deferred": 16,
-      "condition": 44,
+      "condition": 45,
       "unsupported": 301,
-      "unmarked": 1053,
+      "unmarked": 1051,
       "subsystem": 4
     }
   },
@@ -12792,11 +12792,22 @@
       "name": "Atrocity",
       "set": "mdns",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero",
+      "wp": "WP-757",
+      "decision": "D-24587"
+    },
+    {
+      "extId": "mdns-villain-fallen-metarchus",
+      "name": "Metarchus",
+      "set": "mdns",
+      "scope": "villain",
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero",
+      "wp": "WP-757",
+      "decision": "D-24587"
     },
     {
       "extId": "mdns-villain-fallen-metarchus",
@@ -12814,11 +12825,11 @@
       "name": "Patriarch",
       "set": "mdns",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero",
+      "wp": "WP-757",
+      "decision": "D-24587"
     },
     {
       "extId": "mdns-villain-fallen-salom-sorceress-supreme",
@@ -13157,6 +13168,23 @@
       "name": "Werewolf by Night",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "snarling-fangs",
+          "name": "Snarling Fangs"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "name": "Werewolf by Night",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -13195,6 +13223,23 @@
         {
           "slug": "track-the-captives",
           "name": "Track the Captives"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "name": "Werewolf by Night",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "optional-ko-your-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-your-hero",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "snarling-fangs",
+          "name": "Snarling Fangs"
         }
       ]
     },
@@ -32192,19 +32237,20 @@
     "mdns-villain-fallen-atrocity": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "haunt-hq-hero"
       ]
     },
     "mdns-villain-fallen-metarchus": {
       "scope": "villain",
       "mechanics": [
+        "haunt-hq-hero",
         "koHeroCurrentPlayer"
       ]
     },
     "mdns-villain-fallen-patriarch": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "haunt-hq-hero"
       ]
     },
     "mdns-villain-fallen-salom-sorceress-supreme": {
@@ -32275,8 +32321,10 @@
       "scope": "hero",
       "mechanics": [
         "blood-frenzy",
+        "defeated-villain-or-mastermind",
         "draw",
         "moonlight",
+        "optional-ko-your-hero",
         "optional-put-bottom-hq",
         "sunlight"
       ]
