@@ -400,6 +400,7 @@ high-water: 422
 - WP-759 — haunt-client-ui (App arena-client. Haunted HQ cards show the haunting Villain/Zarathos, Recruit disabled, an Exorcise action + KO-or-give choice UI. BLOCKED on WP-757. reserved 2026-09-25, claude/wp-zarathos-draft)
 
 - WP-760 — fallen-fight-side (Game Engine + card data. The Fallen's non-Haunt lines: Blood Frenzy (+1 fight cost per distinct VP value in the fighting player's Victory Pile) for Metarchus + Salomé, Atrocity Fight rescue, Patriarch Fight reveal-draw, Salomé Fight KO-up-to-two-from-discard; Salomé's Escape ascension scoped at draft. BLOCKED on WP-757 (+ WP-750 client fight-cost sequencing). reserved 2026-09-25, claude/wp-zarathos-draft)
+- WP-761 — long-press-slash (arena-client. Touch / pen slash-to-fight on a horizontally SCROLLING City row via a long-press arm; WP-756 follow-up. reserved 2026-09-25, claude/wp-longpress-slash-draft)
 
 ## EC
 
@@ -761,6 +762,7 @@ high-water: 457
 - EC-796 — haunt-client-ui (WP-759; App arena-client. reserved 2026-09-25, claude/wp-zarathos-draft)
 
 - EC-797 — fallen-fight-side (WP-760; Game Engine + card data. reserved 2026-09-25, claude/wp-zarathos-draft)
+- EC-798 — long-press-slash (WP-761; arena-client. reserved 2026-09-25, claude/wp-longpress-slash-draft)
 
 ## D
 
@@ -1132,3 +1134,4 @@ section below) and the allocation protocol in
 - D-24590 — autoplay-non-active-seat-choice-drain (direct fix, no WP — the autoplay drain resolves a seat choice addressed to a non-active seat as that seat, WP-749 policy; D-24582 precedent. reserved 2026-09-25, claude/autoplay-seat-choice-drain)
 - D-24588 — zarathos-haunting-mastermind (RESERVED: locks WP-758 / EC-795 — highest-cost haunt selector, strike wound-before-haunt order, the five tactic seat-choice kinds + defaults, Henchmen-count-as-Villains, Demonic hand+inPlay + chain, Final-Blow-blocked-by-haunt. reserved 2026-09-25, claude/wp-zarathos-draft)
 - D-24591 — autoplay-spend-filter-exclusion (direct fix, no WP — the autoplay spend step offers every legal move except playCard / revealVillainCard / endTurn and parked resolve choices, so WP-757 exorciseHauntedHero needs no server edit; D-24590 follow-up. reserved 2026-09-25, claude/autoplay-spend-filter-legal-moves)
+- D-24592 — long-press-slash (RESERVED: locks WP-761 / EC-798 — the long-press arm threshold + movement tolerance, the armed-stroke touch-action / scroll-suppression contract, and how it composes with the D-24585 fit rule. reserved 2026-09-25, claude/wp-longpress-slash-draft)
