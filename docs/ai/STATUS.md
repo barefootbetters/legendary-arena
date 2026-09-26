@@ -143,8 +143,11 @@ Now:
   name "villainDeck pile"); both are fixed by D-24599. A third game (same build, Venom hero) passed
   twists #7–#10 without ending. The meter tracked `hero-deck` 38/42 (Hero Deck 4 left, Villain Deck
   7 left), and the heroes won on turn 28, four cards short of a Hero Deck runout.
-- **Pending (D-24026), Symbiotic Absorption.** A non-core printed-count scheme: the match must not
-  end at twist 7, and the meter must show the printed threshold (11). Record the result here.
+- **Live-verify (D-24026), Symbiotic Absorption — PASS 2026-09-26** (operator, solo vs Zarathos, build
+  `a8bef34`). Every twist line carried the printed threshold ("Scheme Twist #N … (N of 11 to Evil
+  Wins)"). Twist #7 on turn 17 resolved with no scheme loss, and the heroes won that same turn. The
+  meter read `twists` 7/11 (menace 0.64, rising), the printed count and not the old flat 7. **WP-763
+  live-verify is complete**: both Midnight Massacre and Symbiotic Absorption pass.
 
 ### WP-765 — Sunlight / Moonlight: day/night gates hero lines; hero Blood Frenzy (EC-802 / D-24598) (2026-09-25)
 
