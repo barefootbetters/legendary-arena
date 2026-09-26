@@ -44,6 +44,8 @@ export interface FlatCard {
   physicalCardImageUrl?: string;
   /** Hero-only: which half of a shared split-card image is this face's. */
   physicalCardImageHalf?: "left" | "right";
+  /** Hero-only: the other face's name when this card is one half of a split card. */
+  splitPartnerName?: string;
   /** Hero-only fields */
   heroName?:  string;
   team?:      string;

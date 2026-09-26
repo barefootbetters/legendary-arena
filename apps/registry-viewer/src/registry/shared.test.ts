@@ -400,6 +400,8 @@ describe("flattenSet hero physicalCardImageUrl (D-14103)", () => {
     assert.ok(man, "inspire-a-man card must exist");
     assert.equal(nation.physicalCardImageHalf, "left", "lower slot is the left half");
     assert.equal(man.physicalCardImageHalf, "right", "higher slot is the right half even though it is sides[0]");
+    assert.equal(nation.splitPartnerName, "Inspire a Man", "left half names the right half");
+    assert.equal(man.splitPartnerName, "Inspire a Nation", "right half names the left half");
   });
 
   it("leaves physicalCardImageHalf undefined for single-side cards", () => {
@@ -429,6 +431,7 @@ describe("flattenSet hero physicalCardImageUrl (D-14103)", () => {
 
     assert.ok(web, "web card must exist");
     assert.equal(web.physicalCardImageHalf, undefined, "single-side card keeps default center crop");
+    assert.equal(web.splitPartnerName, undefined, "single-side card is not a split card");
   });
 
   it("yields empty imageUrl when physicalCards is absent (D-15101)", () => {
