@@ -7,6 +7,24 @@
 
 ## Current State
 
+### D-24603 — Henchmen are Villains for "Whenever you defeat a Villain or Mastermind" (direct fix) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Defeating a
+henchman now triggers "Whenever you defeat a Villain or Mastermind this turn" abilities, as Universal
+Rules v23 prints ("Henchman Villain cards are indeed Villains"). Found in the operator's WP-767 live
+check: in a solo Zarathos / Midnight Massacre match, round 20, three Snarling Fangs armed under
+Moonlight and the player then defeated Savage Land Mutates, but no KO was offered.
+
+- **Engine.** `fightVillain` signals every successful defeat, villain or henchman. This reverses
+  #2030's henchman exclusion, which assumed henchmen are not Villains. Affected cards: Diamond Form,
+  Impossible Trick Shot, Overwhelming Firepower, Snarling Fangs.
+- **Counts and gates.** Engine 4499/0 (two tests intentionally flipped to "a henchman counts").
+  `pnpm -r --no-bail test` → 0 fail; the core oracles and the `sim:runtime-observed` /
+  `sim:coverage` / feed checks are unchanged.
+- **Live-verify (D-24026): operator-pending.** Arm Snarling Fangs under Moonlight, then defeat a
+  henchman: the prompt reads "You may KO a card". This also closes the WP-767 check if the prompt
+  lists only hand and played-this-turn Heroes.
+
 ### WP-760 — The Fallen fight-side: Blood Frenzy, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (EC-797 / D-24589) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** The Fallen's
@@ -47,7 +65,7 @@ Salomé's Escape (Ascend to an additional Mastermind) stays deferred.
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Werewolf by
 Night's Snarling Fangs gains its Moonlight ability. Played under Moonlight, each Villain or Mastermind
-defeat later that turn (each tactic counts; a henchman does not) offers **"You may KO a card"**,
+defeat later that turn (each tactic counts; since D-24603 a henchman counts too) offers **"You may KO a card"**,
 listing the player's Heroes in hand and the cards they played this turn. Wounds and the discard pile
 are never offered, and the player may decline. Under Sunlight or neither the line does nothing, and
 it logs "did not activate — it isn't Moonlight". The `moonlight … parse-unrecognized` hollow for

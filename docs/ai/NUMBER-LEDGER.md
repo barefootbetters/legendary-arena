@@ -1163,3 +1163,4 @@ section below) and the allocation protocol in
 - D-24600 — snarling-fangs-moonlight (RESERVED: locks WP-767 / EC-804 — the optional-KO-your-Hero keyword zones (hand + played this turn), its defeat-trigger dispatch, and the day/night condition timing. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
 - D-24601 — indestructible-man-mastermind (RESERVED: locks WP-768 / EC-805. reserved 2026-09-26, claude/special-masterminds-draft)
 - D-24602 — killmonger-mastermind (RESERVED: locks WP-769 / EC-806 — generic Mastermind Wounds. reserved 2026-09-26, claude/special-masterminds-draft)
+- D-24603 — henchmen-are-villains (direct fix, no WP — a henchman defeat satisfies "Whenever you defeat a Villain or Mastermind" per rules v23 §"Henchmen Are Villains/Adversaries"; reverses the D-24467 #2030 henchman exclusion. D-24601..24602 held by open PR #2412. reserved 2026-09-26, claude/henchmen-are-villains)
