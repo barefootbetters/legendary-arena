@@ -21,6 +21,7 @@
 - **Click suppression (armed path only):** cleared on the next `pointerdown` / `keydown`, not `setTimeout(0)`.
 - **Context menu:** the row `contextmenu` listener → `preventDefault()` while a long press is pending or armed.
 - **Hold gate:** `isLongPressHoldEnabled` = setting on AND (`!isRowFitting` OR `isLongPressLive`), where `isLongPressLive` is an **internal** ref written only by `syncLongPressState()` alongside `isLongPressArmed`, whose value is always `stroke !== null && stroke.isLongPress` (pending or armed). So the hold listeners and class outlive a mid-stroke fit change and detach on the first sync after the long press ends if the row now fits; setting off detaches at once (it cancels the stroke anyway).
+- **Hold listener attach:** a separate `watch([rowElement, isLongPressHoldEnabled], …, { immediate: true, flush: 'post' })` attaches `touchmove` / `contextmenu` / `lostpointercapture` to the current row and detaches them in `onCleanup` (mirrors the WP-756 adapter watch, `:591-603`).
 - **CSS:** `city-spaces--gesture-hold` iff `isLongPressHoldEnabled` — carries `-webkit-touch-callout: none` and gates the long-press listeners. `city-spaces--gesture-armed` iff armed — **inset** glow (`box-shadow: inset` or negative `outline-offset`), no animation under `prefers-reduced-motion`. `city-spaces--gesture` unchanged.
 - **Controller additions:** `isLongPressArmed: Readonly<Ref<boolean>>` (`readonly(...)`), `isLongPressHoldEnabled: Readonly<Ref<boolean>>` (the Hold gate), `shouldPreventTouchScroll(): boolean`; `isLongPressLive` is internal, written only by `syncLongPressState()`. WP-756 members keep their signatures.
 
@@ -46,6 +47,7 @@
 - `syncLongPressState()` as the only writer of `isLongPressArmed` (a `computed` over the plain `let stroke` would never update), and the row-targeted, `pointerId`-matched `lostpointercapture` check.
 - Armed-path click suppression cleared on the next input, not `setTimeout(0)` (the touch `click` can land a task later).
 - The `dragstart` prevention now also blocking touch drag-and-drop after a long press.
+- The hold gate's `OR isLongPressLive` term: a chain fight can make the row fit while the finger is down, and detaching the listeners then would let the browser pan.
 
 ## Files to Produce
 
@@ -72,4 +74,5 @@
 - **The row stops scrolling after toggling the setting.** A reset path skipped `syncLongPressState()`, leaving `isLongPressArmed` true with no stroke.
 - **An armed stroke dies on the first move.** `lostpointercapture` from the child→row capture move was not filtered to `event.target === row`.
 - **The armed glow never appears.** `isLongPressArmed` was a `computed` over the non-reactive `stroke`.
+- **An armed stroke starts scrolling right after the first fight.** The hold gate dropped `isLongPressLive`, so a fit flip detached the listeners.
 - **The armed glow is invisible.** An outer glow was clipped by the row's `overflow-x: auto`; use inset.
