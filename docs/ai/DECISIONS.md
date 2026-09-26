@@ -44666,4 +44666,32 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 ---
 
+### D-24592 — A still 350 ms touch / pen hold arms slash-to-fight on a City row that scrolls sideways (Active 2026-09-25 — WP-761 / EC-798)
+
+**Status:** Active — landed 2026-09-25 (WP-761 / EC-798). Live-on-surface (D-24026) is operator-manual-pending on real iOS + Android phones.
+
+**Context.** WP-756 (D-24585 §5) gives touch / pen the slash gesture only while the City row fits without horizontal scrolling, because on a scrolling row a finger drag must stay a scroll. At phone width the five City spaces (~800 px) never fit, so the gesture was mouse-only on phones. D-24585's Consequences named a long-press mode for scrolling rows as out of scope; this decision lifts that line.
+
+**Decision.**
+1. **The arm.** A touch or pen press held still (≤ `LONG_PRESS_MOVE_TOLERANCE_PX` = 10 px) for `LONG_PRESS_ARM_MS` = 350 ms on a row that does not fit arms a slash — the one scroll-safe intent signal (a scroll moves at once, a tap releases at once). Eligibility is decided at `pointerdown` only; mouse never long-presses; a fitting row keeps WP-756's immediate path. A later fit change never affects a pending or armed long press.
+2. **One source of truth.** A long press is a `stroke` with `isLongPress` (pending while `hasStarted` is false, armed after). `stroke` stays a plain `let`, so `syncLongPressState()` is the only writer of the `isLongPressArmed` ref and the internal `isLongPressLive` ref, called at every stroke change; `shouldPreventTouchScroll()` reads the stroke. The row can never be left armed without a live stroke.
+3. **Cancelling.** `pointerup` / `pointercancel` before the arm, drift over 10 px, a second finger (a pinch — and the cancelling `pointerdown` never starts its own arm), the setting turning off and scope dispose all end a pending arm. Cancelling arms no suppression.
+4. **The armed stroke.** `armStroke()` waives the start distance, seeds the crossing state at the press point with candidates measured at the arm, captures the pointer, publishes one trail sample at the press point and buzzes `navigator.vibrate(12)` when available. While armed, the row's non-passive `touchmove` listener calls `preventDefault()` (only then — `touch-action` is fixed at touch start and a pan can only be stopped before it begins). `pointerup` completes the stroke; `pointercancel` and a `lostpointercapture` targeted at the row itself with the matching `pointerId` end it keeping completed crossings (a bubbled child `lostpointercapture` from the child→row capture move is ignored). A second finger during an armed stroke is ignored.
+5. **Hold gate.** `isLongPressHoldEnabled` = setting on AND (the row does not fit OR a long press is live) binds `city-spaces--gesture-hold` (`-webkit-touch-callout: none`) and a separate row-keyed watch that attaches the `touchmove` / `contextmenu` / `lostpointercapture` listeners. The live term keeps them attached when a chain fight makes the row fit mid-stroke. A fitting row and the setting-off row carry none of it, so WP-756 is byte-identical there. `contextmenu` is prevented while a long press is pending or armed.
+6. **Clicks.** An armed stroke's click suppression is cleared on the next `pointerdown` / `keydown`, not by `setTimeout(0)`: the touch `click` after a long press can land a task after `pointerup`.
+7. **Feedback.** `city-spaces--gesture-armed` is an inset lavender glow (the row and its band are `overflow-x: auto`, so an outer glow would clip), with a one-shot pulse removed under reduced motion.
+8. **The slow-tap trade.** On a scrolling row a press held ≥ 350 ms is an arm, not a tap: released without a stroke it fights nothing.
+
+**Accepted degradations and costs.** The non-passive `touchmove` listener makes the compositor consult the main thread before panning a touch that starts on a scrolling row (checked for perceptible lag on devices). A hold that starts on an empty slot that a mid-stroke fight fills leaves `touchmove` targeting a detached node, so the pan resumes and `pointercancel` ends the stroke with its completed crossings kept. If iOS makes the armed `touchmove` uncancelable after sub-slop jitter, the same degradation applies pending a WebKit follow-up. A screen-reader activation (no `pointerdown` / `keydown`) right after an armed stroke is swallowed once. WP-756's `dragstart` prevention also blocks touch drag-and-drop after a long press on card art.
+
+**Consequences.** Client-only; no engine, registry or server change; `fightVillain({ cityIndex })` through the unchanged chain; `finalStateHash` / `PRE_WP080_HASH` untouched by construction. The only new timing is a `setTimeout` (no clock read, D-24365 subsurface untouched).
+
+**Gates.** arena-client typecheck 0; tests 2084 → 2115 / 0 (mutation checks: dropping the hold gate's live term, skipping the sync in `endStroke`, and ignoring the `lostpointercapture` target each fail tests). Whole repo `pnpm -r build && pnpm -r --no-bail test` green. Preview-driven at 375 px against a local server + a paused guest autoplay match with synthetic touch-typed pointer events: a quick 20 px drag armed nothing and left `touchmove` unprevented; a 350 ms hold armed (class, inset glow, `touchmove` + `contextmenu` prevented, `vibrate(12)`), and the armed drag fought Hand Ninjas then Skrull Shapeshifters in crossing order with both slices at the stroke angle; setting off → plain class, nothing armed or prevented; a 120 ms tap fought Hand Ninjas.
+
+**D-24026 live-on-surface:** pending — on a real iOS phone and a real Android phone: the row does not scroll while armed, no `pointercancel` cuts the stroke, no context menu / callout appears, a jittery iOS hold still arms, and an unarmed drag scrolls without start lag while VFX runs.
+
+**Reserved by:** NUMBER-LEDGER D-24592 (WP-761 / EC-798). Related: D-24585 (the slash gesture; lifts its long-press out-of-scope line), D-24365 (VFX determinism subsurface), D-6512 (SFC `setup()` return), D-24026 (live-verify).
+
+---
+
 Protect this file.

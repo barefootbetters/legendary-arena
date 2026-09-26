@@ -1,6 +1,6 @@
 import '../../testing/jsdom-setup';
 
-import { describe, test, beforeEach } from 'node:test';
+import { describe, test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
@@ -555,6 +555,211 @@ describe('CityRow — slash gesture (WP-756)', () => {
     row.element.dispatchEvent(pointerEvent('pointermove', 190, 150));
     row.element.dispatchEvent(pointerEvent('pointerup', 190, 150));
     assert.equal(calls.length, 0);
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-761 / D-24592 — the long-press slash through the row's DOM adapter.
+// ---------------------------------------------------------------------------
+
+/** A cancelable, bubbling DOM event (touchmove / contextmenu need no fields). */
+function cancelableEvent(type: string): Event {
+  return new window.Event(type, { bubbles: true, cancelable: true });
+}
+
+/** A bubbling lostpointercapture carrying an explicit pointerId. */
+function lostCaptureEvent(pointerId: number): Event {
+  const event = new window.Event('lostpointercapture', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'pointerId', { value: pointerId });
+  return event;
+}
+
+/** Stubs the row's scroll metrics and re-measures the fit via a window resize. */
+async function setRowFits(row: Element, isFitting: boolean): Promise<void> {
+  const scrollWidth = isFitting ? 300 : 900;
+  Object.defineProperty(row, 'scrollWidth', { value: scrollWidth, configurable: true });
+  Object.defineProperty(row, 'clientWidth', { value: 300, configurable: true });
+  window.dispatchEvent(new window.Event('resize'));
+  await nextTick();
+}
+
+/** Mounts the row, stubs villain rects, and makes the row overflow (the phone case). */
+async function mountOverflowingRow(submitMove: SubmitMove) {
+  const wrapper = mountForGesture(submitMove);
+  await nextTick();
+  stubVillainRects(wrapper.element);
+  const row = wrapper.find('ol.city-spaces');
+  await setRowFits(row.element, false);
+  assert.equal(row.classes().includes('city-spaces--gesture-touch'), false);
+  return { wrapper, row };
+}
+
+describe('CityRow — long-press slash (WP-761)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+    mock.timers.enable({ apis: ['setTimeout'] });
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+  });
+
+  test('a 350 ms touch hold arms: glow class, touchmove and contextmenu prevented', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    assert.ok(row.classes().includes('city-spaces--gesture-hold'));
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(350);
+    await nextTick();
+    assert.ok(row.classes().includes('city-spaces--gesture-armed'));
+    const move = cancelableEvent('touchmove');
+    row.element.dispatchEvent(move);
+    assert.equal(move.defaultPrevented, true);
+    const menu = cancelableEvent('contextmenu');
+    row.element.dispatchEvent(menu);
+    assert.equal(menu.defaultPrevented, true);
+    wrapper.unmount();
+  });
+
+  test('an armed touch stroke across two villains fights them in crossing order', async () => {
+    const { calls, submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    // Engine index 0 is at x 100..180 and index 2 at x 300..380.
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(350);
+    row.element.dispatchEvent(pointerEvent('pointermove', 190, 150, 'touch'));
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
+    await wrapper.setProps({
+      city: {
+        spaces: [null, null, villain('electro', 5), null, villain('thug', 2)],
+        escapedPile: [],
+      },
+    });
+    row.element.dispatchEvent(pointerEvent('pointermove', 390, 150, 'touch'));
+    await nextTick();
+    assert.deepEqual(calls[1], { name: 'fightVillain', args: { cityIndex: 2 } });
+    wrapper.unmount();
+  });
+
+  test('without an arm a touchmove is NOT prevented (native scroll)', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    const idle = cancelableEvent('touchmove');
+    row.element.dispatchEvent(idle);
+    assert.equal(idle.defaultPrevented, false);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    const pending = cancelableEvent('touchmove');
+    row.element.dispatchEvent(pending);
+    assert.equal(pending.defaultPrevented, false);
+    wrapper.unmount();
+  });
+
+  test('a contextmenu while the long press is still pending is prevented', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(200);
+    const menu = cancelableEvent('contextmenu');
+    row.element.dispatchEvent(menu);
+    assert.equal(menu.defaultPrevented, true);
+    wrapper.unmount();
+  });
+
+  test('the row fitting mid-stroke keeps the hold listeners until the long press ends', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    await setRowFits(row.element, true);
+    const pendingMenu = cancelableEvent('contextmenu');
+    row.element.dispatchEvent(pendingMenu);
+    assert.equal(pendingMenu.defaultPrevented, true);
+    mock.timers.tick(350);
+    await setRowFits(row.element, true);
+    assert.ok(row.classes().includes('city-spaces--gesture-armed'));
+    assert.ok(row.classes().includes('city-spaces--gesture-hold'));
+    const armedMove = cancelableEvent('touchmove');
+    row.element.dispatchEvent(armedMove);
+    assert.equal(armedMove.defaultPrevented, true);
+    row.element.dispatchEvent(pointerEvent('pointerup', 60, 150, 'touch'));
+    await nextTick();
+    assert.equal(row.classes().includes('city-spaces--gesture-hold'), false);
+    const afterMove = cancelableEvent('touchmove');
+    row.element.dispatchEvent(afterMove);
+    assert.equal(afterMove.defaultPrevented, false);
+    wrapper.unmount();
+  });
+
+  test('on a fitting row there is no hold class and nothing is prevented', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    const row = wrapper.find('ol.city-spaces');
+    assert.ok(row.classes().includes('city-spaces--gesture-touch'));
+    assert.equal(row.classes().includes('city-spaces--gesture-hold'), false);
+    const move = cancelableEvent('touchmove');
+    row.element.dispatchEvent(move);
+    const menu = cancelableEvent('contextmenu');
+    row.element.dispatchEvent(menu);
+    assert.equal(move.defaultPrevented, false);
+    assert.equal(menu.defaultPrevented, false);
+    wrapper.unmount();
+  });
+
+  test('lostpointercapture on the row ends the arm; one bubbling from a child tile does not', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(350);
+    await nextTick();
+    const tile = wrapper.find('[data-testid="play-city-villain"]').element;
+    tile.dispatchEvent(lostCaptureEvent(1));
+    await nextTick();
+    assert.ok(row.classes().includes('city-spaces--gesture-armed'));
+    row.element.dispatchEvent(lostCaptureEvent(1));
+    await nextTick();
+    assert.equal(row.classes().includes('city-spaces--gesture-armed'), false);
+    wrapper.unmount();
+  });
+
+  test('setting off while armed removes the glow; re-enabled, an unarmed touchmove is not prevented', async () => {
+    const { submitMove } = recorder();
+    const { wrapper, row } = await mountOverflowingRow(submitMove);
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(350);
+    await nextTick();
+    assert.ok(row.classes().includes('city-spaces--gesture-armed'));
+    useSlashGestureSetting().setEnabled(false);
+    await nextTick();
+    assert.equal(row.classes().includes('city-spaces--gesture-armed'), false);
+    useSlashGestureSetting().setEnabled(true);
+    await nextTick();
+    const move = cancelableEvent('touchmove');
+    row.element.dispatchEvent(move);
+    assert.equal(move.defaultPrevented, false);
+    wrapper.unmount();
+  });
+
+  test('setting off: a 350 ms hold arms nothing and touchmove / contextmenu are not prevented', async () => {
+    useSlashGestureSetting().setEnabled(false);
+    const { submitMove } = recorder();
+    const wrapper = mountForGesture(submitMove);
+    await nextTick();
+    const row = wrapper.find('ol.city-spaces');
+    await setRowFits(row.element, false);
+    assert.equal(row.attributes('class'), 'city-spaces');
+    row.element.dispatchEvent(pointerEvent('pointerdown', 60, 150, 'touch'));
+    mock.timers.tick(350);
+    await nextTick();
+    assert.equal(row.attributes('class'), 'city-spaces');
+    const move = cancelableEvent('touchmove');
+    row.element.dispatchEvent(move);
+    const menu = cancelableEvent('contextmenu');
+    row.element.dispatchEvent(menu);
+    assert.equal(move.defaultPrevented, false);
+    assert.equal(menu.defaultPrevented, false);
     wrapper.unmount();
   });
 });

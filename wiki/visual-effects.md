@@ -1101,12 +1101,27 @@ villain still fights it exactly as before.
   tap still fights). After a mouse stroke the trailing click is swallowed once;
   the flag clears on the next press or key, so it can never eat a later tap. The
   native image drag is prevented on the row while the setting is on.
-- **Touch and pen only when the row fits.** On a narrow screen the City row
-  scrolls sideways, and there a finger drag must stay a scroll. So touch / pen
-  get the gesture only while the row, every horizontally scrolling ancestor and
-  the viewport show all five spaces without horizontal scrolling (re-measured
-  when villains enter, on resize, and on mount); then `touch-action: pan-y`
-  hands horizontal strokes to the gesture and vertical page scroll keeps working.
+- **Touch and pen: immediate when the row fits, long-press when it scrolls.**
+  While the row, every horizontally scrolling ancestor and the viewport show all
+  five spaces without horizontal scrolling (re-measured when villains enter, on
+  resize, and on mount), `touch-action: pan-y` hands horizontal strokes straight
+  to the gesture and vertical page scroll keeps working. On a narrow screen the
+  row scrolls sideways, so a finger drag there stays a scroll — and the slash
+  needs a **long press** first (below).
+- **Long-press slash on a scrolling row** (WP-761 / D-24592). Hold a finger or
+  pen **still for 350 ms** on the City row — on a gap, a slot label or an empty
+  space — and the row **arms**: an inset lavender glow, plus a short buzz on
+  phones that support it. Now drag: the row no longer scrolls under the finger,
+  and the stroke works exactly like a mouse slash — every fightable villain it
+  fully crosses is fought, in order, with the blade trail and stroke-angled
+  slices. The crossing rule still applies, so a hold that starts *on* a villain
+  never fights that villain (it can still slash the others). Moving more than
+  10 px before the 350 ms is an ordinary scroll, and a quick tap still fights.
+  **One trade:** on a scrolling row a press held 350 ms or longer is an arm, not
+  a tap — releasing it without a stroke fights nothing. While a long press is
+  live the browser's context menu and image callout are suppressed. Whether the
+  row truly stops scrolling is a browser behaviour checked on real iOS and
+  Android phones, not in tests.
 - **The engine confirms every fight.** Fights go out one at a time, keyed by the
   card, never by position. The next City frame after each fight decides it: the
   card is gone → confirmed, move on; the card is still there (a Guard, Patrol,
@@ -1122,8 +1137,9 @@ villain still fights it exactly as before.
   space; the slice beat takes it first thing, so a vertical stroke slices the card
   vertically. A click-fight keeps the rotating per-defeat angle.
 - **The setting.** A 🗡️ **Slash to fight** toggle beside Effect Intensity in the
-  sound bar turns the gesture off (remembered per browser). It defaults on; with
-  it off the City row behaves exactly as the click-only row did.
+  sound bar turns the gesture off (remembered per browser), long press included.
+  It defaults on; with it off the City row behaves exactly as the click-only row
+  did.
 
 Pure presentation and input only: the gesture sends the same `fightVillain`
 intent a click does, reads no clock (the trail's fade stamp lives in the
