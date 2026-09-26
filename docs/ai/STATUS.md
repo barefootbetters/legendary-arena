@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-765 — Sunlight / Moonlight: day/night gates hero lines; hero Blood Frenzy (EC-802 / D-24598) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Midnight Sons
+and New Mutants day/night heroes stop granting their bonuses on every play. Each Sunlight line now
+fires only when most HQ Heroes have even printed costs, each Moonlight line only when most are odd,
+and neither on a tie. Analyze Planetary Rotation no longer gives +2 recruit **and** +2 attack every
+time; Release the Beast, Analyze Planetary Rotation and Nanite Shapeshifter give both only when their
+"Instead, you get both" condition holds.
+
+- **Engine.** New pure `computeDayNight(G)` (printed HQ costs). New `sunlightInEffect` /
+  `moonlightInEffect` conditions, re-read per line. New composite `day-night-both` keyword fuses the
+  three "both" cards. Day/night conditions are excluded from the Synergy Rate.
+- **Blood Frenzy.** Hero `blood-frenzy` / `blood-frenzy-recruit` on a new shared
+  `economy/bloodFrenzy.logic.ts` (WP-760 consumes it), with a scoring-parity test. Works on Release
+  the Beast, Creature of Dawn and Dusk, Mesmerize (as recruit) and Insatiable Craving.
+- **Markers.** Draw, put-bottom, discard-draw, reveal-may-KO and KO-Wound lines that were hollow now
+  resolve (new `mdns` marker section; Scalded by Sunlight un-deferred).
+- **Honest hollows.** The 9 `DAY_NIGHT_UNMODELED_LINES` keep their gate but grant nothing and record a
+  hollow when their state holds (moonlight 274 → 44, sunlight 107 → 29 in the sweep).
+- **Projection.** `UIHQState.dayNight`, present only when a day/night hero is in the match (Warlock-only
+  included), passed through the audience filter. The badge is WP-766.
+- **Counts.** `HERO_KEYWORDS` 69 → 72, handlers 53 → 56. `pnpm -r build && pnpm -r --no-bail test` →
+  0 fail (engine 4235 → 4281, arena-client 2115/0, dashboard 505/0, server 1636 / 1430 pass / 206
+  skip). All six card / feed gates → 0. No hash / PAR re-pin. Dashboard in-play pin re-pinned
+  percentResolved 24.3 → 37.6 (totalObs 3019 held).
+- **Replay note.** Pre-WP-765 mdns / nmut replays will not re-execute identically; D-24119
+  re-verification of ranked mdns / nmut matches recorded before this WP will mismatch.
+- **Pending (D-24026).** Operator live-verify after deploy: in a Werewolf by Night match, Release the
+  Beast gives +3 recruit only when the HQ is majority even, and nothing on a tie.
+
 ### WP-762 — Fill the missing printed attack values: Masterminds and henchmen stop fighting for 0 (EC-799 / D-24594) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** 14 Mastermind
