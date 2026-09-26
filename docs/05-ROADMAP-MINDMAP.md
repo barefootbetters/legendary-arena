@@ -429,7 +429,7 @@ mindmap
         ["WP-761 ✅ Long-press slash arena-client plus ewiki EC-798 D-24592 Active DONE 2026-09-25 Extends WP-756. On a scrolling City row a touch or pen press held still for 350 ms arms a slash; the armed stroke stops the pan and fights each villain it fully crosses through the WP-756 chain; moving first still scrolls, releasing early is still a tap"]
         ["WP-744 ✅ Sim PAR and fixture turn loops resolve and clear deferred conditional grants game engine simulation DONE 2026-09-22 engine 4124 of 0. The three rebuilt turn loops now fire wait-and-see hero grants after every move and drop them at the turn boundary, mirroring game.ts, replay harness excluded, oracles unchanged. EC-781 D-24567 Active"]
         ["WP-745 📝 Unmarked If-condition you get plus N grants gate 17 free conditional hero cards game engine plus card-data DRAFTED. Rage waits for a Hero KO this turn via a gated KO-pile turn-start snapshot, first eighth and N-other-cards plus cost and distinct-Hero gates read a gated per-turn play history on play, draw and Bystander lines reuse existing conditions, hash oracles unchanged, blocked on WP-743. EC-782 D-24568 reserved"]
-        ["WP-747 📝 Villain-Deck Bystander captured by the Villain closest to the Villain Deck game engine plus ewiki DRAFTED. The lowest occupied City space captures per Universal Rules v23 instead of the escape-edge villain, Mastermind fallback unchanged, hash oracles unchanged. EC-784 D-24571 reserved"]
+        ["WP-747 ✅ Villain-Deck Bystander captured by the Villain closest to the Villain Deck game engine plus ewiki DONE 2026-09-26. The lowest occupied City space captures per Universal Rules v23 instead of the escape-edge villain, Mastermind fallback unchanged, hash oracles unchanged. EC-784 D-24571 Active"]
         ["WP-748 ✅ Midtown Bank Robbery family each Villain gets plus one attack for each Bystander it has game engine DONE 2026-09-26. A scheme-gated bonus in the single fight-cost authority for core Midtown plus co2e and msp1 reprints so the fight gate bot legal moves and City fight cost move together, Mastermind untouched. EC-785 D-24572 Active"]
         ["WP-749 📝 Sim and PAR loops resolve a seat choice addressed to a non-active seat game engine simulation DRAFTED. Loki Vanishing Illusions no longer strands PAR games as stuck, the loops dispatch the deterministic default for the addressed seat. EC-786 D-24573 reserved"]
         ["WP-750 ✅ Client Fight gating reads the engine projected fight cost arena-client plus game-engine UIState EC-787 D-24574 Active DONE 2026-09-26. City and Mastermind Fight gate on the projected cost not printed cost, a Fight N badge on mismatch, unblocks WP-748 and WP-760"]
@@ -930,7 +930,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 162/173 | 11 open |
+| Hero Ability Coverage & Markup Pipeline | 163/173 | 10 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 54/54 | — |
@@ -950,9 +950,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **749/761 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 11 open |
+| **Total** | **750/761 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 10 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 12):** WP-764 open; WP-760 open; WP-759 open; WP-758 open; WP-757 open; WP-749 open; WP-745 open; WP-747 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 11):** WP-764 open; WP-760 open; WP-759 open; WP-758 open; WP-757 open; WP-749 open; WP-745 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

@@ -45131,6 +45131,33 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 **Reserved by:** NUMBER-LEDGER D-24572. Related: D-24348 (Portals scheme bonus), D-24314 (Midtown carry-away loss), D-24499 (printed-attack readers), D-24574 (WP-750 client gating), D-24571 (WP-747 Bystander captor), D-24026 (live-on-surface).
 
+### D-24571 — A Bystander revealed from the Villain Deck is captured by the City villain closest to the Villain Deck (Active 2026-09-26 — WP-747 / EC-784)
+
+**Status:** Active. Landed 2026-09-26 (WP-747 / EC-784). The live-on-surface check (D-24026) is pending with the operator. In a Midtown match, a Bystander revealed while two or more City spaces are occupied must be logged as captured by the villain at the **lowest** occupied space.
+
+**Context.** The Bystander branch of `revealVillainCard` picked its captor by scanning the City from the escape edge down, so the villain **about to escape** (the highest occupied index) captured every revealed Bystander. Universal Rules v23 (L606–608) say: "Put the Bystander under the Villain/Adversary in the city that's closest to the Villain/Adversary Deck." Villains enter at index 0 (the Villain Deck side, `pushVillainIntoCity`) and escape from index 4, so the rule's captor is the **lowest** occupied index.
+- PR #75 (2026-05-17) chose the opposite end and noted in its own write-up that its prompt was ambiguous about which end is "front". No decision ever locked that direction.
+- In live match `PaT5TygrTPQ` (2p Red Skull / Midtown), four hostages piled onto The Leader at spaces 3–4 instead of the Sentinels at space 0. The Leader then escaped holding 6, against Midtown's 8-Bystander loss threshold.
+
+**Decision.**
+
+1. **Captor rule.** A Bystander revealed from the Villain Deck attaches (in `G.attachedBystanders`) to the occupant of the lowest occupied `G.city` index: the scan runs upward from index 0, and the first occupant wins. Henchmen count, as before. With an empty City it goes to `G.mastermind.baseCardId`, mirrored into `G.mastermind.attachedBystanders` (D-12805), unchanged.
+2. **Direction only.** The Mastermind fallback, the append-not-overwrite attach, the log line `"<Bystander> revealed and captured by <captor>."` and the `bystanderRevealed` event shape (WP-602 / D-24412) are byte-identical. There is no new `G` field, move, effect type or log outcome. `notableEvents.types.ts` received JSDoc prose only (not a contract change).
+3. **Correction to D-24254.** D-24254 (WP-432) restates the captor as "the frontmost city villain" in passing, while describing the branch as unchanged. That restatement is superseded here: the captor is the City villain closest to the Villain Deck. D-24254's own decision, that no villain captures merely by entering the City, stands.
+4. **Precedent.** The two hero effects that pick a City captor (`heroEffectKidnapPerCount`, `heroEffectHereHoldThis`, via `buildHereHoldThisTargets`) already scan ascending, "FIRST City villain by ascending city index" (D-24537). The Villain-Deck reveal now agrees with them.
+5. **Out of scope, unchanged.** Captors named by `capture-bystander` effects (Ambush / Twist / Fight / Master Strike; the Midtown Bank twist; D-15401) and escape penalties are unchanged. The PAR profile re-pin (`data/par/profile/v1/**`) is the separate `INFRA:` follow-up now that both WP-747 and WP-748 have landed. Seed PAR is untouched.
+6. **Replay posture.** Re-executing a match recorded before this change may produce a different final state wherever a Bystander was revealed with two or more occupied City spaces. Stored scores are not recomputed.
+7. **Pair interaction.** WP-748 (D-24572, +1 attack per Bystander under the Midtown family) merged first. Under Midtown the two compound: hostages now land on the villain nearest the Villain Deck, and that villain gets harder. As second of the pair, this session re-ran the hash oracles and both sim gates on the merged tree.
+
+**Gates.** After `pnpm -r build` (no `Failed`), on `origin/main` including WP-748:
+- Engine suite 4333/0 → 4334/0. The direction test was rewritten, the intentional behaviour change: `[villain-entry, null, villain-middle, villain-near-escape, null]` → `villain-entry`. One new test: `[null, villain-a, null, villain-b, null]` → `villain-a`. Every other test is byte-identical, including the single-occupant fixtures and the escape description.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` pins pass unchanged.
+- `sim:coverage --check` and `sim:runtime-observed:check` → 0. `wiki-viewer:project` and `wiki-viewer:check-links` → 0.
+- `pnpm -r --no-bail test` → 0 fail.
+- Greps: the ascending scan matches once; "frontmost" has zero matches across the 3 engine source files and 4 wiki pages.
+
+**Reserved by:** NUMBER-LEDGER D-24571. Related: D-24254 (WP-432, corrected restatement), D-24537 (ascending captor precedent), D-24412 (WP-602 `bystanderRevealed`), D-12805 (Mastermind mirror), D-24314 (Midtown carry-away), D-24572 (WP-748), D-24026 (live-on-surface).
+
 ---
 
 Protect this file.

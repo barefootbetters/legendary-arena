@@ -532,7 +532,7 @@ export function performVillainReveal(
     // why: WP-432 (supersedes D-1701 / removes the WP-431 entry-capture log) —
     // a villain/henchman does NOT capture a bystander merely by entering the
     // City. Canonical Legendary: bystanders enter play ONLY via a bystander CARD
-    // revealed from the villain deck (captured by the frontmost city villain, or
+    // revealed from the villain deck (captured by the city villain closest to the Villain Deck, or
     // the Mastermind if the city is empty — the `cardType === 'bystander'` branch
     // below) or via a specific Ambush / Master-Strike / Scheme-Twist / Fight
     // `capture-bystander` effect. The former MVP unconditional attach from
@@ -605,14 +605,16 @@ export function performVillainReveal(
   if (cardType === 'villain' || cardType === 'henchman') {
     // Already placed in City in step 4b — do not also place in discard
   } else if (cardType === 'bystander') {
-    // why: per Legendary tabletop rules, a bystander revealed from the
-    // villain deck is captured by the frontmost villain in the City (the
-    // one that will escape next — highest occupied index, since index 4
-    // is the escape edge per pushVillainIntoCity). If the City has no
-    // villains, the Mastermind captures the bystander instead. The
+    // why: WP-747 / D-24571 — Universal Rules v23 (L606-608): "Put the Bystander
+    // under the Villain/Adversary in the city that's closest to the
+    // Villain/Adversary Deck." Villains enter at index 0 (the Villain Deck side;
+    // pushVillainIntoCity) and escape from index 4, so the captor is the LOWEST
+    // occupied index — scanned upward from the entry edge, first occupant wins.
+    // This replaces the former escape-edge captor (highest occupied index). If the
+    // City has no villains, the Mastermind captures the bystander instead. The
     // bystander is NOT routed to villainDeck.discard.
     let captorCardId = G.mastermind.baseCardId;
-    for (let cityIndex = G.city.length - 1; cityIndex >= 0; cityIndex--) {
+    for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
       const occupant = G.city[cityIndex];
       if (occupant !== null && occupant !== undefined) {
         captorCardId = occupant;

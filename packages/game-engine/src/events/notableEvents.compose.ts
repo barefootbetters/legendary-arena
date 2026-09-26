@@ -304,7 +304,7 @@ export function composeHealNarrative(woundsHealed: number): string {
  * had no entry) supplied by the fire site, so the composer keeps its no-`G` purity.
  *
  * @param bystanderName - Human-facing name of the revealed Bystander card.
- * @param captorName - Human-facing name of the captor (frontmost City villain, or the Mastermind).
+ * @param captorName - Human-facing name of the captor (City villain closest to the Villain Deck, or the Mastermind).
  * @returns A single English sentence for the notable-event overlay.
  */
 export function composeBystanderRevealedNarrative(

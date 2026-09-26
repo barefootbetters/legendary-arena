@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-747 — A Villain-Deck Bystander is captured by the Villain closest to the Villain Deck (EC-784 / D-24571) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** A Bystander
+revealed from the Villain Deck is now captured by the City villain **closest to the Villain Deck**
+(the lowest occupied space), as Universal Rules v23 L606–608 print. It used to go to the villain about
+to escape. In live match `PaT5TygrTPQ` that piled four hostages onto The Leader at spaces 3–4, and he
+escaped carrying 6 against Midtown's 8-Bystander loss threshold. Under Midtown this compounds with
+WP-748: hostages now sit on the newest villain, which gets +1 attack per hostage.
+
+- **Engine.** The captor scan direction is flipped in `revealVillainCard`. Everything else is
+  byte-identical: the Mastermind fallback, the attach, the log line and the `bystanderRevealed`
+  event. There is no new `G` field, move or effect. The JSDoc and 4 ewiki pages are reworded, and
+  D-24571 corrects D-24254's passing restatement.
+- **Counts and gates.** This was the second of the WP-748 pair, run on the merged tree.
+  - Engine 4333/0 → 4334/0.
+  - Replay sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged.
+  - `sim:coverage --check`, `sim:runtime-observed:check`, `wiki-viewer:project` and
+    `check-links` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Follow-up.** The PAR profile re-pin (`data/par/profile/v1/**`), a separate `INFRA:`, is now due
+  since both WP-747 and WP-748 have landed.
+- **Pending (D-24026).** Operator live-verify in a Midtown match: a Bystander revealed while two or
+  more City spaces are occupied is logged as captured by the villain at the lowest occupied space.
+
 ### WP-748 — Midtown Bank Robbery family: each Villain gets +1 attack for each Bystander it has (EC-785 / D-24572) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Under
