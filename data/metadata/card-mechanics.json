@@ -380,10 +380,11 @@
       "label": "Defeated Villain Or Mastermind",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 4,
+      "cardCount": 5,
       "cardIds": [
         "core/emma-frost",
         "core/hawkeye",
+        "mdns/werewolf-by-night",
         "msp1/hawkeye",
         "rvlt/war-machine"
       ],
@@ -1080,6 +1081,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/nick-fury"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "optional-ko-your-hero",
+      "label": "Optional Ko Your Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "mdns/werewolf-by-night"
       ],
       "hidden": true
     },
@@ -3319,8 +3331,10 @@
     "mdns/werewolf-by-night": {
       "mechanics": [
         "blood-frenzy",
+        "defeated-villain-or-mastermind",
         "draw",
         "moonlight",
+        "optional-ko-your-hero",
         "optional-put-bottom-hq",
         "sunlight"
       ]

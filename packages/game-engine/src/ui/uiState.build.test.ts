@@ -25,6 +25,9 @@ import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
 import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { getLegalMoves } from '../simulation/ai.legalMoves.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
 
 /**
  * Creates a valid test MatchSetupConfig. Same pattern used in
@@ -1530,6 +1533,81 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
     assert.equal(ui.pendingOptionalKoReward!.eligibleDiscard.length, 3, 'discard cards are still offered');
     assert.deepStrictEqual(ui.pendingOptionalKoReward!.eligibleInPlay, [], 'in-play cards are NOT offered (koZones excludes inPlay)');
     assert.equal(ui.pendingOptionalKoReward!.rewardLabel, '', 'no reward label for the no-reward variant');
+  });
+
+  /** Snarling Fangs' entry (WP-767 / D-24600): hand + played this turn, Heroes only. */
+  function withSnarlingFangsEntry(): LegendaryGameState {
+    const gameState = withOptionalReward('rescue', 1);
+    gameState.playerZones['0']!.hand = ['hero-h1' as CardExtId, WOUND, 'hero-h2' as CardExtId];
+    gameState.playerZones['0']!.inPlay = ['hero-p1' as CardExtId, WOUND];
+    gameState.pendingOptionalKoRewards = [
+      {
+        playerID: '0',
+        rewardType: 'none',
+        rewardMagnitude: 0,
+        sourceCardId: 'mdns/werewolf-by-night/snarling-fangs#0' as CardExtId,
+        koZones: ['hand', 'inPlay'],
+        koHeroesOnly: true,
+      },
+    ];
+    return gameState;
+  }
+
+  it('WP-767: a koZones hand/inPlay + koHeroesOnly entry lists NO discard cards and NO Wounds', () => {
+    const ui = buildUIState(withSnarlingFangsEntry(), mockCtx);
+    const projection = ui.pendingOptionalKoReward!;
+    assert.deepStrictEqual(projection.eligibleHand.map((entry) => entry.cardId), ['hero-h1', 'hero-h2'], 'hand Heroes only — the Wound is omitted');
+    assert.deepStrictEqual(projection.eligibleInPlay.map((entry) => entry.cardId), ['hero-p1'], 'played-this-turn Heroes only');
+    assert.deepStrictEqual(projection.eligibleDiscard, [], 'the discard pile is not offered (koZones omits discard)');
+    assert.equal(projection.rewardLabel, '', 'no reward label');
+  });
+
+  it('WP-767: an entry WITHOUT koHeroesOnly still lists Wounds (existing entries unchanged)', () => {
+    const ui = buildUIState(withOptionalReward('rescue', 1), mockCtx);
+    assert.ok(
+      ui.pendingOptionalKoReward!.eligibleDiscard.some((entry) => entry.cardId === WOUND),
+      'the rewarded entry still offers the discard Wound',
+    );
+  });
+
+  it('WP-767 round trip: projection, resolve and bot agree for a koZones hand/inPlay + koHeroesOnly entry', () => {
+    // why: WP-767 copilot — the four eligibility copies (projection, resolve, bot, selector) are
+    // not refactored into one; this test pins that they agree. A Wound and a discard card are
+    // present so every exclusion is exercised.
+    const baseState = withSnarlingFangsEntry();
+    const projection = buildUIState(baseState, mockCtx).pendingOptionalKoReward!;
+    const projected = [...projection.eligibleHand, ...projection.eligibleDiscard, ...projection.eligibleInPlay];
+    const projectedKeys = new Set(projected.map((entry) => `${entry.zone}:${entry.cardId}`));
+
+    // 1. every projected card is accepted by the resolve.
+    for (const entry of projected) {
+      const gameState = structuredClone(baseState);
+      resolveOptionalKoReward(makeMockMoveContext(gameState), { zone: entry.zone, cardId: entry.cardId });
+      assert.deepStrictEqual(gameState.ko, [entry.cardId], `the resolve accepts projected ${entry.zone}:${entry.cardId}`);
+      assert.equal(gameState.pendingOptionalKoRewards!.length, 0, 'the entry is popped');
+    }
+
+    // 2. the bot's target is one of the projection's cards.
+    const botMoves = getLegalMoves(baseState, { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 });
+    assert.equal(botMoves.length, 1, 'the bot short-circuits to a single resolve');
+    assert.equal(botMoves[0]!.name, 'resolveOptionalKoReward');
+    const botTarget = botMoves[0]!.args as { zone: string; cardId: string };
+    assert.ok(projectedKeys.has(`${botTarget.zone}:${botTarget.cardId}`), 'the bot picks a projected card');
+
+    // 3. the resolve rejects every hand / in-play / discard card the projection leaves out.
+    const zoneNames: ('hand' | 'discard' | 'inPlay')[] = ['hand', 'discard', 'inPlay'];
+    let rejectedCount = 0;
+    for (const zoneName of zoneNames) {
+      for (const cardId of baseState.playerZones['0']![zoneName]) {
+        if (projectedKeys.has(`${zoneName}:${cardId}`)) { continue; }
+        const gameState = structuredClone(baseState);
+        resolveOptionalKoReward(makeMockMoveContext(gameState), { zone: zoneName, cardId });
+        assert.deepStrictEqual(gameState.ko, [], `the resolve rejects unprojected ${zoneName}:${cardId}`);
+        assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'the queue stays intact');
+        rejectedCount += 1;
+      }
+    }
+    assert.ok(rejectedCount >= 4, 'the hand Wound, the in-play Wound and the discard cards were all exercised');
   });
 
   it('eligible order follows array index, not Object.keys (reversed-array pin)', () => {

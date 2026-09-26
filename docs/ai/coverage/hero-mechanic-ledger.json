@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 768,
+    "totalRows": 770,
     "byStatus": {
-      "executable": 374,
+      "executable": 375,
       "deferred": 16,
-      "condition": 44,
+      "condition": 45,
       "unsupported": 300,
       "unmarked": 32,
       "subsystem": 2
     },
-    "distinctMechanics": 154
+    "distinctMechanics": 155
   },
   "rows": [
     {
@@ -6508,6 +6508,22 @@
       "extId": "mdns/werewolf-by-night",
       "heroName": "Werewolf by Night",
       "set": "mdns",
+      "mechanic": "defeated-villain-or-mastermind",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "snarling-fangs",
+          "name": "Snarling Fangs"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "heroName": "Werewolf by Night",
+      "set": "mdns",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -6545,6 +6561,22 @@
         {
           "slug": "track-the-captives",
           "name": "Track the Captives"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "heroName": "Werewolf by Night",
+      "set": "mdns",
+      "mechanic": "optional-ko-your-hero",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-your-hero",
+      "designs": [
+        {
+          "slug": "snarling-fangs",
+          "name": "Snarling Fangs"
         }
       ]
     },

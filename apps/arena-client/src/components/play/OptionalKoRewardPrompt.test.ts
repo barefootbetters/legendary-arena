@@ -247,7 +247,9 @@ describe('OptionalKoRewardPrompt (WP-249 / EC-280)', () => {
     });
 
     const heading = wrapper.find('.optional-ko-reward-prompt__heading').text();
-    assert.match(heading, /You may KO a card from your hand or discard pile/);
+    // why: WP-767 / D-24600 — intentional copy change to the generic no-reward heading. Exact
+    // equality, because a /You may KO a card/ regex would also match the old heading.
+    assert.equal(heading.trim(), 'You may KO a card');
     assert.ok(!heading.includes('()'), 'no empty reward parentheses');
     assert.equal(wrapper.find('.optional-ko-reward-prompt__reward').exists(), false, 'no reward label span');
     assert.ok(wrapper.find('[data-testid="optional-ko-reward-card-hand-hand-card-1"]').exists(), 'hand KO offered');

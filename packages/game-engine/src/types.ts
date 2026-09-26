@@ -1016,6 +1016,13 @@ export interface PendingOptionalKoReward {
   // Heroes (the S.H.I.E.L.D. Officer token itself counts as a S.H.I.E.L.D. Hero).
   /** Optional KO-target team restriction; absent = any card (D-24498). */
   koTeamFilter?: 'shield';
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes" restricts the KO
+  // target to Heroes. ABSENT = no filter, so every existing entry is byte-unchanged. Written as
+  // `true` or omitted, NEVER `false`; readers test `=== true`. When set, WOUND_EXT_ID is
+  // ineligible in the resolve, the projection and the bot (a Wound is the only non-Hero card
+  // that can be in a hand or play area today — a future one must extend this check).
+  /** Optional Heroes-only KO restriction (a Wound is ineligible); absent = any card (D-24600). */
+  koHeroesOnly?: true;
 }
 
 /**
