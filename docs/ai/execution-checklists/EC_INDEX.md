@@ -940,6 +940,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-806 | WP-769    | Game Engine (`MastermindState.wounds` contract + `mastermind/killmonger.logic.ts` [new] + `moves/woundMastermind.ts` [new] + fight gate + wound return + strike + 3 tactics + full move lockstep + projection) | **WP-769 — Killmonger.** Mastermind Wounds + Wound-him move. D-24602 reserved. | Draft |
 | EC-807 | WP-770    | Arena Client (`AssassinShuffleChooser.vue` [new] + `MastermindTile.vue` shuffle-fight branch) | **WP-770 — Indestructible Man client.** BLOCKED on WP-768. | Draft |
 | EC-808 | WP-771    | Arena Client (`MastermindTile.vue` Wound button + badge + Fight lock; `uiMoveName` + `useTurnActions`) | **WP-771 — Killmonger client.** BLOCKED on WP-769. | Draft |
+| EC-809 | WP-772    | Game Engine (`hero/splitCard.logic.ts` [new: `resolveSplitFacePair` / `offPlayCardTraits` / `offPlayCardStats`] + `moves/splitFaceChoice.resolve.ts` [either-face recognition + relabel] + ~16 off-play class / printed-stat read sites across `hero/*`, `rules/*`, `moves/*`, `villain/villainEffects.execute.ts`, `scoring/{dynamicVictoryPoints,scoring.logic}.ts`, `economy/bloodFrenzy.logic.ts` + tests) | **WP-772 — Divided Card off-play traits.** Off play a split hero counts as both halves (union of classes, summed printed Attack/Recruit); in play only the chosen half. Read-time derivation, no new `G` field, non-split games byte-unchanged. Fixes the face-b replay bug. D-24604 reserved. | Draft |
 ---
 
 ## Rules
