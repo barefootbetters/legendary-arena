@@ -7,6 +7,34 @@
 
 ## Current State
 
+### WP-748 — Midtown Bank Robbery family: each Villain gets +1 attack for each Bystander it has (EC-785 / D-24572) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Under
+Midtown Bank Robbery and its reprints (co2e Bank Robbery Hostage Crisis, msp1 Destroy the Cities of
+Earth!), a Villain now costs its printed attack plus one for each Bystander it holds, as the scheme
+prints. Before, the engine ignored the rule: in live match `PaT5TygrTPQ` the bot ally beat HYDRA
+Kidnappers holding 3 Bystanders with 3 attack instead of 6. The new cost reaches three places at once:
+- the fight gate;
+- the bot's legal moves;
+- the City `fightCost`, shown on the tile's `Fight N` badge through WP-750.
+
+- **Engine only.** It is a private scheme-gated bonus inside `resolveFightCost`, the single
+  fight-cost authority, beside the Portals bonus. It is not applied to the Mastermind or to
+  printed-attack readers. There is no client edit and no `G` / UIState field.
+- **Counts and gates.**
+  - Engine 4324/0 → 4333/0.
+  - Replay sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged.
+  - `sim:coverage --check` and `sim:runtime-observed:check` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Follow-ups.**
+  - The PAR profile re-pin (separate `INFRA:`, after WP-747 lands too).
+  - The per-card "+N per Bystander" villains, a separate rule.
+- **Pending (D-24026).** Operator live-verify in a Midtown match. A City villain holding N
+  Bystanders must:
+  - show `city[i].fightCost` = printed + N in the Play Diagnostics `uiStateSnapshot`;
+  - show `Fight printed+N` on its tile;
+  - keep Fight disabled at printed attack.
+
 ### WP-766 — Day/Night badge on the play HUD (EC-803; consumes D-24598) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** In a match with
