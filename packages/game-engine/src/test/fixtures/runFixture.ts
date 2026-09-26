@@ -449,6 +449,14 @@ function executeOnce(
     endgameOutcome: null,
   };
 
+  // why: the live onBegin runs for turn 1 too, and the simulation runner / PAR
+  // aggregator both mirror it before their first move; runFixture previously only
+  // mirrored it at rotateToNextTurn. The flag resets were masked (setup seeds the
+  // same values), but the WP-328 logMeta stamp is not — without this call turn 1
+  // logged unnumbered and every later turn read one lower than the sim that
+  // captured the fixture (the D-24273 capture -> replay lockstep).
+  applyOnBeginParity(gameState, cursor.currentPlayer);
+
   for (let moveIndex = 0; moveIndex < fixture.input.moves.length; moveIndex++) {
     if (cursor.endgameOutcome !== null) {
       // why: extra moves past `evaluateEndgame` returning non-null are a

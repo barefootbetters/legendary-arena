@@ -129,6 +129,33 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.deepEqual(zones.deck, ['c1']);
   });
 
+  it('stamps play-relative logMeta numbering like game.ts onBegin (WP-328)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    // why: precondition — setup leaves logMeta unstamped (setup messages are bare).
+    assert.equal(gameState.logMeta, undefined);
+
+    applyOnBeginParity(gameState, '0');
+    assert.deepEqual(gameState.logMeta, { turn: 1, actionInStep: 0 });
+
+    // why: mid-turn actions advance the counter; the next turn start must bump the
+    // turn and reset the action counter, exactly as live onBegin reassigns logMeta.
+    gameState.logMeta!.actionInStep = 4;
+    applyOnBeginParity(gameState, '1');
+    assert.deepEqual(gameState.logMeta, { turn: 2, actionInStep: 0 });
+
+    applyOnBeginParity(gameState, '0');
+    assert.equal(gameState.logMeta!.turn, 3);
+  });
+
+  it('resets lastPlayEffectsFired to 0 like game.ts onBegin (WP-409)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.lastPlayEffectsFired = 3;
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal(gameState.lastPlayEffectsFired, 0);
+  });
+
   it('drops deferredConditionalGrants and the defeat edge flag at the turn boundary (WP-744 / D-24567)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     gameState.deferredConditionalGrants = [
@@ -158,6 +185,10 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
 
     assert.equal('deferredConditionalGrants' in gameState, false);
     assert.equal('villainOrMastermindDefeatedSinceResolve' in gameState, false);
-    assert.deepEqual(Object.keys(gameState).sort(), keysBefore);
+    // why: the ONLY keys the mirror may add are the two live onBegin also stamps on
+    // every turn (logMeta, WP-328; lastPlayEffectsFired, WP-409) — both excluded from
+    // hashGameState. Any other new key would be a deferred-grant leak.
+    const expectedKeys = [...keysBefore, 'lastPlayEffectsFired', 'logMeta'].sort();
+    assert.deepEqual(Object.keys(gameState).sort(), expectedKeys);
   });
 });
