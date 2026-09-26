@@ -1601,6 +1601,13 @@ export interface UIPendingSplitFaceChoice {
   faceA: UISplitFaceOption;
   /** The alternate face (sides[1], `face: 'b'`). */
   faceB: UISplitFaceOption;
+  // why: sides[] order (faceA/faceB) is NOT the printed left-to-right order — for 19 of the 39
+  // split cards faceB is the LEFT half. The picker renders `leftFace` first so the buttons match
+  // the card art; each button still submits its own face. Derived at projection time from
+  // G.splitFacesAlternateOnLeft (lower hero-card slot = left half). Required (not optional) so a
+  // builder or filter that forgets it fails typecheck instead of silently dropping it.
+  /** Which face is printed on the LEFT half of the landscape card ('a' = faceA, 'b' = faceB). */
+  leftFace: 'a' | 'b';
 }
 
 /**

@@ -38,7 +38,22 @@ const mockPending: UIPendingSplitFaceChoice = {
   playerID: 'player-0',
   faceA: { extId: 'cvwr/peter-parker/hot-bowl-of-soup#0', name: 'Hot Bowl of Soup', abilityText: 'You may KO a Wound from your hand or discard pile. [keyword:ko-wound]', cost: 2, attack: 0, recruit: 1 },
   faceB: { extId: 'cvwr/peter-parker/protect-my-family#0', name: 'Protect My Family', abilityText: 'Rescue a Bystander. [keyword:rescue:1]', cost: 2, attack: 1, recruit: 0 },
+  leftFace: 'a',
 };
+
+// why: cvwr Captain America, Secret Avenger — sides[] is ["inspire-a-man", "inspire-a-nation"]
+// but Inspire a Nation (slot 2) is printed on the LEFT half, so the engine projects leftFace 'b'.
+const reversedPending: UIPendingSplitFaceChoice = {
+  playerID: 'player-0',
+  faceA: { extId: 'cvwr/captain-america-secret-avenger/inspire-a-man#0', name: 'Inspire a Man', cost: 4, attack: 2, recruit: 0 },
+  faceB: { extId: 'cvwr/captain-america-secret-avenger/inspire-a-nation#0', name: 'Inspire a Nation', cost: 4, attack: 0, recruit: 2 },
+  leftFace: 'b',
+};
+
+/** The face ids of the rendered buttons, in DOM (left-to-right) order. */
+function renderedFaceOrder(wrapper: ReturnType<typeof mount>): string[] {
+  return wrapper.findAll('button').map((button) => button.attributes('data-testid') ?? '');
+}
 
 describe('SplitFaceChoicePrompt (WP-725 / EC-762)', () => {
   test('renders when a pending choice exists and the viewer is the chooser', () => {
@@ -97,6 +112,34 @@ describe('SplitFaceChoicePrompt (WP-725 / EC-762)', () => {
     });
     await wrapper.find('[data-testid="split-face-b"]').trigger('click');
     assert.deepEqual(calls, [{ name: 'resolveSplitFaceChoice', args: { face: 'b' } }]);
+  });
+
+  test('renders face A first when leftFace is "a"', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: mockPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.deepEqual(renderedFaceOrder(wrapper), ['split-face-a', 'split-face-b']);
+  });
+
+  test('renders the printed-left face B first for a reversed card, and each button still submits its own face', async () => {
+    const left = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: reversedPending, viewerPlayerId: 'player-0', submitMove: left.submitMove },
+    });
+    assert.deepEqual(renderedFaceOrder(wrapper), ['split-face-b', 'split-face-a'], 'Inspire a Nation (left half) renders first');
+    const buttons = wrapper.findAll('button');
+    assert.match(buttons[0]!.text(), /Inspire a Nation/);
+    assert.match(buttons[1]!.text(), /Inspire a Man/);
+    await buttons[0]!.trigger('click');
+    assert.deepEqual(left.calls, [{ name: 'resolveSplitFaceChoice', args: { face: 'b' } }], 'the left button submits face b');
+
+    const right = recorder();
+    const second = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: reversedPending, viewerPlayerId: 'player-0', submitMove: right.submitMove },
+    });
+    await second.findAll('button')[1]!.trigger('click');
+    assert.deepEqual(right.calls, [{ name: 'resolveSplitFaceChoice', args: { face: 'a' } }], 'the right button submits face a');
   });
 
   test('does not submit twice for one choice (double-submit guard)', async () => {

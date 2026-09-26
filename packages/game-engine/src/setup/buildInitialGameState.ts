@@ -48,7 +48,7 @@ import {
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces } from './buildHeroDeck.js';
+import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
@@ -554,6 +554,12 @@ export function buildInitialGameState(
   // contrast transformTargets, which is always-seeded and DID re-pin).
   const splitFaces = buildSplitFaces(effectiveHeroDeckIds, registry);
   const splitFacesFields = Object.keys(splitFaces).length > 0 ? { splitFaces } : {};
+  // why: display-only printed-order capture for the "choose a side" picker (sides[] is not
+  // left-to-right; lower slot = left half). Same absent-when-empty spread, so games whose split
+  // cards are all primary-on-left (and every no-split game) serialize byte-identically.
+  const splitFacesAlternateOnLeft = buildSplitFaceAlternateOnLeft(effectiveHeroDeckIds, registry);
+  const splitFacesAlternateOnLeftFields =
+    Object.keys(splitFacesAlternateOnLeft).length > 0 ? { splitFacesAlternateOnLeft } : {};
 
   // why: WP-670 / D-24484 — Scheme Transform. For a scheme in SCHEME_TRANSFORM_TARGETS,
   // capture its Great Old One flip target + that face's ability text (read the same way as
@@ -715,6 +721,7 @@ export function buildInitialGameState(
     // the loadout has split heroes (conditional spread), so a no-split game (incl. the
     // sentinel) serializes byte-identically → no re-pin.
     ...splitFacesFields,
+    ...splitFacesAlternateOnLeftFields,
     // why: mastermind state built at setup from registry; tactics deck
     // shuffled deterministically; base card fightCost in G.cardStats
     mastermind: mastermindState,
