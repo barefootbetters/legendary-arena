@@ -44451,7 +44451,7 @@ Safe to repeat; a later accepted submit re-publishes. Re-check the "only writer"
 
 ### D-24581 — "You may discard a card. If you do, draw a card." and "Reveal the top card of your deck. You may KO it." ride the Smash and reveal-top-dispose queues (Active 2026-09-25 — WP-754 / EC-791)
 
-**Status:** Active — landed 2026-09-25 (WP-754 / EC-791). Live-on-surface (D-24026) is operator-pending.
+**Status:** Active — landed 2026-09-25 (WP-754 / EC-791). Live-on-surface (D-24026) CONFIRMED 2026-09-25: Hungry for Action discard-to-draw (guest autoplay `AtAN1Xky0Nx`) and Gruesome Feast KO-or-keep via Excessive Violence (operator 2-player match, round 28 — revealed Cauldron of the Cosmos, kept on top, no Discard offered).
 
 **Context.** Two printed hero abilities had no marker and no executor, so eight cards granted only their printed resources: "You may discard a card. If you do, draw a card." (vnom Hungry for Action's Digest 3 line; gotg Gritty Scavenger, asrd Bio-Engineered Cyborg, shld GW Bridge, antm Risky Science `[hc:tech]`) and "Reveal the top card of your deck. You may KO it." (vnom Gruesome Feast and mgtg Remove His Spine on their Excessive Violence lines; vill Electroshock Therapy). Operator-observed live in match `a2e01e70` (2026-09-24): Gruesome Feast played on round 30 and never enrolled for Excessive Violence; Hungry for Action played by both seats on eleven turns, round 32 included, with no applied line.
 
