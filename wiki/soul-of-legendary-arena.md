@@ -1383,7 +1383,11 @@ looks like freedom.
   that were the whole menu. A false dilemma is not a debate; it narrows the
   field until every visible option serves the same hand — the
   [two-box choice](#how-heroes-beat-it--the-difficulty-knobs) the heroes must
-  learn to refuse.
+  learn to refuse. Its sharpest form is the **straw man**: the manufactured
+  choice with the other box forged. The opponent is made to hold a claim she
+  never made — usually the cruelest available — so that declining the official
+  box looks like vice. "Kneel or you stand for brutality" is one; "they don't
+  want those people to exist" is another.
 - **Manipulation runs on virtues, not vices** *(questions 4 and 5)*.
   Compassion, fairness, loyalty, protecting children. Those are the handles,
   because they are the ones you will not want to let go of. A vice can be
@@ -1782,6 +1786,33 @@ dispute.
 
   What the table cannot show is the one thing the league's rule requires: a
   definition.
+- **The straw man in Minneapolis** *(questions 2, 3 and 4)*. In July 2026,
+  Indiana's Sophie Cunningham told ESPN she wanted "to protect young girls in a
+  locker room, or young girls in sport who shouldn't have to go against
+  biological men," and later said of the backlash: "I got a lot of negative
+  feedback about me hating trans. And I'm like, 'I never once said that.'"
+  Minnesota coach Cheryl Reeve answered the phrasing on 1 August, before the
+  teams met: "It is not the case that we have, quote, biological men in girls'
+  locker rooms, the way it's being phrased, the innuendo there that somehow
+  transgender women are predators of some kind." The next day Reeve wore a
+  "Trans Kids Belong" shirt under her jacket, Cunningham was booed from first
+  touch, and rallies for and against her gathered outside the arena. After the
+  regular-season finale on 24 September, Reeve named the shirt among the most
+  meaningful things of her season: "what is happening in the name of some
+  issues of transgender in sports — it's really an attack on all transgender
+  community. They don't want transgender people to exist." She did not name
+  Cunningham. The existence frame did the work regardless. The dispute on the
+  floor was a category: who competes in the women's game and who uses its locker
+  room. The report from the podium was about existence. That is question 3 by
+  substitution. The claim that was made — this category is for females — is not
+  refuted; it is replaced with a claim no one made and no decent person could
+  hold, and a predator "innuendo" is read into a sentence that did not contain
+  one. Question 4 follows: the player who declines the frame finds a vice
+  already placed in her mouth. And the handle is a virtue — "for the
+  transgender community this really is about life and death" — which is why the
+  swap works: once the stakes are existence, defending a sex category feels like
+  abandoning a child. The lens does not referee the category or judge anyone's
+  kindness. It reads the swap.
 - **The Bout swap** *(questions 1, 2 and 3)*. Two Americans sat in Russian
   prisons in 2022. Paul Whelan, a former Marine — discharged in 2008 with a
   bad-conduct discharge after a court-martial on larceny-related charges — had
@@ -2711,6 +2742,14 @@ choice for the operator, never make it silently.
   ABC News on [the 2026 divorce filing](https://abcnews.com/GMA/Culture/brittney-griner-files-divorce-wife-cherelle-griner/story?id=135268883);
   *Indiatimes* on [both marriages](https://www.indiatimes.com/trending/what-happened-between-brittney-griner-and-glory-johnson-old-marriage-drama-resurfaces-after-controversial-divorce-filing-against-cherelle-griner/articleshow/132776550.html)
   (1 August 2026).
+  For the straw man in Minneapolis: PinkNews on
+  [Cunningham's ESPN remarks](https://www.thepinknews.com/2026/07/24/wnba-star-sophie-cunningham-wants-to-protect-young-girls-in-trans-athlete-debate/)
+  (24 July 2026); FOX 9 on
+  [Reeve's 1 August remarks and shirt](https://www.fox9.com/sports/cheryl-reeve-sports-shirt-supporting-trans-kids-after-sophie-cunningham-response);
+  ESPN on [the 2 August game and rallies](https://www.espn.com/wnba/story/_/id/49514434/fever-lynx-game-attracts-rallies-cunningham);
+  and OutKick on
+  [Reeve's 24 September remarks](https://www.foxnews.com/outkick-sports/lynx-coach-cheryl-reeve-voices-support-trans-community-regular-season-finale-vs-fever),
+  with MPR's [game report](https://www.mprnews.org/story/2026/09/25/lynx-beat-the-indiana-fever-for-regular-season-finale-before-playoffs-begin-sunday).
   For the Bout swap: the Justice Department on
   [Bout's 2011 conviction](https://www.justice.gov/archives/opa/pr/international-arms-dealer-viktor-bout-convicted-new-york-terrorism-crimes);
   Al Jazeera on the [wrongful-detention designation](https://www.aljazeera.com/news/2022/5/3/us-state-department-says-griner-wrongfully-detained-by-russia)
