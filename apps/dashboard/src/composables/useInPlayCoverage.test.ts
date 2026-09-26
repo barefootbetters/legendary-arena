@@ -442,9 +442,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // "If it costs 0, KO it" / See Future Timelines act on Wounds they used to skip; the
   // fixed-seed sweep's trajectories shift and totalObs 3017 -> 3019 (+2). resolvedObs stays
   // 733, percentResolved stays 24.3 (733 / 3019). A sweep-trajectory artifact, not a regression.
+  // 2026-09-25 (D-24600, re-pin): the anni / ff04 Focus lines no longer grant their cost and
+  // gated effect for free. Each is now an honest `focus` parse-unrecognized hollow (917
+  // observations that used to pass as executable), and the sweep's trajectories shift with the
+  // lost free resources, so totalObs 3019 -> 3967. resolvedObs stays 733, so percentResolved
+  // 24.3 -> 18.5 (733 / 3967). This is newly visible hollow surface, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3019);
-  assert.equal(view.percentResolved.value, 24.3);
+  assert.equal(view.totalObs.value, 3967);
+  assert.equal(view.percentResolved.value, 18.5);
   assert.ok(view.remaining.value.length > 0);
 });
 

@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 2785,
+    "executable": 2690,
     "heroes": 324,
-    "hooks": 6309,
-    "noEffect": 2521,
+    "hooks": 6304,
+    "noEffect": 2611,
     "parsedNotExecuted": 1003
   },
   "perSet": {
@@ -23,9 +23,9 @@
       "noEffect": 94
     },
     "anni": {
-      "executable": 73,
-      "hooks": 127,
-      "noEffect": 49
+      "executable": 16,
+      "hooks": 122,
+      "noEffect": 101
     },
     "antm": {
       "executable": 47,
@@ -103,9 +103,9 @@
       "noEffect": 76
     },
     "ff04": {
-      "executable": 59,
+      "executable": 21,
       "hooks": 74,
-      "noEffect": 5
+      "noEffect": 43
     },
     "gotg": {
       "executable": 17,

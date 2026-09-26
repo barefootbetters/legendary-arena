@@ -44712,4 +44712,26 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 ---
 
+### D-24600 — A Focus cost and the effect it pays for are never a free grant — suppress every icon in the Focus-gated segment in the hero-ability parser (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct parser fix, no WP; the D-24471 / D-24486 / D-24599 positional-suppression precedent).
+
+**Context.** The Annihilation-era Focus prefix, `[keyword:Focus] N[icon:recruit|attack] [icon:5] <effect>` (anni) and `[keyword:Focus N][icon:recruit]  [icon:5] <effect>` (ff04), is a pay-to-activate ability: "you may spend N to do <effect>". No Focus handler exists in the engine. `buildHeroAbilityHooks`' icon-magnitude read (Step 2b) and icon→keyword read (Step 3) turned the cost into an unconditional `+N` grant **and** fired any icon grant in the gated effect for free. Confirmed against the built dist with the real card data on all 25 hero Focus lines (15 anni, 10 ff04): e.g. anni fantastic-four-united/invisible-woman line 1 +4 recruit; anni psi-lord/reshape-reality +3 recruit plus its Scheme-Twist-conditional +4 attack, unconditionally; anni super-skrull/stretching-credibility +2 attack; ff04 silver-surfer/the-power-cosmic recruit + 9 attack. The ff04 space form `[keyword:Focus N]` never matches `KEYWORD_PATTERN`, so it was also dropped silently, with no unresolved marker.
+
+**Decision.** In `setup/heroAbility.setup.ts`, add `FOCUS_COST_PATTERN` (`\[keyword:Focus(?:\s+\d+)?\]`) and push the range from the Focus token to the end of the line into the existing `suppressedIconRanges`, beside the D-24471 condition-clause and D-24486 negative-magnitude ranges. Suppressing only the cost icon would still leave the gated effect firing for free (The Power Cosmic's +9 attack), which is the same bug, so the whole Focus-gated segment is inert until a Focus handler (optional spend-N-to-activate) is built. A line carrying a Focus token now always records the `focus` unresolved marker, including the ff04 space form, so every Focus line is an honest `parse-unrecognized` hollow rather than a fake-executable grant. An icon before the Focus token (none in the current data) is untouched. No marker, card-data, executor or contract change.
+
+**Coverage.** `scripts/coverage/hero-effect-coverage.baseline.json` refreshed: anni executable 73 → 16, ff04 59 → 21 (corpus hooks 6309 → 6304 because inert copies of the same card now dedupe as byte-identical). `docs/ai/coverage/runtime-observed-hollows.json` regenerated: `focus` appears with 917 `parse-unrecognized` observations. The dashboard `useInPlayCoverage` pin moves totalObs 3019 → 3967 and percentResolved 24.3 → 18.5; resolvedObs is unchanged at 733. This is newly visible hollow surface, the intended result of removing phantom grants (the #1930 precedent).
+
+**Determinism.** No sentinel replay or PAR fixture plays these cards. The engine suite passes at 4242/4242 with no `finalStateHash` / `PRE_WP080_HASH` re-pin.
+
+**Gates.** Focused test `hero/focusCostIconSuppression.test.ts` passes 7/7, and 6 of those fail against the unfixed parser. `sim:coverage --check` (after the baseline refresh), `sim:runtime-observed:check` (after regen), `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check` and `ledger:numbers:check` all pass. The dashboard suite passes 505/505.
+
+**Follow-up.** Build a Focus executor: an optional spend-N-recruit/attack activation, repeatable where printed (Unseen Rescue's "up to four times this turn"), which resolves the gated effect through the existing descriptors. Until then these lines do nothing, which is honest.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play ff04 The Power Cosmic and confirm recruit and attack don't rise.
+
+**Reserved by:** NUMBER-LEDGER D-24600. Related: D-24471 (condition-clause icons), D-24486 (negative-magnitude icons), D-24599 (adversary-stat icons, PR #2393), D-24034 (unresolved markers).
+
+---
+
 Protect this file.
