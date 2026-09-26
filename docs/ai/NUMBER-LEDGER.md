@@ -405,7 +405,7 @@ high-water: 422
 - WP-763 — scheme-evil-wins-audit (Game Engine. Audit every scheme's printed Evil Wins condition against the engine: schemes with no resolver fall back to the generic 7-twist doom-clock loss even when the card prints a different loss (live: Midnight Massacre lost at twist 7 on a deck-runout scheme). Suppress the false twist-count loss per scheme and wire the printed condition where the engine already has it. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - WP-764 — midnight-massacre-scheme (Game Engine. mdns Midnight Massacre: 11 twists, a Blade Hero's 14 cards shuffled into the Villain Deck as Switchblade Villains (attack = printed cost; Sunlight/Moonlight fight rules; Fight: KO or a player gains it), the Hero-Deck-burn twist, Evil Wins on Hero or Villain Deck runout. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - WP-765 — sunlight-moonlight-engine (Game Engine + card data. The Sunlight/Moonlight day-night rule (most HQ Heroes odd printed cost = Moonlight, even = Sunlight, tie = neither), the hero keywords that gate on it (Werewolf by Night, Blade and other mdns heroes currently parse-unrecognized / always-Sunlight), and its UIState projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
-- WP-766 — sunlight-moonlight-client (App arena-client. A day/night indicator on the play board fed by the WP-765 projection. BLOCKED on WP-765. reserved 2026-09-25, claude/sunlight-moonlight-draft)
+- WP-766 — sunlight-moonlight-client (App arena-client. A day/night indicator on the play board fed by the WP-765 projection. BLOCKED on WP-765. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - WP-767 — snarling-fangs-moonlight (Game Engine + card data. WbN Snarling Fangs Moonlight: "Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes" — a new optional-KO-your-Hero keyword on the D-24467 defeat trigger; removes the line from WP-765 DAY_NIGHT_UNMODELED_LINES. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
 ## EC
 
@@ -772,7 +772,7 @@ high-water: 457
 - EC-800 — scheme-evil-wins-audit (WP-763; Game Engine. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - EC-801 — midnight-massacre-scheme (WP-764; Game Engine. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - EC-802 — sunlight-moonlight-engine (WP-765; Game Engine + card data. reserved 2026-09-25, claude/sunlight-moonlight-draft)
-- EC-803 — sunlight-moonlight-client (WP-766; App arena-client. reserved 2026-09-25, claude/sunlight-moonlight-draft)
+- EC-803 — sunlight-moonlight-client (WP-766; App arena-client. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - EC-804 — snarling-fangs-moonlight (WP-767; Game Engine + card data. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
 ## D
 
@@ -1150,6 +1150,6 @@ section below) and the allocation protocol in
 - D-24595 — scheme-evil-wins-audit (RESERVED: locks WP-763 / EC-800 — which schemes keep the generic twist-count proxy vs suppress it, and the per-scheme Evil Wins mapping. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - D-24596 — midnight-massacre-scheme (RESERVED: locks WP-764 / EC-801 — Switchblade representation, Blade-hero selection, twist + deck-runout semantics. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - D-24597 — par-scenario-key-set-qualified (direct fix, no WP — ScenarioKey segments keep the `setAbbr/` qualifier for every non-core id, so reprint schemes / masterminds / villain groups no longer PAR-gate against core; gauntlet queries match the set's own segment form; one-time operator rekey script. reserved 2026-09-25, claude/gifted-thompson-f6afb4)
-- D-24598 — sunlight-moonlight (RESERVED: locks WP-765 / EC-802 — the day-night determination, keyword semantics and projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
+- D-24598 — sunlight-moonlight (RESERVED: locks WP-765 / EC-802 — the day-night determination, keyword semantics and projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - D-24599 — deck-runout-loss-log-text (direct fix, no WP — the final-turn latch skips its tie announcement when the emptied deck is the scheme's Evil Wins pile, and the pile-depletion loss line names the pile in rulebook words; D-24595 follow-up. reserved 2026-09-26, claude/infra-deck-runout-log)
 - D-24600 — snarling-fangs-moonlight (RESERVED: locks WP-767 / EC-804 — the optional-KO-your-Hero keyword zones (hand + played this turn), its defeat-trigger dispatch, and the day/night condition timing. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
