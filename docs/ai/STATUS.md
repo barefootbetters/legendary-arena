@@ -7,6 +7,40 @@
 
 ## Current State
 
+### WP-750 — Client Fight gating reads the engine's projected fight cost (EC-787 / D-24574) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Fight
+buttons now agree with the engine on cost. The City villain and Mastermind Fight / Excessive-Violence
+buttons gate on the cost the engine will actually charge, not the printed cost. A **Fight N** badge
+at the bottom of the tile shows that cost whenever it differs from the printed cost.
+- **Dead buttons fixed.** Villains holding captured Heroes, a Dark-Portal City space, a Skrull, and
+  the Portals Mastermind with a portal are now disabled until you can pay the real cost. Before, the
+  button was enabled and the click silently did nothing.
+- **False locks fixed.** A card with no printed attack, or a converted Killbot, is no longer shown as
+  "cannot be fought". WP-762 filled the missing printed attack values first.
+
+- **Engine.** One optional UIState field, `UIMastermindState.fightCost`
+  (`resolveMastermindFightCost`), through the full five-step with a filter pass-through for every
+  audience. No move, guard, `G` or hash change.
+- **Client.**
+  - `canFight` / `canFightWithExcessiveViolence` take the projected cost as a number.
+  - CityRow reads `UICityCard.fightCost`. MastermindTile reads `fightCost ?? display.cost`.
+  - The slash gesture inherits the gate unchanged.
+- **Counts.**
+  - Engine 4321/0 → 4324/0.
+  - arena-client 2116/0 → 2126/0; typecheck 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Verified in the preview** at 1280×720 (`?fixture=mid-turn&play=1`):
+  - three `Fight 0` badges on three enabled villains;
+  - the Mastermind keeps the null fallback with no badge;
+  - City space widths are identical with the badges shown or hidden, so the board scale is unchanged.
+- **Unblocks** WP-748 (Midtown +1 per Bystander) and WP-760 (Fallen Blood Frenzy).
+- **Pending (D-24026).** Operator live-verify on a Portals to the Dark Dimension match (check the
+  deployed gitSha), with a Dark Portal on a City space or the Mastermind:
+  - the tile shows `Fight printed+1`;
+  - Fight is disabled at exactly the printed attack;
+  - Fight is enabled at printed + 1, and the fight succeeds.
+
 ### WP-763 — Scheme Evil Wins fidelity: printed twist thresholds, Villain Deck runout, last-twist interim rule (EC-800 / D-24595) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Only the 8
