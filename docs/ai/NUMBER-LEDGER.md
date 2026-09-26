@@ -407,6 +407,10 @@ high-water: 422
 - WP-765 — sunlight-moonlight-engine (Game Engine + card data. The Sunlight/Moonlight day-night rule (most HQ Heroes odd printed cost = Moonlight, even = Sunlight, tie = neither), the hero keywords that gate on it (Werewolf by Night, Blade and other mdns heroes currently parse-unrecognized / always-Sunlight), and its UIState projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - WP-766 — sunlight-moonlight-client (App arena-client. A day/night indicator on the play board fed by the WP-765 projection. BLOCKED on WP-765. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - WP-767 — snarling-fangs-moonlight (Game Engine + card data. WbN Snarling Fangs Moonlight: "Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes" — a new optional-KO-your-Hero keyword on the D-24467 defeat trigger; removes the line from WP-765 DAY_NIGHT_UNMODELED_LINES. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
+- WP-768 — indestructible-man-mastermind (Game Engine. bkwd Indestructible Man: can't be fought with attack; once per turn shuffle two player-chosen Elite Assassins from your Victory Pile into the Villain Deck to fight him. Today he is a free 0-attack win (WP-762/750 accepted residual). reserved 2026-09-26, claude/special-masterminds-draft)
+- WP-769 — killmonger-mastermind (Game Engine. bkpt Killmonger: generic Mastermind Wounds (-1 attack each, returned after a tactic), a woundMastermind move (spend his attack, +1 recruit), can't be fought above 0; strike + three tactics. reserved 2026-09-26, claude/special-masterminds-draft)
+- WP-770 — indestructible-man-client (App arena-client. Elite Assassin chooser + shuffle-fight affordance on the Mastermind tile. BLOCKED on WP-768. reserved 2026-09-26, claude/special-masterminds-draft)
+- WP-771 — killmonger-client (App arena-client. Wound-him button + Mastermind wounds badge. BLOCKED on WP-769. reserved 2026-09-26, claude/special-masterminds-draft)
 ## EC
 
 high-water: 457
@@ -774,6 +778,10 @@ high-water: 457
 - EC-802 — sunlight-moonlight-engine (WP-765; Game Engine + card data. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - EC-803 — sunlight-moonlight-client (WP-766; App arena-client. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - EC-804 — snarling-fangs-moonlight (WP-767; Game Engine + card data. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
+- EC-805 — indestructible-man-mastermind (WP-768; Game Engine. reserved 2026-09-26, claude/special-masterminds-draft)
+- EC-806 — killmonger-mastermind (WP-769; Game Engine. reserved 2026-09-26, claude/special-masterminds-draft)
+- EC-807 — indestructible-man-client (WP-770; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
+- EC-808 — killmonger-client (WP-771; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
 ## D
 
 high-water: 24241
@@ -1153,3 +1161,5 @@ section below) and the allocation protocol in
 - D-24598 — sunlight-moonlight (RESERVED: locks WP-765 / EC-802 — the day-night determination, keyword semantics and projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 - D-24599 — deck-runout-loss-log-text (direct fix, no WP — the final-turn latch skips its tie announcement when the emptied deck is the scheme's Evil Wins pile, and the pile-depletion loss line names the pile in rulebook words; D-24595 follow-up. reserved 2026-09-26, claude/infra-deck-runout-log)
 - D-24600 — snarling-fangs-moonlight (RESERVED: locks WP-767 / EC-804 — the optional-KO-your-Hero keyword zones (hand + played this turn), its defeat-trigger dispatch, and the day/night condition timing. reserved 2026-09-26, claude/wp-snarling-fangs-draft)
+- D-24601 — indestructible-man-mastermind (RESERVED: locks WP-768 / EC-805. reserved 2026-09-26, claude/special-masterminds-draft)
+- D-24602 — killmonger-mastermind (RESERVED: locks WP-769 / EC-806 — generic Mastermind Wounds. reserved 2026-09-26, claude/special-masterminds-draft)
