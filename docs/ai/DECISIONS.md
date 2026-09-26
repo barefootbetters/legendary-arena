@@ -45348,4 +45348,39 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24604 — Divided Card off-play traits: a split hero counts as both halves until it is played (WP-772 / EC-809) (Drafted 2026-09-26; not yet landed)
+
+**Context.**
+- **The rule.** Universal Rules v23 p.49, "Divided Cards": while a Divided Card is anywhere other than in play (hand, deck, discard pile, HQ, etc.), it counts as all its Hero Classes, Teams, card names and Hero Names. It counts as "a multicolored card", and its printed Attack is the total of both halves. Once played, it counts only as the chosen side.
+- **The off-play gap.** WP-724 (D-24545 / D-24546) keeps an unplayed split card as its primary (`sides[0]`) instance. It gives each face its own `G.cardTraits` and `G.cardStats` entry. So every off-play trait read sees one face.
+- **The replay bug.** `resolveSplitFaceChoice` relabels a face-b choice in `inPlay`. Cleanup discards that face-b id unchanged. `isSplitCardInstance` recognises primary ids only. So a card once played as face b never offers the choice again.
+
+**Decision.**
+
+1. **Read-time view, no new `G` field.** A pure helper module, `hero/splitCard.logic.ts`, derives the off-play view from the existing `G.splitFaces`, `G.cardTraits` and `G.cardStats`:
+   - `resolveSplitFacePair` maps either face id to both face ids at the same `#copyIndex`. The reverse lookup is a `for...of` over the map.
+   - `offPlayCardTraits` returns the union: `{ heroClass: faceA.hc, heroClass2: faceB.hc, team }`.
+   - `offPlayCardStats` sums attack and recruit, and ORs the attack / recruit icon flags. Cost and every other field are face a's. The rulebook text names a single "printed [icon]" whose glyph the text extraction drops. The data makes this moot for Recruit: no pair has Recruit on both halves, so the sum is the card's one printed Recruit. The Attack total matters only for the four two-Attack pairs. Summing both is locked.
+   - For a non-split id, or when `G.splitFaces` is absent, both return the raw entry (identity).
+
+   The union cannot be written into `G.cardTraits[primaryId]`, because the primary id is also the in-play id when face a is chosen.
+2. **Boundary.** Off-play reads use the helper. Off-play means hand, deck, discard, victory, HQ, Hero Deck, KO, and revealed or moved cards not in play. `inPlay` reads keep the chosen face. Reads that mix hand and in-play cards split by zone. The Ultron dynamic VP / Blood Frenzy [Tech] count takes the union in every zone except `inPlay`. This applies on both the live path (`bloodFrenzy.logic.ts`) and the final-score path (`scoring.logic.ts` `computeFinalScores`), which must agree.
+3. **Two-slot premise.**
+   - A real-data test pins that all 39 split pairs have exactly one class per face (no `hc2`), two distinct classes, equal cost, and no Recruit on both faces, and that the map is one-to-one (no base is both a primary key and an alternate value; no alternate appears twice). So the union fits the existing two-slot `CardTraitEntry`, and cost reads need no change.
+   - Team is a hero-level field (both faces equal), and no gameplay code matches card names or Hero Names. So team and name reads need no change.
+   - Per-face teams for dual-hero cards (e.g. Storm & Black Panther) are a card-data gap, not modelled here.
+4. **Choice on every play.**
+   - `isSplitCardInstance` is true for either face id.
+   - The parked choice always carries `faceA` = the primary instance and `faceB` = the alternate.
+   - `resolveSplitFaceChoice` relabels `inPlay` from the played id to the chosen face when they differ.
+   - The `PendingSplitFaceChoice` and `UIPendingSplitFaceChoice` shapes are unchanged.
+5. **Determinism.**
+   - No hashed state is added. Non-split games, including the core-2p-Doom sentinel, take the identity path, so `finalStateHash` is unchanged.
+   - The `sim:runtime-observed` sweep includes all five split sets, so its artifact may shift. A diff is accepted only when it is confined to those boards and attributed to this change.
+   - Replays (D-24119) of split-hero matches recorded before WP-772 may diverge on re-execution. Gauntlet `legPicks` are player-chosen, so stored split-hero competitive or gauntlet rows can exist without any fixed pool. **Policy:** stored `competitive_scores` rows are frozen and not re-verified (the D-24600 precedent). The executor records a read-only count of split-hero `team_key` rows, supplied to Jeff as a psql command.
+
+**Reserved by:** NUMBER-LEDGER D-24604. Related: D-24545, D-24546 (WP-724), D-24523 (dual-class reads), D-24499 ("Heroes you have"), D-24362 (Ultron VP), D-24119 (replay verification), D-14101.
+
+---
+
 Protect this file.
