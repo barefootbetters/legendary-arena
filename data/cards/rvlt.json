@@ -1160,7 +1160,7 @@
           "name": "Mandarin",
           "slug": "mandarin",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "16",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-mm-mandarin.webp",
           "abilities": [
             "All Mandarin's Rings get +1[icon:attack].",
@@ -1586,6 +1586,8 @@
       "id": 33,
       "name": "HYDRA Base",
       "slug": "hydra-base",
+      "vAttack": "2+",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-hydra-base.webp",
       "abilities": [
         "HYDRA Base gets +2[icon:attack] while there's a Villain here.",
@@ -1596,6 +1598,8 @@
       "id": 34,
       "name": "Mandarin's Rings",
       "slug": "mandarins-rings",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
       "abilities": [],
       "cards": [

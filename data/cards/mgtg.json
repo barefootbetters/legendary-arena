@@ -939,7 +939,7 @@
           "name": "Ronan the Accuser",
           "slug": "ronan-the-accuser",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/mgtg/mgtg-mm-ronan-the-accuser.webp",
           "abilities": [
             "Always Leads: Followers of Ronan",
@@ -1016,7 +1016,7 @@
           "name": "Ego, the Living Planet",
           "slug": "ego-the-living-planet",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "3+",
           "imageUrl": "https://images.legendary-arena.com/mgtg/mgtg-mm-ego-the-living-planet.webp",
           "abilities": [
             "Ego gets +1[icon:attack] for each city space. When there are no more city spaces, Good Wins.",

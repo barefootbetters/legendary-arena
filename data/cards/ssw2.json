@@ -2382,6 +2382,8 @@
       "id": 16,
       "name": "Khonshu Guardians",
       "slug": "khonshu-guardians",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-khonshu-guardians.webp",
       "abilities": [
         "While in the Sewers, Rooftops or Bridge, this is in “wolf form“ and gets +2[icon:attack].",
@@ -2392,6 +2394,8 @@
       "id": 17,
       "name": "Magma Men",
       "slug": "magma-men",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-magma-men.webp",
       "abilities": [
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]",
@@ -2402,6 +2406,8 @@
       "id": 18,
       "name": "Spider-Infected",
       "slug": "spider-infected",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-spider-infected.webp",
       "abilities": [
         "Ambush: This captures a Bystander. [effect:captureBystander]",

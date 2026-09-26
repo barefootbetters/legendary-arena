@@ -117,8 +117,7 @@
       "slug": "carnage",
       "cards": [
         {
-          "slug": "carnage",
-          "vAttack": null
+          "slug": "carnage"
         },
         {
           "slug": "drooling-jaws",
@@ -143,8 +142,7 @@
       "slug": "mysterio",
       "cards": [
         {
-          "slug": "mysterio",
-          "vAttack": null
+          "slug": "mysterio"
         },
         {
           "slug": "blurring-images",
