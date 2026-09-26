@@ -1739,10 +1739,13 @@ dispute.
   rule can be enforced consistently only if the standard is known.
 
   The same problem appears from the opposite direction. Brittney Griner has long
-  been the subject of public speculation about her sex. Whether that speculation
-  is fair is not the issue. The issue is that the league has never stated a
+  been the subject of public speculation about Griner's sex. Part of it is
+  height — Griner stands 6'9" — and part is the game itself: Griner holds the
+  WNBA record with 27 of the roughly 38 dunks in league history, more than every
+  other player combined, in a league where only eight players have ever dunked
+  in a game. Whether that speculation is fair is not the issue. The issue is that the league has never stated a
   standard capable of resolving the question one way or the other. Without a
-  published definition, neither Griner's supporters nor her critics can point to
+  published definition, neither Griner's supporters nor Griner's critics can point to
   an authoritative answer. The uncertainty exists because the rule remains
   undefined.
 
@@ -1764,16 +1767,16 @@ dispute.
   been held since December 2018 and was serving 16 years for espionage.
   Brittney Griner, arrested in February 2022 with vape cartridges holding 0.702
   grams of cannabis oil, pleaded guilty and was sentenced to nine years; the
-  State Department declared her "wrongfully detained" in May. It was not her
-  first case. In April 2015 she and her fiancée, fellow WNBA player Glory
-  Johnson, were arrested after a fight at their Arizona home: Griner had a bite
-  wound on her finger and scratches on her wrist; Johnson had a scratch above
+  State Department declared Griner "wrongfully detained" in May. It was not
+  Griner's first case. In April 2015 Griner and fiancée Glory Johnson, a fellow
+  WNBA player, were arrested after a fight at their Arizona home: Griner had a
+  bite wound on a finger and scratches on a wrist; Johnson had a scratch above
   her lip and was diagnosed with a concussion — a traumatic brain injury, not a
   surface wound. Griner pleaded guilty to misdemeanor disorderly conduct and was
   ordered into 26 weeks of domestic-violence counseling under a diversion plea,
   and the league suspended both players seven games. Griner was the reigning
-  Defensive Player of the Year when she was arrested, and the league named her
-  Defensive Player of the Year again that season. The marriage lasted 28 days:
+  Defensive Player of the Year at the time of the arrest, and the league gave
+  Griner the award again that season. The marriage lasted 28 days:
   the day after Johnson announced she was pregnant with twins, Griner filed to
   annul it, claiming fraud and duress. A judge rejected the annulment, finding
   no legal basis, and the case went forward as a divorce,
@@ -1784,11 +1787,10 @@ dispute.
   parent. (Johnson later said she
   had never considered herself a lesbian: "They wanted me to be a lesbian who
   converted from being straight… It just doesn't work for me like that.") In
-  July 2026, Griner filed for divorce from her second wife, Cherelle Griner — the
-  public face of the 2022 campaign to bring her home — after eight years of
-  marriage. On 8
+  July 2026, Griner filed for divorce from Cherelle Griner — the public face of
+  the 2022 campaign to bring Griner home — after eight years of marriage. On 8
   December
-  2022 she was traded in Abu Dhabi for Viktor Bout, the arms dealer known as the
+  2022 Griner was traded in Abu Dhabi for Viktor Bout, the arms dealer known as the
   "Merchant of Death," a decade into a 25-year sentence for conspiring
   to kill Americans. Whelan stayed behind. Run question 1 — who decided whose
   release got bought, and at what price? Russia set the menu, and the
@@ -1797,11 +1799,11 @@ dispute.
   none," and the President said "this was not a choice of which American to
   bring home." That is the [manufactured choice](#the-mastermind-lens--five-questions)
   in diplomatic form: one box or the empty box. Question 2 ran through
-  publicity. Griner was a celebrity with a league and a national campaign behind
-  her; Whelan's brother called the result "a catastrophe for Paul," and Whelan
+  publicity. Griner was a celebrity with a league and a national campaign
+  behind the case; Whelan's brother called the result "a catastrophe for Paul," and Whelan
   asked from prison why "more has not been done to secure my release." Then each
   side read its own model American into the trade. Donald Trump called Griner "a
-  basketball player who openly hates our Country" — she had said in 2020, "I'm
+  basketball player who openly hates our Country" — Griner had said in 2020, "I'm
   not going to be out there for the national anthem" — and the swap "a stupid
   and unpatriotic embarrassment"; Kevin McCarthy called it "a gift to Vladimir
   Putin" and Whelan's omission "unconscionable." Commentators on the right cast
@@ -2650,7 +2652,8 @@ choice for the operator, never make it silently.
   (August 2026); the *Washington Times* on
   [White's Gaetz-signed filing](https://www.washingtontimes.com/news/2026/aug/19/royce-white-files-formal-wnba-draft-declaration-matt-gaetz-counsel/);
   the WNBA's [announcement of Engelbert's retirement](https://www.wnba.com/news/commissioner-cathy-engelbert-to-retire-at-end-of-year)
-  (4 September 2026).
+  (4 September 2026); Sporting News on [the WNBA's dunk record](https://www.sportingnews.com/us/wnba/news/wnba-players-dunk-record-brittney-griner-2024/934de9277f292a8beac56a1d)
+  (2024).
   For Griner's 2015 case: 6abc on
   [the injuries, plea and suspensions](https://6abc.com/post/brittney-griner-glory-johnson-each-suspended-7-games-for-incident/724596/)
   (16 May 2015); Johnson's account in [*People*](https://people.com/parents/glory-johnson-opens-up-about-tumultuous-relationship-and-sudden-split/)
