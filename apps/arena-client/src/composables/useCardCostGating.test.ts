@@ -43,27 +43,27 @@ describe('useCardCostGating (WP-129)', () => {
   });
 
   test('canFight returns allowed when availableAttack matches villain cost exactly', () => {
-    const result = canFight(display(4), economy({ attack: 4, recruit: 0 }));
+    const result = canFight(4, economy({ attack: 4, recruit: 0 }));
     assert.equal(result.allowed, true);
   });
 
   test('canFight returns disallowed with full-sentence reason when economy is short', () => {
-    const result = canFight(display(6), economy({ attack: 2, recruit: 0 }));
+    const result = canFight(6, economy({ attack: 2, recruit: 0 }));
     assert.equal(result.allowed, false);
     assert.equal(result.reason, 'Needs 6 attack, you have 2.');
   });
 
   test('canFight returns structural-disallowed when cost is null', () => {
-    const result = canFight(display(null), economy({ attack: 9, recruit: 0 }));
+    const result = canFight(null, economy({ attack: 9, recruit: 0 }));
     assert.equal(result.allowed, false);
     assert.equal(result.reason, 'This card cannot be fought.');
   });
 
   test('useCardCostGating exposes both predicates bound to the supplied economy', () => {
     const gating = useCardCostGating(economy({ attack: 3, recruit: 4 }));
-    assert.equal(gating.canFight(display(3)).allowed, true);
+    assert.equal(gating.canFight(3).allowed, true);
     assert.equal(gating.canRecruit(display(4)).allowed, true);
-    assert.equal(gating.canFight(display(5)).allowed, false);
+    assert.equal(gating.canFight(5).allowed, false);
     assert.equal(gating.canRecruit(display(5)).allowed, false);
   });
 
@@ -83,25 +83,38 @@ describe('canFightWithExcessiveViolence (WP-738 / D-24561)', () => {
   }
 
   test('false when the availability cue is absent, even if cost+1 is affordable', () => {
-    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(9, false)), false);
+    assert.equal(canFightWithExcessiveViolence(3, evEconomy(9, false)), false);
   });
 
   test('false when available but availableAttack is below cost+1', () => {
     // why: cost 3 needs 4 attack for the +1 overspend; 3 is short by one.
-    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(3, true)), false);
+    assert.equal(canFightWithExcessiveViolence(3, evEconomy(3, true)), false);
   });
 
   test('true when available and availableAttack meets cost+1 exactly', () => {
-    assert.equal(canFightWithExcessiveViolence(display(3), evEconomy(4, true)), true);
+    assert.equal(canFightWithExcessiveViolence(3, evEconomy(4, true)), true);
   });
 
   test('false when the target cost is null (non-fightable)', () => {
-    assert.equal(canFightWithExcessiveViolence(display(null), evEconomy(9, true)), false);
+    assert.equal(canFightWithExcessiveViolence(null, evEconomy(9, true)), false);
+  });
+
+  test('WP-750 / D-24574 — a projected cost of 0 is fightable with no attack', () => {
+    // why: a card with no printed attack projects fightCost 0 — the engine
+    // charges 0, so the old "This card cannot be fought." false lock is gone.
+    const result = canFight(0, economy({ attack: 0, recruit: 0 }));
+    assert.equal(result.allowed, true);
+    assert.equal(result.reason, null);
+  });
+
+  test('WP-750 / D-24574 — EV against a projected cost of 0 needs exactly 1 attack', () => {
+    assert.equal(canFightWithExcessiveViolence(0, evEconomy(0, true)), false);
+    assert.equal(canFightWithExcessiveViolence(0, evEconomy(1, true)), true);
   });
 
   test('useCardCostGating exposes canFightWithExcessiveViolence bound to the economy', () => {
     const gating = useCardCostGating(evEconomy(4, true));
-    assert.equal(gating.canFightWithExcessiveViolence(display(3)), true);
-    assert.equal(gating.canFightWithExcessiveViolence(display(4)), false);
+    assert.equal(gating.canFightWithExcessiveViolence(3), true);
+    assert.equal(gating.canFightWithExcessiveViolence(4), false);
   });
 });

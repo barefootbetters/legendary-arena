@@ -2915,6 +2915,23 @@ describe('filterUIStateForAudience — mastermind.finalBlowPending (WP-687)', ()
   });
 });
 
+// WP-750 / D-24574 — the projected Mastermind fight cost is a board-visible field
+// and must survive the audience filter for every audience (the EC-206 drop guard).
+describe('filterUIStateForAudience — mastermind.fightCost (WP-750)', () => {
+  it('mastermind.fightCost survives the filter for every audience', () => {
+    const uiState = createTestUIState();
+    assert.equal(typeof uiState.mastermind.fightCost, 'number', 'build populates fightCost');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.mastermind.fightCost,
+        uiState.mastermind.fightCost,
+        `fightCost must survive the whitelist for ${audience.kind} view`,
+      );
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-695 / EC-732 — pendingRuthlessDictatorChoice + pendingElectromagneticBubbleChoice
 // audience-filter survival (D-24512)

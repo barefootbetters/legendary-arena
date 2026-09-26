@@ -45050,6 +45050,52 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 **Reserved by:** NUMBER-LEDGER D-24595. Related: D-24178 (MVP threshold), D-24315..D-24320 (resource loss, suppression, precedence), D-24366 / D-24367 (menace signal, client copy boundary), D-24371 (superseded §6 for non-core), D-24319 (loss before tie), D-5302 (score immutability), D-24596 (WP-764 Midnight Massacre consumes the multi-pile condition), D-24597 (PAR keys keep the set qualifier).
 
+### D-24574 — The client gates Fight on the engine's projected fight cost, never the printed cost (Active 2026-09-26 — WP-750 / EC-787)
+
+**Status:** Active. Landed 2026-09-26 (WP-750 / EC-787). The live-on-surface check (D-24026) is pending with the operator. It needs a live Portals to the Dark Dimension match with a Dark Portal on a City space or on the Mastermind:
+- the tile shows `Fight printed+1`;
+- Fight stays disabled at exactly printed attack;
+- Fight enables at printed + 1, and the fight succeeds.
+
+**Context.** `useCardCostGating` gated City and Mastermind Fight on the printed `UICardDisplay.cost`, while the engine guards on `resolveFightCost` / `resolveMastermindFightCost`. The two disagreed in both directions:
+- **Dead buttons.** Fight was enabled but the engine refused it: captured-Hero `*` / `N+` villains, a Dark-Portal City space, a Skrull, and the Portals Mastermind once it holds a portal.
+- **False locks.** "This card cannot be fought." was shown where the engine allowed the fight: a null printed attack (engine cost 0), and a converted Killbot.
+
+WP-762 / D-24594 filled the missing printed attack values first, so removing the false lock no longer exposes 0-cost fights on 14 Masterminds and 32 henchman groups.
+
+**Decision.**
+
+1. **One cost source per target, the engine projection.**
+   - City: `UICityCard.fightCost` (`resolveFightCost`, already projected and filter-copied).
+   - Mastermind: the new optional `UIMastermindState.fightCost` = `resolveMastermindFightCost(gameState)`, the same authority the `fightMastermind` guard and the bot read. `MastermindTile` reads `fightCost ?? display.cost`; the fallback exists only for snapshots that predate the field.
+   - The client never adds a Dark-Portal, captured-Hero, Skrull or Killbot term itself. A future cost term is added engine-side in `resolveFightCost` / `resolveMastermindFightCost` and reaches the client with no client change. WP-748 and WP-760 rely on this.
+2. **UIState five-step.** `fightCost?` was added to `UIMastermindState`, populated in `buildUIState`, and passed through `filterUIStateForAudience` with a conditional spread (never a `fightCost: undefined` literal). It is public shared-board data for every audience, and a filter test pins it for PLAYER_0 / PLAYER_1 / SPECTATOR. The diagnostics `uiStateSnapshot` is the whole received store, so it carries the field.
+3. **Numeric gating.** The signatures are now `canFight(cost: number | null, economy)` and `canFightWithExcessiveViolence(cost: number | null, economy)`. Messages are unchanged: `This card cannot be fought.` for null, `Needs X attack, you have Y.` when short, and EV requires `availableAttack >= cost + 1`. `canRecruit` is unchanged. Tooltip precedence stays stage → resource → structural. The WP-756 / WP-761 slash gesture inherits the gate through `gateForCityIndex`, with no change to `useSlashGesture.ts`.
+4. **Fight N badge.**
+   - It shows the projected cost only on a mismatch: City when `fightCost !== display.cost` (a null printed cost counts as different); Mastermind when `fightCost !== undefined && fightCost !== display.cost`, never from the fallback.
+   - Test ids: `play-city-fight-cost` / `play-mastermind-fight-cost`. Classes: `city-space__fight-cost` / `mastermind__fight-cost`.
+   - Position: absolutely positioned inside the Fight button, at the bottom, outside the top band. It is not a `.city-space` flex child, so the scale-to-fit board (D-24505) is unchanged.
+   - **Placement note (execution):** the Mastermind Fight button stacks the Tactics-remaining and Final Blow lines under the card. Its badge therefore anchors to a `position: relative` card frame (`mastermind__card-frame`) inside the button, not to the button's bottom edge, which would cover those lines. The button still gets `position: relative`. The City button holds only the card, so its badge anchors to the button.
+5. **Patrol / Guard.** They are unset (D-2504), so `fightCost` equals the guard's cost term in every real match. If a future data pass sets Patrol, it must be absorbed into the `resolveFightCost` projection, or the client gate will under-state the cost again.
+6. **Named follow-ups (not in this decision):**
+   - The defeat-requirement dead button (Blob / Venom / Zombie Venom: the engine refuses for a non-cost reason the client can't see; it needs a projected requirement flag).
+   - The bot never enumerating a Final Blow fight (`ai.legalMoves.ts`).
+   - The WP-762 residual cards (Indestructible Man, Killmonger, Jameson, pttr doppelganger / kraven-the-hunter / sandman, noir kraven-animal-trainer). The operator accepted these as engine follow-ups; no client lock is added (D-24594 §7).
+
+**Gates.**
+- `pnpm -r build` → 0. `pnpm --filter @legendary-arena/arena-client typecheck` → 0.
+- Engine suite 4321/0 → 4324/0 (+2 build, +1 filter).
+- arena-client suite 2116/0 → 2126/0 (+2 gating, +4 CityRow, +4 MastermindTile). No test was deleted.
+- Test migration was limited to what the observed scaffold broke: the CityRow `villain()` helper now sets `fightCost: cost`, and `useCardCostGating.test.ts` passes numbers. No assertion was edited.
+- `pnpm -r --no-bail test` → 0 fail.
+- Preview `/?fixture=mid-turn&play=1` at 1280×720 shows:
+  - 3 × `Fight 0` badges inside 3 enabled villain buttons;
+  - the Mastermind titled "This card cannot be fought." with no badge (the fixture predates the field);
+  - identical City space widths with the badges shown or hidden.
+- No move, guard, `G` or hash change.
+
+**Reserved by:** NUMBER-LEDGER D-24574. Related: D-12803 (audience filter), D-11104 (`UICardDisplay.cost`), D-24348 (Dark-Portal bonus), D-24561 (EV fight button), D-24585 / D-24592 (slash gesture), D-2504 (Patrol / Guard safe-skip), D-24594 (WP-762 data fill), D-24026 (live-on-surface).
+
 ---
 
 Protect this file.

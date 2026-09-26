@@ -28,7 +28,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * name/image via CardTile, shown only when non-empty.
  *
  * Cost gating: the mastermind is fightable when `economy.availableAttack
- * >= mastermind.display.cost`. Disabled-state tooltip precedence locked at
+ * >= mastermind.fightCost` — the engine's projected fight cost (WP-750 /
+ * D-24574), falling back to the printed `display.cost` only for snapshots that
+ * predate the field. A `Fight N` badge shows the projected cost whenever it
+ * differs from the printed one. Disabled-state tooltip precedence locked at
  * EC-132 §3 (stage → resource → structural; "all tactics defeated" is the
  * structural lock).
  *
@@ -84,6 +87,25 @@ export default defineComponent({
     },
   },
   setup(props, { emit }) {
+    function mastermindFightCost(): number | null {
+      // why: WP-750 / D-24574 — the engine's projected cost
+      // (resolveMastermindFightCost: printed + the Portals Dark-Portal bonus) is
+      // the only fight-cost source. The `display.cost` fallback covers only
+      // snapshots from before `fightCost` existed; it never adds a term itself.
+      const mastermindFightCost = props.mastermind.fightCost ?? props.mastermind.display.cost;
+      return mastermindFightCost;
+    }
+
+    function hasFightCostBadge(): boolean {
+      // why: WP-750 / D-24574 — players see the number the engine will actually
+      // charge, only when it differs from the printed cost. Never rendered from the
+      // fallback: an absent fightCost (an old snapshot or fixture) shows no badge.
+      if (props.mastermind.fightCost === undefined) {
+        return false;
+      }
+      return props.mastermind.fightCost !== props.mastermind.display.cost;
+    }
+
     function gateForFight(): GatingResult {
       // why: disabled-state tooltip precedence per EC-132 §3 — stage →
       // resource → structural. Stage gate first; then cost gate (consumes
@@ -93,7 +115,7 @@ export default defineComponent({
       if (!stage.allowed) {
         return stage;
       }
-      const cost = useCardCostGating(props.economy).canFight(props.mastermind.display);
+      const cost = useCardCostGating(props.economy).canFight(mastermindFightCost());
       if (!cost.allowed) {
         return cost;
       }
@@ -161,7 +183,7 @@ export default defineComponent({
       if (!gateForFight().allowed) {
         return false;
       }
-      return useCardCostGating(props.economy).canFightWithExcessiveViolence(props.mastermind.display);
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(mastermindFightCost());
     }
 
     function onFightEV(): void {
@@ -173,7 +195,15 @@ export default defineComponent({
       props.submitMove('fightMastermind', { useExcessiveViolence: true });
     }
 
-    return { gateForFight, onFight, onRead, isVictoryAssured, showEvFight, onFightEV };
+    return {
+      gateForFight,
+      hasFightCostBadge,
+      onFight,
+      onRead,
+      isVictoryAssured,
+      showEvFight,
+      onFightEV,
+    };
   },
 });
 </script>
@@ -206,6 +236,7 @@ export default defineComponent({
     </div>
     <button
       type="button"
+      class="mastermind__fight-button"
       data-testid="play-mastermind-button"
       :data-mastermind-id="mastermind.id"
       :disabled="!gateForFight().allowed"
@@ -217,12 +248,27 @@ export default defineComponent({
            (stage → resource → structural). Reason text is bound from
            useTurnActions / useCardCostGating + the structural "all
            tactics defeated" override. -->
-      <CardTile
-        :display="mastermind.display"
-        size="md"
-        :interactive="gateForFight().allowed"
-        :show-label="true"
-      />
+      <!-- why: WP-750 / D-24574 — the frame is the badge's positioning context, so
+           the Fight N badge sits at the bottom of the CARD art. Pinning it to the
+           button's bottom would cover the Tactics-remaining / Final Blow lines
+           stacked under the card. -->
+      <span class="mastermind__card-frame">
+        <CardTile
+          :display="mastermind.display"
+          size="md"
+          :interactive="gateForFight().allowed"
+          :show-label="true"
+        />
+        <!-- why: WP-750 / D-24574 — the engine's projected fight cost, shown only
+             when it differs from the printed cost and never from the display.cost
+             fallback. Bottom of the card, clear of the top band where the printed
+             cost sits. -->
+        <span
+          v-if="hasFightCostBadge()"
+          class="mastermind__fight-cost"
+          data-testid="play-mastermind-fight-cost"
+        >Fight {{ mastermind.fightCost }}</span>
+      </span>
       <span class="mastermind-status" data-testid="play-mastermind-tactics-remaining">
         Tactics remaining: {{ mastermind.tacticsRemaining }}
       </span>
@@ -323,6 +369,38 @@ export default defineComponent({
   align-items: flex-start;
   gap: 0.15rem;
   padding: 0.25rem 0.5rem;
+}
+
+/* why: WP-750 — the Fight button and its card frame are positioning contexts;
+   the frame anchors the Fight N badge to the card art so it overlays the tile
+   instead of taking layout space or covering the status lines below the card. */
+.mastermind__fight-button {
+  position: relative;
+}
+
+.mastermind__card-frame {
+  position: relative;
+  display: inline-flex;
+}
+
+/* why: WP-750 / D-24574 — the projected Mastermind fight cost, pinned to the
+   bottom of the Fight button. Dark pill, matching the City badge. */
+.mastermind__fight-cost {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .mastermind-id {

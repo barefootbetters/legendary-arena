@@ -509,6 +509,16 @@ export function filterUIStateForAudience(
       ...(uiState.mastermind.finalBlowPending !== undefined
         ? { finalBlowPending: uiState.mastermind.finalBlowPending }
         : {}),
+      // why: WP-750 / D-24574 — the projected Mastermind fight cost is public
+      // shared-board information (every player sees the Dark Portal and the
+      // printed cost), passed through for every audience. Optional, so TypeScript
+      // does not flag its omission; without this line the client silently falls
+      // back to the printed cost and the Portals Mastermind Fight button goes dead
+      // again (the EC-206 drop). Conditional spread, never a
+      // `fightCost: undefined` literal (exactOptionalPropertyTypes).
+      ...(uiState.mastermind.fightCost !== undefined
+        ? { fightCost: uiState.mastermind.fightCost }
+        : {}),
     },
     scheme: {
       id: uiState.scheme.id,

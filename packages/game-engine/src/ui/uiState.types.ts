@@ -680,6 +680,14 @@ export interface UIMastermindState {
   // in buildUIState but not passed through the audience filter is silently dropped
   // (the EC-206 failure mode) — see uiState.filter.ts.
   finalBlowPending?: boolean;
+  // why: WP-750 / D-24574 — the attack the engine will actually charge to fight
+  // the Mastermind: resolveMastermindFightCost, the same authority the
+  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus).
+  // The client gates Fight on this instead of the printed display.cost. Optional
+  // so typed fixtures and snapshots that predate it still compile (the client
+  // falls back to display.cost); passed through the audience filter explicitly,
+  // because a build-only field is silently dropped at the whitelist (EC-206).
+  fightCost?: number;
 }
 
 /**

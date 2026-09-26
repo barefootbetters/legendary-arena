@@ -45,7 +45,7 @@ function villain(extId: string, cost: number): UICityCard {
     attachedHeroes: [],
     attachedHeroDisplay: [],
     attachedBystanderCount: 0,
-    fightCost: 0,
+    fightCost: cost,
   };
 }
 
@@ -760,6 +760,109 @@ describe('CityRow — long-press slash (WP-761)', () => {
     row.element.dispatchEvent(menu);
     assert.equal(move.defaultPrevented, false);
     assert.equal(menu.defaultPrevented, false);
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-750 / D-24574 — Fight gates on the engine's projected fightCost, not the
+// printed display.cost, and a Fight N badge shows the projected cost on mismatch.
+// ---------------------------------------------------------------------------
+
+/** A villain whose printed cost and engine-projected fight cost differ. */
+function villainWithFightCost(extId: string, printedCost: number | null, fightCost: number): UICityCard {
+  const card = villain(extId, 0);
+  return {
+    ...card,
+    display: { ...card.display, cost: printedCost },
+    fightCost,
+  };
+}
+
+/**
+ * A City with a Dark-Portal villain (printed 3, projected 4) at engine index 0,
+ * a no-printed-attack villain (projected 0) at index 2, and a matching villain
+ * (printed 2, projected 2) at index 4.
+ */
+function projectedCostCity(): UICityState {
+  return {
+    spaces: [
+      villainWithFightCost('portal-villain', 3, 4),
+      null,
+      villainWithFightCost('attackless-villain', null, 0),
+      null,
+      villain('thug', 2),
+    ],
+    escapedPile: [],
+  };
+}
+
+function mountProjected(submitMove: SubmitMove, availableAttack: number, isEvAvailable = false) {
+  const evField = isEvAvailable ? { excessiveViolenceAvailable: true } : {};
+  return mount(CityRow, {
+    props: {
+      city: projectedCostCity(),
+      decks: DECKS,
+      currentStage: 'main',
+      economy: economy({ attack: availableAttack, availableAttack, ...evField }),
+      submitMove,
+    },
+  });
+}
+
+describe('CityRow — projected fight cost (WP-750 / D-24574)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  test('fightCost above printed disables Fight at printed attack, hides EV, and shows the badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 3, true);
+    const portal = wrapper.find('[data-testid="play-city-villain"][data-card-id="portal-villain"]');
+    assert.equal(portal.attributes('disabled'), '');
+    assert.match(portal.attributes('title')!, /Needs 4 attack, you have 3\./);
+    assert.equal(
+      wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="0"]').exists(),
+      false,
+    );
+    const badge = portal.find('[data-testid="play-city-fight-cost"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.text(), 'Fight 4');
+  });
+
+  test('a null printed cost with fightCost 0 is fightable and shows "Fight 0"', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 0);
+    const attackless = wrapper.find('[data-testid="play-city-villain"][data-card-id="attackless-villain"]');
+    assert.equal(attackless.attributes('disabled'), undefined);
+    assert.equal(attackless.attributes('title'), undefined);
+    assert.equal(attackless.find('[data-testid="play-city-fight-cost"]').text(), 'Fight 0');
+    await attackless.trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 2 } }]);
+  });
+
+  test('a villain whose fightCost equals its printed cost shows no badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 9);
+    const thug = wrapper.find('[data-testid="play-city-villain"][data-card-id="thug"]');
+    assert.equal(thug.find('[data-testid="play-city-fight-cost"]').exists(), false);
+    assert.equal(wrapper.findAll('[data-testid="play-city-fight-cost"]').length, 2);
+  });
+
+  test('the slash gesture fights exactly what the Fight button allows (gateForCityIndex)', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 3);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    // why: a stroke across engine indices 0 (portal, projected 4 > 3 attack) and
+    // 2 (attackless, projected 0) — only the one the button allows is fought.
+    row.dispatchEvent(pointerEvent('pointerdown', 60, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 390, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 390, 150));
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 2 } }]);
     wrapper.unmount();
   });
 });

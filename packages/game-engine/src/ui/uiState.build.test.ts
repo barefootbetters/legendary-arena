@@ -23,6 +23,7 @@ import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
+import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 
 /**
@@ -2282,5 +2283,35 @@ describe('buildUIState — Portals Dark-Portal descriptor (WP-728 / D-24549)', (
   it('projects all five city spaces at count 6', () => {
     const result = buildUIState(portalsState(6), mockCtx);
     assert.deepEqual(result.scheme.darkPortals?.citySpaceIndices, [0, 1, 2, 3, 4]);
+  });
+});
+
+describe('buildUIState — mastermind.fightCost projection (WP-750 / D-24574)', () => {
+  const PORTALS = 'core/portals-to-the-dark-dimension';
+  const PRINTED_MASTERMIND_COST = 8;
+
+  /** A test G whose Mastermind base card prints PRINTED_MASTERMIND_COST attack. */
+  function stateWithPrintedCost(): LegendaryGameState {
+    const gameState = createTestGameState();
+    gameState.cardStats[gameState.mastermind.baseCardId] = makeCardStatEntry({
+      fightCost: PRINTED_MASTERMIND_COST,
+    });
+    return gameState;
+  }
+
+  it('projects the printed cost when no Dark Portal is on the Mastermind', () => {
+    const gameState = stateWithPrintedCost();
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, PRINTED_MASTERMIND_COST);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
+  });
+
+  it('projects printed + 1 with a Portals Dark Portal on the Mastermind', () => {
+    const gameState = stateWithPrintedCost();
+    gameState.selection.schemeId = PORTALS;
+    gameState.counters[DARK_PORTAL_COUNT] = 1;
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, PRINTED_MASTERMIND_COST + 1);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
   });
 });
