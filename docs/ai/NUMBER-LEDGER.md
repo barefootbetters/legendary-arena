@@ -404,6 +404,8 @@ high-water: 422
 - WP-762 — null-vattack-data-fill (Card Data. 14 Mastermind base cards (all in gauntlet loadouts, e.g. gotg/thanos, dstr/dormammu), 24 villain cards and up to 32 henchman groups carry no vAttack, so the engine charges 0 to fight them and the bot already does; fill the printed values via the convert-cards patch overlays. Hard prerequisite of WP-750, which removes the client's accidental 'cannot be fought' lock. reserved 2026-09-25, claude/wp750-draft)
 - WP-763 — scheme-evil-wins-audit (Game Engine. Audit every scheme's printed Evil Wins condition against the engine: schemes with no resolver fall back to the generic 7-twist doom-clock loss even when the card prints a different loss (live: Midnight Massacre lost at twist 7 on a deck-runout scheme). Suppress the false twist-count loss per scheme and wire the printed condition where the engine already has it. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - WP-764 — midnight-massacre-scheme (Game Engine. mdns Midnight Massacre: 11 twists, a Blade Hero's 14 cards shuffled into the Villain Deck as Switchblade Villains (attack = printed cost; Sunlight/Moonlight fight rules; Fight: KO or a player gains it), the Hero-Deck-burn twist, Evil Wins on Hero or Villain Deck runout. reserved 2026-09-25, claude/scheme-evilwins-draft)
+- WP-765 — sunlight-moonlight-engine (Game Engine + card data. The Sunlight/Moonlight day-night rule (most HQ Heroes odd printed cost = Moonlight, even = Sunlight, tie = neither), the hero keywords that gate on it (Werewolf by Night, Blade and other mdns heroes currently parse-unrecognized / always-Sunlight), and its UIState projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
+- WP-766 — sunlight-moonlight-client (App arena-client. A day/night indicator on the play board fed by the WP-765 projection. BLOCKED on WP-765. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 ## EC
 
 high-water: 457
@@ -768,6 +770,8 @@ high-water: 457
 - EC-799 — null-vattack-data-fill (WP-762; Card Data. reserved 2026-09-25, claude/wp750-draft)
 - EC-800 — scheme-evil-wins-audit (WP-763; Game Engine. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - EC-801 — midnight-massacre-scheme (WP-764; Game Engine. reserved 2026-09-25, claude/scheme-evilwins-draft)
+- EC-802 — sunlight-moonlight-engine (WP-765; Game Engine + card data. reserved 2026-09-25, claude/sunlight-moonlight-draft)
+- EC-803 — sunlight-moonlight-client (WP-766; App arena-client. reserved 2026-09-25, claude/sunlight-moonlight-draft)
 ## D
 
 high-water: 24241
@@ -1144,3 +1148,4 @@ section below) and the allocation protocol in
 - D-24595 — scheme-evil-wins-audit (RESERVED: locks WP-763 / EC-800 — which schemes keep the generic twist-count proxy vs suppress it, and the per-scheme Evil Wins mapping. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - D-24596 — midnight-massacre-scheme (RESERVED: locks WP-764 / EC-801 — Switchblade representation, Blade-hero selection, twist + deck-runout semantics. reserved 2026-09-25, claude/scheme-evilwins-draft)
 - D-24597 — par-scenario-key-set-qualified (direct fix, no WP — ScenarioKey segments keep the `setAbbr/` qualifier for every non-core id, so reprint schemes / masterminds / villain groups no longer PAR-gate against core; gauntlet queries match the set's own segment form; one-time operator rekey script. reserved 2026-09-25, claude/gifted-thompson-f6afb4)
+- D-24598 — sunlight-moonlight (RESERVED: locks WP-765 / EC-802 — the day-night determination, keyword semantics and projection. reserved 2026-09-25, claude/sunlight-moonlight-draft)
