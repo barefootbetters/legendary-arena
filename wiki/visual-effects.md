@@ -1091,6 +1091,19 @@ crossing order, while a glowing blade trail follows the pointer and each
 villain's slice follows the stroke's direction (WP-756 / D-24585). Clicking a
 villain still fights it exactly as before.
 
+![Animated mock of slash to fight: a finger sweeps across the City row and a glowing white-and-lavender blade trail follows it; the first villain it fully crosses splits along the stroke's angle, then the second, marked 1 and 2 in crossing order; the third villain, which the stroke never crosses, is untouched. Loops.](/visual-effects/slash-to-fight.svg "width=64%")
+
+*Illustrative mock of the shipped slash to fight — a CSS-only animated SVG (no
+JavaScript, so it animates on the JS-free wiki) that loops and holds the stroke
+trace and both split cards as a static frame under `prefers-reduced-motion`. The
+blade-trail and streak colours, the villain ink and the stroke-angled split are
+the shipped ones; each villain splits when the stroke **leaves** it (the
+full-crossing rule), and the uncrossed third villain is never fought. The motion
+is slowed so it reads at a glance (the live trail fades within 170 ms), and the
+cards are stylised stand-ins for the real art. Animation source:
+[slash-gesture.py](../ewiki/visual-effects/slash-gesture.py) — regenerate with
+`python slash-gesture.py`.*
+
 - **The full-crossing rule.** A villain counts only when the stroke *began
   outside* its tile, entered it, and later left it — so a press-and-drag that
   starts on a card never spends attack, and no clock is needed (a speed rule
@@ -1140,6 +1153,17 @@ villain still fights it exactly as before.
   sound bar turns the gesture off (remembered per browser), long press included.
   It defaults on; with it off the City row behaves exactly as the click-only row
   did.
+
+![Animated mock of the long-press slash on a phone: the City row scrolls sideways, so a finger first holds still on a gap while a lavender ring fills; the row arms with an inset lavender glow and the word ARMED gives a small buzz; then the finger drags right, a blade trail follows, and the two villains it fully crosses split along the stroke in order while the row stays put. Loops.](/visual-effects/long-press-slash.svg "width=46%")
+
+*Illustrative mock of the shipped long-press slash (WP-761 / D-24592) on a
+phone-width City row that scrolls sideways (the faded right edge): the finger
+holds still while the ring fills (the live arm is 350 ms, slowed here), the row
+**arms** with the inset lavender glow of `city-spaces--gesture-armed`, and only
+then does the drag slash — without scrolling the row. Holds the armed row, the
+stroke trace and the split cards as a static frame under
+`prefers-reduced-motion`. Same generator:
+[slash-gesture.py](../ewiki/visual-effects/slash-gesture.py).*
 
 Pure presentation and input only: the gesture sends the same `fightVillain`
 intent a click does, reads no clock (the trail's fade stamp lives in the
