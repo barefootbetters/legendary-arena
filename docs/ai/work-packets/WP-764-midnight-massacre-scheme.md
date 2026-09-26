@@ -1,6 +1,6 @@
 # WP-764 — Midnight Massacre: Blade Switchblades, the Hero-Deck-burn twist, deck-runout Evil Wins (Game Engine + Card Data)
 
-**Status:** Draft 2026-09-25. **BLOCKED on WP-763** (multi-pile / `villainDeck` loss condition and the `counter-only` config entry it declares for this scheme).
+**Status:** Draft 2026-09-25. Was blocked on WP-763 (multi-pile / `villainDeck` loss condition and the `counter-only` config entry it declares for this scheme); WP-763 landed 2026-09-25 (#2396, D-24595 Active), so this packet is unblocked.
 **Primary Layer:** Game Engine (scheme setup, twist resolver, fight outcome), plus one card-data count fix.
 **Dependencies:**
 - **WP-763 / D-24595:** `pile-depleted` with `piles: ['heroDeck', 'villainDeck']`, and the Midnight Massacre config entry.
