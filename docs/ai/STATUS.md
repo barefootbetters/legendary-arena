@@ -134,12 +134,15 @@ Now:
 - **Counts.** engine 4235/0 → 4275/0 at landing (whole repo `pnpm -r build && pnpm -r --no-bail test`
   0 failures; re-run after rebasing onto WP-762 and WP-765); arena-client 2115/0 → 2116/0 (typecheck
   0); `sim:coverage --check` and `sim:runtime-observed:check` 0.
-- **Pending (D-24026).** Operator live-verify after deploy:
-  1. On a non-core twist-count scheme (e.g. Symbiotic Absorption), the match does not end at twist 7,
-     and the meter shows the printed threshold.
-  2. A Midnight Massacre match does not end on twists.
-
-  Record the result here as a STATUS flip.
+- **Live-verify (D-24026), Midnight Massacre — PASS 2026-09-26** (operator, solo vs Zarathos, build
+  `9f48893`). Twists #7–#11 were revealed on turns 23–33 and the game continued, with no "of N to
+  Evil Wins" clause on any twist line. On turn 35 the Villain Deck ran out and the match ended
+  **`scheme-wins`**, not a tie. The meter tracked `villain-deck` 35/35 (menace 1). An earlier
+  18-turn game on the same build showed `hero-deck` 22/42 as the leading condition. The run exposed
+  two misleading log lines (a "final turn… tie" announcement just before the loss, and the internal
+  name "villainDeck pile"); both are fixed by D-24599.
+- **Pending (D-24026), Symbiotic Absorption.** A non-core printed-count scheme: the match must not
+  end at twist 7, and the meter must show the printed threshold (11). Record the result here.
 
 ### WP-765 — Sunlight / Moonlight: day/night gates hero lines; hero Blood Frenzy (EC-802 / D-24598) (2026-09-25)
 
