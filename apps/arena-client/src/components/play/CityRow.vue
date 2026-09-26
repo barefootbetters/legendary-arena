@@ -152,7 +152,15 @@ export default defineComponent({
     // listeners and no classes — it is byte-identical to the click-only row.
     const cityRowEl = ref<HTMLElement | null>(null);
     const { isEnabled: isSlashGestureSettingOn } = useSlashGestureSetting();
-    const { isGestureEnabled, isTouchGestureEnabled } = useSlashGesture({
+    // why: WP-761 — the long-press slash for touch / pen on a row that scrolls:
+    // `isLongPressHoldEnabled` binds the hold class (callout off, long-press
+    // listeners attached) and `isLongPressArmed` the armed glow.
+    const {
+      isGestureEnabled,
+      isTouchGestureEnabled,
+      isLongPressArmed,
+      isLongPressHoldEnabled,
+    } = useSlashGesture({
       rowElement: cityRowEl,
       city: () => props.city,
       gateForCityIndex,
@@ -170,6 +178,8 @@ export default defineComponent({
       cityRowEl,
       isGestureEnabled,
       isTouchGestureEnabled,
+      isLongPressArmed,
+      isLongPressHoldEnabled,
     };
   },
 });
@@ -184,13 +194,17 @@ export default defineComponent({
     <!-- why: WP-756 — the gesture classes: `--gesture` (setting on) stops mouse
          strokes selecting label text; `--gesture-touch` (setting on AND the row
          fits without horizontal scroll) hands horizontal finger/pen strokes to
-         the gesture while vertical page scroll keeps working. -->
+         the gesture while vertical page scroll keeps working. WP-761:
+         `--gesture-hold` (setting on AND the row scrolls, or a long press is
+         live) marks the long-press slash; `--gesture-armed` glows while armed. -->
     <ol
       ref="cityRowEl"
       class="city-spaces"
       :class="{
         'city-spaces--gesture': isGestureEnabled,
         'city-spaces--gesture-touch': isTouchGestureEnabled,
+        'city-spaces--gesture-hold': isLongPressHoldEnabled,
+        'city-spaces--gesture-armed': isLongPressArmed,
       }"
     >
       <!-- why: 7-cell visual layout locked per EC-132 §2:
@@ -356,6 +370,37 @@ export default defineComponent({
    On a scrolling row this class is absent, so touch keeps native scrolling. */
 .city-spaces--gesture-touch {
   touch-action: pan-y;
+}
+
+/* why: WP-761 — during a long press iOS would open the image / link callout
+   over the card art. Only on the hold class (the row scrolls, or a long press is
+   live), so a fitting row keeps WP-756's styling exactly. */
+.city-spaces--gesture-hold {
+  -webkit-touch-callout: none;
+}
+
+/* why: WP-761 — the "armed" cue. INSET, because the row and its mobile band are
+   overflow-x: auto and would clip an outer glow. A short pulse draws the eye to
+   the arm; reduced motion keeps the glow and drops the pulse. */
+.city-spaces--gesture-armed {
+  box-shadow: inset 0 0 0 2px rgba(214, 194, 255, 0.95), inset 0 0 14px rgba(214, 194, 255, 0.55);
+  border-radius: 0.35rem;
+  animation: city-spaces-armed-pulse 600ms ease-out 1;
+}
+
+@keyframes city-spaces-armed-pulse {
+  from {
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 1), inset 0 0 22px rgba(214, 194, 255, 0.9);
+  }
+  to {
+    box-shadow: inset 0 0 0 2px rgba(214, 194, 255, 0.95), inset 0 0 14px rgba(214, 194, 255, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-spaces--gesture-armed {
+    animation: none;
+  }
 }
 
 /* why (Jeff feedback): a HORIZONTAL row — the slot label rotated on the left, the

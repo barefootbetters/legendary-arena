@@ -534,3 +534,357 @@ describe('useSlashGesture — signals (WP-756 §H)', () => {
     assert.equal(useSliceAngleHints().take(0), null);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-761 — the long-press slash on a row that scrolls sideways.
+// ---------------------------------------------------------------------------
+
+/** A row whose content is wider than its box — the phone case (no touch class). */
+function overflowingRow(): HTMLElement {
+  const row = buildRow();
+  stubWidths(row, 900, 300);
+  return row;
+}
+
+/** Holds a touch still for the full arm duration. */
+function holdToArm(controller: SlashGestureController, sample: SlashPointerSample): void {
+  controller.handlePointerDown(sample);
+  mock.timers.tick(350);
+}
+
+/** The Hold gate / armed-state invariants every transition must keep. */
+function assertLongPressSynced(
+  controller: SlashGestureController,
+  expected: { isArmed: boolean; isHoldEnabled: boolean },
+): void {
+  assert.equal(controller.isLongPressArmed.value, expected.isArmed);
+  assert.equal(controller.shouldPreventTouchScroll(), expected.isArmed);
+  assert.equal(controller.isLongPressArmed.value, controller.shouldPreventTouchScroll());
+  assert.equal(controller.isLongPressHoldEnabled.value, expected.isHoldEnabled);
+}
+
+// A long press begins in the gap left of tile 0 (100..180) — outside every tile.
+const GAP = { x: 60, y: 150 };
+
+describe('useSlashGesture — long-press arm (WP-761 §D)', () => {
+  test('a 350 ms touch hold arms, and the drag across two tiles chains both fights', async () => {
+    const { controller, cityRef, submits, captures } = createHarness(['a', 'b', null, null, null], {
+      row: overflowingRow(),
+    });
+    assert.equal(controller.isTouchGestureEnabled.value, false);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    mock.timers.tick(350);
+    assertLongPressSynced(controller, { isArmed: true, isHoldEnabled: true });
+    assert.deepEqual(captures, [7]);
+    controller.handlePointerMove(touch(150, 150));
+    controller.handlePointerMove(touch(290, 150));
+    assert.deepEqual(submits, [0]);
+    cityRef.value = cityOf([null, 'b', null, null, null]);
+    await nextTick();
+    assert.deepEqual(submits, [0, 1]);
+    controller.handlePointerUp(touch(290, 150));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+  });
+
+  test('a 349 ms hold then release is a tap: never armed, no submit, no suppression', () => {
+    const { controller, submits, captures } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    mock.timers.tick(349);
+    controller.handlePointerUp(touch(GAP.x, GAP.y));
+    mock.timers.tick(10);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    assert.deepEqual(submits, []);
+    assert.deepEqual(captures, []);
+    assert.equal(controller.shouldSuppressClick(), false);
+  });
+
+  test('11 px of drift before 350 ms cancels the arm; a later drag fights nothing', () => {
+    const { controller, submits, captures } = createHarness(['a', 'b', null, null, null], {
+      row: overflowingRow(),
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    controller.handlePointerMove(touch(GAP.x + 11, GAP.y));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    mock.timers.tick(400);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    controller.handlePointerMove(touch(290, 150));
+    controller.handlePointerUp(touch(290, 150));
+    assert.deepEqual(submits, []);
+    assert.deepEqual(captures, []);
+  });
+
+  test('10 px of drift (the tolerance) still arms', () => {
+    const { controller } = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    controller.handlePointerMove(touch(GAP.x + 10, GAP.y));
+    mock.timers.tick(350);
+    assert.equal(controller.isLongPressArmed.value, true);
+  });
+
+  test('pointercancel before 350 ms cancels the arm', () => {
+    const { controller, captures } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    controller.handlePointerCancel(touch(GAP.x, GAP.y));
+    mock.timers.tick(400);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    assert.deepEqual(captures, []);
+  });
+
+  test('an armed hold released in place arms suppression that outlives setTimeout(0)', () => {
+    const { controller, submits } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    holdToArm(controller, touch(GAP.x, GAP.y));
+    controller.handlePointerUp(touch(GAP.x, GAP.y));
+    mock.timers.tick(0);
+    mock.timers.tick(50);
+    assert.deepEqual(submits, []);
+    assert.equal(controller.shouldSuppressClick(), true);
+    assert.equal(controller.shouldSuppressClick(), false);
+  });
+
+  test('the armed-path suppression is cleared by the next pointerdown, and by keydown', () => {
+    const first = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(first.controller, touch(GAP.x, GAP.y));
+    first.controller.handlePointerUp(touch(GAP.x, GAP.y));
+    first.controller.handlePointerDown(touch(140, 150, 8));
+    assert.equal(first.controller.shouldSuppressClick(), false);
+
+    const second = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(second.controller, touch(GAP.x, GAP.y));
+    second.controller.handlePointerUp(touch(GAP.x, GAP.y));
+    second.controller.handleKeyDown();
+    assert.equal(second.controller.shouldSuppressClick(), false);
+  });
+
+  test('the slow-tap trade: a 350 ms hold on a villain released in place fights nothing', () => {
+    const { controller, submits } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    holdToArm(controller, touch(140, 150));
+    controller.handlePointerUp(touch(140, 150));
+    assert.deepEqual(submits, []);
+    assert.equal(controller.shouldSuppressClick(), true);
+  });
+
+  test('a hold that starts on a villain never fights it, but a stroke from it fights the next', () => {
+    const { controller, submits } = createHarness(['a', 'b', null, null, null], {
+      row: overflowingRow(),
+    });
+    holdToArm(controller, touch(140, 150));
+    controller.handlePointerMove(touch(290, 150));
+    controller.handlePointerUp(touch(290, 150));
+    assert.deepEqual(submits, [1]);
+  });
+
+  test('pen follows the same path; a still mouse press never long-presses', () => {
+    const penHarness = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(penHarness.controller, pen(GAP.x, GAP.y));
+    assert.equal(penHarness.controller.isLongPressArmed.value, true);
+    penHarness.controller.handlePointerMove(pen(190, 150));
+    assert.deepEqual(penHarness.submits, [0]);
+
+    const mouseHarness = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(mouseHarness.controller, mouse(GAP.x, GAP.y));
+    assert.equal(mouseHarness.controller.isLongPressArmed.value, false);
+    assert.deepEqual(mouseHarness.captures, []);
+  });
+
+  test('on a fitting row a touch press starts no long press (WP-756 immediate path)', () => {
+    const { controller, captures } = createHarness(['a', null, null, null, null]);
+    assert.equal(controller.isTouchGestureEnabled.value, true);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: false });
+    holdToArm(controller, touch(GAP.x, GAP.y));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: false });
+    assert.deepEqual(captures, []);
+  });
+
+  test('a fit change mid-hold cancels nothing, and the hold gate stays on until it ends', async () => {
+    const row = overflowingRow();
+    const { controller, cityRef } = createHarness(['a', 'b', null, null, null], { row });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    stubWidths(row, 300, 300);
+    cityRef.value = cityOf(['a', 'b', null, null, null]);
+    await nextTick();
+    assert.equal(controller.isTouchGestureEnabled.value, true);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    mock.timers.tick(350);
+    assertLongPressSynced(controller, { isArmed: true, isHoldEnabled: true });
+    cityRef.value = cityOf(['a', 'b', null, null, null]);
+    await nextTick();
+    assertLongPressSynced(controller, { isArmed: true, isHoldEnabled: true });
+    controller.handlePointerUp(touch(GAP.x, GAP.y));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: false });
+  });
+
+  test('setting off: no pending arm, and turning it off mid-hold cancels the arm', async () => {
+    const off = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+      isEnabled: false,
+    });
+    holdToArm(off.controller, touch(GAP.x, GAP.y));
+    assertLongPressSynced(off.controller, { isArmed: false, isHoldEnabled: false });
+
+    const midHold = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    midHold.controller.handlePointerDown(touch(GAP.x, GAP.y));
+    midHold.isEnabled.value = false;
+    await nextTick();
+    mock.timers.tick(350);
+    assertLongPressSynced(midHold.controller, { isArmed: false, isHoldEnabled: false });
+    assert.deepEqual(midHold.captures, []);
+  });
+
+  test('setting off while armed ends the arm; after re-enabling a fresh touch is not armed', async () => {
+    const { controller, isEnabled } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    holdToArm(controller, touch(GAP.x, GAP.y));
+    assertLongPressSynced(controller, { isArmed: true, isHoldEnabled: true });
+    isEnabled.value = false;
+    await nextTick();
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: false });
+    isEnabled.value = true;
+    await nextTick();
+    controller.handlePointerDown(touch(GAP.x, GAP.y, 11));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+  });
+
+  test('a second finger cancels a pending arm and never starts its own', () => {
+    const { controller, captures } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y, 7));
+    controller.handlePointerDown(touch(GAP.x + 40, GAP.y, 8));
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    mock.timers.tick(700);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+    assert.deepEqual(captures, []);
+  });
+
+  test('a second finger during an armed stroke is ignored', () => {
+    const { controller, submits } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    holdToArm(controller, touch(GAP.x, GAP.y, 7));
+    controller.handlePointerDown(touch(300, 300, 8));
+    controller.handlePointerMove(touch(190, 150, 8));
+    assertLongPressSynced(controller, { isArmed: true, isHoldEnabled: true });
+    controller.handlePointerMove(touch(190, 150, 7));
+    assert.deepEqual(submits, [0]);
+  });
+
+  test('scope dispose clears the pending arm timer', () => {
+    const { controller, captures, scope } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    scope.stop();
+    mock.timers.tick(700);
+    assert.equal(controller.isLongPressArmed.value, false);
+    assert.deepEqual(captures, []);
+  });
+
+  test('an armed pointercancel keeps completed crossings, ends the trail, arms nothing', () => {
+    const { controller, submits } = createHarness(['a', 'b', null, null, null], {
+      row: overflowingRow(),
+    });
+    const ends: boolean[] = [];
+    const scope = effectScope();
+    openScopes.push(scope);
+    scope.run(() => {
+      watch(
+        useBladeTrailSignal(),
+        (sample) => {
+          if (sample !== null) ends.push(sample.isStrokeEnd);
+        },
+        { flush: 'sync' },
+      );
+    });
+    holdToArm(controller, touch(GAP.x, GAP.y));
+    controller.handlePointerMove(touch(240, 150));
+    controller.handlePointerCancel(touch(240, 150));
+    assert.deepEqual(submits, [0]);
+    assert.equal(ends[ends.length - 1], true);
+    assert.equal(controller.shouldSuppressClick(), false);
+    assertLongPressSynced(controller, { isArmed: false, isHoldEnabled: true });
+  });
+
+  test('the arm publishes exactly one trail sample, at the press point', () => {
+    const { controller } = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    const samples: { x: number; y: number; isStrokeEnd: boolean }[] = [];
+    const scope = effectScope();
+    openScopes.push(scope);
+    scope.run(() => {
+      watch(
+        useBladeTrailSignal(),
+        (sample) => {
+          if (sample !== null) samples.push({ x: sample.x, y: sample.y, isStrokeEnd: sample.isStrokeEnd });
+        },
+        { flush: 'sync' },
+      );
+    });
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    assert.equal(samples.length, 0);
+    mock.timers.tick(350);
+    assert.deepEqual(samples, [{ x: GAP.x, y: GAP.y, isStrokeEnd: false }]);
+  });
+
+  test('candidates are measured at the arm, not at pointerdown', () => {
+    const { controller, submits, allowed } = createHarness(['a', null, null, null, null], {
+      row: overflowingRow(),
+    });
+    allowed.delete(0);
+    controller.handlePointerDown(touch(GAP.x, GAP.y));
+    allowed.add(0);
+    mock.timers.tick(350);
+    controller.handlePointerMove(touch(190, 150));
+    assert.deepEqual(submits, [0]);
+  });
+});
+
+describe('useSlashGesture — the arm buzz (WP-761 §D)', () => {
+  let vibrateCalls: number[] = [];
+
+  beforeEach(() => {
+    vibrateCalls = [];
+    Object.defineProperty(navigator, 'vibrate', {
+      value: (pattern: number) => {
+        vibrateCalls.push(pattern);
+        return true;
+      },
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    // why: navigator is a shared global (jsdom-setup.ts), so the stub must not
+    // leak into other suites.
+    delete (navigator as { vibrate?: unknown }).vibrate;
+  });
+
+  test('the arm buzzes once for 12 ms; a mouse press and a fitting row never buzz', () => {
+    const armed = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(armed.controller, touch(GAP.x, GAP.y));
+    assert.deepEqual(vibrateCalls, [12]);
+
+    const mouseHarness = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    holdToArm(mouseHarness.controller, mouse(GAP.x, GAP.y));
+    const fitting = createHarness(['a', null, null, null, null]);
+    holdToArm(fitting.controller, touch(GAP.x, GAP.y));
+    assert.deepEqual(vibrateCalls, [12]);
+  });
+
+  test('with navigator.vibrate absent the arm still happens and does not throw', () => {
+    delete (navigator as { vibrate?: unknown }).vibrate;
+    const { controller } = createHarness(['a', null, null, null, null], { row: overflowingRow() });
+    assert.doesNotThrow(() => holdToArm(controller, touch(GAP.x, GAP.y)));
+    assert.equal(controller.isLongPressArmed.value, true);
+  });
+});

@@ -19,11 +19,16 @@
  * the D-24365 VFX subsurface); the backstop is a `setTimeout`, which schedules
  * rather than reads time.
  *
- * @see WP-756 §B "useSlashGesture.ts"
- * @see DECISIONS.md D-24585 (the slash gesture)
+ * WP-761 adds the **long-press slash** for touch / pen on a row that scrolls
+ * sideways (every phone): a press held still for 350 ms arms a stroke, and while
+ * armed the row's `touchmove` is prevented so the finger slashes instead of
+ * scrolling. The stroke then runs through the same crossing rule and chain.
+ *
+ * @see WP-756 §B "useSlashGesture.ts" / WP-761 §A "the long press"
+ * @see DECISIONS.md D-24585 (the slash gesture) + D-24592 (the long-press slash)
  */
 
-import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
+import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue';
 import type { UICityState } from '@legendary-arena/game-engine';
 import {
   advanceCrossingState,
@@ -49,6 +54,15 @@ const TOUCH_START_DISTANCE_PX = 16;
 // frame would arrive first, read as a rejection, and trigger a late submit.
 // Abandoning never submits, so nothing is ever sent late.
 export const TARGET_CONFIRM_TIMEOUT_MS = 3000;
+
+// why: WP-761 — the long press is the one scroll-safe intent signal on a row
+// that scrolls: a scroll starts moving at once and a tap releases at once, so a
+// finger held STILL for 350 ms means "slash". 10 px of drift before then is a
+// scroll (or a sloppy tap) and abandons the arm; the browser pans on its own.
+const LONG_PRESS_ARM_MS = 350;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+// why: a short buzz confirms the arm on phones that support it; purely feedback.
+const LONG_PRESS_VIBRATE_MS = 12;
 
 // why: 1 px of slack on the fit comparison absorbs sub-pixel rounding between
 // scrollWidth and clientWidth, which browsers report as integers.
@@ -104,6 +118,16 @@ export interface SlashGestureController {
   shouldSuppressClick: (isVillainTileClick?: boolean) => boolean;
   isGestureEnabled: Ref<boolean>;
   isTouchGestureEnabled: Ref<boolean>;
+  /** WP-761 — true while a long-press stroke is armed (binds the armed glow). */
+  isLongPressArmed: Readonly<Ref<boolean>>;
+  /**
+   * WP-761 — the hold gate: the setting is on AND (the row does not fit OR a
+   * long press is live). Binds `city-spaces--gesture-hold` and gates the
+   * long-press listeners.
+   */
+  isLongPressHoldEnabled: Readonly<Ref<boolean>>;
+  /** WP-761 — whether the row's `touchmove` must be prevented (armed only). */
+  shouldPreventTouchScroll: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +275,8 @@ interface ActiveStroke {
   lastPoint: Point;
   hasStarted: boolean;
   crossing: CrossingState | null;
+  /** WP-761 — a long press: pending while `hasStarted` is false, armed after. */
+  isLongPress: boolean;
 }
 
 /** The chain target currently submitted and awaiting its confirming snapshot. */
@@ -281,6 +307,15 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
   let stroke: ActiveStroke | null = null;
   let isClickSuppressionArmed = false;
   let suppressionTimer: ReturnType<typeof setTimeout> | null = null;
+  let armTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // why: WP-761 — `stroke` is a plain `let` mutated in place, so a `computed`
+  // over it would never update. These two refs mirror it and are written ONLY
+  // by syncLongPressState(), called at every point the stroke changes, so the
+  // armed glow and the hold gate can never disagree with the stroke — and the
+  // row can never be left unscrollable after the stroke is gone.
+  const isLongPressArmedState = ref(false);
+  const isLongPressLive = ref(false);
 
   const chainQueue: CompletedCrossing[] = [];
   let inFlight: InFlightTarget | null = null;
@@ -292,6 +327,40 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
   // horizontally — on a scrolling row a finger stroke must stay a native scroll.
   // Re-measured on content change, since scrollWidth grows as villains enter.
   const isTouchGestureEnabled = computed(() => isEnabled.value && isRowFitting.value);
+  // why: WP-761 — the long-press listeners and callout CSS are needed only on a
+  // row that scrolls, so a fitting row stays byte-identical to WP-756. The
+  // `|| isLongPressLive` term keeps them attached while a long press is live: a
+  // chain fight can make the row fit while the finger is down, and detaching
+  // the listeners then would let the browser pan mid-stroke.
+  const isLongPressHoldEnabled = computed(
+    () => isEnabled.value && (!isRowFitting.value || isLongPressLive.value),
+  );
+
+  /** Mirrors the stroke into the two long-press refs — their ONLY writer. */
+  function syncLongPressState(): void {
+    isLongPressLive.value = stroke !== null && stroke.isLongPress;
+    isLongPressArmedState.value = stroke !== null && stroke.isLongPress && stroke.hasStarted;
+  }
+
+  /** Whether the row's touchmove must be prevented: only while armed. */
+  function shouldPreventTouchScroll(): boolean {
+    return stroke !== null && stroke.isLongPress && stroke.hasStarted;
+  }
+
+  /** Stops a pending arm's timer, if any. */
+  function clearArmTimer(): void {
+    if (armTimer !== null) {
+      clearTimeout(armTimer);
+      armTimer = null;
+    }
+  }
+
+  /** Ends any stroke (pending, armed or WP-756) and syncs the long-press refs. */
+  function endStroke(): void {
+    clearArmTimer();
+    stroke = null;
+    syncLongPressState();
+  }
 
   /** Re-measures whether the row fits (drives the touch class). */
   function measureFit(): void {
@@ -324,6 +393,34 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
       suppressionTimer = null;
       isClickSuppressionArmed = false;
     }, 0);
+  }
+
+  /**
+   * Arms the one-shot click suppression after an ARMED long-press stroke.
+   *
+   * why: WP-761 — once `contextmenu` is prevented a browser may still fire a
+   * `click` after the long touch, and on touch that click comes from the tap
+   * gesture, which can land in a LATER task than `pointerup` — a setTimeout(0)
+   * clear could run first and let it through. So this path is cleared only by
+   * the next `pointerdown` / `keydown`; every later tap starts with a
+   * `pointerdown`, so it can never eat one.
+   */
+  function armClickSuppressionUntilNextInput(): void {
+    clearClickSuppression();
+    isClickSuppressionArmed = true;
+  }
+
+  /** The arm buzz, where the device supports it. */
+  function buzzArm(): void {
+    // why: navigator.vibrate is absent on iOS Safari (and in jsdom); it is
+    // feature-checked and never load-bearing — the glow is the real cue.
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    try {
+      navigator.vibrate(LONG_PRESS_VIBRATE_MS);
+    } catch {
+      // why: some browsers throw when vibration is blocked by policy; the arm
+      // must still happen, so the buzz is simply skipped.
+    }
   }
 
   /** The fightable tiles at gesture start, with their rects (measured once). */
@@ -445,15 +542,36 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
     return isTouchGestureEnabled.value;
   }
 
+  /**
+   * Whether this press should start a long press (WP-761): touch or pen on a
+   * row that scrolls. Decided here, at pointerdown, only — a later fit change
+   * never affects a pending or armed long press.
+   */
+  function isLongPressEligible(sample: SlashPointerSample): boolean {
+    if (sample.pointerType === 'mouse') return false;
+    return !isTouchGestureEnabled.value;
+  }
+
   function handlePointerDown(sample: SlashPointerSample): void {
     clearClickSuppression();
     if (!isEnabled.value) return;
-    if (stroke !== null && stroke.pointerId !== sample.pointerId) return;
-    if (!canPointerStartStroke(sample)) {
-      stroke = null;
+    if (stroke !== null && stroke.pointerId !== sample.pointerId) {
+      // why: a second finger during a PENDING long press is a pinch or a
+      // two-finger pan, so it cancels the arm — and this pointerdown never
+      // starts an arm of its own. An armed or WP-756 stroke ignores it.
+      if (stroke.isLongPress && !stroke.hasStarted) endStroke();
       return;
     }
+    clearArmTimer();
     const downPoint = { x: sample.x, y: sample.y };
+    if (isLongPressEligible(sample)) {
+      startPendingLongPress(sample, downPoint);
+      return;
+    }
+    if (!canPointerStartStroke(sample)) {
+      endStroke();
+      return;
+    }
     stroke = {
       pointerId: sample.pointerId,
       pointerType: sample.pointerType,
@@ -461,7 +579,46 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
       lastPoint: downPoint,
       hasStarted: false,
       crossing: null,
+      isLongPress: false,
     };
+    syncLongPressState();
+  }
+
+  /** Starts a pending long press: the arm fires unless the finger moves or lifts. */
+  function startPendingLongPress(sample: SlashPointerSample, downPoint: Point): void {
+    stroke = {
+      pointerId: sample.pointerId,
+      pointerType: sample.pointerType,
+      downPoint,
+      lastPoint: downPoint,
+      hasStarted: false,
+      crossing: null,
+      isLongPress: true,
+    };
+    armTimer = setTimeout(armStroke, LONG_PRESS_ARM_MS);
+    syncLongPressState();
+  }
+
+  /**
+   * Arms a pending long press after 350 ms of stillness.
+   *
+   * why: the start distance is waived — the finger has not moved, so the stroke
+   * is seeded at the press point, and the candidate tiles are measured NOW
+   * (the row cannot scroll during an armed stroke, and a villain may have
+   * become fightable since pointerdown). Not startGesture: that publishes two
+   * trail samples and advances a segment, and here there is no segment yet.
+   */
+  function armStroke(): void {
+    armTimer = null;
+    const activeStroke = stroke;
+    if (activeStroke === null || !activeStroke.isLongPress || activeStroke.hasStarted) return;
+    activeStroke.hasStarted = true;
+    capturePointer(activeStroke.pointerId);
+    activeStroke.crossing = createCrossingState(collectCandidateTiles(), activeStroke.downPoint);
+    activeStroke.lastPoint = activeStroke.downPoint;
+    publishTrailSample(activeStroke.downPoint, false);
+    buzzArm();
+    syncLongPressState();
   }
 
   /**
@@ -487,6 +644,14 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
       return { hasStartedGesture: false };
     }
     const point = { x: sample.x, y: sample.y };
+    if (activeStroke.isLongPress && !activeStroke.hasStarted) {
+      // A pending long press: drifting past the tolerance is a scroll (or a
+      // sloppy tap) — abandon the arm and let the browser pan natively.
+      if (distanceBetween(activeStroke.downPoint, point) > LONG_PRESS_MOVE_TOLERANCE_PX) {
+        endStroke();
+      }
+      return { hasStartedGesture: false };
+    }
     if (!activeStroke.hasStarted) {
       const startDistance =
         activeStroke.pointerType === 'mouse' ? MOUSE_START_DISTANCE_PX : TOUCH_START_DISTANCE_PX;
@@ -505,18 +670,22 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
   function handlePointerUp(sample: SlashPointerSample): void {
     const activeStroke = stroke;
     if (activeStroke === null || activeStroke.pointerId !== sample.pointerId) return;
-    stroke = null;
+    endStroke();
     if (!activeStroke.hasStarted) return;
     const point = { x: sample.x, y: sample.y };
     advanceStroke(activeStroke, activeStroke.lastPoint, point);
     publishTrailSample(point, true);
-    armClickSuppression();
+    if (activeStroke.isLongPress) {
+      armClickSuppressionUntilNextInput();
+    } else {
+      armClickSuppression();
+    }
   }
 
   function handlePointerCancel(sample: SlashPointerSample): void {
     const activeStroke = stroke;
     if (activeStroke === null || activeStroke.pointerId !== sample.pointerId) return;
-    stroke = null;
+    endStroke();
     if (!activeStroke.hasStarted) return;
     // why: a cancel (e.g. the browser taking a vertical pan under pan-y) keeps
     // the crossings already completed, ends the trail, and arms NO suppression —
@@ -565,6 +734,8 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
     // why: the native image drag starts below the 8 px start distance, and a
     // drag would cancel the pointer stream mid-stroke, so dragstart is prevented
     // on the row whenever the setting is on. Preventing it never cancels click.
+    // WP-761: it is also what stops Android / iOS touch drag-and-drop from
+    // starting after a long press on card art.
     const onDragStart = (event: Event): void => {
       event.preventDefault();
     };
@@ -586,13 +757,73 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
     };
   }
 
+  /**
+   * Ends an armed long-press stroke when the row itself loses pointer capture.
+   *
+   * why: when armStroke() moves capture from the touched child to the row, the
+   * child fires a BUBBLING lostpointercapture — which must not kill the stroke
+   * it just armed. Only a loss on the row itself, for this armed long press's
+   * pointer, ends it (like pointercancel). Mouse and fitting-row strokes ignore
+   * it entirely.
+   */
+  function handleRowLostPointerCapture(sample: SlashPointerSample, isRowTarget: boolean): void {
+    if (!isRowTarget) return;
+    const activeStroke = stroke;
+    if (activeStroke === null || !activeStroke.isLongPress || !activeStroke.hasStarted) return;
+    if (activeStroke.pointerId !== sample.pointerId) return;
+    handlePointerCancel(sample);
+  }
+
+  /** Wires the long-press-only listeners to the row; returns the detach function. */
+  function attachHoldListeners(row: HTMLElement): () => void {
+    // why: touch-action is fixed when the touch starts, so the row cannot switch
+    // to pan-y mid-touch; the only way to stop the pan is preventDefault() on a
+    // cancelable touchmove BEFORE the browser starts panning — exactly the
+    // held-still long-press case. Never prevented unless armed: an unarmed
+    // touch must scroll natively.
+    const onTouchMove = (event: Event): void => {
+      if (shouldPreventTouchScroll() && event.cancelable) event.preventDefault();
+    };
+    // why: a long press on card art or a label raises the browser context menu
+    // (Android) — swallowed while a long press is pending or armed. The iOS
+    // callout is suppressed by -webkit-touch-callout on the hold class.
+    const onContextMenu = (event: Event): void => {
+      if (stroke !== null && stroke.isLongPress) event.preventDefault();
+    };
+    const onLostPointerCapture = (event: Event): void => {
+      handleRowLostPointerCapture(sampleFromEvent(event), event.target === row);
+    };
+    // why: non-passive, or the browser may ignore preventDefault() on touchmove
+    // and pan anyway.
+    row.addEventListener('touchmove', onTouchMove, { passive: false });
+    row.addEventListener('contextmenu', onContextMenu);
+    row.addEventListener('lostpointercapture', onLostPointerCapture);
+    return () => {
+      row.removeEventListener('touchmove', onTouchMove);
+      row.removeEventListener('contextmenu', onContextMenu);
+      row.removeEventListener('lostpointercapture', onLostPointerCapture);
+    };
+  }
+
+  // why: WP-761 — the long-press listeners follow the hold gate (setting on AND
+  // the row does not fit OR a long press is live), so a fitting row carries
+  // none of them and a live long press never loses them mid-stroke.
+  watch(
+    [rowElement, isLongPressHoldEnabled],
+    ([row, isHoldOn], _previous, onCleanup) => {
+      if (row === null || !isHoldOn) return;
+      onCleanup(attachHoldListeners(row));
+    },
+    { immediate: true, flush: 'post' },
+  );
+
   // why: the adapter is attached only while the setting is on, so with it off
   // the row carries no listeners at all — byte-identical to the pre-gesture row.
   watch(
     [rowElement, isEnabled],
     ([row, isOn], _previous, onCleanup) => {
       if (row === null || !isOn) {
-        stroke = null;
+        endStroke();
         clearClickSuppression();
         return;
       }
@@ -628,7 +859,7 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
     clearClickSuppression();
     resolveInFlight();
     chainQueue.length = 0;
-    stroke = null;
+    endStroke();
     if (resizeObserver !== null) resizeObserver.disconnect();
     resizeObserver = null;
     if (typeof window !== 'undefined') window.removeEventListener('resize', onWindowResize);
@@ -643,5 +874,8 @@ export function useSlashGesture(options: SlashGestureOptions): SlashGestureContr
     shouldSuppressClick,
     isGestureEnabled,
     isTouchGestureEnabled,
+    isLongPressArmed: readonly(isLongPressArmedState),
+    isLongPressHoldEnabled: readonly(isLongPressHoldEnabled),
+    shouldPreventTouchScroll,
   };
 }
