@@ -262,7 +262,7 @@ If any item is false, this packet is **BLOCKED**.
 - **The Fallen fight-side** (Blood Frenzy, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard) is WP-760.
 - **Salomé's Escape "ascends to become an additional Mastermind"** is deferred to a future Ascend / multiple-Masterminds arc (34 lines across 7 sets; `G.mastermind` is a single object today).
 - **Epic Zarathos** (no Epic-face selection, D-24193) is a named follow-up.
-- **Server autoplay** (`apps/server/src/autoplay/autoplay.mjs`). Its spend filter is a hardcoded move-name list (~895-901), so all-bot autoplay matches will not exorcise until it gains `exorciseHauntedHero`. That is tracked as a separate server follow-up, together with its non-active seat-choice gap. Engine bots (sim/PAR) do exorcise via `ai.competent.ts`. Human play is unaffected.
+- **Server autoplay** (`apps/server/src/autoplay/autoplay.mjs`). No change needed. Its spend step offers the policy every legal move except the loop-driven ones (D-24591, #2364), so all-bot autoplay matches pick up `exorciseHauntedHero` as soon as `getLegalMoves` emits it. Non-active seat choices are already drained (D-24590, #2361). Engine bots (sim/PAR) exorcise via `ai.competent.ts`.
 - **N/A engine mechanics:** "HQ space destroyed" and "escape KOs a Hero from the HQ" have no engine path today.
 - **Patriarch's choice.** An interactive choice for "an unhaunted Hero" is not built; v1 is deterministic.
 - **Excluded surfaces:** no scoring, PAR-table, leaderboard, identity or monetization surface.
@@ -408,7 +408,7 @@ This is ~30 code/test/data files, well over the ~8 guideline. Justification: one
   - Recruit refuses that Hero;
   - an exorcise drops the Villain into the City.
 
-  Recorded as operator-pending until seen. Not all-bot autoplay (see Out of Scope).
+  Recorded as operator-pending until seen. All-bot autoplay also exorcises (D-24591) and may be used as a supplementary check, but the Recruit refusal needs a human-driven click.
 
 ## Reserved Decision (lands at execution)
 

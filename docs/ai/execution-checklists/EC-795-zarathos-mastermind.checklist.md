@@ -61,7 +61,7 @@
 - No edit to `applySeatChoiceTimeoutDefault`. Each builder sets `defaultOptionIndex`: 0 for the multi-seat kinds, the last option for the "may" kinds.
 - Parks go through `parkSeatChoice(G, events, choice)`, following Monarch's Decree.
 - No RNG beyond the draw reshuffle. Moves never throw. No `.reduce()`.
-- No `apps/*` change. The autoplay non-active-seat gap is out of scope; do not fix it here.
+- No `apps/*` change. Autoplay already drains non-active seat choices (D-24590).
 
 ## Required `// why:` Comments
 - Wound-before-haunt order and the skip-when-haunting rule (D-24588).

@@ -63,7 +63,7 @@
 - `fightMastermind`, BOTH free-defeat builders (`buildDefeatWithBystanderTargets` and `buildPureFuryTargets`) and the bot intents all use the one predicate `isMastermindHaunting`.
 - The Ambush handler nulls the Villain's City space when it haunts. When no slot is eligible, the Villain stays and a log line is written. The handler writes exactly one `pushLog` line, with no double narration. The `ambushResolved` `citySpace` 0 fallback is accepted and asserted.
 - UIState five-step, in order: types → build (embed `display`) → filter pass-through → audience test → diagnostics snapshot.
-- Engine only. Do not touch `apps/server/src/autoplay/*` (it is a separate follow-up).
+- Engine only. Do not touch `apps/server/src/autoplay/*` (it already offers any new spend move, D-24591).
 
 ## Required `// why:` Comments
 - `hqHaunters` field: D-24587. Per-slot and omit-when-absent (hash stability); index-keyed so refills inherit the haunter.
