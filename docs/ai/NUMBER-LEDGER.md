@@ -411,6 +411,7 @@ high-water: 422
 - WP-769 — killmonger-mastermind (Game Engine. bkpt Killmonger: generic Mastermind Wounds (-1 attack each, returned after a tactic), a woundMastermind move (spend his attack, +1 recruit), can't be fought above 0; strike + three tactics. reserved 2026-09-26, claude/special-masterminds-draft)
 - WP-770 — indestructible-man-client (App arena-client. Elite Assassin chooser + shuffle-fight affordance on the Mastermind tile. BLOCKED on WP-768. reserved 2026-09-26, claude/special-masterminds-draft)
 - WP-771 — killmonger-client (App arena-client. Wound-him button + Mastermind wounds badge. BLOCKED on WP-769. reserved 2026-09-26, claude/special-masterminds-draft)
+- WP-772 — divided-card-off-play-traits (Engine. A split / Divided hero card off-play counts as all of both faces' classes/teams/names, multicolored, and summed printed numbers; in-play unchanged. reserved 2026-09-26, claude/objective-ramanujan-5bf9f8)
 ## EC
 
 high-water: 457
@@ -782,6 +783,7 @@ high-water: 457
 - EC-806 — killmonger-mastermind (WP-769; Game Engine. reserved 2026-09-26, claude/special-masterminds-draft)
 - EC-807 — indestructible-man-client (WP-770; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
 - EC-808 — killmonger-client (WP-771; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
+- EC-809 — divided-card-off-play-traits (WP-772; Engine. reserved 2026-09-26, claude/objective-ramanujan-5bf9f8)
 ## D
 
 high-water: 24241
@@ -1164,3 +1166,4 @@ section below) and the allocation protocol in
 - D-24601 — indestructible-man-mastermind (RESERVED: locks WP-768 / EC-805. reserved 2026-09-26, claude/special-masterminds-draft)
 - D-24602 — killmonger-mastermind (RESERVED: locks WP-769 / EC-806 — generic Mastermind Wounds. reserved 2026-09-26, claude/special-masterminds-draft)
 - D-24603 — henchmen-are-villains (direct fix, no WP — a henchman defeat satisfies "Whenever you defeat a Villain or Mastermind" per rules v23 §"Henchmen Are Villains/Adversaries"; reverses the D-24467 #2030 henchman exclusion. D-24601..24602 held by open PR #2412. reserved 2026-09-26, claude/henchmen-are-villains)
+- D-24604 — divided-card-off-play-traits (RESERVED: locks WP-772 / EC-809 — the off-play union model for Divided Cards keyed off G.splitFaces, which read sites are off-play, and the hash/determinism posture. reserved 2026-09-26, claude/objective-ramanujan-5bf9f8)
