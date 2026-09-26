@@ -657,7 +657,7 @@ Catch them at PR review:
 - **[Villain Deck](villain-deck.md)** — `revealVillainCard` is
   one of the recorder-dispatchable moves. The 5-element
   `RevealedCardType` taxonomy drives reveal routing identically
-  to production (bystanders to mastermind or frontmost villain,
+  to production (bystanders to mastermind or the villain closest to the Villain Deck,
   scheme-twist via `onSchemeTwistRevealed`, mastermind-strike
   via `onMastermindStrikeRevealed`).
 - **[CardExtId](cardextid.md)** — All `cardId` references in

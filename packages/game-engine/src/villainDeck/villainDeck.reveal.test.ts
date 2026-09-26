@@ -724,22 +724,24 @@ describe('revealVillainCard — destination pile routing (WP-153)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Bystander capture routing — frontmost villain or mastermind
+// Bystander capture routing — villain closest to the Villain Deck, or mastermind
 // ---------------------------------------------------------------------------
 
 describe('revealVillainCard — bystander capture routing', () => {
-  it('attaches bystander to frontmost villain (highest occupied city index)', () => {
+  it('attaches bystander to the villain closest to the Villain Deck (lowest occupied city index)', () => {
+    // why: WP-747 / D-24571 — intentional behaviour change. Universal Rules v23
+    // L606-608 put the Bystander under the Villain closest to the Villain Deck;
+    // index 0 is the entry edge (Villain Deck side), index 4 the escape edge.
     const gameState = createMockGameState({
       deck: ['bystander-001'],
       discard: [],
       cardTypes: { 'bystander-001': 'bystander' },
     });
-    // city[3] is the frontmost occupied slot (closest to escape edge at 4)
     gameState.city = [
-      'villain-back' as CardExtId,
+      'villain-entry' as CardExtId,
       null,
       'villain-middle' as CardExtId,
-      'villain-front' as CardExtId,
+      'villain-near-escape' as CardExtId,
       null,
     ];
 
@@ -747,9 +749,9 @@ describe('revealVillainCard — bystander capture routing', () => {
     revealVillainCard(moveContext);
 
     assert.deepStrictEqual(
-      moveContext.G.attachedBystanders['villain-front'],
+      moveContext.G.attachedBystanders['villain-entry'],
       ['bystander-001'],
-      'Bystander must be attached to the frontmost villain (city[3])',
+      'Bystander must be attached to villain-entry (city[0], closest to the Villain Deck)',
     );
     assert.ok(
       !moveContext.G.villainDeck.discard.includes('bystander-001'),
@@ -761,9 +763,38 @@ describe('revealVillainCard — bystander capture routing', () => {
       'No bystander should attach to villain-middle',
     );
     assert.equal(
-      moveContext.G.attachedBystanders['villain-back'],
+      moveContext.G.attachedBystanders['villain-near-escape'],
       undefined,
-      'No bystander should attach to villain-back',
+      'No bystander should attach to villain-near-escape',
+    );
+  });
+
+  it('attaches bystander to the lowest OCCUPIED city index when index 0 is empty', () => {
+    const gameState = createMockGameState({
+      deck: ['bystander-001'],
+      discard: [],
+      cardTypes: { 'bystander-001': 'bystander' },
+    });
+    gameState.city = [
+      null,
+      'villain-a' as CardExtId,
+      null,
+      'villain-b' as CardExtId,
+      null,
+    ];
+
+    const moveContext = createMockMoveContext(gameState);
+    revealVillainCard(moveContext);
+
+    assert.deepStrictEqual(
+      moveContext.G.attachedBystanders['villain-a'],
+      ['bystander-001'],
+      'Bystander must be attached to villain-a (city[1], the lowest occupied index)',
+    );
+    assert.equal(
+      moveContext.G.attachedBystanders['villain-b'],
+      undefined,
+      'No bystander should attach to villain-b',
     );
   });
 

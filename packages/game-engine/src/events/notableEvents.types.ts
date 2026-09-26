@@ -322,9 +322,9 @@ export interface HealResolvedEvent {
  * revealed from the villain deck and captured (WP-602 / D-24412). Fires as the
  * final step of the `cardType === 'bystander'` capture branch, after the
  * "revealed and captured by" `G.messages` line and after the attach settles —
- * additive to that log line, not a replacement. The captor is the frontmost
- * City villain, or the Mastermind (`G.mastermind.baseCardId`) when the City is
- * empty. Presentation parity with `schemeTwistResolved` / `mastermindStrikeResolved`
+ * additive to that log line, not a replacement. The captor is the City villain
+ * closest to the Villain Deck, or the Mastermind (`G.mastermind.baseCardId`) when
+ * the City is empty. Presentation parity with `schemeTwistResolved` / `mastermindStrikeResolved`
  * so the overlay announces a revealed Bystander; not a new mechanic or reward.
  */
 export interface BystanderRevealedEvent {
@@ -332,7 +332,7 @@ export interface BystanderRevealedEvent {
   type: 'bystanderRevealed';
   /** Zone-instance ext_id of the Bystander card revealed from the villain deck. */
   revealedCardId: CardExtId;
-  /** Ext_id of the captor — the frontmost City villain, or the Mastermind when the City is empty. */
+  /** Ext_id of the captor — the City villain closest to the Villain Deck, or the Mastermind when the City is empty. */
   captorCardId: CardExtId;
   /** Engine-composed single-sentence English narrative. */
   narrative: string;
