@@ -129,6 +129,20 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.deepEqual(zones.deck, ['c1']);
   });
 
+  it('resets the WP-379 heal lock (hasActedThisTurn / hasHealedThisTurn) like game.ts onBegin', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    // why: a harness fight/recruit (or heal) on the previous turn leaves these set;
+    // live onBegin clears them, so the mirror must too or the lock carries across
+    // turns and the harness G diverges from live play.
+    gameState.hasActedThisTurn = true;
+    gameState.hasHealedThisTurn = true;
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal(gameState.hasActedThisTurn, false);
+    assert.equal(gameState.hasHealedThisTurn, false);
+  });
+
   it('drops deferredConditionalGrants and the defeat edge flag at the turn boundary (WP-744 / D-24567)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     gameState.deferredConditionalGrants = [

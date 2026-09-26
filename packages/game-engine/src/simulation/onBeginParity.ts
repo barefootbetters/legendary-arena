@@ -2,8 +2,9 @@
  * Shared play-phase onBegin parity for the observation-only harnesses.
  *
  * The boardgame.io play-phase `onBegin` hook (game.ts) runs at the start of
- * every player turn. It resets the two once-per-turn allowance flags
- * (`villainRevealedThisTurn`, `hasDrawnThisTurn`), drops every wait-and-see
+ * every player turn. It resets the once-per-turn allowance flags
+ * (`villainRevealedThisTurn`, `hasDrawnThisTurn`, and the WP-379 heal lock
+ * `hasActedThisTurn` / `hasHealedThisTurn`), drops every wait-and-see
  * deferred conditional grant (`deferredConditionalGrants`, WP-568 / D-24377)
  * and clears the WP-656 defeat edge flag
  * (`villainOrMastermindDefeatedSinceResolve`, D-24467). None of the engine's
@@ -33,8 +34,8 @@ import type { LegendaryGameState } from '../types.js';
 import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrants.js';
 
 /**
- * Mirrors the play-phase onBegin hook for one turn start: resets the two
- * once-per-turn allowance flags for the incoming seat, drops every deferred
+ * Mirrors the play-phase onBegin hook for one turn start: resets the
+ * once-per-turn allowance flags (including the WP-379 heal lock), drops every deferred
  * conditional grant, and clears the WP-656 defeat edge flag — in the same order
  * `game.ts` `onBegin` runs them. No draw (D-24520 — the draw is at end of turn).
  *
@@ -43,7 +44,7 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  * reset stays with the callers (they already do it); this helper owns the
  * flag resets and the deferred-grant turn-boundary clear of onBegin.
  *
- * @param gameState - the live per-game state; the two allowance flags are
+ * @param gameState - the live per-game state; the allowance flags are
  *   mutated in place, and `deferredConditionalGrants` /
  *   `villainOrMastermindDefeatedSinceResolve` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
@@ -62,6 +63,12 @@ export function applyOnBeginParity(
   // no-op all turn. Set the flag TRUE (matching game.ts onBegin + the OLD model's
   // post-draw value), so harness legal-moves never offer a mid-turn manual refill.
   gameState.hasDrawnThisTurn = true;
+  // why: WP-379 / D-24180 — mirrors game.ts onBegin's Healing/act mutual-exclusion
+  // reset, in the same order (after the draw flag). Without it a harness fight or
+  // recruit on turn N leaves hasActedThisTurn stuck true for every later turn (and a
+  // heal would lock fight/recruit forever), diverging the harness G from live play.
+  gameState.hasActedThisTurn = false;
+  gameState.hasHealedThisTurn = false;
   // why: WP-744 / D-24567 — mirrors game.ts onBegin for the rebuilt loops. The
   // wait-and-see window (WP-568 / D-24377) is THIS turn: an entry surviving into the
   // next turn would re-evaluate against a fresh turnEconomy and could grant for the
