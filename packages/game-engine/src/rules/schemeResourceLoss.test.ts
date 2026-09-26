@@ -68,9 +68,9 @@ describe('countEscapedPileByType', () => {
       'henchman-doombot-legion-00': 'henchman',
     });
 
-    assert.equal(countEscapedPileByType(state, 'bystander'), 2);
-    assert.equal(countEscapedPileByType(state, 'villain'), 1);
-    assert.equal(countEscapedPileByType(state, 'henchman'), 1);
+    assert.equal(countEscapedPileByType(state, ['bystander']), 2);
+    assert.equal(countEscapedPileByType(state, ['villain']), 1);
+    assert.equal(countEscapedPileByType(state, ['henchman']), 1);
   });
 
   it('classifies supply bystanders (BYSTANDER_EXT_ID) as bystander despite no villainDeckCardTypes entry', () => {
@@ -86,12 +86,12 @@ describe('countEscapedPileByType', () => {
       // NOTE: BYSTANDER_EXT_ID deliberately absent from the map.
     });
 
-    assert.equal(countEscapedPileByType(state, 'bystander'), 3);
+    assert.equal(countEscapedPileByType(state, ['bystander']), 3);
   });
 
   it('returns 0 for an empty escaped pile', () => {
     const state = makeState(MIDTOWN, [], {});
-    assert.equal(countEscapedPileByType(state, 'bystander'), 0);
+    assert.equal(countEscapedPileByType(state, ['bystander']), 0);
   });
 });
 
@@ -188,9 +188,9 @@ describe('escaped-pile-count villain — Negative Zone (WP-509 / D-24316)', () =
     return makeState(NEG_ZONE, escapedPile, types, counters);
   }
 
-  it('counts villains only — henchmen and bystanders in the pile are excluded', () => {
+  it('counts villains AND henchmen — bystanders in the pile are excluded (D-24605)', () => {
     const state = negZoneState(3, { henchmen: 4, bystanders: 5 });
-    assert.equal(countEscapedPileByType(state, 'villain'), 3);
+    assert.equal(countEscapedPileByType(state, ['villain', 'henchman']), 7);
   });
 
   it('sets SCHEME_LOSS when 12 villains have escaped', () => {
@@ -205,11 +205,24 @@ describe('escaped-pile-count villain — Negative Zone (WP-509 / D-24316)', () =
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
   });
 
-  it('11 villains + 6 henchmen does NOT lose — henchmen never count toward the 12 (villains-only, D-24316)', () => {
-    // why: the faithfulness guard. 17 escaped adversaries (over the retired
-    // ESCAPE_LIMIT 8) but only 11 villains — Negative Zone loses on villains
-    // only per Universal Rules v23 §Escaped Villains.
-    const state = negZoneState(11, { henchmen: 6 });
+  it('11 villains + 1 henchman LOSES — henchmen count toward the 12 (D-24605)', () => {
+    // why: rules v23 §"Henchmen Are Villains/Adversaries" — "Henchman Villain
+    // cards are indeed Villains" — and §"Schemes that Count Escaped Villains"
+    // counts the Villain cards in the Escape Pile. Reverses the D-24316
+    // villains-only reading.
+    const state = negZoneState(11, { henchmen: 1 });
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('12 henchmen alone LOSES (the printed setup adds an extra Henchman group)', () => {
+    const state = negZoneState(0, { henchmen: 12 });
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('11 villains + 6 escaped bystanders does NOT lose — bystanders are not Villains', () => {
+    const state = negZoneState(11, { bystanders: 6 });
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
   });

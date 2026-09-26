@@ -50,7 +50,7 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       lossThreshold: 8,
       resourceLossCondition: {
         kind: 'escaped-pile-count',
-        cardType: 'bystander',
+        cardTypes: ['bystander'],
         threshold: 8,
       },
     },
@@ -85,17 +85,20 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       resolverId: 'chained-reveals',
       params: { revealCount: 2 },
       // why: real Evil-Wins is a RESOURCE condition (D-24316) — "If 12 Villains
-      // escape", counted as 'villain'-typed entries in G.escapedPile. Villains
-      // only, per Universal Rules v23 §"Schemes that Count Escaped Villains"
-      // (henchmen — typed 'henchman' — are excluded, so counting the pile by
-      // 'villain' type is faithful; the ESCAPED_VILLAINS counter would wrongly
-      // include them). Declaring resourceLossCondition SUPPRESSES the twist-count
-      // doom-clock proxy for this scheme; lossThreshold (the printed 8-twist
-      // stack size) is retained but now INERT for loss (D-24178 / D-24317).
+      // escape", counted as the Villain cards in G.escapedPile. Universal Rules v23
+      // §"Schemes that Count Escaped Villains" counts "only the Villain cards
+      // currently in the Escape Pile", and §"Henchmen Are Villains/Adversaries"
+      // says "Henchman Villain cards are indeed Villains" — so escaped henchmen
+      // count toward the 12 (D-24605; the printed setup adds an extra Henchman
+      // group for exactly this). Escaped Bystanders and other non-Villain entries
+      // do not, which is why this counts the pile by type rather than reading the
+      // ESCAPED_VILLAINS counter. Declaring resourceLossCondition SUPPRESSES the
+      // twist-count doom-clock proxy for this scheme; lossThreshold (the printed
+      // 8-twist stack size) is retained but now INERT for loss (D-24178 / D-24317).
       lossThreshold: 8,
       resourceLossCondition: {
         kind: 'escaped-pile-count',
-        cardType: 'villain',
+        cardTypes: ['villain', 'henchman'],
         threshold: 12,
       },
     },
