@@ -45096,6 +45096,41 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 **Reserved by:** NUMBER-LEDGER D-24574. Related: D-12803 (audience filter), D-11104 (`UICardDisplay.cost`), D-24348 (Dark-Portal bonus), D-24561 (EV fight button), D-24585 / D-24592 (slash gesture), D-2504 (Patrol / Guard safe-skip), D-24594 (WP-762 data fill), D-24026 (live-on-surface).
 
+### D-24572 — The Midtown Bank Robbery family's "+1 attack for each Bystander it has" is applied in resolveFightCost (Active 2026-09-26 — WP-748 / EC-785)
+
+**Status:** Active. Landed 2026-09-26 (WP-748 / EC-785). The live-on-surface check (D-24026) is pending with the operator. In a Midtown match, a City villain holding N Bystanders must show `city[i].fightCost` = printed + N, both in the Play Diagnostics `uiStateSnapshot` and on the tile's `Fight N` badge (WP-750 / D-24574). Fight must stay disabled at printed attack.
+
+**Context.** Three schemes print the Special Rule "Each Villain gets +1[icon:attack] for each Bystander it has.": core Midtown Bank Robbery, co2e Bank Robbery Hostage Crisis, and msp1 Destroy the Cities of Earth! The engine ignored it; `resolveFightCost` had scheme bonuses only for Killbots and Portals. In live match `PaT5TygrTPQ` (2p Red Skull / Midtown), the bot ally defeated HYDRA Kidnappers holding 3 Bystanders with 3 attack; the true cost was 6. The PAR calibration page already flagged `midtown-bank-robbery :: red-skull :: hydra` as too easy.
+
+**Decision.**
+
+1. **One bonus, one site.** A private helper, `bystanderVillainAttackBonus`, sits beside `darkPortalVillainBonus`, and `resolveFightCost` returns base + Portals bonus + this bonus. It is the second scheme-gated additive bonus in the single fight-cost authority (WP-214), after Portals (D-24348). The fight move gate, the bot's legal moves and the City `fightCost` projection all read that one function, so they move together. The client shows the projection through WP-750.
+2. **The rule.** Under a scheme in `VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS`, the bonus equals `G.attachedBystanders[villainId].length`:
+   - `core/midtown-bank-robbery`
+   - `co2e/bank-robbery-hostage-crisis`
+   - `msp1/destroy-the-cities-of-earth`
+
+   Any other scheme gets 0. The bonus stacks on the static, dynamic (`N+` / `*`) or converted Killbot/Skrull resolution, and henchmen are included (they are Villains). The Patrol modifier still stacks on top at both gate sites.
+3. **Not the Mastermind.** The rule says "Villain", so `resolveMastermindFightCost` is untouched. Bystanders stored under the Mastermind's key never change its cost; a test pins this.
+4. **Not printed-attack readers.** `getPrintedAttackForDefeatTarget` (Pure Fury, D-24499) still reads the printed attack.
+5. **Partial-G tolerance.** The helper reads `G.selection?.schemeId` and `G.attachedBystanders?.[id]` with optional chaining. The Portals and Mastermind fixtures build `G` under Midtown without the map, and a missing map means "holds no Bystanders".
+6. **Out of scope, named.**
+   - Per-card "+N attack for each Bystander he has" villains (co2e Baron Zemo / Enchantress, msp1 Raza, dkcy Blockbuster / Chimera / Scalphunter, 2099 Jigsaw) are a separate rule. If implemented, they stack additively in `resolveFightCost`.
+   - The PAR profile re-pin (`data/par/profile/v1/**`) is a separate `INFRA:` regeneration after this WP (and WP-747) land. Seed PAR is untouched.
+   - Replays of Midtown-family matches recorded before this change may re-execute differently; stored scores are not recomputed.
+7. **Sequencing.** WP-750 (client gates on `fightCost`) merged first, so a hostage-laden villain shows its real cost and its Fight button disables instead of silently no-oping. WP-747 (the Villain-Deck Bystander captor) has not landed. It is parallel-safe; whichever lands second re-runs the hash oracles and both sim gates on the merged tree.
+
+**Gates.** After `pnpm -r build` (no `Failed`):
+- Engine suite 4324/0 → 4333/0: +6 `economy.resolve.test.ts` (the three family schemes, non-family control, dynamic stack, missing map, Mastermind isolation) and +3 `fightVillain.test.ts` (Midtown refused at 3; defeated at 6 with exactly 6 spent and all 3 Bystanders rescued; control defeated at 3). No existing test edited.
+- With the bonus neutered, 5 of the new tests fail. They test the fix, not the fixture.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` pins pass unchanged (no committed fixture plays a family scheme).
+- `pnpm sim:coverage --check` and `pnpm sim:runtime-observed:check` → 0.
+- `pnpm -r --no-bail test` → 0 fail.
+- Each scheme id matches once in `economy.resolve.ts`, and the composition call matches once.
+- No `data/par/**` change, no client edit, no new `G` / UIState field.
+
+**Reserved by:** NUMBER-LEDGER D-24572. Related: D-24348 (Portals scheme bonus), D-24314 (Midtown carry-away loss), D-24499 (printed-attack readers), D-24574 (WP-750 client gating), D-24571 (WP-747 Bystander captor), D-24026 (live-on-surface).
+
 ---
 
 Protect this file.
