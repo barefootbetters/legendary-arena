@@ -8,6 +8,12 @@
 .githooks/** text eol=lf
 *.sh text eol=lf
 
+# why: packages/lagn-spec/scripts/generate-schema.mjs rewrites this file with LF
+# on every `pnpm -r build`. With `text=auto` a Windows checkout holds it as CRLF,
+# so each build left a phantom ` M` in `git status` with no content change. The
+# index copy is already LF; pinning the checkout to LF makes a build a no-op.
+packages/lagn-spec/schemas/lagn-v1.json text eol=lf
+
 # why (D-24242): the number-allocation ledger is append-only. `merge=union` makes
 # git keep BOTH sides' distinct reservation lines on a local rebase/merge, so two
 # sessions reserving different WP/EC/D numbers never conflict here (unlike the
