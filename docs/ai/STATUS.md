@@ -7,6 +7,23 @@
 
 ## Current State
 
+### D-24605 — Negative Zone Prison Breakout counts escaped henchmen toward its 12 (direct fix) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** In Negative
+Zone Prison Breakout, escaped henchmen now count toward "If 12 Villains escape", as Universal Rules
+v23 prints ("Henchman Villain cards are indeed Villains"). Before this, only non-henchman Villains
+counted, even though the scheme's setup adds an extra Henchman group. Escaped Bystanders still do not
+count. The danger meter's escaped count includes henchmen too.
+
+- **Engine.** The `escaped-pile-count` loss condition takes a list of card types (`cardTypes`);
+  Negative Zone lists villain and henchman, Midtown Bank Robbery lists bystander. Reverses the
+  D-24316 villains-only reading, whose cited rulebook section does not exclude henchmen.
+- **Counts and gates.** Engine 4501/0 (one test intentionally flipped to "a henchman counts").
+  `pnpm -r --no-bail test` → 0 fail; the core oracles and the `sim:runtime-observed` /
+  `sim:coverage` checks are unchanged.
+- **Live-verify (D-24026): operator-pending.** Start Negative Zone Prison Breakout and let a henchman
+  escape: the danger meter's escaped count goes up by one.
+
 ### D-24603 — Henchmen are Villains for "Whenever you defeat a Villain or Mastermind" (direct fix) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Defeating a

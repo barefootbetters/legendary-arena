@@ -45304,6 +45304,25 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Reserved by:** NUMBER-LEDGER D-24603. Related: D-24467 (per-defeat trigger), D-24600 (WP-767), D-24565, D-24543, D-24119.
 
+
+---
+
+### D-24605 — Negative Zone Prison Breakout: escaped henchmen count toward "If 12 Villains escape" (Active 2026-09-26 — direct fix, no WP; reverses the D-24316 villains-only reading)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `rules/schemeTwistConfig.types.ts`, `rules/schemeTwistConfigs.ts`, `rules/schemeResourceLoss.ts`, `rules/schemeLossProgress.ts`).
+
+**Context.** D-24316 (WP-509) modeled Negative Zone Prison Breakout's Evil Wins ("If 12 Villains escape") as an `escaped-pile-count` condition on `'villain'`-typed entries only, and its `// why:` comment cited Universal Rules v23 §"Schemes that Count Escaped Villains" as excluding henchmen. That section does not say so. It reads: "These count only the Villain cards currently in the Escape Pile", and its bullets extend the count to other card types turned into Villains and exclude Villains sent anywhere other than the Escape Pile. It is about non-Villain cards in the pile (captured Bystanders), not henchmen. §"Henchmen Are Villains/Adversaries" says "Henchman Villain cards are indeed Villains." The printed scheme setup also says "Add an extra Henchman group to the Villain Deck", which the villains-only reading made nearly irrelevant to the loss. D-24603 reversed the same wrong premise for the "defeat a Villain" trigger; its §5 flagged this case.
+
+**Decision.**
+
+1. **Henchmen count.** Negative Zone's condition counts `'villain'` and `'henchman'` entries in `G.escapedPile` against 12. Escaped Bystanders and other non-Villain entries still do not count, so the scheme keeps counting the pile by type rather than reading the `ESCAPED_VILLAINS` counter.
+2. **Contract change.** The `escaped-pile-count` member of `SchemeResourceLossCondition` takes `cardTypes: readonly RevealedCardType[]` in place of `cardType: RevealedCardType`, so each config lists exactly what it counts (Midtown Bank Robbery `['bystander']`, Negative Zone `['villain', 'henchman']`). `countEscapedPileByType` takes the same list. The danger meter reads the same helper, so it now shows henchmen in the Negative Zone numerator. The loss log names the counted types joined by `/`.
+3. **Supersedes** the "villains only / henchmen excluded" clause of D-24316. Everything else in D-24316 (removal of the generic `ESCAPE_LIMIT` branch, `SCHEME_LOSS` latched from the escape path) stands. Resolves D-24603 §5.
+4. **Replay / oracles.** Negative Zone games now lose earlier when henchmen escape. A past Negative Zone match whose escaped Villains plus henchmen reached 12 before 12 Villains diverges on D-24119 re-execution. Seed PAR is computed from authored difficulty ratings, not simulation, so it does not move; no core `finalStateHash` oracle covers this path (see Gates). No gauntlet or competitive pool is migrated.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4501/0; the NZPB test "11 villains + 6 henchmen does not lose" intentionally flipped to "11 villains + 1 henchman loses", plus "12 henchmen alone loses" and "bystanders still excluded"); core `finalStateHash` / replay oracles unchanged; `sim:runtime-observed:check`, `sim:coverage --check`, `ledger:numbers:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24605. Related: D-24316 (WP-509), D-24315, D-24603, D-24366 / D-24371 (danger meter), D-24119.
 ---
 
 Protect this file.

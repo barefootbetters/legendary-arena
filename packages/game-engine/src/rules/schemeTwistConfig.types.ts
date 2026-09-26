@@ -43,9 +43,10 @@ export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
  * A discriminated union on `kind` (data-only object literals, no functions, so
  * `SchemeTwistConfig` stays JSON-serializable):
  *
- * - `'escaped-pile-count'` (D-24315): the scheme loses when the Escaped Villains
- *   pile (`G.escapedPile`) holds at least `threshold` entries whose card type
- *   equals `cardType` (Midtown Bank Robbery, Negative Zone Prison Breakout).
+ * - `'escaped-pile-count'` (D-24315 / D-24605): the scheme loses when the Escaped
+ *   Villains pile (`G.escapedPile`) holds at least `threshold` entries whose card
+ *   type is one of `cardTypes` (Midtown Bank Robbery: `['bystander']`; Negative
+ *   Zone Prison Breakout: `['villain', 'henchman']` — henchmen are Villains).
  * - `'pile-depleted'` (D-24318 / D-24320 / D-24595): the scheme loses when a named
  *   pile runs out — the pile's length reaches 0. Super Hero Civil War:
  *   `pile: 'heroDeck'` (`G.heroDeck`); Legacy Virus: `pile: 'wounds'`
@@ -63,8 +64,12 @@ export type SchemeResourceLossCondition =
   | {
       /** Count entries of a card type in the Escaped Villains pile. */
       kind: 'escaped-pile-count';
-      /** The card type to count in `G.escapedPile`. */
-      cardType: RevealedCardType;
+      /**
+       * The card types to count in `G.escapedPile`. A printed "Villains" count
+       * lists both `'villain'` and `'henchman'` — rules v23 §"Henchmen Are
+       * Villains/Adversaries" (D-24605).
+       */
+      cardTypes: readonly RevealedCardType[];
       /** The count at which the scheme is lost (evil wins). */
       threshold: number;
     }

@@ -162,7 +162,7 @@ function makeTestState(options: TestStateOptions): LegendaryGameState {
 
 describe('resolveSchemeLossThreshold — the four-rung order (WP-557 / D-24366 §1)', () => {
   it('rung 1: a resourceLossCondition threshold wins outright', () => {
-    // why: Negative Zone declares escaped-pile-count / villain / 12. D-24315
+    // why: Negative Zone declares escaped-pile-count / villain+henchman / 12. D-24315
     // suppresses its twist proxy, so 12 — not its lossThreshold of 8 — is the
     // denominator. This is the rung most easily lost by reusing the twist order.
     const gameState = makeTestState({ schemeId: 'core/negative-zone-prison-breakout' });
@@ -235,18 +235,19 @@ describe('isTwistLossSuppressed (D-24315)', () => {
 
 describe('resolveSchemeLossProgress — the condition-aware numerator', () => {
   it('counts matching escaped-pile entries for an escaped-pile-count scheme', () => {
-    // why: Negative Zone counts VILLAINS in the escaped pile, so the bystander
-    // entry must not be counted.
+    // why: Negative Zone counts VILLAINS in the escaped pile — henchmen are
+    // Villains (D-24605), so the henchman counts; the bystander entry must not.
     const gameState = makeTestState({
       schemeId: 'core/negative-zone-prison-breakout',
-      escapedPile: ['villain-a', 'villain-b', 'bystander-a'],
+      escapedPile: ['villain-a', 'villain-b', 'henchman-a', 'bystander-a'],
       villainDeckCardTypes: {
         'villain-a': 'villain',
         'villain-b': 'villain',
+        'henchman-a': 'henchman',
         'bystander-a': 'bystander',
       },
     });
-    assert.equal(resolveSchemeLossProgress(gameState), 2);
+    assert.equal(resolveSchemeLossProgress(gameState), 3);
   });
 
   it('counts converted-origin entries for an escaped-converted-count scheme', () => {
