@@ -134,6 +134,11 @@ function hasAbilityText(line: string): boolean {
         <dt>Slot</dt>
         <dd>{{ card.slot }}</dd>
       </template>
+
+      <template v-if="card.splitPartnerName">
+        <dt>Split Card</dt>
+        <dd>{{ card.physicalCardImageHalf === "right" ? "Right" : "Left" }} half · other half: {{ card.splitPartnerName }}</dd>
+      </template>
     </dl>
 
     <div v-if="card.abilities && card.abilities.some(hasAbilityText)" class="ability-block">

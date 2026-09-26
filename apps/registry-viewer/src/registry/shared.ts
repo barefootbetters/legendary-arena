@@ -58,6 +58,19 @@ function orderSplitSidesLeftToRight(
   return [sides[0], sides[1]];
 }
 
+/**
+ * Resolves a split card's other face to its display name, or undefined when
+ * the card is not split (or the partner slug has no card entry).
+ */
+function splitPartnerName(
+  partnerSlug: string | undefined,
+  heroCards: readonly { slug?: string; name?: string | null }[],
+): string | undefined {
+  if (partnerSlug === undefined) return undefined;
+  const partnerCard = heroCards.find((heroCard) => heroCard.slug === partnerSlug);
+  return partnerCard?.name ?? undefined;
+}
+
 export function flattenSet(
   set: SetData,
   setName: string,
@@ -87,6 +100,7 @@ export function flattenSet(
     // alphabetized: Captain America's sides[0] "inspire-a-man" is the RIGHT
     // half), so orderSplitSidesLeftToRight keys off slot instead.
     const sideToImageHalf = new Map<string, "left" | "right">();
+    const sideToSplitPartner = new Map<string, string>();
     if (Array.isArray(hero.physicalCards)) {
       for (const physicalCard of hero.physicalCards) {
         if (!physicalCard || typeof physicalCard !== 'object') continue;
@@ -101,6 +115,8 @@ export function flattenSet(
           const [leftSlug, rightSlug] = orderSplitSidesLeftToRight(physicalCard.sides, hero.cards);
           sideToImageHalf.set(leftSlug, "left");
           sideToImageHalf.set(rightSlug, "right");
+          sideToSplitPartner.set(leftSlug, rightSlug);
+          sideToSplitPartner.set(rightSlug, leftSlug);
         }
       }
     }
@@ -172,6 +188,7 @@ export function flattenSet(
         imageUrl:    sideToImageUrl.get(card.slug) ?? "",
         physicalCardImageUrl: sideToImageUrl.get(card.slug),
         physicalCardImageHalf: sideToImageHalf.get(card.slug),
+        splitPartnerName: splitPartnerName(sideToSplitPartner.get(card.slug), hero.cards),
         heroName:    hero.name,
         team:        hero.team ?? undefined,
         hc:          card.hc ?? undefined,
