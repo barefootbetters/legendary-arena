@@ -4,6 +4,7 @@
 **Primary Layer:** Game Engine / Implementation + Card Data (+ one Arena Client copy fix)
 **Dependencies:**
 - **WP-750 / D-24574** (reserved; client Fight gating reads `UICityCard.fightCost`)
+- **WP-765 / D-24598 (hard; amended 2026-09-25).** WP-765 creates the shared `economy/bloodFrenzy.logic.ts` (`victoryPointValueForCard`, `countDistinctVictoryPointValues`, plus the scoring-parity test). This packet **consumes** it and does not create it.
 - WP-757 / D-24587 (sequencing only)
 - WP-214 (dynamic `N+` fight cost)
 - WP-539 / D-24348 (Dark-Portal additive cost-term precedent)
@@ -103,7 +104,7 @@ If any item is false, this packet is **BLOCKED**.
 - **One cost authority.** The Blood Frenzy term lives only in `resolveFightCost`. `resolveFightCost` gains an **optional** third parameter `fightingPlayerId?: string`:
   - With it omitted, the term is 0, so every existing caller and test stays byte-identical until it opts in.
   - All three production callers pass the acting player: `fightVillain` passes `ctx.currentPlayer`, `ai.legalMoves` passes `activePlayer`, and `uiState.build` passes `ctx.currentPlayer`. The City `fightCost` projection therefore shows the **active** player's cost to every audience, which is correct because only the active player can fight.
-- **Distinct-VP count.** `countDistinctVictoryPointValues(G, playerId)` iterates `playerZones[playerId].victory` and collects each card's value from a new `victoryPointValueForCard(G, playerId, cardId)`.   That helper mirrors `computeFinalScores`' branch order **exactly**:
+- **Distinct-VP count.** `countDistinctVictoryPointValues(G, playerId)` iterates `playerZones[playerId].victory` and collects each card's value from WP-765's shared `victoryPointValueForCard(G, playerId, cardId)`.   That helper mirrors `computeFinalScores`' branch order **exactly**:
   1. villain: dynamic → printed → fallback;
   2. henchman;
   3. bystander;
@@ -148,7 +149,7 @@ If any item is false, this packet is **BLOCKED**.
 
 - **A)** `types.ts`: `villainBloodFrenzy?` and `PendingKoDiscardChoice.sourceCardId?`.
 - **B)** `setup/buildVillainBloodFrenzy.ts` (new) + test, wired in `setup/buildInitialGameState.ts` (assigned only when non-empty).
-- **C)** `economy/bloodFrenzy.logic.ts` (new) + test: `victoryPointValueForCard`, `countDistinctVictoryPointValues`, and the scoring-parity test.
+- **C)** Import `countDistinctVictoryPointValues` from WP-765's `economy/bloodFrenzy.logic.ts`, and do not re-implement it. **Amended 2026-09-25:** the helper and its scoring-parity test moved to WP-765, so that hero Blood Frenzy could ship without waiting on this packet's WP-750 / WP-762 chain. This packet still adds a villain fight-cost Blood Frenzy test that uses the helper.
 - **D)** `economy/economy.resolve.ts` + test: the optional parameter and the term.
 - **E)** Callers pass the player: `moves/fightVillain.ts`, `simulation/ai.legalMoves.ts`, `ui/uiState.build.ts`, each with tests.
 - **F)** The two primitives:
@@ -171,7 +172,7 @@ If any item is false, this packet is **BLOCKED**.
   - Ascend appears on 34 ability lines across 7 sets (wtif, ssw2, msmc, ssw1, xmen, mdns, wpnx).
   - It needs additional-Mastermind state, fight targeting, an all-defeated endgame gate, per-Mastermind strike ordering, UI tiles, bot moves, and scoring as a Villain.
   - Until then, her Escape behaves as any Escape without a handler does today.
-- **Hero-side Blood Frenzy** (Blade, Elsa Bloodstone, Morbius, Werewolf by Night: `card-mechanics.json` scope "hero", currently unsupported) is a follow-up. It can reuse `countDistinctVictoryPointValues`.
+- **Hero-side Blood Frenzy** is WP-765, which also owns the shared helper.
 - **The "N+" overload** (a Fallen villain that captured a Hero would also add that Hero's cost). The Fallen have no capture text, so this is not reachable today; noted only.
 - **Interactive choice for Patriarch** (the rule is deterministic: cost ≤ 3 → draw).
 - **Other client work.** WP-750 owns the fightCost read, and there is no Blood-Frenzy-specific UI. The only client edit here is the KO-discard header.
@@ -185,8 +186,6 @@ If any item is false, this packet is **BLOCKED**.
 - `packages/game-engine/src/setup/buildVillainBloodFrenzy.ts` — **new**
 - `packages/game-engine/src/setup/buildVillainBloodFrenzy.test.ts` — **new**
 - `packages/game-engine/src/setup/buildInitialGameState.ts` — modified (wiring)
-- `packages/game-engine/src/economy/bloodFrenzy.logic.ts` — **new**
-- `packages/game-engine/src/economy/bloodFrenzy.logic.test.ts` — **new** (includes the scoring-parity case)
 - `packages/game-engine/src/economy/economy.resolve.ts` — modified; its test `economy.resolve.test.ts` — modified
 - `packages/game-engine/src/moves/fightVillain.ts` — modified; its test — modified
 - `packages/game-engine/src/simulation/ai.legalMoves.ts` — modified; its test — modified
@@ -204,12 +203,12 @@ If any item is false, this packet is **BLOCKED**.
 - Derived feeds — regenerated: `data/metadata/effect-implementation-index.json`, `data/metadata/card-mechanics.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`, `docs/ai/coverage/runtime-observed-hollows.json`. The `sim:coverage` baseline changes only if its check flags.
 - Governance: `docs/ai/DECISIONS.md` (D-24589), `docs/ai/STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`
 
-That is ~26 code/test/data files, above the ~8 guideline. It is justified: two independent small mechanics plus one cost term, each with a test file and the standard marker/feed chain, and about half are tests.
+That is ~24 code/test/data files (the Blood Frenzy helper moved to WP-765), above the ~8 guideline. It is justified: two independent small mechanics plus one cost term, each with a test file and the standard marker/feed chain, and about half are tests.
 
 ## Contract
 
 - The Locked Values above: the `resolveFightCost` signature, `villainBloodFrenzy?`, the two primitives and their tokens, `sourceCardId?`, the client header, and the marker rows.
-- `victoryPointValueForCard` / `countDistinctVictoryPointValues` are exported from `economy/bloodFrenzy.logic.ts` for later hero-side Blood Frenzy reuse. They are not added to `index.ts`.
+- `countDistinctVictoryPointValues` is **consumed** from WP-765's `economy/bloodFrenzy.logic.ts` (D-24598). This packet does not define or re-export it.
 
 ## Vision Alignment
 
@@ -242,8 +241,7 @@ That is ~26 code/test/data files, above the ~8 guideline. It is justified: two i
 2. **Distinct-VP count.**
    - `countDistinctVictoryPointValues` counts **distinct** values: {Bystander 1, Bystander 1, Villain 2, Villain 3} → 3.
    - It ignores heroes and twists.
-   - It counts a defeated tactic at its scoring value, and an Undercover card at 1.
-   - The scoring-parity test passes.
+   - It counts a defeated tactic at its scoring value, and an Undercover card at 1. (This is the helper's behaviour, owned and parity-tested by WP-765.)
 3. **Blood Frenzy cost.** `resolveFightCost(G, metarchusId, p)` = 3 + distinct(p). Omitting the player gives 3. `fightVillain` refuses at 3 attack when distinct(p) ≥ 1. Bot legal moves and `UICityCard.fightCost` show the same raised cost.
 4. **Atrocity.** Defeating Atrocity puts one Bystander in the defeater's Victory Pile. An empty Bystander supply is a no-op.
 5. **Patriarch.**
@@ -285,7 +283,7 @@ That is ~26 code/test/data files, above the ~8 guideline. It is justified: two i
 
 **D-24589 — fallen-fight-side.** It locks:
 - the Blood Frenzy term in `resolveFightCost`, with the optional acting-player parameter (the active player's cost is projected to every audience);
-- the per-card VP helper that mirrors scoring, plus its parity test;
+- consuming the D-24598 per-card VP helper (owned by WP-765), not re-implementing it;
 - `villainBloodFrenzy` as an omit-when-empty setup map, not a `BoardKeyword`;
 - the two primitives and their semantics (Wound = 0, empty-deck reshuffle, no draw lock);
 - `sourceCardId` on the KO-discard choice, and the source-neutral client header;
@@ -302,9 +300,9 @@ Drafted directly in house structure, after the WP-757/758/759 round-1 gate findi
 - **§2:** boilerplate and the session protocol are present.
 - **§3:** the Assumes items were verified by the research subagent against live code. Every line reference there is its report.
 - **§4:** context is complete.
-- **§5:** ~26 files, justified.
+- **§5:** ~24 files (helper moved to WP-765), justified.
 - **§6:** field names are canonical; the slug `salom-sorceress-supreme` is verbatim from the data.
-- **§7:** no new dependencies.
+- **§7:** WP-765 added as a hard dependency (amended 2026-09-25; it owns the shared Blood Frenzy helper).
 - **§8:** engine only.
 - **§9–§11:** N/A.
 - **§12:** `node:test`.
@@ -333,3 +331,5 @@ Findings, all fixed in this revision:
 **Copilot (01.7): RISK.** The flagged modes were the G-text field and the user-visible mislabel, both fixed above. Residual risk: WP-750 is still undrafted; drafting it also unblocks WP-748.
 
 **Round 3 CONFIRM (independent subagent):** CONFIRM. Every recorded fix is consistent across WP, EC and session prompt, code facts were re-verified, the cross-packet contract matches verbatim, and the stale-text sweep came back clean.
+
+**Amendment (2026-09-25, WP-765 drafting SPEC):** the Blood Frenzy helper (`economy/bloodFrenzy.logic.ts` and its scoring-parity test) now lands in WP-765, and this packet consumes it. That adds WP-765 as a hard dependency. The helper's semantics (the scoring-mirror branch order, the `null` handling for cards with no value, and the parity sum) are unchanged. They are now locked in WP-765 and D-24598. §Distinct-VP count, the AC-2 cases and Locked Values still describe the helper's behaviour; they are no longer this packet's implementation work. Scope, Files and EC-797 are updated to match.

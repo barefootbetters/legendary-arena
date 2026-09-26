@@ -6,6 +6,7 @@
 ## Before Starting
 - [ ] WP-750 is merged: City Fight gating reads `UICityCard.fightCost`. If not, STOP. A Blood Frenzy cost would leave a dead Fight button.
 - [ ] WP-757 is merged: the `mdns/fallen` `ambush` marker rows are present.
+- [ ] WP-765 is merged: `economy/bloodFrenzy.logic.ts` exports `countDistinctVictoryPointValues` (and its parity test). Import it; do not re-create it. If it is missing, STOP.
 - [ ] `resolveFightCost(G, villainCardId)` has exactly three production callers: `fightVillain`, `ai.legalMoves` and `uiState.build`.
 - [ ] `computeFinalScores` victory-pile branch order is unchanged.
 - [ ] `PendingKoDiscardChoice` and the "(Maniacal Tyrant)" log are at `koDiscardChoice.resolve.ts:~161`.
@@ -18,15 +19,7 @@
   - `ai.legalMoves` passes `activePlayer`.
   - `uiState.build` passes `ctx.currentPlayer`.
 - Blood Frenzy term = `countDistinctVictoryPointValues(G, player)` when `G.villainBloodFrenzy?.[id] === true`. Use explicit `if`, not ternary chains.
-- `victoryPointValueForCard(G, playerId, cardId)` mirrors `computeFinalScores` in this order:
-  1. dynamic villain, then printed, then `VP_VILLAIN`
-  2. henchman: printed, then `VP_HENCHMAN`
-  3. bystander: `VP_BYSTANDER`
-  4. defeated tactic: `cardVictoryPoints[mastermind.baseCardId] ?? VP_TACTIC`
-  5. Undercover card (`zones.undercover`): `VP_UNDERCOVER`
-  6. otherwise `null`
-
-  Distinct count = the size of the set of non-null values (negative and zero values count).
+- `countDistinctVictoryPointValues` is **imported only**, from WP-765's `economy/bloodFrenzy.logic.ts`. The per-card mirror and its parity test are owned by WP-765 / EC-802.
 - `G.villainBloodFrenzy?: Record<CardExtId, true>` is omit-when-empty. It is built by `setup/buildVillainBloodFrenzy.ts` from `[keyword:Blood Frenzy]`, one entry per copy id. `BoardKeyword` is NOT widened.
 - Primitives: `'reveal-top-draw-if-cost-lte'` and `'ko-up-to-from-discard-current'`, each with a `:N` magnitude.
 - Markers under `mdns/fallen`:
@@ -41,7 +34,7 @@
 
 ## Guardrails
 - The cost term lives ONLY in `resolveFightCost`, so the fight gate, the bot and the projection always agree.
-- Do NOT refactor `computeFinalScores` (duplicate first). The parity test pins the mirror against `villainVP + henchmanVP + bystanderVP + tacticVP + undercoverVP`, using a pile that includes a tactic and an Undercover card.
+- Do NOT re-implement the VP mirror. Import the WP-765 helper; its parity test lives there.
 - `villainBloodFrenzy` is assigned onto `G` only when non-empty, keeping the hash oracles byte-stable.
 - Patriarch:
   - an empty deck reshuffles the discard via `shuffleContext`; if both are empty, it's a no-op;
@@ -54,7 +47,7 @@
 
 ## Required `// why:` Comments
 - The optional `fightingPlayerId`: Blood Frenzy reads the fighter's Victory Pile, and only the active player can fight, so the projection shows the active player's cost to every audience.
-- The `victoryPointValueForCard` mirror: duplicated from scoring on purpose; the parity test pins it.
+- The Blood Frenzy term reuses WP-765's shared helper (D-24598), so villain and hero Blood Frenzy can never diverge.
 - `villainBloodFrenzy` omit-when-empty, and not a `BoardKeyword` (Blood Frenzy isn't City-structural).
 - Patriarch: Wound = 0 (D-24583), the empty-deck reshuffle (D-24285), no draw lock (WP-731 precedent).
 - The `sourceCardId` fallback keeps the Maniacal Tyrant log unchanged.
@@ -65,7 +58,6 @@
 - `packages/game-engine/src/types.ts` — **modified**
 - `setup/buildVillainBloodFrenzy.ts` + test — **new**
 - `setup/buildInitialGameState.ts` — **modified**
-- `economy/bloodFrenzy.logic.ts` + test — **new**
 - `economy/economy.resolve.ts`, `moves/fightVillain.ts`, `simulation/ai.legalMoves.ts`, `ui/uiState.build.ts`, each with its test — **modified**
 - `rules/villainAbility.types.ts`, `setup/villainAbility.setup.ts`, `villain/villainEffects.execute.ts`, `moves/koDiscardChoice.resolve.ts`, each with its test — **modified**
 - `apps/arena-client/src/components/play/PendingKoDiscardChoicePrompt.vue` + test — **modified**
