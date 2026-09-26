@@ -1714,42 +1714,50 @@ dispute.
   or face referral to the Justice Department and loss of federal funding. The
   same funding lever as Penn, this time resisted.
 - **The WNBA's undefined word** *(questions 1, 2 and 3)*. The league's 2026
-  collective bargaining agreement says only that "only players who are women are
-  eligible to play in the WNBA." It does not define "woman," and it sets no
-  process for deciding. On 7 August 2026 two former NBA players tested the gap on
-  purpose. Enes Kanter Freedom (6'10") posted that "if simply declaring who you
-  are is all that's required, then I meet every single requirement," and
-  declared for the 2027 draft — "Rules are rules! #LetFreedomPlay." Royce White
-  followed within hours, then filed a formal declaration signed by his lawyer,
-  Matt Gaetz, citing the agreement's own text. Both were plainly protest stunts,
-  but a stunt can still expose a real hole. The league's answer ran questions 1
-  and 2 at once: Commissioner Cathy Engelbert sent the matter to a task force of
-  the league's own team presidents and general managers, which met on 12 August;
-  the league then said there were "no immediate eligibility matters" and declined
-  to say how it had reached that conclusion. There was no third-party review and
-  no published test. Its statement did not answer the question; it characterized
-  the askers: "we strongly denounce the bad-faith efforts to use these topics to
-  demean or marginalize others" — judging by motive, the thing this lens refuses
-  to do. That is question 3 in its purest form, the
-  [keep-them-ignorant tell](#five-tells-for-naming-the-mastermind): a rule vague
-  enough that no one can argue with it. It also cuts the other way. Brittney
-  Griner has for years been the subject of suspicion that she is not a woman.
-  The suspicion rests on traits rare in women — at 6'9" she is an inch shorter
-  than Kanter Freedom, with the strength and the deep voice fans often call a
-  man's — though none of those traits establishes sex, and no public record
-  shows she is anything but female. Without a stated standard, the suspicion
-  can be neither confirmed nor put to rest. A published test, applied to every
-  player and checked by someone other than the league, would settle Griner's
-  case as surely as White's — which is the point: whatever defines "woman" should be
-  applied to all, not to the players a rumor or a stunt happens to target. The
-  league has run a Pride campaign since 2014 — the first US professional league
-  to do so — and says it has no eligibility question; those two facts do not contradict each other. What is missing is the
-  method. Then the seat turned over: on 4 September 2026 Engelbert announced she
-  will retire at year's end, with no successor named. (She also denied, in
-  October 2025, remarks that Napheesa Collier attributed to her about Caitlin
-  Clark — a separate labor dispute, one word against another.) The test for the
-  next commissioner is the Church Committee's, not the Warren Commission's: write
-  the definition down, and let someone outside the league check it.
+  collective bargaining agreement states only that "only players who are women
+  are eligible to play in the WNBA." It never defines *woman*, nor does it
+  describe how eligibility is determined. On 7 August 2026, former NBA players
+  Enes Kanter Freedom and Royce White deliberately tested that gap. Kanter
+  Freedom announced that if self-declaration is sufficient, he met the league's
+  stated requirements and would enter the 2027 draft. White followed with a
+  formal legal filing, signed by his lawyer, Matt Gaetz, citing the agreement's
+  own language. The point was not that either man expected to play in the WNBA.
+  The point was that the rule contains no visible mechanism for deciding who
+  qualifies.
+
+  The league's response raised questions 1 and 2 immediately. Commissioner Cathy
+  Engelbert referred the matter to a task force of the league's own team
+  presidents and general managers. After it met on 12 August, the league
+  announced that there were "no immediate eligibility matters" and declined to
+  explain the standard it had used. No independent review was announced. No
+  published test was cited. The conclusion was public; the method was not.
+
+  Instead of answering the eligibility question directly, the league's statement
+  addressed the motives of those who raised it, condemning what it called
+  "bad-faith efforts to use these topics to demean or marginalize others."
+  Whether the motives were good or bad is separate from the underlying issue. A
+  rule can be enforced consistently only if the standard is known.
+
+  The same problem appears from the opposite direction. Brittney Griner has long
+  been the subject of public speculation about her sex. Whether that speculation
+  is fair is not the issue. The issue is that the league has never stated a
+  standard capable of resolving the question one way or the other. Without a
+  published definition, neither Griner's supporters nor her critics can point to
+  an authoritative answer. The uncertainty exists because the rule remains
+  undefined.
+
+  A published standard applied equally to every player would resolve both cases
+  at once. It would answer the challenge raised by Kanter Freedom and White while
+  ending the speculation surrounding players such as Griner. The principle is
+  simple: whatever definition governs eligibility should apply to everyone, not
+  only to the people who become the center of a controversy.
+
+  The league insists it has no eligibility problem. Yet a rule without a visible
+  method of enforcement invites exactly these questions. The issue is not the
+  conclusion; it is the process. Engelbert announced on 4 September 2026 that
+  she will retire at the end of the year, and the next commissioner should start
+  there: state the standard, publish the procedure, and allow independent
+  verification. A rule should not depend on trust alone.
 - **The Bout swap** *(questions 1, 2 and 3)*. Two Americans sat in Russian
   prisons in 2022. Paul Whelan, a former Marine — discharged in 2008 with a
   bad-conduct discharge after a court-martial on larceny-related charges — had
@@ -2619,10 +2627,7 @@ choice for the operator, never make it silently.
   (August 2026); the *Washington Times* on
   [White's Gaetz-signed filing](https://www.washingtontimes.com/news/2026/aug/19/royce-white-files-formal-wnba-draft-declaration-matt-gaetz-counsel/);
   the WNBA's [announcement of Engelbert's retirement](https://www.wnba.com/news/commissioner-cathy-engelbert-to-retire-at-end-of-year)
-  (4 September 2026); and ESPN on
-  [Collier's remarks](https://www.espn.com/wnba/story/_/id/46437911/napheesa-collier-blasts-wnba-engelbert-worst-leadership)
-  and [Engelbert's denial](https://www.espn.com/wnba/story/_/id/46480629/wnba-engelbert-collier-remarks-do-better)
-  (2025); ESPN on the [2014 launch of WNBA Pride](https://www.espn.com/wnba/story/_/id/10963103/wnba-launches-marketing-campaign-directed-lgbt-community).
+  (4 September 2026).
   For the Bout swap: the Justice Department on
   [Bout's 2011 conviction](https://www.justice.gov/archives/opa/pr/international-arms-dealer-viktor-bout-convicted-new-york-terrorism-crimes);
   Al Jazeera on the [wrongful-detention designation](https://www.aljazeera.com/news/2022/5/3/us-state-department-says-griner-wrongfully-detained-by-russia)
