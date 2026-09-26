@@ -3,6 +3,7 @@ import { defineComponent, type PropType } from 'vue';
 import type { UIState } from '@legendary-arena/game-engine';
 import SkinSelector from './SkinSelector.vue';
 import DangerMeter from './DangerMeter.vue';
+import DayNightBadge from './DayNightBadge.vue';
 import EndGameControl from './EndGameControl.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
@@ -29,7 +30,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'TopHudBar',
-  components: { SkinSelector, DangerMeter, EndGameControl },
+  components: { SkinSelector, DangerMeter, DayNightBadge, EndGameControl },
   props: {
     snapshot: {
       type: Object as PropType<UIState>,
@@ -187,6 +188,13 @@ export default defineComponent({
     <div class="top-hud-bar__row">
       <span data-testid="play-hud-twists">Twists: {{ twistProgressLabel() }}</span>
       <DangerMeter :progress="snapshot.progress" />
+      <!-- why: WP-766 / D-24598 — the engine projects hq.dayNight only when a
+           day/night Hero is in the match; an absent field means no badge element
+           at all, so every other match's HUD is unchanged. -->
+      <DayNightBadge
+        v-if="snapshot.hq.dayNight !== undefined"
+        :state="snapshot.hq.dayNight"
+      />
       <span data-testid="play-hud-tactics">Tactics: {{ mastermindProgressLabel() }}</span>
       <span data-testid="play-hud-bystanders">
         Rescued: {{ snapshot.progress.bystandersRescued }}

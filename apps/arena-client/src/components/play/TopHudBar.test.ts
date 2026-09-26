@@ -254,3 +254,33 @@ describe('TopHudBar (Jeff feedback) — the End Game escape hatch lives in the r
     );
   });
 });
+
+describe('TopHudBar — Day/Night badge (WP-766 / D-24598)', () => {
+  test('renders no badge element when hq.dayNight is absent', () => {
+    setActivePinia(createPinia());
+    const wrapper = mount(TopHudBar, {
+      props: { snapshot: fixture(), mastermindTacticsTotal: 4 },
+    });
+    assert.equal(wrapper.find('[data-testid="play-day-night-badge"]').exists(), false);
+  });
+
+  test('renders the projected state verbatim beside the DangerMeter row when present', () => {
+    for (const state of ['sunlight', 'moonlight', 'neither'] as const) {
+      setActivePinia(createPinia());
+      const snapshot = fixture();
+      snapshot.hq = { ...snapshot.hq, dayNight: state };
+      const wrapper = mount(TopHudBar, {
+        props: { snapshot, mastermindTacticsTotal: 4 },
+      });
+      const badge = wrapper.find('[data-testid="play-day-night-badge"]');
+      assert.ok(badge.exists(), `${state}: the badge is mounted`);
+      assert.equal(badge.attributes('data-state'), state);
+      const twists = wrapper.find('[data-testid="play-hud-twists"]');
+      assert.equal(
+        badge.element.parentElement,
+        twists.element.parentElement,
+        `${state}: the badge sits in row 2 with the DangerMeter`,
+      );
+    }
+  });
+});
