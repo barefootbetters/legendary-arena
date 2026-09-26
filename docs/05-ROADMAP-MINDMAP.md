@@ -432,8 +432,8 @@ mindmap
         ["WP-747 📝 Villain-Deck Bystander captured by the Villain closest to the Villain Deck game engine plus ewiki DRAFTED. The lowest occupied City space captures per Universal Rules v23 instead of the escape-edge villain, Mastermind fallback unchanged, hash oracles unchanged. EC-784 D-24571 reserved"]
         ["WP-748 📝 Midtown Bank Robbery family each Villain gets plus one attack for each Bystander it has game engine DRAFTED. A scheme-gated bonus in the single fight-cost authority for core Midtown plus co2e and msp1 reprints so the fight gate bot legal moves and City fight cost move together, Mastermind untouched. EC-785 D-24572 reserved"]
         ["WP-749 📝 Sim and PAR loops resolve a seat choice addressed to a non-active seat game engine simulation DRAFTED. Loki Vanishing Illusions no longer strands PAR games as stuck, the loops dispatch the deterministic default for the addressed seat. EC-786 D-24573 reserved"]
-        ["WP-750 📝 Client Fight gating reads the engine projected fight cost arena-client plus game-engine UIState DRAFTED 2026-09-25 EC-787 D-24574 reserved BLOCKED on WP-762. City and Mastermind Fight gate on the projected cost not printed cost, a Fight N badge on mismatch, unblocks WP-748 and WP-760"]
-        ["WP-762 📝 Fill the missing printed attack values converter drops Mastermind-level and henchman vAttack card-data DRAFTED 2026-09-25 EC-799 D-24594 reserved. 14 Masterminds (13 ranked) and 32 henchman groups stop fighting for 0, prerequisite of WP-750"]
+        ["WP-750 📝 Client Fight gating reads the engine projected fight cost arena-client plus game-engine UIState DRAFTED 2026-09-25 EC-787 D-24574 reserved, WP-762 prerequisite done. City and Mastermind Fight gate on the projected cost not printed cost, a Fight N badge on mismatch, unblocks WP-748 and WP-760"]
+        ["WP-762 ✅ Fill the missing printed attack values converter drops Mastermind-level and henchman vAttack card-data EC-799 D-24594 Active DONE 2026-09-25. 14 Masterminds (13 ranked) and 32 henchman groups stop fighting for 0, prerequisite of WP-750"]
         ["WP-763 📝 Scheme Evil Wins fidelity stop false twist-7 losses printed thresholds Villain Deck runout game engine plus arena-client DRAFTED 2026-09-25 EC-800 D-24595 reserved. 192 unmodelled schemes stop losing at a flat 7, interim last-twist rule labelled approximate"]
         ["WP-764 📝 Midnight Massacre Blade Switchblades Hero Deck burn twist deck-runout Evil Wins game engine plus card-data DRAFTED 2026-09-25 EC-801 D-24596 reserved BLOCKED on WP-763"]
         ["WP-765 📝 Sunlight Moonlight day-night rule gated hero lines hero Blood Frenzy game engine plus card-data DRAFTED 2026-09-25 EC-802 D-24598 reserved. Every Sunlight and Moonlight hero line stops firing unconditionally, shared Blood Frenzy helper"]
@@ -930,7 +930,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 156/173 | 17 open |
+| Hero Ability Coverage & Markup Pipeline | 157/173 | 16 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 54/54 | — |
@@ -950,9 +950,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **743/761 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 17 open |
+| **Total** | **744/761 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 16 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 18):** WP-766 open; WP-765 open; WP-764 open; WP-763 open; WP-762 open; WP-750 open; WP-760 open; WP-759 open; WP-758 open; WP-757 open; WP-749 open; WP-745 open; WP-747 open; WP-748 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 17):** WP-766 open; WP-765 open; WP-764 open; WP-763 open; WP-750 open; WP-760 open; WP-759 open; WP-758 open; WP-757 open; WP-749 open; WP-745 open; WP-747 open; WP-748 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

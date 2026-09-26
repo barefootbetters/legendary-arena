@@ -44710,6 +44710,77 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 **Reserved by:** NUMBER-LEDGER D-24597. Related: D-24119 (replay carve-out), D-24122 (artifact store), D-10014 (set-qualified ids), D-5103 (PAR fail-closed), D-5302 (score immutability), D-24187 / D-24199 / D-24283 (gauntlet division, loadouts, per-scheme legs), D-24595 (WP-763 scheme Evil Wins audit).
 
+### D-24594 — Printed attack for Mastermind base faces and henchman groups comes from upstream (images for the 6 outlier groups) and is reproduced by the converter (Active 2026-09-25 — WP-762 / EC-799)
+
+**Status:** Active. Landed 2026-09-25 (WP-762 / EC-799). The live-on-surface check (D-24026) is pending with the operator. In a live `gotg/thanos` or `dstr/dormammu` match, fighting the Mastermind must require 24 / 11.
+
+**Context.** 14 Mastermind base cards and 32 henchman groups had no `vAttack`. The engine (`parseCardStatValue`: `null` or absent → 0) and the bot therefore fought them for **0**. Only the client's accidental "cannot be fought" lock hid this from humans, and WP-750 removes that lock. The pipeline had two defects in `convert-cards-v15.mjs`:
+- The Mastermind emitter read only the card-level `vAttack`. Upstream stores the printed attack at the Mastermind level (`mm.vAttack`) for 53 Masterminds.
+- The henchmen emitter never wrote `vAttack` or `vp`, so only the groups with a patch overlay (or hand-authored co2e data) had a fight cost.
+
+**Decision.**
+
+1. **Source of truth.** Every filled value comes from upstream `scripts/convert-cards/inputs/cards/*.js`. The only exception is the 6 amwp/wtif henchman groups, which bypass the converter and have no in-repo attack source; their values are transcribed from the R2 card image (§5). No value is invented.
+2. **Converter: Masterminds.** `vAttack: card.vAttack ?? mm.vAttack ?? null`, applied only to the **first non-tactic, non-epic** face (the face the engine reads, D-24193). Epic faces carry their own card-level `vAttack`, so they never receive the Mastermind-level value. `vAttackAsterisk` / `vAttackHideValue` are not carried in v1.
+3. **Converter: henchmen.** The upstream group-level `vAttack` (a string) and `vp` (a number) are emitted (`copyHenchmanPrintedStats`). The patch merge runs later, so an existing patch value still wins. The five base-card `vAttack: null` patch keys are removed, because they would override the fix: pttr carnage / mysterio, gotg supreme-intelligence-of-the-kree / thanos, fear uru-enchanted-iron-man. The tactic-card nulls stay.
+4. **Surgical committed edits, proven by `cards:check`.** The only value change is `null` → the upstream string on the 14 base cards. Henchman `vAttack` / `vp` are line insertions after each group's `slug`, and no set file is re-serialized. With the converter and patch fixes, the regen diverged from committed data in exactly **18 sets / 66 leaves**, all of them intended fills. (WP Assumes 8a said "17 sets", a miscount: rvlt carries both a Mastermind and a henchman fill.) After the edits, `pnpm cards:check` → 0. Reverting the Thanos fill makes it fail on exactly that leaf.
+
+   | Mastermind base face | `vAttack` |
+   |---|---|
+   | bkpt/killmonger | "5" |
+   | bkwd/indestructible-man | "0" |
+   | dims/j-jonah-jameson | "4" |
+   | dstr/nightmare | "6" |
+   | dstr/dormammu | "11" |
+   | fear/uru-enchanted-iron-man | "7" |
+   | gotg/supreme-intelligence-of-the-kree | "9" |
+   | gotg/thanos | "24" |
+   | mgtg/ronan-the-accuser | "6" |
+   | mgtg/ego-the-living-planet | "3+" |
+   | pttr/carnage | "9" |
+   | pttr/mysterio | "8" |
+   | rvlt/mandarin | "16" |
+   | vnom/hybrid | "6" |
+
+   | Henchman groups (`vp` the number 1 on every group) | `vAttack` |
+   |---|---|
+   | 3dtc circus-of-crime, spider-slayer; cvwr cape-killers; dkcy phalanx; rvlt mandarins-rings; ssw1 ghost-racers, m-o-d-o-k-s, thor-corps; ssw2 khonshu-guardians, magma-men, spider-infected; vill asgardian-warriors, cops, multiple-man, shield-assault-squad; wwhk cytoplasm-spikes, deaths-heads, sakaaran-hivelings; xmen hellfire-cult, sapien-league, shiar-patrol-craft | "3" |
+   | dkcy maggia-goons | "4" |
+   | xmen shiar-death-commandos | "2" |
+   | cvwr mandroid; rvlt hydra-base | "2+" |
+   | xmen brood-the | "1+" |
+
+5. **Outlier henchmen: image citations.** Each group's committed `imageUrl` was read from R2 (all HTTP 200). Tardigrade and Ultron Sentries are per-class, so all five class images were read, and they agree. Every card prints VP 1, stored as the number `1`.
+
+   | Group | Image | Printed | Stored |
+   |---|---|---|---|
+   | amwp quantumnauts | `https://images.legendary-arena.com/amwp/amwp-hm-quantumnauts.webp` | 2+ | `"2+"` |
+   | amwp quantum-hound | `https://images.legendary-arena.com/amwp/amwp-hm-quantum-hound.webp` | 3 | `"3"` |
+   | amwp tardigrade | `https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-{covert,instinct,ranged,strength,tech}.webp` | 4* | `"4"` |
+   | wtif giants-of-jotunheim | `https://images.legendary-arena.com/wtif/wtif-hm-giants-of-jotunheim.webp` | 3 | `"3"` |
+   | wtif vibranium-liberator-drones | `https://images.legendary-arena.com/wtif/wtif-hm-vibranium-liberator-drones.webp` | 3 | `"3"` |
+   | wtif ultron-sentries | `https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-{covert,instinct,ranged,strength,tech}.webp` | 2+ | `"2+"` |
+
+   Tardigrade's printed `4*` is stored as `"4"`. That follows §2 (asterisk not carried) and the amwp set's own convention, since none of its villain `vAttack` values carry `*`. `parseCardStatValue` reads `"4"` and `"4*"` identically. Before editing, a scratch worktree confirmed that `apply-card-counts.mjs` / `cards:check` preserve a hand-added outlier `vAttack` / `vp`.
+6. **Sequencing.** WP-762 is the operator-chosen hard prerequisite of WP-750 (D-24574). The free-fight path closes before the client lock is removed.
+7. **Residual exposures (named engine follow-ups, accepted by the operator, not modelled here):**
+   - bkwd/indestructible-man prints 0: he is fought by shuffling Elite Assassins, so the 0-cost fight stays.
+   - bkpt/killmonger: can't be fought while above 0, and attack Wounds him. After this WP he is fightable at 5.
+   - dims/j-jonah-jameson: the Angry Mobs fight lock is unmodelled.
+   - gotg/thanos and rvlt/mandarin: the negative per-Gem / per-Ring modifiers are unmodelled. The printed value is a ceiling.
+   - mgtg/ego-the-living-planet `3+` and the henchman `N+` values (mandroid, hydra-base, brood-the; outliers quantumnauts, ultron-sentries): the conditional bonus is unmodelled.
+   - The four variable-attack villains: pttr doppelganger / kraven-the-hunter / sandman (`""`) and noir kraven-animal-trainer (`"*"`).
+8. **Replay compatibility.** `cardStats` / `cardVictoryPoints` in `G` change for the affected cards. Henchman `vp` 1 equals the `VP_HENCHMAN` fallback, so scores are unchanged, but `G` is not. Stored replays of pre-WP-762 matches that fought these cards will not re-execute identically. No hash fixture, PAR fixture or `data/par` entry references an affected slug, so nothing was re-pinned. Published seed PAR for affected loadouts may drift; the PAR pipeline owns regeneration.
+
+**Gates.** After `pnpm -r build`:
+- `cards:check`, `mechanics:metadata:check`, `ledger:villains:check`, `sim:runtime-observed:check`, `gauntlet:loadouts:check` and `sim:coverage --check` → all 0.
+- `pnpm -r --no-bail test` → 0 fail (engine 4235/4235, registry 253/253, arena-client 2115/2115, server 1636 tests / 1430 pass / 206 skipped).
+- The dist one-liner prints `24 11 3`.
+- A dist assertion over all 14 Mastermind base faces and all 32 groups passes: each face's engine parse equals the table, each group's parse is > 0, and each group's `vp` is the number 1.
+- No engine source change, no derived feed regenerated, no fixture re-pinned.
+
+**Reserved by:** NUMBER-LEDGER D-24594. Related: D-24443 (WP-633 regen gate, canonical committed corpus), D-24193 (first non-tactic face), D-24574 (WP-750 client fight gating), D-24026 (live-on-surface).
+
 ---
 
 Protect this file.
