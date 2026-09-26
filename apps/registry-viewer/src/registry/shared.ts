@@ -37,6 +37,27 @@ function henchmanAttack(value: unknown): string | null {
   return String(value);
 }
 
+/**
+ * Orders a split card's two side slugs left-to-right as printed on the
+ * physical (landscape) card: the face with the lower slot is the left half.
+ * Falls back to sides[] order when either slot is missing.
+ *
+ * why: verified by eye against the R2 images for 9 split cards across
+ * cvwr/mgtg/xmen/msis/bkwd, including every sampled case where slot order and
+ * sides[] order disagree.
+ */
+function orderSplitSidesLeftToRight(
+  sides: readonly string[],
+  heroCards: readonly { slug?: string; slot?: number | null }[],
+): [string, string] {
+  const firstSlot = heroCards.find((heroCard) => heroCard.slug === sides[0])?.slot;
+  const secondSlot = heroCards.find((heroCard) => heroCard.slug === sides[1])?.slot;
+  if (typeof firstSlot === "number" && typeof secondSlot === "number" && secondSlot < firstSlot) {
+    return [sides[1], sides[0]];
+  }
+  return [sides[0], sides[1]];
+}
+
 export function flattenSet(
   set: SetData,
   setName: string,
@@ -60,6 +81,12 @@ export function flattenSet(
     // why: D-15101 — physicalCards[] is the sole hero image source now that
     // HeroCardSchema.imageUrl has been removed (D-14103 transition closed).
     const sideToImageUrl = new Map<string, string>();
+    // why: a split card's two faces share ONE landscape image, but the grid
+    // tile is portrait, so each face must crop to its own half instead of the
+    // image's center seam. sides[] is NOT left-to-right order (cvwr is largely
+    // alphabetized: Captain America's sides[0] "inspire-a-man" is the RIGHT
+    // half), so orderSplitSidesLeftToRight keys off slot instead.
+    const sideToImageHalf = new Map<string, "left" | "right">();
     if (Array.isArray(hero.physicalCards)) {
       for (const physicalCard of hero.physicalCards) {
         if (!physicalCard || typeof physicalCard !== 'object') continue;
@@ -69,6 +96,11 @@ export function flattenSet(
           if (typeof sideSlug === 'string') {
             sideToImageUrl.set(sideSlug, physicalCard.imageUrl);
           }
+        }
+        if (physicalCard.sides.length === 2) {
+          const [leftSlug, rightSlug] = orderSplitSidesLeftToRight(physicalCard.sides, hero.cards);
+          sideToImageHalf.set(leftSlug, "left");
+          sideToImageHalf.set(rightSlug, "right");
         }
       }
     }
@@ -139,6 +171,7 @@ export function flattenSet(
         slug:        card.slug,
         imageUrl:    sideToImageUrl.get(card.slug) ?? "",
         physicalCardImageUrl: sideToImageUrl.get(card.slug),
+        physicalCardImageHalf: sideToImageHalf.get(card.slug),
         heroName:    hero.name,
         team:        hero.team ?? undefined,
         hc:          card.hc ?? undefined,
