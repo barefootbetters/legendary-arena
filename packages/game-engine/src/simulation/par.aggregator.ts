@@ -72,6 +72,7 @@ import { drawCards, playCard, endTurn } from '../moves/coreMoves.impl.js';
 import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
+import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 // why: WP-286 — same reason as simulation.runner.ts: One-Hit Wonder parks a draw-or-empowered
 // choice unconditionally, so any getLegalMoves-driven loop (this PAR aggregator included) that
@@ -479,6 +480,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   revealVillainCard: (context) => revealVillainCard(context as never),
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
+  // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
+  // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
+  exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
   fightMastermind: (context) => fightMastermind(context as never),
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).

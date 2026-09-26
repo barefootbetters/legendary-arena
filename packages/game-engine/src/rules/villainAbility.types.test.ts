@@ -346,7 +346,9 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // WP-544 (D-24353) appended a twenty-fifth, `ko-heroes-current-count-by-trait`, at
   // position 25 (core radiation Maestro Fight — the trait supplies the COUNT of Heroes to
   // KO; the targets are the player's free interactive choice, reusing the `ko-hero` park).
-  it('contains exactly the 25 canonical primitives in order', () => {
+  // WP-757 (D-24587) appended a twenty-sixth, `haunt-hq-hero`, at position 26 (the Haunt
+  // keyword — The Fallen's Ambush moves the Villain out of the City to haunt an HQ Hero).
+  it('contains exactly the 26 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -373,11 +375,12 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'add-next-hand-size',
       'play-villain-deck-cards',
       'ko-heroes-current-count-by-trait',
+      'haunt-hq-hero',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      25,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 25 entries',
+      26,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 26 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -535,5 +538,32 @@ describe('Tier-D descriptor additions (WP-494 / D-24299)', () => {
     };
     const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
     assert.deepStrictEqual(deserialized, descriptor, 'the victory-group field must survive JSON round-trip');
+  });
+});
+
+describe('haunt-hq-hero descriptor (WP-757 / D-24587)', () => {
+  it('every haunt-hq-hero selector is keyword-less (self-narrates, no legacy reverse-map)', () => {
+    // why: the Haunt handler writes exactly one log line itself; a legacy reverse-map
+    // would add the generic "Ambush effect:" line and double-log.
+    for (const selector of ['rightmost', 'leftmost', 'cost-lte-3'] as const) {
+      assert.equal(
+        descriptorToLegacyKeyword({ primitive: 'haunt-hq-hero', selector }),
+        undefined,
+        `haunt-hq-hero:${selector} must not reverse-map to a legacy keyword`,
+      );
+    }
+  });
+
+  it('the rightmost capture-hq-hero keeps its legacy keyword (the selector widening changed nothing)', () => {
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'capture-hq-hero', selector: 'rightmost' }),
+      'captureHqHeroRightmost',
+    );
+  });
+
+  it('JSON round-trips a haunt-hq-hero descriptor', () => {
+    const descriptor: VillainEffectDescriptor = { primitive: 'haunt-hq-hero', selector: 'cost-lte-3' };
+    const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
+    assert.deepStrictEqual(deserialized, descriptor);
   });
 });

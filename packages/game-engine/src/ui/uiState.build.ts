@@ -38,6 +38,7 @@ import type {
   UICardDisplay,
   UIHQCard,
   UIHQState,
+  UIHQHaunter,
   UIDisplayEntry,
   UIDecksState,
   UISharedPilesState,
@@ -131,6 +132,7 @@ import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
@@ -863,6 +865,27 @@ export function buildUIState(
     }
   }
 
+  // why: WP-757 / D-24587 — project the per-slot haunters, index-aligned with the HQ.
+  // A Villain haunter embeds its display (the client has no extId → display resolver).
+  // Undefined when G.hqHaunters is absent, so the field is omitted (hash-neutral).
+  let hqHaunters: (UIHQHaunter | null)[] | undefined;
+  if (gameState.hqHaunters !== undefined) {
+    hqHaunters = [];
+    for (const haunter of gameState.hqHaunters) {
+      if (haunter === null || haunter === undefined) {
+        hqHaunters.push(null);
+      } else if (haunter.kind === 'villain') {
+        hqHaunters.push({
+          kind: 'villain',
+          extId: haunter.cardId,
+          display: resolveDisplay(haunter.cardId, gameState),
+        });
+      } else {
+        hqHaunters.push({ kind: 'mastermind' });
+      }
+    }
+  }
+
   // --- 5. Project mastermind ---
   // why: tactics projected as counts, not card arrays. display lookup
   // uses gameState.mastermind.baseCardId (the canonical G.cardStats /
@@ -915,6 +938,9 @@ export function buildUIState(
     // resolveMastermindFightCost the fightMastermind guard and the bot read, so the
     // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
     fightCost: resolveMastermindFightCost(gameState),
+    // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
+    // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
+    ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
   };
 
   // --- 6. Project scheme — derive twist count ---
@@ -2241,7 +2267,11 @@ export function buildUIState(
     // why: WP-111 — slots preserved verbatim (PS-6 fallback); slotDisplay
     // added as a parallel array. Length-equals-slots invariant is
     // maintained by the unified for-of loop above.
-    hq: buildHqProjection(hqSlots, hqSlotDisplay, gameState),
+    hq: {
+      ...buildHqProjection(hqSlots, hqSlotDisplay, gameState),
+      // why: WP-757 / D-24587 — projected only once G.hqHaunters exists (omit-when-absent).
+      ...(hqHaunters !== undefined ? { haunters: hqHaunters } : {}),
+    },
     mastermind,
     scheme,
     economy,

@@ -12,6 +12,7 @@ export type {
   GlobalPiles,
   MatchSelection,
   PendingKoHeroChoice,
+  HqHaunter,
 } from "./types.js";
 export type {
   Zone,
@@ -158,6 +159,15 @@ export { revealVillainCard } from "./villainDeck/villainDeck.reveal.js";
 export { fightVillain } from "./moves/fightVillain.js";
 export { recruitHero } from "./moves/recruitHero.js";
 export { recruitOfficer, OFFICER_RECRUIT_COST } from "./moves/recruitOfficer.js";
+// why: WP-757 / D-24587 — the Haunt contract WP-758 (Zarathos) and WP-759 (client)
+// consume verbatim: the exorcise move + args and the three haunt helpers.
+export { exorciseHauntedHero } from "./moves/exorciseHauntedHero.js";
+export type { ExorciseHauntedHeroArgs, ExorciseOutcome } from "./moves/exorciseHauntedHero.js";
+export {
+  hauntHqSlot,
+  isMastermindHaunting,
+  isHqSlotHaunted,
+} from "./board/haunt.logic.js";
 export { buildVillainDeck } from "./villainDeck/villainDeck.setup.js";
 export type { VillainDeckRegistryReader } from "./villainDeck/villainDeck.setup.js";
 export type {
@@ -372,6 +382,7 @@ export type {
   UICardDisplay,
   UIDeckCardStat,
   UIHQCard,
+  UIHQHaunter,
   UIDisplayEntry,
   UIDecksState,
   UISharedPilesState,

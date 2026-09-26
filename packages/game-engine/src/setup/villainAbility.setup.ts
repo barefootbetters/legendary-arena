@@ -369,6 +369,7 @@ function parseParameterizedEffect(
  *   - `ko-hero:current` | `ko-hero:each:<N>`
  *   - `gain-wound:current` | `gain-wound:each` | `gain-wound:each-other[:<N>]` (D-24295)
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
+ *   - `haunt-hq-hero:rightmost` | `:leftmost` | `:cost-lte-3`  (D-24587)
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
  *   - `draw-cards-current:<N>`  (N a positive integer; D-24290)
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
@@ -487,6 +488,21 @@ function parseUngatedEffect(
         selector === 'lowest-cost')
     ) {
       return { primitive: 'capture-hq-hero', selector };
+    }
+    return null;
+  }
+  if (primitiveToken === 'haunt-hq-hero') {
+    // why: WP-757 / D-24587 — grammar `haunt-hq-hero:<selector>` (exactly 2 tokens),
+    // selector ∈ rightmost | leftmost | cost-lte-3 (Metarchus / Atrocity / Patriarch).
+    // The capture-hq-hero branch above is unchanged and still rejects the two new values.
+    const selector = parts[1];
+    if (
+      parts.length === 2 &&
+      (selector === 'rightmost' ||
+        selector === 'leftmost' ||
+        selector === 'cost-lte-3')
+    ) {
+      return { primitive: 'haunt-hq-hero', selector };
     }
     return null;
   }

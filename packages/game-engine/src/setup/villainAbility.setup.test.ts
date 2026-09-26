@@ -1620,3 +1620,58 @@ describe('buildVillainAbilityHooks — unresolved markers (WP-257)', () => {
     assert.equal(hook!.unresolvedMarkers, undefined, 'flavor text carries no marker token');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — `haunt-hq-hero:<selector>` parameterized marker.
+//
+// Grammar is exactly two tokens with selector ∈ rightmost | leftmost | cost-lte-3.
+// Anything else is unresolved. The capture-hq-hero branch is unchanged: it still
+// rejects the two selector values Haunt introduced.
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — haunt-hq-hero marker (WP-757 / D-24587)', () => {
+  /** Builds a single villain group with one card carrying one ability line. */
+  function buildSingleAbility(abilityText: string) {
+    const registry = makeRegistry(
+      'core',
+      [{ slug: 'fallen', cards: [{ slug: 'v', abilities: [abilityText] }] }],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/fallen'], []));
+    return hooks.find((hook) => hook.cardId === 'core-villain-fallen-v-00');
+  }
+
+  for (const selector of ['rightmost', 'leftmost', 'cost-lte-3'] as const) {
+    it(`parses [effect:haunt-hq-hero:${selector}] into a haunt descriptor`, () => {
+      const hook = buildSingleAbility(`Ambush: Haunt. [effect:haunt-hq-hero:${selector}]`);
+      assert.ok(hook, 'a hook is emitted for the Ambush line');
+      assert.equal(hook!.timing, 'onAmbush');
+      assert.deepStrictEqual(hook!.effects, [{ primitive: 'haunt-hq-hero', selector }]);
+      assert.equal(hook!.unresolvedMarkers, undefined, 'a valid haunt marker is not unresolved');
+    });
+  }
+
+  for (const token of [
+    'haunt-hq-hero',
+    'haunt-hq-hero:highest-cost',
+    'haunt-hq-hero:rightmost:2',
+  ]) {
+    it(`rejects malformed [effect:${token}] as unresolved`, () => {
+      const hook = buildSingleAbility(`Ambush: Haunt. [effect:${token}]`);
+      assert.ok(hook, 'a hook is still emitted for the timing line');
+      assert.deepStrictEqual(hook!.effects, [], 'no descriptor for a malformed haunt marker');
+      assert.deepStrictEqual(hook!.unresolvedMarkers, [token]);
+    });
+  }
+
+  for (const token of ['capture-hq-hero:leftmost', 'capture-hq-hero:cost-lte-3']) {
+    it(`capture-hq-hero still rejects the Haunt-only selector in [effect:${token}]`, () => {
+      // why: the selector union was widened for Haunt; the capture parser must not
+      // silently start accepting the new values (no handler supports them).
+      const hook = buildSingleAbility(`Ambush: Capture. [effect:${token}]`);
+      assert.ok(hook);
+      assert.deepStrictEqual(hook!.effects, []);
+      assert.deepStrictEqual(hook!.unresolvedMarkers, [token]);
+    });
+  }
+});

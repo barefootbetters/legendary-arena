@@ -810,7 +810,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-metarchus.webp",
           "abilities": [
             "[keyword:Blood Frenzy]",
-            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ.",
+            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:rightmost]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
@@ -822,7 +822,7 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-atrocity.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ.",
+            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:leftmost]",
             "Fight: Rescue a Bystander."
           ],
           "copies": 2
@@ -834,7 +834,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-patriarch.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less.",
+            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less. [effect:haunt-hq-hero:cost-lte-3]",
             "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it."
           ],
           "copies": 3

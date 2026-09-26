@@ -1058,3 +1058,46 @@ describe('fightMastermind — Excessive Violence with the real move context (WP-
     assert.deepStrictEqual(zones.discard, [], 'the discard was reshuffled into the deck');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — a haunting Mastermind cannot be fought
+// ---------------------------------------------------------------------------
+
+describe('fightMastermind — Haunt (WP-757 / D-24587)', () => {
+  it('with a Mastermind haunter in the HQ and ample attack, the fight changes nothing', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 20, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    // why: rulebook v23 p.27 — while the Mastermind haunts an HQ Hero it is not in the
+    // Mastermind space, so it cannot be fought until that Hero is exorcised.
+    gameState.hq = ['hero-a', 'hero-b', null, null, null];
+    gameState.hqHaunters = [null, { kind: 'mastermind' }, null, null, null];
+    const snapshotBefore = JSON.stringify(gameState);
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'G must be byte-identical while the Mastermind haunts');
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, [], 'no tactic is defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack is spent');
+  });
+
+  it('with only a Villain haunter in the HQ, the Mastermind fight proceeds normally', () => {
+    const gameState = createMockGameState({
+      turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+    });
+    gameState.hq = ['hero-a', null, null, null, null];
+    gameState.hqHaunters = [{ kind: 'villain', cardId: 'haunting-villain' }, null, null, null, null];
+
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1'], 'the top tactic is defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 8, 'the fight cost is spent');
+    assert.deepStrictEqual(
+      moveContext.G.hqHaunters,
+      [{ kind: 'villain', cardId: 'haunting-villain' }, null, null, null, null],
+      'the Villain haunter is untouched by a Mastermind fight',
+    );
+  });
+});

@@ -1475,6 +1475,20 @@ export interface PendingDivingBlockWound {
  * bot default (no snapshot) — HQ contents are public, so no hand-leak redaction. The
  * choice is single-Hero (no `remaining`): each player gains exactly one Hero.
  */
+/**
+ * Who haunts one HQ slot (WP-757 / D-24587, the Haunt keyword).
+ *
+ * A Villain haunter is tucked beneath the Hero, OUT of the City, so it cannot be
+ * fought until a player exorcises the Hero and it enters the City. `cardId` is the
+ * copy-indexed Villain instance ext_id — a string, never a card object.
+ */
+// why: WP-757 / D-24587 — the `mastermind` kind ships here, before its producer
+// (Zarathos's Master Strike / tactics, WP-758), so the Haunt contract never reopens.
+// It carries no card id: there is exactly one Mastermind (G.mastermind).
+export type HqHaunter =
+  | { kind: 'villain'; cardId: CardExtId }
+  | { kind: 'mastermind' };
+
 export interface PendingGiveHqHeroChoice {
   /** Discriminant for future extensibility; always 'give-hq-hero'. */
   choiceType: 'give-hq-hero';
@@ -1755,6 +1769,17 @@ export interface LegendaryGameState {
   // replay/sentinel oracle stays byte-identical (no re-pin). Absent = no override.
   /** Per-player next-`onBegin` hand-fill override (lazy; WP-497 / D-24300). */
   handSizeOverrides?: Record<string, number>;
+
+  // why: WP-757 / D-24587 — the Haunt keyword (rulebook v23 p.27). One entry per HQ
+  // slot, index-aligned with G.hq (length 5), recording who haunts the Hero in that
+  // slot. Per-slot and omit-when-absent: it is created lazily on the FIRST haunt and
+  // never seeded in Game.setup or written empty, so a match that never haunts omits it
+  // from canonical JSON and every hash oracle stays byte-stable. Index-keyed (not
+  // card-keyed) on purpose: every HQ removal site nulls the slot and refills it by
+  // index, so the refill Hero inherits the haunter with no edit to those sites ("the
+  // Haunting Villain stays in that HQ space and Haunts the new Hero").
+  /** Per-HQ-slot haunter, index-aligned with `hq` (lazy; WP-757 / D-24587). */
+  hqHaunters?: (HqHaunter | null)[];
 
   // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
   // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their

@@ -51,6 +51,7 @@ import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExc
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
@@ -4320,7 +4321,9 @@ export function buildPureFuryTargets(
 
   // why: Masterminds are explicitly eligible (the text names them); a Mastermind with
   // no tactics left is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
-  if (G.mastermind.tacticsDeck.length > 0) {
+  // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so Pure Fury can't
+  // defeat it either (the shared isMastermindHaunting predicate).
+  if (G.mastermind.tacticsDeck.length > 0 && !isMastermindHaunting(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
     if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });

@@ -192,3 +192,23 @@ describe('simulation move-dispatch drift guard (WP-289 / D-24073)', () => {
     );
   });
 });
+
+describe('simulation move-dispatch drift guard — exorciseHauntedHero (WP-757 / D-24587)', () => {
+  it('exorciseHauntedHero is emittable AND dispatchable in BOTH maps (else the sim stalls)', () => {
+    // why: getLegalMoves step 4b emits exorciseHauntedHero on any haunted board; a missing
+    // MOVE_MAP entry would make the loop dispatch "unknown move name", never break the
+    // haunt, and burn the per-turn step budget. Pin all three memberships explicitly.
+    assert.ok(
+      SIMULATION_MOVE_NAMES.includes('exorciseHauntedHero'),
+      'exorciseHauntedHero must be in SIMULATION_MOVE_NAMES (getLegalMoves emits it)',
+    );
+    assert.ok(
+      SIMULATION_RUNNER_MOVE_NAMES.includes('exorciseHauntedHero'),
+      'exorciseHauntedHero must be a simulation.runner MOVE_MAP key',
+    );
+    assert.ok(
+      PAR_AGGREGATOR_MOVE_NAMES.includes('exorciseHauntedHero'),
+      'exorciseHauntedHero must be a par.aggregator MOVE_MAP key',
+    );
+  });
+});
