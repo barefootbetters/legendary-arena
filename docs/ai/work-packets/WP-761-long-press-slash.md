@@ -1,6 +1,6 @@
 # WP-761 — Long-press slash: touch / pen slash-to-fight on a scrolling City row (arena-client + ewiki)
 
-**Status:** Draft 2026-09-25 (EC-798; D-24592 reserved) — READY TO EXECUTE (pre-flight READY r7; copilot PASS r3; lint PASS).
+**Status:** Draft 2026-09-25 (EC-798; D-24592 reserved) — READY TO EXECUTE (pre-flight READY r9; copilot PASS; lint PASS).
 **Primary Layer:** arena-client (`apps/arena-client/src/composables/useSlashGesture.ts`, `.../components/play/CityRow.vue`) + ewiki docs
 **Dependencies:**
 - **WP-756 / D-24585** (the slash gesture: `useSlashGesture`, its DOM adapter, the full-crossing rule, the engine-confirmed chain, the touch fit rule) ✅ (#2357, `c031a59d`).
@@ -332,14 +332,14 @@ pnpm -r build && pnpm -r --no-bail test
 
 ## Gate Record
 
-**Pre-flight (01.4): READY TO EXECUTE** — independent subagent, 7 rounds.
+**Pre-flight (01.4): READY TO EXECUTE** — independent subagent, 9 rounds.
 - r1 NOT READY: PS-1 second-`pointerId` contradiction; PS-2 Assumes #2 uncheckable before merge (now a platform premise with device pass criteria and an iOS fallback); PS-3 a free-standing armed flag could strand the row unscrollable; RS-1..10 (a dedicated `armStroke()`, armed-path click clearing on the next input, inset glow, CityRow overflow harness, buzz test, eligibility at `pointerdown`, detached-target degradation, `dragstart` role, wording, baseline). All folded in.
 - r2 NOT READY: PS-1 a `computed` over the plain `let stroke` never updates (now one ref written only by `syncLongPressState()`); PS-2 the child→row capture move bubbles a `lostpointercapture` that would kill the stroke (now row-targeted + `pointerId`-matched); RS-1..3 folded in (the screen-reader click accepted as a D-24592 degradation).
 - r3 READY; r4 re-confirm after test-detail edits.
 - r5 NOT READY after the copilot fixes: gating the hold listeners on "row does not fit" alone would detach them mid-stroke when a fight makes the row fit — now gated on "does not fit OR a long press is live" (`isLongPressLive`), with a fit-flip CityRow test.
-- r6 READY; r7 re-confirm after the copilot round-2 edits.
+- r6 READY (`isLongPressLive`); r7 re-confirm (`isLongPressLive` internal, value locked); r8 re-confirm after the copilot round-2 edits; r9 re-confirm of the lint self-review, this record and the session prompt (Step 6 scope check PASS).
 
-**Copilot check (01.7): PASS (CONFIRM)** — a separate independent subagent, 3 rounds.
+**Copilot check (01.7): PASS (CONFIRM)** — a separate independent subagent, 3 substantive rounds plus a re-confirm of the record-only edits.
 - r1 RISK/HOLD, 9 findings folded in: the slow-tap trade disclosed and tested; AC2 / AC3 / AC6 split into in-session vs real-device clauses; the callout CSS and listeners hold-gated so fitting rows stay byte-identical; the non-passive listener cost recorded; missing tests; the 2084 / 0 baseline; the ewiki bullet + D-24585 out-of-scope lift; `Readonly<Ref>` contract; ledger wording.
 - r2 RISK/HOLD, 3 low findings folded in: the WORK_INDEX row's gate text, the row-keyed hold-listener watch, the `// why:` + failure smell for the `OR isLongPressLive` term.
 - r3 PASS — nothing outstanding on the 30 lens items.
