@@ -569,7 +569,7 @@
           "name": "Supreme Intelligence of the Kree",
           "slug": "supreme-intelligence-of-the-kree",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "9",
           "imageUrl": "https://images.legendary-arena.com/gotg/gotg-mm-supreme-intelligence-of-the-kree.webp",
           "abilities": [
             "Always Leads: Kree Starforce",
@@ -631,7 +631,7 @@
           "name": "Thanos",
           "slug": "thanos",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "24",
           "imageUrl": "https://images.legendary-arena.com/gotg/gotg-mm-thanos.webp",
           "abilities": [
             "Always Leads: Infinity Gems",

@@ -998,3 +998,17 @@ describe('portals resolver', () => {
     assert.equal((lastEvent as { resolverKey?: string })?.resolverKey, 'portals');
   });
 });
+
+describe('counter-only resolver (WP-763 / D-24595)', () => {
+  it('is registered and is a pure no-op — no log, no notable event, no G change', () => {
+    const resolver = SCHEME_TWIST_RESOLVERS['counter-only'];
+    const gameState = makeResolverState({ schemeId: 'vnom/symbiotic-absorption' });
+    const before = JSON.stringify(gameState);
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {}, 'twist' as CardExtId);
+
+    assert.equal(JSON.stringify(gameState), before);
+    assert.equal(gameState.messages.length, 0);
+    assert.equal(gameState.notableEvents.length, 0);
+  });
+});

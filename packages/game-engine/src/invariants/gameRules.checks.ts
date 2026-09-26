@@ -110,6 +110,16 @@ export function checkNoCardInMultipleZones(G: LegendaryGameState): void {
     visitCardId(cardId, `hq[${hqIndex}]`, firstSeenZone);
   }
 
+  // why: WP-757 / D-24587 — a Haunting Villain lives ONLY in G.hqHaunters (its City
+  // space was nulled when it haunted), so it is a card container too: visiting it
+  // catches a Villain that was recorded as a haunter without leaving the City.
+  const hqHaunters = G.hqHaunters ?? [];
+  for (let hqIndex = 0; hqIndex < hqHaunters.length; hqIndex += 1) {
+    const haunter = hqHaunters[hqIndex];
+    if (haunter === null || haunter === undefined || haunter.kind !== 'villain') continue;
+    visitCardId(haunter.cardId, `hqHaunters[${hqIndex}]`, firstSeenZone);
+  }
+
   scanZone(G.ko, 'ko', firstSeenZone);
   scanZone(G.villainDeck.deck, 'villainDeck.deck', firstSeenZone);
   scanZone(G.villainDeck.discard, 'villainDeck.discard', firstSeenZone);

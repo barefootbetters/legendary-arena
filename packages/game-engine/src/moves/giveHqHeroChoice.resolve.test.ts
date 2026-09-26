@@ -265,3 +265,86 @@ describe('resolveGiveHqHeroChoice filtered gain + decline arm (WP-692)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.discard, []);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Haunt vs the give-hq-hero queue. A FILTERED entry is a free
+// RECRUIT (Dark Technology / Bitter Captor), which can't take a Haunted Hero. An
+// UNFILTERED entry (Paibok) is a "gain", which still reaches Haunted Heroes; the
+// haunter stays in the HQ space and haunts the refill Hero.
+// ---------------------------------------------------------------------------
+
+import { hauntHqSlot } from '../board/haunt.logic.js';
+
+const GHOST_HAUNTER = { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId } as const;
+
+describe('give-hq-hero eligibility with a Haunted Hero (WP-757 / D-24587)', () => {
+  it('filtered entry: a haunted matching Hero is excluded from the eligible list', () => {
+    const G = makeG({
+      hq: ['hXmen', 'hRanged', null, null, null] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+    });
+    assert.equal(hauntHqSlot(G, 0, GHOST_HAUNTER), true);
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), ['hRanged'], 'haunted hXmen dropped');
+  });
+
+  it('filtered entry: the bot default never names the haunted Hero even when it costs most', () => {
+    const G = makeG({
+      hq: ['hXmen', 'hRanged', null, null, null] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+      cardStats: { hXmen: { cost: 9 }, hRanged: { cost: 2 } },
+    });
+    assert.equal(hauntHqSlot(G, 0, GHOST_HAUNTER), true);
+    assert.equal(selectDefaultGiveHqHeroCard(G, '0'), 'hRanged');
+  });
+
+  it('filtered entry: the bot default is null when the only match is haunted', () => {
+    const G = makeG({
+      hq: ['hXmen', 'hStrength', null, null, null] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+      cardStats: { hXmen: { cost: 4 }, hStrength: { cost: 1 } },
+    });
+    assert.equal(hauntHqSlot(G, 0, { kind: 'mastermind' }), true);
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), []);
+    assert.equal(selectDefaultGiveHqHeroCard(G, '0'), null);
+  });
+
+  it('filtered entry: resolving with the haunted cardId is a no-op (queue intact)', () => {
+    const G = makeG({
+      hq: ['hXmen', 'hRanged', null, null, null] as CardExtId[],
+      heroDeck: ['refill'] as CardExtId[],
+      pending: [TEAM_FILTER],
+      cardTraits: TRAITS,
+    });
+    assert.equal(hauntHqSlot(G, 0, GHOST_HAUNTER), true);
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: 'hXmen' as CardExtId });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'haunted Hero not recruited');
+    assert.equal(G.hq[0], 'hXmen', 'HQ unchanged');
+    assert.deepStrictEqual(G.heroDeck, ['refill'], 'no refill');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'queue intact for a valid resubmit');
+  });
+
+  it('unfiltered (Paibok) entry: the haunted Hero IS eligible', () => {
+    const G = makeG({ hq: ['h0', 'h1', null, null, null] as CardExtId[], pending: [CHOICE] });
+    assert.equal(hauntHqSlot(G, 1, GHOST_HAUNTER), true);
+    assert.deepStrictEqual(getEligibleGiveHqHeroCards(G, '0'), ['h0', 'h1'], '"gain" reaches Haunted Heroes');
+  });
+
+  it('unfiltered (Paibok) entry: gaining the haunted Hero works; the haunter stays and haunts the refill', () => {
+    const G = makeG({
+      hq: ['h0', 'h1', null, null, null] as CardExtId[],
+      heroDeck: ['r0'] as CardExtId[],
+      pending: [CHOICE],
+    });
+    assert.equal(hauntHqSlot(G, 1, GHOST_HAUNTER), true);
+    resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: 'h1' as CardExtId });
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['h1'], 'haunted Hero gained to discard');
+    assert.equal(G.hq[1], 'r0', 'slot refilled from heroDeck');
+    assert.equal(G.pendingGiveHqHeroChoices?.length, 0, 'front-popped');
+    // why: rulebook v23 p.27 — "the Haunting Villain stays in that HQ space and Haunts
+    // the new Hero"; hqHaunters is slot-indexed, so the refill inherits it.
+    assert.deepStrictEqual(G.hqHaunters![1], GHOST_HAUNTER, 'haunter stays on the slot');
+  });
+});

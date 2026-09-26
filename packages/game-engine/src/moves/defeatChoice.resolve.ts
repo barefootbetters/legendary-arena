@@ -28,6 +28,7 @@
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, DefeatWithBystanderTarget } from '../types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { defeatCityVillainCore } from './fightVillain.js';
 import { defeatMastermindTacticCore } from './fightMastermind.js';
 
@@ -111,8 +112,14 @@ export function buildDefeatWithBystanderTargets(
   // (G.mastermind.attachedBystanders), so it is checked separately and appended
   // LAST. Require a remaining tactic — defeating "the Mastermind" defeats one
   // tactic, so a mastermind with no tactics left is not a defeatable target.
+  // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so a free defeat
+  // can't target it either (the shared isMastermindHaunting predicate).
   const mastermindBystanders = G.mastermind.attachedBystanders ?? [];
-  if (mastermindBystanders.length > 0 && G.mastermind.tacticsDeck.length > 0) {
+  if (
+    mastermindBystanders.length > 0 &&
+    G.mastermind.tacticsDeck.length > 0 &&
+    !isMastermindHaunting(G)
+  ) {
     targets.push({ kind: 'mastermind', cardId: G.mastermind.baseCardId });
   }
 

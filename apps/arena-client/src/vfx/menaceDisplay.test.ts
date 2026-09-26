@@ -130,6 +130,18 @@ describe('menaceDisplay (WP-562) — the kind label', () => {
     assert.equal(menaceKindLabel('twists'), 'Twists');
   });
 
+  test('labels the WP-763 kinds: the Villain Deck, and the approximate twist rule', () => {
+    // why: D-24595 — the last-twist fallback is an interim stand-in, so its label
+    // must read as approximate, distinct from a printed "Twist N: Evil Wins".
+    assert.equal(menaceKindLabel('villain-deck'), 'Villain Deck');
+    assert.equal(menaceKindLabel('twists-fallback'), 'Twists (approximate)');
+    assert.notEqual(menaceKindLabel('twists-fallback'), menaceKindLabel('twists'));
+    assert.equal(
+      `${menaceKindLabel('twists-fallback')} ${menaceRatioLabel(3, 11)}`,
+      'Twists (approximate) 3/11',
+    );
+  });
+
   test('every SCHEME_LOSS_KINDS member has a non-empty noun', () => {
     // why: iterating the engine's canonical array (not a local copy) means a new
     // kind member fails here until it is given a word — the same cross-package

@@ -15,6 +15,27 @@ import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 
 /**
+ * A standard shared pile whose running out can be a scheme's Evil-Wins condition.
+ *
+ * why (D-24595): many printed conditions read "when the Hero Deck or Villain Deck
+ * runs out" / "when the Wound Stack or Villain Deck runs out", so the Villain Deck
+ * joins the two piles WP-510 / WP-511 introduced, and a condition may name several.
+ */
+export type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck';
+
+/**
+ * Canonical ordered list of SchemeLossPile values.
+ *
+ * Drift-checked against the `SchemeLossPile` union — never update one without the
+ * other (`.claude/rules/code-style.md` §Drift Detection).
+ */
+export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
+  'heroDeck',
+  'wounds',
+  'villainDeck',
+];
+
+/**
  * Declares a scheme's real "Evil Wins" condition as a resource threshold,
  * so the scheme loses when the condition is met rather than on the
  * twist-count doom-clock proxy (D-24178 / D-24315).
@@ -25,9 +46,13 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * - `'escaped-pile-count'` (D-24315): the scheme loses when the Escaped Villains
  *   pile (`G.escapedPile`) holds at least `threshold` entries whose card type
  *   equals `cardType` (Midtown Bank Robbery, Negative Zone Prison Breakout).
- * - `'pile-depleted'` (D-24318 / D-24320): the scheme loses when a named pile runs
- *   out — the pile's length reaches 0. Super Hero Civil War: `pile: 'heroDeck'`
- *   (`G.heroDeck`); Legacy Virus: `pile: 'wounds'` (`G.piles.wounds`).
+ * - `'pile-depleted'` (D-24318 / D-24320 / D-24595): the scheme loses when a named
+ *   pile runs out — the pile's length reaches 0. Super Hero Civil War:
+ *   `pile: 'heroDeck'` (`G.heroDeck`); Legacy Virus: `pile: 'wounds'`
+ *   (`G.piles.wounds`); a Villain Deck runout: `pile: 'villainDeck'`
+ *   (`G.villainDeck.deck`). A scheme printing "when X or Y runs out" lists every
+ *   pile in `piles` instead (exactly one of `pile` / `piles` is present); the loss
+ *   fires when ANY listed pile is empty.
  * - `'escaped-converted-count'` (D-24325 / D-24326): the scheme loses when at least
  *   `threshold` entries in `G.escapedPile` carry a converted-villain `origin`
  *   (`G.convertedVillainOrigins`) — counts converted cards distinctly from real
@@ -46,8 +71,16 @@ export type SchemeResourceLossCondition =
   | {
       /** A named pile running out (reaching zero cards) is the loss. */
       kind: 'pile-depleted';
-      /** The pile whose emptiness ends the game (`heroDeck` or `wounds`). */
-      pile: 'heroDeck' | 'wounds';
+      /** The single pile whose emptiness ends the game. */
+      pile: SchemeLossPile;
+      piles?: never;
+    }
+  | {
+      /** Any of several named piles running out is the loss. */
+      kind: 'pile-depleted';
+      /** The piles, any one of which running out ends the game. */
+      piles: readonly SchemeLossPile[];
+      pile?: never;
     }
   | {
       /** Count escaped-pile entries carrying a converted-villain origin. */
@@ -69,7 +102,8 @@ export type SchemeTwistResolverId =
   | 'midtown-bank-robbery'
   | 'killbots'
   | 'secret-invasion'
-  | 'portals';
+  | 'portals'
+  | 'counter-only';
 
 /**
  * Configuration for a single scheme's twist behavior.
@@ -86,18 +120,18 @@ export interface SchemeTwistConfig {
   /** Resolver-specific parameters. */
   params: Record<string, unknown>;
   /**
-   * Override MVP_SCHEME_TWIST_THRESHOLD for this scheme — the twist count at
-   * which scheme loss triggers. Set to the scheme's printed twist-stack size so
-   * the scheme never resolves a twist early (D-24178). A player-count-independent
-   * scheme uses this scalar.
+   * The twist count at which scheme loss triggers, overriding the D-24595
+   * last-twist-in-the-deck fallback. Set to the scheme's printed twist count
+   * ("Twist N: Evil Wins") or, for the core resource schemes, its printed
+   * twist-stack size (D-24178). A player-count-independent scheme uses this scalar.
    */
   lossThreshold?: number;
   /**
    * Per-player-count loss threshold, for schemes whose printed twist stack varies
    * by player count (e.g. Super Hero Civil War: 8 twists at 2-3 players, 5 at 4-5).
    * Keyed by `String(gameState.lobby.requiredPlayers)`; when a key matches, it wins
-   * over `lossThreshold`. Falls back to `lossThreshold`, then the MVP default
-   * (D-24178). Data-only (a plain map, no functions).
+   * over `lossThreshold`. Falls back to `lossThreshold`, then the D-24595
+   * last-twist fallback. Data-only (a plain map, no functions).
    */
   lossThresholdByPlayerCount?: Record<string, number>;
   /**
@@ -108,6 +142,17 @@ export interface SchemeTwistConfig {
    * (Portals, Cosmic Cube), which keep the twist-threshold loss. Data-only.
    */
   resourceLossCondition?: SchemeResourceLossCondition;
+  /**
+   * Keeps the twist-count proxy ACTIVE, at the D-24595 last-twist fallback
+   * threshold, alongside a declared `resourceLossCondition`.
+   *
+   * why (D-24595): compound schemes print "an unmodelled counter reaches N, OR a
+   * pile runs out". The pile half is modelled; the counter half is not. Without a
+   * doom clock for the unmodelled half, such a scheme could only ever lose on the
+   * pile, so it keeps the last-twist fallback as an approximate stand-in. Absent
+   * means D-24315 suppression applies unchanged.
+   */
+  twistFallbackWithResourceLoss?: true;
 }
 
 /**

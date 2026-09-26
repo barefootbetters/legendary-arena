@@ -117,6 +117,17 @@ const SCORE_FIGHT_MASTERMIND_BASE = 1500;
 /** Base score for recruiting a hero from HQ. */
 const SCORE_RECRUIT_BASE = 50;
 
+/**
+ * Base score for exorcising a Haunted HQ Hero (WP-757 / D-24587).
+ *
+ * // why: an exorcise both frees a Hero (the bot gains it, like a recruit) and drops
+ * the Haunting Villain into the City where it can be fought (or, for a Mastermind
+ * haunter, makes the Mastermind fightable again). That ranks it above a plain recruit
+ * (50) and below fighting a Villain (100), so the bot still spends attack on fights
+ * first and uses leftover recruit to break a haunt before buying another Hero.
+ */
+const SCORE_EXORCISE_BASE = 75;
+
 /** Base score for playing a card from hand (economy building). */
 const SCORE_PLAY_CARD_BASE = 200;
 
@@ -317,6 +328,9 @@ function scoreOneMove(move: LegalMove, view: UIState): number {
   }
   if (move.name === 'recruitHero') {
     return scoreRecruitHero(move);
+  }
+  if (move.name === 'exorciseHauntedHero') {
+    return SCORE_EXORCISE_BASE;
   }
   if (move.name === 'playCard') {
     return scorePlayCard(move);

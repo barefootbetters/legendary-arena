@@ -205,15 +205,16 @@ describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
     // why: the fields are OPTIONAL in the type only so arena-client fixtures
     // need no backfill (D-24366 §6). buildUIState must always populate them,
     // or every consumer has to handle an absence that never legitimately
-    // occurs. `test-scheme-001` is unconfigured, so the denominator is the
-    // MVP fallback of 7 — NOT 8.
+    // occurs. `test-scheme-001` is unconfigured and the mock registry builds no
+    // twist cards, so the denominator is the D-24595 fallback default of 8
+    // (DEFAULT_SCHEME_TWIST_COUNT), not the retired flat 7.
     const gameState = createTestGameState();
-    gameState.counters.schemeTwistCount = 7;
+    gameState.counters.schemeTwistCount = 8;
 
     const result = buildUIState(gameState, mockCtx);
 
-    assert.equal(result.progress.schemeLossProgress, 7);
-    assert.equal(result.progress.schemeLossThreshold, 7);
+    assert.equal(result.progress.schemeLossProgress, 8);
+    assert.equal(result.progress.schemeLossThreshold, 8);
     assert.equal(result.progress.menace, 1);
     assert.equal(result.progress.menaceTier, 'critical');
   });
@@ -237,7 +238,7 @@ describe('UIState.progress menace signal (WP-557 / D-24366)', () => {
 
     const result = buildUIState(gameState, mockCtx);
 
-    assert.equal(result.progress.menace, 3 / 7);
+    assert.equal(result.progress.menace, 3 / 8);
     assert.equal(result.progress.menaceTier, 'rising');
   });
 
@@ -338,8 +339,10 @@ describe('UIState.progress scheme-faithful loss (WP-562 / D-24371)', () => {
     // fallback path.
     const result = buildUIState(createTestGameState(), mockCtx);
 
-    assert.equal(result.progress.schemeLossKind, 'twists');
-    assert.equal(result.progress.schemeTwistThreshold, 7);
+    // why: WP-763 / D-24595 — an unconfigured scheme's condition is the
+    // approximate last-twist fallback, so the kind is 'twists-fallback'.
+    assert.equal(result.progress.schemeLossKind, 'twists-fallback');
+    assert.equal(result.progress.schemeTwistThreshold, 8);
   });
 
   it('the kind and the numbers always describe the same quantity', () => {

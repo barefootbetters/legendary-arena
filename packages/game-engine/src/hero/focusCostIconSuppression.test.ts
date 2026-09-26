@@ -1,5 +1,5 @@
 /**
- * Focus cost icon suppression (D-24600).
+ * Focus cost icon suppression (D-24606).
  *
  * The Annihilation-era Focus prefix ("[keyword:Focus] 3[icon:recruit] [icon:5] <effect>",
  * ff04 "[keyword:Focus 9][icon:recruit]  [icon:5] <effect>") is a pay-to-activate ability:
@@ -92,7 +92,7 @@ function assertInertFocusLine(hook: HeroAbilityHook, cardName: string): void {
   );
 }
 
-describe('Focus cost icon suppression (D-24600)', () => {
+describe('Focus cost icon suppression (D-24606)', () => {
   it('Invisible Woman — the "4[icon:recruit]" Focus cost is not a +4 recruit grant', () => {
     assertInertFocusLine(buildHook(INVISIBLE_WOMAN_FOCUS_ABILITY), 'Invisible Woman');
   });

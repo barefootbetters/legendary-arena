@@ -74,8 +74,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "[keyword:Sunlight]: You get +2[icon:attack] and you may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[keyword:Moonlight]: [keyword:Blood Frenzy]"
+            "[keyword:Sunlight]: You get +2[icon:attack] and you may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
+            "[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]"
           ]
         }
       ],
@@ -250,7 +250,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]."
+            "[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]. [keyword:blood-frenzy-recruit]"
           ]
         },
         {
@@ -266,7 +266,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack].",
-            "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]."
+            "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]"
           ]
         },
         {
@@ -281,7 +281,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: [keyword:Blood Frenzy]"
+            "[hc:covert]: [keyword:Blood Frenzy] [keyword:blood-frenzy]"
           ]
         },
         {
@@ -360,7 +360,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You get +1[icon:attack].",
-            "[keyword:Moonlight]: Draw a card."
+            "[keyword:Moonlight]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -375,8 +375,8 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes."
+            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
+            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes. [keyword:defeated-villain-or-mastermind] [keyword:optional-ko-your-hero]"
           ]
         },
         {
@@ -392,7 +392,7 @@
           "recruit": "0+",
           "abilities": [
             "[keyword:Sunlight]: You get +3[icon:recruit].",
-            "[keyword:Moonlight]: [keyword:Blood Frenzy]",
+            "[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]",
             "[hc:instinct]: Instead, you get both."
           ]
         },
@@ -810,7 +810,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-metarchus.webp",
           "abilities": [
             "[keyword:Blood Frenzy]",
-            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ.",
+            "Ambush: [keyword:Haunt] the rightmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:rightmost]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
@@ -822,8 +822,8 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-atrocity.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ.",
-            "Fight: Rescue a Bystander."
+            "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:leftmost]",
+            "Fight: Rescue a Bystander. [effect:captureBystander]"
           ],
           "copies": 2
         },
@@ -834,8 +834,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-patriarch.webp",
           "abilities": [
-            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less.",
-            "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it."
+            "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less. [effect:haunt-hq-hero:cost-lte-3]",
+            "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it. [effect:reveal-top-draw-if-cost-lte:3]"
           ],
           "copies": 3
         },
@@ -847,7 +847,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-salom-sorceress-supreme.webp",
           "abilities": [
             "[keyword:Blood Frenzy]",
-            "Fight: KO up to two cards from your discard pile.",
+            "Fight: KO up to two cards from your discard pile. [effect:ko-up-to-from-discard-current:2]",
             "Escape: Salomé ascends to become an additional Mastermind. She gains the ability “Master Strike: Each player discards a [team:marvel-knights] Hero or gains a Wound.“"
           ],
           "copies": 1

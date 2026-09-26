@@ -17,6 +17,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { getSpendableAttack, spendFightCost, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatMastermindTacticCore, which non-fight
@@ -136,6 +137,14 @@ export function fightMastermind(
   // (WP-687). The `&& !isFinalBlow` is the only change here; with Final Blow off
   // isFinalBlow is false so the early-return is unchanged (regression pin).
   if (G.mastermind.tacticsDeck.length === 0 && !isFinalBlow) {
+    return;
+  }
+
+  // why: WP-757 / D-24587 — rulebook v23 p.27: the Mastermind can't be fought while it
+  // haunts an HQ Hero; exorcising that Hero returns it to the Mastermind space first.
+  // isMastermindHaunting is the single predicate shared with both free-defeat target
+  // builders and the bot legal intents.
+  if (isMastermindHaunting(G)) {
     return;
   }
 

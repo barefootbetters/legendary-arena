@@ -388,7 +388,7 @@ const CONDITION_ICON_PATTERN =
 // elsewhere on the line ("you get +3[icon:attack]") carries no "-", so it is never suppressed.
 const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/gi;
 
-// why: D-24600 — the Annihilation-era Focus cost prefix ("[keyword:Focus] 2[icon:recruit]
+// why: D-24606 — the Annihilation-era Focus cost prefix ("[keyword:Focus] 2[icon:recruit]
 // [icon:5] <effect>", the ff04 form "[keyword:Focus 6][icon:recruit] [icon:5] <effect>") is a
 // pay-to-activate ability: "you may spend N [icon:recruit] to do <effect>". The cost icon is a
 // resource the player SPENDS, and the effect after it only happens when the cost is paid. No
@@ -579,6 +579,52 @@ const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
   'mgtg/drax/remove-his-spine',
 ]);
 
+// why: WP-765 / D-24598 — the cards whose "[keyword:Sunlight]: … / [keyword:Moonlight]: … /
+// [X]: Instead, you get both." lines are FUSED into one executable `day-night-both` hook (the
+// WP-735 digest-indigestion composite precedent). HeroCondition has no OR, so emitting the three
+// lines as separate hooks would double-fire a branch when the upgrade holds AND that branch's
+// day/night state is also in effect. Keyed by the canonical `{setAbbr}/{heroSlug}/{cardSlug}`
+// (the DIGEST_INDIGESTION_CARDS allowlist posture). Nanite's upgrade line is four [team:x-men]
+// tokens, which countRepeatedBothCondition turns into bothConditionCount 4.
+const DAY_NIGHT_BOTH_CARDS: ReadonlySet<string> = new Set<string>([
+  'mdns/werewolf-by-night/release-the-beast',
+  'nmut/warlock/analyze-planetary-rotation',
+  'nmut/warlock/nanite-shapeshifter',
+]);
+
+// why: WP-765 / D-24598 — the printed day/night display tokens. KEYWORD_PATTERN already matches
+// them (Step 2 arms below); these non-global, case-insensitive patterns only locate WHICH line of
+// a card is its Sunlight / Moonlight line for the fusion and the unmodeled-line lookup.
+const SUNLIGHT_MARKER_PATTERN = /\[keyword:Sunlight\]/i;
+const MOONLIGHT_MARKER_PATTERN = /\[keyword:Moonlight\]/i;
+
+// why: WP-765 / D-24598 — day/night lines whose printed effect the engine does not yet model.
+// Keyed `{setAbbr}/{heroSlug}/{cardSlug}:{sunlight|moonlight}`. Each still gets its day/night
+// condition, but ALSO records its `sunlight`/`moonlight` token as an unresolved marker and drops
+// the parsed attack/recruit grant. Without this suppression these gated lines would silently
+// grant bonuses the engine does not model — the icon on "If you do, you get +2[icon:attack]" or
+// "+1[icon:attack] for each …" would fire as a flat grant (the D-24570 parsed-grant suppression
+// sibling). They stay visibly hollow (parse-unrecognized) until a named follow-up models them.
+const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
+  // why: WP-767 / D-24606 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
+  // trigger + optional-ko-your-hero markers), so it left this list; eight entries remain.
+  'mdns/werewolf-by-night/track-the-captives:moonlight',
+  'mdns/morbius/scalded-by-sunlight:sunlight',
+  'nmut/sunspot/solar-powered:sunlight',
+  'nmut/sunspot/thermokinetic-fury:sunlight',
+  'nmut/sunspot/empyreal-force:sunlight',
+  'nmut/wolfsbane/night-vision:moonlight',
+  'nmut/wolfsbane/nocturnal-savagery:moonlight',
+  'nmut/mirage/haunted-by-the-demon-bear:moonlight',
+]);
+
+// why: WP-765 / D-24598 — the two day/night condition types. Kept as a named set so the
+// unmodeled-line suppression can keep ONLY the day/night gate on such a line.
+const DAY_NIGHT_CONDITION_TYPES: ReadonlySet<string> = new Set<string>([
+  'sunlightInEffect',
+  'moonlightInEffect',
+]);
+
 // why: WP-723 / D-24544 — detects an X-Gene line. On such a line (for an allowlisted card)
 // the leading [hc:X] is the discard-condition class ("a [class] card in your discard pile"),
 // NOT a heroClassMatch play-this-turn gate, so Step 1a reroutes it (mirrors the reveal-from-
@@ -699,7 +745,7 @@ function computeNegativeMagnitudeIconRanges(abilityText: string): Array<{ start:
 }
 
 /**
- * Computes the Focus-gated character range of an ability line (D-24600): from the
+ * Computes the Focus-gated character range of an ability line (D-24606): from the
  * `[keyword:Focus]` / `[keyword:Focus N]` token to the end of the line. The cost icon and
  * the effect it pays for both sit in this range, so the icon-magnitude (Step 2b) and
  * icon→keyword (Step 3) extractors skip every icon in it until a Focus handler exists.
@@ -758,7 +804,14 @@ function parseAbilityText(
   // the card id), so the support decision is threaded in. Defaults false so every
   // other caller/test keeps the pre-WP-658 behaviour (a [keyword:Transform] on a
   // non-supported card stays an unresolved marker).
-  options: { transformSupported?: boolean; teleportOnDiscardSupported?: boolean; xGeneSupported?: boolean } = {},
+  // why: WP-765 / D-24598 — dayNightUnmodeled is resolved by the caller from
+  // DAY_NIGHT_UNMODELED_LINES (parseAbilityText never sees the card id). Defaults false.
+  options: {
+    transformSupported?: boolean;
+    teleportOnDiscardSupported?: boolean;
+    xGeneSupported?: boolean;
+    dayNightUnmodeled?: boolean;
+  } = {},
 ): {
   keywords: HeroKeyword[];
   conditions: HeroCondition[];
@@ -780,6 +833,9 @@ function parseAbilityText(
   // so a [keyword:X-Gene] on any non-allowlisted card (heir-to-wolverine) stays an honest
   // unresolved marker and its co-located [hc:X] stays a heroClassMatch gate — both unchanged.
   const xGeneSupported = options.xGeneSupported === true;
+  // why: WP-765 / D-24598 — true only for a DAY_NIGHT_UNMODELED_LINES line (see the Step 2 arm
+  // and the unmodeled-line suppression before the 'conditional' keyword below).
+  const dayNightUnmodeled = options.dayNightUnmodeled === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -858,7 +914,7 @@ function parseAbilityText(
   for (const negativeIconRange of computeNegativeMagnitudeIconRanges(abilityText)) {
     suppressedIconRanges.push(negativeIconRange);
   }
-  // why: D-24600 — also suppress every icon in a Focus-gated segment (the pay-to-activate
+  // why: D-24606 — also suppress every icon in a Focus-gated segment (the pay-to-activate
   // cost and the effect it buys), so neither is read as a free grant (The Power Cosmic +9 bug).
   for (const focusGatedRange of computeFocusGatedRanges(abilityText)) {
     suppressedIconRanges.push(focusGatedRange);
@@ -1264,6 +1320,23 @@ function parseAbilityText(
         type: 'distinctHeroClassesAtLeast',
         value: String(SPECTRUM_CLASS_THRESHOLD),
       });
+    } else if (normalizedKeyword === 'sunlight' || normalizedKeyword === 'moonlight') {
+      // why: WP-765 / D-24598 — [keyword:Sunlight] / [keyword:Moonlight] is the rulebook gate
+      // (rules v23 ~L1696-1731), modeled as a game-state CONDITION on the D-24055 Spectrum
+      // marker→condition precedent, so the line's printed effects fire only while that state is
+      // in effect (computeDayNight, read as the hook resolves). Placed before the
+      // recruit-threshold arm and the unresolved-marker fallback so it never flags hollow.
+      if (normalizedKeyword === 'sunlight') {
+        conditions.push({ type: 'sunlightInEffect', value: '' });
+      } else {
+        conditions.push({ type: 'moonlightInEffect', value: '' });
+      }
+      // why: WP-765 / D-24598 — an unmodeled day/night line keeps its gate AND records the token
+      // as an unresolved marker, so it stays a visible hollow when its state is in effect (its
+      // parsed grant is dropped below — see DAY_NIGHT_UNMODELED_LINES).
+      if (dayNightUnmodeled) {
+        unresolvedMarkers.push(normalizedKeyword);
+      }
     } else if (normalizedKeyword === 'recruit-threshold') {
       // why: WP-545 / D-24354 — mirrors the D-24055 Spectrum marker→condition pattern:
       // a [keyword:…] marker that pushes a game-state CONDITION (not a keyword/effect)
@@ -1375,7 +1448,7 @@ function parseAbilityText(
     }
     keywordMatch = keywordRegex.exec(abilityText);
   }
-  // why: D-24600 — the ff04 space form "[keyword:Focus 6]" never matches KEYWORD_PATTERN
+  // why: D-24606 — the ff04 space form "[keyword:Focus 6]" never matches KEYWORD_PATTERN
   // (which needs `:N` or `]` right after the name), so it was silently dropped. Record it as
   // the same `focus` unresolved marker the anni "[keyword:Focus]" form already produces, so the
   // now-inert line stays a detectable parse-unrecognized hollow rather than looking like flavor.
@@ -1897,6 +1970,60 @@ function parseAbilityText(
     }
     uniqueKeywords = keywordsWithoutAttackIcon;
     magnitudes.delete('attack');
+  }
+
+  // Icon-suppression (sibling): a Blood Frenzy line's printed icons are DESCRIPTIVE. Morbius
+  // Mesmerize reads "Blood Frenzy, gaining [icon:recruit] instead of [icon:attack]" — neither
+  // icon is a flat grant; the blood-frenzy(-recruit) handler grants the distinct-VP count.
+  // Without this, Step 3 promotes both icons to magnitude-less plain keywords that sit beside the
+  // real effect and mis-classify the hook.
+  // why: WP-765 / D-24598 — the Blood Frenzy keywords subsume the printed resource icons
+  // (mirrors the D-24481 reveal-herodeck-attack suppression above).
+  let lineHasBloodFrenzy = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'blood-frenzy' || keyword === 'blood-frenzy-recruit') {
+      lineHasBloodFrenzy = true;
+      break;
+    }
+  }
+  if (lineHasBloodFrenzy) {
+    const keywordsWithoutResourceIcons: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack' && keyword !== 'recruit') {
+        keywordsWithoutResourceIcons.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutResourceIcons;
+    magnitudes.delete('attack');
+    magnitudes.delete('recruit');
+  }
+
+  // Unmodeled day/night line suppression: drop the parsed attack/recruit grant and every
+  // non-day/night condition, keeping only the Sunlight/Moonlight gate and the unresolved marker
+  // pushed in Step 2.
+  // why: WP-765 / D-24598 — without this the gated lines in DAY_NIGHT_UNMODELED_LINES would
+  // silently grant bonuses the engine does not model ("If you do, you get +2[icon:attack]",
+  // "+1[icon:attack] for each …") whenever the state is in effect — the D-24570 parsed-grant
+  // suppression sibling. Their other tokens ("for each other [team:x-men] card") describe the
+  // unmodeled grant, not a play gate, so they are dropped too: the line then logs and records
+  // its day/night hollow exactly when its state holds.
+  if (dayNightUnmodeled) {
+    const keywordsWithoutResourceIcons: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack' && keyword !== 'recruit') {
+        keywordsWithoutResourceIcons.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutResourceIcons;
+    magnitudes.delete('attack');
+    magnitudes.delete('recruit');
+    const dayNightConditions: HeroCondition[] = [];
+    for (const condition of conditions) {
+      if (DAY_NIGHT_CONDITION_TYPES.has(condition.type)) {
+        dayNightConditions.push(condition);
+      }
+    }
+    conditions.splice(0, conditions.length, ...dayNightConditions);
   }
 
   // If conditions were found, add 'conditional' keyword
@@ -3215,6 +3342,89 @@ function buildExcessiveViolenceFusion(
 }
 
 /**
+ * Fuses an allowlisted card's "[keyword:Sunlight]: … / [keyword:Moonlight]: … / [X]: Instead,
+ * you get both." lines into one day-night-both hook (WP-765 / D-24598).
+ *
+ * Parses each branch line's inline effects via the shared parseAbilityText (the branch's own
+ * day/night condition is discarded — the handler selects the branch), reads the upgrade line's
+ * condition into bothCondition (+ bothConditionCount for a repeated token, e.g. Nanite's four
+ * [team:x-men]), and returns the single fused hook plus the consumed line indices so the caller
+ * skips them. Returns undefined when the card lacks a Sunlight or Moonlight line (defensive —
+ * every allowlisted card has both).
+ *
+ * @param cardId - The played hero card's CardExtId (the hook's cardId).
+ * @param abilityLines - The card's ability lines (post-coalesce).
+ * @returns The fused hook + consumed line indices, or undefined when a branch line is missing.
+ */
+function buildDayNightBothFusion(
+  cardId: CardExtId,
+  abilityLines: string[],
+): { hook: HeroAbilityHook; consumedIndices: ReadonlySet<number> } | undefined {
+  const sunlightIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && SUNLIGHT_MARKER_PATTERN.test(line),
+  );
+  const moonlightIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && MOONLIGHT_MARKER_PATTERN.test(line),
+  );
+  if (sunlightIndex === -1 || moonlightIndex === -1) {
+    return undefined;
+  }
+  const sunlightEffects = parseAbilityText(abilityLines[sunlightIndex]!).effects;
+  const moonlightEffects = parseAbilityText(abilityLines[moonlightIndex]!).effects;
+  const consumedIndices = new Set<number>([sunlightIndex, moonlightIndex]);
+
+  // why: WP-765 / D-24598 — the "Instead, you get both." upgrade line (the same detector the
+  // digest fusion uses). Its class/team tokens are the bothCondition; a repeated identical token
+  // needs that many OTHER matching cards (WP-740 / D-24562 countRepeatedBothCondition).
+  const bothIndex = abilityLines.findIndex(
+    (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
+  );
+  let bothCondition: HeroCondition | undefined;
+  let bothConditionCount: number | undefined;
+  if (bothIndex !== -1) {
+    consumedIndices.add(bothIndex);
+    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
+    const firstCondition = bothConditions[0];
+    if (firstCondition !== undefined) {
+      bothCondition = firstCondition;
+      bothConditionCount = countRepeatedBothCondition(bothConditions);
+    }
+  }
+
+  const effect: HeroEffectDescriptor = { type: 'day-night-both', sunlightEffects, moonlightEffects };
+  if (bothCondition !== undefined) {
+    effect.bothCondition = bothCondition;
+  }
+  if (bothConditionCount !== undefined) {
+    effect.bothConditionCount = bothConditionCount;
+  }
+  const hook: HeroAbilityHook = {
+    cardId,
+    timing: 'onPlay',
+    keywords: ['day-night-both'],
+    effects: [effect],
+  };
+  return { hook, consumedIndices };
+}
+
+/**
+ * Whether one ability line of a card is a DAY_NIGHT_UNMODELED_LINES entry (WP-765 / D-24598).
+ *
+ * @param cardKey - The canonical `{setAbbr}/{heroSlug}/{cardSlug}` key.
+ * @param abilityText - The ability line.
+ * @returns Whether the line's Sunlight / Moonlight effect is allowlisted as unmodeled.
+ */
+function isDayNightUnmodeledLine(cardKey: string, abilityText: string): boolean {
+  if (SUNLIGHT_MARKER_PATTERN.test(abilityText) && DAY_NIGHT_UNMODELED_LINES.has(`${cardKey}:sunlight`)) {
+    return true;
+  }
+  if (MOONLIGHT_MARKER_PATTERN.test(abilityText) && DAY_NIGHT_UNMODELED_LINES.has(`${cardKey}:moonlight`)) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Builds hero ability hooks from registry card data at setup time.
  *
  * Called during Game.setup() via buildInitialGameState. Resolves hero
@@ -3318,6 +3528,18 @@ export function buildHeroAbilityHooks(
       if (excessiveViolenceFusion !== undefined) {
         hooks.push(excessiveViolenceFusion.hook);
       }
+      // why: WP-765 / D-24598 — for an allowlisted "Sunlight / Moonlight / Instead, you get both"
+      // card, fuse its three lines into ONE day-night-both hook up front (the digest fusion
+      // precedent) and record the consumed indices so the per-line loop below SKIPS them — emitting
+      // them as separate condition-gated hooks as well would double-fire a branch under the upgrade.
+      const dayNightBothFusion = DAY_NIGHT_BOTH_CARDS.has(
+        `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+      )
+        ? buildDayNightBothFusion(instance.extId, abilityLines)
+        : undefined;
+      if (dayNightBothFusion !== undefined) {
+        hooks.push(dayNightBothFusion.hook);
+      }
       for (let lineIndex = 0; lineIndex < abilityLines.length; lineIndex++) {
         // why: WP-735 / D-24555 — skip the Digest/Indigestion/upgrade lines the fusion already
         // consumed into the single digest-indigestion hook above.
@@ -3327,6 +3549,11 @@ export function buildHeroAbilityHooks(
         // why: WP-736 / D-24556 — skip the [keyword:Excessive Violence] line the EV fusion consumed
         // into the single excessive-violence hook above.
         if (excessiveViolenceFusion !== undefined && excessiveViolenceFusion.consumedIndices.has(lineIndex)) {
+          continue;
+        }
+        // why: WP-765 / D-24598 — skip the Sunlight / Moonlight / upgrade lines the day-night-both
+        // fusion consumed into the single fused hook above.
+        if (dayNightBothFusion !== undefined && dayNightBothFusion.consumedIndices.has(lineIndex)) {
           continue;
         }
         const abilityText = abilityLines[lineIndex]!;
@@ -3356,7 +3583,19 @@ export function buildHeroAbilityHooks(
         const xGeneSupported = X_GENE_CARDS.has(
           `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
         );
-        const parsedAbility = parseAbilityText(abilityText, { transformSupported, teleportOnDiscardSupported, xGeneSupported });
+        // why: WP-765 / D-24598 — resolve whether this line is an allowlisted unmodeled day/night
+        // line (DAY_NIGHT_UNMODELED_LINES), from the same canonical key, so parseAbilityText keeps
+        // its gate but drops its grant and records it as an honest hollow.
+        const dayNightUnmodeled = isDayNightUnmodeledLine(
+          `${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`,
+          abilityText,
+        );
+        const parsedAbility = parseAbilityText(abilityText, {
+          transformSupported,
+          teleportOnDiscardSupported,
+          xGeneSupported,
+          dayNightUnmodeled,
+        });
 
         // why: freshly-constructed hook per instance — copies never alias a
         // shared object or arrays (D-13502).

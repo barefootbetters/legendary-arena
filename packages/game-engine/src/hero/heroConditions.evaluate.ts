@@ -18,6 +18,7 @@ import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { computeDayNight } from '../rules/dayNight.logic.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -317,6 +318,22 @@ export function evaluateCondition(
       // condition.value is the class read from the co-located [hc:X] token at parse time,
       // never a hardcoded literal.
       return discardHasHeroClass(G, playerID, condition.value);
+    }
+
+    case 'sunlightInEffect': {
+      // why: WP-765 / D-24598 — "[keyword:Sunlight]: <effect>" works only while most HQ Heroes
+      // have even printed costs (rules v23 ~L1696-1731). Read from the shared computeDayNight at
+      // hook-resolution time, never cached per card: abilities resolve one at a time
+      // (~L2603-2610), so each line re-reads the HQ as it resolves. Deliberately NOT a
+      // wait-and-see or sequence-gate type — day/night is board state resolved per line, not a
+      // turn window or a play-order synergy. Ignores condition.value.
+      return computeDayNight(G) === 'sunlight';
+    }
+
+    case 'moonlightInEffect': {
+      // why: WP-765 / D-24598 — the Moonlight mirror of the case above (most HQ Heroes have odd
+      // printed costs); a tie is neither, so both day/night gates fail on a tie.
+      return computeDayNight(G) === 'moonlight';
     }
 
     default: {
@@ -779,6 +796,14 @@ export function describeFailedCondition(
       // ("instinct") reads "an instinct card", not the ungrammatical "a instinct card";
       // consonant classes (strength/covert/tech/ranged) keep "a". Copy-only, no behavior change.
       return `it needs a${/^[aeiou]/i.test(condition.value) ? 'n' : ''} ${condition.value} card in your discard pile`;
+
+    case 'sunlightInEffect':
+      // why: WP-765 / D-24598 — a boolean board-state gate; the HQ decides it, so there is no
+      // running count to quote.
+      return "it isn't Sunlight";
+
+    case 'moonlightInEffect':
+      return "it isn't Moonlight";
 
     default:
       return `its play condition could not be evaluated (unrecognized condition type "${condition.type}")`;

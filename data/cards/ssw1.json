@@ -2191,6 +2191,8 @@
       "id": 13,
       "name": "Ghost Racers",
       "slug": "ghost-racers",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw1/ssw1-hm-ghost-racers.webp",
       "abilities": [
         "Ambush: [keyword:Rise of The Living Dead]",
@@ -2201,6 +2203,8 @@
       "id": 14,
       "name": "M.O.D.O.K.s",
       "slug": "m-o-d-o-k-s",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw1/ssw1-hm-m-o-d-o-k-s.webp",
       "abilities": [
         "Fight: KO a Hero from your discard pile or the HQ. If that Hero has a [icon:recruit] icon, you get +1[icon:recruit]."
@@ -2210,6 +2214,8 @@
       "id": 15,
       "name": "Thor Corps",
       "slug": "thor-corps",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/ssw1/ssw1-hm-thor-corps.webp",
       "abilities": [
         "Fight: Gain this as a Hero.",

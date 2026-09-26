@@ -16,7 +16,7 @@
  * attachBystanderToVillain, awardAttachedBystanders.
  */
 
-import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop } from '../types.js';
+import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   VillainAbilityTiming,
@@ -51,6 +51,7 @@ import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // from G.heroDeck after removing the gifted Hero, the same refill contract
 // captureHeroFromHq uses (leaves null when the reservoir is empty).
 import { refillHqSlot } from '../board/city.logic.js';
+import { hauntHqSlot, selectUnhauntedHqIndex } from '../board/haunt.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -1697,6 +1698,129 @@ function villainEffectDrawCardsCurrent(
 }
 
 /**
+ * Reads the cost of a card revealed from the top of a deck (WP-760 / D-24589).
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The revealed card.
+ * @returns The printed cost; 0 for a Wound; undefined for an uncosted non-Wound card.
+ */
+function resolveRevealedDeckTopCost(G: LegendaryGameState, cardId: CardExtId): number | undefined {
+  const cardStats = G.cardStats[cardId];
+  if (cardStats !== undefined) {
+    return cardStats.cost;
+  }
+  // why: D-24583 — a Wound has no printed cost and no G.cardStats entry; an uncosted
+  // Wound costs 0 (rules v23 L2861-2862), the same rule hero reveals use. A local copy
+  // of the hero module's private resolver (duplicate first; the villain module does not
+  // import hero internals).
+  if (cardId === WOUND_EXT_ID) {
+    return 0;
+  }
+  return undefined;
+}
+
+/**
+ * reveal-top-draw-if-cost-lte primitive — the current (defeating) player reveals the
+ * top card of their deck and draws it if it costs `magnitude` or less; otherwise it
+ * stays on top (The Fallen's Patriarch: "Fight: Reveal the top card of your deck. If
+ * it costs 3 or less, draw it.", WP-760 / D-24589).
+ *
+ * Self-narrates via `pushLog`: the primitive is keyword-less (no legacy reverse-map
+ * entry), so the generic `<timing> effect:` line never fires.
+ */
+function villainEffectRevealTopDrawIfCostLte(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const costCeiling = descriptor.magnitude;
+  if (costCeiling === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  // why: D-24285 — a reveal on an empty deck reshuffles the discard first
+  // (reshuffleDiscardIntoDeck no-ops on an empty discard or a missing shuffle source,
+  // so an exhausted deck + discard falls through to the logged no-op below).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const topCardId = zones.deck[0];
+  if (topCardId === undefined) {
+    pushLog(G, 'Fight effect: no card to reveal — your deck and discard pile are empty.', 'blocked');
+    return { targets: [] };
+  }
+  const topName = resolveCardDisplayName(G, topCardId);
+  const cost = resolveRevealedDeckTopCost(G, topCardId);
+  if (cost === undefined || cost > costCeiling) {
+    pushLog(G, `Fight effect: revealed "${topName}" (costs more than ${String(costCeiling)}) — left on top of your deck.`, 'blocked', topCardId);
+    return { targets: [] };
+  }
+  // why: the card moves deck → hand directly, NOT through the hero-effect draw path, so
+  // a turn's draw lock does not apply — the WP-731 precedent for villain-driven draws
+  // for the active player. Deck top only; no reshuffle can occur past the reveal above.
+  const moveResult = moveCardFromZone(zones.deck, zones.hand, topCardId);
+  if (!moveResult.found) {
+    return { targets: [] };
+  }
+  zones.deck = moveResult.from;
+  zones.hand = moveResult.to;
+  pushLog(G, `Fight effect: revealed "${topName}" (cost ${String(cost)}) — drew it.`, 'applied', topCardId);
+  return { targets: [topCardId] };
+}
+
+/**
+ * ko-up-to-from-discard-current primitive — the current (defeating) player may KO up
+ * to `magnitude` cards from their own discard pile (The Fallen's Salomé: "Fight: KO up
+ * to two cards from your discard pile.", WP-760 / D-24589).
+ *
+ * Parks the existing PendingKoDiscardChoice (WP-693 / D-24510: block-all guard, UIState
+ * projection, client prompt, bot default `{ cardIds: [] }`) with `sourceCardId`, and
+ * returns `{ pending: true }`. An empty discard is a logged no-op (nothing parks).
+ */
+function villainEffectKoUpToFromDiscardCurrent(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const maxCount = descriptor.magnitude;
+  if (maxCount === undefined) {
+    return { targets: [] };
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const sourceName = resolveCardDisplayName(G, cardId);
+  if (zones.discard.length === 0) {
+    pushLog(G, `Fight effect: your discard pile is empty (${sourceName}); nothing to KO.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: `sourceCardId` names the parking card for the resolve log (display text is never
+  // stored in G). The queue is created lazily at the park site, so an untriggered match
+  // leaves the field undefined and the hash oracles stay byte-stable.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount,
+    sourceCardId: cardId,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G, `Fight effect: KO up to ${String(maxCount)} cards from your discard pile (${sourceName}).`, 'neutral');
+  return { targets: [], pending: true };
+}
+
+/**
  * override-next-hand-size primitive — set the current (defeating) player's next
  * `onBegin` hand-fill target to the descriptor `magnitude` (the core spider-foes
  * Doctor Octopus villain Fight: "draw eight cards instead of six", D-24307 /
@@ -2803,6 +2927,70 @@ function villainEffectSwapTwoCityVillains(
 }
 
 /**
+ * haunt-hq-hero primitive — the Haunting Villain leaves the City and haunts an HQ Hero
+ * chosen by the descriptor's selector (WP-757 / D-24587, rulebook v23 p.27).
+ *
+ * Only occupied, UNHAUNTED slots are eligible ("a Hero can't be Haunted by two
+ * Villains at once"). With no eligible slot, or when the Villain is no longer in the
+ * City, it is a logged no-op and the Villain stays where it is. Otherwise the Villain's
+ * City space is nulled and it is recorded as the slot's haunter, so it can't be fought
+ * until a player exorcises the Hero. Attached bystanders / captured heroes stay keyed
+ * to the Villain's card id. Keyword-less: self-narrates with exactly one log line, and
+ * no composed "Ambush effect:" line is written for it.
+ *
+ * @param G - Game state (mutated: `G.city`, `G.hqHaunters`).
+ * @param _currentPlayer - Unused (Haunt targets the shared HQ).
+ * @param cardId - The haunting Villain's copy-indexed instance ext_id.
+ * @param timing - The firing timing (labels the log line).
+ * @param descriptor - Carries the `selector`.
+ * @returns The haunted Hero as the target, or no targets on a no-op.
+ */
+function villainEffectHauntHqHero(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const villainName = resolveCardDisplayName(G, cardId);
+  const selector = descriptor.selector;
+  if (selector !== 'rightmost' && selector !== 'leftmost' && selector !== 'cost-lte-3') {
+    pushLog(G, `${label} effect: ${villainName} has no valid Haunt selector; nothing happens.`, 'blocked');
+    return { targets: [] };
+  }
+  const cityIndex = G.city.indexOf(cardId);
+  if (cityIndex < 0) {
+    // why: D-24587 — Haunt moves the Villain from the City; a Villain no longer in the
+    // City has nothing to tuck beneath a Hero (a reachable no-op, never a hollow record).
+    pushLog(G, `${label} effect: ${villainName} is not in the City; no Hero is haunted.`, 'blocked');
+    return { targets: [] };
+  }
+  const hqIndex = selectUnhauntedHqIndex(G, selector);
+  if (hqIndex === null) {
+    // why: D-24587 — no occupied, unhaunted HQ slot matches: the Haunt fizzles and the
+    // Villain stays in the City, fightable as normal.
+    pushLog(G, `${label} effect: no unhaunted Hero in the HQ to haunt; ${villainName} stays in the City.`, 'blocked');
+    return { targets: [] };
+  }
+  const heroId = G.hq[hqIndex] as CardExtId;
+  if (!hauntHqSlot(G, hqIndex, { kind: 'villain', cardId })) {
+    pushLog(G, `${label} effect: ${villainName} could not haunt HQ slot ${String(hqIndex)}; it stays in the City.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24587 — the haunter is tucked beneath the Hero, OUT of the City. Nulling the
+  // space is what makes it unfightable (fightVillain only fights G.city) and keeps the
+  // card-uniqueness invariant (it now lives only in G.hqHaunters).
+  G.city[cityIndex] = null;
+  pushLog(
+    G,
+    `${label} effect: ${villainName} haunts ${resolveCardDisplayName(G, heroId)} (HQ slot ${String(hqIndex)}); that Hero can't be recruited until exorcised.`,
+    'threat',
+  );
+  return { targets: [heroId] };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -2990,6 +3178,13 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'add-next-hand-size': villainEffectAddNextHandSize,
   'play-villain-deck-cards': villainEffectPlayVillainDeckCards,
   'ko-heroes-current-count-by-trait': villainEffectKoHeroesCurrentCountByTrait,
+  // why: WP-757 / D-24587 — the Haunt keyword (The Fallen's Ambush); keyword-less,
+  // self-narrating. Moves the Villain out of the City into G.hqHaunters.
+  'haunt-hq-hero': villainEffectHauntHqHero,
+  // why: WP-760 / D-24589 — The Fallen's Patriarch (reveal-top-draw-if-cost-lte:3) and
+  // Salomé (ko-up-to-from-discard-current:2) Fights; both keyword-less, self-narrating.
+  'reveal-top-draw-if-cost-lte': villainEffectRevealTopDrawIfCostLte,
+  'ko-up-to-from-discard-current': villainEffectKoUpToFromDiscardCurrent,
 };
 
 /**

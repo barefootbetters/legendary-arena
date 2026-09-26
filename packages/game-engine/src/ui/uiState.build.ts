@@ -25,6 +25,7 @@ import {
   resolveSchemeLossThreshold,
   resolveTwistLossThreshold,
 } from '../rules/schemeLossProgress.js';
+import { computeDayNight } from '../rules/dayNight.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
@@ -36,6 +37,8 @@ import type {
   UIParBreakdown,
   UICardDisplay,
   UIHQCard,
+  UIHQState,
+  UIHQHaunter,
   UIDisplayEntry,
   UIDecksState,
   UISharedPilesState,
@@ -93,6 +96,7 @@ import type {
 // byte-identical to what resolveVictoryPileCardPick re-filters at resolve time
 // (the round-trip rule) — never a re-implemented filter.
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { splitInstanceIntoBaseAndCopy } from '../moves/splitFaceChoice.resolve.js';
 // why: D-24139 — reuse the engine's authoritative 0-cost discard eligibility helper so
 // the projected list is byte-identical to what resolveReturnZeroCostDiscard validates
 // at resolve time (the round-trip rule) — never a re-implemented filter.
@@ -119,6 +123,7 @@ import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import {
   resolveFightCost,
+  resolveMastermindFightCost,
   darkPortalLocations,
   DARK_PORTAL_ATTACK_BONUS,
 } from '../economy/economy.resolve.js';
@@ -128,6 +133,7 @@ import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
@@ -565,6 +571,54 @@ function buildMatchCardImageManifest(
   return manifest;
 }
 
+/**
+ * Whether the match has any day/night hero hook (WP-765 / D-24598): a hook carrying a
+ * sunlightInEffect / moonlightInEffect condition, or the fused day-night-both keyword.
+ *
+ * // why: the presence rule for UIHQState.dayNight — the badge is only meaningful when a
+ * Sunlight/Moonlight card is in the match. The day-night-both keyword is checked too because a
+ * Warlock-only match's fused hooks carry no day/night condition of their own.
+ *
+ * @param gameState - Current game state (read-only).
+ * @returns Whether any hook is a day/night hook.
+ */
+function matchHasDayNightHook(gameState: LegendaryGameState): boolean {
+  for (const hook of gameState.heroAbilityHooks ?? []) {
+    for (const keyword of hook.keywords) {
+      if (keyword === 'day-night-both') {
+        return true;
+      }
+    }
+    for (const condition of hook.conditions ?? []) {
+      if (condition.type === 'sunlightInEffect' || condition.type === 'moonlightInEffect') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Builds the HQ projection: the verbatim slots, the parallel slotDisplay, and — only for a
+ * match with a day/night hero hook — the current Sunlight / Moonlight state (WP-765 / D-24598).
+ *
+ * @param hqSlots - The HQ slot ext_ids (null for an empty slot).
+ * @param hqSlotDisplay - The slot-aligned display payloads.
+ * @param gameState - Current game state (read-only).
+ * @returns The UIHQState, with dayNight omitted when the match has no day/night hook.
+ */
+function buildHqProjection(
+  hqSlots: (string | null)[],
+  hqSlotDisplay: (UIHQCard | null)[],
+  gameState: LegendaryGameState,
+): UIHQState {
+  const hq: UIHQState = { slots: hqSlots, slotDisplay: hqSlotDisplay };
+  if (matchHasDayNightHook(gameState)) {
+    hq.dayNight = computeDayNight(gameState);
+  }
+  return hq;
+}
+
 export function buildUIState(
   gameState: LegendaryGameState,
   ctx: UIBuildContext,
@@ -780,8 +834,10 @@ export function buildUIState(
         // why: WP-505 / D-24311 — count only (face-down = identity hidden).
         attachedBystanderCount: spaceAttachedBystanders.length,
         // why: WP-214 — engine-resolved fight cost; UI must not recompute
-        // dynamic values (engine-owns-truth invariant)
-        fightCost: resolveFightCost(gameState, space),
+        // dynamic values (engine-owns-truth invariant). WP-760 / D-24589: passes the
+        // active player — the only player who can fight — so a Blood Frenzy villain
+        // shows that player's cost to every audience.
+        fightCost: resolveFightCost(gameState, space, ctx.currentPlayer),
       });
     }
   }
@@ -809,6 +865,27 @@ export function buildUIState(
         extId: slot,
         display: resolveDisplay(slot, gameState),
       });
+    }
+  }
+
+  // why: WP-757 / D-24587 — project the per-slot haunters, index-aligned with the HQ.
+  // A Villain haunter embeds its display (the client has no extId → display resolver).
+  // Undefined when G.hqHaunters is absent, so the field is omitted (hash-neutral).
+  let hqHaunters: (UIHQHaunter | null)[] | undefined;
+  if (gameState.hqHaunters !== undefined) {
+    hqHaunters = [];
+    for (const haunter of gameState.hqHaunters) {
+      if (haunter === null || haunter === undefined) {
+        hqHaunters.push(null);
+      } else if (haunter.kind === 'villain') {
+        hqHaunters.push({
+          kind: 'villain',
+          extId: haunter.cardId,
+          display: resolveDisplay(haunter.cardId, gameState),
+        });
+      } else {
+        hqHaunters.push({ kind: 'mastermind' });
+      }
     }
   }
 
@@ -860,6 +937,13 @@ export function buildUIState(
     // would refuse it. Always a boolean here; the audience filter must pass it
     // through (the EC-206 drop) — see uiState.filter.ts.
     finalBlowPending: isFinalBlowAvailable(gameState.mastermind, gameState.finalBlow),
+    // why: WP-750 / D-24574 — the projected fight cost, from the same
+    // resolveMastermindFightCost the fightMastermind guard and the bot read, so the
+    // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
+    fightCost: resolveMastermindFightCost(gameState),
+    // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
+    // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
+    ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
   };
 
   // --- 6. Project scheme — derive twist count ---
@@ -1463,23 +1547,37 @@ export function buildUIState(
       // too, but a filtered projection is what a well-behaved client offers). Absent
       // koTeamFilter = no restriction, so every existing entry lists every card unchanged.
       const shieldOnly = frontReward.koTeamFilter === 'shield';
+      // why: WP-767 / D-24600 — koHeroesOnly (Snarling Fangs' "one of your Heroes") omits
+      // Wounds from all three lists, matching the resolve's Wound rejection. Absent = no
+      // filter, so every existing entry lists every card unchanged.
+      const heroesOnly = frontReward.koHeroesOnly === true;
       const eligibleHand: UIEligibleKoHeroCard[] = [];
       for (const cardId of chooserZones.hand) {
         if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
+        if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
         eligibleHand.push({
           zone: 'hand',
           cardId,
           display: { ...resolveDisplay(cardId, gameState) },
         });
       }
+      // why: WP-767 / D-24600 — mirrors the inPlay gate below: list discard cards ONLY when
+      // the entry's koZones permits discard. Snarling Fangs' entry sets ['hand','inPlay'], so
+      // its discard list is empty and the chooser is never offered a card the resolve rejects.
+      // Absent koZones = the wide set, so existing entries project discard exactly as before.
+      const discardPermitted =
+        frontReward.koZones === undefined || frontReward.koZones.includes('discard');
       const eligibleDiscard: UIEligibleKoHeroCard[] = [];
-      for (const cardId of chooserZones.discard) {
-        if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
-        eligibleDiscard.push({
-          zone: 'discard',
-          cardId,
-          display: { ...resolveDisplay(cardId, gameState) },
-        });
+      if (discardPermitted) {
+        for (const cardId of chooserZones.discard) {
+          if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
+          if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
+          eligibleDiscard.push({
+            zone: 'discard',
+            cardId,
+            display: { ...resolveDisplay(cardId, gameState) },
+          });
+        }
       }
       // why: D-24442 — cards the chooser played this turn (inPlay) are a valid KO
       // source; project them in zone+index order with a fresh display spread,
@@ -1495,6 +1593,7 @@ export function buildUIState(
       const eligibleInPlay: UIEligibleKoHeroCard[] = [];
       if (inPlayPermitted) {
         for (const cardId of chooserZones.inPlay) {
+          if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
           eligibleInPlay.push({
             zone: 'inPlay',
             cardId,
@@ -1593,7 +1692,12 @@ export function buildUIState(
     if (faceBDisplay?.abilityText !== undefined) {
       faceB.abilityText = faceBDisplay.abilityText;
     }
-    pendingSplitFaceChoice = { playerID: frontSplit.playerID, faceA, faceB };
+    // why: printed left-to-right order for the picker — faceB is the left half when the split
+    // card's primary card-key (faceA minus its #copy suffix) is in G.splitFacesAlternateOnLeft.
+    const faceABaseKey = splitInstanceIntoBaseAndCopy(frontSplit.faceA).baseKey as CardExtId;
+    const leftFace: 'a' | 'b' =
+      gameState.splitFacesAlternateOnLeft?.[faceABaseKey] === true ? 'b' : 'a';
+    pendingSplitFaceChoice = { playerID: frontSplit.playerID, faceA, faceB, leftFace };
   }
 
   // why: WP-675 / D-24490 — project the FRONT entry of G.pendingCountScaledChoice, resolving
@@ -2186,7 +2290,11 @@ export function buildUIState(
     // why: WP-111 — slots preserved verbatim (PS-6 fallback); slotDisplay
     // added as a parallel array. Length-equals-slots invariant is
     // maintained by the unified for-of loop above.
-    hq: { slots: hqSlots, slotDisplay: hqSlotDisplay },
+    hq: {
+      ...buildHqProjection(hqSlots, hqSlotDisplay, gameState),
+      // why: WP-757 / D-24587 — projected only once G.hqHaunters exists (omit-when-absent).
+      ...(hqHaunters !== undefined ? { haunters: hqHaunters } : {}),
+    },
     mastermind,
     scheme,
     economy,

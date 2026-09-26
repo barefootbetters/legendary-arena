@@ -158,6 +158,12 @@ function isLockedEffectKeyword(keyword) {
 // radiation Maestro "For each of your [hc:strength] Heroes, KO one of your Heroes"; validates
 // via the shared trait-predicate branch below alongside its `ko-heroes-current-by-trait`
 // sibling, which KOs the MATCHING Heroes rather than counting them).
+// `haunt-hq-hero` (`:<selector>`) appended by WP-757 (D-24587 — the Haunt keyword, The
+// Fallen's Ambush; selector rightmost | leftmost | cost-lte-3, validated by its own branch
+// below — the capture-hq-hero branch still rejects leftmost / cost-lte-3).
+// `reveal-top-draw-if-cost-lte` and `ko-up-to-from-discard-current` (`:<N>`) appended by
+// WP-760 (D-24589 — The Fallen's Patriarch and Salomé Fights; the count validates via
+// their own `:<N>` branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -184,6 +190,9 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'add-next-hand-size',
   'play-villain-deck-cards',
   'ko-heroes-current-count-by-trait',
+  'haunt-hq-hero',
+  'reveal-top-draw-if-cost-lte',
+  'ko-up-to-from-discard-current',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -272,6 +281,14 @@ function isValidParameterizedEffectToken(token) {
       (parts[1] === 'rightmost' || parts[1] === 'highest-cost' || parts[1] === 'lowest-cost')
     );
   }
+  if (primitive === 'haunt-hq-hero') {
+    // why: D-24587 — grammar haunt-hq-hero:<selector> (exactly 2 tokens); selector is
+    // rightmost | leftmost | cost-lte-3. Mirrors the engine parser's haunt-hq-hero branch.
+    return (
+      parts.length === 2 &&
+      (parts[1] === 'rightmost' || parts[1] === 'leftmost' || parts[1] === 'cost-lte-3')
+    );
+  }
   if (primitive === 'reveal-or-wound') {
     // why: D-24281 — grammar reveal-or-wound:<kind>:<value> (exactly 3 tokens);
     // kind is the card-text namespace token team | hc; value is any non-empty slug
@@ -295,6 +312,12 @@ function isValidParameterizedEffectToken(token) {
     // of EXTRA cards added to the next-hand target (Savage Land Mutates: 1). Same strict
     // positive-integer grammar as override-next-hand-size; the additive-vs-absolute
     // distinction is a handler concern, not a grammar one.
+    return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-draw-if-cost-lte' || primitive === 'ko-up-to-from-discard-current') {
+    // why: D-24589 — grammar <primitive>:<N> (exactly 2 tokens); N is a positive integer
+    // (Patriarch's cost ceiling 3, Salomé's KO cap 2). Mirrors the engine parser's
+    // parsePositiveInteger branch so producer + consumer agree on the grammar.
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (primitive === 'play-villain-deck-cards') {

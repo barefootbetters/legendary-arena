@@ -2518,6 +2518,8 @@
       "id": 5,
       "name": "Maggia Goons",
       "slug": "maggia-goons",
+      "vAttack": "4",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-hm-maggia-goons.webp",
       "abilities": [
         "[keyword:Bribe]",
@@ -2528,6 +2530,8 @@
       "id": 6,
       "name": "Phalanx",
       "slug": "phalanx",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-hm-phalanx.webp",
       "abilities": [
         "Fight: Reveal a [hc:tech] Hero or KO one of your Heroes with a [icon:attack] icon."

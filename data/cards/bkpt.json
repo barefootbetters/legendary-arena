@@ -583,7 +583,7 @@
           "name": "Killmonger",
           "slug": "killmonger",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/bkpt/bkpt-mm-killmonger.webp",
           "abilities": [
             "While Killmonger has more than 0[icon:attack], you cannot fight him. Instead, you may spend [icon:attack] equal to his [icon:attack] to [keyword:Wound him] and get +1[icon:recruit].",

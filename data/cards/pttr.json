@@ -572,7 +572,7 @@
           "name": "Carnage",
           "slug": "carnage",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "9",
           "imageUrl": "https://images.legendary-arena.com/pttr/pttr-mm-carnage.webp",
           "abilities": [
             "Always Leads: Maximum Carnage",
@@ -637,7 +637,7 @@
           "name": "Mysterio",
           "slug": "mysterio",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/pttr/pttr-mm-mysterio.webp",
           "abilities": [
             "Always Leads: Sinister Six",

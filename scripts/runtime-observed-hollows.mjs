@@ -117,10 +117,12 @@ const SEEDS_PER_BOARD = 8;
 // the sweep stays fast, AND should not pollute the hero decks under test (a twist
 // that adds Wounds to players clogs draws and suppresses the very hero abilities
 // this sweep measures). Portals to the Dark Dimension is a faithful TRUE twist-loss
-// scheme (printed "Twist 7: Evil Wins!") that loses at twist 7 via the engine's
-// MVP_SCHEME_TWIST_THRESHOLD fallback — it declares NO SCHEME_TWIST_CONFIGS entry
-// because its faithful loss IS the twist count, so it never needs a resource-loss
-// condition — deck-independent, every game. Its Dark-Portal twists buff the board
+// scheme (printed "Twist 7: Evil Wins!") that loses at exactly twist 7 via its
+// explicit SCHEME_TWIST_CONFIGS entry (lossThreshold 7, `portals` resolver —
+// WP-539 / D-24348) and declares no resource-loss condition, so the loss is
+// deck-independent, every game. (When this backdrop was chosen it was unconfigured
+// and hit 7 only via the old flat MVP fallback, which D-24595 has since replaced
+// with each scheme's own deck twist count.) Its Dark-Portal twists buff the board
 // (mastermind / city villains) instead of wounding players, so heroes keep drawing
 // and playing: 12 distinct mechanics vs Cosmic Cube's 10 (D-24322). WP-511's Cosmic
 // Cube backdrop terminated fine but its "wound all" twist polluted the decks; this

@@ -571,7 +571,7 @@
           "name": "Hybrid",
           "slug": "hybrid",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/vnom/vnom-mm-hybrid.webp",
           "abilities": [
             "If you fight Hybrid while he's bonded to a Villain, defeat that Villain and rescue three Bystanders instead of taking a Tactic.",

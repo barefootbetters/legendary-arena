@@ -28,6 +28,11 @@ Discrete in-game mechanics with specific triggers and effects.
   trigger. Currently engine-unsupported (a `parse-unrecognized` hollow);
   transformed cards are wrongly recruitable. Includes the full roster and a
   Sentry bidirectional-loop deep-dive.
+- [Split Card](split-card.md) — The rulebook's **Divided Card**: two
+  mini Hero cards printed side by side on one landscape card, with the half
+  chosen at play time (WP-724/725). Explains why `sides[]` isn't left-to-right
+  (the **lower slot is the left half**), the in-hand "counts as both classes"
+  rule the engine doesn't yet model, and the full 39-card roster.
 
 ## System
 
