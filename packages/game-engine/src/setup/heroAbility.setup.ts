@@ -401,6 +401,17 @@ const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/g
 const ADVERSARY_STAT_ICON_PATTERN =
   /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?/gi;
 
+// why: D-24606 — the Annihilation-era Focus cost prefix ("[keyword:Focus] 2[icon:recruit]
+// [icon:5] <effect>", the ff04 form "[keyword:Focus 6][icon:recruit] [icon:5] <effect>") is a
+// pay-to-activate ability: "you may spend N [icon:recruit] to do <effect>". The cost icon is a
+// resource the player SPENDS, and the effect after it only happens when the cost is paid. No
+// Focus handler exists, so the Step 2b/3 extractors read the cost as a phantom +N grant AND
+// fired the gated effect unconditionally (the live bug: The Power Cosmic granting +9 recruit
+// and +9 attack on every play). Every icon from the Focus token to the end of the line is
+// suppressed, so the line emits no grant and keeps its honest `focus` unresolved marker.
+// Non-global so `.exec` is stateless. The optional " N" covers the ff04 space form.
+const FOCUS_COST_PATTERN = /\[keyword:Focus(?:\s+\d+)?\]/i;
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for VP-cost-threshold in reveal lines: "2[icon:vp] or less". Non-global; first match only. */
 const VP_COST_THRESHOLD_PATTERN = /(\d+)\s*\[icon:vp\]\s*or less/;
@@ -608,7 +619,7 @@ const MOONLIGHT_MARKER_PATTERN = /\[keyword:Moonlight\]/i;
 // "+1[icon:attack] for each …" would fire as a flat grant (the D-24570 parsed-grant suppression
 // sibling). They stay visibly hollow (parse-unrecognized) until a named follow-up models them.
 const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
-  // why: WP-767 / D-24600 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
+  // why: WP-767 / D-24606 — Snarling Fangs' Moonlight line is now modelled (the per-defeat
   // trigger + optional-ko-your-hero markers), so it left this list; eight entries remain.
   'mdns/werewolf-by-night/track-the-captives:moonlight',
   'mdns/morbius/scalded-by-sunlight:sunlight',
@@ -778,6 +789,23 @@ function computeAdversaryStatIconRanges(abilityText: string): Array<{ start: num
 }
 
 /**
+ * Computes the Focus-gated character range of an ability line (D-24606): from the
+ * `[keyword:Focus]` / `[keyword:Focus N]` token to the end of the line. The cost icon and
+ * the effect it pays for both sit in this range, so the icon-magnitude (Step 2b) and
+ * icon→keyword (Step 3) extractors skip every icon in it until a Focus handler exists.
+ *
+ * @param abilityText - The raw ability line.
+ * @returns The single Focus-gated range, or an empty array when the line has no Focus cost.
+ */
+function computeFocusGatedRanges(abilityText: string): Array<{ start: number; end: number }> {
+  const focusMatch = FOCUS_COST_PATTERN.exec(abilityText);
+  if (focusMatch === null) {
+    return [];
+  }
+  return [{ start: focusMatch.index, end: abilityText.length }];
+}
+
+/**
  * Returns whether a match span `[matchStart, matchEnd)` overlaps any suppressed condition
  * icon range (WP-660 / D-24471). Used to skip an icon the extractors would otherwise read
  * as a resource grant.
@@ -936,6 +964,11 @@ function parseAbilityText(
   // +4 bug). Same positional range machinery as the two suppressions above.
   for (const adversaryStatIconRange of computeAdversaryStatIconRanges(abilityText)) {
     suppressedIconRanges.push(adversaryStatIconRange);
+  }
+  // why: D-24606 — also suppress every icon in a Focus-gated segment (the pay-to-activate
+  // cost and the effect it buys), so neither is read as a free grant (The Power Cosmic +9 bug).
+  for (const focusGatedRange of computeFocusGatedRanges(abilityText)) {
+    suppressedIconRanges.push(focusGatedRange);
   }
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
@@ -1465,6 +1498,13 @@ function parseAbilityText(
       unresolvedMarkers.push(normalizedKeyword);
     }
     keywordMatch = keywordRegex.exec(abilityText);
+  }
+  // why: D-24606 — the ff04 space form "[keyword:Focus 6]" never matches KEYWORD_PATTERN
+  // (which needs `:N` or `]` right after the name), so it was silently dropped. Record it as
+  // the same `focus` unresolved marker the anni "[keyword:Focus]" form already produces, so the
+  // now-inert line stays a detectable parse-unrecognized hollow rather than looking like flavor.
+  if (FOCUS_COST_PATTERN.test(abilityText) && !unresolvedMarkers.includes('focus')) {
+    unresolvedMarkers.push('focus');
   }
 
   // Step 2b: Extract icon-adjacent magnitudes for attack/recruit keywords.
