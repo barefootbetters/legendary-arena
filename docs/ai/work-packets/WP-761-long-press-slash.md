@@ -19,7 +19,7 @@ Let a phone or tablet player **slash to fight even when the City row scrolls sid
 
 - **Press and hold** on the City row, without moving, for 350 ms. The row **arms**: it glows, and (where supported) the phone gives a short buzz.
 - **Then drag.** The row no longer scrolls under the finger. The stroke works exactly like a WP-756 mouse stroke: every fightable villain it fully crosses is fought, in crossing order, with the blade trail and stroke-angled slices.
-- **A normal drag still scrolls** the row, and **a tap still fights**, exactly as today.
+- **A normal drag still scrolls** the row, and **a quick tap still fights**, exactly as today. One deliberate change: on a scrolling row a press held **350 ms or longer** is a slash arm, not a tap — releasing it without a stroke fights nothing.
 
 ---
 
@@ -28,7 +28,7 @@ Let a phone or tablet player **slash to fight even when the City row scrolls sid
 - **Before:** on a phone the City row scrolls, so WP-756 hands every finger drag to native scrolling and the slash gesture is unavailable. Only taps fight.
 - **After:** a finger that holds still on the row for 350 ms arms a slash; the next drag is a stroke, not a scroll. Releasing ends it.
 - **Unchanged:**
-  - taps fight (a press released before 350 ms, or one that moves first, is not a long press);
+  - taps fight (a press released before 350 ms, or one that moves first, is not a long press). **Changed:** on a scrolling row a press held ≥ 350 ms on a villain used to fight it on release; it now arms, and releasing it without a stroke fights nothing (a deliberate trade, D-24592);
   - a drag that starts moving before 350 ms scrolls the row natively;
   - mouse behaviour (WP-756);
   - touch on a row that fits (WP-756's immediate 16 px gesture, `pan-y`);
@@ -89,7 +89,7 @@ Verify each before coding. If any is false, STOP and reconcile.
 
 **Packet-specific:**
 - No `performance.now()` / `Date.now()` / `Math.random()` outside `src/vfx/**` and `VfxOverlay.vue`. The 350 ms arm is a `setTimeout`.
-- **WP-756 behaviour is byte-identical** for: mouse strokes; touch / pen on a fitting row (`city-spaces--gesture-touch`); taps; setting off (no listeners, no classes — the new `touchmove` / `contextmenu` / `lostpointercapture` listeners live inside the same setting-gated adapter, and `lostpointercapture` acts only on an armed long-press stroke).
+- **WP-756 behaviour is byte-identical** for: mouse strokes; touch / pen on a fitting row (`city-spaces--gesture-touch`); taps; setting off. The new `touchmove` / `contextmenu` / `lostpointercapture` listeners and the callout CSS are attached **only while the setting is on AND the row does not fit** (class `city-spaces--gesture-hold`), so a fitting row carries neither and the setting-off row carries nothing. On a non-fitting row the listeners are inert for mouse (they act only on a pending / armed long press).
 - **Never `preventDefault()` a `touchmove` unless armed.** An unarmed touch must scroll natively. Never `preventDefault()` `touchstart` / `pointerdown`.
 - The chain, hints, trail signal, fit rule and `VfxOverlay.vue` are reused **unchanged**; click suppression is unchanged except the armed-path clearing (Locked Values).
 - Never reference the `PointerEvent` or `TouchEvent` globals (no `instanceof`, no constructors); read fields off the event object.
@@ -110,8 +110,8 @@ EC-798 copies these verbatim. The WP wins on conflict.
 - **Armed stroke:** the adapter's non-passive `touchmove` listener calls `preventDefault()` iff `shouldPreventTouchScroll()`; `pointermove` advances as in WP-756; a **second `pointerId` is ignored** (WP-756 rule); `pointerup` completes it (arms click suppression, publishes `isStrokeEnd`); `pointercancel` keeps completed crossings and arms nothing. **`lostpointercapture` ends the stroke the same way only when `event.target` is the row itself and its `pointerId` matches an armed long-press stroke** — capture moving from the touched child to the row (at `armStroke()`) fires a bubbling `lostpointercapture` on the child, which must be ignored; mouse and fitting-row strokes ignore it entirely. Every path that nulls the stroke (including the setting / row watch and dispose) ends the arm.
 - **Click suppression (armed path only):** cleared on the next `pointerdown` / `keydown`, not by `setTimeout(0)`. Mouse and fitting-row paths keep WP-756's clearing.
 - **Context menu:** the row's `contextmenu` listener (events bubbling to the row) calls `preventDefault()` while a long press is pending or armed.
-- **CSS:** `city-spaces--gesture-armed` iff `isLongPressArmed` — an **inset** glow (`box-shadow: inset …` or `outline` with a negative `outline-offset`), no animation under `prefers-reduced-motion`. `city-spaces--gesture` adds `-webkit-touch-callout: none`.
-- **Controller additions:** `isLongPressArmed: Ref<boolean>` and `shouldPreventTouchScroll(): boolean`. `handlePointerDown/Move/Up/Cancel` keep their WP-756 signatures.
+- **CSS:** `city-spaces--gesture-hold` iff the setting is on AND `isTouchGestureEnabled` is false (the row scrolls) — it carries `-webkit-touch-callout: none` and marks when the long-press listeners are attached. `city-spaces--gesture-armed` iff `isLongPressArmed` — an **inset** glow (`box-shadow: inset …` or `outline` with a negative `outline-offset`), no animation under `prefers-reduced-motion`. `city-spaces--gesture` is unchanged from WP-756.
+- **Controller additions:** `isLongPressArmed: Readonly<Ref<boolean>>` (returned as `readonly(...)`; only `syncLongPressState()` writes the underlying ref), `isLongPressHoldEnabled: Readonly<Ref<boolean>>` (setting on AND the row does not fit — binds `city-spaces--gesture-hold` and gates the long-press listeners), and `shouldPreventTouchScroll(): boolean`. `handlePointerDown/Move/Up/Cancel` keep their WP-756 signatures.
 
 ---
 
@@ -123,16 +123,16 @@ EC-798 copies these verbatim. The WP wins on conflict.
 - `handlePointerMove`: before the arm, movement > tolerance cancels the pending arm (and the move is otherwise ignored — native scroll). After the arm, the move advances the stroke exactly as a started WP-756 stroke.
 - `handlePointerUp` / `handlePointerCancel`: cancel a pending arm; end an armed stroke per the Locked Values.
 - `isLongPressArmed` (a `ref` written only by `syncLongPressState()`) and `shouldPreventTouchScroll()` on the controller; a dedicated `armStroke()`.
-- Adapter: a non-passive `touchmove` listener (`{ passive: false }`) calling `preventDefault()` when `shouldPreventTouchScroll()`; a `contextmenu` listener; a `lostpointercapture` listener that ends an armed long-press stroke like `pointercancel` only when `event.target` is the row and the `pointerId` matches (a no-op otherwise, and after a normal `pointerup`). All are added and removed with the existing listeners (setting-gated).
+- Adapter: a non-passive `touchmove` listener (`{ passive: false }`) calling `preventDefault()` when `shouldPreventTouchScroll()`; a `contextmenu` listener; a `lostpointercapture` listener that ends an armed long-press stroke like `pointercancel` only when `event.target` is the row and the `pointerId` matches. These three are attached **only while `isLongPressHoldEnabled`** (re-attached when the fit or the setting changes); the WP-756 listeners keep their existing setting gate.
 - Every stroke-reset path (including the setting / row watch and scope dispose) clears the arm timer and ends the arm.
 - `// why:` comments per EC-798.
 
 ### B) `apps/arena-client/src/components/play/CityRow.vue` (**modified**)
 - Bind `city-spaces--gesture-armed` to `isLongPressArmed` (returned from `setup()`, D-6512).
-- CSS: the armed glow; `-webkit-touch-callout: none` on `city-spaces--gesture`; the reduced-motion override.
+- Bind `city-spaces--gesture-hold` to `isLongPressHoldEnabled`. CSS: the armed inset glow; `-webkit-touch-callout: none` on `city-spaces--gesture-hold` only; the reduced-motion override.
 
 ### C) ewiki — `wiki/visual-effects.md` (**modified**)
-Add a "Long-press slash on a scrolling row" paragraph to §Slash to fight (`{#slash-to-fight}`): hold 350 ms without moving to arm, the glow / buzz, the full-crossing rule still applies (hold off a card), normal drags scroll, taps fight, the toggle covers it.
+Add a "Long-press slash on a scrolling row" paragraph to §Slash to fight (`{#slash-to-fight}`): hold 350 ms without moving to arm, the glow / buzz, the full-crossing rule still applies (hold off a card), normal drags scroll, quick taps fight, a press held ≥ 350 ms is an arm rather than a tap, the toggle covers it. **Also amend** the existing "Touch and pen only when the row fits" bullet in that section, which would otherwise say a finger drag on a scrolling row must stay a scroll with no alternative.
 
 ### D) Tests (**modified**)
 
@@ -152,10 +152,17 @@ Add a "Long-press slash on a scrolling row" paragraph to §Slash to fight (`{#sl
 - After every transition above (pending, armed, each cancel path, `pointerup`, setting off, dispose), `isLongPressArmed.value === shouldPreventTouchScroll()`.
 - Scope dispose clears the pending timer (advancing 350 ms after dispose arms nothing).
 - The buzz: with `navigator.vibrate` stubbed, the arm calls it once with `12`; no call for a mouse press or on a fitting row; with `vibrate` absent the arm does not throw.
+- An armed `pointercancel` keeps completed crossings (their submits happen), publishes `isStrokeEnd`, arms no suppression, and `isLongPressArmed` becomes false.
+- The arm publishes exactly **one** trail sample, at the `pointerdown` point.
+- Candidates are measured at the arm: a villain that becomes fightable between `pointerdown` and the arm (the gate flips) is fought by the armed stroke.
+- A touch hold of 350 ms on a villain tile released without moving: no submit, click suppression armed (the documented slow-tap trade).
+- `navigator.vibrate` stubs are removed in `afterEach` (`navigator` is a shared global, `jsdom-setup.ts:65`).
 
 **`CityRow.test.ts`** (DOM adapter; `mock.timers` `setTimeout` enabled in the `describe`, reset in `afterEach`). To make the row overflow: after mount, stub `scrollWidth` > `clientWidth` on `ol.city-spaces`, dispatch `window.dispatchEvent(new window.Event('resize'))`, `await nextTick()`, and assert `city-spaces--gesture-touch` is absent. Then:
 - A touch `pointerdown` + 350 ms → `city-spaces--gesture-armed`; a cancelable `touchmove` on the row is `defaultPrevented`; a cancelable `contextmenu` is `defaultPrevented`.
 - Without arming, a cancelable `touchmove` is **not** `defaultPrevented`.
+- A cancelable `contextmenu` while the long press is still **pending** (before 350 ms) is `defaultPrevented`.
+- On a **fitting** row (setting on) the row lacks `city-spaces--gesture-hold`, and `touchmove` / `contextmenu` are not prevented (the long-press listeners are not attached).
 - A `lostpointercapture` dispatched on the **row** while armed (matching `pointerId`) removes the armed class; a bubbling `lostpointercapture` dispatched on a **child tile** while armed does **not**.
 - Setting off while armed → the armed class is gone; after re-enabling, an unarmed cancelable `touchmove` is not `defaultPrevented`.
 - Setting off: no armed class after a 350 ms hold, and `touchmove` / `contextmenu` are not prevented.
@@ -189,15 +196,15 @@ Governance at close: `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24592), `WOR
 
 ## Contract
 
-- `useSlashGesture(options)` — options unchanged; the returned controller adds `isLongPressArmed: Ref<boolean>` and `shouldPreventTouchScroll(): boolean`. All WP-756 members keep their signatures.
-- DOM: class `city-spaces--gesture-armed`; the adapter adds non-passive `touchmove`, `contextmenu` and `lostpointercapture` listeners under the existing setting gate.
+- `useSlashGesture(options)` — options unchanged; the returned controller adds `isLongPressArmed: Readonly<Ref<boolean>>`, `isLongPressHoldEnabled: Readonly<Ref<boolean>>` and `shouldPreventTouchScroll(): boolean`. All WP-756 members keep their signatures.
+- DOM: classes `city-spaces--gesture-hold` and `city-spaces--gesture-armed`; the adapter adds non-passive `touchmove`, `contextmenu` and `lostpointercapture` listeners only while `isLongPressHoldEnabled`.
 - Move contract unchanged: `fightVillain({ cityIndex })` only.
 
 ---
 
 ## Vision Alignment
 
-**Vision clauses touched:** §8 / §22 (determinism, replay-faithful — no engine change); §17 (accessibility & inclusivity — taps and native scrolling are untouched, the gesture is opt-out via the existing toggle, and the arm glow honours reduced motion); NG-1 (no pay-to-win).
+**Vision clauses touched:** §8 / §22 (determinism, replay-faithful — no engine change); §17 (accessibility & inclusivity — quick taps and native scrolling are unchanged, a press held ≥ 350 ms on a scrolling row becomes a slash arm instead of a tap (recorded in D-24592), the gesture is opt-out via the existing toggle, and the arm glow honours reduced motion); NG-1 (no pay-to-win).
 
 **Conflict assertion:** No conflict. This WP preserves all touched clauses.
 
@@ -218,11 +225,11 @@ Governance at close: `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24592), `WOR
 ## Acceptance Criteria
 
 1. **Arm.** On a scrolling row, a touch or pen press held still (≤ 10 px) for 350 ms arms: the row shows `city-spaces--gesture-armed`, the pointer is captured, and the buzz fires where supported.
-2. **Armed stroke.** After arming, dragging does not scroll the row, and every fightable villain the stroke fully crosses is fought in crossing order through the WP-756 chain, with the trail and stroke-angled slices.
-3. **Scrolling survives.** A touch that moves more than 10 px before 350 ms scrolls natively; no `touchmove` is prevented, nothing arms, nothing is fought.
-4. **Taps survive.** A touch released before 350 ms fights exactly as a tap does today; nothing is armed or suppressed.
+2. **Armed stroke.** In session: after arming, a cancelable `touchmove` on the row is `defaultPrevented`, and every fightable villain the stroke fully crosses is fought in crossing order through the WP-756 chain, with the trail and stroke-angled slices. On a real device (operator-manual, D-24026): the row does not scroll while armed.
+3. **Scrolling survives.** In session: a touch that moves more than 10 px before 350 ms arms nothing, fights nothing, and no `touchmove` is `defaultPrevented`. On a real device (operator-manual, D-24026): that drag scrolls the row natively, with no perceptible start lag while VFX runs.
+4. **Taps survive.** A touch released before 350 ms fights exactly as a tap does today; nothing is armed or suppressed. A touch held ≥ 350 ms on a scrolling row and released without moving arms, fights nothing, and arms the click suppression (the documented trade).
 5. **No regressions.** Mouse strokes, touch on a fitting row, the setting-off row, the chain, hints, trail and all existing tests are unchanged. No `packages/**` change.
-6. **Context menu.** A long press on the row does not open the browser context menu or iOS callout while the setting is on.
+6. **Context menu.** In session: on a scrolling row, a cancelable `contextmenu` bubbling to the row is `defaultPrevented` while a long press is pending or armed, and the row carries `city-spaces--gesture-hold` (`-webkit-touch-callout: none`). On a real device (operator-manual, D-24026): a long press on a scrolling row opens no context menu or iOS callout.
 7. **Checks.** `pnpm --filter @legendary-arena/arena-client typecheck` and `test` pass; `pnpm -r build && pnpm -r --no-bail test` passes.
 
 ---
@@ -260,7 +267,7 @@ pnpm -r build && pnpm -r --no-bail test
 #      scroll while armed, no pointercancel ends the stroke mid-way (both villains fought,
 #      in order), and no context menu / image callout / text selection appears
 #    - a deliberately jittery hold on iOS still arms, and the armed drag still does not scroll
-#    - a quick drag scrolls the row; a tap fights
+#    - a quick drag scrolls the row with no perceptible start lag while VFX runs; a tap fights
 #    If iOS fails the scroll criterion: record it, ship the documented degradation
 #    (pointercancel ends the stroke, completed crossings kept), and open the WebKit
 #    pending-arm touchmove follow-up named in Assumes #2.
@@ -270,7 +277,7 @@ pnpm -r build && pnpm -r --no-bail test
 
 ## Definition of Done
 
-- [ ] All Acceptance Criteria are met.
+- [ ] All Acceptance Criteria are met, except the real-device clauses of AC2 / AC3 / AC6, which are recorded operator-manual-pending (D-24026).
 - [ ] No `packages/**` change, and no files outside `## Files Expected to Change` except the governance ledgers.
 - [ ] arena-client typecheck 0; `pnpm -r build && pnpm -r --no-bail test` green.
 - [ ] The preview drive (Verification step 4) is recorded with screenshots.
@@ -290,7 +297,9 @@ pnpm -r build && pnpm -r --no-bail test
 - feedback: inset armed glow, optional 12 ms buzz, one trail sample at the press point;
 - accepted degradations: a detached `touchmove` target after a mid-stroke empty-slot fill resumes the pan (`pointercancel`, completed crossings kept); on iOS, if sub-slop jitter makes the armed `touchmove` uncancelable, the same degradation applies pending a WebKit follow-up; if an armed stroke is released and the browser fires no `click`, the armed-path suppression waits for the next `pointerdown` / `keydown`, so a screen-reader activation (VoiceOver / TalkBack double-tap, which sends a `click` without either) in the row is swallowed once — no timer is used, because a timer reintroduces the touch-`click` task race;
 - WP-756's `dragstart` prevention also blocks touch drag-and-drop after a long press on card art;
-- composition with D-24585: full-crossing rule, chain, hints, trail, fit rule and setting reused unchanged.
+- composition with D-24585: full-crossing rule, chain, hints, trail, fit rule and setting reused unchanged; this **lifts** the D-24585 Consequences out-of-scope line "a long-press slash mode for scrolling rows";
+- the long-press listeners and callout CSS attach only while the row does not fit (`city-spaces--gesture-hold`); the accepted cost is that the non-passive `touchmove` listener makes the compositor consult the main thread before panning a touch that starts on a scrolling row (verified for perceptible lag on devices at D-24026);
+- the slow-tap trade: on a scrolling row a press held ≥ 350 ms and released without a stroke arms and fights nothing, where WP-756 would have fought it as a tap.
 
 ---
 

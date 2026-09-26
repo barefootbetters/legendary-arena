@@ -8,7 +8,7 @@
 
 - [ ] WP-756 is merged (WORK_INDEX `[x]`) and `useSlashGesture.ts` matches WP-761 Assumes #1 (anchors `:43`, `:93`, `:294`, `:443`, `:448`, `:474`, `:546`). Reconcile any drift against the shipped names; STOP if the chain / hints / suppression shape changed.
 - [ ] #2362 is merged: at 375 px the play page does not overflow; only the City row's band scrolls.
-- [ ] Read WP-761 in full, then `useSlashGesture.ts` + test and `CityRow.vue` + test. Run `pnpm -r build` and `pnpm --filter @legendary-arena/arena-client typecheck` (exit 0); record the test count.
+- [ ] Read WP-761 in full, then `useSlashGesture.ts` + test and `CityRow.vue` + test. Run `pnpm -r build` and `pnpm --filter @legendary-arena/arena-client typecheck` (exit 0). Baseline: arena-client **2084 / 0** (D-24585 Gates); record the observed count and reconcile any drift before coding.
 
 ## Locked Values (verbatim from WP-761 §Locked Values; the WP wins on conflict)
 
@@ -20,15 +20,15 @@
 - **Armed stroke:** non-passive row `touchmove` → `preventDefault()` iff `shouldPreventTouchScroll()`; `pointermove` advances as WP-756; a second `pointerId` is **ignored**; `pointerup` completes (arms suppression, publishes `isStrokeEnd`); `pointercancel` keeps completed crossings, arms nothing; `lostpointercapture` does the same **only when `event.target` is the row and the `pointerId` matches an armed long-press stroke** (the child→row capture move bubbles one that must be ignored). Every stroke-nulling path ends the arm.
 - **Click suppression (armed path only):** cleared on the next `pointerdown` / `keydown`, not `setTimeout(0)`.
 - **Context menu:** the row `contextmenu` listener → `preventDefault()` while a long press is pending or armed.
-- **CSS:** `city-spaces--gesture-armed` iff armed — **inset** glow (`box-shadow: inset` or negative `outline-offset`), no animation under `prefers-reduced-motion`; `city-spaces--gesture` adds `-webkit-touch-callout: none`.
-- **Controller additions:** `isLongPressArmed: Ref<boolean>`, `shouldPreventTouchScroll(): boolean`. WP-756 members keep their signatures.
+- **CSS:** `city-spaces--gesture-hold` iff setting on AND the row does not fit — carries `-webkit-touch-callout: none` and gates the long-press listeners. `city-spaces--gesture-armed` iff armed — **inset** glow (`box-shadow: inset` or negative `outline-offset`), no animation under `prefers-reduced-motion`. `city-spaces--gesture` unchanged.
+- **Controller additions:** `isLongPressArmed: Readonly<Ref<boolean>>` (`readonly(...)`), `isLongPressHoldEnabled: Readonly<Ref<boolean>>`, `shouldPreventTouchScroll(): boolean`. WP-756 members keep their signatures.
 
 ## Guardrails
 
 - **Zero engine change.** No `packages/**`; only `fightVillain({ cityIndex })` via the unchanged chain.
 - **Never prevent an unarmed `touchmove`,** and never prevent `touchstart` / `pointerdown` — an unarmed touch must scroll natively. The row must never be left armed without a live stroke.
 - **Assumes #2 is a platform premise** verified only on real iOS + Android devices (WP Verification step 5); do not claim it from jsdom or the preview.
-- **WP-756 byte-identical** for mouse, touch on a fitting row, taps, and setting off (the new listeners live inside the existing setting-gated adapter).
+- **WP-756 byte-identical** for mouse, touch on a fitting row, taps, and setting off: the `touchmove` / `contextmenu` / `lostpointercapture` listeners and the callout CSS exist only while `isLongPressHoldEnabled`. **One recorded trade:** on a scrolling row a press held ≥ 350 ms is an arm, not a tap.
 - **Reuse, don't fork:** chain, hints, trail signal, fit rule and `VfxOverlay.vue` unchanged; click suppression unchanged except the armed-path clearing.
 - **No clock** outside `src/vfx/**` + `VfxOverlay.vue`; the arm is a `setTimeout`.
 - **No `PointerEvent` / `TouchEvent` globals** (no `instanceof`, no constructors) in code or tests.
@@ -50,11 +50,12 @@
 
 - [ ] `apps/arena-client/src/composables/useSlashGesture.ts` (+ `.test.ts`)
 - [ ] `apps/arena-client/src/components/play/CityRow.vue` (+ `.test.ts`)
-- [ ] `wiki/visual-effects.md`
+- [ ] `wiki/visual-effects.md` (new long-press paragraph + amend the "Touch and pen only when the row fits" bullet)
 
 ## After Completing
 
-- [ ] arena-client typecheck 0 and tests 0 fail; `pnpm -r build && pnpm -r --no-bail test` green; no `packages/**` in the diff.
+- [ ] arena-client typecheck 0 and tests 0 fail (from the 2084 baseline); `pnpm -r build && pnpm -r --no-bail test` green; no `packages/**` in the diff.
+- [ ] All ACs met except the real-device clauses of AC2 / AC3 / AC6 (no scroll while armed, native scroll without start lag, no context menu / callout), recorded operator-manual-pending (D-24026).
 - [ ] Preview drive (WP Verification step 4, synthetic touch events) recorded with screenshots.
 - [ ] Two-commit topology: `EC-798:` + `SPEC:` close (WORK_INDEX, EC_INDEX, DECISIONS D-24592, STATUS `### WP-761`, mindmap ✅ + `roadmap:counts:write`).
 - [ ] `pnpm roadmap:counts:check` and `pnpm ledger:numbers:check` exit 0.
