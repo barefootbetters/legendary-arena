@@ -29,6 +29,7 @@ source:
   - ../packages/game-engine/src/setup/buildHeroDeck.ts
   - ../packages/game-engine/src/setup/buildCardTraits.ts
   - ../packages/game-engine/src/moves/splitFaceChoice.resolve.ts
+  - ../packages/game-engine/src/ui/uiState.build.ts
   - ../apps/arena-client/src/components/play/SplitFaceChoicePrompt.vue
   - ../apps/registry-viewer/src/registry/shared.ts
   - ../apps/registry-viewer/src/components/CardGrid.vue
@@ -120,7 +121,12 @@ distinct slots. The registry viewer uses exactly this rule
   card, not a keyword, so no new `HeroKeyword` exists for it.
 - **The prompt (WP-725).** `SplitFaceChoicePrompt.vue` shows two buttons labelled
   with each face's name, its `+N Attack / +N Recruit`, and its ability text (rendered
-  through `AbilityText`).
+  through `AbilityText`). The buttons appear in **printed** order: the left half is
+  the first button. At setup, `buildSplitFaceAlternateOnLeft` applies the slot rule and
+  records each card whose `sides[1]` is the left half in
+  `G.splitFacesAlternateOnLeft`. Like `splitFaces`, that map is absent when empty.
+  The projection then carries `UIPendingSplitFaceChoice.leftFace` (`'a'` or `'b'`).
+  Each button still submits its own face, so `face: 'a'` still means `sides[0]`.
 
 ### In the registry viewer (cards.legendary-arena.com)
 
@@ -161,9 +167,9 @@ distinct slots. The registry viewer uses exactly this rule
   ext_id. So a check like "reveal a [Tech] Hero" or "a multicolored card" looking at
   your hand sees `sides[0]`'s class, not both. That under-credits the player. The
   gap isn't recorded as a decision yet.
-- **The prompt's buttons follow `sides[]`, not the printed layout.** Face A (the
-  first button) is always `sides[0]`, so on the 19 cards listed out of order the
-  buttons appear in the opposite order to the card art.
+- **Button order is not face order.** On the 19 cards listed out of order, the first
+  (left) button is face `b`. Tests and bots should select a face by
+  `data-testid="split-face-a|b"`, not by button position.
 - **Never read left/right from `sides[0]` or the filename.** Use `slot` (lower =
   left). The engine's `isPrimaryFace` means "listed first in the data", not "left
   half". Don't conflate them.
