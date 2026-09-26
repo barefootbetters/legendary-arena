@@ -1610,6 +1610,7 @@
     "id": "hero-smash-parks-a-discard-choice-with-a-card-to-discard",
     "mechanic": "smash",
     "decision": "D-24492",
+    "rulesRef": "universal-rules-v23 §Smash",
     "scenario": {
       "action": "fire-hero-effect",
       "setup": {
@@ -1626,6 +1627,7 @@
     "id": "hero-smash-empty-hand-parks-nothing",
     "mechanic": "smash",
     "decision": "D-24492",
+    "rulesRef": "universal-rules-v23 §Smash",
     "scenario": {
       "action": "fire-hero-effect",
       "setup": {
@@ -1674,6 +1676,7 @@
     "id": "resolve-smash-discard-grants-attack",
     "mechanic": "smash",
     "decision": "D-24492",
+    "rulesRef": "universal-rules-v23 §Smash",
     "scenario": {
       "action": "resolve-smash",
       "setup": {
@@ -1690,6 +1693,7 @@
     "id": "resolve-smash-decline-grants-no-attack",
     "mechanic": "smash",
     "decision": "D-24492",
+    "rulesRef": "universal-rules-v23 §Smash",
     "scenario": {
       "action": "resolve-smash",
       "setup": {
