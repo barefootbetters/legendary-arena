@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1946,
+    "totalEntries": 1948,
     "byScope": {
       "hero": 770,
-      "villain": 720,
+      "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 529,
+      "executable": 532,
       "deferred": 16,
       "condition": 45,
       "unsupported": 301,
-      "unmarked": 1051,
+      "unmarked": 1050,
       "subsystem": 4
     }
   },
@@ -12792,6 +12792,17 @@
       "name": "Atrocity",
       "set": "mdns",
       "scope": "villain",
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
+      "wp": "WP-185",
+      "decision": "D-18506"
+    },
+    {
+      "extId": "mdns-villain-fallen-atrocity",
+      "name": "Atrocity",
+      "set": "mdns",
+      "scope": "villain",
       "mechanic": "haunt-hq-hero",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero",
@@ -12832,15 +12843,26 @@
       "decision": "D-24587"
     },
     {
+      "extId": "mdns-villain-fallen-patriarch",
+      "name": "Patriarch",
+      "set": "mdns",
+      "scope": "villain",
+      "mechanic": "reveal-top-draw-if-cost-lte",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-draw-if-cost-lte",
+      "wp": "WP-760",
+      "decision": "D-24589"
+    },
+    {
       "extId": "mdns-villain-fallen-salom-sorceress-supreme",
       "name": "Salomé, Sorceress Supreme",
       "set": "mdns",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "mdns-villain-lilin-blackout",
@@ -32237,6 +32259,7 @@
     "mdns-villain-fallen-atrocity": {
       "scope": "villain",
       "mechanics": [
+        "captureBystander",
         "haunt-hq-hero"
       ]
     },
@@ -32250,13 +32273,14 @@
     "mdns-villain-fallen-patriarch": {
       "scope": "villain",
       "mechanics": [
-        "haunt-hq-hero"
+        "haunt-hq-hero",
+        "reveal-top-draw-if-cost-lte"
       ]
     },
     "mdns-villain-fallen-salom-sorceress-supreme": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "mdns-villain-lilin-blackout": {

@@ -314,7 +314,9 @@ export type VillainEffectPrimitive =
   | 'add-next-hand-size'
   | 'play-villain-deck-cards'
   | 'ko-heroes-current-count-by-trait'
-  | 'haunt-hq-hero';
+  | 'haunt-hq-hero'
+  | 'reveal-top-draw-if-cost-lte'
+  | 'ko-up-to-from-discard-current';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -409,6 +411,12 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'play-villain-deck-cards',
   'ko-heroes-current-count-by-trait',
   'haunt-hq-hero',
+  // why: WP-760 / D-24589 — appended at positions 27 and 28. Patriarch's Fight
+  // (`reveal-top-draw-if-cost-lte:<N>`: reveal your deck top, draw it if it costs N or
+  // less) and Salomé's Fight (`ko-up-to-from-discard-current:<N>`: park a KO-up-to-N
+  // choice from your own discard). Both keyword-less, so both self-narrate.
+  'reveal-top-draw-if-cost-lte',
+  'ko-up-to-from-discard-current',
 ] as const;
 
 /**
@@ -419,6 +427,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
  *   - `haunt-hq-hero` (D-24587): `selector` 'rightmost' | 'leftmost' | 'cost-lte-3',
  *     choosing among occupied, UNHAUNTED HQ slots only
+ *   - `reveal-top-draw-if-cost-lte` (D-24589): `magnitude` N, the highest cost drawn
+ *   - `ko-up-to-from-discard-current` (D-24589): `magnitude` N, the most cards KO'd
  *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
  *     `gain-attached-hero`, `ko-wounds-current-hand-and-discard`,
  *     `ko-cullable-each-deck-top`, `swap-two-city-villains`: no params

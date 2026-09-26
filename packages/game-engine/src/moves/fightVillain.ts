@@ -144,7 +144,9 @@ export function fightVillain(
   // patrol modifier is additive on top of the resolved fight cost.
   // resolveFightCost is the single authority — handles both static and
   // dynamic (captured-hero-based) villains (WP-214).
-  const baseFightCost = resolveFightCost(G, cardId);
+  // why: WP-760 / D-24589 — pass the fighter so a Blood Frenzy villain's cost counts
+  // THEIR Victory Pile (the same player the bot and the City projection pass).
+  const baseFightCost = resolveFightCost(G, cardId, ctx.currentPlayer);
   const patrolModifier = getPatrolModifier(cardId, cardKeywords);
   const requiredFightCost = baseFightCost + patrolModifier;
   // why: WP-580 / D-24389 — getSpendableAttack folds in unspent recruit when the

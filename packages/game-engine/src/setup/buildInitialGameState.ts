@@ -60,6 +60,7 @@ import {
 } from './heroAbility.setup.js';
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
+import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -402,6 +403,11 @@ export function buildInitialGameState(
     registry as unknown,
     config,
   );
+
+  // why: WP-760 / D-24589 — Blood Frenzy villain instances (Metarchus, Salomé),
+  // scanned once at setup from the selected villain groups and read only by
+  // resolveFightCost. Narrow test mocks → empty record (omitted below).
+  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, config);
 
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
@@ -806,6 +812,10 @@ export function buildInitialGameState(
     // gate treats a missing entry as "no requirement"), so matches without Blob /
     // Venom / Zombie Venom keep a byte-identical finalStateHash.
     ...(Object.keys(villainDefeatRequirements).length > 0 ? { villainDefeatRequirements } : {}),
+    // why: WP-760 / D-24589 — same hash-stability discipline: villainBloodFrenzy is on G
+    // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
+    // a byte-identical finalStateHash.
+    ...(Object.keys(villainBloodFrenzy).length > 0 ? { villainBloodFrenzy } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

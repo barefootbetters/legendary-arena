@@ -659,6 +659,54 @@ describe('buildVillainAbilityHooks — play-villain-deck-cards grammar (WP-542 /
   });
 });
 
+describe('buildVillainAbilityHooks — The Fallen fight grammars (WP-760 / D-24589)', () => {
+  const registry = makeRegistry(
+    'mdns',
+    [
+      {
+        slug: 'fallen',
+        cards: [
+          {
+            slug: 'patriarch',
+            abilities: ['Fight: Reveal the top card of your deck. If it costs 3 or less, draw it. [effect:reveal-top-draw-if-cost-lte:3]'],
+          },
+          {
+            slug: 'salom-sorceress-supreme',
+            abilities: ['[keyword:Blood Frenzy]', 'Fight: KO up to two cards from your discard pile. [effect:ko-up-to-from-discard-current:2]'],
+          },
+          // why: the count is required for both primitives — a no-param or non-integer
+          // count is malformed and lands in unresolvedMarkers.
+          { slug: 'patriarch-noparam', abilities: ['Fight: nope. [effect:reveal-top-draw-if-cost-lte]'] },
+          { slug: 'salome-bad', abilities: ['Fight: nope. [effect:ko-up-to-from-discard-current:0]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['mdns/fallen'], []));
+  const fightHook = (slug: string) =>
+    hooks.find((h) => h.cardId === `mdns-villain-fallen-${slug}-00` && h.timing === 'onFight')!;
+
+  it('parses Patriarch Fight to reveal-top-draw-if-cost-lte:3 (keyword-less)', () => {
+    assert.deepStrictEqual(fightHook('patriarch').effects, [{ primitive: 'reveal-top-draw-if-cost-lte', magnitude: 3 }]);
+    assert.deepStrictEqual(fightHook('patriarch').keywords, []);
+  });
+
+  it('parses Salomé Fight to ko-up-to-from-discard-current:2 (keyword-less)', () => {
+    assert.deepStrictEqual(fightHook('salom-sorceress-supreme').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2 },
+    ]);
+    assert.deepStrictEqual(fightHook('salom-sorceress-supreme').keywords, []);
+  });
+
+  it('rejects a missing or non-positive count to unresolvedMarkers', () => {
+    assert.deepStrictEqual(fightHook('patriarch-noparam').effects, []);
+    assert.deepStrictEqual(fightHook('patriarch-noparam').unresolvedMarkers, ['reveal-top-draw-if-cost-lte']);
+    assert.deepStrictEqual(fightHook('salome-bad').effects, []);
+    assert.deepStrictEqual(fightHook('salome-bad').unresolvedMarkers, ['ko-up-to-from-discard-current:0']);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(

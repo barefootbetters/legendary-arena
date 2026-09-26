@@ -1035,3 +1035,43 @@ describe('fightVillain — Midtown Bank Robbery Bystander bonus (WP-748)', () =>
     assert.equal(moveContext.G.turnEconomy.spentAttack, 3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Villain Blood Frenzy — the fight gate charges the fighter's distinct VP count (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — villain Blood Frenzy (WP-760)', () => {
+  /**
+   * A Blood Frenzy villain (printed 3) at City index 0, with player 0's Victory Pile
+   * holding two villains worth 2 and 4 — two distinct VP values, so the cost is 5.
+   */
+  function createBloodFrenzyState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.villainBloodFrenzy = { ['villain-a' as CardExtId]: true };
+    gameState.villainDeckCardTypes = {
+      ['vp-two' as CardExtId]: 'villain',
+      ['vp-four' as CardExtId]: 'villain',
+    };
+    gameState.cardVictoryPoints = { ['vp-two' as CardExtId]: 2, ['vp-four' as CardExtId]: 4 };
+    gameState.playerZones['0']!.victory = ['vp-two', 'vp-four'] as LegendaryGameState['playerZones']['0']['victory'];
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('refuses the fight at the printed attack (3 < 3 + 2)', () => {
+    const moveContext = createMockMoveContext(createBloodFrenzyState(3));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.city[0], 'villain-a', 'villain stays in the City');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent');
+  });
+
+  it('defeats it at printed + distinct VP count, spending exactly 5', () => {
+    const moveContext = createMockMoveContext(createBloodFrenzyState(5));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 5);
+  });
+});

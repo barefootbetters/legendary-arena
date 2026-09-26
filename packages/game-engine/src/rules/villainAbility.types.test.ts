@@ -348,7 +348,7 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // KO; the targets are the player's free interactive choice, reusing the `ko-hero` park).
   // WP-757 (D-24587) appended a twenty-sixth, `haunt-hq-hero`, at position 26 (the Haunt
   // keyword — The Fallen's Ambush moves the Villain out of the City to haunt an HQ Hero).
-  it('contains exactly the 26 canonical primitives in order', () => {
+  it('contains exactly the 28 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -376,11 +376,13 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'play-villain-deck-cards',
       'ko-heroes-current-count-by-trait',
       'haunt-hq-hero',
+      'reveal-top-draw-if-cost-lte',
+      'ko-up-to-from-discard-current',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      26,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 26 entries',
+      28,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 28 entries',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],

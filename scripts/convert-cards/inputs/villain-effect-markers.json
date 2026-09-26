@@ -177,8 +177,9 @@
     "mdns": {
       "fallen": {
         "metarchus": { "fight": ["koHeroCurrentPlayer"], "ambush": ["haunt-hq-hero:rightmost"] },
-        "atrocity": { "ambush": ["haunt-hq-hero:leftmost"] },
-        "patriarch": { "ambush": ["haunt-hq-hero:cost-lte-3"] }
+        "atrocity": { "ambush": ["haunt-hq-hero:leftmost"], "fight": ["captureBystander"] },
+        "patriarch": { "ambush": ["haunt-hq-hero:cost-lte-3"], "fight": ["reveal-top-draw-if-cost-lte:3"] },
+        "salom-sorceress-supreme": { "fight": ["ko-up-to-from-discard-current:2"] }
       },
       "lilin": {
         "skinner": { "fight": ["koHeroCurrentPlayer"] }

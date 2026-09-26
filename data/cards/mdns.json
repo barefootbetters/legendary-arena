@@ -823,7 +823,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-atrocity.webp",
           "abilities": [
             "Ambush: [keyword:Haunt] the leftmost unhaunted Hero in the HQ. [effect:haunt-hq-hero:leftmost]",
-            "Fight: Rescue a Bystander."
+            "Fight: Rescue a Bystander. [effect:captureBystander]"
           ],
           "copies": 2
         },
@@ -835,7 +835,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-patriarch.webp",
           "abilities": [
             "Ambush: [keyword:Haunt] an unhaunted Hero in the HQ that costs 3 or less. [effect:haunt-hq-hero:cost-lte-3]",
-            "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it."
+            "Fight: Reveal the top card of your deck. If it costs 3 or less, draw it. [effect:reveal-top-draw-if-cost-lte:3]"
           ],
           "copies": 3
         },
@@ -847,7 +847,7 @@
           "imageUrl": "https://images.legendary-arena.com/mdns/mdns-vi-fallen-salom-sorceress-supreme.webp",
           "abilities": [
             "[keyword:Blood Frenzy]",
-            "Fight: KO up to two cards from your discard pile.",
+            "Fight: KO up to two cards from your discard pile. [effect:ko-up-to-from-discard-current:2]",
             "Escape: Salomé ascends to become an additional Mastermind. She gains the ability “Master Strike: Each player discards a [team:marvel-knights] Hero or gains a Wound.“"
           ],
           "copies": 1

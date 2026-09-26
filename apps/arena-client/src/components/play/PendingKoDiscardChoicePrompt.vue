@@ -5,7 +5,8 @@ import type { SubmitMove } from "./uiMoveName.types";
 
 /**
  * Inline prompt for resolving a pending KO-from-discard choice (WP-693 / D-24510 —
- * Loki's Maniacal Tyrant: "KO up to four cards from your discard pile").
+ * Loki's Maniacal Tyrant: "KO up to four cards from your discard pile"; WP-760 /
+ * D-24589 — The Fallen's Salomé: "KO up to two cards from your discard pile").
  *
  * Renders iff `pendingKoDiscardChoice !== undefined AND viewerPlayerId === playerID`.
  * Hidden for opponents and spectators. Shows the chooser's discard; the player picks
@@ -142,8 +143,10 @@ export default defineComponent({
     role="region"
     aria-label="KO from discard choice"
   >
+    <!-- why: WP-760 / D-24589 — two cards now park this choice (Loki's Maniacal Tyrant,
+         Salomé's Fight), so the header is source-neutral; the game log names the source. -->
     <h3 class="pending-ko-discard-choice-prompt__heading">
-      Maniacal Tyrant — KO up to {{ maxCount }} card{{ maxCount === 1 ? '' : 's' }} from your discard pile
+      KO up to {{ maxCount }} card{{ maxCount === 1 ? '' : 's' }} from your discard pile
     </h3>
     <div class="pending-ko-discard-choice-prompt__cards">
       <button
