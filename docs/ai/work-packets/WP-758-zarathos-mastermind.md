@@ -196,7 +196,7 @@ If any item is false, this packet is **BLOCKED**.
 
 - Epic Zarathos. No Epic-face selection exists (D-24193); this is a named follow-up.
 - The Fallen fight-side (Blood Frenzy, Atrocity, Patriarch, Salomé), which is WP-760.
-- Server autoplay resolving non-active seat choices (`apps/server/src/autoplay/autoplay.mjs` `drainPendingChoices` dispatches only as `currentPlayer`). This is a pre-existing gap that also affects Vanishing Illusions and Monarch's Decree, and is a separate follow-up. Consequence: until it lands, an **all-bot** Zarathos autoplay match can stall on Eruption / Corrupted Spirit. Human and solo play are unaffected.
+- Server autoplay resolving non-active seat choices. No change needed: `drainPendingChoices` already dispatches an outstanding addressed seat's default `resolveSeatChoice` as that seat (D-24590, #2361), so an all-bot Zarathos autoplay match drains Eruption / Corrupted Spirit. The bot-ally driver's equivalent gap (a seat choice addressed to a bot while a human is active) is a separate server follow-up.
 - The generic `captureBystanderOntoMastermind` strike bookkeeping (pre-existing, all Masterminds).
 - Letting players choose which cards "discard down to 3" drops.
 - Any client change (the generic prompt suffices; WP-759 owns the haunt UI).
@@ -306,7 +306,7 @@ That is 14 code/data files, above the ~8 guideline. Half are tests; the rest is 
   - the Mastermind unfightable until exorcised;
   - a tactic's second clause resolving.
 
-  This is recorded as operator-pending until seen. Do not use all-bot autoplay; see Out of Scope.
+  This is recorded as operator-pending until seen. All-bot autoplay now drains the tactic seat choices (D-24590) and may be used as a supplementary check; the human-driven match is the required observation.
 
 ## Reserved Decision (lands at execution)
 
