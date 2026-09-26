@@ -257,9 +257,48 @@ export function applyPileDepletionResourceLoss(
       gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
       pushLog(
         gameState,
-        `Scheme loss triggered — the ${pile} pile has run out.`,
+        `Scheme loss triggered — the ${pileDisplayName(pile)} has run out.`,
       );
       return;
     }
+  }
+}
+
+/**
+ * Reports whether the active scheme's Evil Wins includes a named pile running out.
+ *
+ * @param gameState - The current game state (read-only).
+ * @param pile - The pile to ask about.
+ * @returns True when the scheme's `pile-depleted` condition names that pile.
+ */
+export function isSchemeLossPile(
+  gameState: LegendaryGameState,
+  pile: SchemeLossPile,
+): boolean {
+  const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
+  const condition = config?.resourceLossCondition;
+  if (!condition || condition.kind !== 'pile-depleted') {
+    return false;
+  }
+  return listConditionPiles(condition).includes(pile);
+}
+
+/**
+ * Names a depletion pile the way the printed rules do, for the game log.
+ *
+ * @param pile - The depletion pile.
+ * @returns The rulebook name ("Villain Deck", "Hero Deck", "Wound Stack").
+ */
+function pileDisplayName(pile: SchemeLossPile): string {
+  // why (D-24599): the loss line printed the internal key ("the villainDeck pile
+  // has run out"). An exhaustive switch, so a new pile fails to compile here
+  // rather than leaking its identifier into the player's log.
+  switch (pile) {
+    case 'heroDeck':
+      return 'Hero Deck';
+    case 'wounds':
+      return 'Wound Stack';
+    case 'villainDeck':
+      return 'Villain Deck';
   }
 }
