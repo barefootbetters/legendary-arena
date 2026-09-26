@@ -625,6 +625,13 @@ export interface UICityState {
 export interface UIHQState {
   slots: (string | null)[];
   slotDisplay?: (UIHQCard | null)[];
+  // why: WP-765 / D-24598 — which of Sunlight / Moonlight is in effect, from the shared
+  // computeDayNight over the HQ's printed costs (no G field). Present iff the match has a
+  // day/night hero hook (a sunlightInEffect / moonlightInEffect condition or the fused
+  // day-night-both keyword); omitted otherwise, so a match without those heroes is unchanged.
+  // Passed through the audience filter explicitly (uiState.filter.ts) — a build-only field is
+  // silently dropped at the whitelist (the EC-206 failure mode).
+  dayNight?: 'sunlight' | 'moonlight' | 'neither';
 }
 
 /**

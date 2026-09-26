@@ -465,6 +465,10 @@ export function filterUIStateForAudience(
       ...(uiState.hq.slotDisplay !== undefined
         ? { slotDisplay: deepCopyHqSlotDisplay(uiState.hq.slotDisplay) }
         : {}),
+      // why: WP-765 / D-24598 — dayNight is public shared-board state (derived from the public
+      // HQ), passed through for every audience; omit-when-absent keeps non-day/night matches
+      // byte-identical.
+      ...(uiState.hq.dayNight !== undefined ? { dayNight: uiState.hq.dayNight } : {}),
     },
     mastermind: {
       id: uiState.mastermind.id,

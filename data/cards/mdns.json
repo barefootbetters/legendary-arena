@@ -74,8 +74,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "[keyword:Sunlight]: You get +2[icon:attack] and you may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[keyword:Moonlight]: [keyword:Blood Frenzy]"
+            "[keyword:Sunlight]: You get +2[icon:attack] and you may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
+            "[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]"
           ]
         }
       ],
@@ -250,7 +250,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]."
+            "[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]. [keyword:blood-frenzy-recruit]"
           ]
         },
         {
@@ -266,7 +266,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack].",
-            "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]."
+            "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]"
           ]
         },
         {
@@ -281,7 +281,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: [keyword:Blood Frenzy]"
+            "[hc:covert]: [keyword:Blood Frenzy] [keyword:blood-frenzy]"
           ]
         },
         {
@@ -360,7 +360,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You get +1[icon:attack].",
-            "[keyword:Moonlight]: Draw a card."
+            "[keyword:Moonlight]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -375,7 +375,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
+            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
             "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes."
           ]
         },
@@ -392,7 +392,7 @@
           "recruit": "0+",
           "abilities": [
             "[keyword:Sunlight]: You get +3[icon:recruit].",
-            "[keyword:Moonlight]: [keyword:Blood Frenzy]",
+            "[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]",
             "[hc:instinct]: Instead, you get both."
           ]
         },

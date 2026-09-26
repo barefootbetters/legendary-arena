@@ -442,9 +442,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // "If it costs 0, KO it" / See Future Timelines act on Wounds they used to skip; the
   // fixed-seed sweep's trajectories shift and totalObs 3017 -> 3019 (+2). resolvedObs stays
   // 733, percentResolved stays 24.3 (733 / 3019). A sweep-trajectory artifact, not a regression.
+  // 2026-09-25 (WP-765 / D-24598, re-pin): [keyword:Sunlight] / [keyword:Moonlight] now parse to
+  // the sunlightInEffect / moonlightInEffect conditions, so the hero ledger reads `sunlight` /
+  // `moonlight` as `condition` (KNOWN_CONDITIONS) and hero Blood Frenzy as `executable`; per
+  // D-24464 a condition-status mechanic counts as resolved, so their peak obs move into
+  // resolvedObs 733 -> 1135 (+402). The live sweep drops the gated-off hits (totalObservations
+  // 2514 -> 2206), but peakObs = max(baseline, live) holds the denominator, so totalObs stays
+  // 3019 and percentResolved 24.3 -> 37.6 (1135 / 3019). Deterministic — CI computes the same
+  // 3019 / 37.6 from the committed source.
   const view = useInPlayCoverage();
   assert.equal(view.totalObs.value, 3019);
-  assert.equal(view.percentResolved.value, 24.3);
+  assert.equal(view.percentResolved.value, 37.6);
   assert.ok(view.remaining.value.length > 0);
 });
 

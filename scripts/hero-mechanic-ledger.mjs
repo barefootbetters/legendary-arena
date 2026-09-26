@@ -152,7 +152,12 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // THIS card's hook actually resolved the keyword, else `unsupported`. Without this the by-name
 // MVP_KEYWORDS check would falsely mark every EV hero executable and over-claim the deferred
 // siblings (the AC #11 / WP-735-AC-#8 reward-integrity over-claim).
-const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence']);
+// why: WP-765 / D-24598 — blood-frenzy and day-night-both are by-hook too. The printed
+// `[keyword:Blood Frenzy]` normalizes to `blood-frenzy` on every card that prints it, but only the
+// marked hero lines resolve it; Vengeance of the Bloodstone Gem (a doubled Marvel Knights prefix)
+// and It's Morbin Time (a Blood Frenzy draw variant) stay inert, so a by-name check would
+// over-claim them executable.
+const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword
@@ -180,6 +185,10 @@ const KNOWN_CONDITIONS = {
   // so the row reads `condition`, not `unsupported`. Registered here at landing to avoid the
   // false-`unsupported` drag on an implemented condition (PR #1865 pattern).
   'first-hero-condition': 'firstHeroPlayedThisTurn',             // Deadpool "Do-Over": the first Hero played this turn
+  // why: WP-765 / D-24598 — [keyword:Sunlight] / [keyword:Moonlight] gate their line on the
+  // shipped day/night conditions (the D-24055 posture), so the rows read `condition`.
+  'sunlight': 'sunlightInEffect',                                 // most HQ Heroes have even printed costs
+  'moonlight': 'moonlightInEffect',                               // most HQ Heroes have odd printed costs
 };
 
 /** Error type signalling a probe failure (exit code 2). */
@@ -574,6 +583,14 @@ function buildLedger(registry, provenance) {
       }
       for (const keyword of hook.keywords ?? []) {
         cardResolvedKeywords.add(keyword);
+      }
+      // why: WP-765 / D-24598 — a fused day-night-both hook resolves its branch keywords INSIDE
+      // its descriptor (Release the Beast's Moonlight Blood Frenzy), not on hook.keywords, so
+      // collect the nested branch effect types as resolved too.
+      for (const effect of hook.effects ?? []) {
+        for (const branchEffect of [...(effect.sunlightEffects ?? []), ...(effect.moonlightEffects ?? [])]) {
+          cardResolvedKeywords.add(branchEffect.type);
+        }
       }
     }
     for (const mechanic of [...designNamesByMechanic.keys()].sort()) {

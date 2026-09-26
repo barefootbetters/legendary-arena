@@ -62,12 +62,15 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 69 entries after WP-754 optional-discard-draw + reveal-top-may-ko', () => {
+  it('HERO_KEYWORDS array has exactly 72 entries after WP-765 blood-frenzy + blood-frenzy-recruit + day-night-both', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      69,
-      'HERO_KEYWORDS must have exactly 69 entries (67 + optional-discard-draw + reveal-top-may-ko (WP-754 / D-24581))',
+      72,
+      'HERO_KEYWORDS must have exactly 72 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598))',
     );
+    assert.ok(HERO_KEYWORDS.includes('blood-frenzy'), 'blood-frenzy must be in HERO_KEYWORDS array');
+    assert.ok(HERO_KEYWORDS.includes('blood-frenzy-recruit'), 'blood-frenzy-recruit must be in HERO_KEYWORDS array');
+    assert.ok(HERO_KEYWORDS.includes('day-night-both'), 'day-night-both must be in HERO_KEYWORDS array');
     assert.ok(
       HERO_KEYWORDS.includes('optional-discard-draw'),
       'optional-discard-draw must be in HERO_KEYWORDS array',
