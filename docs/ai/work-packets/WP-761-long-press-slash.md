@@ -67,7 +67,7 @@ Verify each before coding. If any is false, STOP and reconcile.
 
 **Why taps survive.** A tap releases before 350 ms, so the arm never fires and nothing is armed or suppressed. An armed hold released without movement is a completed gesture: it arms the one-shot click suppression, because once `contextmenu` is prevented a browser may still fire `click` after the long touch. On touch that `click` comes from the tap gesture and can land in a *later* task than `pointerup`, so for the **armed path only** the suppression is cleared on the next `pointerdown` / `keydown` — not by WP-756's `setTimeout(0)`. Every later tap begins with a `pointerdown`, so this can never eat a later tap. The mouse and fitting-row paths keep WP-756's clearing unchanged.
 
-**One source of truth for "armed".** A long press is a `stroke` carrying `isLongPress: true`. It is *pending* while `hasStarted` is false and the arm timer runs, and *armed* once `armStroke()` sets `hasStarted`. `isLongPressArmed` and `shouldPreventTouchScroll()` are derived from that stroke (armed ⇔ `stroke !== null && stroke.isLongPress && stroke.hasStarted`), never kept as a free-standing flag. So every path that ends the stroke — `pointerup`, `pointercancel`, `lostpointercapture`, a > 10 px pre-arm move, a second finger while pending, the setting / row watch, scope dispose — also ends the arm and clears its timer, and the row can never be left unscrollable.
+**One source of truth for "armed".** A long press is a `stroke` carrying `isLongPress: true`. It is *pending* while `hasStarted` is false and the arm timer runs, and *armed* once `armStroke()` sets `hasStarted`. `stroke` stays WP-756's plain `let` (mutated in place), so a `computed` over it would never update. Instead one `ref`, `isLongPressArmed`, is written **only** by a single helper `syncLongPressState()`, whose value is always `stroke !== null && stroke.isLongPress && stroke.hasStarted`, and which runs at every point that changes the stroke: `pointerdown`, `armStroke()`, `pointerup`, `pointercancel`, `lostpointercapture`, the > 10 px pre-arm cancel, the second-finger cancel, the setting / row watch, and scope dispose. `shouldPreventTouchScroll()` is a plain function reading `stroke` directly. So the row can never be left unscrollable, and the ref can never disagree with the stroke.
 
 **Eligibility is decided at `pointerdown`.** Chain fights during an armed stroke change the row's `scrollWidth`, and the fit re-measures on every `city()` change, so `isTouchGestureEnabled` can flip mid-stroke. A pending or armed long press continues regardless (`touch-action` is fixed at touch start anyway).
 
@@ -89,9 +89,9 @@ Verify each before coding. If any is false, STOP and reconcile.
 
 **Packet-specific:**
 - No `performance.now()` / `Date.now()` / `Math.random()` outside `src/vfx/**` and `VfxOverlay.vue`. The 350 ms arm is a `setTimeout`.
-- **WP-756 behaviour is byte-identical** for: mouse strokes; touch / pen on a fitting row (`city-spaces--gesture-touch`); taps; setting off (no listeners, no classes — the new `touchmove` / `contextmenu` listeners live inside the same setting-gated adapter).
+- **WP-756 behaviour is byte-identical** for: mouse strokes; touch / pen on a fitting row (`city-spaces--gesture-touch`); taps; setting off (no listeners, no classes — the new `touchmove` / `contextmenu` / `lostpointercapture` listeners live inside the same setting-gated adapter, and `lostpointercapture` acts only on an armed long-press stroke).
 - **Never `preventDefault()` a `touchmove` unless armed.** An unarmed touch must scroll natively. Never `preventDefault()` `touchstart` / `pointerdown`.
-- The chain, hints, click suppression, trail signal, fit rule and `VfxOverlay.vue` are reused **unchanged**.
+- The chain, hints, trail signal, fit rule and `VfxOverlay.vue` are reused **unchanged**; click suppression is unchanged except the armed-path clearing (Locked Values).
 - Never reference the `PointerEvent` or `TouchEvent` globals (no `instanceof`, no constructors); read fields off the event object.
 
 ---
@@ -104,10 +104,10 @@ EC-798 copies these verbatim. The WP wins on conflict.
 - `LONG_PRESS_MOVE_TOLERANCE_PX = 10` — movement from the `pointerdown` point that abandons a pending arm (a scroll or a sloppy tap).
 - `LONG_PRESS_VIBRATE_MS = 12` — the arm buzz, only when `typeof navigator.vibrate === 'function'`.
 - **Eligibility (decided at `pointerdown` only):** the setting is on, the pointer is `touch` or `pen`, no stroke is pending or active, and `isTouchGestureEnabled` is **false** (the row scrolls). When it is true, WP-756's immediate path applies and no long press runs. Mouse never long-presses. A later fit change does not affect a pending or armed long press.
-- **Representation:** a long press is a `stroke` with `isLongPress: true`; *pending* = `hasStarted` false + the arm timer running; *armed* = `hasStarted` true. Armed ⇔ `stroke !== null && stroke.isLongPress && stroke.hasStarted`. `isLongPressArmed` and `shouldPreventTouchScroll()` are derived from this, never a free-standing flag. A pending long press never runs WP-756's 16 px `startGesture` path.
-- **Pending arm:** starts at `pointerdown`; cancelled (stroke nulled, timer cleared) by `pointerup`, `pointercancel`, movement > 10 px from the `pointerdown` point, a **second `pointerId`** (a pinch or two-finger pan), the setting turning off, or scope dispose. Cancelling never arms suppression.
+- **Representation:** a long press is a `stroke` with `isLongPress: true`; *pending* = `hasStarted` false + the arm timer running; *armed* = `hasStarted` true. `stroke` stays a plain `let`. `isLongPressArmed` is a `ref` written **only** by `syncLongPressState()`, whose value is always `stroke !== null && stroke.isLongPress && stroke.hasStarted`; it runs at every stroke change (`pointerdown`, `armStroke()`, `pointerup`, `pointercancel`, `lostpointercapture`, the > 10 px cancel, the second-finger cancel, the setting / row watch, dispose). `shouldPreventTouchScroll()` is a plain function reading `stroke`. A pending long press never runs WP-756's 16 px `startGesture` path.
+- **Pending arm:** starts at `pointerdown`; cancelled (stroke nulled, timer cleared, `syncLongPressState()`) by `pointerup`, `pointercancel`, movement > 10 px from the `pointerdown` point, a **second `pointerId`** (a pinch or two-finger pan), the setting turning off, or scope dispose. **The `pointerdown` that cancels a pending arm does not itself start one.** Cancelling never arms suppression.
 - **Arm (`armStroke()`, at 350 ms):** `hasStarted = true`; capture the pointer; `createCrossingState(collectCandidateTiles(), downPoint)` (candidates measured now); publish **one** trail sample at `downPoint`; buzz if supported. Do not reuse `startGesture` (it publishes two samples and advances a segment).
-- **Armed stroke:** the adapter's non-passive `touchmove` listener calls `preventDefault()` iff `shouldPreventTouchScroll()`; `pointermove` advances as in WP-756; a **second `pointerId` is ignored** (WP-756 rule); `pointerup` completes it (arms click suppression, publishes `isStrokeEnd`); `pointercancel` and `lostpointercapture` keep completed crossings and arm nothing. Every path that nulls the stroke (including the setting / row watch and dispose) ends the arm.
+- **Armed stroke:** the adapter's non-passive `touchmove` listener calls `preventDefault()` iff `shouldPreventTouchScroll()`; `pointermove` advances as in WP-756; a **second `pointerId` is ignored** (WP-756 rule); `pointerup` completes it (arms click suppression, publishes `isStrokeEnd`); `pointercancel` keeps completed crossings and arms nothing. **`lostpointercapture` ends the stroke the same way only when `event.target` is the row itself and its `pointerId` matches an armed long-press stroke** — capture moving from the touched child to the row (at `armStroke()`) fires a bubbling `lostpointercapture` on the child, which must be ignored; mouse and fitting-row strokes ignore it entirely. Every path that nulls the stroke (including the setting / row watch and dispose) ends the arm.
 - **Click suppression (armed path only):** cleared on the next `pointerdown` / `keydown`, not by `setTimeout(0)`. Mouse and fitting-row paths keep WP-756's clearing.
 - **Context menu:** the row's `contextmenu` listener (events bubbling to the row) calls `preventDefault()` while a long press is pending or armed.
 - **CSS:** `city-spaces--gesture-armed` iff `isLongPressArmed` — an **inset** glow (`box-shadow: inset …` or `outline` with a negative `outline-offset`), no animation under `prefers-reduced-motion`. `city-spaces--gesture` adds `-webkit-touch-callout: none`.
@@ -122,8 +122,8 @@ EC-798 copies these verbatim. The WP wins on conflict.
 - In `handlePointerDown`, a touch / pen press on a non-fitting row starts a **pending arm** (a `setTimeout(LONG_PRESS_ARM_MS)`), instead of returning.
 - `handlePointerMove`: before the arm, movement > tolerance cancels the pending arm (and the move is otherwise ignored — native scroll). After the arm, the move advances the stroke exactly as a started WP-756 stroke.
 - `handlePointerUp` / `handlePointerCancel`: cancel a pending arm; end an armed stroke per the Locked Values.
-- `isLongPressArmed` (derived) and `shouldPreventTouchScroll()` on the controller; a dedicated `armStroke()`.
-- Adapter: a non-passive `touchmove` listener (`{ passive: false }`) calling `preventDefault()` when `shouldPreventTouchScroll()`; a `contextmenu` listener; a `lostpointercapture` listener that ends an armed stroke like `pointercancel` (a no-op after a normal `pointerup`). All are added and removed with the existing listeners (setting-gated).
+- `isLongPressArmed` (a `ref` written only by `syncLongPressState()`) and `shouldPreventTouchScroll()` on the controller; a dedicated `armStroke()`.
+- Adapter: a non-passive `touchmove` listener (`{ passive: false }`) calling `preventDefault()` when `shouldPreventTouchScroll()`; a `contextmenu` listener; a `lostpointercapture` listener that ends an armed long-press stroke like `pointercancel` only when `event.target` is the row and the `pointerId` matches (a no-op otherwise, and after a normal `pointerup`). All are added and removed with the existing listeners (setting-gated).
 - Every stroke-reset path (including the setting / row watch and scope dispose) clears the arm timer and ends the arm.
 - `// why:` comments per EC-798.
 
@@ -148,14 +148,15 @@ Add a "Long-press slash on a scrolling row" paragraph to §Slash to fight (`{#sl
 - On a **fitting** row a touch press does not start a pending arm (WP-756's immediate path; its existing tests stay green).
 - A fit change mid-hold (the row starts fitting) does not cancel a pending or armed long press.
 - Setting off: no pending arm; the setting turning off mid-hold cancels it; the setting turning off **while armed** makes `isLongPressArmed` false and, after re-enabling, `shouldPreventTouchScroll()` is false for a fresh unarmed touch.
-- A second `pointerId` during a pending arm **cancels** it (advancing 350 ms arms nothing, no capture); a second `pointerId` during an armed stroke is **ignored**.
+- A second `pointerId` during a pending arm **cancels** it, and does not start one of its own: advancing 350 ms after the second finger lands arms nothing for either pointer, with no capture. A second `pointerId` during an armed stroke is **ignored**.
+- After every transition above (pending, armed, each cancel path, `pointerup`, setting off, dispose), `isLongPressArmed.value === shouldPreventTouchScroll()`.
 - Scope dispose clears the pending timer (advancing 350 ms after dispose arms nothing).
 - The buzz: with `navigator.vibrate` stubbed, the arm calls it once with `12`; no call for a mouse press or on a fitting row; with `vibrate` absent the arm does not throw.
 
 **`CityRow.test.ts`** (DOM adapter; `mock.timers` `setTimeout` enabled in the `describe`, reset in `afterEach`). To make the row overflow: after mount, stub `scrollWidth` > `clientWidth` on `ol.city-spaces`, dispatch `window.dispatchEvent(new window.Event('resize'))`, `await nextTick()`, and assert `city-spaces--gesture-touch` is absent. Then:
 - A touch `pointerdown` + 350 ms → `city-spaces--gesture-armed`; a cancelable `touchmove` on the row is `defaultPrevented`; a cancelable `contextmenu` is `defaultPrevented`.
 - Without arming, a cancelable `touchmove` is **not** `defaultPrevented`.
-- A `lostpointercapture` on the row while armed removes the armed class.
+- A `lostpointercapture` dispatched on the **row** while armed (matching `pointerId`) removes the armed class; a bubbling `lostpointercapture` dispatched on a **child tile** while armed does **not**.
 - Setting off while armed → the armed class is gone; after re-enabling, an unarmed cancelable `touchmove` is not `defaultPrevented`.
 - Setting off: no armed class after a 350 ms hold, and `touchmove` / `contextmenu` are not prevented.
 - Existing tests unchanged.
@@ -189,7 +190,7 @@ Governance at close: `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24592), `WOR
 ## Contract
 
 - `useSlashGesture(options)` — options unchanged; the returned controller adds `isLongPressArmed: Ref<boolean>` and `shouldPreventTouchScroll(): boolean`. All WP-756 members keep their signatures.
-- DOM: class `city-spaces--gesture-armed`; the adapter adds non-passive `touchmove` and `contextmenu` listeners under the existing setting gate.
+- DOM: class `city-spaces--gesture-armed`; the adapter adds non-passive `touchmove`, `contextmenu` and `lostpointercapture` listeners under the existing setting gate.
 - Move contract unchanged: `fightVillain({ cityIndex })` only.
 
 ---
@@ -284,10 +285,10 @@ pnpm -r build && pnpm -r --no-bail test
 
 **D-24592 — long-press-slash.** Locks:
 - the 350 ms / 10 px arm on a scrolling row (touch / pen only, never mouse, never when the row fits; eligibility decided at `pointerdown`);
-- "armed" derived from the stroke (`isLongPress && hasStarted`), so every stroke-reset path ends it; a second finger cancels a pending arm and is ignored once armed; `lostpointercapture` ends an armed stroke;
+- "armed" = `stroke.isLongPress && stroke.hasStarted`, mirrored into the `isLongPressArmed` ref only by `syncLongPressState()` at every stroke change, so every stroke-reset path ends it; a second finger cancels a pending arm (without starting its own) and is ignored once armed; `lostpointercapture` ends an armed long-press stroke only when targeted at the row with a matching `pointerId`;
 - the armed-stroke contract: `armStroke()` seeds the stroke at the press point with the start distance waived and candidates measured at the arm; `touchmove` prevented only while armed; `contextmenu` prevented while pending or armed; armed-path click suppression cleared on the next `pointerdown` / `keydown`;
 - feedback: inset armed glow, optional 12 ms buzz, one trail sample at the press point;
-- accepted degradations: a detached `touchmove` target after a mid-stroke empty-slot fill resumes the pan (`pointercancel`, completed crossings kept); on iOS, if sub-slop jitter makes the armed `touchmove` uncancelable, the same degradation applies pending a WebKit follow-up;
+- accepted degradations: a detached `touchmove` target after a mid-stroke empty-slot fill resumes the pan (`pointercancel`, completed crossings kept); on iOS, if sub-slop jitter makes the armed `touchmove` uncancelable, the same degradation applies pending a WebKit follow-up; if an armed stroke is released and the browser fires no `click`, the armed-path suppression waits for the next `pointerdown` / `keydown`, so a screen-reader activation (VoiceOver / TalkBack double-tap, which sends a `click` without either) in the row is swallowed once — no timer is used, because a timer reintroduces the touch-`click` task race;
 - WP-756's `dragstart` prevention also blocks touch drag-and-drop after a long press on card art;
 - composition with D-24585: full-crossing rule, chain, hints, trail, fit rule and setting reused unchanged.
 
