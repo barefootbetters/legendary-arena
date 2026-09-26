@@ -453,6 +453,12 @@
     },
     {
       "heroSlug": "iron-man",
+      "cardSlug": "endless-invention",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "iron-man",
       "cardSlug": "quantum-breakthrough",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:2]"
@@ -843,6 +849,12 @@
       "heroSlug": "iron-man",
       "cardSlug": "endless-invention",
       "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "iron-man",
+      "cardSlug": "endless-invention",
+      "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
     },
     {
