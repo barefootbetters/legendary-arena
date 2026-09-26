@@ -1805,7 +1805,21 @@ dispute.
   $20,000 a month in spousal support in August 2015, and in 2016 ordered Griner to pay $2,516.97 a
   month in child support for twins Johnson had conceived through in-vitro
   fertilization during the marriage, though Griner is not their biological
-  parent. (Johnson later said she
+  parent. Read by effect, the annulment attempt is the telling move. A divorce
+  ends a valid marriage and carries its obligations with it; an annulment
+  declares the marriage void from the start. Under Arizona law, a court
+  annulling a marriage still divides property and sets obligations for the
+  couple's "common or adopted children" — and twins conceived with donor sperm
+  are neither biologically Griner's nor adopted. What tied Griner to them was the
+  marriage itself: a spouse is presumed the parent of a child born during the
+  marriage, a presumption the Arizona Supreme Court confirmed for same-sex
+  spouses and donor conception a year later in *McLaughlin v. Jones* (2017). An
+  annulment, filed the day after the pregnancy was announced, would have removed
+  that tie. The court refused it, and imposed exactly the obligation it would
+  have undercut. Griner's stated grounds were fraud and duress; the motive
+  cannot be known from outside. The effect can: the one move that would have
+  erased the parental obligation was denied, and the obligation followed.
+  (Johnson later said she
   had never considered herself a lesbian: "They wanted me to be a lesbian who
   converted from being straight… It just doesn't work for me like that.") In
   July 2026, Griner filed for divorce from Cherelle Griner — the public face of
@@ -2691,6 +2705,9 @@ choice for the operator, never make it silently.
   *People* on [the spousal-support ruling](https://people.com/sports/wnbas-glory-johnson-reacts-to-judge-declining-spousal-support/)
   and ESPN on [the child-support order](https://www.espn.com/wnba/story/_/id/15355152/brittney-griner-ordered-pay-child-support-glory-johnson);
   BuzzFeed News on [the rejected annulment](https://www.buzzfeednews.com/article/sheridanwatson/brittney-griner-glory-johnson-annulment);
+  [A.R.S. § 25-302](https://azleg.gov/ars/25/00302.htm) on annulment procedure and
+  children; *McLaughlin v. Jones*,
+  [401 P.3d 492 (Ariz. 2017)](https://law.justia.com/cases/arizona/supreme-court/2017/cv-16-0266-pr.html);
   ABC News on [the 2026 divorce filing](https://abcnews.com/GMA/Culture/brittney-griner-files-divorce-wife-cherelle-griner/story?id=135268883);
   *Indiatimes* on [both marriages](https://www.indiatimes.com/trending/what-happened-between-brittney-griner-and-glory-johnson-old-marriage-drama-resurfaces-after-controversial-divorce-filing-against-cherelle-griner/articleshow/132776550.html)
   (1 August 2026).
