@@ -627,12 +627,15 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'reveal-three-assign-again', // why: WP-753 / D-24580 — Crystal of Kadavus's "[team:venomverse][team:venomverse]: Do this ability again." (repeat counter)
     'optional-discard-draw', // why: WP-754 / D-24581 — "You may discard a card. If you do, draw a card." (Hungry for Action's Digest 3 + four standalone cards) — a draw-reward entry on the Smash queue
     'reveal-top-may-ko', // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it." (Gruesome Feast / Remove His Spine via EV + Electroshock Therapy) — a KO-or-keep entry on the reveal-top-dispose queue
+    'blood-frenzy', // why: WP-765 / D-24598 — hero Blood Frenzy: +N attack, N = distinct VP values in the Victory Pile (shared economy/bloodFrenzy.logic.ts)
+    'blood-frenzy-recruit', // why: WP-765 / D-24598 — Morbius Mesmerize's Blood Frenzy gaining recruit instead of attack
+    'day-night-both', // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite (digest-indigestion precedent)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      69,
-      'HERO_KEYWORDS must have exactly 69 entries',
+      72,
+      'HERO_KEYWORDS must have exactly 72 entries',
     );
 
     assert.deepStrictEqual(

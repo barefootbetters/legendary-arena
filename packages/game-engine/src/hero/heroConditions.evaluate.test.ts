@@ -1579,3 +1579,93 @@ describe('countOtherInPlayMatchingCondition (WP-740 / D-24562)', () => {
     assert.equal(countOtherInPlayMatchingCondition(noTraits, '0', { type: 'heroClassMatch', value: 'strength' }, self), 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// sunlightInEffect / moonlightInEffect (WP-765 / D-24598)
+// ---------------------------------------------------------------------------
+
+describe('sunlightInEffect / moonlightInEffect (WP-765 / D-24598)', () => {
+  // why: the two day/night condition types, kept here as the runtime drift pin —
+  // HeroCondition.type is a bare string, so no compile-time union can catch a missing case.
+  const DAY_NIGHT_CONDITION_TYPES = ['sunlightInEffect', 'moonlightInEffect'];
+
+  /** A state whose HQ holds the given [cardId, printed cost] pairs (null = empty slot). */
+  function makeDayNightTestState(slots: ([string, number] | null)[]): LegendaryGameState {
+    const costs: Record<string, number> = {};
+    const hq: (string | null)[] = [];
+    for (const slot of slots) {
+      if (slot === null) {
+        hq.push(null);
+      } else {
+        hq.push(slot[0]);
+        costs[slot[0]] = slot[1];
+      }
+    }
+    const gameState = makeTestState({ inPlay: ['day-night-card'], cardStatCosts: costs });
+    (gameState as unknown as { hq: (string | null)[] }).hq = hq;
+    return gameState;
+  }
+
+  const SUNLIGHT_HQ: ([string, number] | null)[] = [['h2', 2], ['h4', 4], ['h3', 3], null, null];
+  const MOONLIGHT_HQ: ([string, number] | null)[] = [['h3', 3], ['h5', 5], ['h4', 4], null, null];
+  const TIE_HQ: ([string, number] | null)[] = [['h2', 2], ['h3', 3], null, null, null];
+
+  it('sunlightInEffect holds only when most HQ Heroes have even printed costs', () => {
+    const condition = { type: 'sunlightInEffect', value: '' };
+    assert.equal(evaluateCondition(makeDayNightTestState(SUNLIGHT_HQ), '0', condition), true);
+    assert.equal(evaluateCondition(makeDayNightTestState(MOONLIGHT_HQ), '0', condition), false);
+    assert.equal(evaluateCondition(makeDayNightTestState(TIE_HQ), '0', condition), false, 'a tie is neither');
+  });
+
+  it('moonlightInEffect holds only when most HQ Heroes have odd printed costs', () => {
+    const condition = { type: 'moonlightInEffect', value: '' };
+    assert.equal(evaluateCondition(makeDayNightTestState(MOONLIGHT_HQ), '0', condition), true);
+    assert.equal(evaluateCondition(makeDayNightTestState(SUNLIGHT_HQ), '0', condition), false);
+    assert.equal(evaluateCondition(makeDayNightTestState(TIE_HQ), '0', condition), false, 'a tie is neither');
+  });
+
+  it('re-reads the HQ on every evaluation (never cached per card)', () => {
+    const gameState = makeDayNightTestState(SUNLIGHT_HQ);
+    const condition = { type: 'sunlightInEffect', value: '' };
+    assert.equal(evaluateCondition(gameState, '0', condition, 'day-night-card'), true);
+    // why: the HQ changes between two resolutions of the same card's line.
+    (gameState as unknown as { hq: (string | null)[] }).hq = ['h3', 'h5', 'h4', null, null];
+    assert.equal(evaluateCondition(gameState, '0', condition, 'day-night-card'), false);
+  });
+
+  it('describes a failed day/night gate in player-facing English', () => {
+    const gameState = makeDayNightTestState(TIE_HQ);
+    assert.equal(describeFailedCondition(gameState, '0', { type: 'sunlightInEffect', value: '' }), "it isn't Sunlight");
+    assert.equal(describeFailedCondition(gameState, '0', { type: 'moonlightInEffect', value: '' }), "it isn't Moonlight");
+  });
+
+  it('runtime pin: both types have a real evaluate case and a real describe case, and are neither wait-and-see nor sequence gates', () => {
+    for (const conditionType of DAY_NIGHT_CONDITION_TYPES) {
+      // why: the default evaluate branch only returns false, so a `true` on a satisfying
+      // HQ proves the case exists.
+      const satisfyingHq = conditionType === 'sunlightInEffect' ? SUNLIGHT_HQ : MOONLIGHT_HQ;
+      assert.equal(
+        evaluateCondition(makeDayNightTestState(satisfyingHq), '0', { type: conditionType, value: '' }),
+        true,
+        `"${conditionType}" must have a real evaluateCondition case.`,
+      );
+      // why: the default describe branch names the type as unrecognized.
+      const description = describeFailedCondition(makeDayNightTestState(TIE_HQ), '0', { type: conditionType, value: '' });
+      assert.ok(
+        !description.includes('could not be evaluated'),
+        `"${conditionType}" must have a real describeFailedCondition case.`,
+      );
+      assert.equal(WAIT_AND_SEE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is resolved per line, never a wait-and-see gate.`);
+      assert.equal(SEQUENCE_GATE_CONDITION_TYPES.includes(conditionType), false,
+        `"${conditionType}" is board state, never a play-order sequence gate.`);
+    }
+  });
+
+  it('returns false (never throws) on a minimal G with no HQ (heroConditionHoldsForInPlay slice)', () => {
+    const minimal = { playerZones: { '0': { inPlay: [] } } } as unknown as LegendaryGameState;
+    assert.doesNotThrow(() => evaluateCondition(minimal, '0', { type: 'sunlightInEffect', value: '' }));
+    assert.equal(evaluateCondition(minimal, '0', { type: 'sunlightInEffect', value: '' }), false);
+    assert.equal(evaluateCondition(minimal, '0', { type: 'moonlightInEffect', value: '' }), false);
+  });
+});

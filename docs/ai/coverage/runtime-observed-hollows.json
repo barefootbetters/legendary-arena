@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 28,
-    "totalObservations": 2514,
+    "totalObservations": 2206,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 496,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2018
+      "parse-unrecognized": 1710
     }
   },
   "byMechanic": {
@@ -573,27 +573,15 @@
       ]
     },
     "moonlight": {
-      "hitCount": 274,
-      "lastSeenTurn": 30,
+      "hitCount": 44,
+      "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 274
+        "parse-unrecognized": 44
       },
       "examples": [
         {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "mdns/werewolf-by-night/release-the-beast#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
           "cardType": "hero",
           "timing": "onPlay",
@@ -607,6 +595,18 @@
         },
         {
           "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/werewolf-by-night/snarling-fangs#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -888,40 +888,40 @@
       ]
     },
     "sunlight": {
-      "hitCount": 107,
+      "hitCount": 29,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 107
+        "parse-unrecognized": 29
       },
       "examples": [
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/sunspot/solar-powered#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/sunspot/solar-powered#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#0",
+          "cardId": "nmut/sunspot/solar-powered#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#1",
+          "cardId": "nmut/sunspot/solar-powered#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "mdns/werewolf-by-night/snarling-fangs#1",
+          "cardId": "nmut/sunspot/solar-powered#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

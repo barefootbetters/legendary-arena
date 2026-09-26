@@ -3086,3 +3086,82 @@ describe('filterUIStateForAudience — WP-754 optional fields (D-24581)', () => 
     assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingRevealTopDispose, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-765 / D-24598 — hq.dayNight board-visible field: presence rule + audience filter
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — hq.dayNight (WP-765 / D-24598)', () => {
+  /**
+   * Builds a game state whose HQ is majority-even (Sunlight), with the given hero hooks.
+   */
+  function dayNightGameState(hooks: LegendaryGameState['heroAbilityHooks']): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const hqIds = ['dn-hq-0', 'dn-hq-1', 'dn-hq-2', null, null];
+    const costs = [2, 4, 3];
+    for (let index = 0; index < costs.length; index++) {
+      gameState.cardStats[hqIds[index] as CardExtId] = {
+        attack: 0, recruit: 0, cost: costs[index]!, fightCost: 0, fightCostMode: 'static', fightCostBase: 0,
+        hasAttackIcon: false, hasRecruitIcon: false, isShieldOrHydra: false,
+      };
+    }
+    gameState.hq = hqIds as LegendaryGameState['hq'];
+    gameState.heroAbilityHooks = hooks;
+    return gameState;
+  }
+
+  it('is omitted when the match has no day/night hero hook (and stays omitted through the filter)', () => {
+    const uiState = buildUIState(dayNightGameState([]), mockCtx);
+    assert.equal('dayNight' in uiState.hq, false, 'no day/night hook → no field');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal('dayNight' in filterUIStateForAudience(uiState, audience).hq, false);
+    }
+  });
+
+  it('is present for a day/night condition hook and survives the filter for every audience', () => {
+    const uiState = buildUIState(dayNightGameState([{
+      cardId: 'mdns/werewolf-by-night/starlit-path#0',
+      timing: 'onPlay',
+      keywords: ['draw', 'conditional'],
+      conditions: [{ type: 'moonlightInEffect', value: '' }],
+      effects: [{ type: 'draw', magnitude: 1 }],
+    }]), mockCtx);
+    assert.equal(uiState.hq.dayNight, 'sunlight', 'computed from the HQ printed costs (2, 4, 3)');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal(
+        filterUIStateForAudience(uiState, audience).hq.dayNight,
+        'sunlight',
+        `dayNight must survive the whitelist for ${audience.kind} view`,
+      );
+    }
+  });
+
+  it('is present in a Warlock-only match, whose fused day-night-both hooks carry no day/night condition', () => {
+    const uiState = buildUIState(dayNightGameState([{
+      cardId: 'nmut/warlock/analyze-planetary-rotation#0',
+      timing: 'onPlay',
+      keywords: ['day-night-both'],
+      effects: [{
+        type: 'day-night-both',
+        sunlightEffects: [{ type: 'recruit', magnitude: 2 }],
+        moonlightEffects: [{ type: 'attack', magnitude: 2 }],
+        bothCondition: { type: 'heroClassMatch', value: 'tech' },
+      }],
+    }]), mockCtx);
+    assert.equal(uiState.hq.dayNight, 'sunlight');
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).hq.dayNight, 'sunlight');
+  });
+
+  it('reports neither on a tied HQ', () => {
+    const gameState = dayNightGameState([{
+      cardId: 'nmut/warlock/analyze-planetary-rotation#0',
+      timing: 'onPlay',
+      keywords: ['day-night-both'],
+      effects: [{ type: 'day-night-both', sunlightEffects: [], moonlightEffects: [] }],
+    }]);
+    gameState.hq = ['dn-hq-0', 'dn-hq-2', null, null, null] as LegendaryGameState['hq'];
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.equal(uiState.hq.dayNight, 'neither');
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_0).hq.dayNight, 'neither');
+  });
+});

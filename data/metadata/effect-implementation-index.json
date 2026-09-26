@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1931,
+    "totalEntries": 1943,
     "byScope": {
-      "hero": 756,
+      "hero": 768,
       "villain": 719,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 510,
+      "executable": 525,
       "deferred": 16,
-      "condition": 30,
-      "unsupported": 318,
+      "condition": 44,
+      "unsupported": 301,
       "unmarked": 1053,
       "subsystem": 4
     }
@@ -12892,8 +12892,8 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "blood-frenzy",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy",
       "wp": "",
       "decision": "",
       "designs": [
@@ -12909,7 +12909,7 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -12921,6 +12921,23 @@
         {
           "slug": "ride-by-moonlight",
           "name": "Ride by Moonlight"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/blade-daywalker",
+      "name": "Blade, Daywalker",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "optional-put-bottom-hq",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq",
+      "wp": "",
+      "decision": "D-24130",
+      "designs": [
+        {
+          "slug": "creature-of-dawn-and-dusk",
+          "name": "Creature of Dawn and Dusk"
         }
       ]
     },
@@ -12951,7 +12968,7 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -13027,8 +13044,8 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "blood-frenzy",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13051,8 +13068,42 @@
       "name": "Morbius",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "blood-frenzy-recruit",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy-recruit",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "mesmerize",
+          "name": "Mesmerize"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/morbius",
+      "name": "Morbius",
+      "set": "mdns",
+      "scope": "hero",
+      "mechanic": "ko-wound-reward",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward",
+      "wp": "WP-382",
+      "decision": "D-24183",
+      "designs": [
+        {
+          "slug": "scalded-by-sunlight",
+          "name": "Scalded by Sunlight"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/morbius",
+      "name": "Morbius",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -13073,7 +13124,7 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -13090,8 +13141,8 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "blood-frenzy",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy",
       "wp": "",
       "decision": "",
       "designs": [
@@ -13106,8 +13157,25 @@
       "name": "Werewolf by Night",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "starlit-path",
+          "name": "Starlit Path"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "name": "Werewolf by Night",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -13135,8 +13203,25 @@
       "name": "Werewolf by Night",
       "set": "mdns",
       "scope": "hero",
+      "mechanic": "optional-put-bottom-hq",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq",
+      "wp": "",
+      "decision": "D-24130",
+      "designs": [
+        {
+          "slug": "snarling-fangs",
+          "name": "Snarling Fangs"
+        }
+      ]
+    },
+    {
+      "extId": "mdns/werewolf-by-night",
+      "name": "Werewolf by Night",
+      "set": "mdns",
+      "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -13182,7 +13267,7 @@
       "set": "mdns",
       "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -15966,7 +16051,7 @@
       "set": "nmut",
       "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -15978,6 +16063,23 @@
         {
           "slug": "haunted-by-the-demon-bear",
           "name": "Haunted By the Demon Bear"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/mirage",
+      "name": "Mirage",
+      "set": "nmut",
+      "scope": "hero",
+      "mechanic": "optional-discard-draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "dreams-made-real",
+          "name": "Dreams Made Real"
         }
       ]
     },
@@ -16007,11 +16109,45 @@
       "name": "Sunspot",
       "set": "nmut",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "absorb-radiation",
+          "name": "Absorb Radiation"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/sunspot",
+      "name": "Sunspot",
+      "set": "nmut",
+      "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
+      "designs": [
+        {
+          "slug": "absorb-radiation",
+          "name": "Absorb Radiation"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/sunspot",
+      "name": "Sunspot",
+      "set": "nmut",
+      "scope": "hero",
+      "mechanic": "optional-put-bottom-hq",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq",
+      "wp": "",
+      "decision": "D-24130",
       "designs": [
         {
           "slug": "absorb-radiation",
@@ -16042,7 +16178,7 @@
       "set": "nmut",
       "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -16070,8 +16206,25 @@
       "name": "Warlock",
       "set": "nmut",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "nanite-shapeshifter",
+          "name": "Nanite Shapeshifter"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/warlock",
+      "name": "Warlock",
+      "set": "nmut",
+      "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -16092,7 +16245,7 @@
       "set": "nmut",
       "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -16112,8 +16265,25 @@
       "name": "Wolfsbane",
       "set": "nmut",
       "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "wolf-out",
+          "name": "Wolf Out"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/wolfsbane",
+      "name": "Wolfsbane",
+      "set": "nmut",
+      "scope": "hero",
       "mechanic": "moonlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -16141,8 +16311,42 @@
       "name": "Wolfsbane",
       "set": "nmut",
       "scope": "hero",
+      "mechanic": "optional-put-bottom-hq",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq",
+      "wp": "",
+      "decision": "D-24130",
+      "designs": [
+        {
+          "slug": "wolf-out",
+          "name": "Wolf Out"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/wolfsbane",
+      "name": "Wolfsbane",
+      "set": "nmut",
+      "scope": "hero",
+      "mechanic": "reveal-top-may-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko",
+      "wp": "WP-754",
+      "decision": "D-24581",
+      "designs": [
+        {
+          "slug": "howl-at-the-moon",
+          "name": "Howl at the Moon"
+        }
+      ]
+    },
+    {
+      "extId": "nmut/wolfsbane",
+      "name": "Wolfsbane",
+      "set": "nmut",
+      "scope": "hero",
       "mechanic": "sunlight",
-      "status": "unsupported",
+      "status": "condition",
       "handler": "",
       "wp": "",
       "decision": "",
@@ -32044,6 +32248,7 @@
       "mechanics": [
         "blood-frenzy",
         "moonlight",
+        "optional-put-bottom-hq",
         "patrol",
         "sunlight"
       ]
@@ -32060,6 +32265,8 @@
       "scope": "hero",
       "mechanics": [
         "blood-frenzy",
+        "blood-frenzy-recruit",
+        "ko-wound-reward",
         "moonlight",
         "sunlight"
       ]
@@ -32068,7 +32275,9 @@
       "scope": "hero",
       "mechanics": [
         "blood-frenzy",
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
         "sunlight"
       ]
     },
@@ -33063,13 +33272,16 @@
       "scope": "hero",
       "mechanics": [
         "moonlight",
+        "optional-discard-draw",
         "waking-nightmare"
       ]
     },
     "nmut/sunspot": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
         "put-any-number-bottom-hq",
         "sunlight"
       ]
@@ -33077,6 +33289,7 @@
     "nmut/warlock": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "moonlight",
         "sunlight"
       ]
@@ -33084,7 +33297,10 @@
     "nmut/wolfsbane": {
       "scope": "hero",
       "mechanics": [
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
+        "reveal-top-may-ko",
         "sunlight"
       ]
     },

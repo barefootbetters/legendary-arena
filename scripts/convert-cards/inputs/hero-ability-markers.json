@@ -1586,12 +1586,104 @@
       "markupToken": "[keyword:draw:1]"
     }
   ],
+  "mdns": [
+    {
+      "heroSlug": "werewolf-by-night",
+      "cardSlug": "starlit-path",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "werewolf-by-night",
+      "cardSlug": "snarling-fangs",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-put-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "werewolf-by-night",
+      "cardSlug": "release-the-beast",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:blood-frenzy]"
+    },
+    {
+      "heroSlug": "blade-daywalker",
+      "cardSlug": "creature-of-dawn-and-dusk",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-put-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "blade-daywalker",
+      "cardSlug": "creature-of-dawn-and-dusk",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:blood-frenzy]"
+    },
+    {
+      "heroSlug": "morbius",
+      "cardSlug": "mesmerize",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:blood-frenzy-recruit]"
+    },
+    {
+      "heroSlug": "morbius",
+      "cardSlug": "insatiable-craving",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:blood-frenzy]"
+    },
+    {
+      "heroSlug": "morbius",
+      "cardSlug": "scalded-by-sunlight",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:ko-wound-reward:attack:2]"
+    }
+  ],
   "nmut": [
     {
       "heroSlug": "sunspot",
       "cardSlug": "empyreal-force",
       "abilityIndex": 0,
       "markupToken": "[keyword:put-any-number-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "sunspot",
+      "cardSlug": "absorb-radiation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-put-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "sunspot",
+      "cardSlug": "absorb-radiation",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "warlock",
+      "cardSlug": "nanite-shapeshifter",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:3]"
+    },
+    {
+      "heroSlug": "wolfsbane",
+      "cardSlug": "wolf-out",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-put-bottom-hq:1]"
+    },
+    {
+      "heroSlug": "wolfsbane",
+      "cardSlug": "wolf-out",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "wolfsbane",
+      "cardSlug": "howl-at-the-moon",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-top-may-ko]"
+    },
+    {
+      "heroSlug": "mirage",
+      "cardSlug": "dreams-made-real",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-discard-draw:1]"
     }
   ],
   "pttr": [
@@ -2298,14 +2390,6 @@
       "abilityIndex": 1,
       "abilityText": "[hc:strength][hc:covert]: Draw a card.",
       "reason": "D-22501 — multi-condition cost prefix: the doubled [hc:X] prefix encodes a 'pay two hero-class icons' cost the single-condition evaluator does not model; deferred."
-    },
-    {
-      "setAbbr": "mdns",
-      "heroSlug": "morbius",
-      "cardSlug": "scalded-by-sunlight",
-      "abilityIndex": 1,
-      "abilityText": "[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack].",
-      "reason": "WP-382 / D-24183 — ko-wound-reward candidate deferred: the [keyword:Moonlight]: prefix is a night/day state condition the hero condition evaluator does not model; auto-firing it would ignore the gate. Same discipline as D-21602/D-21603 timing/condition-gated deferrals."
     },
     {
       "setAbbr": "wpnx",

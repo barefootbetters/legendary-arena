@@ -1427,7 +1427,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 69, 'HERO_KEYWORDS stays 69 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko added)');
+    assert.equal(HERO_KEYWORDS.length, 72, 'HERO_KEYWORDS stays 72 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1541,5 +1541,159 @@ describe('buildHeroAbilityHooks — Spider-Man reveal cost-draw parity (WP-733 /
       [],
       'a bare [keyword:reveal] yields empty reveal rules (the silent no-op this WP fixes)',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-765 / D-24598 — Sunlight / Moonlight conditions, the day-night-both fusion,
+// hero Blood Frenzy, and the unmodeled-line suppression
+// ---------------------------------------------------------------------------
+
+// why: the exact generated ability lines after the WP-765 markers, verified against
+// data/cards/mdns.json and data/cards/nmut.json.
+const DAY_NIGHT_LINES = {
+  starlitPath: [
+    '[keyword:Sunlight]: You get +1[icon:attack].',
+    '[keyword:Moonlight]: Draw a card. [keyword:draw:1]',
+  ],
+  releaseTheBeast: [
+    '[keyword:Sunlight]: You get +3[icon:recruit].',
+    '[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]',
+    '[hc:instinct]: Instead, you get both.',
+  ],
+  analyzePlanetaryRotation: [
+    '[keyword:Sunlight]: You get +2[icon:recruit].',
+    '[keyword:Moonlight]: You get +2[icon:attack].',
+    '[hc:tech]: Instead, you get both.',
+  ],
+  naniteShapeshifter: [
+    '[keyword:Sunlight]: Draw 3 cards. [keyword:draw:3]',
+    '[keyword:Moonlight]: You get +3[icon:recruit] and +3[icon:attack].',
+    '[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both.',
+  ],
+  solarPowered: [
+    '[keyword:Sunlight]: You may put a card from your hand on the bottom of you deck. If you do, you get +2[icon:attack].',
+  ],
+  thermokineticFury: [
+    'To play this, you must put a card from your hand on the bottom of your deck.',
+    '[keyword:Sunlight]: You get +1[icon:attack] for each other [team:x-men] card you played this turn.',
+  ],
+  scaldedBySunlight: [
+    '[keyword:Sunlight]: You may gain a Wound. If you do, you get +2[icon:attack].',
+    '[keyword:Moonlight]: You may KO a Wound from your hand or discard pile. If you do, you get +2[icon:attack]. [keyword:ko-wound-reward:attack:2]',
+  ],
+  mesmerize: [
+    '[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]. [keyword:blood-frenzy-recruit]',
+  ],
+  creatureOfDawnAndDusk: [
+    '[keyword:Sunlight]: You get +2[icon:attack] and you may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]',
+    '[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]',
+  ],
+};
+
+/** Builds the hooks for one real day/night card (one copy, so its hooks key `#0`). */
+function buildDayNightCardHooks(setAbbr: string, heroSlug: string, cardSlug: string, abilities: string[]) {
+  const registry = makeRegistry(setAbbr, heroSlug, [{ slug: cardSlug, abilities }]);
+  const hooks = buildHeroAbilityHooks(registry, makeConfig(`${setAbbr}/${heroSlug}`));
+  const cardId = `${setAbbr}/${heroSlug}/${cardSlug}#0`;
+  return hooks.filter((hook) => hook.cardId === cardId);
+}
+
+describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', () => {
+  it('Starlit Path gates each line on its own day/night condition', () => {
+    const hooks = buildDayNightCardHooks('mdns', 'werewolf-by-night', 'starlit-path', DAY_NIGHT_LINES.starlitPath);
+    assert.equal(hooks.length, 2);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'attack', magnitude: 1 }]);
+    assert.deepStrictEqual(hooks[1]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[1]!.effects, [{ type: 'draw', magnitude: 1 }]);
+    assert.equal(hooks[0]!.unresolvedMarkers, undefined, 'a modeled day/night line records no hollow marker');
+    assert.equal(hooks[1]!.unresolvedMarkers, undefined, 'a modeled day/night line records no hollow marker');
+  });
+
+  it('Release the Beast fuses its three lines into ONE day-night-both hook', () => {
+    const hooks = buildDayNightCardHooks('mdns', 'werewolf-by-night', 'release-the-beast', DAY_NIGHT_LINES.releaseTheBeast);
+    assert.equal(hooks.length, 1, 'no per-line hooks survive beside the fused hook (they would double-fire)');
+    assert.deepStrictEqual(hooks[0]!.keywords, ['day-night-both']);
+    assert.equal(hooks[0]!.conditions, undefined, 'the fused hook carries no gate of its own');
+    assert.deepStrictEqual(hooks[0]!.effects, [{
+      type: 'day-night-both',
+      sunlightEffects: [{ type: 'recruit', magnitude: 3 }],
+      moonlightEffects: [{ type: 'blood-frenzy' }],
+      bothCondition: { type: 'heroClassMatch', value: 'instinct' },
+    }]);
+  });
+
+  it('Analyze Planetary Rotation fuses to recruit 2 (Sunlight) / attack 2 (Moonlight) / tech upgrade', () => {
+    const hooks = buildDayNightCardHooks('nmut', 'warlock', 'analyze-planetary-rotation', DAY_NIGHT_LINES.analyzePlanetaryRotation);
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.effects, [{
+      type: 'day-night-both',
+      sunlightEffects: [{ type: 'recruit', magnitude: 2 }],
+      moonlightEffects: [{ type: 'attack', magnitude: 2 }],
+      bothCondition: { type: 'heroClassMatch', value: 'tech' },
+    }]);
+  });
+
+  it('Nanite Shapeshifter fuses with bothConditionCount 4 from its four [team:x-men] tokens', () => {
+    const hooks = buildDayNightCardHooks('nmut', 'warlock', 'nanite-shapeshifter', DAY_NIGHT_LINES.naniteShapeshifter);
+    assert.equal(hooks.length, 1);
+    const effect = hooks[0]!.effects![0]!;
+    assert.equal(effect.type, 'day-night-both');
+    assert.deepStrictEqual(effect.sunlightEffects, [{ type: 'draw', magnitude: 3 }]);
+    assert.equal(effect.moonlightEffects!.length, 2);
+    assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'recruit' && branch.magnitude === 3));
+    assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'attack' && branch.magnitude === 3));
+    assert.deepStrictEqual(effect.bothCondition, { type: 'requiresTeam', value: 'x-men' });
+    assert.equal(effect.bothConditionCount, 4);
+  });
+
+  it('a non-allowlisted card with the same text shape is NOT fused (the allowlist gates the fusion)', () => {
+    const hooks = buildDayNightCardHooks('test', 'test-hero', 'release-the-beast', DAY_NIGHT_LINES.releaseTheBeast);
+    assert.equal(hooks.length, 3, 'three per-line hooks, no day-night-both');
+    for (const hook of hooks) {
+      assert.ok(!hook.keywords.includes('day-night-both'));
+    }
+  });
+
+  it('Solar-Powered (unmodeled) keeps its Sunlight gate, drops the +2 attack, and records a sunlight marker', () => {
+    const hooks = buildDayNightCardHooks('nmut', 'sunspot', 'solar-powered', DAY_NIGHT_LINES.solarPowered);
+    assert.equal(hooks.length, 1);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }]);
+    assert.equal(hooks[0]!.effects, undefined, 'the unmodeled line grants nothing');
+    assert.deepStrictEqual(hooks[0]!.unresolvedMarkers, ['sunlight']);
+  });
+
+  it('Thermokinetic Fury (unmodeled) keeps ONLY its Sunlight gate — the x-men count token is not a gate', () => {
+    const hooks = buildDayNightCardHooks('nmut', 'sunspot', 'thermokinetic-fury', DAY_NIGHT_LINES.thermokineticFury);
+    const sunlightHook = hooks[1]!;
+    assert.deepStrictEqual(sunlightHook.conditions, [{ type: 'sunlightInEffect', value: '' }]);
+    assert.equal(sunlightHook.effects, undefined);
+    assert.deepStrictEqual(sunlightHook.unresolvedMarkers, ['sunlight']);
+  });
+
+  it('Scalded by Sunlight: the Sunlight line is an honest hollow; the Moonlight line is the Wound-gated reward only', () => {
+    const hooks = buildDayNightCardHooks('mdns', 'morbius', 'scalded-by-sunlight', DAY_NIGHT_LINES.scaldedBySunlight);
+    assert.equal(hooks[0]!.effects, undefined);
+    assert.deepStrictEqual(hooks[0]!.unresolvedMarkers, ['sunlight']);
+    assert.deepStrictEqual(hooks[1]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[1]!.effects, [{ type: 'ko-wound-reward', magnitude: 2, rewardType: 'attack' }]);
+    assert.equal(hooks[1]!.unresolvedMarkers, undefined);
+  });
+
+  it('Mesmerize parses to blood-frenzy-recruit only — its descriptive icons grant nothing', () => {
+    const hooks = buildDayNightCardHooks('mdns', 'morbius', 'mesmerize', DAY_NIGHT_LINES.mesmerize);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[0]!.effects, [{ type: 'blood-frenzy-recruit' }]);
+  });
+
+  it('Creature of Dawn and Dusk: Sunlight = +2 attack + optional put-bottom; Moonlight = Blood Frenzy', () => {
+    const hooks = buildDayNightCardHooks('mdns', 'blade-daywalker', 'creature-of-dawn-and-dusk', DAY_NIGHT_LINES.creatureOfDawnAndDusk);
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }]);
+    assert.equal(hooks[0]!.effects!.length, 2);
+    assert.ok(hooks[0]!.effects!.some((effect) => effect.type === 'attack' && effect.magnitude === 2));
+    assert.ok(hooks[0]!.effects!.some((effect) => effect.type === 'optional-put-bottom-hq' && effect.magnitude === 1));
+    assert.deepStrictEqual(hooks[1]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
+    assert.deepStrictEqual(hooks[1]!.effects, [{ type: 'blood-frenzy' }]);
   });
 });

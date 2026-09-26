@@ -150,13 +150,24 @@
       "slug": "blood-frenzy",
       "label": "Blood Frenzy",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 4,
       "cardIds": [
         "mdns/blade-daywalker",
         "mdns/elsa-bloodstone",
         "mdns/morbius",
         "mdns/werewolf-by-night"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "blood-frenzy-recruit",
+      "label": "Blood Frenzy Recruit",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "mdns/morbius"
       ],
       "hidden": true
     },
@@ -503,7 +514,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 96,
+      "cardCount": 100,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -554,6 +565,7 @@
         "dkcy/wolverine",
         "dstr/ancient-one-the",
         "ff04/mr-fantastic",
+        "mdns/werewolf-by-night",
         "mgtg/gamora",
         "mgtg/mantis",
         "msis/black-panther",
@@ -563,6 +575,9 @@
         "msp1/black-widow",
         "msp1/hawkeye",
         "msp1/iron-man",
+        "nmut/sunspot",
+        "nmut/warlock",
+        "nmut/wolfsbane",
         "pttr/scarlet-spider",
         "rlmk/crystal",
         "rvlt/darkhawk",
@@ -910,7 +925,7 @@
       "label": "Ko Wound Reward",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 10,
+      "cardCount": 11,
       "cardIds": [
         "3dtc/hulk",
         "co2e/hulk",
@@ -920,6 +935,7 @@
         "cvwr/hulkling",
         "dstr/vishanti-the",
         "ff04/human-torch",
+        "mdns/morbius",
         "msis/bruce-banner",
         "msp1/hulk"
       ],
@@ -1013,11 +1029,12 @@
       "label": "Optional Discard Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 5,
+      "cardCount": 6,
       "cardIds": [
         "antm/ant-man",
         "asrd/beta-ray-bill",
         "gotg/rocket-raccoon",
+        "nmut/mirage",
         "shld/gw-bridge",
         "vnom/venom-rocket"
       ],
@@ -1082,9 +1099,13 @@
       "label": "Optional Put Bottom Hq",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 5,
       "cardIds": [
-        "antm/wonder-man"
+        "antm/wonder-man",
+        "mdns/blade-daywalker",
+        "mdns/werewolf-by-night",
+        "nmut/sunspot",
+        "nmut/wolfsbane"
       ],
       "hidden": true
     },
@@ -1563,9 +1584,10 @@
       "label": "Reveal Top May Ko",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 4,
       "cardIds": [
         "mgtg/drax",
+        "nmut/wolfsbane",
         "vill/electro",
         "vnom/carnage"
       ],
@@ -3273,6 +3295,7 @@
       "mechanics": [
         "blood-frenzy",
         "moonlight",
+        "optional-put-bottom-hq",
         "patrol",
         "sunlight"
       ]
@@ -3287,6 +3310,8 @@
     "mdns/morbius": {
       "mechanics": [
         "blood-frenzy",
+        "blood-frenzy-recruit",
+        "ko-wound-reward",
         "moonlight",
         "sunlight"
       ]
@@ -3294,7 +3319,9 @@
     "mdns/werewolf-by-night": {
       "mechanics": [
         "blood-frenzy",
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
         "sunlight"
       ]
     },
@@ -3475,25 +3502,32 @@
     "nmut/mirage": {
       "mechanics": [
         "moonlight",
+        "optional-discard-draw",
         "waking-nightmare"
       ]
     },
     "nmut/sunspot": {
       "mechanics": [
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
         "put-any-number-bottom-hq",
         "sunlight"
       ]
     },
     "nmut/warlock": {
       "mechanics": [
+        "draw",
         "moonlight",
         "sunlight"
       ]
     },
     "nmut/wolfsbane": {
       "mechanics": [
+        "draw",
         "moonlight",
+        "optional-put-bottom-hq",
+        "reveal-top-may-ko",
         "sunlight"
       ]
     },

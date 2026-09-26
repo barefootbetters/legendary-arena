@@ -343,21 +343,26 @@ gotg/groot,Groot,gotg,(unmarked),unmarked,,,,
 gotg/rocket-raccoon,Rocket Raccoon,gotg,artifact,unsupported,,,,incoming-detector
 gotg/rocket-raccoon,Rocket Raccoon,gotg,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,gritty-scavenger
 gotg/star-lord,Star-Lord,gotg,artifact,unsupported,,,,element-guns|implanted-memory-chip|sentient-starship
-mdns/blade-daywalker,"Blade, Daywalker",mdns,blood-frenzy,unsupported,,,,creature-of-dawn-and-dusk
-mdns/blade-daywalker,"Blade, Daywalker",mdns,moonlight,unsupported,,,,creature-of-dawn-and-dusk|ride-by-moonlight
+mdns/blade-daywalker,"Blade, Daywalker",mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,creature-of-dawn-and-dusk
+mdns/blade-daywalker,"Blade, Daywalker",mdns,moonlight,condition,,,,creature-of-dawn-and-dusk|ride-by-moonlight
+mdns/blade-daywalker,"Blade, Daywalker",mdns,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,creature-of-dawn-and-dusk
 mdns/blade-daywalker,"Blade, Daywalker",mdns,patrol,unsupported,,,,hunt-high-and-low|where-monsters-lurk
-mdns/blade-daywalker,"Blade, Daywalker",mdns,sunlight,unsupported,,,,creature-of-dawn-and-dusk
+mdns/blade-daywalker,"Blade, Daywalker",mdns,sunlight,condition,,,,creature-of-dawn-and-dusk
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,blood-frenzy,unsupported,,,,vengeance-of-the-bloodstone-gem
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,hunt-for-victims,unsupported,,,,stalk-the-night-stalkers
 mdns/elsa-bloodstone,Elsa Bloodstone,mdns,patrol,unsupported,,,,axe-of-the-slayer|silver-bullets|vengeance-of-the-bloodstone-gem
-mdns/morbius,Morbius,mdns,blood-frenzy,unsupported,,,,insatiable-craving|its-morbin-time|mesmerize
-mdns/morbius,Morbius,mdns,moonlight,unsupported,,,,mesmerize|scalded-by-sunlight
-mdns/morbius,Morbius,mdns,sunlight,unsupported,,,,scalded-by-sunlight
-mdns/werewolf-by-night,Werewolf by Night,mdns,blood-frenzy,unsupported,,,,release-the-beast
-mdns/werewolf-by-night,Werewolf by Night,mdns,moonlight,unsupported,,,,release-the-beast|snarling-fangs|starlit-path|track-the-captives
-mdns/werewolf-by-night,Werewolf by Night,mdns,sunlight,unsupported,,,,release-the-beast|snarling-fangs|starlit-path
+mdns/morbius,Morbius,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,insatiable-craving|its-morbin-time|mesmerize
+mdns/morbius,Morbius,mdns,blood-frenzy-recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy-recruit,mesmerize
+mdns/morbius,Morbius,mdns,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,scalded-by-sunlight
+mdns/morbius,Morbius,mdns,moonlight,condition,,,,mesmerize|scalded-by-sunlight
+mdns/morbius,Morbius,mdns,sunlight,condition,,,,scalded-by-sunlight
+mdns/werewolf-by-night,Werewolf by Night,mdns,blood-frenzy,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#blood-frenzy,release-the-beast
+mdns/werewolf-by-night,Werewolf by Night,mdns,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,starlit-path
+mdns/werewolf-by-night,Werewolf by Night,mdns,moonlight,condition,,,,release-the-beast|snarling-fangs|starlit-path|track-the-captives
+mdns/werewolf-by-night,Werewolf by Night,mdns,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,snarling-fangs
+mdns/werewolf-by-night,Werewolf by Night,mdns,sunlight,condition,,,,release-the-beast|snarling-fangs|starlit-path
 mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,patrol,unsupported,,,,bridge-between-dimensions|seal-the-rift
-mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,sunlight,unsupported,,,,face-your-demons|searing-shards-of-sunlight
+mdns/wong-master-of-the-mystic-arts,"Wong, Master of the Mystic Arts",mdns,sunlight,condition,,,,face-your-demons|searing-shards-of-sunlight
 mgtg/drax,Drax,mgtg,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,i-am-invisible|nothing-goes-over-my-head|prison-riot|remove-his-spine|revenge-for-my-family
 mgtg/drax,Drax,mgtg,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,remove-his-spine
 mgtg/drax,Drax,mgtg,triggered-artifact,unsupported,,,,dual-knives
@@ -422,15 +427,22 @@ msp1/iron-man,Iron Man,msp1,draw,executable,WP-022,D-2201,packages/game-engine/s
 msp1/nick-fury,Nick Fury,msp1,(unmarked),unmarked,,,,
 msp1/thor,Thor,msp1,recruit-threshold,condition,,,,surge-of-power
 nmut/karma,Karma,nmut,(unmarked),unmarked,,,,
-nmut/mirage,Mirage,nmut,moonlight,unsupported,,,,dreams-made-real|haunted-by-the-demon-bear
+nmut/mirage,Mirage,nmut,moonlight,condition,,,,dreams-made-real|haunted-by-the-demon-bear
+nmut/mirage,Mirage,nmut,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,dreams-made-real
 nmut/mirage,Mirage,nmut,waking-nightmare,unsupported,,,,haunted-by-the-demon-bear|nightmare-wolves
-nmut/sunspot,Sunspot,nmut,moonlight,unsupported,,,,absorb-radiation
+nmut/sunspot,Sunspot,nmut,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,absorb-radiation
+nmut/sunspot,Sunspot,nmut,moonlight,condition,,,,absorb-radiation
+nmut/sunspot,Sunspot,nmut,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,absorb-radiation
 nmut/sunspot,Sunspot,nmut,put-any-number-bottom-hq,executable,,D-24132,packages/game-engine/src/hero/heroEffects.execute.ts#put-any-number-bottom-hq,empyreal-force
-nmut/sunspot,Sunspot,nmut,sunlight,unsupported,,,,absorb-radiation|empyreal-force|solar-powered|thermokinetic-fury
-nmut/warlock,Warlock,nmut,moonlight,unsupported,,,,analyze-planetary-rotation|nanite-shapeshifter
-nmut/warlock,Warlock,nmut,sunlight,unsupported,,,,analyze-planetary-rotation|nanite-shapeshifter
-nmut/wolfsbane,Wolfsbane,nmut,moonlight,unsupported,,,,howl-at-the-moon|night-vision|nocturnal-savagery|wolf-out
-nmut/wolfsbane,Wolfsbane,nmut,sunlight,unsupported,,,,wolf-out
+nmut/sunspot,Sunspot,nmut,sunlight,condition,,,,absorb-radiation|empyreal-force|solar-powered|thermokinetic-fury
+nmut/warlock,Warlock,nmut,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,nanite-shapeshifter
+nmut/warlock,Warlock,nmut,moonlight,condition,,,,analyze-planetary-rotation|nanite-shapeshifter
+nmut/warlock,Warlock,nmut,sunlight,condition,,,,analyze-planetary-rotation|nanite-shapeshifter
+nmut/wolfsbane,Wolfsbane,nmut,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,wolf-out
+nmut/wolfsbane,Wolfsbane,nmut,moonlight,condition,,,,howl-at-the-moon|night-vision|nocturnal-savagery|wolf-out
+nmut/wolfsbane,Wolfsbane,nmut,optional-put-bottom-hq,executable,,D-24130,packages/game-engine/src/hero/heroEffects.execute.ts#optional-put-bottom-hq,wolf-out
+nmut/wolfsbane,Wolfsbane,nmut,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,howl-at-the-moon
+nmut/wolfsbane,Wolfsbane,nmut,sunlight,condition,,,,wolf-out
 noir/angel-noir,Angel Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,missing-person-case|multitalented
 noir/daredevil-noir,Daredevil Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,discover-the-bodies|listen-for-heartbeats
 noir/iron-man-noir,Iron Man Noir,noir,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,adventurers-assemble|mechanized-plate-mail

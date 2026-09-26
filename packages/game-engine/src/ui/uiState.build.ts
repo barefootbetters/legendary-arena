@@ -25,6 +25,7 @@ import {
   resolveSchemeLossThreshold,
   resolveTwistLossThreshold,
 } from '../rules/schemeLossProgress.js';
+import { computeDayNight } from '../rules/dayNight.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
@@ -36,6 +37,7 @@ import type {
   UIParBreakdown,
   UICardDisplay,
   UIHQCard,
+  UIHQState,
   UIDisplayEntry,
   UIDecksState,
   UISharedPilesState,
@@ -563,6 +565,54 @@ function buildMatchCardImageManifest(
     }
   }
   return manifest;
+}
+
+/**
+ * Whether the match has any day/night hero hook (WP-765 / D-24598): a hook carrying a
+ * sunlightInEffect / moonlightInEffect condition, or the fused day-night-both keyword.
+ *
+ * // why: the presence rule for UIHQState.dayNight — the badge is only meaningful when a
+ * Sunlight/Moonlight card is in the match. The day-night-both keyword is checked too because a
+ * Warlock-only match's fused hooks carry no day/night condition of their own.
+ *
+ * @param gameState - Current game state (read-only).
+ * @returns Whether any hook is a day/night hook.
+ */
+function matchHasDayNightHook(gameState: LegendaryGameState): boolean {
+  for (const hook of gameState.heroAbilityHooks ?? []) {
+    for (const keyword of hook.keywords) {
+      if (keyword === 'day-night-both') {
+        return true;
+      }
+    }
+    for (const condition of hook.conditions ?? []) {
+      if (condition.type === 'sunlightInEffect' || condition.type === 'moonlightInEffect') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Builds the HQ projection: the verbatim slots, the parallel slotDisplay, and — only for a
+ * match with a day/night hero hook — the current Sunlight / Moonlight state (WP-765 / D-24598).
+ *
+ * @param hqSlots - The HQ slot ext_ids (null for an empty slot).
+ * @param hqSlotDisplay - The slot-aligned display payloads.
+ * @param gameState - Current game state (read-only).
+ * @returns The UIHQState, with dayNight omitted when the match has no day/night hook.
+ */
+function buildHqProjection(
+  hqSlots: (string | null)[],
+  hqSlotDisplay: (UIHQCard | null)[],
+  gameState: LegendaryGameState,
+): UIHQState {
+  const hq: UIHQState = { slots: hqSlots, slotDisplay: hqSlotDisplay };
+  if (matchHasDayNightHook(gameState)) {
+    hq.dayNight = computeDayNight(gameState);
+  }
+  return hq;
 }
 
 export function buildUIState(
@@ -2186,7 +2236,7 @@ export function buildUIState(
     // why: WP-111 — slots preserved verbatim (PS-6 fallback); slotDisplay
     // added as a parallel array. Length-equals-slots invariant is
     // maintained by the unified for-of loop above.
-    hq: { slots: hqSlots, slotDisplay: hqSlotDisplay },
+    hq: buildHqProjection(hqSlots, hqSlotDisplay, gameState),
     mastermind,
     scheme,
     economy,

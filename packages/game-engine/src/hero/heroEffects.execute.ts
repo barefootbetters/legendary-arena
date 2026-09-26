@@ -48,6 +48,8 @@ import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard } from '../economy/economy.logic.js';
+import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
+import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
@@ -269,6 +271,17 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // entry (heroEffectRevealTopMayKo) that parks a KO-or-keep entry on the reveal-top-dispose
   // queue, so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'reveal-top-may-ko',
+  // why: WP-765 / D-24598 — hero Blood Frenzy (+N attack) and its recruit variant; each has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectBloodFrenzy / heroEffectBloodFrenzyRecruit) reading the
+  // shared countDistinctVictoryPointValues, so they belong here. Carry NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'blood-frenzy',
+  'blood-frenzy-recruit',
+  // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite; has
+  // a HERO_EFFECT_HANDLERS entry (heroEffectDayNightBoth) that selects and dispatches the branch(es)
+  // via the reentrant executeSingleEffect, so it belongs here. Carries NO top-level magnitude →
+  // also in NO_MAGNITUDE_KEYWORDS.
+  'day-night-both',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -535,6 +548,13 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // (or Excessive Violence fire) time, so the magnitude pre-gate must not drop it, or the reveal
   // never parks its choice. (optional-discard-draw is NOT here — it carries the draw count.)
   'reveal-top-may-ko',
+  // why: WP-765 / D-24598 — blood-frenzy / blood-frenzy-recruit carry NO magnitude (the grant is
+  // the distinct-VP count, read at resolve time) and day-night-both carries NO top-level magnitude
+  // (the branch magnitudes ride the nested sunlightEffects / moonlightEffects). The magnitude
+  // pre-gate must not drop them, or the handlers never run.
+  'blood-frenzy',
+  'blood-frenzy-recruit',
+  'day-night-both',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -752,8 +772,11 @@ export function executeHeroEffects(
     // per-match Synergy Rate iff it carries >=1 condition AND an executable effect
     // body. An unconditional hook has no synergy decision; a hollow (unimplemented)
     // body is our backlog, never the player's miss — both are excluded from the tally.
+    // why: WP-765 / D-24598 — day/night conditions are excluded from the clause count: Sunlight /
+    // Moonlight is board state, not a synergy the player built, and counting it would log a
+    // guaranteed "miss" for one line of every two-line day/night card on every play.
     const isCountableConditionalClause =
-      (hook.conditions?.length ?? 0) > 0 && hookHasExecutableEffect(hook);
+      countSynergyConditions(hook) > 0 && hookHasExecutableEffect(hook);
 
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
@@ -1002,6 +1025,26 @@ function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Counts a hook's conditions that are player-built synergy gates — every condition except the
+ * Sunlight / Moonlight board-state gates (WP-765 / D-24598).
+ *
+ * // why: day/night is decided by the HQ, not by what the player assembled, so a
+ * day/night-only hook is not a Synergy Rate clause (the Synergy exclusion in D-24598).
+ *
+ * @param hook - The hero ability hook.
+ * @returns How many of its conditions count toward the Synergy Rate.
+ */
+function countSynergyConditions(hook: HeroAbilityHook): number {
+  let count = 0;
+  for (const condition of hook.conditions ?? []) {
+    if (condition.type !== 'sunlightInEffect' && condition.type !== 'moonlightInEffect') {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 /**
@@ -5323,6 +5366,113 @@ function heroEffectDigestIndigestion(
 }
 
 /**
+ * Hero handler for the `blood-frenzy` keyword (WP-765 / D-24598).
+ *
+ * "You get +1 Attack for each different Victory Point value among the cards in your Victory
+ * Pile." The count comes from the shared countDistinctVictoryPointValues (the helper WP-760's
+ * villain fight-cost Blood Frenzy also consumes), read at resolve time.
+ *
+ * @param G - Game state (turnEconomy mutated).
+ * @param _ctx - Unused.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param _effect - The 'blood-frenzy' descriptor (no magnitude).
+ * @returns void.
+ */
+function heroEffectBloodFrenzy(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const distinctValues = countDistinctVictoryPointValues(G, playerID);
+  G.turnEconomy = addResources(G.turnEconomy, distinctValues, 0);
+  pushLog(G,
+    `Player ${playerID} gained +${distinctValues} attack from ${formatCardRef(G.cardDisplayData, cardId)} (Blood Frenzy: ${distinctValues} different Victory Point value(s)).`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Hero handler for the `blood-frenzy-recruit` keyword (WP-765 / D-24598) — Morbius Mesmerize's
+ * "Blood Frenzy, gaining Recruit instead of Attack". Same shared distinct-VP count, granted as
+ * recruit.
+ *
+ * @param G - Game state (turnEconomy mutated).
+ * @param _ctx - Unused.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param _effect - The 'blood-frenzy-recruit' descriptor (no magnitude).
+ * @returns void.
+ */
+function heroEffectBloodFrenzyRecruit(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const distinctValues = countDistinctVictoryPointValues(G, playerID);
+  G.turnEconomy = addResources(G.turnEconomy, 0, distinctValues);
+  pushLog(G,
+    `Player ${playerID} gained +${distinctValues} recruit from ${formatCardRef(G.cardDisplayData, cardId)} (Blood Frenzy: ${distinctValues} different Victory Point value(s)).`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Hero handler for the fused `day-night-both` keyword (WP-765 / D-24598).
+ *
+ * If the printed "[X]: Instead, you get both." upgrade holds, runs the Sunlight branch then the
+ * Moonlight branch; otherwise runs the branch computeDayNight selects; on a tie ('neither') runs
+ * nothing and logs why. Each branch effect dispatches through the reentrant executeSingleEffect.
+ *
+ * // why: the digest-indigestion composite precedent (D-24555). HeroCondition has no OR, so the
+ * three printed lines cannot be separate hooks without double-firing a branch under the upgrade;
+ * the upgrade check reuses isDigestBothConditionMet, whose bothConditionCount path handles
+ * Nanite's four [team:x-men] (WP-740 / D-24562). Day/night is read here, as the hook resolves.
+ *
+ * @param G - Game state (mutated by the dispatched branch effects).
+ * @param ctx - Context, forwarded to each branch effect's handler.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param effect - The 'day-night-both' descriptor { sunlightEffects, moonlightEffects, bothCondition?, bothConditionCount? }.
+ * @returns void.
+ */
+function heroEffectDayNightBoth(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const sunlightEffects = effect.sunlightEffects ?? [];
+  const moonlightEffects = effect.moonlightEffects ?? [];
+  if (isDigestBothConditionMet(G, playerID, cardId, effect)) {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, sunlightEffects);
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, moonlightEffects);
+    return;
+  }
+  const dayNight = computeDayNight(G);
+  if (dayNight === 'sunlight') {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, sunlightEffects);
+  } else if (dayNight === 'moonlight') {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, moonlightEffects);
+  } else {
+    // why: a tie leaves neither Sunlight nor Moonlight in effect, so the card does nothing; one
+    // neutral line keeps that observable (G.messages is hash-excluded, D-24081).
+    pushLog(G,
+      `Player ${playerID}'s ${resolveCardName(G.cardDisplayData, cardId)} — neither Sunlight nor Moonlight is in effect; no effect.`,
+      'neutral',
+      cardId,
+    );
+  }
+}
+
+/**
  * Hero handler for the `excessive-violence` keyword (WP-736 / D-24556).
  *
  * Venomverse's "Excessive Violence" (keywords-full id 30). `executeHeroEffects` fires this at
@@ -5607,6 +5757,13 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it.": parks a KO-or-keep
   // entry on the reveal-top-dispose queue, resolved by resolveRevealTopDispose ('ko' or 'top').
   'reveal-top-may-ko': heroEffectRevealTopMayKo,
+  // why: WP-765 / D-24598 — hero Blood Frenzy: +N attack (or recruit), N = distinct VP values in
+  // the active player's Victory Pile (shared economy/bloodFrenzy.logic.ts). NO magnitude.
+  'blood-frenzy': heroEffectBloodFrenzy,
+  'blood-frenzy-recruit': heroEffectBloodFrenzyRecruit,
+  // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite:
+  // both branches under the upgrade, else the computeDayNight branch, else nothing. NO magnitude.
+  'day-night-both': heroEffectDayNightBoth,
 };
 
 // ---------------------------------------------------------------------------
