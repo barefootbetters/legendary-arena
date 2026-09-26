@@ -401,7 +401,7 @@ high-water: 422
 
 - WP-760 — fallen-fight-side (Game Engine + card data. The Fallen's non-Haunt lines: Blood Frenzy (+1 fight cost per distinct VP value in the fighting player's Victory Pile) for Metarchus + Salomé, Atrocity Fight rescue, Patriarch Fight reveal-draw, Salomé Fight KO-up-to-two-from-discard; Salomé's Escape ascension scoped at draft. BLOCKED on WP-757 (+ WP-750 client fight-cost sequencing). reserved 2026-09-25, claude/wp-zarathos-draft)
 - WP-761 — long-press-slash (arena-client. Touch / pen slash-to-fight on a horizontally SCROLLING City row via a long-press arm; WP-756 follow-up. reserved 2026-09-25, claude/wp-longpress-slash-draft)
-
+- WP-762 — null-vattack-data-fill (Card Data. 14 Mastermind base cards (all in gauntlet loadouts, e.g. gotg/thanos, dstr/dormammu), 24 villain cards and up to 32 henchman groups carry no vAttack, so the engine charges 0 to fight them and the bot already does; fill the printed values via the convert-cards patch overlays. Hard prerequisite of WP-750, which removes the client's accidental 'cannot be fought' lock. reserved 2026-09-25, claude/wp750-draft)
 ## EC
 
 high-water: 457
@@ -763,7 +763,7 @@ high-water: 457
 
 - EC-797 — fallen-fight-side (WP-760; Game Engine + card data. reserved 2026-09-25, claude/wp-zarathos-draft)
 - EC-798 — long-press-slash (WP-761; arena-client. reserved 2026-09-25, claude/wp-longpress-slash-draft)
-
+- EC-799 — null-vattack-data-fill (WP-762; Card Data. reserved 2026-09-25, claude/wp750-draft)
 ## D
 
 high-water: 24241
@@ -1136,3 +1136,4 @@ section below) and the allocation protocol in
 - D-24591 — autoplay-spend-filter-exclusion (direct fix, no WP — the autoplay spend step offers every legal move except playCard / revealVillainCard / endTurn and parked resolve choices, so WP-757 exorciseHauntedHero needs no server edit; D-24590 follow-up. reserved 2026-09-25, claude/autoplay-spend-filter-legal-moves)
 - D-24592 — long-press-slash (RESERVED: locks WP-761 / EC-798 — the long-press arm threshold + movement tolerance, the armed-stroke touch-action / scroll-suppression contract, and how it composes with the D-24585 fit rule. reserved 2026-09-25, claude/wp-longpress-slash-draft)
 - D-24593 — bot-ally-non-active-seat-choice (direct fix, no WP — the bot-ally driver answers a seat choice addressed to a bot seat when that bot is not the active player, and waits instead of faulting while a human owes one; D-24590 policy. reserved 2026-09-25, claude/bot-ally-seat-choice-drain)
+- D-24594 — null-vattack-data-fill (RESERVED: locks WP-762 / EC-799 — the source of truth for filled attack values and the WP-750 sequencing. reserved 2026-09-25, claude/wp750-draft)
