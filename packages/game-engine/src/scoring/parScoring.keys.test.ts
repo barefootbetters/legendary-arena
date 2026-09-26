@@ -8,7 +8,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildScenarioKey, buildTeamKey } from './parScoring.keys.js';
+import {
+  buildScenarioKey,
+  buildScenarioKeyFromExtIds,
+  buildTeamKey,
+  toScenarioKeySegment,
+} from './parScoring.keys.js';
 
 describe('parScoring keys (WP-048)', () => {
   it('buildScenarioKey with unsorted villain slugs produces a sorted, stable key', () => {
@@ -86,5 +91,37 @@ describe('parScoring keys (WP-048)', () => {
     assert.strictEqual(scenarioKeyA, scenarioKeyRepeat);
     assert.strictEqual(teamKeyA, teamKeyB);
     assert.strictEqual(teamKeyA, teamKeyRepeat);
+  });
+});
+
+describe('set-qualified ScenarioKey segments (D-24597)', () => {
+  it('toScenarioKeySegment strips only the core qualifier', () => {
+    assert.strictEqual(toScenarioKeySegment('core/red-skull'), 'red-skull');
+    assert.strictEqual(toScenarioKeySegment('co2e/red-skull'), 'co2e/red-skull');
+    assert.strictEqual(toScenarioKeySegment('msp1/super-hero-civil-war'), 'msp1/super-hero-civil-war');
+    assert.strictEqual(toScenarioKeySegment('already-bare'), 'already-bare');
+  });
+
+  it('an all-core selection yields the same key as the bare-slug builder', () => {
+    const fromExtIds = buildScenarioKeyFromExtIds('core/midtown-bank-robbery', 'core/red-skull', [
+      'core/masters-of-evil',
+      'core/hydra',
+    ]);
+    assert.strictEqual(
+      fromExtIds,
+      buildScenarioKey('midtown-bank-robbery', 'red-skull', ['masters-of-evil', 'hydra']),
+    );
+  });
+
+  it('a reprint scheme, mastermind, or villain group never collides with the core key', () => {
+    const coreKey = buildScenarioKeyFromExtIds('core/super-hero-civil-war', 'core/red-skull', ['core/hydra']);
+    const reprintKeys = [
+      buildScenarioKeyFromExtIds('co2e/super-hero-civil-war', 'core/red-skull', ['core/hydra']),
+      buildScenarioKeyFromExtIds('msp1/super-hero-civil-war', 'core/red-skull', ['core/hydra']),
+      buildScenarioKeyFromExtIds('core/super-hero-civil-war', 'co2e/red-skull', ['core/hydra']),
+      buildScenarioKeyFromExtIds('core/super-hero-civil-war', 'core/red-skull', ['co2e/hydra']),
+    ];
+    assert.strictEqual(reprintKeys[0], 'co2e/super-hero-civil-war::red-skull::hydra');
+    assert.strictEqual(new Set([coreKey, ...reprintKeys]).size, 5);
   });
 });

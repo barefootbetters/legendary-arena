@@ -1,7 +1,8 @@
 /**
  * Tests for the live-match capture step (WP-335).
  *
- * A logic-pure test always runs (the set-abbr strip). The end-to-end capture test
+ * Logic-pure tests always run (the D-24597 set-qualified key against the
+ * committed seed PAR index). The end-to-end capture test
  * is DB-gated (non-silent skip without `TEST_DATABASE_URL`): it seeds a real
  * finished match (a `bgio.matches` row whose `initial_state`/`log` are produced by
  * the WP-334 manufacture pattern), two authenticated seats, then runs `captureMatch`
@@ -21,9 +22,15 @@ import {
   LegendaryGame,
 } from '@legendary-arena/game-engine';
 
-import { captureMatch, stripSetAbbreviation } from './matchCapture.logic.js';
+import { captureMatch, deriveCaptureScenarioKey } from './matchCapture.logic.js';
+// @ts-ignore — importing .mjs from .ts; tsx resolves this at runtime.
+import { checkParPublished } from '../par/parGate.mjs';
+// @ts-ignore — loadParIndex lives behind the Setup-Tooling Surface (WP-144 / D-14401).
+import { loadParIndex } from '@legendary-arena/game-engine/setup';
 import { reduceMatchToFinalState } from './matchReplay.logic.js';
 import type { DatabaseClient } from '../identity/identity.types.js';
+
+import { fileURLToPath } from 'node:url';
 
 import pg from 'pg';
 
@@ -91,12 +98,60 @@ function manufactureArtifact(): { initialState: unknown; log: unknown[] } {
   return { initialState, log };
 }
 
-describe('stripSetAbbreviation (WP-335)', () => {
-  test('strips a set-abbr prefix; leaves a bare slug unchanged', () => {
-    assert.equal(stripSetAbbreviation('core/dr-doom'), 'dr-doom');
-    assert.equal(stripSetAbbreviation('test/test-scheme-001'), 'test-scheme-001');
-    assert.equal(stripSetAbbreviation('already-bare'), 'already-bare');
+// why: the committed PAR store, resolved from this file (the test runner's cwd is
+// the package, not the repo root).
+const PAR_BASE_PATH = fileURLToPath(new URL('../../../../data/par', import.meta.url));
+
+const CORE_VILLAINS = [
+  'core/masters-of-evil',
+  'core/brotherhood',
+  'core/enemies-of-asgard',
+  'core/hydra',
+];
+
+describe('capture scenarioKey is set-qualified against published PAR (D-24597)', () => {
+  test('a core scheme leg still resolves the published seed PAR', async () => {
+    const seedIndex = await loadParIndex(PAR_BASE_PATH, 'v1', 'seed');
+    assert.notEqual(seedIndex, null);
+    const scenarioKey = deriveCaptureScenarioKey({
+      schemeId: 'core/portals-to-the-dark-dimension',
+      mastermindId: 'core/red-skull',
+      villainGroupIds: CORE_VILLAINS,
+    });
+    assert.equal(
+      scenarioKey,
+      'portals-to-the-dark-dimension::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil',
+    );
+    assert.notEqual(checkParPublished(null, seedIndex, scenarioKey), null);
   });
+
+  // why: every reprint scheme/mastermind whose bare slug equals a core one. Each is
+  // otherwise the identical core leg, so a set-blind key lands on core's PAR row.
+  const reprints: ReadonlyArray<{ label: string; schemeId: string; mastermindId: string }> = [
+    { label: 'co2e Portals', schemeId: 'co2e/portals-to-the-dark-dimension', mastermindId: 'core/red-skull' },
+    { label: 'co2e Civil War', schemeId: 'co2e/super-hero-civil-war', mastermindId: 'core/red-skull' },
+    { label: 'co2e Cosmic Cube', schemeId: 'co2e/unleash-the-power-of-the-cosmic-cube', mastermindId: 'core/red-skull' },
+    { label: 'co2e Secret Invasion', schemeId: 'co2e/secret-invasion-of-the-skrull-shapeshifters', mastermindId: 'core/red-skull' },
+    { label: 'co2e Killbots', schemeId: 'co2e/replace-earths-leaders-with-killbots', mastermindId: 'core/red-skull' },
+    { label: 'msp1 Civil War', schemeId: 'msp1/super-hero-civil-war', mastermindId: 'core/red-skull' },
+    { label: 'msp1 Cosmic Cube', schemeId: 'msp1/unleash-the-power-of-the-cosmic-cube', mastermindId: 'core/red-skull' },
+    { label: 'co2e Red Skull (core scheme)', schemeId: 'core/portals-to-the-dark-dimension', mastermindId: 'co2e/red-skull' },
+  ];
+  for (const reprint of reprints) {
+    test(`${reprint.label} reports no PAR instead of core's`, async () => {
+      const seedIndex = await loadParIndex(PAR_BASE_PATH, 'v1', 'seed');
+      const scenarioKey = deriveCaptureScenarioKey({
+        schemeId: reprint.schemeId,
+        mastermindId: reprint.mastermindId,
+        villainGroupIds: CORE_VILLAINS,
+      });
+      assert.equal(
+        checkParPublished(null, seedIndex, scenarioKey),
+        null,
+        `${reprint.label} derived "${scenarioKey}", which resolves a published core PAR row.`,
+      );
+    });
+  }
 });
 
 describe('captureMatch (WP-335)', () => {
@@ -110,11 +165,12 @@ describe('captureMatch (WP-335)', () => {
     const reduced = reduceMatchToFinalState(artifact);
     expectedHash = reduced.stateHash;
     // why: independent recompute of the expected scenarioKey from the mock setup —
-    // the capture step must derive the same via strip + buildScenarioKey.
+    // the capture step must derive the same via buildScenarioKeyFromExtIds.
+    // D-24597: the `test/` set is not core, so its ids stay set-qualified.
     expectedScenarioKey = buildScenarioKey(
-      'test-scheme-001',
-      'test-mastermind-001',
-      ['test-villain-group-001', 'test-villain-group-002'],
+      'test/test-scheme-001',
+      'test/test-mastermind-001',
+      ['test/test-villain-group-001', 'test/test-villain-group-002'],
     );
     void computeStateHash; // referenced for parity with the mechanism's hashing
 

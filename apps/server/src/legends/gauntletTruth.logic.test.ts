@@ -17,6 +17,8 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  gauntletScenarioKeySegment,
+  legSchemeSlugOfScenarioKey,
   FIXED_POOL_TEAM_CAP,
   findBestPoolAssignment,
   matchesApprovedLoadout,
@@ -534,5 +536,20 @@ describe('findBestPoolAssignment (WP-442)', () => {
 
   test('the cap constant is the D-24187 §5 locked value of 12', () => {
     assert.strictEqual(FIXED_POOL_TEAM_CAP, 12);
+  });
+});
+
+describe('gauntlet ScenarioKey segments (D-24597)', () => {
+  test('a core gauntlet matches bare segments; any other set matches qualified ones', () => {
+    assert.equal(gauntletScenarioKeySegment('core', 'red-skull'), 'red-skull');
+    assert.equal(gauntletScenarioKeySegment('co2e', 'red-skull'), 'co2e/red-skull');
+  });
+
+  test('legSchemeSlugOfScenarioKey returns the bare leg slug for either form', () => {
+    assert.equal(legSchemeSlugOfScenarioKey('super-hero-civil-war::red-skull::hydra'), 'super-hero-civil-war');
+    assert.equal(
+      legSchemeSlugOfScenarioKey('co2e/super-hero-civil-war::co2e/red-skull::co2e/hydra'),
+      'super-hero-civil-war',
+    );
   });
 });

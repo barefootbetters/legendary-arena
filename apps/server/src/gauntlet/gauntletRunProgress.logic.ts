@@ -42,6 +42,8 @@
 
 import {
   findBestPoolAssignment,
+  gauntletScenarioKeySegment,
+  legSchemeSlugOfScenarioKey,
   qualifiesAsLegClear,
 } from '../legends/gauntletTruth.logic.js';
 import type {
@@ -376,7 +378,7 @@ export function deriveGauntletRunProgress(
       continue;
     }
 
-    const schemeSlug = replay.scenarioKey.split('::')[0] ?? '';
+    const schemeSlug = legSchemeSlugOfScenarioKey(replay.scenarioKey);
     clearedSchemeSlugs.add(schemeSlug);
 
     const currentLastPlayed = lastPlayedBySchemeSlug.get(schemeSlug);
@@ -479,6 +481,7 @@ export function deriveGauntletRunProgress(
  * restriction.
  *
  * @param database the pg pool.
+ * @param setAbbr the run's set (qualifies the key segments, D-24597).
  * @param mastermindSlug the run's mastermind slug (scenario-key segment 2).
  * @param legs the gauntlet's leg schemes (scenario-key segment 1 ∈ these).
  * @param playerCount the run's player count.
@@ -487,14 +490,17 @@ export function deriveGauntletRunProgress(
  */
 async function queryCallerLegScores(
   database: DatabaseClient,
+  setAbbr: string,
   mastermindSlug: string,
   legs: readonly GauntletLeg[],
   playerCount: number,
   callerPlayerId: number,
 ): Promise<CallerGauntletScoreRow[]> {
-  const legSchemeSlugs: string[] = [];
+  // why: D-24597 — segments are bare for core and set-qualified otherwise; match
+  // the run's own set's form so another set's same-slug wins never leak in.
+  const legSchemeSegments: string[] = [];
   for (const leg of legs) {
-    legSchemeSlugs.push(leg.schemeSlug);
+    legSchemeSegments.push(gauntletScenarioKeySegment(setAbbr, leg.schemeSlug));
   }
   // why: the candidate replays are narrowed to ones the CALLER owns at this
   // run's player_count (the `replay_hash IN (…caller ownership…)` clause +
@@ -529,7 +535,12 @@ async function queryCallerLegScores(
       'INNER JOIN legendary.replay_ownership ro ' +
       '  ON ro.replay_hash = cs.replay_hash ' +
       'INNER JOIN legendary.players p ON ro.player_id = p.player_id',
-    [mastermindSlug, legSchemeSlugs, playerCount, callerPlayerId],
+    [
+      gauntletScenarioKeySegment(setAbbr, mastermindSlug),
+      legSchemeSegments,
+      playerCount,
+      callerPlayerId,
+    ],
   );
   return result.rows as CallerGauntletScoreRow[];
 }
@@ -585,6 +596,7 @@ export async function listGauntletRunProgress(
     }
     const qualifyingRows = await queryCallerLegScores(
       database,
+      run.setAbbr,
       run.mastermindSlug,
       inputs.legs,
       run.playerCount,

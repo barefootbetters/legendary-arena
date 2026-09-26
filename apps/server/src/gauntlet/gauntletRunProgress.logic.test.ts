@@ -80,9 +80,13 @@ interface FixtureRow {
   visibility: string;
 }
 
-/** Canonical test scenario key for a (scheme, mastermind) pair. */
+/**
+ * Canonical test scenario key for a (scheme, mastermind) pair — as capture writes
+ * it for the non-core `tst` set: scheme + mastermind segments set-qualified
+ * (D-24597).
+ */
 function scenarioKeyFor(schemeSlug: string): string {
-  return `${schemeSlug}::${TEST_MASTERMIND}::villains-x`;
+  return `${TEST_SET}/${schemeSlug}::${TEST_SET}/${TEST_MASTERMIND}::villains-x`;
 }
 
 /**
@@ -469,7 +473,7 @@ describe('deriveGauntletRunProgress (pure, synthetic rows)', () => {
     const rows: FixtureRow[] = [
       {
         ...soloRow('r1', 'scheme-a', -5, 'h1+h2+h3', '2026-07-02T10:00:00.000Z'),
-        scenario_key: 'scheme-a::mm-one::unpublished-villains',
+        scenario_key: `${TEST_SET}/scheme-a::${TEST_SET}/mm-one::unpublished-villains`,
       },
     ];
     const view = deriveGauntletRunProgress(
@@ -534,7 +538,7 @@ function perSchemeRow(
 ): FixtureRow {
   return {
     ...soloRow(replayHash, schemeSlug, finalScore, 'h1+h2+h3', '2026-07-02T10:00:00.000Z'),
-    scenario_key: `${schemeSlug}::${TEST_MASTERMIND}::${villainSegment}`,
+    scenario_key: `${TEST_SET}/${schemeSlug}::${TEST_SET}/${TEST_MASTERMIND}::${villainSegment}`,
     henchman_key: henchmanKey,
   };
 }
