@@ -1773,9 +1773,10 @@ dispute.
   ordered into 26 weeks of domestic-violence counseling under a diversion plea,
   and the league suspended both players seven games. Griner was the reigning
   Defensive Player of the Year when she was arrested, and the league named her
-  Defensive Player of the Year again that season. The marriage lasted 28 days
-  before Griner sought to end it. A judge rejected her request for an
-  annulment, finding no legal basis, and the case went forward as a divorce,
+  Defensive Player of the Year again that season. The marriage lasted 28 days:
+  the day after Johnson announced she was pregnant with twins, Griner filed to
+  annul it, claiming fraud and duress. A judge rejected the annulment, finding
+  no legal basis, and the case went forward as a divorce,
   finalized in June 2016. Along the way the court denied Johnson's request for
   $20,000 a month in spousal support in August 2015, and in 2016 ordered Griner to pay $2,516.97 a
   month in child support for twins Johnson had conceived through in-vitro
@@ -2659,7 +2660,9 @@ choice for the operator, never make it silently.
   *People* on [the spousal-support ruling](https://people.com/sports/wnbas-glory-johnson-reacts-to-judge-declining-spousal-support/)
   and ESPN on [the child-support order](https://www.espn.com/wnba/story/_/id/15355152/brittney-griner-ordered-pay-child-support-glory-johnson);
   BuzzFeed News on [the rejected annulment](https://www.buzzfeednews.com/article/sheridanwatson/brittney-griner-glory-johnson-annulment);
-  ABC News on [the 2026 divorce filing](https://abcnews.com/GMA/Culture/brittney-griner-files-divorce-wife-cherelle-griner/story?id=135268883).
+  ABC News on [the 2026 divorce filing](https://abcnews.com/GMA/Culture/brittney-griner-files-divorce-wife-cherelle-griner/story?id=135268883);
+  *Indiatimes* on [both marriages](https://www.indiatimes.com/trending/what-happened-between-brittney-griner-and-glory-johnson-old-marriage-drama-resurfaces-after-controversial-divorce-filing-against-cherelle-griner/articleshow/132776550.html)
+  (1 August 2026).
   For the Bout swap: the Justice Department on
   [Bout's 2011 conviction](https://www.justice.gov/archives/opa/pr/international-arms-dealer-viktor-bout-convicted-new-york-terrorism-crimes);
   Al Jazeera on the [wrongful-detention designation](https://www.aljazeera.com/news/2022/5/3/us-state-department-says-griner-wrongfully-detained-by-russia)
