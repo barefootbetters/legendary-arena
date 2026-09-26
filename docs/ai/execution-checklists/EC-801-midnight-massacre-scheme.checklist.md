@@ -41,7 +41,7 @@
 - Blade ids feed the stats, display, traits and hook builders **only** for this scheme, and never enter the Hero Deck or HQ.
 - No Sunlight/Moonlight, no 3-Recruit surcharge, no Blood Frenzy term. Deferred and recorded as hollow.
 - No client or server change. The choice renders through the generic `PendingSeatChoicePrompt`.
-- The data change is the Daywalker counts only, made in `hero-card-counts.json`. `cards:check` proves reproducibility, and the `mdns.json` diff is limited to those counts. The Daywalker rarities need operator confirmation before execution.
+- The data change is the Daywalker counts only, made in `hero-card-counts.json`. `cards:check` proves reproducibility, and the `mdns.json` diff is limited to those counts. The Daywalker rarities were operator-confirmed on 2026-09-25 (Ride by Moonlight = Uncommon ×3).
 - Moves and effects never throw. Randomness only through the existing shuffle.
 
 ## Required `// why:` Comments
