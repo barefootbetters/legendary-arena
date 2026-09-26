@@ -881,10 +881,11 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
     );
   });
 
-  it('does NOT set the signal on a HENCHMAN defeat (Diamond Form is "Villain or Mastermind")', () => {
-    // why: regression — fightVillain defeats BOTH villains and henchmen, but Diamond
-    // Form's grant excludes henchmen. A live Red Skull match over-fired +3 recruit for
-    // each Hand Ninja defeated; the flag must be gated on the fought card's revealed type.
+  it('SETS the signal on a HENCHMAN defeat — Henchmen are Villains (D-24603)', () => {
+    // why: D-24603 — Universal Rules v23 "Henchman Villain cards are indeed Villains", so a
+    // henchman defeat satisfies "Whenever you defeat a Villain or Mastermind". This test
+    // previously pinned the reversed D-24467 (#2030) exclusion; the behaviour change is
+    // intentional (live: Snarling Fangs offered no KO after a Savage Land Mutates defeat).
     const gameState = createMockGameState({ city: ['ninja-a', null, null, null, null] });
     gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
     gameState.villainDeckCardTypes = { 'ninja-a': 'henchman' };
@@ -895,12 +896,12 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
     assert.equal(
       moveContext.G.playerZones['0']!.victory.length,
       1,
-      'the henchman is still defeated (only the Diamond Form signal is gated, not the fight)',
+      'the henchman is defeated',
     );
     assert.equal(
       moveContext.G.villainOrMastermindDefeatedSinceResolve,
-      undefined,
-      'a henchman defeat must NOT satisfy "defeat a Villain or Mastermind"',
+      true,
+      'a henchman defeat satisfies "defeat a Villain or Mastermind"',
     );
   });
 
@@ -973,5 +974,105 @@ describe('fightVillain — Excessive Violence with the real move context (WP-754
       revealedTops: [{ ownerPlayerID: '0', cardId: 'disc-1', isKoAllowed: true, isDiscardAllowed: false }],
     }], 'one KO-or-keep entry on the reshuffled deck top');
     assert.deepStrictEqual(moveContext.G.playerZones['0']!.deck, ['disc-1'], 'the revealed card stays on top');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Midtown Bank Robbery family — +1 attack per Bystander a Villain has (WP-748 / D-24572)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Midtown Bank Robbery Bystander bonus (WP-748)', () => {
+  const HOSTAGES = ['hostage-1', 'hostage-2', 'hostage-3'] as CardExtId[];
+
+  /**
+   * A 3-cost villain at city index 0 holding three Bystanders, under `schemeId`,
+   * with `attack` available.
+   */
+  function createHostageState(schemeId: string, attack: number): LegendaryGameState {
+    const base = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    // why: selection is readonly and the shared factory hardcodes 'test-scheme'
+    // (the control), so the scheme is set by spreading selection, never by
+    // editing the factory.
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, schemeId },
+    };
+    gameState.attachedBystanders = { ['villain-a' as CardExtId]: [...HOSTAGES] };
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('Midtown: a 3-cost villain holding 3 Bystanders is refused at 3 attack', () => {
+    const moveContext = createMockMoveContext(createHostageState('core/midtown-bank-robbery', 3));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], 'villain-a', 'villain stays in the City');
+    assert.equal(moveContext.G.playerZones['0']!.victory.length, 0, 'nothing defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent on a refused fight');
+  });
+
+  it('Midtown: the same villain is defeated at 6 attack, rescuing its 3 Bystanders and spending exactly 6', () => {
+    const moveContext = createMockMoveContext(createHostageState('core/midtown-bank-robbery', 6));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const victory = moveContext.G.playerZones['0']!.victory;
+    assert.equal(moveContext.G.city[0], null, 'villain left the City');
+    assert.ok(victory.includes('villain-a'), 'villain in the Victory Pile');
+    for (const hostage of HOSTAGES) {
+      assert.ok(victory.includes(hostage), `${hostage} rescued to the Victory Pile`);
+    }
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 6, 'exactly printed 3 + 3 Bystanders spent');
+    assert.equal(moveContext.G.turnEconomy.attack - moveContext.G.turnEconomy.spentAttack, 0);
+  });
+
+  it('control: under a non-family scheme the villain is defeated at its printed 3', () => {
+    const moveContext = createMockMoveContext(createHostageState('test-scheme', 3));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated at printed attack');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Villain Blood Frenzy — the fight gate charges the fighter's distinct VP count (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — villain Blood Frenzy (WP-760)', () => {
+  /**
+   * A Blood Frenzy villain (printed 3) at City index 0, with player 0's Victory Pile
+   * holding two villains worth 2 and 4 — two distinct VP values, so the cost is 5.
+   */
+  function createBloodFrenzyState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.villainBloodFrenzy = { ['villain-a' as CardExtId]: true };
+    gameState.villainDeckCardTypes = {
+      ['vp-two' as CardExtId]: 'villain',
+      ['vp-four' as CardExtId]: 'villain',
+    };
+    gameState.cardVictoryPoints = { ['vp-two' as CardExtId]: 2, ['vp-four' as CardExtId]: 4 };
+    gameState.playerZones['0']!.victory = ['vp-two', 'vp-four'] as LegendaryGameState['playerZones']['0']['victory'];
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('refuses the fight at the printed attack (3 < 3 + 2)', () => {
+    const moveContext = createMockMoveContext(createBloodFrenzyState(3));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.city[0], 'villain-a', 'villain stays in the City');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent');
+  });
+
+  it('defeats it at printed + distinct VP count, spending exactly 5', () => {
+    const moveContext = createMockMoveContext(createBloodFrenzyState(5));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 5);
   });
 });

@@ -2814,6 +2814,8 @@
       "id": 19,
       "name": "Mandroid",
       "slug": "mandroid",
+      "vAttack": "2+",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-hm-mandroid.webp",
       "abilities": [
         "This gets +1[icon:attack] for each other Mandroid in your Victory Pile.",
@@ -2824,6 +2826,8 @@
       "id": 20,
       "name": "Cape-Killers",
       "slug": "cape-killers",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-hm-cape-killers.webp",
       "abilities": [
         "[keyword:S.H.I.E.L.D. Clearance]",

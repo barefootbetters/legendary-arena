@@ -2564,7 +2564,9 @@ describe('menace signal survives the audience filter (WP-557 / D-24366)', () => 
     const config = createTestConfig();
     const registry = createMockRegistry();
     const gameState = buildInitialGameState(config, registry, makeMockCtx());
-    gameState.counters.schemeTwistCount = 5;
+    // why: WP-763 / D-24595 — the unconfigured fixture scheme's denominator is
+    // now the default 8 (was the flat 7), so 6 twists (0.75) keeps it critical.
+    gameState.counters.schemeTwistCount = 6;
     // why: buildUIState takes a UIBuildContext (phase/turn/currentPlayer), NOT the
     // setup context. Passing makeMockCtx() here fed it undefined for all three;
     // the assertions only read progress, so it passed. Surfaced by the WP-563 gate.
@@ -2913,6 +2915,23 @@ describe('filterUIStateForAudience — mastermind.finalBlowPending (WP-687)', ()
   });
 });
 
+// WP-750 / D-24574 — the projected Mastermind fight cost is a board-visible field
+// and must survive the audience filter for every audience (the EC-206 drop guard).
+describe('filterUIStateForAudience — mastermind.fightCost (WP-750)', () => {
+  it('mastermind.fightCost survives the filter for every audience', () => {
+    const uiState = createTestUIState();
+    assert.equal(typeof uiState.mastermind.fightCost, 'number', 'build populates fightCost');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(
+        result.mastermind.fightCost,
+        uiState.mastermind.fightCost,
+        `fightCost must survive the whitelist for ${audience.kind} view`,
+      );
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-695 / EC-732 — pendingRuthlessDictatorChoice + pendingElectromagneticBubbleChoice
 // audience-filter survival (D-24512)
@@ -3084,5 +3103,268 @@ describe('filterUIStateForAudience — WP-754 optional fields (D-24581)', () => 
     const uiState = createKoOrKeepUIState();
     assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingRevealTopDispose, undefined);
     assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingRevealTopDispose, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-765 / D-24598 — hq.dayNight board-visible field: presence rule + audience filter
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — hq.dayNight (WP-765 / D-24598)', () => {
+  /**
+   * Builds a game state whose HQ is majority-even (Sunlight), with the given hero hooks.
+   */
+  function dayNightGameState(hooks: LegendaryGameState['heroAbilityHooks']): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const hqIds = ['dn-hq-0', 'dn-hq-1', 'dn-hq-2', null, null];
+    const costs = [2, 4, 3];
+    for (let index = 0; index < costs.length; index++) {
+      gameState.cardStats[hqIds[index] as CardExtId] = {
+        attack: 0, recruit: 0, cost: costs[index]!, fightCost: 0, fightCostMode: 'static', fightCostBase: 0,
+        hasAttackIcon: false, hasRecruitIcon: false, isShieldOrHydra: false,
+      };
+    }
+    gameState.hq = hqIds as LegendaryGameState['hq'];
+    gameState.heroAbilityHooks = hooks;
+    return gameState;
+  }
+
+  it('is omitted when the match has no day/night hero hook (and stays omitted through the filter)', () => {
+    const uiState = buildUIState(dayNightGameState([]), mockCtx);
+    assert.equal('dayNight' in uiState.hq, false, 'no day/night hook → no field');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal('dayNight' in filterUIStateForAudience(uiState, audience).hq, false);
+    }
+  });
+
+  it('is present for a day/night condition hook and survives the filter for every audience', () => {
+    const uiState = buildUIState(dayNightGameState([{
+      cardId: 'mdns/werewolf-by-night/starlit-path#0',
+      timing: 'onPlay',
+      keywords: ['draw', 'conditional'],
+      conditions: [{ type: 'moonlightInEffect', value: '' }],
+      effects: [{ type: 'draw', magnitude: 1 }],
+    }]), mockCtx);
+    assert.equal(uiState.hq.dayNight, 'sunlight', 'computed from the HQ printed costs (2, 4, 3)');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal(
+        filterUIStateForAudience(uiState, audience).hq.dayNight,
+        'sunlight',
+        `dayNight must survive the whitelist for ${audience.kind} view`,
+      );
+    }
+  });
+
+  it('is present in a Warlock-only match, whose fused day-night-both hooks carry no day/night condition', () => {
+    const uiState = buildUIState(dayNightGameState([{
+      cardId: 'nmut/warlock/analyze-planetary-rotation#0',
+      timing: 'onPlay',
+      keywords: ['day-night-both'],
+      effects: [{
+        type: 'day-night-both',
+        sunlightEffects: [{ type: 'recruit', magnitude: 2 }],
+        moonlightEffects: [{ type: 'attack', magnitude: 2 }],
+        bothCondition: { type: 'heroClassMatch', value: 'tech' },
+      }],
+    }]), mockCtx);
+    assert.equal(uiState.hq.dayNight, 'sunlight');
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).hq.dayNight, 'sunlight');
+  });
+
+  it('reports neither on a tied HQ', () => {
+    const gameState = dayNightGameState([{
+      cardId: 'nmut/warlock/analyze-planetary-rotation#0',
+      timing: 'onPlay',
+      keywords: ['day-night-both'],
+      effects: [{ type: 'day-night-both', sunlightEffects: [], moonlightEffects: [] }],
+    }]);
+    gameState.hq = ['dn-hq-0', 'dn-hq-2', null, null, null] as LegendaryGameState['hq'];
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.equal(uiState.hq.dayNight, 'neither');
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_0).hq.dayNight, 'neither');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Haunt: `hq.haunters` and `mastermind.isHaunting` are PUBLIC
+// shared-board fields. Both are optional, so a missed filter pass-through silently
+// drops them (the EC-206 failure mode). Five-step Board-Visible Field contract:
+// declared, built, passed through for every audience, tested here, and carried by the
+// diagnostics uiStateSnapshot (the JSON round-trip).
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Haunt haunters + isHaunting (WP-757 / D-24587)', () => {
+  const HAUNTER_ID = 'core-villain-fallen-metarchus-00';
+  const HAUNTER_NAME = 'Metarchus';
+  const ALL_AUDIENCES: UIAudience[] = [PLAYER_0, PLAYER_1, SPECTATOR];
+
+  /** Builds a G with two seeded HQ Heroes and the given per-slot haunters. */
+  function createHauntedGameState(
+    haunters: LegendaryGameState['hqHaunters'] | undefined,
+  ): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const heroA = gameState.playerZones['0']!.deck[0]!;
+    const heroB = gameState.playerZones['0']!.deck[1]!;
+    gameState.hq = [heroA, heroB, null, null, null] as LegendaryGameState['hq'];
+    // why: the villain haunter's display is resolved from G.cardDisplayData; seed a
+    // real name so the test proves the client gets a name, not a hyphenated id.
+    gameState.cardDisplayData = {
+      ...gameState.cardDisplayData,
+      [HAUNTER_ID]: {
+        extId: HAUNTER_ID,
+        name: HAUNTER_NAME,
+        imageUrl: 'https://images.legendary-arena.com/core/metarchus.webp',
+        cost: null,
+      },
+    };
+    if (haunters !== undefined) {
+      gameState.hqHaunters = haunters;
+    }
+    return gameState;
+  }
+
+  /** UIState with a Villain haunter on slot 0 only (no Mastermind haunter). */
+  function createVillainHauntUIState(): UIState {
+    return buildUIState(
+      createHauntedGameState([{ kind: 'villain', cardId: HAUNTER_ID }, null, null, null, null]),
+      mockCtx,
+    );
+  }
+
+  /** UIState with a Mastermind haunter on slot 1 only. */
+  function createMastermindHauntUIState(): UIState {
+    return buildUIState(
+      createHauntedGameState([null, { kind: 'mastermind' }, null, null, null]),
+      mockCtx,
+    );
+  }
+
+  it('hq.haunters survives for every audience with the villain display embedded', () => {
+    const uiState = createVillainHauntUIState();
+    assert.ok(uiState.hq.haunters !== undefined, 'precondition: buildUIState projects haunters');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const haunters = result.hq.haunters;
+      assert.ok(haunters !== undefined, `haunters survive the filter for ${JSON.stringify(audience)}`);
+      assert.equal(haunters!.length, 5, 'index-aligned with the 5 HQ slots');
+      const slotZero = haunters![0]!;
+      assert.equal(slotZero.kind, 'villain');
+      if (slotZero.kind === 'villain') {
+        assert.equal(slotZero.extId, HAUNTER_ID);
+        assert.equal(slotZero.display.name, HAUNTER_NAME, 'a display name, not the hyphenated id');
+      }
+      for (let slotIndex = 1; slotIndex < 5; slotIndex++) {
+        assert.equal(haunters![slotIndex], null);
+      }
+    }
+  });
+
+  it('a Villain-only haunt projects NO mastermind.isHaunting key', () => {
+    const uiState = createVillainHauntUIState();
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal('isHaunting' in result.mastermind, false);
+    }
+  });
+
+  it('a Mastermind haunter projects mastermind.isHaunting === true and a mastermind entry for every audience', () => {
+    const uiState = createMastermindHauntUIState();
+    assert.equal(uiState.mastermind.isHaunting, true, 'precondition: buildUIState projects isHaunting');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal(result.mastermind.isHaunting, true);
+      assert.deepStrictEqual(result.hq.haunters, [null, { kind: 'mastermind' }, null, null, null]);
+    }
+  });
+
+  it('omit-when-absent: no G.hqHaunters → neither hq.haunters nor mastermind.isHaunting is present', () => {
+    const uiState = buildUIState(createHauntedGameState(undefined), mockCtx);
+    assert.equal('haunters' in uiState.hq, false, 'buildUIState omits haunters');
+    assert.equal('isHaunting' in uiState.mastermind, false, 'buildUIState omits isHaunting');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.equal('haunters' in result.hq, false);
+      assert.equal('isHaunting' in result.mastermind, false);
+    }
+  });
+
+  it('the diagnostics uiStateSnapshot (JSON round-trip) carries haunters and isHaunting', () => {
+    const villainResult = filterUIStateForAudience(createVillainHauntUIState(), SPECTATOR);
+    const villainSerialized = JSON.parse(JSON.stringify(villainResult)) as UIState;
+    const serializedSlot = villainSerialized.hq.haunters![0]!;
+    assert.equal(serializedSlot.kind, 'villain');
+    if (serializedSlot.kind === 'villain') {
+      assert.equal(serializedSlot.display.name, HAUNTER_NAME);
+    }
+
+    const mastermindResult = filterUIStateForAudience(createMastermindHauntUIState(), PLAYER_1);
+    const mastermindSerialized = JSON.parse(JSON.stringify(mastermindResult)) as UIState;
+    assert.equal(mastermindSerialized.mastermind.isHaunting, true);
+    assert.deepStrictEqual(mastermindSerialized.hq.haunters![1], { kind: 'mastermind' });
+  });
+
+  it('no aliasing: mutating a filtered haunter (array, entry, display) leaves the input intact', () => {
+    const uiState = createVillainHauntUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.notStrictEqual(result.hq.haunters, uiState.hq.haunters, 'fresh haunters array');
+    const filteredSlot = result.hq.haunters![0]!;
+    const inputSlot = uiState.hq.haunters![0]!;
+    assert.notStrictEqual(filteredSlot, inputSlot, 'fresh haunter entry');
+    if (filteredSlot.kind === 'villain' && inputSlot.kind === 'villain') {
+      assert.notStrictEqual(filteredSlot.display, inputSlot.display, 'fresh display object');
+      filteredSlot.display.name = 'MUTATED';
+      assert.equal(inputSlot.display.name, HAUNTER_NAME);
+    }
+    result.hq.haunters![1] = { kind: 'mastermind' };
+    assert.equal(uiState.hq.haunters![1], null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-724 / D-24546 — pendingSplitFaceChoice redaction + leftFace pass-through
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a UIState where player '0' owes a split-card "choose a side" pick. When
+ * `isAlternateOnLeft` is true the card's primary key is recorded in
+ * G.splitFacesAlternateOnLeft (the cvwr Captain America, Secret Avenger shape: sides[0]
+ * "inspire-a-man" is printed on the RIGHT, sides[1] "inspire-a-nation" on the LEFT).
+ */
+function createSplitFaceChoiceUIState(isAlternateOnLeft: boolean): UIState {
+  const config = createTestConfig();
+  const registry = createMockRegistry();
+  const setupContext = makeMockCtx();
+  const gameState = buildInitialGameState(config, registry, setupContext);
+  gameState.pendingSplitFaceChoices = [{
+    playerID: '0',
+    sourceCardId: 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId,
+    faceA: 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId,
+    faceB: 'cvwr/captain-america-secret-avenger/inspire-a-nation#1' as CardExtId,
+  }];
+  if (isAlternateOnLeft) {
+    gameState.splitFacesAlternateOnLeft = {
+      ['cvwr/captain-america-secret-avenger/inspire-a-man' as CardExtId]: true,
+    };
+  }
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingSplitFaceChoice redaction + leftFace (D-24546)', () => {
+  it('the chooser sees leftFace "b" when the alternate face is printed on the left', () => {
+    const result = filterUIStateForAudience(createSplitFaceChoiceUIState(true), PLAYER_0);
+    assert.ok(result.pendingSplitFaceChoice !== undefined, 'chooser sees the split-face choice');
+    assert.equal(result.pendingSplitFaceChoice!.leftFace, 'b', 'leftFace survives the filter whitelist');
+    assert.equal(result.pendingSplitFaceChoice!.faceA.extId, 'cvwr/captain-america-secret-avenger/inspire-a-man#1', 'face a is still sides[0]');
+  });
+
+  it('the chooser sees leftFace "a" when the card is not recorded as alternate-on-left', () => {
+    const result = filterUIStateForAudience(createSplitFaceChoiceUIState(false), PLAYER_0);
+    assert.equal(result.pendingSplitFaceChoice!.leftFace, 'a');
+  });
+
+  it('an opponent and a spectator do NOT see pendingSplitFaceChoice', () => {
+    const uiState = createSplitFaceChoiceUIState(true);
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingSplitFaceChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingSplitFaceChoice, undefined);
   });
 });

@@ -48,7 +48,10 @@ import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard } from '../economy/economy.logic.js';
+import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
+import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
@@ -269,6 +272,22 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // entry (heroEffectRevealTopMayKo) that parks a KO-or-keep entry on the reveal-top-dispose
   // queue, so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'reveal-top-may-ko',
+  // why: WP-765 / D-24598 — hero Blood Frenzy (+N attack) and its recruit variant; each has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectBloodFrenzy / heroEffectBloodFrenzyRecruit) reading the
+  // shared countDistinctVictoryPointValues, so they belong here. Carry NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'blood-frenzy',
+  'blood-frenzy-recruit',
+  // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite; has
+  // a HERO_EFFECT_HANDLERS entry (heroEffectDayNightBoth) that selects and dispatches the branch(es)
+  // via the reentrant executeSingleEffect, so it belongs here. Carries NO top-level magnitude →
+  // also in NO_MAGNITUDE_KEYWORDS.
+  'day-night-both',
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectOptionalKoYourHero) that parks a no-reward entry into
+  // the shared optional-ko-reward queue, so it belongs here. Carries NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'optional-ko-your-hero',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -535,6 +554,17 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // (or Excessive Violence fire) time, so the magnitude pre-gate must not drop it, or the reveal
   // never parks its choice. (optional-discard-draw is NOT here — it carries the draw count.)
   'reveal-top-may-ko',
+  // why: WP-765 / D-24598 — blood-frenzy / blood-frenzy-recruit carry NO magnitude (the grant is
+  // the distinct-VP count, read at resolve time) and day-night-both carries NO top-level magnitude
+  // (the branch magnitudes ride the nested sunlightEffects / moonlightEffects). The magnitude
+  // pre-gate must not drop them, or the handlers never run.
+  'blood-frenzy',
+  'blood-frenzy-recruit',
+  'day-night-both',
+  // why: WP-767 / D-24600 — optional-ko-your-hero carries NO magnitude (it offers exactly one
+  // optional KO, no reward); the eligible Heroes are read from hand + play at park time, so the
+  // magnitude pre-gate must not drop it, or the per-defeat choice never parks.
+  'optional-ko-your-hero',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -752,8 +782,11 @@ export function executeHeroEffects(
     // per-match Synergy Rate iff it carries >=1 condition AND an executable effect
     // body. An unconditional hook has no synergy decision; a hollow (unimplemented)
     // body is our backlog, never the player's miss — both are excluded from the tally.
+    // why: WP-765 / D-24598 — day/night conditions are excluded from the clause count: Sunlight /
+    // Moonlight is board state, not a synergy the player built, and counting it would log a
+    // guaranteed "miss" for one line of every two-line day/night card on every play.
     const isCountableConditionalClause =
-      (hook.conditions?.length ?? 0) > 0 && hookHasExecutableEffect(hook);
+      countSynergyConditions(hook) > 0 && hookHasExecutableEffect(hook);
 
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
@@ -1002,6 +1035,26 @@ function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Counts a hook's conditions that are player-built synergy gates — every condition except the
+ * Sunlight / Moonlight board-state gates (WP-765 / D-24598).
+ *
+ * // why: day/night is decided by the HQ, not by what the player assembled, so a
+ * day/night-only hook is not a Synergy Rate clause (the Synergy exclusion in D-24598).
+ *
+ * @param hook - The hero ability hook.
+ * @returns How many of its conditions count toward the Synergy Rate.
+ */
+function countSynergyConditions(hook: HeroAbilityHook): number {
+  let count = 0;
+  for (const condition of hook.conditions ?? []) {
+    if (condition.type !== 'sunlightInEffect' && condition.type !== 'moonlightInEffect') {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 /**
@@ -2652,6 +2705,61 @@ function heroEffectOptionalKoHandDiscard(
 }
 
 /**
+ * Park handler for the `optional-ko-your-hero` hero keyword (WP-767 / D-24600).
+ *
+ * Snarling Fangs' Moonlight "Whenever you defeat a Villain or Mastermind this turn, you
+ * may KO one of your Heroes." The per-defeat timing and the Moonlight gate ride the hook's
+ * conditions (the D-24467 wait-and-see deferral re-evaluates both at each defeat), so this
+ * handler runs once per qualifying defeat. It parks a NO-REWARD entry into the shared
+ * `G.pendingOptionalKoRewards` queue, reusing the block-all guard, the bot short-circuit,
+ * the resolve move, the projection and the client prompt.
+ *
+ * KO source = hand ∪ played this turn (rules v23 §3439 "your Heroes"), Heroes only. 0
+ * eligible (hand + play hold only Wounds, or nothing) → a logged no-op that parks nothing.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KO happens at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param _effect - The `{ type: 'optional-ko-your-hero' }` descriptor (no magnitude).
+ */
+function heroEffectOptionalKoYourHero(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  let eligibleCount = 0;
+  for (const handCardId of playerZones.hand) {
+    if (handCardId !== WOUND_EXT_ID) { eligibleCount += 1; }
+  }
+  for (const inPlayCardId of playerZones.inPlay) {
+    if (inPlayCardId !== WOUND_EXT_ID) { eligibleCount += 1; }
+  }
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a Hero for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — they have no Heroes in hand or played this turn.`,
+    );
+    return;
+  }
+  // why: WP-767 / D-24600 — koZones ['hand','inPlay'] excludes the discard pile ("your
+  // Heroes" = hand + played this turn), and koHeroesOnly because a Wound is not a Hero. The
+  // resolve, projection and bot all honour both. Lazy-init the queue; the park is SILENT.
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  G.pendingOptionalKoRewards.push({
+    playerID,
+    rewardType: 'none',
+    rewardMagnitude: 0,
+    sourceCardId: cardId,
+    koZones: ['hand', 'inPlay'],
+    koHeroesOnly: true,
+  });
+}
+
+/**
  * Park handler for the `smash` hero keyword (WP-676 / D-24492).
  *
  * Per universal-rules-v23 §Smash, "Smash N" = "You may discard another card from
@@ -4277,7 +4385,9 @@ export function buildPureFuryTargets(
 
   // why: Masterminds are explicitly eligible (the text names them); a Mastermind with
   // no tactics left is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
-  if (G.mastermind.tacticsDeck.length > 0) {
+  // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so Pure Fury can't
+  // defeat it either (the shared isMastermindHaunting predicate).
+  if (G.mastermind.tacticsDeck.length > 0 && !isMastermindHaunting(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
     if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });
@@ -5323,6 +5433,113 @@ function heroEffectDigestIndigestion(
 }
 
 /**
+ * Hero handler for the `blood-frenzy` keyword (WP-765 / D-24598).
+ *
+ * "You get +1 Attack for each different Victory Point value among the cards in your Victory
+ * Pile." The count comes from the shared countDistinctVictoryPointValues (the helper WP-760's
+ * villain fight-cost Blood Frenzy also consumes), read at resolve time.
+ *
+ * @param G - Game state (turnEconomy mutated).
+ * @param _ctx - Unused.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param _effect - The 'blood-frenzy' descriptor (no magnitude).
+ * @returns void.
+ */
+function heroEffectBloodFrenzy(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const distinctValues = countDistinctVictoryPointValues(G, playerID);
+  G.turnEconomy = addResources(G.turnEconomy, distinctValues, 0);
+  pushLog(G,
+    `Player ${playerID} gained +${distinctValues} attack from ${formatCardRef(G.cardDisplayData, cardId)} (Blood Frenzy: ${distinctValues} different Victory Point value(s)).`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Hero handler for the `blood-frenzy-recruit` keyword (WP-765 / D-24598) — Morbius Mesmerize's
+ * "Blood Frenzy, gaining Recruit instead of Attack". Same shared distinct-VP count, granted as
+ * recruit.
+ *
+ * @param G - Game state (turnEconomy mutated).
+ * @param _ctx - Unused.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param _effect - The 'blood-frenzy-recruit' descriptor (no magnitude).
+ * @returns void.
+ */
+function heroEffectBloodFrenzyRecruit(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const distinctValues = countDistinctVictoryPointValues(G, playerID);
+  G.turnEconomy = addResources(G.turnEconomy, 0, distinctValues);
+  pushLog(G,
+    `Player ${playerID} gained +${distinctValues} recruit from ${formatCardRef(G.cardDisplayData, cardId)} (Blood Frenzy: ${distinctValues} different Victory Point value(s)).`,
+    'applied',
+    cardId,
+  );
+}
+
+/**
+ * Hero handler for the fused `day-night-both` keyword (WP-765 / D-24598).
+ *
+ * If the printed "[X]: Instead, you get both." upgrade holds, runs the Sunlight branch then the
+ * Moonlight branch; otherwise runs the branch computeDayNight selects; on a tie ('neither') runs
+ * nothing and logs why. Each branch effect dispatches through the reentrant executeSingleEffect.
+ *
+ * // why: the digest-indigestion composite precedent (D-24555). HeroCondition has no OR, so the
+ * three printed lines cannot be separate hooks without double-firing a branch under the upgrade;
+ * the upgrade check reuses isDigestBothConditionMet, whose bothConditionCount path handles
+ * Nanite's four [team:x-men] (WP-740 / D-24562). Day/night is read here, as the hook resolves.
+ *
+ * @param G - Game state (mutated by the dispatched branch effects).
+ * @param ctx - Context, forwarded to each branch effect's handler.
+ * @param playerID - Active player ID.
+ * @param cardId - The played hero card's CardExtId.
+ * @param effect - The 'day-night-both' descriptor { sunlightEffects, moonlightEffects, bothCondition?, bothConditionCount? }.
+ * @returns void.
+ */
+function heroEffectDayNightBoth(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const sunlightEffects = effect.sunlightEffects ?? [];
+  const moonlightEffects = effect.moonlightEffects ?? [];
+  if (isDigestBothConditionMet(G, playerID, cardId, effect)) {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, sunlightEffects);
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, moonlightEffects);
+    return;
+  }
+  const dayNight = computeDayNight(G);
+  if (dayNight === 'sunlight') {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, sunlightEffects);
+  } else if (dayNight === 'moonlight') {
+    runDigestIndigestionBranch(G, ctx, playerID, cardId, moonlightEffects);
+  } else {
+    // why: a tie leaves neither Sunlight nor Moonlight in effect, so the card does nothing; one
+    // neutral line keeps that observable (G.messages is hash-excluded, D-24081).
+    pushLog(G,
+      `Player ${playerID}'s ${resolveCardName(G.cardDisplayData, cardId)} — neither Sunlight nor Moonlight is in effect; no effect.`,
+      'neutral',
+      cardId,
+    );
+  }
+}
+
+/**
  * Hero handler for the `excessive-violence` keyword (WP-736 / D-24556).
  *
  * Venomverse's "Excessive Violence" (keywords-full id 30). `executeHeroEffects` fires this at
@@ -5607,6 +5824,16 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-754 / D-24581 — "Reveal the top card of your deck. You may KO it.": parks a KO-or-keep
   // entry on the reveal-top-dispose queue, resolved by resolveRevealTopDispose ('ko' or 'top').
   'reveal-top-may-ko': heroEffectRevealTopMayKo,
+  // why: WP-765 / D-24598 — hero Blood Frenzy: +N attack (or recruit), N = distinct VP values in
+  // the active player's Victory Pile (shared economy/bloodFrenzy.logic.ts). NO magnitude.
+  'blood-frenzy': heroEffectBloodFrenzy,
+  'blood-frenzy-recruit': heroEffectBloodFrenzyRecruit,
+  // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite:
+  // both branches under the upgrade, else the computeDayNight branch, else nothing. NO magnitude.
+  'day-night-both': heroEffectDayNightBoth,
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes": parks a no-reward
+  // optional-ko-reward entry scoped to hand + played this turn, Heroes only. NO magnitude.
+  'optional-ko-your-hero': heroEffectOptionalKoYourHero,
 };
 
 // ---------------------------------------------------------------------------
@@ -5720,6 +5947,9 @@ export interface OptionalKoTarget {
  * @param zones - The player's card zones (discard + hand first; inPlay only as
  *   the empty-hand+discard fallback).
  * @param cardStats - Card stat lookup for the cost tie-break (?.cost ?? 0).
+ * @param isEligible - Target filter (default accept-all).
+ * @param allowInPlay - Whether the inPlay fallback may be returned (default true).
+ * @param allowDiscard - Whether the discard scan runs (default true; WP-767 / D-24600).
  * @returns The default KO target, or null when all three zones are empty.
  */
 export function selectDefaultOptionalKoTarget(
@@ -5727,6 +5957,7 @@ export function selectDefaultOptionalKoTarget(
   cardStats: Record<CardExtId, CardStatEntry>,
   isEligible: (cardId: CardExtId) => boolean = () => true,
   allowInPlay: boolean = true,
+  allowDiscard: boolean = true,
 ): OptionalKoTarget | null {
   // why: iterate discard fully (index ascending) then hand (index ascending),
   // replacing the candidate ONLY on a STRICTLY lower cost. Because the scan
@@ -5745,6 +5976,13 @@ export function selectDefaultOptionalKoTarget(
   let bestCost = Number.POSITIVE_INFINITY;
   const orderedZones: ('discard' | 'hand')[] = ['discard', 'hand'];
   for (const zoneName of orderedZones) {
+    // why: WP-767 / D-24600 — mirrors the allowInPlay gate: a koZones that omits discard
+    // (Snarling Fangs' hand + played-this-turn entry) must never yield a discard target the
+    // resolve rejects (a sim hang). Skipping only the discard scan leaves the hand scan order
+    // and tie-break unchanged, and the default true keeps every existing caller's pick.
+    if (zoneName === 'discard' && !allowDiscard) {
+      continue;
+    }
     const zoneArray = zones[zoneName];
     for (let cardIndex = 0; cardIndex < zoneArray.length; cardIndex++) {
       const cardId = zoneArray[cardIndex]!;

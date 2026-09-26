@@ -17,11 +17,22 @@ import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility
 import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { revealRulesForLegacyKeyword } from '../rules/revealRule.js';
 import { HERO_COMPOSITION_MARKERS, buildEmpoweredComposition } from '../rules/heroCompositions.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+// why: WP-765 / D-24598 — the Sunlight / Moonlight behaviour tests parse the real marked
+// ability lines into hooks, so the parser and the executor are exercised together.
+import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
 // why: WP-665 / D-24476 — the start-of-turn refill helper; the drew-two-cards test asserts
 // it structurally cannot touch the effect-draw counter (it receives playerZones, not G).
 import { drawCardsIntoHand } from '../moves/drawCards.logic.js';
+// why: WP-767 / D-24600 — the Snarling Fangs tests drive the real fight, resolve moves and bot
+// short-circuits, so a choice parked beside a fight's own choice is proven to unfreeze.
+import { fightVillain } from '../moves/fightVillain.js';
+import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
+import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { getLegalMoves } from '../simulation/ai.legalMoves.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
+import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.types.js';
 
 // why: WP-253 Amendment-A — the pre-existing reveal fixtures hand-built legacy
 // `{ type: 'reveal-ko' }` descriptors; once those keywords lose their handlers
@@ -113,7 +124,12 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // (Crystal of Kadavus / Interplanetary Visitor draw / discard / KO + the repeat) (49 → 51).
     // WP-754 / D-24581 added the optional-discard-draw + reveal-top-may-ko handlers (a draw-reward
     // Smash-queue entry and a KO-or-keep reveal-top entry) (51 → 53).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 53);
+    // WP-765 / D-24598 added the blood-frenzy + blood-frenzy-recruit + day-night-both handlers
+    // (hero Blood Frenzy on the shared distinct-VP helper, and the fused Sunlight / Moonlight /
+    // "Instead, you get both" composite) (53 → 56).
+    // WP-767 / D-24600 added the optional-ko-your-hero handler (Snarling Fangs' Moonlight
+    // no-reward KO of one of your Heroes) (56 → 57).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 57);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7134,9 +7150,11 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // it registers no handler. The count stays at the current total (after WP-736's
     // excessive-violence enroll handler, D-24556, D-24558's reveal-top-dispose-ko handler,
     // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580, and WP-754's
-    // optional-discard-draw + reveal-top-may-ko handlers, D-24581 — 53).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 53,
-      'HERO_EFFECT_HANDLERS stays 53 (X-Gene is not an effect handler)');
+    // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
+    // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
+    // handler, D-24600 — 57).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 57,
+      'HERO_EFFECT_HANDLERS stays 57 (X-Gene is not an effect handler)');
   });
 });
 
@@ -7945,5 +7963,640 @@ describe('reveal-top-may-ko handler + stale KO-or-keep refresh (WP-754 / D-24581
     resolveDeferredHeroGrants(shipped, revealCtx);
     assert.deepStrictEqual(shipped.pendingRevealTopDispose[0]!.revealedTops, [{ ownerPlayerID: '0', cardId: 'd-1' }],
       'a discard-allowed entry keeps its snapshot');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sunlight / Moonlight + hero Blood Frenzy (WP-765 / D-24598)
+// ---------------------------------------------------------------------------
+
+describe('Sunlight / Moonlight hero lines + Blood Frenzy (WP-765 / D-24598)', () => {
+  const dayNightCtx = makeMockCtx();
+
+  // why: the exact generated ability lines after the WP-765 markers, verified against
+  // data/cards/mdns.json and data/cards/nmut.json.
+  const RELEASE_THE_BEAST = [
+    '[keyword:Sunlight]: You get +3[icon:recruit].',
+    '[keyword:Moonlight]: [keyword:Blood Frenzy] [keyword:blood-frenzy]',
+    '[hc:instinct]: Instead, you get both.',
+  ];
+  const ANALYZE_PLANETARY_ROTATION = [
+    '[keyword:Sunlight]: You get +2[icon:recruit].',
+    '[keyword:Moonlight]: You get +2[icon:attack].',
+    '[hc:tech]: Instead, you get both.',
+  ];
+  const NANITE_SHAPESHIFTER = [
+    '[keyword:Sunlight]: Draw 3 cards. [keyword:draw:3]',
+    '[keyword:Moonlight]: You get +3[icon:recruit] and +3[icon:attack].',
+    '[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both.',
+  ];
+  const STARLIT_PATH = [
+    '[keyword:Sunlight]: You get +1[icon:attack].',
+    '[keyword:Moonlight]: Draw a card. [keyword:draw:1]',
+  ];
+  const MESMERIZE = [
+    '[keyword:Moonlight]: [keyword:Blood Frenzy], gaining [icon:recruit] instead of [icon:attack]. [keyword:blood-frenzy-recruit]',
+  ];
+  const INSATIABLE_CRAVING = ['[hc:covert]: [keyword:Blood Frenzy] [keyword:blood-frenzy]'];
+  const SOLAR_POWERED = [
+    '[keyword:Sunlight]: You may put a card from your hand on the bottom of you deck. If you do, you get +2[icon:attack].',
+  ];
+
+  /** Parses one real card's lines into its hooks; the played copy is `{set}/{hero}/{card}#0`. */
+  function buildCardHooks(setAbbr: string, heroSlug: string, cardSlug: string, abilities: string[]): HeroAbilityHook[] {
+    const setData = {
+      abbr: setAbbr,
+      heroes: [{ slug: heroSlug, cards: [{ slug: cardSlug, abilities }], physicalCards: [{ id: 'p0', count: 1, sides: [cardSlug] }] }],
+      villains: [], henchmen: [], schemes: [], masterminds: [], bystanders: [], wounds: [], other: [],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: setAbbr }],
+      getSet: (abbr: string) => (abbr === setAbbr ? setData : undefined),
+    };
+    return buildHeroAbilityHooks(registry, {
+      schemeId: 'test/test-scheme',
+      mastermindId: 'test/test-mastermind',
+      villainGroupIds: ['test/villain-001'],
+      henchmanGroupIds: ['test/henchman-001'],
+      heroDeckIds: [`${setAbbr}/${heroSlug}`],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    });
+  }
+
+  type DayNight = 'sunlight' | 'moonlight' | 'neither';
+
+  // why: HQ printed costs that put each day/night state in effect (a 2-2 split is a tie).
+  const HQ_COSTS: Record<DayNight, number[]> = {
+    sunlight: [2, 4, 6, 3, 5],
+    moonlight: [1, 3, 5, 2, 4],
+    neither: [2, 4, 3, 5],
+  };
+
+  /**
+   * A state with the played card in play (plus any allies), the HQ set to the given
+   * day/night state, and a Victory Pile of {Bystander 1, Villain 2, Villain 3} — 3
+   * distinct VP values for Blood Frenzy.
+   */
+  function makeDayNightState(
+    hooks: HeroAbilityHook[],
+    playedCardId: string,
+    dayNight: DayNight,
+    allies: { cardTraits?: Record<string, { heroClass: string | null; team: string | null }> } = {},
+  ): LegendaryGameState {
+    const hqIds: (string | null)[] = [];
+    const cardStats: Record<string, { attack: number; recruit: number; cost: number; fightCost: number; fightCostMode: 'static'; fightCostBase: number }> = {};
+    HQ_COSTS[dayNight].forEach((cost, index) => {
+      const hqCardId = `hq-hero-${String(index)}`;
+      hqIds.push(hqCardId);
+      cardStats[hqCardId] = { attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 };
+    });
+    while (hqIds.length < 5) {
+      hqIds.push(null);
+    }
+    const allyIds = Object.keys(allies.cardTraits ?? {});
+    const gameState = makeTestState({
+      inPlay: [playedCardId, ...allyIds],
+      deck: ['deck-1', 'deck-2', 'deck-3', 'deck-4'],
+      victory: [BYSTANDER_EXT_ID, 'villain-two', 'villain-three'],
+      heroAbilityHooks: hooks,
+      cardStats,
+      cardTraits: allies.cardTraits ?? {},
+    });
+    gameState.hq = hqIds as LegendaryGameState['hq'];
+    gameState.villainDeckCardTypes = { 'villain-two': 'villain', 'villain-three': 'villain' } as LegendaryGameState['villainDeckCardTypes'];
+    gameState.cardVictoryPoints = { 'villain-two': 2, 'villain-three': 3 };
+    return gameState;
+  }
+
+  const RELEASE_ID = 'mdns/werewolf-by-night/release-the-beast#0';
+  const INSTINCT_ALLY = { cardTraits: { 'instinct-ally': { heroClass: 'instinct', team: null } } };
+
+  it('Release the Beast: Sunlight +3 recruit, Moonlight Blood Frenzy attack, a tie nothing (no instinct Hero)', () => {
+    const hooks = buildCardHooks('mdns', 'werewolf-by-night', 'release-the-beast', RELEASE_THE_BEAST);
+    const expected: Record<DayNight, { attack: number; recruit: number }> = {
+      sunlight: { attack: 0, recruit: 3 },
+      moonlight: { attack: 3, recruit: 0 },
+      neither: { attack: 0, recruit: 0 },
+    };
+    for (const dayNight of ['sunlight', 'moonlight', 'neither'] as DayNight[]) {
+      const gameState = makeDayNightState(hooks, RELEASE_ID, dayNight);
+      executeHeroEffects(gameState, dayNightCtx, '0', RELEASE_ID);
+      assert.equal(gameState.turnEconomy.attack, expected[dayNight].attack, `${dayNight}: attack`);
+      assert.equal(gameState.turnEconomy.recruit, expected[dayNight].recruit, `${dayNight}: recruit`);
+    }
+  });
+
+  it('Release the Beast with another instinct Hero gets both under Sunlight, Moonlight AND a tie', () => {
+    const hooks = buildCardHooks('mdns', 'werewolf-by-night', 'release-the-beast', RELEASE_THE_BEAST);
+    for (const dayNight of ['sunlight', 'moonlight', 'neither'] as DayNight[]) {
+      const gameState = makeDayNightState(hooks, RELEASE_ID, dayNight, INSTINCT_ALLY);
+      executeHeroEffects(gameState, dayNightCtx, '0', RELEASE_ID);
+      assert.equal(gameState.turnEconomy.recruit, 3, `${dayNight}: the Sunlight +3 recruit`);
+      assert.equal(gameState.turnEconomy.attack, 3, `${dayNight}: the Moonlight Blood Frenzy (3 distinct VP values)`);
+    }
+  });
+
+  it('Analyze Planetary Rotation: the over-grant is gone — one branch per state, both only with a tech Hero', () => {
+    const hooks = buildCardHooks('nmut', 'warlock', 'analyze-planetary-rotation', ANALYZE_PLANETARY_ROTATION);
+    const cardId = 'nmut/warlock/analyze-planetary-rotation#0';
+    const sunlight = makeDayNightState(hooks, cardId, 'sunlight');
+    executeHeroEffects(sunlight, dayNightCtx, '0', cardId);
+    assert.deepEqual([sunlight.turnEconomy.recruit, sunlight.turnEconomy.attack], [2, 0], 'Sunlight: +2 recruit only');
+    const moonlight = makeDayNightState(hooks, cardId, 'moonlight');
+    executeHeroEffects(moonlight, dayNightCtx, '0', cardId);
+    assert.deepEqual([moonlight.turnEconomy.recruit, moonlight.turnEconomy.attack], [0, 2], 'Moonlight: +2 attack only');
+    const tie = makeDayNightState(hooks, cardId, 'neither');
+    executeHeroEffects(tie, dayNightCtx, '0', cardId);
+    assert.deepEqual([tie.turnEconomy.recruit, tie.turnEconomy.attack], [0, 0], 'a tie without a tech Hero: nothing');
+    const tieWithTech = makeDayNightState(hooks, cardId, 'neither', { cardTraits: { 'tech-ally': { heroClass: 'tech', team: null } } });
+    executeHeroEffects(tieWithTech, dayNightCtx, '0', cardId);
+    assert.deepEqual([tieWithTech.turnEconomy.recruit, tieWithTech.turnEconomy.attack], [2, 2], 'a tech Hero: both');
+  });
+
+  it('Nanite Shapeshifter: draw 3 (Sunlight), +3/+3 (Moonlight), both only with FOUR other X-Men', () => {
+    const hooks = buildCardHooks('nmut', 'warlock', 'nanite-shapeshifter', NANITE_SHAPESHIFTER);
+    const cardId = 'nmut/warlock/nanite-shapeshifter#0';
+    const sunlight = makeDayNightState(hooks, cardId, 'sunlight');
+    executeHeroEffects(sunlight, dayNightCtx, '0', cardId);
+    assert.equal(sunlight.playerZones['0']!.hand.length, 3, 'Sunlight: draw 3');
+    assert.deepEqual([sunlight.turnEconomy.recruit, sunlight.turnEconomy.attack], [0, 0]);
+    const moonlight = makeDayNightState(hooks, cardId, 'moonlight');
+    executeHeroEffects(moonlight, dayNightCtx, '0', cardId);
+    assert.deepEqual([moonlight.turnEconomy.recruit, moonlight.turnEconomy.attack], [3, 3], 'Moonlight: +3 / +3');
+    assert.equal(moonlight.playerZones['0']!.hand.length, 0);
+
+    const xMen = (count: number) => {
+      const traits: Record<string, { heroClass: string | null; team: string | null }> = {};
+      for (let index = 0; index < count; index++) {
+        traits[`x-men-${String(index)}`] = { heroClass: 'tech', team: 'x-men' };
+      }
+      return { cardTraits: traits };
+    };
+    const fourXMen = makeDayNightState(hooks, cardId, 'neither', xMen(4));
+    executeHeroEffects(fourXMen, dayNightCtx, '0', cardId);
+    assert.equal(fourXMen.playerZones['0']!.hand.length, 3, 'four X-Men: the Sunlight draw 3');
+    assert.deepEqual([fourXMen.turnEconomy.recruit, fourXMen.turnEconomy.attack], [3, 3], 'four X-Men: and the Moonlight +3 / +3');
+    const threeXMen = makeDayNightState(hooks, cardId, 'neither', xMen(3));
+    executeHeroEffects(threeXMen, dayNightCtx, '0', cardId);
+    assert.equal(threeXMen.playerZones['0']!.hand.length, 0, 'three X-Men on a tie: nothing');
+    assert.deepEqual([threeXMen.turnEconomy.recruit, threeXMen.turnEconomy.attack], [0, 0]);
+  });
+
+  it('Starlit Path: Moonlight draws a card, Sunlight grants +1 attack, a tie grants nothing', () => {
+    const hooks = buildCardHooks('mdns', 'werewolf-by-night', 'starlit-path', STARLIT_PATH);
+    const cardId = 'mdns/werewolf-by-night/starlit-path#0';
+    const moonlight = makeDayNightState(hooks, cardId, 'moonlight');
+    executeHeroEffects(moonlight, dayNightCtx, '0', cardId);
+    assert.equal(moonlight.playerZones['0']!.hand.length, 1, 'Moonlight: draw a card');
+    assert.equal(moonlight.turnEconomy.attack, 0, 'the Sunlight +1 is gated off');
+    const sunlight = makeDayNightState(hooks, cardId, 'sunlight');
+    executeHeroEffects(sunlight, dayNightCtx, '0', cardId);
+    assert.equal(sunlight.turnEconomy.attack, 1);
+    assert.equal(sunlight.playerZones['0']!.hand.length, 0);
+    const tie = makeDayNightState(hooks, cardId, 'neither');
+    executeHeroEffects(tie, dayNightCtx, '0', cardId);
+    assert.equal(tie.turnEconomy.attack, 0, 'a tie: no attack');
+    assert.equal(tie.playerZones['0']!.hand.length, 0, 'a tie: no draw');
+    assert.ok(
+      tie.messages.some((message) => JSON.stringify(message).includes("it isn't Sunlight")),
+      'the blocked Sunlight line is logged',
+    );
+  });
+
+  it('Mesmerize grants the Blood Frenzy count as recruit under Moonlight, nothing under Sunlight', () => {
+    const hooks = buildCardHooks('mdns', 'morbius', 'mesmerize', MESMERIZE);
+    const cardId = 'mdns/morbius/mesmerize#0';
+    const moonlight = makeDayNightState(hooks, cardId, 'moonlight');
+    executeHeroEffects(moonlight, dayNightCtx, '0', cardId);
+    assert.deepEqual([moonlight.turnEconomy.recruit, moonlight.turnEconomy.attack], [3, 0], '3 distinct VP values as recruit');
+    const sunlight = makeDayNightState(hooks, cardId, 'sunlight');
+    executeHeroEffects(sunlight, dayNightCtx, '0', cardId);
+    assert.deepEqual([sunlight.turnEconomy.recruit, sunlight.turnEconomy.attack], [0, 0]);
+  });
+
+  it('Insatiable Craving applies Blood Frenzy under its covert condition only', () => {
+    const hooks = buildCardHooks('mdns', 'morbius', 'insatiable-craving', INSATIABLE_CRAVING);
+    const cardId = 'mdns/morbius/insatiable-craving#0';
+    const withCovert = makeDayNightState(hooks, cardId, 'neither', { cardTraits: { 'covert-ally': { heroClass: 'covert', team: null } } });
+    executeHeroEffects(withCovert, dayNightCtx, '0', cardId);
+    assert.equal(withCovert.turnEconomy.attack, 3);
+    const withoutCovert = makeDayNightState(hooks, cardId, 'neither');
+    executeHeroEffects(withoutCovert, dayNightCtx, '0', cardId);
+    assert.equal(withoutCovert.turnEconomy.attack, 0);
+  });
+
+  it('Solar-Powered (unmodeled) grants nothing and records a sunlight hollow only while Sunlight holds', () => {
+    const hooks = buildCardHooks('nmut', 'sunspot', 'solar-powered', SOLAR_POWERED);
+    const cardId = 'nmut/sunspot/solar-powered#0';
+    const sunlight = makeDayNightState(hooks, cardId, 'sunlight');
+    executeHeroEffects(sunlight, dayNightCtx, '0', cardId);
+    assert.equal(sunlight.turnEconomy.attack, 0, 'the unmodeled +2 attack is never granted');
+    const hollows = sunlight.diagnostics?.hollowEffects ?? [];
+    assert.equal(hollows.length, 1);
+    assert.equal(hollows[0]!.mechanic, 'sunlight');
+    assert.equal(hollows[0]!.reason, 'parse-unrecognized');
+    const moonlight = makeDayNightState(hooks, cardId, 'moonlight');
+    executeHeroEffects(moonlight, dayNightCtx, '0', cardId);
+    assert.equal(moonlight.turnEconomy.attack, 0);
+    assert.equal((moonlight.diagnostics?.hollowEffects ?? []).length, 0, 'a gated-off line is condition-failed, not hollow');
+  });
+
+  it('day/night-only hooks are not Synergy Rate clauses; a class gate still is', () => {
+    const starlit = buildCardHooks('mdns', 'werewolf-by-night', 'starlit-path', STARLIT_PATH);
+    const starlitId = 'mdns/werewolf-by-night/starlit-path#0';
+    const gameState = makeDayNightState(starlit, starlitId, 'moonlight');
+    executeHeroEffects(gameState, dayNightCtx, '0', starlitId);
+    assert.equal(gameState.diagnostics?.conditionalClauses?.['0'], undefined,
+      'neither the blocked Sunlight line nor the fired Moonlight line is a synergy clause');
+
+    const craving = buildCardHooks('mdns', 'morbius', 'insatiable-craving', INSATIABLE_CRAVING);
+    const cravingId = 'mdns/morbius/insatiable-craving#0';
+    const covertState = makeDayNightState(craving, cravingId, 'neither');
+    executeHeroEffects(covertState, dayNightCtx, '0', cravingId);
+    assert.equal(covertState.diagnostics?.conditionalClauses?.['0']?.played, 1, 'the [hc:covert] gate still counts');
+  });
+
+  it('Blood Frenzy counts distinct values, and is 0 with an empty Victory Pile', () => {
+    const hooks = buildCardHooks('mdns', 'morbius', 'insatiable-craving', INSATIABLE_CRAVING);
+    const cardId = 'mdns/morbius/insatiable-craving#0';
+    const gameState = makeDayNightState(hooks, cardId, 'neither', { cardTraits: { 'covert-ally': { heroClass: 'covert', team: null } } });
+    gameState.playerZones['0']!.victory = [];
+    executeHeroEffects(gameState, dayNightCtx, '0', cardId);
+    assert.equal(gameState.turnEconomy.attack, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Pure Fury vs Haunt. A haunting Mastermind can't be fought, so
+// buildPureFuryTargets omits it while a `{ kind: 'mastermind' }` haunter exists.
+// ---------------------------------------------------------------------------
+
+import { buildPureFuryTargets } from './heroEffects.execute.js';
+import { hauntHqSlot } from '../board/haunt.logic.js';
+
+/** A static fight-stat row whose printed attack is `printedAttack` (mirrors pureFury.logic.test). */
+function hauntStaticFightStats(printedAttack: number) {
+  return { attack: 0, recruit: 0, cost: 0, fightCost: printedAttack, fightCostMode: 'static', fightCostBase: 0 };
+}
+
+/**
+ * Minimal state for buildPureFuryTargets: 3 S.H.I.E.L.D. Heroes in the KO pile, a
+ * printed-2 City Villain, a printed-2 Mastermind with a tactic left, and one HQ Hero
+ * (hauntHqSlot refuses an empty slot).
+ */
+function makePureFuryHauntG(): LegendaryGameState {
+  return {
+    ko: ['sh-1', 'sh-2', 'sh-3'],
+    cardTraits: {
+      'sh-1': { heroClass: 'tech', team: 'shield' },
+      'sh-2': { heroClass: 'covert', team: 'shield' },
+      'sh-3': { heroClass: 'ranged', team: 'shield' },
+    },
+    city: ['villain-a', null, null, null, null],
+    hq: ['hero-haunted', null, null, null, null],
+    cardStats: { 'villain-a': hauntStaticFightStats(2), 'mm-base': hauntStaticFightStats(2) },
+    mastermind: { ...makeMastermindState(), baseCardId: 'mm-base', tacticsDeck: ['t1'], tacticsDefeated: [] },
+  } as unknown as LegendaryGameState;
+}
+
+describe('buildPureFuryTargets vs Haunt (WP-757 / D-24587)', () => {
+  it('the Mastermind is eligible when its printed attack is below the KO S.H.I.E.L.D. count and nothing haunts', () => {
+    assert.deepStrictEqual(buildPureFuryTargets(makePureFuryHauntG()), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'mm-base' },
+    ]);
+  });
+
+  it('omits the Mastermind while it haunts an HQ slot; City Villain targets remain', () => {
+    const G = makePureFuryHauntG();
+    assert.equal(hauntHqSlot(G, 0, { kind: 'mastermind' }), true);
+    assert.deepStrictEqual(buildPureFuryTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ]);
+  });
+
+  it('a Villain haunter does NOT remove the Mastermind target', () => {
+    const G = makePureFuryHauntG();
+    assert.equal(hauntHqSlot(G, 0, { kind: 'villain', cardId: 'villain-ghost#0' }), true);
+    assert.deepStrictEqual(buildPureFuryTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'mm-base' },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// optional-ko-your-hero — Snarling Fangs' Moonlight per-defeat KO (WP-767 / D-24600)
+// ---------------------------------------------------------------------------
+
+describe('Snarling Fangs Moonlight — "whenever you defeat … you may KO one of your Heroes" (WP-767 / D-24600)', () => {
+  const fangsCtx = makeMockCtx();
+  const BOT_CONTEXT = { phase: 'play', turn: 1, currentPlayer: '0', numPlayers: 1 };
+  const FANGS_ID = 'mdns/werewolf-by-night/snarling-fangs#0';
+  const FANGS_COPY_ID = 'mdns/werewolf-by-night/snarling-fangs#1';
+
+  // why: the exact generated ability lines after the WP-767 markers, verified against
+  // data/cards/mdns.json.
+  const SNARLING_FANGS = [
+    '[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]',
+    '[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes. [keyword:defeated-villain-or-mastermind] [keyword:optional-ko-your-hero]',
+  ];
+
+  /** Parses the real Snarling Fangs lines into its two hooks (Sunlight, then Moonlight). */
+  function snarlingFangsHooks(): HeroAbilityHook[] {
+    const setData = {
+      abbr: 'mdns',
+      heroes: [{
+        slug: 'werewolf-by-night',
+        cards: [{ slug: 'snarling-fangs', abilities: SNARLING_FANGS }],
+        physicalCards: [{ id: 'p0', count: 1, sides: ['snarling-fangs'] }],
+      }],
+      villains: [], henchmen: [], schemes: [], masterminds: [], bystanders: [], wounds: [], other: [],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'mdns' }],
+      getSet: (abbr: string) => (abbr === 'mdns' ? setData : undefined),
+    };
+    const hooks = buildHeroAbilityHooks(registry, {
+      schemeId: 'test/test-scheme',
+      mastermindId: 'test/test-mastermind',
+      villainGroupIds: ['test/villain-001'],
+      henchmanGroupIds: ['test/henchman-001'],
+      heroDeckIds: ['mdns/werewolf-by-night'],
+      bystandersCount: 10,
+      woundsCount: 15,
+      officersCount: 20,
+      sidekicksCount: 5,
+    });
+    return hooks.filter((hook) => hook.cardId === FANGS_ID);
+  }
+
+  /** A printed-cost stat row (only `cost` / `fightCost` matter here). */
+  function statRow(cost: number, fightCost: number = 0): LegendaryGameState['cardStats'][string] {
+    return {
+      attack: 0, recruit: 0, cost, fightCost, fightCostMode: 'static', fightCostBase: fightCost,
+    } as LegendaryGameState['cardStats'][string];
+  }
+
+  /** Rewrites the HQ so Moonlight (odd costs) or Sunlight (even costs) is in effect. */
+  function setDayNight(gameState: LegendaryGameState, dayNight: 'sunlight' | 'moonlight'): void {
+    let costs: number[];
+    if (dayNight === 'moonlight') {
+      costs = [1, 3, 5, 2, 4];
+    } else {
+      costs = [2, 4, 6, 3, 5];
+    }
+    const hq: string[] = [];
+    for (let index = 0; index < costs.length; index++) {
+      const hqCardId = `hq-hero-${String(index)}`;
+      hq.push(hqCardId);
+      gameState.cardStats[hqCardId] = statRow(costs[index]!);
+    }
+    gameState.hq = hq as LegendaryGameState['hq'];
+  }
+
+  /** A state with Snarling Fangs (and any extra hooks) in play and the HQ in the given state. */
+  function makeFangsState(options: {
+    dayNight: 'sunlight' | 'moonlight';
+    hand?: string[];
+    discard?: string[];
+    inPlay?: string[];
+    extraHooks?: HeroAbilityHook[];
+  }): LegendaryGameState {
+    const gameState = makeTestState({
+      hand: options.hand ?? ['hero-cheap', 'hero-pricey'],
+      discard: options.discard ?? ['discard-hero'],
+      inPlay: options.inPlay ?? [FANGS_ID],
+      heroAbilityHooks: [...snarlingFangsHooks(), ...(options.extraHooks ?? [])],
+    });
+    gameState.cardStats['hero-cheap'] = statRow(2);
+    gameState.cardStats['hero-pricey'] = statRow(5);
+    gameState.cardStats['discard-hero'] = statRow(0);
+    gameState.cardStats[FANGS_ID] = statRow(3);
+    setDayNight(gameState, options.dayNight);
+    return gameState;
+  }
+
+  /** Puts one City enemy up for a real fightVillain (fight cost 1, 5 attack available). */
+  function seedCityEnemy(gameState: LegendaryGameState, cardId: string, cardType: 'villain' | 'henchman'): void {
+    gameState.city = [cardId, null, null, null, null] as LegendaryGameState['city'];
+    gameState.villainDeckCardTypes = { [cardId]: cardType } as LegendaryGameState['villainDeckCardTypes'];
+    gameState.villainAbilityHooks = [];
+    gameState.notableEvents = [];
+    gameState.turnEconomy.attack = 5;
+    gameState.cardStats[cardId] = statRow(0, 1);
+  }
+
+  /** Simulates a fight-site Villain/Mastermind defeat: the edge flag, gated on a pending grant. */
+  function signalDefeat(gameState: LegendaryGameState): void {
+    if (gameState.deferredConditionalGrants !== undefined && gameState.deferredConditionalGrants.length > 0) {
+      gameState.villainOrMastermindDefeatedSinceResolve = true;
+    }
+  }
+
+  /** A defeat, then the post-move resolution the game runs after every play-phase move. */
+  function defeatAndResolve(gameState: LegendaryGameState): void {
+    signalDefeat(gameState);
+    resolveDeferredHeroGrants(gameState, fangsCtx);
+  }
+
+  /** Applies the bot's single short-circuit resolve moves until none is pending; returns their names. */
+  function runBotChoices(gameState: LegendaryGameState): string[] {
+    const appliedNames: string[] = [];
+    for (let step = 0; step < 10; step++) {
+      const move = getLegalMoves(gameState, BOT_CONTEXT)[0];
+      if (move === undefined) {
+        break;
+      }
+      const target = move.args as { zone: 'hand' | 'discard' | 'inPlay'; cardId: string };
+      if (move.name === 'resolveOptionalKoReward') {
+        resolveOptionalKoReward(makeMockMoveContext(gameState), target);
+      } else if (move.name === 'resolveKoHeroChoice') {
+        resolveKoHeroChoice(makeMockMoveContext(gameState), target);
+      } else {
+        break;
+      }
+      resolveDeferredHeroGrants(gameState, fangsCtx);
+      appliedNames.push(move.name);
+    }
+    return appliedNames;
+  }
+
+  it('under Moonlight: waits on play, parks nothing on a non-defeat move, and parks one choice per defeat', () => {
+    const gameState = makeFangsState({ dayNight: 'moonlight' });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    assert.ok(gameState.messages.some((entry) => entry.text.includes('waiting')), 'the Moonlight line is armed ("is waiting")');
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'nothing parks on play');
+
+    resolveDeferredHeroGrants(gameState, fangsCtx);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'a non-defeat move parks nothing');
+
+    const messagesBeforePark = gameState.messages.length;
+    defeatAndResolve(gameState);
+    assert.deepStrictEqual(gameState.pendingOptionalKoRewards, [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: FANGS_ID,
+      koZones: ['hand', 'inPlay'], koHeroesOnly: true,
+    }], 'defeat 1 parks the no-reward, hand + played-this-turn, Heroes-only choice');
+    assert.equal(gameState.messages.length, messagesBeforePark, 'the park is silent');
+    assert.deepStrictEqual(runBotChoices(gameState), ['resolveOptionalKoReward']);
+    assert.deepStrictEqual(gameState.ko, ['hero-cheap'], 'the bot KOs the lowest-cost hand Hero, not the cost-0 discard card');
+
+    defeatAndResolve(gameState);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'defeat 2 parks a second choice (one at a time)');
+  });
+
+  it("under Sunlight: \"did not activate — it isn't Moonlight\" and never parks, even after a defeat", () => {
+    const gameState = makeFangsState({ dayNight: 'sunlight' });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    assert.ok(
+      gameState.messages.some((entry) => entry.text.includes('did not activate') && entry.text.includes("it isn't Moonlight")),
+      'the Moonlight condition is checked first, so the line did not activate',
+    );
+    assert.ok(!gameState.messages.some((entry) => entry.text.includes('waiting')), 'never "is waiting" under Sunlight');
+    gameState.villainOrMastermindDefeatedSinceResolve = true;
+    resolveDeferredHeroGrants(gameState, fangsCtx);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'a defeat offers nothing');
+  });
+
+  it('a defeat after the HQ turns to Sunlight parks nothing; Moonlight again parks on the next defeat', () => {
+    const gameState = makeFangsState({ dayNight: 'moonlight' });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    setDayNight(gameState, 'sunlight');
+    defeatAndResolve(gameState);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'Moonlight is re-checked at the defeat (D-24467 fire-time re-evaluation)');
+    setDayNight(gameState, 'moonlight');
+    defeatAndResolve(gameState);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 1, 'the armed line survives the Sunlight spell');
+  });
+
+  it('a henchman defeat offers the KO — Henchmen are Villains (D-24603)', () => {
+    // why: D-24603 reverses the D-24467 henchman exclusion (rules v23 "Henchman Villain cards
+    // are indeed Villains"); the operator's live round-20 Savage Land Mutates defeat is this case.
+    const gameState = makeFangsState({ dayNight: 'moonlight' });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    seedCityEnemy(gameState, 'ninja-a', 'henchman');
+
+    fightVillain(makeMockMoveContext(gameState), { cityIndex: 0 });
+    resolveDeferredHeroGrants(gameState, fangsCtx);
+
+    assert.ok(gameState.playerZones['0']!.victory.includes('ninja-a'), 'the henchman was defeated');
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 1, 'a henchman is a Villain — the KO is offered');
+  });
+
+  it('no eligible Hero (only Wounds in hand, nothing played) → a logged no-op that parks nothing', () => {
+    const gameState = makeFangsState({ dayNight: 'moonlight', hand: [WOUND_EXT_ID, WOUND_EXT_ID], discard: ['discard-hero'] });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    // why: Snarling Fangs itself left play (e.g. KO'd earlier this turn); its armed grant remains.
+    gameState.playerZones['0']!.inPlay = [];
+    defeatAndResolve(gameState);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'Wounds and the discard pile are not eligible');
+    assert.ok(
+      gameState.messages.some((entry) => entry.text.includes('could not KO a Hero')),
+      'the player sees why nothing happened',
+    );
+  });
+
+  it('self-KO: Snarling Fangs may KO itself, and its armed grant still fires on a later defeat this turn', () => {
+    // why: WP-767 / D-24600 — Snarling Fangs may KO itself; the armed grant persists for the
+    // turn because deferred grants are keyed by card id, not by the card still being in play.
+    const gameState = makeFangsState({ dayNight: 'moonlight', hand: ['hero-cheap'] });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    defeatAndResolve(gameState);
+    resolveOptionalKoReward(makeMockMoveContext(gameState), { zone: 'inPlay', cardId: FANGS_ID });
+    assert.deepStrictEqual(gameState.ko, [FANGS_ID], 'the KO of Snarling Fangs itself is accepted');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+
+    defeatAndResolve(gameState);
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'the next defeat still offers the KO');
+  });
+
+  it('two armed copies + one defeat park two entries, first in first out, and both resolve', () => {
+    const copyHooks = snarlingFangsHooks().map((hook) => ({ ...hook, cardId: FANGS_COPY_ID }));
+    const gameState = makeFangsState({ dayNight: 'moonlight', hand: [], inPlay: [FANGS_ID, FANGS_COPY_ID], extraHooks: copyHooks });
+    gameState.cardStats[FANGS_COPY_ID] = statRow(3);
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_COPY_ID);
+    defeatAndResolve(gameState);
+
+    assert.deepStrictEqual(
+      gameState.pendingOptionalKoRewards!.map((entry) => entry.sourceCardId),
+      [FANGS_ID, FANGS_COPY_ID],
+      'one entry per copy, in arming order',
+    );
+    // why: with an empty hand, each copy in play is itself an eligible Hero, so the second entry
+    // stays resolvable after the first KO.
+    assert.deepStrictEqual(runBotChoices(gameState), ['resolveOptionalKoReward', 'resolveOptionalKoReward']);
+    assert.equal(gameState.ko.length, 2, 'both entries resolved with a KO');
+    assert.equal(gameState.pendingOptionalKoRewards!.length, 0);
+  });
+
+  it("a choice parked beside the fight's own KO choice: both resolve in bot order and the turn continues", () => {
+    const gameState = makeFangsState({ dayNight: 'moonlight', hand: ['hero-cheap', 'hero-pricey'] });
+    executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
+    seedCityEnemy(gameState, 'villain-a', 'villain');
+    gameState.villainAbilityHooks = [{
+      cardId: 'villain-a',
+      timing: 'onFight',
+      keywords: ['koHeroCurrentPlayer'],
+      effects: [{ ...LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR.koHeroCurrentPlayer }],
+    }];
+
+    fightVillain(makeMockMoveContext(gameState), { cityIndex: 0 });
+    resolveDeferredHeroGrants(gameState, fangsCtx);
+    assert.equal(gameState.pendingKoHeroChoices?.length, 1, "the Villain's Fight effect parked its KO choice");
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'the defeat parked the Snarling Fangs choice beside it');
+
+    assert.deepStrictEqual(runBotChoices(gameState), ['resolveOptionalKoReward', 'resolveKoHeroChoice'],
+      'the bot resolves the optional KO first (precedence lock), then the Fight KO');
+    assert.equal(gameState.pendingKoHeroChoices?.length ?? 0, 0);
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0);
+    const nextMoves = getLegalMoves(gameState, BOT_CONTEXT).map((move) => move.name);
+    assert.ok(nextMoves.includes('advanceStage'), 'the board is unfrozen — the turn can finish');
+  });
+
+  it('the handler parks directly (NO_MAGNITUDE_KEYWORDS membership) and skips Wounds when counting', () => {
+    // why: WP-767 — the keyword carries no magnitude; had it been left out of
+    // NO_MAGNITUDE_KEYWORDS the magnitude pre-gate would drop it and nothing would ever park.
+    const gameState = makeTestState({
+      hand: [WOUND_EXT_ID, 'hero-h'],
+      inPlay: ['fangs-direct'],
+      heroAbilityHooks: [{
+        cardId: 'fangs-direct',
+        timing: 'onPlay',
+        keywords: ['optional-ko-your-hero'],
+        effects: [{ type: 'optional-ko-your-hero' }],
+      }],
+    });
+    executeHeroEffects(gameState, fangsCtx, '0', 'fangs-direct');
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'the handler parked');
+    assert.equal(gameState.pendingOptionalKoRewards![0]!.koHeroesOnly, true);
+  });
+});
+
+describe('selectDefaultOptionalKoTarget allowDiscard (WP-767 / D-24600)', () => {
+  const zones = {
+    deck: [], hand: ['hand-cost-2'], discard: ['discard-cost-0'], inPlay: ['played-cost-1'], victory: [],
+  } as unknown as Parameters<typeof selectDefaultOptionalKoTarget>[0];
+  const stats = {
+    'hand-cost-2': { attack: 0, recruit: 0, cost: 2, fightCost: 0 },
+    'discard-cost-0': { attack: 0, recruit: 0, cost: 0, fightCost: 0 },
+    'played-cost-1': { attack: 0, recruit: 0, cost: 1, fightCost: 0 },
+  } as unknown as Parameters<typeof selectDefaultOptionalKoTarget>[1];
+
+  it('the default (allowDiscard true) still scans discard first — existing picks unchanged', () => {
+    assert.deepStrictEqual(selectDefaultOptionalKoTarget(zones, stats), { zone: 'discard', cardId: 'discard-cost-0' });
+  });
+
+  it('allowDiscard false skips only the discard scan (hand kept; inPlay stays a fallback)', () => {
+    assert.deepStrictEqual(
+      selectDefaultOptionalKoTarget(zones, stats, undefined, true, false),
+      { zone: 'hand', cardId: 'hand-cost-2' },
+      'the cheaper discard and played cards are not picked while a hand card is eligible',
+    );
   });
 });

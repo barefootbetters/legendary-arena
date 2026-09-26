@@ -16,6 +16,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
+import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
@@ -91,6 +92,12 @@ export function recruitHero(
 
   const cardId = G.hq[hqIndex];
   if (cardId === null || cardId === undefined) {
+    return;
+  }
+
+  // why: WP-757 / D-24587 — rulebook v23 p.27: players can't recruit a Haunted Hero
+  // while its haunter is under it (exorcise it instead). Silent no-op before any spend.
+  if (isHqSlotHaunted(G, hqIndex)) {
     return;
   }
 

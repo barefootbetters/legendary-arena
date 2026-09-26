@@ -26,6 +26,7 @@ import type {
   UITurnEconomyState,
   UICityCard,
   UIHQCard,
+  UIHQHaunter,
   UIDisplayEntry,
   UIKoPileState,
   UIDeckCardStat,
@@ -122,6 +123,29 @@ function deepCopyHqSlotDisplay(
         extId: entry.extId,
         display: { ...entry.display },
       });
+    }
+  }
+  return result;
+}
+
+/**
+ * Builds a per-entry copy of the HQ haunters (WP-757 / D-24587) so the filtered
+ * UIState shares no references with its input. Public information — not redacted.
+ *
+ * @param haunters - The projected per-slot haunters.
+ * @returns A fresh array with fresh entries (and fresh display payloads).
+ */
+function deepCopyHqHaunters(
+  haunters: (UIHQHaunter | null)[],
+): (UIHQHaunter | null)[] {
+  const result: (UIHQHaunter | null)[] = [];
+  for (const haunter of haunters) {
+    if (haunter === null) {
+      result.push(null);
+    } else if (haunter.kind === 'villain') {
+      result.push({ kind: 'villain', extId: haunter.extId, display: { ...haunter.display } });
+    } else {
+      result.push({ kind: 'mastermind' });
     }
   }
   return result;
@@ -465,6 +489,17 @@ export function filterUIStateForAudience(
       ...(uiState.hq.slotDisplay !== undefined
         ? { slotDisplay: deepCopyHqSlotDisplay(uiState.hq.slotDisplay) }
         : {}),
+      // why: WP-765 / D-24598 — dayNight is public shared-board state (derived from the public
+      // HQ), passed through for every audience; omit-when-absent keeps non-day/night matches
+      // byte-identical.
+      ...(uiState.hq.dayNight !== undefined ? { dayNight: uiState.hq.dayNight } : {}),
+      // why: WP-757 / D-24587 — the Haunt haunters are public shared-board information
+      // for every audience and MUST survive this field-by-field whitelist. Optional, so
+      // TypeScript does not flag a missing pass-through (the EC-206 drop). Conditional
+      // spread keeps it omit-when-absent; fresh copies prevent aliasing.
+      ...(uiState.hq.haunters !== undefined
+        ? { haunters: deepCopyHqHaunters(uiState.hq.haunters) }
+        : {}),
     },
     mastermind: {
       id: uiState.mastermind.id,
@@ -505,6 +540,20 @@ export function filterUIStateForAudience(
       ...(uiState.mastermind.finalBlowPending !== undefined
         ? { finalBlowPending: uiState.mastermind.finalBlowPending }
         : {}),
+      // why: WP-750 / D-24574 — the projected Mastermind fight cost is public
+      // shared-board information (every player sees the Dark Portal and the
+      // printed cost), passed through for every audience. Optional, so TypeScript
+      // does not flag its omission; without this line the client silently falls
+      // back to the printed cost and the Portals Mastermind Fight button goes dead
+      // again (the EC-206 drop). Conditional spread, never a
+      // `fightCost: undefined` literal (exactOptionalPropertyTypes).
+      ...(uiState.mastermind.fightCost !== undefined
+        ? { fightCost: uiState.mastermind.fightCost }
+        : {}),
+      // why: WP-757 / D-24587 — "the Mastermind is haunting" is public shared-board
+      // information for every audience; optional, so it MUST be passed through here or
+      // it is silently dropped (the EC-206 failure mode). Omit-when-absent.
+      ...(uiState.mastermind.isHaunting === true ? { isHaunting: true as const } : {}),
     },
     scheme: {
       id: uiState.scheme.id,
@@ -1144,6 +1193,7 @@ export function filterUIStateForAudience(
       playerID: uiState.pendingSplitFaceChoice.playerID,
       faceA: { ...uiState.pendingSplitFaceChoice.faceA },
       faceB: { ...uiState.pendingSplitFaceChoice.faceB },
+      leftFace: uiState.pendingSplitFaceChoice.leftFace,
     };
   }
 

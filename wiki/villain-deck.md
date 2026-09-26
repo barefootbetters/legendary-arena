@@ -82,7 +82,7 @@ O(1) at runtime — moves never query the registry. See
 |---|---|
 | `villain` | Pushed into the City |
 | `henchman` | Pushed into the City |
-| `bystander` | **Captured** — attached under the frontmost City villain (or the Mastermind if the City is empty); emits a `bystanderRevealed` notable event (WP-602); **never** discarded |
+| `bystander` | **Captured** — attached under the City villain closest to the Villain Deck (or the Mastermind if the City is empty); emits a `bystanderRevealed` notable event (WP-602); **never** discarded |
 | `scheme-twist` | Fires `onSchemeTwistRevealed`; card goes to `G.scheme.twistPile` |
 | `mastermind-strike` | Fires `onMastermindStrikeRevealed`; card goes to `G.mastermind.strikePile` |
 
@@ -168,8 +168,8 @@ happens before triggers fire:
 - **Step 6 — Apply effects.** `applyRuleEffects` mutates `G` from the
   collected `RuleEffect[]`.
 - **Step 7 — Final destination.** `villain` and `henchman` are already
-  in the City. A `bystander` is attached under its captor (frontmost City
-  villain, or the Mastermind if the City is empty — also mirrored onto
+  in the City. A `bystander` is attached under its captor (the City villain
+  closest to the Villain Deck, or the Mastermind if the City is empty — also mirrored onto
   `G.mastermind.attachedBystanders` for the UI projection, D-12805), and the
   reveal emits a `bystanderRevealed` notable event (WP-602 / D-24412) so the
   arena-client `NotableEventOverlay` announces the capture like it does a
@@ -315,9 +315,11 @@ The full step contract is also documented inline in
   reasons but nothing routes to it: villains/henchmen go to the City,
   bystanders attach, twists/strikes go to their own piles.
 - **Bystander captor selection.** A revealed `bystander` is captured by
-  the **frontmost** City villain — the highest occupied City index, i.e.
-  the one nearest the escape edge — or by the Mastermind when the City is
-  empty. It is stored in `G.attachedBystanders[captorId]`; a Mastermind
+  the City villain closest to the Villain Deck — the lowest occupied City
+  index, the space nearest the Villain Deck (index 0) — or by the Mastermind
+  when the City is empty. Per Universal Rules v23 L606-608 ("the Villain in the
+  city that's closest to the Villain Deck"); D-24571 corrected the former
+  escape-edge captor (WP-747). It is stored in `G.attachedBystanders[captorId]`; a Mastermind
   capture is additionally mirrored onto `G.mastermind.attachedBystanders`
   for the UI (D-12805).
 - **Ambush gates on supply.** Ambush wound application is gated on

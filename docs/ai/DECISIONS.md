@@ -44710,9 +44710,603 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 **Reserved by:** NUMBER-LEDGER D-24597. Related: D-24119 (replay carve-out), D-24122 (artifact store), D-10014 (set-qualified ids), D-5103 (PAR fail-closed), D-5302 (score immutability), D-24187 / D-24199 / D-24283 (gauntlet division, loadouts, per-scheme legs), D-24595 (WP-763 scheme Evil Wins audit).
 
+### D-24594 — Printed attack for Mastermind base faces and henchman groups comes from upstream (images for the 6 outlier groups) and is reproduced by the converter (Active 2026-09-25 — WP-762 / EC-799)
+
+**Status:** Active. Landed 2026-09-25 (WP-762 / EC-799). The live-on-surface check (D-24026) is pending with the operator. In a live `gotg/thanos` or `dstr/dormammu` match, fighting the Mastermind must require 24 / 11.
+
+**Context.** 14 Mastermind base cards and 32 henchman groups had no `vAttack`. The engine (`parseCardStatValue`: `null` or absent → 0) and the bot therefore fought them for **0**. Only the client's accidental "cannot be fought" lock hid this from humans, and WP-750 removes that lock. The pipeline had two defects in `convert-cards-v15.mjs`:
+- The Mastermind emitter read only the card-level `vAttack`. Upstream stores the printed attack at the Mastermind level (`mm.vAttack`) for 53 Masterminds.
+- The henchmen emitter never wrote `vAttack` or `vp`, so only the groups with a patch overlay (or hand-authored co2e data) had a fight cost.
+
+**Decision.**
+
+1. **Source of truth.** Every filled value comes from upstream `scripts/convert-cards/inputs/cards/*.js`. The only exception is the 6 amwp/wtif henchman groups, which bypass the converter and have no in-repo attack source; their values are transcribed from the R2 card image (§5). No value is invented.
+2. **Converter: Masterminds.** `vAttack: card.vAttack ?? mm.vAttack ?? null`, applied only to the **first non-tactic, non-epic** face (the face the engine reads, D-24193). Epic faces carry their own card-level `vAttack`, so they never receive the Mastermind-level value. `vAttackAsterisk` / `vAttackHideValue` are not carried in v1.
+3. **Converter: henchmen.** The upstream group-level `vAttack` (a string) and `vp` (a number) are emitted (`copyHenchmanPrintedStats`). The patch merge runs later, so an existing patch value still wins. The five base-card `vAttack: null` patch keys are removed, because they would override the fix: pttr carnage / mysterio, gotg supreme-intelligence-of-the-kree / thanos, fear uru-enchanted-iron-man. The tactic-card nulls stay.
+4. **Surgical committed edits, proven by `cards:check`.** The only value change is `null` → the upstream string on the 14 base cards. Henchman `vAttack` / `vp` are line insertions after each group's `slug`, and no set file is re-serialized. With the converter and patch fixes, the regen diverged from committed data in exactly **18 sets / 66 leaves**, all of them intended fills. (WP Assumes 8a said "17 sets", a miscount: rvlt carries both a Mastermind and a henchman fill.) After the edits, `pnpm cards:check` → 0. Reverting the Thanos fill makes it fail on exactly that leaf.
+
+   | Mastermind base face | `vAttack` |
+   |---|---|
+   | bkpt/killmonger | "5" |
+   | bkwd/indestructible-man | "0" |
+   | dims/j-jonah-jameson | "4" |
+   | dstr/nightmare | "6" |
+   | dstr/dormammu | "11" |
+   | fear/uru-enchanted-iron-man | "7" |
+   | gotg/supreme-intelligence-of-the-kree | "9" |
+   | gotg/thanos | "24" |
+   | mgtg/ronan-the-accuser | "6" |
+   | mgtg/ego-the-living-planet | "3+" |
+   | pttr/carnage | "9" |
+   | pttr/mysterio | "8" |
+   | rvlt/mandarin | "16" |
+   | vnom/hybrid | "6" |
+
+   | Henchman groups (`vp` the number 1 on every group) | `vAttack` |
+   |---|---|
+   | 3dtc circus-of-crime, spider-slayer; cvwr cape-killers; dkcy phalanx; rvlt mandarins-rings; ssw1 ghost-racers, m-o-d-o-k-s, thor-corps; ssw2 khonshu-guardians, magma-men, spider-infected; vill asgardian-warriors, cops, multiple-man, shield-assault-squad; wwhk cytoplasm-spikes, deaths-heads, sakaaran-hivelings; xmen hellfire-cult, sapien-league, shiar-patrol-craft | "3" |
+   | dkcy maggia-goons | "4" |
+   | xmen shiar-death-commandos | "2" |
+   | cvwr mandroid; rvlt hydra-base | "2+" |
+   | xmen brood-the | "1+" |
+
+5. **Outlier henchmen: image citations.** Each group's committed `imageUrl` was read from R2 (all HTTP 200). Tardigrade and Ultron Sentries are per-class, so all five class images were read, and they agree. Every card prints VP 1, stored as the number `1`.
+
+   | Group | Image | Printed | Stored |
+   |---|---|---|---|
+   | amwp quantumnauts | `https://images.legendary-arena.com/amwp/amwp-hm-quantumnauts.webp` | 2+ | `"2+"` |
+   | amwp quantum-hound | `https://images.legendary-arena.com/amwp/amwp-hm-quantum-hound.webp` | 3 | `"3"` |
+   | amwp tardigrade | `https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-{covert,instinct,ranged,strength,tech}.webp` | 4* | `"4"` |
+   | wtif giants-of-jotunheim | `https://images.legendary-arena.com/wtif/wtif-hm-giants-of-jotunheim.webp` | 3 | `"3"` |
+   | wtif vibranium-liberator-drones | `https://images.legendary-arena.com/wtif/wtif-hm-vibranium-liberator-drones.webp` | 3 | `"3"` |
+   | wtif ultron-sentries | `https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-{covert,instinct,ranged,strength,tech}.webp` | 2+ | `"2+"` |
+
+   Tardigrade's printed `4*` is stored as `"4"`. That follows §2 (asterisk not carried) and the amwp set's own convention, since none of its villain `vAttack` values carry `*`. `parseCardStatValue` reads `"4"` and `"4*"` identically. Before editing, a scratch worktree confirmed that `apply-card-counts.mjs` / `cards:check` preserve a hand-added outlier `vAttack` / `vp`.
+6. **Sequencing.** WP-762 is the operator-chosen hard prerequisite of WP-750 (D-24574). The free-fight path closes before the client lock is removed.
+7. **Residual exposures (named engine follow-ups, accepted by the operator, not modelled here):**
+   - bkwd/indestructible-man prints 0: he is fought by shuffling Elite Assassins, so the 0-cost fight stays.
+   - bkpt/killmonger: can't be fought while above 0, and attack Wounds him. After this WP he is fightable at 5.
+   - dims/j-jonah-jameson: the Angry Mobs fight lock is unmodelled.
+   - gotg/thanos and rvlt/mandarin: the negative per-Gem / per-Ring modifiers are unmodelled. The printed value is a ceiling.
+   - mgtg/ego-the-living-planet `3+` and the henchman `N+` values (mandroid, hydra-base, brood-the; outliers quantumnauts, ultron-sentries): the conditional bonus is unmodelled.
+   - The four variable-attack villains: pttr doppelganger / kraven-the-hunter / sandman (`""`) and noir kraven-animal-trainer (`"*"`).
+8. **Replay compatibility.** `cardStats` / `cardVictoryPoints` in `G` change for the affected cards. Henchman `vp` 1 equals the `VP_HENCHMAN` fallback, so scores are unchanged, but `G` is not. Stored replays of pre-WP-762 matches that fought these cards will not re-execute identically. No hash fixture, PAR fixture or `data/par` entry references an affected slug, so nothing was re-pinned. Published seed PAR for affected loadouts may drift; the PAR pipeline owns regeneration.
+
+**Gates.** After `pnpm -r build`:
+- `cards:check`, `mechanics:metadata:check`, `ledger:villains:check`, `sim:runtime-observed:check`, `gauntlet:loadouts:check` and `sim:coverage --check` → all 0.
+- `pnpm -r --no-bail test` → 0 fail (engine 4235/4235, registry 253/253, arena-client 2115/2115, server 1636 tests / 1430 pass / 206 skipped).
+- The dist one-liner prints `24 11 3`.
+- A dist assertion over all 14 Mastermind base faces and all 32 groups passes: each face's engine parse equals the table, each group's parse is > 0, and each group's `vp` is the number 1.
+- No engine source change, no derived feed regenerated, no fixture re-pinned.
+
+**Reserved by:** NUMBER-LEDGER D-24594. Related: D-24443 (WP-633 regen gate, canonical committed corpus), D-24193 (first non-tactic face), D-24574 (WP-750 client fight gating), D-24026 (live-on-surface).
+
 ---
 
-### D-24599 — An unsigned `[icon:attack]` that states an Adversary's printed attack is never a player grant — suppress it in the hero-ability parser (Active 2026-09-25 — direct fix, no WP)
+### D-24598 — Sunlight / Moonlight: the day-night rule, gated hero lines, the `day-night-both` fusion, and hero Blood Frenzy on a shared helper (Active 2026-09-25 — WP-765 / EC-802)
+
+**Status:** Active — landed 2026-09-25 (WP-765 / EC-802). The client badge is WP-766 / EC-803.
+
+**Context.** `[keyword:Sunlight]` / `[keyword:Moonlight]` were unrecognised markers. They attached no condition, so every icon grant on a day/night hero line fired on every play (Analyze Planetary Rotation always gave +2 recruit **and** +2 attack; Nanite +3 / +3; Starlit Path, Release the Beast, Ride by Moonlight and Creature of Dawn and Dusk always granted their icons), and every other line was hollow. The fixed-seed sweep recorded moonlight 274 / sunlight 107 hollow hits.
+
+**Decision.**
+1. **The rule.** `computeDayNight(G)` (`rules/dayNight.logic.ts`) is the shared authority (rules v23 ~L1696-1731). It counts the **printed** `cardStats[id].cost` of each non-null HQ slot: odd > even → `'moonlight'`, even > odd → `'sunlight'`, otherwise (a tie or an empty HQ) → `'neither'`. Runtime cost modifiers never count; a slot is one card (a Divided Card counts once; Haunters never sit in a slot). An absent `G.hq` / `G.cardStats` (test mocks, `heroConditionHoldsForInPlay`'s minimal slice) returns `'neither'` and never throws. No `G` field.
+2. **Conditions.** The parser arms `sunlight` → `{ type: 'sunlightInEffect', value: '' }` and `moonlight` → `{ type: 'moonlightInEffect', value: '' }` (the D-24055 marker→condition pattern), placed before `recruit-threshold` and the unresolved-marker fallback. `evaluateCondition` reads `computeDayNight(G)` as each hook resolves, so day/night is re-read per line (~L2603-2610) and never cached per card. Neither type is a wait-and-see gate nor a sequence gate; a runtime pin in `heroConditions.evaluate.test.ts` asserts both have real evaluate and describe cases and are in neither array. A blocked line logs the standard "did not activate — it isn't Sunlight / Moonlight" line.
+3. **`day-night-both`.** A no-magnitude composite HeroKeyword on the D-24555 Digest precedent. `DAY_NIGHT_BOTH_CARDS` = `mdns/werewolf-by-night/release-the-beast` (`[hc:instinct]`), `nmut/warlock/analyze-planetary-rotation` (`[hc:tech]`), `nmut/warlock/nanite-shapeshifter` (four `[team:x-men]` → `bothConditionCount: 4`). The fusion consumes the Sunlight, Moonlight and upgrade lines into one hook carrying `sunlightEffects`, `moonlightEffects`, `bothCondition` and optionally `bothConditionCount`. The handler runs Sunlight then Moonlight when the upgrade holds (via the shared `isDigestBothConditionMet`), otherwise the branch `computeDayNight` selects, and on `'neither'` nothing (one neutral log line). HeroCondition has no OR, so per-line hooks would double-fire a branch under the upgrade.
+4. **Unmodelled lines.** `DAY_NIGHT_UNMODELED_LINES` (9): WbN Snarling Fangs M, WbN Track the Captives M, Morbius Scalded by Sunlight S, Sunspot Solar-Powered S / Thermokinetic Fury S / Empyreal Force S, Wolfsbane Night Vision M / Nocturnal Savagery M, Mirage Haunted by the Demon Bear M. Each keeps its day/night condition, records `sunlight` / `moonlight` as an unresolved marker, and drops its parsed attack / recruit grant and every non-day/night condition (the D-24570 suppression sibling), so it grants nothing and records a `parse-unrecognized` hollow exactly when its state holds. After regeneration only these lines carry the hits (moonlight 44 / sunlight 29).
+5. **Hero Blood Frenzy.** `economy/bloodFrenzy.logic.ts` is the **shared** helper (WP-760's villain fight-cost Blood Frenzy consumes it; there is no second copy). `victoryPointValueForCard(G, playerId, cardId)` mirrors `computeFinalScores` branch for branch: villain dynamic → printed → `VP_VILLAIN`; henchman; bystander; a defeated tactic at `cardVictoryPoints[mastermind.baseCardId] ?? VP_TACTIC`; an Undercover card at `VP_UNDERCOVER`; else `null`. `countDistinctVictoryPointValues` is the size of the set of non-null values (0 and negative printed values count). A parity test pins the per-card sum against the breakdown; `computeFinalScores` is not refactored. Keywords `blood-frenzy` (+N attack) and `blood-frenzy-recruit` (+N recruit, Mesmerize) are no-magnitude; a Blood Frenzy line's printed `[icon:recruit]` / `[icon:attack]` are descriptive and suppressed at parse. `HERO_KEYWORDS` 69 → 72, `HERO_EFFECT_HANDLERS` 53 → 56, all three in `NO_MAGNITUDE_KEYWORDS`.
+6. **Synergy Rate.** Day/night conditions are excluded from the WP-708 clause count: Sunlight / Moonlight is board state, not a synergy the player built.
+7. **Projection.** `UIHQState.dayNight?: 'sunlight' | 'moonlight' | 'neither'`, built from `computeDayNight`, present iff any hook carries a `sunlightInEffect` / `moonlightInEffect` condition **or** the `day-night-both` keyword (a Warlock-only match has only fused hooks), omitted otherwise, and passed through the audience filter explicitly for every audience.
+8. **Markers and ledger.** Markers per WP-765 §Card Map (new `mdns` section; `:1` magnitudes on put-bottom / discard-draw; the `_deferred` Scalded by Sunlight entry lifted). Ledger: `KNOWN_CONDITIONS` gains `sunlight` / `moonlight`; `BY_HOOK_KEYWORDS` gains `blood-frenzy` and `day-night-both`, and the by-hook scan also collects the nested branch types of a fused hook (Release the Beast resolves Blood Frenzy inside `moonlightEffects`). Vengeance of the Bloodstone Gem and It's Morbin Time stay inert.
+
+**Known deviation.** An `optional-put-bottom-hq` line parks a choice; a later day/night line of the same card is evaluated before that choice changes the HQ. Resolving it is a named follow-up.
+
+**Determinism.** No randomness; behaviour-only change. No `finalStateHash` / `PRE_WP080_HASH` / PAR re-pin (engine 4235 → 4281, 0 fail). Replays of pre-WP-765 mdns / nmut matches will not re-execute identically, and **D-24119 re-verification of ranked mdns / nmut matches recorded before this WP will mismatch**.
+
+**Feeds.** Regenerated `data/cards/{mdns,nmut}.json`, `card-mechanics.json`, `effect-implementation-index.json`, the hero ledger JSON / CSV and `runtime-observed-hollows.json` (totalObservations 2514 → 2206). `sim:coverage --check` did not flag. Dashboard in-play pin: totalObs 3019 held (peak), percentResolved 24.3 → 37.6 (resolvedObs 733 → 1135 — condition-status mechanics count as resolved per D-24464; this includes the 73 live hits on the unmodelled lines, because the ledger is mechanic-level).
+
+**Out of scope.** Villain / mastermind / scheme day/night (fight-cost terms, Belasco, Crash the Moon into the Sun, the Switchblade un-defer) is one named follow-up after WP-760, reusing both helpers; the 9 unmodelled lines; Face Your Demons line 0.
+
+**D-24026 live-on-surface:** pending — in a Werewolf by Night match, Release the Beast gives +3 recruit only when the HQ is majority even, and nothing on a tie without another instinct Hero.
+
+**Reserved by:** NUMBER-LEDGER D-24598. Related: D-24055, D-24354, D-24555, D-24562, D-24570, D-24581, D-24183, D-24464, D-24531, D-24119, D-12803.
+
+### D-24595 — Scheme Evil Wins fidelity: printed twist thresholds, Villain Deck runout, and the last-twist interim rule (Active 2026-09-25 — WP-763 / EC-800)
+
+**Status:** Active — landed 2026-09-25 (WP-763 / EC-800; Game Engine scheme config + loss rules + UIState enum, and one arena-client label file). **Supersedes D-24371 §6 for non-core schemes**: its "the 7-twist fallback remains correct for a genuinely unconfigured scheme" holds for no scheme. Core behaviour is unchanged.
+
+**Context.** Only the 8 core schemes modelled an Evil Wins condition. The other 192 lost on the engine's generic `MVP_SCHEME_TWIST_THRESHOLD = 7` whatever the card printed. A live solo match on `mdns/midnight-massacre` ended "twist threshold reached" at twist 7; that card's printed Evil Wins is "When the Hero Deck or Villain Deck runs out." An independent audit subagent (2026-09-25; full table below) found **144** schemes that can lose falsely at twist 7, **14** that lose early (printed 8–11), and **25** that can never lose (6 or fewer twists in the deck). All three sets are ranked gauntlet legs.
+
+**Operator decision (Jeff, 2026-09-25).** For a scheme whose printed condition is an unmodelled per-scheme counter, the interim Evil Wins is **the last Scheme Twist in that scheme's Villain Deck**, and the danger meter labels it **approximate**. Rejected alternatives: *no twist loss* (unfair free wins would inflate ranked scores) and *pull those schemes from ranked* (shrinks the catalog). Modelling the per-scheme counters (escaped-villain counts, tokens on the scheme, KO-pile counts, …) is a named follow-up **series**, one family per WP.
+
+**Decision.**
+
+1. **Fallback threshold = the deck's twist count.** `resolveTwistLossThreshold` resolves `lossThresholdByPlayerCount` → `lossThreshold` → **the count of `G.villainDeckCardTypes` values `=== 'scheme-twist'`**, derived at read time (no new `G` field). A count of 0 (a test mock, or a scheme missing from the registry) uses `DEFAULT_SCHEME_TWIST_COUNT = 8`, mirroring the `villainDeck.setup.ts` default. `MVP_SCHEME_TWIST_THRESHOLD` is deleted. The count is safe to derive because `'scheme-twist'` is written only at setup, one uniquely-suffixed key per copy; the one runtime write (the Secret Invasion twist) writes `'villain'` for a Hero. Every core scheme sets rung 1 or 2, so no core threshold moves (pinned per scheme in `schemeLossProgress.test.ts`).
+2. **`counter-only` resolver.** `SchemeTwistResolverId` gains `'counter-only'`, a registered **pure no-op** (no log, no notable event, no `G` write, so no `SchemeTwistResolverKey`). It lets a scheme be configured for its Evil Wins without inventing a twist effect. `resolverId` stays required. A configured scheme no longer logs "[Scheme Twist] No resolver configured…"; the generic "…twist count incremented…" line still emits, so PAR anchor extraction is unaffected.
+3. **`villainDeck` pile + the multi-pile form.** `type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck'` with a drift-checked `SCHEME_LOSS_PILES`. `pile-depleted` is the exclusive union `{ kind; pile: SchemeLossPile; piles?: never } | { kind; piles: readonly SchemeLossPile[]; pile?: never }`; the loss fires when **any** named pile is empty. `villainDeck` reads `G.villainDeck.deck.length`. One normaliser (`listConditionPiles`) serves the loss rule, the setup capture and the meter. Core entries keep the single-`pile` form.
+4. **Setup sizes.** `schemeLossPileSetupSize` (hero deck / wound stack) is unchanged, so the sentinel hash is untouched. A new omit-when-absent `G.schemeLossVillainDeckSetupSize` is written only when the condition names `villainDeck`, sized from the built deck (never from the `villainDeckCardTypes` key count). No configured scheme names both the hero deck and the wound stack (pinned).
+5. **Compound schemes.** New config flag `twistFallbackWithResourceLoss?: true` keeps the twist proxy **active** at the fallback threshold alongside a `resourceLossCondition`. Set on the 25 D-compound entries only; without it, D-24315 suppression is unchanged.
+6. **Loss kinds + one selector.** `SchemeLossKind` gains `'villain-deck'` and `'twists-fallback'` (union + canonical array together). `twists-fallback` is the kind whenever the measured twist threshold is the fallback (an unconfigured scheme, or a compound scheme's twist half); a configured printed count stays `'twists'`. `selectActiveLossCondition` is the single place kind, threshold and progress are decided: for a multi-pile or compound scheme it reports the condition with the **highest normalised progress**, and a tie goes to the pile (resource conditions are listed first; strictly greater wins). `resolveSchemeLossKind` maps piles through an exhaustive switch. The legacy pair (a pile-depleted state with no WP-562 capture reads twists and omits `schemeLossThreshold`) is preserved.
+7. **Client copy.** `menaceDisplay.ts` only: `villain-deck` → "Villain Deck", `twists-fallback` → "Twists (approximate)". No label string in `packages/` (D-24367 §2).
+8. **Endgame precedence.** A Villain Deck runout that latches the final turn **and** trips `pile-depleted` in the same `onMove` is a **scheme loss**, not a tie (D-24319 order: latch, then pile check; `evaluateEndgame` reads `SCHEME_LOSS` before `FINAL_TURN_TIE`). Asserted in `endgame.evaluate.test.ts`, with the contrast case (an unconfigured scheme still ties).
+
+**Configuration (WP-763 §Audit, verbatim; all 67 entries use `resolverId: 'counter-only'`).**
+
+- **A — printed twist count** (`lossThreshold` = printed N; 27): N=6 `anni/sneak-attack-the-heroes-homes`, `ca75/unbreakable-enigma-code-the`, `vnom/paralyzing-venom`, `xmen/horror-of-horrors`; N=7 `2099/pull-reality-into-cyberspace`, `bkwd/corrupt-the-spy-agencies`, `co2e/portals-to-the-dark-dimension`, `ff04/invincible-force-field`, `ff04/pull-reality-into-the-negative-zone`, `msp1/invade-asgard`, `pttr/weave-a-web-of-lies`, `ssw1/dark-alliance`, `wwhk/mutating-gamma-rays`; N=8 `co2e/unleash-the-power-of-the-cosmic-cube`, `msp1/unleash-the-power-of-the-cosmic-cube`, `cvwr/avengers-vs-x-men`, `mgtg/inescapable-kyln-space-prison`, `rvlt/korvac-saga-the`, `ssw2/god-emperor-of-battleworld-the` (its "(If any Mastermind still lives)" is a named gap; v1 is plain twist 8), `ssw2/secret-wars`, `wpnx/condition-logan-into-weapon-x`; N=9 `anni/pulse-waves-from-the-negative-zone`, `wwhk/world-war-hulk`; N=10 `msis/the-time-heist`, `rlmk/tornado-of-terrigen-mists`, `shld/hail-hydra`; N=11 `vnom/symbiotic-absorption`. The twist-7 schemes are configured explicitly so the fallback can never move them.
+- **D-pure — only a standard pile running out** (twist proxy suppressed; 15): Hero Deck `ca75/go-back-in-time-to-slay-heroes-ancestors`, `co2e/super-hero-civil-war`, `cvwr/epic-super-hero-civil-war`, `dead/deadpool-kills-the-marvel-universe`, `msp1/super-hero-civil-war`, `wpnx/go-after-heroes-loved-ones`; Wound Stack `msp1/radioactive-palladium-poisoning`, `ssw1/pan-dimensional-plague`, `wwhk/fall-of-the-hulks`; Wound Stack or Villain Deck `bkpt/poison-lakes-with-nanite-microbots`, `co2e/the-legacy-virus`, `xmen/anti-mutant-hatred`, `xmen/televised-deathtraps-of-mojoworld`; Hero Deck or Villain Deck `mdns/midnight-massacre`, `msis/halve-all-life-in-the-universe`.
+- **D-compound — unmodelled counter, or a standard pile** (pile loss + `twistFallbackWithResourceLoss`; 25): escaped-villain count or Villain Deck — `antm/trap-heroes-in-the-microverse`, `bkwd/train-black-widows-in-the-red-room`, `co2e/negative-zone-prison-outbreak`, `dstr/war-for-the-dream-dimension`, `rlmk/devolve-with-xerogen-crystals`, `rvlt/earthquake-drains-the-ocean`, `smhc/scavenge-alien-weaponry`, `wtif/marvel-zombies`, `wwhk/gladiator-pits-of-sakaar`, `pttr/clone-saga-the`, `pttr/splice-humans-with-spider-dna`, `vnom/invasion-of-the-venom-symbiotes`; tokens or cards, or Villain Deck — `bkpt/plunder-wakandas-vibranium`, `co2e/bank-robbery-hostage-crisis`, `co2e/enshrouded-identity`, `cosm/annihilation-conquest`, `dstr/cursed-pages-of-the-darkhold-tome`, `mdns/sire-vampires-at-the-blood-bank`, `msmc/control-the-mutant-messiah`, `msmc/open-rifts-to-future-timelines`; counter, or Villain Deck or Hero Deck — `msmc/reveal-the-heroes-evil-clones`, `msmc/unleash-an-anti-mutant-bioweapon`; counter, or Hero Deck — `2099/befoul-earth-into-a-polluted-wasteland`, `dkcy/detonate-the-helicarrier`; counter, or Wound Stack — `vnom/maximum-carnage`.
+- **Excluded** (no entry; they use the last-twist rule; named follow-ups): the non-standard piles `chmp/clash-of-the-monsters-unleashed` (Monster Pit), `chmp/divide-and-conquer` (all Hero Decks), `noir/five-families-of-crime` (multiple Villain Decks), `rvlt/secret-hydra-corruption` (Officer stack), `wwhk/shoot-hulk-into-space` (Hulk Deck), `gotg/unite-the-shards` (Shards supply); the "Good Wins" schemes (the `vill` set, `fear/fear-itself`, `fear/last-stand-at-avengers-tower`, `fear/traitor-the`). The 8 core entries are untouched.
+
+**Replay and score compatibility.** Core schemes are byte-identical: the sentinel replay and all PAR seed scenarios use only core schemes, and both oracles pass unchanged. A **non-core** replay recorded before WP-763 may end differently when re-executed (a different twist on which Evil Wins fires, or a deck runout that is now a loss rather than a tie). Published non-core gauntlet scores are **not** recomputed (D-5302 score immutability).
+
+**Gates.** After `pnpm -r build`: engine 4235/0 → 4275/0; arena-client 2115/0 → 2116/0 with `vue-tsc` 0; `pnpm -r --no-bail test` 0 failures; `sim:coverage --check` and `sim:runtime-observed:check` 0. The scaffold-predicted pin set moved as expected (7 → derived fallback and `twists` → `twists-fallback` in `schemeHandlers.test.ts`, `schemeLossProgress.test.ts`, `uiState.build.progress.test.ts` and `uiState.filter.test.ts`), with no hash or replay failure.
+
+**Out of scope.** Per-scheme counters (the follow-up series); twist effects (WP-764 for Midnight Massacre); the Excluded piles; PAR keys dropping the set prefix (fixed separately by D-24597).
+
+**Audit table (independent subagent, 2026-09-25; the engine state *before* WP-763).** Category key: A printed twist count; B escaped-villain count; C escaped-card / bystander count; D standard pile runout; E per-scheme tokens / counters; F other (KO pile, transform, Good Wins, none printed).
+
+| scheme | category | twists in deck | engine threshold | suppress | resolver | engine loss | verdict | printed Evil Wins |
+|---|---|---|---|---|---|---|---|---|
+| 2099/pull-reality-into-cyberspace | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| 2099/become-president-of-the-united-states | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind is elected President by having Forty Million more votes than the highest-voted Hero Name. |
+| 2099/subjugate-earth-with-mega-corporations | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When a single Mega-Corp has 3 Dominations. |
+| 2099/befoul-earth-into-a-polluted-wasteland | D+F:KO-pile+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out, or there are 8 Toxic Sludges under the HQ and/or in the river (KO pile). |
+| amwp/auction-shrink-tech-to-highest-bidder | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Shrink Tech cards are Controlled by Arms Dealers. |
+| amwp/safeguard-dark-secrets | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the Mastermind has 5 Secrets. |
+| amwp/escape-an-imprisoning-dimension | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When 3 Escape Routes have been discovered. |
+| amwp/siphon-energy-from-the-quantum-realm | F:KO-pile+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Quantum Realm Villains have been KO'd or there are 9 Quantum Siphons. |
+| anni/pulse-waves-from-the-negative-zone | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 9) | Twist 9: Evil wins! |
+| anni/sneak-attack-the-heroes-homes | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| anni/put-humanity-on-trial | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Jurors vote to Condmen Humanity. |
+| anni/breach-parallel-dimensions | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When at least half of the original Dimensions are destroyed. |
+| antm/age-of-ultron | B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Evolved Ultrons are in the city and/or Escape Pile. |
+| antm/pull-earth-into-medieval-times | B | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| antm/transform-commuters-into-giant-ants | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When ther are 10 Giant Ants next to the Mastermind. |
+| antm/trap-heroes-in-the-microverse | D+B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| asrd/asgardian-test-of-worth | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Moral Failings. |
+| asrd/dark-world-of-svartalfheim-the | E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all city spaces or all HQ spaces are covered in Eternal Darkness. |
+| asrd/war-of-the-frost-giants | B+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Frost Giant Invaders in the city and/or Escape Pile. |
+| asrd/ragnarok-twilight-of-the-gods | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Guardians Defeated. |
+| bkpt/seize-the-wakandan-throne | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When the 5 Tribes of Wakanda have been defeated. |
+| bkpt/poison-lakes-with-nanite-microbots | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| bkpt/plunder-wakandas-vibranium | D+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Vibranium are in the Escape Pile or the Villain Deck runs out. |
+| bkpt/provoke-a-clash-of-nations | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: At 6 International Crises. |
+| bkwd/corrupt-the-spy-agencies | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| bkwd/train-black-widows-in-the-red-room | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| bkwd/sniper-rifle-assassins | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are four non-grey Heroes per player in the KO Pile. |
+| bkwd/frame-heroes-for-murder | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 pieces of Incriminating Evidence. |
+| ca75/brainwash-the-military | C | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 S.H.I.E.L.D. Officers escape. |
+| ca75/change-the-outcome-of-wwii | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 capitals are conquered. |
+| ca75/go-back-in-time-to-slay-heroes-ancestors | D | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| ca75/unbreakable-enigma-code-the | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| chmp/clash-of-the-monsters-unleashed | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Monster Pit Deck runs out. |
+| chmp/divide-and-conquer | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all Hero Decks are gone. |
+| chmp/hypnotize-every-human | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Villains are in the Escape pile. |
+| chmp/steal-all-oxygen-on-earth | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 20 non-grey Heroes are KO'd. |
+| co2e/bank-robbery-hostage-crisis | D+C | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Bystanders are in the Escape Pile or the Villain Deck runs out. |
+| co2e/secret-invasion-of-the-skrull-shapeshifters | C+E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When there are 6 Hero cards in the Escape Pile. |
+| co2e/the-legacy-virus | D | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Deck or the Villain Deck runs out. |
+| co2e/negative-zone-prison-outbreak | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| co2e/portals-to-the-dark-dimension | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| co2e/replace-earths-leaders-with-killbots | C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Bystander cards in the Escape Pile. |
+| co2e/super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| co2e/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| co2e/enshrouded-identity | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 9 Bodyguards or the Villain Deck runs out. |
+| core/midtown-bank-robbery | C | 8 | 8 | true | midtown-bank-robbery | escaped-pile-count bystander>=8 | MATCH | Evil Wins: When 8 Bystanders are carried away by escaping Villains. |
+| core/secret-invasion-of-the-skrull-shapeshifters | C+B | (8 default) | 8 | true | secret-invasion | escaped-converted skrull>=6 | MATCH | Evil Wins: If 6 Heroes get into the Escaped Villains pile. |
+| core/legacy-virus-the | D | (8 default) | 8 | true | reveal-or-punish | pile-depleted wounds | MATCH | Evil Wins: If the Wound stack runs out. |
+| core/negative-zone-prison-breakout | B | (8 default) | 8 | true | chained-reveals | escaped-pile-count villain>=12 | MATCH | Evil Wins: If 12 Villains escape. |
+| core/portals-to-the-dark-dimension | A | 7 | 7 | false | portals | twist 7 | MATCH | Twist 7: Evil Wins! |
+| core/replace-earths-leaders-with-killbots | C | 5 | 5 | true | killbots | escaped-converted killbot>=5 | MATCH | Evil Wins: If 5 “Killbots“ escape. |
+| core/super-hero-civil-war | D | (8 default) | 8/5 by pc | true | ko-from-hq | pile-depleted heroDeck | MATCH | Evil Wins: If the Hero Deck runs out. |
+| core/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 8 | false | wound-all | twist 8 | MATCH | Twist 8: Evil Wins! |
+| cosm/contest-of-champions-the | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Evil Triumphs. |
+| cosm/turn-the-soul-of-adam-warlock | E | 14 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 8 Souls Corruptions. |
+| cosm/destroy-the-nova-corps | F:KO-pile+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 KO'd Nova Centurions per player. |
+| cosm/annihilation-conquest | D+B+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Phalanx-Infected in the city and/or Escape Pile, or the Villain Deck runs out. |
+| cvwr/avengers-vs-x-men | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| cvwr/dark-reign-of-h-a-m-m-e-r-officers | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Officers next to the Mastermind. |
+| cvwr/epic-super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| cvwr/imprison-unregistered-superhumans | F:KO-pile+C | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Bystanders are in the KO pile and/or Escape Pile. |
+| cvwr/nitro-the-supervillain-threatens-crowds | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 15 Bystanders are in the KO pile and/or Escape Pile. |
+| cvwr/predict-future-crime | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When there are 2 Villains per player in the Escape Pile. |
+| cvwr/reveal-heroes-secret-identities | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 5 Heroes are Unmasked. |
+| cvwr/united-states-split-by-civil-war | E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Western Victories or 3 Eastern Victories. |
+| dead/deadpool-kills-the-marvel-universe | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| dead/deadpool-wants-a-chimichanga | C | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 6 Chimichangas are in the Escape Pile. |
+| dead/deadpool-writes-a-scheme | F:none-printed | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | (none) |
+| dead/everybody-hates-deadpool | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| dkcy/capture-baby-hope | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Twists stacked next to the Mastermind. |
+| dkcy/detonate-the-helicarrier | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all HQ spaces are Destroyed or the Hero Deck runs out. |
+| dkcy/massive-earthquake-generator | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non grey Heroes in the KO pile is 3 times the number of players. |
+| dkcy/organized-crime-wave | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Goons escape. |
+| dkcy/save-humanity | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of Bystanders KO'd and/or carried off is 4 times the number of players. |
+| dkcy/steal-the-weaponized-plutonium | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Plutonium have been carried off by Villains. |
+| dkcy/transform-citizens-into-demons | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 Goblin Queen cards escape. |
+| dkcy/x-cutioners-song | F:KO-pile+C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: 9 non grey Heroes are KO'd or carried off. |
+| dstr/war-for-the-dream-dimension | D+B | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| dstr/claim-souls-for-demons | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of Tormented Souls is four times the number of players. |
+| dstr/cursed-pages-of-the-darkhold-tome | D+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has 7 Cursed Pages at the end of any player's turn or the Villain Deck runs out. |
+| dstr/duels-of-science-and-magic | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has won 5 Duels. |
+| fear/fear-itself | F:good-wins | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| fear/last-stand-at-avengers-tower | F:good-wins | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | (none) |
+| fear/traitor-the | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| ff04/bathe-the-earth-in-cosmic-rays | F:KO-pile | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is six times the number of players. |
+| ff04/flood-the-planet-with-melted-glaciers | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 20 non-grey Heroes are KO'd. |
+| ff04/invincible-force-field | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| ff04/pull-reality-into-the-negative-zone | A | (8 default) | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| gotg/forge-the-infinity-gauntlet | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Infinity Gem Villains are in the city and/or the Escape Pile. / Evil Wins: When a player controls 4 Infinity Gem Artifacts, that player is corrupted by power. That player wins, Evil wins, and all other players lose. |
+| gotg/intergalactic-kree-nega-bomb | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 16 non-grey Heroes are in the KO pile. |
+| gotg/kree-skrull-war-the | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Kree Conquests or 4 Skrull Conquests. |
+| gotg/unite-the-shards | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has 10 [rule:Shards] or when there are no more [rule:Shards] in the supply. |
+| mdns/sire-vampires-at-the-blood-bank | D+E | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Vampire Thralls on the Villain Deck runs out. |
+| mdns/ritual-sacrifice-to-summon-chthon | F:chthon | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| mdns/midnight-massacre | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck or Villain Deck runs out. |
+| mdns/wager-at-blackjack-for-heroes-souls | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Wagered Souls. |
+| mdns/great-old-one-chthon | F:chthon | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| mgtg/inescapable-kyln-space-prison | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| mgtg/provoke-the-sovereign-war-fleet | B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Omnicraft escape. |
+| mgtg/star-lords-awesome-mix-tape | F:KO-pile | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 32 non-grey Heroes in the KO pile. |
+| mgtg/unleash-the-abilisk-space-monster | E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Tentacles. |
+| msis/sacrifice-for-the-soul-stone | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Mastermind has sacrificed 5 Heroes for the Soul Stone. |
+| msis/halve-all-life-in-the-universe | D | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the Hero Deck or Villain Deck runs out. |
+| msis/warp-reality-into-a-tv-show | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all TV is destroyed. |
+| msis/the-time-heist | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil wins! |
+| msmc/hack-cerebro-servers-to | F:transform | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/control-the-mutant-messiah | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 cards in the Fallen Messiah stack or the Villain Deck runs out. |
+| msmc/drain-mutant-powers-to | F:transform | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/open-rifts-to-future-timelines | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Temporal Rifts or the Villain Deck runs out. |
+| msmc/hire-singularity-investigations-to | F:transform | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/reveal-the-heroes-evil-clones | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 7 Evil Clones in the city and/or Escape Pile, or the Villain Deck or Hero Deck runs out. |
+| msmc/raid-gene-banks-to | F:transform | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| msmc/unleash-an-anti-mutant-bioweapon | D+F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 15 non-grey Heroes in the KO pile or the Villain Deck or Hero Deck runs out. |
+| msp1/asgard-under-siege | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If 12 Villains escape. |
+| msp1/destroy-the-cities-of-earth | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Bystanders are carried away by escaping Villains. |
+| msp1/enslave-minds-with-the-chitauri-scepter | C+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If 6 Heroes get into the Escaped Villains pile. |
+| msp1/invade-asgard | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| msp1/radioactive-palladium-poisoning | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If the Wound stack runs out. |
+| msp1/replace-earths-leaders-with-hydra | C | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: If 5 “Infiltrators“ escape. |
+| msp1/super-hero-civil-war | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: If the Hero Deck runs out. |
+| msp1/unleash-the-power-of-the-cosmic-cube | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| nmut/demon-bear-saga-the | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Dream Horrors. |
+| nmut/crash-the-moon-into-the-sun | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Altered Orbits. |
+| nmut/trapped-in-the-insane-asylum | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When a player has 3 Psychotic Breaks. |
+| nmut/superhuman-baseball-game | B+E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When Evil has 4 “runs“ (Villains in the Escape Pile) per player. |
+| noir/find-the-split-personality-killer | F:none-printed | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| noir/silence-the-witnesses | C | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 6 Bystanders are in the Escape Pile. |
+| noir/five-families-of-crime | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 8 Villains escape or all Villain Decks run out. |
+| noir/hidden-heart-of-darkness | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 2 Tactics escape. |
+| pttr/clone-saga-the | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 2 Villains with the same card name have escaped or the Villain Deck runs out. |
+| pttr/invade-the-daily-bugle-news-hq | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Villains in the HQ. |
+| pttr/splice-humans-with-spider-dna | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 6 Sinister Six Villains have escaped or the Villain Deck runs out. |
+| pttr/weave-a-web-of-lies | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| rlmk/ruin-the-perfect-wedding | F:KO-pile+E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When either Wedding Hero Stack is KO'd. |
+| rlmk/war-of-kings | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Victorious Generals. |
+| rlmk/tornado-of-terrigen-mists | A | 10 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil Wins! |
+| rlmk/devolve-with-xerogen-crystals | D+B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| rvlt/earthquake-drains-the-ocean | D+B | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. / Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| rvlt/house-of-m | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is ten plus double the number of players. |
+| rvlt/secret-hydra-corruption | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 15 Officers next to this Scheme or the S.H.I.E.L.D. Officer Stack runs out. |
+| rvlt/korvac-saga-the | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| shld/shield-vs-hydra-war | E | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the [keyword:Hydra Level] is 11. |
+| shld/hail-hydra | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 10) | Twist 10: Evil Wins! |
+| shld/hydra-helicarriers-hunt-heroes | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 18 non-grey Heroes in the KO pile. |
+| shld/secret-empire-of-betrayal | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Vicious Betrayals next to the Scheme. |
+| smhc/distract-the-hero | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there have been 5 Villainous Interruptions. |
+| smhc/explosion-at-the-washington-monument | F:KO-pile+C+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 10 Bystanders are in the KO pile and/or Escape Pile, or all Floors are KO'd. |
+| smhc/ferry-disaster | F:KO-pile+C | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Bystanders are in the KO pile and/or Escape Pile. |
+| smhc/scavenge-alien-weaponry | D+B | 7 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped or the Villain Deck runs out. |
+| ssw1/build-an-army-of-annihilation | E | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 10 Annihilation Henchmen next to the Mastermind. |
+| ssw1/corrupt-the-next-generation-of-heroes | C | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 4 [rule:Sidekicks] escape. |
+| ssw1/crush-them-with-my-bare-hands | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When 8 Master Strikes have taken effect. |
+| ssw1/dark-alliance | A | (8 default) | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| ssw1/fragmented-realities | F:KO-pile | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of non-grey Heroes in the KO pile is 5 times the number of players. |
+| ssw1/master-of-tyrants | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Tyrant Villains escape. |
+| ssw1/pan-dimensional-plague | D | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack runs out. |
+| ssw1/smash-two-dimensions-together | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 10 Villains escape. |
+| ssw2/deadlands-hordes-charge-the-wall | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains equals the number of players plus 6. |
+| ssw2/enthrone-the-barons-of-battleworld | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Masterminds. |
+| ssw2/fountain-of-eternal-life-the | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains is 3 times the number of players. |
+| ssw2/god-emperor-of-battleworld-the | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! (If any Mastermind still lives.) |
+| ssw2/mark-of-khonshu-the | B | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 7 Khonshu Guardians escape (includes both Villain and Henchman). |
+| ssw2/master-the-mysteries-of-kung-fu | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the number of escaped Villains is double the number of players. |
+| ssw2/secret-wars | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil wins! |
+| ssw2/sinister-ambitions | B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 4 Ambition Villains escape. |
+| vill/build-an-underground-megavault-prison | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/cage-villains-in-power-suppressing-cells | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/crown-thor-king-of-asgard | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/crush-hydra | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/graduation-at-xaviers-x-academy | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/infiltrate-the-lair-with-spies | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/mass-produce-war-machine-armor | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vill/resurrect-heroes-with-norn-stones | F:good-wins | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | (none) |
+| vnom/invasion-of-the-venom-symbiotes | D+B+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Escape Pile has 3 cards per player, or the Villain Deck runs out. |
+| vnom/maximum-carnage | D+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 6 Bystanders in the Escape Pile or the Wound Stack runs out. |
+| vnom/paralyzing-venom | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil Wins! |
+| vnom/symbiotic-absorption | A | 11 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 11) | Twist 11: Evil Wins! |
+| wpnx/condition-logan-into-weapon-x | A | (8 default) | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 8) | Twist 8: Evil Wins! |
+| wpnx/go-after-heroes-loved-ones | D | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Hero Deck runs out. |
+| wpnx/wipe-heroes-memories | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 4 Total Memory Wipes. |
+| wtif/trash-earth-with-hugest-party-ever | E | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 5 Wreckages have been Discovered. |
+| wtif/marvel-zombies | D+B | 4 | 7 | false | - | none (deck 4 twists <7) | MISSING-LOSS | Evil Wins: When there are 3 Villains per player in the Escape Pile or the Villain Deck runs out. |
+| wtif/collect-an-interstellar-zoo | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Zoo has 5 heroes. |
+| wtif/breach-the-nexus-of-all-realities | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When all Realities have been destroyed. |
+| wwhk/break-the-planet-asunder | F:KO-pile | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 25 non-grey Heroes are KO'd. |
+| wwhk/cytoplasm-spike-invasion | F:KO-pile+C | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the KO pile and Escape Pile combine to have 18 Bystanders and/or Spikes. |
+| wwhk/fall-of-the-hulks | D | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack runs out. |
+| wwhk/gladiator-pits-of-sakaar | D+B | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING-LOSS | Evil Wins: When 2 Villains per player have escaped or the Villain Deck runs out. |
+| wwhk/mutating-gamma-rays | A | 7 | 7 | false | - | twist-7 proxy | MATCH (coincidental 7) | Twist 7: Evil Wins! |
+| wwhk/shoot-hulk-into-space | D+E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 10 cards in the Prison Ship or the Hulk Deck runs out. |
+| wwhk/subjugate-with-obedience-disks | E | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When each HQ space has 2 Obedience Disks. |
+| wwhk/world-war-hulk | A | 9 | 7 | false | - | twist-7 proxy | WRONG-THRESHOLD (early @7, print 9) | Twist 9: Evil Wins! |
+| xmen/alien-brood-encounters | B | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Villains per player have escaped. |
+| xmen/anti-mutant-hatred | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| xmen/dark-phoenix-saga-the | B | 10 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 5 Jean Grey cards have escaped. |
+| xmen/horror-of-horrors | A | 6 | 7 | false | - | none (deck 6 twists <7) | MISSING (print 6, never reaches 7) | Twist 6: Evil wins! |
+| xmen/mutant-hunting-super-sentinels | B | 9 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When 3 Sentinels have Escaped. |
+| xmen/nuclear-armageddon | E | 5 | 7 | false | - | none (deck 5 twists <7) | MISSING-LOSS | Evil Wins: When the city is destroyed. |
+| xmen/televised-deathtraps-of-mojoworld | D | 11 | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When the Wound Stack or Villain Deck runs out. |
+| xmen/x-men-danger-room-goes-berserk | E | (8 default) | 7 | false | - | twist-7 proxy | FALSE-LOSS | Evil Wins: When there are 5 Airborne Neurotoxins. |
+
+**Reserved by:** NUMBER-LEDGER D-24595. Related: D-24178 (MVP threshold), D-24315..D-24320 (resource loss, suppression, precedence), D-24366 / D-24367 (menace signal, client copy boundary), D-24371 (superseded §6 for non-core), D-24319 (loss before tie), D-5302 (score immutability), D-24596 (WP-764 Midnight Massacre consumes the multi-pile condition), D-24597 (PAR keys keep the set qualifier).
+
+### D-24574 — The client gates Fight on the engine's projected fight cost, never the printed cost (Active 2026-09-26 — WP-750 / EC-787)
+
+**Status:** Active. Landed 2026-09-26 (WP-750 / EC-787). The live-on-surface check (D-24026) is pending with the operator. It needs a live Portals to the Dark Dimension match with a Dark Portal on a City space or on the Mastermind:
+- the tile shows `Fight printed+1`;
+- Fight stays disabled at exactly printed attack;
+- Fight enables at printed + 1, and the fight succeeds.
+
+**Context.** `useCardCostGating` gated City and Mastermind Fight on the printed `UICardDisplay.cost`, while the engine guards on `resolveFightCost` / `resolveMastermindFightCost`. The two disagreed in both directions:
+- **Dead buttons.** Fight was enabled but the engine refused it: captured-Hero `*` / `N+` villains, a Dark-Portal City space, a Skrull, and the Portals Mastermind once it holds a portal.
+- **False locks.** "This card cannot be fought." was shown where the engine allowed the fight: a null printed attack (engine cost 0), and a converted Killbot.
+
+WP-762 / D-24594 filled the missing printed attack values first, so removing the false lock no longer exposes 0-cost fights on 14 Masterminds and 32 henchman groups.
+
+**Decision.**
+
+1. **One cost source per target, the engine projection.**
+   - City: `UICityCard.fightCost` (`resolveFightCost`, already projected and filter-copied).
+   - Mastermind: the new optional `UIMastermindState.fightCost` = `resolveMastermindFightCost(gameState)`, the same authority the `fightMastermind` guard and the bot read. `MastermindTile` reads `fightCost ?? display.cost`; the fallback exists only for snapshots that predate the field.
+   - The client never adds a Dark-Portal, captured-Hero, Skrull or Killbot term itself. A future cost term is added engine-side in `resolveFightCost` / `resolveMastermindFightCost` and reaches the client with no client change. WP-748 and WP-760 rely on this.
+2. **UIState five-step.** `fightCost?` was added to `UIMastermindState`, populated in `buildUIState`, and passed through `filterUIStateForAudience` with a conditional spread (never a `fightCost: undefined` literal). It is public shared-board data for every audience, and a filter test pins it for PLAYER_0 / PLAYER_1 / SPECTATOR. The diagnostics `uiStateSnapshot` is the whole received store, so it carries the field.
+3. **Numeric gating.** The signatures are now `canFight(cost: number | null, economy)` and `canFightWithExcessiveViolence(cost: number | null, economy)`. Messages are unchanged: `This card cannot be fought.` for null, `Needs X attack, you have Y.` when short, and EV requires `availableAttack >= cost + 1`. `canRecruit` is unchanged. Tooltip precedence stays stage → resource → structural. The WP-756 / WP-761 slash gesture inherits the gate through `gateForCityIndex`, with no change to `useSlashGesture.ts`.
+4. **Fight N badge.**
+   - It shows the projected cost only on a mismatch: City when `fightCost !== display.cost` (a null printed cost counts as different); Mastermind when `fightCost !== undefined && fightCost !== display.cost`, never from the fallback.
+   - Test ids: `play-city-fight-cost` / `play-mastermind-fight-cost`. Classes: `city-space__fight-cost` / `mastermind__fight-cost`.
+   - Position: absolutely positioned inside the Fight button, at the bottom, outside the top band. It is not a `.city-space` flex child, so the scale-to-fit board (D-24505) is unchanged.
+   - **Placement note (execution):** the Mastermind Fight button stacks the Tactics-remaining and Final Blow lines under the card. Its badge therefore anchors to a `position: relative` card frame (`mastermind__card-frame`) inside the button, not to the button's bottom edge, which would cover those lines. The button still gets `position: relative`. The City button holds only the card, so its badge anchors to the button.
+5. **Patrol / Guard.** They are unset (D-2504), so `fightCost` equals the guard's cost term in every real match. If a future data pass sets Patrol, it must be absorbed into the `resolveFightCost` projection, or the client gate will under-state the cost again.
+6. **Named follow-ups (not in this decision):**
+   - The defeat-requirement dead button (Blob / Venom / Zombie Venom: the engine refuses for a non-cost reason the client can't see; it needs a projected requirement flag).
+   - The bot never enumerating a Final Blow fight (`ai.legalMoves.ts`).
+   - The WP-762 residual cards (Indestructible Man, Killmonger, Jameson, pttr doppelganger / kraven-the-hunter / sandman, noir kraven-animal-trainer). The operator accepted these as engine follow-ups; no client lock is added (D-24594 §7).
+
+**Gates.**
+- `pnpm -r build` → 0. `pnpm --filter @legendary-arena/arena-client typecheck` → 0.
+- Engine suite 4321/0 → 4324/0 (+2 build, +1 filter).
+- arena-client suite 2116/0 → 2126/0 (+2 gating, +4 CityRow, +4 MastermindTile). No test was deleted.
+- Test migration was limited to what the observed scaffold broke: the CityRow `villain()` helper now sets `fightCost: cost`, and `useCardCostGating.test.ts` passes numbers. No assertion was edited.
+- `pnpm -r --no-bail test` → 0 fail.
+- Preview `/?fixture=mid-turn&play=1` at 1280×720 shows:
+  - 3 × `Fight 0` badges inside 3 enabled villain buttons;
+  - the Mastermind titled "This card cannot be fought." with no badge (the fixture predates the field);
+  - identical City space widths with the badges shown or hidden.
+- No move, guard, `G` or hash change.
+
+**Reserved by:** NUMBER-LEDGER D-24574. Related: D-12803 (audience filter), D-11104 (`UICardDisplay.cost`), D-24348 (Dark-Portal bonus), D-24561 (EV fight button), D-24585 / D-24592 (slash gesture), D-2504 (Patrol / Guard safe-skip), D-24594 (WP-762 data fill), D-24026 (live-on-surface).
+
+### D-24572 — The Midtown Bank Robbery family's "+1 attack for each Bystander it has" is applied in resolveFightCost (Active 2026-09-26 — WP-748 / EC-785)
+
+**Status:** Active. Landed 2026-09-26 (WP-748 / EC-785). The live-on-surface check (D-24026) is pending with the operator. In a Midtown match, a City villain holding N Bystanders must show `city[i].fightCost` = printed + N, both in the Play Diagnostics `uiStateSnapshot` and on the tile's `Fight N` badge (WP-750 / D-24574). Fight must stay disabled at printed attack.
+
+**Context.** Three schemes print the Special Rule "Each Villain gets +1[icon:attack] for each Bystander it has.": core Midtown Bank Robbery, co2e Bank Robbery Hostage Crisis, and msp1 Destroy the Cities of Earth! The engine ignored it; `resolveFightCost` had scheme bonuses only for Killbots and Portals. In live match `PaT5TygrTPQ` (2p Red Skull / Midtown), the bot ally defeated HYDRA Kidnappers holding 3 Bystanders with 3 attack; the true cost was 6. The PAR calibration page already flagged `midtown-bank-robbery :: red-skull :: hydra` as too easy.
+
+**Decision.**
+
+1. **One bonus, one site.** A private helper, `bystanderVillainAttackBonus`, sits beside `darkPortalVillainBonus`, and `resolveFightCost` returns base + Portals bonus + this bonus. It is the second scheme-gated additive bonus in the single fight-cost authority (WP-214), after Portals (D-24348). The fight move gate, the bot's legal moves and the City `fightCost` projection all read that one function, so they move together. The client shows the projection through WP-750.
+2. **The rule.** Under a scheme in `VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS`, the bonus equals `G.attachedBystanders[villainId].length`:
+   - `core/midtown-bank-robbery`
+   - `co2e/bank-robbery-hostage-crisis`
+   - `msp1/destroy-the-cities-of-earth`
+
+   Any other scheme gets 0. The bonus stacks on the static, dynamic (`N+` / `*`) or converted Killbot/Skrull resolution, and henchmen are included (they are Villains). The Patrol modifier still stacks on top at both gate sites.
+3. **Not the Mastermind.** The rule says "Villain", so `resolveMastermindFightCost` is untouched. Bystanders stored under the Mastermind's key never change its cost; a test pins this.
+4. **Not printed-attack readers.** `getPrintedAttackForDefeatTarget` (Pure Fury, D-24499) still reads the printed attack.
+5. **Partial-G tolerance.** The helper reads `G.selection?.schemeId` and `G.attachedBystanders?.[id]` with optional chaining. The Portals and Mastermind fixtures build `G` under Midtown without the map, and a missing map means "holds no Bystanders".
+6. **Out of scope, named.**
+   - Per-card "+N attack for each Bystander he has" villains (co2e Baron Zemo / Enchantress, msp1 Raza, dkcy Blockbuster / Chimera / Scalphunter, 2099 Jigsaw) are a separate rule. If implemented, they stack additively in `resolveFightCost`.
+   - The PAR profile re-pin (`data/par/profile/v1/**`) is a separate `INFRA:` regeneration after this WP (and WP-747) land. Seed PAR is untouched.
+   - Replays of Midtown-family matches recorded before this change may re-execute differently; stored scores are not recomputed.
+7. **Sequencing.** WP-750 (client gates on `fightCost`) merged first, so a hostage-laden villain shows its real cost and its Fight button disables instead of silently no-oping. WP-747 (the Villain-Deck Bystander captor) has not landed. It is parallel-safe; whichever lands second re-runs the hash oracles and both sim gates on the merged tree.
+
+**Gates.** After `pnpm -r build` (no `Failed`):
+- Engine suite 4324/0 → 4333/0: +6 `economy.resolve.test.ts` (the three family schemes, non-family control, dynamic stack, missing map, Mastermind isolation) and +3 `fightVillain.test.ts` (Midtown refused at 3; defeated at 6 with exactly 6 spent and all 3 Bystanders rescued; control defeated at 3). No existing test edited.
+- With the bonus neutered, 5 of the new tests fail. They test the fix, not the fixture.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` pins pass unchanged (no committed fixture plays a family scheme).
+- `pnpm sim:coverage --check` and `pnpm sim:runtime-observed:check` → 0.
+- `pnpm -r --no-bail test` → 0 fail.
+- Each scheme id matches once in `economy.resolve.ts`, and the composition call matches once.
+- No `data/par/**` change, no client edit, no new `G` / UIState field.
+
+**Reserved by:** NUMBER-LEDGER D-24572. Related: D-24348 (Portals scheme bonus), D-24314 (Midtown carry-away loss), D-24499 (printed-attack readers), D-24574 (WP-750 client gating), D-24571 (WP-747 Bystander captor), D-24026 (live-on-surface).
+
+### D-24571 — A Bystander revealed from the Villain Deck is captured by the City villain closest to the Villain Deck (Active 2026-09-26 — WP-747 / EC-784)
+
+**Status:** Active. Landed 2026-09-26 (WP-747 / EC-784). The live-on-surface check (D-24026) is pending with the operator. In a Midtown match, a Bystander revealed while two or more City spaces are occupied must be logged as captured by the villain at the **lowest** occupied space.
+
+**Context.** The Bystander branch of `revealVillainCard` picked its captor by scanning the City from the escape edge down, so the villain **about to escape** (the highest occupied index) captured every revealed Bystander. Universal Rules v23 (L606–608) say: "Put the Bystander under the Villain/Adversary in the city that's closest to the Villain/Adversary Deck." Villains enter at index 0 (the Villain Deck side, `pushVillainIntoCity`) and escape from index 4, so the rule's captor is the **lowest** occupied index.
+- PR #75 (2026-05-17) chose the opposite end and noted in its own write-up that its prompt was ambiguous about which end is "front". No decision ever locked that direction.
+- In live match `PaT5TygrTPQ` (2p Red Skull / Midtown), four hostages piled onto The Leader at spaces 3–4 instead of the Sentinels at space 0. The Leader then escaped holding 6, against Midtown's 8-Bystander loss threshold.
+
+**Decision.**
+
+1. **Captor rule.** A Bystander revealed from the Villain Deck attaches (in `G.attachedBystanders`) to the occupant of the lowest occupied `G.city` index: the scan runs upward from index 0, and the first occupant wins. Henchmen count, as before. With an empty City it goes to `G.mastermind.baseCardId`, mirrored into `G.mastermind.attachedBystanders` (D-12805), unchanged.
+2. **Direction only.** The Mastermind fallback, the append-not-overwrite attach, the log line `"<Bystander> revealed and captured by <captor>."` and the `bystanderRevealed` event shape (WP-602 / D-24412) are byte-identical. There is no new `G` field, move, effect type or log outcome. `notableEvents.types.ts` received JSDoc prose only (not a contract change).
+3. **Correction to D-24254.** D-24254 (WP-432) restates the captor as "the frontmost city villain" in passing, while describing the branch as unchanged. That restatement is superseded here: the captor is the City villain closest to the Villain Deck. D-24254's own decision, that no villain captures merely by entering the City, stands.
+4. **Precedent.** The two hero effects that pick a City captor (`heroEffectKidnapPerCount`, `heroEffectHereHoldThis`, via `buildHereHoldThisTargets`) already scan ascending, "FIRST City villain by ascending city index" (D-24537). The Villain-Deck reveal now agrees with them.
+5. **Out of scope, unchanged.** Captors named by `capture-bystander` effects (Ambush / Twist / Fight / Master Strike; the Midtown Bank twist; D-15401) and escape penalties are unchanged. The PAR profile re-pin (`data/par/profile/v1/**`) is the separate `INFRA:` follow-up now that both WP-747 and WP-748 have landed. Seed PAR is untouched.
+6. **Replay posture.** Re-executing a match recorded before this change may produce a different final state wherever a Bystander was revealed with two or more occupied City spaces. Stored scores are not recomputed.
+7. **Pair interaction.** WP-748 (D-24572, +1 attack per Bystander under the Midtown family) merged first. Under Midtown the two compound: hostages now land on the villain nearest the Villain Deck, and that villain gets harder. As second of the pair, this session re-ran the hash oracles and both sim gates on the merged tree.
+
+**Gates.** After `pnpm -r build` (no `Failed`), on `origin/main` including WP-748:
+- Engine suite 4333/0 → 4334/0. The direction test was rewritten, the intentional behaviour change: `[villain-entry, null, villain-middle, villain-near-escape, null]` → `villain-entry`. One new test: `[null, villain-a, null, villain-b, null]` → `villain-a`. Every other test is byte-identical, including the single-occupant fixtures and the escape description.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` pins pass unchanged.
+- `sim:coverage --check` and `sim:runtime-observed:check` → 0. `wiki-viewer:project` and `wiki-viewer:check-links` → 0.
+- `pnpm -r --no-bail test` → 0 fail.
+- Greps: the ascending scan matches once; "frontmost" has zero matches across the 3 engine source files and 4 wiki pages.
+
+**Reserved by:** NUMBER-LEDGER D-24571. Related: D-24254 (WP-432, corrected restatement), D-24537 (ascending captor precedent), D-24412 (WP-602 `bystanderRevealed`), D-12805 (Mastermind mirror), D-24314 (Midtown carry-away), D-24572 (WP-748), D-24026 (live-on-surface).
+
+### D-24599 — A deck-runout scheme loss is announced once, in rulebook words (Active 2026-09-26 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine` endgame log text only; follow-up to D-24595).
+
+**Context.** The WP-763 live check (`mdns/midnight-massacre`, solo, build `9f48893`) ended correctly as a scheme loss when the Villain Deck ran out, but the log's last two lines were `The villain deck is empty — this is the final turn. Win or lose this turn, or the game ends in a tie.` then `Scheme loss triggered — the villainDeck pile has run out.` The first line contradicts the outcome: `onMove` runs the WP-367 final-turn latch before the pile-depletion check (D-24319), so the tie was announced one line before the loss. The second printed an internal key. Core Super Hero Civil War had the same contradiction on a Hero Deck runout.
+
+**Decision.**
+
+1. `latchFinalTurnIfDeckExhausted` still latches `FINAL_TURN_TRIGGERED` exactly as before, but **skips its announcement** when the deck that emptied is one the active scheme loses on (`isSchemeLossPile`, reading the same `pile-depleted` condition as the loss rule). A runout of a deck the scheme does not lose on is still announced (WP-367 unchanged).
+2. The pile-depletion loss line names the pile as the rules do: `Scheme loss triggered — the Villain Deck / Hero Deck / Wound Stack has run out.` (exhaustive `pileDisplayName` switch).
+3. **Not changed.** No counter, zone or outcome changes; only `G.messages` text in games that reach these lines. The sentinel `finalStateHash` and PAR seed oracles pass unchanged. The replay harness and the sim loops do not run the latch (D-24322), so they only see the reworded loss line.
+
+**Gates.** After `pnpm -r build`: engine 4327/0 (3 new tests: Midnight Massacre Villain Deck runout logs exactly one plain loss line; Civil War Hero Deck runout likewise; a runout of a deck the scheme does not lose on still announces the final turn); `pnpm -r --no-bail test` 0 failures in every package; `sim:coverage --check` and `sim:runtime-observed:check` OK. The `finalTurn.logic.test.ts` fixture gained `selection` (real `G` always carries it; the latch now reads the scheme).
+
+**Reserved by:** NUMBER-LEDGER D-24599. Related: D-24595 (WP-763), D-24319 (loss before tie), D-24159 (WP-367 final turn), D-24322 (replay harness exclusions).
+
+### D-24587 — The Haunt keyword is index-keyed, omit-when-absent HQ-slot state; exorcise spends like a recruit and releases the haunter through a no-Ambush, reveal-parity City entry (Active 2026-09-25 — WP-757 / EC-794)
+
+**Status:** Active — landed 2026-09-25 (WP-757 / EC-794). Live-on-surface (D-24026) is operator-pending and shared with WP-759 (the client affordance): the two deploy together.
+
+**Context.** Zarathos (`mdns`) set up and ran, but every Zarathos effect and all three Fallen Ambush lines are written in terms of **Haunt** (rulebook v23 p.27), which did not exist in the engine. The Fallen's Ambush lines were unmarked, so they fired nothing.
+
+**Decision.**
+1. **State.** `G.hqHaunters?: (HqHaunter | null)[]`, `HqHaunter = { kind: 'villain'; cardId } | { kind: 'mastermind' }`. It is index-aligned with `G.hq` (length 5), created lazily on the **first** haunt by `hauntHqSlot`, never seeded in `Game.setup`, and never written empty. A match that never haunts omits the key, so `finalStateHash` / `PRE_WP080_HASH` are byte-stable (no re-pin). The `mastermind` kind ships with no producer; WP-758 (Zarathos) produces it, so the contract does not reopen.
+2. **Index-keyed inheritance.** No existing HQ removal site is edited. Every removal nulls the slot and refills it by index, so the refill Hero inherits the haunter ("the Haunting Villain stays in that HQ space and Haunts the new Hero"). An empty slot (Hero deck dry) keeps its haunter, cannot be exorcised (no Hero, no cost), and re-attaches if the slot refills; the deck-exhaustion final-turn latch bounds a stranded Mastermind haunter.
+3. **Recruit block, exactly four sites.** `recruitHero` (silent no-op before any spend); `collectEligibleHqIndices` (free-recruit auto-gain); `getEligibleGiveHqHeroCards` / `selectDefaultGiveHqHeroCard` **only for entries carrying `filter`** (the Dark Technology / Bitter Captor free recruit); the `ai.legalMoves` recruit intents. Paibok's unfiltered "gain" and put-bottom effects still reach a Haunted Hero, per the rulebook.
+4. **Fight block.** A Villain haunter is out of the City (its space is nulled when it haunts), so `fightVillain` cannot reach it. `isMastermindHaunting` is the single predicate for `fightMastermind`, both free-defeat builders (`buildDefeatWithBystanderTargets`, `buildPureFuryTargets`) and the bot `fightMastermind` intent.
+5. **Exorcise.** `exorciseHauntedHero({ hqIndex, outcome: 'ko' | 'gain', recipientPlayerId? })`, registered `client: false`. Validation: args → cost (`cardStats[heroId].cost`, recruitHero's authority) → stage `main` → recruitHero's block-all guards → `hasHealedThisTurn`. Mutation: spend + `hasActedThisTurn = true` (it spends like a recruit) → `'ko'` to `G.ko` / `'gain'` to the recipient's discard (any seat) → clear the haunter → refill → release. It is neither a recruit nor a fight: no recruit triggers, no `onFight`.
+6. **City entry keeps reveal parity.** The escape branch of `performVillainReveal` was extracted mechanically into `resolveVillainEscape(G, context, implementationMap, escapedCardId)`; every existing reveal test passes unchanged. `enterCityIgnoringAmbush` (`villainDeck/villainDeck.enterCity.ts`) pushes the released Villain into space 0 and calls it for any card pushed out — generic wound, card-text Escape, escape→Scheme-Twist, bystander carry, captured-hero KO, resource-loss check. It never fires `onAmbush` and does not copy Secret Invasion's reduced handling. A Mastermind haunter is released with a "returns to the Mastermind space" log line.
+7. **Villain primitive.** `haunt-hq-hero` (26th `VILLAIN_EFFECT_PRIMITIVES` entry, keyword-less, self-narrating in exactly one log line) with the descriptor `selector` widened append-only by `'leftmost' | 'cost-lte-3'`; the `capture-hq-hero` parser and marker validator still reject the new values. Selectors consider only occupied, unhaunted slots: `rightmost` = highest index, `leftmost` = lowest, `cost-lte-3` = lowest index with `cardStats` cost ≤ 3. **Named fidelity gap:** Patriarch's "an unhaunted Hero that costs 3 or less" is a player choice on the tabletop; v1 picks deterministically. No eligible slot → logged no-op and the Villain stays in the City. The reveal path's `ambushResolved` then records `citySpace` 0 for a Villain that left the City — accepted. Markers: Metarchus `rightmost`, Atrocity `leftmost`, Patriarch `cost-lte-3`.
+8. **Visibility.** UIState five-step: `hq.haunters?: (UIHQHaunter | null)[]` (a Villain entry embeds `display`) and `mastermind.isHaunting?: true`, both public and omit-when-absent; the card-uniqueness invariant visits each Villain haunter.
+9. **Bots.** `exorciseHauntedHero({ hqIndex, outcome: 'gain', recipientPlayerId: <self> })` per affordable Haunted slot, after the `fightMastermind` step, `hqIndex` ascending; scored `SCORE_EXORCISE_BASE = 75` (recruit 50 < exorcise < fight Villain 100). Added to `SIMULATION_MOVE_NAMES`, both sim MOVE_MAPs and the replay map. Server autoplay already offers it (D-24591); no `apps/*` change.
+10. **Replay compatibility.** Stored replays of pre-WP-757 matches that revealed a Fallen Ambush will not re-execute identically, because those Ambushes now haunt — the same consequence every card-fidelity change carries.
+
+**Gates.** Engine 4235/0 → 4343/0; the only pre-existing tests touched are the two intentional drift pins (move list 44 → 45, `VILLAIN_EFFECT_PRIMITIVES` 25 → 26), and every existing reveal test passes unchanged after the escape extraction. `pnpm -r build && pnpm -r --no-bail test`: 0 fail in every package (server 1636 / 1430 pass / 206 skipped DB-less, arena-client 2115/0). `cards:check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:villains:check`, `sim:runtime-observed:check` and `sim:coverage --check` all exit 0; `apply-effect-markers.mjs` appended 3 markers and is idempotent. No hash oracle moved (`hqHaunters` is absent in every oracle match). No endpoint changed, so the API catalog is unaffected.
+
+**Reserved by:** NUMBER-LEDGER D-24587. Related: D-18701 (villain effect-marker substrate), D-24509 (free recruit), D-24510 (free-defeat targets), D-24460 (new-move lockstep template), D-12803 (UIState audience filter), D-24058 (Secret Invasion push precedent), D-24591 (autoplay spend step), D-24588 (WP-758 Zarathos), D-24589 (WP-760 Fallen fight-side).
+
+---
+
+### D-24600 — Snarling Fangs Moonlight: "you may KO one of your Heroes" on each defeat (Active 2026-09-26 — WP-767 / EC-804)
+
+**Status:** Active — landed 2026-09-26 (WP-767 / EC-804; `packages/game-engine` keyword + optional-KO queue scope, card-data markers, one arena-client heading).
+
+**Context.** Werewolf by Night's Snarling Fangs prints "Moonlight: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes." WP-765 (D-24598) left the line on `DAY_NIGHT_UNMODELED_LINES`, so it granted nothing and logged a `moonlight … parse-unrecognized` hollow on every Moonlight play (seen in each of the operator's WP-763 Midnight Massacre live-check games).
+
+**Decision.**
+
+1. **Keyword.** A new no-magnitude hero keyword `optional-ko-your-hero` (in `NO_MAGNITUDE_KEYWORDS`). Its handler `heroEffectOptionalKoYourHero` parks a silent no-reward entry on the shared optional-KO queue (D-24480 / D-24498): `{ rewardType: 'none', rewardMagnitude: 0, koZones: ['hand','inPlay'], koHeroesOnly: true }`. When the player has no eligible card (hand + play hold only Wounds, or nothing) it logs a no-op line and parks nothing.
+2. **Scope.** "One of your Heroes" = hand + cards played this turn (rules v23 §3439), so the discard pile is never offered. `PendingOptionalKoReward.koHeroesOnly?: true` is new: written `true` or omitted, never `false`, and read with `=== true`. When set, a Wound is ineligible in the resolve, the projection and the bot. All three readers (projection, bot, `selectDefaultOptionalKoTarget` via a new `allowDiscard = true` parameter) now honour a `koZones` that omits `discard`, exactly as they already honoured one that omits `inPlay`. Existing entries (Radioactive Riot, Battlefield Promotion, rewarded entries) are byte-unchanged in projection, resolve and bot pick.
+3. **Trigger and Moonlight timing.** The line carries the D-24467 marker `[keyword:defeated-villain-or-mastermind]` before `[keyword:optional-ko-your-hero]` (the D-24565 Impossible Trick Shot marker-only precedent), so each Villain or Mastermind defeat (each Mastermind tactic counts; a henchman does not) parks one choice. The hook's conditions are ordered `moonlightInEffect` then `defeatedVillainOrMastermindThisTurn`, so a Sunlight play logs "did not activate — it isn't Moonlight" rather than "is waiting". **Moonlight must hold when the card is played AND again at each defeat** — the existing fire-time re-evaluation of all the hook's conditions. No deferral-rule change.
+   - *Considered and rejected:* "checked only at play; once armed it lasts the turn even if the HQ turns to Sunlight." It needs either a new `G` snapshot or an ordering-sensitive change to the D-24467 deferral rule, for a rules question the rulebook does not settle.
+4. **Self-KO.** Snarling Fangs may KO itself from play. Its armed grant keeps firing on later defeats that turn, because deferred grants are keyed by card id, not by the card staying in play.
+5. **"Hero" = "not a Wound" invariant.** The only non-Hero card that can be in a player's hand or play area today is a Wound (no engine path puts a Bystander into hand or play). Any future non-Hero card type that can enter a hand or play area must extend the `koHeroesOnly` check in all three readers and the resolve.
+6. **Client.** The no-reward optional-KO heading becomes the generic "You may KO a card" (the per-zone labels already name each source). Copy only; no new UIState field.
+7. **Replay note (D-24119).** A pre-WP-767 match that played Snarling Fangs under Moonlight and then defeated a Villain or Mastermind now diverges on re-execution: a new choice parks, and the block-all guard freezes the old log. Such matches cannot be re-verified under D-24119. No gauntlet or competitive pool includes Werewolf by Night, so no migration is needed (the D-24595 / D-24598 precedent).
+
+**Gates.** After `pnpm -r build`: engine 4445 → 4469 / 0 fail (rebased onto WP-757; 4337 → 4361 before it); arena-client 2139 / 0; arena-client typecheck 0; `pnpm -r --no-bail test` 0 failures; `cards:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `sim:runtime-observed:check` (the sim-hang gate; `totalObs` 2206 → 2184) and `sim:coverage --check` all 0. Core `finalStateHash` and PAR oracles unchanged (no sentinel or PAR fixture plays Werewolf by Night). `DAY_NIGHT_UNMODELED_LINES` has 8 entries; HERO_KEYWORDS 72 → 73; HERO_EFFECT_HANDLERS 56 → 57.
+
+**Reserved by:** NUMBER-LEDGER D-24600. Related: D-24598 (WP-765), D-24467 (per-defeat trigger), D-24565 (Trick Shot precedent), D-24480 / D-24498 (optional-KO queue, `koZones`), D-24442 (in-play KO source), D-24119 (replay verification).
+
+### D-24589 — The Fallen fight-side: villain Blood Frenzy in resolveFightCost, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (Active 2026-09-26 — WP-760 / EC-797)
+
+**Status:** Active. Landed 2026-09-26 (WP-760 / EC-797). Live-on-surface (D-24026) is pending with the operator. It needs a match that includes The Fallen:
+- Metarchus's tile shows `Fight 3 + N`, where N is the fighting player's distinct Victory Point value count.
+- Patriarch's Fight draws a card that costs 3 or less.
+- Salomé's Fight opens the "KO up to 2 cards from your discard pile" prompt.
+
+**Context.** WP-757 made The Fallen's Ambush Haunts work, but their fight-side text was still inert:
+- Metarchus and Salomé print Blood Frenzy, which nothing read.
+- Atrocity, Patriarch and Salomé were `unmarked` in the ledger.
+
+WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared distinct-VP helper) were hard prerequisites. WP-757 was the sequencing prerequisite, because it shares the `mdns/fallen` marker block.
+
+**Decision.**
+
+1. **Villain Blood Frenzy lives in the single fight-cost authority.**
+   - `resolveFightCost(G, villainCardId, fightingPlayerId?)` adds `countDistinctVictoryPointValues(G, fightingPlayerId)` when `G.villainBloodFrenzy?.[villainCardId] === true`.
+   - When the player is omitted, the term is 0, so every pre-WP-760 caller and test is byte-identical.
+   - The three production callers pass the acting player: `fightVillain` passes `ctx.currentPlayer`, `ai.legalMoves` passes `activePlayer`, and `uiState.build` passes `ctx.currentPlayer`. The fight gate, the bot and the City `fightCost` projection therefore always agree.
+   - The projection shows the **active** player's cost to every audience, because only the active player can fight.
+   - The term composes additively with the Portals and Midtown (WP-748 / D-24572) bonuses.
+2. **The distinct-VP count is WP-765's helper, imported and not re-implemented.** Villain and hero Blood Frenzy can never count differently (D-24598). Non-null values count once each; zero and negative printed values count as values.
+3. **`G.villainBloodFrenzy?: Record<CardExtId, true>` is omit-when-empty.**
+   - `setup/buildVillainBloodFrenzy.ts` builds it at setup. It scans the ability text of the **selected** villain groups for `[keyword:Blood Frenzy]` (case-insensitive) and fans out one entry per copy instance id.
+   - **Execution note:** the scan is scoped to `config.villainGroupIds`, which the WP left implicit. Scanning every loaded set would make the map non-empty in every match (`mdns` is always loaded), and that would change every match's hashed `G`.
+   - `BoardKeyword` is not widened; Blood Frenzy is a cost modifier, not City-structural.
+   - Real-data check: a Fallen setup flags Metarchus ×2 and Salomé ×1, all present in the Villain Deck. A core HYDRA setup omits the field.
+4. **Two new villain primitives (26 → 28), both keyword-less and self-narrating.**
+   - **`reveal-top-draw-if-cost-lte:N`** (Patriarch, N = 3):
+     - An empty deck first reshuffles the discard (D-24285). If both are empty, it's a logged no-op.
+     - An uncosted Wound reads cost 0 (D-24583, a local copy of the hero-module resolver).
+     - If the card costs N or less, it moves deck → hand directly, not through the hero-effect draw path, so no draw lock applies (the WP-731 precedent).
+     - Otherwise the card stays on top and the reveal is logged.
+   - **`ko-up-to-from-discard-current:N`** (Salomé, N = 2):
+     - It parks the existing `PendingKoDiscardChoice` with `sourceCardId` and returns `{ pending: true }`. It reuses WP-693's block-all guard, projection, prompt and bot default (D-24510).
+     - An empty discard is a logged no-op.
+5. **`PendingKoDiscardChoice.sourceCardId?` is optional and omit-when-absent.**
+   - `resolveKoDiscardChoice` names the source from `G.cardDisplayData`. With no `sourceCardId` it logs `Maniacal Tyrant`, so Loki's entry and its log stay byte-identical.
+   - Display text is never stored in `G`.
+   - The one declared client edit: the `PendingKoDiscardChoicePrompt.vue` header is now the source-neutral "KO up to N card(s) from your discard pile".
+6. **Atrocity** "Fight: Rescue a Bystander." is marked `captureBystander` on Fight. A Fight-timed capture is awarded immediately (D-18506), so no new code is needed.
+7. **Data and provenance.**
+   - Three marker rows under `villains.mdns.fallen`. `apply-effect-markers.mjs` validates both new `:N` grammars, and its second run appends 0 markers.
+   - `mechanic-provenance.json` rows for both primitives.
+   - `subsystem-coverage.json` entries for Metarchus and Salomé (`economy:fight-cost-modifier`, documentation-only; both rows stay `executable` from their effect markers).
+   - `mdns.json`, the effect index and the villain ledger were regenerated.
+8. **Deferred.** Salomé's Escape ("ascends to become an additional Mastermind") stays inert; no additional-Mastermind model was started.
+
+**Gates.** After `pnpm -r build` (no `Failed`):
+- Engine 4445/0 → 4472/0 (+27); arena-client 2139/0 → 2141/0 (+2). The only pre-existing test edit is the intentional primitive drift pin (26 → 28).
+- New tests:
+  - the setup builder (4)
+  - the resolver term (5)
+  - the parser grammars (3)
+  - Patriarch (5) and Salomé (2) handlers
+  - the resolve source log (3)
+  - one Blood Frenzy test file for each of the three callers
+  - the client header (2)
+- With the player argument removed at each caller, that caller's Blood Frenzy tests fail.
+- `cards:check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:villains:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `gauntlet:loadouts:check` → all 0. Markers idempotent.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (the field is omitted for core).
+- `pnpm -r --no-bail test` → 0 fail. arena-client typecheck → 0.
+
+**Reserved by:** NUMBER-LEDGER D-24589. Related: D-24598 (WP-765 shared Blood Frenzy helper), D-24574 (WP-750 client gating), D-24587 (WP-757 Haunt), D-24572 (WP-748 Midtown term), D-24348 (Portals term precedent), D-24510 (KO-from-discard choice), D-18506, D-24285, D-24583, D-24267, D-24026.
+
+---
+
+### D-24603 — Henchmen are Villains: a henchman defeat satisfies "Whenever you defeat a Villain or Mastermind" (Active 2026-09-26 — direct fix, no WP; reverses the D-24467 #2030 henchman exclusion)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/moves/fightVillain.ts` defeat-signal gate only).
+
+**Context.** Operator solo match `mdns/zarathos` / `mdns/midnight-massacre` (Peter Parker / Storm / Werewolf by Night), round 20: three Snarling Fangs played under Moonlight each logged "… is waiting — it needs you to defeat a Villain or Mastermind this turn", then the player defeated **Savage Land Mutates** (a henchman) and no KO was offered. The WP-767 code did what D-24467 says: #2030 ("Diamond Form no longer over-fires on henchman defeats") gated the `fightVillain` defeat signal on `villainDeckCardTypes[cardId] !== 'henchman'`, on the stated premise that "Henchmen are neither Villains nor Masterminds". The rulebook says the opposite.
+
+**Decision.**
+
+1. **Henchmen are Villains.** Universal Rules v23, §"Henchmen Are Villains/Adversaries": "Henchman Villain cards are indeed Villains." Masterminds are the only foes that are not Villains. Every successful `fightVillain` (villain **or** henchman) now sets `villainOrMastermindDefeatedSinceResolve` (still gated on a pending deferred grant, still edge-triggered). `fightMastermind` is unchanged.
+2. **Affected cards** (all on the D-24467 trigger): Emma Frost Diamond Form, Hawkeye Impossible Trick Shot (D-24565), War Machine Overwhelming Firepower (D-24543), Werewolf by Night Snarling Fangs (D-24600). Each now fires on a henchman defeat too. The Diamond Form "over-fire" #2030 fixed was correct play.
+3. **Supersedes** the henchman clause of D-24467 (#2030) and the "a henchman does not" wording in D-24600 §3. Nothing else in those entries changes.
+4. **Replay / oracles.** The core `finalStateHash` and PAR oracles and `sim:runtime-observed` / `sim:coverage` checks are unchanged. A past match with one of these cards armed and a later henchman defeat diverges on D-24119 re-execution (the grant now fires); no gauntlet or competitive pool is migrated.
+5. **Open related question (not changed here).** `rules/schemeTwistConfigs.ts` counts only `'villain'`-typed escapes for Negative Zone Prison Breakout, citing a v23 section that does not appear in the rulebook text; under §"Henchmen Are Villains" escaped henchmen may count. Tracked separately.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4499/0; two tests intentionally flipped from "henchman does not signal/park" to "does"); `sim:runtime-observed:check`, `sim:coverage --check`, `ledger:heroes:check`, `effect-index:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24603. Related: D-24467 (per-defeat trigger), D-24600 (WP-767), D-24565, D-24543, D-24119.
+
+---
+
+### D-24605 — An unsigned `[icon:attack]` that states an Adversary's printed attack is never a player grant — suppress it in the hero-ability parser (Active 2026-09-25 — direct fix, no WP)
 
 **Status:** Active — landed 2026-09-25 (direct parser fix, no WP; the D-24486 / D-24471 positional-suppression precedent).
 
@@ -44728,7 +45322,7 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 **D-24026 live-on-surface:** pending. On the deployed client, play Face Your Demons without Sunlight and confirm attack rises by the printed 6 only, not 10.
 
-**Reserved by:** NUMBER-LEDGER D-24599. Related: D-24471 (condition-clause icons), D-24486 (negative-magnitude icons), D-24570 (reward-handler icons), D-24598 / WP-765 (Sunlight on the same card's line 1).
+**Reserved by:** NUMBER-LEDGER D-24605 (renumbered from D-24599, which main assigned to deck-runout-loss-log-text). Related: D-24471 (condition-clause icons), D-24486 (negative-magnitude icons), D-24570 (reward-handler icons), D-24598 / WP-765 (Sunlight on the same card's line 1).
 
 ---
 

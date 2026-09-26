@@ -622,9 +622,33 @@ export interface UICityState {
  * matches `slots[i] === null` exactly. Mirrors the handCards / handDisplay
  * parallel-array pattern.
  */
+/**
+ * Who haunts one HQ slot, for display (WP-757 / D-24587, the Haunt keyword).
+ *
+ * // why: a Villain haunter carries an embedded `display` (like UICityCard.display)
+ * because the client has no extId → display resolver; a bare extId would render as a
+ * hyphenated id. The Mastermind kind needs no display — the Mastermind tile already
+ * carries it.
+ */
+export type UIHQHaunter =
+  | { kind: 'villain'; extId: string; display: UICardDisplay }
+  | { kind: 'mastermind' };
+
 export interface UIHQState {
   slots: (string | null)[];
   slotDisplay?: (UIHQCard | null)[];
+  // why: WP-765 / D-24598 — which of Sunlight / Moonlight is in effect, from the shared
+  // computeDayNight over the HQ's printed costs (no G field). Present iff the match has a
+  // day/night hero hook (a sunlightInEffect / moonlightInEffect condition or the fused
+  // day-night-both keyword); omitted otherwise, so a match without those heroes is unchanged.
+  // Passed through the audience filter explicitly (uiState.filter.ts) — a build-only field is
+  // silently dropped at the whitelist (the EC-206 failure mode).
+  dayNight?: 'sunlight' | 'moonlight' | 'neither';
+  // why: WP-757 / D-24587 — per-slot haunters, index-aligned with `slots`. Public
+  // shared-board information (a Haunting Villain is tucked face-up beneath the Hero).
+  // Omit-when-absent: present only once G.hqHaunters exists (the first haunt). It is
+  // optional, so a missed filter pass-through is silent — see uiState.filter.ts.
+  haunters?: (UIHQHaunter | null)[];
 }
 
 /**
@@ -673,6 +697,18 @@ export interface UIMastermindState {
   // in buildUIState but not passed through the audience filter is silently dropped
   // (the EC-206 failure mode) — see uiState.filter.ts.
   finalBlowPending?: boolean;
+  // why: WP-750 / D-24574 — the attack the engine will actually charge to fight
+  // the Mastermind: resolveMastermindFightCost, the same authority the
+  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus).
+  // The client gates Fight on this instead of the printed display.cost. Optional
+  // so typed fixtures and snapshots that predate it still compile (the client
+  // falls back to display.cost); passed through the audience filter explicitly,
+  // because a build-only field is silently dropped at the whitelist (EC-206).
+  fightCost?: number;
+  // why: WP-757 / D-24587 — true while the Mastermind haunts an HQ Hero (it can't be
+  // fought until that Hero is exorcised). Public; omit-when-absent (never `false`), so
+  // the key appears only while the Mastermind actually haunts.
+  isHaunting?: true;
 }
 
 /**
@@ -1565,6 +1601,13 @@ export interface UIPendingSplitFaceChoice {
   faceA: UISplitFaceOption;
   /** The alternate face (sides[1], `face: 'b'`). */
   faceB: UISplitFaceOption;
+  // why: sides[] order (faceA/faceB) is NOT the printed left-to-right order — for 19 of the 39
+  // split cards faceB is the LEFT half. The picker renders `leftFace` first so the buttons match
+  // the card art; each button still submits its own face. Derived at projection time from
+  // G.splitFacesAlternateOnLeft (lower hero-card slot = left half). Required (not optional) so a
+  // builder or filter that forgets it fails typecheck instead of silently dropping it.
+  /** Which face is printed on the LEFT half of the landscape card ('a' = faceA, 'b' = faceB). */
+  leftFace: 'a' | 'b';
 }
 
 /**

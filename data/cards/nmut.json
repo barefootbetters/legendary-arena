@@ -135,7 +135,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Moonlight]: You may discard a card. If you do, draw a card."
+            "[keyword:Moonlight]: You may discard a card. If you do, draw a card. [keyword:optional-discard-draw:1]"
           ]
         },
         {
@@ -244,8 +244,8 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "[keyword:Moonlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[keyword:Sunlight]: Draw a card."
+            "[keyword:Moonlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
+            "[keyword:Sunlight]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -402,7 +402,7 @@
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
-            "[keyword:Sunlight]: Draw 3 cards.",
+            "[keyword:Sunlight]: Draw 3 cards. [keyword:draw:3]",
             "[keyword:Moonlight]: You get +3[icon:recruit] and +3[icon:attack].",
             "[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both."
           ]
@@ -482,8 +482,8 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[keyword:Moonlight]: Draw a card."
+            "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
+            "[keyword:Moonlight]: Draw a card. [keyword:draw:1]"
           ]
         },
         {
@@ -498,7 +498,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[keyword:Moonlight]: Look at the top card of your deck. KO it or put it back."
+            "[keyword:Moonlight]: Look at the top card of your deck. KO it or put it back. [keyword:reveal-top-may-ko]"
           ]
         },
         {

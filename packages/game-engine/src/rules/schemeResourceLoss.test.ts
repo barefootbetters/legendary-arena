@@ -17,6 +17,8 @@ import {
   applyEscapedPileResourceLoss,
   applyPileDepletionResourceLoss,
   countEscapedByConvertedOrigin,
+  listConditionPiles,
+  remainingPileCount,
 } from './schemeResourceLoss.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -282,6 +284,101 @@ describe('applyPileDepletionResourceLoss — Super Hero Civil War (WP-510 / D-24
     const result = evaluateEndgame(state);
     assert.ok(result, 'endgame must have resolved');
     assert.equal(result!.outcome, 'scheme-wins');
+  });
+});
+
+describe('Villain Deck pile and the multi-pile form (WP-763 / D-24595)', () => {
+  /**
+   * A minimal state with sized hero deck, wound stack and Villain Deck.
+   *
+   * @param schemeId - The active scheme.
+   * @param sizes - The remaining length of each pile.
+   * @returns A minimal LegendaryGameState.
+   */
+  function pileState(
+    schemeId: string,
+    sizes: { heroDeck: number; wounds: number; villainDeck: number },
+  ): LegendaryGameState {
+    const makeIds = (prefix: string, count: number): string[] => {
+      const ids: string[] = [];
+      for (let index = 0; index < count; index++) {
+        ids.push(`${prefix}-${index}`);
+      }
+      return ids;
+    };
+    return {
+      selection: {
+        schemeId,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroDeck: makeIds('hero', sizes.heroDeck),
+      piles: { wounds: makeIds('wound', sizes.wounds) },
+      villainDeck: { deck: makeIds('villain', sizes.villainDeck), discard: [] },
+      counters: {},
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('remainingPileCount reads the Villain Deck from G.villainDeck.deck', () => {
+    const state = pileState('mdns/midnight-massacre', { heroDeck: 3, wounds: 4, villainDeck: 5 });
+    assert.equal(remainingPileCount(state, 'villainDeck'), 5);
+    assert.equal(remainingPileCount(state, 'heroDeck'), 3);
+    assert.equal(remainingPileCount(state, 'wounds'), 4);
+  });
+
+  it('Midnight Massacre loses when the Villain Deck runs out (Hero Deck still full)', () => {
+    const state = pileState('mdns/midnight-massacre', { heroDeck: 20, wounds: 10, villainDeck: 0 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(evaluateEndgame(state)?.outcome, 'scheme-wins');
+  });
+
+  it('Midnight Massacre loses when the Hero Deck runs out (Villain Deck still full)', () => {
+    const state = pileState('mdns/midnight-massacre', { heroDeck: 0, wounds: 10, villainDeck: 20 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('does not lose while every named pile holds cards (an unnamed empty pile is ignored)', () => {
+    // why: Midnight Massacre names heroDeck + villainDeck; the empty wound stack
+    // is not part of its condition.
+    const state = pileState('mdns/midnight-massacre', { heroDeck: 1, wounds: 0, villainDeck: 1 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('a Wound Stack or Villain Deck scheme loses on either (co2e/the-legacy-virus)', () => {
+    const woundsOut = pileState('co2e/the-legacy-virus', { heroDeck: 5, wounds: 0, villainDeck: 5 });
+    applyPileDepletionResourceLoss(woundsOut);
+    assert.equal(woundsOut.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+
+    const villainOut = pileState('co2e/the-legacy-virus', { heroDeck: 5, wounds: 5, villainDeck: 0 });
+    applyPileDepletionResourceLoss(villainOut);
+    assert.equal(villainOut.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('a compound escaped-or-Villain-Deck scheme loses on the Villain Deck runout', () => {
+    const state = pileState('wtif/marvel-zombies', { heroDeck: 5, wounds: 5, villainDeck: 0 });
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('logs exactly once, naming the pile that ran out', () => {
+    const state = pileState('mdns/midnight-massacre', { heroDeck: 0, wounds: 0, villainDeck: 0 });
+    applyPileDepletionResourceLoss(state);
+    applyPileDepletionResourceLoss(state);
+    assert.equal(state.messages.length, 1);
+  });
+
+  it('listConditionPiles normalises both forms', () => {
+    assert.deepEqual(listConditionPiles({ kind: 'pile-depleted', pile: 'wounds' }), ['wounds']);
+    assert.deepEqual(
+      listConditionPiles({ kind: 'pile-depleted', piles: ['heroDeck', 'villainDeck'] }),
+      ['heroDeck', 'villainDeck'],
+    );
   });
 });
 

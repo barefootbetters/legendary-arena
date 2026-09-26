@@ -3097,6 +3097,8 @@
       "id": 26,
       "name": "Cytoplasm Spikes",
       "slug": "cytoplasm-spikes",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-cytoplasm-spikes.webp",
       "abilities": [
         "Fight: [keyword:Feast]. If Cytoplasm Spikes feasts on a non-grey Hero, you get +2[icon:recruit]."
@@ -3106,6 +3108,8 @@
       "id": 27,
       "name": "Death's Heads",
       "slug": "deaths-heads",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-deaths-heads.webp",
       "abilities": [
         "Fight: If you [keyword:Outwit] these Death's Heads, KO one of your cards that costs 0."
@@ -3115,6 +3119,8 @@
       "id": 28,
       "name": "Sakaaran Hivelings",
       "slug": "sakaaran-hivelings",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-sakaaran-hivelings.webp",
       "abilities": [
         "Fight: Look at the top card of your deck. Put it back on the top or bottom. Then [keyword:Feast]."

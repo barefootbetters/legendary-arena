@@ -16,6 +16,7 @@ import {
   buildTransformSideDeck,
   buildTransformSideDeckCards,
   buildTransformTargets,
+  buildSplitFaceAlternateOnLeft,
   heroCardInstanceExtIds,
   shuffleHeroDeck,
   buildCardCountsNameLookup,
@@ -32,6 +33,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 interface MockHeroCard {
   slug: string;
   rarityLabel: string;
+  slot?: number;
   name?: string;
   isTransform?: boolean;
   transformOf?: string;
@@ -1031,5 +1033,55 @@ describe('buildTransformTargets — base→target map (D-24469)', () => {
       {},
       'an incomplete RegistryReader yields an empty map (mirrors buildTransformSideDeck)',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildSplitFaceAlternateOnLeft — printed left/right order of split cards
+// ---------------------------------------------------------------------------
+
+describe('buildSplitFaceAlternateOnLeft (split-card printed order)', () => {
+  // why: mirrors cvwr Captain America, Secret Avenger — sides[0] "inspire-a-man" is slot 3
+  // (printed RIGHT), sides[1] "inspire-a-nation" is slot 2 (printed LEFT) — plus a
+  // left-first split card (sides[0] has the lower slot) that must NOT be recorded.
+  const captain: MockHero = {
+    slug: 'captain-america-secret-avenger',
+    cards: [
+      { slug: 'bold-leadership', rarityLabel: 'Common', slot: 1 },
+      { slug: 'inspire-a-nation', rarityLabel: 'Common', slot: 2 },
+      { slug: 'inspire-a-man', rarityLabel: 'Common', slot: 3 },
+      { slug: 'left-first', rarityLabel: 'Uncommon', slot: 4 },
+      { slug: 'right-second', rarityLabel: 'Uncommon', slot: 5 },
+    ],
+    physicalCards: [
+      { id: 'p1', count: 5, sides: ['bold-leadership'] },
+      { id: 'p2', count: 5, sides: ['inspire-a-man', 'inspire-a-nation'] },
+      { id: 'p3', count: 3, sides: ['left-first', 'right-second'] },
+    ],
+  };
+
+  it('records only split cards whose alternate face (sides[1]) has the lower slot', () => {
+    const registry = buildMockRegistry('cvwr', [captain]);
+    assert.deepStrictEqual(
+      buildSplitFaceAlternateOnLeft(['cvwr/captain-america-secret-avenger'], registry),
+      { 'cvwr/captain-america-secret-avenger/inspire-a-man': true },
+    );
+  });
+
+  it('soft-skips a split pair with a missing slot (treated as primary-on-left)', () => {
+    const noSlots: MockHero = {
+      slug: 'no-slots',
+      cards: [
+        { slug: 'x', rarityLabel: 'Common' },
+        { slug: 'y', rarityLabel: 'Common' },
+      ],
+      physicalCards: [{ id: 'p1', count: 5, sides: ['y', 'x'] }],
+    };
+    const registry = buildMockRegistry('cvwr', [noSlots]);
+    assert.deepStrictEqual(buildSplitFaceAlternateOnLeft(['cvwr/no-slots'], registry), {});
+  });
+
+  it('soft-skips a narrow registry (no getSet) with an empty map', () => {
+    assert.deepStrictEqual(buildSplitFaceAlternateOnLeft(['cvwr/x'], { listCards: () => [] }), {});
   });
 });

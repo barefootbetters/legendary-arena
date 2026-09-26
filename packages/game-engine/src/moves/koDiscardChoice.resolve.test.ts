@@ -140,3 +140,40 @@ describe('resolveKoDiscardChoice (WP-693 / D-24510)', () => {
     assert.equal(hasPendingKoDiscardChoice(badElement), true, 'a non-string element leaves the queue intact');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-760 / D-24589 — the resolve log names the parking card via sourceCardId
+// ---------------------------------------------------------------------------
+
+describe('resolveKoDiscardChoice — source naming (WP-760 / D-24589)', () => {
+  it('names the source card from cardDisplayData when the entry carries sourceCardId (Salomé)', () => {
+    const salome = 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId;
+    const G = makeG({
+      discard: ['a', 'b', 'c'] as CardExtId[],
+      pending: [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: salome }],
+    });
+    (G as { cardDisplayData?: unknown }).cardDisplayData = { [salome]: { name: 'Salomé, Sorceress Supreme' } };
+    resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'c'] });
+    assert.deepStrictEqual(G.ko, ['a', 'c']);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Player 0 KO'd 2 card(s) from their discard pile (Salomé, Sorceress Supreme).");
+  });
+
+  it('keeps the Maniacal Tyrant log byte-identical when no sourceCardId is set', () => {
+    const G = makeG({ discard: ['a', 'b'] as CardExtId[], pending: parked() });
+    resolveKoDiscardChoice(makeContext(G), { cardIds: ['a'] });
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Player 0 KO'd 1 card(s) from their discard pile (Maniacal Tyrant).");
+  });
+
+  it('enforces the Salomé cap of 2 (a 3-card selection is rejected, queue intact)', () => {
+    const salome = 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId;
+    const G = makeG({
+      discard: ['a', 'b', 'c'] as CardExtId[],
+      pending: [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: salome }],
+    });
+    resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'b', 'c'] });
+    assert.equal(hasPendingKoDiscardChoice(G), true);
+    assert.deepStrictEqual(G.ko, []);
+  });
+});

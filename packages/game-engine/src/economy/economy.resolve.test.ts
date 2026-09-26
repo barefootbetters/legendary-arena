@@ -385,3 +385,158 @@ describe('DARK_PORTAL_ATTACK_BONUS (WP-728 / D-24549)', () => {
     assert.equal(DARK_PORTAL_ATTACK_BONUS, 1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Midtown Bank Robbery family — +1 attack per Bystander a Villain has (WP-748 / D-24572)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — Midtown Bank Robbery family Bystander bonus (WP-748)', () => {
+  const MIDTOWN = 'core/midtown-bank-robbery';
+  const FAMILY_SCHEME_IDS = [
+    MIDTOWN,
+    'co2e/bank-robbery-hostage-crisis',
+    'msp1/destroy-the-cities-of-earth',
+  ];
+
+  /** A G under `schemeId` with static villain `v` (cost 3) holding `bystanderCount` Bystanders. */
+  function makeBystanderG(schemeId: string, bystanderCount: number): LegendaryGameState {
+    const bystanders: CardExtId[] = [];
+    for (let index = 0; index < bystanderCount; index++) {
+      bystanders.push(`bystander-${index}` as CardExtId);
+    }
+    return {
+      cardStats: { v: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+      attachedBystanders: { v: bystanders },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('Midtown: a 3-cost villain holding 2 Bystanders costs 5; holding none, 3', () => {
+    assert.equal(resolveFightCost(makeBystanderG(MIDTOWN, 2), 'v' as CardExtId), 5);
+    assert.equal(resolveFightCost(makeBystanderG(MIDTOWN, 0), 'v' as CardExtId), 3);
+  });
+
+  it('every family scheme (core, co2e, msp1) applies +1 per Bystander', () => {
+    for (const schemeId of FAMILY_SCHEME_IDS) {
+      assert.equal(
+        resolveFightCost(makeBystanderG(schemeId, 3), 'v' as CardExtId),
+        6,
+        `${schemeId} must add +1 per attached Bystander`,
+      );
+    }
+  });
+
+  it('a non-family scheme adds nothing for attached Bystanders', () => {
+    assert.equal(resolveFightCost(makeBystanderG('core/legacy-virus-the', 2), 'v' as CardExtId), 3);
+  });
+
+  it('stacks on a dynamic N+ villain: base + captured hero cost + Bystanders', () => {
+    const gameState = {
+      cardStats: {
+        v: { fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 2 },
+        hero: { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 4 },
+      },
+      villainAttachedHeroes: { v: ['hero'] },
+      selection: { schemeId: MIDTOWN },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+      attachedBystanders: { v: ['bystander-0'] },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(gameState, 'v' as CardExtId), 2 + 4 + 1);
+  });
+
+  it('a G with no attachedBystanders map resolves to the base under Midtown (no throw)', () => {
+    const gameState = {
+      cardStats: { v: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId: MIDTOWN },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(gameState, 'v' as CardExtId), 3);
+  });
+
+  it('Mastermind isolation: Bystanders under its key never change resolveMastermindFightCost', () => {
+    function makeMidtownMastermindG(bystandersUnderMastermind: CardExtId[]): LegendaryGameState {
+      return {
+        cardStats: { 'mm-base': { fightCost: 7, fightCostMode: 'static', fightCostBase: 0 } },
+        mastermind: { baseCardId: 'mm-base' },
+        selection: { schemeId: MIDTOWN },
+        counters: {},
+        attachedBystanders: { 'mm-base': bystandersUnderMastermind },
+      } as unknown as LegendaryGameState;
+    }
+    const withBystanders = resolveMastermindFightCost(
+      makeMidtownMastermindG(['bystander-0', 'bystander-1'] as CardExtId[]),
+    );
+    const withoutBystanders = resolveMastermindFightCost(makeMidtownMastermindG([]));
+    assert.equal(withBystanders, withoutBystanders);
+    assert.equal(withBystanders, 7);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Villain Blood Frenzy — +1 per distinct VP value in the fighter's Victory Pile (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain Blood Frenzy (WP-760)', () => {
+  const METARCHUS = 'mdns-villain-fallen-metarchus-00';
+
+  /**
+   * A G with Metarchus (static base 3) in the City, Blood-Frenzy-flagged unless
+   * `isFlagged` is false, and player 0's Victory Pile holding villains worth 2, 3, 3,
+   * a henchman worth 1 and a bystander (VP_BYSTANDER = 1) — three distinct VP values,
+   * since the repeated 3 and the two 1s each count once.
+   */
+  function makeBloodFrenzyG(isFlagged: boolean, schemeId = 'core/legacy-virus-the'): LegendaryGameState {
+    const victory = ['villain-two', 'villain-three-a', 'villain-three-b', 'henchman-one', 'bystander-x'];
+    return {
+      cardStats: { [METARCHUS]: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId },
+      city: [METARCHUS, null, null, null, null],
+      counters: {},
+      attachedBystanders: {},
+      ...(isFlagged ? { villainBloodFrenzy: { [METARCHUS]: true } } : {}),
+      villainDeckCardTypes: {
+        'villain-two': 'villain',
+        'villain-three-a': 'villain',
+        'villain-three-b': 'villain',
+        'henchman-one': 'henchman',
+        'bystander-x': 'bystander',
+      },
+      cardVictoryPoints: { 'villain-two': 2, 'villain-three-a': 3, 'villain-three-b': 3, 'henchman-one': 1 },
+      cardTraits: {},
+      mastermind: { baseCardId: 'mm-base', tacticsDefeated: [] },
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory, undercover: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [], undercover: [] },
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('adds the fighting player’s distinct VP value count (2, 3, 3, 1, 1 → 3)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId, '0'), 3 + 3);
+  });
+
+  it('reads the fighting player’s own Victory Pile (an empty pile adds 0)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId, '1'), 3);
+  });
+
+  it('adds nothing when no fighting player is passed (pre-WP-760 callers stay byte-identical)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId), 3);
+  });
+
+  it('adds nothing for a villain without the Blood Frenzy flag', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(false), METARCHUS as CardExtId, '0'), 3);
+  });
+
+  it('composes additively with the Midtown per-Bystander bonus', () => {
+    const gameState = makeBloodFrenzyG(true, 'core/midtown-bank-robbery');
+    gameState.attachedBystanders = { [METARCHUS as CardExtId]: ['hostage-1' as CardExtId, 'hostage-2' as CardExtId] };
+    assert.equal(resolveFightCost(gameState, METARCHUS as CardExtId, '0'), 3 + 2 + 3);
+  });
+});

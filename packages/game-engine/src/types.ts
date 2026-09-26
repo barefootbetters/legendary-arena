@@ -944,6 +944,13 @@ export interface PendingKoDiscardChoice {
   playerID: string;
   /** The maximum number of cards the player may KO (MANIACAL_TYRANT_KO_MAX = 4), clamped by discard size at resolve. */
   maxCount: number;
+  /**
+   * The card whose effect parked this choice (WP-760 / D-24589: Salomé's Fight).
+   * Optional and omit-when-absent: Loki's Maniacal Tyrant entry never sets it, so its
+   * resolve log stays byte-identical. Display text is never stored in G — the resolver
+   * names the card from G.cardDisplayData.
+   */
+  sourceCardId?: CardExtId;
 }
 
 /**
@@ -1016,6 +1023,13 @@ export interface PendingOptionalKoReward {
   // Heroes (the S.H.I.E.L.D. Officer token itself counts as a S.H.I.E.L.D. Hero).
   /** Optional KO-target team restriction; absent = any card (D-24498). */
   koTeamFilter?: 'shield';
+  // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes" restricts the KO
+  // target to Heroes. ABSENT = no filter, so every existing entry is byte-unchanged. Written as
+  // `true` or omitted, NEVER `false`; readers test `=== true`. When set, WOUND_EXT_ID is
+  // ineligible in the resolve, the projection and the bot (a Wound is the only non-Hero card
+  // that can be in a hand or play area today — a future one must extend this check).
+  /** Optional Heroes-only KO restriction (a Wound is ineligible); absent = any card (D-24600). */
+  koHeroesOnly?: true;
 }
 
 /**
@@ -1475,6 +1489,20 @@ export interface PendingDivingBlockWound {
  * bot default (no snapshot) — HQ contents are public, so no hand-leak redaction. The
  * choice is single-Hero (no `remaining`): each player gains exactly one Hero.
  */
+/**
+ * Who haunts one HQ slot (WP-757 / D-24587, the Haunt keyword).
+ *
+ * A Villain haunter is tucked beneath the Hero, OUT of the City, so it cannot be
+ * fought until a player exorcises the Hero and it enters the City. `cardId` is the
+ * copy-indexed Villain instance ext_id — a string, never a card object.
+ */
+// why: WP-757 / D-24587 — the `mastermind` kind ships here, before its producer
+// (Zarathos's Master Strike / tactics, WP-758), so the Haunt contract never reopens.
+// It carries no card id: there is exactly one Mastermind (G.mastermind).
+export type HqHaunter =
+  | { kind: 'villain'; cardId: CardExtId }
+  | { kind: 'mastermind' };
+
 export interface PendingGiveHqHeroChoice {
   /** Discriminant for future extensibility; always 'give-hq-hero'. */
   choiceType: 'give-hq-hero';
@@ -1755,6 +1783,17 @@ export interface LegendaryGameState {
   // replay/sentinel oracle stays byte-identical (no re-pin). Absent = no override.
   /** Per-player next-`onBegin` hand-fill override (lazy; WP-497 / D-24300). */
   handSizeOverrides?: Record<string, number>;
+
+  // why: WP-757 / D-24587 — the Haunt keyword (rulebook v23 p.27). One entry per HQ
+  // slot, index-aligned with G.hq (length 5), recording who haunts the Hero in that
+  // slot. Per-slot and omit-when-absent: it is created lazily on the FIRST haunt and
+  // never seeded in Game.setup or written empty, so a match that never haunts omits it
+  // from canonical JSON and every hash oracle stays byte-stable. Index-keyed (not
+  // card-keyed) on purpose: every HQ removal site nulls the slot and refills it by
+  // index, so the refill Hero inherits the haunter with no edit to those sites ("the
+  // Haunting Villain stays in that HQ space and Haunts the new Hero").
+  /** Per-HQ-slot haunter, index-aligned with `hq` (lazy; WP-757 / D-24587). */
+  hqHaunters?: (HqHaunter | null)[];
 
   // why: WP-695 / D-24512 — per-player deferred SPECIFIC-card hand injections, keyed by
   // PlayerID; value = the ext_ids to add to that player's hand as extra cards at their
@@ -2263,6 +2302,18 @@ export interface LegendaryGameState {
   /** Split-hero base→alternate-face card-key map (D-24545). Absent when no split heroes are in play. */
   splitFaces?: Readonly<Record<CardExtId, CardExtId>> | undefined;
 
+  // why: `sides[]` is NOT the printed left-to-right order — for 19 of the 39 split cards
+  // (mostly cvwr) the alternate face (sides[1]) is the LEFT half of the landscape card. The
+  // printed position is the lower hero-card `slot` (lower slot = left half; all 39 pairs have
+  // distinct slots). Moves have no registry, so buildSplitFaceAlternateOnLeft captures it here at
+  // Game.setup(), keyed by the same copy-agnostic PRIMARY card-key as splitFaces. Display-only:
+  // buildUIState reads it to project UIPendingSplitFaceChoice.leftFace so the picker renders the
+  // halves in printed order. Face 'a'/'b' semantics are unchanged. Absent when empty (the
+  // splitFaces precedent), so a game whose split cards are all already left-first — and any
+  // no-split game — serializes byte-identically.
+  /** Primary card-keys of split cards whose ALTERNATE face (sides[1]) is the printed left half. Absent when none. */
+  splitFacesAlternateOnLeft?: Readonly<Record<CardExtId, true>> | undefined;
+
   // why: KO pile stores cards permanently removed from the game. Destination-only
   // zone — cards enter via koCard helper and never return in MVP. Initialized
   // empty at setup.
@@ -2327,6 +2378,15 @@ export interface LegendaryGameState {
   // and reasoned; PRE_WP080_HASH (the empty replay, no scheme) must NOT move.
   /** Setup size of the depletion-loss pile; absent unless the scheme loses on one. */
   schemeLossPileSetupSize?: number;
+
+  // why: WP-763 / D-24595 — the Villain Deck's setup size, for a scheme whose
+  // Evil Wins includes "the Villain Deck runs out" (Midnight Massacre, Halve All
+  // Life, the compound escaped-villain schemes). A SEPARATE field from
+  // schemeLossPileSetupSize so the sentinel hash that depends on that field does
+  // not move and a two-pile scheme can measure both. Materialized LAZILY — only
+  // when the condition names 'villainDeck' — so every core game is unchanged.
+  /** Villain Deck setup size; absent unless the scheme loses on the Villain Deck. */
+  schemeLossVillainDeckSetupSize?: number;
 
   // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
   // play time and are waiting for the threshold to be reached later in the SAME
@@ -2460,6 +2520,16 @@ export interface LegendaryGameState {
   // without these villains keep a byte-identical G shape (determinism).
   /** Per-villain defeat requirements. Built at setup, read-only; absent when none. */
   villainDefeatRequirements?: Record<CardExtId, VillainDefeatRequirement>;
+
+  // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
+  // each different Victory Point value among the cards in your Victory Pile"; The
+  // Fallen's Metarchus and Salomé). Read by resolveFightCost only. Built once at setup
+  // from the bare [keyword:Blood Frenzy] line, keyed by copy-suffixed instance ext_id.
+  // OMITTED ENTIRELY when no Blood Frenzy villain is in the match, so every other
+  // match keeps a byte-identical G (hash oracles). Not a BoardKeyword: Blood Frenzy is
+  // a cost modifier, not City-structural (patrol / ambush / guard).
+  /** Blood Frenzy villain instances. Built at setup, read-only; absent when none. */
+  villainBloodFrenzy?: Record<CardExtId, true>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

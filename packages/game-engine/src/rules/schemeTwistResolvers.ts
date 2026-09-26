@@ -820,6 +820,20 @@ function portals(
   });
 }
 
+/**
+ * Counter-only resolver (WP-763 / D-24595). Deliberately does nothing.
+ *
+ * why: lets a scheme be configured for its Evil-Wins condition (a printed twist
+ * count, or a pile running out) without inventing a twist effect the engine does
+ * not model yet. The dispatcher's generic twist-count increment and loss check
+ * still run after it, so the "twist count incremented" log line the PAR anchors
+ * count is unaffected. A pure no-op: no log, no notable event, no G write — so it
+ * needs no SchemeTwistResolverKey.
+ */
+function counterOnly(): void {
+  return;
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -829,4 +843,5 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'killbots': killbots,
   'secret-invasion': secretInvasion,
   'portals': portals,
+  'counter-only': counterOnly,
 };

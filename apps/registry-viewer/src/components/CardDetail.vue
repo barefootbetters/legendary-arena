@@ -281,6 +281,14 @@ const matchedMechanicalPattern = computed(() => {
             <span class="stat-label">Slot</span>
             <span class="stat-value">{{ card.slot }}</span>
           </div>
+          <!-- why: split cards print two faces on one landscape card; name the
+               other half so the shared image (and the crop) makes sense. -->
+          <div v-if="card.splitPartnerName" class="stat">
+            <span class="stat-label">Split Card</span>
+            <span class="stat-value split-value">
+              {{ card.physicalCardImageHalf === "right" ? "Right" : "Left" }} half · other half: {{ card.splitPartnerName }}
+            </span>
+          </div>
         </div>
 
         <!-- Abilities with rich token rendering -->
@@ -474,6 +482,9 @@ const matchedMechanicalPattern = computed(() => {
 .img-wrap img { width: 100%; display: block; object-fit: cover; pointer-events: none; }
 
 /* ── Stats grid ──────────────────────────────────────────────────────────── */
+/* why: .stat-value capitalizes every word, which mangles card names
+   ("Inspire a Man" → "Inspire A Man"); keep the partner name as printed. */
+.stat-value.split-value { text-transform: none; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 .stat { background: #12121a; border-radius: 6px; padding: 0.4rem 0.55rem; }
 .stat-label { display: block; font-size: 0.62rem; color: #6666aa; text-transform: uppercase; letter-spacing: 0.05em; }

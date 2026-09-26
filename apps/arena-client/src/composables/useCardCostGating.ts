@@ -1,10 +1,12 @@
 /**
  * Pure helper that decides whether the active player can fight a city
- * villain or recruit an HQ hero given the current turn economy and the
- * card's display payload.
+ * villain / the Mastermind, or recruit an HQ hero, given the current turn
+ * economy and the card's cost.
  *
  * Consumes WP-128 fields `economy.availableAttack` and
- * `economy.availableRecruit`, plus `UICardDisplay.cost` (added by WP-111).
+ * `economy.availableRecruit`. Recruit reads `UICardDisplay.cost` (added by
+ * WP-111); Fight reads the engine's projected fight cost (WP-750 / D-24574:
+ * `UICityCard.fightCost` / `UIMastermindState.fightCost`), passed in as a number.
  * Returns a `{ allowed, reason }` pair so binding sites (button
  * `aria-disabled` + `title`) can render the locked tooltip precedence
  * without re-deriving the message.
@@ -18,6 +20,7 @@
  * @see WP-129 §Acceptance Criteria — cost gating
  * @see EC-132 §3 disabled-state tooltip precedence
  * @see WP-111 D-11104 (UICardDisplay.cost projection)
+ * @see WP-750 D-24574 (Fight gates on the engine's projected fight cost)
  */
 
 import type { UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
@@ -67,21 +70,22 @@ export function canRecruit(
 }
 
 /**
- * Decide whether the active player can fight a villain whose attack-cost
- * is the supplied display payload's `cost` field. Returns disallowed when
- * `availableAttack < villain.cost`. Villains with `cost === null` (e.g.,
- * non-fightable scenery cards if any future scenario projects them) are
- * treated as disallowed with a structural reason.
+ * Decide whether the active player can fight a target whose fight cost is
+ * `cost`. Returns disallowed when `availableAttack < cost`. A `null` cost
+ * (a snapshot with no projected cost and no printed cost) is treated as
+ * disallowed with a structural reason.
  *
- * // why: cost gate consumes WP-128 `economy.availableAttack`. The
- * structural-null branch protects city slots holding non-fightable cards
- * from rendering as enabled when the economy can technically "afford" them.
+ * // why: WP-750 / D-24574 — the cost is a NUMBER, the engine's projected fight
+ * cost, never the printed `display.cost`. The printed cost diverged from the
+ * engine both ways: dead buttons (Dark Portal, captured Heroes, Skrull — the
+ * engine charged more) and false locks (null printed attack, Killbots — the
+ * engine charged 0 or a counter). The caller supplies the projection, so the
+ * client never re-derives a cost term. Consumes WP-128 `economy.availableAttack`.
  */
 export function canFight(
-  villain: UICardDisplay,
+  cost: number | null,
   economy: UITurnEconomyState,
 ): GatingResult {
-  const cost = villain.cost;
   if (cost === null) {
     return {
       allowed: false,
@@ -101,10 +105,10 @@ export function canFight(
  * Decide whether the active player can fight a villain/Mastermind **using
  * Excessive Violence** — the availability cue is set (WP-739 /
  * `economy.excessiveViolenceAvailable`) AND they can afford one attack MORE
- * than the target's fight cost (the WP-736 `+1` overspend). Reuses the same
- * `display.cost` source `canFight` uses, so the client gate mirrors the engine
- * gate `getSpendableAttack >= requiredFightCost + 1` exactly and the engine
- * stays the sole authority. Returns a plain boolean (this is an enable check
+ * than the target's fight cost (the WP-736 `+1` overspend). Takes the same
+ * projected fight cost `canFight` takes (WP-750 / D-24574), so the client gate
+ * mirrors the engine gate `getSpendableAttack >= requiredFightCost + 1` exactly
+ * and the engine stays the sole authority. Returns a plain boolean (this is an enable check
  * for a secondary affordance, not a disabled-tooltip gate).
  *
  * // why: WP-738 / D-24561 — per-target enable for the "Fight using Excessive
@@ -112,13 +116,12 @@ export function canFight(
  * non-fightable (`cost === null`) target is never EV-fightable.
  */
 export function canFightWithExcessiveViolence(
-  target: UICardDisplay,
+  cost: number | null,
   economy: UITurnEconomyState,
 ): boolean {
   if (economy.excessiveViolenceAvailable !== true) {
     return false;
   }
-  const cost = target.cost;
   if (cost === null) {
     return false;
   }
@@ -134,13 +137,13 @@ export function useCardCostGating(
   economy: UITurnEconomyState,
 ): {
   canRecruit: (hero: UICardDisplay) => GatingResult;
-  canFight: (villain: UICardDisplay) => GatingResult;
-  canFightWithExcessiveViolence: (target: UICardDisplay) => boolean;
+  canFight: (cost: number | null) => GatingResult;
+  canFightWithExcessiveViolence: (cost: number | null) => boolean;
 } {
   return {
     canRecruit: (hero) => canRecruit(hero, economy),
-    canFight: (villain) => canFight(villain, economy),
-    canFightWithExcessiveViolence: (target) =>
-      canFightWithExcessiveViolence(target, economy),
+    canFight: (cost) => canFight(cost, economy),
+    canFightWithExcessiveViolence: (cost) =>
+      canFightWithExcessiveViolence(cost, economy),
   };
 }

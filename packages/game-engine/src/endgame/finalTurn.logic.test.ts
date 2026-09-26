@@ -12,7 +12,8 @@ import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 
 /**
  * Builds a minimal LegendaryGameState carrying only the fields the final-turn
- * helpers read: counters, the two shared decks, and the messages log. The
+ * helpers read: the active scheme, counters, the two shared decks, and the
+ * messages log. The
  * helpers are pure over these fields, so a narrow cast avoids coupling to
  * buildInitialGameState (mirrors endgame.evaluate.test.ts).
  */
@@ -20,8 +21,13 @@ function makeState(options: {
   villainDeck?: string[];
   heroDeck?: string[];
   counters?: Record<string, number>;
+  schemeId?: string;
 }): LegendaryGameState {
   return {
+    // why (D-24599): the latch now reads the active scheme to decide whether the
+    // emptied deck is that scheme's Evil Wins pile. Default to a scheme with no
+    // pile-depletion loss, so the WP-367 behaviour below is what is exercised.
+    selection: { schemeId: options.schemeId ?? 'core/unleash-the-power-of-the-cosmic-cube' },
     counters: options.counters ?? {},
     villainDeck: { deck: options.villainDeck ?? ['v-1'], discard: [] },
     heroDeck: options.heroDeck ?? ['h-1'],
@@ -191,5 +197,58 @@ describe('D-24319 — Civil War hero-deck depletion pre-empts the deck-exhaustio
     const result = evaluateEndgame(state);
     assert.ok(result, 'endgame must have resolved');
     assert.equal(result!.outcome, 'scheme-wins', 'evil wins by hero-deck depletion, not a tie');
+  });
+});
+
+describe('D-24599 — no contradictory "final turn… tie" line before a deck-runout loss', () => {
+  it('Midnight Massacre: a Villain Deck runout latches silently, then logs one plain loss line', () => {
+    const state = makeState({
+      schemeId: 'mdns/midnight-massacre',
+      villainDeck: [],
+      heroDeck: ['h-1'],
+    });
+
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+
+    assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED], 1);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages.length, 1);
+    assert.equal(
+      state.messages[0]!.text,
+      'Scheme loss triggered — the Villain Deck has run out.',
+    );
+    assert.equal(evaluateEndgame(state)?.outcome, 'scheme-wins');
+  });
+
+  it('Civil War: a Hero Deck runout also skips the tie announcement', () => {
+    const state = makeState({
+      schemeId: 'core/super-hero-civil-war',
+      villainDeck: ['v-1'],
+      heroDeck: [],
+    });
+
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+
+    assert.equal(state.messages.length, 1);
+    assert.equal(state.messages[0]!.text, 'Scheme loss triggered — the Hero Deck has run out.');
+  });
+
+  it('a runout of a deck the scheme does NOT lose on still announces the final turn', () => {
+    // why: Civil War loses on the Hero Deck, not the Villain Deck — an empty
+    // Villain Deck there is the ordinary WP-367 final turn.
+    const state = makeState({
+      schemeId: 'core/super-hero-civil-war',
+      villainDeck: [],
+      heroDeck: ['h-1'],
+    });
+
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+    assert.equal(state.messages.length, 1);
+    assert.match(state.messages[0]!.text, /villain deck is empty — this is the final turn/);
   });
 });

@@ -445,3 +445,50 @@ describe('resolveDefeatChoice (WP-486 / D-24291)', () => {
     assert.equal(G.city[0], 'villain-a', 'no villain was defeated on the rejected submission');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — a haunting Mastermind can't be fought, so the free-defeat
+// target builder omits it while any HQ slot carries a `{ kind: 'mastermind' }`
+// haunter. A Villain haunter does not affect the Mastermind target.
+// ---------------------------------------------------------------------------
+
+import { hauntHqSlot } from '../board/haunt.logic.js';
+
+/** A defeat-choice state with one bystander-holding City Villain + a targetable Mastermind. */
+function makeHauntDefeatG(): LegendaryGameState {
+  const G = makeG({
+    city: ['villain-a', null, null, null, null],
+    attachedBystanders: { 'villain-a': ['bystander-1'] },
+    mastermindAttachedBystanders: ['bystander-m'],
+    mastermindTacticsDeck: ['tactic-1'],
+  });
+  // why: hauntHqSlot refuses an empty HQ slot, so seed a Hero to be haunted.
+  G.hq[2] = 'hero-haunted' as CardExtId;
+  return G;
+}
+
+describe('buildDefeatWithBystanderTargets vs Haunt (WP-757 / D-24587)', () => {
+  it('the Mastermind is a target when nothing haunts', () => {
+    assert.deepStrictEqual(buildDefeatWithBystanderTargets(makeHauntDefeatG()), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'test-mastermind-base' },
+    ]);
+  });
+
+  it('omits the Mastermind while it haunts an HQ slot; City Villain targets are unaffected', () => {
+    const G = makeHauntDefeatG();
+    assert.equal(hauntHqSlot(G, 2, { kind: 'mastermind' }), true);
+    assert.deepStrictEqual(buildDefeatWithBystanderTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ]);
+  });
+
+  it('a Villain haunter does NOT remove the Mastermind target', () => {
+    const G = makeHauntDefeatG();
+    assert.equal(hauntHqSlot(G, 2, { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }), true);
+    assert.deepStrictEqual(buildDefeatWithBystanderTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'test-mastermind-base' },
+    ]);
+  });
+});

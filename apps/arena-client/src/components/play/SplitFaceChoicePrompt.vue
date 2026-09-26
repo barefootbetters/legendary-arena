@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, watch, type PropType } from "vue";
+import { computed, defineComponent, ref, watch, type PropType } from "vue";
 import type { UIPendingSplitFaceChoice, UISplitFaceOption } from "@legendary-arena/game-engine";
 import type { SubmitMove } from "./uiMoveName.types";
 import AbilityText from "./AbilityText.vue";
@@ -16,6 +16,11 @@ import AbilityText from "./AbilityText.vue";
  * Pressing face A submits `resolveSplitFaceChoice({ face: 'a' })`; face B submits
  * `resolveSplitFaceChoice({ face: 'b' })`. The client submits INTENT only — the ENGINE binds the
  * chosen face, grants its economy, and fires its ability (the other face does nothing).
+ *
+ * // why: the buttons render in PRINTED left-to-right order (`leftFace` first), not faceA-first —
+ * sides[] order is not the printed order (for 19 of 39 split cards faceB is the left half), and a
+ * picker whose order contradicts the card art invites a mis-click. Each button still carries its
+ * own face id, so the submitted `face` is unaffected by the display order.
  *
  * // why: D-24546 — non-dismissible; controls disable after submit to prevent a double move. The
  * choice is game-blocking (WP-724's block-all guard freezes turn-end until it resolves); the only
@@ -77,6 +82,16 @@ export default defineComponent({
       return parts.join(", ");
     }
 
+    /** The two faces in printed left-to-right order, each paired with the face id it submits. */
+    const orderedFaces = computed((): { face: "a" | "b"; option: UISplitFaceOption }[] => {
+      const pending = props.pendingSplitFaceChoice;
+      if (pending === undefined) return [];
+      const faceAEntry = { face: "a" as const, option: pending.faceA };
+      const faceBEntry = { face: "b" as const, option: pending.faceB };
+      if (pending.leftFace === "b") return [faceBEntry, faceAEntry];
+      return [faceAEntry, faceBEntry];
+    });
+
     function onChoose(face: "a" | "b"): void {
       if (isSubmitting.value) return;
       isSubmitting.value = true;
@@ -86,6 +101,7 @@ export default defineComponent({
     return {
       isSubmitting,
       shouldRender,
+      orderedFaces,
       economyLabel,
       onChoose,
     };
@@ -104,28 +120,18 @@ export default defineComponent({
     <h3 class="split-face-prompt__heading">Choose a side</h3>
     <div class="split-face-prompt__buttons">
       <button
+        v-for="entry in orderedFaces"
+        :key="entry.face"
         type="button"
         class="split-face-prompt__btn"
-        data-testid="split-face-a"
+        :data-testid="`split-face-${entry.face}`"
         :disabled="isSubmitting"
         :aria-disabled="isSubmitting ? 'true' : undefined"
-        @click="onChoose('a')"
+        @click="onChoose(entry.face)"
       >
-        <span class="split-face-prompt__name">{{ pendingSplitFaceChoice!.faceA.name }}</span>
-        <span v-if="economyLabel(pendingSplitFaceChoice!.faceA)" class="split-face-prompt__economy">{{ economyLabel(pendingSplitFaceChoice!.faceA) }}</span>
-        <AbilityText v-if="pendingSplitFaceChoice!.faceA.abilityText" :text="pendingSplitFaceChoice!.faceA.abilityText" />
-      </button>
-      <button
-        type="button"
-        class="split-face-prompt__btn"
-        data-testid="split-face-b"
-        :disabled="isSubmitting"
-        :aria-disabled="isSubmitting ? 'true' : undefined"
-        @click="onChoose('b')"
-      >
-        <span class="split-face-prompt__name">{{ pendingSplitFaceChoice!.faceB.name }}</span>
-        <span v-if="economyLabel(pendingSplitFaceChoice!.faceB)" class="split-face-prompt__economy">{{ economyLabel(pendingSplitFaceChoice!.faceB) }}</span>
-        <AbilityText v-if="pendingSplitFaceChoice!.faceB.abilityText" :text="pendingSplitFaceChoice!.faceB.abilityText" />
+        <span class="split-face-prompt__name">{{ entry.option.name }}</span>
+        <span v-if="economyLabel(entry.option)" class="split-face-prompt__economy">{{ economyLabel(entry.option) }}</span>
+        <AbilityText v-if="entry.option.abilityText" :text="entry.option.abilityText" />
       </button>
     </div>
   </div>

@@ -1,5 +1,5 @@
 /**
- * Adversary-stat icon suppression (D-24599).
+ * Adversary-stat icon suppression (D-24605).
  *
  * An unsigned attack icon that states an ADVERSARY's printed attack ("as if it were a
  * 4[icon:attack] Darkhold Demon Villain", "a Villain that has 3[icon:attack] or less",
@@ -83,7 +83,7 @@ function assertNoAttackGrant(hook: HeroAbilityHook, cardName: string): void {
   assert.ok(!hook.keywords.includes('attack'), `${cardName}: no plain attack keyword`);
 }
 
-describe('adversary-stat icon suppression (D-24599)', () => {
+describe('adversary-stat icon suppression (D-24605)', () => {
   it('Face Your Demons line 0 — "as if it were a 4[icon:attack] Darkhold Demon" grants no attack', () => {
     assertNoAttackGrant(buildHook(FACE_YOUR_DEMONS_ABILITY), 'Face Your Demons');
   });

@@ -2709,6 +2709,8 @@
       "id": 21,
       "name": "Brood, The",
       "slug": "brood-the",
+      "vAttack": "1+",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/xmen/xmen-hm-brood-the.webp",
       "abilities": [
         "This Villain gets +1[icon:attack] for each Bystander in the KO pile.",
@@ -2719,6 +2721,8 @@
       "id": 22,
       "name": "Hellfire Cult",
       "slug": "hellfire-cult",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/xmen/xmen-hm-hellfire-cult.webp",
       "abilities": [
         "Fight: Reveal the top card of your deck. If it costs 0, KO it. Otherwise, you get +1[icon:recruit]."
@@ -2728,6 +2732,8 @@
       "id": 23,
       "name": "Sapien League",
       "slug": "sapien-league",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/xmen/xmen-hm-sapien-league.webp",
       "abilities": [
         "Fight: KO one of your Heroes. Then, reveal the top card of the Villain Deck. If it's a Henchman Villain, play it."
@@ -2737,6 +2743,8 @@
       "id": 24,
       "name": "Shi'ar Death Commandos",
       "slug": "shiar-death-commandos",
+      "vAttack": "2",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/xmen/xmen-hm-shiar-death-commandos.webp",
       "abilities": [
         "Ambush: This Villain captures a [keyword:Human Shield].",
@@ -2747,6 +2755,8 @@
       "id": 25,
       "name": "Shi'ar Patrol Craft",
       "slug": "shiar-patrol-craft",
+      "vAttack": "3",
+      "vp": 1,
       "imageUrl": "https://images.legendary-arena.com/xmen/xmen-hm-shiar-patrol-craft.webp",
       "abilities": [
         "Fight: The next Hero you recruit this turn has [keyword:Soaring Flight]."

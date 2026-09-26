@@ -4312,3 +4312,310 @@ describe('play-villain-deck-cards detector + reachable no-op (WP-542 / D-24351)'
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a reachable no-op is not a hollow');
   });
 });
+
+describe('executeVillainAbilities — haunt-hq-hero (WP-757 / D-24587)', () => {
+  const HAUNTER = 'core-villain-fallen-metarchus-00' as CardExtId;
+  const OTHER_HAUNTER = 'core-villain-fallen-atrocity-00' as CardExtId;
+  const HERO_0 = 'core-hero-a-00' as CardExtId;
+  const HERO_1 = 'core-hero-b-00' as CardExtId;
+  const HERO_2 = 'core-hero-c-00' as CardExtId;
+  const HERO_3 = 'core-hero-d-00' as CardExtId;
+  const HERO_4 = 'core-hero-e-00' as CardExtId;
+
+  // why: haunt-hq-hero is keyword-less and parameterized, so the hook() helper (which
+  // reads LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR) can't build it — construct directly.
+  function hauntHook(
+    cardId: CardExtId,
+    selector: 'rightmost' | 'leftmost' | 'cost-lte-3',
+  ): VillainAbilityHook {
+    return {
+      cardId,
+      timing: 'onAmbush',
+      keywords: [],
+      effects: [{ primitive: 'haunt-hq-hero', selector }],
+    };
+  }
+
+  interface MakeHauntGOptions {
+    selector: 'rightmost' | 'leftmost' | 'cost-lte-3';
+    hq: (CardExtId | null)[];
+    cardStats?: Record<string, { cost: number }>;
+    hqHaunters?: LegendaryGameState['hqHaunters'];
+  }
+
+  // why: makeG does not model G.city / G.hqHaunters — attach them post-build via cast
+  // (the swap-two-city-villains pattern above). `messages: []` makes pushLog record so
+  // the single self-narrated log line can be counted.
+  function makeHauntG(options: MakeHauntGOptions): LegendaryGameState {
+    const G = makeG({
+      hooks: [hauntHook(HAUNTER, options.selector)],
+      hq: options.hq,
+      cardStats: options.cardStats ?? {},
+      messages: [],
+    });
+    (G as { city?: unknown }).city = [HAUNTER, null, null, null, null];
+    if (options.hqHaunters !== undefined) {
+      G.hqHaunters = options.hqHaunters;
+    }
+    return G;
+  }
+
+  const FULL_HQ = [HERO_0, HERO_1, HERO_2, HERO_3, HERO_4];
+
+  it('rightmost haunts the highest occupied slot, nulls the City space, logs one line', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: FULL_HQ });
+    const results = executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(results, [], 'keyword-less primitive returns no result entry');
+    assert.deepStrictEqual(G.hqHaunters, [null, null, null, null, { kind: 'villain', cardId: HAUNTER }]);
+    assert.equal(G.city[0], null, 'the Haunting Villain left its City space');
+    assert.equal(G.city.includes(HAUNTER), false);
+    assert.deepStrictEqual(G.hq, FULL_HQ, 'the haunted Hero stays in the HQ');
+    assert.equal(G.messages.length, 1, 'exactly one self-narrated log line');
+  });
+
+  it('leftmost haunts the lowest occupied slot', () => {
+    const G = makeHauntG({ selector: 'leftmost', hq: FULL_HQ });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [{ kind: 'villain', cardId: HAUNTER }, null, null, null, null]);
+    assert.equal(G.city[0], null);
+    assert.equal(G.messages.length, 1);
+  });
+
+  it('cost-lte-3 haunts the lowest-index Hero costing 3 or less', () => {
+    const G = makeHauntG({
+      selector: 'cost-lte-3',
+      hq: FULL_HQ,
+      cardStats: {
+        [HERO_0]: { cost: 5 },
+        [HERO_1]: { cost: 4 },
+        [HERO_2]: { cost: 3 },
+        [HERO_3]: { cost: 2 },
+        [HERO_4]: { cost: 6 },
+      },
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [null, null, { kind: 'villain', cardId: HAUNTER }, null, null]);
+    assert.equal(G.city[0], null);
+    assert.equal(G.messages.length, 1);
+  });
+
+  it('skips null and already-haunted slots when selecting (rightmost)', () => {
+    const existing = { kind: 'villain' as const, cardId: OTHER_HAUNTER };
+    const G = makeHauntG({
+      selector: 'rightmost',
+      // why: slot 4 is empty, slot 3 is already haunted → the rightmost ELIGIBLE is 2.
+      hq: [HERO_0, HERO_1, HERO_2, HERO_3, null],
+      hqHaunters: [null, null, null, existing, null],
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      null,
+      null,
+      { kind: 'villain', cardId: HAUNTER },
+      existing,
+      null,
+    ]);
+    assert.equal(G.city[0], null);
+  });
+
+  it('skips null and already-haunted slots when selecting (leftmost)', () => {
+    const G = makeHauntG({
+      selector: 'leftmost',
+      hq: [null, HERO_1, HERO_2, null, null],
+      hqHaunters: [null, { kind: 'mastermind' }, null, null, null],
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      null,
+      { kind: 'mastermind' },
+      { kind: 'villain', cardId: HAUNTER },
+      null,
+      null,
+    ]);
+  });
+
+  it('no eligible slot (empty HQ) is a no-op: Villain stays, no hqHaunters key, one blocked line', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: [null, null, null, null, null] });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal(G.city[0], HAUNTER, 'the Villain stays in the City');
+    assert.equal('hqHaunters' in G, false, 'hqHaunters is never created on a no-op');
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('cost-lte-3 with every Hero costing more than 3 is a no-op', () => {
+    const G = makeHauntG({
+      selector: 'cost-lte-3',
+      hq: FULL_HQ,
+      cardStats: {
+        [HERO_0]: { cost: 4 },
+        [HERO_1]: { cost: 5 },
+        [HERO_2]: { cost: 6 },
+        [HERO_3]: { cost: 7 },
+        [HERO_4]: { cost: 8 },
+      },
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal(G.city[0], HAUNTER);
+    assert.equal('hqHaunters' in G, false);
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('every occupied slot already haunted → no-op; existing haunters are never overwritten', () => {
+    const haunters: LegendaryGameState['hqHaunters'] = [
+      { kind: 'villain', cardId: OTHER_HAUNTER },
+      { kind: 'mastermind' },
+      null,
+      null,
+      null,
+    ];
+    const G = makeHauntG({
+      selector: 'rightmost',
+      hq: [HERO_0, HERO_1, null, null, null],
+      hqHaunters: haunters,
+    });
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.deepStrictEqual(G.hqHaunters, [
+      { kind: 'villain', cardId: OTHER_HAUNTER },
+      { kind: 'mastermind' },
+      null,
+      null,
+      null,
+    ]);
+    assert.equal(G.city[0], HAUNTER, 'the second haunter stays in the City');
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('a Villain that is no longer in the City haunts nothing', () => {
+    const G = makeHauntG({ selector: 'rightmost', hq: FULL_HQ });
+    (G as { city?: unknown }).city = [null, null, null, null, null];
+    executeVillainAbilities(G, CTX, HAUNTER, 'onAmbush');
+
+    assert.equal('hqHaunters' in G, false);
+    assert.equal(G.messages.length, 1);
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The Fallen fight-side primitives (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — reveal-top-draw-if-cost-lte (Patriarch, WP-760)', () => {
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+  const PATRIARCH = 'mdns-villain-fallen-patriarch-00' as CardExtId;
+  const patriarchHook: VillainAbilityHook = {
+    cardId: PATRIARCH,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'reveal-top-draw-if-cost-lte', magnitude: 3 }],
+  };
+
+  /** Player 0 holding `deck` and `discard`, with the given card costs. */
+  function patriarchG(deck: CardExtId[], discard: CardExtId[], cardStats: Record<string, { cost: number }>): LegendaryGameState {
+    return makeG({
+      hooks: [patriarchHook],
+      playerZones: {
+        '0': { deck, hand: [], discard, inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardStats,
+      messages: [],
+      cardDisplayData: { cheap: { name: 'Cheap Hero' }, pricey: { name: 'Pricey Hero' } },
+    });
+  }
+
+  it('draws the top card when it costs 3 or less', () => {
+    const G = patriarchG(['cheap' as CardExtId, 'next' as CardExtId], [], { cheap: { cost: 3 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['cheap']);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['next']);
+    assert.match(G.messages![0]!.text, /revealed "Cheap Hero" \(cost 3\) — drew it\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('leaves a card costing more than 3 on top and logs it', () => {
+    const G = patriarchG(['pricey' as CardExtId], [], { pricey: { cost: 4 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['pricey'], 'left on top');
+    assert.match(G.messages![0]!.text, /revealed "Pricey Hero" \(costs more than 3\) — left on top of your deck\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+
+  it('draws a Wound (an uncosted Wound reads cost 0, D-24583)', () => {
+    const G = patriarchG([WOUND], [], {});
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [WOUND]);
+  });
+
+  it('reshuffles the discard when the deck is empty, then reveals (D-24285)', () => {
+    const G = patriarchG([], ['pricey' as CardExtId, 'cheap' as CardExtId], { cheap: { cost: 2 }, pricey: { cost: 5 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    // why: the reversed discard puts `cheap` on top, and it costs 2 — drawn.
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['cheap']);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['pricey']);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, []);
+  });
+
+  it('is a logged no-op when both the deck and the discard are empty', () => {
+    const G = patriarchG([], [], {});
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.match(G.messages![0]!.text, /no card to reveal/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});
+
+describe('executeVillainAbilities — ko-up-to-from-discard-current (Salomé, WP-760)', () => {
+  const SALOME = 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId;
+  const salomeHook: VillainAbilityHook = {
+    cardId: SALOME,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'ko-up-to-from-discard-current', magnitude: 2 }],
+  };
+
+  /** Player 0 with the given discard pile. */
+  function salomeG(discard: CardExtId[]): LegendaryGameState {
+    return makeG({
+      hooks: [salomeHook],
+      playerZones: {
+        '0': { deck: [], hand: [], discard, inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+      cardDisplayData: { [SALOME]: { name: 'Salomé, Sorceress Supreme' } },
+    });
+  }
+
+  it('parks a KO-up-to-2 discard choice naming Salomé as the source, KOing nothing yet', () => {
+    const G = salomeG(['a' as CardExtId, 'b' as CardExtId, 'c' as CardExtId]);
+    executeVillainAbilities(G, CTX, SALOME, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: SALOME },
+    ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['a', 'b', 'c'], 'nothing KO’d until the choice resolves');
+    assert.match(G.messages![0]!.text, /KO up to 2 cards from your discard pile \(Salomé, Sorceress Supreme\)\./);
+  });
+
+  it('parks nothing on an empty discard (a logged no-op)', () => {
+    const G = salomeG([]);
+    executeVillainAbilities(G, CTX, SALOME, 'onFight');
+    assert.equal(G.pendingKoDiscardChoices, undefined, 'no queue created');
+    assert.match(G.messages![0]!.text, /your discard pile is empty/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});

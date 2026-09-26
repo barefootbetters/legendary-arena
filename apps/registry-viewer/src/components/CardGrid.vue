@@ -115,10 +115,20 @@ watch(() => props.selectedKey, (newKey) => {
         <div class="img-wrap" :class="{ 'data-expanded': viewMode === 'data' && cardSize >= ABILITY_THRESHOLD_PX }">
           <template v-if="viewMode === 'image'">
             <img :src="card.physicalCardImageUrl ?? card.imageUrl" :alt="card.name" loading="lazy"
+              :class="card.physicalCardImageHalf ? `split-${card.physicalCardImageHalf}` : undefined"
               @error="($event.target as HTMLImageElement).style.opacity = '0.2'; devLog('render', 'image load failed', { card: card.name, url: card.physicalCardImageUrl ?? card.imageUrl })" />
             <span class="type-badge" :style="{ background: TYPE_COLOR[card.cardType] + '22', color: TYPE_COLOR[card.cardType] }">
               {{ card.cardType }}
             </span>
+            <!-- why: split cards share one landscape image with another face;
+                 flag them on the tile and name the other half on hover.
+                 Top-left is free (twist/pattern badges sit top-right) and an
+                 overlay keeps the footer one line at the 130px minimum. -->
+            <span
+              v-if="card.splitPartnerName"
+              class="split-tile-badge"
+              :title="`Split card — other half: ${card.splitPartnerName}`"
+            >Split</span>
             <span
               v-if="card.twistPattern && twistPatternMap.get(card.twistPattern)"
               class="twist-tile-badge"
@@ -196,7 +206,12 @@ watch(() => props.selectedKey, (newKey) => {
 .img-wrap { position: relative; width: 100%; aspect-ratio: 3/4; background: #12121a; overflow: hidden; }
 .img-wrap.data-expanded { aspect-ratio: auto; }
 .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* why: split-card faces share one landscape image; anchor each face's crop to
+   its own half so the tile shows that face, not the center seam. */
+.img-wrap img.split-left { object-position: left center; }
+.img-wrap img.split-right { object-position: right center; }
 .type-badge { position: absolute; bottom: 4px; left: 4px; font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 3px; font-weight: 600; text-transform: capitalize; }
+.split-tile-badge { position: absolute; top: 4px; left: 4px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #e0e0ff; background: rgba(42, 42, 90, 0.85); border: 1px solid #5050a0; border-radius: 3px; padding: 0.05rem 0.3rem; line-height: 1.3; cursor: help; }
 .twist-tile-badge { position: absolute; top: 4px; right: 4px; font-size: 0.75rem; line-height: 1; background: rgba(0, 0, 0, 0.55); border-radius: 4px; padding: 2px 4px; cursor: help; }
 .pattern-tile-badge { position: absolute; top: 4px; right: 4px; font-size: 0.75rem; line-height: 1; background: rgba(0, 0, 0, 0.55); border-radius: 4px; padding: 2px 4px; cursor: help; }
 .tile-info { padding: 0.4rem 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; }

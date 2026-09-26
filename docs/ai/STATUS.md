@@ -7,6 +7,356 @@
 
 ## Current State
 
+### D-24603 — Henchmen are Villains for "Whenever you defeat a Villain or Mastermind" (direct fix) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** Defeating a
+henchman now triggers "Whenever you defeat a Villain or Mastermind this turn" abilities, as Universal
+Rules v23 prints ("Henchman Villain cards are indeed Villains"). Found in the operator's WP-767 live
+check: in a solo Zarathos / Midnight Massacre match, round 20, three Snarling Fangs armed under
+Moonlight and the player then defeated Savage Land Mutates, but no KO was offered.
+
+- **Engine.** `fightVillain` signals every successful defeat, villain or henchman. This reverses
+  #2030's henchman exclusion, which assumed henchmen are not Villains. Affected cards: Diamond Form,
+  Impossible Trick Shot, Overwhelming Firepower, Snarling Fangs.
+- **Counts and gates.** Engine 4499/0 (two tests intentionally flipped to "a henchman counts").
+  `pnpm -r --no-bail test` → 0 fail; the core oracles and the `sim:runtime-observed` /
+  `sim:coverage` / feed checks are unchanged.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator solo match `mdns/zarathos` /
+  `mdns/midnight-massacre` (build `d1a71c1`), log 17.2.11 → 17.2.16: Snarling Fangs played under
+  Moonlight logged "is waiting". The player then defeated Savage Land Mutates, a **henchman**,
+  and the KO fired: a S.H.I.E.L.D. Trooper was KO'd from the cards played that turn. (The first
+  post-deploy match had no henchman defeat while Fangs was armed; this second match exercised it.)
+
+### WP-760 — The Fallen fight-side: Blood Frenzy, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (EC-797 / D-24589) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** The Fallen's
+fight-side text now works:
+- **Metarchus and Salomé (Blood Frenzy):** they cost +1 attack for each different Victory Point
+  value in the fighting player's Victory Pile. The City tile's `Fight N` badge shows the real cost
+  (via WP-750).
+- **Atrocity:** defeating it rescues a Bystander.
+- **Patriarch:** defeating it reveals your deck top and draws it if it costs 3 or less.
+- **Salomé:** defeating her opens "KO up to 2 cards from your discard pile".
+
+Salomé's Escape (Ascend to an additional Mastermind) stays deferred.
+
+- **Engine.**
+  - `resolveFightCost` takes an optional fighting player and adds WP-765's shared distinct-VP
+    count for flagged villains. All three callers pass the active player, so the fight gate, the
+    bot and the projection agree.
+  - New omit-when-empty `G.villainBloodFrenzy`, built from the **selected** villain groups only.
+    That keeps every non-Fallen match byte-identical.
+  - Two new villain primitives (26 → 28).
+  - `PendingKoDiscardChoice.sourceCardId?` names Salomé in the log; Maniacal Tyrant's log is
+    unchanged.
+- **Client.** The one declared copy fix: the KO-from-discard prompt header is source-neutral.
+- **Counts.**
+  - Engine 4445/0 → 4472/0 (+27). The only pre-existing test edit is the intentional
+    primitive drift pin.
+  - arena-client 2139/0 → 2141/0.
+  - All data and sim gates → 0; replay hash oracles unchanged; `pnpm -r --no-bail test` → 0 fail.
+  - Rebased and re-verified on top of WP-767 (#2419): engine 4496/0 on the combined tree.
+- **Real-data setup check.** A Fallen match flags Metarchus ×2 and Salomé ×1, all in the Villain
+  Deck. A core HYDRA match omits the field.
+- **Pending (D-24026).** Operator live-verify in a match with The Fallen:
+  - Metarchus shows `Fight 3 + N`, where N is your distinct VP count, and stays disabled below it.
+  - Patriarch draws a card that costs 3 or less.
+  - Salomé opens the KO-up-to-2 prompt, and the log names her.
+
+### WP-767 — Snarling Fangs Moonlight: "you may KO one of your Heroes" on each defeat (EC-804 / D-24600) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** Werewolf by
+Night's Snarling Fangs gains its Moonlight ability. Played under Moonlight, each Villain or Mastermind
+defeat later that turn (each tactic counts; since D-24603 a henchman counts too) offers **"You may KO a card"**,
+listing the player's Heroes in hand and the cards they played this turn. Wounds and the discard pile
+are never offered, and the player may decline. Under Sunlight or neither the line does nothing, and
+it logs "did not activate — it isn't Moonlight". The `moonlight … parse-unrecognized` hollow for
+Snarling Fangs is gone.
+
+- **Engine.** A new no-magnitude keyword `optional-ko-your-hero` parks a no-reward entry on the
+  shared optional-KO queue with `koZones: ['hand','inPlay']` and a new `koHeroesOnly: true`.
+  The projection, the bot and the default selector now honour a `koZones` that omits discard
+  (new `allowDiscard` parameter, default true). Moonlight is checked at play and again at each
+  defeat through the existing D-24467 fire-time re-evaluation; there is no deferral change.
+  Snarling Fangs may KO itself, and its armed grant keeps firing that turn.
+- **Card data.** Two markers on the Moonlight line; the entry left `DAY_NIGHT_UNMODELED_LINES`
+  (8 remain). Feeds regenerated (`runtime-observed-hollows` `totalObs` 2206 → 2184).
+- **Client.** The no-reward optional-KO heading is now the generic "You may KO a card" (Radioactive
+  Riot's prompt reads correctly either way).
+- **Counts and gates.**
+  - Engine 4445/0 → 4469/0 (rebased onto WP-757; 4337 → 4361 before it); arena-client 2139/0; typecheck 0.
+  - HERO_KEYWORDS 72 → 73; HERO_EFFECT_HANDLERS 56 → 57.
+  - Core `finalStateHash` and PAR oracles unchanged.
+  - All feed checks, `sim:runtime-observed:check` (the sim-hang gate) and `sim:coverage --check` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Replay note.** Pre-WP-767 matches that played Snarling Fangs under Moonlight and then defeated
+  an enemy cannot be re-verified under D-24119. No competitive or gauntlet pool is affected.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator solo match `mdns/zarathos` /
+  `mdns/midnight-massacre` (Peter Parker / Storm / Werewolf by Night), build `d1a71c1`:
+  - log 11.2.9 → 11.2.17 and 18.2.10 → 18.2.16: Snarling Fangs played under Moonlight logged
+    "is waiting". A later Zarathos tactic defeat then offered the KO, and the operator KO'd a
+    S.H.I.E.L.D. Trooper from the cards played that turn. The ability fired once per defeat.
+  - every Sunlight play (log 3.2.2, 6.2.2, 8.2.2, 11.2.5 …) logged "did not activate — it isn't
+    Moonlight", with no "is waiting" line.
+  - The log records only the chosen card, not the prompt's full list; the hand + played-this-turn
+    scope is pinned by the round-trip test.
+
+### WP-757 — Haunt keyword engine: haunted HQ Heroes, exorcise, The Fallen's Ambush Haunts (EC-794 / D-24587) (2026-09-25)
+
+**Engine + card data; user-visible on `play.legendary-arena.com` once WP-759 (the client affordance)
+deploys with it — live-verify operator-pending (D-24026).** The Fallen (always led by Zarathos) now
+Haunt on entry: Metarchus the rightmost unhaunted HQ Hero, Atrocity the leftmost, Patriarch the
+lowest-index unhaunted Hero costing 3 or less. The Haunting Villain leaves the City and can't be
+fought; the Haunted Hero can't be recruited (not even for free). A player pays the Hero's cost to
+exorcise it — KO it or give it to any player — and the Villain drops into the City, ignoring its Ambush.
+
+- **Engine.** Omit-when-absent `G.hqHaunters` (index-keyed, so refills inherit the haunter);
+  `board/haunt.logic.ts`; recruit blocked in exactly four places; `isMastermindHaunting` gates
+  `fightMastermind`, both free-defeat builders and the bot intent (the `mastermind` haunter kind ships
+  for WP-758); new `exorciseHauntedHero` move; `resolveVillainEscape` extracted mechanically from the
+  reveal path so `enterCityIgnoringAmbush` keeps reveal-parity escapes; `haunt-hq-hero` villain
+  primitive (26th); uniqueness invariant visits haunters; UIState `hq.haunters` (Villain display
+  embedded) + `mastermind.isHaunting`; sim / PAR / replay dispatch; bots exorcise at score 75.
+  No `apps/*` change — server autoplay already offers the move (D-24591).
+- **Counts.** Engine 4235/0 → 4343/0 (drift pins +1: moves 44 → 45, villain primitives 25 → 26; every
+  existing reveal test unchanged). `pnpm -r build && pnpm -r --no-bail test` 0 fail in every package
+  (server 1636 / 1430 pass / 206 skip DB-less; arena-client 2115/0). `cards:check`, effect-index,
+  mechanics, `ledger:villains`, `sim:runtime-observed`, `sim:coverage --check` all 0. No hash re-pin.
+- **Live-verify (operator-pending, after WP-759 deploys).** Human-driven solo `mdns/zarathos` match:
+  a Fallen Ambush haunts a Hero; Recruit is refused on it; exorcising drops the Villain into the City.
+- **Unblocks.** WP-759 (client) now; WP-758 (Zarathos) once WP-749 lands; WP-760 sequenced after.
+
+### WP-747 — A Villain-Deck Bystander is captured by the Villain closest to the Villain Deck (EC-784 / D-24571) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** A Bystander
+revealed from the Villain Deck is now captured by the City villain **closest to the Villain Deck**
+(the lowest occupied space), as Universal Rules v23 L606–608 print. It used to go to the villain about
+to escape. In live match `PaT5TygrTPQ` that piled four hostages onto The Leader at spaces 3–4, and he
+escaped carrying 6 against Midtown's 8-Bystander loss threshold. Under Midtown this compounds with
+WP-748: hostages now sit on the newest villain, which gets +1 attack per hostage.
+
+- **Engine.** The captor scan direction is flipped in `revealVillainCard`. Everything else is
+  byte-identical: the Mastermind fallback, the attach, the log line and the `bystanderRevealed`
+  event. There is no new `G` field, move or effect. The JSDoc and 4 ewiki pages are reworded, and
+  D-24571 corrects D-24254's passing restatement.
+- **Counts and gates.** This was the second of the WP-748 pair, run on the merged tree.
+  - Engine 4333/0 → 4334/0.
+  - Replay sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged.
+  - `sim:coverage --check`, `sim:runtime-observed:check`, `wiki-viewer:project` and
+    `check-links` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Follow-up (done).** The PAR profile re-pin landed as #2405: Midtown bot wins 2059 → 1571 across
+  the 16 Midtown scenarios.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator 2p match `25-GJ0oXBwy`
+  (Red Skull / Midtown Bank Robbery / HYDRA + Masters of Evil / Savage Land Mutates; build
+  `6a1ce21`). Every Bystander revealed with two or more City spaces occupied was captured by the
+  villain at the lowest occupied space, the newest arrival (log 6.1.3, 8.1.1, 17.1.1, 19.1.3,
+  22.2.12). On 8.1.1 space 0 had just been cleared, and the villain at space 1 correctly took it.
+
+### WP-748 — Midtown Bank Robbery family: each Villain gets +1 attack for each Bystander it has (EC-785 / D-24572) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Under
+Midtown Bank Robbery and its reprints (co2e Bank Robbery Hostage Crisis, msp1 Destroy the Cities of
+Earth!), a Villain now costs its printed attack plus one for each Bystander it holds, as the scheme
+prints. Before, the engine ignored the rule: in live match `PaT5TygrTPQ` the bot ally beat HYDRA
+Kidnappers holding 3 Bystanders with 3 attack instead of 6. The new cost reaches three places at once:
+- the fight gate;
+- the bot's legal moves;
+- the City `fightCost`, shown on the tile's `Fight N` badge through WP-750.
+
+- **Engine only.** It is a private scheme-gated bonus inside `resolveFightCost`, the single
+  fight-cost authority, beside the Portals bonus. It is not applied to the Mastermind or to
+  printed-attack readers. There is no client edit and no `G` / UIState field.
+- **Counts and gates.**
+  - Engine 4324/0 → 4333/0.
+  - Replay sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged.
+  - `sim:coverage --check` and `sim:runtime-observed:check` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Follow-ups.**
+  - The PAR profile re-pin (separate `INFRA:`, after WP-747 lands too).
+  - The per-card "+N per Bystander" villains, a separate rule.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Same operator match `25-GJ0oXBwy`
+  (build `6a1ce21`):
+  - the diagnostics `uiStateSnapshot` shows every City villain at `fightCost` = printed + N
+    (Savage Land Mutates 3+0 / 3+2 / 3+3, Baron Zemo 6+1);
+  - Red Skull stays at his printed 7 while holding 2 Bystanders (Villains only);
+  - on turn 3 the operator could not fight Savage Land Mutates (printed 3, holding 2 Bystanders)
+    with 3 attack. The engine and the client gate agreed on cost 5.
+
+  The operator did not notice the `Fight 5` badge on the tile. It rendered, but the small dark pill
+  was too quiet at the moment it mattered. Follow-up INFRA (Jeff feedback): the badge is louder
+  when the player can't afford the projected cost.
+  The match was lost on turn 23: 10 Bystanders were carried away (threshold 8) by three escapes
+  holding 2, 4 and 4.
+
+### WP-766 — Day/Night badge on the play HUD (EC-803; consumes D-24598) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** In a match with
+Sunlight/Moonlight Heroes, a badge beside the Danger Meter shows **Sunlight** (sun icon), **Moonlight**
+(moon icon) or **Neither**, with the rule as a tooltip. Players no longer have to count odd and even HQ
+costs to know which of their day/night lines will fire. Every other match's HUD is unchanged.
+
+- **Client only.** `DayNightBadge.vue` renders the engine-projected `snapshot.hq.dayNight` verbatim
+  (WP-765); the client never computes day/night. Copy lives in `vfx/dayNightDisplay.ts`.
+- **Accessibility.** Inline-SVG Lucide icons (no Unicode glyphs; none for Neither), the word always
+  shown, `role="status"` so a flip is announced, `aria-label` from `dayNightAriaText`.
+- **Counts.** arena-client 2116 → 2124 / 0 fail; typecheck 0; `pnpm -r --no-bail test` → 0 fail.
+- **Layout (preview, fixture + dev-store injection, not committed).** 1280×720: HUD height 39.57px in
+  all three states, equal to the no-badge render (row 2 does not wrap). Mobile: no horizontal scroll
+  (scrollWidth = clientWidth = 375); HUD height 171px in every state.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** In an operator Werewolf by Night match (build
+  `573d4b1`) the badge rendered and matched the engine (final HQ all cost 2 → Sunlight), but the
+  operator did not notice it: as a plain word it read as one more stat in the row. Fixed by the
+  pill treatment in the follow-up INFRA change (Jeff feedback, #2406). After that deploy the operator
+  saw the pill switch between Sunlight and Moonlight as the HQ changed.
+
+### WP-750 — Client Fight gating reads the engine's projected fight cost (EC-787 / D-24574) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Fight
+buttons now agree with the engine on cost. The City villain and Mastermind Fight / Excessive-Violence
+buttons gate on the cost the engine will actually charge, not the printed cost. A **Fight N** badge
+at the bottom of the tile shows that cost whenever it differs from the printed cost.
+- **Dead buttons fixed.** Villains holding captured Heroes, a Dark-Portal City space, a Skrull, and
+  the Portals Mastermind with a portal are now disabled until you can pay the real cost. Before, the
+  button was enabled and the click silently did nothing.
+- **False locks fixed.** A card with no printed attack, or a converted Killbot, is no longer shown as
+  "cannot be fought". WP-762 filled the missing printed attack values first.
+
+- **Engine.** One optional UIState field, `UIMastermindState.fightCost`
+  (`resolveMastermindFightCost`), through the full five-step with a filter pass-through for every
+  audience. No move, guard, `G` or hash change.
+- **Client.**
+  - `canFight` / `canFightWithExcessiveViolence` take the projected cost as a number.
+  - CityRow reads `UICityCard.fightCost`. MastermindTile reads `fightCost ?? display.cost`.
+  - The slash gesture inherits the gate unchanged.
+- **Counts.**
+  - Engine 4321/0 → 4324/0.
+  - arena-client 2116/0 → 2126/0; typecheck 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Verified in the preview** at 1280×720 (`?fixture=mid-turn&play=1`):
+  - three `Fight 0` badges on three enabled villains;
+  - the Mastermind keeps the null fallback with no badge;
+  - City space widths are identical with the badges shown or hidden, so the board scale is unchanged.
+- **Unblocks** WP-748 (Midtown +1 per Bystander) and WP-760 (Fallen Blood Frenzy).
+- **Pending (D-24026).** Operator live-verify on a Portals to the Dark Dimension match (check the
+  deployed gitSha), with a Dark Portal on a City space or the Mastermind:
+  - the tile shows `Fight printed+1`;
+  - Fight is disabled at exactly the printed attack;
+  - Fight is enabled at printed + 1, and the fight succeeds.
+
+### WP-763 — Scheme Evil Wins fidelity: printed twist thresholds, Villain Deck runout, last-twist interim rule (EC-800 / D-24595) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Only the 8
+core schemes modelled Evil Wins; the other 192 lost on a flat "7 twists" stand-in whatever the card
+printed. That meant 144 false twist-7 losses, 14 early losses, and 25 schemes that could never lose.
+The live report was a Midnight Massacre match that ended at twist 7; that card loses on a deck runout.
+Now:
+
+- **Printed twist counts.** 27 schemes lose at exactly their printed "Twist N: Evil Wins" (Symbiotic
+  Absorption at 11, The Time Heist at 10, Sneak Attack the Heroes' Homes at 6).
+- **Deck and stack runout.** 15 schemes lose only when the Hero Deck, Wound Stack or **Villain Deck**
+  runs out (a new pile, with an "X or Y runs out" form). Midnight Massacre never loses on twists. A
+  Villain Deck runout on those schemes is a **loss**, not the final-turn tie.
+- **Compound schemes.** 25 schemes ("3 Villains per player escaped **or** the Villain Deck runs out")
+  lose on the pile or at their last twist, whichever comes first.
+- **Everything else** uses the operator's interim rule: Evil Wins at the **last twist in that scheme's
+  Villain Deck**. The danger meter reads **"Twists (approximate)"** for it, and "Villain Deck" for
+  the new pile.
+- **Core 8 unchanged.** The `finalStateHash` sentinel and all PAR seed oracles pass untouched. Non-core
+  replays recorded before this change may end differently; published scores are not recomputed.
+- **Counts.** engine 4235/0 → 4275/0 at landing (whole repo `pnpm -r build && pnpm -r --no-bail test`
+  0 failures; re-run after rebasing onto WP-762 and WP-765); arena-client 2115/0 → 2116/0 (typecheck
+  0); `sim:coverage --check` and `sim:runtime-observed:check` 0.
+- **Live-verify (D-24026), Midnight Massacre — PASS 2026-09-26** (operator, solo vs Zarathos, build
+  `9f48893`). Twists #7–#11 were revealed on turns 23–33 and the game continued, with no "of N to
+  Evil Wins" clause on any twist line. On turn 35 the Villain Deck ran out and the match ended
+  **`scheme-wins`**, not a tie. The meter tracked `villain-deck` 35/35 (menace 1). An earlier
+  18-turn game on the same build showed `hero-deck` 22/42 as the leading condition. The run exposed
+  two misleading log lines (a "final turn… tie" announcement just before the loss, and the internal
+  name "villainDeck pile"); both are fixed by D-24599. A third game (same build, Venom hero) passed
+  twists #7–#10 without ending. The meter tracked `hero-deck` 38/42 (Hero Deck 4 left, Villain Deck
+  7 left), and the heroes won on turn 28, four cards short of a Hero Deck runout.
+- **Live-verify (D-24026), Symbiotic Absorption — PASS 2026-09-26** (operator, solo vs Zarathos, build
+  `a8bef34`). Every twist line carried the printed threshold ("Scheme Twist #N … (N of 11 to Evil
+  Wins)"). Twist #7 on turn 17 resolved with no scheme loss, and the heroes won that same turn. The
+  meter read `twists` 7/11 (menace 0.64, rising), the printed count and not the old flat 7. **WP-763
+  live-verify is complete**: both Midnight Massacre and Symbiotic Absorption pass.
+
+### WP-765 — Sunlight / Moonlight: day/night gates hero lines; hero Blood Frenzy (EC-802 / D-24598) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Midnight Sons
+and New Mutants day/night heroes stop granting their bonuses on every play. Each Sunlight line now
+fires only when most HQ Heroes have even printed costs, each Moonlight line only when most are odd,
+and neither on a tie. Analyze Planetary Rotation no longer gives +2 recruit **and** +2 attack every
+time; Release the Beast, Analyze Planetary Rotation and Nanite Shapeshifter give both only when their
+"Instead, you get both" condition holds.
+
+- **Engine.** New pure `computeDayNight(G)` (printed HQ costs). New `sunlightInEffect` /
+  `moonlightInEffect` conditions, re-read per line. New composite `day-night-both` keyword fuses the
+  three "both" cards. Day/night conditions are excluded from the Synergy Rate.
+- **Blood Frenzy.** Hero `blood-frenzy` / `blood-frenzy-recruit` on a new shared
+  `economy/bloodFrenzy.logic.ts` (WP-760 consumes it), with a scoring-parity test. Works on Release
+  the Beast, Creature of Dawn and Dusk, Mesmerize (as recruit) and Insatiable Craving.
+- **Markers.** Draw, put-bottom, discard-draw, reveal-may-KO and KO-Wound lines that were hollow now
+  resolve (new `mdns` marker section; Scalded by Sunlight un-deferred).
+- **Honest hollows.** The 9 `DAY_NIGHT_UNMODELED_LINES` keep their gate but grant nothing and record a
+  hollow when their state holds (moonlight 274 → 44, sunlight 107 → 29 in the sweep).
+- **Projection.** `UIHQState.dayNight`, present only when a day/night hero is in the match (Warlock-only
+  included), passed through the audience filter. The badge is WP-766.
+- **Counts.** `HERO_KEYWORDS` 69 → 72, handlers 53 → 56. `pnpm -r build && pnpm -r --no-bail test` →
+  0 fail (engine 4235 → 4281, arena-client 2115/0, dashboard 505/0, server 1636 / 1430 pass / 206
+  skip). All six card / feed gates → 0. No hash / PAR re-pin. Dashboard in-play pin re-pinned
+  percentResolved 24.3 → 37.6 (totalObs 3019 held).
+- **Replay note.** Pre-WP-765 mdns / nmut replays will not re-execute identically; D-24119
+  re-verification of ranked mdns / nmut matches recorded before this WP will mismatch.
+- **Live-verify (D-24026) 2026-09-26 — PASS (tie branch waived).** Four operator Zarathos /
+  Midnight Massacre matches with Werewolf by Night on `play.legendary-arena.com` (builds `9f48893`,
+  `573d4b1`), checked against the card data:
+  - Release the Beast with no instinct Hero gave +3 recruit only under Sunlight (turn 25 of match 2,
+    turn 19 of match 3); every "both" play had an instinct Hero played earlier that turn.
+  - Release the Beast with no instinct Hero gave Blood Frenzy +4 attack only under Moonlight (turn 14
+    of match 4; the Victory Pile held {1, 2, 4, 6}), and +3 recruit only under Sunlight on turn 12 of
+    the same match. Both single-state branches are confirmed live.
+  - Blood Frenzy counts matched the printed VP (e.g. {1, 2, 3, 4, 5, 6} → +6); the final scores
+    recompute exactly (56 / 60 / 50 / 39 VP).
+  - Starlit Path, Snarling Fangs and Track the Captives gated per state; the unmodelled Snarling Fangs
+    Moonlight line recorded its expected `moonlight` hollow.
+  - **Tie branch waived by the operator (2026-09-26).** Release the Beast with no instinct Hero on a
+    tied HQ → nothing needs an empty HQ slot with an even odd/even split, which is rare in live play;
+    it is covered by the engine tests (`heroEffects.execute.test.ts`, the `neither` cases).
+    **WP-765 D-24026 live-verify: CLOSED.**
+
+### WP-762 — Fill the missing printed attack values: Masterminds and henchmen stop fighting for 0 (EC-799 / D-24594) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** 14 Mastermind
+base cards and 32 henchman groups had no attack value in the data, so the engine and the bot fought
+them for **0**. 13 of those Masterminds and 20 of the groups sit in ranked gauntlet menus. They now
+cost what they print, for example Thanos 24, Dormammu 11, Carnage 9, Mandarin 16, and Hellfire Cult 3.
+This closes the free-fight path before WP-750 removes the client's accidental lock.
+
+- **Converter.** `convert-cards-v15.mjs` changes in two places:
+  - The first non-tactic, non-epic Mastermind face falls back to the upstream Mastermind-level
+    `vAttack`.
+  - Henchman groups emit the upstream `vAttack` / `vp`.
+
+  Five base-card `vAttack: null` patch keys were removed (pttr ×2, gotg ×2, fear ×1).
+- **Data.** Committed `data/cards` edits are surgical: `null` → value on 14 base faces, plus line
+  insertions for the henchman fields. The 6 amwp/wtif groups were transcribed from their R2 card
+  images; D-24594 has the URLs and values. `cards:check` reproduces every fill (18 sets / 66 leaves),
+  and reverting one fill makes it fail.
+- **Counts.** `pnpm -r build && pnpm -r --no-bail test` → 0 fail (engine 4235/0, arena-client
+  2115/0, server 1636 / 1430 pass / 206 skip). The five data gates and `gauntlet:loadouts:check` → 0.
+  The dist one-liner prints `24 11 3`. No engine source change, no feed regenerated, no fixture
+  re-pinned.
+- **Residual exposures** (named engine follow-ups, D-24594 §7):
+  - Indestructible Man (prints 0), Killmonger, and Jameson.
+  - The Thanos / Mandarin modifiers, and the `N+` conditional bonuses.
+  - The four variable-attack villains.
+- **Replay note.** Stored pre-WP-762 replays that fought these cards will not re-execute
+  identically, because `cardStats` / `cardVictoryPoints` changed.
+- **Pending (D-24026).** Operator live-verify after deploy: in a live `gotg/thanos` or
+  `dstr/dormammu` match, fighting the Mastermind must require 24 / 11 attack.
+
 ### WP-761 — Long-press slash: a 350 ms hold arms slash-to-fight on a scrolling City row (EC-798 / D-24592) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (real-device live-verify operator-pending, D-24026).** On

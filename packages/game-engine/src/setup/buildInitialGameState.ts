@@ -38,14 +38,17 @@ import {
 } from './pilesInit.js';
 import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
-import { resolveSchemeLossPileSetupSize } from '../rules/schemeLossProgress.js';
+import {
+  resolveSchemeLossPileSetupSize,
+  resolveSchemeLossVillainDeckSetupSize,
+} from '../rules/schemeLossProgress.js';
 import {
   buildVillainDeck,
   isVillainDeckRegistryReader,
 } from '../villainDeck/villainDeck.setup.js';
 import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
-import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces } from './buildHeroDeck.js';
+import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
 import {
   buildMastermindState,
@@ -57,6 +60,7 @@ import {
 } from './heroAbility.setup.js';
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
+import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -400,6 +404,11 @@ export function buildInitialGameState(
     config,
   );
 
+  // why: WP-760 / D-24589 — Blood Frenzy villain instances (Metarchus, Salomé),
+  // scanned once at setup from the selected villain groups and read only by
+  // resolveFightCost. Narrow test mocks → empty record (omitted below).
+  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, config);
+
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
   // Separate from scheme twist execution (WP-024).
@@ -545,6 +554,12 @@ export function buildInitialGameState(
   // contrast transformTargets, which is always-seeded and DID re-pin).
   const splitFaces = buildSplitFaces(effectiveHeroDeckIds, registry);
   const splitFacesFields = Object.keys(splitFaces).length > 0 ? { splitFaces } : {};
+  // why: display-only printed-order capture for the "choose a side" picker (sides[] is not
+  // left-to-right; lower slot = left half). Same absent-when-empty spread, so games whose split
+  // cards are all primary-on-left (and every no-split game) serialize byte-identically.
+  const splitFacesAlternateOnLeft = buildSplitFaceAlternateOnLeft(effectiveHeroDeckIds, registry);
+  const splitFacesAlternateOnLeftFields =
+    Object.keys(splitFacesAlternateOnLeft).length > 0 ? { splitFacesAlternateOnLeft } : {};
 
   // why: WP-670 / D-24484 — Scheme Transform. For a scheme in SCHEME_TRANSFORM_TARGETS,
   // capture its Great Old One flip target + that face's ability text (read the same way as
@@ -597,6 +612,16 @@ export function buildInitialGameState(
     config.schemeId,
     shuffledHeroDeck.length,
     piles.wounds.length,
+  );
+  // why: WP-763 / D-24595 — the Villain Deck gets its OWN lazy field rather than
+  // reusing schemeLossPileSetupSize, so the sentinel (core/legacy-virus-the) hash
+  // that depends on that field is untouched, and a "Hero Deck or Villain Deck"
+  // scheme can measure both piles. Written only when the scheme's condition names
+  // 'villainDeck'. Sized from the built deck (after any Skrull conversion) — never
+  // from the villainDeckCardTypes key count, which a Secret Invasion twist mutates.
+  const schemeLossVillainDeckSetupSize = resolveSchemeLossVillainDeckSetupSize(
+    config.schemeId,
+    skrullConversion.villainDeckState.deck.length,
   );
 
   // why: build the base state first, then apply scheme setup instructions.
@@ -660,6 +685,12 @@ export function buildInitialGameState(
     // serialize a key into every game's state and move PRE_WP080_HASH, which the
     // packet treats as a STOP condition rather than a re-pin.
     ...(schemeLossPileSetupSize !== undefined ? { schemeLossPileSetupSize } : {}),
+    // why: WP-763 / D-24595 — omit-when-absent, the same lazy pattern, so every
+    // scheme whose condition does not name the Villain Deck (all 8 core schemes)
+    // stays byte-identical.
+    ...(schemeLossVillainDeckSetupSize !== undefined
+      ? { schemeLossVillainDeckSetupSize }
+      : {}),
     // why: KO pile starts empty; cards enter via koCard helper (WP-017)
     ko: [],
     // why: no bystanders attached at game start; populated during reveals (WP-017)
@@ -690,6 +721,7 @@ export function buildInitialGameState(
     // the loadout has split heroes (conditional spread), so a no-split game (incl. the
     // sentinel) serializes byte-identically → no re-pin.
     ...splitFacesFields,
+    ...splitFacesAlternateOnLeftFields,
     // why: mastermind state built at setup from registry; tactics deck
     // shuffled deterministically; base card fightCost in G.cardStats
     mastermind: mastermindState,
@@ -787,6 +819,10 @@ export function buildInitialGameState(
     // gate treats a missing entry as "no requirement"), so matches without Blob /
     // Venom / Zombie Venom keep a byte-identical finalStateHash.
     ...(Object.keys(villainDefeatRequirements).length > 0 ? { villainDefeatRequirements } : {}),
+    // why: WP-760 / D-24589 — same hash-stability discipline: villainBloodFrenzy is on G
+    // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
+    // a byte-identical finalStateHash.
+    ...(Object.keys(villainBloodFrenzy).length > 0 ? { villainBloodFrenzy } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

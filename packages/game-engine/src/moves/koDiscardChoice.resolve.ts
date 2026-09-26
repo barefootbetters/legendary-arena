@@ -156,13 +156,35 @@ export function resolveKoDiscardChoice(
 
   // Step 5: Narrate the resolved KO. `G.messages` is hash-excluded (D-24081), so this
   // adds no determinism / sentinel impact.
+  // why: WP-760 / D-24589 — two cards now park this choice. Salomé's entry carries
+  // `sourceCardId`, named from G.cardDisplayData; Loki's Maniacal Tyrant entry never sets
+  // it, so its log line stays byte-identical.
+  let sourceName = 'Maniacal Tyrant';
+  if (front.sourceCardId !== undefined) {
+    sourceName = resolveSourceCardName(G, front.sourceCardId);
+  }
   pushLog(
     G,
-    `Player ${playerID} KO'd ${String(chosenCards.length)} card(s) from their discard pile (Maniacal Tyrant).`,
+    `Player ${playerID} KO'd ${String(chosenCards.length)} card(s) from their discard pile (${sourceName}).`,
     'applied',
   );
 
   // Step 6: Front-pop ONLY on success (front-pop = Array.shift). An empty selection is a
   // successful "KO nothing" and still pops so the board unfreezes.
   queue.shift();
+}
+
+/**
+ * Resolves the display name of the card that parked a KO-from-discard choice.
+ *
+ * @param G - Current game state (read-only).
+ * @param sourceCardId - The parking card's ext_id.
+ * @returns The card's display name, or the raw ext_id when no name is available.
+ */
+function resolveSourceCardName(G: LegendaryGameState, sourceCardId: CardExtId): string {
+  const display = G.cardDisplayData?.[sourceCardId];
+  if (display && typeof display.name === 'string' && display.name.length > 0) {
+    return display.name;
+  }
+  return sourceCardId;
 }

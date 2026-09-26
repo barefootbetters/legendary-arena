@@ -3,19 +3,19 @@
     "finalStateHash": "492fe6bfda41cf79e263f25fb40d88f2c014fc2a7c008eb9e88a11c467e8f235",
     "messages": [
       {
-        "text": "[Master Strike] core/dr-doom captured a Bystander.",
+        "text": "1.1.1 [Master Strike] core/dr-doom captured a Bystander.",
         "outcome": "applied"
       },
       {
-        "text": "[Dr. Doom Master Strike] Player 0 must put 2 cards on top of their deck — choose which cards.",
+        "text": "1.1.2 [Dr. Doom Master Strike] Player 0 must put 2 cards on top of their deck — choose which cards.",
         "outcome": "neutral"
       },
       {
-        "text": "[Dr. Doom Master Strike] Player 1 put 2 card(s) on top of their deck.",
+        "text": "1.1.3 [Dr. Doom Master Strike] Player 1 put 2 card(s) on top of their deck.",
         "outcome": "neutral"
       },
       {
-        "text": "Mastermind strike revealed — strike count incremented.",
+        "text": "1.1.4 Mastermind strike revealed — strike count incremented.",
         "outcome": "neutral"
       }
     ],
@@ -48,10 +48,10 @@
           "masterStrikeCount": 1
         },
         "messages": [
-          "[Master Strike] core/dr-doom captured a Bystander.",
-          "[Dr. Doom Master Strike] Player 0 must put 2 cards on top of their deck — choose which cards.",
-          "[Dr. Doom Master Strike] Player 1 put 2 card(s) on top of their deck.",
-          "Mastermind strike revealed — strike count incremented."
+          "1.1.1 [Master Strike] core/dr-doom captured a Bystander.",
+          "1.1.2 [Dr. Doom Master Strike] Player 0 must put 2 cards on top of their deck — choose which cards.",
+          "1.1.3 [Dr. Doom Master Strike] Player 1 put 2 card(s) on top of their deck.",
+          "1.1.4 Mastermind strike revealed — strike count incremented."
         ]
       }
     ],

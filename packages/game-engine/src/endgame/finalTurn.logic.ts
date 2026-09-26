@@ -22,6 +22,7 @@ import type { LegendaryGameState } from '../types.js';
 import { ENDGAME_CONDITIONS } from './endgame.types.js';
 import { evaluateEndgame } from './endgame.evaluate.js';
 import { pushLog } from '../log/logPush.js';
+import { isSchemeLossPile } from '../rules/schemeResourceLoss.js';
 
 /**
  * Latches the deck-exhaustion final turn if either shared deck is now empty.
@@ -47,6 +48,20 @@ export function latchFinalTurnIfDeckExhausted(gameState: LegendaryGameState): vo
   }
 
   gameState.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED] = 1;
+
+  // why (D-24599): when the deck that just emptied is one the active scheme
+  // LOSES on (Midnight Massacre's Villain Deck, Civil War's Hero Deck), the
+  // per-move pile check that runs right after this latch ends the game as a
+  // scheme loss (D-24319). Announcing "final turn… or the game ends in a tie"
+  // one line before "Scheme loss triggered" told the player two contradicting
+  // things. The counter is still latched exactly as before; only the misleading
+  // announcement is skipped.
+  const isVillainDeckLoss = isVillainDeckEmpty && isSchemeLossPile(gameState, 'villainDeck');
+  const isHeroDeckLoss = isHeroDeckEmpty && isSchemeLossPile(gameState, 'heroDeck');
+  if (isVillainDeckLoss || isHeroDeckLoss) {
+    return;
+  }
+
   const emptiedDeckName = isVillainDeckEmpty ? 'villain' : 'hero';
   pushLog(
     gameState,

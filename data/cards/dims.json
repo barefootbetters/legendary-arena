@@ -543,7 +543,7 @@
           "name": "J. Jonah Jameson",
           "slug": "j-jonah-jameson",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/dims/dims-mm-j-jonah-jameson.webp",
           "abilities": [
             "Start of Game: Put 2 S.H.I.E.L.D. Officers per player into a face down “Angry Mobs“ stack.",

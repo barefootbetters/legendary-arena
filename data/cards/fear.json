@@ -676,7 +676,7 @@
           "name": "Uru-Enchanted Iron Man",
           "slug": "uru-enchanted-iron-man",
           "tactic": false,
-          "vAttack": null,
+          "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/fear/fear-mm-uru-enchanted-iron-man.webp",
           "abilities": [
             "Always Leads: The Mighty",

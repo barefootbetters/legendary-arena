@@ -17,11 +17,13 @@ import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { TURN_STAGES } from '../turn/turnPhases.types.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
-import { initializeCity, initializeHq } from '../board/city.logic.js';
+import { initializeCity, initializeHq, refillHqSlot } from '../board/city.logic.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
-import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { captureHeroFromHq } from '../board/heroCapture.logic.js';
+import { hauntHqSlot, isHqSlotHaunted } from '../board/haunt.logic.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -496,5 +498,94 @@ describe('recruitHero — WP-273 Wall-Crawl deck-top placement', () => {
     const playerZones = moveContext.G.playerZones['0']!;
     assert.ok(playerZones.discard.includes(nonWallCrawlCard), 'non-wall-crawl Hero routes to discard');
     assert.deepStrictEqual(playerZones.deck, ['already-on-deck'], 'deck order is unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — a Haunted Hero cannot be recruited; the haunter stays on the slot
+// ---------------------------------------------------------------------------
+
+describe('recruitHero — Haunt (WP-757 / D-24587)', () => {
+  it('recruiting a haunted slot changes nothing (no spend, no gain, slot and haunter unchanged)', () => {
+    const gameState = createMockGameState({
+      hq: ['hero-a', 'hero-b', null, null, null],
+      heroDeck: ['refill-card'],
+    });
+    gameState.cardStats = { 'hero-a': { ...makeCardStatEntry(), cost: 2 } };
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit: 5 };
+    hauntHqSlot(gameState, 0, { kind: 'villain', cardId: 'haunting-villain' });
+    const snapshotBefore = JSON.stringify(gameState);
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'G must be byte-identical after recruiting a haunted slot');
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 0, 'no recruit is spent');
+    assert.equal(moveContext.G.hq[0], 'hero-a', 'the Haunted Hero stays in the HQ');
+    assert.ok(isHqSlotHaunted(moveContext.G, 0), 'the haunter stays on the slot');
+  });
+
+  it('recruiting an unhaunted slot while another slot is haunted still works', () => {
+    const gameState = createMockGameState({
+      hq: ['hero-a', 'hero-b', null, null, null],
+      heroDeck: ['refill-card'],
+    });
+    hauntHqSlot(gameState, 0, { kind: 'mastermind' });
+
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 1 });
+
+    assert.ok(moveContext.G.playerZones['0']!.discard.includes('hero-b'), 'hero-b is recruited to discard');
+    assert.equal(moveContext.G.hq[1], 'refill-card', 'slot 1 is refilled');
+    assert.equal(isHqSlotHaunted(moveContext.G, 1), false, 'the refilled recruit slot is not haunted');
+    assert.equal(moveContext.G.hq[0], 'hero-a', 'the haunted slot is untouched');
+    assert.deepStrictEqual(moveContext.G.hqHaunters![0], { kind: 'mastermind' }, 'the haunter on slot 0 is untouched');
+  });
+
+  it('when a Haunted Hero is captured out of the HQ, the haunter stays and haunts the refill Hero', () => {
+    const gameState = createMockGameState({
+      hq: [null, null, null, null, 'hero-e'],
+      heroDeck: ['refill-card'],
+    });
+    gameState.villainAttachedHeroes = {};
+    hauntHqSlot(gameState, 4, { kind: 'villain', cardId: 'haunting-villain' });
+
+    // why: rulebook v23 p.27 — "the Haunting Villain stays in that HQ space and Haunts
+    // the new Hero". captureHeroFromHq is a non-recruit exit path that nulls + refills.
+    const captureResult = captureHeroFromHq(gameState, 'capturing-villain', 'rightmost');
+    assert.equal(captureResult?.capturedHeroId, 'hero-e', 'the Haunted Hero was captured');
+    assert.equal(gameState.hq[4], 'refill-card', 'the slot refilled from heroDeck');
+    assert.deepStrictEqual(
+      gameState.hqHaunters![4],
+      { kind: 'villain', cardId: 'haunting-villain' },
+      'the haunter stays on the slot',
+    );
+
+    const snapshotBefore = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 4 });
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'the refill Hero is haunted, so recruit is refused');
+  });
+
+  it('when a Haunted Hero leaves via a direct null + refillHqSlot (put-bottom path), the refill Hero is haunted', () => {
+    const gameState = createMockGameState({
+      hq: ['hero-a', null, null, null, null],
+      heroDeck: ['refill-card'],
+    });
+    hauntHqSlot(gameState, 0, { kind: 'mastermind' });
+
+    // why: mirrors the put-on-bottom exit paths, which null the slot then call
+    // refillHqSlot directly without touching G.hqHaunters.
+    gameState.hq[0] = null;
+    const refillResult = refillHqSlot(gameState.hq, 0, gameState.heroDeck);
+    gameState.hq = refillResult.hq;
+    gameState.heroDeck = refillResult.heroDeck;
+    assert.equal(gameState.hq[0], 'refill-card', 'the slot refilled from heroDeck');
+    assert.ok(isHqSlotHaunted(gameState, 0), 'the haunter stays on the slot');
+
+    const snapshotBefore = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'the refill Hero is haunted, so recruit is refused');
   });
 });

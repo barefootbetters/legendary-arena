@@ -213,6 +213,14 @@ export interface HeroEffectDescriptor {
   // so this array stays plain data (no functions/Maps, acyclic). The handler safe-skips a
   // 'excessive-violence' effect that lacks it. Other keywords ignore it.
   excessiveViolenceEffects?: HeroEffectDescriptor[];
+  // why: WP-765 / D-24598 — for a 'day-night-both' effect, sunlightEffects / moonlightEffects are
+  // the already-parsed inline effects of the card's printed "[keyword:Sunlight]:" and
+  // "[keyword:Moonlight]:" lines (fused like the digest-indigestion branches; the same plain-data,
+  // acyclic nesting). heroEffectDayNightBoth runs both (Sunlight first) when the shared
+  // bothCondition / bothConditionCount upgrade holds, else the branch computeDayNight selects,
+  // else nothing. The handler treats an absent array as an empty branch. Other keywords ignore them.
+  sunlightEffects?: HeroEffectDescriptor[];
+  moonlightEffects?: HeroEffectDescriptor[];
 }
 
 // ---------------------------------------------------------------------------

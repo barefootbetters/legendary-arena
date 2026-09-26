@@ -48,6 +48,7 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { refillHqSlot } from '../board/city.logic.js';
+import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 // why: WP-694 / D-24511 — the two multi-seat tactics PARK a WP-684 pending seat choice.
 // parkSeatChoice is the foundational park entry; the mode/KO builders are pure (from the
@@ -801,6 +802,12 @@ function collectEligibleHqIndices(
   const indices: number[] = [];
   for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
     const slot = G.hq[hqIndex];
+    // why: WP-757 / D-24587 — rulebook v23 p.27: "recruit a Hero from the HQ for free"
+    // doesn't work on a Haunted Hero, since you can't recruit it. ("Gain" and put-bottom
+    // effects still reach Haunted Heroes; only this free-RECRUIT path skips them.)
+    if (isHqSlotHaunted(G, hqIndex)) {
+      continue;
+    }
     if (slot !== null && slot !== undefined && hqHeroMatchesFreeRecruitFilter(G, slot, filter)) {
       indices.push(hqIndex);
     }

@@ -659,6 +659,54 @@ describe('buildVillainAbilityHooks — play-villain-deck-cards grammar (WP-542 /
   });
 });
 
+describe('buildVillainAbilityHooks — The Fallen fight grammars (WP-760 / D-24589)', () => {
+  const registry = makeRegistry(
+    'mdns',
+    [
+      {
+        slug: 'fallen',
+        cards: [
+          {
+            slug: 'patriarch',
+            abilities: ['Fight: Reveal the top card of your deck. If it costs 3 or less, draw it. [effect:reveal-top-draw-if-cost-lte:3]'],
+          },
+          {
+            slug: 'salom-sorceress-supreme',
+            abilities: ['[keyword:Blood Frenzy]', 'Fight: KO up to two cards from your discard pile. [effect:ko-up-to-from-discard-current:2]'],
+          },
+          // why: the count is required for both primitives — a no-param or non-integer
+          // count is malformed and lands in unresolvedMarkers.
+          { slug: 'patriarch-noparam', abilities: ['Fight: nope. [effect:reveal-top-draw-if-cost-lte]'] },
+          { slug: 'salome-bad', abilities: ['Fight: nope. [effect:ko-up-to-from-discard-current:0]'] },
+        ],
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['mdns/fallen'], []));
+  const fightHook = (slug: string) =>
+    hooks.find((h) => h.cardId === `mdns-villain-fallen-${slug}-00` && h.timing === 'onFight')!;
+
+  it('parses Patriarch Fight to reveal-top-draw-if-cost-lte:3 (keyword-less)', () => {
+    assert.deepStrictEqual(fightHook('patriarch').effects, [{ primitive: 'reveal-top-draw-if-cost-lte', magnitude: 3 }]);
+    assert.deepStrictEqual(fightHook('patriarch').keywords, []);
+  });
+
+  it('parses Salomé Fight to ko-up-to-from-discard-current:2 (keyword-less)', () => {
+    assert.deepStrictEqual(fightHook('salom-sorceress-supreme').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2 },
+    ]);
+    assert.deepStrictEqual(fightHook('salom-sorceress-supreme').keywords, []);
+  });
+
+  it('rejects a missing or non-positive count to unresolvedMarkers', () => {
+    assert.deepStrictEqual(fightHook('patriarch-noparam').effects, []);
+    assert.deepStrictEqual(fightHook('patriarch-noparam').unresolvedMarkers, ['reveal-top-draw-if-cost-lte']);
+    assert.deepStrictEqual(fightHook('salome-bad').effects, []);
+    assert.deepStrictEqual(fightHook('salome-bad').unresolvedMarkers, ['ko-up-to-from-discard-current:0']);
+  });
+});
+
 describe('buildVillainAbilityHooks — keywords/effects parity', () => {
   it('keywords and effects are distinct but parallel arrays (WP-252)', () => {
     const registry = makeRegistry(
@@ -1619,4 +1667,59 @@ describe('buildVillainAbilityHooks — unresolved markers (WP-257)', () => {
     assert.ok(hook);
     assert.equal(hook!.unresolvedMarkers, undefined, 'flavor text carries no marker token');
   });
+});
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — `haunt-hq-hero:<selector>` parameterized marker.
+//
+// Grammar is exactly two tokens with selector ∈ rightmost | leftmost | cost-lte-3.
+// Anything else is unresolved. The capture-hq-hero branch is unchanged: it still
+// rejects the two selector values Haunt introduced.
+// ---------------------------------------------------------------------------
+
+describe('buildVillainAbilityHooks — haunt-hq-hero marker (WP-757 / D-24587)', () => {
+  /** Builds a single villain group with one card carrying one ability line. */
+  function buildSingleAbility(abilityText: string) {
+    const registry = makeRegistry(
+      'core',
+      [{ slug: 'fallen', cards: [{ slug: 'v', abilities: [abilityText] }] }],
+      [],
+    );
+    const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/fallen'], []));
+    return hooks.find((hook) => hook.cardId === 'core-villain-fallen-v-00');
+  }
+
+  for (const selector of ['rightmost', 'leftmost', 'cost-lte-3'] as const) {
+    it(`parses [effect:haunt-hq-hero:${selector}] into a haunt descriptor`, () => {
+      const hook = buildSingleAbility(`Ambush: Haunt. [effect:haunt-hq-hero:${selector}]`);
+      assert.ok(hook, 'a hook is emitted for the Ambush line');
+      assert.equal(hook!.timing, 'onAmbush');
+      assert.deepStrictEqual(hook!.effects, [{ primitive: 'haunt-hq-hero', selector }]);
+      assert.equal(hook!.unresolvedMarkers, undefined, 'a valid haunt marker is not unresolved');
+    });
+  }
+
+  for (const token of [
+    'haunt-hq-hero',
+    'haunt-hq-hero:highest-cost',
+    'haunt-hq-hero:rightmost:2',
+  ]) {
+    it(`rejects malformed [effect:${token}] as unresolved`, () => {
+      const hook = buildSingleAbility(`Ambush: Haunt. [effect:${token}]`);
+      assert.ok(hook, 'a hook is still emitted for the timing line');
+      assert.deepStrictEqual(hook!.effects, [], 'no descriptor for a malformed haunt marker');
+      assert.deepStrictEqual(hook!.unresolvedMarkers, [token]);
+    });
+  }
+
+  for (const token of ['capture-hq-hero:leftmost', 'capture-hq-hero:cost-lte-3']) {
+    it(`capture-hq-hero still rejects the Haunt-only selector in [effect:${token}]`, () => {
+      // why: the selector union was widened for Haunt; the capture parser must not
+      // silently start accepting the new values (no handler supports them).
+      const hook = buildSingleAbility(`Ambush: Capture. [effect:${token}]`);
+      assert.ok(hook);
+      assert.deepStrictEqual(hook!.effects, []);
+      assert.deepStrictEqual(hook!.unresolvedMarkers, [token]);
+    });
+  }
 });
