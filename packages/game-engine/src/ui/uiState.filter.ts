@@ -1193,6 +1193,7 @@ export function filterUIStateForAudience(
       playerID: uiState.pendingSplitFaceChoice.playerID,
       faceA: { ...uiState.pendingSplitFaceChoice.faceA },
       faceB: { ...uiState.pendingSplitFaceChoice.faceB },
+      leftFace: uiState.pendingSplitFaceChoice.leftFace,
     };
   }
 

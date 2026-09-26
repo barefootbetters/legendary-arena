@@ -96,6 +96,7 @@ import type {
 // byte-identical to what resolveVictoryPileCardPick re-filters at resolve time
 // (the round-trip rule) — never a re-implemented filter.
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { splitInstanceIntoBaseAndCopy } from '../moves/splitFaceChoice.resolve.js';
 // why: D-24139 — reuse the engine's authoritative 0-cost discard eligibility helper so
 // the projected list is byte-identical to what resolveReturnZeroCostDiscard validates
 // at resolve time (the round-trip rule) — never a re-implemented filter.
@@ -1691,7 +1692,12 @@ export function buildUIState(
     if (faceBDisplay?.abilityText !== undefined) {
       faceB.abilityText = faceBDisplay.abilityText;
     }
-    pendingSplitFaceChoice = { playerID: frontSplit.playerID, faceA, faceB };
+    // why: printed left-to-right order for the picker — faceB is the left half when the split
+    // card's primary card-key (faceA minus its #copy suffix) is in G.splitFacesAlternateOnLeft.
+    const faceABaseKey = splitInstanceIntoBaseAndCopy(frontSplit.faceA).baseKey as CardExtId;
+    const leftFace: 'a' | 'b' =
+      gameState.splitFacesAlternateOnLeft?.[faceABaseKey] === true ? 'b' : 'a';
+    pendingSplitFaceChoice = { playerID: frontSplit.playerID, faceA, faceB, leftFace };
   }
 
   // why: WP-675 / D-24490 — project the FRONT entry of G.pendingCountScaledChoice, resolving

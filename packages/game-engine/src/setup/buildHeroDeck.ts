@@ -58,6 +58,12 @@ interface HeroCardEntry {
   /** Card-level slug within the hero (e.g., 'mission-accomplished'). */
   slug: string;
   /**
+   * 1-based position in the hero deck (HeroCardSchema.slot, optional). For a split
+   * physical card the face with the LOWER slot is the printed LEFT half; read only by
+   * buildSplitFaceAlternateOnLeft.
+   */
+  slot?: number;
+  /**
    * Display name from the upstream patch. Optional in the registry schema
    * (HeroCardSchema.name is .optional()); when undefined, the cardCounts
    * lookup yields undefined and falls through to the rarity-map branch.
@@ -942,4 +948,78 @@ export function buildSplitFaces(
   }
 
   return splitFaces;
+}
+
+/**
+ * Builds the set of split cards whose ALTERNATE face (`sides[1]`) is the printed LEFT
+ * half of the landscape card (G.splitFacesAlternateOnLeft).
+ *
+ * `sides[]` order is the engine's primary/alternate order, NOT the printed order: the
+ * printed position is the hero-card `slot` — the face with the LOWER slot is the left
+ * half. Records the copy-agnostic PRIMARY card-key (the splitFaces key) for every split
+ * physical card whose sides[1] slot is lower than its sides[0] slot. A pair with a
+ * missing slot on either face is soft-skipped (treated as primary-on-left, the pre-fix
+ * render order). Display-only: consumed by buildUIState to order the "choose a side"
+ * picker; never read by a move.
+ *
+ * Returns an empty object when no split card is reversed; the caller omits the field
+ * from `G` then. No ctx.random, no I/O — pure setup-time registry walk mirroring
+ * buildSplitFaces.
+ *
+ * @param heroDeckIds - Array of qualified hero deck IDs `<setAbbr>/<heroSlug>`.
+ * @param registry - Setup-time registry reader. Accepts unknown to support narrow test
+ *   mocks; returns {} when it does not satisfy RegistryReader.
+ * @returns Primary-face-key → true for each split card printed alternate-face-left.
+ */
+export function buildSplitFaceAlternateOnLeft(
+  heroDeckIds: string[],
+  registry: unknown,
+): Record<CardExtId, true> {
+  const alternateOnLeft: Record<CardExtId, true> = {};
+
+  if (!isRegistryReader(registry)) {
+    return alternateOnLeft;
+  }
+
+  for (const heroDeckId of heroDeckIds) {
+    const parsed = parseQualifiedIdForSetup(heroDeckId);
+    if (parsed === null) continue;
+
+    const setData = registry.getSet(parsed.setAbbr);
+    if (!setData || typeof setData !== 'object') continue;
+
+    const candidate = setData as { heroes?: unknown };
+    if (!Array.isArray(candidate.heroes)) continue;
+
+    let heroEntry: HeroEntry | null = null;
+    for (const hero of candidate.heroes as HeroEntry[]) {
+      if (hero && typeof hero === 'object' && hero.slug === parsed.slug) {
+        heroEntry = hero;
+        break;
+      }
+    }
+    if (heroEntry === null) continue;
+    if (!Array.isArray(heroEntry.cards)) continue;
+
+    const slotBySlug: Record<string, number> = {};
+    for (const card of heroEntry.cards) {
+      if (typeof card.slug === 'string' && typeof card.slot === 'number') {
+        slotBySlug[card.slug] = card.slot;
+      }
+    }
+
+    const physicalCards = parsePhysicalCards(heroEntry.physicalCards);
+    for (const physicalCard of physicalCards) {
+      if (physicalCard.sides.length < 2) continue;
+      const primarySlot = slotBySlug[physicalCard.sides[0]!];
+      const alternateSlot = slotBySlug[physicalCard.sides[1]!];
+      if (primarySlot === undefined || alternateSlot === undefined) continue;
+      if (alternateSlot < primarySlot) {
+        const primaryKey = `${parsed.setAbbr}/${parsed.slug}/${physicalCard.sides[0]!}` as CardExtId;
+        alternateOnLeft[primaryKey] = true;
+      }
+    }
+  }
+
+  return alternateOnLeft;
 }

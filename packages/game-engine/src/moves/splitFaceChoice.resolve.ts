@@ -70,7 +70,7 @@ export function hasPendingSplitFaceChoice(G: LegendaryGameState): boolean {
  * @param cardId - A card instance ext_id, e.g. `cvwr/peter-parker/hot-bowl-of-soup#0`.
  * @returns The base key (before `#`) and the suffix (`#0`, or '' when absent).
  */
-function splitInstanceIntoBaseAndCopy(cardId: string): { baseKey: string; copySuffix: string } {
+export function splitInstanceIntoBaseAndCopy(cardId: string): { baseKey: string; copySuffix: string } {
   const hashIndex = cardId.indexOf('#');
   if (hashIndex === -1) {
     return { baseKey: cardId, copySuffix: '' };

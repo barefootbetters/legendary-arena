@@ -2302,6 +2302,18 @@ export interface LegendaryGameState {
   /** Split-hero base→alternate-face card-key map (D-24545). Absent when no split heroes are in play. */
   splitFaces?: Readonly<Record<CardExtId, CardExtId>> | undefined;
 
+  // why: `sides[]` is NOT the printed left-to-right order — for 19 of the 39 split cards
+  // (mostly cvwr) the alternate face (sides[1]) is the LEFT half of the landscape card. The
+  // printed position is the lower hero-card `slot` (lower slot = left half; all 39 pairs have
+  // distinct slots). Moves have no registry, so buildSplitFaceAlternateOnLeft captures it here at
+  // Game.setup(), keyed by the same copy-agnostic PRIMARY card-key as splitFaces. Display-only:
+  // buildUIState reads it to project UIPendingSplitFaceChoice.leftFace so the picker renders the
+  // halves in printed order. Face 'a'/'b' semantics are unchanged. Absent when empty (the
+  // splitFaces precedent), so a game whose split cards are all already left-first — and any
+  // no-split game — serializes byte-identically.
+  /** Primary card-keys of split cards whose ALTERNATE face (sides[1]) is the printed left half. Absent when none. */
+  splitFacesAlternateOnLeft?: Readonly<Record<CardExtId, true>> | undefined;
+
   // why: KO pile stores cards permanently removed from the game. Destination-only
   // zone — cards enter via koCard helper and never return in MVP. Initialized
   // empty at setup.
