@@ -96,6 +96,16 @@ export default defineComponent({
       return mastermindFightCost;
     }
 
+    function isFightCostUnaffordable(): boolean {
+      // why (Jeff feedback): loud only when the badge explains a disabled Fight —
+      // the viewer's Main stage and the projected cost is more than their attack.
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightMastermind();
+      if (!stage.allowed) {
+        return false;
+      }
+      return !useCardCostGating(props.economy).canFight(mastermindFightCost()).allowed;
+    }
+
     function hasFightCostBadge(): boolean {
       // why: WP-750 / D-24574 — players see the number the engine will actually
       // charge, only when it differs from the printed cost. Never rendered from the
@@ -198,6 +208,7 @@ export default defineComponent({
     return {
       gateForFight,
       hasFightCostBadge,
+      isFightCostUnaffordable,
       onFight,
       onRead,
       isVictoryAssured,
@@ -266,6 +277,7 @@ export default defineComponent({
         <span
           v-if="hasFightCostBadge()"
           class="mastermind__fight-cost"
+          :class="{ 'mastermind__fight-cost--unaffordable': isFightCostUnaffordable() }"
           data-testid="play-mastermind-fight-cost"
         >Fight {{ mastermind.fightCost }}</span>
       </span>
@@ -401,6 +413,32 @@ export default defineComponent({
   line-height: 1.2;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* why (Jeff feedback, match 25-GJ0oXBwy): the quiet dark pill went unnoticed at the
+   one moment it matters — the villain costs more than the attack in hand. On that
+   state only, the badge turns red, grows slightly and pulses once; reduced motion
+   keeps the colour and drops the pulse. */
+.mastermind__fight-cost--unaffordable {
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  font-size: 0.75rem;
+  animation: mastermind__fight-cost-pulse 700ms ease-out 1;
+}
+
+@keyframes mastermind__fight-cost-pulse {
+  from {
+    transform: translateX(-50%) scale(1.35);
+  }
+  to {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mastermind__fight-cost--unaffordable {
+    animation: none;
+  }
 }
 
 .mastermind-id {

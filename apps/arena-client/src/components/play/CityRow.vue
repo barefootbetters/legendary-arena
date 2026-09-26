@@ -108,6 +108,21 @@ export default defineComponent({
       return cost;
     }
 
+    function isFightCostUnaffordable(cell: CityCell): boolean {
+      // why (Jeff feedback): the Fight N badge is loud only when it explains a
+      // disabled Fight — the viewer's Main stage, and the projected cost is more
+      // than the attack they have. Outside that window (another player's turn, a
+      // non-main stage) the badge stays the quiet informational pill.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain();
+      if (!stage.allowed) {
+        return false;
+      }
+      return !useCardCostGating(props.economy).canFight(cell.card.fightCost).allowed;
+    }
+
     function hasFightCostBadge(cell: CityCell): boolean {
       // why: WP-750 / D-24574 — players see the number the engine will actually
       // charge. Shown only when it differs from the printed cost (a null printed
@@ -189,6 +204,7 @@ export default defineComponent({
       buildCells,
       gateForCell,
       hasFightCostBadge,
+      isFightCostUnaffordable,
       onFight,
       showEvFight,
       onFightEV,
@@ -293,6 +309,7 @@ export default defineComponent({
             <span
               v-if="hasFightCostBadge(cell)"
               class="city-space__fight-cost"
+              :class="{ 'city-space__fight-cost--unaffordable': isFightCostUnaffordable(cell) }"
               data-testid="play-city-fight-cost"
             >Fight {{ cell.card.fightCost }}</span>
           </button>
@@ -471,6 +488,32 @@ export default defineComponent({
   line-height: 1.2;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* why (Jeff feedback, match 25-GJ0oXBwy): the quiet dark pill went unnoticed at the
+   one moment it matters — the villain costs more than the attack in hand. On that
+   state only, the badge turns red, grows slightly and pulses once; reduced motion
+   keeps the colour and drops the pulse. */
+.city-space__fight-cost--unaffordable {
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  font-size: 0.75rem;
+  animation: city-space__fight-cost-pulse 700ms ease-out 1;
+}
+
+@keyframes city-space__fight-cost-pulse {
+  from {
+    transform: translateX(-50%) scale(1.35);
+  }
+  to {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-space__fight-cost--unaffordable {
+    animation: none;
+  }
 }
 
 /* why: WP-727 — the Dark Portal marker sits at the top of the space, centered,
