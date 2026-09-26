@@ -1364,7 +1364,7 @@
   {
     "id": "swap-two-city-villains-swaps-lowest-and-highest",
     "mechanic": "swap-two-city-villains",
-    "decision": "D-24336",
+    "decision": "D-24607",
     "scenario": {
       "action": "fire-villain-effect",
       "setup": {
@@ -1373,7 +1373,7 @@
         "currentPlayer": "0",
         "descriptor": { "primitive": "swap-two-city-villains" },
         "playerZones": { "0": {} },
-        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "core/masters-of-evil/melter#0"],
+        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/masters-of-evil/melter#0", "core/hydra/doombot-legion#0"],
         "villainDeckCardTypes": {
           "co2e/masters-of-evil/whirlwind#0": "villain",
           "core/hand/hand-ninjas#0": "henchman",
@@ -1383,13 +1383,13 @@
         }
       }
     },
-    "expected": { "kind": "city-equal", "cards": ["core/masters-of-evil/melter#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/hydra/doombot-legion#0", "co2e/masters-of-evil/whirlwind#0"] },
-    "why": "Whirlwind's Ambush (Rule B) swaps the entrance-side villain (index 0, Whirlwind) with the escape-side villain (index 4, Melter) — the maximum positional displacement. The middle villain (Ultron, index 2) and both henchmen (Hand Ninjas index 1, Doombot Legion index 3) are untouched — henchmen never swap and only the lowest/highest villain-occupied spaces move (D-24336, the engine's first City board-position manipulation)."
+    "expected": { "kind": "city-equal", "cards": ["core/hydra/doombot-legion#0", "core/hand/hand-ninjas#0", "co2e/masters-of-evil/ultron#0", "core/masters-of-evil/melter#0", "co2e/masters-of-evil/whirlwind#0"] },
+    "why": "Whirlwind's Ambush (Rule B, D-24336) swaps the entrance-side Villain (index 0, Whirlwind) with the escape-side Villain (index 4, the Doombot Legion henchman) — the maximum positional displacement. Henchmen are Villains (rules v23 §Henchmen Are Villains/Adversaries; D-24607 superseded D-24336's henchman exclusion), so the henchman at the escape edge is selected over Melter at index 3. Every space between the two extremes (Hand Ninjas, Ultron, Melter) is untouched."
   },
   {
     "id": "swap-two-city-villains-fewer-than-two-is-noop",
     "mechanic": "swap-two-city-villains",
-    "decision": "D-24336",
+    "decision": "D-24607",
     "scenario": {
       "action": "fire-villain-effect",
       "setup": {
@@ -1398,18 +1398,14 @@
         "currentPlayer": "0",
         "descriptor": { "primitive": "swap-two-city-villains" },
         "playerZones": { "0": {} },
-        "city": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"],
+        "city": ["co2e/masters-of-evil/whirlwind#0"],
         "villainDeckCardTypes": {
-          "co2e/masters-of-evil/whirlwind#0": "villain",
-          "core/hand/hand-ninjas#0": "henchman",
-          "core/hand/hand-ninjas#1": "henchman",
-          "core/hydra/doombot-legion#0": "henchman",
-          "core/hydra/doombot-legion#1": "henchman"
+          "co2e/masters-of-evil/whirlwind#0": "villain"
         }
       }
     },
-    "expected": { "kind": "city-equal", "cards": ["co2e/masters-of-evil/whirlwind#0", "core/hand/hand-ninjas#0", "core/hand/hand-ninjas#1", "core/hydra/doombot-legion#0", "core/hydra/doombot-legion#1"] },
-    "why": "Fewer than two Villains in the City is a reachable no-op: with a single Villain (Whirlwind) among four henchmen there is no second Villain to swap with, so the City row is unchanged (D-24336). Paired with the positive sibling that proves the swap fires with two or more Villains."
+    "expected": { "kind": "city-equal", "cards": ["co2e/masters-of-evil/whirlwind#0"] },
+    "why": "Fewer than two Villains in the City is a reachable no-op: with Whirlwind alone in the City there is no second Villain (villain or henchman — D-24607) to swap with, so the City row is unchanged (D-24336). Paired with the positive sibling that proves the swap fires with two or more Villains."
   },
   {
     "id": "ko-heroes-count-by-trait-forced-auto-kos-the-count",

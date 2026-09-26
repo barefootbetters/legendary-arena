@@ -591,6 +591,22 @@ count. The danger meter's escaped count includes henchmen too.
 - **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator ran Negative Zone Prison Breakout after
   #2426 deployed: a henchman escape raised the escaped count by one.
 
+### D-24607 — Whirlwind's Ambush swap counts henchmen as Villains (direct fix) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com`.** co2e Whirlwind's Ambush "Two Villains in the city
+swap spaces" now treats henchmen in the City as Villains, as Universal Rules v23 prints ("Henchman
+Villain cards are indeed Villains"). Before, a henchman was never moved, and a City holding one
+villain and one henchman did not swap at all.
+
+- **Engine.** `collectCityVillainIndices` collects villain **and** henchman occupants; Rule B
+  (lowest index ↔ highest index) is unchanged. Supersedes only the D-24336 henchman clause; same
+  correction as D-24603.
+- **Tests.** Engine unit AC-3 flipped to "a henchman at an extreme is selected", plus two new
+  cases (villain + henchman swap; two henchmen swap). Both `swap-two-city-villains` effect rulings
+  re-pinned to D-24607.
+- **Live-verify (D-24026):** pending. In a co2e Masters of Evil match, let Whirlwind ambush with a
+  henchman at the City entrance or escape edge and confirm the henchman moves.
+
 ### D-24603 — Henchmen are Villains for "Whenever you defeat a Villain or Mastermind" (direct fix) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** Defeating a

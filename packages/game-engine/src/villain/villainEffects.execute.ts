@@ -2920,12 +2920,12 @@ function villainEffectGiveHqHeroByTraitToCurrent(
 }
 
 /**
- * Collects the City indices whose occupant is a `villain` (not a henchman, not empty),
- * in ascending index order (D-24336 / WP-523).
+ * Collects the City indices whose occupant is a Villain — a `villain` or a `henchman`
+ * (not empty) — in ascending index order (D-24336 / WP-523; henchmen per D-24607).
  *
- * "Two Villains in the city" counts only `villain`-classified occupants
- * (`G.villainDeckCardTypes[id] === 'villain'`). An empty slot (`null`) or a henchman
- * occupant is skipped. Feeds the frontmost-rearmost swap rule below.
+ * "Two Villains in the city" counts `villain`- and `henchman`-classified occupants
+ * (rules v23 §"Henchmen Are Villains/Adversaries"). An empty slot (`null`) or an
+ * unclassified occupant is skipped. Feeds the frontmost-rearmost swap rule below.
  *
  * @param G - Game state (read-only here; only `G.city` + `G.villainDeckCardTypes`).
  * @returns The villain-occupied City indices in ascending order.
@@ -2938,10 +2938,12 @@ function collectCityVillainIndices(G: LegendaryGameState): number[] {
     if (occupant === null || occupant === undefined) {
       continue;
     }
-    // why: D-24336 — henchmen are excluded ("Two Villains"); classify by the villain-deck
-    // card-type map. An absent classification does NOT count as a villain (production always
+    // why: D-24607 (supersedes D-24336's henchman exclusion) — rules v23 "Henchman Villain
+    // cards are indeed Villains", so both types are swap candidates. Classify by the
+    // villain-deck card-type map; an absent classification does NOT count (production always
     // builds the map; a narrow test mock that omits it simply holds no villains here).
-    if (cardTypes?.[occupant] === 'villain') {
+    const occupantType = cardTypes?.[occupant];
+    if (occupantType === 'villain' || occupantType === 'henchman') {
       indices.push(cityIndex);
     }
   }
@@ -2956,7 +2958,8 @@ function collectCityVillainIndices(G: LegendaryGameState): number[] {
  * Rule B (locked, operator-confirmed): with at least two villain-occupied City spaces, swap
  * the LOWEST-index (entrance side) with the HIGHEST-index (escape side) — the largest
  * positional displacement, the "disrupt the board" reading. The card names no chooser, so
- * the engine picks deterministically (no `ctx.random`). Henchmen are never swapped; Whirlwind
+ * the engine picks deterministically (no `ctx.random`). Henchmen are Villains and swap too
+ * (D-24607, superseding D-24336's exclusion); Whirlwind
  * itself is eligible (it is pushed into the City before its Ambush fires). Fewer than two
  * villain-occupied spaces is a reachable no-op. `cityIndex` is unused — the Ambush fire site
  * passes undefined and the swap is space-relative, reading `G.city` directly (not the WP-489
@@ -3212,8 +3215,8 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
 // (auto-resolve — remove the highest-cost HQ Hero matching a trait and give it to the
 // current player's discard, refill the slot) appended by WP-522 (D-24335 — co2e Ultron Fight).
 // why: `swap-two-city-villains` (auto-resolve — swap the lowest- and highest-index
-// villain-occupied City spaces, henchmen excluded, fewer than two is a no-op) appended by
-// WP-523 (D-24336 — co2e Whirlwind Ambush; the first City board-position manipulation).
+// villain-occupied City spaces, henchmen included per D-24607, fewer than two is a no-op)
+// appended by WP-523 (D-24336 — co2e Whirlwind Ambush; the first City board-position manipulation).
 // why: `gain-recruit-current` (auto-resolve — the current player gains N recruit) and
 // `gain-officer-current` (auto-resolve — the current player gains one S.H.I.E.L.D. Officer
 // from the supply, empty pile → logged no-op) appended by WP-541 (D-24350 — Hand Ninjas +

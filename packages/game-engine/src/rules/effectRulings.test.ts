@@ -511,8 +511,8 @@ function runFireVillainEffect(rawSetup: Record<string, unknown>): Outcome {
   }
 
   // why: swap-two-city-villains reads the City row (G.city) and classifies each
-  // occupant via G.villainDeckCardTypes (only 'villain' occupants swap; henchmen
-  // never do). Seed both only when the ruling provides them so other villain
+  // occupant via G.villainDeckCardTypes ('villain' and 'henchman' occupants both
+  // swap — henchmen are Villains, D-24607). Seed both only when the ruling provides them so other villain
   // rulings keep the base City untouched.
   if (setup.city !== undefined) {
     G.city = setup.city as LegendaryGameState['city'];
