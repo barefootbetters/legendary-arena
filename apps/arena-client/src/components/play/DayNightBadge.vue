@@ -102,31 +102,45 @@ export default defineComponent({
 
 <style scoped>
 /* why: compact and non-wrapping so TopHudBar row 2 keeps one line at the 1280
-   authoring width (a wrapped row makes the HUD taller and shrinks the board). */
+   authoring width (a wrapped row makes the HUD taller and shrinks the board).
+   why (Jeff feedback): as a bare word the badge read as one more stat in the row and
+   went unnoticed in a live match, so it is a filled pill in the state's colour. The
+   vertical padding stays small and the line-height is pinned so the pill fits inside
+   the row's existing line box (HUD height unchanged). */
 .day-night-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
 }
 
 .day-night-badge__icon {
-  width: 1.1em;
-  height: 1.1em;
+  width: 1.15em;
+  height: 1.15em;
   flex: 0 0 auto;
 }
 
-.day-night-badge--sunlight .day-night-badge__icon {
-  color: var(--color-day-night-sun, #d19a2f);
+.day-night-badge--sunlight {
+  background: var(--color-day-night-sun-bg, #fdecc8);
+  border-color: var(--color-day-night-sun, #d19a2f);
+  color: var(--color-day-night-sun-text, #7a4b00);
 }
 
-.day-night-badge--moonlight .day-night-badge__icon {
-  color: var(--color-day-night-moon, #6c8ebf);
+.day-night-badge--moonlight {
+  background: var(--color-day-night-moon-bg, #1f2a4d);
+  border-color: var(--color-day-night-moon, #6c8ebf);
+  color: var(--color-day-night-moon-text, #e3ebff);
 }
 
+/* why: Neither is still information (both lines are off), so it keeps the pill
+   shape but in a neutral outline rather than disappearing into the row. */
 .day-night-badge--neither {
-  opacity: 0.75;
-  font-weight: 400;
+  border-color: var(--color-foreground, #999);
+  font-weight: 600;
 }
 </style>
