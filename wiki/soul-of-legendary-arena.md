@@ -1741,9 +1741,8 @@ dispute.
   The same problem appears from the opposite direction. Brittney Griner has long
   been the subject of public speculation about Griner's sex. Part of it is
   height — Griner stands 6'9" — and part is the game itself: Griner holds the
-  WNBA record with 27 of the roughly 38 dunks in league history, more than every
-  other player combined, in a league where only eight players have ever dunked
-  in a game. Whether that speculation is fair is not the issue. The issue is that the league has never stated a
+  WNBA record with 27 dunks, and no other player in league history has more
+  than two. Whether that speculation is fair is not the issue. The issue is that the league has never stated a
   standard capable of resolving the question one way or the other. Without a
   published definition, neither Griner's supporters nor Griner's critics can point to
   an authoritative answer. The uncertainty exists because the rule remains
@@ -1761,6 +1760,27 @@ dispute.
   she will retire at the end of the year, and the next commissioner should start
   there: state the standard, publish the procedure, and allow independent
   verification. A rule should not depend on trust alone.
+
+  **Can Freedom and White follow the trail blazed by Griner?**
+
+  | | Brittney Griner | Enes Kanter Freedom | Royce White |
+  |---|---|---|---|
+  | Listed height | 6'9" | 6'10" | 6'8" |
+  | Draft | No. 1 overall, WNBA, 2013 | No. 3 overall, NBA, 2011 | No. 16, NBA, 2012 |
+  | Pro career | WNBA since 2013 (Phoenix, Atlanta, Connecticut) | 11 NBA seasons, 2011–2022 | 3 NBA games, 2013–14; later NBL Canada, BIG3, MMA |
+  | Titles | NCAA 2012 (Baylor); WNBA 2014 (Phoenix) | None | NBL Canada 2017 and 2018 (London) |
+  | Olympic gold | 2016, 2020, 2024 | None | None |
+  | All-Star selections | 10 (including an honorary 2022 selection while detained) | None | None |
+  | Defensive Player of the Year | 2014, 2015 | None | None |
+  | Blocks | WNBA career leader (since June 2026); 8 blocks titles | — | — |
+  | Dunks | 27, the WNBA record; no other player has more than two | — | — |
+  | Criminal record | 2015: pleaded guilty to disorderly conduct after a fight with fiancée Glory Johnson (diversion, 26 weeks of domestic-violence counseling). 2022: convicted in Russia of cannabis-oil possession, sentenced to nine years, freed in the Bout swap | Charged in absentia in Turkey (terrorism, insulting the president) after criticizing Erdoğan; Turkey sought an Interpol Red Notice. No U.S. arrests found | 2009: pleaded guilty to misdemeanor theft and disorderly conduct (Mall of America) |
+  | Domestic-violence record | 2015 arrest; Johnson diagnosed with a concussion; seven-game league suspension | None found | 2026: civil protective order; a judge found abuse and threats against his ex-wife and teenage son (White denies it and is appealing) |
+  | Support orders | Ordered in 2016 to pay child support for IVF twins | None found | Reported judgments of more than $100,000 in unpaid child support |
+  | WNBA eligibility claim | Plays in the league | Declared for the 2027 draft as a protest, August 2026 | Declared for the 2027 draft with a formal filing, August 2026 |
+
+  What the table cannot show is the one thing the league's rule requires: a
+  definition.
 - **The Bout swap** *(questions 1, 2 and 3)*. Two Americans sat in Russian
   prisons in 2022. Paul Whelan, a former Marine — discharged in 2008 with a
   bad-conduct discharge after a court-martial on larceny-related charges — had
@@ -2653,7 +2673,13 @@ choice for the operator, never make it silently.
   [White's Gaetz-signed filing](https://www.washingtontimes.com/news/2026/aug/19/royce-white-files-formal-wnba-draft-declaration-matt-gaetz-counsel/);
   the WNBA's [announcement of Engelbert's retirement](https://www.wnba.com/news/commissioner-cathy-engelbert-to-retire-at-end-of-year)
   (4 September 2026); Sporting News on [the WNBA's dunk record](https://www.sportingnews.com/us/wnba/news/wnba-players-dunk-record-brittney-griner-2024/934de9277f292a8beac56a1d)
-  (2024).
+  (2024) and ESPN on [the dunk record](https://www.espn.com/wnba/story/_/id/32258450/2021-wnba-playoffs-brittney-griner-owns-wnba-dunking-record-coming-more)
+  (2021); for the comparison table, Basketball-Reference on
+  [Griner's career](https://www.basketball-reference.com/wnba/players/g/grinebr01w.html),
+  NBA.com on [Turkey's warrant for Kanter](https://www.nba.com/news/turkey-seeks-warrant-enes-kanter),
+  the *Minnesota Daily* on [White's 2009 plea](https://mndaily.com/uncategorized/white-pleads-guilty-mall-america-theft/12/02/2009/snoadmin/),
+  MPR News on [White's 2026 protective order](https://www.mprnews.org/story/2026/04/23/us-senate-candidate-royce-white-is-under-order-to-avoid-ex-wife-their-son-over-threats),
+  and the *Daily Beast* on [White's child-support judgments](https://www.thedailybeast.com/gop-us-senate-candidate-royce-white-owes-more-than-dollar100k-child-support/).
   For Griner's 2015 case: 6abc on
   [the injuries, plea and suspensions](https://6abc.com/post/brittney-griner-glory-johnson-each-suspended-7-games-for-incident/724596/)
   (16 May 2015); Johnson's account in [*People*](https://people.com/parents/glory-johnson-opens-up-about-tumultuous-relationship-and-sudden-split/)
