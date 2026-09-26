@@ -1,0 +1,71 @@
+# EC-798 — Long-press slash: touch / pen slash-to-fight on a scrolling City row (Execution Checklist)
+
+**Source:** docs/ai/work-packets/WP-761-long-press-slash.md
+**Layer:** arena-client (`composables/useSlashGesture.ts`, `components/play/CityRow.vue`) + ewiki docs
+**Status:** Pending
+
+## Before Starting
+
+- [ ] WP-756 is merged (WORK_INDEX `[x]`) and `useSlashGesture.ts` matches WP-761 Assumes #1 (anchors `:43`, `:93`, `:294`, `:443`, `:448`, `:474`, `:546`). Reconcile any drift against the shipped names; STOP if the chain / hints / suppression shape changed.
+- [ ] #2362 is merged: at 375 px the play page does not overflow; only the City row's band scrolls.
+- [ ] Read WP-761 in full, then `useSlashGesture.ts` + test and `CityRow.vue` + test. Run `pnpm -r build` and `pnpm --filter @legendary-arena/arena-client typecheck` (exit 0); record the test count.
+
+## Locked Values (verbatim from WP-761 §Locked Values; the WP wins on conflict)
+
+- `LONG_PRESS_ARM_MS = 350`; `LONG_PRESS_MOVE_TOLERANCE_PX = 10`; `LONG_PRESS_VIBRATE_MS = 12` (only when `typeof navigator.vibrate === 'function'`).
+- **Eligibility (at `pointerdown` only):** setting on, pointer `touch` or `pen`, no stroke pending or active, `isTouchGestureEnabled` **false**. When true, WP-756's immediate path applies. Mouse never long-presses. A later fit change does not affect a pending or armed long press.
+- **Representation:** a `stroke` with `isLongPress: true`; pending = `hasStarted` false + timer; armed = `hasStarted` true. Armed ⇔ `stroke !== null && stroke.isLongPress && stroke.hasStarted`; `isLongPressArmed` / `shouldPreventTouchScroll()` are derived, never a free-standing flag. A pending long press never runs the 16 px `startGesture` path.
+- **Pending arm:** starts at `pointerdown`; cancelled (stroke nulled, timer cleared) by `pointerup`, `pointercancel`, > 10 px from the down point, a **second `pointerId`**, the setting turning off, or dispose. Cancelling never arms suppression.
+- **Arm (`armStroke()`, 350 ms):** `hasStarted = true`; capture; `createCrossingState(collectCandidateTiles(), downPoint)`; **one** trail sample at `downPoint`; buzz if supported. Not `startGesture`.
+- **Armed stroke:** non-passive row `touchmove` → `preventDefault()` iff `shouldPreventTouchScroll()`; `pointermove` advances as WP-756; a second `pointerId` is **ignored**; `pointerup` completes (arms suppression, publishes `isStrokeEnd`); `pointercancel` / `lostpointercapture` keep completed crossings, arm nothing. Every stroke-nulling path (incl. the setting / row watch and dispose) ends the arm.
+- **Click suppression (armed path only):** cleared on the next `pointerdown` / `keydown`, not `setTimeout(0)`.
+- **Context menu:** the row `contextmenu` listener → `preventDefault()` while a long press is pending or armed.
+- **CSS:** `city-spaces--gesture-armed` iff armed — **inset** glow (`box-shadow: inset` or negative `outline-offset`), no animation under `prefers-reduced-motion`; `city-spaces--gesture` adds `-webkit-touch-callout: none`.
+- **Controller additions:** `isLongPressArmed: Ref<boolean>`, `shouldPreventTouchScroll(): boolean`. WP-756 members keep their signatures.
+
+## Guardrails
+
+- **Zero engine change.** No `packages/**`; only `fightVillain({ cityIndex })` via the unchanged chain.
+- **Never prevent an unarmed `touchmove`,** and never prevent `touchstart` / `pointerdown` — an unarmed touch must scroll natively. The row must never be left armed without a live stroke.
+- **Assumes #2 is a platform premise** verified only on real iOS + Android devices (WP Verification step 5); do not claim it from jsdom or the preview.
+- **WP-756 byte-identical** for mouse, touch on a fitting row, taps, and setting off (the new listeners live inside the existing setting-gated adapter).
+- **Reuse, don't fork:** chain, hints, suppression, trail signal, fit rule and `VfxOverlay.vue` unchanged.
+- **No clock** outside `src/vfx/**` + `VfxOverlay.vue`; the arm is a `setTimeout`.
+- **No `PointerEvent` / `TouchEvent` globals** (no `instanceof`, no constructors) in code or tests.
+- **Commit subjects and PR titles never contain "swipe".**
+
+## Required `// why:` Comments
+
+- The long press as the scroll-safe intent signal (a scroll moves at once, a tap releases at once).
+- `touchmove` `preventDefault()` only while armed: `touch-action` is fixed at touch start, and a pan can only be stopped before it begins.
+- The non-passive listener option.
+- `contextmenu` / `-webkit-touch-callout` suppression during a hold.
+- The start-distance waiver at the arm, and measuring candidates at the arm.
+- The `navigator.vibrate` feature check.
+- Armed derived from the stroke (so every reset path ends it), and the `lostpointercapture` listener.
+- Armed-path click suppression cleared on the next input, not `setTimeout(0)` (the touch `click` can land a task later).
+- The `dragstart` prevention now also blocking touch drag-and-drop after a long press.
+
+## Files to Produce
+
+- [ ] `apps/arena-client/src/composables/useSlashGesture.ts` (+ `.test.ts`)
+- [ ] `apps/arena-client/src/components/play/CityRow.vue` (+ `.test.ts`)
+- [ ] `wiki/visual-effects.md`
+
+## After Completing
+
+- [ ] arena-client typecheck 0 and tests 0 fail; `pnpm -r build && pnpm -r --no-bail test` green; no `packages/**` in the diff.
+- [ ] Preview drive (WP Verification step 4, synthetic touch events) recorded with screenshots.
+- [ ] Two-commit topology: `EC-798:` + `SPEC:` close (WORK_INDEX, EC_INDEX, DECISIONS D-24592, STATUS `### WP-761`, mindmap ✅ + `roadmap:counts:write`).
+- [ ] `pnpm roadmap:counts:check` and `pnpm ledger:numbers:check` exit 0.
+- [ ] D-24026 real-device (iOS + Android) live-verify recorded as operator-manual-pending.
+
+## Common Failure Smells (Optional)
+
+- **The City row won't scroll on a phone.** A `touchmove` was prevented while not armed, or `touch-action` was changed.
+- **Taps stopped fighting.** A pending arm armed suppression on cancel, or the arm fired on release.
+- **A held finger opens the image menu.** `contextmenu` was not prevented, or the iOS callout CSS is missing.
+- **The first villain in the stroke is skipped.** Candidates were measured at `pointerdown` instead of at the arm, or the crossing state was not seeded at the press point.
+- **Mouse users see a glow after holding still.** Eligibility did not exclude `mouse`.
+- **The row stops scrolling after toggling the setting.** "Armed" was a free-standing flag that survived a stroke reset.
+- **The armed glow is invisible.** An outer glow was clipped by the row's `overflow-x: auto`; use inset.
