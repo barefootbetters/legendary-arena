@@ -150,7 +150,7 @@ make resets that clock, so a long think is never a problem.
 ## Open Questions
 
 - **Choices on your turn** (the bot answering Loki's Vanishing Illusions or
-  Monarch's Decree while you are the active player) lands with D-24591
+  Monarch's Decree while you are the active player) lands with D-24593
   ([PR #2365](https://github.com/barefootbetters/legendary-arena/pull/2365)).
   Until that merges, those effects freeze the table. Move this page to
   `canonical` once it ships.
@@ -193,4 +193,4 @@ make resets that clock, so a long think is never a problem.
   - D-24170 — bot-ally model.
   - D-24120 — bots have no account row.
   - D-24230 / D-24233 — revival cap and reset.
-  - D-24591 — seat choices on your turn.
+  - D-24593 — seat choices on your turn.

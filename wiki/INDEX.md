@@ -88,7 +88,7 @@ Coordinated subsystems spanning multiple files / phases.
   co-op game solo: bots fill the other seats and take their own turns.
   Covers starting a game (bot count, **Competent** / **Random** skill),
   how the bot plays (no peeking, default choices, answering "each other
-  player" effects on your turn — D-24591), scoring (never ranked; Casual
+  player" effects on your turn — D-24593), scoring (never ranked; Casual
   on a ranked-gauntlet loadout), the stall bar, and the 20-minute idle stop.
 - [Play Board](play-board.md) — The rendered game mat on
   `play.legendary-arena.com`: which board zone reads which `UIState`
