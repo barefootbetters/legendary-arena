@@ -124,7 +124,7 @@ If any item is false, this packet is **BLOCKED**.
 
   Regenerate and confirm `data/cards/mdns.json` `physicalCards` counts are 5/5/3/1. The values follow the card's own `rarityLabels` (Ride = Uncommon), not the curated file's 3-on-Hunt, which contradicts them.
 
-  **Operator confirmation of the printed rarities is requested in the drafting summary before execution.** `cards:check` must pass, and the only data diff is Daywalker's counts. The fix also corrects Daywalker as a normal hero.
+  **Operator-confirmed 2026-09-25:** Jeff confirmed "Ride by Moonlight" is the Uncommon, from the card image `mdns-hr-blade-daywalker-ride-by-moonlight.webp`. The registry record reads `rarityLabel: "Uncommon"` but `count: 5`, which is the defect. Ride = 3 and Hunt High And Low = 5 are locked. `cards:check` must pass, and the only data diff is Daywalker's counts. The fix also corrects Daywalker as a normal hero.
 - **Extra-hero data feed (in `buildInitialGameState` only).**
   - `const dataConfig = bladeHeroId ? { ...config, heroDeckIds: [...config.heroDeckIds, bladeHeroId] } : config;`
   - It is passed **only** to `buildCardStats`, `buildCardTraits`, the hero ability hooks and `buildCardDisplayData`.
@@ -340,6 +340,6 @@ That is about 16 files. The Skrull precedent spans the same set.
 
 **Scope verdict:** READY TO EXECUTE once WP-763 merges. Re-run pre-flight at session start, because the PS-3/RS-2 file scope changed.
 
-**Copilot (01.7): HOLD.** The HOLD findings were #4/#21, #16/#25, #26, #23 and #11. They are resolved by the fixes above, and the new tests cover #11. After the fixes: **RISK (documented)**. The residual risk is the Daywalker rarity confirmation.
+**Copilot (01.7): HOLD.** The HOLD findings were #4/#21, #16/#25, #26, #23 and #11. They are resolved by the fixes above, and the new tests cover #11. After the fixes: **RISK (documented)**. The residual Daywalker rarity question was operator-confirmed on 2026-09-25 (Ride by Moonlight = Uncommon ×3).
 
 **Final CONFIRM (independent subagent, round 2).** All PS/RS fixes were confirmed, and the cross-packet contract with WP-763 is consistent (resolverId swap only; sequencing is clear). Two text defects were fixed in this revision: a stale WP-750 reference and an ambiguous allowlist wording. A line-anchor caveat was added. **CONFIRM.**
