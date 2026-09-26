@@ -975,3 +975,63 @@ describe('fightVillain — Excessive Violence with the real move context (WP-754
     assert.deepStrictEqual(moveContext.G.playerZones['0']!.deck, ['disc-1'], 'the revealed card stays on top');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Midtown Bank Robbery family — +1 attack per Bystander a Villain has (WP-748 / D-24572)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Midtown Bank Robbery Bystander bonus (WP-748)', () => {
+  const HOSTAGES = ['hostage-1', 'hostage-2', 'hostage-3'] as CardExtId[];
+
+  /**
+   * A 3-cost villain at city index 0 holding three Bystanders, under `schemeId`,
+   * with `attack` available.
+   */
+  function createHostageState(schemeId: string, attack: number): LegendaryGameState {
+    const base = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    // why: selection is readonly and the shared factory hardcodes 'test-scheme'
+    // (the control), so the scheme is set by spreading selection, never by
+    // editing the factory.
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, schemeId },
+    };
+    gameState.attachedBystanders = { ['villain-a' as CardExtId]: [...HOSTAGES] };
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('Midtown: a 3-cost villain holding 3 Bystanders is refused at 3 attack', () => {
+    const moveContext = createMockMoveContext(createHostageState('core/midtown-bank-robbery', 3));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.equal(moveContext.G.city[0], 'villain-a', 'villain stays in the City');
+    assert.equal(moveContext.G.playerZones['0']!.victory.length, 0, 'nothing defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent on a refused fight');
+  });
+
+  it('Midtown: the same villain is defeated at 6 attack, rescuing its 3 Bystanders and spending exactly 6', () => {
+    const moveContext = createMockMoveContext(createHostageState('core/midtown-bank-robbery', 6));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const victory = moveContext.G.playerZones['0']!.victory;
+    assert.equal(moveContext.G.city[0], null, 'villain left the City');
+    assert.ok(victory.includes('villain-a'), 'villain in the Victory Pile');
+    for (const hostage of HOSTAGES) {
+      assert.ok(victory.includes(hostage), `${hostage} rescued to the Victory Pile`);
+    }
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 6, 'exactly printed 3 + 3 Bystanders spent');
+    assert.equal(moveContext.G.turnEconomy.attack - moveContext.G.turnEconomy.spentAttack, 0);
+  });
+
+  it('control: under a non-family scheme the villain is defeated at its printed 3', () => {
+    const moveContext = createMockMoveContext(createHostageState('test-scheme', 3));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated at printed attack');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3);
+  });
+});

@@ -385,3 +385,95 @@ describe('DARK_PORTAL_ATTACK_BONUS (WP-728 / D-24549)', () => {
     assert.equal(DARK_PORTAL_ATTACK_BONUS, 1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Midtown Bank Robbery family — +1 attack per Bystander a Villain has (WP-748 / D-24572)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — Midtown Bank Robbery family Bystander bonus (WP-748)', () => {
+  const MIDTOWN = 'core/midtown-bank-robbery';
+  const FAMILY_SCHEME_IDS = [
+    MIDTOWN,
+    'co2e/bank-robbery-hostage-crisis',
+    'msp1/destroy-the-cities-of-earth',
+  ];
+
+  /** A G under `schemeId` with static villain `v` (cost 3) holding `bystanderCount` Bystanders. */
+  function makeBystanderG(schemeId: string, bystanderCount: number): LegendaryGameState {
+    const bystanders: CardExtId[] = [];
+    for (let index = 0; index < bystanderCount; index++) {
+      bystanders.push(`bystander-${index}` as CardExtId);
+    }
+    return {
+      cardStats: { v: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+      attachedBystanders: { v: bystanders },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('Midtown: a 3-cost villain holding 2 Bystanders costs 5; holding none, 3', () => {
+    assert.equal(resolveFightCost(makeBystanderG(MIDTOWN, 2), 'v' as CardExtId), 5);
+    assert.equal(resolveFightCost(makeBystanderG(MIDTOWN, 0), 'v' as CardExtId), 3);
+  });
+
+  it('every family scheme (core, co2e, msp1) applies +1 per Bystander', () => {
+    for (const schemeId of FAMILY_SCHEME_IDS) {
+      assert.equal(
+        resolveFightCost(makeBystanderG(schemeId, 3), 'v' as CardExtId),
+        6,
+        `${schemeId} must add +1 per attached Bystander`,
+      );
+    }
+  });
+
+  it('a non-family scheme adds nothing for attached Bystanders', () => {
+    assert.equal(resolveFightCost(makeBystanderG('core/legacy-virus-the', 2), 'v' as CardExtId), 3);
+  });
+
+  it('stacks on a dynamic N+ villain: base + captured hero cost + Bystanders', () => {
+    const gameState = {
+      cardStats: {
+        v: { fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 2 },
+        hero: { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 4 },
+      },
+      villainAttachedHeroes: { v: ['hero'] },
+      selection: { schemeId: MIDTOWN },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+      attachedBystanders: { v: ['bystander-0'] },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(gameState, 'v' as CardExtId), 2 + 4 + 1);
+  });
+
+  it('a G with no attachedBystanders map resolves to the base under Midtown (no throw)', () => {
+    const gameState = {
+      cardStats: { v: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId: MIDTOWN },
+      city: [null, null, null, null, 'v'],
+      counters: {},
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(gameState, 'v' as CardExtId), 3);
+  });
+
+  it('Mastermind isolation: Bystanders under its key never change resolveMastermindFightCost', () => {
+    function makeMidtownMastermindG(bystandersUnderMastermind: CardExtId[]): LegendaryGameState {
+      return {
+        cardStats: { 'mm-base': { fightCost: 7, fightCostMode: 'static', fightCostBase: 0 } },
+        mastermind: { baseCardId: 'mm-base' },
+        selection: { schemeId: MIDTOWN },
+        counters: {},
+        attachedBystanders: { 'mm-base': bystandersUnderMastermind },
+      } as unknown as LegendaryGameState;
+    }
+    const withBystanders = resolveMastermindFightCost(
+      makeMidtownMastermindG(['bystander-0', 'bystander-1'] as CardExtId[]),
+    );
+    const withoutBystanders = resolveMastermindFightCost(makeMidtownMastermindG([]));
+    assert.equal(withBystanders, withoutBystanders);
+    assert.equal(withBystanders, 7);
+  });
+});

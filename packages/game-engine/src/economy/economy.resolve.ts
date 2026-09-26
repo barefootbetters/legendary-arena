@@ -4,7 +4,9 @@
  * resolveFightCost is the single authoritative source for villain fight cost.
  * Static villains return their fightCost directly. Dynamic villains (vAttack
  * "*" or "N+") return fightCostBase plus the sum of captured hero recruit
- * costs. The UI must never recompute dynamic values — it consumes the
+ * costs. Scheme bonuses stack on top: the Portals Dark-Portal space bonus
+ * (WP-539) and the Midtown Bank Robbery family's +1 per attached Bystander
+ * (WP-748). The UI must never recompute dynamic values — it consumes the
  * engine-resolved projection from UIState.
  *
  * No boardgame.io import. No ctx dependency. No randomness. No .reduce().
@@ -29,12 +31,25 @@ const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
 // consumers) share ONE value and can never disagree.
 export const DARK_PORTAL_ATTACK_BONUS = 1;
 
+// why: WP-748 / D-24572 — the schemes whose Special Rules print "Each Villain gets
+// +1 attack for each Bystander it has": core Midtown Bank Robbery, the co2e Bank
+// Robbery Hostage Crisis reprint, and msp1 Destroy the Cities of Earth. A card-data
+// scan of every set finds exactly these three. Consumed only by
+// bystanderVillainAttackBonus.
+const VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS: ReadonlySet<string> = new Set([
+  'core/midtown-bank-robbery',
+  'co2e/bank-robbery-hostage-crisis',
+  'msp1/destroy-the-cities-of-earth',
+]);
+
 /**
  * Resolves the fight cost for a villain at the current game state.
  *
  * For static villains (fightCostMode === 'static'), returns fightCost
  * unchanged. For dynamic villains (fightCostMode === 'dynamic'), returns
- * fightCostBase + sum(captured hero recruit costs).
+ * fightCostBase + sum(captured hero recruit costs). Scheme bonuses are then
+ * added: the Portals Dark-Portal space bonus (darkPortalVillainBonus) and the
+ * Midtown Bank Robbery family's per-Bystander bonus (bystanderVillainAttackBonus).
  *
  * Tolerates: missing cardStats entry (returns 0), no attached heroes
  * (returns fightCostBase), missing cardStats for a captured hero (treats
@@ -48,10 +63,17 @@ export function resolveFightCost(
   G: LegendaryGameState,
   villainCardId: CardExtId,
 ): number {
-  // why: WP-539 / D-24348 — the Dark-Portal bonus stacks on top of every villain's
-  // resolved cost (static, dynamic, or a converted Killbot/Skrull), so it is applied
-  // here around the base resolution.
-  return resolveBaseFightCost(G, villainCardId) + darkPortalVillainBonus(G, villainCardId);
+  // why: scheme bonuses stack on top of every villain's resolved cost (static,
+  // dynamic, or a converted Killbot/Skrull), so they are applied here around the
+  // base resolution: the Portals Dark-Portal bonus (WP-539 / D-24348) and the
+  // Midtown Bank Robbery family's +1 per Bystander (WP-748 / D-24572). This is the
+  // single site, so the fight move, the bot's legal moves and the City fightCost
+  // projection can never disagree.
+  return (
+    resolveBaseFightCost(G, villainCardId) +
+    darkPortalVillainBonus(G, villainCardId) +
+    bystanderVillainAttackBonus(G, villainCardId)
+  );
 }
 
 /**
@@ -117,6 +139,31 @@ function darkPortalVillainBonus(
   return darkPortalLocations(G).citySpaceIndices.includes(cityIndex)
     ? DARK_PORTAL_ATTACK_BONUS
     : 0;
+}
+
+/**
+ * The Midtown Bank Robbery family's attack bonus for a villain (WP-748 / D-24572).
+ *
+ * Under a scheme in VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS, a Villain (henchmen
+ * included) gets +1 attack for each Bystander it holds in G.attachedBystanders.
+ * Any other scheme gets 0. The Mastermind is not a Villain and never reads this.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @returns The number of Bystanders the villain holds under a family scheme, else 0.
+ */
+function bystanderVillainAttackBonus(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+): number {
+  // why: defensive `?.` mirrors this module's partial-G tolerance — the Portals and
+  // Mastermind fixtures build G under Midtown with no selection or no
+  // attachedBystanders map, and a missing map means "holds no Bystanders".
+  const schemeId = G.selection?.schemeId;
+  if (schemeId === undefined || !VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS.has(schemeId)) {
+    return 0;
+  }
+  return G.attachedBystanders?.[villainCardId]?.length ?? 0;
 }
 
 /**
