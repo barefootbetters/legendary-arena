@@ -12,7 +12,7 @@ related:
   - guest-accounts.md
   - play-board.md
   - tournament-calendar.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\bot-ally.md (this page — https://ewiki.legendary-arena.com/bot-ally/)
   - ../apps/arena-client/src/lobby/LobbyView.vue
@@ -147,14 +147,6 @@ make resets that clock, so a long think is never a problem.
 - **Very long games:** the bot ally stops after 400 of its own turns. No real
   game gets close.
 
-## Open Questions
-
-- **Choices on your turn** (the bot answering Loki's Vanishing Illusions or
-  Monarch's Decree while you are the active player) lands with D-24593
-  ([PR #2365](https://github.com/barefootbetters/legendary-arena/pull/2365)).
-  Until that merges, those effects freeze the table. Move this page to
-  `canonical` once it ships.
-
 ## References
 
 - **UI:**
@@ -174,6 +166,8 @@ make resets that clock, so a long think is never a problem.
     idle stop and the 400-turn cap.
   - [competition.logic.ts](../apps/server/src/competition/competition.logic.ts)
     — ranked eligibility; any bot seat makes the match Casual.
+  - [botAllySeatChoice.test.ts](../apps/server/src/bot-ally/botAllySeatChoice.test.ts)
+    — the bot answering a seat choice on your turn, and waiting on yours.
 - **Design and work packets:**
   - [DESIGN-SOLO-BOT-ALLY.md](../docs/ai/DESIGN-SOLO-BOT-ALLY.md) — design
     ("Casual history yes, ranked never").
