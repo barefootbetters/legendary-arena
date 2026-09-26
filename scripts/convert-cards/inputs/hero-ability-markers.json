@@ -2307,7 +2307,7 @@
       "heroSlug": "werewolf-by-night",
       "cardSlug": "track-the-captives",
       "abilityIndex": 0,
-      "abilityText": "[keyword:Moonlight]: Whenever you defeat a Vilain or Mastermind this turn, you may rescue a Bystander or gain a Hero from the HQ or Sidekick Deck whose cost is less than that Enemy's [icon:attack].",
+      "abilityText": "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may rescue a Bystander or gain a Hero from the HQ or Sidekick Deck whose cost is less than that Enemy's [icon:attack].",
       "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects"
     },
     {
@@ -2315,7 +2315,7 @@
       "heroSlug": "wong-master-of-the-mystic-arts",
       "cardSlug": "face-your-demons",
       "abilityIndex": 0,
-      "abilityText": "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Vilan with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”",
+      "abilityText": "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Villain with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”",
       "reason": "D-21602 — fight-win trigger: not wired to executeHeroEffects; non-standard combat against Bystander Deck stack"
     },
     {

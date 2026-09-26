@@ -170,7 +170,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "You may have a Vilain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile.",
+            "You may have a Villain or Mastermind [keyword:Hunt for Victims]. If it KOs a Bystander this way, you may KO a Hero from your hand or discard pile.",
             "[hc:tech]: If a Bystander is KO'd this way, you may also rescue that Bystander instead of putting it in the KO pile."
           ]
         },
@@ -408,7 +408,7 @@
           "attack": "5+",
           "recruit": null,
           "abilities": [
-            "[keyword:Moonlight]: Whenever you defeat a Vilain or Mastermind this turn, you may rescue a Bystander or gain a Hero from the HQ or Sidekick Deck whose cost is less than that Enemy's [icon:attack].",
+            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may rescue a Bystander or gain a Hero from the HQ or Sidekick Deck whose cost is less than that Enemy's [icon:attack].",
             "[hc:instinct]: You get +2[icon:attack]."
           ]
         }
@@ -518,7 +518,7 @@
           "attack": "6+",
           "recruit": null,
           "abilities": [
-            "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Vilan with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”",
+            "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Villain with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”",
             "[keyword:Sunlight]: You get +2[icon:attack]."
           ]
         }

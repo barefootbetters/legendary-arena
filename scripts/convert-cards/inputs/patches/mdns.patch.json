@@ -1,4 +1,8 @@
 {
+  "_abilityTokenRewrite": {
+    "a Vilain or Mastermind": "a Villain or Mastermind",
+    "“Darkhold Demon” Vilan with": "“Darkhold Demon” Villain with"
+  },
   "schemes": [
     {
       "_op": "append",
