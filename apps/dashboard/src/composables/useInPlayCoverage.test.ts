@@ -450,9 +450,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 2514 -> 2206), but peakObs = max(baseline, live) holds the denominator, so totalObs stays
   // 3019 and percentResolved 24.3 -> 37.6 (1135 / 3019). Deterministic — CI computes the same
   // 3019 / 37.6 from the committed source.
+  // 2026-09-26 (D-24606, re-pin): the anni / ff04 Focus lines no longer grant their cost and
+  // gated effect for free. Each is now an honest `focus` parse-unrecognized hollow (917 new
+  // observations), and the anni boards' trajectories shift with the lost free resources, so
+  // totalObs 3019 -> 3967. resolvedObs stays 1135, so percentResolved 37.6 -> 28.6
+  // (1135 / 3967). Newly visible hollow surface, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3019);
-  assert.equal(view.percentResolved.value, 37.6);
+  assert.equal(view.totalObs.value, 3967);
+  assert.equal(view.percentResolved.value, 28.6);
   assert.ok(view.remaining.value.length > 0);
 });
 

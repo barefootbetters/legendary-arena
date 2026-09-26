@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2768,
+    "executable": 2652,
     "heroes": 324,
-    "hooks": 6309,
-    "noEffect": 2538,
-    "parsedNotExecuted": 1003
+    "hooks": 6286,
+    "noEffect": 2580,
+    "parsedNotExecuted": 1054
   },
   "perSet": {
     "2099": {
@@ -23,9 +23,9 @@
       "noEffect": 94
     },
     "anni": {
-      "executable": 73,
-      "hooks": 127,
-      "noEffect": 49
+      "executable": 16,
+      "hooks": 122,
+      "noEffect": 101
     },
     "antm": {
       "executable": 47,
@@ -103,9 +103,9 @@
       "noEffect": 76
     },
     "ff04": {
-      "executable": 59,
+      "executable": 21,
       "hooks": 74,
-      "noEffect": 5
+      "noEffect": 43
     },
     "gotg": {
       "executable": 17,
@@ -113,9 +113,9 @@
       "noEffect": 65
     },
     "mdns": {
-      "executable": 63,
-      "hooks": 123,
-      "noEffect": 60
+      "executable": 53,
+      "hooks": 117,
+      "noEffect": 37
     },
     "mgtg": {
       "executable": 51,
@@ -138,9 +138,9 @@
       "noEffect": 13
     },
     "nmut": {
-      "executable": 37,
-      "hooks": 98,
-      "noEffect": 61
+      "executable": 26,
+      "hooks": 86,
+      "noEffect": 36
     },
     "noir": {
       "executable": 16,
@@ -223,7 +223,6 @@
     "artifact--": 6,
     "artifacts": 2,
     "astral-plane": 1,
-    "blood-frenzy": 6,
     "bridge": 3,
     "bridge-conqueror": 3,
     "burn-2-shards": 3,
@@ -246,7 +245,7 @@
     "cyber-mod-wound": 2,
     "danger-sense": 18,
     "dark-memories": 10,
-    "defeated-villain-or-mastermind": 4,
+    "defeated-villain-or-mastermind": 5,
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
