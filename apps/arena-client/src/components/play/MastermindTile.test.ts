@@ -581,3 +581,40 @@ describe('MastermindTile — projected fight cost (WP-750 / D-24574)', () => {
     assert.equal(wrapper.find('[data-testid="play-mastermind-fight-cost"]').exists(), false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Jeff feedback (match 25-GJ0oXBwy) — the Mastermind Fight N badge is loud when it
+// explains a disabled Fight.
+// ---------------------------------------------------------------------------
+
+describe('MastermindTile — louder unaffordable Fight N badge', () => {
+  const UNAFFORDABLE = 'mastermind__fight-cost--unaffordable';
+
+  function mountAt(availableAttack: number, currentStage = 'main') {
+    const { submitMove } = recorder();
+    return mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fightCost: 7 }),
+        currentStage,
+        economy: economy({ attack: availableAttack, availableAttack }),
+        submitMove,
+      },
+    });
+  }
+
+  test('loud when the projected cost is unaffordable in the Main stage', () => {
+    const badge = mountAt(6).find('[data-testid="play-mastermind-fight-cost"]');
+    assert.equal(badge.classes().includes(UNAFFORDABLE), true);
+  });
+
+  test('quiet when affordable, and quiet outside the Main stage', () => {
+    assert.equal(
+      mountAt(7).find('[data-testid="play-mastermind-fight-cost"]').classes().includes(UNAFFORDABLE),
+      false,
+    );
+    assert.equal(
+      mountAt(0, 'start').find('[data-testid="play-mastermind-fight-cost"]').classes().includes(UNAFFORDABLE),
+      false,
+    );
+  });
+});

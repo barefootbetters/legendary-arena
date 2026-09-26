@@ -866,3 +866,46 @@ describe('CityRow — projected fight cost (WP-750 / D-24574)', () => {
     wrapper.unmount();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Jeff feedback (match 25-GJ0oXBwy) — the Fight N badge is loud when it explains
+// a disabled Fight: the viewer's Main stage and the projected cost is unaffordable.
+// ---------------------------------------------------------------------------
+
+describe('CityRow — louder unaffordable Fight N badge', () => {
+  const UNAFFORDABLE = 'city-space__fight-cost--unaffordable';
+
+  function badgeFor(wrapper: ReturnType<typeof mount>, cardId: string) {
+    return wrapper
+      .find(`[data-testid="play-city-villain"][data-card-id="${cardId}"]`)
+      .find('[data-testid="play-city-fight-cost"]');
+  }
+
+  test('an unaffordable projected cost in the Main stage makes the badge loud', () => {
+    const { submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 3);
+    assert.equal(badgeFor(wrapper, 'portal-villain').classes().includes(UNAFFORDABLE), true);
+    assert.equal(badgeFor(wrapper, 'attackless-villain').classes().includes(UNAFFORDABLE), false);
+  });
+
+  test('an affordable projected cost keeps the quiet badge', () => {
+    const { submitMove } = recorder();
+    const wrapper = mountProjected(submitMove, 4);
+    assert.equal(badgeFor(wrapper, 'portal-villain').classes().includes(UNAFFORDABLE), false);
+  });
+
+  test('outside the Main stage the badge stays quiet even when unaffordable', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: projectedCostCity(),
+        decks: DECKS,
+        currentStage: 'start',
+        economy: economy({ attack: 0, availableAttack: 0 }),
+        submitMove,
+      },
+    });
+    assert.equal(badgeFor(wrapper, 'portal-villain').exists(), true);
+    assert.equal(badgeFor(wrapper, 'portal-villain').classes().includes(UNAFFORDABLE), false);
+  });
+});
