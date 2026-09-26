@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-766 — Day/Night badge on the play HUD (EC-803; consumes D-24598) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** In a match with
+Sunlight/Moonlight Heroes, a badge beside the Danger Meter shows **Sunlight** (sun icon), **Moonlight**
+(moon icon) or **Neither**, with the rule as a tooltip. Players no longer have to count odd and even HQ
+costs to know which of their day/night lines will fire. Every other match's HUD is unchanged.
+
+- **Client only.** `DayNightBadge.vue` renders the engine-projected `snapshot.hq.dayNight` verbatim
+  (WP-765); the client never computes day/night. Copy lives in `vfx/dayNightDisplay.ts`.
+- **Accessibility.** Inline-SVG Lucide icons (no Unicode glyphs; none for Neither), the word always
+  shown, `role="status"` so a flip is announced, `aria-label` from `dayNightAriaText`.
+- **Counts.** arena-client 2116 → 2124 / 0 fail; typecheck 0; `pnpm -r --no-bail test` → 0 fail.
+- **Layout (preview, fixture + dev-store injection, not committed).** 1280×720: HUD height 39.57px in
+  all three states, equal to the no-badge render (row 2 does not wrap). Mobile: no horizontal scroll
+  (scrollWidth = clientWidth = 375); HUD height 171px in every state.
+- **Pending (D-24026).** Operator live-verify after deploy: in a Werewolf by Night match the badge
+  shows the right state and flips as the HQ changes.
+
 ### WP-750 — Client Fight gating reads the engine's projected fight cost (EC-787 / D-24574) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Fight
