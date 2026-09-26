@@ -21,10 +21,13 @@
  * filename reads left-to-right as (set, ribbon, hero, companion, sides).
  *
  * why: D-14702 — two-side filenames use source-data sides[] order with NO
- * Array.prototype.sort(). The source-data order is the physical-side order
- * (side A on the left/top of the printed card is first in the array), which
- * is also deterministic because JSON files are byte-identical across
- * Windows/Linux/CI. D-14702 narrowly overrides D-13802's UTF-16 sort lock
+ * Array.prototype.sort(). The order is deterministic because JSON files are
+ * byte-identical across Windows/Linux/CI. D-14702 intended sides[] to be the
+ * physical-side order (side A on the left/top first), but that does NOT hold
+ * in the data: on 19 of the 39 split cards (mostly cvwr, entered near
+ * alphabetically) sides[0] is the RIGHT half. The filename therefore follows
+ * sides[] identity order, not the printed layout; the face with the lower
+ * hero-card `slot` is the left half (wiki/split-card.md). D-14702 narrowly overrides D-13802's UTF-16 sort lock
  * for sides.length === 2; D-13802 remains in effect for single-side
  * filenames and any future automatic ordering operation.
  *
@@ -91,8 +94,9 @@ export function heroImageUrl(
   }
 
   // why: D-14702 — sides[] order is taken from source data verbatim for
-  // sides.length === 2 (physical-side order: side A on the left/top of the
-  // printed card is first in the array). NO Array.prototype.sort() here.
+  // sides.length === 2 because the R2 filenames were minted in that order.
+  // It is NOT reliably left-to-right (lower `slot` = left half; see header).
+  // NO Array.prototype.sort() here.
   // D-13802's UTF-16 sort lock remains in effect for single-side filenames
   // and any future automatic ordering operation — D-14702 is scoped
   // narrowly to sides.length === 2.
