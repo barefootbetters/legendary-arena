@@ -944,6 +944,13 @@ export interface PendingKoDiscardChoice {
   playerID: string;
   /** The maximum number of cards the player may KO (MANIACAL_TYRANT_KO_MAX = 4), clamped by discard size at resolve. */
   maxCount: number;
+  /**
+   * The card whose effect parked this choice (WP-760 / D-24589: Salomé's Fight).
+   * Optional and omit-when-absent: Loki's Maniacal Tyrant entry never sets it, so its
+   * resolve log stays byte-identical. Display text is never stored in G — the resolver
+   * names the card from G.cardDisplayData.
+   */
+  sourceCardId?: CardExtId;
 }
 
 /**
@@ -2501,6 +2508,16 @@ export interface LegendaryGameState {
   // without these villains keep a byte-identical G shape (determinism).
   /** Per-villain defeat requirements. Built at setup, read-only; absent when none. */
   villainDefeatRequirements?: Record<CardExtId, VillainDefeatRequirement>;
+
+  // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
+  // each different Victory Point value among the cards in your Victory Pile"; The
+  // Fallen's Metarchus and Salomé). Read by resolveFightCost only. Built once at setup
+  // from the bare [keyword:Blood Frenzy] line, keyed by copy-suffixed instance ext_id.
+  // OMITTED ENTIRELY when no Blood Frenzy villain is in the match, so every other
+  // match keeps a byte-identical G (hash oracles). Not a BoardKeyword: Blood Frenzy is
+  // a cost modifier, not City-structural (patrol / ambush / guard).
+  /** Blood Frenzy villain instances. Built at setup, read-only; absent when none. */
+  villainBloodFrenzy?: Record<CardExtId, true>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

@@ -6,7 +6,8 @@
  * "*" or "N+") return fightCostBase plus the sum of captured hero recruit
  * costs. Scheme bonuses stack on top: the Portals Dark-Portal space bonus
  * (WP-539) and the Midtown Bank Robbery family's +1 per attached Bystander
- * (WP-748). The UI must never recompute dynamic values — it consumes the
+ * (WP-748). A Blood Frenzy villain adds the fighting player's distinct Victory
+ * Point value count (WP-760). The UI must never recompute dynamic values — it consumes the
  * engine-resolved projection from UIState.
  *
  * No boardgame.io import. No ctx dependency. No randomness. No .reduce().
@@ -21,6 +22,9 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
+// why: WP-760 / D-24589 — villain Blood Frenzy reuses WP-765's shared distinct-VP
+// helper (D-24598), so villain and hero Blood Frenzy can never count differently.
+import { countDistinctVictoryPointValues } from './bloodFrenzy.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
@@ -50,6 +54,8 @@ const VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS: ReadonlySet<string> = new Set([
  * fightCostBase + sum(captured hero recruit costs). Scheme bonuses are then
  * added: the Portals Dark-Portal space bonus (darkPortalVillainBonus) and the
  * Midtown Bank Robbery family's per-Bystander bonus (bystanderVillainAttackBonus).
+ * A Blood Frenzy villain then adds the fighting player's distinct Victory Point
+ * value count (villainBloodFrenzyBonus).
  *
  * Tolerates: missing cardStats entry (returns 0), no attached heroes
  * (returns fightCostBase), missing cardStats for a captured hero (treats
@@ -57,23 +63,59 @@ const VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS: ReadonlySet<string> = new Set([
  *
  * @param G - Game state (read-only).
  * @param villainCardId - The villain zone-instance ext_id.
+ * @param fightingPlayerId - The player who would fight (the active player). When
+ *   omitted, the Blood Frenzy term is 0.
  * @returns The resolved fight cost as a non-negative integer.
  */
 export function resolveFightCost(
   G: LegendaryGameState,
   villainCardId: CardExtId,
+  fightingPlayerId?: string,
 ): number {
   // why: scheme bonuses stack on top of every villain's resolved cost (static,
   // dynamic, or a converted Killbot/Skrull), so they are applied here around the
   // base resolution: the Portals Dark-Portal bonus (WP-539 / D-24348) and the
   // Midtown Bank Robbery family's +1 per Bystander (WP-748 / D-24572). This is the
   // single site, so the fight move, the bot's legal moves and the City fightCost
-  // projection can never disagree.
+  // projection can never disagree. Blood Frenzy (WP-760 / D-24589) is a villain
+  // keyword, not a scheme bonus, but it lives here for the same reason.
   return (
     resolveBaseFightCost(G, villainCardId) +
     darkPortalVillainBonus(G, villainCardId) +
-    bystanderVillainAttackBonus(G, villainCardId)
+    bystanderVillainAttackBonus(G, villainCardId) +
+    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId)
   );
+}
+
+/**
+ * The Blood Frenzy attack bonus for a villain (WP-760 / D-24589).
+ *
+ * A villain flagged in G.villainBloodFrenzy gets +1 attack for each different
+ * Victory Point value among the cards in the fighting player's Victory Pile.
+ * Unflagged villains, and any call without a fighting player, get 0.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @param fightingPlayerId - The player who would fight, if known.
+ * @returns The distinct VP value count, or 0.
+ */
+function villainBloodFrenzyBonus(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+  fightingPlayerId: string | undefined,
+): number {
+  // why: Blood Frenzy reads the FIGHTER's Victory Pile, so the term needs a player.
+  // The parameter is optional so every pre-WP-760 caller and test stays
+  // byte-identical; the three production callers pass the active player — the only
+  // player who can fight — so the City projection shows that player's cost to every
+  // audience.
+  if (fightingPlayerId === undefined) {
+    return 0;
+  }
+  if (G.villainBloodFrenzy?.[villainCardId] !== true) {
+    return 0;
+  }
+  return countDistinctVictoryPointValues(G, fightingPlayerId);
 }
 
 /**

@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 720,
+    "totalRows": 722,
     "byStatus": {
-      "executable": 137,
+      "executable": 140,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 580,
+      "unmarked": 579,
       "subsystem": 2
     },
-    "distinctMechanics": 34
+    "distinctMechanics": 36
   },
   "rows": [
     {
@@ -3461,6 +3461,17 @@
       "cardName": "Atrocity",
       "set": "mdns",
       "cardType": "villain",
+      "mechanic": "captureBystander",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18506",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "mdns-villain-fallen-atrocity",
+      "cardName": "Atrocity",
+      "set": "mdns",
+      "cardType": "villain",
       "mechanic": "haunt-hq-hero",
       "status": "executable",
       "wp": "WP-757",
@@ -3534,15 +3545,26 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero"
     },
     {
+      "extId": "mdns-villain-fallen-patriarch",
+      "cardName": "Patriarch",
+      "set": "mdns",
+      "cardType": "villain",
+      "mechanic": "reveal-top-draw-if-cost-lte",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-draw-if-cost-lte"
+    },
+    {
       "extId": "mdns-villain-fallen-salom-sorceress-supreme",
       "cardName": "Salomé, Sorceress Supreme",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "mdns-villain-lilin-sister-nil",

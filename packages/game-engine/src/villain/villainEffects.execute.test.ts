@@ -4506,3 +4506,116 @@ describe('executeVillainAbilities — haunt-hq-hero (WP-757 / D-24587)', () => {
     assert.equal(G.messages[0]!.outcome, 'blocked');
   });
 });
+
+// ---------------------------------------------------------------------------
+// The Fallen fight-side primitives (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — reveal-top-draw-if-cost-lte (Patriarch, WP-760)', () => {
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+  const PATRIARCH = 'mdns-villain-fallen-patriarch-00' as CardExtId;
+  const patriarchHook: VillainAbilityHook = {
+    cardId: PATRIARCH,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'reveal-top-draw-if-cost-lte', magnitude: 3 }],
+  };
+
+  /** Player 0 holding `deck` and `discard`, with the given card costs. */
+  function patriarchG(deck: CardExtId[], discard: CardExtId[], cardStats: Record<string, { cost: number }>): LegendaryGameState {
+    return makeG({
+      hooks: [patriarchHook],
+      playerZones: {
+        '0': { deck, hand: [], discard, inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardStats,
+      messages: [],
+      cardDisplayData: { cheap: { name: 'Cheap Hero' }, pricey: { name: 'Pricey Hero' } },
+    });
+  }
+
+  it('draws the top card when it costs 3 or less', () => {
+    const G = patriarchG(['cheap' as CardExtId, 'next' as CardExtId], [], { cheap: { cost: 3 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['cheap']);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['next']);
+    assert.match(G.messages![0]!.text, /revealed "Cheap Hero" \(cost 3\) — drew it\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('leaves a card costing more than 3 on top and logs it', () => {
+    const G = patriarchG(['pricey' as CardExtId], [], { pricey: { cost: 4 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['pricey'], 'left on top');
+    assert.match(G.messages![0]!.text, /revealed "Pricey Hero" \(costs more than 3\) — left on top of your deck\./);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+
+  it('draws a Wound (an uncosted Wound reads cost 0, D-24583)', () => {
+    const G = patriarchG([WOUND], [], {});
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [WOUND]);
+  });
+
+  it('reshuffles the discard when the deck is empty, then reveals (D-24285)', () => {
+    const G = patriarchG([], ['pricey' as CardExtId, 'cheap' as CardExtId], { cheap: { cost: 2 }, pricey: { cost: 5 } });
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    // why: the reversed discard puts `cheap` on top, and it costs 2 — drawn.
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['cheap']);
+    assert.deepStrictEqual(G.playerZones['0']!.deck, ['pricey']);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, []);
+  });
+
+  it('is a logged no-op when both the deck and the discard are empty', () => {
+    const G = patriarchG([], [], {});
+    executeVillainAbilities(G, CTX, PATRIARCH, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.match(G.messages![0]!.text, /no card to reveal/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});
+
+describe('executeVillainAbilities — ko-up-to-from-discard-current (Salomé, WP-760)', () => {
+  const SALOME = 'mdns-villain-fallen-salom-sorceress-supreme-00' as CardExtId;
+  const salomeHook: VillainAbilityHook = {
+    cardId: SALOME,
+    timing: 'onFight',
+    keywords: [],
+    effects: [{ primitive: 'ko-up-to-from-discard-current', magnitude: 2 }],
+  };
+
+  /** Player 0 with the given discard pile. */
+  function salomeG(discard: CardExtId[]): LegendaryGameState {
+    return makeG({
+      hooks: [salomeHook],
+      playerZones: {
+        '0': { deck: [], hand: [], discard, inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+      cardDisplayData: { [SALOME]: { name: 'Salomé, Sorceress Supreme' } },
+    });
+  }
+
+  it('parks a KO-up-to-2 discard choice naming Salomé as the source, KOing nothing yet', () => {
+    const G = salomeG(['a' as CardExtId, 'b' as CardExtId, 'c' as CardExtId]);
+    executeVillainAbilities(G, CTX, SALOME, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: SALOME },
+    ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['a', 'b', 'c'], 'nothing KO’d until the choice resolves');
+    assert.match(G.messages![0]!.text, /KO up to 2 cards from your discard pile \(Salomé, Sorceress Supreme\)\./);
+  });
+
+  it('parks nothing on an empty discard (a logged no-op)', () => {
+    const G = salomeG([]);
+    executeVillainAbilities(G, CTX, SALOME, 'onFight');
+    assert.equal(G.pendingKoDiscardChoices, undefined, 'no queue created');
+    assert.match(G.messages![0]!.text, /your discard pile is empty/);
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+});

@@ -90,3 +90,23 @@ describe('PendingKoDiscardChoicePrompt (WP-693 / D-24510)', () => {
     assert.deepEqual(submitted, { name: 'resolveKoDiscardChoice', args: { cardIds: ['dup'] } });
   });
 });
+
+describe('PendingKoDiscardChoicePrompt — source-neutral header (WP-760 / D-24589)', () => {
+  // why: two cards now park this choice (Loki's Maniacal Tyrant, Salomé's Fight), so the
+  // header names neither; the game log names the source.
+  test('the header reads "KO up to N cards from your discard pile" with no card name', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a', 'b', 'c'], 2), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    const heading = wrapper.find('.pending-ko-discard-choice-prompt__heading').text();
+    assert.equal(heading, 'KO up to 2 cards from your discard pile');
+    assert.doesNotMatch(heading, /Maniacal Tyrant/);
+  });
+
+  test('keeps the singular form for a cap of 1', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a'], 1), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 1 card from your discard pile');
+  });
+});

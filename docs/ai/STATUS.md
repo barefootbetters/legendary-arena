@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-760 — The Fallen fight-side: Blood Frenzy, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (EC-797 / D-24589) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** The Fallen's
+fight-side text now works:
+- **Metarchus and Salomé (Blood Frenzy):** they cost +1 attack for each different Victory Point
+  value in the fighting player's Victory Pile. The City tile's `Fight N` badge shows the real cost
+  (via WP-750).
+- **Atrocity:** defeating it rescues a Bystander.
+- **Patriarch:** defeating it reveals your deck top and draws it if it costs 3 or less.
+- **Salomé:** defeating her opens "KO up to 2 cards from your discard pile".
+
+Salomé's Escape (Ascend to an additional Mastermind) stays deferred.
+
+- **Engine.**
+  - `resolveFightCost` takes an optional fighting player and adds WP-765's shared distinct-VP
+    count for flagged villains. All three callers pass the active player, so the fight gate, the
+    bot and the projection agree.
+  - New omit-when-empty `G.villainBloodFrenzy`, built from the **selected** villain groups only.
+    That keeps every non-Fallen match byte-identical.
+  - Two new villain primitives (26 → 28).
+  - `PendingKoDiscardChoice.sourceCardId?` names Salomé in the log; Maniacal Tyrant's log is
+    unchanged.
+- **Client.** The one declared copy fix: the KO-from-discard prompt header is source-neutral.
+- **Counts.**
+  - Engine 4445/0 → 4472/0 (+27). The only pre-existing test edit is the intentional
+    primitive drift pin.
+  - arena-client 2139/0 → 2141/0.
+  - All data and sim gates → 0; replay hash oracles unchanged; `pnpm -r --no-bail test` → 0 fail.
+  - Rebased and re-verified on top of WP-767 (#2419): engine 4496/0 on the combined tree.
+- **Real-data setup check.** A Fallen match flags Metarchus ×2 and Salomé ×1, all in the Villain
+  Deck. A core HYDRA match omits the field.
+- **Pending (D-24026).** Operator live-verify in a match with The Fallen:
+  - Metarchus shows `Fight 3 + N`, where N is your distinct VP count, and stays disabled below it.
+  - Patriarch draws a card that costs 3 or less.
+  - Salomé opens the KO-up-to-2 prompt, and the log names her.
+
 ### WP-767 — Snarling Fangs Moonlight: "you may KO one of your Heroes" on each defeat (EC-804 / D-24600) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Werewolf by

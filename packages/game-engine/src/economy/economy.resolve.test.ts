@@ -477,3 +477,66 @@ describe('resolveFightCost — Midtown Bank Robbery family Bystander bonus (WP-7
     assert.equal(withBystanders, 7);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Villain Blood Frenzy — +1 per distinct VP value in the fighter's Victory Pile (WP-760 / D-24589)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain Blood Frenzy (WP-760)', () => {
+  const METARCHUS = 'mdns-villain-fallen-metarchus-00';
+
+  /**
+   * A G with Metarchus (static base 3) in the City, Blood-Frenzy-flagged unless
+   * `isFlagged` is false, and player 0's Victory Pile holding villains worth 2, 3, 3,
+   * a henchman worth 1 and a bystander (VP_BYSTANDER = 1) — three distinct VP values,
+   * since the repeated 3 and the two 1s each count once.
+   */
+  function makeBloodFrenzyG(isFlagged: boolean, schemeId = 'core/legacy-virus-the'): LegendaryGameState {
+    const victory = ['villain-two', 'villain-three-a', 'villain-three-b', 'henchman-one', 'bystander-x'];
+    return {
+      cardStats: { [METARCHUS]: { fightCost: 3, fightCostMode: 'static', fightCostBase: 0 } },
+      villainAttachedHeroes: {},
+      selection: { schemeId },
+      city: [METARCHUS, null, null, null, null],
+      counters: {},
+      attachedBystanders: {},
+      ...(isFlagged ? { villainBloodFrenzy: { [METARCHUS]: true } } : {}),
+      villainDeckCardTypes: {
+        'villain-two': 'villain',
+        'villain-three-a': 'villain',
+        'villain-three-b': 'villain',
+        'henchman-one': 'henchman',
+        'bystander-x': 'bystander',
+      },
+      cardVictoryPoints: { 'villain-two': 2, 'villain-three-a': 3, 'villain-three-b': 3, 'henchman-one': 1 },
+      cardTraits: {},
+      mastermind: { baseCardId: 'mm-base', tacticsDefeated: [] },
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory, undercover: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [], undercover: [] },
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('adds the fighting player’s distinct VP value count (2, 3, 3, 1, 1 → 3)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId, '0'), 3 + 3);
+  });
+
+  it('reads the fighting player’s own Victory Pile (an empty pile adds 0)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId, '1'), 3);
+  });
+
+  it('adds nothing when no fighting player is passed (pre-WP-760 callers stay byte-identical)', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(true), METARCHUS as CardExtId), 3);
+  });
+
+  it('adds nothing for a villain without the Blood Frenzy flag', () => {
+    assert.equal(resolveFightCost(makeBloodFrenzyG(false), METARCHUS as CardExtId, '0'), 3);
+  });
+
+  it('composes additively with the Midtown per-Bystander bonus', () => {
+    const gameState = makeBloodFrenzyG(true, 'core/midtown-bank-robbery');
+    gameState.attachedBystanders = { [METARCHUS as CardExtId]: ['hostage-1' as CardExtId, 'hostage-2' as CardExtId] };
+    assert.equal(resolveFightCost(gameState, METARCHUS as CardExtId, '0'), 3 + 2 + 3);
+  });
+});

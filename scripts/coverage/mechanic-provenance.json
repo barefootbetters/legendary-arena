@@ -67,6 +67,8 @@
     "play-villain-deck-cards": { "wp": "WP-542", "decision": "D-24351" },
     "ko-heroes-current-count-by-trait": { "wp": "WP-544", "decision": "D-24353" },
     "haunt-hq-hero": { "wp": "WP-757", "decision": "D-24587" },
+    "reveal-top-draw-if-cost-lte": { "wp": "WP-760", "decision": "D-24589" },
+    "ko-up-to-from-discard-current": { "wp": "WP-760", "decision": "D-24589" },
     "draw": { "wp": "WP-022", "decision": "D-2201" },
     "rescue": { "wp": "WP-215", "decision": "D-21501" },
     "undercover": { "wp": "WP-282", "decision": "D-24060" },

@@ -1214,3 +1214,36 @@ describe('getLegalMoves — Haunt guard agreement: every emitted intent commits 
     assert.deepStrictEqual(followUp.map((move) => (move.args as { hqIndex: number }).hqIndex), [2]);
   });
 });
+
+describe('getLegalMoves — villain Blood Frenzy cost matches the move guard (WP-760 / D-24589)', () => {
+  // why: the bot must pass the same fighter the fightVillain move passes, or it would
+  // offer a Blood Frenzy villain the move refuses (the legalMoves↔guard divergence class
+  // that FAULTs bot turns).
+
+  /** A Blood Frenzy villain (printed 3) with player 0 holding VP values 2 and 4 → cost 5. */
+  function makeBloodFrenzyG(availableAttack: number): LegendaryGameState {
+    const gameState = makeG({ hand: [], currentStage: 'main' });
+    gameState.turnEconomy = { ...makeTurnEconomy(), attack: availableAttack } as LegendaryGameState['turnEconomy'];
+    gameState.city = ['bf-villain' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'bf-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.villainBloodFrenzy = { ['bf-villain' as CardExtId]: true };
+    gameState.villainDeckCardTypes = { ['vp-two' as CardExtId]: 'villain', ['vp-four' as CardExtId]: 'villain' };
+    gameState.cardVictoryPoints = { ['vp-two' as CardExtId]: 2, ['vp-four' as CardExtId]: 4 };
+    gameState.cardTraits = {};
+    (gameState.mastermind as { tacticsDefeated?: CardExtId[] }).tacticsDefeated = [];
+    gameState.playerZones['0']!.victory = ['vp-two', 'vp-four'] as LegendaryGameState['playerZones']['0']['victory'];
+    return gameState;
+  }
+
+  test('does NOT offer the fight at the printed attack (3 < 3 + 2)', () => {
+    const legalMoves = getLegalMoves(makeBloodFrenzyG(3), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 0);
+  });
+
+  test('offers the fight once attack covers printed + distinct VP count', () => {
+    const legalMoves = getLegalMoves(makeBloodFrenzyG(5), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 1);
+  });
+});

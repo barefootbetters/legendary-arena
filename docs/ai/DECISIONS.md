@@ -45219,6 +45219,71 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 **Reserved by:** NUMBER-LEDGER D-24600. Related: D-24598 (WP-765), D-24467 (per-defeat trigger), D-24565 (Trick Shot precedent), D-24480 / D-24498 (optional-KO queue, `koZones`), D-24442 (in-play KO source), D-24119 (replay verification).
 
+### D-24589 — The Fallen fight-side: villain Blood Frenzy in resolveFightCost, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (Active 2026-09-26 — WP-760 / EC-797)
+
+**Status:** Active. Landed 2026-09-26 (WP-760 / EC-797). Live-on-surface (D-24026) is pending with the operator. It needs a match that includes The Fallen:
+- Metarchus's tile shows `Fight 3 + N`, where N is the fighting player's distinct Victory Point value count.
+- Patriarch's Fight draws a card that costs 3 or less.
+- Salomé's Fight opens the "KO up to 2 cards from your discard pile" prompt.
+
+**Context.** WP-757 made The Fallen's Ambush Haunts work, but their fight-side text was still inert:
+- Metarchus and Salomé print Blood Frenzy, which nothing read.
+- Atrocity, Patriarch and Salomé were `unmarked` in the ledger.
+
+WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared distinct-VP helper) were hard prerequisites. WP-757 was the sequencing prerequisite, because it shares the `mdns/fallen` marker block.
+
+**Decision.**
+
+1. **Villain Blood Frenzy lives in the single fight-cost authority.**
+   - `resolveFightCost(G, villainCardId, fightingPlayerId?)` adds `countDistinctVictoryPointValues(G, fightingPlayerId)` when `G.villainBloodFrenzy?.[villainCardId] === true`.
+   - When the player is omitted, the term is 0, so every pre-WP-760 caller and test is byte-identical.
+   - The three production callers pass the acting player: `fightVillain` passes `ctx.currentPlayer`, `ai.legalMoves` passes `activePlayer`, and `uiState.build` passes `ctx.currentPlayer`. The fight gate, the bot and the City `fightCost` projection therefore always agree.
+   - The projection shows the **active** player's cost to every audience, because only the active player can fight.
+   - The term composes additively with the Portals and Midtown (WP-748 / D-24572) bonuses.
+2. **The distinct-VP count is WP-765's helper, imported and not re-implemented.** Villain and hero Blood Frenzy can never count differently (D-24598). Non-null values count once each; zero and negative printed values count as values.
+3. **`G.villainBloodFrenzy?: Record<CardExtId, true>` is omit-when-empty.**
+   - `setup/buildVillainBloodFrenzy.ts` builds it at setup. It scans the ability text of the **selected** villain groups for `[keyword:Blood Frenzy]` (case-insensitive) and fans out one entry per copy instance id.
+   - **Execution note:** the scan is scoped to `config.villainGroupIds`, which the WP left implicit. Scanning every loaded set would make the map non-empty in every match (`mdns` is always loaded), and that would change every match's hashed `G`.
+   - `BoardKeyword` is not widened; Blood Frenzy is a cost modifier, not City-structural.
+   - Real-data check: a Fallen setup flags Metarchus ×2 and Salomé ×1, all present in the Villain Deck. A core HYDRA setup omits the field.
+4. **Two new villain primitives (26 → 28), both keyword-less and self-narrating.**
+   - **`reveal-top-draw-if-cost-lte:N`** (Patriarch, N = 3):
+     - An empty deck first reshuffles the discard (D-24285). If both are empty, it's a logged no-op.
+     - An uncosted Wound reads cost 0 (D-24583, a local copy of the hero-module resolver).
+     - If the card costs N or less, it moves deck → hand directly, not through the hero-effect draw path, so no draw lock applies (the WP-731 precedent).
+     - Otherwise the card stays on top and the reveal is logged.
+   - **`ko-up-to-from-discard-current:N`** (Salomé, N = 2):
+     - It parks the existing `PendingKoDiscardChoice` with `sourceCardId` and returns `{ pending: true }`. It reuses WP-693's block-all guard, projection, prompt and bot default (D-24510).
+     - An empty discard is a logged no-op.
+5. **`PendingKoDiscardChoice.sourceCardId?` is optional and omit-when-absent.**
+   - `resolveKoDiscardChoice` names the source from `G.cardDisplayData`. With no `sourceCardId` it logs `Maniacal Tyrant`, so Loki's entry and its log stay byte-identical.
+   - Display text is never stored in `G`.
+   - The one declared client edit: the `PendingKoDiscardChoicePrompt.vue` header is now the source-neutral "KO up to N card(s) from your discard pile".
+6. **Atrocity** "Fight: Rescue a Bystander." is marked `captureBystander` on Fight. A Fight-timed capture is awarded immediately (D-18506), so no new code is needed.
+7. **Data and provenance.**
+   - Three marker rows under `villains.mdns.fallen`. `apply-effect-markers.mjs` validates both new `:N` grammars, and its second run appends 0 markers.
+   - `mechanic-provenance.json` rows for both primitives.
+   - `subsystem-coverage.json` entries for Metarchus and Salomé (`economy:fight-cost-modifier`, documentation-only; both rows stay `executable` from their effect markers).
+   - `mdns.json`, the effect index and the villain ledger were regenerated.
+8. **Deferred.** Salomé's Escape ("ascends to become an additional Mastermind") stays inert; no additional-Mastermind model was started.
+
+**Gates.** After `pnpm -r build` (no `Failed`):
+- Engine 4445/0 → 4472/0 (+27); arena-client 2139/0 → 2141/0 (+2). The only pre-existing test edit is the intentional primitive drift pin (26 → 28).
+- New tests:
+  - the setup builder (4)
+  - the resolver term (5)
+  - the parser grammars (3)
+  - Patriarch (5) and Salomé (2) handlers
+  - the resolve source log (3)
+  - one Blood Frenzy test file for each of the three callers
+  - the client header (2)
+- With the player argument removed at each caller, that caller's Blood Frenzy tests fail.
+- `cards:check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:villains:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `gauntlet:loadouts:check` → all 0. Markers idempotent.
+- The replay sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (the field is omitted for core).
+- `pnpm -r --no-bail test` → 0 fail. arena-client typecheck → 0.
+
+**Reserved by:** NUMBER-LEDGER D-24589. Related: D-24598 (WP-765 shared Blood Frenzy helper), D-24574 (WP-750 client gating), D-24587 (WP-757 Haunt), D-24572 (WP-748 Midtown term), D-24348 (Portals term precedent), D-24510 (KO-from-discard choice), D-18506, D-24285, D-24583, D-24267, D-24026.
+
 ---
 
 Protect this file.

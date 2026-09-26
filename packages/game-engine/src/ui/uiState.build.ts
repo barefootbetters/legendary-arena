@@ -833,8 +833,10 @@ export function buildUIState(
         // why: WP-505 / D-24311 — count only (face-down = identity hidden).
         attachedBystanderCount: spaceAttachedBystanders.length,
         // why: WP-214 — engine-resolved fight cost; UI must not recompute
-        // dynamic values (engine-owns-truth invariant)
-        fightCost: resolveFightCost(gameState, space),
+        // dynamic values (engine-owns-truth invariant). WP-760 / D-24589: passes the
+        // active player — the only player who can fight — so a Blood Frenzy villain
+        // shows that player's cost to every audience.
+        fightCost: resolveFightCost(gameState, space, ctx.currentPlayer),
       });
     }
   }

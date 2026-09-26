@@ -2393,3 +2393,24 @@ describe('buildUIState — mastermind.fightCost projection (WP-750 / D-24574)', 
     assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
   });
 });
+
+describe('buildUIState — City fightCost includes villain Blood Frenzy for the active player (WP-760 / D-24589)', () => {
+  it('projects printed + the active player’s distinct VP count, and the printed cost when unflagged', () => {
+    const gameState = createTestGameState();
+    const villainId = 'bf-villain' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.villainDeckCardTypes = {
+      ...gameState.villainDeckCardTypes,
+      ['vp-two' as CardExtId]: 'villain',
+      ['vp-four' as CardExtId]: 'villain',
+    };
+    gameState.cardVictoryPoints = { ...(gameState.cardVictoryPoints ?? {}), ['vp-two' as CardExtId]: 2, ['vp-four' as CardExtId]: 4 };
+    gameState.playerZones[mockCtx.currentPlayer]!.victory = ['vp-two', 'vp-four'] as CardExtId[];
+
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 3, 'unflagged: printed only');
+
+    gameState.villainBloodFrenzy = { [villainId]: true };
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 3 + 2);
+  });
+});

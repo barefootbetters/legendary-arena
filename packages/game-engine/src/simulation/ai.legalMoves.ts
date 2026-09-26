@@ -941,7 +941,9 @@ export function getLegalMoves(
       ) {
         continue;
       }
-      const baseFightCost = resolveFightCost(gameState, cityCard);
+      // why: WP-760 / D-24589 — the same fighter the fightVillain move passes, so a
+      // Blood Frenzy cost can't diverge between enumeration and the move guard.
+      const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
       const requiredFightCost = baseFightCost + patrolModifier;
       if (spendableAttack >= requiredFightCost) {

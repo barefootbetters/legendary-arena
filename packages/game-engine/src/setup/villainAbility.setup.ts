@@ -375,6 +375,8 @@ function parseParameterizedEffect(
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `add-next-hand-size:<N>`  (N extra cards added to the next-hand target; D-24352)
  *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
+ *   - `reveal-top-draw-if-cost-lte:<N>`  (draw the deck top if it costs ≤ N; D-24589)
+ *   - `ko-up-to-from-discard-current:<N>`  (KO up to N cards from your discard; D-24589)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `ko-heroes-current-count-by-trait:<kind>:<value>`  (the trait sizes the COUNT, not
  *     the KO filter; kind `team` | `hc`; D-24353)
@@ -562,6 +564,24 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'add-next-hand-size', magnitude };
+  }
+  if (
+    primitiveToken === 'reveal-top-draw-if-cost-lte' ||
+    primitiveToken === 'ko-up-to-from-discard-current'
+  ) {
+    // why: WP-760 / D-24589 — grammar `<primitive>:<N>` (exactly 2 tokens), the same
+    // strict positive-integer grammar as `draw-cards-current:<N>`, carried as
+    // `magnitude`: the cost ceiling for Patriarch's reveal-draw (3), the KO cap for
+    // Salomé's discard KO (2). A missing or non-positive count falls through to null
+    // (→ unresolvedMarkers) — neither effect has a meaningful default.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const magnitude = parsePositiveInteger(parts[1]!);
+    if (magnitude === null) {
+      return null;
+    }
+    return { primitive: primitiveToken, magnitude };
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
