@@ -74,11 +74,11 @@ costs to know which of their day/night lines will fire. Every other match's HUD 
 - **Layout (preview, fixture + dev-store injection, not committed).** 1280×720: HUD height 39.57px in
   all three states, equal to the no-badge render (row 2 does not wrap). Mobile: no horizontal scroll
   (scrollWidth = clientWidth = 375); HUD height 171px in every state.
-- **Live-verify (D-24026) 2026-09-26 — partial.** In an operator Werewolf by Night match (build
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** In an operator Werewolf by Night match (build
   `573d4b1`) the badge rendered and matched the engine (final HQ all cost 2 → Sunlight), but the
   operator did not notice it: as a plain word it read as one more stat in the row. Fixed by the
-  pill treatment in the follow-up INFRA change (Jeff feedback). **Still pending:** seeing the badge
-  flip as the HQ changes.
+  pill treatment in the follow-up INFRA change (Jeff feedback, #2406). After that deploy the operator
+  saw the pill switch between Sunlight and Moonlight as the HQ changed.
 
 ### WP-750 — Client Fight gating reads the engine's projected fight cost (EC-787 / D-24574) (2026-09-26)
 
