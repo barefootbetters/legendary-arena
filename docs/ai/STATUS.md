@@ -22,8 +22,9 @@ Moonlight and the player then defeated Savage Land Mutates, but no KO was offere
   `pnpm -r --no-bail test` → 0 fail; the core oracles and the `sim:runtime-observed` /
   `sim:coverage` / feed checks are unchanged.
 - **Live-verify (D-24026): operator-pending.** Arm Snarling Fangs under Moonlight, then defeat a
-  henchman: the prompt reads "You may KO a card". This also closes the WP-767 check if the prompt
-  lists only hand and played-this-turn Heroes.
+  henchman: the prompt reads "You may KO a card". (WP-767's own check closed separately.) Not yet
+  exercised: in the first post-deploy match (build `d1a71c1`) no henchman was defeated while
+  Snarling Fangs was armed under Moonlight.
 
 ### WP-760 — The Fallen fight-side: Blood Frenzy, Atrocity's rescue, Patriarch's reveal-draw, Salomé's KO-from-discard (EC-797 / D-24589) (2026-09-26)
 
@@ -89,9 +90,15 @@ Snarling Fangs is gone.
   - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
 - **Replay note.** Pre-WP-767 matches that played Snarling Fangs under Moonlight and then defeated
   an enemy cannot be re-verified under D-24119. No competitive or gauntlet pool is affected.
-- **Live-verify (D-24026): operator-pending.** In a Werewolf by Night match, play Snarling Fangs under
-  Moonlight, then defeat a Villain: the prompt reads "You may KO a card" and lists only hand and
-  played-this-turn Heroes (no discard cards, no Wounds).
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator solo match `mdns/zarathos` /
+  `mdns/midnight-massacre` (Peter Parker / Storm / Werewolf by Night), build `d1a71c1`:
+  - log 11.2.9 → 11.2.17 and 18.2.10 → 18.2.16: Snarling Fangs played under Moonlight logged
+    "is waiting". A later Zarathos tactic defeat then offered the KO, and the operator KO'd a
+    S.H.I.E.L.D. Trooper from the cards played that turn. The ability fired once per defeat.
+  - every Sunlight play (log 3.2.2, 6.2.2, 8.2.2, 11.2.5 …) logged "did not activate — it isn't
+    Moonlight", with no "is waiting" line.
+  - The log records only the chosen card, not the prompt's full list; the hand + played-this-turn
+    scope is pinned by the round-trip test.
 
 ### WP-757 — Haunt keyword engine: haunted HQ Heroes, exorcise, The Fallen's Ambush Haunts (EC-794 / D-24587) (2026-09-25)
 
