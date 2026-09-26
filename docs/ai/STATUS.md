@@ -176,13 +176,16 @@ time; Release the Beast, Analyze Planetary Rotation and Nanite Shapeshifter give
   percentResolved 24.3 → 37.6 (totalObs 3019 held).
 - **Replay note.** Pre-WP-765 mdns / nmut replays will not re-execute identically; D-24119
   re-verification of ranked mdns / nmut matches recorded before this WP will mismatch.
-- **Live-verify (D-24026) 2026-09-26 — PASS except the tie branch.** Three operator Zarathos /
+- **Live-verify (D-24026) 2026-09-26 — PASS except the tie branch.** Four operator Zarathos /
   Midnight Massacre matches with Werewolf by Night on `play.legendary-arena.com` (builds `9f48893`,
   `573d4b1`), checked against the card data:
   - Release the Beast with no instinct Hero gave +3 recruit only under Sunlight (turn 25 of match 2,
     turn 19 of match 3); every "both" play had an instinct Hero played earlier that turn.
+  - Release the Beast with no instinct Hero gave Blood Frenzy +4 attack only under Moonlight (turn 14
+    of match 4; the Victory Pile held {1, 2, 4, 6}), and +3 recruit only under Sunlight on turn 12 of
+    the same match. Both single-state branches are confirmed live.
   - Blood Frenzy counts matched the printed VP (e.g. {1, 2, 3, 4, 5, 6} → +6); the final scores
-    recompute exactly (56 / 60 / 50 VP).
+    recompute exactly (56 / 60 / 50 / 39 VP).
   - Starlit Path, Snarling Fangs and Track the Captives gated per state; the unmodelled Snarling Fangs
     Moonlight line recorded its expected `moonlight` hollow.
   - **Still pending:** the tie branch (Release the Beast with no instinct Hero on a tied HQ → nothing)
