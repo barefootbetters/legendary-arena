@@ -8218,3 +8218,62 @@ describe('Sunlight / Moonlight hero lines + Blood Frenzy (WP-765 / D-24598)', ()
     assert.equal(gameState.turnEconomy.attack, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — Pure Fury vs Haunt. A haunting Mastermind can't be fought, so
+// buildPureFuryTargets omits it while a `{ kind: 'mastermind' }` haunter exists.
+// ---------------------------------------------------------------------------
+
+import { buildPureFuryTargets } from './heroEffects.execute.js';
+import { hauntHqSlot } from '../board/haunt.logic.js';
+
+/** A static fight-stat row whose printed attack is `printedAttack` (mirrors pureFury.logic.test). */
+function hauntStaticFightStats(printedAttack: number) {
+  return { attack: 0, recruit: 0, cost: 0, fightCost: printedAttack, fightCostMode: 'static', fightCostBase: 0 };
+}
+
+/**
+ * Minimal state for buildPureFuryTargets: 3 S.H.I.E.L.D. Heroes in the KO pile, a
+ * printed-2 City Villain, a printed-2 Mastermind with a tactic left, and one HQ Hero
+ * (hauntHqSlot refuses an empty slot).
+ */
+function makePureFuryHauntG(): LegendaryGameState {
+  return {
+    ko: ['sh-1', 'sh-2', 'sh-3'],
+    cardTraits: {
+      'sh-1': { heroClass: 'tech', team: 'shield' },
+      'sh-2': { heroClass: 'covert', team: 'shield' },
+      'sh-3': { heroClass: 'ranged', team: 'shield' },
+    },
+    city: ['villain-a', null, null, null, null],
+    hq: ['hero-haunted', null, null, null, null],
+    cardStats: { 'villain-a': hauntStaticFightStats(2), 'mm-base': hauntStaticFightStats(2) },
+    mastermind: { ...makeMastermindState(), baseCardId: 'mm-base', tacticsDeck: ['t1'], tacticsDefeated: [] },
+  } as unknown as LegendaryGameState;
+}
+
+describe('buildPureFuryTargets vs Haunt (WP-757 / D-24587)', () => {
+  it('the Mastermind is eligible when its printed attack is below the KO S.H.I.E.L.D. count and nothing haunts', () => {
+    assert.deepStrictEqual(buildPureFuryTargets(makePureFuryHauntG()), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'mm-base' },
+    ]);
+  });
+
+  it('omits the Mastermind while it haunts an HQ slot; City Villain targets remain', () => {
+    const G = makePureFuryHauntG();
+    assert.equal(hauntHqSlot(G, 0, { kind: 'mastermind' }), true);
+    assert.deepStrictEqual(buildPureFuryTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ]);
+  });
+
+  it('a Villain haunter does NOT remove the Mastermind target', () => {
+    const G = makePureFuryHauntG();
+    assert.equal(hauntHqSlot(G, 0, { kind: 'villain', cardId: 'villain-ghost#0' }), true);
+    assert.deepStrictEqual(buildPureFuryTargets(G), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+      { kind: 'mastermind', cardId: 'mm-base' },
+    ]);
+  });
+});

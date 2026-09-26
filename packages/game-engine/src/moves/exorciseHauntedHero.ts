@@ -1,12 +1,13 @@
 /**
- * Recruit hero move for the Legendary Arena game engine.
+ * Exorcise move for the Haunt keyword (WP-757 / D-24587).
  *
- * recruitHero removes a hero from an HQ slot and places it in the current
- * player's discard pile. Follows the three-step validation contract:
- * validate args, check stage gate, mutate G.
+ * exorciseHauntedHero pays a Haunted Hero's cost, then KOs that Hero or gives it to a
+ * chosen player's discard pile, refills the HQ slot, and releases the haunter: a
+ * Villain haunter enters the City ignoring its Ambush; a Mastermind haunter returns to
+ * the Mastermind space. Rulebook v23 p.27: exorcising is neither a recruit nor a
+ * fight, so no recruit triggers and no Fight effects fire.
  *
- * This is a non-core move that gates internally (same pattern as
- * revealVillainCard from WP-014A). It is NOT added to CoreMoveName,
+ * Non-core move that gates internally (the recruitHero pattern). NOT in CoreMoveName,
  * CORE_MOVE_NAMES, or MOVE_ALLOWED_STAGES.
  *
  * No registry imports. No .reduce(). Moves never throw.
@@ -14,9 +15,13 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
-import { isHqSlotHaunted } from '../board/haunt.logic.js';
+import { koCard } from '../board/ko.logic.js';
+import { clearHqHaunter, isHqSlotHaunted } from '../board/haunt.logic.js';
+import { enterCityIgnoringAmbush } from '../villainDeck/villainDeck.enterCity.js';
+import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
@@ -47,75 +52,97 @@ import { hasPendingGiveHqHeroChoice } from './giveHqHeroChoice.resolve.js';
 import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
-import { getHooksForCard, filterHooksByTiming } from '../rules/heroAbility.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
-/** Arguments for the recruitHero move. */
-interface RecruitHeroArgs {
-  /** 0-based index of the HQ slot to recruit from (0-4). */
+/** What happens to the exorcised Hero. */
+export type ExorciseOutcome = 'ko' | 'gain';
+
+/** Arguments for the exorciseHauntedHero move. */
+export interface ExorciseHauntedHeroArgs {
+  /** 0-based index of the Haunted HQ slot (0-4). */
   hqIndex: number;
-  // why: D-24049 — additive optional Wall-Crawl placement. When true AND the
-  // recruited Hero has an onRecruit wall-crawl hook, the card is placed on top of
-  // the recruiting player's OWN deck (the next-draw position) instead of the
-  // discard pile. Omitted or false ⇒ today's discard placement (byte-identical).
-  /** Optional: place a recruited Wall-Crawl Hero on top of your own deck. */
-  toTopOfDeck?: boolean;
+  /** `'ko'` sends the Hero to the KO pile; `'gain'` gives it to `recipientPlayerId`. */
+  outcome: ExorciseOutcome;
+  /** For `'gain'`: the player (any seat, not only the active one) who gains the Hero. */
+  recipientPlayerId?: string;
 }
 
 /**
- * Recruits a hero from the HQ.
+ * Returns whether the exorcise args are well-formed against the current state: a
+ * haunted, occupied HQ slot, a known outcome, and (for `'gain'`) a real recipient.
  *
- * Removes the card from the specified HQ slot and places it in the
- * current player's discard pile.
- *
- * @param context - boardgame.io move context with G, ctx.
- * @param args - The HQ slot index to recruit from.
+ * @param G - The game state to inspect (not mutated).
+ * @param args - The submitted args (untrusted payload).
+ * @returns True when every argument is valid.
  */
-export function recruitHero(
-  { G, ctx }: MoveContext,
-  { hqIndex, toTopOfDeck }: RecruitHeroArgs,
-): void {
-  // Step 1: Validate args
+function areExorciseArgsValid(G: LegendaryGameState, args: unknown): boolean {
+  if (args === null || typeof args !== 'object') {
+    return false;
+  }
+  const hqIndex = (args as { hqIndex?: unknown }).hqIndex;
   if (
     typeof hqIndex !== 'number' ||
-    !Number.isFinite(hqIndex) ||
     !Number.isInteger(hqIndex) ||
     hqIndex < 0 ||
     hqIndex > 4
   ) {
-    return;
+    return false;
   }
+  const heroId = G.hq[hqIndex];
+  if (heroId === null || heroId === undefined) {
+    return false;
+  }
+  if (!isHqSlotHaunted(G, hqIndex)) {
+    return false;
+  }
+  const outcome = (args as { outcome?: unknown }).outcome;
+  if (outcome === 'ko') {
+    return true;
+  }
+  if (outcome !== 'gain') {
+    return false;
+  }
+  const recipientPlayerId = (args as { recipientPlayerId?: unknown }).recipientPlayerId;
+  if (typeof recipientPlayerId !== 'string') {
+    return false;
+  }
+  return G.playerZones[recipientPlayerId] !== undefined;
+}
 
-  const cardId = G.hq[hqIndex];
-  if (cardId === null || cardId === undefined) {
-    return;
-  }
+/**
+ * Exorcises a Haunted Hero (WP-757 / D-24587).
+ *
+ * Validation order (locked by EC-794): args → cost → stage `main` → the recruitHero
+ * block-all guards → the Wound Healing lock. Mutation order: spend + mark acted →
+ * apply the outcome → clear the haunter → refill the slot → release the haunter.
+ *
+ * @param context - boardgame.io move context with G, ctx, random.
+ * @param args - The Haunted HQ slot, the outcome, and the optional recipient.
+ */
+export function exorciseHauntedHero(
+  { G, ctx, random }: MoveContext,
+  args: ExorciseHauntedHeroArgs,
+): void {
+  // Step 1: Validate args
+  if (!areExorciseArgsValid(G, args)) return;
+  const hqIndex = args.hqIndex;
+  const heroId = G.hq[hqIndex] as CardExtId;
 
-  // why: WP-757 / D-24587 — rulebook v23 p.27: players can't recruit a Haunted Hero
-  // while its haunter is under it (exorcise it instead). Silent no-op before any spend.
-  if (isHqSlotHaunted(G, hqIndex)) {
-    return;
-  }
-
-  // why: silent failure preserves deterministic move contract — insufficient
-  // recruit points means the recruit cannot proceed
-  const requiredCost = G.cardStats[cardId]?.cost ?? 0;
-  const availableRecruit = getAvailableRecruit(G.turnEconomy);
-  if (availableRecruit < requiredCost) {
-    return;
-  }
+  // why: D-24587 — the exorcise price is the Haunted Hero's cost, read from the same
+  // authority recruitHero uses (G.cardStats). Insufficient recruit is a silent no-op.
+  const requiredCost = G.cardStats[heroId]?.cost ?? 0;
+  if (getAvailableRecruit(G.turnEconomy) < requiredCost) return;
 
   // Step 2: Stage gate (non-core move, internal gating)
-  // why: recruiting happens during the main action window; non-core moves
-  // gate internally per the WP-014A precedent
+  // why: exorcising spends recruit during the main action window, like recruitHero.
   if (G.currentStage !== 'main') return;
 
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
-  // board is frozen; recruitHero returns with no side effects. Placed
+  // board is frozen; exorciseHauntedHero returns with no side effects. Placed
   // immediately after the stage gate, before any G/zone write.
   if (hasPendingKoHeroChoice(G)) return;
   // why: block-all guard (D-24282) — a pending Doombot scry-KO choice freezes the
@@ -167,64 +194,54 @@ export function recruitHero(
   if (hasPendingCopyPowersChoice(G)) return;
   if (hasPendingSeatChoice(G)) return; // why: WP-684 / D-24501 — block-all (non-active/multi-seat pending choice)
 
-  // why: D-24180 — a player who used the Wound Healing ability this turn may not
-  // fight or recruit for the rest of the turn (the reverse lock).
+  // why: D-24587 / D-24180 — exorcise spends like a recruit, so the Wound Healing
+  // reverse lock applies: a player who healed this turn may not exorcise either.
   if (hasHealedThisTurn(G)) return;
 
   // Step 3: Mutate G
-  // why: D-24049 — the printed "Wall-Crawl" ability ("when you recruit this Hero,
-  // you may put it on top of your deck") is optional and acts on the recruiting
-  // player's OWN deck via their own recruit action — no hidden information, no
-  // opponent interaction — so it needs no pending-choice/board-freeze guard. The
-  // hook query is read-only: getHooksForCard is 2-arg (no timing param), so the
-  // onRecruit wall-crawl hook is reached by filtering its result to onRecruit and
-  // checking the keyword specifically (never "the first onRecruit hook"). The
-  // Array.isArray guard covers narrow test mocks that omit G.heroAbilityHooks.
-  const placeOnDeckTop =
-    toTopOfDeck === true &&
-    Array.isArray(G.heroAbilityHooks) &&
-    filterHooksByTiming(getHooksForCard(G.heroAbilityHooks, cardId), 'onRecruit').some(
-      (hook) => hook.keywords.includes('wall-crawl'),
-    );
-
-  // why: D-24049 — deck[0] is the next-draw position (drawFromPlayerDeck draws
-  // deck[0]), so the deck-top placement uses unshift. WP-018 — economy deduction
-  // lands after the placement; WP-135 — HQ slot refill lands after that. The slot
-  // is vacated by refillHqSlot (which assigns null when heroDeck is empty per
-  // D-13503), so we must not pre-null G.hq[hqIndex] here. When placeOnDeckTop is
-  // false (toTopOfDeck falsy or no wall-crawl onRecruit hook) the discard placement
-  // is byte-identical to the pre-WP-273 behavior.
-  if (placeOnDeckTop) {
-    G.playerZones[ctx.currentPlayer]!.deck.unshift(cardId);
-  } else {
-    G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
-  }
+  // why: D-24587 / D-24180 — exorcise spends like a recruit: it spends through the
+  // recruit path and marks the player as having acted (barring Wound Healing).
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
-
-  // why: D-24180 — this successful recruit marks the player as having acted this
-  // turn, which bars the Wound Healing ability for the rest of the turn.
   G.hasActedThisTurn = true;
 
-  // why: WP-135 — refill the vacated slot from G.heroDeck (FIFO via shift).
-  // Empty-deck case leaves the slot null per D-13503; no auto-reshuffle of
-  // recruited cards back into the deck (separate engine WP if ever needed).
+  if (args.outcome === 'ko') {
+    G.ko = koCard(G.ko, heroId);
+  } else {
+    // why: D-24327 — "choose a player to gain it" routes to that player's discard pile.
+    // The recipient may be any seat, not only the active player.
+    G.playerZones[args.recipientPlayerId as string]!.discard.push(heroId);
+  }
+
+  const haunter = clearHqHaunter(G, hqIndex);
+
   const refillResult = refillHqSlot(G.hq, hqIndex, G.heroDeck);
   G.hq = refillResult.hq;
   G.heroDeck = refillResult.heroDeck;
 
-  // why: WP-135 — log line is replay-visible and snapshotted; format is
-  // locked at this site to byte-equality. Replaces the pre-WP-135 line
-  // shape from WP-016 (one push per successful recruit, not two). Never
-  // add timestamps or non-deterministic context. The empty-deck branch
-  // substitutes the trailing parenthetical per the §7.6 byte-locked format.
-  const refillSuffix =
-    refillResult.hq[hqIndex] === null
-      ? '(heroDeck empty; slot left null)'
-      : `(heroDeck.length: ${String(refillResult.heroDeck.length)})`;
-  // why: D-24049 — append a Wall-Crawl placement note ONLY on the deck-top branch;
-  // the discard branch's line is byte-identical to the pre-WP-273 WP-135 format.
-  const placementNote = placeOnDeckTop ? ' (Wall-Crawl: placed on top of deck)' : '';
-  pushLog(G, 
-    `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}`,
+  let outcomeText = `KO'd it`;
+  if (args.outcome === 'gain') {
+    outcomeText = `gave it to Player ${args.recipientPlayerId as string}`;
+  }
+  pushLog(
+    G,
+    `Player ${ctx.currentPlayer} exorcised ${formatCardRef(G.cardDisplayData, heroId)} (HQ slot ${String(hqIndex)}) and ${outcomeText}.`,
+    'applied',
+  );
+
+  if (haunter === null) return;
+  if (haunter.kind === 'villain') {
+    // why: D-24587 — exorcise is not a reveal: the Villain enters the City ignoring its
+    // Ambush, and any escape it causes keeps reveal parity (enterCityIgnoringAmbush).
+    enterCityIgnoringAmbush(
+      G,
+      { random, ctx: { currentPlayer: ctx.currentPlayer } },
+      DEFAULT_IMPLEMENTATION_MAP,
+      haunter.cardId,
+    );
+    return;
+  }
+  pushLog(
+    G,
+    `${formatCardRef(G.cardDisplayData, G.mastermind.baseCardId)} returns to the Mastermind space.`,
   );
 }

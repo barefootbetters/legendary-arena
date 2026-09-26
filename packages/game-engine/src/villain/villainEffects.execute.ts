@@ -51,6 +51,7 @@ import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 // from G.heroDeck after removing the gifted Hero, the same refill contract
 // captureHeroFromHq uses (leaves null when the reservoir is empty).
 import { refillHqSlot } from '../board/city.logic.js';
+import { hauntHqSlot, selectUnhauntedHqIndex } from '../board/haunt.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -2803,6 +2804,70 @@ function villainEffectSwapTwoCityVillains(
 }
 
 /**
+ * haunt-hq-hero primitive — the Haunting Villain leaves the City and haunts an HQ Hero
+ * chosen by the descriptor's selector (WP-757 / D-24587, rulebook v23 p.27).
+ *
+ * Only occupied, UNHAUNTED slots are eligible ("a Hero can't be Haunted by two
+ * Villains at once"). With no eligible slot, or when the Villain is no longer in the
+ * City, it is a logged no-op and the Villain stays where it is. Otherwise the Villain's
+ * City space is nulled and it is recorded as the slot's haunter, so it can't be fought
+ * until a player exorcises the Hero. Attached bystanders / captured heroes stay keyed
+ * to the Villain's card id. Keyword-less: self-narrates with exactly one log line, and
+ * no composed "Ambush effect:" line is written for it.
+ *
+ * @param G - Game state (mutated: `G.city`, `G.hqHaunters`).
+ * @param _currentPlayer - Unused (Haunt targets the shared HQ).
+ * @param cardId - The haunting Villain's copy-indexed instance ext_id.
+ * @param timing - The firing timing (labels the log line).
+ * @param descriptor - Carries the `selector`.
+ * @returns The haunted Hero as the target, or no targets on a no-op.
+ */
+function villainEffectHauntHqHero(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const villainName = resolveCardDisplayName(G, cardId);
+  const selector = descriptor.selector;
+  if (selector !== 'rightmost' && selector !== 'leftmost' && selector !== 'cost-lte-3') {
+    pushLog(G, `${label} effect: ${villainName} has no valid Haunt selector; nothing happens.`, 'blocked');
+    return { targets: [] };
+  }
+  const cityIndex = G.city.indexOf(cardId);
+  if (cityIndex < 0) {
+    // why: D-24587 — Haunt moves the Villain from the City; a Villain no longer in the
+    // City has nothing to tuck beneath a Hero (a reachable no-op, never a hollow record).
+    pushLog(G, `${label} effect: ${villainName} is not in the City; no Hero is haunted.`, 'blocked');
+    return { targets: [] };
+  }
+  const hqIndex = selectUnhauntedHqIndex(G, selector);
+  if (hqIndex === null) {
+    // why: D-24587 — no occupied, unhaunted HQ slot matches: the Haunt fizzles and the
+    // Villain stays in the City, fightable as normal.
+    pushLog(G, `${label} effect: no unhaunted Hero in the HQ to haunt; ${villainName} stays in the City.`, 'blocked');
+    return { targets: [] };
+  }
+  const heroId = G.hq[hqIndex] as CardExtId;
+  if (!hauntHqSlot(G, hqIndex, { kind: 'villain', cardId })) {
+    pushLog(G, `${label} effect: ${villainName} could not haunt HQ slot ${String(hqIndex)}; it stays in the City.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24587 — the haunter is tucked beneath the Hero, OUT of the City. Nulling the
+  // space is what makes it unfightable (fightVillain only fights G.city) and keeps the
+  // card-uniqueness invariant (it now lives only in G.hqHaunters).
+  G.city[cityIndex] = null;
+  pushLog(
+    G,
+    `${label} effect: ${villainName} haunts ${resolveCardDisplayName(G, heroId)} (HQ slot ${String(hqIndex)}); that Hero can't be recruited until exorcised.`,
+    'threat',
+  );
+  return { targets: [heroId] };
+}
+
+/**
  * Whether a player's Victory Pile holds a villain of the target group OTHER than
  * the just-defeated/escaped card (WP-494 / D-24299).
  *
@@ -2990,6 +3055,9 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'add-next-hand-size': villainEffectAddNextHandSize,
   'play-villain-deck-cards': villainEffectPlayVillainDeckCards,
   'ko-heroes-current-count-by-trait': villainEffectKoHeroesCurrentCountByTrait,
+  // why: WP-757 / D-24587 — the Haunt keyword (The Fallen's Ambush); keyword-less,
+  // self-narrating. Moves the Villain out of the City into G.hqHaunters.
+  'haunt-hq-hero': villainEffectHauntHqHero,
 };
 
 /**

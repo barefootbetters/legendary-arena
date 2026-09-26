@@ -312,12 +312,13 @@ gotg-villain-infinity-gems-soul-gem,Soul Gem,gotg,villain,(unmarked),unmarked,,,
 gotg-villain-infinity-gems-space-gem,Space Gem,gotg,villain,(unmarked),unmarked,,,
 gotg-villain-kree-starforce-supremor,Supremor,gotg,villain,(unmarked),unmarked,,,
 gotg-villain-infinity-gems-time-gem,Time Gem,gotg,villain,(unmarked),unmarked,,,
-mdns-villain-fallen-atrocity,Atrocity,mdns,villain,(unmarked),unmarked,,,
+mdns-villain-fallen-atrocity,Atrocity,mdns,villain,haunt-hq-hero,executable,WP-757,D-24587,packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero
 mdns-villain-lilin-blackout,Blackout,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-meatmarket,Meatmarket,mdns,villain,(unmarked),unmarked,,,
+mdns-villain-fallen-metarchus,Metarchus,mdns,villain,haunt-hq-hero,executable,WP-757,D-24587,packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero
 mdns-villain-fallen-metarchus,Metarchus,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 mdns-villain-lilin-outcast,Outcast,mdns,villain,(unmarked),unmarked,,,
-mdns-villain-fallen-patriarch,Patriarch,mdns,villain,(unmarked),unmarked,,,
+mdns-villain-fallen-patriarch,Patriarch,mdns,villain,haunt-hq-hero,executable,WP-757,D-24587,packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero
 mdns-villain-fallen-salom-sorceress-supreme,"Salomé, Sorceress Supreme",mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-sister-nil,Sister Nil,mdns,villain,(unmarked),unmarked,,,
 mdns-villain-lilin-skinner,Skinner,mdns,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero

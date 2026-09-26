@@ -158,6 +158,9 @@ function isLockedEffectKeyword(keyword) {
 // radiation Maestro "For each of your [hc:strength] Heroes, KO one of your Heroes"; validates
 // via the shared trait-predicate branch below alongside its `ko-heroes-current-by-trait`
 // sibling, which KOs the MATCHING Heroes rather than counting them).
+// `haunt-hq-hero` (`:<selector>`) appended by WP-757 (D-24587 — the Haunt keyword, The
+// Fallen's Ambush; selector rightmost | leftmost | cost-lte-3, validated by its own branch
+// below — the capture-hq-hero branch still rejects leftmost / cost-lte-3).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -184,6 +187,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'add-next-hand-size',
   'play-villain-deck-cards',
   'ko-heroes-current-count-by-trait',
+  'haunt-hq-hero',
 ];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
@@ -270,6 +274,14 @@ function isValidParameterizedEffectToken(token) {
     return (
       parts.length === 2 &&
       (parts[1] === 'rightmost' || parts[1] === 'highest-cost' || parts[1] === 'lowest-cost')
+    );
+  }
+  if (primitive === 'haunt-hq-hero') {
+    // why: D-24587 — grammar haunt-hq-hero:<selector> (exactly 2 tokens); selector is
+    // rightmost | leftmost | cost-lte-3. Mirrors the engine parser's haunt-hq-hero branch.
+    return (
+      parts.length === 2 &&
+      (parts[1] === 'rightmost' || parts[1] === 'leftmost' || parts[1] === 'cost-lte-3')
     );
   }
   if (primitive === 'reveal-or-wound') {

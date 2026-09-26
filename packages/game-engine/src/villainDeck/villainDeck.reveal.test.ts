@@ -15,6 +15,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { revealVillainCard, performVillainReveal, playTopVillainDeckCards } from './villainDeck.reveal.js';
+import { resolveVillainEscape } from './villainDeck.reveal.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType, VillainDeckState } from './villainDeck.types.js';
@@ -2225,6 +2226,138 @@ describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-
       gameState.villainDeck.deck,
       ['should-stay'],
       'a non-play Ambush leaves the rest of the deck untouched',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-757 / D-24587 — resolveVillainEscape extraction + Haunt via the reveal path
+// ---------------------------------------------------------------------------
+
+describe('resolveVillainEscape + Haunt Ambush (WP-757 / D-24587)', () => {
+  /**
+   * Builds a full-City state whose space-4 Villain carries one bystander, so the
+   * next City entry forces an escape with every generic consequence.
+   */
+  function makeFullCityEscapeState(): LegendaryGameState {
+    const gameState = createMockGameState({
+      deck: ['new-villain' as CardExtId],
+      discard: [],
+      cardTypes: { 'new-villain': 'villain' },
+    });
+    gameState.playerZones = {
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.piles.wounds = ['w0'] as CardExtId[];
+    gameState.city = [
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+      'escaper' as CardExtId,
+    ];
+    gameState.attachedBystanders = { escaper: ['captured-bystander' as CardExtId] };
+    return gameState;
+  }
+
+  it('resolveVillainEscape called directly matches the reveal path escape consequences', () => {
+    const revealState = makeFullCityEscapeState();
+    revealVillainCard(createMockMoveContext(revealState));
+
+    const directState = makeFullCityEscapeState();
+    // why: the reveal path pushes the new villain in first; mirror only that City
+    // push so the direct call sees the same post-push board.
+    directState.city = [
+      'new-villain' as CardExtId,
+      'c0' as CardExtId,
+      'c1' as CardExtId,
+      'c2' as CardExtId,
+      'c3' as CardExtId,
+    ];
+    directState.villainDeck.deck = [];
+    resolveVillainEscape(
+      directState,
+      { random: makeMockCtx().random, ctx: { currentPlayer: '0' } },
+      DEFAULT_IMPLEMENTATION_MAP,
+      'escaper' as CardExtId,
+    );
+
+    assert.equal(directState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS], 1);
+    assert.equal(
+      directState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS],
+      revealState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS],
+    );
+    assert.deepStrictEqual(directState.escapedPile, ['escaper', 'captured-bystander']);
+    assert.deepStrictEqual(directState.escapedPile, revealState.escapedPile);
+    assert.deepStrictEqual(directState.attachedBystanders, revealState.attachedBystanders);
+    assert.deepStrictEqual(directState.playerZones['0']!.discard, ['w0']);
+    assert.deepStrictEqual(directState.playerZones['0']!.discard, revealState.playerZones['0']!.discard);
+    assert.deepStrictEqual(directState.piles.wounds, revealState.piles.wounds);
+    assert.equal(directState.turnEconomy.woundsDrawn, revealState.turnEconomy.woundsDrawn);
+    assert.deepStrictEqual(directState.city, revealState.city);
+  });
+
+  it('a revealed haunt-hq-hero:rightmost Ambush Villain leaves the City and haunts the rightmost occupied HQ slot', () => {
+    const haunterId = 'fallen-haunter' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [haunterId],
+      discard: [],
+      cardTypes: { [haunterId]: 'villain' },
+      cardKeywords: { [haunterId]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: haunterId,
+          timing: 'onAmbush',
+          // why: haunt-hq-hero is keyword-less (D-24587), so the hook carries no
+          // legacy keyword and the ambushResolved appliedEffects stays empty.
+          keywords: [],
+          effects: [{ primitive: 'haunt-hq-hero', selector: 'rightmost' }],
+        },
+      ],
+    });
+    gameState.playerZones = {
+      '0': { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+    };
+    gameState.hq = [
+      'hero-0' as CardExtId,
+      'hero-1' as CardExtId,
+      'hero-2' as CardExtId,
+      null,
+      null,
+    ];
+    gameState.heroDeck = [];
+
+    revealVillainCard(createMockMoveContext(gameState));
+
+    assert.equal(gameState.city.includes(haunterId), false, 'the Haunting Villain left the City');
+    assert.deepStrictEqual(gameState.hqHaunters, [
+      null,
+      null,
+      { kind: 'villain', cardId: haunterId },
+      null,
+      null,
+    ]);
+    assert.equal(gameState.hq[2], 'hero-2', 'the Haunted Hero stays in the HQ');
+
+    const ambushEvents = gameState.notableEvents.filter((event) => event.type === 'ambushResolved');
+    assert.equal(ambushEvents.length, 1, 'exactly one ambushResolved event');
+    const event = ambushEvents[0]!;
+    assert.equal(event.type, 'ambushResolved');
+    if (event.type === 'ambushResolved') {
+      assert.equal(event.revealedCardId, haunterId);
+      // why: D-24587 — the card left the City, so indexOf is -1 and citySpace falls back to 0.
+      assert.equal(event.citySpace, 0);
+      assert.deepStrictEqual(event.appliedEffects, []);
+    }
+    // why: the haunt primitive self-narrates with the timing label ("Ambush effect:
+    // <villain> haunts ..."). The reveal path must NOT add a second, composed
+    // "Ambush effect:" line (appliedAmbushResults is empty for a keyword-less
+    // primitive), so the only Ambush-effect line is the primitive's own haunt line.
+    const ambushEffectLines = gameState.messages.filter((message) => message.text.startsWith('Ambush effect:'));
+    assert.equal(ambushEffectLines.length, 1, 'exactly one Ambush-effect line (no composed duplicate)');
+    assert.ok(
+      ambushEffectLines[0]!.text.includes(`${haunterId} haunts hero-2 (HQ slot 2)`),
+      `the single line is the primitive self-narration, got: ${ambushEffectLines[0]!.text}`,
     );
   });
 });

@@ -313,7 +313,8 @@ export type VillainEffectPrimitive =
   | 'gain-officer-current'
   | 'add-next-hand-size'
   | 'play-villain-deck-cards'
-  | 'ko-heroes-current-count-by-trait';
+  | 'ko-heroes-current-count-by-trait'
+  | 'haunt-hq-hero';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -375,6 +376,11 @@ export type VillainEffectPrimitive =
 // matching Heroes. Deliberately named `-count-by-trait` (count first) to stay visually
 // distinct from `ko-heroes-current-by-trait`, which KOs the MATCHING Heroes;
 // predicate-parameterized, keyword-less, self-narrating).
+// why: `haunt-hq-hero` appended at position 26 by WP-757 (D-24587 — the Haunt keyword,
+// rulebook v23 p.27: The Fallen's Ambush "Haunt the rightmost / leftmost / an unhaunted
+// Hero that costs 3 or less". The Villain leaves the City and is recorded as the slot's
+// haunter in the lazy `G.hqHaunters`; `selector` picks the slot. Keyword-less,
+// self-narrating).
 /** All villain effect primitives in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'ko-hero',
@@ -402,6 +408,7 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'add-next-hand-size',
   'play-villain-deck-cards',
   'ko-heroes-current-count-by-trait',
+  'haunt-hq-hero',
 ] as const;
 
 /**
@@ -410,6 +417,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *   - `ko-hero`:         `target` 'current' | 'each'; `magnitude` (each only)
  *   - `gain-wound`:      `target` 'current' | 'each'
  *   - `capture-hq-hero`: `selector` 'rightmost' | 'highest-cost' | 'lowest-cost'
+ *   - `haunt-hq-hero` (D-24587): `selector` 'rightmost' | 'leftmost' | 'cost-lte-3',
+ *     choosing among occupied, UNHAUNTED HQ slots only
  *   - `hero-deck-top-to-escape`, `capture-bystander`, `scry-ko-own-deck`,
  *     `gain-attached-hero`, `ko-wounds-current-hand-and-discard`,
  *     `ko-cullable-each-deck-top`, `swap-two-city-villains`: no params
@@ -463,7 +472,10 @@ export interface VillainEffectDescriptor {
   // keyword-less (no legacy reverse-map entry) and self-narrates.
   target?: 'current' | 'each' | 'each-other';
   magnitude?: number;
-  selector?: 'rightmost' | 'highest-cost' | 'lowest-cost';
+  // why: WP-757 / D-24587 — widened append-only with `'leftmost' | 'cost-lte-3'` for
+  // `haunt-hq-hero`. The capture-hq-hero parser still accepts only its original three
+  // values, so the new values can never reach the capture handler.
+  selector?: 'rightmost' | 'highest-cost' | 'lowest-cost' | 'leftmost' | 'cost-lte-3';
   // why: D-24295 — the universal location gate: the effect fires ONLY when the
   // villain is fought on one of these named City spaces (Abomination:
   // Streets/Bridge, the Lizard: Sewers). Additive optional; lifted from the

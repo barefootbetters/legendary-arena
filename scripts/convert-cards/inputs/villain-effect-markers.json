@@ -176,7 +176,9 @@
     },
     "mdns": {
       "fallen": {
-        "metarchus": { "fight": ["koHeroCurrentPlayer"] }
+        "metarchus": { "fight": ["koHeroCurrentPlayer"], "ambush": ["haunt-hq-hero:rightmost"] },
+        "atrocity": { "ambush": ["haunt-hq-hero:leftmost"] },
+        "patriarch": { "ambush": ["haunt-hq-hero:cost-lte-3"] }
       },
       "lilin": {
         "skinner": { "fight": ["koHeroCurrentPlayer"] }

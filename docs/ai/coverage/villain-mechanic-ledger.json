@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 719,
+    "totalRows": 720,
     "byStatus": {
-      "executable": 134,
+      "executable": 137,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 582,
+      "unmarked": 580,
       "subsystem": 2
     },
-    "distinctMechanics": 33
+    "distinctMechanics": 34
   },
   "rows": [
     {
@@ -3461,11 +3461,11 @@
       "cardName": "Atrocity",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "wp": "WP-757",
+      "decision": "D-24587",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero"
     },
     {
       "extId": "mdns-villain-lilin-blackout",
@@ -3494,6 +3494,17 @@
       "cardName": "Metarchus",
       "set": "mdns",
       "cardType": "villain",
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "wp": "WP-757",
+      "decision": "D-24587",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero"
+    },
+    {
+      "extId": "mdns-villain-fallen-metarchus",
+      "cardName": "Metarchus",
+      "set": "mdns",
+      "cardType": "villain",
       "mechanic": "koHeroCurrentPlayer",
       "status": "executable",
       "wp": "WP-185",
@@ -3516,11 +3527,11 @@
       "cardName": "Patriarch",
       "set": "mdns",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "haunt-hq-hero",
+      "status": "executable",
+      "wp": "WP-757",
+      "decision": "D-24587",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#haunt-hq-hero"
     },
     {
       "extId": "mdns-villain-fallen-salom-sorceress-supreme",

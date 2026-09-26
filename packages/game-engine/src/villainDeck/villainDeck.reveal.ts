@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { RuleEffect } from '../rules/ruleHooks.types.js';
 import type { ImplementationMap } from '../rules/ruleRuntime.execute.js';
@@ -292,159 +293,10 @@ export function performVillainReveal(
     }
 
     if (pushResult.escapedCard !== null) {
-      // why: ENDGAME_CONDITIONS.ESCAPED_VILLAINS is the canonical counter key
-      // for escape tracking. evaluateEndgame reads this counter to determine
-      // scheme-wins loss condition.
-      const currentEscaped = G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
-      G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] = currentEscaped + 1;
-
-      // why: escaped card pushed to G.escapedPile only when non-null (null
-      // means no card was displaced). Counter increments regardless — the
-      // counter tracks escape events, the pile tracks card identity.
-      G.escapedPile = [...G.escapedPile, pushResult.escapedCard];
-
-      pushLog(G, 
-        `Villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} escaped from the city.`,
-      );
-
-      // why: D-24439 — the WP-015 generic per-escape wound is a BASELINE penalty
-      // for a plain villain that just slides out of the City. It applies ONLY when
-      // the escaping villain has NO onEscape ability of its own. A villain whose
-      // card text governs its escape (Ultron's reveal-or-wound, Mystique's
-      // become-scheme-twist, …) resolves that ability below INSTEAD — the generic
-      // wound must not stack on top of it. That stacking double-wounded the active
-      // player on every ability-bearing escape (the generic wound hits the active
-      // player, then the card ability hits again), with no basis in the card or
-      // scheme text or the Legendary rules. The gate keys off the card's parsed
-      // onEscape hooks, so it needs no new data. Current player gains 1 wound.
-      if (!villainCardHasEscapeAbility(G, pushResult.escapedCard)) {
-        const woundPileBefore = G.piles.wounds.length;
-        // why: WP-682 / D-24499 — route the generic per-escape wound through the
-        // gainWoundForPlayer chokepoint so the current player's Diving Block sees it.
-        gainWoundForPlayer(G, ctx.currentPlayer);
-        if (woundPileBefore > 0) {
-          // why: track current player wound for UI economy projection
-          G.turnEconomy.woundsDrawn += 1;
-          pushLog(G,
-            `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
-          );
-        }
-      }
-
-      // why: D-24314 — an escaping villain CARRIES its captured bystanders into
-      // the Escaped Villains pile (G.escapedPile), not back to the shared supply.
-      // This is faithful to Universal Rules v23 escape handling and makes the
-      // bystanders countable for resource-loss schemes (e.g. Midtown Bank
-      // Robbery: "8 Bystanders carried away by escaping Villains"). The mapping
-      // entry is still cleared (no leak); G.piles.bystanders is NOT touched here.
-      const escapedPileBeforeBystanders = G.escapedPile.length;
-      const escapeBystanderResult = carryEscapedBystandersToPile(
-        pushResult.escapedCard,
-        G.attachedBystanders,
-        G.escapedPile,
-      );
-      G.attachedBystanders = escapeBystanderResult.attachedBystanders;
-      G.escapedPile = escapeBystanderResult.escapedPile;
-      if (escapeBystanderResult.escapedPile.length > escapedPileBeforeBystanders) {
-        pushLog(G,
-          `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} carried into the Escaped Villains pile.`,
-        );
-      }
-
-      // why: card-specific Escape:/Overrun: effects fire AFTER
-      // carryEscapedBystandersToPile per D-18603 — a captureBystander effect
-      // reached via an Escape: marker attaches to the escaped card now in
-      // G.escapedPile (post-carry), not the still-attached pre-carry
-      // state. The generic per-escape current-player wound above (WP-015
-      // legacy system-level penalty) is PRESERVED; card-text effects layer
-      // on top, they do not replace it. Overrun: is a v1 synonym of Escape:
-      // (D-18602) — both prefixes resolve to onEscape at parse time, so this
-      // single fire site covers both. Henchman escapes safely no-op here
-      // (per-card hook lookup misses; D-18507-class filter). Per WP-191
-      // (D-18704..D-18708), pushResult.escapedCard is the zone-instance
-      // ext_id the per-card hook lookup expects, so villain onEscape effects
-      // now fire end-to-end on real cards (D-18508 CLOSED).
-      const appliedEscapeResults = executeVillainAbilities(
-        G,
-        ctx,
-        pushResult.escapedCard,
-        'onEscape',
-        // why: WP-478 / D-24285 — thread the reveal move's shuffle source so a future
-        // Escape-timed scry could reshuffle a short deck (no such marker today; kept
-        // uniform with the Fight fire site). Wrapped as a ShuffleProvider `{ random }`
-        // from the RevealContext's random API (the bare `ctx` carries only currentPlayer).
-        { random: context.random },
-        // why: WP-489 / D-24295 — the Escape fire site has no fought City space, so
-        // cityIndex is undefined; the location gate FAILS CLOSED, so any
-        // requireCitySpaces effect at Escape never fires (none of Tier B's cards escape).
-        undefined,
-      );
-      // why: WP-316 — Escape is LOG-ONLY: narrate the Escape: effect targets
-      // into G.messages (hash-excluded, D-24081) but add NO escapeResolved (or
-      // any) notableEvent. G.notableEvents is hashed + projected to the
-      // arena-client, so a new event would re-pin the sentinel finalStateHash.
-      // Length-guarded: no line when no effect applied. Names resolve at the
-      // fire site via G.cardDisplayData (the composer stays pure).
-      if (appliedEscapeResults.length > 0) {
-        const resolvedEscapeResults = resolveEffectResultNames(G, appliedEscapeResults);
-        pushLog(G, 
-          `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
-        );
-      }
-      // why: captured heroes KO'd when villain escapes (tabletop rules)
-      koAttachedHeroesOnEscape(G, pushResult.escapedCard);
-
-      // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
-      // takes effect immediately." The executor's become-scheme-twist handler is a
-      // no-op (it cannot reach the rule pipeline); the actual twist fires HERE, where
-      // the hookRegistry + implementationMap + RevealContext are in scope. Run the
-      // SAME two-call pattern the reveal path uses for a revealed scheme-twist card
-      // (Step 5/6 above): the active scheme's twist resolver runs, schemeTwistCount
-      // increments, and the loss threshold is checked. The escaped card stays in the
-      // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
-      // notableEvent, never to route a card. "Takes effect immediately" → after the
-      // escape's own consequences (wound / bystander release / escape effects / hero KO).
-      if (villainCardEscapeTriggersSchemeTwist(G, pushResult.escapedCard)) {
-        pushLog(G,
-          `Escape effect: ${formatCardRef(G.cardDisplayData, pushResult.escapedCard)} becomes a Scheme Twist that takes effect immediately.`,
-        );
-        const escapeSchemeTwistEffects = executeRuleHooks(
-          G,
-          context,
-          'onSchemeTwistRevealed',
-          { cardId: pushResult.escapedCard },
-          G.hookRegistry,
-          implementationMap,
-        );
-        applyRuleEffects(G, context, escapeSchemeTwistEffects);
-        // why: WP-488 / D-24294 — the become-scheme-twist executor handler is a deliberate
-        // no-op (D-24287); the REAL Scheme Twist just fired HERE via the rule pipeline. Emit
-        // a `secondary-site` trace so the Mystique case is answerable ("the executor was a
-        // no-op; the twist fired at the escape site"), distinct from the executor's `no-op`
-        // trace for the same card. `handler` names the rule trigger that ran; `turn` reads 0
-        // because the RevealContext carries no turn (consistent with the villain executor's
-        // hollow records on this same reveal path — readTurnNumber returns 0 there too).
-        recordEffectTrace(G, {
-          cardId: pushResult.escapedCard,
-          scope: 'villain',
-          timing: 'onEscape',
-          effect: 'become-scheme-twist',
-          handler: 'onSchemeTwistRevealed',
-          status: 'secondary-site',
-          fireSite: 'escape-scheme-twist',
-          params: {},
-          turn: readRevealContextTurn(context),
-        });
-      }
-
-      // why: D-24315 — evaluate the active scheme's escaped-pile resource-loss
-      // condition at the END of the escape branch, after every escape
-      // consequence has settled (bystander carry-away, current-player wound,
-      // card-text Escape: effects, captured-hero KO, and the Mystique
-      // escape→scheme-twist path). This is the only place G.escapedPile grows,
-      // so the count reflects the full escape. No-op for schemes with no
-      // resourceLossCondition.
-      applyEscapedPileResourceLoss(G);
+      // why: WP-757 / D-24587 — the escape branch is extracted MECHANICALLY into
+      // resolveVillainEscape so a no-Ambush City entry (the Haunt exorcise,
+      // enterCityIgnoringAmbush) resolves an escape with exact reveal parity.
+      resolveVillainEscape(G, context, implementationMap, pushResult.escapedCard);
     }
 
     // why: Ambush fires on City entry. The hardcoded "each player gains a
@@ -675,6 +527,184 @@ export function performVillainReveal(
     // discard) so the game tracks resolved strikes for UI projection
     G.mastermind.strikePile = [...G.mastermind.strikePile, cardId];
   }
+}
+
+/**
+ * Resolves one Villain escaping the City: the escape counter + Escaped Villains pile,
+ * the generic per-escape wound (only when the escaper has no Escape ability of its
+ * own), bystander carry-away, card-text Escape effects, captured-hero KO, the
+ * escape→Scheme-Twist branch (Mystique) and the escaped-pile resource-loss check.
+ *
+ * // why: WP-757 / D-24587 — extracted mechanically from performVillainReveal's escape
+ * branch (the reveal path calls it with identical behavior) so every push into the
+ * City — a villain-deck reveal, or a Haunt exorcise that ignores Ambush
+ * (enterCityIgnoringAmbush) — resolves an escape the same way.
+ *
+ * @param G - The game state to mutate.
+ * @param context - Narrow reveal context (random + ctx.currentPlayer).
+ * @param implementationMap - Handler map used by executeRuleHooks (escape→Scheme-Twist).
+ * @param escapedCardId - The card pushed out of City space 4.
+ */
+export function resolveVillainEscape(
+  G: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  escapedCardId: CardExtId,
+): void {
+  const ctx = context.ctx;
+  // why: ENDGAME_CONDITIONS.ESCAPED_VILLAINS is the canonical counter key
+  // for escape tracking. evaluateEndgame reads this counter to determine
+  // scheme-wins loss condition.
+  const currentEscaped = G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;
+  G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] = currentEscaped + 1;
+
+  // why: escaped card pushed to G.escapedPile only when non-null (null
+  // means no card was displaced). Counter increments regardless — the
+  // counter tracks escape events, the pile tracks card identity.
+  G.escapedPile = [...G.escapedPile, escapedCardId];
+
+  pushLog(G, 
+    `Villain ${formatCardRef(G.cardDisplayData, escapedCardId)} escaped from the city.`,
+  );
+
+  // why: D-24439 — the WP-015 generic per-escape wound is a BASELINE penalty
+  // for a plain villain that just slides out of the City. It applies ONLY when
+  // the escaping villain has NO onEscape ability of its own. A villain whose
+  // card text governs its escape (Ultron's reveal-or-wound, Mystique's
+  // become-scheme-twist, …) resolves that ability below INSTEAD — the generic
+  // wound must not stack on top of it. That stacking double-wounded the active
+  // player on every ability-bearing escape (the generic wound hits the active
+  // player, then the card ability hits again), with no basis in the card or
+  // scheme text or the Legendary rules. The gate keys off the card's parsed
+  // onEscape hooks, so it needs no new data. Current player gains 1 wound.
+  if (!villainCardHasEscapeAbility(G, escapedCardId)) {
+    const woundPileBefore = G.piles.wounds.length;
+    // why: WP-682 / D-24499 — route the generic per-escape wound through the
+    // gainWoundForPlayer chokepoint so the current player's Diving Block sees it.
+    gainWoundForPlayer(G, ctx.currentPlayer);
+    if (woundPileBefore > 0) {
+      // why: track current player wound for UI economy projection
+      G.turnEconomy.woundsDrawn += 1;
+      pushLog(G,
+        `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
+      );
+    }
+  }
+
+  // why: D-24314 — an escaping villain CARRIES its captured bystanders into
+  // the Escaped Villains pile (G.escapedPile), not back to the shared supply.
+  // This is faithful to Universal Rules v23 escape handling and makes the
+  // bystanders countable for resource-loss schemes (e.g. Midtown Bank
+  // Robbery: "8 Bystanders carried away by escaping Villains"). The mapping
+  // entry is still cleared (no leak); G.piles.bystanders is NOT touched here.
+  const escapedPileBeforeBystanders = G.escapedPile.length;
+  const escapeBystanderResult = carryEscapedBystandersToPile(
+    escapedCardId,
+    G.attachedBystanders,
+    G.escapedPile,
+  );
+  G.attachedBystanders = escapeBystanderResult.attachedBystanders;
+  G.escapedPile = escapeBystanderResult.escapedPile;
+  if (escapeBystanderResult.escapedPile.length > escapedPileBeforeBystanders) {
+    pushLog(G,
+      `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, escapedCardId)} carried into the Escaped Villains pile.`,
+    );
+  }
+
+  // why: card-specific Escape:/Overrun: effects fire AFTER
+  // carryEscapedBystandersToPile per D-18603 — a captureBystander effect
+  // reached via an Escape: marker attaches to the escaped card now in
+  // G.escapedPile (post-carry), not the still-attached pre-carry
+  // state. The generic per-escape current-player wound above (WP-015
+  // legacy system-level penalty) is PRESERVED; card-text effects layer
+  // on top, they do not replace it. Overrun: is a v1 synonym of Escape:
+  // (D-18602) — both prefixes resolve to onEscape at parse time, so this
+  // single fire site covers both. Henchman escapes safely no-op here
+  // (per-card hook lookup misses; D-18507-class filter). Per WP-191
+  // (D-18704..D-18708), escapedCardId is the zone-instance
+  // ext_id the per-card hook lookup expects, so villain onEscape effects
+  // now fire end-to-end on real cards (D-18508 CLOSED).
+  const appliedEscapeResults = executeVillainAbilities(
+    G,
+    ctx,
+    escapedCardId,
+    'onEscape',
+    // why: WP-478 / D-24285 — thread the reveal move's shuffle source so a future
+    // Escape-timed scry could reshuffle a short deck (no such marker today; kept
+    // uniform with the Fight fire site). Wrapped as a ShuffleProvider `{ random }`
+    // from the RevealContext's random API (the bare `ctx` carries only currentPlayer).
+    { random: context.random },
+    // why: WP-489 / D-24295 — the Escape fire site has no fought City space, so
+    // cityIndex is undefined; the location gate FAILS CLOSED, so any
+    // requireCitySpaces effect at Escape never fires (none of Tier B's cards escape).
+    undefined,
+  );
+  // why: WP-316 — Escape is LOG-ONLY: narrate the Escape: effect targets
+  // into G.messages (hash-excluded, D-24081) but add NO escapeResolved (or
+  // any) notableEvent. G.notableEvents is hashed + projected to the
+  // arena-client, so a new event would re-pin the sentinel finalStateHash.
+  // Length-guarded: no line when no effect applied. Names resolve at the
+  // fire site via G.cardDisplayData (the composer stays pure).
+  if (appliedEscapeResults.length > 0) {
+    const resolvedEscapeResults = resolveEffectResultNames(G, appliedEscapeResults);
+    pushLog(G, 
+      `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
+    );
+  }
+  // why: captured heroes KO'd when villain escapes (tabletop rules)
+  koAttachedHeroesOnEscape(G, escapedCardId);
+
+  // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
+  // takes effect immediately." The executor's become-scheme-twist handler is a
+  // no-op (it cannot reach the rule pipeline); the actual twist fires HERE, where
+  // the hookRegistry + implementationMap + RevealContext are in scope. Run the
+  // SAME two-call pattern the reveal path uses for a revealed scheme-twist card
+  // (Step 5/6 above): the active scheme's twist resolver runs, schemeTwistCount
+  // increments, and the loss threshold is checked. The escaped card stays in the
+  // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
+  // notableEvent, never to route a card. "Takes effect immediately" → after the
+  // escape's own consequences (wound / bystander release / escape effects / hero KO).
+  if (villainCardEscapeTriggersSchemeTwist(G, escapedCardId)) {
+    pushLog(G,
+      `Escape effect: ${formatCardRef(G.cardDisplayData, escapedCardId)} becomes a Scheme Twist that takes effect immediately.`,
+    );
+    const escapeSchemeTwistEffects = executeRuleHooks(
+      G,
+      context,
+      'onSchemeTwistRevealed',
+      { cardId: escapedCardId },
+      G.hookRegistry,
+      implementationMap,
+    );
+    applyRuleEffects(G, context, escapeSchemeTwistEffects);
+    // why: WP-488 / D-24294 — the become-scheme-twist executor handler is a deliberate
+    // no-op (D-24287); the REAL Scheme Twist just fired HERE via the rule pipeline. Emit
+    // a `secondary-site` trace so the Mystique case is answerable ("the executor was a
+    // no-op; the twist fired at the escape site"), distinct from the executor's `no-op`
+    // trace for the same card. `handler` names the rule trigger that ran; `turn` reads 0
+    // because the RevealContext carries no turn (consistent with the villain executor's
+    // hollow records on this same reveal path — readTurnNumber returns 0 there too).
+    recordEffectTrace(G, {
+      cardId: escapedCardId,
+      scope: 'villain',
+      timing: 'onEscape',
+      effect: 'become-scheme-twist',
+      handler: 'onSchemeTwistRevealed',
+      status: 'secondary-site',
+      fireSite: 'escape-scheme-twist',
+      params: {},
+      turn: readRevealContextTurn(context),
+    });
+  }
+
+  // why: D-24315 — evaluate the active scheme's escaped-pile resource-loss
+  // condition at the END of the escape branch, after every escape
+  // consequence has settled (bystander carry-away, current-player wound,
+  // card-text Escape: effects, captured-hero KO, and the Mystique
+  // escape→scheme-twist path). This is the only place G.escapedPile grows,
+  // so the count reflects the full escape. No-op for schemes with no
+  // resourceLossCondition.
+  applyEscapedPileResourceLoss(G);
 }
 
 /**

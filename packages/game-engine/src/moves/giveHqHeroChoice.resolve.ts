@@ -21,6 +21,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, GiveHqHeroFilter } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { refillHqSlot } from '../board/city.logic.js';
+import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -128,6 +129,13 @@ export function getEligibleGiveHqHeroCards(
   const eligible: CardExtId[] = [];
   for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
     const slot = G.hq[hqIndex];
+    // why: WP-757 / D-24587 — rulebook v23 p.27: a free RECRUIT (an entry carrying a
+    // trait `filter`: Dark Technology / Bitter Captor) can't take a Haunted Hero, since
+    // you can't recruit it. Paibok's unfiltered entry is a "gain", which still works on
+    // Haunted Heroes, so it stays unfiltered. The bot default reads this same list.
+    if (front.filter !== undefined && isHqSlotHaunted(G, hqIndex)) {
+      continue;
+    }
     if (slot !== null && slot !== undefined && hqHeroMatchesFilter(G, slot, front.filter)) {
       eligible.push(slot);
     }

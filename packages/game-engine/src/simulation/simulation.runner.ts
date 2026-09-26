@@ -57,6 +57,7 @@ import { drawCards, playCard, endTurn } from '../moves/coreMoves.impl.js';
 import { revealVillainCard } from '../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
+import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 // why: WP-286 — draw-or-empowered parks an interactive choice UNCONDITIONALLY when One-Hit
 // Wonder is played (no precondition, unlike the sibling resolve moves whose pending choices a
@@ -321,6 +322,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   revealVillainCard: (context) => revealVillainCard(context as never),
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
+  // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
+  // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
+  exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
   fightMastermind: (context) => fightMastermind(context as never),
   // why: WP-286 — must be dispatchable; One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally, so the sweep reaches it and the block-all guard freezes every other move.
