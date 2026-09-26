@@ -26,10 +26,13 @@ WP-748: hostages now sit on the newest villain, which gets +1 attack per hostage
   - `sim:coverage --check`, `sim:runtime-observed:check`, `wiki-viewer:project` and
     `check-links` → 0.
   - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
-- **Follow-up.** The PAR profile re-pin (`data/par/profile/v1/**`), a separate `INFRA:`, is now due
-  since both WP-747 and WP-748 have landed.
-- **Pending (D-24026).** Operator live-verify in a Midtown match: a Bystander revealed while two or
-  more City spaces are occupied is logged as captured by the villain at the lowest occupied space.
+- **Follow-up (done).** The PAR profile re-pin landed as #2405: Midtown bot wins 2059 → 1571 across
+  the 16 Midtown scenarios.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator 2p match `25-GJ0oXBwy`
+  (Red Skull / Midtown Bank Robbery / HYDRA + Masters of Evil / Savage Land Mutates; build
+  `6a1ce21`). Every Bystander revealed with two or more City spaces occupied was captured by the
+  villain at the lowest occupied space, the newest arrival (log 6.1.3, 8.1.1, 17.1.1, 19.1.3,
+  22.2.12). On 8.1.1 space 0 had just been cleared, and the villain at space 1 correctly took it.
 
 ### WP-748 — Midtown Bank Robbery family: each Villain gets +1 attack for each Bystander it has (EC-785 / D-24572) (2026-09-26)
 
@@ -53,11 +56,19 @@ Kidnappers holding 3 Bystanders with 3 attack instead of 6. The new cost reaches
 - **Follow-ups.**
   - The PAR profile re-pin (separate `INFRA:`, after WP-747 lands too).
   - The per-card "+N per Bystander" villains, a separate rule.
-- **Pending (D-24026).** Operator live-verify in a Midtown match. A City villain holding N
-  Bystanders must:
-  - show `city[i].fightCost` = printed + N in the Play Diagnostics `uiStateSnapshot`;
-  - show `Fight printed+N` on its tile;
-  - keep Fight disabled at printed attack.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Same operator match `25-GJ0oXBwy`
+  (build `6a1ce21`):
+  - the diagnostics `uiStateSnapshot` shows every City villain at `fightCost` = printed + N
+    (Savage Land Mutates 3+0 / 3+2 / 3+3, Baron Zemo 6+1);
+  - Red Skull stays at his printed 7 while holding 2 Bystanders (Villains only);
+  - on turn 3 the operator could not fight Savage Land Mutates (printed 3, holding 2 Bystanders)
+    with 3 attack. The engine and the client gate agreed on cost 5.
+
+  The operator did not notice the `Fight 5` badge on the tile. It rendered, but the small dark pill
+  was too quiet at the moment it mattered. Follow-up INFRA (Jeff feedback): the badge is louder
+  when the player can't afford the projected cost.
+  The match was lost on turn 23: 10 Bystanders were carried away (threshold 8) by three escapes
+  holding 2, 4 and 4.
 
 ### WP-766 — Day/Night badge on the play HUD (EC-803; consumes D-24598) (2026-09-26)
 
