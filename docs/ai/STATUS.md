@@ -140,7 +140,9 @@ Now:
   **`scheme-wins`**, not a tie. The meter tracked `villain-deck` 35/35 (menace 1). An earlier
   18-turn game on the same build showed `hero-deck` 22/42 as the leading condition. The run exposed
   two misleading log lines (a "final turn… tie" announcement just before the loss, and the internal
-  name "villainDeck pile"); both are fixed by D-24599.
+  name "villainDeck pile"); both are fixed by D-24599. A third game (same build, Venom hero) passed
+  twists #7–#10 without ending. The meter tracked `hero-deck` 38/42 (Hero Deck 4 left, Villain Deck
+  7 left), and the heroes won on turn 28, four cards short of a Hero Deck runout.
 - **Pending (D-24026), Symbiotic Absorption.** A non-core printed-count scheme: the match must not
   end at twist 7, and the meter must show the printed threshold (11). Record the result here.
 
