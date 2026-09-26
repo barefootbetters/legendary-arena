@@ -44647,4 +44647,23 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 ---
 
+### D-24593 — The bot-ally driver answers a seat choice owed by a bot seat that is not the active player (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct `apps/server` bot-ally fix, no WP; the D-24590 follow-up it named as out of scope).
+
+**Context.** `botAllyDriver.mjs` acted only when a bot seat was `ctx.currentPlayer`. A `G.pendingSeatChoice` (WP-684 / D-24501) is addressed to seats other than the active player, which broke the driver in two ways. (1) A human who defeated Loki's Vanishing Illusions or took Dr. Doom's Monarch's Decree discard (D-24511) left the bot's submission outstanding. The driver sat on the human's turn and never answered, so the block-all guard froze the human forever. (2) A bot that opened the choice with its own fight had no legal move while the other seats owed theirs. Its policy picked nothing useful, `endTurn` / `advanceStage` were guard-rejected, and the co-op match **faulted**. The driver already polls every 250ms on every turn, so it wakes correctly. The turn gate was the defect, not the trigger.
+
+**Decision.**
+1. In `runTick`, an open seat choice with any outstanding seat takes precedence over the turn gate. `findBotOwedSeatChoiceSeat` returns the first outstanding addressed seat **the driver owns**. It does not wait on the human's answer: the engine applies the choice atomically once the last seat submits, so submission order across seats does not matter. That is why it does not reuse autoplay's `findSeatChoiceActingSeat`, which returns the first outstanding seat of any kind. It keeps the same `getOutstandingSeats` mirror.
+2. `decideBotSeatChoiceMove` enumerates `getLegalMoves` **as that bot seat** and submits its single `resolveSeatChoice` (the engine's `defaultOptionIndex`) with that seat's own credentials. This is the D-24590 `decidePendingChoiceDispatch` policy: no synthesized option and no policy call. `decidePendingChoiceDispatch` itself is not imported, because `autoplay.mjs` pulls the registry and playback modules into a driver that the header keeps to engine-barrel imports only.
+3. When only the human owes a submission, the driver waits and tracks idle exactly as on the human's turn, so the existing abandon bound still applies. It never answers for the human seat.
+4. `attemptBotTurn` returns a new `yielded` result when a seat choice opens mid-turn. `runTick` does not count it as a completed turn, and the next tick answers or waits, then resumes the turn.
+5. Fail loud. A bot seat with no single `resolveSeatChoice`, or a submission that does not land across `BOT_MOVE_SUBMIT_ATTEMPTS`, faults the match with the existing public-safe `BOT_FAULTED_MESSAGE` and a `[bot-ally] … FAULTED` log line. Progress means the seat left the outstanding set, not a bare `_stateID` bump.
+
+**Gates.** `apps/server/src/bot-ally/botAllySeatChoice.test.ts` passes 6/6 against a real engine state and the real `resolveSeatChoice` move. With both new gates neutered to the old behaviour, 5 of them fail: the human-active case submits nothing, and the bot-active case faults. The server suite is 1625 tests / 1420 pass / 0 fail / 205 skipped after `pnpm -r build` (rebased onto D-24591). There is no engine, endpoint, or `G` change, so there is no hash, PAR, or API-catalog impact.
+
+**Reserved by:** NUMBER-LEDGER D-24593. Related: D-24590 (autoplay counterpart), D-24591 (autoplay spend filter), D-24501 (seat-choice model), D-24511 (Vanishing Illusions / Monarch's Decree), D-24573 (WP-749 sim / PAR parity), D-24170 (driver poll model), D-24037 (public-safe fault copy).
+
+---
+
 Protect this file.
