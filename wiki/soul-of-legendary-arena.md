@@ -1764,7 +1764,17 @@ dispute.
   been held since December 2018 and was serving 16 years for espionage.
   Brittney Griner, arrested in February 2022 with vape cartridges holding 0.702
   grams of cannabis oil, pleaded guilty and was sentenced to nine years; the
-  State Department declared her "wrongfully detained" in May. On 8 December
+  State Department declared her "wrongfully detained" in May. It was not her
+  first case. In April 2015 she and her fiancée, fellow WNBA player Glory
+  Johnson, were arrested after a fight at their Arizona home: Griner had a bite
+  wound on her finger and scratches on her wrist; Johnson had a scratch above
+  her lip and was diagnosed with a concussion — a traumatic brain injury, not a
+  surface wound. Griner pleaded guilty to misdemeanor disorderly conduct and was
+  ordered into 26 weeks of domestic-violence counseling under a diversion plea,
+  and the league suspended both players seven games. (Johnson later said she
+  had never considered herself a lesbian: "They wanted me to be a lesbian who
+  converted from being straight… It just doesn't work for me like that.") On 8
+  December
   2022 she was traded in Abu Dhabi for Viktor Bout, the arms dealer known as the
   "Merchant of Death," a decade into a 25-year sentence for conspiring
   to kill Americans. Whelan stayed behind. Run question 1 — who decided whose
@@ -2628,6 +2638,10 @@ choice for the operator, never make it silently.
   [White's Gaetz-signed filing](https://www.washingtontimes.com/news/2026/aug/19/royce-white-files-formal-wnba-draft-declaration-matt-gaetz-counsel/);
   the WNBA's [announcement of Engelbert's retirement](https://www.wnba.com/news/commissioner-cathy-engelbert-to-retire-at-end-of-year)
   (4 September 2026).
+  For Griner's 2015 case: 6abc on
+  [the injuries, plea and suspensions](https://6abc.com/post/brittney-griner-glory-johnson-each-suspended-7-games-for-incident/724596/)
+  (16 May 2015); Johnson's account in [*People*](https://people.com/parents/glory-johnson-opens-up-about-tumultuous-relationship-and-sudden-split/)
+  and, for the quoted line, [coverage of her 2015 *Cosmopolitan* interview](https://afterellen.com/glory-johnson-tells-cosmo-side-story/).
   For the Bout swap: the Justice Department on
   [Bout's 2011 conviction](https://www.justice.gov/archives/opa/pr/international-arms-dealer-viktor-bout-convicted-new-york-terrorism-crimes);
   Al Jazeera on the [wrongful-detention designation](https://www.aljazeera.com/news/2022/5/3/us-state-department-says-griner-wrongfully-detained-by-russia)
