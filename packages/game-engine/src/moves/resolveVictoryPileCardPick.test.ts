@@ -5,7 +5,9 @@
  * Covers all 7 mandatory ACs from EC-317 §Required Test Coverage:
  *   AC-valid     — correct attack value granted to G.turnEconomy.attack
  *   AC-absent    — cardId not in victory pile: G entirely unmutated
- *   AC-non-villain — card present but villainDeckCardTypes[id] !== 'villain': G unmutated
+ *   AC-non-villain — card present but villainDeckCardTypes[id] is neither 'villain'
+ *                    nor 'henchman' (e.g. a bystander): G unmutated. Henchmen ARE
+ *                    Villains (rules v23; D-24608) and resolve like any villain.
  *   AC-empty     — eligible list empty at resolution time: G unmutated
  *   AC-fifo      — FIFO order: ≥2 queued entries, first resolve consumes entry [0]
  *   AC-undef     — undefined queue: predicate returns false; move is a no-op
@@ -299,16 +301,17 @@ describe('resolveVictoryPileCardPick — card absent from victory pile', () => {
 });
 
 // ---------------------------------------------------------------------------
-// AC-non-villain: card present but villainDeckCardTypes[id] !== 'villain' → G unmutated
+// AC-non-villain: card present but villainDeckCardTypes[id] is neither 'villain'
+// nor 'henchman' → G unmutated. Henchmen ARE Villains (rules v23; D-24608).
 // ---------------------------------------------------------------------------
 
-describe('resolveVictoryPileCardPick — non-villain card in victory pile', () => {
-  it('returns with no side effects when card is a henchman, not a villain (AC-non-villain)', () => {
+describe('resolveVictoryPileCardPick — henchman in victory pile (D-24608)', () => {
+  it('grants the printed attack of a henchman — Henchman Villain cards are Villains', () => {
     const pending: PendingVictoryPileCardPick[] = [{ rewardType: 'attack', playerID: '0' }];
     const gameState = makeTestGameState({
       victory: ['henchman-g' as CardExtId],
       villainDeckCardTypes: { 'henchman-g': 'henchman' },
-      cardStats: { 'henchman-g': { attack: 0, recruit: 0, cost: 0, fightCost: 2 } },
+      cardStats: { 'henchman-g': { attack: 0, recruit: 0, cost: 0, fightCost: 3 } },
       pendingVictoryPileCardPick: pending,
       attack: 2,
     });
@@ -316,7 +319,26 @@ describe('resolveVictoryPileCardPick — non-villain card in victory pile', () =
 
     resolveVictoryPileCardPick(context, { cardId: 'henchman-g' as CardExtId });
 
-    assert.equal(gameState.turnEconomy.attack, 2, 'attack unchanged — henchman not eligible');
+    assert.equal(gameState.turnEconomy.attack, 5, 'henchman fightCost 3 added to attack 2');
+    assert.equal(gameState.pendingVictoryPileCardPick!.length, 0, 'front entry popped');
+  });
+});
+
+describe('resolveVictoryPileCardPick — non-villain card in victory pile', () => {
+  it('returns with no side effects when card is a bystander, not a villain (AC-non-villain)', () => {
+    const pending: PendingVictoryPileCardPick[] = [{ rewardType: 'attack', playerID: '0' }];
+    const gameState = makeTestGameState({
+      victory: ['bystander-g' as CardExtId],
+      villainDeckCardTypes: { 'bystander-g': 'bystander' },
+      cardStats: { 'bystander-g': { attack: 0, recruit: 0, cost: 0, fightCost: 2 } },
+      pendingVictoryPileCardPick: pending,
+      attack: 2,
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveVictoryPileCardPick(context, { cardId: 'bystander-g' as CardExtId });
+
+    assert.equal(gameState.turnEconomy.attack, 2, 'attack unchanged — bystander not eligible');
     assert.equal(gameState.pendingVictoryPileCardPick!.length, 1, 'queue intact');
   });
 
@@ -470,19 +492,29 @@ describe('resolveVictoryPileCardPick — atomicity', () => {
 // ---------------------------------------------------------------------------
 
 describe('getEligibleVictoryVillains', () => {
-  it('returns only villain-typed cards from the victory pile', () => {
+  it('returns villain- and henchman-typed cards from the victory pile, in pile order', () => {
     const gameState = makeTestGameState({
-      victory: ['villain-m' as CardExtId, 'henchman-n' as CardExtId, 'villain-o' as CardExtId],
+      victory: [
+        'villain-m' as CardExtId,
+        'henchman-n' as CardExtId,
+        'bystander-x' as CardExtId,
+        'villain-o' as CardExtId,
+      ],
       villainDeckCardTypes: {
         'villain-m': 'villain',
         'henchman-n': 'henchman',
+        'bystander-x': 'bystander',
         'villain-o': 'villain',
       },
     });
 
     const eligible = getEligibleVictoryVillains(gameState, '0');
 
-    assert.deepStrictEqual(eligible, ['villain-m', 'villain-o'], 'only villains returned');
+    assert.deepStrictEqual(
+      eligible,
+      ['villain-m', 'henchman-n', 'villain-o'],
+      'villains and henchmen returned (Henchmen are Villains, D-24608); bystander excluded',
+    );
   });
 
   it('returns empty array when no players zones exist for playerID', () => {

@@ -59,10 +59,10 @@ export function hasPendingVictoryPileCardPick(G: LegendaryGameState): boolean {
  * Returns the villain CardExtIds currently eligible for a victory-pile pick.
  *
  * Eligibility: card must be present in G.playerZones[playerID].victory AND
- * G.villainDeckCardTypes[cardId] must equal 'villain' (not henchman, bystander,
- * scheme-twist, mastermind-strike, or tactic).
+ * G.villainDeckCardTypes[cardId] must equal 'villain' or 'henchman' (not
+ * bystander, scheme-twist, or mastermind-strike; tactics never appear in the map).
  *
- * // why: filter reads setup-time villain-deck type map (WP-014B); tactics are in G.mastermind, never in this map, so === 'villain' cleanly excludes them
+ * // why: filter reads setup-time villain-deck type map (WP-014B); tactics are in G.mastermind, never in this map, so the villain/henchman check cleanly excludes them. Henchmen are included per rules v23 "Henchmen Are Villains" (D-24608)
  *
  * Called at resolve time (not park time) so the eligibility list is always
  * authoritative — victory pile contents may have changed since the pick was parked.
@@ -81,8 +81,10 @@ export function getEligibleVictoryVillains(
   }
   const eligible: CardExtId[] = [];
   for (const cardId of playerZones.victory) {
-    // why: filter reads setup-time villain-deck type map (WP-014B); tactics are in G.mastermind, never in this map, so === 'villain' cleanly excludes them
-    if (G.villainDeckCardTypes[cardId] === 'villain') {
+    // why: filter reads setup-time villain-deck type map (WP-014B); tactics are in G.mastermind, never in this map, so they stay excluded.
+    // Henchmen count: rules v23 "Henchmen Are Villains" — "Henchman Villain cards are indeed Villains" (D-24608; same correction as D-24603).
+    const cardType = G.villainDeckCardTypes[cardId];
+    if (cardType === 'villain' || cardType === 'henchman') {
       eligible.push(cardId);
     }
   }

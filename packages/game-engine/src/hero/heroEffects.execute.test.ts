@@ -5256,7 +5256,7 @@ describe('executeHeroEffects victory-villain-attack park (WP-285 / D-24067)', ()
     });
     // why: makeTestState hardcodes villainDeckCardTypes: {} — set the setup-time
     // type map directly so the park site's getEligibleVictoryVillains filter sees
-    // a real villain (henchman-2 is deliberately non-villain to prove the filter).
+    // a real villain (henchman-2 is also eligible — Henchmen are Villains, D-24608).
     gameState.villainDeckCardTypes = {
       'villain-1': 'villain',
       'henchman-2': 'henchman',
@@ -5272,6 +5272,31 @@ describe('executeHeroEffects victory-villain-attack park (WP-285 / D-24067)', ()
     );
     // No attack granted at play time — the grant happens at resolve time.
     assert.equal(gameState.turnEconomy.attack, 0, 'no attack granted at park time');
+  });
+
+  it('parks a pick when the only Villain in the victory pile is a henchman (D-24608)', () => {
+    const gameState = makeTestState({
+      victory: ['henchman-only', 'bystander-1'],
+      inPlay: ['the-ebony-blade'],
+      heroAbilityHooks: [
+        {
+          cardId: 'the-ebony-blade' as string,
+          timing: 'onPlay',
+          keywords: ['victory-villain-attack'],
+          effects: [{ type: 'victory-villain-attack' }],
+        },
+      ],
+    });
+    // why: rules v23 "Henchmen Are Villains" — a henchman satisfies "a Villain in
+    // your Victory Pile", so the ability must not fizzle when it is the only one.
+    gameState.villainDeckCardTypes = {
+      'henchman-only': 'henchman',
+      'bystander-1': 'bystander',
+    } as unknown as LegendaryGameState['villainDeckCardTypes'];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'the-ebony-blade' as string);
+
+    assert.equal(gameState.pendingVictoryPileCardPick?.length, 1, 'a henchman-only victory pile still parks the pick');
   });
 
   it('with 0 eligible villains it is a no-op plus a game-log line (no pick parked)', () => {

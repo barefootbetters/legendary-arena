@@ -1715,22 +1715,26 @@ describe('buildUIState — pendingVictoryPileCardPick projection (WP-313 / D-240
   const villainWithDisplay = 'core-villain-brotherhood-magneto-00' as CardExtId;
   const villainNoDisplay = 'core-villain-skrulls-super-skrull-00' as CardExtId;
   const henchman = 'henchman-doombot-legion-00' as CardExtId;
+  const bystander = 'bystander-00' as CardExtId;
 
   /**
-   * Builds a game state whose player-0 victory pile holds two villains + one
-   * henchman, with a pending victory-pile pick for player 0. The henchman is
-   * NOT type 'villain', so it must be excluded from the eligible list.
+   * Builds a game state whose player-0 victory pile holds two villains, one
+   * henchman and one bystander, with a pending victory-pile pick for player 0.
+   * Henchmen ARE Villains (rules v23; D-24608), so the henchman is eligible;
+   * the bystander is not.
    */
   function withVictoryPilePick(): LegendaryGameState {
     const gameState = makeGameStateWithDisplayData();
-    gameState.playerZones['0']!.victory.push(villainWithDisplay, henchman, villainNoDisplay);
+    gameState.playerZones['0']!.victory.push(villainWithDisplay, henchman, bystander, villainNoDisplay);
     const types = gameState.villainDeckCardTypes as Record<string, string>;
     types[villainWithDisplay] = 'villain';
     types[villainNoDisplay] = 'villain';
     types[henchman] = 'henchman';
+    types[bystander] = 'bystander';
     const stats = gameState.cardStats as Record<string, { attack: number; recruit: number; cost: number; fightCost: number }>;
     stats[villainWithDisplay] = { attack: 0, recruit: 0, cost: 5, fightCost: 5 };
     stats[villainNoDisplay] = { attack: 0, recruit: 0, cost: 4, fightCost: 4 };
+    stats[henchman] = { attack: 0, recruit: 0, cost: 3, fightCost: 3 };
     gameState.pendingVictoryPileCardPick = [{ playerID: '0', rewardType: 'attack' }];
     return gameState;
   }
@@ -1742,15 +1746,15 @@ describe('buildUIState — pendingVictoryPileCardPick projection (WP-313 / D-240
     assert.equal(ui.pendingVictoryPileCardPick, undefined, 'absent when no pending pick');
   });
 
-  it('projects the FRONT entry with playerID + eligible villains in victory-pile order, henchman excluded', () => {
+  it('projects the FRONT entry with playerID + eligible villains in victory-pile order, henchman included (D-24608)', () => {
     const ui = buildUIState(withVictoryPilePick(), mockCtx);
     assert.ok(ui.pendingVictoryPileCardPick !== undefined, 'present when queue non-empty');
     assert.equal(ui.pendingVictoryPileCardPick!.playerID, '0');
     const eligible = ui.pendingVictoryPileCardPick!.eligibleVillains;
-    assert.equal(eligible.length, 2, 'only the two villains are eligible (henchman excluded)');
+    assert.equal(eligible.length, 3, 'two villains + the henchman are eligible (bystander excluded)');
     assert.deepEqual(
       eligible.map((v) => v.cardId),
-      [villainWithDisplay, villainNoDisplay],
+      [villainWithDisplay, henchman, villainNoDisplay],
       'in victory-pile order',
     );
   });
@@ -1759,6 +1763,7 @@ describe('buildUIState — pendingVictoryPileCardPick projection (WP-313 / D-240
     const eligible = buildUIState(withVictoryPilePick(), mockCtx).pendingVictoryPileCardPick!.eligibleVillains;
     assert.equal(eligible.find((v) => v.cardId === villainWithDisplay)!.attackValue, 5);
     assert.equal(eligible.find((v) => v.cardId === villainNoDisplay)!.attackValue, 4);
+    assert.equal(eligible.find((v) => v.cardId === henchman)!.attackValue, 3, 'henchman printed attack');
   });
 
   it('projects only the FRONT entry when the queue holds more than one', () => {

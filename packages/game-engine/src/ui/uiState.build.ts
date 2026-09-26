@@ -92,7 +92,7 @@ import type {
   UIDeckCardStat,
 } from './uiState.types.js';
 // why: WP-313 — reuse the engine's authoritative victory-pile eligibility helper
-// (victory pile ∩ villainDeckCardTypes === 'villain') so the projected list is
+// (victory pile ∩ villainDeckCardTypes ∈ {villain, henchman}, D-24608) so the projected list is
 // byte-identical to what resolveVictoryPileCardPick re-filters at resolve time
 // (the round-trip rule) — never a re-implemented filter.
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
@@ -1807,7 +1807,7 @@ export function buildUIState(
   // why: WP-313 / D-24099 — project the FRONT entry of G.pendingVictoryPileCardPick
   // with the eligible victory-pile villains recomputed fresh from current G via the
   // engine's getEligibleVictoryVillains (WP-285 stores no snapshot). The list mirrors
-  // the resolve-time filter (victory pile ∩ villain type), in victory-pile order and
+  // the resolve-time filter (victory pile ∩ villain or henchman type), in victory-pile order and
   // unfiltered, so the client's { cardId } selection always maps to a villain the
   // engine resolve accepts (the round-trip rule). Each entry's attackValue is the
   // villain's printed attack, read from G.cardStats[cardId].fightCost the same way the

@@ -1954,14 +1954,31 @@
       "action": "resolve-victory-pile-card-pick",
       "setup": {
         "currentPlayer": "0",
+        "victory": ["core/bystander#0"],
+        "villainDeckCardTypes": { "core/bystander#0": "bystander" },
+        "cardStats": { "core/bystander#0": { "fightCost": 4 } },
+        "resolve": { "cardId": "core/bystander#0" }
+      }
+    },
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
+    "why": "Only Villains (cards typed 'villain' or 'henchman' in G.villainDeckCardTypes) are eligible — a rescued Bystander in the Victory pile is not a valid Ebony Blade target, so the pick is a no-op and no attack is granted despite a fightCost entry (D-24067, henchman clause corrected by D-24608). Paired with the villain and henchman siblings that prove the attack claim fires."
+  },
+  {
+    "id": "resolve-victory-pile-pick-henchman-target-grants-attack",
+    "mechanic": "victory-pile-card-pick",
+    "decision": "D-24608",
+    "scenario": {
+      "action": "resolve-victory-pile-card-pick",
+      "setup": {
+        "currentPlayer": "0",
         "victory": ["core/hydra/doombot-legion#0"],
         "villainDeckCardTypes": { "core/hydra/doombot-legion#0": "henchman" },
         "cardStats": { "core/hydra/doombot-legion#0": { "fightCost": 4 } },
         "resolve": { "cardId": "core/hydra/doombot-legion#0" }
       }
     },
-    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 0 },
-    "why": "Only cards typed 'villain' in G.villainDeckCardTypes are eligible — a henchman (Doombot Legion) in the Victory pile is not a valid Ebony Blade target, so the pick is a no-op and no attack is granted despite its fightCost (D-24067). Paired with the villain sibling that proves the attack claim fires."
+    "expected": { "kind": "turn-economy-value", "economyField": "attack", "amount": 4 },
+    "why": "Universal Rules v23 'Henchmen Are Villains/Adversaries': 'Henchman Villain cards are indeed Villains.' A henchman (Doombot Legion) in the Victory pile is a valid Ebony Blade target, so picking it grants its printed attack, fightCost 4 → +4 attack (D-24608, correcting the D-24067 henchman exclusion)."
   },
   {
     "id": "resolve-ko-discard-kos-selected-cards",

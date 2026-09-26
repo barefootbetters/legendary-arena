@@ -322,7 +322,7 @@ describe('getLegalMoves — pending victory-pile villain-pick short-circuit (WP-
       {
         'villain-low': { attack: 0, recruit: 0, cost: 0, fightCost: 3 },
         'villain-high': { attack: 0, recruit: 0, cost: 0, fightCost: 8 },
-        'henchman-x': { attack: 0, recruit: 0, cost: 0, fightCost: 99 },
+        'henchman-x': { attack: 0, recruit: 0, cost: 0, fightCost: 6 },
       },
     );
 
@@ -331,8 +331,25 @@ describe('getLegalMoves — pending victory-pile villain-pick short-circuit (WP-
     assert.equal(legalMoves.length, 1, 'exactly one legal move while a pick is pending');
     const only = legalMoves[0]!;
     assert.equal(only.name, 'resolveVictoryPileCardPick', 'the single move is resolveVictoryPileCardPick');
-    // villain-high (fightCost 8) beats villain-low (3); the henchman (99) is filtered out (not a villain).
+    // villain-high (fightCost 8) beats the henchman (6) and villain-low (3).
     assert.deepStrictEqual(only.args, { cardId: 'villain-high' }, 'bot picks highest-fightCost eligible villain');
+  });
+
+  test('a henchman with the highest printed attack is the bot pick (Henchmen are Villains, D-24608)', () => {
+    const gameState = makeVictoryPickG(
+      ['villain-low' as CardExtId, 'henchman-x' as CardExtId, 'bystander-y' as CardExtId],
+      { 'villain-low': 'villain', 'henchman-x': 'henchman', 'bystander-y': 'bystander' },
+      {
+        'villain-low': { attack: 0, recruit: 0, cost: 0, fightCost: 3 },
+        'henchman-x': { attack: 0, recruit: 0, cost: 0, fightCost: 5 },
+        'bystander-y': { attack: 0, recruit: 0, cost: 0, fightCost: 99 },
+      },
+    );
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(legalMoves[0]!.args, { cardId: 'henchman-x' }, 'henchman (5) beats villain (3); bystander never eligible');
   });
 
   test('tie on fightCost is broken by lowest victory-pile index (AC-12)', () => {
@@ -377,9 +394,9 @@ describe('getLegalMoves — pending victory-pile villain-pick short-circuit (WP-
 
   test('bot never emits resolveVictoryPileCardPick when no eligible villain exists (AC-16)', () => {
     const gameState = makeVictoryPickG(
-      ['henchman-only' as CardExtId],
-      { 'henchman-only': 'henchman' },
-      { 'henchman-only': { attack: 0, recruit: 0, cost: 0, fightCost: 6 } },
+      ['bystander-only' as CardExtId],
+      { 'bystander-only': 'bystander' },
+      { 'bystander-only': { attack: 0, recruit: 0, cost: 0, fightCost: 6 } },
     );
 
     const legalMoves = getLegalMoves(gameState, CONTEXT);

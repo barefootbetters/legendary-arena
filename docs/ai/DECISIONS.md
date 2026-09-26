@@ -45402,4 +45402,26 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24608 — A henchman in your Victory Pile is "a Villain in your Victory Pile" for the victory-villain-attack pick (Active 2026-09-26 — direct fix, no WP; corrects the WP-285 / D-24067 henchman exclusion)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/moves/resolveVictoryPileCardPick.ts` eligibility filter only).
+
+**Context.** `getEligibleVictoryVillains` filtered the Victory Pile to `villainDeckCardTypes[cardId] === 'villain'`, explicitly excluding henchmen. It is the single eligibility source for the `[keyword:victory-villain-attack]` park site (`heroEffects.execute.ts`), the `resolveVictoryPileCardPick` resolve-time re-filter, the `pendingVictoryPileCardPick` UIState projection, and the bot's `ai.legalMoves` pick. The only card carrying the keyword is `antm` The Ebony Blade ("You get +[icon:attack] equal to the printed [icon:attack] of a Villain in your Victory Pile. (Mastermind tactics aren't Villains.)"). It prints "a Villain", the broad term, with only tactics carved out. A player whose Victory Pile held only henchmen got the "no eligible villains" no-op, and a player with both could not pick a henchman even when it had the higher printed attack.
+
+**Decision.**
+
+1. **Henchmen are eligible.** Universal Rules v23, §"Henchmen Are Villains/Adversaries": "Henchman Villain cards are indeed Villains." The filter now accepts `'villain'` or `'henchman'`. Bystanders, scheme twists and mastermind strikes stay excluded. Tactics never enter `villainDeckCardTypes`, so the card's tactic carve-out still holds.
+2. **Attack value.** A henchman's printed attack is its `cardStats[cardId].fightCost`, populated per copy at setup like a villain's, so resolve, projection and bot all read it the same way. No new field or contract change.
+3. **Client.** `VictoryPileCardPickPrompt.vue` renders `eligibleVillains` as projected, so henchmen appear as buttons with their name and `+N Attack` with no client change.
+4. **Same correction as D-24603** (fightVillain defeat trigger). Supersedes the "not henchman" clause in the D-24067 eligibility wording; nothing else there changes.
+5. **Replay / oracles.** No sentinel replay or PAR fixture plays The Ebony Blade; the core `finalStateHash` / PAR oracles are unchanged. A past match that played it with a henchman in the Victory Pile diverges on D-24119 re-execution; no gauntlet or competitive pool is migrated.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4523/0, arena-client 2143/0). Tests intentionally flipped from "henchman excluded" to "henchman eligible" (move, helper, UIState projection, bot pick, effect ruling `resolve-victory-pile-pick-non-villain-target-is-noop` now targets a bystander); new tests cover a henchman-only Victory Pile park, a henchman bot pick, and the `resolve-victory-pile-pick-henchman-target-grants-attack` ruling. `ledger:numbers`, `sim:runtime-observed`, `sim:coverage`, `effect-index`, `ledger:heroes` checks pass.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play The Ebony Blade with a henchman in the Victory Pile and confirm the henchman is listed and picking it grants its printed attack.
+
+**Reserved by:** NUMBER-LEDGER D-24608. Related: D-24067 (WP-285), D-24099 (WP-313 projection), D-24603.
+
+---
+
 Protect this file.
