@@ -176,8 +176,10 @@ describe('schemeTwistHandler', () => {
   // Test 3: at threshold, produces modifyCounter on SCHEME_LOSS
   // -------------------------------------------------------------------------
   it('at threshold: produces modifyCounter on ENDGAME_CONDITIONS.SCHEME_LOSS', () => {
-    // why: threshold is 7; set counter to 6 so handler predicts 7 (>= threshold)
-    const gameState = makeTestState({ schemeTwistCount: 6 });
+    // why: 'test-scheme' is unconfigured and this mock carries no twist cards, so
+    // the D-24595 fallback is DEFAULT_SCHEME_TWIST_COUNT (8); set counter to 7 so
+    // the handler predicts 8 (>= threshold).
+    const gameState = makeTestState({ schemeTwistCount: 7 });
     const effects = schemeTwistHandler(gameState, {}, { cardId: 'test-twist' }, DEFAULT_IMPLEMENTATION_MAP);
 
     const schemeLossEffect = effects.find(
@@ -222,7 +224,8 @@ describe('schemeTwistHandler', () => {
   // Test 5: uses ENDGAME_CONDITIONS.SCHEME_LOSS constant (not string literal)
   // -------------------------------------------------------------------------
   it('uses ENDGAME_CONDITIONS.SCHEME_LOSS constant for scheme-loss counter', () => {
-    const gameState = makeTestState({ schemeTwistCount: 6 });
+    // why: predicted twist 8 = the D-24595 default fallback for a twist-less mock.
+    const gameState = makeTestState({ schemeTwistCount: 7 });
     const effects = schemeTwistHandler(gameState, {}, { cardId: 'test-twist' }, DEFAULT_IMPLEMENTATION_MAP);
 
     const schemeLossEffect = effects.find(
@@ -612,13 +615,131 @@ describe('scheme loss threshold (D-24178)', () => {
     );
   });
 
-  it('an unconfigured scheme still falls back to the MVP default threshold (7)', () => {
-    const state = makeTestState({ schemeTwistCount: 6 });
-    // 'test-scheme' has no config → fallback 7 → predicted 7 → loss.
+  it('an unconfigured twist-less mock falls back to the default twist count (8)', () => {
+    // why: D-24595 replaced the flat 7. With no scheme-twist cards in
+    // villainDeckCardTypes (a test mock) the fallback is DEFAULT_SCHEME_TWIST_COUNT.
+    const beforeLoss = makeTestState({ schemeTwistCount: 6 });
     assert.equal(
-      triggersSchemeLoss(schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
-      true,
-      'unconfigured scheme uses the fallback threshold of 7',
+      triggersSchemeLoss(schemeTwistHandler(beforeLoss, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      false,
+      'unconfigured scheme must not lose at twist 7 any more',
     );
+    const atLoss = makeTestState({ schemeTwistCount: 7 });
+    assert.equal(
+      triggersSchemeLoss(schemeTwistHandler(atLoss, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP)),
+      true,
+      'unconfigured twist-less scheme loses at the default 8',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-763 / D-24595 — scheme Evil Wins fidelity
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a handler test state for a named scheme with N scheme-twist cards
+ * built into its Villain Deck (the source the D-24595 fallback counts).
+ *
+ * @param schemeId - The active scheme.
+ * @param setupTwists - How many 'scheme-twist' entries villainDeckCardTypes holds.
+ * @param twistCount - The resolved-twist counter before this twist.
+ * @returns A minimal LegendaryGameState.
+ */
+function makeSchemeState(
+  schemeId: string,
+  setupTwists: number,
+  twistCount: number,
+): LegendaryGameState {
+  const state = makeTestState({ schemeTwistCount: twistCount });
+  state.selection.schemeId = schemeId;
+  for (let twistIndex = 0; twistIndex < setupTwists; twistIndex = twistIndex + 1) {
+    state.villainDeckCardTypes[`scheme-twist-x-${twistIndex}`] = 'scheme-twist';
+  }
+  // why: a villain entry proves only 'scheme-twist' values are counted.
+  state.villainDeckCardTypes['villain-x'] = 'villain';
+  return state;
+}
+
+/**
+ * Reports whether revealing the NEXT twist loses the game.
+ *
+ * @param schemeId - The active scheme.
+ * @param setupTwists - Scheme twists built into the Villain Deck.
+ * @param twistNumber - The twist being revealed (1-based).
+ * @returns True when the handler pushes SCHEME_LOSS.
+ */
+function losesAtTwist(schemeId: string, setupTwists: number, twistNumber: number): boolean {
+  const state = makeSchemeState(schemeId, setupTwists, twistNumber - 1);
+  return triggersSchemeLoss(
+    schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP),
+  );
+}
+
+describe('scheme Evil Wins fidelity (WP-763 / D-24595)', () => {
+  it('AC-4: an unconfigured scheme loses at its LAST twist, never at 7', () => {
+    assert.equal(losesAtTwist('xyz/unconfigured-scheme', 10, 7), false, 'no false twist-7 loss');
+    assert.equal(losesAtTwist('xyz/unconfigured-scheme', 10, 9), false, 'not before the last twist');
+    assert.equal(losesAtTwist('xyz/unconfigured-scheme', 10, 10), true, 'loses at the 10th of 10');
+  });
+
+  it('AC-4: an unconfigured scheme with 6 or fewer twists can now lose', () => {
+    // why: under the flat 7 a 4-twist scheme could never reach the threshold.
+    assert.equal(losesAtTwist('xyz/unconfigured-scheme', 4, 3), false);
+    assert.equal(losesAtTwist('xyz/unconfigured-scheme', 4, 4), true);
+  });
+
+  it('AC-1: printed-N schemes lose at exactly N, never at N-1', () => {
+    const printed: Array<[string, number, number]> = [
+      ['vnom/symbiotic-absorption', 11, 11],
+      ['anni/sneak-attack-the-heroes-homes', 6, 6],
+      ['msis/the-time-heist', 10, 11],
+      ['wwhk/world-war-hulk', 9, 9],
+      ['co2e/unleash-the-power-of-the-cosmic-cube', 8, 8],
+      ['2099/pull-reality-into-cyberspace', 7, 7],
+    ];
+    for (const [schemeId, printedThreshold, deckTwists] of printed) {
+      assert.equal(
+        losesAtTwist(schemeId, deckTwists, printedThreshold - 1),
+        false,
+        `${schemeId} must not lose at twist ${printedThreshold - 1}`,
+      );
+      assert.equal(
+        losesAtTwist(schemeId, deckTwists, printedThreshold),
+        true,
+        `${schemeId} must lose at twist ${printedThreshold}`,
+      );
+    }
+  });
+
+  it('AC-2: a D-pure scheme never loses on twists (Midnight Massacre)', () => {
+    for (let twistNumber = 1; twistNumber <= 11; twistNumber = twistNumber + 1) {
+      assert.equal(
+        losesAtTwist('mdns/midnight-massacre', 11, twistNumber),
+        false,
+        `Midnight Massacre must not lose at twist ${twistNumber}`,
+      );
+    }
+  });
+
+  it('AC-3: a D-compound scheme keeps the last-twist fallback beside its pile', () => {
+    // why: wtif/marvel-zombies (4 twists) prints "escaped villains OR the Villain
+    // Deck runs out"; the unmodelled half keeps the approximate last-twist clock.
+    assert.equal(losesAtTwist('wtif/marvel-zombies', 4, 3), false);
+    assert.equal(losesAtTwist('wtif/marvel-zombies', 4, 4), true);
+  });
+
+  it('counter-only is a pure no-op: no "No resolver" line, no notable event, generic line kept', () => {
+    const state = makeSchemeState('vnom/symbiotic-absorption', 11, 2);
+    const effects = schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
+    assert.equal(state.messages.length, 0, 'the resolver pushed no log line');
+    assert.equal(state.notableEvents.length, 0, 'the resolver pushed no notable event');
+    const genericLine = effects.find(
+      (effect) =>
+        effect.type === 'queueMessage' &&
+        (effect as { message: string }).message.includes('twist count incremented'),
+    );
+    // why: scripts/extract-par-anchors.mjs counts twists by this literal.
+    assert.ok(genericLine, 'the PAR-anchor "twist count incremented" line still emits');
   });
 });

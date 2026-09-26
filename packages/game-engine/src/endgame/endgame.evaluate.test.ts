@@ -4,6 +4,11 @@ import assert from 'node:assert';
 import type { LegendaryGameState } from '../types.js';
 import { evaluateEndgame } from './endgame.evaluate.js';
 import { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame.types.js';
+import {
+  latchFinalTurnIfDeckExhausted,
+  resolveFinalTurnTieIfUnresolved,
+} from './finalTurn.logic.js';
+import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 
 /**
  * Builds a minimal LegendaryGameState with only the counters field populated.
@@ -14,6 +19,24 @@ import { ENDGAME_CONDITIONS, ESCAPE_LIMIT } from './endgame.types.js';
  */
 function makeMinimalState(counters: Record<string, number>): LegendaryGameState {
   return { counters } as LegendaryGameState;
+}
+
+/**
+ * Builds a minimal state whose Villain Deck has just run out (the Hero Deck has
+ * not), carrying only the fields the final-turn latch, the pile-depletion check
+ * and evaluateEndgame read.
+ *
+ * @param schemeId - The active scheme.
+ * @returns A minimal LegendaryGameState.
+ */
+function makeVillainDeckRunoutState(schemeId: string): LegendaryGameState {
+  return {
+    selection: { schemeId },
+    villainDeck: { deck: [], discard: [] },
+    heroDeck: ['hero-card-a', 'hero-card-b'],
+    counters: {},
+    messages: [],
+  } as unknown as LegendaryGameState;
 }
 
 describe('evaluateEndgame', () => {
@@ -228,6 +251,35 @@ describe('evaluateEndgame', () => {
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.endedEarly, undefined);
     }
+  });
+
+  // why: WP-763 / D-24595 + D-24319 — a Villain Deck runout both latches the
+  // deck-exhaustion final turn AND, on a scheme whose Evil Wins names the Villain
+  // Deck, trips the pile-depleted loss in the same onMove. The order below is the
+  // play-phase onMove order (latch, then pile check); the result must be a SCHEME
+  // LOSS, not the final-turn tie.
+  it('a Villain Deck runout on a pile-depleted scheme is a scheme loss, not a tie (WP-763)', () => {
+    const state = makeVillainDeckRunoutState('mdns/midnight-massacre');
+
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+    resolveFinalTurnTieIfUnresolved(state);
+
+    assert.strictEqual(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED], 1);
+    assert.strictEqual(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TIE], undefined);
+    assert.strictEqual(evaluateEndgame(state)?.outcome, 'scheme-wins');
+  });
+
+  it('the same runout on a scheme that does not name the Villain Deck still ties', () => {
+    // why: the contrast case — only a scheme whose printed Evil Wins includes the
+    // Villain Deck turns the runout into a loss; every other scheme keeps WP-367.
+    const state = makeVillainDeckRunoutState('xyz/unconfigured-scheme');
+
+    latchFinalTurnIfDeckExhausted(state);
+    applyPileDepletionResourceLoss(state);
+    resolveFinalTurnTieIfUnresolved(state);
+
+    assert.strictEqual(evaluateEndgame(state)?.outcome, 'tie');
   });
 
   it('JSON.stringify succeeds for all return values', () => {

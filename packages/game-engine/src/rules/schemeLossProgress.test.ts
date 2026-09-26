@@ -11,8 +11,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DEFAULT_SCHEME_TWIST_COUNT,
   MENACE_TIERS,
-  MVP_SCHEME_TWIST_THRESHOLD,
   SCHEME_LOSS_KINDS,
   computeMenace,
   isTwistLossSuppressed,
@@ -21,9 +21,13 @@ import {
   resolveSchemeLossPileSetupSize,
   resolveSchemeLossProgress,
   resolveSchemeLossThreshold,
+  resolveSchemeLossVillainDeckSetupSize,
   resolveTwistLossThreshold,
+  selectActiveLossCondition,
 } from './schemeLossProgress.js';
 import type { MenaceTier, SchemeLossKind } from './schemeLossProgress.js';
+import { SCHEME_LOSS_PILES } from './schemeTwistConfig.types.js';
+import type { SchemeLossPile } from './schemeTwistConfig.types.js';
 import type { LegendaryGameState } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -43,6 +47,11 @@ interface TestStateOptions {
   schemeLossPileSetupSize?: number;
   heroDeckRemaining?: number;
   woundsRemaining?: number;
+  // why: WP-763 — the Villain Deck pile, its lazy setup size, and the number of
+  // scheme-twist cards the D-24595 fallback counts.
+  schemeLossVillainDeckSetupSize?: number;
+  villainDeckRemaining?: number;
+  setupTwists?: number;
 }
 
 /**
@@ -101,8 +110,8 @@ function makeTestState(options: TestStateOptions): LegendaryGameState {
     notableEvents: [],
     counters: { schemeTwistCount: options.twistCount ?? 0 },
     hookRegistry: [],
-    villainDeck: { deck: [], discard: [] },
-    villainDeckCardTypes: options.villainDeckCardTypes ?? {},
+    villainDeck: { deck: makeCardIds(options.villainDeckRemaining ?? 0), discard: [] },
+    villainDeckCardTypes: { ...(options.villainDeckCardTypes ?? {}) },
     ko: [],
     attachedBystanders: {},
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0 },
@@ -135,6 +144,13 @@ function makeTestState(options: TestStateOptions): LegendaryGameState {
   if (options.schemeLossPileSetupSize !== undefined) {
     (state as { schemeLossPileSetupSize?: number }).schemeLossPileSetupSize =
       options.schemeLossPileSetupSize;
+  }
+  if (options.schemeLossVillainDeckSetupSize !== undefined) {
+    (state as { schemeLossVillainDeckSetupSize?: number }).schemeLossVillainDeckSetupSize =
+      options.schemeLossVillainDeckSetupSize;
+  }
+  for (let twistIndex = 0; twistIndex < (options.setupTwists ?? 0); twistIndex = twistIndex + 1) {
+    state.villainDeckCardTypes[`scheme-twist-test-${twistIndex}`] = 'scheme-twist';
   }
 
   return state;
@@ -185,17 +201,17 @@ describe('resolveSchemeLossThreshold — the four-rung order (WP-557 / D-24366 �
     assert.equal(resolveSchemeLossThreshold(gameState), 8);
   });
 
-  it('rung 4: an unconfigured scheme falls back to the MVP threshold of 7', () => {
-    const gameState = makeTestState({ schemeId: 'not-a-real-scheme' });
-    assert.equal(resolveSchemeLossThreshold(gameState), MVP_SCHEME_TWIST_THRESHOLD);
-    assert.equal(MVP_SCHEME_TWIST_THRESHOLD, 7);
+  it('rung 4: an unconfigured scheme falls back to its deck twist count (D-24595)', () => {
+    const gameState = makeTestState({ schemeId: 'not-a-real-scheme', setupTwists: 10 });
+    assert.equal(resolveSchemeLossThreshold(gameState), 10);
   });
 
-  it('the fallback is 7, never 8 — 8 is a per-scheme value, not a default', () => {
-    // why: pins the exact off-by-one the arena-client HUD shipped (a hardcoded
-    // /8 denominator). If this ever reads 8, the fallback has been "corrected"
-    // to match the client's bug rather than the engine's rule.
-    assert.notEqual(MVP_SCHEME_TWIST_THRESHOLD, 8);
+  it('rung 4 with no twist cards (a mock) falls back to DEFAULT_SCHEME_TWIST_COUNT', () => {
+    // why: mirrors villainDeck.setup.ts SCHEME_TWIST_COUNT — the setup default for
+    // a scheme that omits villainDeckTwistCount.
+    const gameState = makeTestState({ schemeId: 'not-a-real-scheme' });
+    assert.equal(DEFAULT_SCHEME_TWIST_COUNT, 8);
+    assert.equal(resolveSchemeLossThreshold(gameState), DEFAULT_SCHEME_TWIST_COUNT);
   });
 });
 
@@ -516,8 +532,12 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
     assert.equal(resolveSchemeLossKind(gameState), 'twists');
   });
 
-  it('falls back to twists for an unconfigured scheme', () => {
-    assert.equal(resolveSchemeLossKind(makeTestState({ schemeId: 'not-a-real-scheme' })), 'twists');
+  it('reports twists-fallback for an unconfigured scheme (D-24595)', () => {
+    // why: the last-twist rule is approximate, so the meter must be able to say so.
+    assert.equal(
+      resolveSchemeLossKind(makeTestState({ schemeId: 'not-a-real-scheme' })),
+      'twists-fallback',
+    );
   });
 
   it('SCHEME_LOSS_KINDS matches the SchemeLossKind union exactly', () => {
@@ -525,13 +545,21 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
     const everyKind = [
       'hero-deck',
       'wound-stack',
+      'villain-deck',
       'escaped-pile',
       'escaped-bystander',
       'escaped-killbot',
       'escaped-skrull',
       'twists',
+      'twists-fallback',
     ] satisfies SchemeLossKind[];
     assert.deepStrictEqual([...SCHEME_LOSS_KINDS], everyKind);
+  });
+
+  it('SCHEME_LOSS_PILES matches the SchemeLossPile union exactly (WP-763)', () => {
+    // why: canonical-array drift pin, asserted at runtime (WP-563 / D-24372).
+    const everyPile = ['heroDeck', 'wounds', 'villainDeck'] satisfies SchemeLossPile[];
+    assert.deepStrictEqual([...SCHEME_LOSS_PILES], everyPile);
   });
 
   it('splits the escaped-pile kind by counted card type (WP-612)', () => {
@@ -660,14 +688,18 @@ describe('the solo twist threshold (WP-562 / D-24371 §6) — AC-7', () => {
     // reported 3/7 in a real match. Solo mirrors 2-player.
     const solo = makeTestState({ schemeId: 'core/super-hero-civil-war', requiredPlayers: 1 });
     assert.equal(resolveTwistLossThreshold(solo), 8);
-    assert.notEqual(resolveTwistLossThreshold(solo), MVP_SCHEME_TWIST_THRESHOLD);
+    assert.notEqual(resolveTwistLossThreshold(solo), 7);
   });
 
-  it('the MVP fallback itself is untouched at 7', () => {
-    // why: the fix is the missing key, NOT a change to the fallback, which stays
-    // correct for a genuinely unconfigured scheme.
-    assert.equal(MVP_SCHEME_TWIST_THRESHOLD, 7);
-    assert.equal(resolveTwistLossThreshold(makeTestState({ schemeId: 'not-a-real-scheme' })), 7);
+  it('a configured seat key wins over the deck twist count (D-24595)', () => {
+    // why: D-24595 changed only the unconfigured rung; a printed count still wins
+    // even when the deck carries a different number of twists.
+    const solo = makeTestState({
+      schemeId: 'core/super-hero-civil-war',
+      requiredPlayers: 1,
+      setupTwists: 5,
+    });
+    assert.equal(resolveTwistLossThreshold(solo), 8);
   });
 
   it('every seat count 1-5 resolves Civil War to a printed stack size', () => {
@@ -715,5 +747,200 @@ describe('menaceTierFor — locked band boundaries (D-24366 §3)', () => {
       produced.add(menaceTierFor(step / 100));
     }
     assert.deepStrictEqual([...produced].sort(), [...MENACE_TIERS].sort());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-763 / D-24595 — core unchanged, Villain Deck, compound schemes
+// ---------------------------------------------------------------------------
+
+describe('every core threshold is unchanged by the D-24595 fallback (WP-763 AC-6)', () => {
+  it('core twist thresholds ignore the deck twist count', () => {
+    // why: every core scheme sets a printed rung, so no deck count (here 11, a
+    // number no core threshold uses) can move one.
+    const expected: Array<[string, number, number]> = [
+      ['core/midtown-bank-robbery', 2, 8],
+      ['core/legacy-virus-the', 2, 8],
+      ['core/negative-zone-prison-breakout', 2, 8],
+      ['core/unleash-the-power-of-the-cosmic-cube', 2, 8],
+      ['core/super-hero-civil-war', 2, 8],
+      ['core/super-hero-civil-war', 4, 5],
+      ['core/replace-earths-leaders-with-killbots', 2, 5],
+      ['core/secret-invasion-of-the-skrull-shapeshifters', 2, 8],
+      ['core/portals-to-the-dark-dimension', 2, 7],
+    ];
+    for (const [schemeId, requiredPlayers, threshold] of expected) {
+      const gameState = makeTestState({ schemeId, requiredPlayers, setupTwists: 11 });
+      assert.equal(
+        resolveTwistLossThreshold(gameState),
+        threshold,
+        `${schemeId} at ${requiredPlayers} players`,
+      );
+    }
+  });
+
+  it('core kinds and suppression are unchanged', () => {
+    const kindBySchemeId: Array<[string, SchemeLossKind]> = [
+      ['core/midtown-bank-robbery', 'escaped-bystander'],
+      ['core/negative-zone-prison-breakout', 'escaped-pile'],
+      ['core/unleash-the-power-of-the-cosmic-cube', 'twists'],
+      ['core/replace-earths-leaders-with-killbots', 'escaped-killbot'],
+      ['core/secret-invasion-of-the-skrull-shapeshifters', 'escaped-skrull'],
+      ['core/portals-to-the-dark-dimension', 'twists'],
+    ];
+    for (const [schemeId, kind] of kindBySchemeId) {
+      const gameState = makeTestState({ schemeId, setupTwists: 11 });
+      assert.equal(resolveSchemeLossKind(gameState), kind, schemeId);
+    }
+    assert.equal(isTwistLossSuppressed(makeTestState({ schemeId: 'core/legacy-virus-the' })), true);
+  });
+});
+
+describe('Villain Deck pile and multi-pile selection (WP-763 / D-24595)', () => {
+  it('resolves the villain-deck kind, never "wound-stack", via the exhaustive switch', () => {
+    // why: mdns/midnight-massacre is Hero Deck OR Villain Deck. With the Villain
+    // Deck further along, the meter must report 'villain-deck' (the old ternary
+    // mapped every non-heroDeck pile to 'wound-stack').
+    const gameState = makeTestState({
+      schemeId: 'mdns/midnight-massacre',
+      schemeLossPileSetupSize: 40,
+      heroDeckRemaining: 30,
+      schemeLossVillainDeckSetupSize: 40,
+      villainDeckRemaining: 10,
+    });
+    const active = selectActiveLossCondition(gameState);
+    assert.equal(active.kind, 'villain-deck');
+    assert.equal(active.progress, 30);
+    assert.equal(active.threshold, 40);
+    assert.equal(computeMenace(gameState), 0.75);
+  });
+
+  it('reports the higher-progress pile, numerator and denominator from ONE condition', () => {
+    // why: the hero deck is 15/20 gone (0.75); the Villain Deck only 10/60. Mixing
+    // them (15/60, or 10/20) is the EC-800 numerator/denominator failure smell.
+    const gameState = makeTestState({
+      schemeId: 'mdns/midnight-massacre',
+      schemeLossPileSetupSize: 20,
+      heroDeckRemaining: 5,
+      schemeLossVillainDeckSetupSize: 60,
+      villainDeckRemaining: 50,
+    });
+    assert.equal(resolveSchemeLossKind(gameState), 'hero-deck');
+    assert.equal(resolveSchemeLossProgress(gameState), 15);
+    assert.equal(resolveSchemeLossThreshold(gameState), 20);
+    assert.equal(computeMenace(gameState), 0.75);
+  });
+
+  it('a tie between two piles goes to the first declared pile', () => {
+    const gameState = makeTestState({
+      schemeId: 'mdns/midnight-massacre',
+      schemeLossPileSetupSize: 10,
+      heroDeckRemaining: 5,
+      schemeLossVillainDeckSetupSize: 10,
+      villainDeckRemaining: 5,
+    });
+    assert.equal(resolveSchemeLossKind(gameState), 'hero-deck');
+  });
+
+  it('a D-pure scheme suppresses the twist proxy, so twists never lead the meter', () => {
+    const gameState = makeTestState({
+      schemeId: 'mdns/midnight-massacre',
+      twistCount: 10,
+      setupTwists: 11,
+      schemeLossPileSetupSize: 40,
+      heroDeckRemaining: 40,
+      schemeLossVillainDeckSetupSize: 40,
+      villainDeckRemaining: 40,
+    });
+    assert.equal(isTwistLossSuppressed(gameState), true);
+    assert.equal(resolveSchemeLossKind(gameState), 'hero-deck');
+    assert.equal(computeMenace(gameState), 0);
+  });
+});
+
+describe('compound schemes keep the approximate twist clock (WP-763 / D-24595)', () => {
+  it('is not suppressed despite declaring a resourceLossCondition', () => {
+    assert.equal(isTwistLossSuppressed(makeTestState({ schemeId: 'wtif/marvel-zombies' })), false);
+  });
+
+  it('reports twists-fallback when the twist half is further along', () => {
+    const gameState = makeTestState({
+      schemeId: 'wtif/marvel-zombies',
+      twistCount: 3,
+      setupTwists: 4,
+      schemeLossVillainDeckSetupSize: 40,
+      villainDeckRemaining: 30,
+    });
+    const active = selectActiveLossCondition(gameState);
+    assert.equal(active.kind, 'twists-fallback');
+    assert.equal(active.progress, 3);
+    assert.equal(active.threshold, 4);
+  });
+
+  it('reports the villain-deck pile when it is further along', () => {
+    const gameState = makeTestState({
+      schemeId: 'wtif/marvel-zombies',
+      twistCount: 1,
+      setupTwists: 4,
+      schemeLossVillainDeckSetupSize: 40,
+      villainDeckRemaining: 10,
+    });
+    assert.equal(resolveSchemeLossKind(gameState), 'villain-deck');
+    assert.equal(computeMenace(gameState), 0.75);
+  });
+
+  it('a tie between the pile and the twist clock goes to the pile', () => {
+    const gameState = makeTestState({
+      schemeId: 'wtif/marvel-zombies',
+      twistCount: 2,
+      setupTwists: 4,
+      schemeLossVillainDeckSetupSize: 40,
+      villainDeckRemaining: 20,
+    });
+    assert.equal(resolveSchemeLossKind(gameState), 'villain-deck');
+  });
+});
+
+describe('printed-N schemes report a printed twist count (WP-763 AC-1 / AC-5)', () => {
+  it('Symbiotic Absorption reads N/11 as twists, not the approximate fallback', () => {
+    const gameState = makeTestState({
+      schemeId: 'vnom/symbiotic-absorption',
+      twistCount: 3,
+      setupTwists: 11,
+    });
+    assert.equal(resolveSchemeLossKind(gameState), 'twists');
+    assert.equal(resolveSchemeLossThreshold(gameState), 11);
+  });
+});
+
+describe('resolveSchemeLossVillainDeckSetupSize — the lazy Villain Deck capture', () => {
+  it('captures only when the condition names the Villain Deck', () => {
+    assert.equal(resolveSchemeLossVillainDeckSetupSize('mdns/midnight-massacre', 57), 57);
+    assert.equal(resolveSchemeLossVillainDeckSetupSize('wtif/marvel-zombies', 57), 57);
+    assert.equal(resolveSchemeLossVillainDeckSetupSize('msp1/super-hero-civil-war', 57), undefined);
+    assert.equal(resolveSchemeLossVillainDeckSetupSize('vnom/symbiotic-absorption', 57), undefined);
+    assert.equal(resolveSchemeLossVillainDeckSetupSize('not-a-real-scheme', 57), undefined);
+  });
+
+  it('never captures for a core scheme (core hashes stay byte-identical)', () => {
+    const coreSchemeIds = [
+      'core/midtown-bank-robbery',
+      'core/legacy-virus-the',
+      'core/negative-zone-prison-breakout',
+      'core/unleash-the-power-of-the-cosmic-cube',
+      'core/super-hero-civil-war',
+      'core/replace-earths-leaders-with-killbots',
+      'core/secret-invasion-of-the-skrull-shapeshifters',
+      'core/portals-to-the-dark-dimension',
+    ];
+    for (const schemeId of coreSchemeIds) {
+      assert.equal(resolveSchemeLossVillainDeckSetupSize(schemeId, 57), undefined, schemeId);
+    }
+  });
+
+  it('the hero-deck / wound-stack capture resolves the non-Villain pile of a multi-pile scheme', () => {
+    assert.equal(resolveSchemeLossPileSetupSize('mdns/midnight-massacre', 42, 12), 42);
+    assert.equal(resolveSchemeLossPileSetupSize('co2e/the-legacy-virus', 42, 12), 12);
+    assert.equal(resolveSchemeLossPileSetupSize('wtif/marvel-zombies', 42, 12), undefined);
   });
 });

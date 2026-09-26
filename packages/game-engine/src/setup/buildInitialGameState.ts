@@ -38,7 +38,10 @@ import {
 } from './pilesInit.js';
 import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
-import { resolveSchemeLossPileSetupSize } from '../rules/schemeLossProgress.js';
+import {
+  resolveSchemeLossPileSetupSize,
+  resolveSchemeLossVillainDeckSetupSize,
+} from '../rules/schemeLossProgress.js';
 import {
   buildVillainDeck,
   isVillainDeckRegistryReader,
@@ -598,6 +601,16 @@ export function buildInitialGameState(
     shuffledHeroDeck.length,
     piles.wounds.length,
   );
+  // why: WP-763 / D-24595 — the Villain Deck gets its OWN lazy field rather than
+  // reusing schemeLossPileSetupSize, so the sentinel (core/legacy-virus-the) hash
+  // that depends on that field is untouched, and a "Hero Deck or Villain Deck"
+  // scheme can measure both piles. Written only when the scheme's condition names
+  // 'villainDeck'. Sized from the built deck (after any Skrull conversion) — never
+  // from the villainDeckCardTypes key count, which a Secret Invasion twist mutates.
+  const schemeLossVillainDeckSetupSize = resolveSchemeLossVillainDeckSetupSize(
+    config.schemeId,
+    skrullConversion.villainDeckState.deck.length,
+  );
 
   // why: build the base state first, then apply scheme setup instructions.
   // executeSchemeSetup returns updated state — pure function, no mutation.
@@ -660,6 +673,12 @@ export function buildInitialGameState(
     // serialize a key into every game's state and move PRE_WP080_HASH, which the
     // packet treats as a STOP condition rather than a re-pin.
     ...(schemeLossPileSetupSize !== undefined ? { schemeLossPileSetupSize } : {}),
+    // why: WP-763 / D-24595 — omit-when-absent, the same lazy pattern, so every
+    // scheme whose condition does not name the Villain Deck (all 8 core schemes)
+    // stays byte-identical.
+    ...(schemeLossVillainDeckSetupSize !== undefined
+      ? { schemeLossVillainDeckSetupSize }
+      : {}),
     // why: KO pile starts empty; cards enter via koCard helper (WP-017)
     ko: [],
     // why: no bystanders attached at game start; populated during reveals (WP-017)

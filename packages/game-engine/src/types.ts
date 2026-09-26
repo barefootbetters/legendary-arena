@@ -2328,6 +2328,15 @@ export interface LegendaryGameState {
   /** Setup size of the depletion-loss pile; absent unless the scheme loses on one. */
   schemeLossPileSetupSize?: number;
 
+  // why: WP-763 / D-24595 — the Villain Deck's setup size, for a scheme whose
+  // Evil Wins includes "the Villain Deck runs out" (Midnight Massacre, Halve All
+  // Life, the compound escaped-villain schemes). A SEPARATE field from
+  // schemeLossPileSetupSize so the sentinel hash that depends on that field does
+  // not move and a two-pile scheme can measure both. Materialized LAZILY — only
+  // when the condition names 'villainDeck' — so every core game is unchanged.
+  /** Villain Deck setup size; absent unless the scheme loses on the Villain Deck. */
+  schemeLossVillainDeckSetupSize?: number;
+
   // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
   // play time and are waiting for the threshold to be reached later in the SAME
   // turn (Surge of Power's "if you made 8 or more recruit this turn"). Materialized
