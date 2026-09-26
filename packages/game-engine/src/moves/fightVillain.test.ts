@@ -881,10 +881,11 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
     );
   });
 
-  it('does NOT set the signal on a HENCHMAN defeat (Diamond Form is "Villain or Mastermind")', () => {
-    // why: regression — fightVillain defeats BOTH villains and henchmen, but Diamond
-    // Form's grant excludes henchmen. A live Red Skull match over-fired +3 recruit for
-    // each Hand Ninja defeated; the flag must be gated on the fought card's revealed type.
+  it('SETS the signal on a HENCHMAN defeat — Henchmen are Villains (D-24603)', () => {
+    // why: D-24603 — Universal Rules v23 "Henchman Villain cards are indeed Villains", so a
+    // henchman defeat satisfies "Whenever you defeat a Villain or Mastermind". This test
+    // previously pinned the reversed D-24467 (#2030) exclusion; the behaviour change is
+    // intentional (live: Snarling Fangs offered no KO after a Savage Land Mutates defeat).
     const gameState = createMockGameState({ city: ['ninja-a', null, null, null, null] });
     gameState.deferredConditionalGrants = [{ playerId: '0', cardId: 'diamond-form', hookIndex: 0 }];
     gameState.villainDeckCardTypes = { 'ninja-a': 'henchman' };
@@ -895,12 +896,12 @@ describe('WP-656 / D-24467 — villain-defeat signal', () => {
     assert.equal(
       moveContext.G.playerZones['0']!.victory.length,
       1,
-      'the henchman is still defeated (only the Diamond Form signal is gated, not the fight)',
+      'the henchman is defeated',
     );
     assert.equal(
       moveContext.G.villainOrMastermindDefeatedSinceResolve,
-      undefined,
-      'a henchman defeat must NOT satisfy "defeat a Villain or Mastermind"',
+      true,
+      'a henchman defeat satisfies "defeat a Villain or Mastermind"',
     );
   });
 

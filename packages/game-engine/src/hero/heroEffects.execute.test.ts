@@ -8474,7 +8474,9 @@ describe('Snarling Fangs Moonlight — "whenever you defeat … you may KO one o
     assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 1, 'the armed line survives the Sunlight spell');
   });
 
-  it('a henchman defeat parks nothing (the fight site does not signal it, D-24467)', () => {
+  it('a henchman defeat offers the KO — Henchmen are Villains (D-24603)', () => {
+    // why: D-24603 reverses the D-24467 henchman exclusion (rules v23 "Henchman Villain cards
+    // are indeed Villains"); the operator's live round-20 Savage Land Mutates defeat is this case.
     const gameState = makeFangsState({ dayNight: 'moonlight' });
     executeHeroEffects(gameState, fangsCtx, '0', FANGS_ID);
     seedCityEnemy(gameState, 'ninja-a', 'henchman');
@@ -8483,7 +8485,7 @@ describe('Snarling Fangs Moonlight — "whenever you defeat … you may KO one o
     resolveDeferredHeroGrants(gameState, fangsCtx);
 
     assert.ok(gameState.playerZones['0']!.victory.includes('ninja-a'), 'the henchman was defeated');
-    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 0, 'a henchman is not a Villain — no KO offered');
+    assert.equal(gameState.pendingOptionalKoRewards?.length ?? 0, 1, 'a henchman is a Villain — the KO is offered');
   });
 
   it('no eligible Hero (only Wounds in hand, nothing played) → a logged no-op that parks nothing', () => {

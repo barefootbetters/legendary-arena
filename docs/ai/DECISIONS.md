@@ -45286,4 +45286,24 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24603 — Henchmen are Villains: a henchman defeat satisfies "Whenever you defeat a Villain or Mastermind" (Active 2026-09-26 — direct fix, no WP; reverses the D-24467 #2030 henchman exclusion)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/moves/fightVillain.ts` defeat-signal gate only).
+
+**Context.** Operator solo match `mdns/zarathos` / `mdns/midnight-massacre` (Peter Parker / Storm / Werewolf by Night), round 20: three Snarling Fangs played under Moonlight each logged "… is waiting — it needs you to defeat a Villain or Mastermind this turn", then the player defeated **Savage Land Mutates** (a henchman) and no KO was offered. The WP-767 code did what D-24467 says: #2030 ("Diamond Form no longer over-fires on henchman defeats") gated the `fightVillain` defeat signal on `villainDeckCardTypes[cardId] !== 'henchman'`, on the stated premise that "Henchmen are neither Villains nor Masterminds". The rulebook says the opposite.
+
+**Decision.**
+
+1. **Henchmen are Villains.** Universal Rules v23, §"Henchmen Are Villains/Adversaries": "Henchman Villain cards are indeed Villains." Masterminds are the only foes that are not Villains. Every successful `fightVillain` (villain **or** henchman) now sets `villainOrMastermindDefeatedSinceResolve` (still gated on a pending deferred grant, still edge-triggered). `fightMastermind` is unchanged.
+2. **Affected cards** (all on the D-24467 trigger): Emma Frost Diamond Form, Hawkeye Impossible Trick Shot (D-24565), War Machine Overwhelming Firepower (D-24543), Werewolf by Night Snarling Fangs (D-24600). Each now fires on a henchman defeat too. The Diamond Form "over-fire" #2030 fixed was correct play.
+3. **Supersedes** the henchman clause of D-24467 (#2030) and the "a henchman does not" wording in D-24600 §3. Nothing else in those entries changes.
+4. **Replay / oracles.** The core `finalStateHash` and PAR oracles and `sim:runtime-observed` / `sim:coverage` checks are unchanged. A past match with one of these cards armed and a later henchman defeat diverges on D-24119 re-execution (the grant now fires); no gauntlet or competitive pool is migrated.
+5. **Open related question (not changed here).** `rules/schemeTwistConfigs.ts` counts only `'villain'`-typed escapes for Negative Zone Prison Breakout, citing a v23 section that does not appear in the rulebook text; under §"Henchmen Are Villains" escaped henchmen may count. Tracked separately.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4499/0; two tests intentionally flipped from "henchman does not signal/park" to "does"); `sim:runtime-observed:check`, `sim:coverage --check`, `ledger:heroes:check`, `effect-index:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24603. Related: D-24467 (per-defeat trigger), D-24600 (WP-767), D-24565, D-24543, D-24119.
+
+---
+
 Protect this file.
