@@ -92,3 +92,212 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
     assert.equal(cosmicCube?.resourceLossCondition, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-763 / D-24595 — the §Audit configuration, verbatim
+// ---------------------------------------------------------------------------
+
+// why: the WP-763 §Audit tables ARE the configuration. Re-stated here as data so a
+// dropped, duplicated or mis-bucketed entry fails loudly rather than silently
+// falling back to the approximate last-twist rule.
+const AUDIT_PRINTED_THRESHOLDS: Record<number, readonly string[]> = {
+  6: [
+    'anni/sneak-attack-the-heroes-homes',
+    'ca75/unbreakable-enigma-code-the',
+    'vnom/paralyzing-venom',
+    'xmen/horror-of-horrors',
+  ],
+  7: [
+    '2099/pull-reality-into-cyberspace',
+    'bkwd/corrupt-the-spy-agencies',
+    'co2e/portals-to-the-dark-dimension',
+    'ff04/invincible-force-field',
+    'ff04/pull-reality-into-the-negative-zone',
+    'msp1/invade-asgard',
+    'pttr/weave-a-web-of-lies',
+    'ssw1/dark-alliance',
+    'wwhk/mutating-gamma-rays',
+  ],
+  8: [
+    'co2e/unleash-the-power-of-the-cosmic-cube',
+    'msp1/unleash-the-power-of-the-cosmic-cube',
+    'cvwr/avengers-vs-x-men',
+    'mgtg/inescapable-kyln-space-prison',
+    'rvlt/korvac-saga-the',
+    'ssw2/god-emperor-of-battleworld-the',
+    'ssw2/secret-wars',
+    'wpnx/condition-logan-into-weapon-x',
+  ],
+  9: ['anni/pulse-waves-from-the-negative-zone', 'wwhk/world-war-hulk'],
+  10: ['msis/the-time-heist', 'rlmk/tornado-of-terrigen-mists', 'shld/hail-hydra'],
+  11: ['vnom/symbiotic-absorption'],
+};
+
+const AUDIT_PURE_PILES: ReadonlyArray<[readonly string[], readonly string[]]> = [
+  [
+    ['heroDeck'],
+    [
+      'ca75/go-back-in-time-to-slay-heroes-ancestors',
+      'co2e/super-hero-civil-war',
+      'cvwr/epic-super-hero-civil-war',
+      'dead/deadpool-kills-the-marvel-universe',
+      'msp1/super-hero-civil-war',
+      'wpnx/go-after-heroes-loved-ones',
+    ],
+  ],
+  [
+    ['wounds'],
+    [
+      'msp1/radioactive-palladium-poisoning',
+      'ssw1/pan-dimensional-plague',
+      'wwhk/fall-of-the-hulks',
+    ],
+  ],
+  [
+    ['wounds', 'villainDeck'],
+    [
+      'bkpt/poison-lakes-with-nanite-microbots',
+      'co2e/the-legacy-virus',
+      'xmen/anti-mutant-hatred',
+      'xmen/televised-deathtraps-of-mojoworld',
+    ],
+  ],
+  [['heroDeck', 'villainDeck'], ['mdns/midnight-massacre', 'msis/halve-all-life-in-the-universe']],
+];
+
+const AUDIT_COMPOUND_PILES: ReadonlyArray<[readonly string[], readonly string[]]> = [
+  [
+    ['villainDeck'],
+    [
+      'antm/trap-heroes-in-the-microverse',
+      'bkwd/train-black-widows-in-the-red-room',
+      'co2e/negative-zone-prison-outbreak',
+      'dstr/war-for-the-dream-dimension',
+      'rlmk/devolve-with-xerogen-crystals',
+      'rvlt/earthquake-drains-the-ocean',
+      'smhc/scavenge-alien-weaponry',
+      'wtif/marvel-zombies',
+      'wwhk/gladiator-pits-of-sakaar',
+      'pttr/clone-saga-the',
+      'pttr/splice-humans-with-spider-dna',
+      'vnom/invasion-of-the-venom-symbiotes',
+      'bkpt/plunder-wakandas-vibranium',
+      'co2e/bank-robbery-hostage-crisis',
+      'co2e/enshrouded-identity',
+      'cosm/annihilation-conquest',
+      'dstr/cursed-pages-of-the-darkhold-tome',
+      'mdns/sire-vampires-at-the-blood-bank',
+      'msmc/control-the-mutant-messiah',
+      'msmc/open-rifts-to-future-timelines',
+    ],
+  ],
+  [
+    ['villainDeck', 'heroDeck'],
+    ['msmc/reveal-the-heroes-evil-clones', 'msmc/unleash-an-anti-mutant-bioweapon'],
+  ],
+  [['heroDeck'], ['2099/befoul-earth-into-a-polluted-wasteland', 'dkcy/detonate-the-helicarrier']],
+  [['wounds'], ['vnom/maximum-carnage']],
+];
+
+/**
+ * Lists a config's depletion piles, whichever form it declares.
+ *
+ * @param schemeId - The scheme to read.
+ * @returns The named piles, or an empty list when not pile-depleted.
+ */
+function configPiles(schemeId: string): readonly string[] {
+  const condition = SCHEME_TWIST_CONFIGS.get(schemeId)?.resourceLossCondition;
+  if (condition?.kind !== 'pile-depleted') {
+    return [];
+  }
+  if (condition.piles !== undefined) {
+    return condition.piles;
+  }
+  return [condition.pile];
+}
+
+describe('WP-763 §Audit configuration (D-24595)', () => {
+  it('A: 27 printed twist-count schemes carry exactly their printed N', () => {
+    let entryCount = 0;
+    for (const [threshold, schemeIds] of Object.entries(AUDIT_PRINTED_THRESHOLDS)) {
+      for (const schemeId of schemeIds) {
+        const config = SCHEME_TWIST_CONFIGS.get(schemeId);
+        assert.equal(config?.lossThreshold, Number(threshold), schemeId);
+        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.resourceLossCondition, undefined, schemeId);
+        assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
+        entryCount = entryCount + 1;
+      }
+    }
+    assert.equal(entryCount, 27);
+  });
+
+  it('D-pure: 15 pile-runout schemes declare their piles and suppress the twist proxy', () => {
+    let entryCount = 0;
+    for (const [piles, schemeIds] of AUDIT_PURE_PILES) {
+      for (const schemeId of schemeIds) {
+        const config = SCHEME_TWIST_CONFIGS.get(schemeId);
+        assert.deepEqual(configPiles(schemeId), piles, schemeId);
+        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.lossThreshold, undefined, schemeId);
+        assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
+        entryCount = entryCount + 1;
+      }
+    }
+    assert.equal(entryCount, 15);
+  });
+
+  it('D-compound: 25 schemes declare their piles AND keep the twist fallback', () => {
+    let entryCount = 0;
+    for (const [piles, schemeIds] of AUDIT_COMPOUND_PILES) {
+      for (const schemeId of schemeIds) {
+        const config = SCHEME_TWIST_CONFIGS.get(schemeId);
+        assert.deepEqual(configPiles(schemeId), piles, schemeId);
+        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.lossThreshold, undefined, schemeId);
+        assert.equal(config?.twistFallbackWithResourceLoss, true, schemeId);
+        entryCount = entryCount + 1;
+      }
+    }
+    assert.equal(entryCount, 25);
+  });
+
+  it('the registry holds exactly the 8 core entries plus the 67 audit entries', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67);
+    let coreCount = 0;
+    for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
+      if (schemeId.startsWith('core/')) {
+        coreCount = coreCount + 1;
+      }
+    }
+    assert.equal(coreCount, 8);
+  });
+
+  it('no pile-depleted entry names both the hero deck and the wound stack', () => {
+    // why: G.schemeLossPileSetupSize holds ONE size for the hero-deck / wound
+    // pile; a scheme naming both would measure one of them against the other's
+    // setup size. None does today — this pin makes adding one a loud decision.
+    for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
+      const piles = configPiles(schemeId);
+      assert.equal(
+        piles.includes('heroDeck') && piles.includes('wounds'),
+        false,
+        schemeId,
+      );
+    }
+  });
+
+  it('the Excluded schemes stay unconfigured (they use the last-twist fallback)', () => {
+    const excluded = [
+      'chmp/clash-of-the-monsters-unleashed',
+      'chmp/divide-and-conquer',
+      'noir/five-families-of-crime',
+      'rvlt/secret-hydra-corruption',
+      'wwhk/shoot-hulk-into-space',
+      'gotg/unite-the-shards',
+    ];
+    for (const schemeId of excluded) {
+      assert.equal(SCHEME_TWIST_CONFIGS.has(schemeId), false, schemeId);
+    }
+  });
+});

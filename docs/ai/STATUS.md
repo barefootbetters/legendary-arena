@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-763 — Scheme Evil Wins fidelity: printed twist thresholds, Villain Deck runout, last-twist interim rule (EC-800 / D-24595) (2026-09-25)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Only the 8
+core schemes modelled Evil Wins; the other 192 lost on a flat "7 twists" stand-in whatever the card
+printed. That meant 144 false twist-7 losses, 14 early losses, and 25 schemes that could never lose.
+The live report was a Midnight Massacre match that ended at twist 7; that card loses on a deck runout.
+Now:
+
+- **Printed twist counts.** 27 schemes lose at exactly their printed "Twist N: Evil Wins" (Symbiotic
+  Absorption at 11, The Time Heist at 10, Sneak Attack the Heroes' Homes at 6).
+- **Deck and stack runout.** 15 schemes lose only when the Hero Deck, Wound Stack or **Villain Deck**
+  runs out (a new pile, with an "X or Y runs out" form). Midnight Massacre never loses on twists. A
+  Villain Deck runout on those schemes is a **loss**, not the final-turn tie.
+- **Compound schemes.** 25 schemes ("3 Villains per player escaped **or** the Villain Deck runs out")
+  lose on the pile or at their last twist, whichever comes first.
+- **Everything else** uses the operator's interim rule: Evil Wins at the **last twist in that scheme's
+  Villain Deck**. The danger meter reads **"Twists (approximate)"** for it, and "Villain Deck" for
+  the new pile.
+- **Core 8 unchanged.** The `finalStateHash` sentinel and all PAR seed oracles pass untouched. Non-core
+  replays recorded before this change may end differently; published scores are not recomputed.
+- **Counts.** engine 4235/0 → 4275/0 at landing (whole repo `pnpm -r build && pnpm -r --no-bail test`
+  0 failures; re-run after rebasing onto WP-762 and WP-765); arena-client 2115/0 → 2116/0 (typecheck
+  0); `sim:coverage --check` and `sim:runtime-observed:check` 0.
+- **Pending (D-24026).** Operator live-verify after deploy:
+  1. On a non-core twist-count scheme (e.g. Symbiotic Absorption), the match does not end at twist 7,
+     and the meter shows the printed threshold.
+  2. A Midnight Massacre match does not end on twists.
+
+  Record the result here as a STATUS flip.
+
 ### WP-765 — Sunlight / Moonlight: day/night gates hero lines; hero Blood Frenzy (EC-802 / D-24598) (2026-09-25)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Midnight Sons

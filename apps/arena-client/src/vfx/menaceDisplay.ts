@@ -31,6 +31,9 @@ export interface MenaceSignal {
 const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   'hero-deck': 'Heroes',
   'wound-stack': 'Wounds',
+  // why: WP-763 / D-24595 — a scheme whose Evil Wins includes "the Villain Deck
+  // runs out" (Midnight Massacre, Halve All Life, the compound escape schemes).
+  'villain-deck': 'Villain Deck',
   'escaped-pile': 'Escaped',
   // why: WP-612 — a bystander-counting escaped-pile scheme (Midtown Bank Robbery)
   // tracks BYSTANDERS carried into the escaped pile, so it reads "Bystanders N/8",
@@ -46,6 +49,10 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   'escaped-killbot': 'Killbots',
   'escaped-skrull': 'Skrulls',
   twists: 'Twists',
+  // why: WP-763 / D-24595 — the operator's interim rule (Evil Wins at the last
+  // twist in the deck) stands in for a printed condition the engine does not
+  // model yet. The meter must say so rather than present it as the card's rule.
+  'twists-fallback': 'Twists (approximate)',
 };
 
 // why: the pre-WP-562 label, kept as the fallback for a state that projects no

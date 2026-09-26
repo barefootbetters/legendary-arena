@@ -2564,7 +2564,9 @@ describe('menace signal survives the audience filter (WP-557 / D-24366)', () => 
     const config = createTestConfig();
     const registry = createMockRegistry();
     const gameState = buildInitialGameState(config, registry, makeMockCtx());
-    gameState.counters.schemeTwistCount = 5;
+    // why: WP-763 / D-24595 — the unconfigured fixture scheme's denominator is
+    // now the default 8 (was the flat 7), so 6 twists (0.75) keeps it critical.
+    gameState.counters.schemeTwistCount = 6;
     // why: buildUIState takes a UIBuildContext (phase/turn/currentPlayer), NOT the
     // setup context. Passing makeMockCtx() here fed it undefined for all three;
     // the assertions only read progress, so it passed. Surfaced by the WP-563 gate.

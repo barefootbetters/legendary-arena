@@ -12,10 +12,20 @@
 
 import type { LegendaryGameState, ConvertedVillainOrigin } from '../types.js';
 import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
+import type {
+  SchemeLossPile,
+  SchemeResourceLossCondition,
+} from './schemeTwistConfig.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import { pushLog } from '../log/logPush.js';
+
+/** The `pile-depleted` members of the resource-loss condition union. */
+export type PileDepletedCondition = Extract<
+  SchemeResourceLossCondition,
+  { kind: 'pile-depleted' }
+>;
 
 /**
  * Resolves the card type of one Escaped Villains pile entry.
@@ -153,13 +163,33 @@ export function applyEscapedPileResourceLoss(
 }
 
 /**
+ * Lists the piles a `pile-depleted` condition names, in declaration order.
+ *
+ * why (D-24595): the condition is an exclusive union — a single `pile` (every
+ * core entry) or a `piles` list ("the Hero Deck or Villain Deck runs out"). This
+ * one normaliser is shared by the loss rule, the setup capture and the meter, so
+ * no caller re-decides which form it is looking at.
+ *
+ * @param condition - A `pile-depleted` resource-loss condition.
+ * @returns The named piles (one entry for the single-pile form).
+ */
+export function listConditionPiles(
+  condition: PileDepletedCondition,
+): readonly SchemeLossPile[] {
+  if (condition.piles !== undefined) {
+    return condition.piles;
+  }
+  return [condition.pile];
+}
+
+/**
  * Returns the number of cards remaining in a named depletion-loss pile.
  *
- * Maps a `pile-depleted` condition's `pile` name to the length of the
+ * Maps a `pile-depleted` condition's pile name to the length of the
  * corresponding zone in `G`. `'heroDeck'` → `G.heroDeck` (Super Hero Civil War,
- * WP-510); `'wounds'` → `G.piles.wounds` (Legacy Virus, WP-511).
+ * WP-510); `'wounds'` → `G.piles.wounds` (Legacy Virus, WP-511);
+ * `'villainDeck'` → `G.villainDeck.deck` (WP-763 / D-24595).
  *
- * @param gameState - The current game state (read-only).
  * Exported so `schemeLossProgress.ts` reads the SAME pile mapping the loss
  * itself turns on (WP-562). A second mapping there would be free to drift from
  * this one, which is exactly the class of defect that module exists to prevent.
@@ -170,16 +200,19 @@ export function applyEscapedPileResourceLoss(
  */
 export function remainingPileCount(
   gameState: LegendaryGameState,
-  pile: 'heroDeck' | 'wounds',
+  pile: SchemeLossPile,
 ): number {
   // why: an explicit switch (not dynamic G[pile] indexing) so each supported
   // pile maps to its real zone location — the hero deck lives at G.heroDeck,
-  // the wound stack under G.piles.wounds.
+  // the wound stack under G.piles.wounds, the Villain Deck under
+  // G.villainDeck.deck.
   switch (pile) {
     case 'heroDeck':
       return gameState.heroDeck.length;
     case 'wounds':
       return gameState.piles.wounds.length;
+    case 'villainDeck':
+      return gameState.villainDeck.deck.length;
   }
 }
 
@@ -187,7 +220,7 @@ export function remainingPileCount(
  * Applies the active scheme's pile-depletion resource-loss condition, if any.
  *
  * If the active scheme declares a `'pile-depleted'` resourceLossCondition and
- * the named pile is empty (`remainingPileCount === 0`), sets the SCHEME_LOSS
+ * ANY named pile is empty (`remainingPileCount === 0`), sets the SCHEME_LOSS
  * counter to 1 (idempotent) and logs once. A no-op for schemes without a
  * `'pile-depleted'` condition, or when already lost. Never throws.
  *
@@ -209,17 +242,24 @@ export function applyPileDepletionResourceLoss(
     return;
   }
 
-  if (remainingPileCount(gameState, condition.pile) === 0) {
-    // why: SCHEME_LOSS is set HERE (called from the play-phase turn.onMove
-    // hook, a central per-move chokepoint) rather than at the recruitHero
-    // refill, because the named pile can be drained by paths other than a
-    // recruit — Super Hero Civil War's ko-from-hq twist forces HQ refills that
-    // drain G.heroDeck outside any recruit move. evaluateEndgame stays
-    // counter-only; the depletion decision lives here at the check site.
-    gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
-    pushLog(
-      gameState,
-      `Scheme loss triggered — the ${condition.pile} pile has run out.`,
-    );
+  for (const pile of listConditionPiles(condition)) {
+    if (remainingPileCount(gameState, pile) === 0) {
+      // why: SCHEME_LOSS is set HERE (called from the play-phase turn.onMove
+      // hook, a central per-move chokepoint) rather than at the recruitHero
+      // refill, because the named pile can be drained by paths other than a
+      // recruit — Super Hero Civil War's ko-from-hq twist forces HQ refills that
+      // drain G.heroDeck outside any recruit move, and the Villain Deck drains on
+      // every reveal. evaluateEndgame stays counter-only; the depletion decision
+      // lives here at the check site. Because onMove runs the final-turn latch
+      // first and evaluateEndgame checks SCHEME_LOSS before the deck-out tie
+      // (D-24319), a Villain Deck runout on a scheme that names it is a loss,
+      // not a tie.
+      gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+      pushLog(
+        gameState,
+        `Scheme loss triggered — the ${pile} pile has run out.`,
+      );
+      return;
+    }
   }
 }

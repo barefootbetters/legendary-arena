@@ -26,6 +26,7 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
 const LEGACY_VIRUS_SCHEME_ID = 'core/legacy-virus-the';
 const MIDTOWN_SCHEME_ID = 'core/midtown-bank-robbery';
+const MIDNIGHT_MASSACRE_SCHEME_ID = 'mdns/midnight-massacre';
 
 const FIVE_HERO_IDS = [
   'core/hero-a',
@@ -95,8 +96,18 @@ function buildRegistry() {
 
   return {
     listCards: () => [],
-    listSets: () => [{ abbr: 'core' }],
-    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    listSets: () => [{ abbr: 'core' }, { abbr: 'mdns' }],
+    getSet: (abbr: string) => {
+      if (abbr === 'core') {
+        return setData;
+      }
+      // why: WP-763 — a scheme-only mdns set so a Villain-Deck-loss scheme can be
+      // set up against the same core board.
+      if (abbr === 'mdns') {
+        return { abbr: 'mdns', schemes: [{ slug: 'midnight-massacre' }] };
+      }
+      return undefined;
+    },
   };
 }
 
@@ -177,5 +188,31 @@ describe('buildInitialGameState — the lazy loss-pile capture (WP-562 / D-24371
     );
 
     assert.equal('schemeLossPileSetupSize' in gameState, false);
+  });
+
+  it('AC-8: the Villain Deck field is ABSENT for every core scheme under test (WP-763)', () => {
+    // why: omit-when-absent — a key on a core game would move the core oracles.
+    for (const schemeId of [CIVIL_WAR_SCHEME_ID, LEGACY_VIRUS_SCHEME_ID, MIDTOWN_SCHEME_ID]) {
+      const gameState = buildInitialGameState(
+        buildConfig(schemeId),
+        buildRegistry(),
+        makeMockCtx({ numPlayers: 2 }),
+      );
+      assert.equal('schemeLossVillainDeckSetupSize' in gameState, false, schemeId);
+    }
+  });
+
+  it('captures the built Villain Deck and the hero deck for Midnight Massacre (WP-763)', () => {
+    // why: Midnight Massacre loses when the Hero Deck OR the Villain Deck runs
+    // out, so both setup sizes are captured — each in its own field.
+    const gameState = buildInitialGameState(
+      buildConfig(MIDNIGHT_MASSACRE_SCHEME_ID),
+      buildRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+
+    assert.equal(gameState.schemeLossVillainDeckSetupSize, gameState.villainDeck.deck.length);
+    assert.equal((gameState.schemeLossVillainDeckSetupSize ?? 0) > 0, true);
+    assert.equal(gameState.schemeLossPileSetupSize, 5 * CARDS_PER_HERO_GROUP);
   });
 });

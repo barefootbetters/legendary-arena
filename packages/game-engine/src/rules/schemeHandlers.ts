@@ -100,7 +100,8 @@ function buildGenericTwistEffects(
  *
  * Looks up the active scheme in SCHEME_TWIST_CONFIGS. If a config exists,
  * resolves the matching SchemeTwistResolver and calls it with config params.
- * If no config exists, runs the generic fallback (counter increment only).
+ * If no config exists, runs the generic fallback (counter increment plus the
+ * D-24595 last-twist loss check).
  *
  * @param gameState - Current game state (mutated by resolvers).
  * @param ctx - boardgame.io context (passed through to chained reveals).
@@ -162,18 +163,20 @@ export function schemeTwistHandler(
     }
   } else {
     // why: config-not-found is safe because the generic counter-increment
-    // and loss-check still run below. Unconfigured schemes simply get the
-    // counter-only behavior — no card-specific effects.
+    // and loss-check still run below. Unconfigured schemes get no card-specific
+    // effects, and lose at the D-24595 last-twist fallback threshold.
     pushLog(gameState, 
       `[Scheme Twist] No resolver configured for scheme "${schemeId}" — counter increment only.`,
     );
   }
 
   // why: the D-24178 threshold-resolution order and the D-24315
-  // resourceLossCondition suppression now live in schemeLossProgress.ts, so the
+  // resourceLossCondition suppression live in schemeLossProgress.ts, so the
   // UIState menace projection (D-24366) reads the same rule this dispatcher acts
-  // on instead of carrying a second copy that could drift from it. Behavior is
-  // unchanged — the helper is the same priority order that was inline here.
+  // on instead of carrying a second copy that could drift from it. D-24595: the
+  // threshold for a scheme with no printed count (and for the twist half of a
+  // compound scheme) is the last twist in its Villain Deck, not a flat 7, and a
+  // compound scheme is not suppressed despite declaring a resource condition.
   const effectiveThreshold = resolveTwistLossThreshold(gameState);
   const suppressTwistLoss = isTwistLossSuppressed(gameState);
 
