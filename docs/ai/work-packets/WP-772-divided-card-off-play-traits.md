@@ -487,5 +487,9 @@ followed (recorded below).
   - The re-run failed only on the Step 4 sentinel filter. That was fixed, and a delta re-run
     gave PASS.
 
+- **Post-#2427 delta re-run (all three gates):** 01.4 READY, 01.7 PASS, 00.3 PASS. #2427 is
+  display-only and adds no off-play read. The `faceA` = primary lock keeps its `leftFace`
+  correct. No allowlist change.
+
 **Documented RISK (none open).** The printed-icon glyph is lost in text extraction. The data
 settles it (see the Context icon note).
