@@ -40,7 +40,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { posix } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { computeParScore, buildScenarioKey } from "@legendary-arena/game-engine";
+import { computeParScore, buildScenarioKeyFromExtIds } from "@legendary-arena/game-engine";
 import {
   writeSeedParArtifact,
   buildParIndex,
@@ -130,7 +130,7 @@ function clampRange(low, high, value) {
 
 /**
  * Strips a set-abbreviation prefix (`setAbbr/slug`) to the bare slug the
- * `ScenarioKey` uses. A bare slug (no `/`) passes through unchanged.
+ * per-scheme PAR profile is keyed by. A bare slug (no `/`) passes through unchanged.
  */
 function stripSetAbbreviation(id) {
   return id.slice(id.indexOf("/") + 1);
@@ -297,10 +297,12 @@ function enumerateScenarios(gauntletConfigs) {
         for (const playerCountKey of Object.keys(slicing)) {
           const villainCount = slicing[playerCountKey];
           const villainExtIds = leg.villainPool.slice(0, villainCount);
-          const scenarioKey = buildScenarioKey(
-            schemeSlug,
-            mastermindSlug,
-            villainExtIds.map(stripSetAbbreviation),
+          // why: D-24597 — the same set-qualified derivation live capture keys on,
+          // so a non-core leg can never publish under (or be looked up as) core's key.
+          const scenarioKey = buildScenarioKeyFromExtIds(
+            `${setAbbr}/${schemeSlug}`,
+            `${setAbbr}/${mastermindSlug}`,
+            villainExtIds,
           );
           if (seenKeys.has(scenarioKey)) {
             continue;

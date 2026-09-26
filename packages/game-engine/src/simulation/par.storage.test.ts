@@ -197,6 +197,11 @@ describe('PAR artifact storage (WP-050)', () => {
     );
   });
 
+  test('scenarioKeyToFilename maps a set qualifier / to ~ (single path component, D-24597)', () => {
+    const filename = scenarioKeyToFilename('co2e/super-hero-civil-war::red-skull::co2e/hydra+masters-of-evil');
+    assert.strictEqual(filename, 'co2e~super-hero-civil-war--red-skull--co2e~hydra_masters-of-evil.json');
+  });
+
   test('scenarioKeyToFilename is deterministic (same key = same filename)', () => {
     const scenarioKey = 'alpha-scheme::magneto::brotherhood+sentinels';
     const first = scenarioKeyToFilename(scenarioKey);

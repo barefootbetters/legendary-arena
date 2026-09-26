@@ -30,7 +30,36 @@
  * D-24199.
  */
 
+import { toScenarioKeySegment } from '@legendary-arena/game-engine';
+
 import type { GauntletApprovedLoadouts } from './gauntlet.logic.js';
+
+/**
+ * The ScenarioKey segment a gauntlet's `(setAbbr, slug)` is stored under: bare for
+ * core, `setAbbr/slug` for any other set (D-24597). Gauntlet score queries match
+ * `split_part(scenario_key, …)` against this, so a co2e Red Skull gauntlet never
+ * reads core Red Skull wins (or the reverse).
+ *
+ * @param setAbbr The gauntlet's set.
+ * @param slug A mastermind or scheme slug within that set.
+ * @returns The segment as it appears in a captured ScenarioKey.
+ */
+export function gauntletScenarioKeySegment(setAbbr: string, slug: string): string {
+  return toScenarioKeySegment(`${setAbbr}/${slug}`);
+}
+
+/**
+ * The bare scheme slug of a ScenarioKey (segment 0 with any `setAbbr/` dropped) —
+ * the form gauntlet legs are keyed by. Only safe on rows the query already
+ * restricted to one gauntlet's set via `gauntletScenarioKeySegment`.
+ *
+ * @param scenarioKey A captured ScenarioKey.
+ * @returns The leg scheme slug.
+ */
+export function legSchemeSlugOfScenarioKey(scenarioKey: string): string {
+  const schemeSegment = scenarioKey.split('::')[0] ?? '';
+  return schemeSegment.slice(schemeSegment.indexOf('/') + 1);
+}
 
 // why: EC-413 §Locked Values (D-24187 §5) — the fixed-division search
 // enumerates subsets of a competitor's distinct team keys; more than this
@@ -194,7 +223,7 @@ export function qualifiesAsLegClear(
   // (keyed by the replay's scheme, ScenarioKey segment 0), else the
   // per-mastermind menu. An absent map reproduces the pre-WP-472 match.
   const effectiveApprovedLoadouts =
-    approvedLoadoutsByScheme?.get(facts.scenarioKey.split('::')[0] ?? '') ??
+    approvedLoadoutsByScheme?.get(legSchemeSlugOfScenarioKey(facts.scenarioKey)) ??
     approvedLoadouts;
   if (
     !matchesApprovedLoadout(

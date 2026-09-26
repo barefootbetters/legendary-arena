@@ -115,12 +115,14 @@ test("getGauntletLoadoutMenu finds a known gauntlet and misses an unknown one", 
   );
 });
 
-test("buildVillainSegment strips set qualifiers and sorts; buildHenchmanKey does not strip", () => {
+// why: D-24597 — only the core qualifier is dropped; a non-core villain group keeps
+// its set, matching the ScenarioKey segment capture writes.
+test("buildVillainSegment strips only the core qualifier and sorts; buildHenchmanKey does not strip", () => {
   const composition: GauntletLoadoutComposition = {
     villainGroupIds: ["zzzz/omega-flight", "core/brotherhood"],
     henchmanGroupIds: ["zzzz/omega-guard", "core/doombot-legion"],
   };
-  assert.equal(buildVillainSegment(composition), "brotherhood+omega-flight");
+  assert.equal(buildVillainSegment(composition), "brotherhood+zzzz/omega-flight");
   assert.equal(
     buildHenchmanKey(composition),
     "core/doombot-legion+zzzz/omega-guard",

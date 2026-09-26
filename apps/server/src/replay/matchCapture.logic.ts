@@ -22,11 +22,15 @@
  * Authority: WP-335 / EC-365; D-24119 (arc); D-24121 (WP-3 owns the mapping);
  * D-24122 (durable artifact store in the bgio schema; submittable-only; storeReplay
  * superseded); D-24120 (only authenticated seats have a match_seat_accounts row);
- * D-10014 (set-qualified selection ids).
+ * D-10014 (set-qualified selection ids); D-24597 (set-qualified ScenarioKey
+ * segments for non-core ids).
  */
 
-import { buildScenarioKey } from '@legendary-arena/game-engine';
-import type { LegendaryGameState } from '@legendary-arena/game-engine';
+import { buildScenarioKeyFromExtIds } from '@legendary-arena/game-engine';
+import type {
+  LegendaryGameState,
+  MatchSelection,
+} from '@legendary-arena/game-engine';
 
 import {
   readMatchForReplay,
@@ -49,15 +53,22 @@ export interface CaptureResult {
 }
 
 /**
- * Strip the set-abbreviation prefix from a set-qualified id (`<setAbbr>/<slug>`)
- * to the bare slug `buildScenarioKey` expects. A bare slug (no `/`) passes through
- * unchanged (`indexOf` returns -1 → `slice(0)`).
+ * Derive the ScenarioKey a captured match is recorded (and later PAR-gated) under.
  *
- * @param id A `MatchSelection` id, e.g. `"core/dr-doom"`.
- * @returns The bare slug, e.g. `"dr-doom"`.
+ * @param selection The reduced final state's `MatchSelection` (set-qualified ids).
+ * @returns The ScenarioKey stored on the artifact + every ownership row.
  */
-export function stripSetAbbreviation(id: string): string {
-  return id.slice(id.indexOf('/') + 1);
+export function deriveCaptureScenarioKey(
+  selection: Pick<MatchSelection, 'schemeId' | 'mastermindId' | 'villainGroupIds'>,
+): string {
+  // why: D-24597 — set-qualified for every non-core id, so a reprint scheme /
+  // mastermind / villain group (co2e, msp1, ...) never keys onto core's PAR row.
+  // Core ids stay bare, so every published PAR key is unchanged.
+  return buildScenarioKeyFromExtIds(
+    selection.schemeId,
+    selection.mastermindId,
+    selection.villainGroupIds,
+  );
 }
 
 /**
@@ -97,11 +108,8 @@ export async function captureMatch(
     log: artifact.log,
   });
 
-  const selection = (finalState as LegendaryGameState).selection;
-  const scenarioKey = buildScenarioKey(
-    stripSetAbbreviation(selection.schemeId),
-    stripSetAbbreviation(selection.mastermindId),
-    selection.villainGroupIds.map(stripSetAbbreviation),
+  const scenarioKey = deriveCaptureScenarioKey(
+    (finalState as LegendaryGameState).selection,
   );
 
   // why: durable copy of the artifact keyed by replayHash — survives the reaper

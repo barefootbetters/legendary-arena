@@ -239,7 +239,13 @@ export type {
   ScoringConfigValidationResult,
 } from "./scoring/parScoring.types.js";
 export { PENALTY_EVENT_TYPES } from "./scoring/parScoring.types.js";
-export { buildScenarioKey, buildTeamKey } from "./scoring/parScoring.keys.js";
+export {
+  buildScenarioKey,
+  buildScenarioKeyFromExtIds,
+  buildTeamKey,
+  SCENARIO_KEY_BARE_SET_ABBR,
+  toScenarioKeySegment,
+} from "./scoring/parScoring.keys.js";
 export {
   deriveScoringInputs,
   computeRawScore,

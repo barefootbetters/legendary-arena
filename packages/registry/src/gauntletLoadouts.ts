@@ -70,25 +70,30 @@ export function getGauntletLoadoutMenu(
 }
 
 /**
- * Strips the set qualifier from an ext_id, yielding the bare group slug.
+ * Projects one villain-group ext_id to its ScenarioKey segment form: the bare
+ * slug for a `core/` id, the id unchanged for any other set.
+ *
+ * why: mirrors the engine's `toScenarioKeySegment` (D-24597) — the registry may
+ * not import the engine, and a divergent copy would make the qualification check
+ * compare against a segment capture never writes.
  *
  * @param groupExtId a `setAbbr/slug` ext_id.
- * @returns the bare slug.
+ * @returns the ScenarioKey segment for the group.
  */
-function stripSetAbbreviation(groupExtId: string): string {
-  return groupExtId.slice(groupExtId.indexOf('/') + 1);
+function toScenarioKeySegment(groupExtId: string): string {
+  if (groupExtId.startsWith('core/')) {
+    return groupExtId.slice('core/'.length);
+  }
+  return groupExtId;
 }
 
 /**
  * Projects a composition's villain groups into the bare-slug, sorted, `+`-joined
  * form the ScenarioKey's third segment carries.
  *
- * why: ScenarioKey is built from bare slugs (`buildScenarioKey` strips the set
- * qualifier), so a stored key cannot distinguish `core/hydra` from
- * `co2e/hydra`. The qualification check therefore compares villain groups in
- * this lossy projection — the alternative is changing the key's shape, which
- * would re-key every future PAR table. Henchmen carry no such constraint and
- * are compared as exact set-qualified ids.
+ * why: ScenarioKey carries core ids bare and every other set's ids qualified
+ * (D-24597), so `core/hydra` and `co2e/hydra` project to distinct segments.
+ * Henchmen are not part of ScenarioKey and are compared as exact set-qualified ids.
  *
  * @param composition the approved composition.
  * @returns the villain segment as it would appear in a ScenarioKey.
@@ -96,11 +101,11 @@ function stripSetAbbreviation(groupExtId: string): string {
 export function buildVillainSegment(
   composition: GauntletLoadoutComposition,
 ): string {
-  const bareSlugs: string[] = [];
+  const segments: string[] = [];
   for (const groupExtId of composition.villainGroupIds) {
-    bareSlugs.push(stripSetAbbreviation(groupExtId));
+    segments.push(toScenarioKeySegment(groupExtId));
   }
-  return bareSlugs.sort().join('+');
+  return segments.sort().join('+');
 }
 
 /**

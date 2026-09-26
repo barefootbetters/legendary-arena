@@ -56,6 +56,8 @@ import type {
 // type-only, so there is no import cycle.
 import {
   findBestPoolAssignment,
+  gauntletScenarioKeySegment,
+  legSchemeSlugOfScenarioKey,
   qualifiesAsLegClear,
 } from './gauntletTruth.logic.js';
 import type {
@@ -597,7 +599,13 @@ export async function getGauntletStandings(
   // co-owners submitted. The ownership JOIN then fans each replay back out
   // to one row per owner, which the fold regroups into rosters.
   // split_part positions: scenario_key =
-  // "{schemeSlug}::{mastermindSlug}::{villains}" (WP-334 capture).
+  // "{scheme}::{mastermind}::{villains}" (WP-334 capture), each segment bare for
+  // core and set-qualified otherwise (D-24597) — so match on the gauntlet's own
+  // segment form, never the bare slug, or another set's same-slug wins leak in.
+  const legSchemeSegments: string[] = [];
+  for (const legSchemeSlug of legSchemeSlugs) {
+    legSchemeSegments.push(gauntletScenarioKeySegment(definition.setAbbr, legSchemeSlug));
+  }
   const result = await database.query(
     'SELECT cs.replay_hash, cs.scenario_key, cs.final_score, ' +
       'cs.scoring_config_version, cs.player_count, cs.team_key, ' +
@@ -616,7 +624,10 @@ export async function getGauntletStandings(
       'INNER JOIN legendary.replay_ownership ro ' +
       '  ON ro.replay_hash = cs.replay_hash ' +
       'INNER JOIN legendary.players p ON ro.player_id = p.player_id',
-    [definition.mastermindSlug, legSchemeSlugs],
+    [
+      gauntletScenarioKeySegment(definition.setAbbr, definition.mastermindSlug),
+      legSchemeSegments,
+    ],
   );
 
   // --- Group rows by replay: score facts + full owner roster ---
@@ -720,7 +731,7 @@ export async function getGauntletStandings(
       rostersForCount.set(rosterKey, rosterAccumulator);
     }
 
-    const schemeSlug = replay.scenarioKey.split('::')[0] ?? '';
+    const schemeSlug = legSchemeSlugOfScenarioKey(replay.scenarioKey);
     const currentBest = rosterAccumulator.bestScoreBySchemeSlug.get(schemeSlug);
     if (currentBest === undefined || replay.finalScore < currentBest) {
       rosterAccumulator.bestScoreBySchemeSlug.set(schemeSlug, replay.finalScore);

@@ -414,7 +414,7 @@ function computeExpectedSeedParValue(
 /**
  * Converts a `ScenarioKey` to a filesystem-safe filename.
  *
- * Replaces `::` with `--` and `+` with `_`, then appends `.json`. Reversible
+ * Replaces `::` with `--`, `+` with `_`, and `/` with `~`, then appends `.json`. Reversible
  * only via knowledge of the scheme — do not attempt to round-trip via string
  * transforms alone; the index is the authoritative key-to-path mapping.
  */
@@ -422,8 +422,10 @@ function computeExpectedSeedParValue(
 // problematic on some filesystems (Windows treats `:` specially; `+` is
 // reserved in URL-encoded query strings). Mapping to filesystem-safe
 // characters preserves portability across local disk, R2/S3, and CDN.
+// why (D-24597): a non-core segment carries its `setAbbr/` qualifier; `/` maps to
+// `~` so the key stays a single path component instead of a nested directory.
 export function scenarioKeyToFilename(scenarioKey: ScenarioKey): string {
-  return `${scenarioKey.replace(/::/g, '--').replace(/\+/g, '_')}.json`;
+  return `${scenarioKey.replace(/::/g, '--').replace(/\+/g, '_').replace(/\//g, '~')}.json`;
 }
 
 /**

@@ -52,7 +52,7 @@ import {
 import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
 
 import {
-  buildScenarioKey,
+  buildScenarioKeyFromExtIds,
   buildScoreBreakdown,
   computeFinalScore,
   computeParScore,
@@ -1433,13 +1433,13 @@ describe('submitCompetitiveScoreByMatchIdForRequest (WP-338)', () => {
   const OWNER_EXT_ID = 'wp338-owner';
   const STRANGER_EXT_ID = 'wp338-stranger';
 
-  // why: the manufactured match's scenarioKey — buildScenarioKey over the
-  // set-abbr-stripped selection ids (capture derives the same). The PAR stub
-  // publishes a config for exactly this key.
-  const WP338_SCENARIO_KEY = buildScenarioKey(
-    'test-scheme-001',
-    'test-mastermind-001',
-    ['test-villain-group-001', 'test-villain-group-002'],
+  // why: the manufactured match's scenarioKey — the capture derivation over the
+  // set-qualified selection ids (D-24597: the non-core `test/` set stays
+  // qualified). The PAR stub publishes a config for exactly this key.
+  const WP338_SCENARIO_KEY = buildScenarioKeyFromExtIds(
+    'test/test-scheme-001',
+    'test/test-mastermind-001',
+    ['test/test-villain-group-001', 'test/test-villain-group-002'],
   ) as ScenarioKey;
   const WP338_SCORING_CONFIG: ScenarioScoringConfig = {
     ...TEST_SCORING_CONFIG,
@@ -2089,12 +2089,12 @@ describe('submitCompetitiveScoreByMatchIdForRequest — Vanguard + shared seat w
 
   // why: capture derives the scenarioKey from the reduced final state's
   // `selection`, which comes from WP338_SETUP_DATA (the fixture these tests
-  // reuse to build a real, fully-populated engine state). Strip the set-abbr
-  // prefixes exactly as capture does so the PAR stub publishes for this key.
-  const VANGUARD_SCENARIO_KEY = buildScenarioKey(
-    'test-scheme-001',
-    'test-mastermind-001',
-    ['test-villain-group-001', 'test-villain-group-002'],
+  // reuse to build a real, fully-populated engine state). Derive the key exactly
+  // as capture does (D-24597) so the PAR stub publishes for this key.
+  const VANGUARD_SCENARIO_KEY = buildScenarioKeyFromExtIds(
+    'test/test-scheme-001',
+    'test/test-mastermind-001',
+    ['test/test-villain-group-001', 'test/test-villain-group-002'],
   ) as ScenarioKey;
 
   // why: a COMPLETE ScenarioScoringConfig — every ParBaseline field present,
