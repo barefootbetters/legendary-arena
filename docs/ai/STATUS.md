@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-767 — Snarling Fangs Moonlight: "you may KO one of your Heroes" on each defeat (EC-804 / D-24600) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Werewolf by
+Night's Snarling Fangs gains its Moonlight ability. Played under Moonlight, each Villain or Mastermind
+defeat later that turn (each tactic counts; a henchman does not) offers **"You may KO a card"**,
+listing the player's Heroes in hand and the cards they played this turn. Wounds and the discard pile
+are never offered, and the player may decline. Under Sunlight or neither the line does nothing, and
+it logs "did not activate — it isn't Moonlight". The `moonlight … parse-unrecognized` hollow for
+Snarling Fangs is gone.
+
+- **Engine.** A new no-magnitude keyword `optional-ko-your-hero` parks a no-reward entry on the
+  shared optional-KO queue with `koZones: ['hand','inPlay']` and a new `koHeroesOnly: true`.
+  The projection, the bot and the default selector now honour a `koZones` that omits discard
+  (new `allowDiscard` parameter, default true). Moonlight is checked at play and again at each
+  defeat through the existing D-24467 fire-time re-evaluation; there is no deferral change.
+  Snarling Fangs may KO itself, and its armed grant keeps firing that turn.
+- **Card data.** Two markers on the Moonlight line; the entry left `DAY_NIGHT_UNMODELED_LINES`
+  (8 remain). Feeds regenerated (`runtime-observed-hollows` `totalObs` 2206 → 2184).
+- **Client.** The no-reward optional-KO heading is now the generic "You may KO a card" (Radioactive
+  Riot's prompt reads correctly either way).
+- **Counts and gates.**
+  - Engine 4445/0 → 4469/0 (rebased onto WP-757; 4337 → 4361 before it); arena-client 2139/0; typecheck 0.
+  - HERO_KEYWORDS 72 → 73; HERO_EFFECT_HANDLERS 56 → 57.
+  - Core `finalStateHash` and PAR oracles unchanged.
+  - All feed checks, `sim:runtime-observed:check` (the sim-hang gate) and `sim:coverage --check` → 0.
+  - `pnpm -r build && pnpm -r --no-bail test` → 0 fail.
+- **Replay note.** Pre-WP-767 matches that played Snarling Fangs under Moonlight and then defeated
+  an enemy cannot be re-verified under D-24119. No competitive or gauntlet pool is affected.
+- **Live-verify (D-24026): operator-pending.** In a Werewolf by Night match, play Snarling Fangs under
+  Moonlight, then defeat a Villain: the prompt reads "You may KO a card" and lists only hand and
+  played-this-turn Heroes (no discard cards, no Wounds).
+
 ### WP-757 — Haunt keyword engine: haunted HQ Heroes, exorcise, The Fallen's Ambush Haunts (EC-794 / D-24587) (2026-09-25)
 
 **Engine + card data; user-visible on `play.legendary-arena.com` once WP-759 (the client affordance)

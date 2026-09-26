@@ -45198,4 +45198,27 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 ---
 
+### D-24600 — Snarling Fangs Moonlight: "you may KO one of your Heroes" on each defeat (Active 2026-09-26 — WP-767 / EC-804)
+
+**Status:** Active — landed 2026-09-26 (WP-767 / EC-804; `packages/game-engine` keyword + optional-KO queue scope, card-data markers, one arena-client heading).
+
+**Context.** Werewolf by Night's Snarling Fangs prints "Moonlight: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes." WP-765 (D-24598) left the line on `DAY_NIGHT_UNMODELED_LINES`, so it granted nothing and logged a `moonlight … parse-unrecognized` hollow on every Moonlight play (seen in each of the operator's WP-763 Midnight Massacre live-check games).
+
+**Decision.**
+
+1. **Keyword.** A new no-magnitude hero keyword `optional-ko-your-hero` (in `NO_MAGNITUDE_KEYWORDS`). Its handler `heroEffectOptionalKoYourHero` parks a silent no-reward entry on the shared optional-KO queue (D-24480 / D-24498): `{ rewardType: 'none', rewardMagnitude: 0, koZones: ['hand','inPlay'], koHeroesOnly: true }`. When the player has no eligible card (hand + play hold only Wounds, or nothing) it logs a no-op line and parks nothing.
+2. **Scope.** "One of your Heroes" = hand + cards played this turn (rules v23 §3439), so the discard pile is never offered. `PendingOptionalKoReward.koHeroesOnly?: true` is new: written `true` or omitted, never `false`, and read with `=== true`. When set, a Wound is ineligible in the resolve, the projection and the bot. All three readers (projection, bot, `selectDefaultOptionalKoTarget` via a new `allowDiscard = true` parameter) now honour a `koZones` that omits `discard`, exactly as they already honoured one that omits `inPlay`. Existing entries (Radioactive Riot, Battlefield Promotion, rewarded entries) are byte-unchanged in projection, resolve and bot pick.
+3. **Trigger and Moonlight timing.** The line carries the D-24467 marker `[keyword:defeated-villain-or-mastermind]` before `[keyword:optional-ko-your-hero]` (the D-24565 Impossible Trick Shot marker-only precedent), so each Villain or Mastermind defeat (each Mastermind tactic counts; a henchman does not) parks one choice. The hook's conditions are ordered `moonlightInEffect` then `defeatedVillainOrMastermindThisTurn`, so a Sunlight play logs "did not activate — it isn't Moonlight" rather than "is waiting". **Moonlight must hold when the card is played AND again at each defeat** — the existing fire-time re-evaluation of all the hook's conditions. No deferral-rule change.
+   - *Considered and rejected:* "checked only at play; once armed it lasts the turn even if the HQ turns to Sunlight." It needs either a new `G` snapshot or an ordering-sensitive change to the D-24467 deferral rule, for a rules question the rulebook does not settle.
+4. **Self-KO.** Snarling Fangs may KO itself from play. Its armed grant keeps firing on later defeats that turn, because deferred grants are keyed by card id, not by the card staying in play.
+5. **"Hero" = "not a Wound" invariant.** The only non-Hero card that can be in a player's hand or play area today is a Wound (no engine path puts a Bystander into hand or play). Any future non-Hero card type that can enter a hand or play area must extend the `koHeroesOnly` check in all three readers and the resolve.
+6. **Client.** The no-reward optional-KO heading becomes the generic "You may KO a card" (the per-zone labels already name each source). Copy only; no new UIState field.
+7. **Replay note (D-24119).** A pre-WP-767 match that played Snarling Fangs under Moonlight and then defeated a Villain or Mastermind now diverges on re-execution: a new choice parks, and the block-all guard freezes the old log. Such matches cannot be re-verified under D-24119. No gauntlet or competitive pool includes Werewolf by Night, so no migration is needed (the D-24595 / D-24598 precedent).
+
+**Gates.** After `pnpm -r build`: engine 4445 → 4469 / 0 fail (rebased onto WP-757; 4337 → 4361 before it); arena-client 2139 / 0; arena-client typecheck 0; `pnpm -r --no-bail test` 0 failures; `cards:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `sim:runtime-observed:check` (the sim-hang gate; `totalObs` 2206 → 2184) and `sim:coverage --check` all 0. Core `finalStateHash` and PAR oracles unchanged (no sentinel or PAR fixture plays Werewolf by Night). `DAY_NIGHT_UNMODELED_LINES` has 8 entries; HERO_KEYWORDS 72 → 73; HERO_EFFECT_HANDLERS 56 → 57.
+
+**Reserved by:** NUMBER-LEDGER D-24600. Related: D-24598 (WP-765), D-24467 (per-defeat trigger), D-24565 (Trick Shot precedent), D-24480 / D-24498 (optional-KO queue, `koZones`), D-24442 (in-play KO source), D-24119 (replay verification).
+
+---
+
 Protect this file.
