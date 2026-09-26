@@ -1,6 +1,6 @@
 # WP-761 — Long-press slash: touch / pen slash-to-fight on a scrolling City row (arena-client + ewiki)
 
-**Status:** Draft 2026-09-25 (EC-798; D-24592 reserved).
+**Status:** Draft 2026-09-25 (EC-798; D-24592 reserved) — READY TO EXECUTE (pre-flight READY r7; copilot PASS r3; lint PASS).
 **Primary Layer:** arena-client (`apps/arena-client/src/composables/useSlashGesture.ts`, `.../components/play/CityRow.vue`) + ewiki docs
 **Dependencies:**
 - **WP-756 / D-24585** (the slash gesture: `useSlashGesture`, its DOM adapter, the full-crossing rule, the engine-confirmed chain, the touch fit rule) ✅ (#2357, `c031a59d`).
@@ -307,8 +307,39 @@ pnpm -r build && pnpm -r --no-bail test
 
 ## Lint Gate Self-Review (00.3)
 
-_Pending — completed in Step 5 after pre-flight and copilot._
+**PASS** (after pre-flight READY and copilot PASS; every section resolved):
+- **§1 Structure:** Goal, User-Visible Impact, Assumes, Context, Non-Negotiable Constraints, Locked Values, Scope (In) A–D, Out of Scope (5 exclusions), Files Expected to Change, Contract, Vision Alignment, Funding Surface Gate, API Catalog, Acceptance Criteria, Verification Steps, Definition of Done, Reserved Decision — all present and non-empty.
+- **§2 Constraints:** engine-wide boilerplate (full files, ESM, Node v22+, 00.6), session protocol, packet-specific rules, and a §Locked Values block EC-798 copies.
+- **§3 Assumes:** WP-756 anchors (`useSlashGesture.ts:43/93/272/294/443/448/474/546/591-603`), #2362, the browser touch model (a platform premise verified on devices, with a fallback), the `setTimeout` precedent, jsdom limits — each verified by pre-flight against the code.
+- **§4 Context:** authoritative references listed (WP-756, EC-793, D-24585, `02-CODE-CATEGORIES.md:320-330`, the arena-client import row); the design rationale (long press as the scroll-safe intent, derived armed state, the hold gate) is stated.
+- **§5 Files:** 4 code/test files + 1 ewiki page, one app; governance ledgers named separately. Two-session lane (not Lightweight): the touch-scroll interplay makes scope classification ambiguous.
+- **§6 Naming:** `isLongPressArmed`, `isLongPressHoldEnabled`, `isLongPressLive` (`is` prefix), `shouldPreventTouchScroll`, `syncLongPressState`, `armStroke`; classes `city-spaces--gesture-hold` / `city-spaces--gesture-armed`; consistent across WP, EC and the index rows.
+- **§7 Dependencies:** no new package dependency.
+- **§8 Boundaries:** arena-client only; engine types only; no `packages/**`; `fightVillain({ cityIndex })` via the unchanged chain.
+- **§9 Windows:** pnpm / git / node only.
+- **§10 Env vars:** none.
+- **§11 Auth:** N/A (no auth surface).
+- **§12 Tests:** `node:test` + jsdom; controller seam with `effectScope` and `mock.timers` (`setTimeout` only); no PointerEvent / TouchEvent constructors; DOM cases via `new window.Event(…, { bubbles: true, cancelable: true })`.
+- **§13 Verification:** exact commands with expected output; the preview step is explicitly synthetic; the real-device step has iOS + Android pass criteria.
+- **§14 ACs:** seven binary, observable criteria; AC2 / AC3 / AC6 split into in-session and real-device clauses.
+- **§15 DoD:** STATUS, DECISIONS (D-24592), WORK_INDEX, EC_INDEX, mindmap, two-commit topology; §15.1 D-24026 real-device live-verify recorded operator-manual-pending.
+- **§16 Code style:** explicit control flow, one writer for the armed state, `// why:` comments enumerated in EC-798, small functions (`armStroke`, `syncLongPressState`).
+- **§17 Vision:** §8 / §22 / §17 / NG-1 addressed, no conflict, NG proximity checked, determinism line present, the slow-tap trade disclosed.
+- **§18 Prose-vs-grep:** N/A — no literal-string grep gate.
+- **§19 Bridge-vs-HEAD:** anchors re-verified against `origin/main` `244fbd9d` during pre-flight.
+- **§20 Funding surface:** N/A (no funding affordance, copy or channel).
+- **§21 API catalog:** N/A (no HTTP endpoint; no `apps/server/src/**` surface).
 
 ## Gate Record
 
-_Pending — pre-flight (01.4) and copilot (01.7) verdicts recorded in Step 5._
+**Pre-flight (01.4): READY TO EXECUTE** — independent subagent, 7 rounds.
+- r1 NOT READY: PS-1 second-`pointerId` contradiction; PS-2 Assumes #2 uncheckable before merge (now a platform premise with device pass criteria and an iOS fallback); PS-3 a free-standing armed flag could strand the row unscrollable; RS-1..10 (a dedicated `armStroke()`, armed-path click clearing on the next input, inset glow, CityRow overflow harness, buzz test, eligibility at `pointerdown`, detached-target degradation, `dragstart` role, wording, baseline). All folded in.
+- r2 NOT READY: PS-1 a `computed` over the plain `let stroke` never updates (now one ref written only by `syncLongPressState()`); PS-2 the child→row capture move bubbles a `lostpointercapture` that would kill the stroke (now row-targeted + `pointerId`-matched); RS-1..3 folded in (the screen-reader click accepted as a D-24592 degradation).
+- r3 READY; r4 re-confirm after test-detail edits.
+- r5 NOT READY after the copilot fixes: gating the hold listeners on "row does not fit" alone would detach them mid-stroke when a fight makes the row fit — now gated on "does not fit OR a long press is live" (`isLongPressLive`), with a fit-flip CityRow test.
+- r6 READY; r7 re-confirm after the copilot round-2 edits.
+
+**Copilot check (01.7): PASS (CONFIRM)** — a separate independent subagent, 3 rounds.
+- r1 RISK/HOLD, 9 findings folded in: the slow-tap trade disclosed and tested; AC2 / AC3 / AC6 split into in-session vs real-device clauses; the callout CSS and listeners hold-gated so fitting rows stay byte-identical; the non-passive listener cost recorded; missing tests; the 2084 / 0 baseline; the ewiki bullet + D-24585 out-of-scope lift; `Readonly<Ref>` contract; ledger wording.
+- r2 RISK/HOLD, 3 low findings folded in: the WORK_INDEX row's gate text, the row-keyed hold-listener watch, the `// why:` + failure smell for the `OR isLongPressLive` term.
+- r3 PASS — nothing outstanding on the 30 lens items.
