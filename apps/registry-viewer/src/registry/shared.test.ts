@@ -360,6 +360,75 @@ describe("flattenSet hero physicalCardImageUrl (D-14103)", () => {
 
     assert.ok(atone, "atone card must exist");
     assert.equal(atone.physicalCardImageUrl, "https://img/attune-atone.webp", "back-side also gets physicalCardImageUrl");
+
+    // Split faces crop to their own half of the shared landscape image.
+    assert.equal(attune.physicalCardImageHalf, "left", "sides[0] is the left half");
+    assert.equal(atone.physicalCardImageHalf, "right", "sides[1] is the right half");
+  });
+
+  it("orders split halves by slot, not sides[] order", () => {
+    const setData = {
+      id: 1,
+      abbr: "cvwr",
+      heroes: [
+        {
+          name: "Captain America, Secret Avenger",
+          slug: "captain-america-secret-avenger",
+          cards: [
+            { slug: "inspire-a-nation", name: "Inspire a Nation", slot: 2, abilities: [] },
+            { slug: "inspire-a-man", name: "Inspire a Man", slot: 3, abilities: [] },
+          ],
+          physicalCards: [
+            { id: "p1", count: 5, imageUrl: "https://img/cap.webp", sides: ["inspire-a-man", "inspire-a-nation"] },
+          ],
+        },
+      ],
+      masterminds: [],
+      villains: [],
+      henchmen: [],
+      schemes: [],
+      bystanders: [],
+      wounds: [],
+      other: [],
+    } as unknown as SetData;
+
+    const result = flattenSet(setData, "Civil War");
+    const nation = result.find((c) => c.slug === "inspire-a-nation");
+    const man = result.find((c) => c.slug === "inspire-a-man");
+
+    assert.ok(nation, "inspire-a-nation card must exist");
+    assert.ok(man, "inspire-a-man card must exist");
+    assert.equal(nation.physicalCardImageHalf, "left", "lower slot is the left half");
+    assert.equal(man.physicalCardImageHalf, "right", "higher slot is the right half even though it is sides[0]");
+  });
+
+  it("leaves physicalCardImageHalf undefined for single-side cards", () => {
+    const setData = {
+      id: 1,
+      abbr: "core",
+      heroes: [
+        {
+          name: "Spider-Man",
+          slug: "spider-man",
+          cards: [{ slug: "web", name: "Web", abilities: [] }],
+          physicalCards: [
+            { id: "p1", count: 5, imageUrl: "https://img/web.webp", sides: ["web"] },
+          ],
+        },
+      ],
+      masterminds: [],
+      villains: [],
+      henchmen: [],
+      schemes: [],
+      bystanders: [],
+      wounds: [],
+      other: [],
+    } as unknown as SetData;
+
+    const web = flattenSet(setData, "Core Set").find((c) => c.slug === "web");
+
+    assert.ok(web, "web card must exist");
+    assert.equal(web.physicalCardImageHalf, undefined, "single-side card keeps default center crop");
   });
 
   it("yields empty imageUrl when physicalCards is absent (D-15101)", () => {
