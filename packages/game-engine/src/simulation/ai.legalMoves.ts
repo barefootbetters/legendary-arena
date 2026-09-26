@@ -528,11 +528,21 @@ export function getLegalMoves(
     // default selector must honor both. An absent koTeamFilter/koZones = the unrestricted
     // default (every existing entry unchanged).
     const front = gameState.pendingOptionalKoRewards![0]!;
-    const isEligible = front.koTeamFilter === 'shield'
-      ? (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId)
-      : undefined;
+    // why: WP-767 / D-24600 — a Snarling Fangs entry (koHeroesOnly) excludes Wounds, which
+    // the resolve rejects; the bot must never emit one or the sim hangs. Absent = unchanged.
+    let isEligible: ((cardId: CardExtId) => boolean) | undefined;
+    if (front.koTeamFilter === 'shield') {
+      isEligible = (cardId: CardExtId) => cardCountsAsShieldHero(gameState, cardId);
+    } else if (front.koHeroesOnly === true) {
+      isEligible = (cardId: CardExtId) => cardId !== WOUND_EXT_ID;
+    }
     const allowInPlay = front.koZones === undefined || front.koZones.includes('inPlay');
-    const defaultTarget = selectDefaultOptionalKoTarget(zones, gameState.cardStats, isEligible, allowInPlay);
+    // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling
+    // Fangs' hand + played-this-turn entry) must not yield a discard target the resolve rejects.
+    const allowDiscard = front.koZones === undefined || front.koZones.includes('discard');
+    const defaultTarget = selectDefaultOptionalKoTarget(
+      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard,
+    );
     if (defaultTarget !== null) {
       return [{ name: 'resolveOptionalKoReward', args: defaultTarget }];
     }

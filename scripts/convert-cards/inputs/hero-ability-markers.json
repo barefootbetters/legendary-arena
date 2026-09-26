@@ -1601,6 +1601,18 @@
     },
     {
       "heroSlug": "werewolf-by-night",
+      "cardSlug": "snarling-fangs",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:defeated-villain-or-mastermind]"
+    },
+    {
+      "heroSlug": "werewolf-by-night",
+      "cardSlug": "snarling-fangs",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:optional-ko-your-hero]"
+    },
+    {
+      "heroSlug": "werewolf-by-night",
       "cardSlug": "release-the-beast",
       "abilityIndex": 1,
       "markupToken": "[keyword:blood-frenzy]"

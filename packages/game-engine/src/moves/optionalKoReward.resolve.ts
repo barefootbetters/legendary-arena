@@ -31,6 +31,7 @@ import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { gainOfficerToHand } from './recruitOfficer.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
+import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -134,6 +135,14 @@ export function resolveOptionalKoReward(
   // lists only S.H.I.E.L.D. Heroes, so a well-behaved client never submits a non-shield
   // target; this guards a hand-built / malformed payload.
   if (front.koTeamFilter === 'shield' && !cardCountsAsShieldHero(G, cardId as CardExtId)) {
+    return;
+  }
+
+  // why: WP-767 / D-24600 — enforce the entry's koHeroesOnly. ABSENT = no filter (every
+  // existing entry is unchanged); true (Snarling Fangs' "one of your Heroes") rejects a Wound,
+  // which is not a Hero, as a silent no-op (queue intact, resubmit). The projection omits
+  // Wounds, so a well-behaved client never submits one; this guards a malformed payload.
+  if (front.koHeroesOnly === true && cardId === WOUND_EXT_ID) {
     return;
   }
 

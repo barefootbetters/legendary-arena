@@ -1544,23 +1544,37 @@ export function buildUIState(
       // too, but a filtered projection is what a well-behaved client offers). Absent
       // koTeamFilter = no restriction, so every existing entry lists every card unchanged.
       const shieldOnly = frontReward.koTeamFilter === 'shield';
+      // why: WP-767 / D-24600 — koHeroesOnly (Snarling Fangs' "one of your Heroes") omits
+      // Wounds from all three lists, matching the resolve's Wound rejection. Absent = no
+      // filter, so every existing entry lists every card unchanged.
+      const heroesOnly = frontReward.koHeroesOnly === true;
       const eligibleHand: UIEligibleKoHeroCard[] = [];
       for (const cardId of chooserZones.hand) {
         if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
+        if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
         eligibleHand.push({
           zone: 'hand',
           cardId,
           display: { ...resolveDisplay(cardId, gameState) },
         });
       }
+      // why: WP-767 / D-24600 — mirrors the inPlay gate below: list discard cards ONLY when
+      // the entry's koZones permits discard. Snarling Fangs' entry sets ['hand','inPlay'], so
+      // its discard list is empty and the chooser is never offered a card the resolve rejects.
+      // Absent koZones = the wide set, so existing entries project discard exactly as before.
+      const discardPermitted =
+        frontReward.koZones === undefined || frontReward.koZones.includes('discard');
       const eligibleDiscard: UIEligibleKoHeroCard[] = [];
-      for (const cardId of chooserZones.discard) {
-        if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
-        eligibleDiscard.push({
-          zone: 'discard',
-          cardId,
-          display: { ...resolveDisplay(cardId, gameState) },
-        });
+      if (discardPermitted) {
+        for (const cardId of chooserZones.discard) {
+          if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
+          if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
+          eligibleDiscard.push({
+            zone: 'discard',
+            cardId,
+            display: { ...resolveDisplay(cardId, gameState) },
+          });
+        }
       }
       // why: D-24442 — cards the chooser played this turn (inPlay) are a valid KO
       // source; project them in zone+index order with a fresh display spread,
@@ -1576,6 +1590,7 @@ export function buildUIState(
       const eligibleInPlay: UIEligibleKoHeroCard[] = [];
       if (inPlayPermitted) {
         for (const cardId of chooserZones.inPlay) {
+          if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
           eligibleInPlay.push({
             zone: 'inPlay',
             cardId,

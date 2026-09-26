@@ -376,7 +376,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]",
-            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes."
+            "[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes. [keyword:defeated-villain-or-mastermind] [keyword:optional-ko-your-hero]"
           ]
         },
         {

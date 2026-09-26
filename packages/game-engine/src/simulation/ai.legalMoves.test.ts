@@ -18,7 +18,8 @@ import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeTurnEconomy, makeCardStatEntry, makeCardRegistryReader } from '../test/fixtureBuilders.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
@@ -197,6 +198,94 @@ describe('getLegalMoves — pending optional-KO-reward short-circuit (WP-248 / D
       'resolveOptionalKoReward',
       'optional-KO-reward takes precedence over resolveKoHeroChoice',
     );
+  });
+
+  /** cardStats with only the cost field the selector reads. */
+  function costsOf(costs: Record<string, number>): LegendaryGameState['cardStats'] {
+    const result: Record<string, { attack: number; recruit: number; cost: number; fightCost: number }> = {};
+    for (const cardId of Object.keys(costs)) {
+      result[cardId] = { attack: 0, recruit: 0, cost: costs[cardId]!, fightCost: 0 };
+    }
+    return result as unknown as LegendaryGameState['cardStats'];
+  }
+
+  test('WP-767: a Snarling Fangs entry picks the lowest-cost HAND Hero — never a cheaper discard card or a Wound', () => {
+    const gameState = makeG({
+      discard: ['free-discard' as CardExtId],
+      hand: [WOUND_EXT_ID as CardExtId, 'hero-cost-3' as CardExtId, 'hero-cost-2' as CardExtId],
+      inPlay: ['played-cost-1' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'fangs' as CardExtId,
+      koZones: ['hand', 'inPlay'], koHeroesOnly: true,
+    }];
+    gameState.cardStats = costsOf({ 'free-discard': 0, 'hero-cost-3': 3, 'hero-cost-2': 2, 'played-cost-1': 1 });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'hand', cardId: 'hero-cost-2' },
+      'hand Heroes are scanned; the discard card and the (cost-0) Wound are skipped');
+  });
+
+  test('WP-767: with only a Wound in hand, the bot falls back to a played-this-turn Hero', () => {
+    const gameState = makeG({
+      discard: ['free-discard' as CardExtId],
+      hand: [WOUND_EXT_ID as CardExtId],
+      inPlay: ['fangs' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'fangs' as CardExtId,
+      koZones: ['hand', 'inPlay'], koHeroesOnly: true,
+    }];
+    gameState.cardStats = costsOf({ 'free-discard': 0, fangs: 3 });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'inPlay', cardId: 'fangs' });
+  });
+
+  test('WP-767: Radioactive Riot and Battlefield Promotion picks are unchanged', () => {
+    // why: WP-767 / D-24600 — the new allowDiscard parameter and the koHeroesOnly filter must not
+    // move an existing entry's pick: Riot (hand/discard, no filter) still takes the cheapest card
+    // discard-first, a Wound included; Battlefield Promotion still takes the cheapest S.H.I.E.L.D. Hero.
+    const riotState = makeG({
+      discard: [WOUND_EXT_ID as CardExtId, 'riot-discard' as CardExtId],
+      hand: ['riot-hand' as CardExtId],
+      inPlay: ['riot-played' as CardExtId],
+      currentStage: 'main',
+    });
+    riotState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'none', rewardMagnitude: 0, sourceCardId: 'riot' as CardExtId,
+      koZones: ['hand', 'discard'],
+    }];
+    riotState.cardStats = costsOf({ 'riot-discard': 1, 'riot-hand': 1, 'riot-played': 0 });
+    assert.deepStrictEqual(getLegalMoves(riotState, CONTEXT)[0]!.args, { zone: 'discard', cardId: WOUND_EXT_ID },
+      'Riot still KOs the cost-0 discard Wound (discard-first, lowest index)');
+
+    const promotionState = makeG({
+      discard: ['non-shield' as CardExtId, SHIELD_OFFICER_EXT_ID as CardExtId],
+      hand: ['shield-agent' as CardExtId],
+      currentStage: 'main',
+    });
+    promotionState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'gain-officer-hand', rewardMagnitude: 1, sourceCardId: 'promotion' as CardExtId,
+      koZones: ['hand', 'discard'], koTeamFilter: 'shield',
+    }];
+    promotionState.cardStats = costsOf({ 'non-shield': 0, [SHIELD_OFFICER_EXT_ID]: 3, 'shield-agent': 2 });
+    promotionState.cardTraits = {
+      'shield-agent': { heroClass: null, team: 'shield' },
+    } as unknown as LegendaryGameState['cardTraits'];
+    const promotionMoves = getLegalMoves(promotionState, CONTEXT);
+    const expectedPromotion = selectDefaultOptionalKoTarget(
+      promotionState.playerZones['0']!, promotionState.cardStats,
+      (cardId) => cardCountsAsShieldHero(promotionState, cardId), false,
+    );
+    assert.deepStrictEqual(promotionMoves[0]!.args, expectedPromotion, 'Battlefield Promotion pick unchanged');
+    assert.deepStrictEqual(promotionMoves[0]!.args, { zone: 'hand', cardId: 'shield-agent' },
+      'the cheapest S.H.I.E.L.D. Hero; the cost-0 non-S.H.I.E.L.D. discard card is skipped');
   });
 
   test('no resolveOptionalKoReward and normal enumeration when no optional-KO-reward is pending', () => {

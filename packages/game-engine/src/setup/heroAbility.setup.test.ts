@@ -1427,7 +1427,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 72, 'HERO_KEYWORDS stays 72 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both added)');
+    assert.equal(HERO_KEYWORDS.length, 73, 'HERO_KEYWORDS stays 73 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1695,5 +1695,28 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     assert.ok(hooks[0]!.effects!.some((effect) => effect.type === 'optional-put-bottom-hq' && effect.magnitude === 1));
     assert.deepStrictEqual(hooks[1]!.conditions, [{ type: 'moonlightInEffect', value: '' }]);
     assert.deepStrictEqual(hooks[1]!.effects, [{ type: 'blood-frenzy' }]);
+  });
+
+  it('Snarling Fangs (WP-767 / D-24600): Moonlight BEFORE the per-defeat gate, then the optional KO of one of your Heroes', () => {
+    // why: the exact generated lines after the WP-767 markers, verified against data/cards/mdns.json.
+    const snarlingFangs = [
+      '[keyword:Sunlight]: You may put a Hero from the HQ on the bottom of the Hero Deck. [keyword:optional-put-bottom-hq:1]',
+      '[keyword:Moonlight]: Whenever you defeat a Villain or Mastermind this turn, you may KO one of your Heroes. [keyword:defeated-villain-or-mastermind] [keyword:optional-ko-your-hero]',
+    ];
+    const hooks = buildDayNightCardHooks('mdns', 'werewolf-by-night', 'snarling-fangs', snarlingFangs);
+    assert.equal(hooks.length, 2);
+    const moonlightHook = hooks[1]!;
+    assert.deepStrictEqual(moonlightHook.keywords, ['optional-ko-your-hero', 'conditional']);
+    // why: the ORDER is load-bearing — the first failed condition decides the on-play log. With
+    // Moonlight first, a Sunlight play logs "did not activate — it isn't Moonlight"; reversed, it
+    // would log "is waiting" for a defeat that can never pay out.
+    assert.deepStrictEqual(moonlightHook.conditions, [
+      { type: 'moonlightInEffect', value: '' },
+      { type: 'defeatedVillainOrMastermindThisTurn', value: '1' },
+    ]);
+    assert.deepStrictEqual(moonlightHook.effects, [{ type: 'optional-ko-your-hero' }]);
+    assert.equal(moonlightHook.unresolvedMarkers, undefined, 'the Moonlight line is modelled — no moonlight hollow');
+    assert.ok(!moonlightHook.keywords.includes('ko'), 'no spurious ko keyword from the "KO" prose');
+    assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }], 'the Sunlight line is unchanged');
   });
 });
