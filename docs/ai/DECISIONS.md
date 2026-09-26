@@ -45158,6 +45158,22 @@ WP-762 / D-24594 filled the missing printed attack values first, so removing the
 
 **Reserved by:** NUMBER-LEDGER D-24571. Related: D-24254 (WP-432, corrected restatement), D-24537 (ascending captor precedent), D-24412 (WP-602 `bystanderRevealed`), D-12805 (Mastermind mirror), D-24314 (Midtown carry-away), D-24572 (WP-748), D-24026 (live-on-surface).
 
+### D-24599 — A deck-runout scheme loss is announced once, in rulebook words (Active 2026-09-26 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine` endgame log text only; follow-up to D-24595).
+
+**Context.** The WP-763 live check (`mdns/midnight-massacre`, solo, build `9f48893`) ended correctly as a scheme loss when the Villain Deck ran out, but the log's last two lines were `The villain deck is empty — this is the final turn. Win or lose this turn, or the game ends in a tie.` then `Scheme loss triggered — the villainDeck pile has run out.` The first line contradicts the outcome: `onMove` runs the WP-367 final-turn latch before the pile-depletion check (D-24319), so the tie was announced one line before the loss. The second printed an internal key. Core Super Hero Civil War had the same contradiction on a Hero Deck runout.
+
+**Decision.**
+
+1. `latchFinalTurnIfDeckExhausted` still latches `FINAL_TURN_TRIGGERED` exactly as before, but **skips its announcement** when the deck that emptied is one the active scheme loses on (`isSchemeLossPile`, reading the same `pile-depleted` condition as the loss rule). A runout of a deck the scheme does not lose on is still announced (WP-367 unchanged).
+2. The pile-depletion loss line names the pile as the rules do: `Scheme loss triggered — the Villain Deck / Hero Deck / Wound Stack has run out.` (exhaustive `pileDisplayName` switch).
+3. **Not changed.** No counter, zone or outcome changes; only `G.messages` text in games that reach these lines. The sentinel `finalStateHash` and PAR seed oracles pass unchanged. The replay harness and the sim loops do not run the latch (D-24322), so they only see the reworded loss line.
+
+**Gates.** After `pnpm -r build`: engine 4327/0 (3 new tests: Midnight Massacre Villain Deck runout logs exactly one plain loss line; Civil War Hero Deck runout likewise; a runout of a deck the scheme does not lose on still announces the final turn); `pnpm -r --no-bail test` 0 failures in every package; `sim:coverage --check` and `sim:runtime-observed:check` OK. The `finalTurn.logic.test.ts` fixture gained `selection` (real `G` always carries it; the latch now reads the scheme).
+
+**Reserved by:** NUMBER-LEDGER D-24599. Related: D-24595 (WP-763), D-24319 (loss before tie), D-24159 (WP-367 final turn), D-24322 (replay harness exclusions).
+
 ---
 
 Protect this file.
