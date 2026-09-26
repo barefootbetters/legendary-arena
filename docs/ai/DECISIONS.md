@@ -44712,4 +44712,24 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 
 ---
 
+### D-24599 — An unsigned `[icon:attack]` that states an Adversary's printed attack is never a player grant — suppress it in the hero-ability parser (Active 2026-09-25 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-25 (direct parser fix, no WP; the D-24486 / D-24471 positional-suppression precedent).
+
+**Context.** Wong, Master of the Mystic Arts — Face Your Demons (`mdns`) line 0 prints "Once this turn, you may fight the top card of the Bystander Deck as if it were a 4[icon:attack] “Darkhold Demon” Villain with “Fight: KO up to two of your Heroes. Rescue this card as a Bystander.”" (verified against the card image, `images.legendary-arena.com/mdns/mdns-hr-wong-master-of-the-mystic-arts-face-your-demons.webp`). The 4 is the demon's printed attack, not a resource. `buildHeroAbilityHooks`' icon-magnitude read (Step 2b) and icon→keyword read (Step 3) promoted it to an unconditional `{ type: 'attack', magnitude: 4 }`, so every play granted a free +4 attack. A whole-corpus scan of unsigned attack/recruit icons found the same enemy-stat phrasing on 5 more hero lines, each confirmed against the built dist with the real card data: `ssw2` soulsword-colossus/invade-the-inferno ("as if it were a 3[icon:attack] Demon Villain", +3); `cvwr` stature/crush-ants and trample-the-tiny ("a Villain that has 3/4 [icon:attack] or less", +3 / +4); `dkcy` ghost-rider/infernal-chains ("a Villain of 3[icon:attack] or less", +3); `ff04` silver-surfer/epic-destiny ("a Villain of 5 [icon:attack] or 6 [icon:attack]", +5).
+
+**Decision.** In `setup/heroAbility.setup.ts`, add `ADVERSARY_STAT_ICON_PATTERN` (`as if it were a(n) N[icon:attack]`, `N[icon:attack] or less`, `Villain of N [icon:attack]( or M [icon:attack])?`) and push the positions of every `[icon:…]` inside each match into the existing `suppressedIconRanges`, beside the D-24471 condition-clause and D-24486 negative-magnitude ranges. A grant icon ("you get +2[icon:attack]") never matches, so it survives even on the same line. No marker, card-data, executor or contract change, and `hero-ability-markers.json` is untouched. WP-765 edits that file and the Sunlight arms for Face Your Demons line 1, so the two changes don't collide. Line 0's real mechanic (fight the top Bystander as a Darkhold Demon) stays unimplemented under its existing `_deferred` entry. After the fix the line does nothing, which is honest, instead of granting +4.
+
+**Out of scope (flagged separately).** The Annihilation-era `[keyword:Focus] N[icon:recruit|attack] [icon:5]` cost prefix is a different misparse (a pay-to-activate cost read as a +N grant) on ~15 `anni` / `ff04` lines.
+
+**Determinism.** No sentinel replay or PAR fixture plays these cards. The engine suite passes at 4241/4241 with no `finalStateHash` / `PRE_WP080_HASH` re-pin. `sim:runtime-observed:check` stays current because the fixed-seed sweep doesn't reach these lines. `scripts/coverage/hero-effect-coverage.baseline.json` was refreshed because 17 hooks moved from `executable` to `noEffect` (cvwr +6, ssw2 +5, dkcy +5, mdns +1), the intended result of removing phantom grants (the #1930 precedent). `ff04` epic-destiny still carries its Focus-derived `recruit` keyword, so its count is unchanged.
+
+**Gates.** Focused test `hero/adversaryStatIconSuppression.test.ts` passes 6/6, and 5 of those fail against the unfixed parser. `sim:coverage --check` (after the baseline refresh), `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check` and `ledger:numbers:check` all pass. The dashboard suite passes 505/505.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play Face Your Demons without Sunlight and confirm attack rises by the printed 6 only, not 10.
+
+**Reserved by:** NUMBER-LEDGER D-24599. Related: D-24471 (condition-clause icons), D-24486 (negative-magnitude icons), D-24570 (reward-handler icons), D-24598 / WP-765 (Sunlight on the same card's line 1).
+
+---
+
 Protect this file.

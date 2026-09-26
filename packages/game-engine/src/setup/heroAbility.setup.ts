@@ -388,6 +388,19 @@ const CONDITION_ICON_PATTERN =
 // elsewhere on the line ("you get +3[icon:attack]") carries no "-", so it is never suppressed.
 const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/gi;
 
+// why: D-24599 — an unsigned attack icon that states an ADVERSARY's printed attack is a
+// description of the enemy, never a resource the player gains: "fight the top card of the
+// Bystander Deck as if it were a 4[icon:attack] Darkhold Demon Villain" (mdns Wong, Face Your
+// Demons), "Defeat a Villain that has 3[icon:attack] or less" (cvwr Stature), "Defeat a Villain
+// of 5 [icon:attack] or 6 [icon:attack]" (ff04 Silver Surfer). The sign-dropping Step 2b/3
+// extractors read each as a phantom +N self-grant (the live bug: Face Your Demons granting a
+// free +4 attack on every play). This pattern locates those stat icons so both extractors
+// EXCLUDE them (mirrors CONDITION_ICON_PATTERN / NEGATIVE_MAGNITUDE_ICON_PATTERN). A GRANT
+// icon ("you get +3[icon:attack]") never follows "as if it were a", never precedes "or less",
+// and never follows "Villain of", so it is never suppressed.
+const ADVERSARY_STAT_ICON_PATTERN =
+  /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?/gi;
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for VP-cost-threshold in reveal lines: "2[icon:vp] or less". Non-global; first match only. */
 const VP_COST_THRESHOLD_PATTERN = /(\d+)\s*\[icon:vp\]\s*or less/;
@@ -688,6 +701,37 @@ function computeNegativeMagnitudeIconRanges(abilityText: string): Array<{ start:
 }
 
 /**
+ * Computes the character ranges of unsigned `[icon:attack]` tokens that state an
+ * ADVERSARY's printed attack ("as if it were a 4[icon:attack] … Villain", "a Villain that
+ * has 3[icon:attack] or less", "a Villain of 5 [icon:attack] or 6 [icon:attack]") so the
+ * icon-magnitude (Step 2b) and icon→keyword (Step 3) extractors can exclude them and not
+ * emit a phantom player grant (D-24599).
+ *
+ * A match may hold two icons (the "Villain of N or M" form), so EVERY `[icon:…]` token in
+ * the match is returned as its own `[iconStart, iconEnd)` range. The icon→keyword match
+ * (starts at "[") overlaps directly; the icon-magnitude match (digit through "]") overlaps
+ * by its tail.
+ *
+ * @param abilityText - The raw ability line.
+ * @returns Character ranges of the adversary-stat icons (empty when the line has none).
+ */
+function computeAdversaryStatIconRanges(abilityText: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const regex = new RegExp(ADVERSARY_STAT_ICON_PATTERN.source, 'gi');
+  let match: RegExpExecArray | null = regex.exec(abilityText);
+  while (match !== null) {
+    let iconOffset = match[0].indexOf('[icon:');
+    while (iconOffset !== -1) {
+      const iconEnd = match[0].indexOf(']', iconOffset) + 1;
+      ranges.push({ start: match.index + iconOffset, end: match.index + iconEnd });
+      iconOffset = match[0].indexOf('[icon:', iconEnd);
+    }
+    match = regex.exec(abilityText);
+  }
+  return ranges;
+}
+
+/**
  * Returns whether a match span `[matchStart, matchEnd)` overlaps any suppressed condition
  * icon range (WP-660 / D-24471). Used to skip an icon the extractors would otherwise read
  * as a resource grant.
@@ -829,6 +873,13 @@ function parseAbilityText(
   // positional range machinery as the condition-icon suppression above.
   for (const negativeIconRange of computeNegativeMagnitudeIconRanges(abilityText)) {
     suppressedIconRanges.push(negativeIconRange);
+  }
+  // why: D-24599 — also suppress unsigned attack icons that state an Adversary's printed
+  // attack ("as if it were a 4[icon:attack] … Villain", "3[icon:attack] or less"), so the
+  // Step 2b/3 extractors never read one as a phantom player grant (the Face Your Demons
+  // +4 bug). Same positional range machinery as the two suppressions above.
+  for (const adversaryStatIconRange of computeAdversaryStatIconRanges(abilityText)) {
+    suppressedIconRanges.push(adversaryStatIconRange);
   }
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their

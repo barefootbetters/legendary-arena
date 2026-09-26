@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 2785,
+    "executable": 2768,
     "heroes": 324,
     "hooks": 6309,
-    "noEffect": 2521,
+    "noEffect": 2538,
     "parsedNotExecuted": 1003
   },
   "perSet": {
@@ -73,9 +73,9 @@
       "noEffect": 149
     },
     "cvwr": {
-      "executable": 165,
+      "executable": 159,
       "hooks": 400,
-      "noEffect": 149
+      "noEffect": 155
     },
     "dead": {
       "executable": 46,
@@ -88,9 +88,9 @@
       "noEffect": 63
     },
     "dkcy": {
-      "executable": 167,
+      "executable": 162,
       "hooks": 298,
-      "noEffect": 121
+      "noEffect": 126
     },
     "dstr": {
       "executable": 40,
@@ -113,9 +113,9 @@
       "noEffect": 65
     },
     "mdns": {
-      "executable": 64,
+      "executable": 63,
       "hooks": 123,
-      "noEffect": 59
+      "noEffect": 60
     },
     "mgtg": {
       "executable": 51,
@@ -178,9 +178,9 @@
       "noEffect": 85
     },
     "ssw2": {
-      "executable": 133,
+      "executable": 128,
       "hooks": 271,
-      "noEffect": 79
+      "noEffect": 84
     },
     "vill": {
       "executable": 130,
