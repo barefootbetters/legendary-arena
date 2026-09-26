@@ -121,6 +121,7 @@ import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../
 import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
 import {
   resolveFightCost,
+  resolveMastermindFightCost,
   darkPortalLocations,
   DARK_PORTAL_ATTACK_BONUS,
 } from '../economy/economy.resolve.js';
@@ -910,6 +911,10 @@ export function buildUIState(
     // would refuse it. Always a boolean here; the audience filter must pass it
     // through (the EC-206 drop) — see uiState.filter.ts.
     finalBlowPending: isFinalBlowAvailable(gameState.mastermind, gameState.finalBlow),
+    // why: WP-750 / D-24574 — the projected fight cost, from the same
+    // resolveMastermindFightCost the fightMastermind guard and the bot read, so the
+    // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
+    fightCost: resolveMastermindFightCost(gameState),
   };
 
   // --- 6. Project scheme — derive twist count ---

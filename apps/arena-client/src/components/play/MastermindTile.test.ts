@@ -525,3 +525,59 @@ describe('MastermindTile — Excessive Violence affordance (WP-738 / D-24561)', 
     assert.deepEqual(calls[0]!.args, {});
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-750 / D-24574 — the Mastermind Fight gate reads the engine's projected
+// fightCost (falling back to display.cost only when absent), and a Fight N badge
+// shows the projected cost on mismatch — never from the fallback.
+// ---------------------------------------------------------------------------
+
+describe('MastermindTile — projected fight cost (WP-750 / D-24574)', () => {
+  function mountWithCost(over: Partial<UIMastermindState>, availableAttack: number, isEvAvailable = false) {
+    const { calls, submitMove } = recorder();
+    const evField = isEvAvailable ? { excessiveViolenceAvailable: true } : {};
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(over),
+        currentStage: 'main',
+        economy: economy({ attack: availableAttack, availableAttack, ...evField }),
+        submitMove,
+      },
+    });
+    return { calls, wrapper };
+  }
+
+  test('fightCost printed + 1 at printed attack: Fight disabled, EV hidden, badge shown', () => {
+    // why: a Portals Dark Portal on the Mastermind — printed 6, the engine charges 7.
+    const { wrapper } = mountWithCost({ fightCost: 7 }, 6, true);
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, /Needs 7 attack, you have 6\./);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-ev"]').exists(), false);
+    const badge = button.find('[data-testid="play-mastermind-fight-cost"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.text(), 'Fight 7');
+  });
+
+  test('fightCost printed + 1 at printed + 1 attack: Fight enabled and submits', async () => {
+    const { calls, wrapper } = mountWithCost({ fightCost: 7 }, 7);
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), undefined);
+    await button.trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightMastermind', args: {} }]);
+  });
+
+  test('fightCost absent falls back to display.cost and renders no badge', () => {
+    const { wrapper } = mountWithCost({}, 5);
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, /Needs 6 attack, you have 5\./);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-fight-cost"]').exists(), false);
+  });
+
+  test('fightCost equal to the printed cost renders no badge', () => {
+    const { wrapper } = mountWithCost({ fightCost: 6 }, 6);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-button"]').attributes('disabled'), undefined);
+    assert.equal(wrapper.find('[data-testid="play-mastermind-fight-cost"]').exists(), false);
+  });
+});

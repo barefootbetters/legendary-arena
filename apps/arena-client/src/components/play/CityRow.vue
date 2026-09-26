@@ -24,7 +24,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * order.
  *
  * Cost gating: villains in the city render disabled when
- * `economy.availableAttack < villain.cost` per WP-128 economy projection.
+ * `economy.availableAttack < cell.card.fightCost` — the engine's projected
+ * fight cost (WP-750 / D-24574), not the printed cost — per the WP-128
+ * economy projection. A `Fight N` badge shows the projected cost whenever it
+ * differs from the printed one.
  * Disabled-state tooltip precedence locked at EC-132 §3 (stage → resource
  * → structural). The reason is bound from useTurnActions / useCardCostGating
  * — never composed ad-hoc.
@@ -97,8 +100,22 @@ export default defineComponent({
       if (!stage.allowed) {
         return stage;
       }
-      const cost = useCardCostGating(props.economy).canFight(cell.card.display);
+      // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightCost,
+      // the same authority the fightVillain guard reads (captured Heroes, the
+      // Dark-Portal space bonus, Killbot / Skrull overlays; Patrol / Guard are
+      // unset per D-2504), never on the printed `display.cost`.
+      const cost = useCardCostGating(props.economy).canFight(cell.card.fightCost);
       return cost;
+    }
+
+    function hasFightCostBadge(cell: CityCell): boolean {
+      // why: WP-750 / D-24574 — players see the number the engine will actually
+      // charge. Shown only when it differs from the printed cost (a null printed
+      // cost counts as different), so a matching tile renders exactly as before.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      return cell.card.fightCost !== cell.card.display.cost;
     }
 
     function onFight(cityIndex: number): void {
@@ -117,7 +134,7 @@ export default defineComponent({
       if (!gateForCell(cell).allowed) {
         return false;
       }
-      return useCardCostGating(props.economy).canFightWithExcessiveViolence(cell.card.display);
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(cell.card.fightCost);
     }
 
     function onFightEV(cityIndex: number): void {
@@ -171,6 +188,7 @@ export default defineComponent({
     return {
       buildCells,
       gateForCell,
+      hasFightCostBadge,
       onFight,
       showEvFight,
       onFightEV,
@@ -243,6 +261,7 @@ export default defineComponent({
           <button
             v-if="cell.card !== null"
             type="button"
+            class="city-space__villain"
             data-testid="play-city-villain"
             :data-city-index="cell.cityIndex"
             :data-slot-name="cell.slotName"
@@ -256,7 +275,7 @@ export default defineComponent({
                  (stage → resource → structural). The reason text is bound
                  from useTurnActions / useCardCostGating, not composed
                  ad-hoc. Cost gate consumes WP-128 economy.availableAttack
-                 + UICityCard.display.cost. -->
+                 + UICityCard.fightCost (WP-750 / D-24574). -->
             <!-- why (Jeff feedback): city villains render at `md` (was `sm`) so the
                  villain art is easier to read; the city row scrolls in-zone, so the
                  larger tiles never push the layout. -->
@@ -266,6 +285,16 @@ export default defineComponent({
               :interactive="gateForCell(cell).allowed"
               :show-label="true"
             />
+            <!-- why: WP-750 / D-24574 — the engine's projected fight cost, shown only
+                 when it differs from the printed cost. Inside the button, pinned to
+                 the bottom (not a .city-space flex child, which would widen every
+                 space and shrink the scale-to-fit board, D-24505), and clear of the
+                 top band where the Dark-Portal marker and the printed cost sit. -->
+            <span
+              v-if="hasFightCostBadge(cell)"
+              class="city-space__fight-cost"
+              data-testid="play-city-fight-cost"
+            >Fight {{ cell.card.fightCost }}</span>
           </button>
           <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
                name inside it — the name is now the side label above. It stays a
@@ -415,6 +444,33 @@ export default defineComponent({
   align-items: stretch;
   gap: 0.15rem;
   min-width: 0;
+}
+
+/* why: WP-750 — the villain button is the positioning context for the Fight N
+   badge, so the badge overlays the tile instead of taking layout space. */
+.city-space__villain {
+  position: relative;
+}
+
+/* why: WP-750 / D-24574 — the projected fight cost, pinned to the bottom of the
+   villain tile. Dark pill, like the captured-bystander badge, so it reads over
+   any card art; the top band is left to the Dark-Portal marker and printed cost. */
+.city-space__fight-cost {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* why: WP-727 — the Dark Portal marker sits at the top of the space, centered,
