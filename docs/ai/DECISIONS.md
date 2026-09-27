@@ -45505,7 +45505,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 - **Control:** on every other turn, split cards played before Penumbra, or on turns without it, still parked the picker.
 - **Hollows:** the hollow table lists only `phasing`, with no `rule:divided-card`.
 - **Not exercised:** Manly Dullard was never played after Penumbra.
-- **Found in this pass (§7 open):** WP-777 (#2461) wired the split-side discard cost into `resolveSplitFaceChoice` only, not into `playBothSplitFaces`. So under Penumbra an unpayable cost face (Hercules's Manly Dullard, bkwd Attune) still grants its economy. The rule locked in WP-780 §Context ("skip only the unpayable face, logged") is not yet enforced on this path; a follow-up is raised. **Closed 2026-09-27 by D-24621.**
+- **Found in this pass (§7 open):** WP-777 (#2461) wired the split-side discard cost into `resolveSplitFaceChoice` only, not into `playBothSplitFaces`. So under Penumbra an unpayable cost face (Hercules's Manly Dullard, bkwd Attune) still grants its economy. The rule locked in WP-780 §Context ("skip only the unpayable face, logged") is not yet enforced on this path; a follow-up is raised. **Closed 2026-09-27 by D-24625.**
 
 **Context.** cvwr Cloak & Dagger Penumbra prints "Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards." Rules v23 p.49 otherwise binds one side at play and ignores the other. Penumbra did nothing; D-24618 surfaced it as a `rule:divided-card` hollow. Every in-play read keys off `inPlay` entries and one instance id, so a second entry per physical card would break the duplicate-id invariant, cleanup, and UI counts.
 
@@ -45595,7 +45595,69 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
-### D-24621 — Under Penumbra, an unpayable split face is skipped; the payable face still plays (Active 2026-09-27 — direct fix, no WP; closes D-24619 §7)
+### D-24623 — A hero line whose only resolved piece is its play gate is an honest `parse-unrecognized` hollow (Active 2026-09-27 — direct fix, no WP; sibling of D-24618, extends the WP-257 / D-24034 unresolved-marker contract)
+
+**Status:** Active — landed 2026-09-27 (direct fix; parser Step 4b in `packages/game-engine/src/setup/heroAbility.setup.ts` plus the gate-failed log wording in `packages/game-engine/src/hero/heroEffects.execute.ts`).
+
+**Context.** A gate — `[hc:X]:`, `[team:X]:`, or a condition keyword such as Outwit, Savior, Worthy or `recruit-threshold` — parses to `conditions` plus the `conditional` keyword. When the body after it carries no effect markup, the hook has conditions and nothing else. `detectHollowHeroHook` skips a hook that declares no effect, primitive or unresolved marker, so a passed gate fired nothing and reported nothing. A failed gate logged "did not activate — it needs another X Hero played this turn", which implies the card works. Found via operator match `VP1KNXl2ENQ` turn 13: cvwr Storm & Black Panther Tsunami of Justice ("[hc:covert]: You may KO a card from your hand or discard pile.") passed its gate with no effect trace and no hollow record.
+
+**Measured inert set.** A scan of every hero through `buildHeroAbilityHooks` found 260 gate-only hooks on 254 cards. All were `onPlay` with keywords exactly `['conditional']`, and none is referenced by any card-keyed allowlist, fusion or executor in engine code. Breakdown: about 150 are plain English after the gate. The other ~110 carry a multi-word or space-magnitude `[keyword:X N]` token that `KEYWORD_PATTERN` cannot match, so it was silently dropped (Microscopic Size-Changing 13, Thrones Favor 6, Man Out of Time 6, Danger Sense 6, and others), or a gated `[rule:X]` token that D-24618's fully-empty scope skipped. One is a whole-line reminder parenthetical (anni Brainstorm Protégé of Dr. Doom), which stays exempt. The task's ~123 text-scan figure counted only leading `[hc:]` / `[team:]` gates. The hook scan also catches condition-keyword gates, non-leading gate tokens, and gates over unmatched keyword tokens.
+
+**Decision.**
+
+1. **Step 4b widened.** A line that resolved nothing except its gate (keywords exactly `['conditional']`, no effect, no primitive, no unresolved marker, not a whole-line reminder) records, in order: its `rule:<concept>` tokens (D-24618 slugging), then the names of its unmatched `[keyword:...]` tokens, then `gate-only` if it recorded nothing else. Unmatched keyword names use the `scripts/hero-effect-coverage.mjs` normalization (lower-case, trailing magnitude dropped, whitespace to hyphen, so "Danger Sense 2" becomes `danger-sense`). Runtime rows and ledger rows then share one key. Ungated fully-empty lines keep the D-24618 rule-token-only behavior.
+2. **Honest log for a gated hollow body.** When a gate fails on a hook whose declared body is entirely hollow (≥1 effect or unresolved marker, no executable effect), the log line still names the failed condition and ends "Its effect is not supported yet." The wait-and-see variant replaces "It will apply if you reach it this turn." with the same sentence. Hooks with an executable effect keep their exact wording. `G.messages` is excluded from `finalStateHash` (D-24081), and no replay fixture pins a gated-hollow line.
+3. **No gameplay change.** Parse-time provenance plus log wording only. Nothing executes differently, no `G` field is added, and the `finalStateHash` / PAR oracles are unchanged (engine suite green, including `replayFixtures.test.ts`).
+
+**Pin impacts (all re-pinned in this change).**
+- `sim:coverage` baseline: `hooks` 6315→6319 and `noEffect` 2575→2579, all in `rlmk`. `executable` is unchanged. This is the WP-257 dedupe effect: markers made previously identical per-hero hooks distinct. No line went dark.
+- `runtime-observed-hollows.json`: 32→53 distinct mechanics, observations 3533→4569 (+1036). Every pre-existing mechanic's count is byte-identical except `rule:shard` 320→415 (its gated lines now record it), so there is no trajectory shift. The largest new rows are `gate-only` 460, `thrones-favor` 98, `danger-sense` 73, `woman-out-of-time` 69, `man-out-of-time` 52 and `microscopic-size-changing` 30.
+- Dashboard `useInPlayCoverage` pin: totalObs 4363→5397 (`liberate`'s committed peak of 2 absorbs 2 of the +1036). resolvedObs holds at 1135, so percentResolved 26.0→21.0.
+- `ledger:heroes:check` (780 rows), `ledger:villains:check`, `effect-index:check` and `mechanics:metadata:check` are unchanged.
+
+**Gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package (engine 4650/0, dashboard 505/0, arena-client 2157/0, server 1430 pass / 0 fail with DB-backed tests skipped). New `hero/gateOnlyHollow.test.ts` covers Tsunami of Justice (gate-only), a Savior gate over "Man Out of Time", space-magnitude and Microscopic tokens, a gated `[rule:Sidekick]`, the reminder exemption, the resolved-line exemption, a passed gate recording the hollow end to end, and both log wordings. Every Coverage & Ledger CI gate passes.
+
+**Follow-up (not in this change).** 154 **ungated** hero lines carry a `[keyword:...]` token and still build a fully empty hook, because `KEYWORD_PATTERN` drops multi-word tokens and Step 4b only names `[rule:X]` there. Top names: Soaring Flight 16, Excessive Violence 12 (non-allowlisted cards), Piercing Energy 11, Danger Sense 10, Versatile 9. Several are static or recruit-time keywords, so the fix needs a timing call, not just a marker. Separately, the 13 `[keyword:Microscopic Size-Changing]` lines and 8 unmarked plain-text "(Microscopic) Size-Changing [hc:X]" lines parse their cost-reduction classes as play gates. They now surface honestly as hollows, but their conditions are spurious.
+
+**D-24026 live-on-surface:** verified 2026-09-27. Operator solo match (Loki / Midtown Bank Robbery; cvwr Cloak & Dagger, Storm & Black Panther, Hercules) on the deployed client. Hercules' Crowd Favorite (`[hc:instinct]: <plain text>`) stood in for Tsunami of Justice, whose Water side was chosen on every play. With the gate passed (log 19.2.21–22: "declared a \"gate-only\" mechanic … (parse-unrecognized)"), the Play Diagnostics hollow table listed `gate-only` twice. Each failed gate logged "…it needs another instinct Hero played this turn. Its effect is not supported yet." Real-effect gates (cvwr Fight, Prince of Power, Darkness) kept the unchanged wording.
+
+**Reserved by:** NUMBER-LEDGER D-24623. Related: D-24618 (rule-token sibling), D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24082 (WP-295 gate log), D-24375 (WP-566 named failed condition), D-24377 (WP-568 wait-and-see), D-24081 (messages outside the hash).
+
+### D-24624 — An ungated line whose only markup is a multi-word keyword is an honest `parse-unrecognized` hollow, labelled with the keyword's printed timing (Active 2026-09-27 — direct fix, no WP; closes the D-24623 follow-up)
+
+**Status:** Active — landed 2026-09-27 (direct fix; parser Step 4b + Step 5 in `packages/game-engine/src/setup/heroAbility.setup.ts`).
+
+**Context.** `KEYWORD_PATTERN` admits only `[keyword:Name]` / `[keyword:Name:N]`, so a multi-word or space-magnitude token (`[keyword:Soaring Flight]`, `[keyword:Excessive Violence]`, `[keyword:Danger Sense 2]`) never matches. On an ungated line with nothing else resolved, the hook ended up fully empty, and `detectHollowHeroHook` treats an empty hook as flavor text. D-24618 named `[rule:X]`-only lines and D-24623 named gated lines; ungated keyword lines stayed silent.
+
+**Measured inert set (re-measured after D-24623).** Building hooks for every hero via `buildHeroAbilityHooks` found 154 ungated fully-empty hooks whose line carries a `[keyword:…]` token. One of these is a scan artifact: vnom Venompool "Can I Get a Little Gratitude" is on `EXCESSIVE_VIOLENCE_CARDS`, and its EV line is fused, so the remaining empty hook is its plain-English line. That leaves 153 real lines. Top names: soaring-flight 16, excessive-violence 12 (not allowlisted), piercing-energy 11, danger-sense 10, versatile 9, thrown-artifact 8, weapon-x-sequence 7. After the change, all 153 carry a marker and none stays silent.
+
+**Timing decision.** The only hollow detection site is the play-time executor (`executeHeroEffects` does not filter by timing). So a recruit-time keyword can only be observed when the card is played. Flagging it as `onPlay` would claim a play-time effect the card never had. The printed timings in `data/metadata/keywords-full.json` settle each case. The hollow is still recorded at play, but a line **led** by one of these keywords now carries its printed timing on the hook, and so on the `HollowEffectRecord` and the log line ("declared a soaring-flight mechanic at onRecruit"):
+- `onRecruit`: Soaring Flight ("When you recruit this Hero, set it aside…"), "When Recruited" Abilities, and Excessive Kindness (triggered by overspending Recruit when recruiting).
+- `onFight`: Excessive Violence (matching the fused-hook timing from WP-736 / D-24556) and Piercing Energy (spent to fight; the economy field is never granted).
+- `onReveal`: Switcheroo ("You use Switcheroo instead of playing the card").
+- Every other keyword keeps `onPlay`: Danger Sense, Versatile, Hyperspeed, Dark Memories, Weapon X Sequence, Patrol, What If…?, the Artifact family and the rest.
+
+A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this turn have [keyword:Soaring Flight].") is a play effect and keeps `onPlay`. Timing changes only on these marker-only hooks. The single timing-keyed dispatch in the engine (`recruitHero`'s wall-crawl check) keys on the `wall-crawl` keyword, so nothing executes differently.
+
+**Decision.**
+1. **Step 4b widened to ungated lines.** A line that resolved nothing (no keyword, effect, primitive or unresolved marker, and not a whole-line reminder) records its `rule:<concept>` tokens as before (D-24618), then the names of its unmatched `[keyword:…]` tokens, using the D-24623 normalization shared with `scripts/hero-effect-coverage.mjs`. Ungated lines get **no** `gate-only` fallback, so plain-English flavor text still builds an empty hook. Allowlisted and fused lines (Excessive Violence, Digest / Indigestion, day / night) are consumed before the per-line parse and are unaffected. Any line that already resolved something keeps its hook byte-identical.
+2. **Leading-keyword timing.** An ungated marker-only line whose first token is an unmatched keyword listed in `UNMATCHED_KEYWORD_TIMINGS` takes that timing. The keyword-default loop still runs first, and an explicit `[timing:X]` still wins.
+3. **No gameplay change.** This is parse provenance only. Nothing executes differently, no `G` field is added, and `finalStateHash` / PAR are unchanged (engine suite green, including `replayFixtures.test.ts`).
+
+**Known limit.** Three reactive "you may reveal this card" lines (bkpt Okoye, bkpt White Wolf, wtif Captain Carter) name a keyword that is not their first token, so they flag at `onPlay`. Inferring `onReveal` from plain English would break the parser's no-NL-inference rule (Step 5, D-24049).
+
+**Pin impacts (all re-pinned in this change).**
+- `sim:coverage` baseline: `hooks` 6319→6380 and `noEffect` 2579→2640 (+61 across 2099, amwp, chmp, fear, gotg, mdns, rlmk, wpnx, wwhk and xmen). `executable` is unchanged at 2657. This is the WP-257 dedupe effect: identical empty hooks used to collapse into one per hero, and the markers make them distinct.
+- `runtime-observed-hollows.json`: 53→78 distinct mechanics, observations 4569→7178 (+2609). Only rows for keywords this change names moved: soaring-flight 14→276, danger-sense 73→357, versatile 12→161, excessive-violence 1→158, man-out-of-time 52→93, liberate 9→32, fated-future 3→15, wound-a-villain 17→20 and thrones-favor 98→100, plus 25 new rows (thrown-artifact 251, switcheroo 215, s.h.i.e.l.d.-level 162, piercing-energy 143, "when-recruited"-abilities 131, …). No unrelated row moved.
+- Dashboard `useInPlayCoverage` pin: totalObs 5397→8006 (equal to the raw feed rise). resolvedObs holds at 1135, so percentResolved 21.0→14.2.
+
+**Gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail. New `hero/ungatedKeywordHollow.test.ts` covers a play-time header, the recruit / fight / reveal timings, the leading-token rule, the punctuated-name normalization, the plain-English and reminder exemptions, an effect-bearing line staying marker-free, and the play-time records with their timing labels.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play an X-Men Soaring Flight hero (e.g. Cannonball Kinetic Blast Field) and confirm the Play Diagnostics hollow table lists `soaring-flight` at `onRecruit`. Then play a Danger Sense hero and confirm `danger-sense` at `onPlay`.
+
+**Reserved by:** NUMBER-LEDGER D-24624. Related: D-24623 (gated sibling, whose follow-up this closes), D-24618 (rule-token sibling), D-24033 / D-24034 (WP-257), D-24049 (keyword default timing), D-24556 (Excessive Violence fusion timing), D-24081 (messages outside the hash).
+
+### D-24625 — Under Penumbra, an unpayable split face is skipped; the payable face still plays (Active 2026-09-27 — direct fix, no WP; closes D-24619 §7)
 
 **Status:** Active — landed 2026-09-27.
 
@@ -45613,7 +45675,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **D-24026 live-on-surface:** pending. On `play.legendary-arena.com`, with Cloak & Dagger and Hercules: play Penumbra, then Boy Genius / Manly Dullard with no other card in hand and an empty deck. Confirm the "could not play side b, Manly Dullard" line and no +3 Attack.
 
-**Reserved by:** NUMBER-LEDGER D-24621. Related: D-24615 (WP-777), D-24619 (WP-780), D-24620, D-24185.
+**Reserved by:** NUMBER-LEDGER D-24625. Related: D-24615 (WP-777), D-24619 (WP-780), D-24620, D-24185.
 
 ---
 

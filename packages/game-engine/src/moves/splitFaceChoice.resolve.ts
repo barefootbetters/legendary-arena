@@ -329,7 +329,7 @@ function resolveBothSidesFace(
 
 /**
  * Logs that one face of a split card was skipped under Penumbra because its discard-to-play
- * cost cannot be paid (D-24621). The face grants no economy and fires no hooks.
+ * cost cannot be paid (D-24625). The face grants no economy and fires no hooks.
  *
  * @param G - The game state to mutate (log only).
  * @param playerID - The active player.
@@ -355,7 +355,7 @@ function logBothSidesFaceSkipped(
  * Penumbra is active this turn (WP-780 / D-24619). Called by playCard after the card has left
  * the hand, instead of parking the choose-a-side picker.
  *
- * Each face must be payable before it resolves (WP-777's isSplitFacePayable / D-24621): a face
+ * Each face must be payable before it resolves (WP-777's isSplitFacePayable / D-24625): a face
  * whose discard-to-play cost the hand cannot pay is skipped entirely (no economy, no hooks, one
  * log line); a payable face resolves normally and its own discard-to-play hook charges the cost.
  *
@@ -384,7 +384,7 @@ export function playBothSplitFaces(
   if (pair === null) {
     return false;
   }
-  // why: D-24621 — face a plays when payable, or when face b is not payable either (the
+  // why: D-24625 — face a plays when payable, or when face b is not payable either (the
   // isSplitFaceBindable anti-freeze fallback, D-24615 §2, so an all-costed card still plays one
   // face as the picker path would). No card in the data has a cost on both faces.
   const isFaceAPlayed = isSplitFaceBindable(G, playerID, pair.faceA, pair.faceB);

@@ -6,16 +6,57 @@
     "matrixDescription": "policy=competent-heuristic; maxTurns=50; playerCount=1; seedsPerBoard=8; runSeed=wp265-real-v1. Real signal (WP-265): the competent policy recruits / plays / fights (enabled by WP-266 onBegin parity) and surfaces the runtime hollows those plays trigger. The signal lever is hero/board diversity, not seeds — each hero-deck set below is swept over the sentinel core × 8 seeds. sentinelCore: scheme=core/portals-to-the-dark-dimension, mastermind=core/dr-doom, villainGroups=[core/brotherhood], henchmanGroups=[core/savage-land-mutates]. heroDeckSets: 2099{2099/doctor-doom-2099, 2099/ghost-rider-2099, 2099/hulk-2099, 2099/ravage-2099, 2099/spider-man-2099}; 3dtc{3dtc/black-widow, 3dtc/deadpool, 3dtc/howard-the-duck, 3dtc/hulk, 3dtc/man-thing}; amwp{amwp/ant-army, amwp/ant-man, amwp/cassie-lang, amwp/freedom-fighters, amwp/janet-van-dyne}; anni{anni/brainstorm, anni/fantastic-four-united, anni/heralds-of-galactus, anni/psi-lord, anni/super-skrull}; antm{antm/ant-man, antm/black-knight, antm/jocasta, antm/wasp, antm/wonder-man}; asrd{asrd/beta-ray-bill, asrd/lady-sif, asrd/thor, asrd/valkyrie, asrd/warriors-three-the}; bkpt{bkpt/general-okoye, bkpt/king-black-panther, bkpt/princess-shuri, bkpt/queen-storm-of-wakanda, bkpt/white-wolf}; bkwd{bkwd/black-widow, bkwd/falcon-winter-soldier, bkwd/red-guardian, bkwd/white-tiger, bkwd/yelena-belova}; ca75{ca75/agent-x-13, ca75/captain-america-1941, ca75/captain-america-falcon, ca75/steve-rogers-director-of-shield, ca75/winter-soldier}; chmp{chmp/gwenpool, chmp/ms-marvel, chmp/nova, chmp/totally-awesome-hulk, chmp/viv-vision}; core{core/black-widow, core/captain-america, core/cyclops, core/deadpool, core/emma-frost}; cosm{cosm/adam-warlock, cosm/captain-mar-vell, cosm/moondragon, cosm/nebula, cosm/nova}; cvwr{cvwr/captain-america-secret-avenger, cvwr/cloak-dagger, cvwr/daredevil, cvwr/falcon, cvwr/goliath}; dead{dead/bob-agent-of-hydra, dead/deadpool, dead/slapstick, dead/solo, dead/stingray}; dims{dims/howard-the-duck, dims/jessica-jones, dims/man-thing, dims/ms-america, dims/squirrel-girl}; dkcy{dkcy/angel, dkcy/bishop, dkcy/blade, dkcy/cable, dkcy/colossus}; dstr{dstr/ancient-one-the, dstr/clea, dstr/doctor-strange, dstr/doctor-voodoo, dstr/vishanti-the}; fear{fear/greithoth-breaker-of-wills, fear/kuurth-breaker-of-stone, fear/nerkkod-breaker-of-oceans, fear/nul-breaker-of-worlds, fear/skadi}; ff04{ff04/human-torch, ff04/invisible-woman, ff04/mr-fantastic, ff04/silver-surfer, ff04/thing}; gotg{gotg/drax-the-destroyer, gotg/gamora, gotg/groot, gotg/rocket-raccoon, gotg/star-lord}; mdns{mdns/blade-daywalker, mdns/elsa-bloodstone, mdns/morbius, mdns/werewolf-by-night, mdns/wong-master-of-the-mystic-arts}; mgtg{mgtg/drax, mgtg/gamora, mgtg/mantis, mgtg/rocket-groot, mgtg/star-lord}; msis{msis/black-panther, msis/bruce-banner, msis/captain-marvel, msis/doctor-strange, msis/wanda-vision}; msmc{msmc/m, msmc/multiple-man, msmc/rictor, msmc/shatterstar, msmc/siryn}; msp1{msp1/black-widow, msp1/captain-america, msp1/hawkeye, msp1/hulk, msp1/iron-man}; nmut{nmut/karma, nmut/mirage, nmut/sunspot, nmut/warlock, nmut/wolfsbane}; noir{noir/angel-noir, noir/daredevil-noir, noir/iron-man-noir, noir/luke-cage-noir, noir/spider-man-noir}; pttr{pttr/black-cat, pttr/moon-knight, pttr/scarlet-spider, pttr/spider-woman, pttr/symbiote-spider-man}; rlmk{rlmk/black-bolt, rlmk/crystal, rlmk/gorgon, rlmk/karnak, rlmk/medusa}; rvlt{rvlt/captain-marvel-agent-of-shield, rvlt/darkhawk, rvlt/hellcat, rvlt/photon, rvlt/quicksilver}; shld{shld/agent-phil-coulson, shld/deathlok, shld/dum-dum-dugan, shld/grant-ward, shld/gw-bridge}; smhc{smhc/happy-hogan, smhc/high-tech-spider-man, smhc/peter-parker-homecoming, smhc/peters-allies, smhc/tony-stark}; ssw1{ssw1/apocalyptic-kitty-pryde, ssw1/black-bolt, ssw1/black-panther, ssw1/captain-marvel, ssw1/dr-strange}; ssw2{ssw2/agent-venom, ssw2/arkon-the-magnificent, ssw2/beast, ssw2/black-swan, ssw2/captain-and-the-devil-the}; vill{vill/bullseye, vill/dr-octopus, vill/electro, vill/enchantress, vill/green-goblin}; vnom{vnom/carnage, vnom/venom, vnom/venom-rocket, vnom/venomized-dr-strange, vnom/venompool}; wtif{wtif/apocalyptic-black-widow, wtif/captain-carter, wtif/doctor-strange-supreme, wtif/gamora-destroyer-of-thanos, wtif/killmonger-spec-ops}; wwhk{wwhk/amadeus-cho, wwhk/bruce-banner, wwhk/caiera, wwhk/gladiator-hulk, wwhk/hiroim}; xmen{xmen/aurora-northstar, xmen/banshee, xmen/beast, xmen/cannonball, xmen/colossus-wolverine}"
   },
   "summary": {
-    "distinctMechanics": 32,
-    "totalObservations": 3533,
+    "distinctMechanics": 78,
+    "totalObservations": 7178,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 514,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 3019
+      "parse-unrecognized": 6664
     }
   },
   "byMechanic": {
+    "\"when-recruited\"-abilities": {
+      "hitCount": 131,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 131
+      },
+      "examples": [
+        {
+          "cardId": "rlmk/black-bolt/break-the-silence#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/black-bolt/break-the-silence#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/black-bolt/break-the-silence#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/black-bolt/break-the-silence#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/black-bolt/break-the-silence#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "abomination": {
       "hitCount": 34,
       "lastSeenTurn": 29,
@@ -139,6 +180,88 @@
         }
       ]
     },
+    "artifact--": {
+      "hitCount": 99,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 99
+      },
+      "examples": [
+        {
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "gotg/drax-the-destroyer/knives-of-the-hunter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "astral-plane": {
+      "hitCount": 47,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 47
+      },
+      "examples": [
+        {
+          "cardId": "dstr/ancient-one-the/astral-confrontation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/astral-confrontation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/astral-confrontation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/astral-confrontation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/astral-confrontation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "bridge": {
       "hitCount": 9,
       "lastSeenTurn": 30,
@@ -174,6 +297,170 @@
         },
         {
           "cardId": "anni/super-skrull/put-to-the-torch#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "bridge-conqueror": {
+      "hitCount": 13,
+      "lastSeenTurn": 27,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 13
+      },
+      "examples": [
+        {
+          "cardId": "anni/heralds-of-galactus/firelord#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/heralds-of-galactus/firelord#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/heralds-of-galactus/firelord#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/heralds-of-galactus/firelord#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/heralds-of-galactus/firelord#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "burn-2-shards": {
+      "hitCount": 42,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 42
+      },
+      "examples": [
+        {
+          "cardId": "cosm/adam-warlock/transmute-matter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/transmute-matter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/transmute-matter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/transmute-matter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/transmute-matter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "burn-4-shards": {
+      "hitCount": 5,
+      "lastSeenTurn": 26,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 5
+      },
+      "examples": [
+        {
+          "cardId": "cosm/adam-warlock/soulblast#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/soulblast#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/soulblast#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/soulblast#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/adam-warlock/soulblast#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "cheering-crowds": {
+      "hitCount": 47,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 47
+      },
+      "examples": [
+        {
+          "cardId": "chmp/gwenpool/i-heard-keywords-are-powerful#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/i-heard-keywords-are-powerful#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/i-heard-keywords-are-powerful#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/i-heard-keywords-are-powerful#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/i-heard-keywords-are-powerful#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -303,6 +590,82 @@
         }
       ]
     },
+    "cosmic-threat": {
+      "hitCount": 6,
+      "lastSeenTurn": 23,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 6
+      },
+      "examples": [
+        {
+          "cardId": "cosm/nova/declare-galactic-threat#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/nova/declare-galactic-threat#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/nova/declare-galactic-threat#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/nova/declare-galactic-threat#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/nova/declare-galactic-threat#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "cross-dimensional-hulk-rampage": {
+      "hitCount": 4,
+      "lastSeenTurn": 25,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 4
+      },
+      "examples": [
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "cyber-mod": {
       "hitCount": 9,
       "lastSeenTurn": 22,
@@ -344,6 +707,88 @@
         }
       ]
     },
+    "danger-sense": {
+      "hitCount": 357,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 357
+      },
+      "examples": [
+        {
+          "cardId": "cosm/captain-mar-vell/cosmic-awareness#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/captain-mar-vell/cosmic-awareness#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/captain-mar-vell/cosmic-awareness#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/captain-mar-vell/cosmic-awareness#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "cosm/captain-mar-vell/cosmic-awareness#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "dark-memories": {
+      "hitCount": 93,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 93
+      },
+      "examples": [
+        {
+          "cardId": "bkwd/black-widow/widows-bite#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkwd/black-widow/widows-bite#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkwd/black-widow/widows-bite#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkwd/black-widow/widows-bite#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkwd/black-widow/widows-bite#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "demolish": {
       "hitCount": 15,
       "lastSeenTurn": 29,
@@ -379,6 +824,93 @@
         },
         {
           "cardId": "fear/nul-breaker-of-worlds/demolition-derby#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "demonic-bargain": {
+      "hitCount": 16,
+      "lastSeenTurn": 27,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 16
+      },
+      "examples": [
+        {
+          "cardId": "dstr/clea/bind-the-dark-dimension#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/clea/bind-the-dark-dimension#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/clea/bind-the-dark-dimension#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/vishanti-the/agamotto#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/vishanti-the/agamotto#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "don't-speak": {
+      "hitCount": 2,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 2
+      },
+      "examples": [
+        {
+          "cardId": "rlmk/black-bolt/the-kings-speech#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/black-bolt/the-kings-speech#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "double-striker": {
+      "hitCount": 2,
+      "lastSeenTurn": 25,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 2
+      },
+      "examples": [
+        {
+          "cardId": "smhc/happy-hogan/asset-management#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "smhc/happy-hogan/asset-management#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -449,6 +981,129 @@
         }
       ]
     },
+    "excessive-kindness": {
+      "hitCount": 92,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 92
+      },
+      "examples": [
+        {
+          "cardId": "mgtg/mantis/empathic-bond#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/mantis/empathic-bond#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/mantis/empathic-bond#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/mantis/empathic-bond#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/mantis/empathic-bond#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "excessive-violence": {
+      "hitCount": 158,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 158
+      },
+      "examples": [
+        {
+          "cardId": "dead/bob-agent-of-hydra/bullets-flying-bob-hiding#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dead/bob-agent-of-hydra/bullets-flying-bob-hiding#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dead/bob-agent-of-hydra/bullets-flying-bob-hiding#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dead/bob-agent-of-hydra/bullets-flying-bob-hiding#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dead/bob-agent-of-hydra/bullets-flying-bob-hiding#1",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "fated-future": {
+      "hitCount": 15,
+      "lastSeenTurn": 23,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 15
+      },
+      "examples": [
+        {
+          "cardId": "2099/doctor-doom-2099/tear-through-time-itself#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/doctor-doom-2099/tear-through-time-itself#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/doctor-doom-2099/tear-through-time-itself#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/detect-vibrations#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/detect-vibrations#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "focus": {
       "hitCount": 917,
       "lastSeenTurn": 30,
@@ -484,6 +1139,47 @@
         },
         {
           "cardId": "anni/fantastic-four-united/human-torch#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "gate-only": {
+      "hitCount": 460,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 460
+      },
+      "examples": [
+        {
+          "cardId": "2099/ravage-2099/down-in-the-dregs#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/down-in-the-dregs#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/down-in-the-dregs#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/down-in-the-dregs#4",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "2099/ravage-2099/down-in-the-dregs#4",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -531,6 +1227,129 @@
         }
       ]
     },
+    "highest-abomination": {
+      "hitCount": 15,
+      "lastSeenTurn": 27,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 15
+      },
+      "examples": [
+        {
+          "cardId": "rlmk/gorgon/trample-underhoof#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/gorgon/trample-underhoof#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/gorgon/trample-underhoof#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/gorgon/trample-underhoof#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/gorgon/trample-underhoof#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "hunt-for-victims": {
+      "hitCount": 13,
+      "lastSeenTurn": 24,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 13
+      },
+      "examples": [
+        {
+          "cardId": "mdns/elsa-bloodstone/stalk-the-night-stalkers#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/elsa-bloodstone/stalk-the-night-stalkers#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/elsa-bloodstone/stalk-the-night-stalkers#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/elsa-bloodstone/stalk-the-night-stalkers#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/elsa-bloodstone/stalk-the-night-stalkers#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "hyperspeed": {
+      "hitCount": 13,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 13
+      },
+      "examples": [
+        {
+          "cardId": "rvlt/photon/ultraviolet-radiation#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rvlt/photon/ultraviolet-radiation#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rvlt/photon/ultraviolet-radiation#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rvlt/photon/ultraviolet-radiation#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rvlt/quicksilver/perpetual-motion#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "investigate": {
       "hitCount": 212,
       "lastSeenTurn": 29,
@@ -566,6 +1385,47 @@
         },
         {
           "cardId": "dims/ms-america/search-parallel-dimensions#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "liberate": {
+      "hitCount": 32,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 32
+      },
+      "examples": [
+        {
+          "cardId": "wtif/apocalyptic-black-widow/relentless#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/relentless#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/relentless#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/relentless#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/relentless#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -613,6 +1473,129 @@
         }
       ]
     },
+    "man-out-of-time": {
+      "hitCount": 93,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 93
+      },
+      "examples": [
+        {
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "man/woman-out-of-time": {
+      "hitCount": 28,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 28
+      },
+      "examples": [
+        {
+          "cardId": "anni/psi-lord/avert-future-tragedy#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/psi-lord/avert-future-tragedy#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/psi-lord/avert-future-tragedy#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/psi-lord/avert-future-tragedy#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/psi-lord/avert-future-tragedy#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "microscopic-size-changing": {
+      "hitCount": 30,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 30
+      },
+      "examples": [
+        {
+          "cardId": "amwp/ant-army/anti-tank-weapons#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "amwp/ant-army/anti-tank-weapons#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "amwp/ant-army/anti-tank-weapons#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "amwp/ant-army/anti-tank-weapons#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "amwp/ant-army/antiproton-experiments#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "moonlight": {
       "hitCount": 22,
       "lastSeenTurn": 24,
@@ -654,6 +1637,211 @@
         }
       ]
     },
+    "patrol-any-city-space": {
+      "hitCount": 35,
+      "lastSeenTurn": 26,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 35
+      },
+      "examples": [
+        {
+          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/beast/upside-down-thinking#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "patrol-the-bridge": {
+      "hitCount": 36,
+      "lastSeenTurn": 24,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 36
+      },
+      "examples": [
+        {
+          "cardId": "mdns/wong-master-of-the-mystic-arts/bridge-between-dimensions#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/wong-master-of-the-mystic-arts/bridge-between-dimensions#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/wong-master-of-the-mystic-arts/bridge-between-dimensions#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/wong-master-of-the-mystic-arts/bridge-between-dimensions#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/wong-master-of-the-mystic-arts/bridge-between-dimensions#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "patrol-the-rooftops": {
+      "hitCount": 80,
+      "lastSeenTurn": 26,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 80
+      },
+      "examples": [
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "patrol-the-sewers": {
+      "hitCount": 53,
+      "lastSeenTurn": 26,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 53
+      },
+      "examples": [
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mdns/blade-daywalker/hunt-high-and-low#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "patrol-the-streets": {
+      "hitCount": 8,
+      "lastSeenTurn": 23,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 8
+      },
+      "examples": [
+        {
+          "cardId": "ssw2/captain-and-the-devil-the/feeding-grounds#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/captain-and-the-devil-the/feeding-grounds#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/captain-and-the-devil-the/feeding-grounds#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/captain-and-the-devil-the/feeding-grounds#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "ssw2/captain-and-the-devil-the/feeding-grounds#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "phasing": {
       "hitCount": 98,
       "lastSeenTurn": 29,
@@ -689,6 +1877,76 @@
         },
         {
           "cardId": "cvwr/cloak-dagger/fight#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "piercing-energy": {
+      "hitCount": 143,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 143
+      },
+      "examples": [
+        {
+          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardType": "hero",
+          "timing": "onFight",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "ritual-artifact": {
+      "hitCount": 3,
+      "lastSeenTurn": 26,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 3
+      },
+      "examples": [
+        {
+          "cardId": "dstr/ancient-one-the/the-orb-of-agamotto#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/the-orb-of-agamotto#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/ancient-one-the/the-orb-of-agamotto#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -778,12 +2036,12 @@
       ]
     },
     "rule:shard": {
-      "hitCount": 320,
+      "hitCount": 415,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 320
+        "parse-unrecognized": 415
       },
       "examples": [
         {
@@ -853,6 +2111,47 @@
         },
         {
           "cardId": "cvwr/daredevil/roundhouse-side-kick#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "s.h.i.e.l.d.-level": {
+      "hitCount": 162,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 162
+      },
+      "examples": [
+        {
+          "cardId": "shld/agent-phil-coulson/impeccable-planning#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "shld/agent-phil-coulson/impeccable-planning#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "shld/agent-phil-coulson/impeccable-planning#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "shld/agent-phil-coulson/impeccable-planning#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "shld/agent-phil-coulson/impeccable-planning#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -941,6 +2240,47 @@
         }
       ]
     },
+    "soaring-flight": {
+      "hitCount": 276,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 276
+      },
+      "examples": [
+        {
+          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardType": "hero",
+          "timing": "onRecruit",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "soulbind": {
       "hitCount": 1,
       "lastSeenTurn": 20,
@@ -1016,6 +2356,29 @@
         },
         {
           "cardId": "anni/super-skrull/put-to-the-torch#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "streets-abomination": {
+      "hitCount": 2,
+      "lastSeenTurn": 24,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 2
+      },
+      "examples": [
+        {
+          "cardId": "rlmk/gorgon/stomping-shockwave#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "rlmk/gorgon/stomping-shockwave#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1104,6 +2467,88 @@
         }
       ]
     },
+    "switcheroo": {
+      "hitCount": 215,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 215
+      },
+      "examples": [
+        {
+          "cardId": "dims/jessica-jones/alias-investigations#0",
+          "cardType": "hero",
+          "timing": "onReveal",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/jessica-jones/alias-investigations#0",
+          "cardType": "hero",
+          "timing": "onReveal",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/jessica-jones/alias-investigations#0",
+          "cardType": "hero",
+          "timing": "onReveal",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/jessica-jones/alias-investigations#0",
+          "cardType": "hero",
+          "timing": "onReveal",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dims/jessica-jones/alias-investigations#0",
+          "cardType": "hero",
+          "timing": "onReveal",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "tactical-formation": {
+      "hitCount": 52,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 52
+      },
+      "examples": [
+        {
+          "cardId": "msmc/multiple-man/me-myself-and-i#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msmc/multiple-man/me-myself-and-i#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msmc/multiple-man/me-myself-and-i#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msmc/multiple-man/me-myself-and-i#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msmc/multiple-man/me-myself-and-i#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "teleport": {
       "hitCount": 204,
       "lastSeenTurn": 28,
@@ -1139,6 +2584,88 @@
         },
         {
           "cardId": "dims/man-thing/form-from-ooze#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "thrones-favor": {
+      "hitCount": 100,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 100
+      },
+      "examples": [
+        {
+          "cardId": "bkpt/king-black-panther/heart-shaped-herb#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/king-black-panther/heart-shaped-herb#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/king-black-panther/heart-shaped-herb#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/king-black-panther/heart-shaped-herb#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/king-black-panther/heart-shaped-herb#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "thrown-artifact": {
+      "hitCount": 251,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 251
+      },
+      "examples": [
+        {
+          "cardId": "asrd/valkyrie/dragonfang#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "asrd/valkyrie/dragonfang#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "asrd/valkyrie/dragonfang#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "asrd/valkyrie/dragonfang#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "asrd/valkyrie/dragonfang#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1186,6 +2713,47 @@
         }
       ]
     },
+    "triggered-artifact": {
+      "hitCount": 6,
+      "lastSeenTurn": 28,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 6
+      },
+      "examples": [
+        {
+          "cardId": "mgtg/rocket-groot/gravity-mines#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/rocket-groot/gravity-mines#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/rocket-groot/gravity-mines#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/rocket-groot/gravity-mines#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "mgtg/rocket-groot/gravity-mines#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
     "undercover": {
       "hitCount": 514,
       "lastSeenTurn": 30,
@@ -1224,6 +2792,252 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "no-handler"
+        }
+      ]
+    },
+    "versatile": {
+      "hitCount": 161,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 161
+      },
+      "examples": [
+        {
+          "cardId": "chmp/gwenpool/come-on-nobody-reads-card-names#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/come-on-nobody-reads-card-names#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/come-on-nobody-reads-card-names#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/come-on-nobody-reads-card-names#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "chmp/gwenpool/come-on-nobody-reads-card-names#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "villain-or-mastermind-has-any-wounds": {
+      "hitCount": 16,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 16
+      },
+      "examples": [
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/command-the-hatut-zeraze#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "what-if...?": {
+      "hitCount": 40,
+      "lastSeenTurn": 27,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 40
+      },
+      "examples": [
+        {
+          "cardId": "wtif/apocalyptic-black-widow/the-last-avenger#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/the-last-avenger#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/the-last-avenger#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/the-last-avenger#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wtif/apocalyptic-black-widow/the-last-avenger#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "woman-out-of-time": {
+      "hitCount": 69,
+      "lastSeenTurn": 29,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 69
+      },
+      "examples": [
+        {
+          "cardId": "anni/brainstorm/borrow-from-the-future#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/brainstorm/borrow-from-the-future#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/brainstorm/borrow-from-the-future#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/brainstorm/borrow-from-the-future#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "anni/brainstorm/borrow-from-the-future#2",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "wound-a-villain": {
+      "hitCount": 20,
+      "lastSeenTurn": 30,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 20
+      },
+      "examples": [
+        {
+          "cardId": "bkpt/general-okoye/sovereign-bodyguard#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/general-okoye/sovereign-bodyguard#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/general-okoye/sovereign-bodyguard#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/cloaking-tech-ambush#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "bkpt/white-wolf/cloaking-tech-ambush#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        }
+      ]
+    },
+    "wounded-fury": {
+      "hitCount": 9,
+      "lastSeenTurn": 25,
+      "byReason": {
+        "no-handler": 0,
+        "unsupported-keyword": 0,
+        "parse-unrecognized": 9
+      },
+      "examples": [
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "wwhk/gladiator-hulk/the-green-scar#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
         }
       ]
     },

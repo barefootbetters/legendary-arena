@@ -143,6 +143,42 @@ const RULE_TOKEN_SINGULAR: Readonly<Record<string, string>> = {
   sidekicks: 'sidekick',
 };
 
+// why: D-24623 — the unresolved-marker name for a gated line whose body parsed to nothing and
+// names no rule concept or keyword. One shared name so the gap aggregates as one runtime row.
+/** Unresolved marker recorded for a line that resolved only its play gate. */
+const GATE_ONLY_MARKER = 'gate-only';
+
+// why: D-24623 — KEYWORD_PATTERN admits only `[keyword:Name]` / `[keyword:Name:N]`, so a
+// multi-word or space-magnitude token ("[keyword:Man Out of Time]", "[keyword:Danger Sense 2]")
+// never matches and is dropped. This matches every token so those can be named.
+/** Regex for any `[keyword:...]` token, including multi-word and space-magnitude forms. */
+const ANY_KEYWORD_TOKEN_PATTERN = /\[keyword:([^\]]+)\]/g;
+
+/** Regex for the token bodies KEYWORD_PATTERN does match (`Name` or `Name:N`). */
+const MATCHED_KEYWORD_BODY_PATTERN = /^[a-zA-Z][a-zA-Z-]*(?::\d+)?$/;
+
+// why: D-24624 — an ungated line that LEADS with an unmatched keyword token ("[keyword:Soaring
+// Flight]", "[keyword:Excessive Kindness]: Draw a card.") is that keyword's printed ability, so
+// its hollow takes the keyword's printed timing rather than the onPlay default.
+/** Regex for a `[keyword:...]` token at the very start of a line. */
+const LEADING_KEYWORD_TOKEN_PATTERN = /^\s*\[keyword:([^\]]+)\]/;
+
+// why: D-24624 — printed timings from data/metadata/keywords-full.json for unmatched keywords
+// that do NOT resolve at play. The hollow is still observed when the card is played (the only
+// detection site), but it is labelled with this timing so the log and the runtime ledger never
+// claim a play-time effect. Keys use the collectUnmatchedKeywordSlugs normalization. Soaring
+// Flight / "When Recruited" / Excessive Kindness fire on recruit; Excessive Violence and Piercing
+// Energy are spent when fighting; Switcheroo is used by revealing the card instead of playing it.
+/** Printed non-play timing for unmatched keyword names that lead a line. */
+const UNMATCHED_KEYWORD_TIMINGS: Readonly<Record<string, HeroAbilityTiming>> = {
+  'soaring-flight': 'onRecruit',
+  '"when-recruited"-abilities': 'onRecruit',
+  'excessive-kindness': 'onRecruit',
+  'excessive-violence': 'onFight',
+  'piercing-energy': 'onFight',
+  switcheroo: 'onReveal',
+};
+
 // why: D-24044 — the ANCHORED Empowered parameter tail. The color must immediately follow
 // the `[keyword:Empowered]` token as `by [hc:COLOR]` (the `^` anchors to the text right after
 // the marker — a broad forward scan could wrongly bind a later, unrelated [hc:...] to
@@ -2301,23 +2337,36 @@ function parseAbilityText(
   // model, not flavor text. Record `rule:<concept>` so detectHollowHeroHook flags it
   // `parse-unrecognized`. Scoped to fully-empty lines so a line that already resolved an
   // effect keeps its hook byte-identical, and reminder parentheticals are exempt.
+  // why: D-24623 — the same holds for a line whose only resolved piece is its GATE
+  // (`[hc:X]: <text>`, `[team:X]: <text>`, or a condition keyword such as Outwit / Savior).
+  // The gate parses to `conditions` + the 'conditional' keyword and the body to nothing, so
+  // a passed gate fired nothing and reported nothing (cvwr Tsunami of Justice). Such a line
+  // records its `rule:<concept>` tokens, else its unmatched multi-word `[keyword:X N]` names
+  // (normalized like the coverage probe, so runtime and ledger rows share one key), else
+  // `gate-only`.
+  // why: D-24624 — an UNGATED fully-empty line records its unmatched keyword names too
+  // ("[keyword:Soaring Flight]", "[keyword:Danger Sense 2]"): same order (rule tokens first),
+  // but no `gate-only` fallback, so plain-English flavor text still builds an empty hook.
+  const lineResolvedOnlyItsGate = uniqueKeywords.length === 1 && uniqueKeywords[0] === 'conditional';
+  let ungatedKeywordTiming: HeroAbilityTiming | undefined;
   if (
-    uniqueKeywords.length === 0 &&
+    (uniqueKeywords.length === 0 || lineResolvedOnlyItsGate) &&
     effects.length === 0 &&
     primitiveEffects.length === 0 &&
     unresolvedMarkers.length === 0 &&
     !REMINDER_TEXT_PATTERN.test(abilityText)
   ) {
-    const ruleTokenRegex = new RegExp(RULE_TOKEN_PATTERN.source, 'g');
-    let ruleTokenMatch: RegExpExecArray | null = ruleTokenRegex.exec(abilityText);
-    while (ruleTokenMatch !== null) {
-      const ruleSlug = ruleTokenMatch[1]!.trim().toLowerCase().replace(/\s+/g, '-');
-      const conceptSlug = RULE_TOKEN_SINGULAR[ruleSlug] ?? ruleSlug;
-      const ruleMarker = `rule:${conceptSlug}`;
-      if (!unresolvedMarkers.includes(ruleMarker)) {
-        unresolvedMarkers.push(ruleMarker);
+    unresolvedMarkers.push(...collectRuleTokenMarkers(abilityText));
+    for (const keywordSlug of collectUnmatchedKeywordSlugs(abilityText)) {
+      if (!unresolvedMarkers.includes(keywordSlug)) {
+        unresolvedMarkers.push(keywordSlug);
       }
-      ruleTokenMatch = ruleTokenRegex.exec(abilityText);
+    }
+    if (lineResolvedOnlyItsGate && unresolvedMarkers.length === 0) {
+      unresolvedMarkers.push(GATE_ONLY_MARKER);
+    }
+    if (!lineResolvedOnlyItsGate) {
+      ungatedKeywordTiming = findLeadingUnmatchedKeywordTiming(abilityText);
     }
   }
 
@@ -2333,6 +2382,11 @@ function parseAbilityText(
       timing = keywordDefaultTiming;
       break;
     }
+  }
+  // why: D-24624 — a marker-only line led by a recruit / fight / reveal keyword takes that
+  // printed timing (the line resolved no keyword, so the loop above left it at onPlay).
+  if (ungatedKeywordTiming !== undefined) {
+    timing = ungatedKeywordTiming;
   }
   const timingMatch = TIMING_PATTERN.exec(abilityText);
   if (timingMatch !== null) {
@@ -2352,6 +2406,81 @@ function parseAbilityText(
     sizeChangingClasses,
     timing,
   };
+}
+
+/**
+ * Collects the `rule:<concept>` unresolved markers for every `[rule:X]` token on a line
+ * (D-24618): lower-case, whitespace to hyphen, plurals folded to the singular concept,
+ * deduplicated, in text order.
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The rule markers, empty when the line has no `[rule:X]` token.
+ */
+function collectRuleTokenMarkers(abilityText: string): string[] {
+  const ruleMarkers: string[] = [];
+  const ruleTokenRegex = new RegExp(RULE_TOKEN_PATTERN.source, 'g');
+  let ruleTokenMatch: RegExpExecArray | null = ruleTokenRegex.exec(abilityText);
+  while (ruleTokenMatch !== null) {
+    const ruleSlug = ruleTokenMatch[1]!.trim().toLowerCase().replace(/\s+/g, '-');
+    const conceptSlug = RULE_TOKEN_SINGULAR[ruleSlug] ?? ruleSlug;
+    const ruleMarker = `rule:${conceptSlug}`;
+    if (!ruleMarkers.includes(ruleMarker)) {
+      ruleMarkers.push(ruleMarker);
+    }
+    ruleTokenMatch = ruleTokenRegex.exec(abilityText);
+  }
+  return ruleMarkers;
+}
+
+/**
+ * Collects the mechanic names of the `[keyword:...]` tokens KEYWORD_PATTERN cannot match
+ * (multi-word or space-magnitude forms), normalized the way `scripts/hero-effect-coverage.mjs`
+ * normalizes mechanic tokens: trimmed, lower-case, trailing magnitude dropped, whitespace to
+ * hyphen ("Danger Sense 2" → "danger-sense"). Deduplicated, in text order (D-24623).
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The unmatched keyword names, empty when every token matched KEYWORD_PATTERN.
+ */
+function collectUnmatchedKeywordSlugs(abilityText: string): string[] {
+  const keywordSlugs: string[] = [];
+  const tokenRegex = new RegExp(ANY_KEYWORD_TOKEN_PATTERN.source, 'g');
+  let tokenMatch: RegExpExecArray | null = tokenRegex.exec(abilityText);
+  while (tokenMatch !== null) {
+    const tokenBody = tokenMatch[1]!.trim();
+    if (!MATCHED_KEYWORD_BODY_PATTERN.test(tokenBody)) {
+      const keywordSlug = tokenBody
+        .toLowerCase()
+        .replace(/:\d+$/, '')
+        .replace(/\s+\d+$/, '')
+        .replace(/\s+/g, '-');
+      if (keywordSlug !== '' && !keywordSlugs.includes(keywordSlug)) {
+        keywordSlugs.push(keywordSlug);
+      }
+    }
+    tokenMatch = tokenRegex.exec(abilityText);
+  }
+  return keywordSlugs;
+}
+
+/**
+ * Returns the printed non-play timing of the unmatched keyword that leads a line, if any
+ * (D-24624). Only a line whose FIRST token is the keyword qualifies — a sentence that merely
+ * mentions it ("All Heroes you recruit this turn have [keyword:Soaring Flight].") is a play
+ * effect and keeps onPlay.
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The keyword's timing from UNMATCHED_KEYWORD_TIMINGS, or undefined.
+ */
+function findLeadingUnmatchedKeywordTiming(abilityText: string): HeroAbilityTiming | undefined {
+  const leadingMatch = LEADING_KEYWORD_TOKEN_PATTERN.exec(abilityText);
+  if (leadingMatch === null) {
+    return undefined;
+  }
+  const leadingSlugs = collectUnmatchedKeywordSlugs(leadingMatch[0]);
+  if (leadingSlugs.length === 0) {
+    return undefined;
+  }
+  return UNMATCHED_KEYWORD_TIMINGS[leadingSlugs[0]!];
 }
 
 /**

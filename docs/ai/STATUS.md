@@ -7,7 +7,7 @@
 
 ## Current State
 
-### D-24621 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
+### D-24625 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** With Penumbra active, a split card side
 that costs a discard (Hercules's Manly Dullard, Falcon & Winter Soldier's Attune) no longer grants its
@@ -19,7 +19,57 @@ other side still plays. With a card in hand, the side plays and the discard prom
   A lone face-b play is entered as the face-b id.
 - **Tests.** 3 new + 1 rewritten + 1 new real-cvwr case. The rewritten test had pinned the bug (face b
   +3 Attack from an empty hand).
-- **Live-verify (D-24026):** pending — see D-24621.
+- **Live-verify (D-24026):** pending — see D-24625.
+
+### D-24624 — Ungated multi-word keyword lines now surface as hollow effects (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
+lists 153 hero lines that used to do nothing and report nothing: bare keyword lines such as
+`[keyword:Soaring Flight]`, `[keyword:Danger Sense 2]` and `[keyword:Versatile 3]`, and keyword-labelled
+abilities such as `[keyword:Excessive Kindness]: Draw a card.` Recruit, fight and reveal keywords are
+labelled with their printed timing (`onRecruit` / `onFight` / `onReveal`), so the log never claims a
+play-time effect.
+
+- **Engine.** Parser Step 4b now also names unmatched `[keyword:…]` tokens on UNGATED fully-empty
+  lines, using the D-24623 normalization. There is no `gate-only` fallback, so plain English stays empty.
+  Step 5 gives a line that LEADS with Soaring Flight, "When Recruited", or Excessive Kindness the
+  `onRecruit` timing; Excessive Violence and Piercing Energy get `onFight`, and Switcheroo gets
+  `onReveal` (from `keywords-full.json`). Allowlisted and fused lines and whole-line reminders are
+  unaffected. Parse only: no gameplay, `G`, or hash change.
+- **Pins re-pinned.** `sim:coverage` baseline hooks 6319→6380 and noEffect 2579→2640; executable
+  unchanged at 2657. `runtime-observed-hollows.json` 53→78 mechanics and 4569→7178 observations; only
+  rows for the named keywords moved. Dashboard `useInPlayCoverage` totalObs 5397→8006, percentResolved
+  21.0→14.2.
+- **Live-verify (D-24026):** pending. Play Cannonball Kinetic Blast Field and confirm `soaring-flight`
+  at `onRecruit` in the diagnostics hollow table.
+
+### D-24623 — Gate-only hero lines now surface as hollow effects (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
+lists hero abilities whose only parsed piece is their play gate (`[hc:X]: <text>`, `[team:X]: <text>`,
+Outwit / Savior / Worthy gates). Before, a passed gate fired nothing and reported nothing: Storm & Black
+Panther's Tsunami of Justice in operator match `VP1KNXl2ENQ` (turn 13). A failed gate over such a line
+no longer implies a working card; the log ends "Its effect is not supported yet."
+
+- **Engine.** Parser Step 4b: a line that resolved only its gate records its gated `rule:<concept>`,
+  its unmatched multi-word `[keyword:X N]` name (coverage-probe normalization, e.g. `danger-sense`), or
+  `gate-only`. There are 260 such hooks corpus-wide, and none is handled by any allowlist or fusion.
+  Whole-line reminders stay exempt. Gate-failed wording changes only for hooks with a fully hollow body.
+  Parse and log only: no gameplay, `G`, or hash change.
+- **Pins re-pinned.** `sim:coverage` baseline hooks 6315→6319 and noEffect 2575→2579 (rlmk); executable
+  unchanged. `runtime-observed-hollows.json` 32→53 mechanics and 3533→4569 observations, with no
+  existing count moving except `rule:shard` +95. Dashboard `useInPlayCoverage` totalObs 4363→5397,
+  percentResolved 26.0→21.0.
+- **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package
+  (engine 4650/0, dashboard 505/0, arena-client 2157/0). Every Coverage & Ledger CI gate passes.
+- **Next.** 154 ungated hero lines with multi-word `[keyword:…]` tokens (Soaring Flight, Excessive
+  Violence, Piercing Energy…) are still silent. They are recorded as a D-24623 follow-up.
+- **Live-verify (D-24026):** verified 2026-09-27, operator solo match (Loki / Midtown Bank Robbery,
+  cvwr Cloak & Dagger + Storm & Black Panther + Hercules). Hercules' Crowd Favorite ("[hc:instinct]:
+  Whenever you defeat a Villain this turn, rescue a Bystander.") stood in for Tsunami of Justice, whose
+  Water side was always chosen. With its gate passed (log 19.2.21–22), the Play Diagnostics hollow table
+  listed `gate-only` (two rows). Every failed gate logged "…needs another instinct Hero played this turn.
+  Its effect is not supported yet.", while real-effect gates (Fight, Prince of Power) kept the old wording.
 
 ### WP-778 — The side picker shows a discard cost and blocks an unpayable side (2026-09-27)
 
@@ -101,7 +151,7 @@ before Penumbra, or on another turn, still gets the picker.
   - Split plays on other turns still used the picker.
   - **Open follow-up:** WP-777 (#2461) wired the split-side discard cost into the picker path only. Under
     Penumbra, an unpayable Manly Dullard / Attune face still grants its economy. See D-24619.
-    **Closed 2026-09-27 by D-24621.**
+    **Closed 2026-09-27 by D-24625.**
 
 ### D-24618 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
 

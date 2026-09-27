@@ -19,7 +19,7 @@
  *  - playBothSplitFaces (WP-780 / D-24619): both faces' economy in order, one face-a inPlay
  *    entry, the marker written between the faces; null pair → false with no mutation; missing
  *    zones → true with no mutation; playCard skips the picker only while Penumbra is active.
- *  - playBothSplitFaces per-face cost (D-24621): an unpayable face is skipped (no economy, no
+ *  - playBothSplitFaces per-face cost (D-24625): an unpayable face is skipped (no economy, no
  *    hooks, one log line); a lone played face is the unmarked entry.
  *
  * Uses node:test + node:assert only. No boardgame.io imports.
@@ -489,7 +489,7 @@ describe('resolveSplitFaceChoice — Attune discard cost (WP-777 / D-24615)', ()
   });
 });
 
-describe('playBothSplitFaces — per-face discard cost under Penumbra (D-24621)', () => {
+describe('playBothSplitFaces — per-face discard cost under Penumbra (D-24625)', () => {
   it('face a unpayable, face b payable: Attune skipped, Atone played as the one unmarked entry', () => {
     const gameState = makeAttuneState([], false);
     const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');

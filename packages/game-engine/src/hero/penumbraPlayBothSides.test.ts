@@ -16,7 +16,7 @@
  *  - AC-9: a second Penumbra is a no-op on the flag.
  *  - Manly Dullard (cvwr Hercules, split face b with [keyword:discard-to-play:1], D-24620):
  *    under Penumbra face b fires its own hooks exactly as the picker path does; with no card to
- *    discard, face b is skipped entirely (D-24621).
+ *    discard, face b is skipped entirely (D-24625).
  *
  * Hooks, split-face map and traits are built through the real setup builders. Uses node:test +
  * node:assert only. No boardgame.io imports.
@@ -428,7 +428,7 @@ describe('Manly Dullard — a split face b with discard-to-play under Penumbra (
     );
   });
 
-  it('with no card left in hand, face b is skipped: no attack, no hooks, no marker, one skip line (D-24621)', () => {
+  it('with no card left in hand, face b is skipped: no attack, no hooks, no marker, one skip line (D-24625)', () => {
     const G = makeHerculesState([], []);
     play(G, PENUMBRA);
     play(G, BOY_GENIUS);
@@ -450,7 +450,7 @@ describe('Manly Dullard — a split face b with discard-to-play under Penumbra (
     );
   });
 
-  it('with a card in hand, face b grants its attack and paying the cost discards it (D-24621)', () => {
+  it('with a card in hand, face b grants its attack and paying the cost discards it (D-24625)', () => {
     const SPARE = 'core/spider-man/astonishing-strength#0' as CardExtId;
     const G = makeHerculesState([SPARE], []);
     play(G, PENUMBRA);
