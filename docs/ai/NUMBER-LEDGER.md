@@ -417,6 +417,8 @@ high-water: 422
 - WP-775 — board-affordability-cues (App arena-client. An unaffordable cue on every cost the player reads (HQ heroes, and City villains / the Mastermind at their printed cost, extending the WP-750 badge treatment) and a rim on the villains a slash would fight. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-776 — superpower-ready-glow (Game Engine + App arena-client. Owner-only per-hand-card projection of whether a card's superpower condition already holds for what is in play (WP-710 heroConditionHoldsForInPlay), rendered as a rim on the hand card. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-780 — penumbra-play-both-sides (Game Engine. cvwr Cloak & Dagger Penumbra: while active this turn, a played Divided Card skips the choose-a-side choice and resolves BOTH faces' economy and abilities as two plays of one physical card; retires the D-24618 rule:divided-card hollow. WP-777..779 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
+- WP-777 — split-face-discard-fidelity (Engine + card data. bkwd Falcon & Winter Soldier split faces: Attune "To play this side, you must discard a card" enforced as a face-bind cost, and New Wings "If you discarded any cards this turn" gated on a per-turn discard count; both over-credited in match 19720cb4. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- WP-778 — split-face-cost-picker (App arena-client. SplitFaceChoicePrompt disables a face whose discard cost the hand cannot pay. Depends on WP-777. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 ## EC
 
 high-water: 457
@@ -794,6 +796,8 @@ high-water: 457
 - EC-812 — board-affordability-cues (WP-775; App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - EC-813 — superpower-ready-glow (WP-776; Game Engine + App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - EC-817 — penumbra-play-both-sides (WP-780; Game Engine. EC-814..816 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
+- EC-814 — split-face-discard-fidelity (WP-777; Engine + card data. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- EC-815 — split-face-cost-picker (WP-778; App arena-client. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 ## D
 
 high-water: 24241
@@ -1188,3 +1192,5 @@ section below) and the allocation protocol in
 - D-24614 — heal-lock-board-buttons (direct fix, no WP — HQRow / CityRow / MastermindTile / SharedDecks take hasHealedThisTurn and disable recruit + fight after a heal, mirroring the D-24180 engine heal lock. D-24610..24613 held by open PR #2439. reserved 2026-09-26, claude/heal-lock-board-buttons)
 - D-24618 — rule-token-hollow (direct fix, no WP — a hero line whose only markup is [rule:X] (Shard / Sidekick / Divided Card / multicolored) records rule:<concept> as an unresolved marker so the WP-257 detector flags it parse-unrecognized instead of passing as flavor text; Penumbra. D-24614..24617 held by open PRs #2442 / #2443 / #2444 / #2445. renumbered from D-24615 (collided with #2443 / #2444). reserved 2026-09-26, claude/charming-villani-22f807)
 - D-24619 — penumbra-play-both-sides (WP-780. Locks the Penumbra per-turn flag, the both-faces resolution order, the one-inPlay-entry representation and which in-play reads count the card as both faces. D-24614..24618 held by open PRs #2442..#2446. reserved 2026-09-26, claude/wp780-penumbra-reserve)
+- D-24615 — split-face-discard-cost (WP-777. Locks the discard-to-play cost of a split face as a face-bind precondition in resolveSplitFaceChoice; split cards bypass the playCard precondition. D-24614 held by open PR #2442. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- D-24616 — cards-discarded-this-turn (WP-777. Locks the per-turn discard counter at the discardFromHand chokepoint and the cardsDiscardedThisTurnAtLeast wait-and-see condition. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
