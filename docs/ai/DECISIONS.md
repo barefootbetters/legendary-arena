@@ -45367,7 +45367,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
-### D-24604 — Divided Card off-play traits: a split hero counts as both halves until it is played (WP-772 / EC-809) (Drafted 2026-09-26; not yet landed)
+### D-24604 — Divided Card off-play traits: a split hero counts as both halves until it is played (Active 2026-09-26 — WP-772 / EC-809)
 
 **Context.**
 - **The rule.** Universal Rules v23 p.49, "Divided Cards": while a Divided Card is anywhere other than in play (hand, deck, discard pile, HQ, etc.), it counts as all its Hero Classes, Teams, card names and Hero Names. It counts as "a multicolored card", and its printed Attack is the total of both halves. Once played, it counts only as the chosen side.
@@ -45397,6 +45397,18 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
    - No hashed state is added. Non-split games, including the core-2p-Doom sentinel, take the identity path, so `finalStateHash` is unchanged.
    - The `sim:runtime-observed` sweep includes all five split sets, so its artifact may shift. A diff is accepted only when it is confined to those boards and attributed to this change.
    - Replays (D-24119) of split-hero matches recorded before WP-772 may diverge on re-execution. Gauntlet `legPicks` are player-chosen, so stored split-hero competitive or gauntlet rows can exist without any fixed pool. **Policy:** stored `competitive_scores` rows are frozen and not re-verified (the D-24600 precedent). The executor records a read-only count of split-hero `team_key` rows, supplied to Jeff as a psql command.
+
+**Execution (2026-09-26).**
+- Landed as locked, with no new `G` field.
+- The concatenated hand-and-inPlay villain / defeat-requirement scans now split by zone.
+- `countTechHeroesAmongCards` and `computeDynamicVillainVictoryPoints` take off-play and in-play id
+  lists plus `G`. A test pins that `computeFinalScores` equals `victoryPointValueForCard` on a split
+  Ultron board.
+- The sentinel `finalStateHash` is unchanged.
+- The `sim:runtime-observed` diff is confined to the bkwd / mgtg / msis boards (per-board tally vs
+  `origin/main`).
+- §5 record: a read-only prod count found 0 of 197 `competitive_scores` rows with a split hero in
+  `team_key`. The frozen-rows policy stands and currently covers no rows.
 
 **Reserved by:** NUMBER-LEDGER D-24604. Related: D-24545, D-24546 (WP-724), D-24523 (dual-class reads), D-24499 ("Heroes you have"), D-24362 (Ultron VP), D-24119 (replay verification), D-14101.
 
