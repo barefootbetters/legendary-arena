@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2652,
+    "executable": 2657,
     "heroes": 324,
-    "hooks": 6310,
-    "noEffect": 2604,
-    "parsedNotExecuted": 1054
+    "hooks": 6315,
+    "noEffect": 2575,
+    "parsedNotExecuted": 1083
   },
   "perSet": {
     "2099": {
@@ -20,7 +20,7 @@
     "amwp": {
       "executable": 69,
       "hooks": 187,
-      "noEffect": 94
+      "noEffect": 91
     },
     "anni": {
       "executable": 16,
@@ -35,7 +35,7 @@
     "asrd": {
       "executable": 42,
       "hooks": 102,
-      "noEffect": 55
+      "noEffect": 50
     },
     "bkpt": {
       "executable": 59,
@@ -45,7 +45,7 @@
     "bkwd": {
       "executable": 30,
       "hooks": 138,
-      "noEffect": 29
+      "noEffect": 24
     },
     "ca75": {
       "executable": 57,
@@ -69,13 +69,13 @@
     },
     "cosm": {
       "executable": 44,
-      "hooks": 207,
+      "hooks": 212,
       "noEffect": 163
     },
     "cvwr": {
       "executable": 159,
       "hooks": 400,
-      "noEffect": 155
+      "noEffect": 149
     },
     "dead": {
       "executable": 46,
@@ -158,9 +158,9 @@
       "noEffect": 75
     },
     "rvlt": {
-      "executable": 56,
+      "executable": 61,
       "hooks": 172,
-      "noEffect": 108
+      "noEffect": 98
     },
     "shld": {
       "executable": 31,
@@ -249,6 +249,7 @@
     "demolish": 3,
     "demonic-bargain": 4,
     "digest": 7,
+    "discard-threshold": 2,
     "don't-speak": 1,
     "double-striker": 1,
     "draw-threshold": 1,
