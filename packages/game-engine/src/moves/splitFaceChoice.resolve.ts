@@ -28,7 +28,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { CardExtId, LegendaryGameState, PendingSplitFaceChoice } from '../types.js';
-import { addResources } from '../economy/economy.logic.js';
+import { addResources, markBothSidesPlayed } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { pushLog } from '../log/logPush.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
@@ -222,4 +222,80 @@ export function resolveSplitFaceChoice(
 
   // Step 4: Front-pop LAST (front-pop = Array.shift), mirroring coveringFireChoice.resolve.ts.
   queue.shift();
+}
+
+/**
+ * Grants one face's base attack/recruit, logs it, and fires that face's onPlay ability, for a
+ * split card played both-sides under Penumbra (WP-780 / D-24619).
+ *
+ * @param G - The game state to mutate.
+ * @param context - The move context (ctx, events, random, log) passed to executeHeroEffects.
+ * @param playerID - The active player.
+ * @param faceId - The face instance ext_id to resolve (face a or face b).
+ * @param side - Which side this is, for the log line.
+ * @returns The number of hero effects that fired for this face.
+ */
+function resolveBothSidesFace(
+  G: LegendaryGameState,
+  context: Omit<MoveContext, 'G' | 'playerID'>,
+  playerID: string,
+  faceId: CardExtId,
+  side: 'a' | 'b',
+): number {
+  const cardStats = G.cardStats[faceId];
+  const faceAttack = cardStats ? cardStats.attack : 0;
+  const faceRecruit = cardStats ? cardStats.recruit : 0;
+  G.turnEconomy = addResources(G.turnEconomy, faceAttack, faceRecruit);
+  pushLog(
+    G,
+    `Player ${playerID} resolved side ${side}: ${formatPlayedCardLabel(G.cardDisplayData, faceId, formatBaseEconomyClause(faceAttack, faceRecruit))}.`,
+    'neutral',
+    faceId,
+  );
+  return executeHeroEffects(G, context, playerID, faceId);
+}
+
+/**
+ * Plays BOTH faces of a split card as two different cards, face a then face b, while cvwr
+ * Penumbra is active this turn (WP-780 / D-24619). Called by playCard after the card has left
+ * the hand, instead of parking the choose-a-side picker.
+ *
+ * The physical card enters inPlay ONCE, as its face-a id. Face a's economy and ability resolve,
+ * the entry is recorded in `bothSidesPlayedCardIds`, then face b's economy and ability resolve.
+ *
+ * @param G - The game state to mutate.
+ * @param context - The move context (ctx, events, random, log) passed to executeHeroEffects.
+ * @param playerID - The active player.
+ * @param cardId - The played instance ext_id (either face).
+ * @returns false when the id has no split pair (playCard then falls through to its park path,
+ *   so the card is never lost); true otherwise, including the silent no-op on missing zones.
+ */
+export function playBothSplitFaces(
+  G: LegendaryGameState,
+  context: Omit<MoveContext, 'G' | 'playerID'>,
+  playerID: string,
+  cardId: CardExtId,
+): boolean {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return true;
+  }
+  const pair = resolveSplitFacePair(G, cardId);
+  if (pair === null) {
+    return false;
+  }
+  // why: a card last played as face b keeps its face-b id; under Penumbra the one physical card
+  // is entered as ONE face-a entry so both faces resolve in data order (sides[0] then sides[1]).
+  playerZones.inPlay = [...playerZones.inPlay, pair.faceA];
+  const faceALabel = formatPlayedCardLabel(G.cardDisplayData, pair.faceA, '');
+  pushLog(G, `Player ${playerID} played ${faceALabel}.`, 'neutral', pair.faceA);
+  pushLog(G, `Penumbra: both sides of ${faceALabel} play as two different cards.`, 'neutral', pair.faceA);
+  const effectsFiredA = resolveBothSidesFace(G, context, playerID, pair.faceA, 'a');
+  // why: the faces are played sequentially — record the marker only AFTER face a resolves, so
+  // face a sees a plain one-face entry (face b is not yet played) and face b's reads expand the
+  // entry and see face a as another card played this turn.
+  G.turnEconomy = markBothSidesPlayed(G.turnEconomy, pair.faceA);
+  const effectsFiredB = resolveBothSidesFace(G, context, playerID, pair.faceB, 'b');
+  G.lastPlayEffectsFired = effectsFiredA + effectsFiredB;
+  return true;
 }

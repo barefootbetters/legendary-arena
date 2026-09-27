@@ -22,6 +22,10 @@ import {
   enableRecruitSpendableAsAttack,
   enableDrawLock,
   enrollExcessiveViolenceCard,
+  enablePlayBothSides,
+  markBothSidesPlayed,
+  spendAttack,
+  spendRecruit,
   markExcessiveViolenceUsed,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -766,5 +770,58 @@ describe('enrollExcessiveViolenceCard / markExcessiveViolenceUsed (WP-736 / D-24
     assert.strictEqual(economy.excessiveViolenceUsedThisTurn, true,
       'enrolling a card must not drop the once-per-turn guard set earlier this turn');
     assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/venom/razor-teeth#0']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-780 / D-24619 — Penumbra's play-both-sides flag + both-sides ledger
+// ---------------------------------------------------------------------------
+
+describe('enablePlayBothSides / markBothSidesPlayed (WP-780 / D-24619)', () => {
+  it('a fresh economy carries neither field (absent until set — hash-stable)', () => {
+    const fresh = resetTurnEconomy();
+    assert.strictEqual('isPlayBothSidesActive' in fresh, false);
+    assert.strictEqual('bothSidesPlayedCardIds' in fresh, false);
+  });
+
+  it('enablePlayBothSides sets the flag, is idempotent, and never mutates its input', () => {
+    const base = resetTurnEconomy();
+    const enabled = enablePlayBothSides(base);
+    assert.strictEqual(enabled.isPlayBothSidesActive, true);
+    assert.strictEqual('isPlayBothSidesActive' in base, false, 'input untouched (pure rebuild)');
+    assert.deepStrictEqual(enablePlayBothSides(enabled), enabled, 'a second activation is a no-op');
+  });
+
+  it('markBothSidesPlayed appends in play order and builds a NEW array each time', () => {
+    const first = markBothSidesPlayed(enablePlayBothSides(resetTurnEconomy()), 'cvwr/cloak-dagger/above#0');
+    const second = markBothSidesPlayed(first, 'cvwr/cloak-dagger/above#1');
+    assert.deepStrictEqual(first.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
+    assert.deepStrictEqual(second.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0', 'cvwr/cloak-dagger/above#1']);
+    assert.notStrictEqual(second.bothSidesPlayedCardIds, first.bothSidesPlayedCardIds, 'no aliasing');
+    assert.strictEqual(second.isPlayBothSidesActive, true, 'the flag survives the ledger write');
+  });
+
+  it('both fields survive addResources / spendAttack / spendRecruit and drop at resetTurnEconomy', () => {
+    let economy = markBothSidesPlayed(enablePlayBothSides(resetTurnEconomy()), 'cvwr/cloak-dagger/above#0');
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.strictEqual(economy.isPlayBothSidesActive, true, 'the picker must not reappear after a spend');
+    assert.deepStrictEqual(economy.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
+    const nextTurn = resetTurnEconomy();
+    assert.strictEqual(nextTurn.isPlayBothSidesActive, undefined);
+    assert.strictEqual(nextTurn.bothSidesPlayedCardIds, undefined);
+  });
+
+  it('coexists with the other lazy fields — setting one never drops another', () => {
+    let economy = enableDrawLock(resetTurnEconomy());
+    economy = enrollExcessiveViolenceCard(economy, 'vnom/carnage/rending-claws#0');
+    economy = enablePlayBothSides(economy);
+    economy = markBothSidesPlayed(economy, 'cvwr/cloak-dagger/above#0');
+    economy = markExcessiveViolenceUsed(economy);
+    assert.strictEqual(economy.drawsLocked, true);
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0']);
+    assert.strictEqual(economy.isPlayBothSidesActive, true);
+    assert.deepStrictEqual(economy.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
   });
 });

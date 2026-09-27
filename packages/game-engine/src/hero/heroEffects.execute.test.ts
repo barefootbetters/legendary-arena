@@ -129,7 +129,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // "Instead, you get both" composite) (53 → 56).
     // WP-767 / D-24600 added the optional-ko-your-hero handler (Snarling Fangs' Moonlight
     // no-reward KO of one of your Heroes) (56 → 57).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 57);
+    // WP-780 / D-24619 added the play-both-sides handler (cvwr Penumbra's turn-scoped
+    // isPlayBothSidesActive flag) (57 → 58).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 58);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -517,6 +519,52 @@ describe('no-more-draws — turn-scoped draw lock (WP-731 / D-24552)', () => {
     drawCardsIntoHand(gameState.playerZones['0']!, 3, lockCtx);
     assert.equal(gameState.playerZones['0']!.hand.length, 3,
       'drawCardsIntoHand refills a full hand even while drawsLocked is set');
+  });
+});
+
+describe('play-both-sides — cvwr Penumbra turn-scoped flag (WP-780 / D-24619)', () => {
+  const bothSidesCtx = makeMockCtx();
+
+  /** Builds a state with one Penumbra-shaped play-both-sides hook in play. */
+  function makePenumbraState(): LegendaryGameState {
+    return makeTestState({
+      inPlay: ['penumbra'],
+      turnEconomyAttack: 4,
+      heroAbilityHooks: [
+        {
+          cardId: 'penumbra' as string,
+          timing: 'onPlay',
+          keywords: ['play-both-sides'] as HeroKeyword[],
+          effects: [{ type: 'play-both-sides' }],
+        },
+      ],
+    });
+  }
+
+  it('fires with no magnitude and arms isPlayBothSidesActive, carrying every other field', () => {
+    const gameState = makePenumbraState();
+    const fired = executeHeroEffects(gameState, bothSidesCtx, '0', 'penumbra' as string);
+    assert.equal(fired, 1, 'the magnitude-less effect is not dropped by the magnitude pre-gate');
+    assert.equal(gameState.turnEconomy.isPlayBothSidesActive, true);
+    assert.equal(gameState.turnEconomy.attack, 4, 'the economy rebuild carries attack unchanged');
+    assert.equal(gameState.turnEconomy.bothSidesPlayedCardIds, undefined, 'the ledger stays absent until a both-sides play');
+    assert.ok(
+      gameState.messages.some((line) => line.text.includes('will play both sides')),
+      'the activation is named in the game log',
+    );
+  });
+
+  it('is idempotent — a second activation leaves the economy byte-identical', () => {
+    const gameState = makePenumbraState();
+    executeHeroEffects(gameState, bothSidesCtx, '0', 'penumbra' as string);
+    const afterFirst = JSON.stringify(gameState.turnEconomy);
+    executeHeroEffects(gameState, bothSidesCtx, '0', 'penumbra' as string);
+    assert.equal(JSON.stringify(gameState.turnEconomy), afterFirst);
+  });
+
+  it('is registered in HANDLED_KEYWORDS and HERO_EFFECT_HANDLERS', () => {
+    assert.ok(HANDLED_KEYWORDS.has('play-both-sides'));
+    assert.equal(typeof HERO_EFFECT_HANDLERS['play-both-sides'], 'function');
   });
 });
 
@@ -4975,9 +5023,12 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     assert.equal(records(gameState)[0]!.mechanic, 'mind-swap');
   });
 
-  it('D-24618: playing Penumbra (a [rule:Divided Card]-only line) records a parse-unrecognized hollow', () => {
-    // why: end-to-end from the real printed line — before D-24618 this hook was empty and
-    // the play recorded nothing (operator match 19720cb4: 4 Penumbra plays, no record).
+  it('D-24618: the PRE-MARKER Penumbra line (a [rule:Divided Card]-only line) records a parse-unrecognized hollow', () => {
+    // why: end-to-end from the pre-marker printed line — before D-24618 this hook was empty and
+    // the play recorded nothing (operator match 19720cb4: 4 Penumbra plays, no record). WP-780 /
+    // D-24619 marks the generated line with [keyword:play-both-sides], so this fixture is now the
+    // [rule:X]-only-line detector pin, not "Penumbra as generated" (that pin is
+    // penumbraPlayBothSides.test.ts AC-1).
     const [penumbraHook] = buildHeroAbilityHooks(
       {
         listCards: () => [],
@@ -7236,9 +7287,9 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580, and WP-754's
     // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
     // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
-    // handler, D-24600 — 57).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 57,
-      'HERO_EFFECT_HANDLERS stays 57 (X-Gene is not an effect handler)');
+    // handler, D-24600, and WP-780's play-both-sides handler, D-24619 — 58).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 58,
+      'HERO_EFFECT_HANDLERS stays 58 (X-Gene is not an effect handler)');
   });
 });
 

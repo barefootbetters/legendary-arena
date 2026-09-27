@@ -9,6 +9,8 @@
  *  - offPlayCardStats: attack / recruit totalled, icons OR-ed, cost from face a; identity.
  *  - Contract edges: absent maps return undefined; a missing face entry falls back to the raw
  *    entry; the split path returns a new object (never a G entry).
+ *  - playedCardIdsThisTurn (WP-780 / D-24619): a both-sides-marked inPlay entry expands in
+ *    place to [faceA, faceB]; identity (a fresh copy) on no marker / empty ledger / no pair.
  *  - Real data: all 39 split pairs have no hc2, distinct hc, equal cost, no Recruit on both faces,
  *    and the primary→alternate map is one-to-one (the two-slot union + sum premise).
  *
@@ -20,7 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats } from './splitCard.logic.js';
+import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats, playedCardIdsThisTurn } from './splitCard.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
@@ -95,6 +97,43 @@ describe('resolveSplitFacePair (WP-772 / D-24604)', () => {
     } as Record<CardExtId, CardExtId>;
     const pair = resolveSplitFacePair(makeState({ splitFaces: chained }), 'set/hero/x#0');
     assert.deepEqual(pair, { faceA: 'set/hero/x#0', faceB: 'set/hero/y#0' });
+  });
+});
+
+describe('playedCardIdsThisTurn (WP-780 / D-24619)', () => {
+  /** Builds a state carrying the split-face map and the given both-sides ledger. */
+  function makeMarkedState(bothSidesPlayedCardIds?: CardExtId[]): LegendaryGameState {
+    const state = makeState({ splitFaces: SPLIT_FACES });
+    const turnEconomy: Record<string, unknown> = { attack: 0, recruit: 0 };
+    if (bothSidesPlayedCardIds !== undefined) {
+      turnEconomy.bothSidesPlayedCardIds = bothSidesPlayedCardIds;
+    }
+    state.turnEconomy = turnEconomy as unknown as LegendaryGameState['turnEconomy'];
+    return state;
+  }
+
+  it('expands a marked entry IN PLACE to [faceA, faceB], keeping every other entry in order', () => {
+    const inPlay = [PLAIN_CARD, FACE_A, 'core/hulk/smash#0' as CardExtId];
+    const expanded = playedCardIdsThisTurn(makeMarkedState([FACE_A]), inPlay);
+    assert.deepEqual(expanded, [PLAIN_CARD, FACE_A, FACE_B, 'core/hulk/smash#0']);
+    assert.deepEqual(inPlay, [PLAIN_CARD, FACE_A, 'core/hulk/smash#0'], 'the zone is never mutated');
+  });
+
+  it('leaves an unmarked split entry as one id (a picker-played card counts as its chosen face)', () => {
+    assert.deepEqual(playedCardIdsThisTurn(makeMarkedState([]), [FACE_A]), [FACE_A]);
+    assert.deepEqual(playedCardIdsThisTurn(makeMarkedState(), [FACE_A]), [FACE_A]);
+  });
+
+  it('keeps a marked id whose pair resolves to null as a single entry', () => {
+    const state = makeMarkedState([PLAIN_CARD]);
+    assert.deepEqual(playedCardIdsThisTurn(state, [PLAIN_CARD]), [PLAIN_CARD]);
+  });
+
+  it('returns a fresh copy (not the zone) when there is no turnEconomy at all', () => {
+    const inPlay = [FACE_A];
+    const result = playedCardIdsThisTurn(makeState({ splitFaces: SPLIT_FACES }), inPlay);
+    assert.deepEqual(result, inPlay);
+    assert.notEqual(result, inPlay);
   });
 });
 

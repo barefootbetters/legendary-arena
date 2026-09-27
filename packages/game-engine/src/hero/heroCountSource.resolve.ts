@@ -35,7 +35,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
-import { offPlayCardTraits } from './splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -115,7 +115,8 @@ function countWorthyCardsPlayedThisTurn(
   }
 
   let worthyCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -154,7 +155,8 @@ function countCost4PlusCardsPlayedThisTurn(
   }
 
   let cost4PlusCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -196,7 +198,8 @@ function countIconCardsPlayedThisTurn(
   }
 
   let iconCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -267,7 +270,8 @@ function countTeamCardsPlayedThisTurn(
   }
 
   let teamCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -307,7 +311,8 @@ function countHeroClassCardsPlayedThisTurn(
   }
 
   let classCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     // why: "each OTHER [class] Hero you played this turn" — exclude the triggering card itself.
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
@@ -344,7 +349,8 @@ function countOddCostCardsPlayedThisTurn(
   }
 
   let oddCostCount = 0;
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -467,7 +473,8 @@ function collectCostThresholdCardsPlayedThisTurn(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -506,7 +513,8 @@ function collectIconCardsPlayedThisTurn(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -545,7 +553,8 @@ function collectTeamCardsPlayedThisTurn(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -578,7 +587,8 @@ function collectOddCostCardsPlayedThisTurn(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -615,7 +625,8 @@ function collectHeroClassCardsPlayedThisTurn(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
@@ -673,7 +684,8 @@ function collectDistinctHeroClassCards(
     }
   }
   // why: PLAY half — printed colours plus Size-Changing granted classes.
-  for (const playedCardId of playerZones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     const hasPrintedClass =
       traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 776,
+    "totalRows": 777,
     "byStatus": {
-      "executable": 381,
+      "executable": 382,
       "deferred": 16,
       "condition": 45,
       "unsupported": 300,
       "unmarked": 32,
       "subsystem": 2
     },
-    "distinctMechanics": 155
+    "distinctMechanics": 156
   },
   "rows": [
     {
@@ -4453,6 +4453,22 @@
         {
           "slug": "flee",
           "name": "Flee"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/cloak-dagger",
+      "heroName": "Cloak & Dagger",
+      "set": "cvwr",
+      "mechanic": "play-both-sides",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides",
+      "designs": [
+        {
+          "slug": "penumbra",
+          "name": "Penumbra"
         }
       ]
     },

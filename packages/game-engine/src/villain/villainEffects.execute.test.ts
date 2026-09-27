@@ -4655,3 +4655,63 @@ describe('executeVillainAbilities — reveal-or-wound with a split card (WP-772 
     assert.equal(G.playerZones['1']!.discard.length, 1, 'played as face a (instinct) — wounded');
   });
 });
+
+describe('executeVillainAbilities — a split card Penumbra played both-sides (WP-780 / D-24619)', () => {
+  const FACE_A = 'cvwr/duo/instinct-half#0' as CardExtId;
+  const FACE_B = 'cvwr/duo/strength-half#0' as CardExtId;
+  const TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [FACE_A]: { heroClass: 'instinct', team: 'avengers' },
+    [FACE_B]: { heroClass: 'strength', team: 'avengers' },
+  };
+
+  /** Builds a state with the split card in seat 0's play area, optionally marked both-sides. */
+  function makeSplitState(
+    hook: VillainAbilityHook,
+    isMarked: boolean,
+    bystanders: CardExtId[] = [],
+  ): LegendaryGameState {
+    const G = makeG({
+      hooks: [hook],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [FACE_A], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      bystanders,
+      messages: [],
+      cardTraits: TRAITS,
+    });
+    G.splitFaces = { 'cvwr/duo/instinct-half': 'cvwr/duo/strength-half' } as LegendaryGameState['splitFaces'];
+    if (isMarked) {
+      G.turnEconomy = { ...G.turnEconomy, bothSidesPlayedCardIds: [FACE_A] };
+    }
+    return G;
+  }
+
+  it('reveal-or-wound: the marked card reveals for its face-b class; unmarked it does not', () => {
+    const hook: VillainAbilityHook = {
+      cardId: 'v-reveal-strength' as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'reveal-or-wound', requireKind: 'hero-class', requireValue: 'strength' }],
+    };
+    const unmarked = makeSplitState(hook, false);
+    executeVillainAbilities(unmarked, CTX, 'v-reveal-strength' as CardExtId, 'onFight');
+    assert.equal(unmarked.playerZones['0']!.discard.length, 1, 'played as face a only — wounded');
+    const marked = makeSplitState(hook, true);
+    executeVillainAbilities(marked, CTX, 'v-reveal-strength' as CardExtId, 'onFight');
+    assert.equal(marked.playerZones['0']!.discard.length, 0, 'both faces played — face b reveals strength');
+  });
+
+  it('Baron Zemo count: the marked card counts as two Avengers Heroes', () => {
+    const hook: VillainAbilityHook = {
+      cardId: 'v-zemo' as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [{ primitive: 'rescue-bystanders-current-by-trait-count', requireKind: 'team', requireValue: 'avengers' }],
+    };
+    const marked = makeSplitState(hook, true, ['bys0', 'bys1', 'bys2'] as CardExtId[]);
+    executeVillainAbilities(marked, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(marked.playerZones['0']!.victory.length, 2, 'two different cards → two Bystanders');
+  });
+});

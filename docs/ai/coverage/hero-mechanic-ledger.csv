@@ -242,6 +242,7 @@ cosm/yondu,Yondu,cosm,burn-shards,unsupported,,,,whistling-arrow
 cosm/yondu,Yondu,cosm,danger-sense,unsupported,,,,anticipate-their-movements|interstellar-hunter
 cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,(unmarked),unmarked,,,,
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,phasing,unsupported,,,,fight|flee
+cvwr/cloak-dagger,Cloak & Dagger,cvwr,play-both-sides,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides,penumbra
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,darkness
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,light
 cvwr/daredevil,Daredevil,cvwr,(unmarked),unmarked,,,,

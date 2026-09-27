@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1954,
+    "totalEntries": 1955,
     "byScope": {
-      "hero": 776,
+      "hero": 777,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 538,
+      "executable": 539,
       "deferred": 16,
       "condition": 45,
       "unsupported": 301,
@@ -8860,6 +8860,23 @@
         {
           "slug": "flee",
           "name": "Flee"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/cloak-dagger",
+      "name": "Cloak & Dagger",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "play-both-sides",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "penumbra",
+          "name": "Penumbra"
         }
       ]
     },
@@ -30873,6 +30890,7 @@
       "scope": "hero",
       "mechanics": [
         "phasing",
+        "play-both-sides",
         "reveal-ko",
         "reveal-min"
       ]

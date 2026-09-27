@@ -1708,3 +1708,55 @@ describe('Divided Card off-play classes (WP-772 / D-24604)', () => {
     assert.equal(countDistinctHeroClassesYouHave(inPlay, '0'), 1, 'in play: only the chosen face counts');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-780 / D-24619 — a card Penumbra played both-sides counts as both faces
+// ---------------------------------------------------------------------------
+
+describe('both-sides expansion in rules-facing condition reads (WP-780 / D-24619)', () => {
+  const FACE_A = 'cvwr/duo/tech-half#0';
+  const FACE_B = 'cvwr/duo/strength-half#0';
+  const OTHER = 'core/other/covert-card#0';
+
+  /** Builds a state with the split card in play (face-a entry), optionally marked both-sides. */
+  function makeBothSidesState(isMarked: boolean): LegendaryGameState {
+    const G = makeTestState({
+      inPlay: [FACE_A, OTHER],
+      cardTraits: {
+        [FACE_A]: { heroClass: 'tech', team: 'avengers' },
+        [FACE_B]: { heroClass: 'strength', team: 'x-men' },
+        [OTHER]: { heroClass: 'covert', team: null },
+      },
+    });
+    G.splitFaces = { 'cvwr/duo/tech-half': 'cvwr/duo/strength-half' } as LegendaryGameState['splitFaces'];
+    if (isMarked) {
+      G.turnEconomy = { ...G.turnEconomy, bothSidesPlayedCardIds: [FACE_A] };
+    }
+    return G;
+  }
+
+  it('heroClassMatch / requiresTeam see face b only when the entry is marked', () => {
+    const unmarked = makeBothSidesState(false);
+    assert.equal(evaluateCondition(unmarked, '0', { type: 'heroClassMatch', value: 'strength' }, OTHER), false);
+    assert.equal(evaluateCondition(unmarked, '0', { type: 'requiresTeam', value: 'x-men' }, OTHER), false);
+    const marked = makeBothSidesState(true);
+    assert.equal(evaluateCondition(marked, '0', { type: 'heroClassMatch', value: 'strength' }, OTHER), true);
+    assert.equal(evaluateCondition(marked, '0', { type: 'requiresTeam', value: 'x-men' }, OTHER), true);
+  });
+
+  it('face b self-excludes by its own id and still sees face a', () => {
+    const marked = makeBothSidesState(true);
+    assert.equal(evaluateCondition(marked, '0', { type: 'heroClassMatch', value: 'tech' }, FACE_B), true, 'face a is another Tech');
+    assert.equal(evaluateCondition(marked, '0', { type: 'heroClassMatch', value: 'strength' }, FACE_B), false, 'face b never counts itself');
+  });
+
+  it('played-this-turn counts, distinct classes and the failure message count both faces', () => {
+    const marked = makeBothSidesState(true);
+    assert.equal(evaluateCondition(marked, '0', { type: 'playedThisTurn', value: '3' }), true);
+    assert.equal(evaluateCondition(makeBothSidesState(false), '0', { type: 'playedThisTurn', value: '3' }), false);
+    assert.equal(evaluateCondition(marked, '0', { type: 'distinctHeroClassesAtLeast', value: '3' }), true);
+    assert.equal(countOtherInPlayMatchingCondition(marked, '0', { type: 'heroClassMatch', value: 'strength' }, OTHER), 1);
+    assert.equal(countDistinctHeroClassesYouHave(marked, '0'), 3);
+    assert.match(describeFailedCondition(marked, '0', { type: 'playedThisTurn', value: '9' }), /you have played 3$/);
+  });
+});

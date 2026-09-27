@@ -1214,6 +1214,17 @@
       "hidden": true
     },
     {
+      "slug": "play-both-sides",
+      "label": "Play Both Sides",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "cvwr/cloak-dagger"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "pure-fury",
       "label": "Pure Fury",
       "scope": "hero",
@@ -2958,6 +2969,7 @@
     "cvwr/cloak-dagger": {
       "mechanics": [
         "phasing",
+        "play-both-sides",
         "reveal-ko",
         "reveal-min"
       ]

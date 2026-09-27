@@ -55,7 +55,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 // no-cycle seatChoiceTactics module). tacticHandlers imports these one-directionally;
 // seatChoice.resolve.ts never imports tacticHandlers (no cycle).
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsThisTurn } from '../hero/splitCard.logic.js';
 import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
@@ -645,7 +645,8 @@ export function resolveXaviersNemesis(
     return;
   }
 
-  const xMenCount = countInPlayXMenHeroes(G, playerZones.inPlay);
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  const xMenCount = countInPlayXMenHeroes(G, playedCardIdsThisTurn(G, playerZones.inPlay));
   let rescuedCount = 0;
   for (let rescueIndex = 0; rescueIndex < xMenCount; rescueIndex++) {
     // why: top-of-pile convention — bystanders[0] is the next available supply

@@ -16,6 +16,9 @@
  *  - invalid face / wrong player / empty queue → silent no-op (queue intact, no economy).
  *  - playCard on a split card parks a choice and grants NO economy until resolved (integration).
  *  - the block-all guard freezes another move (drawCards) while a split-face choice is pending.
+ *  - playBothSplitFaces (WP-780 / D-24619): both faces' economy in order, one face-a inPlay
+ *    entry, the marker written between the faces; null pair → false with no mutation; missing
+ *    zones → true with no mutation; playCard skips the picker only while Penumbra is active.
  *
  * Uses node:test + node:assert only. No boardgame.io imports.
  */
@@ -27,6 +30,7 @@ import {
   hasPendingSplitFaceChoice,
   isSplitCardInstance,
   parkSplitFaceChoice,
+  playBothSplitFaces,
 } from './splitFaceChoice.resolve.js';
 import { playCard, drawCards } from './coreMoves.impl.js';
 import type { LegendaryGameState, PendingSplitFaceChoice } from '../types.js';
@@ -320,5 +324,54 @@ describe('playCard integration + block-all guard (WP-724 / D-24546)', () => {
     drawCards(makeMoveContext(gameState, '0') as unknown as Parameters<typeof drawCards>[0], { count: 1 });
     assert.deepEqual(gameState.playerZones['0']!.hand, [], 'drawCards is a no-op while a split-face choice is pending');
     assert.equal(gameState.playerZones['0']!.deck.length, 2, 'deck untouched');
+  });
+});
+
+describe('playBothSplitFaces + the playCard Penumbra branch (WP-780 / D-24619)', () => {
+  const BOTH_SIDES_STATS = { [FACE_A]: stat(0, 1, 2), [FACE_B]: stat(1, 0, 2) };
+
+  it('grants face a then face b, enters ONE face-a entry, and records the marker', () => {
+    const gameState = makeTestGameState({ '0': {} }, { splitFaces: SPLIT_FACES, cardStats: BOTH_SIDES_STATS });
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    const handled = playBothSplitFaces(gameState, context, '0', FACE_B);
+
+    assert.equal(handled, true);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_A], 'a played face-b id normalises to face a');
+    assert.equal(gameState.turnEconomy.recruit, 1, "face a's recruit");
+    assert.equal(gameState.turnEconomy.attack, 1, "face b's attack");
+    assert.deepEqual(gameState.turnEconomy.bothSidesPlayedCardIds, [FACE_A]);
+    assert.equal(gameState.lastPlayEffectsFired, 0, 'no hooks — zero effects fired across both faces');
+    const sideLines = gameState.messages.filter((entry) => entry.text.includes('resolved side'));
+    assert.deepEqual(sideLines.map((entry) => entry.card), [FACE_A, FACE_B], 'side a, then side b');
+  });
+
+  it('returns false with NO mutation on a null pair (playCard then falls through to the park path)', () => {
+    const plainCard = 'core/spider-man/astonishing-strength#0' as CardExtId;
+    const gameState = makeTestGameState({ '0': {} }, { splitFaces: SPLIT_FACES });
+    const before = JSON.stringify(gameState);
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    assert.equal(playBothSplitFaces(gameState, context, '0', plainCard), false);
+    assert.equal(JSON.stringify(gameState), before, 'the card is never half-played');
+  });
+
+  it('returns true with NO mutation when the player has no zones (silent no-op)', () => {
+    const gameState = makeTestGameState({ '0': {} }, { splitFaces: SPLIT_FACES });
+    const before = JSON.stringify(gameState);
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    assert.equal(playBothSplitFaces(gameState, context, '9', FACE_A), true);
+    assert.equal(JSON.stringify(gameState), before);
+  });
+
+  it('playCard skips the picker only while isPlayBothSidesActive is set', () => {
+    const active = makeTestGameState({ '0': { hand: [FACE_A] } }, { splitFaces: SPLIT_FACES, cardStats: BOTH_SIDES_STATS });
+    active.turnEconomy = { ...active.turnEconomy, isPlayBothSidesActive: true };
+    playCard(makeMoveContext(active, '0'), { cardId: FACE_A });
+    assert.equal(hasPendingSplitFaceChoice(active), false, 'no picker under Penumbra');
+    assert.deepEqual(active.playerZones['0']!.inPlay, [FACE_A]);
+
+    const inactive = makeTestGameState({ '0': { hand: [FACE_A] } }, { splitFaces: SPLIT_FACES, cardStats: BOTH_SIDES_STATS });
+    playCard(makeMoveContext(inactive, '0'), { cardId: FACE_A });
+    assert.equal(hasPendingSplitFaceChoice(inactive), true, 'the picker parks as today');
+    assert.equal(inactive.turnEconomy.bothSidesPlayedCardIds, undefined);
   });
 });

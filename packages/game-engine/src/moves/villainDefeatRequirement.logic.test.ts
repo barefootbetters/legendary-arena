@@ -161,3 +161,21 @@ describe('playerMeetsDefeatRequirement — team vs hero-class matching', () => {
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false);
   });
 });
+
+describe('playerMeetsDefeatRequirement — a split card Penumbra played both-sides (WP-780 / D-24619)', () => {
+  it('a marked in-play split card satisfies the requirement through its face b', () => {
+    const faceA = 'cvwr/duo/tech-half#0' as CardExtId;
+    const faceB = 'cvwr/duo/covert-half#0' as CardExtId;
+    const state = makeState({
+      inPlay: [faceA],
+      traits: {
+        [faceA]: { heroClass: 'tech', team: null },
+        [faceB]: { heroClass: 'covert', team: null },
+      },
+    });
+    state.splitFaces = { 'cvwr/duo/tech-half': 'cvwr/duo/covert-half' } as LegendaryGameState['splitFaces'];
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false, 'unmarked: face a only');
+    state.turnEconomy = { bothSidesPlayedCardIds: [faceA] } as unknown as LegendaryGameState['turnEconomy'];
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'marked: face b is covert');
+  });
+});

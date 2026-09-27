@@ -47,7 +47,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides } from '../economy/economy.logic.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
@@ -289,6 +289,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // the shared optional-ko-reward queue, so it belongs here. Carries NO magnitude → also in
   // NO_MAGNITUDE_KEYWORDS.
   'optional-ko-your-hero',
+  // why: WP-780 / D-24619 — cvwr Penumbra's "play both sides" of a later Divided Card this turn;
+  // has a HERO_EFFECT_HANDLERS entry (heroEffectPlayBothSides) that sets the turn-scoped
+  // isPlayBothSidesActive flag, so it belongs here. Carries NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'play-both-sides',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -566,6 +571,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // optional KO, no reward); the eligible Heroes are read from hand + play at park time, so the
   // magnitude pre-gate must not drop it, or the per-defeat choice never parks.
   'optional-ko-your-hero',
+  // why: WP-780 / D-24619 — play-both-sides carries NO magnitude (it sets the turn-scoped
+  // isPlayBothSidesActive flag, moves no card); the magnitude pre-gate must not drop it, or the
+  // handler never fires, the flag never arms, and the choose-a-side picker still appears.
+  'play-both-sides',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -4879,6 +4888,32 @@ function heroEffectNoMoreDraws(
   );
 }
 
+/**
+ * Hero handler for the `play-both-sides` keyword (WP-780 / D-24619).
+ *
+ * cvwr Cloak & Dagger Penumbra — "Whenever you play a Divided Card card this turn, play both
+ * sides as if they were two different cards." Sets the turn-scoped `isPlayBothSidesActive` flag
+ * on `G.turnEconomy` (idempotent — a second Penumbra rebuilds the same flag); playCard then
+ * routes every LATER split card this turn through playBothSplitFaces. No magnitude, no pending
+ * choice, no resource total moved.
+ */
+function heroEffectPlayBothSides(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  G.turnEconomy = enablePlayBothSides(G.turnEconomy);
+  // why: WP-434 — `applied` (green): it changed turn state (later Divided Cards play both
+  // sides) even though no card moved.
+  pushLog(G,
+    `Player ${playerID} will play both sides of each Divided Card played this turn (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Investigate handler (static-criterion + draw subset; WP-564 / D-24373)
 // ---------------------------------------------------------------------------
@@ -5843,6 +5878,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes": parks a no-reward
   // optional-ko-reward entry scoped to hand + played this turn, Heroes only. NO magnitude.
   'optional-ko-your-hero': heroEffectOptionalKoYourHero,
+  // why: WP-780 / D-24619 — cvwr Penumbra's "play both sides": sets the turn-scoped
+  // isPlayBothSidesActive flag; playCard then plays a later split card's faces a and b via
+  // playBothSplitFaces instead of parking the picker. NO magnitude.
+  'play-both-sides': heroEffectPlayBothSides,
 };
 
 // ---------------------------------------------------------------------------

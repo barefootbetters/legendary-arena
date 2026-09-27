@@ -14,7 +14,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsThisTurn } from '../hero/splitCard.logic.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 
 /**
@@ -69,7 +69,8 @@ export function playerMeetsDefeatRequirement(
       return true;
     }
   }
-  for (const playedCardId of zones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(state, zones.inPlay)) {
     if (traitMeetsDefeatRequirement(state.cardTraits[playedCardId], requirement)) {
       return true;
     }

@@ -19,7 +19,7 @@
 import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsThisTurn } from '../hero/splitCard.logic.js';
 import type {
   VillainAbilityTiming,
   VillainAbilityHook,
@@ -1512,7 +1512,8 @@ function playerHasHeroMatchingTrait(
       return true;
     }
   }
-  for (const playedCardId of zones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, zones.inPlay)) {
     if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
       return true;
     }
@@ -1548,7 +1549,8 @@ function countPlayerHeroesMatchingTrait(
       count += 1;
     }
   }
-  for (const playedCardId of zones.inPlay) {
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, zones.inPlay)) {
     if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
       count += 1;
     }

@@ -988,3 +988,39 @@ describe('free-recruit tactics skip Haunted HQ Heroes (WP-757 / D-24587)', () =>
     assert.equal(G.turnEconomy.recruit, 0, 'free recruit spends no recruit');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-780 / D-24619 — a split X-Men card Penumbra played both-sides
+// ---------------------------------------------------------------------------
+
+import { resolveElectromagneticBubble } from './tacticHandlers.js';
+
+describe("Xavier's Nemesis count vs Electromagnetic Bubble targets for a both-sides card (WP-780 / D-24619)", () => {
+  const LEGION_FACE_A = 'xmen/legion/face-a#0' as CardExtId;
+  const LEGION_FACE_B = 'xmen/legion/face-b#0' as CardExtId;
+
+  /** Builds a state with a both-sides-marked X-Men split card as seat 0's only in-play card. */
+  function makeBothSidesXMenState(): LegendaryGameState {
+    const G = makeXaviersState([LEGION_FACE_A], 5);
+    G.cardTraits = {
+      [LEGION_FACE_A]: { heroClass: 'covert', team: 'x-men' },
+      [LEGION_FACE_B]: { heroClass: 'ranged', team: 'x-men' },
+    } as LegendaryGameState['cardTraits'];
+    G.splitFaces = { 'xmen/legion/face-a': 'xmen/legion/face-b' } as LegendaryGameState['splitFaces'];
+    G.turnEconomy = { bothSidesPlayedCardIds: [LEGION_FACE_A] } as unknown as LegendaryGameState['turnEconomy'];
+    return G;
+  }
+
+  it("Xavier's Nemesis (a count of your X-Men Heroes) counts both faces", () => {
+    const G = makeBothSidesXMenState();
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 2, 'two different X-Men cards → two Bystanders');
+  });
+
+  it('AC-7c: the Electromagnetic Bubble offers the PHYSICAL entry exactly once, never a face-b id', () => {
+    const G = makeBothSidesXMenState();
+    resolveElectromagneticBubble(G, '0');
+    assert.equal(G.pendingElectromagneticBubbleChoices, undefined, 'one eligible Hero — no pick parked');
+    assert.deepEqual(G.deferredHandInjections, { '0': [LEGION_FACE_A] }, 'the physical face-a entry, once');
+  });
+});
