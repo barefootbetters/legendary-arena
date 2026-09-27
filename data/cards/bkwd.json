@@ -478,7 +478,7 @@
           "attack": null,
           "recruit": "3",
           "abilities": [
-            "To play this side, you must discard a card."
+            "To play this side, you must discard a card. [keyword:discard-to-play:1]"
           ]
         },
         {
@@ -539,7 +539,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "If you discarded any cards this turn, you get +4[icon:attack]."
+            "If you discarded any cards this turn, you get +4[icon:attack]. [keyword:discard-threshold:1]"
           ]
         },
         {

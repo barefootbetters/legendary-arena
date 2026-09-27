@@ -831,6 +831,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.villainOrMastermindDefeatedSinceResolve;
           }
 
+          // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
+          // count, so it must not carry into the next turn (a stale count would let New
+          // Wings / Pumpkin Bombs fire with no discard — the exact over-credit this fixes).
+          // Guarded so a match that never wrote the counter stays byte-unchanged.
+          if (G.cardsDiscardedThisTurn !== undefined) {
+            delete G.cardsDiscardedThisTurn;
+          }
+
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
           // helper push sites have no ctx) and reset the per-step action counter, so
           // pushLog can number every log line {turn}.{step}.{action}. NOTE (WP-337):

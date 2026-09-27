@@ -49,7 +49,11 @@ import {
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
-import { hasPendingSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
+import {
+  hasPendingSplitFaceChoice,
+  isSplitCardInstance,
+  isSplitFaceBindable,
+} from '../moves/splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from '../moves/undercover.resolve.js';
 import {
@@ -431,7 +435,15 @@ export function getLegalMoves(
   // this WP; a smarter expected-value default is deferred, mirroring the defaults above). Returns a
   // list of length EXACTLY 1.
   if (hasPendingSplitFaceChoice(gameState)) {
-    return [{ name: 'resolveSplitFaceChoice', args: { face: 'a' } }];
+    // why: WP-777 / D-24615 — legalMoves ↔ guard parity: resolveSplitFaceChoice rejects a face
+    // whose discard cost the hand cannot pay (bkwd Attune from an empty hand), so the bot takes
+    // face b whenever face a is not bindable. Face b is then always bindable (the anti-freeze
+    // rule), so the bot never submits a move the guard rejects and never stalls.
+    const frontSplit = gameState.pendingSplitFaceChoices![0]!;
+    if (isSplitFaceBindable(gameState, frontSplit.playerID, frontSplit.faceA, frontSplit.faceB)) {
+      return [{ name: 'resolveSplitFaceChoice', args: { face: 'a' } }];
+    }
+    return [{ name: 'resolveSplitFaceChoice', args: { face: 'b' } }];
   }
   // why: WP-675 / D-24490 — a count-scaled choose-one blocks every other move; the bot resolves
   // it first with a deterministic default of option 0 (an expected-value default is deferred,
@@ -884,8 +896,14 @@ export function getLegalMoves(
       // getDiscardToPlayCost (the single authority playCard itself uses) rather than
       // re-deriving it is the D-24363 part-1 rule — third application, after WP-214
       // (fight cost) and WP-554 (defeat requirement).
+      // why: WP-777 / D-24615 — mirrors playCard's split-card exemption: a split card's cost is
+      // bound at the side choice, so the card itself is always playable and must be enumerated.
       const discardToPlayCost = getDiscardToPlayCost(gameState, cardId);
-      if (discardToPlayCost > 0 && zones.hand.length < discardToPlayCost + 1) {
+      if (
+        discardToPlayCost > 0 &&
+        zones.hand.length < discardToPlayCost + 1 &&
+        !isSplitCardInstance(gameState, cardId)
+      ) {
         continue;
       }
       legalMoves.push({ name: 'playCard', args: { cardId } });

@@ -1437,6 +1437,21 @@ function parseAbilityText(
           value: drawThreshold,
         });
       }
+    } else if (normalizedKeyword === 'discard-threshold') {
+      // why: WP-777 / D-24616 — mirrors the draw-threshold marker→condition arm: a
+      // [keyword:discard-threshold:N] marker pushes a cardsDiscardedThisTurnAtLeast:N
+      // condition onto this line's hook, so New Wings' +4 / Pumpkin Bombs' +2 attack gates on
+      // "If you discarded any cards this turn" instead of firing on every play (the phantom
+      // grant in match 19720cb4). The literal matches CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE
+      // (heroConditions.evaluate.ts). Placed before the unresolved-marker fallback so it never
+      // records a parse-unrecognized hollow.
+      const discardThreshold = keywordMatch[2];
+      if (discardThreshold !== undefined) {
+        conditions.push({
+          type: 'cardsDiscardedThisTurnAtLeast',
+          value: discardThreshold,
+        });
+      }
     } else if (normalizedKeyword === 'outwit') {
       // why: WP-653 / D-24464 — Outwit is a game-state CONDITION (the D-24055
       // Spectrum marker→condition pattern), gating the line's printed effects on

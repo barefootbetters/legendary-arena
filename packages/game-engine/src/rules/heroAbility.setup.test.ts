@@ -2768,3 +2768,40 @@ describe('buildHeroAbilityHooks — optional-discard-draw + reveal-top-may-ko ma
     });
   }
 });
+
+describe('buildHeroAbilityHooks — split-face discard markers (WP-777 / D-24615 / D-24616)', () => {
+  /** Builds the one hook of a single-ability card, as the real regenerated data carries it. */
+  function hookFor(setAbbr: string, heroSlug: string, cardSlug: string, ability: string) {
+    const registry = makeHeroRegistry(setAbbr, heroSlug, [
+      { slug: cardSlug, rarityLabel: 'Common 1', abilities: [ability] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: [`${setAbbr}/${heroSlug}`] };
+    return buildHeroAbilityHooks(registry, config).find((entry) => entry.cardId === `${setAbbr}/${heroSlug}/${cardSlug}#0`);
+  }
+
+  it('New Wings: discard-threshold:1 gates the +4 attack on cardsDiscardedThisTurnAtLeast', () => {
+    const hook = hookFor('bkwd', 'falcon-winter-soldier', 'new-wings',
+      'If you discarded any cards this turn, you get +4[icon:attack]. [keyword:discard-threshold:1]');
+    assert.ok(hook !== undefined, 'the New Wings hook exists');
+    assert.deepEqual(hook!.conditions, [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }]);
+    const attackEffects = (hook!.effects ?? []).filter((effect) => effect.type === 'attack');
+    assert.deepEqual(attackEffects.map((effect) => effect.magnitude), [4], 'one gated +4 attack');
+    assert.ok(!(hook!.unresolvedMarkers ?? []).includes('discard-threshold'), 'the marker resolves (no hollow)');
+  });
+
+  it('Pumpkin Bombs line 2: discard-threshold:1 gates the +2 attack', () => {
+    const hook = hookFor('vill', 'green-goblin', 'pumpkin-bombs',
+      'If you discarded any cards this turn, you get +2[icon:attack]. [keyword:discard-threshold:1]');
+    assert.ok(hook !== undefined, 'the Pumpkin Bombs hook exists');
+    assert.deepEqual(hook!.conditions, [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }]);
+  });
+
+  it('Attune: "To play this side" yields exactly one discard-to-play effect of magnitude 1', () => {
+    const hook = hookFor('bkwd', 'falcon-winter-soldier', 'attune',
+      'To play this side, you must discard a card. [keyword:discard-to-play:1]');
+    assert.ok(hook !== undefined, 'the Attune hook exists');
+    assert.ok(hook!.keywords.includes('discard-to-play'), 'the discard-to-play keyword is attached');
+    assert.deepEqual(hook!.effects, [{ type: 'discard-to-play', magnitude: 1 }], 'no stray effect beside the cost');
+    assert.deepEqual(hook!.unresolvedMarkers ?? [], [], 'no unresolved marker');
+  });
+});

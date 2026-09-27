@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 777,
+    "totalRows": 780,
     "byStatus": {
-      "executable": 382,
+      "executable": 383,
       "deferred": 16,
-      "condition": 45,
+      "condition": 47,
       "unsupported": 300,
       "unmarked": 32,
       "subsystem": 2
     },
-    "distinctMechanics": 156
+    "distinctMechanics": 157
   },
   "rows": [
     {
@@ -2063,6 +2063,38 @@
         {
           "slug": "captain-americas-legacy",
           "name": "Captain America's Legacy"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/falcon-winter-soldier",
+      "heroName": "Falcon & Winter Soldier",
+      "set": "bkwd",
+      "mechanic": "discard-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "new-wings",
+          "name": "New Wings"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/falcon-winter-soldier",
+      "heroName": "Falcon & Winter Soldier",
+      "set": "bkwd",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "attune",
+          "name": "Attune"
         }
       ]
     },
@@ -11039,6 +11071,22 @@
         {
           "slug": "unending-anguish",
           "name": "Unending Anguish"
+        }
+      ]
+    },
+    {
+      "extId": "vill/green-goblin",
+      "heroName": "Green Goblin",
+      "set": "vill",
+      "mechanic": "discard-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "pumpkin-bombs",
+          "name": "Pumpkin Bombs"
         }
       ]
     },

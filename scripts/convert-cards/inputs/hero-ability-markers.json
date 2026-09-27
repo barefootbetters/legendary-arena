@@ -1470,6 +1470,18 @@
   "bkwd": [
     {
       "heroSlug": "falcon-winter-soldier",
+      "cardSlug": "attune",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "falcon-winter-soldier",
+      "cardSlug": "new-wings",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-threshold:1]"
+    },
+    {
+      "heroSlug": "falcon-winter-soldier",
       "cardSlug": "new-plan",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:2]"
@@ -1890,6 +1902,12 @@
     }
   ],
   "vill": [
+    {
+      "heroSlug": "green-goblin",
+      "cardSlug": "pumpkin-bombs",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:discard-threshold:1]"
+    },
     {
       "heroSlug": "ultron",
       "cardSlug": "encephalo-ray",

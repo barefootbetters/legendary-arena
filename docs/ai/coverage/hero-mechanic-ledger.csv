@@ -107,6 +107,8 @@ bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,,widows-bite
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,evasive-acrobatics|weave-a-web-of-spies|widows-bite
 bkwd/black-widow,Black Widow,bkwd,undercover,deferred,WP-282,D-24060,,infiltrate-the-conspiracy|weave-a-web-of-spies
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,,atone|captain-americas-legacy
+bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,discard-threshold,condition,,,,new-wings
+bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,attune
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,relocate
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,new-plan|reload
 bkwd/red-guardian,Red Guardian,bkwd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,champion-of-the-winter-guard
@@ -601,6 +603,7 @@ vill/dr-octopus,Dr. Octopus,vill,draw,executable,WP-022,D-2201,packages/game-eng
 vill/electro,Electro,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,electroshock-therapy|shocking-robbery
 vill/electro,Electro,vill,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-may-ko,electroshock-therapy
 vill/enchantress,Enchantress,vill,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,unending-anguish
+vill/green-goblin,Green Goblin,vill,discard-threshold,condition,,,,pumpkin-bombs
 vill/green-goblin,Green Goblin,vill,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,goblin-glider|pumpkin-bombs|unstable-kidnapper
 vill/juggernaut,Juggernaut,vill,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,size-matters
 vill/juggernaut,Juggernaut,vill,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,runaway-train

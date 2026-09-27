@@ -167,6 +167,58 @@ function listSourceFiles(dir: string): string[] {
   return files;
 }
 
+// why: WP-777 / D-24616 — a hook that reads "If you discarded any cards this turn".
+const NEW_WINGS = 'bkwd/falcon-winter-soldier/new-wings#0';
+
+/**
+ * Builds a two-player state whose hooks include (or omit) a hook reading
+ * cardsDiscardedThisTurnAtLeast, so the counter gate can be exercised both ways.
+ */
+function makeDiscardCountState(matchReadsDiscards: boolean): LegendaryGameState {
+  const hooks: HeroAbilityHook[] = [
+    { cardId: UNENDING_ENERGY, timing: 'onDiscard', keywords: ['return-on-discard'] },
+  ];
+  if (matchReadsDiscards) {
+    hooks.push({
+      cardId: NEW_WINGS,
+      timing: 'onPlay',
+      keywords: ['attack'],
+      conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+      effects: [{ type: 'attack', magnitude: 4 }],
+    } as unknown as HeroAbilityHook);
+  }
+  return {
+    playerZones: {
+      '0': { deck: [], hand: [PLAIN_CARD, PLAIN_CARD], discard: [], inPlay: [], victory: [] },
+      '1': { deck: [], hand: [PLAIN_CARD], discard: [], inPlay: [], victory: [] },
+    },
+    heroAbilityHooks: hooks,
+  } as unknown as LegendaryGameState;
+}
+
+describe('per-turn discard count (WP-777 / D-24616)', () => {
+  it('counts each hand discard per discarding player when the match reads the condition', () => {
+    const G = makeDiscardCountState(true);
+    discardFromHand(G, '0', PLAIN_CARD);
+    discardFromHand(G, '0', PLAIN_CARD);
+    discardFromHand(G, '1', PLAIN_CARD);
+    assert.deepEqual(G.cardsDiscardedThisTurn, { '0': 2, '1': 1 });
+  });
+
+  it('never creates the counter when no hook reads it (hash-safe for every other match)', () => {
+    const G = makeDiscardCountState(false);
+    discardFromHand(G, '0', PLAIN_CARD);
+    assert.equal('cardsDiscardedThisTurn' in G, false);
+  });
+
+  it('a card not in hand is not counted', () => {
+    const G = makeDiscardCountState(true);
+    const found = discardFromHand(G, '0', UNENDING_ENERGY);
+    assert.equal(found, false);
+    assert.equal(G.cardsDiscardedThisTurn, undefined);
+  });
+});
+
 describe('hand→discard chokepoint drift-guard (WP-498 / D-24301)', () => {
   it('every hand→discard zoneOps idiom lives in an allowlisted file', () => {
     const offenders: string[] = [];

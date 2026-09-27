@@ -85,6 +85,12 @@ export function applyOnBeginParity(
   if (gameState.villainOrMastermindDefeatedSinceResolve !== undefined) {
     delete gameState.villainOrMastermindDefeatedSinceResolve;
   }
+  // why: WP-777 / D-24616 — mirrors game.ts onBegin's per-turn discard-count delete for the
+  // rebuilt loops, so a harness turn never inherits the previous turn's discards. Guarded so
+  // a never-set G stays byte-unchanged (no key is created or removed).
+  if (gameState.cardsDiscardedThisTurn !== undefined) {
+    delete gameState.cardsDiscardedThisTurn;
+  }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the
   // turn from ctx.turn offset by the first play turn; the harnesses have no framework

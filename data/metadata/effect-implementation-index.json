@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1955,
+    "totalEntries": 1958,
     "byScope": {
-      "hero": 777,
+      "hero": 780,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 539,
+      "executable": 540,
       "deferred": 16,
-      "condition": 45,
+      "condition": 47,
       "unsupported": 301,
       "unmarked": 1050,
       "subsystem": 4
@@ -3954,6 +3954,40 @@
         {
           "slug": "captain-americas-legacy",
           "name": "Captain America's Legacy"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/falcon-winter-soldier",
+      "name": "Falcon & Winter Soldier",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "discard-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "new-wings",
+          "name": "New Wings"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/falcon-winter-soldier",
+      "name": "Falcon & Winter Soldier",
+      "set": "bkwd",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "attune",
+          "name": "Attune"
         }
       ]
     },
@@ -22230,6 +22264,23 @@
       "name": "Green Goblin",
       "set": "vill",
       "scope": "hero",
+      "mechanic": "discard-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "pumpkin-bombs",
+          "name": "Pumpkin Bombs"
+        }
+      ]
+    },
+    {
+      "extId": "vill/green-goblin",
+      "name": "Green Goblin",
+      "set": "vill",
+      "scope": "hero",
       "mechanic": "dodge",
       "status": "executable",
       "handler": "packages/game-engine/src/moves/dodgeCard.ts",
@@ -29218,6 +29269,8 @@
       "scope": "hero",
       "mechanics": [
         "dark-memories",
+        "discard-threshold",
+        "discard-to-play",
         "dodge",
         "draw"
       ]
@@ -35575,6 +35628,7 @@
     "vill/green-goblin": {
       "scope": "hero",
       "mechanics": [
+        "discard-threshold",
         "dodge"
       ]
     },

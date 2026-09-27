@@ -238,6 +238,23 @@ describe('playCard precondition (D-24185) — the base-power leak fix', () => {
     assert.equal(state.turnEconomy.attack, 2);
     assert.equal(hasPendingDiscardToPlay(state), false);
   });
+
+  it('a SPLIT card is exempt (WP-777 / D-24615): its side cost binds at the side choice, so it commits', () => {
+    // why: bkwd Attune (face a) carries the cost; Atone (face b) is free. Checking the played id
+    // here would reject a card whose free side is playable, so split cards skip the precondition.
+    const state = makeTestGameState({
+      hand: ['bkwd/falcon-winter-soldier/attune#0'] as CardExtId[],
+      cardStats: { 'bkwd/falcon-winter-soldier/attune#0': { attack: 0, recruit: 3, cost: 3, fightCost: 0 } },
+      heroAbilityHooks: [discardToPlayHook('bkwd/falcon-winter-soldier/attune#0', 1)],
+    });
+    state.splitFaces = { 'bkwd/falcon-winter-soldier/attune': 'bkwd/falcon-winter-soldier/atone' } as LegendaryGameState['splitFaces'];
+    playCard(makeMoveContext(state) as never, { cardId: 'bkwd/falcon-winter-soldier/attune#0' as CardExtId });
+
+    assert.deepStrictEqual(state.playerZones['0']!.inPlay, ['bkwd/falcon-winter-soldier/attune#0'], 'the split card commits');
+    assert.equal(state.turnEconomy.recruit, 0, 'no power yet — the side is not chosen');
+    assert.equal(state.pendingSplitFaceChoices?.length, 1, 'the side choice is parked instead');
+    assert.equal(hasPendingDiscardToPlay(state), false, 'no cost parked before the side is chosen');
+  });
 });
 
 describe('resolveDiscardToPlay — pay the cost', () => {

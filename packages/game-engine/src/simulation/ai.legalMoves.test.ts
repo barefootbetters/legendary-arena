@@ -667,6 +667,45 @@ describe('getLegalMoves — discard-to-play payability mirrors the move guard (W
   });
 });
 
+describe('getLegalMoves — split-face discard cost mirrors the side-choice guard (WP-777 / D-24615)', () => {
+  const ATTUNE = 'bkwd/falcon-winter-soldier/attune#0';
+  const ATONE = 'bkwd/falcon-winter-soldier/atone#0';
+  const SPARE = 'core/spider-man/astonishing-strength#0';
+
+  /** Attune (face a, discard-to-play:1) / Atone (face b, free), with the split-face map. */
+  function makeAttuneG(hand: CardExtId[], parked: boolean): LegendaryGameState {
+    const gameState = makeG({ hand, inPlay: parked ? [ATTUNE as CardExtId] : [], currentStage: 'main' });
+    gameState.splitFaces = { 'bkwd/falcon-winter-soldier/attune': 'bkwd/falcon-winter-soldier/atone' } as LegendaryGameState['splitFaces'];
+    gameState.heroAbilityHooks = [
+      { cardId: ATTUNE, keywords: ['discard-to-play'], effects: [{ type: 'discard-to-play', magnitude: 1 }] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    if (parked) {
+      gameState.pendingSplitFaceChoices = [
+        { playerID: '0', sourceCardId: ATTUNE as CardExtId, faceA: ATTUNE as CardExtId, faceB: ATONE as CardExtId },
+      ];
+    }
+    return gameState;
+  }
+
+  test('picks face b when Attune (face a) is unpayable from an empty hand', () => {
+    const legalMoves = getLegalMoves(makeAttuneG([], true), CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveSplitFaceChoice', args: { face: 'b' } }]);
+  });
+
+  test('picks face a when the hand can pay Attune', () => {
+    const legalMoves = getLegalMoves(makeAttuneG([SPARE as CardExtId], true), CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveSplitFaceChoice', args: { face: 'a' } }]);
+  });
+
+  test('offers playCard for the split card alone in hand (its cost binds at the side choice)', () => {
+    const legalMoves = getLegalMoves(makeAttuneG([ATTUNE as CardExtId], false), CONTEXT);
+    assert.ok(
+      legalMoves.some((move) => move.name === 'playCard' && (move.args as { cardId: string }).cardId === ATTUNE),
+      'the split card is playable — Atone is free',
+    );
+  });
+});
+
 describe('getLegalMoves — a Wound is never offered as playCard (WP-643 / D-24455)', () => {
   // why: WP-643. getLegalMoves enumerated playCard for EVERY hand card, but playCard
   // refuses WOUND_EXT_ID (a Wound has no "play a Wound" path — wiki/wounds.md). Enumerating

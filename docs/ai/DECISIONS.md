@@ -45550,7 +45550,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
-### D-24615 — A split face's discard-to-play cost binds at the face choice (Drafted 2026-09-26; not yet landed — WP-777 / EC-814)
+### D-24615 — A split face's discard-to-play cost binds at the face choice (Active 2026-09-26 — WP-777 / EC-814)
 
 **Context.** bkwd Attune (face a of Attune / Atone) prints "To play this side, you must discard a card." The WP-383 cost is checked by the D-24185 playCard pre-commit precondition, keyed on the PLAYED id — but a split card's side is not known until `resolveSplitFaceChoice` (D-24546). Checking at play would reject a playable Atone; skipping it (today, with no marker) grants Attune's +3 Recruit with no discard (operator match 19720cb4, 5×).
 
@@ -45560,11 +45560,13 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 3. The bot picks face a when bindable, else face b (legalMoves ↔ guard parity).
 4. `UISplitFaceOption` gains optional, always-populated `isSelectable?` / `discardToPlayCost?` (chooser-only); optional so an engine packet does not break client fixtures. WP-778 renders them.
 
+**Execution (2026-09-26).** Landed as locked. `isSplitFacePayable` / `isSplitFaceBindable` live in `moves/splitFaceChoice.resolve.ts`; the rejection logs `Player N could not choose <name> — it requires discarding <cost> card(s) but their hand does not hold enough cards to discard; choose the other side.` The bot takes face b when face a is not bindable. `uiState.filter.ts` needed no change (the per-face spread carries both new fields). Engine 4594 → 4624, 0 fail.
+
 **Reserved by:** NUMBER-LEDGER D-24615. Related: D-24184, D-24185 (WP-383), D-24545, D-24546 (WP-724), D-24604 (WP-772).
 
 ---
 
-### D-24616 — "If you discarded any cards this turn": a gated per-player discard count (Drafted 2026-09-26; not yet landed — WP-777 / EC-814)
+### D-24616 — "If you discarded any cards this turn": a gated per-player discard count (Active 2026-09-26 — WP-777 / EC-814)
 
 **Context.** bkwd New Wings (+4 Attack) and vill Pumpkin Bombs (+2 Attack) print "If you discarded any cards this turn". Their lines carry no marker, so the grant is parsed as unconditional (New Wings phantom +4 in match 19720cb4, 3×). The engine keeps no per-turn discard count. WP-745 parked these as its Follow-up B.
 
@@ -45574,6 +45576,8 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 3. Gated + lazy (the WP-743 / D-24467 posture): written only when `matchReadsConditionType(G, 'cardsDiscardedThisTurnAtLeast')`; deleted at both turn-boundary sites (`game.ts`, `onBeginParity.ts`). If WP-777 lands before WP-743, this decision is where `matchReadsConditionType` originates; WP-743 then reuses it. Non-bkwd/vill games are byte-unchanged; the sentinel hash is not re-pinned (scaffold-confirmed).
 4. Deck-top discards (Berserk, reveal-and-discard, Steal Abilities) are NOT counted — the available rules text does not settle whether they are "you discarded". Hand-only can under-credit, never over-credit. A ruling to count them is a follow-up.
 5. Replays of pre-WP-777 bkwd/vill matches diverge on re-execution. Stored `competitive_scores` rows are frozen, not re-verified (the D-24600 / D-24604 precedent); the executor records a read-only count.
+
+**Execution (2026-09-26).** Landed as locked. `matchReadsConditionType` originates here (WP-743 had not landed); WP-743 reuses it. The sentinel and replay hash oracles are unchanged. The `sim:runtime-observed` diff is confined to the bkwd board (285 → 294 hollow observations, all undercover; per-board tally vs `origin/main`, every other board byte-identical) — the bkwd trajectory shifts because Attune now costs a discard and New Wings no longer grants a free +4. §5 record: a read-only prod count found 1 of 200 `competitive_scores` rows with a `falcon-winter-soldier` `team_key` (0 with `green-goblin`). The frozen-rows policy stands and covers that one row.
 
 **Reserved by:** NUMBER-LEDGER D-24616. Related: D-24476 (WP-665), D-24377 (WP-568), D-24301 (WP-498), D-24568 (WP-745 Follow-up B; reserved, not landed), D-24566 (WP-743 `matchReadsConditionType`; reserved, not landed), D-24119.
 

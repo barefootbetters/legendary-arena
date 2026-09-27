@@ -10,6 +10,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
@@ -6603,6 +6604,58 @@ describe('cardsDrawn counter + Gamma-Draining Nanites transform (WP-665 / D-2447
     // (it re-fires this turn if a further draw reaches 2), logged as "waiting", not blocked.
     const waiting = gameState.messages.find((entry) => entry.text.includes('waiting'));
     assert.ok(waiting !== undefined && waiting.outcome === 'neutral', 'the transform is waiting, not blocked');
+  });
+});
+
+// ===========================================================================
+// New Wings — "If you discarded any cards this turn" (WP-777 / D-24616)
+// ===========================================================================
+
+describe('New Wings discarded-this-turn gate (WP-777 / D-24616)', () => {
+  const NEW_WINGS_ID = 'bkwd/falcon-winter-soldier/new-wings#0';
+  const SPARE = 'core/spider-man/astonishing-strength#0';
+
+  /** New Wings in play with its regenerated gated +4 hook, and a spare card in hand. */
+  function makeNewWingsState(): LegendaryGameState {
+    return makeTestState({
+      inPlay: [NEW_WINGS_ID],
+      hand: [SPARE],
+      heroAbilityHooks: [
+        {
+          cardId: NEW_WINGS_ID,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+          effects: [{ type: 'attack', magnitude: 4 }],
+        },
+      ],
+    });
+  }
+
+  it('no discard this turn → no +4; the grant waits (the match 19720cb4 phantom grant is gone)', () => {
+    const gameState = makeNewWingsState();
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', NEW_WINGS_ID);
+    assert.equal(fired, 0);
+    assert.equal(gameState.turnEconomy.attack, 0, 'no unconditional +4');
+    assert.equal(gameState.deferredConditionalGrants?.length, 1, 'a wait-and-see grant is recorded');
+  });
+
+  it('a discard later the same turn grants +4 exactly once', () => {
+    const gameState = makeNewWingsState();
+    executeHeroEffects(gameState, makeMockCtx(), '0', NEW_WINGS_ID);
+    discardFromHand(gameState, '0', SPARE);
+    resolveDeferredHeroGrants(gameState, makeMockCtx());
+    assert.equal(gameState.turnEconomy.attack, 4, 'the retroactive grant fires');
+    resolveDeferredHeroGrants(gameState, makeMockCtx());
+    assert.equal(gameState.turnEconomy.attack, 4, 'and only once');
+  });
+
+  it('a discard before playing grants +4 immediately', () => {
+    const gameState = makeNewWingsState();
+    discardFromHand(gameState, '0', SPARE);
+    const fired = executeHeroEffects(gameState, makeMockCtx(), '0', NEW_WINGS_ID);
+    assert.equal(fired, 1);
+    assert.equal(gameState.turnEconomy.attack, 4);
   });
 });
 

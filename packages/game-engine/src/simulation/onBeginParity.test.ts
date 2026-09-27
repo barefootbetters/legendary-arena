@@ -186,6 +186,26 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('villainOrMastermindDefeatedSinceResolve' in gameState, false);
   });
 
+  it('deletes the per-turn discard count at the turn boundary (WP-777 / D-24616)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.cardsDiscardedThisTurn = { '0': 1 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count surviving the turn boundary would let New Wings /
+    // Pumpkin Bombs fire next turn with no discard. ABSENT, not merely zero.
+    assert.equal('cardsDiscardedThisTurn' in gameState, false);
+  });
+
+  it('never creates the discard count on a G that never had it (oracle safety, WP-777 / D-24616)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    assert.equal('cardsDiscardedThisTurn' in gameState, false);
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal('cardsDiscardedThisTurn' in gameState, false);
+  });
+
   it('creates neither deferred-grant key on a G that never had them (oracle safety, WP-744 / D-24567)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     // why: precondition — a fresh setup never records a deferred grant or a defeat

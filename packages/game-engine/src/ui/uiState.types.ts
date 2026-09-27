@@ -1577,6 +1577,14 @@ export interface UISplitFaceOption {
   attack: number;
   /** The face's base recruit contribution. */
   recruit: number;
+  // why: WP-777 / D-24615 — optional ONLY so an engine change does not break the arena-client
+  // fixtures that build a UISplitFaceOption (a required field would red the required client
+  // typecheck inside an engine packet). buildUIState ALWAYS sets both, for both faces; the
+  // filter copies each face with a spread, so both reach the chooser. WP-778 renders them.
+  /** Whether the engine will accept this face now (false only when its discard cost is unpayable and the other face is payable). */
+  isSelectable?: boolean;
+  /** How many hand cards this face costs to play ("To play this side, you must discard a card"); 0 when none. */
+  discardToPlayCost?: number;
 }
 
 /**

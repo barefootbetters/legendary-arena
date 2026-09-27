@@ -33,6 +33,7 @@ import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { pushLog } from '../log/logPush.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { resolveSplitFacePair } from '../hero/splitCard.logic.js';
+import { getDiscardToPlayCost } from './resolveDiscardToPlay.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -97,6 +98,61 @@ export function splitInstanceIntoBaseAndCopy(cardId: string): { baseKey: string;
  */
 export function isSplitCardInstance(G: LegendaryGameState, cardId: string): boolean {
   return resolveSplitFacePair(G, cardId) !== null;
+}
+
+/**
+ * Whether the player can pay a split face's discard-to-play cost right now (WP-777 / D-24615).
+ *
+ * // why: at choice time the split card is already in inPlay, so the hand holds only the
+ * OTHER cards — exactly the cards the cost may be paid with. A face with no cost is always
+ * payable. The cost comes from getDiscardToPlayCost, the single cost source playCard's
+ * D-24185 precondition and the park handler also use.
+ *
+ * @param G - The game state (not mutated).
+ * @param playerID - The player choosing the face.
+ * @param faceExtId - The face instance ext_id.
+ * @returns true when the face has no cost or the hand holds enough cards to pay it.
+ */
+export function isSplitFacePayable(
+  G: LegendaryGameState,
+  playerID: string,
+  faceExtId: CardExtId,
+): boolean {
+  const cost = getDiscardToPlayCost(G, faceExtId);
+  if (cost === 0) {
+    return true;
+  }
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return false;
+  }
+  return playerZones.hand.length >= cost;
+}
+
+/**
+ * Whether a split face may be bound by resolveSplitFaceChoice (WP-777 / D-24615).
+ *
+ * // why: anti-freeze fallback — a face is bindable when it is payable, OR when the other
+ * face is not payable either, so the block-all choice can never hard-freeze the turn. No
+ * card in the data has a cost on both faces; if one ever did, the park handler's defensive
+ * branch would grant that face without a discard — an accepted leak over a frozen turn.
+ *
+ * @param G - The game state (not mutated).
+ * @param playerID - The player choosing the face.
+ * @param faceExtId - The face being chosen.
+ * @param otherFaceExtId - The other face of the same card.
+ * @returns true when the face may be bound.
+ */
+export function isSplitFaceBindable(
+  G: LegendaryGameState,
+  playerID: string,
+  faceExtId: CardExtId,
+  otherFaceExtId: CardExtId,
+): boolean {
+  if (isSplitFacePayable(G, playerID, faceExtId)) {
+    return true;
+  }
+  return !isSplitFacePayable(G, playerID, otherFaceExtId);
 }
 
 /**
@@ -183,6 +239,22 @@ export function resolveSplitFaceChoice(
   }
 
   const chosenExtId = face === 'a' ? front.faceA : front.faceB;
+  const otherExtId = face === 'a' ? front.faceB : front.faceA;
+
+  // why: WP-777 / D-24615 — a side's discard-to-play cost ("To play this side, you must
+  // discard a card", bkwd Attune) binds HERE, where the side is chosen: the D-24185 playCard
+  // precondition runs before the side is known and is skipped for split cards. An unpayable
+  // side is rejected with a log line and the queue left intact; the log write guarantees a
+  // fresh frame so the picker's submit latch resets and the other side stays clickable.
+  if (!isSplitFaceBindable(G, playerID, chosenExtId, otherExtId)) {
+    pushLog(
+      G,
+      `Player ${playerID} could not choose ${G.cardDisplayData[chosenExtId]?.name ?? chosenExtId} — it requires discarding ${getDiscardToPlayCost(G, chosenExtId)} card(s) but their hand does not hold enough cards to discard; choose the other side.`,
+      'neutral',
+      chosenExtId,
+    );
+    return;
+  }
 
   // Step 3: Bind the chosen face.
   if (chosenExtId !== front.sourceCardId) {
