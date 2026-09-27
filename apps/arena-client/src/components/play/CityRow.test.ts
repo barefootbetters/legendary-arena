@@ -909,3 +909,63 @@ describe('CityRow — louder unaffordable Fight N badge', () => {
     assert.equal(badgeFor(wrapper, 'portal-villain').classes().includes(UNAFFORDABLE), false);
   });
 });
+
+describe('CityRow — heal lock (D-24180 / D-24614)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  function mountHealed(submitMove: SubmitMove, city: UICityState = fullCity(), availableAttack = 9) {
+    return mount(CityRow, {
+      props: {
+        city,
+        decks: DECKS,
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ attack: availableAttack, availableAttack }),
+        submitMove,
+      },
+    });
+  }
+
+  test('after a heal every villain is disabled with the heal-lock tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountHealed(submitMove);
+    const villains = wrapper.findAll('[data-testid="play-city-villain"]');
+    assert.equal(villains.length, 3);
+    for (const button of villains) {
+      assert.equal(button.attributes('disabled'), '');
+      assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+      assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
+    }
+    await villains[0]!.trigger('click');
+    assert.equal(calls.length, 0);
+    wrapper.unmount();
+  });
+
+  test('after a heal a slash stroke across a villain submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountHealed(submitMove);
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    row.dispatchEvent(pointerEvent('pointerdown', 60, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 190, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 190, 150));
+    assert.equal(calls.length, 0);
+    wrapper.unmount();
+  });
+
+  test('after a heal an unaffordable Fight N badge stays quiet (the heal lock, not cost, disables it)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mountHealed(submitMove, projectedCostCity(), 3);
+    const badge = wrapper
+      .find('[data-testid="play-city-villain"][data-card-id="portal-villain"]')
+      .find('[data-testid="play-city-fight-cost"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.classes().includes('city-space__fight-cost--unaffordable'), false);
+    wrapper.unmount();
+  });
+});

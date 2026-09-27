@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { activeStepFor, useTurnActions } from './useTurnActions';
+import { activeStepFor, healLockGate, useTurnActions } from './useTurnActions';
 
 describe('useTurnActions (WP-129)', () => {
   test('activeStepFor maps start → 1, main → 2, cleanup → 3', () => {
@@ -582,5 +582,48 @@ describe('useTurnActions — hasPendingPlayVillainTop gating (WP-663 / EC-700 / 
       assert.equal(result.allowed, false, `passPriority blocked at ${stage}`);
       assert.equal(result.reason, PLAY_VILLAIN_TOP_REASON);
     }
+  });
+});
+
+// why: D-24614 — the D-24180 heal lock. The engine refuses recruitHero,
+// recruitOfficer, fightVillain and fightMastermind for the rest of a turn in which
+// the player healed, so the four board gates must refuse them too. Positional args
+// match the canHealWounds tests: 10 pending flags, then hasWoundInHand,
+// hasActedThisTurn, hasHealedThisTurn.
+describe('useTurnActions — heal lock on recruit and fight (D-24180 / D-24614)', () => {
+  const NO_PENDING_FLAGS = [false, false, false, false, false, false, false, false, false, false] as const;
+  const HEAL_LOCK_REASON = 'You cannot recruit or fight after healing this turn.';
+
+  test('healLockGate blocks with a full-sentence reason only after a heal', () => {
+    assert.deepEqual(healLockGate(false), { allowed: true, reason: null });
+    assert.deepEqual(healLockGate(true), { allowed: false, reason: HEAL_LOCK_REASON });
+  });
+
+  test('all four recruit / fight gates are blocked at main after a heal', () => {
+    const actions = useTurnActions('main', true, ...NO_PENDING_FLAGS, false, false, true);
+    for (const result of [
+      actions.canRecruitHero(),
+      actions.canRecruitOfficer(),
+      actions.canFightVillain(),
+      actions.canFightMastermind(),
+    ]) {
+      assert.equal(result.allowed, false);
+      assert.equal(result.reason, HEAL_LOCK_REASON);
+    }
+  });
+
+  test('the four gates stay allowed at main when the viewer has not healed', () => {
+    const actions = useTurnActions('main', true, ...NO_PENDING_FLAGS, false, false, false);
+    assert.equal(actions.canRecruitHero().allowed, true);
+    assert.equal(actions.canRecruitOfficer().allowed, true);
+    assert.equal(actions.canFightVillain().allowed, true);
+    assert.equal(actions.canFightMastermind().allowed, true);
+  });
+
+  test('turn and stage reasons take precedence over the heal lock', () => {
+    const offTurn = useTurnActions('main', false, ...NO_PENDING_FLAGS, false, false, true).canFightVillain();
+    assert.equal(offTurn.reason, 'It is not your turn.');
+    const cleanup = useTurnActions('cleanup', true, ...NO_PENDING_FLAGS, false, false, true).canRecruitHero();
+    assert.match(cleanup.reason!, /Only available during the Main/);
   });
 });

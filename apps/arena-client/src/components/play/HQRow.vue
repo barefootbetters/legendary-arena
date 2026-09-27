@@ -8,7 +8,7 @@ import type {
 } from '@legendary-arena/game-engine';
 import { useHqRow, type HqCell } from '../../composables/useHqRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
-import { useTurnActions } from '../../composables/useTurnActions';
+import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
@@ -53,6 +53,14 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
+    // recruit and fight for the rest of a turn in which the viewer healed
+    // (D-24180 heal lock), so the button gate must see it too.
+    hasHealedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     economy: {
       type: Object as PropType<UITurnEconomyState>,
       required: true,
@@ -78,6 +86,10 @@ export default defineComponent({
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canRecruitHero();
       if (!stage.allowed) {
         return stage;
+      }
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
       }
       if (cell.display === null) {
         return stage;
@@ -142,6 +154,7 @@ export default defineComponent({
               :display="displayForCell(cell)"
               size="md"
               :interactive="gateForCell(cell).allowed"
+              :tooltip="gateForCell(cell).reason"
               :show-label="true"
             />
           </button>

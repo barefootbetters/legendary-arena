@@ -174,3 +174,68 @@ describe('HQRow (WP-129 — extends WP-100)', () => {
     assert.match(wrapper.find('[data-testid="play-hq-hero-deck"]').text(), /\[42\]/);
   });
 });
+
+describe('HQRow — heal lock (D-24180 / D-24614)', () => {
+  test('after a heal every hero is disabled with the heal-lock tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(HQRow, {
+      props: {
+        hq: fullHq(),
+        decks: DECKS,
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ recruit: 9, availableRecruit: 9 }),
+        submitMove,
+      },
+    });
+    const heroes = wrapper.findAll('[data-testid="play-hq-hero"]');
+    assert.equal(heroes.length, 3);
+    for (const button of heroes) {
+      assert.equal(button.attributes('disabled'), '');
+      assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+      assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
+    }
+    await heroes[0]!.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('the heal lock outranks the cost tooltip (turn, stage, heal lock, then resource)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HQRow, {
+      props: {
+        hq: fullHq(),
+        decks: DECKS,
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ recruit: 0, availableRecruit: 0 }),
+        submitMove,
+      },
+    });
+    for (const button of wrapper.findAll('[data-testid="play-hq-hero"]')) {
+      assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+    }
+  });
+
+  test('without a heal the affordable heroes stay enabled', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HQRow, {
+      props: {
+        hq: fullHq(),
+        decks: DECKS,
+        currentStage: 'main',
+        hasHealedThisTurn: false,
+        economy: economy({ recruit: 9, availableRecruit: 9 }),
+        submitMove,
+      },
+    });
+    for (const button of wrapper.findAll('[data-testid="play-hq-hero"]')) {
+      assert.equal(button.attributes('disabled'), undefined);
+    }
+    // An enabled tile keeps the card name as its hover text.
+    const enabledTiles = wrapper.findAll('[data-testid="play-hq-hero"] [data-testid="card-tile"]');
+    assert.deepEqual(
+      enabledTiles.map((tile) => tile.attributes('title')),
+      ['Captain America', 'Iron Man', 'Spider-Man'],
+    );
+  });
+});

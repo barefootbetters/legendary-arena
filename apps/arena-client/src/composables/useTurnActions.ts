@@ -48,6 +48,32 @@ export function activeStepFor(currentStage: string): TurnStep {
   return 3;
 }
 
+/**
+ * The heal lock (D-24180): once the viewer has used the Wound Healing ability
+ * this turn, the engine silently refuses `recruitHero`, `recruitOfficer`,
+ * `fightVillain` and `fightMastermind` for the rest of the turn. Board buttons
+ * layer this after the turn + stage gate so a live button never offers a move
+ * the engine will no-op.
+ *
+ * // why: D-24614 — exported as a standalone predicate so the board components
+ * (HQRow, CityRow, MastermindTile, SharedDecks), which call `useTurnActions`
+ * with only the stage args, share this one reason string instead of threading
+ * `hasHealedThisTurn` through fifteen positional parameters.
+ *
+ * @param hasHealedThisTurn Whether the viewer has healed this turn
+ *   (`UIState.game.hasHealedThisTurn`).
+ * @returns Blocked with a full-sentence reason when healed, otherwise allowed.
+ */
+export function healLockGate(hasHealedThisTurn: boolean): GatingResult {
+  if (hasHealedThisTurn) {
+    return {
+      allowed: false,
+      reason: 'You cannot recruit or fight after healing this turn.',
+    };
+  }
+  return ALLOWED;
+}
+
 function stageGateReason(currentStage: string, allowedStage: TurnStage): string {
   const allowedDisplay = STAGE_DISPLAY_NAMES[allowedStage];
   return `Only available during the ${allowedDisplay} step (current: ${currentStage}).`;
@@ -140,7 +166,9 @@ const NOT_YOUR_TURN: GatingResult = {
  * @param hasActedThisTurn Whether the viewer has recruited or fought this turn
  *   (from `UIState.game.hasActedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
  * @param hasHealedThisTurn Whether the viewer has already used Healing this turn
- *   (from `UIState.game.hasHealedThisTurn`). Bars `canHealWounds`. Defaults to false. WP-380.
+ *   (from `UIState.game.hasHealedThisTurn`). Bars `canHealWounds`, and (D-24180 heal lock,
+ *   D-24614) `canFightVillain` / `canRecruitHero` / `canRecruitOfficer` /
+ *   `canFightMastermind`. Defaults to false. WP-380.
  * @param hasPendingDiscardChoice Whether the viewer has an unresolved Magneto
  *   discard-to-limit choice (from `UIState.pendingDiscardChoice !== undefined`). When
  *   true, blocks `canEndTurn` and `canPassPriority` at ANY stage (the engine's full
@@ -309,15 +337,17 @@ export function useTurnActions(
     },
     canFightVillain: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
-      return currentStage === 'main'
-        ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return healLockGate(hasHealedThisTurn);
     },
     canRecruitHero: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
-      return currentStage === 'main'
-        ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return healLockGate(hasHealedThisTurn);
     },
     // why: WP-648 — the turn + stage gate for buying a S.H.I.E.L.D. Officer from
     // the shared supply. The resource (≥ 3 recruit) and supply (officersCount > 0)
@@ -325,15 +355,17 @@ export function useTurnActions(
     // HQRow precedent) so this composable stays free of economy/pile inputs.
     canRecruitOfficer: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
-      return currentStage === 'main'
-        ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return healLockGate(hasHealedThisTurn);
     },
     canFightMastermind: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
-      return currentStage === 'main'
-        ? ALLOWED
-        : { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return healLockGate(hasHealedThisTurn);
     },
     // why: D-10011 — Pass-priority fires `advanceStage`, the canonical
     // stage-advance vocabulary. Allowed at every stage (start advances

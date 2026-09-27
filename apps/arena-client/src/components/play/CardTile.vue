@@ -46,6 +46,20 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    /**
+     * Hover text that replaces the card name when set. Board tiles inside a gated
+     * button pass the gate's disabled reason here.
+     *
+     * // why: D-24614 — this tile covers its whole button, and the browser shows
+     * the innermost `title`, so the name on this div hid the button's disabled
+     * reason (the heal lock, stage, and cost tooltips) on every board tile.
+     * Null (the default, and an allowed gate) keeps the card name.
+     */
+    tooltip: {
+      type: String as PropType<string | null>,
+      required: false,
+      default: null,
+    },
   },
   setup(props) {
     // why: tracks broken image loads so the tile falls back to text mode
@@ -90,7 +104,7 @@ export default defineComponent({
       `card-tile--${size}`,
       { 'card-tile--interactive': interactive, 'card-tile--lift-enabled': isLiftEnabled },
     ]"
-    :title="display.name"
+    :title="tooltip ?? display.name"
     data-testid="card-tile"
     :data-card-ext-id="display.extId"
   >

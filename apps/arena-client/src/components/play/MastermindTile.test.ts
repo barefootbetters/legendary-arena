@@ -618,3 +618,40 @@ describe('MastermindTile — louder unaffordable Fight N badge', () => {
     );
   });
 });
+
+describe('MastermindTile — heal lock (D-24180 / D-24614)', () => {
+  test('after a heal the Fight is disabled with the heal-lock tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+    assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+
+  test('after a heal an unaffordable Fight N badge stays quiet', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive({ fightCost: 7 }),
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ attack: 6, availableAttack: 6 }),
+        submitMove,
+      },
+    });
+    const badge = wrapper.find('[data-testid="play-mastermind-fight-cost"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.classes().includes('mastermind__fight-cost--unaffordable'), false);
+  });
+});
