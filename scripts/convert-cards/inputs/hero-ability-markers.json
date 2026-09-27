@@ -559,6 +559,12 @@
       "markupToken": "[keyword:reveal-min:1]"
     },
     {
+      "heroSlug": "cloak-dagger",
+      "cardSlug": "penumbra",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:play-both-sides]"
+    },
+    {
       "heroSlug": "hercules",
       "cardSlug": "prince-of-power",
       "abilityIndex": 0,

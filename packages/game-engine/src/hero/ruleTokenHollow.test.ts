@@ -20,10 +20,13 @@ import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
-// why: the exact generated ability lines, verified against data/cards/cvwr.json
-// (cloak-dagger/penumbra), cosm.json (adam-warlock/soulblast), ssw1.json
+// why: the exact generated ability lines, verified against cosm.json
+// (adam-warlock/soulblast), ssw1.json
 // (black-panther/king-of-wakanda), msis.json (black-panther/vibranium-nanites) and
-// mgtg.json (rocket-groot/we-are-groot).
+// mgtg.json (rocket-groot/we-are-groot). PENUMBRA_ABILITY is the PRE-MARKER cvwr
+// cloak-dagger/penumbra line (before WP-780 / D-24619 appended [keyword:play-both-sides]); it
+// stays as the [rule:X]-only-line detector fixture. The as-generated Penumbra pin is
+// penumbraPlayBothSides.test.ts AC-1.
 const PENUMBRA_ABILITY =
   'Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards.';
 const SOULBLAST_ABILITY = 'Gain 2 [rule:Shards].';
@@ -72,7 +75,7 @@ function buildHook(ability: string): HeroAbilityHook {
 }
 
 describe('[rule:X]-only hero lines record an unresolved rule marker (D-24618)', () => {
-  it('Penumbra records rule:divided-card and nothing executable', () => {
+  it('the pre-marker Penumbra line records rule:divided-card and nothing executable', () => {
     const hook = buildHook(PENUMBRA_ABILITY);
     assert.deepEqual(hook.unresolvedMarkers, ['rule:divided-card']);
     assert.equal(hook.effects, undefined, 'no effect is fabricated');

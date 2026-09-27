@@ -1427,7 +1427,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 73, 'HERO_KEYWORDS stays 73 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero added)');
+    assert.equal(HERO_KEYWORDS.length, 74, 'HERO_KEYWORDS stays 74 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1718,5 +1718,28 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     assert.equal(moonlightHook.unresolvedMarkers, undefined, 'the Moonlight line is modelled — no moonlight hollow');
     assert.ok(!moonlightHook.keywords.includes('ko'), 'no spurious ko keyword from the "KO" prose');
     assert.deepStrictEqual(hooks[0]!.conditions, [{ type: 'sunlightInEffect', value: '' }], 'the Sunlight line is unchanged');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// play-both-sides — cvwr Penumbra (WP-780 / D-24619)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — play-both-sides (WP-780 / D-24619)', () => {
+  it('parses the marked Penumbra line to one onPlay play-both-sides effect with no rule marker', () => {
+    const registry = makeRegistry('cvwr', 'cloak-dagger', [{
+      slug: 'penumbra',
+      abilities: [
+        'Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards. [keyword:play-both-sides]',
+      ],
+    }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('cvwr/cloak-dagger'));
+    assert.equal(hooks.length, 1);
+    const hook = hooks[0]!;
+    assert.equal(hook.timing, 'onPlay');
+    assert.deepEqual(hook.keywords, ['play-both-sides']);
+    assert.deepEqual(hook.effects, [{ type: 'play-both-sides' }], 'no magnitude on the effect');
+    assert.equal(hook.unresolvedMarkers, undefined, 'the resolved keyword retires the rule:divided-card marker');
+    assert.equal(hook.conditions, undefined, 'no class / team gate');
   });
 });

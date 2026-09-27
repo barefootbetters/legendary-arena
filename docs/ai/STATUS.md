@@ -7,6 +7,42 @@
 
 ## Current State
 
+### WP-780 — Penumbra plays both sides of a Divided Card (EC-817 / D-24619) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Cloak & Dagger's **Penumbra**, then
+a split (Divided) hero card that turn. There is no "choose a side" picker. You get both halves:
+face a's Attack/Recruit and ability, then face b's. The log shows "Player N played <card>.",
+"Penumbra: both sides of <card> play as two different cards.", then one "resolved side a / b" line
+per half. Play Diagnostics no longer lists `rule:divided-card` for Penumbra. A split card played
+before Penumbra, or on another turn, still gets the picker.
+
+- **Engine.** New handler-bearing `HeroKeyword` `play-both-sides`, on Penumbra by curated marker.
+  It sets the lazy `TurnEconomy.isPlayBothSidesActive`. `playCard` then calls `playBothSplitFaces`,
+  which enters the card **once** in `inPlay` (face-a id) and resolves face a, then face b. Between
+  the faces it adds the entry to `TurnEconomy.bothSidesPlayedCardIds`. Rules-facing "played this
+  turn" trait and count reads expand that entry to both faces through `playedCardIdsThisTurn`, so
+  face b sees face a, and later cards see both. Targets, VP, UI, snapshots, invariants and cleanup
+  stay physical.
+- **Pins.** `HERO_KEYWORDS` 73→74 (×3) and `HERO_EFFECT_HANDLERS` 57→58 (×2). The D-24618
+  Penumbra fixtures are retitled as the pre-marker line. The hero mechanic ledger, `card-mechanics`
+  feed and effect-implementation index each gain one cvwr `play-both-sides` entry (index 1954→1955).
+  Runtime-observed has no diff, so the dashboard in-play pin is unchanged. The sentinel
+  `finalStateHash` is unchanged.
+- **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` has 0 failures in every
+  package: engine 4554→4594/0, arena-client 2157/0, dashboard 505/0, registry-viewer 307/0. The
+  AC-7 revert proof fails as required. `cards:check`, `sim:coverage --check`,
+  `sim:runtime-observed:check`, `ledger:heroes:check`, `ledger:villains:check`,
+  `effect-index:check`, `mechanics:metadata:check`, `ledger:numbers:check`, `workindex:*:check`
+  and `roadmap:counts:check` all pass.
+- **Known side effects (D-24619).** Copy Powers can copy only face a. Face b resolves even when face
+  a parked a pending choice. The server's play-order teacher may suggest a false "whiff" on a
+  Penumbra turn. Manly Dullard (Hercules, face b) charges its discard-to-play cost exactly as the
+  picker path does.
+- **Live-verify (D-24026): pending.** On play.legendary-arena.com, start a match with Cloak & Dagger
+  (cvwr). Play Penumbra, then Above/Below or Darkness/Light. Confirm there is no picker, that both
+  halves' Attack/Recruit land, that the log shows the two "resolved side" lines, and that Play
+  Diagnostics lists no `rule:divided-card`. Record the matchId here.
+
 ### D-24618 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now

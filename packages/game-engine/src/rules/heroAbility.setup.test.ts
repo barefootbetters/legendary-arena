@@ -631,12 +631,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'blood-frenzy-recruit', // why: WP-765 / D-24598 — Morbius Mesmerize's Blood Frenzy gaining recruit instead of attack
     'day-night-both', // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite (digest-indigestion precedent)
     'optional-ko-your-hero', // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes" (hand + played this turn, Heroes only, no reward)
+    'play-both-sides', // why: WP-780 / D-24619 — cvwr Penumbra "play both sides as if they were two different cards" — sets G.turnEconomy.isPlayBothSidesActive; playCard then plays a later split card's both faces
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      73,
-      'HERO_KEYWORDS must have exactly 73 entries',
+      74,
+      'HERO_KEYWORDS must have exactly 74 entries',
     );
 
     assert.deepStrictEqual(

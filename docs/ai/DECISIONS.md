@@ -45491,13 +45491,13 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
-### D-24619 — Penumbra plays both sides of a Divided Card as two different cards (WP-780 / EC-817) (Drafted 2026-09-26; not yet landed)
+### D-24619 — Penumbra plays both sides of a Divided Card as two different cards (WP-780 / EC-817) (Active 2026-09-26)
 
-**Status:** Drafted 2026-09-26. Lands Active at WP-780 execution.
+**Status:** Active — landed 2026-09-26 with WP-780 / EC-817. D-24026 live-verify pending.
 
 **Context.** cvwr Cloak & Dagger Penumbra prints "Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards." Rules v23 p.49 otherwise binds one side at play and ignores the other. Penumbra did nothing; D-24618 surfaced it as a `rule:divided-card` hollow. Every in-play read keys off `inPlay` entries and one instance id, so a second entry per physical card would break the duplicate-id invariant, cleanup, and UI counts.
 
-**Decision (confirmed at execution).**
+**Decision (confirmed at execution 2026-09-26).**
 
 1. **Keyword.** Handler-bearing, no-magnitude `HeroKeyword` `play-both-sides`, applied to Penumbra by curated marker. The handler sets the lazy `TurnEconomy.isPlayBothSidesActive`, which `resetTurnEconomy` resets each turn.
 2. **No choice; fixed order.** While active, `playCard` on a split card calls `playBothSplitFaces`: face a (`sides[0]`) then face b, each granting its own `cardStats` economy and firing its own hooks. No pending choice, UI, or bot path.
@@ -45505,6 +45505,8 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 4. **Expansion only for rules-facing Hero trait / count reads.** `playedCardIdsThisTurn(G, inPlay)` replaces a marked entry with `[faceA, faceB]` at rules-facing Hero trait / count reads (hero conditions, count sources, the Xavier's Nemesis count, villain class / count reads, defeat requirements). Target, physical and VP reads keep the raw entry: the Electromagnetic Bubble pick, KO / Copy Powers / Transform targets, Blood Frenzy and scoring VP, UI, snapshots, invariants and cleanup.
 5. **Determinism.** No top-level `G` field. Both fields are absent until Penumbra is played, so the sentinel `finalStateHash` is unchanged.
 6. **Known side effects.** Face b resolves in the same move even while a face-a pending choice is open. Copy Powers can copy only face a. The server sequence teacher sees raw `inPlay` and may tip a false whiff on a Penumbra turn.
+7. **Split-face costs (confirmed at execution).** The split-face discard cost (WP-777 / D-24615, #2443) is drafted but not executed on `main`, so the both-sides path adds no per-face precondition. A face with its own `discard-to-play` marker (cvwr Hercules Manly Dullard, face b, D-24620) fires its hooks exactly as the picker path does. It parks a `PendingDiscardToPlay` sourced to the face-b id when the hand holds a card. On an empty hand it logs the handler's fail-closed line and parks nothing. WP-777's executor owns wiring any per-face precondition into `playBothSplitFaces`.
+8. **Null pair never loses the card.** `playBothSplitFaces` returns `false` on a null split pair, and `playCard` then falls through to the existing park path. A missing player zone returns `true` with no mutation.
 
 **Reserved by:** NUMBER-LEDGER D-24619. Related: D-24545 / D-24546 (WP-724), D-24604 (WP-772), D-24618.
 

@@ -29,6 +29,8 @@ source:
   - ../packages/game-engine/src/setup/buildHeroDeck.ts
   - ../packages/game-engine/src/setup/buildCardTraits.ts
   - ../packages/game-engine/src/moves/splitFaceChoice.resolve.ts
+  - ../packages/game-engine/src/hero/splitCard.logic.ts
+  - ../docs/ai/work-packets/WP-780-penumbra-play-both-sides.md
   - ../packages/game-engine/src/ui/uiState.build.ts
   - ../apps/arena-client/src/components/play/SplitFaceChoicePrompt.vue
   - ../apps/registry-viewer/src/registry/shared.ts
@@ -127,6 +129,39 @@ distinct slots. The registry viewer uses exactly this rule
   `G.splitFacesAlternateOnLeft`. Like `splitFaces`, that map is absent when empty.
   The projection then carries `UIPendingSplitFaceChoice.leftFace` (`'a'` or `'b'`).
   Each button still submits its own face, so `face: 'a'` still means `sides[0]`.
+
+### Penumbra: play both sides (WP-780 / D-24619)
+
+cvwr Cloak & Dagger **Penumbra** prints: "Whenever you play a Divided Card card this
+turn, play both sides as if they were two different cards." It overrides the p. 49
+"choose one side" rule for the rest of its turn.
+
+- **Switch.** Penumbra's line carries `[keyword:play-both-sides]`. Playing it sets
+  `G.turnEconomy.isPlayBothSidesActive`. The field is absent until then and is dropped
+  at the next turn start. A second Penumbra changes nothing.
+- **No picker.** While the switch is on, `playCard` sends a split card to
+  `playBothSplitFaces` instead of parking a `PendingSplitFaceChoice`. Face a
+  (`sides[0]`) resolves first: its Attack/Recruit, then its abilities. Face b follows the
+  same way. The order is fixed, with no choice, so replays stay deterministic. A split
+  card played **before** Penumbra, or on another turn, still gets the picker.
+- **One card in play.** The physical card enters `inPlay` **once**, as its face-a id,
+  even when it was drawn as face b. Cleanup discards it once, the duplicate-id
+  invariant holds, and the UI's in-play count is unchanged.
+- **Counts as two played cards.** After face a resolves, the entry is added to
+  `G.turnEconomy.bothSidesPlayedCardIds`. `playedCardIdsThisTurn` then reads that entry
+  as `[faceA, faceB]` for rules-facing "played this turn" reads: class and team gates,
+  "played N cards", count sources, the Xavier's Nemesis count, villain reveal and
+  count checks, and defeat requirements. Because the marker is written **between** the
+  faces, face b's superpower sees face a as another card, but face a's superpower can't
+  see face b. Later cards that turn see both.
+- **Physical reads stay one card.** Targets (the Electromagnetic Bubble pick, KO, Copy
+  Powers, Transform), Victory Points (Blood Frenzy, scoring), the UI, snapshots,
+  invariants and cleanup all read the raw entry.
+- **Known side effects (D-24619).** Face b resolves in the same move even when face a
+  parked a pending choice. Copy Powers can copy only face a. The server's play-order
+  teacher reads raw `inPlay` and may suggest a false "whiff" on a Penumbra turn. A
+  split face with a discard-to-play cost (cvwr Hercules's Manly Dullard) charges it
+  exactly as the picker path does.
 
 ### In the registry viewer (cards.legendary-arena.com)
 
@@ -244,6 +279,8 @@ happens to match the layout.
 - **WP-725 (#2214)**: `SplitFaceChoicePrompt.vue`.
 - **#2410 / #2416 / #2417 (2026-09-26)**: registry viewer crops each face to its own
   half by slot, shows a Split Card data row, and adds a Split badge on grid tiles.
+- **D-24619 (WP-780, 2026-09-26)**: Penumbra plays both sides of a later split card
+  that turn (face a, then face b; one in-play entry; counts as two played cards).
 
 ## References
 

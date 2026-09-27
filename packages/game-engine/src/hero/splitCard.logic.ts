@@ -7,7 +7,9 @@
  * face id, so every per-id trait / stat read sees only that face. These helpers give off-play
  * read sites the rulebook view of the whole card, derived at read time — no G state is written.
  *
- * In-play reads never call these helpers: once played, the card counts only as the chosen face.
+ * In-play reads never call the off-play helpers: once played, the card counts only as the chosen
+ * face. The one exception is `playedCardIdsThisTurn` (WP-780 / D-24619): a card Penumbra played
+ * both-sides counts as BOTH faces for rules-facing "played this turn" reads.
  *
  * Pure: no boardgame.io import, no I/O, no randomness, never throws.
  */
@@ -150,4 +152,36 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
     hasAttackIcon: faceAStats.hasAttackIcon || faceBStats.hasAttackIcon,
     hasRecruitIcon: faceAStats.hasRecruitIcon || faceBStats.hasRecruitIcon,
   };
+}
+
+/**
+ * Returns the "cards played this turn" view of an inPlay zone (WP-780 / D-24619).
+ *
+ * Each inPlay entry listed in `G.turnEconomy.bothSidesPlayedCardIds` is replaced in place by
+ * its two face ids `[faceA, faceB]`; every other entry is copied unchanged, in order. Returns a
+ * fresh copy of `inPlay` (identity) when there is no turnEconomy (the minimal-G slice), when
+ * the ledger is absent or empty, or when a listed entry's pair resolves to null.
+ *
+ * @param G - The game state (reads turnEconomy and the split-face map only).
+ * @param inPlay - The player's inPlay zone (not mutated).
+ * @returns A new array of card ids, one per played card (a both-sides card counts twice).
+ */
+export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
+  // why: cvwr Penumbra — "play both sides as if they were two different cards". The physical
+  // card stays ONE inPlay entry (cleanup, invariants, UI and targets read it raw), so only
+  // rules-facing "played this turn" Hero trait / count reads expand it to both face ids here.
+  const bothSidesPlayed = G.turnEconomy?.bothSidesPlayedCardIds;
+  if (bothSidesPlayed === undefined || bothSidesPlayed.length === 0) {
+    return [...inPlay];
+  }
+  const expanded: CardExtId[] = [];
+  for (const cardId of inPlay) {
+    const pair = bothSidesPlayed.includes(cardId) ? resolveSplitFacePair(G, cardId) : null;
+    if (pair === null) {
+      expanded.push(cardId);
+      continue;
+    }
+    expanded.push(pair.faceA, pair.faceB);
+  }
+  return expanded;
 }

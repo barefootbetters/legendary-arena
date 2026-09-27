@@ -979,3 +979,35 @@ describe('explainCountSourceInputs — resolver byte-identical guarantee (WP-706
     assert.equal(before, explained.length, 'and agrees with the explain length for a per-card source');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-780 / D-24619 — a card Penumbra played both-sides counts as both faces
+// ---------------------------------------------------------------------------
+
+describe('both-sides expansion in played-this-turn count sources (WP-780 / D-24619)', () => {
+  it('a marked split entry counts face b toward class / team counts and its collectors', () => {
+    const faceA = 'cvwr/duo/tech-half#0';
+    const faceB = 'cvwr/duo/strength-half#0';
+    const gameState = makeStatePlayed(
+      [faceA, 'trigger'],
+      {
+        [faceA]: { heroClass: 'tech', team: 'avengers' },
+        [faceB]: { heroClass: 'strength', team: 'avengers' },
+        trigger: { heroClass: 'covert', team: null },
+      },
+      {},
+    );
+    gameState.splitFaces = { 'cvwr/duo/tech-half': 'cvwr/duo/strength-half' } as LegendaryGameState['splitFaces'];
+    assert.equal(resolveCountSource(gameState, '0', 'strength-heroes-played-this-turn', 'trigger'), 0, 'unmarked: face a only');
+    assert.equal(resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'trigger'), 1);
+
+    gameState.turnEconomy = { bothSidesPlayedCardIds: [faceA] } as unknown as LegendaryGameState['turnEconomy'];
+    assert.equal(resolveCountSource(gameState, '0', 'strength-heroes-played-this-turn', 'trigger'), 1, 'marked: face b counts');
+    assert.equal(resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'trigger'), 2, 'two different cards');
+    assert.deepEqual(
+      explainCountSourceInputs(gameState, '0', 'strength-heroes-played-this-turn', 'trigger'),
+      [faceB],
+      'the collector lists the expanded face',
+    );
+  });
+});

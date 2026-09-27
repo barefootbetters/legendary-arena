@@ -98,6 +98,30 @@ export interface TurnEconomy {
    * so a turn that never overspends serializes byte-identically.
    */
   excessiveViolenceUsedThisTurn?: boolean;
+  /**
+   * WP-780 / D-24619 — whether cvwr Cloak & Dagger Penumbra is active this turn
+   * ("Whenever you play a Divided Card card this turn, play both sides as if they were
+   * two different cards"). Set by the `play-both-sides` hero effect (via
+   * `enablePlayBothSides`, idempotent); while set, playCard plays a later split card's
+   * BOTH faces (face a then face b) instead of parking the choose-a-side picker.
+   *
+   * LAZILY MATERIALIZED, exactly like `drawsLocked`: absent until set, dropped by
+   * `resetTurnEconomy` at turn start, and carried across every rebuild by
+   * `carryConversionFlag`. Absent ≡ inactive; omitted by `JSON.stringify`, so a turn
+   * that never plays Penumbra serializes byte-identically.
+   */
+  isPlayBothSidesActive?: true;
+  /**
+   * WP-780 / D-24619 — the inPlay entry ids (face-a ids) of split cards played
+   * both-sides this turn, in play order (appended via `markBothSidesPlayed`). Rules-facing
+   * "played this turn" Hero trait / count reads expand each listed entry to both face ids
+   * through `playedCardIdsThisTurn`; physical reads keep the single raw entry.
+   *
+   * LAZILY MATERIALIZED, exactly like `excessiveViolencePlayedCards`: absent until the
+   * first both-sides play, dropped by `resetTurnEconomy`, carried by `carryConversionFlag`.
+   * Strings only (CardExtId), never card objects.
+   */
+  bothSidesPlayedCardIds?: CardExtId[];
 }
 
 // why: stats resolved at setup time from registry so moves never query

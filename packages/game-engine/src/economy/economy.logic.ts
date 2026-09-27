@@ -477,6 +477,19 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
 // Economy helpers — pure functions, return new objects
 // ---------------------------------------------------------------------------
 
+/** The lazily-materialized turn-scoped TurnEconomy fields carried across every rebuild. */
+type CarriedTurnFields = Partial<
+  Pick<
+    TurnEconomy,
+    | 'recruitSpendableAsAttack'
+    | 'drawsLocked'
+    | 'excessiveViolencePlayedCards'
+    | 'excessiveViolenceUsedThisTurn'
+    | 'isPlayBothSidesActive'
+    | 'bothSidesPlayedCardIds'
+  >
+>;
+
 // why: WP-580 / D-24389 + WP-731 / D-24552 + WP-736 / D-24556 — every
 // lazily-materialized turn-scoped field (`recruitSpendableAsAttack`, `drawsLocked`,
 // and now the Excessive Violence ledger `excessiveViolencePlayedCards` +
@@ -498,13 +511,12 @@ function parseQualifiedIdForSetup(input: string): { setAbbr: string; slug: strin
  *
  * @param economy - Current turn economy state.
  * @returns The subset of `{ recruitSpendableAsAttack, drawsLocked,
- *   excessiveViolencePlayedCards, excessiveViolenceUsedThisTurn }` that is set
+ *   excessiveViolencePlayedCards, excessiveViolenceUsedThisTurn,
+ *   isPlayBothSidesActive, bothSidesPlayedCardIds }` that is set
  *   (each key present only when its field is set), else `{}`.
  */
-function carryConversionFlag(
-  economy: TurnEconomy,
-): Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked' | 'excessiveViolencePlayedCards' | 'excessiveViolenceUsedThisTurn'>> {
-  const carried: Partial<Pick<TurnEconomy, 'recruitSpendableAsAttack' | 'drawsLocked' | 'excessiveViolencePlayedCards' | 'excessiveViolenceUsedThisTurn'>> = {};
+function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
+  const carried: CarriedTurnFields = {};
   if (economy.recruitSpendableAsAttack !== undefined) {
     carried.recruitSpendableAsAttack = economy.recruitSpendableAsAttack;
   }
@@ -520,6 +532,14 @@ function carryConversionFlag(
   }
   if (economy.excessiveViolenceUsedThisTurn !== undefined) {
     carried.excessiveViolenceUsedThisTurn = economy.excessiveViolenceUsedThisTurn;
+  }
+  // why: WP-780 / D-24619 — carry the Penumbra flag and both-sides ledger, or a later
+  // same-turn addResources rebuild would drop them and the picker would reappear.
+  if (economy.isPlayBothSidesActive !== undefined) {
+    carried.isPlayBothSidesActive = economy.isPlayBothSidesActive;
+  }
+  if (economy.bothSidesPlayedCardIds !== undefined) {
+    carried.bothSidesPlayedCardIds = economy.bothSidesPlayedCardIds;
   }
   return carried;
 }
@@ -766,6 +786,67 @@ export function markExcessiveViolenceUsed(economy: TurnEconomy): TurnEconomy {
     // guard never drops the EV ledger (or the two conversion flags) set earlier this turn.
     ...carryConversionFlag(economy),
     excessiveViolenceUsedThisTurn: true,
+  };
+}
+
+/**
+ * Activates cvwr Cloak & Dagger Penumbra's "play both sides" for the current turn
+ * (WP-780 / D-24619).
+ *
+ * Called by the `play-both-sides` hero effect when Penumbra is played. Sets
+ * `isPlayBothSidesActive`; idempotent (a second Penumbra rebuilds the same shape). Every
+ * other field is carried unchanged through the single carry chokepoint.
+ * `resetTurnEconomy` drops the flag at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `isPlayBothSidesActive` set true.
+ */
+export function enablePlayBothSides(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-780 / D-24619 — spread the single carry chokepoint so activating Penumbra never
+    // drops a flag or ledger set earlier this turn. The explicit assignment then sets this one.
+    ...carryConversionFlag(economy),
+    isPlayBothSidesActive: true,
+  };
+}
+
+/**
+ * Records a split card's inPlay entry (its face-a id) as played both-sides this turn
+ * (WP-780 / D-24619).
+ *
+ * Called by `playBothSplitFaces` BETWEEN the two faces. Appends `cardId` to
+ * `bothSidesPlayedCardIds`, materializing the array on the first call. Every other field is
+ * carried unchanged. `resetTurnEconomy` drops the ledger at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The inPlay entry id (face a) of the split card played both-sides.
+ * @returns New TurnEconomy with `cardId` appended to `bothSidesPlayedCardIds`.
+ */
+export function markBothSidesPlayed(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-780 / D-24619 — build a NEW array (mirrors enrollExcessiveViolenceCard) so the
+  // rebuild never aliases the prior economy's ledger.
+  const nextBothSidesPlayed = [...(economy.bothSidesPlayedCardIds ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-780 / D-24619 — spread the single carry chokepoint so recording a both-sides
+    // play never drops the Penumbra flag (or any other lazy field) set earlier this turn.
+    ...carryConversionFlag(economy),
+    bothSidesPlayedCardIds: nextBothSidesPlayed,
   };
 }
 
