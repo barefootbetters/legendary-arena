@@ -4975,6 +4975,48 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     assert.equal(records(gameState)[0]!.mechanic, 'mind-swap');
   });
 
+  it('D-24618: playing Penumbra (a [rule:Divided Card]-only line) records a parse-unrecognized hollow', () => {
+    // why: end-to-end from the real printed line — before D-24618 this hook was empty and
+    // the play recorded nothing (operator match 19720cb4: 4 Penumbra plays, no record).
+    const [penumbraHook] = buildHeroAbilityHooks(
+      {
+        listCards: () => [],
+        getSet: () => ({
+          heroes: [{
+            slug: 'cloak-dagger',
+            cards: [{
+              slug: 'penumbra',
+              abilities: ['Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards.'],
+            }],
+            physicalCards: [{ id: 'p0', count: 1, sides: ['penumbra'] }],
+          }],
+        }),
+      },
+      {
+        schemeId: 'test-scheme',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: ['cvwr/cloak-dagger'],
+        bystandersCount: 0,
+        woundsCount: 0,
+        officersCount: 0,
+        sidekicksCount: 0,
+      },
+    );
+    assert.ok(penumbraHook !== undefined, 'the Penumbra hook is built');
+    const gameState = makeTestState({
+      inPlay: [penumbraHook.cardId],
+      heroAbilityHooks: [penumbraHook],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', penumbraHook.cardId);
+
+    assert.equal(records(gameState).length, 1, 'exactly one hollow record');
+    assert.equal(records(gameState)[0]!.reason, 'parse-unrecognized');
+    assert.equal(records(gameState)[0]!.mechanic, 'rule:divided-card');
+  });
+
   it('a flavor-text-only hook (no effects, no markers) records NO hollow event', () => {
     // why: a hook that declares nothing executable can never be hollow — a pure
     // flavor-text line surfaces no effects and an empty/absent unresolvedMarkers.

@@ -2,8 +2,8 @@
   "corpus": {
     "executable": 2652,
     "heroes": 324,
-    "hooks": 6286,
-    "noEffect": 2580,
+    "hooks": 6310,
+    "noEffect": 2604,
     "parsedNotExecuted": 1054
   },
   "perSet": {
@@ -69,8 +69,8 @@
     },
     "cosm": {
       "executable": 44,
-      "hooks": 193,
-      "noEffect": 149
+      "hooks": 207,
+      "noEffect": 163
     },
     "cvwr": {
       "executable": 159,
@@ -109,8 +109,8 @@
     },
     "gotg": {
       "executable": 17,
-      "hooks": 92,
-      "noEffect": 65
+      "hooks": 102,
+      "noEffect": 75
     },
     "mdns": {
       "executable": 53,

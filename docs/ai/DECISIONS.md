@@ -45438,4 +45438,33 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24618 — A hero line whose only markup is `[rule:X]` is an honest `parse-unrecognized` hollow, not flavor text (Active 2026-09-26 — direct fix, no WP; extends the WP-257 / D-24034 unresolved-marker contract)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/setup/heroAbility.setup.ts` Step 4b only).
+
+**Context.** The WP-257 hollow detector (`detectHollowHeroHook`) only considers a hook that *declared* something: a legacy effect, a composition primitive, or an unresolved `[keyword:X]` marker. A hook that declares none of these is treated as flavor text and never flags. The parser had no `[rule:X]` handling at all, so a line whose only markup is a `[rule:X]` token (Shard, Sidekick, Divided Card, multicolored) built an empty hook and passed as flavor. Found via cvwr Cloak & Dagger **Penumbra** ("Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards."): operator match `19720cb4-929c-467a-ab31-6a63bfaa85ea` played it 4 times with no hollow record, and the hollow table listed only `lightshow`. A corpus scan finds 32 hero lines whose only markup is `[rule:X]` (Shard, Sidekick, multicolored, Divided Card), all silently inert.
+
+**Decision.**
+
+1. **Step 4b.** After effect extraction, a line that resolved nothing (no keyword, no effect, no composition primitive, no other unresolved marker) and carries `[rule:X]` records `rule:<concept>` in `unresolvedMarkers` for each token (deduplicated). The detector then flags it `parse-unrecognized` with mechanic `rule:<concept>`. No new field, reason, or contract change.
+2. **Concept slug.** Lower-case, whitespace → hyphen, prefixed `rule:` so it never collides with a `[keyword:X]` mechanic name. Plurals fold to the singular concept (`shards`→`shard`, `sidekicks`→`sidekick`) so one missing mechanic is one runtime-observed row.
+3. **Scope limits.** A line that already resolved an effect keeps its hook byte-identical: the mixed-hook rule would never flag it, and an extra field would only perturb the coverage probe. A whole-line parenthetical is printed reminder text and records nothing (mgtg Rocket & Groot "(Each [rule:Divided Card] has two different card names.)").
+4. **No gameplay change.** Parse-time provenance only. Nothing executes differently, no `G` field changes, and the `finalStateHash` / PAR oracles are unchanged.
+
+**Pin impacts (all re-pinned in this change).**
+- `sim:coverage` baseline: `hooks` 6286→6310 and `noEffect` 2580→2604 (cosm +14, gotg +10); `executable` holds at 2652. This is the WP-257 dedupe effect: the rule marker makes previously byte-identical per-hero hooks distinct, so they stop collapsing in `deduplicateHooks`. No line went dark.
+- `runtime-observed-hollows.json`: 29→32 distinct mechanics (`rule:shard` 317, `rule:sidekick` 47, `rule:multicolored` 8); observations 3152→3524 (+372, exactly the new rows, so no trajectory shift). `rule:divided-card` does not appear because the fixed-seed sweep never recruits the cost-7 rare Penumbra; it is pinned by unit test instead.
+- Dashboard `useInPlayCoverage` pin: totalObs 3977→4349, percentResolved 28.5→26.1 (1135 / 4349).
+- `ledger:heroes:check` unchanged (770 rows).
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` (counts in STATUS). New `hero/ruleTokenHollow.test.ts` covers Penumbra, the plural fold, multicolored, the reminder exemption, the resolved-line exemption, and flavor text. An end-to-end test in `heroEffects.execute.test.ts` plays Penumbra and gets a `rule:divided-card` hollow record. `sim:coverage --check`, `sim:runtime-observed:check` and `ledger:heroes:check` pass after the re-pin.
+
+**Follow-up.** Penumbra itself is scoped as WP-780 / EC-817 / D-24619 on the WP-724 / WP-772 split-card substrate. Shard (cosm / gotg) and Sidekick (WP-086) stay honest hollows until their executors land.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play Penumbra (cvwr Cloak & Dagger) and confirm the Play Diagnostics hollow table lists `rule:divided-card`.
+
+**Reserved by:** NUMBER-LEDGER D-24618. Related: D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24546 (WP-724), D-24604 (WP-772).
+
+---
+
 Protect this file.
