@@ -98,11 +98,15 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 22,
+      "cardCount": 28,
       "cardIds": [
         "asrd/thor",
+        "bkwd/falcon-winter-soldier",
         "bkwd/red-guardian",
+        "ca75/captain-america-1941",
+        "ca75/captain-america-falcon",
         "co2e/black-widow",
+        "co2e/captain-america",
         "co2e/iron-man",
         "core/black-widow",
         "core/captain-america",
@@ -112,6 +116,8 @@
         "cvwr/goliath",
         "dkcy/iceman",
         "ff04/thing",
+        "msis/black-panther",
+        "msp1/captain-america",
         "msp1/iron-man",
         "noir/luke-cage-noir",
         "shld/agent-phil-coulson",
@@ -1317,10 +1323,14 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 5,
+      "cardCount": 9,
       "cardIds": [
+        "ca75/steve-rogers-director-of-shield",
+        "co2e/captain-america",
         "core/captain-america",
+        "cvwr/captain-america-secret-avenger",
         "dkcy/iceman",
+        "msp1/captain-america",
         "noir/luke-cage-noir",
         "ssw1/captain-marvel",
         "vnom/venom"
@@ -2114,18 +2124,16 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 32,
+      "cardCount": 29,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
         "amwp/scott-lang-cat-burglar",
         "amwp/wasp",
-        "co2e/captain-america",
         "co2e/nick-fury",
         "co2e/spider-man-miles-morales",
         "co2e/storm",
         "cosm/nebula",
-        "cvwr/captain-america-secret-avenger",
         "cvwr/daredevil",
         "cvwr/falcon",
         "cvwr/patriot",
@@ -2134,7 +2142,6 @@
         "dkcy/daredevil",
         "dkcy/professor-x",
         "gotg/groot",
-        "msp1/captain-america",
         "msp1/nick-fury",
         "nmut/karma",
         "rvlt/hellcat",
@@ -2630,6 +2637,7 @@
     },
     "bkwd/falcon-winter-soldier": {
       "mechanics": [
+        "attack-per-count",
         "dark-memories",
         "discard-threshold",
         "discard-to-play",
@@ -2667,6 +2675,7 @@
     },
     "ca75/captain-america-1941": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "out-of-time",
         "rescue",
@@ -2675,6 +2684,7 @@
     },
     "ca75/captain-america-falcon": {
       "mechanics": [
+        "attack-per-count",
         "rescue",
         "savior"
       ]
@@ -2682,6 +2692,7 @@
     "ca75/steve-rogers-director-of-shield": {
       "mechanics": [
         "out-of-time",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
@@ -2742,7 +2753,8 @@
     },
     "co2e/captain-america": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count",
+        "recruit-per-count"
       ]
     },
     "co2e/cyclops": {
@@ -2978,7 +2990,7 @@
     },
     "cvwr/captain-america-secret-avenger": {
       "mechanics": [
-        "unmarked"
+        "recruit-per-count"
       ]
     },
     "cvwr/cloak-dagger": {
@@ -3417,6 +3429,7 @@
     },
     "msis/black-panther": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "sacrifice"
       ]
@@ -3512,7 +3525,8 @@
     },
     "msp1/captain-america": {
       "mechanics": [
-        "unmarked"
+        "attack-per-count",
+        "recruit-per-count"
       ]
     },
     "msp1/hawkeye": {

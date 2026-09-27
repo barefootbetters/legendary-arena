@@ -78,10 +78,48 @@ test('markerPresentFor recognizes the attack and recruit markers for the matchin
 
 test('evaluateLine flags an unmarked count line and clears a marked one', () => {
   const unmarked = '[hc:strength]: You get +3[icon:attack]for each other [hc:strength]card you played this turn.';
-  assert.deepEqual(evaluateLine(unmarked), { isCountLine: true, heroClass: 'strength', marked: false });
+  assert.deepEqual(evaluateLine(unmarked), {
+    isCountLine: true,
+    heroClass: 'strength',
+    countSource: 'strength-heroes-played-this-turn',
+    marked: false,
+  });
 
   const marked = `${unmarked} [keyword:attack-per-count:strength-heroes-played-this-turn:3]`;
-  assert.deepEqual(evaluateLine(marked), { isCountLine: true, heroClass: 'strength', marked: true });
+  assert.deepEqual(evaluateLine(marked), {
+    isCountLine: true,
+    heroClass: 'strength',
+    countSource: 'strength-heroes-played-this-turn',
+    marked: true,
+  });
+});
+
+test('evaluateLine flags the distinct Hero Class / color family and its marker', () => {
+  // bkwd Captain America's Legacy — parsed as a flat +1 in match 19720cb4.
+  const unmarked = 'You get +1[icon:attack] for each Hero Class you have.';
+  assert.deepEqual(evaluateLine(unmarked), {
+    isCountLine: true,
+    heroClass: null,
+    countSource: 'distinct-hero-classes-played-this-turn',
+    marked: false,
+  });
+
+  // ca75 prints a lowercase "Hero class"; msp1 prints "color of Hero".
+  assert.equal(evaluateLine('You get +1[icon:attack] for each Hero class you have.').isCountLine, true);
+  const colorLine =
+    'You get +1[icon:recruit] for each color of Hero you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]';
+  assert.equal(evaluateLine(colorLine).marked, true);
+
+  // A per-class marker for the wrong source does not satisfy the distinct clause.
+  const wrongSource = `${unmarked} [keyword:attack-per-count:tech-heroes-played-this-turn:1]`;
+  assert.equal(evaluateLine(wrongSource).marked, false);
+
+  assert.deepEqual(evaluateLine('Draw a card. [keyword:draw:1]'), {
+    isCountLine: false,
+    heroClass: null,
+    countSource: null,
+    marked: false,
+  });
 });
 
 test('the committed corpus has no unmarked, non-deferred per-class count line', () => {

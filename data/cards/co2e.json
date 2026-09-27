@@ -137,7 +137,7 @@
           "attack": null,
           "recruit": "1+",
           "abilities": [
-            "You get +1[icon:recruit] for each Hero Class you have."
+            "You get +1[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -152,7 +152,7 @@
           "attack": "1+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Hero Class you have."
+            "You get +1[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -182,7 +182,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Hero Class you have.",
+            "You get +1[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]",
             "[team:avengers]: You also get +1[icon:attack] for each other [team:avengers] Hero you played this turn."
           ]
         }

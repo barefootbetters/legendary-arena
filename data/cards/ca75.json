@@ -182,7 +182,7 @@
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
-            "You get +2[icon:attack] for each Hero Class you have.",
+            "You get +2[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]",
             "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have."
           ]
         }
@@ -262,7 +262,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Hero class you have.",
+            "You get +1[icon:attack] for each Hero class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]",
             "[keyword:Man Out of Time]"
           ]
         },
@@ -357,7 +357,7 @@
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
-            "You get +1[icon:recruit] for each Hero Class you have.",
+            "You get +1[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]",
             "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have."
           ]
         },

@@ -26,12 +26,19 @@
  *             is found. This is the CI gate.
  *   (default) print every gap and the deferred list, then exit 0.
  *
+ * A second family is scanned the same way: "for each Hero Class you have" /
+ * "for each color of Hero you have" (Captain America's Perfect Teamwork and its
+ * reprints). It needs the distinct-hero-classes-played-this-turn marker
+ * (D-24529); without it the line parsed as a flat +N (bkwd Captain America's
+ * Legacy in operator match 19720cb4, 2026-09-26).
+ *
  * DEFERRED carries lines that are intentionally unmarked, each with a reason.
  * A DEFERRED entry that no longer matches an unmarked count-phrase line (the
  * card was marked, renamed, or removed) is STALE and fails --check, so the
  * allowlist cannot rot into a silent suppression.
  *
- * The pure helpers (parseCountClauseClass, markerPresentFor, evaluateLine,
+ * The pure helpers (parseCountClauseClass, markerPresentFor,
+ * distinctClassMarkerPresent, evaluateLine,
  * findGaps, findStaleDeferred, DEFERRED) are exported and data-injected so the
  * unit test needs no file I/O; main() is guarded behind isRunDirectly().
  */
@@ -51,6 +58,16 @@ const DEFAULT_CARDS_DIR = join(SCRIPT_DIRECTORY, '..', 'data', 'cards');
 // families (no "[hc:X] ... played this turn" shape), so those are out of scope.
 export const COUNT_CLAUSE =
   /for each other\s*\[hc:([a-z-]+)\]\s*(?:hero|ally|card)s?\s+you\s+(?:have\s+)?played this turn/i;
+
+// why: the distinct-classes-you-have count clause (Perfect Teamwork family).
+// "Hero Class" and "color of Hero" are the same rulebook count across printings
+// (ca75 prints a lowercase "Hero class"). It resolves through the
+// distinct-hero-classes-played-this-turn source (D-24529: hand + play, gray
+// Heroes never count). Only hero lines are scanned, so the villain/mastermind
+// "(including grey)" Fight lines never reach this gate.
+export const DISTINCT_CLASS_CLAUSE = /for each (?:hero class|colou?r of hero) you have/i;
+
+export const DISTINCT_CLASS_SOURCE = 'distinct-hero-classes-played-this-turn';
 
 /**
  * Returns the hero-class slug of a per-class count clause, or null when the line
@@ -86,16 +103,43 @@ export function markerPresentFor(line, heroClass) {
 }
 
 /**
- * Pure classification of a single ability line.
+ * True when the line carries the attack- or recruit-per-count marker for the
+ * distinct-hero-classes source.
  * @param {string} line
- * @returns {{isCountLine:boolean, heroClass:string|null, marked:boolean}}
+ * @returns {boolean}
+ */
+export function distinctClassMarkerPresent(line) {
+  return (
+    line.includes(`[keyword:attack-per-count:${DISTINCT_CLASS_SOURCE}:`) ||
+    line.includes(`[keyword:recruit-per-count:${DISTINCT_CLASS_SOURCE}:`)
+  );
+}
+
+/**
+ * Pure classification of a single ability line. `countSource` is the
+ * HeroCountSource slug the line's marker must name.
+ * @param {string} line
+ * @returns {{isCountLine:boolean, heroClass:string|null, countSource:string|null, marked:boolean}}
  */
 export function evaluateLine(line) {
   const heroClass = parseCountClauseClass(line);
-  if (heroClass === null) {
-    return { isCountLine: false, heroClass: null, marked: false };
+  if (heroClass !== null) {
+    return {
+      isCountLine: true,
+      heroClass,
+      countSource: `${heroClass}-heroes-played-this-turn`,
+      marked: markerPresentFor(line, heroClass),
+    };
   }
-  return { isCountLine: true, heroClass, marked: markerPresentFor(line, heroClass) };
+  if (typeof line === 'string' && DISTINCT_CLASS_CLAUSE.test(line)) {
+    return {
+      isCountLine: true,
+      heroClass: null,
+      countSource: DISTINCT_CLASS_SOURCE,
+      marked: distinctClassMarkerPresent(line),
+    };
+  }
+  return { isCountLine: false, heroClass: null, countSource: null, marked: false };
 }
 
 // why: lines that legitimately have no per-class marker yet. Each names the
@@ -105,7 +149,50 @@ export function evaluateLine(line) {
 // now marked with [keyword:kidnap-per-count:tech-heroes-played-this-turn:1], so its
 // entry is removed. A stale deferral (a card that IS now marked) fails --check, so the
 // allowlist must shrink in lockstep with the marker landing.
-export const DEFERRED = [];
+// why: the entries below are the gated / non-standard variants of the Perfect
+// Teamwork family that the 2026-09-26 backfill left unmarked on purpose (the
+// plain ungated lines were marked). Each is a tracked follow-up.
+export const DEFERRED = [
+  {
+    set: 'ca75',
+    hero: 'captain-america-falcon',
+    card: 'star-spangled-hero',
+    abilityIndex: 1,
+    reason:
+      'Savior-gated per-class recruit line: still a flat +2 under the Savior gate until the marker is composed with that gate and verified.',
+  },
+  {
+    set: 'ca75',
+    hero: 'steve-rogers-director-of-shield',
+    card: 'international-strike-force',
+    abilityIndex: 1,
+    reason:
+      'Savior-gated per-class attack line: still a flat +1 under the Savior gate until the marker is composed with that gate and verified.',
+  },
+  {
+    set: 'bkpt',
+    hero: 'king-black-panther',
+    card: 'unite-the-tribes-of-wakanda',
+    abilityIndex: 0,
+    reason: 'Ambush-gated per-class attack line on a Hero card; needs its own timing analysis.',
+  },
+  {
+    set: 'bkpt',
+    hero: 'king-black-panther',
+    card: 'unite-the-tribes-of-wakanda',
+    abilityIndex: 1,
+    reason:
+      'Thrones Favor optional spend for per-class recruit AND attack; a dual-resource spend, not a plain per-count grant.',
+  },
+  {
+    set: 'dstr',
+    hero: 'doctor-voodoo',
+    card: 'medallion-of-many-loas',
+    abilityIndex: 0,
+    reason:
+      'Ritual Artifact: optional discard at a 3+ Hero Class threshold, then per-class attack; an artifact-activation mechanic, not an onPlay grant.',
+  },
+];
 
 /** True when a scanned entry matches a DEFERRED allowlist entry (by identity). */
 export function isDeferred(entry) {
@@ -147,6 +234,7 @@ export function scanCorpus(cardsDir = DEFAULT_CARDS_DIR) {
             card: card.slug,
             abilityIndex,
             heroClass: evaluated.heroClass,
+            countSource: evaluated.countSource,
             marked: evaluated.marked,
             line,
           });
@@ -210,7 +298,7 @@ export function runCheck() {
           deferred.card === entry.card &&
           deferred.abilityIndex === entry.abilityIndex,
       );
-      console.log(`  - ${entry.set}/${entry.hero}/${entry.card}[${entry.abilityIndex}] (${entry.heroClass}): ${match.reason}`);
+      console.log(`  - ${entry.set}/${entry.hero}/${entry.card}[${entry.abilityIndex}] (${entry.countSource}): ${match.reason}`);
     }
   }
 
@@ -218,8 +306,8 @@ export function runCheck() {
     console.log('\nUNMARKED count-phrase lines (missing per-class marker):');
     for (const entry of gaps) {
       console.log(
-        `  - ${entry.set}/${entry.hero}/${entry.card}[${entry.abilityIndex}] (${entry.heroClass}) needs ` +
-          `[keyword:attack-per-count:${entry.heroClass}-heroes-played-this-turn:N] (or recruit-per-count)`,
+        `  - ${entry.set}/${entry.hero}/${entry.card}[${entry.abilityIndex}] needs ` +
+          `[keyword:attack-per-count:${entry.countSource}:N] (or recruit-per-count)`,
       );
       console.log(`      line: ${entry.line}`);
     }

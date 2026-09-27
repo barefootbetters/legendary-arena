@@ -569,7 +569,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each Hero Class you have.",
+            "You get +1[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]",
             "[team:avengers]: [keyword:Dark Memories]."
           ]
         }

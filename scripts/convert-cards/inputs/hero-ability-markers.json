@@ -91,6 +91,24 @@
       "cardSlug": "liberate-the-prisoners",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "captain-america-1941",
+      "cardSlug": "storm-the-beachhead",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america-falcon",
+      "cardSlug": "star-spangled-hero",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]"
+    },
+    {
+      "heroSlug": "steve-rogers-director-of-shield",
+      "cardSlug": "international-strike-force",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
     }
   ],
   "chmp": [
@@ -173,6 +191,24 @@
       "cardSlug": "overloaded-unibeam",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:tech-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "avengers-assemble",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "perfect-teamwork",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "a-day-unlike-any-other",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
     }
   ],
   "core": [
@@ -677,6 +713,12 @@
       "cardSlug": "manly-dullard",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "captain-america-secret-avenger",
+      "cardSlug": "bold-leadership",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
     }
   ],
   "dkcy": [
@@ -795,6 +837,12 @@
       "cardSlug": "infused-by-the-tesseract",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "black-panther",
+      "cardSlug": "fateful-return",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]"
     }
   ],
   "msp1": [
@@ -887,6 +935,18 @@
       "cardSlug": "crazed-rampage",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-wound-each]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "avengers-assemble",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america",
+      "cardSlug": "perfect-teamwork",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
     }
   ],
   "smhc": [
@@ -1503,6 +1563,12 @@
       "cardSlug": "champion-of-the-winter-guard",
       "abilityIndex": 2,
       "markupToken": "[keyword:attack-per-count:covert-heroes-played-this-turn:2]"
+    },
+    {
+      "heroSlug": "falcon-winter-soldier",
+      "cardSlug": "captain-americas-legacy",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
     }
   ],
   "dead": [
