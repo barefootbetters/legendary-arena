@@ -98,6 +98,18 @@ unlicensed IP, gated the same way as a public video (see
 don't show licensed card art are unaffected. Full content-type table and
 cadence live in the authoritative marketing-repo doc.
 
+### The Soul Line (Across the Table)
+
+The authoritative plan gives *Across the Table* a soul line for episodes whose
+conversation turns from the game to life, drawn from the
+[Soul of Legendary Arena](soul-of-legendary-arena.md) essays:
+
+> No Dad with a wayward son has ever said, "If only my boy would read that
+> award-winning book about the pigsty, *Lord of the Flies*." Every Dad wants his
+> son to know something else: that he can change, leave the pigsty, and start
+> down the road home — the road his Dad is already watching, ready to run and
+> meet him.
+
 ### Success Criteria
 
 The system is working when these trends improve over a rolling 30-day
