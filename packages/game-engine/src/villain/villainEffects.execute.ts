@@ -18,6 +18,8 @@
 
 import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
+import type { CardTraitEntry } from '../state/cardTraits.types.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 import type {
   VillainAbilityTiming,
   VillainAbilityHook,
@@ -1450,11 +1452,10 @@ function villainEffectTimingLabel(timing: VillainAbilityTiming): string {
  * `trait.team` equals the (normalized) value, a `hero-class` predicate needs
  * `trait.heroClass`.
  *
- * @param cardIds - The player's hand + in-play card ext_ids.
- * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param trait - The card's trait entry (the off-play view for a hand / HQ card), or undefined.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
- * @returns True when the player has at least one matching Hero in hand or in play.
+ * @returns True when the trait matches the predicate.
  */
 // why: D-24290 — the per-card trait match, extracted at the third caller
 // (playerHasHeroMatchingTrait, countPlayerHeroesMatchingTrait, and the
@@ -1463,12 +1464,10 @@ function villainEffectTimingLabel(timing: VillainAbilityTiming): string {
 // predicate matches `trait.heroClass`. `value` is normalized at parse time, so
 // `===` is casing/whitespace-safe.
 function cardTraitMatches(
-  cardTraits: LegendaryGameState['cardTraits'],
-  cardId: CardExtId,
+  trait: CardTraitEntry | undefined,
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  const trait = cardTraits[cardId];
   if (trait === undefined) {
     return false;
   }
@@ -1490,14 +1489,31 @@ function cardTraitMatches(
 // Sabretooth having already played Wolverine → wrongly wounded). Counting in-play
 // too makes "you have an X-Men Hero" satisfy the reveal, as the operator ruled.
 // Discard + deck stay excluded (only hand + play are "revealable"). No `.reduce()`.
+// why: WP-772 / D-24604 — the two zones are scanned separately because only the HAND is off
+// play: a split card in hand counts as both halves' classes (rules v23 p.49, via the split-face
+// map), while a played split card counts only as its chosen face.
+/**
+ * Returns whether a player has a Hero — in hand OR in play — matching the trait predicate.
+ *
+ * @param G - Game state (reads G.cardTraits and the split-face map).
+ * @param zones - The player's zones (hand + inPlay are scanned).
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns True when the player has at least one matching Hero in hand or in play.
+ */
 function playerHasHeroMatchingTrait(
-  cardIds: readonly CardExtId[],
-  cardTraits: LegendaryGameState['cardTraits'],
+  G: LegendaryGameState,
+  zones: PlayerZones,
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  for (const cardId of cardIds) {
-    if (cardTraitMatches(cardTraits, cardId, kind, value)) {
+  for (const handCardId of zones.hand) {
+    if (cardTraitMatches(offPlayCardTraits(G, handCardId), kind, value)) {
+      return true;
+    }
+  }
+  for (const playedCardId of zones.inPlay) {
+    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
       return true;
     }
   }
@@ -1512,21 +1528,28 @@ function playerHasHeroMatchingTrait(
  * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) to size the
  * rescue by the number of matching Heroes rather than a mere has/has-not.
  *
- * @param cardIds - The player's hand + in-play card ext_ids.
- * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param G - Game state (reads G.cardTraits and the split-face map).
+ * @param zones - The player's zones (hand + inPlay are scanned).
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns The number of matching Heroes across hand + in-play.
  */
 function countPlayerHeroesMatchingTrait(
-  cardIds: readonly CardExtId[],
-  cardTraits: LegendaryGameState['cardTraits'],
+  G: LegendaryGameState,
+  zones: PlayerZones,
   kind: 'team' | 'hero-class',
   value: string,
 ): number {
   let count = 0;
-  for (const cardId of cardIds) {
-    if (cardTraitMatches(cardTraits, cardId, kind, value)) {
+  // why: WP-772 / D-24604 — hand (off play) reads the split-face map's both-halves view; inPlay
+  // reads the chosen face only (same zone split as playerHasHeroMatchingTrait).
+  for (const handCardId of zones.hand) {
+    if (cardTraitMatches(offPlayCardTraits(G, handCardId), kind, value)) {
+      count += 1;
+    }
+  }
+  for (const playedCardId of zones.inPlay) {
+    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
       count += 1;
     }
   }
@@ -1588,8 +1611,8 @@ function villainEffectRevealOrWound(
     }
     if (
       playerHasHeroMatchingTrait(
-        [...zones.hand, ...zones.inPlay],
-        G.cardTraits,
+        G,
+        zones,
         requireKind,
         requireValue,
       )
@@ -2214,7 +2237,7 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  * UNCHANGED, so the corpus-wide `[team:shield]` synergies and Baron Zemo's
  * rescue-by-count are unaffected (narrow fix — operator ruling 2026-08-03).
  *
- * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param trait - The card's trait entry (the off-play view for a hand card), or undefined.
  * @param cardId - The card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
@@ -2222,12 +2245,12 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  *   under a `team:shield` predicate.
  */
 function koHeroMatchesTraitOrBasicShield(
-  cardTraits: LegendaryGameState['cardTraits'],
+  trait: CardTraitEntry | undefined,
   cardId: CardExtId,
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  if (cardTraitMatches(cardTraits, cardId, kind, value)) {
+  if (cardTraitMatches(trait, kind, value)) {
     return true;
   }
   // why: only a team:shield predicate rescues the teamless basic-S.H.I.E.L.D. cards;
@@ -2272,8 +2295,10 @@ function villainEffectKoHeroesCurrentByTrait(
   // starter-first selection are wrong for a "KO ALL matching" effect.
   const targets: CardExtId[] = [];
   const remainingHand: CardExtId[] = [];
+  // why: WP-772 / D-24604 — the hand is off play, so a split card there matches on either half's
+  // class (via the split-face map); the in-play loop below keeps the chosen face only.
   for (const cardId of zones.hand) {
-    if (koHeroMatchesTraitOrBasicShield(G.cardTraits, cardId, requireKind, requireValue)) {
+    if (koHeroMatchesTraitOrBasicShield(offPlayCardTraits(G, cardId), cardId, requireKind, requireValue)) {
       targets.push(cardId);
     } else {
       remainingHand.push(cardId);
@@ -2281,7 +2306,7 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   const remainingInPlay: CardExtId[] = [];
   for (const cardId of zones.inPlay) {
-    if (koHeroMatchesTraitOrBasicShield(G.cardTraits, cardId, requireKind, requireValue)) {
+    if (koHeroMatchesTraitOrBasicShield(G.cardTraits[cardId], cardId, requireKind, requireValue)) {
       targets.push(cardId);
     } else {
       remainingInPlay.push(cardId);
@@ -2340,8 +2365,8 @@ function villainEffectKoHeroesCurrentCountByTrait(
   // this turn — they sit in `inPlay`, since the Fight effect resolves after the play
   // phase (the operator ruling precedent from `villainEffectKoHeroesCurrentByTrait`).
   const owedFromTrait = countPlayerHeroesMatchingTrait(
-    [...zones.hand, ...zones.inPlay],
-    G.cardTraits,
+    G,
+    zones,
     requireKind,
     requireValue,
   );
@@ -2445,8 +2470,8 @@ function villainEffectRescueBystandersCurrentByTraitCount(
     return { targets: [] };
   }
   const rescueCount = countPlayerHeroesMatchingTrait(
-    [...zones.hand, ...zones.inPlay],
-    G.cardTraits,
+    G,
+    zones,
     requireKind,
     requireValue,
   );
@@ -2493,27 +2518,27 @@ function villainEffectRescueBystandersCurrentByTraitCount(
  * shared `cardTraitMatches`. Deliberately separate from the player-zone scanners
  * (`countPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
  *
- * @param hq - The HQ zone (five `CardExtId | null` slots).
- * @param cardTraits - The setup-time `{ team, heroClass }` trait snapshot.
+ * @param G - Game state (reads G.hq, G.cardTraits and the split-face map).
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns How many non-empty HQ slots hold a Hero matching the trait.
  */
 function countHqHeroesByTrait(
-  hq: LegendaryGameState['hq'],
-  cardTraits: LegendaryGameState['cardTraits'],
+  G: LegendaryGameState,
   kind: 'team' | 'hero-class',
   value: string,
 ): number {
   let count = 0;
-  for (const slot of hq) {
+  for (const slot of G.hq) {
     // why: an empty HQ slot holds no Hero; synthetic cards never sit in the HQ and
     // an `[team:…]` predicate never matches them, so no BASIC_SHIELD-style widening
     // (D-24296) is needed here.
     if (slot === null) {
       continue;
     }
-    if (cardTraitMatches(cardTraits, slot, kind, value)) {
+    // why: WP-772 / D-24604 — the HQ is off play, so a split card there matches on either
+    // half's class (rules v23 p.49), resolved through the split-face map.
+    if (cardTraitMatches(offPlayCardTraits(G, slot), kind, value)) {
       count += 1;
     }
   }
@@ -2552,7 +2577,7 @@ function villainEffectCaptureBystandersPlusPerHqHeroByTrait(
   }
   // why: D-24334 — base 1 ("captures a Bystander") + one per HQ Hero matching the
   // trait ("another Bystander for each [team:avengers] Hero in the HQ").
-  const captureCount = 1 + countHqHeroesByTrait(G.hq, G.cardTraits, requireKind, requireValue);
+  const captureCount = 1 + countHqHeroesByTrait(G, requireKind, requireValue);
   let captured = 0;
   for (let captureIndex = 0; captureIndex < captureCount; captureIndex++) {
     // why: supply-bounded — stop once the shared Bystander pile is empty (a reachable
@@ -2613,7 +2638,9 @@ function selectHqHeroIndexByTraitHighestCost(
     if (slot === null || slot === undefined) {
       continue;
     }
-    if (!cardTraitMatches(G.cardTraits, slot, kind, value)) {
+    // why: WP-772 / D-24604 — the HQ is off play, so a split card there matches on either
+    // half's class (rules v23 p.49), resolved through the split-face map.
+    if (!cardTraitMatches(offPlayCardTraits(G, slot), kind, value)) {
       continue;
     }
     const heroCost = G.cardStats[slot]?.cost ?? 0;

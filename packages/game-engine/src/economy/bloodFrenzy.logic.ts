@@ -59,18 +59,20 @@ export function victoryPointValueForCard(
   const cardType = G.villainDeckCardTypes[cardId];
 
   if (cardType === 'villain') {
-    const allPlayerCardIds = [
+    // why: WP-772 / D-24604 — split by zone exactly like computeFinalScores: the off-play cards
+    // take the split-face map's both-halves view, the in-play cards only their chosen face.
+    const offPlayCardIds = [
       ...zones.deck,
       ...zones.hand,
       ...zones.discard,
-      ...zones.inPlay,
       ...zones.victory,
     ];
     const dynamicVp = computeDynamicVillainVictoryPoints(
       cardId,
       zones.victory,
-      allPlayerCardIds,
-      G.cardTraits,
+      offPlayCardIds,
+      zones.inPlay,
+      G,
     );
     if (dynamicVp !== null) {
       return dynamicVp;

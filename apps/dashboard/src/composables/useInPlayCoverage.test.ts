@@ -455,9 +455,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // observations), and the anni boards' trajectories shift with the lost free resources, so
   // totalObs 3019 -> 3967. resolvedObs stays 1135, so percentResolved 37.6 -> 28.6
   // (1135 / 3967). Newly visible hollow surface, not a regression.
+  // 2026-09-26 (WP-772 / D-24604, re-pin): off play a Divided Card now counts as both halves'
+  // classes, so class checks on the bkwd / mgtg / msis split-hero boards succeed where they
+  // failed and those boards' fixed-seed trajectories shift (per-board tally vs main: bkwd
+  // undercover +9, mgtg artifact +3, msis sacrifice -1; every other board byte-identical).
+  // totalObs 3967 -> 3977; resolvedObs stays 1135, so percentResolved 28.6 -> 28.5
+  // (1135 / 3977). A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3967);
-  assert.equal(view.percentResolved.value, 28.6);
+  assert.equal(view.totalObs.value, 3977);
+  assert.equal(view.percentResolved.value, 28.5);
   assert.ok(view.remaining.value.length > 0);
 });
 

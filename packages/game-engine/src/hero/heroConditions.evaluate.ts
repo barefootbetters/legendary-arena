@@ -19,6 +19,7 @@ import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
+import { offPlayCardTraits } from './splitCard.logic.js';
 
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
@@ -550,7 +551,10 @@ export function countDistinctHeroClassesYouHave(
   // why: HAND half — a Hero still in hand counts as "a Hero you have"; use its
   // printed color(s) only (no Size-Changing grant, which is an in-play effect).
   for (const handCardId of playerZones.hand) {
-    const traitEntry = G.cardTraits[handCardId as CardExtId];
+    // why: WP-772 / D-24604 — only the HAND half reads the off-play view: a split card in hand
+    // counts as both halves' classes (rules v23 p.49), resolved through the split-face map.
+    // The play-area half below keeps the chosen face only.
+    const traitEntry = offPlayCardTraits(G, handCardId);
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
       distinctClasses.add(traitEntry.heroClass);
     }
@@ -659,7 +663,9 @@ function discardHasHeroClass(
     return false;
   }
   for (const discardCardId of playerZones.discard) {
-    const traitEntry = G.cardTraits[discardCardId as CardExtId];
+    // why: WP-772 / D-24604 — the discard pile is off play, so a split card there counts as
+    // both halves' classes (rules v23 p.49), resolved through the split-face map.
+    const traitEntry = offPlayCardTraits(G, discardCardId);
     if (traitEntry === undefined) {
       continue;
     }

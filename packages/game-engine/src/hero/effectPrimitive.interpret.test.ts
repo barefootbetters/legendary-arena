@@ -447,3 +447,46 @@ describe('interpretHeroPrimitiveEffect — WP-317 grant log', () => {
     assert.equal(G.turnEconomy!.attack, 1, 'the grant still applied without a messages array');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-772 / D-24604 — Divided Card off-play reads (HQ class count, printed stat)
+// ---------------------------------------------------------------------------
+
+describe('interpretHeroPrimitiveEffect — split cards off play (WP-772 / D-24604)', () => {
+  const SPLIT_FACE_A = 'cvwr/captain-america-secret-avenger/inspire-a-man#0';
+  const SPLIT_FACE_B = 'cvwr/captain-america-secret-avenger/inspire-a-nation#0';
+  const SPLIT_FACE_MAP = {
+    'cvwr/captain-america-secret-avenger/inspire-a-man': 'cvwr/captain-america-secret-avenger/inspire-a-nation',
+  } as LegendaryGameState['splitFaces'];
+
+  it('count-cards-by-class-in-zone: a split card in the HQ counts for its face-b class', () => {
+    const G = makeState({
+      hq: [SPLIT_FACE_A, null, null, null, null],
+      cardTraits: {
+        [SPLIT_FACE_A]: { heroClass: 'instinct', team: 'avengers' },
+        [SPLIT_FACE_B]: { heroClass: 'strength', team: 'avengers' },
+      },
+    });
+    G.splitFaces = SPLIT_FACE_MAP;
+    const countStrengthInHq: EffectNode = {
+      type: 'gain-resource',
+      resource: 'attack',
+      amount: { type: 'count-cards-by-class-in-zone', heroClass: 'strength', zone: 'hq' },
+    };
+    interpretHeroPrimitiveEffect(G, CTX, '0', countStrengthInHq);
+    assert.equal(G.turnEconomy!.attack, 1, 'the HQ split card counts as strength via face b');
+  });
+
+  it('card-printed-stat (Berserk): a discarded split card gives the total of both halves’ Attack', () => {
+    const G = makeState({});
+    G.splitFaces = SPLIT_FACE_MAP;
+    G.playerZones['0']!.deck = [SPLIT_FACE_A as CardExtId];
+    const statRow = (attack: number) => ({
+      attack, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0,
+      hasAttackIcon: attack > 0, hasRecruitIcon: false,
+    });
+    G.cardStats = { [SPLIT_FACE_A]: statRow(2), [SPLIT_FACE_B]: statRow(1) } as LegendaryGameState['cardStats'];
+    interpretHeroPrimitiveEffect(G, CTX, '0', HERO_COMPOSITION_MARKERS['berserk']!);
+    assert.equal(G.turnEconomy!.attack, 3, 'printed Attack off play = 2 + 1');
+  });
+});

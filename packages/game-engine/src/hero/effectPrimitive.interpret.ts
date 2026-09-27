@@ -38,6 +38,7 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { addResources } from '../economy/economy.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { offPlayCardStats, offPlayCardTraits } from './splitCard.logic.js';
 
 // ---------------------------------------------------------------------------
 // Best-effort warning (non-throwing)
@@ -139,7 +140,10 @@ function evaluateCardPrintedStat(
     );
     return 0;
   }
-  const cardStats = G.cardStats[cardId];
+  // why: WP-772 / D-24604 — the bound card was moved between off-play zones (EffectZoneKind is
+  // deck | discard only), so a split card reads its off-play printed numbers — both halves
+  // totalled (rules v23 p.49) — resolved through the split-face map.
+  const cardStats = offPlayCardStats(G, cardId);
   if (cardStats === undefined) {
     // why: a card with no G.cardStats entry (a S.H.I.E.L.D. starter, D-21502) resolves
     // to 0 — the same accepted MVP limitation the reveal handler's skip-and-advance takes.
@@ -196,7 +200,9 @@ function evaluateCountCardsByClassInZone(
     if (slotCardId === null) {
       continue;
     }
-    const traitEntry = G.cardTraits[slotCardId];
+    // why: WP-772 / D-24604 — the HQ is off play: a split card there counts as both halves'
+    // classes (rules v23 p.49), resolved through the split-face map.
+    const traitEntry = offPlayCardTraits(G, slotCardId);
     // why: WP-703 / D-24523 — a dual-class card counts on EITHER printed class.
     if (traitEntry !== undefined && (traitEntry.heroClass === countExpression.heroClass || traitEntry.heroClass2 === countExpression.heroClass)) {
       matchCount += 1;
@@ -244,7 +250,9 @@ function evaluateMaxClassCountInZone(
     if (slotCardId === null) {
       continue;
     }
-    const traitEntry = G.cardTraits[slotCardId];
+    // why: WP-772 / D-24604 — the HQ is off play: a split card there counts toward both halves'
+    // class buckets (rules v23 p.49), resolved through the split-face map.
+    const traitEntry = offPlayCardTraits(G, slotCardId);
     if (traitEntry === undefined || typeof traitEntry.heroClass !== 'string') {
       continue;
     }
@@ -322,7 +330,9 @@ function evaluateTopDeckCardClassCountInZone(
     );
     return 0;
   }
-  const traitEntry = G.cardTraits[topCardId];
+  // why: WP-772 / D-24604 — the peeked deck-top card and the HQ are both off play, so split
+  // cards on either side use both halves' classes (rules v23 p.49) via the split-face map.
+  const traitEntry = offPlayCardTraits(G, topCardId);
   const heroClass = traitEntry?.heroClass;
   // why: WP-703 / D-24523 relaxes the D-24065 deck-peek single-class scope note here.
   // The revealed card still needs a valid FIRST printed class (null/empty → 0), but a
@@ -349,7 +359,7 @@ function evaluateTopDeckCardClassCountInZone(
     if (slotCardId === null) {
       continue;
     }
-    const slotTraitEntry = G.cardTraits[slotCardId];
+    const slotTraitEntry = offPlayCardTraits(G, slotCardId);
     // why: WP-703 / D-24523 — an HQ card matches if EITHER of its printed classes is in the revealed card's class set.
     const slotClass = slotTraitEntry?.heroClass;
     const slotClass2 = slotTraitEntry?.heroClass2;

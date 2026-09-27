@@ -109,11 +109,13 @@ export function computeFinalScores(
     // (Ultron, D-24362) count Hero cards across the player's whole card pool, not
     // just the victory pile. Built ONCE per player, hoisted out of the victory loop
     // so it is not rebuilt for each victory card.
-    const allPlayerCardIds = [
+    // why: WP-772 / D-24604 — split by zone: the off-play cards take the split-face map's
+    // both-halves view (rules v23 p.49), the in-play cards only their chosen face. Must stay
+    // identical to victoryPointValueForCard (bloodFrenzy.logic.ts) so live VP == final VP.
+    const offPlayCardIds = [
       ...zones.deck,
       ...zones.hand,
       ...zones.discard,
-      ...zones.inPlay,
       ...zones.victory,
     ];
 
@@ -130,8 +132,9 @@ export function computeFinalScores(
         const dynamicVp = computeDynamicVillainVictoryPoints(
           cardId,
           zones.victory,
-          allPlayerCardIds,
-          gameState.cardTraits,
+          offPlayCardIds,
+          zones.inPlay,
+          gameState,
         );
         villainVP += dynamicVp ?? (gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN);
       } else if (cardType === 'henchman') {

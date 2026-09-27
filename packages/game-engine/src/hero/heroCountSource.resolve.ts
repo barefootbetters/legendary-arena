@@ -35,6 +35,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { offPlayCardTraits } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -632,9 +633,11 @@ function collectHeroClassCardsPlayedThisTurn(
  * half by printed `heroClass` / `heroClass2` only, and the PLAY half by those plus the
  * Size-Changing granted classes (an in-play-only grant). It is SELF-INCLUSIVE — the count
  * source counts distinct COLOURS over all Heroes you have including the trigger, so this
- * takes no `triggeringCardId` and lists every card that carries any class. Because the
- * resolved count is a distinct-colour rollup (multiple cards may share a colour),
- * `count <= collected.length` here — a documented rollup, not an error.
+ * takes no `triggeringCardId` and lists every card that carries any class. The resolved
+ * count is a distinct-colour rollup, so it is NOT bounded by `collected.length` in either
+ * direction: multiple cards may share a colour (count below length), and ONE card may carry
+ * two colours — a dual-class card, or a split card in hand (both halves, WP-772 / D-24604) —
+ * pushing count above length. Neither is an error.
  *
  * // why: D-24529 — must scan hand + play (not just inPlay) so the countedInputs stay
  * consistent with the corrected resolveCountSource count; a hand-only colour would
@@ -656,7 +659,10 @@ function collectDistinctHeroClassCards(
   const matchedCardIds: CardExtId[] = [];
   // why: HAND half — printed colours only (no Size-Changing grant, an in-play effect).
   for (const handCardId of playerZones.hand) {
-    const traitEntry = G.cardTraits[handCardId as CardExtId];
+    // why: WP-772 / D-24604 — consistency with countDistinctHeroClassesYouHave: a split card in
+    // hand reads the off-play view (both halves' classes) through the split-face map. Face a
+    // always carries a class, so this does not change which hand cards are collected.
+    const traitEntry = offPlayCardTraits(G, handCardId);
     const hasPrintedClass =
       traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;
     // why: WP-703 / D-24523 — a dual-class card contributes via heroClass2 alone.
@@ -697,7 +703,8 @@ function collectDistinctHeroClassCards(
  * Victory Pile, not cards-played-this-turn, and are omitted from `countedInputs` in this
  * slice. Self-inclusion follows each source: self-EXCLUSIVE for the seven per-card sources
  * (`count === length`), self-INCLUSIVE for `distinct-hero-classes-played-this-turn`
- * (`count <= length`, a distinct-colour rollup). Pure, total, never mutates `G`, no I/O.
+ * (a distinct-colour rollup — count may be below or above length; see
+ * collectDistinctHeroClassCards). Pure, total, never mutates `G`, no I/O.
  *
  * @param G - Game state (read-only).
  * @param playerID - The active player whose state to read.
@@ -736,7 +743,8 @@ export function explainCountSourceInputs(
     case 'distinct-hero-classes-played-this-turn': {
       // why: self-INCLUSIVE — mirrors resolveCountSource's own self-inclusion for this
       // source (no triggeringCardId exclusion); the resolved count is a distinct-colour
-      // rollup, so count <= the returned card-list length.
+      // rollup, not bounded by the returned card-list length (one dual-class or hand split
+      // card can contribute two colours).
       return collectDistinctHeroClassCards(G, playerID);
     }
     case 'avengers-played-this-turn': {

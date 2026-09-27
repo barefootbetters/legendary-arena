@@ -7,6 +7,38 @@
 
 ## Current State
 
+### WP-772 — Divided Card off-play traits: a split hero counts as both halves until it is played (EC-809 / D-24604) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Split
+("Divided") hero cards now follow Universal Rules v23 p.49 everywhere they are not in play:
+- **Off play, both halves count.** In hand, deck, discard pile, HQ, Victory Pile or the Hero Deck, a
+  split card counts as **both** of its Hero Classes. So "reveal a [Strength] Hero or gain a Wound",
+  X-Gene discard checks, defeat requirements, HQ class counts and filters, and "Heroes of N
+  different classes you have" all see either class.
+- **Off play, printed numbers are totalled.** Printed Attack / Recruit reads (Jade Giantess, Berserk,
+  Investigate, the HQ icon reward) use the sum of both halves.
+- **In play, only the chosen half counts,** exactly as before.
+- **Face-b replay fixed.** A card played as its second half now offers the "choose a side" picker
+  again every time it is played. Before, it silently stayed face b forever.
+
+Counts and gates:
+- **Engine** 4518/0 → 4540/0 (+22). The one pre-existing assertion edit is the intentional
+  `isSplitCardInstance(face b)` false → true flip.
+- **Revert proofs.** Each surface-family test fails when its site is reverted to the raw read (8/8).
+- **Oracles.** The sentinel / replay hash oracles are unchanged (no re-pin). No new `G` field.
+- **`sim:runtime-observed`.** It regenerated once, and a per-board tally against `origin/main`
+  attributes every change to split-set boards: bkwd undercover +9, mgtg artifact +3, msis
+  sacrifice −1. Every other board is byte-identical.
+- **Dashboard.** The in-play pin was re-pinned from 3967 / 28.6 to 3977 / 28.5.
+- **Whole repo.** `pnpm -r --no-bail test` has 0 failures. The `sim:coverage` / ledger / cards /
+  effect-index / workindex gates are 0.
+- **Stored scores (D-24604 §5).** A read-only prod count (`default_transaction_read_only = on`)
+  found **0 of 197** `legendary.competitive_scores` rows with a split hero in `team_key`. Nothing
+  needs freezing today.
+- **Live-verify (D-24026) — pending.** In a manual play.legendary-arena.com match with a split hero
+  (e.g. `cvwr/peter-parker`), play a split card as face b. When it cycles back, the picker must
+  appear again. Record the matchId here. Autoplay cannot exercise it (the bot always picks face a).
+
 ### D-24608 — Henchmen count for The Ebony Blade's "a Villain in your Victory Pile" pick (direct fix) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The Ebony Blade (`antm`) now lets you pick

@@ -16,6 +16,23 @@ import {
   ULTRON_BASE_VP,
 } from './dynamicVictoryPoints.js';
 import type { CardExtId } from '../state/zones.types.js';
+import type { LegendaryGameState } from '../types.js';
+
+/**
+ * Wraps a trait map as the minimal game state the VP resolver reads (no split-face map, so
+ * every card takes the identity path — these fixtures carry no split hero).
+ *
+ * @param cardTraits - The card-trait fixture.
+ * @returns A game state exposing only `cardTraits`.
+ */
+function traitState(
+  cardTraits: Record<CardExtId, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
+): LegendaryGameState {
+  return { cardTraits } as unknown as LegendaryGameState;
+}
+
+/** No in-play cards: these fixtures pass every card as off play. */
+const NO_IN_PLAY: readonly CardExtId[] = [];
 
 // Realistic villain instance ext_ids: {setAbbr}-villain-{groupSlug}-{cardSlug}-{copy}.
 const SUPREME_HYDRA: CardExtId = 'core-villain-hydra-supreme-hydra-01' as CardExtId;
@@ -64,11 +81,11 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('Supreme HYDRA with 0 other HYDRA villains scores the base 3 VP', () => {
     const victoryPile: CardExtId[] = [SUPREME_HYDRA];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       SUPREME_HYDRA_BASE_VP,
     );
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       3,
     );
   });
@@ -76,7 +93,7 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('Supreme HYDRA with 1 other HYDRA villain scores 6 VP', () => {
     const victoryPile: CardExtId[] = [SUPREME_HYDRA, HYDRA_OTHER_A];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       6,
     );
   });
@@ -84,11 +101,11 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('Supreme HYDRA with 2 other HYDRA villains scores 9 VP', () => {
     const victoryPile: CardExtId[] = [SUPREME_HYDRA, HYDRA_OTHER_A, HYDRA_OTHER_B];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       SUPREME_HYDRA_BASE_VP + SUPREME_HYDRA_BONUS_PER_OTHER_HYDRA_VILLAIN * 2,
     );
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       9,
     );
   });
@@ -96,7 +113,7 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('non-HYDRA villains in the pile do not count toward the bonus (base 3 only)', () => {
     const victoryPile: CardExtId[] = [SUPREME_HYDRA, NON_HYDRA_VILLAIN, NON_HYDRA_VILLAIN];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       3,
     );
   });
@@ -104,7 +121,7 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('returns null for a non-modifier villain (caller uses the printed/fallback path)', () => {
     const victoryPile: CardExtId[] = [NON_HYDRA_VILLAIN, HYDRA_OTHER_A];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(NON_HYDRA_VILLAIN, victoryPile, NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(NON_HYDRA_VILLAIN, victoryPile, NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       null,
     );
   });
@@ -112,7 +129,7 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
   it('clamps to base 3 defensively when Supreme HYDRA is scored against an empty pile', () => {
     // Defensive: in practice this card is always in its own victory pile when scored.
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, [], NO_PLAYER_CARDS, NO_TRAITS),
+      computeDynamicVillainVictoryPoints(SUPREME_HYDRA, [], NO_PLAYER_CARDS, NO_IN_PLAY, traitState(NO_TRAITS)),
       3,
     );
   });
@@ -121,23 +138,23 @@ describe('computeDynamicVillainVictoryPoints — Supreme HYDRA (D-24355)', () =>
 describe('countTechHeroesAmongCards', () => {
   it('counts only cards whose heroClass is tech', () => {
     const cardIds = [TECH_HERO_A, TECH_HERO_B, NON_TECH_HERO, SHIELD_STARTER];
-    assert.strictEqual(countTechHeroesAmongCards(cardIds, TECH_HERO_TRAITS), 2);
+    assert.strictEqual(countTechHeroesAmongCards(traitState(TECH_HERO_TRAITS), cardIds, NO_IN_PLAY), 2);
   });
 
   it('returns 0 when no cards are tech Heroes', () => {
     assert.strictEqual(
-      countTechHeroesAmongCards([NON_TECH_HERO, SHIELD_STARTER], TECH_HERO_TRAITS),
+      countTechHeroesAmongCards(traitState(TECH_HERO_TRAITS), [NON_TECH_HERO, SHIELD_STARTER], NO_IN_PLAY),
       0,
     );
   });
 
   it('ignores cards absent from the trait map (villains, wounds, bystanders)', () => {
     const cardIds = [ULTRON, NON_HYDRA_VILLAIN, TECH_HERO_A];
-    assert.strictEqual(countTechHeroesAmongCards(cardIds, TECH_HERO_TRAITS), 1);
+    assert.strictEqual(countTechHeroesAmongCards(traitState(TECH_HERO_TRAITS), cardIds, NO_IN_PLAY), 1);
   });
 
   it('returns 0 for an empty card list', () => {
-    assert.strictEqual(countTechHeroesAmongCards([], TECH_HERO_TRAITS), 0);
+    assert.strictEqual(countTechHeroesAmongCards(traitState(TECH_HERO_TRAITS), [], NO_IN_PLAY), 0);
   });
 });
 
@@ -146,11 +163,11 @@ describe('computeDynamicVillainVictoryPoints — Ultron (D-24362)', () => {
     // No tech Heroes anywhere — base 2 only.
     const allPlayerCardIds: CardExtId[] = [ULTRON, NON_TECH_HERO, SHIELD_STARTER];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       ULTRON_BASE_VP,
     );
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       2,
     );
   });
@@ -158,7 +175,7 @@ describe('computeDynamicVillainVictoryPoints — Ultron (D-24362)', () => {
   it('Ultron with 1 tech Hero scores 3 VP', () => {
     const allPlayerCardIds: CardExtId[] = [ULTRON, TECH_HERO_A, NON_TECH_HERO];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       3,
     );
   });
@@ -168,11 +185,11 @@ describe('computeDynamicVillainVictoryPoints — Ultron (D-24362)', () => {
     // only Ultron itself. Ultron must still count both tech Heroes → 2 + 2 = 4.
     const allPlayerCardIds: CardExtId[] = [ULTRON, TECH_HERO_A, TECH_HERO_B, SHIELD_STARTER];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       2 + 2,
     );
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       4,
     );
   });
@@ -182,7 +199,7 @@ describe('computeDynamicVillainVictoryPoints — Ultron (D-24362)', () => {
     // which here also carries none → base 2.
     const allPlayerCardIds: CardExtId[] = [ULTRON];
     assert.strictEqual(
-      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, TECH_HERO_TRAITS),
+      computeDynamicVillainVictoryPoints(ULTRON, [ULTRON], allPlayerCardIds, NO_IN_PLAY, traitState(TECH_HERO_TRAITS)),
       ULTRON_BASE_VP,
     );
   });
@@ -194,7 +211,8 @@ describe('computeDynamicVillainVictoryPoints — Ultron (D-24362)', () => {
         NON_HYDRA_VILLAIN,
         [NON_HYDRA_VILLAIN],
         allPlayerCardIds,
-        TECH_HERO_TRAITS,
+        NO_IN_PLAY,
+        traitState(TECH_HERO_TRAITS),
       ),
       null,
     );

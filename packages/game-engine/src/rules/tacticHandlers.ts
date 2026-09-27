@@ -55,6 +55,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 // no-cycle seatChoiceTactics module). tacticHandlers imports these one-directionally;
 // seatChoice.resolve.ts never imports tacticHandlers (no cycle).
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
@@ -766,7 +767,9 @@ function hqHeroMatchesFreeRecruitFilter(
   cardId: CardExtId,
   filter: GiveHqHeroFilter,
 ): boolean {
-  const trait = G.cardTraits?.[cardId];
+  // why: WP-772 / D-24604 — an HQ card is off play, so a split card matches on either half's
+  // class (rules v23 p.49), resolved through the split-face map.
+  const trait = offPlayCardTraits(G, cardId);
   if (trait === undefined) {
     return false;
   }

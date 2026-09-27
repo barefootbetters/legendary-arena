@@ -57,6 +57,7 @@ import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
+import { offPlayCardStats, offPlayCardTraits } from './splitCard.logic.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
@@ -1923,7 +1924,10 @@ function revealPredicateMatches(
       pushLog(G, 'A reveal rule used a hero-class predicate with no class value and was skipped. Check the reveal rule markup.');
       return false;
     }
-    const traits = G.cardTraits ? G.cardTraits[topCardId] : undefined;
+    // why: WP-772 / D-24604 — the peeked deck-top card is off play, so a split card matches on
+    // either half's class (rules v23 p.49), resolved through the split-face map. (The team
+    // branch above needs no change: team is hero-level, equal on both halves.)
+    const traits = offPlayCardTraits(G, topCardId);
     return traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
   }
   if (predicate.kind === 'cost-lte') {
@@ -2550,7 +2554,9 @@ function heroEffectRevealHeroDeckAttack(
     if (topCardId === undefined) {
       break;
     }
-    const cardStat = G.cardStats[topCardId];
+    // why: WP-772 / D-24604 — a Hero Deck card is off play, so a split card's printed Attack is
+    // the total of both halves (rules v23 p.49), resolved through the split-face map.
+    const cardStat = offPlayCardStats(G, topCardId);
     // why: a card with no stat entry contributes 0 — never a fabricated value.
     const printedAttack = cardStat !== undefined ? cardStat.attack : 0;
     totalAttack += printedAttack;
@@ -5068,8 +5074,11 @@ function investigateCardMatchesCriteria(
   cardId: CardExtId,
   criteria: InvestigateCriterion[],
 ): boolean {
-  const stats = G.cardStats[cardId];
-  const traits = G.cardTraits ? G.cardTraits[cardId] : undefined;
+  // why: WP-772 / D-24604 — investigated cards come from the deck window or a hand reveal, both
+  // off play, so a split card is both halves' classes with its printed numbers totalled (rules
+  // v23 p.49), resolved through the split-face map. Cost is face a's (equal on both halves).
+  const stats = offPlayCardStats(G, cardId);
+  const traits = offPlayCardTraits(G, cardId);
   const candidate: InvestigateCandidate = {
     attack: stats?.attack,
     recruit: stats?.recruit,

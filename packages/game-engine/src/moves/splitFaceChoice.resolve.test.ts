@@ -6,7 +6,9 @@
  *
  * Covers:
  *  - hasPendingSplitFaceChoice: false when undefined/empty, true when queued.
- *  - isSplitCardInstance: true for a card whose base is in G.splitFaces; false otherwise / no map.
+ *  - isSplitCardInstance: true for EITHER face of a split card (WP-772); false otherwise / no map.
+ *  - face-b replay (WP-772 / D-24604): a face-b id replays into a fresh choice (faceA = primary);
+ *    choosing a from a played face-b id relabels inPlay to face a.
  *  - parkSplitFaceChoice: pushes a PendingSplitFaceChoice with faceA = played, faceB = alternate
  *    (same #copyIndex).
  *  - resolveSplitFaceChoice face 'a' → keeps faceA in inPlay, grants faceA economy, queue pops.
@@ -143,12 +145,14 @@ describe('hasPendingSplitFaceChoice + isSplitCardInstance (WP-724 / D-24545)', (
     assert.equal(hasPendingSplitFaceChoice(empty), true);
   });
 
-  it('isSplitCardInstance is true for a split base, false for a non-split card or when no map exists', () => {
+  it('isSplitCardInstance is true for either face of a split card, false for a non-split card or when no map exists', () => {
     const withMap = makeTestGameState({ '0': {} }, { splitFaces: SPLIT_FACES });
     assert.equal(isSplitCardInstance(withMap, FACE_A), true, 'split base (any copy) is recognized');
     assert.equal(isSplitCardInstance(withMap, 'cvwr/peter-parker/hot-bowl-of-soup#4' as CardExtId), true, 'copy-agnostic');
     assert.equal(isSplitCardInstance(withMap, 'core/spider-man/astonishing-strength#0' as CardExtId), false, 'non-split card');
-    assert.equal(isSplitCardInstance(withMap, FACE_B), false, 'the alternate base is never a primary key');
+    // why: WP-772 / D-24604 — INTENTIONAL behavior change (was `false`): a card played as face b
+    // keeps its face-b id, so the next play arrives as face b and must still offer the choice.
+    assert.equal(isSplitCardInstance(withMap, FACE_B), true, 'the alternate face is recognized too');
     const noMap = makeTestGameState({ '0': {} });
     assert.equal(isSplitCardInstance(noMap, FACE_A), false, 'no splitFaces map → never a split');
   });
@@ -224,6 +228,66 @@ describe('resolveSplitFaceChoice — face binding (WP-724 / D-24546)', () => {
     const emptyQueue = makeTestGameState({ '0': {} }, { splitFaces: SPLIT_FACES });
     resolveSplitFaceChoice(makeMoveContext(emptyQueue, '0'), { face: 'a' });
     assert.equal(emptyQueue.turnEconomy.recruit, 0, 'empty queue: no economy granted');
+  });
+});
+
+describe('face-b replay (WP-772 / D-24604)', () => {
+  it('a card played as face b, redrawn and played again, parks a fresh choice with faceA = primary', () => {
+    const gameState = makeTestGameState(
+      { '0': { hand: [FACE_A] } },
+      {
+        splitFaces: SPLIT_FACES,
+        cardStats: { [FACE_A]: stat(0, 1, 2), [FACE_B]: stat(1, 0, 2) },
+      },
+    );
+    // First play: choose face b, so the physical copy now carries the face-b id.
+    playCard(makeMoveContext(gameState, '0'), { cardId: FACE_A });
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'b' });
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_B], 'first play bound face b');
+
+    // The face-b id comes back round (cleanup → discard → redraw), modelled as a direct move.
+    gameState.playerZones['0']!.inPlay = [];
+    gameState.playerZones['0']!.hand = [FACE_B];
+    playCard(makeMoveContext(gameState, '0'), { cardId: FACE_B });
+
+    assert.equal(hasPendingSplitFaceChoice(gameState), true, 'the replayed face-b card offers the choice again');
+    assert.deepEqual(gameState.pendingSplitFaceChoices?.[0], {
+      playerID: '0', sourceCardId: FACE_B, faceA: FACE_A, faceB: FACE_B,
+    }, 'faceA is still the primary face; sourceCardId is the id actually in inPlay');
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_B], 'the card entered inPlay under its face-b id');
+  });
+
+  it("choosing 'a' from a played face-b id relabels inPlay to face a and grants face a's economy", () => {
+    const gameState = makeTestGameState(
+      { '0': { inPlay: [FACE_B] } },
+      {
+        splitFaces: SPLIT_FACES,
+        pendingSplitFaceChoices: [{ playerID: '0', sourceCardId: FACE_B, faceA: FACE_A, faceB: FACE_B }],
+        cardStats: { [FACE_A]: stat(0, 1, 2), [FACE_B]: stat(1, 0, 2) },
+      },
+    );
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'a' });
+
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_A], 'inPlay relabelled from face b to face a');
+    assert.equal(gameState.turnEconomy.recruit, 1, 'face a recruit granted');
+    assert.equal(gameState.turnEconomy.attack, 0, 'face b attack NOT granted');
+    assert.equal(hasPendingSplitFaceChoice(gameState), false, 'queue popped');
+  });
+
+  it("choosing 'b' again from a played face-b id leaves inPlay unchanged and grants face b's economy", () => {
+    const gameState = makeTestGameState(
+      { '0': { inPlay: [FACE_B] } },
+      {
+        splitFaces: SPLIT_FACES,
+        pendingSplitFaceChoices: [{ playerID: '0', sourceCardId: FACE_B, faceA: FACE_A, faceB: FACE_B }],
+        cardStats: { [FACE_A]: stat(0, 1, 2), [FACE_B]: stat(1, 0, 2) },
+      },
+    );
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'b' });
+
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_B], 'no relabel needed');
+    assert.equal(gameState.turnEconomy.attack, 1, 'face b attack granted');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'face a recruit NOT granted');
   });
 });
 

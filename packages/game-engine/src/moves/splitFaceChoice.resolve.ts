@@ -3,12 +3,14 @@
  * player choice (WP-724 / D-24546 — the split hero card mechanic that un-defers D-14101).
  *
  * A split physical card (`physicalCards[].sides.length === 2`) has two faces printed on one
- * card. When it is PLAYED, playCard places it in `inPlay` as its primary face (`sides[0]`
- * instance), DEFERS the card's own economy + ability, and parks a PendingSplitFaceChoice on
+ * card. When it is PLAYED, playCard places it in `inPlay` under the id it carried (the
+ * primary face, or face b when it was played as face b before — WP-772 / D-24604), DEFERS the
+ * card's own economy + ability, and parks a PendingSplitFaceChoice on
  * G.pendingSplitFaceChoices (FIFO). The ACTIVE player then calls this move to bind a side:
  *
- *   - `face: 'a'` → keep the primary face (`sides[0]`).
- *   - `face: 'b'` → swap the in-play instance to the alternate face (`sides[1]`).
+ *   - `face: 'a'` → the primary face (`sides[0]`).
+ *   - `face: 'b'` → the alternate face (`sides[1]`).
+ *   The in-play instance is relabelled to the chosen face when it differs.
  *
  * Once bound, the CHOSEN face's base attack/recruit is granted to G.turnEconomy and its
  * onPlay ability fires — exactly what applyCardPlay does for a non-split card, deferred here
@@ -30,6 +32,7 @@ import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
 import { pushLog } from '../log/logPush.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
+import { resolveSplitFacePair } from '../hero/splitCard.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -81,20 +84,19 @@ export function splitInstanceIntoBaseAndCopy(cardId: string): { baseKey: string;
 /**
  * Whether the given played instance is a split / dual-faced card (WP-724 / D-24545).
  *
- * True when the instance's copy-agnostic base key is a primary face registered in
- * G.splitFaces. Called by playCard to decide whether to park a "choose a side" choice
- * instead of resolving the play immediately.
+ * True for EITHER face id of a split card (WP-772 / D-24604). Called by playCard to decide
+ * whether to park a "choose a side" choice instead of resolving the play immediately.
  *
- * @param G - The game state (reads G.splitFaces only).
+ * // why: a card played as face b keeps its face-b id through cleanup, so the next play of
+ * that physical copy arrives as the face-b id. Recognising only primary ids made such a card
+ * skip the choice and play as face b forever; rules v23 p.49 chooses a side on EVERY play.
+ *
+ * @param G - The game state (reads the split-face map only).
  * @param cardId - The played instance ext_id.
  * @returns true when the card is a split card with an alternate face.
  */
 export function isSplitCardInstance(G: LegendaryGameState, cardId: string): boolean {
-  if (G.splitFaces === undefined) {
-    return false;
-  }
-  const { baseKey } = splitInstanceIntoBaseAndCopy(cardId);
-  return G.splitFaces[baseKey as CardExtId] !== undefined;
+  return resolveSplitFacePair(G, cardId) !== null;
 }
 
 /**
@@ -102,34 +104,30 @@ export function isSplitCardInstance(G: LegendaryGameState, cardId: string): bool
  *
  * Called by playCard AFTER the split card has been appended to inPlay as its primary face,
  * and BEFORE any economy is granted. Lazily initializes the FIFO queue (never in Game.setup)
- * and records both face ext_ids: faceA is the played (primary) instance; faceB is the
- * alternate face's instance for the same physical copy (same `#copyIndex`).
+ * and records both face ext_ids for the same physical copy (same `#copyIndex`): faceA is
+ * ALWAYS the primary (sides[0]) instance and faceB the alternate (sides[1]), whichever face id
+ * was played; sourceCardId is the id actually in inPlay (WP-772 / D-24604).
  *
- * // why: D-24546 — the card is already in inPlay as faceA; the economy + ability are deferred
- * until resolveSplitFaceChoice binds the side. Assumes isSplitCardInstance(G, cardId) is true.
+ * // why: D-24546 — the card is already in inPlay as sourceCardId; the economy + ability are
+ * deferred until resolveSplitFaceChoice binds the side. Pinning faceA to the primary keeps the
+ * 'a'/'b' meaning stable across replays and keeps the picker's leftFace projection (which
+ * strips faceA's #copy to find the card) correct. Assumes isSplitCardInstance(G, cardId).
  *
  * @param G - The game state to mutate.
  * @param playerID - The active player playing the split card.
- * @param cardId - The played primary-face instance ext_id (faceA).
+ * @param cardId - The played instance ext_id (either face).
  */
 export function parkSplitFaceChoice(G: LegendaryGameState, playerID: string, cardId: CardExtId): void {
-  // why: assumes the caller checked isSplitCardInstance; splitFaces + the base key are present.
-  const splitFaces = G.splitFaces;
-  if (splitFaces === undefined) {
+  const pair = resolveSplitFacePair(G, cardId);
+  if (pair === null) {
     return;
   }
-  const { baseKey, copySuffix } = splitInstanceIntoBaseAndCopy(cardId);
-  const alternateBase = splitFaces[baseKey as CardExtId];
-  if (alternateBase === undefined) {
-    return;
-  }
-  const faceB = `${alternateBase}${copySuffix}` as CardExtId;
 
   const pending: PendingSplitFaceChoice = {
     playerID,
     sourceCardId: cardId,
-    faceA: cardId,
-    faceB,
+    faceA: pair.faceA,
+    faceB: pair.faceB,
   };
   // why: lazy-init the FIFO queue at the park site (D-24546); never seeded in Game.setup.
   if (G.pendingSplitFaceChoices === undefined) {
@@ -144,9 +142,8 @@ export function parkSplitFaceChoice(G: LegendaryGameState, playerID: string, car
  * Atomic sequence (HARD — exact order, mirrors coveringFireChoice.resolve.ts):
  *   1. Validate args — face must be exactly 'a' or 'b'; anything else is a silent no-op.
  *   2. Validate the front pending entry — non-empty queue, front.playerID match.
- *   3. Bind the chosen face:
- *      - 'a' → keep faceA (already in inPlay).
- *      - 'b' → replace the faceA entry in inPlay with faceB (relabel the same physical copy).
+ *   3. Bind the chosen face: when the chosen face id differs from sourceCardId (the id in
+ *      inPlay), relabel that inPlay entry to the chosen face (the same physical copy).
  *      Grant the CHOSEN face's base attack/recruit (G.cardStats[chosen]) to G.turnEconomy,
  *      then fire the chosen face's onPlay ability (executeHeroEffects) — the deferred play.
  *   4. Front-pop (queue.shift()) LAST.
@@ -188,14 +185,16 @@ export function resolveSplitFaceChoice(
   const chosenExtId = face === 'a' ? front.faceA : front.faceB;
 
   // Step 3: Bind the chosen face.
-  if (face === 'b') {
-    // why: D-24545 — the same physical copy is already in inPlay as faceA; relabel that one
-    // entry to faceB so every downstream projection (display, economy, ability) reads the
-    // chosen face. indexOf finds the just-played instance (block-all means it is unique here).
-    const inPlayIndex = playerZones.inPlay.indexOf(front.faceA);
+  if (chosenExtId !== front.sourceCardId) {
+    // why: D-24545 / D-24604 — the same physical copy is already in inPlay as sourceCardId,
+    // which is face b when a card played as face b last time comes round again; so the chosen
+    // face may be EITHER a (played-as-b choosing a) or b (played-as-a choosing b). Relabel that
+    // one entry so every downstream projection (display, economy, ability) reads the chosen
+    // face. indexOf finds the just-played instance (block-all means it is unique here).
+    const inPlayIndex = playerZones.inPlay.indexOf(front.sourceCardId);
     if (inPlayIndex !== -1) {
       const nextInPlay = [...playerZones.inPlay];
-      nextInPlay[inPlayIndex] = front.faceB;
+      nextInPlay[inPlayIndex] = chosenExtId;
       playerZones.inPlay = nextInPlay;
     }
   }

@@ -32,6 +32,7 @@ import { refillHqSlot } from '../board/city.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { offPlayCardStats } from '../hero/splitCard.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -150,7 +151,10 @@ export function resolveOptionalPutBottomHQ(
   // card's printed icons are read from its cardStats entry (recruit/attack > 0).
   const rewardMagnitude = front.iconRewardMagnitude;
   if (rewardMagnitude !== undefined && rewardMagnitude > 0) {
-    const movedStats = G.cardStats[targetCardId];
+    // why: WP-772 / D-24604 — the moved card went from the HQ to the Hero Deck (both off play),
+    // so a split card has an icon when EITHER half does: its off-play printed numbers are the
+    // halves' totals (rules v23 p.49), resolved through the split-face map.
+    const movedStats = offPlayCardStats(G, targetCardId);
     const hasRecruitIcon = movedStats !== undefined && movedStats.recruit > 0;
     const hasAttackIcon = movedStats !== undefined && movedStats.attack > 0;
     const recruitGrant = hasRecruitIcon ? rewardMagnitude : 0;

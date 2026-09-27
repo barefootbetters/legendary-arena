@@ -159,14 +159,18 @@ distinct slots. The registry viewer uses exactly this rule
 
 ## Edge Cases
 
-- **Off-play the engine sees only one class, not both.** The rulebook says a split
-  card in hand, deck or discard counts as **all** its classes, teams and names, is
-  multicolored, and has a summed printed Attack/Recruit. The engine keeps an unplayed
-  split card as its **primary** instance only. `buildCardTraits` gives each face its
-  own trait entry, but a card that hasn't been played carries just the primary
-  ext_id. So a check like "reveal a [Tech] Hero" or "a multicolored card" looking at
-  your hand sees `sides[0]`'s class, not both. That under-credits the player. The
-  gap isn't recorded as a decision yet.
+- **Off play, the engine sees both halves (WP-772 / D-24604).** A split card in
+  hand, deck, discard, the HQ, a Victory Pile or the Hero Deck counts as **both** of
+  its classes. Its printed Attack / Recruit is the sum of both halves. So a check like
+  "reveal a [Tech] Hero" or an HQ class count sees either class. The engine derives
+  this at read time from the split-face map (`hero/splitCard.logic.ts`
+  `offPlayCardTraits` / `offPlayCardStats`); nothing extra is stored in `G`. **In
+  play,** only the chosen half counts. Teams need no change: the data carries one
+  team per hero, so both halves share it.
+- **Every play offers the choice (WP-772).** A card played as face `b` keeps its
+  face-`b` id into the discard pile. It used to skip the picker forever after, because
+  only primary ids were recognised. Now either face id parks a fresh choice, with
+  `faceA` always the primary face.
 - **Button order is not face order.** On the 19 cards listed out of order, the first
   (left) button is face `b`. Tests and bots should select a face by
   `data-testid="split-face-a|b"`, not by button position.
