@@ -4975,8 +4975,8 @@ describe('executeHeroEffects — hollow-effect detection (WP-257)', () => {
     assert.equal(records(gameState)[0]!.mechanic, 'mind-swap');
   });
 
-  it('D-24615: playing Penumbra (a [rule:Divided Card]-only line) records a parse-unrecognized hollow', () => {
-    // why: end-to-end from the real printed line — before D-24615 this hook was empty and
+  it('D-24618: playing Penumbra (a [rule:Divided Card]-only line) records a parse-unrecognized hollow', () => {
+    // why: end-to-end from the real printed line — before D-24618 this hook was empty and
     // the play recorded nothing (operator match 19720cb4: 4 Penumbra plays, no record).
     const [penumbraHook] = buildHeroAbilityHooks(
       {

@@ -461,7 +461,7 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // undercover +9, mgtg artifact +3, msis sacrifice -1; every other board byte-identical).
   // totalObs 3967 -> 3977; resolvedObs stays 1135, so percentResolved 28.6 -> 28.5
   // (1135 / 3977). A sweep-trajectory artifact, not a regression.
-  // 2026-09-26 (D-24615, re-pin): a hero line whose only markup is `[rule:X]` (Shard,
+  // 2026-09-26 (D-24618, re-pin): a hero line whose only markup is `[rule:X]` (Shard,
   // Sidekick, multicolored, Divided Card) now flags an honest `rule:<concept>`
   // parse-unrecognized hollow instead of passing as flavor text. Parse-only, no gameplay
   // change, so no trajectory shifts: the feed gains exactly 372 observations (rule:shard 317,

@@ -1,5 +1,5 @@
 /**
- * `[rule:X]`-only hero lines surface as honest hollows (D-24615).
+ * `[rule:X]`-only hero lines surface as honest hollows (D-24618).
  *
  * A `[rule:X]` token names a rules concept (Shard, Sidekick, Divided Card,
  * multicolored). The parser models none of them, so a line whose only markup is
@@ -71,7 +71,7 @@ function buildHook(ability: string): HeroAbilityHook {
   return hook;
 }
 
-describe('[rule:X]-only hero lines record an unresolved rule marker (D-24615)', () => {
+describe('[rule:X]-only hero lines record an unresolved rule marker (D-24618)', () => {
   it('Penumbra records rule:divided-card and nothing executable', () => {
     const hook = buildHook(PENUMBRA_ABILITY);
     assert.deepEqual(hook.unresolvedMarkers, ['rule:divided-card']);

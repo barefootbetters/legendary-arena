@@ -7,7 +7,7 @@
 
 ## Current State
 
-### D-24615 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
+### D-24618 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
 lists hero abilities whose only markup is a `[rule:X]` token. Before, those lines built an empty hook
@@ -25,7 +25,7 @@ that looked like flavor text, so they did nothing and reported nothing. Cloak & 
 - **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package
   (engine 4554/0, dashboard 505/0, registry-viewer 307/0). `sim:coverage --check`,
   `sim:runtime-observed:check`, `ledger:heroes:check` and `ledger:numbers:check` pass.
-- **Next.** Penumbra's actual effect is scoped as WP-777 / EC-814 / D-24616 (split-card "play both
+- **Next.** Penumbra's actual effect is scoped as WP-780 / EC-817 / D-24619 (split-card "play both
   sides").
 - **Live-verify (D-24026):** pending. Play Penumbra and confirm the diagnostics hollow table lists
   `rule:divided-card`.

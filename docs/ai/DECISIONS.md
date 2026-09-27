@@ -45438,7 +45438,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
-### D-24615 — A hero line whose only markup is `[rule:X]` is an honest `parse-unrecognized` hollow, not flavor text (Active 2026-09-26 — direct fix, no WP; extends the WP-257 / D-24034 unresolved-marker contract)
+### D-24618 — A hero line whose only markup is `[rule:X]` is an honest `parse-unrecognized` hollow, not flavor text (Active 2026-09-26 — direct fix, no WP; extends the WP-257 / D-24034 unresolved-marker contract)
 
 **Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/setup/heroAbility.setup.ts` Step 4b only).
 
@@ -45459,11 +45459,11 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` (counts in STATUS). New `hero/ruleTokenHollow.test.ts` covers Penumbra, the plural fold, multicolored, the reminder exemption, the resolved-line exemption, and flavor text. An end-to-end test in `heroEffects.execute.test.ts` plays Penumbra and gets a `rule:divided-card` hollow record. `sim:coverage --check`, `sim:runtime-observed:check` and `ledger:heroes:check` pass after the re-pin.
 
-**Follow-up.** Penumbra itself is scoped as WP-777 / EC-814 / D-24616 on the WP-724 / WP-772 split-card substrate. Shard (cosm / gotg) and Sidekick (WP-086) stay honest hollows until their executors land.
+**Follow-up.** Penumbra itself is scoped as WP-780 / EC-817 / D-24619 on the WP-724 / WP-772 split-card substrate. Shard (cosm / gotg) and Sidekick (WP-086) stay honest hollows until their executors land.
 
 **D-24026 live-on-surface:** pending. On the deployed client, play Penumbra (cvwr Cloak & Dagger) and confirm the Play Diagnostics hollow table lists `rule:divided-card`.
 
-**Reserved by:** NUMBER-LEDGER D-24615. Related: D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24546 (WP-724), D-24604 (WP-772).
+**Reserved by:** NUMBER-LEDGER D-24618. Related: D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24546 (WP-724), D-24604 (WP-772).
 
 ---
 
