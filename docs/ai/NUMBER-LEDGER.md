@@ -416,6 +416,7 @@ high-water: 422
 - WP-774 — turn-handoff-banner (App arena-client. YOUR TURN / ally-name banner + turn-start sting on an active-player change; the HUD shows seat names instead of raw seat ids. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-775 — board-affordability-cues (App arena-client. An unaffordable cue on every cost the player reads (HQ heroes, and City villains / the Mastermind at their printed cost, extending the WP-750 badge treatment) and a rim on the villains a slash would fight. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-776 — superpower-ready-glow (Game Engine + App arena-client. Owner-only per-hand-card projection of whether a card's superpower condition already holds for what is in play (WP-710 heroConditionHoldsForInPlay), rendered as a rim on the hand card. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- WP-780 — penumbra-play-both-sides (Game Engine. cvwr Cloak & Dagger Penumbra: while active this turn, a played Divided Card skips the choose-a-side choice and resolves BOTH faces' economy and abilities as two plays of one physical card; retires the D-24618 rule:divided-card hollow. WP-777..779 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
 ## EC
 
 high-water: 457
@@ -792,6 +793,7 @@ high-water: 457
 - EC-811 — turn-handoff-banner (WP-774; App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - EC-812 — board-affordability-cues (WP-775; App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - EC-813 — superpower-ready-glow (WP-776; Game Engine + App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- EC-817 — penumbra-play-both-sides (WP-780; Game Engine. EC-814..816 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
 ## D
 
 high-water: 24241
@@ -1183,3 +1185,4 @@ section below) and the allocation protocol in
 - D-24611 — turn-handoff-banner (WP-774. Locks the turn-handoff trigger (active-player change, seeded on the first frame), its accessibility gating, and the seat-label rule. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - D-24612 — board-affordability-cues (WP-775. Locks the unaffordable-cost cue rule and the slash-target rim; records why no End Turn cue is built. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - D-24613 — superpower-ready-glow (WP-776. Locks the owner-only per-hand-card superpower-ready projection field and its condition gate set. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- D-24619 — penumbra-play-both-sides (WP-780. Locks the Penumbra per-turn flag, the both-faces resolution order, the one-inPlay-entry representation and which in-play reads count the card as both faces. D-24614..24618 held by open PRs #2442..#2446. reserved 2026-09-26, claude/wp780-penumbra-reserve)
