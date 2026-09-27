@@ -417,6 +417,7 @@ high-water: 422
 - WP-775 — board-affordability-cues (App arena-client. An unaffordable cue on every cost the player reads (HQ heroes, and City villains / the Mastermind at their printed cost, extending the WP-750 badge treatment) and a rim on the villains a slash would fight. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-776 — superpower-ready-glow (Game Engine + App arena-client. Owner-only per-hand-card projection of whether a card's superpower condition already holds for what is in play (WP-710 heroConditionHoldsForInPlay), rendered as a rim on the hand card. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - WP-780 — penumbra-play-both-sides (Game Engine. cvwr Cloak & Dagger Penumbra: while active this turn, a played Divided Card skips the choose-a-side choice and resolves BOTH faces' economy and abilities as two plays of one physical card; retires the D-24618 rule:divided-card hollow. WP-777..779 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
+- WP-781 — lightshow-executor (Game Engine + App arena-client. The Lightshow keyword executor: count Lightshow cards played this turn; once per turn at 2+, an optional single-ability choice from those cards; retires the D-24622 lightshow hollow. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
 - WP-777 — split-face-discard-fidelity (Engine + card data. bkwd Falcon & Winter Soldier split faces: Attune "To play this side, you must discard a card" enforced as a face-bind cost, and New Wings "If you discarded any cards this turn" gated on a per-turn discard count; both over-credited in match 19720cb4. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - WP-778 — split-face-cost-picker (App arena-client. SplitFaceChoicePrompt disables a face whose discard cost the hand cannot pay. Depends on WP-777. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 ## EC
@@ -798,6 +799,7 @@ high-water: 457
 - EC-817 — penumbra-play-both-sides (WP-780; Game Engine. EC-814..816 held by open PRs #2443 / #2445. reserved 2026-09-26, claude/wp780-penumbra-reserve)
 - EC-814 — split-face-discard-fidelity (WP-777; Engine + card data. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - EC-815 — split-face-cost-picker (WP-778; App arena-client. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- EC-818 — lightshow-executor (WP-781; Game Engine + App arena-client. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
 ## D
 
 high-water: 24241
@@ -1195,3 +1197,4 @@ section below) and the allocation protocol in
 - D-24620 — discard-to-play-sweep (direct fix, no WP — marks the printed "To play this, you must discard a card" cost with [keyword:discard-to-play:1] on the hero lines WP-383 missed (amwp Cassie Lang, asrd Beta Ray Bill, cosm Adam Warlock, cvwr Hercules, rvlt Photon x2) so the engine charges it. D-24615..24619 held by open PRs / main. reserved 2026-09-26, claude/zealous-gates-6c61ce)
 - D-24615 — split-face-discard-cost (WP-777. Locks the discard-to-play cost of a split face as a face-bind precondition in resolveSplitFaceChoice; split cards bypass the playCard precondition. D-24614 held by open PR #2442. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - D-24616 — cards-discarded-this-turn (WP-777. Locks the per-turn discard counter at the discardFromHand chokepoint and the cardsDiscardedThisTurnAtLeast wait-and-see condition. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- D-24621 — lightshow-executor (WP-781. Locks the Lightshow count source, the once-per-turn single-ability choice semantics and timing, and its projection. D-24614 held by open PR #2442, D-24622 by open PR #2444. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
