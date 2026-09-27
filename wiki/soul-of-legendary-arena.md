@@ -46,6 +46,15 @@ only tear down what came before. Legendary Arena stands, without apology, on
 the side of the upward pull — it is defined less by what it refuses than by
 what it reaches toward (see [The Upward Pull](#the-upward-pull--what-the-game-is-for)).
 
+The whole orientation fits in one line, written for the page's
+[*Lord of the Flies* case](#the-mastermind-lens--five-questions):
+
+> No Dad with a wayward son has ever said, "If only my boy would read that
+> award-winning book about the pigsty, *Lord of the Flies*." Every Dad wants his
+> son to know something else: that he can change, leave the pigsty, and start
+> down the road home — the road his Dad is already watching, ready to run and
+> meet him.
+
 Deeper still — and this is the center everything else serves — the reason
 any of it matters is the *relationship*: the friends and family who play it
 together. The characters and their lineage are the shared language; the
