@@ -45322,6 +45322,8 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4501/0; the NZPB test "11 villains + 6 henchmen does not lose" intentionally flipped to "11 villains + 1 henchman loses", plus "12 henchmen alone loses" and "bystanders still excluded"); core `finalStateHash` / replay oracles unchanged; `sim:runtime-observed:check`, `sim:coverage --check`, `ledger:numbers:check` 0.
 
+**D-24026 live-on-surface:** PASS (CLOSED) 2026-09-26, operator-verified on `play.legendary-arena.com` after #2426 deployed. In a Negative Zone Prison Breakout match, a henchman escape raised the escaped count toward the 12.
+
 **Reserved by:** NUMBER-LEDGER D-24609 (renumbered from D-24605, which main assigned to adversary-stat-icon-suppression). Related: D-24316 (WP-509), D-24315, D-24603, D-24366 / D-24371 (danger meter), D-24119.
 ---
 
@@ -45430,7 +45432,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4523/0, arena-client 2143/0). Tests intentionally flipped from "henchman excluded" to "henchman eligible" (move, helper, UIState projection, bot pick, effect ruling `resolve-victory-pile-pick-non-villain-target-is-noop` now targets a bystander); new tests cover a henchman-only Victory Pile park, a henchman bot pick, and the `resolve-victory-pile-pick-henchman-target-grants-attack` ruling. `ledger:numbers`, `sim:runtime-observed`, `sim:coverage`, `effect-index`, `ledger:heroes` checks pass.
 
-**D-24026 live-on-surface:** pending. On the deployed client, play The Ebony Blade with a henchman in the Victory Pile and confirm the henchman is listed and picking it grants its printed attack.
+**D-24026 live-on-surface:** PASS (CLOSED) 2026-09-26, operator-verified on `play.legendary-arena.com` after #2434 deployed. Playing The Ebony Blade with a henchman in the Victory Pile listed the henchman in the pick, and picking it added its printed attack.
 
 **Reserved by:** NUMBER-LEDGER D-24608. Related: D-24067 (WP-285), D-24099 (WP-313 projection), D-24603.
 
