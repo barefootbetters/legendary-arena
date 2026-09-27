@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 770,
+    "totalRows": 776,
     "byStatus": {
-      "executable": 375,
+      "executable": 381,
       "deferred": 16,
       "condition": 45,
       "unsupported": 300,
@@ -589,6 +589,22 @@
         {
           "slug": "shrink-away",
           "name": "Shrink Away"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/cassie-lang",
+      "heroName": "Cassie Lang",
+      "set": "amwp",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "start-small",
+          "name": "Start Small"
         }
       ]
     },
@@ -1343,6 +1359,22 @@
         {
           "slug": "8th-wonder-of-the-world",
           "name": "8th Wonder of the World"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "heroName": "Beta Ray Bill",
+      "set": "asrd",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "hope-of-the-korbinites",
+          "name": "Hope of the Korbinites"
         }
       ]
     },
@@ -4159,6 +4191,22 @@
       ]
     },
     {
+      "extId": "cosm/adam-warlock",
+      "heroName": "Adam Warlock",
+      "set": "cosm",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "regenerative-cocoon",
+          "name": "Regenerative Cocoon"
+        }
+      ]
+    },
+    {
       "extId": "cosm/captain-mar-vell",
       "heroName": "Captain Mar-Vell",
       "set": "cosm",
@@ -4523,6 +4571,22 @@
         {
           "slug": "massive-warrior",
           "name": "Massive Warrior"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/hercules",
+      "heroName": "Hercules",
+      "set": "cvwr",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "manly-dullard",
+          "name": "Manly Dullard"
         }
       ]
     },
@@ -8883,6 +8947,42 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "rvlt/photon",
+      "heroName": "Photon",
+      "set": "rvlt",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "designs": [
+        {
+          "slug": "infrared-conversion",
+          "name": "Infrared Conversion"
+        },
+        {
+          "slug": "ultraviolet-radiation",
+          "name": "Ultraviolet Radiation"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/photon",
+      "heroName": "Photon",
+      "set": "rvlt",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "infrared-conversion",
+          "name": "Infrared Conversion"
+        }
+      ]
     },
     {
       "extId": "rvlt/photon",

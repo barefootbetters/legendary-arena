@@ -45510,4 +45510,42 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24620 — "To play this, you must discard a card." is the WP-383 discard-to-play cost; six more hero lines now charge it (Active 2026-09-26 — direct fix, no WP; extends the WP-383 / D-24184 marked set)
+
+**Status:** Active — landed 2026-09-26 (curated marker map + regenerated card data only; no engine code change).
+
+**Context.** WP-383 (D-24184) marked the discard-to-play cost only where the card printed the long form, "To play this card, you must discard a card from your hand." Later sets print the short form, "To play this, you must discard a card." Those lines carried no marker, so the engine never charged the cost. The player got the card's printed power and kept the discard. That is an over-credit that also feeds competitive scoring. A corpus scan of `data/cards/*.json` for the phrase without `[keyword:discard-to-play` finds nine lines. Six are hero play costs on single-face cards (none has `sides.length === 2`).
+
+**Decision.**
+
+1. **Mark the six hero lines** `[keyword:discard-to-play:1]` via `scripts/convert-cards/inputs/hero-ability-markers.json` + `apply-hero-ability-markers.mjs`:
+   - amwp Cassie Lang **Start Small** (ability 1)
+   - asrd Beta Ray Bill **Hope of the Korbinites** (ability 0)
+   - cosm Adam Warlock **Regenerative Cocoon** (ability 0)
+   - cvwr Hercules **Manly Dullard** (ability 0)
+   - rvlt Photon **Infrared Conversion** (ability 0)
+   - rvlt Photon **Ultraviolet Radiation** (ability 0)
+
+   The existing D-24185 pre-commit precondition and the `resolveDiscardToPlay` pending choice handle them unchanged. An unpayable play (an empty hand after the card leaves it) is now withheld.
+2. **Shared-line effects.** Infrared Conversion prints "Draw two cards." on the same line. That draw was also unmarked and dark, so the line now carries `[keyword:draw:2]` too, and the parser emits one onPlay hook with `[discard-to-play:1, draw:2]`. Start Small's trailing "Then, if you have a Villain in your Victory Pile worth 2[icon:vp] or less, draw a card." is gated on a Victory-Pile predicate the parser cannot evaluate. An unconditional `draw:1` would be an over-credit, so it stays in the map `_deferred` list and stays a dark line. The other four cards' remaining effects sit on separate lines and parse as before (Hope of the Korbinites keeps its conditional draw hook, Ultraviolet Radiation its `[hc:ranged]` hook).
+3. **Residual ordering gap (accepted).** The discard parks as a post-commit pending choice, and the draw in the same hook resolves right away. So Infrared Conversion draws two before the player picks the discard, where the card says to discard first. That is a small filtering edge, much smaller than the old free draw, and it is the same ordering every WP-383 card already has. Charging the cost before any same-line effect would need an engine change and is out of scope.
+4. **Not marked.**
+   - bkwd **Attune** "To play this side…" is a split face, governed by WP-777 / D-24615.
+   - asrd **Thrown Artifact** "To throw this…" is an unmodeled Artifact mechanic.
+   - wpnx **Massive Blood Loss** is a Wound card, not a hero. The hero marker map does not reach it, and Wound play costs are a separate surface.
+
+**Pin impacts.** No engine code changed. `pendingDiscardToPlay` is an optional `G` field that stays absent unless a marked card is played, and no recorded fixture plays one, so the sentinel `finalStateHash` is unchanged (as in D-24184).
+- `card-mechanics.json`: the discard-to-play card count goes 5 → 10 heroes, and `draw` gains rvlt Photon.
+- `effect-implementation-index.json`: six new `executable` entries.
+- `hero-mechanic-ledger`: regenerated.
+- `runtime-observed-hollows.json`: redistributed. Marked plays now cost a discard, so the fixed-seed sweep takes a slightly different path. Five mechanics' hit counts shift (same 32 mechanics). The dashboard `useInPlayCoverage` pin is re-pinned: totalObs 4349 → 4354, and percentResolved holds at 26.1.
+
+**Gates.** `pnpm cards:check` passes: a clean regen is semantically identical to the committed `data/cards`. `apply-hero-ability-markers.mjs --validate` finds no drift. Parser output against the real registry was checked for all six lines. `pnpm -r build` exits 0. `pnpm -r --no-bail test`: 0 failures after the dashboard re-pin (game-engine 4554, arena-client 2156, server 1636 with DB-only tests skipped, dashboard 505). `sim:runtime-observed:check`, `sim:coverage --check`, `ledger:heroes:check` (776 rows) and `ledger:numbers:check` pass.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play rvlt Photon's Infrared Conversion with another card in hand. Confirm the discard prompt appears, and that two cards are drawn.
+
+**Reserved by:** NUMBER-LEDGER D-24620. Related: D-24184 / D-24185 (WP-383), D-24615 (WP-777), D-22501 (draw sweep).
+
+---
+
 Protect this file.
