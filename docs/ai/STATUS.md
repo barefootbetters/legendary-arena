@@ -62,10 +62,15 @@ before Penumbra, or on another turn, still gets the picker.
   a parked a pending choice. The server's play-order teacher may suggest a false "whiff" on a
   Penumbra turn. Manly Dullard (Hercules, face b) charges its discard-to-play cost exactly as the
   picker path does.
-- **Live-verify (D-24026): pending.** On play.legendary-arena.com, start a match with Cloak & Dagger
-  (cvwr). Play Penumbra, then Above/Below or Darkness/Light. Confirm there is no picker, that both
-  halves' Attack/Recruit land, that the log shows the two "resolved side" lines, and that Play
-  Diagnostics lists no `rule:divided-card`. Record the matchId here.
+- **Live-verify (D-24026): PASS 2026-09-27.** Match `VP1KNXl2ENQ`, build `5f96abe` (includes #2460),
+  solo Loki / Midtown Bank Robbery with Cloak & Dagger, Storm & Black Panther and Hercules.
+  - Log turn 13: Penumbra, then Above/Below and Tsunami of Justice/Water. No picker appeared, both halves'
+    economy landed, and the "resolved side a / b" lines were logged. Face b's `[hc:ranged]` +2 Attack
+    fired too.
+  - Diagnostics show no `rule:divided-card`.
+  - Split plays on other turns still used the picker.
+  - **Open follow-up:** WP-777 (#2461) wired the split-side discard cost into the picker path only. Under
+    Penumbra, an unpayable Manly Dullard / Attune face still grants its economy. See D-24619.
 
 ### D-24618 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
 
