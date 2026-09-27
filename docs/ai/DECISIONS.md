@@ -45548,4 +45548,33 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24615 — A split face's discard-to-play cost binds at the face choice (Drafted 2026-09-26; not yet landed — WP-777 / EC-814)
+
+**Context.** bkwd Attune (face a of Attune / Atone) prints "To play this side, you must discard a card." The WP-383 cost is checked by the D-24185 playCard pre-commit precondition, keyed on the PLAYED id — but a split card's side is not known until `resolveSplitFaceChoice` (D-24546). Checking at play would reject a playable Atone; skipping it (today, with no marker) grants Attune's +3 Recruit with no discard (operator match 19720cb4, 5×).
+
+**Decision.**
+1. Attune carries `[keyword:discard-to-play:1]` (curated marker map). The cost is paid by the existing park → `resolveDiscardToPlay` → `discardFromHand` path; no new pending type.
+2. Split cards bypass the D-24185 playCard precondition. `resolveSplitFaceChoice` rejects (a logged no-op, queue intact — the log guarantees a fresh frame so the picker latch resets) a face whose cost the hand cannot pay — unless neither face is payable (anti-freeze fallback; no current card triggers it). If the fallback ever binds an unpayable face, the `heroEffectDiscardToPlay` defensive branch grants that face's economy with no discard — an accepted leak in exchange for never hard-freezing a turn. Copy Powers / Steal Abilities re-firing a bound Attune park the cost for the copier, as they already do for non-split discard-to-play cards.
+3. The bot picks face a when bindable, else face b (legalMoves ↔ guard parity).
+4. `UISplitFaceOption` gains optional, always-populated `isSelectable?` / `discardToPlayCost?` (chooser-only); optional so an engine packet does not break client fixtures. WP-778 renders them.
+
+**Reserved by:** NUMBER-LEDGER D-24615. Related: D-24184, D-24185 (WP-383), D-24545, D-24546 (WP-724), D-24604 (WP-772).
+
+---
+
+### D-24616 — "If you discarded any cards this turn": a gated per-player discard count (Drafted 2026-09-26; not yet landed — WP-777 / EC-814)
+
+**Context.** bkwd New Wings (+4 Attack) and vill Pumpkin Bombs (+2 Attack) print "If you discarded any cards this turn". Their lines carry no marker, so the grant is parsed as unconditional (New Wings phantom +4 in match 19720cb4, 3×). The engine keeps no per-turn discard count. WP-745 parked these as its Follow-up B.
+
+**Decision.**
+1. Marker `[keyword:discard-threshold:N]` → condition `cardsDiscardedThisTurnAtLeast:N` (the WP-665 draw-threshold precedent), a WAIT_AND_SEE numeric one-shot (D-24377): a later discard that turn grants retroactively, once.
+2. Count = card-effect HAND discards, incremented at the `discardFromHand` chokepoint (drift-enforced to see every one; end-of-turn cleanup excluded). Stored per discarding player in `G.cardsDiscardedThisTurn?: Record<string, number>`, because a non-active player can be made to discard on another player's turn.
+3. Gated + lazy (the WP-743 / D-24467 posture): written only when `matchReadsConditionType(G, 'cardsDiscardedThisTurnAtLeast')`; deleted at both turn-boundary sites (`game.ts`, `onBeginParity.ts`). If WP-777 lands before WP-743, this decision is where `matchReadsConditionType` originates; WP-743 then reuses it. Non-bkwd/vill games are byte-unchanged; the sentinel hash is not re-pinned (scaffold-confirmed).
+4. Deck-top discards (Berserk, reveal-and-discard, Steal Abilities) are NOT counted — the available rules text does not settle whether they are "you discarded". Hand-only can under-credit, never over-credit. A ruling to count them is a follow-up.
+5. Replays of pre-WP-777 bkwd/vill matches diverge on re-execution. Stored `competitive_scores` rows are frozen, not re-verified (the D-24600 / D-24604 precedent); the executor records a read-only count.
+
+**Reserved by:** NUMBER-LEDGER D-24616. Related: D-24476 (WP-665), D-24377 (WP-568), D-24301 (WP-498), D-24568 (WP-745 Follow-up B; reserved, not landed), D-24566 (WP-743 `matchReadsConditionType`; reserved, not landed), D-24119.
+
+---
+
 Protect this file.
