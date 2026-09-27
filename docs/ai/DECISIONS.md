@@ -45461,7 +45461,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Follow-up.** Penumbra itself is scoped as WP-780 / EC-817 / D-24619 on the WP-724 / WP-772 split-card substrate. Shard (cosm / gotg) and Sidekick (WP-086) stay honest hollows until their executors land.
 
-**D-24026 live-on-surface:** pending. On the deployed client, play Penumbra (cvwr Cloak & Dagger) and confirm the Play Diagnostics hollow table lists `rule:divided-card`.
+**D-24026 live-on-surface:** pending. Re-pointed 2026-09-27: WP-780 (D-24619) made Penumbra executable, so it can no longer demonstrate this hollow. The 2026-09-27 Penumbra match `VP1KNXl2ENQ` correctly lists no `rule:divided-card`. On the deployed client, play a `[rule:Shard]` or `[rule:Sidekick]` hero line (for example cosm Adam Warlock's Transmute Matter, "Gain a [rule:Shard].") and confirm the Play Diagnostics hollow table lists `rule:shard` / `rule:sidekick`.
 
 **Reserved by:** NUMBER-LEDGER D-24618. Related: D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24546 (WP-724), D-24604 (WP-772).
 
@@ -45493,7 +45493,19 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ### D-24619 — Penumbra plays both sides of a Divided Card as two different cards (WP-780 / EC-817) (Active 2026-09-26)
 
-**Status:** Active — landed 2026-09-26 with WP-780 / EC-817. D-24026 live-verify pending.
+**Status:** Active — landed 2026-09-26 with WP-780 / EC-817. Live-verified 2026-09-27.
+
+**D-24026 live-on-surface:** PASS (CLOSED) 2026-09-27. Operator-verified on `play.legendary-arena.com`.
+- **Build and match:** build `5f96abe`, which includes the #2460 merge `408144d`. Match `VP1KNXl2ENQ`, solo Loki / Midtown Bank Robbery, heroes Cloak & Dagger / Storm & Black Panther / Hercules.
+- **What happened on log turn 13.** Penumbra was played, then Above and then Tsunami of Justice. Neither parked a picker.
+  - Each split card logged "Player 0 played …", "Penumbra: both sides of … play as two different cards." and "resolved side a" / "resolved side b" lines.
+  - Above's +2 Attack and Below's +3 Recruit both landed.
+  - Tsunami of Justice's +3 and Tsunami of Water's +3 Attack both landed, plus Water's `[hc:ranged]` +2 Attack. The Penumbra card itself (Ranged) satisfied that gate.
+- **Diagnostics effect traces agree:** `play-both-sides` fired, then `below` recruit 3, then `tsunami-of-water` attack 2.
+- **Control:** on every other turn, split cards played before Penumbra, or on turns without it, still parked the picker.
+- **Hollows:** the hollow table lists only `phasing`, with no `rule:divided-card`.
+- **Not exercised:** Manly Dullard was never played after Penumbra.
+- **Found in this pass (§7 open):** WP-777 (#2461) wired the split-side discard cost into `resolveSplitFaceChoice` only, not into `playBothSplitFaces`. So under Penumbra an unpayable cost face (Hercules's Manly Dullard, bkwd Attune) still grants its economy. The rule locked in WP-780 §Context ("skip only the unpayable face, logged") is not yet enforced on this path; a follow-up is raised.
 
 **Context.** cvwr Cloak & Dagger Penumbra prints "Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards." Rules v23 p.49 otherwise binds one side at play and ignores the other. Penumbra did nothing; D-24618 surfaced it as a `rule:divided-card` hollow. Every in-play read keys off `inPlay` entries and one instance id, so a second entry per physical card would break the duplicate-id invariant, cleanup, and UI counts.
 
