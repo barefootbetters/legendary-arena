@@ -15,7 +15,8 @@
  *  - AC-8: physical reads — cleanup discards exactly one card; the duplicate-id invariant holds.
  *  - AC-9: a second Penumbra is a no-op on the flag.
  *  - Manly Dullard (cvwr Hercules, split face b with [keyword:discard-to-play:1], D-24620):
- *    under Penumbra face b fires its own hooks exactly as the picker path does.
+ *    under Penumbra face b fires its own hooks exactly as the picker path does; with no card to
+ *    discard, face b is skipped entirely (D-24621).
  *
  * Hooks, split-face map and traits are built through the real setup builders. Uses node:test +
  * node:assert only. No boardgame.io imports.
@@ -31,6 +32,7 @@ import { buildSplitFaces } from '../setup/buildHeroDeck.js';
 import { buildCardTraits } from '../setup/buildCardTraits.js';
 import { playCard } from '../moves/coreMoves.impl.js';
 import { resolveSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
+import { resolveDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 import { checkNoCardInMultipleZones } from '../invariants/gameRules.checks.js';
 import { evaluateCondition } from './heroConditions.evaluate.js';
@@ -426,16 +428,39 @@ describe('Manly Dullard — a split face b with discard-to-play under Penumbra (
     );
   });
 
-  it('with no card left in hand, face b logs the fail-closed line and parks nothing', () => {
+  it('with no card left in hand, face b is skipped: no attack, no hooks, no marker, one skip line (D-24621)', () => {
     const G = makeHerculesState([], []);
     play(G, PENUMBRA);
     play(G, BOY_GENIUS);
     assert.deepEqual(G.playerZones['0']!.hand, [], 'face a drew nothing from an empty deck');
-    assert.equal(G.turnEconomy.attack, 4 + 3, 'face b attack is still granted');
+    assert.equal(G.turnEconomy.attack, 4, 'face b (Manly Dullard) grants no +3 attack');
     assert.equal(G.pendingDiscardToPlay, undefined, 'no unpayable choice is parked');
+    assert.equal(G.turnEconomy.bothSidesPlayedCardIds, undefined, 'only face a was played — not marked');
+    assert.deepEqual(G.playerZones['0']!.inPlay, [PENUMBRA, BOY_GENIUS], 'one face-a entry');
+    const skipLines = G.messages.filter((entry) => entry.text.includes('could not play side b'));
+    assert.equal(skipLines.length, 1, 'exactly one skip line');
+    assert.equal(skipLines[0]!.card, MANLY_DULLARD);
     assert.ok(
-      G.messages.some((entry) => entry.text.includes('could not pay the discard-to-play cost')),
-      'the handler logs its defensive fail-closed line',
+      !G.messages.some((entry) => entry.text.includes('resolved side b')),
+      'face b never resolved',
     );
+    assert.ok(
+      !G.messages.some((entry) => entry.text.includes('could not pay the discard-to-play cost')),
+      "face b's hooks never fired, so the handler's fail-closed line is not logged",
+    );
+  });
+
+  it('with a card in hand, face b grants its attack and paying the cost discards it (D-24621)', () => {
+    const SPARE = 'core/spider-man/astonishing-strength#0' as CardExtId;
+    const G = makeHerculesState([SPARE], []);
+    play(G, PENUMBRA);
+    play(G, BOY_GENIUS);
+    assert.equal(G.turnEconomy.attack, 4 + 3, 'face b attack granted');
+    assert.deepEqual(G.turnEconomy.bothSidesPlayedCardIds, [BOY_GENIUS], 'both faces played — marked');
+    assert.deepEqual(G.pendingDiscardToPlay, [{ playerID: '0', sourceCardId: MANLY_DULLARD, remaining: 1 }]);
+    resolveDiscardToPlay(makeMockMoveContext(G) as unknown as Parameters<typeof resolveDiscardToPlay>[0], { cardId: SPARE });
+    assert.deepEqual(G.playerZones['0']!.hand, []);
+    assert.ok(G.playerZones['0']!.discard.includes(SPARE), 'the cost is charged');
+    assert.equal(G.pendingDiscardToPlay?.length ?? 0, 0);
   });
 });

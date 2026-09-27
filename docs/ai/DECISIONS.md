@@ -45505,7 +45505,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 - **Control:** on every other turn, split cards played before Penumbra, or on turns without it, still parked the picker.
 - **Hollows:** the hollow table lists only `phasing`, with no `rule:divided-card`.
 - **Not exercised:** Manly Dullard was never played after Penumbra.
-- **Found in this pass (§7 open):** WP-777 (#2461) wired the split-side discard cost into `resolveSplitFaceChoice` only, not into `playBothSplitFaces`. So under Penumbra an unpayable cost face (Hercules's Manly Dullard, bkwd Attune) still grants its economy. The rule locked in WP-780 §Context ("skip only the unpayable face, logged") is not yet enforced on this path; a follow-up is raised.
+- **Found in this pass (§7 open):** WP-777 (#2461) wired the split-side discard cost into `resolveSplitFaceChoice` only, not into `playBothSplitFaces`. So under Penumbra an unpayable cost face (Hercules's Manly Dullard, bkwd Attune) still grants its economy. The rule locked in WP-780 §Context ("skip only the unpayable face, logged") is not yet enforced on this path; a follow-up is raised. **Closed 2026-09-27 by D-24621.**
 
 **Context.** cvwr Cloak & Dagger Penumbra prints "Whenever you play a [rule:Divided Card] card this turn, play both sides as if they were two different cards." Rules v23 p.49 otherwise binds one side at play and ignores the other. Penumbra did nothing; D-24618 surfaced it as a `rule:divided-card` hollow. Every in-play read keys off `inPlay` entries and one instance id, so a second entry per physical card would break the duplicate-id invariant, cleanup, and UI counts.
 
@@ -45592,6 +45592,28 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 **Execution (2026-09-26).** Landed as locked. `matchReadsConditionType` originates here (WP-743 had not landed); WP-743 reuses it. The sentinel and replay hash oracles are unchanged. The `sim:runtime-observed` diff is confined to the bkwd board (285 → 294 hollow observations, all undercover; per-board tally vs `origin/main`, every other board byte-identical) — the bkwd trajectory shifts because Attune now costs a discard and New Wings no longer grants a free +4. §5 record: a read-only prod count found 1 of 200 `competitive_scores` rows with a `falcon-winter-soldier` `team_key` (0 with `green-goblin`). The frozen-rows policy stands and covers that one row.
 
 **Reserved by:** NUMBER-LEDGER D-24616. Related: D-24476 (WP-665), D-24377 (WP-568), D-24301 (WP-498), D-24568 (WP-745 Follow-up B; reserved, not landed), D-24566 (WP-743 `matchReadsConditionType`; reserved, not landed), D-24119.
+
+---
+
+### D-24621 — Under Penumbra, an unpayable split face is skipped; the payable face still plays (Active 2026-09-27 — direct fix, no WP; closes D-24619 §7)
+
+**Status:** Active — landed 2026-09-27.
+
+**Context.** WP-777 (D-24615) enforced a split face's discard-to-play cost in `resolveSplitFaceChoice` only. WP-780's `playBothSplitFaces` (D-24619) resolves both faces without the picker and never checked it. Under Penumbra an unpayable cost face still granted its base economy: cvwr Hercules Manly Dullard (face b, `[keyword:discard-to-play:1]`, D-24620) gave +3 Attack from an empty hand, and bkwd Attune (face a) gave +3 Recruit. The discard-to-play handler only logged "could not pay". WP-780 §Context had already locked the rule: skip only the unpayable face, with a log line, never the payable one. D-24619 §7 assigned the wiring to WP-777's executor, and it was missed (found in the D-24619 live-verify, #2467).
+
+**Decision.**
+1. **Same helpers.** `playBothSplitFaces` reuses WP-777's `isSplitFacePayable` / `isSplitFaceBindable`. No new cost source.
+2. **Face a** plays when `isSplitFaceBindable(faceA, faceB)` holds: it is payable, or face b is not payable either. That is D-24615 §2's anti-freeze fallback, so a card with a cost on both faces still plays one face as the picker path would. No current card has two costed faces.
+3. **Face b** is checked for payability **after** face a resolves, because face a's effects change the hand the cost is paid from. Boy Genius (face a) draws before Manly Dullard's cost is checked.
+4. **A skipped face** grants no economy and fires no hooks, so the handler's fail-closed line is not logged. It logs one full-sentence line instead: `Player N could not play side <a|b>, <name> — it requires discarding <cost> card(s) but their hand does not hold enough cards to discard, so that side is skipped.` A payable face resolves as before, and its own discard-to-play hook charges the cost through the existing park → `resolveDiscardToPlay` path.
+5. **One inPlay entry, marker = faces actually played.** Both faces played → the face-a entry, marked in `bothSidesPlayedCardIds` between the faces (unchanged). Face b skipped → the face-a entry, **not** marked. Face a skipped → the entry is the **face-b** id, not marked. So "cards played this turn" reads see exactly the faces that were played, and a lone face counts as one ordinary play of that face.
+6. **Determinism.** No new `G` field. The path runs only while Penumbra is active, and no recorded fixture plays Penumbra, so the sentinel `finalStateHash` is unchanged.
+
+**Tests.** `splitFaceChoice.resolve.test.ts`: Attune unpayable / Atone payable (face-b entry, no marker, one skip line), both payable (cost parked, marked), neither payable (face a plays, face b skipped). `penumbraPlayBothSides.test.ts`: real-cvwr Manly Dullard from an empty hand is skipped (no +3 Attack, no marker, no handler line). With a card in hand, the +3 lands and paying the parked cost discards it. The old test asserting "face b attack is still granted" on an empty hand pinned the bug. It is rewritten here because the behaviour intentionally changed. The three skip tests fail against the pre-fix source.
+
+**D-24026 live-on-surface:** pending. On `play.legendary-arena.com`, with Cloak & Dagger and Hercules: play Penumbra, then Boy Genius / Manly Dullard with no other card in hand and an empty deck. Confirm the "could not play side b, Manly Dullard" line and no +3 Attack.
+
+**Reserved by:** NUMBER-LEDGER D-24621. Related: D-24615 (WP-777), D-24619 (WP-780), D-24620, D-24185.
 
 ---
 
