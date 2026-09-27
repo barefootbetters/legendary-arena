@@ -7,6 +7,30 @@
 
 ## Current State
 
+### D-24623 — Gate-only hero lines now surface as hollow effects (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
+lists hero abilities whose only parsed piece is their play gate (`[hc:X]: <text>`, `[team:X]: <text>`,
+Outwit / Savior / Worthy gates). Before, a passed gate fired nothing and reported nothing: Storm & Black
+Panther's Tsunami of Justice in operator match `VP1KNXl2ENQ` (turn 13). A failed gate over such a line
+no longer implies a working card; the log ends "Its effect is not supported yet."
+
+- **Engine.** Parser Step 4b: a line that resolved only its gate records its gated `rule:<concept>`,
+  its unmatched multi-word `[keyword:X N]` name (coverage-probe normalization, e.g. `danger-sense`), or
+  `gate-only`. There are 260 such hooks corpus-wide, and none is handled by any allowlist or fusion.
+  Whole-line reminders stay exempt. Gate-failed wording changes only for hooks with a fully hollow body.
+  Parse and log only: no gameplay, `G`, or hash change.
+- **Pins re-pinned.** `sim:coverage` baseline hooks 6315→6319 and noEffect 2575→2579 (rlmk); executable
+  unchanged. `runtime-observed-hollows.json` 32→53 mechanics and 3533→4569 observations, with no
+  existing count moving except `rule:shard` +95. Dashboard `useInPlayCoverage` totalObs 4363→5397,
+  percentResolved 26.0→21.0.
+- **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package
+  (engine 4650/0, dashboard 505/0, arena-client 2157/0). Every Coverage & Ledger CI gate passes.
+- **Next.** 154 ungated hero lines with multi-word `[keyword:…]` tokens (Soaring Flight, Excessive
+  Violence, Piercing Energy…) are still silent. They are recorded as a D-24623 follow-up.
+- **Live-verify (D-24026):** pending. Play Tsunami of Justice with another Covert hero in play and
+  confirm the diagnostics hollow table lists `gate-only`.
+
 ### WP-778 — The side picker shows a discard cost and blocks an unpayable side (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When you play a split card whose side

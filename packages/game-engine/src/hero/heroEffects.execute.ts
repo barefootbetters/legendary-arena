@@ -837,10 +837,15 @@ export function executeHeroEffects(
       // one is a canonical-array change out of scope here; `blocked` means the effect
       // was suppressed and nothing happened, which is wrong for an ability that may
       // still fire this turn.
+      // why: D-24623 — a gate over a hollow body (the gate parsed, the effect did not) must
+      // not promise an effect. The line still names the failed condition; the tail says the
+      // effect is unsupported instead of implying it would fire.
+      const hollowBodyNote = hookHasHollowBody(hook) ? ' Its effect is not supported yet.' : '';
       if (failedCondition !== undefined && isWaitAndSeeCondition(failedCondition)) {
         recordDeferredConditionalGrant(G, playerID, cardId, G.heroAbilityHooks.indexOf(hook));
+        const waitingOutcome = hollowBodyNote !== '' ? hollowBodyNote : ' It will apply if you reach it this turn.';
         pushLog(G,
-          `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability is waiting — ${reason}. It will apply if you reach it this turn.`,
+          `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability is waiting — ${reason}.${waitingOutcome}`,
           'neutral',
           cardId,
         );
@@ -880,7 +885,7 @@ export function executeHeroEffects(
       // for a single-ability card (where the whole card's ability really was the gated one).
       const abilityPhrase = hooks.length > 1 ? 'did not activate one of its abilities' : 'ability did not activate';
       pushLog(G,
-        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.`,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`,
         'blocked',
         cardId, // why: WP-438 — the played card whose ability was gated (drives the diagnostic's conditionNotMet association).
       );
@@ -1045,6 +1050,19 @@ function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Reports whether a hook declares an effect body that cannot execute: at least one legacy
+ * effect or unresolved marker, and no executable effect (D-24623). A gated line whose body
+ * parsed to nothing records an unresolved marker, so it counts; an empty hook does not.
+ *
+ * @param hook - The hero ability hook.
+ * @returns True when the hook's declared body is entirely hollow.
+ */
+function hookHasHollowBody(hook: HeroAbilityHook): boolean {
+  const declaredCount = (hook.effects?.length ?? 0) + (hook.unresolvedMarkers?.length ?? 0);
+  return declaredCount > 0 && !hookHasExecutableEffect(hook);
 }
 
 /**
