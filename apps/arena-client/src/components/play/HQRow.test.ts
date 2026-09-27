@@ -193,6 +193,7 @@ describe('HQRow — heal lock (D-24180 / D-24614)', () => {
     for (const button of heroes) {
       assert.equal(button.attributes('disabled'), '');
       assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+      assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
     }
     await heroes[0]!.trigger('click');
     assert.equal(calls.length, 0);
@@ -230,5 +231,11 @@ describe('HQRow — heal lock (D-24180 / D-24614)', () => {
     for (const button of wrapper.findAll('[data-testid="play-hq-hero"]')) {
       assert.equal(button.attributes('disabled'), undefined);
     }
+    // An enabled tile keeps the card name as its hover text.
+    const enabledTiles = wrapper.findAll('[data-testid="play-hq-hero"] [data-testid="card-tile"]');
+    assert.deepEqual(
+      enabledTiles.map((tile) => tile.attributes('title')),
+      ['Captain America', 'Iron Man', 'Spider-Man'],
+    );
   });
 });

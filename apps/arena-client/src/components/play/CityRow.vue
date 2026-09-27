@@ -316,6 +316,7 @@ export default defineComponent({
               :display="cell.card.display"
               size="md"
               :interactive="gateForCell(cell).allowed"
+              :tooltip="gateForCell(cell).reason"
               :show-label="true"
             />
             <!-- why: WP-750 / D-24574 — the engine's projected fight cost, shown only

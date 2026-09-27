@@ -154,6 +154,7 @@ export default defineComponent({
               :display="displayForCell(cell)"
               size="md"
               :interactive="gateForCell(cell).allowed"
+              :tooltip="gateForCell(cell).reason"
               :show-label="true"
             />
           </button>

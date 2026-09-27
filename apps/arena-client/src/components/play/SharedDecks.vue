@@ -172,6 +172,7 @@ export default defineComponent({
             size="sm"
             :show-cost="false"
             :interactive="officerGate().allowed"
+            :tooltip="officerGate().reason"
           />
           <span class="shared-decks__name">S.H.I.E.L.D. Officers</span>
           <span class="shared-decks__count">[{{ piles.officersCount }}]</span>

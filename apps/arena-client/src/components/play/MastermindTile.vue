@@ -285,6 +285,7 @@ export default defineComponent({
           :display="mastermind.display"
           size="md"
           :interactive="gateForFight().allowed"
+          :tooltip="gateForFight().reason"
           :show-label="true"
         />
         <!-- why: WP-750 / D-24574 — the engine's projected fight cost, shown only

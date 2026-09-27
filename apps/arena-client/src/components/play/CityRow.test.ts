@@ -938,6 +938,7 @@ describe('CityRow — heal lock (D-24180 / D-24614)', () => {
     for (const button of villains) {
       assert.equal(button.attributes('disabled'), '');
       assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+      assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
     }
     await villains[0]!.trigger('click');
     assert.equal(calls.length, 0);

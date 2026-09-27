@@ -634,6 +634,7 @@ describe('MastermindTile — heal lock (D-24180 / D-24614)', () => {
     const button = wrapper.find('[data-testid="play-mastermind-button"]');
     assert.equal(button.attributes('disabled'), '');
     assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+    assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
     await button.trigger('click');
     assert.equal(calls.length, 0);
   });
