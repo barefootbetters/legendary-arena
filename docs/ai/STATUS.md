@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-777 — Attune pays its discard cost; New Wings / Pumpkin Bombs need a discard (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Two scoring over-credits on the bkwd
+Falcon & Winter Soldier split cards are gone (operator match `19720cb4`):
+
+- **Attune** ("To play this side, you must discard a card") now makes you discard a card. Choosing it
+  with no other card in hand is refused with a log line, and Atone stays available.
+- **New Wings** (+4 Attack) and vill **Pumpkin Bombs** (+2 Attack) now grant only if you discarded a
+  card from your hand this turn — before or after playing them.
+
+- **Engine.** Side-choice cost guard + playCard split exemption + bot pick (D-24615); a gated, lazy,
+  per-player `G.cardsDiscardedThisTurn` at the `discardFromHand` chokepoint feeding the
+  `cardsDiscardedThisTurnAtLeast` wait-and-see condition (D-24616). Hand discards only.
+- **Counts and gates.** Engine 4594/0 → 4624/0. `pnpm -r --no-bail test` 0 fail; arena-client and
+  dashboard typecheck 0; sentinel / replay oracles unchanged; `cards:check`, `ledger:heroes:check`,
+  `mechanics:metadata:check`, `effect-index:check`, `sim:runtime-observed:check`, `sim:coverage` pass.
+- **Pins re-pinned.** `runtime-observed-hollows.json` +9 (bkwd board only, per-board tally). Dashboard
+  `useInPlayCoverage` totalObs 4354→4363, percentResolved 26.1→26.0.
+- **Next.** WP-778 (picker disables an unpayable side) is unblocked.
+- **Live-verify (D-24026):** pending. In a manual Falcon & Winter Soldier match: choose Attune with a
+  card in hand → the discard prompt appears; with an empty hand → the "could not choose" line logs,
+  the picker re-enables and Atone binds; New Wings with no discard that turn → no +4, after a discard
+  → +4; Play Diagnostics `uiStateSnapshot` shows `isSelectable` / `discardToPlayCost` on both faces.
+
 ### WP-780 — Penumbra plays both sides of a Divided Card (EC-817 / D-24619) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Play Cloak & Dagger's **Penumbra**, then

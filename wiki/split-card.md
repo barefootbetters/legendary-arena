@@ -206,6 +206,11 @@ turn, play both sides as if they were two different cards." It overrides the p. 
   face-`b` id into the discard pile. It used to skip the picker forever after, because
   only primary ids were recognised. Now either face id parks a fresh choice, with
   `faceA` always the primary face.
+- **A side's play cost binds when you pick the side (WP-777 / D-24615).** Attune prints
+  "To play this side, you must discard a card." The cost is checked at the side choice,
+  not when the card is played, so a split card is always playable. Picking a side you
+  can't pay for is refused with a log line and the other side stays available; picking
+  one you can pay parks the normal discard prompt.
 - **Button order is not face order.** On the 19 cards listed out of order, the first
   (left) button is face `b`. Tests and bots should select a face by
   `data-testid="split-face-a|b"`, not by button position.
