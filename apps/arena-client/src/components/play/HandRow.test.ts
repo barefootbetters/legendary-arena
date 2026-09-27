@@ -191,6 +191,36 @@ describe('HandRow (WP-129 — extends WP-100)', () => {
     assert.match(woundButton.attributes('title')!, /Heal Wounds/);
   });
 
+  test('the hand card tile carries the disabled reason on hover; a playable tile keeps its card name (D-24614)', () => {
+    // why: the CardTile covers the whole button and the browser shows the
+    // innermost title, so a button-level reason alone is never seen on hover.
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cap-rogers', 'pile-wound'],
+        handDisplay: [display('cap-rogers', 'Captain America'), display('pile-wound', 'Wound')],
+        currentStage: 'main',
+        submitMove,
+      },
+    });
+    const buttons = wrapper.findAll('[data-testid="play-hand-card"]');
+    const heroTile = buttons[0]!.find('[data-testid="card-tile"]');
+    const woundTile = buttons[1]!.find('[data-testid="card-tile"]');
+    assert.equal(heroTile.attributes('title'), 'Captain America');
+    assert.match(woundTile.attributes('title')!, /Wounds cannot be played/);
+
+    const offStage = mount(HandRow, {
+      props: {
+        handCards: ['cap-rogers'],
+        handDisplay: [display('cap-rogers', 'Captain America')],
+        currentStage: 'start',
+        submitMove,
+      },
+    });
+    const offStageTile = offStage.find('[data-testid="play-hand-card"] [data-testid="card-tile"]');
+    assert.match(offStageTile.attributes('title')!, /Only available during the Main/);
+  });
+
   test('clicking the Wound tile does not submit playCard; a Hero tile still does', () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(HandRow, {

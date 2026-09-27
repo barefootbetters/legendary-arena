@@ -228,11 +228,14 @@ export default defineComponent({
                (stage → resource → structural). The reason text is bound
                from useTurnActions().canPlayCard() rather than composed
                ad-hoc; the per-card structural gate additionally disables
-               the un-playable Wound tile (wounds.md). -->
+               the un-playable Wound tile (wounds.md). The tile covers the
+               whole button and the browser shows the innermost title, so the
+               reason is also passed as the tile's tooltip (D-24614). -->
           <CardTile
             :display="resolveDisplay(cardId, index)"
             size="md"
             :interactive="!buttonDisabled(cardId)"
+            :tooltip="buttonReason(cardId)"
             :show-label="true"
             :hand-lift="true"
           />
