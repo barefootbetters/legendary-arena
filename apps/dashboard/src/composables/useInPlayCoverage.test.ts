@@ -484,9 +484,16 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // +95, thrones-favor 98, danger-sense 73, woman-out-of-time 69, …). totalObs 4363 -> 5397
   // (+1034; the raw feed rose +1036, liberate's committed-seed peak of 2 absorbs 2). resolvedObs
   // stays 1135, so percentResolved 26.0 -> 21.0 (1135 / 5397). Newly visible hollow surface.
+  // 2026-09-27 (D-24624, re-pin): an UNGATED line whose only markup is a multi-word keyword
+  // ([keyword:Soaring Flight], [keyword:Danger Sense 2]) now names that keyword as an honest
+  // parse-unrecognized hollow instead of building an empty hook. Parse-only, no gameplay
+  // change: the feed gains 25 mechanics (thrown-artifact 251, switcheroo 215, s.h.i.e.l.d.-level
+  // 162, piercing-energy 143, …) and only rows for those same keywords grow (soaring-flight
+  // 14 -> 276, danger-sense 73 -> 357, versatile 12 -> 161, …). totalObs 5397 -> 8006 (+2609,
+  // equal to the raw feed rise). resolvedObs stays 1135, so percentResolved 21.0 -> 14.2.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 5397);
-  assert.equal(view.percentResolved.value, 21);
+  assert.equal(view.totalObs.value, 8006);
+  assert.equal(view.percentResolved.value, 14.2);
   assert.ok(view.remaining.value.length > 0);
 });
 

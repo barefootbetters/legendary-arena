@@ -2,15 +2,15 @@
   "corpus": {
     "executable": 2657,
     "heroes": 324,
-    "hooks": 6319,
-    "noEffect": 2579,
+    "hooks": 6380,
+    "noEffect": 2640,
     "parsedNotExecuted": 1083
   },
   "perSet": {
     "2099": {
       "executable": 51,
-      "hooks": 112,
-      "noEffect": 38
+      "hooks": 115,
+      "noEffect": 41
     },
     "3dtc": {
       "executable": 31,
@@ -19,8 +19,8 @@
     },
     "amwp": {
       "executable": 69,
-      "hooks": 187,
-      "noEffect": 91
+      "hooks": 190,
+      "noEffect": 94
     },
     "anni": {
       "executable": 16,
@@ -54,8 +54,8 @@
     },
     "chmp": {
       "executable": 29,
-      "hooks": 134,
-      "noEffect": 67
+      "hooks": 143,
+      "noEffect": 76
     },
     "co2e": {
       "executable": 156,
@@ -99,8 +99,8 @@
     },
     "fear": {
       "executable": 43,
-      "hooks": 119,
-      "noEffect": 76
+      "hooks": 122,
+      "noEffect": 79
     },
     "ff04": {
       "executable": 21,
@@ -109,13 +109,13 @@
     },
     "gotg": {
       "executable": 17,
-      "hooks": 102,
-      "noEffect": 75
+      "hooks": 105,
+      "noEffect": 78
     },
     "mdns": {
       "executable": 53,
-      "hooks": 117,
-      "noEffect": 37
+      "hooks": 122,
+      "noEffect": 42
     },
     "mgtg": {
       "executable": 51,
@@ -154,8 +154,8 @@
     },
     "rlmk": {
       "executable": 45,
-      "hooks": 124,
-      "noEffect": 79
+      "hooks": 132,
+      "noEffect": 87
     },
     "rvlt": {
       "executable": 61,
@@ -194,8 +194,8 @@
     },
     "wpnx": {
       "executable": 53,
-      "hooks": 88,
-      "noEffect": 27
+      "hooks": 97,
+      "noEffect": 36
     },
     "wtif": {
       "executable": 81,
@@ -204,13 +204,13 @@
     },
     "wwhk": {
       "executable": 126,
-      "hooks": 336,
-      "noEffect": 120
+      "hooks": 337,
+      "noEffect": 121
     },
     "xmen": {
       "executable": 160,
-      "hooks": 350,
-      "noEffect": 166
+      "hooks": 367,
+      "noEffect": 183
     }
   },
   "schemaVersion": 1,

@@ -7,6 +7,28 @@
 
 ## Current State
 
+### D-24624 — Ungated multi-word keyword lines now surface as hollow effects (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
+lists 153 hero lines that used to do nothing and report nothing: bare keyword lines such as
+`[keyword:Soaring Flight]`, `[keyword:Danger Sense 2]` and `[keyword:Versatile 3]`, and keyword-labelled
+abilities such as `[keyword:Excessive Kindness]: Draw a card.` Recruit, fight and reveal keywords are
+labelled with their printed timing (`onRecruit` / `onFight` / `onReveal`), so the log never claims a
+play-time effect.
+
+- **Engine.** Parser Step 4b now also names unmatched `[keyword:…]` tokens on UNGATED fully-empty
+  lines, using the D-24623 normalization. There is no `gate-only` fallback, so plain English stays empty.
+  Step 5 gives a line that LEADS with Soaring Flight, "When Recruited", or Excessive Kindness the
+  `onRecruit` timing; Excessive Violence and Piercing Energy get `onFight`, and Switcheroo gets
+  `onReveal` (from `keywords-full.json`). Allowlisted and fused lines and whole-line reminders are
+  unaffected. Parse only: no gameplay, `G`, or hash change.
+- **Pins re-pinned.** `sim:coverage` baseline hooks 6319→6380 and noEffect 2579→2640; executable
+  unchanged at 2657. `runtime-observed-hollows.json` 53→78 mechanics and 4569→7178 observations; only
+  rows for the named keywords moved. Dashboard `useInPlayCoverage` totalObs 5397→8006, percentResolved
+  21.0→14.2.
+- **Live-verify (D-24026):** pending. Play Cannonball Kinetic Blast Field and confirm `soaring-flight`
+  at `onRecruit` in the diagnostics hollow table.
+
 ### D-24623 — Gate-only hero lines now surface as hollow effects (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
