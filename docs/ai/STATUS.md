@@ -28,8 +28,12 @@ no longer implies a working card; the log ends "Its effect is not supported yet.
   (engine 4650/0, dashboard 505/0, arena-client 2157/0). Every Coverage & Ledger CI gate passes.
 - **Next.** 154 ungated hero lines with multi-word `[keyword:…]` tokens (Soaring Flight, Excessive
   Violence, Piercing Energy…) are still silent. They are recorded as a D-24623 follow-up.
-- **Live-verify (D-24026):** pending. Play Tsunami of Justice with another Covert hero in play and
-  confirm the diagnostics hollow table lists `gate-only`.
+- **Live-verify (D-24026):** verified 2026-09-27, operator solo match (Loki / Midtown Bank Robbery,
+  cvwr Cloak & Dagger + Storm & Black Panther + Hercules). Hercules' Crowd Favorite ("[hc:instinct]:
+  Whenever you defeat a Villain this turn, rescue a Bystander.") stood in for Tsunami of Justice, whose
+  Water side was always chosen. With its gate passed (log 19.2.21–22), the Play Diagnostics hollow table
+  listed `gate-only` (two rows). Every failed gate logged "…needs another instinct Hero played this turn.
+  Its effect is not supported yet.", while real-effect gates (Fight, Prince of Power) kept the old wording.
 
 ### WP-778 — The side picker shows a discard cost and blocks an unpayable side (2026-09-27)
 
