@@ -328,12 +328,40 @@ function resolveBothSidesFace(
 }
 
 /**
+ * Logs that one face of a split card was skipped under Penumbra because its discard-to-play
+ * cost cannot be paid (D-24625). The face grants no economy and fires no hooks.
+ *
+ * @param G - The game state to mutate (log only).
+ * @param playerID - The active player.
+ * @param faceId - The skipped face instance ext_id.
+ * @param side - Which side was skipped, for the log line.
+ */
+function logBothSidesFaceSkipped(
+  G: LegendaryGameState,
+  playerID: string,
+  faceId: CardExtId,
+  side: 'a' | 'b',
+): void {
+  pushLog(
+    G,
+    `Player ${playerID} could not play side ${side}, ${G.cardDisplayData[faceId]?.name ?? faceId} — it requires discarding ${getDiscardToPlayCost(G, faceId)} card(s) but their hand does not hold enough cards to discard, so that side is skipped.`,
+    'neutral',
+    faceId,
+  );
+}
+
+/**
  * Plays BOTH faces of a split card as two different cards, face a then face b, while cvwr
  * Penumbra is active this turn (WP-780 / D-24619). Called by playCard after the card has left
  * the hand, instead of parking the choose-a-side picker.
  *
- * The physical card enters inPlay ONCE, as its face-a id. Face a's economy and ability resolve,
- * the entry is recorded in `bothSidesPlayedCardIds`, then face b's economy and ability resolve.
+ * Each face must be payable before it resolves (WP-777's isSplitFacePayable / D-24625): a face
+ * whose discard-to-play cost the hand cannot pay is skipped entirely (no economy, no hooks, one
+ * log line); a payable face resolves normally and its own discard-to-play hook charges the cost.
+ *
+ * The physical card enters inPlay ONCE. When both faces play, the entry is the face-a id and is
+ * recorded in `bothSidesPlayedCardIds` between the faces. When only one face plays, the entry is
+ * that face's id and is NOT marked — the card counts as the one face that was actually played.
  *
  * @param G - The game state to mutate.
  * @param context - The move context (ctx, events, random, log) passed to executeHeroEffects.
@@ -356,13 +384,36 @@ export function playBothSplitFaces(
   if (pair === null) {
     return false;
   }
+  // why: D-24625 — face a plays when payable, or when face b is not payable either (the
+  // isSplitFaceBindable anti-freeze fallback, D-24615 §2, so an all-costed card still plays one
+  // face as the picker path would). No card in the data has a cost on both faces.
+  const isFaceAPlayed = isSplitFaceBindable(G, playerID, pair.faceA, pair.faceB);
   // why: a card last played as face b keeps its face-b id; under Penumbra the one physical card
   // is entered as ONE face-a entry so both faces resolve in data order (sides[0] then sides[1]).
-  playerZones.inPlay = [...playerZones.inPlay, pair.faceA];
-  const faceALabel = formatPlayedCardLabel(G.cardDisplayData, pair.faceA, '');
-  pushLog(G, `Player ${playerID} played ${faceALabel}.`, 'neutral', pair.faceA);
-  pushLog(G, `Penumbra: both sides of ${faceALabel} play as two different cards.`, 'neutral', pair.faceA);
+  // When face a is skipped, the entry is face b — the only face actually played.
+  const entryId = isFaceAPlayed ? pair.faceA : pair.faceB;
+  playerZones.inPlay = [...playerZones.inPlay, entryId];
+  const entryLabel = formatPlayedCardLabel(G.cardDisplayData, entryId, '');
+  pushLog(G, `Player ${playerID} played ${entryLabel}.`, 'neutral', entryId);
+  pushLog(G, `Penumbra: both sides of ${entryLabel} play as two different cards.`, 'neutral', entryId);
+
+  if (!isFaceAPlayed) {
+    // why: face a was skipped, so face b is the card's only face this turn — no marker, so
+    // "cards played this turn" reads see exactly one card (the face-b entry).
+    logBothSidesFaceSkipped(G, playerID, pair.faceA, 'a');
+    G.lastPlayEffectsFired = resolveBothSidesFace(G, context, playerID, pair.faceB, 'b');
+    return true;
+  }
+
   const effectsFiredA = resolveBothSidesFace(G, context, playerID, pair.faceA, 'a');
+  // why: face b's payability is read AFTER face a resolves — face a's effects (a draw, a
+  // discard) change the hand the cost is paid from. Boy Genius draws before Manly Dullard's cost.
+  if (!isSplitFacePayable(G, playerID, pair.faceB)) {
+    // why: face b is skipped, so the entry stays an ordinary face-a play — no marker.
+    logBothSidesFaceSkipped(G, playerID, pair.faceB, 'b');
+    G.lastPlayEffectsFired = effectsFiredA;
+    return true;
+  }
   // why: the faces are played sequentially — record the marker only AFTER face a resolves, so
   // face a sees a plain one-face entry (face b is not yet played) and face b's reads expand the
   // entry and see face a as another card played this turn.

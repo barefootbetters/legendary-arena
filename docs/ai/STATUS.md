@@ -7,6 +7,20 @@
 
 ## Current State
 
+### D-24625 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** With Penumbra active, a split card side
+that costs a discard (Hercules's Manly Dullard, Falcon & Winter Soldier's Attune) no longer grants its
+Attack / Recruit when your hand has no card to discard. That side is skipped with a log line, and the
+other side still plays. With a card in hand, the side plays and the discard prompt appears as before.
+
+- **Engine.** `playBothSplitFaces` reuses WP-777's `isSplitFacePayable` / `isSplitFaceBindable`. Face b's
+  payability is read after face a resolves. The both-sides marker is written only when both faces played.
+  A lone face-b play is entered as the face-b id.
+- **Tests.** 3 new + 1 rewritten + 1 new real-cvwr case. The rewritten test had pinned the bug (face b
+  +3 Attack from an empty hand).
+- **Live-verify (D-24026):** pending — see D-24625.
+
 ### D-24624 — Ungated multi-word keyword lines now surface as hollow effects (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
@@ -137,6 +151,7 @@ before Penumbra, or on another turn, still gets the picker.
   - Split plays on other turns still used the picker.
   - **Open follow-up:** WP-777 (#2461) wired the split-side discard cost into the picker path only. Under
     Penumbra, an unpayable Manly Dullard / Attune face still grants its economy. See D-24619.
+    **Closed 2026-09-27 by D-24625.**
 
 ### D-24618 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
 

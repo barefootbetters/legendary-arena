@@ -19,6 +19,8 @@
  *  - playBothSplitFaces (WP-780 / D-24619): both faces' economy in order, one face-a inPlay
  *    entry, the marker written between the faces; null pair → false with no mutation; missing
  *    zones → true with no mutation; playCard skips the picker only while Penumbra is active.
+ *  - playBothSplitFaces per-face cost (D-24625): an unpayable face is skipped (no economy, no
+ *    hooks, one log line); a lone played face is the unmarked entry.
  *
  * Uses node:test + node:assert only. No boardgame.io imports.
  */
@@ -484,5 +486,44 @@ describe('resolveSplitFaceChoice — Attune discard cost (WP-777 / D-24615)', ()
     assert.deepEqual(gameState.playerZones['0']!.hand, []);
     assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATTUNE]);
     assert.equal(gameState.pendingSplitFaceChoices?.length, 1, 'the side choice is parked');
+  });
+});
+
+describe('playBothSplitFaces — per-face discard cost under Penumbra (D-24625)', () => {
+  it('face a unpayable, face b payable: Attune skipped, Atone played as the one unmarked entry', () => {
+    const gameState = makeAttuneState([], false);
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    assert.equal(playBothSplitFaces(gameState, context, '0', ATTUNE), true);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATONE], 'the entry is the face actually played');
+    assert.equal(gameState.turnEconomy.recruit, 0, "no Attune +3 recruit");
+    assert.equal(gameState.turnEconomy.bothSidesPlayedCardIds, undefined, 'one face played — not marked');
+    assert.equal(gameState.pendingDiscardToPlay, undefined, "Attune's cost hook never fired");
+    const skipLines = gameState.messages.filter((entry) => entry.text.includes('could not play side'));
+    assert.deepEqual(skipLines, [{
+      text: 'Player 0 could not play side a, Attune — it requires discarding 1 card(s) but their hand does not hold enough cards to discard, so that side is skipped.',
+      outcome: 'neutral',
+      card: ATTUNE,
+    }]);
+    const sideLines = gameState.messages.filter((entry) => entry.text.includes('resolved side'));
+    assert.deepEqual(sideLines.map((entry) => entry.card), [ATONE], 'only side b resolved');
+  });
+
+  it('both faces payable: Attune charges its cost, both faces resolve, the entry is marked', () => {
+    const gameState = makeAttuneState([HAND_CARD], false);
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    playBothSplitFaces(gameState, context, '0', ATONE);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATTUNE]);
+    assert.equal(gameState.turnEconomy.recruit, 3);
+    assert.deepEqual(gameState.turnEconomy.bothSidesPlayedCardIds, [ATTUNE]);
+    assert.deepEqual(gameState.pendingDiscardToPlay, [{ playerID: '0', sourceCardId: ATTUNE, remaining: 1 }]);
+  });
+
+  it('neither face payable: face a still plays (anti-freeze fallback), face b is skipped', () => {
+    const gameState = makeAttuneState([], false, [{ ...ATTUNE_COST_HOOK, cardId: ATONE } as HeroAbilityHook]);
+    const { G: _G, playerID: _playerID, ...context } = makeMoveContext(gameState, '0');
+    playBothSplitFaces(gameState, context, '0', ATTUNE);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATTUNE]);
+    assert.equal(gameState.turnEconomy.bothSidesPlayedCardIds, undefined);
+    assert.ok(gameState.messages.some((entry) => entry.text.includes('could not play side b, Atone')));
   });
 });
