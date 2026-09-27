@@ -12,6 +12,7 @@ tags:
   - arena-client
   - research
 related:
+  - visual-effects-design-ancestry.md
   - design-system-overview.md
   - sound-effects.md
   - music-authoring.md
@@ -48,6 +49,12 @@ source:
   - ../apps/arena-client/src/composables/useExcessiveViolenceVfx.ts
   - ../apps/arena-client/src/composables/useMastermindHitVfx.ts
   - ../apps/arena-client/src/composables/useVictoryFinaleVfx.ts
+  - ../apps/arena-client/src/composables/useVillainSlashVfx.ts
+  - ../apps/arena-client/src/vfx/villainSlashVfxManifest.ts
+  - ../apps/arena-client/src/composables/useSlashGesture.ts
+  - ../apps/arena-client/src/components/play/HandRow.vue
+  - ../apps/arena-client/src/components/play/handArc.ts
+  - ../apps/arena-client/src/components/play/CardTile.vue
   - ../apps/arena-client/src/vfx/effectIntensity.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../packages/game-engine/src/log/logOutcome.types.ts
@@ -55,7 +62,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-23
+last-reviewed: 2026-09-26
 ---
 
 # Visual Effects Framework
@@ -81,6 +88,18 @@ event, so the visual and audio pages cross-reference through the engine's
 own vocabulary rather than through a hand-maintained index. That is what
 keeps this layer from siloing away from the audio, dopamine, and
 narrative work.
+
+**Where the feel comes from.** The juice layer translates three commercial
+feel systems onto that spine. *Candy Crush* supplies the named, escalating
+cascade (Team-Up! → Unstoppable! → LEGENDARY! on the locked combo scalar).
+*Fruit Ninja* supplies the stroke-as-attack (slash to fight, the blade trail,
+the card split along the cut, the takedown words). *Hearthstone* supplies the
+card-as-object pass: the hand lift and arc have shipped (WP-699); the turn
+banner, the draw and play motion, and the ally-play reveal are still proposal,
+and the reveal is blocked by the D-12803 in-play redaction rather than by a
+missing event. Character may evolve; the contract does not. The pattern-by-pattern
+record of what was adopted, what is proposed, and what is deliberately not
+copied is on [Visual Effects Design Ancestry](visual-effects-design-ancestry.md).
 
 **The chain-reaction "combo flash" now ships (WP-556 / D-24365).** When
 [Sound Effects](sound-effects.md#tiered-combo) was written it flagged the
@@ -111,7 +130,7 @@ governance layer** (implemented against, and not free to drift); the
 [Mechanics](#mechanics) are **design detail** (the per-event *character* —
 which flash, which colour — is proposal-level and free to evolve); and
 [Decisions Pending](#decisions-pending) / [Deferred](#deferred) are the
-**roadmap**. **Seven surfaces have shipped** — the [combo VFX
+**roadmap**. **Shipped so far:** the [combo VFX
 foundation](#shipped-combo-vfx) (flash + synergy call-out + the accessibility
 gate, WP-556), the [shield-block beat](#surface-block) with the **complete
 reveal-to-avoid family** (the `strikeBlocked` event + the Cap-shield burst,
@@ -127,10 +146,14 @@ beat](#shipped-mastermind-hit) (an escalating ember burst on each Tactic defeat 
 `hit1` spark → `hit4` screen-shaking impact — off the projected `tacticsDefeated`
 count delta, WP-690), and the [heroes-win victory finale](#shipped-victory-finale)
 (a gold confetti storm + bloom + "VICTORY!" banner on the projected win, which now
-also fires on the optional Final Blow's 5th, final blow, WP-690 + WP-687);
-everything else here — the remaining notable-event effects (Master Strike
-vignette, fight impact), the other fight/ambush sub-effects, action-move cues,
-faction cries — is still `draft` design against
+also fires on the optional Final Blow's 5th, final blow, WP-690 + WP-687), the
+[villain slash](#surface-villain-slash) (the Fruit Ninja-style defeat beat on every
+`fightResolved`, WP-755), [slash to fight](#slash-to-fight) (the stroke-as-attack
+input, WP-756, with the long-press slash for scrolling rows, WP-761), and the
+[hand presentation](#card-interaction-feel) (hover lift + a shallow hand arc,
+WP-699). Everything else here — the Master Strike vignette (the one Tier-1
+trigger still unbuilt), the other fight/ambush sub-effects, action-move cues, the
+turn banner, faction cries — is still `draft` design against
 the same contract. The event vocabulary,
 the projected `UIState` signals, the shipped audio precedent, the shipped
 combo layer, and the architectural boundaries are sourced to code; the
@@ -189,20 +212,23 @@ replay hash; recorded in
 [`02-CODE-CATEGORIES.md §client-app`](../docs/ai/REFERENCE/02-CODE-CATEGORIES.md).
 
 **Not yet shipped** (still `draft` design against this same contract, each a
-follow-up WP): the remaining [Surface 1](#surface-1) notable-event effects (the
-Master Strike "uh-oh" vignette, the fight impact), the [Surface 1b](#surface-1b)
+follow-up WP): the remaining [Surface 1](#surface-1) notable-event effect (the
+Master Strike "uh-oh" vignette), the [Surface 1b](#surface-1b)
 fight/ambush sub-effects, the [Surface 3](#surface-3) action-move cues, the
 [scheme-wins / tie](#endgame) endgame finales (only **heroes-win** has shipped),
 the [faction battle
 cries](#faction-cries) (licensing-gated, D-24259), and the
-[event-storm coalescing algorithm](#decisions-pending) (not needed until a
-second effect class ships). **Shipped since this list was written:** the
+[event-storm coalescing algorithm](#decisions-pending). That algorithm was
+"not needed until a second effect class ships"; many have since shipped, so it
+is now a live gap rather than a future one. **Shipped since this list was
+written:** the
 [shield-block](#surface-block) **`VfxOverlay` burst** (the Captain-America-shield
 beat, all five reveal-to-avoid threat classes, WP-644..651), the [wound-gained
 damage vignette](#surface-1b) (WP-650), the [mastermind-hit
-beat](#shipped-mastermind-hit) (WP-690), and the [heroes-win victory
+beat](#shipped-mastermind-hit) (WP-690), the [heroes-win victory
 finale](#shipped-victory-finale) (WP-690, firing on the Final Blow 5th blow too,
-WP-687). None is a follow-on any longer.
+WP-687), and the fight impact, which shipped as the
+[villain slash](#surface-villain-slash) (WP-755). None is a follow-on any longer.
 
 ## Shipped: the mastermind-hit beat (WP-690 / D-24507) {#shipped-mastermind-hit}
 
@@ -523,9 +549,11 @@ already streams them through
 [`useNotableEventStream.ts`](../apps/arena-client/src/composables/useNotableEventStream.ts)
 and renders them in
 [`NotableEventOverlay.vue`](../apps/arena-client/src/components/play/NotableEventOverlay.vue)
-— which is, today, the **only** real visual effect in the whole client (a
-single opacity-scale fade transition). A juice layer rides this exact
-stream — one effect per event type — with zero new engine work.
+as centre-screen chips (a single opacity-scale fade transition). When this page
+was first drafted that chip fade was the **only** visual effect in the client.
+The juice layer now rides this exact stream — one effect per event type — with
+zero new engine work: the shield block, the transform surge, the Excessive
+Violence slash and the villain slash are all `notableEvents` consumers.
 
 | Event (`NotableGameEventType`) | Priority | Fires when | Suggested visual character (proposal) |
 |---|---|---|---|
@@ -1042,7 +1070,8 @@ combo scalar, an outcome. This section is the one **client-local** feel
 layer: effects driven purely by the **pointer, the hand contents, and the
 local seat's own affordability**, with *no* engine event behind them. It
 collects the "make it feel like Hearthstone" card-handling polish from a
-game-feel review — all of it **proposal**, and a **different category**
+game-feel review — the hover lift and hand arc **shipped** (WP-699); the rest
+is **proposal** — and it is a **different category**
 from the notable-event juice
 layer, so it is grouped apart from the [trigger surfaces](#surface-1) rather
 than pretending to be another one.
@@ -1062,19 +1091,31 @@ should not be adopted without a `DECISIONS.md` entry.
 
 | Feel item | Client signal | Suggested character (proposal) | Priority |
 |---|---|---|---|
-| **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card scales ~1.06, rises ~12 px, gains a shadow and a `z-index` bump, ~150 ms ease-out; reverse on leave, restore `z-index` after the leave settles | recommend |
-| **Grey-out unplayable** | ~~affordability~~ — see the [caveat](#card-interaction-decisions) | The plan's affordability grey-out (dim what you can't afford) **does not apply here**: playing a card from hand is **resource-free** in this game (cost gating is only for recruiting HQ heroes and fighting villains, [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts) checks turn + stage only). The only in-hand "unplayable" states — not-your-turn / not-main-step / Wound — are already gated (and the Wound is already a disabled tile). | **dropped** (not applicable) |
-| **Hand arc / fan** | hand size + card index (layout only) | lay the hand along a shallow arc, each card rotated to its tangent with a `transform-origin` below it; compress spacing as the hand grows so it never overflows; the hovered card straightens to 0° and nudges its neighbours outward | recommend |
-| **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
-| **Turn-start banner + active-player marker** | the turn boundary in `UIState` (active-player change) | a brief non-blocking sweep / banner naming the active player (~600 ms), paired with the [turn-start sound](sound-effects.md#surface-3), plus a **persistent** active-player indicator | recommend |
+| **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card rises 12 px and scales to 1.06 with a shadow and a `z-index` bump; pointer devices only, off at intensity `off` and under reduced motion, and a disabled tile never lifts ([`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)) | **Shipped (WP-699)** |
+| **Grey-out unplayable** | ~~affordability~~ — see the [caveat](#card-interaction-decisions) | The plan's affordability grey-out (dim what you can't afford) **does not apply here**: playing a card from hand is **resource-free** in this game (cost gating is only for recruiting HQ heroes and fighting villains, [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts) checks turn + stage only). The only in-hand "unplayable" states — not-your-turn / not-main-step / Wound — are already gated (and the Wound is already a disabled tile). The information-bearing hand cue is the superpower-ready rim below. | **dropped** (not applicable) |
+| **Hand arc / fan** | hand size + card index (layout only) | the hand fans along a shallow arc ([`handArc.ts`](../apps/arena-client/src/components/play/handArc.ts): 24° total spread, 0.55 px dip per degree); past six cards the cards overlap (down to -40 px) instead of scrolling; the hovered card straightens to 0° and nudges each neighbour 12 px outward ([`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue)) | **Shipped (WP-699)** |
+| **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms. **Blocker found 2026-09-26:** `HandRow.vue` keys each card `${cardId}-${index}`, so playing one card re-keys every card after it and Vue remounts them — there is nothing to animate. Keys by occurrence (`cardId#n`) stay stable when other cards leave, and `<TransitionGroup>` then gives FLIP reflow with no new dependency | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
+| **Turn-start banner + active-player marker** | the turn boundary in `UIState` (active-player change) | a brief non-blocking sweep / banner naming the active player (~600 ms), paired with the [turn-start sound](sound-effects.md#surface-3), plus a **persistent** active-player indicator. Today the HUD's "Active:" label prints the raw seat id, and `turn-start.mp3` is auditioned on Sound Effects but not wired | recommend — drafted as WP-774 (2026-09-26) |
+| **Superpower-ready rim** | an owner-only, per-hand-card engine projection (not yet projected) | a rim on each hand card whose superpower condition already holds for the cards in play — Hearthstone's "condition active" highlight and Candy Crush's next-match hint. It carries information that a flat "playable" glow cannot, and it feeds the shipped combo ladder. The engine predicate already exists (WP-710 `heroConditionHoldsForInPlay`) | recommend — drafted as WP-776 (2026-09-26) |
+| **At-a-glance affordability** | `economy.availableRecruit` / `availableAttack` against the gates the HQ and City buttons already apply | the WP-750 red cost badge City villains and the Mastermind already carry, extended to HQ heroes (today an unaffordable HQ hero looks the same as an affordable one at rest, and on touch there is no cue at all); a rim on the villains a slash would fight; an End Turn cue when no affordable action remains | recommend — drafted as WP-775 (2026-09-26) |
 | **Per-element damage shake** | a `UIState.players[id].woundCount` delta scoped to a **specific** panel | a short positional shake (3–4 oscillations, ~6 px, ≤ 250 ms per the [performance budget](#performance-budget)) on the *damaged element only* — never the viewport — amplitude scaled by the hit; this is the per-panel refinement the [shipped full-screen wound vignette](#surface-1b) already flags as a follow-up WP | recommend |
-| **Opponent card-reveal moment** | *no ready signal* — see the [caveat](#card-interaction-decisions) | the opponent's played card animates to centre, scales up, holds ~800 ms to be read, then moves to its destination — the multiplayer "what just happened?" fix | recommend, blocked on a signal |
+| **Ally card-reveal moment** | *blocked* — another seat's played cards are redacted from your view (D-12803); see the [caveat](#card-interaction-decisions) | the ally's played card animates to centre, scales up, holds ~800 ms to be read, then moves to its destination — the multiplayer "what just happened?" fix. Seats are teammates here (one shared outcome), so this is ally awareness, not reading a rival | recommend, blocked on a D-12803 supersession |
 
 The **play-log** half of the plan's "opponent action visibility" item
 already **shipped** — the HUD
 [`GameLogPanel`](#game-log-outcome-colours) is the scrollable, colour-coded
 action list (WP-434 / D-24253) — so only the *reveal animation* above
 remains of that item.
+
+**Readable bot turns come first.** In a solo match with a bot ally, the bot's
+whole turn runs back to back: the driver's move loop (`attemptBotTurn` in
+[`botAllyDriver.mjs`](../apps/server/src/bot-ally/botAllyDriver.mjs)) waits only
+on retry back-offs, so every slash, burst and word the bot's moves trigger stacks
+on top of the last. Hearthstone paces its AI on purpose so a person can follow
+it. A per-move pause in the driver is a server-side scheduling change with no
+engine or determinism impact, drafted as WP-773 (2026-09-26). It should land
+before the ally card-reveal above, or the reveal would try to show a whole turn's
+cards at once.
 
 > **Not on this page.** The plan's **canned emotes** and **one-click
 > rematch** are a networked social feature and an end-of-match retention
@@ -1198,10 +1239,14 @@ above. The shipped combo layer (WP-556) wires it this way:
   [`useComboCue.ts`](../apps/arena-client/src/composables/useComboCue.ts))
   watches `UIState.game.lastPlayEffectsFired`, mounted at the shared
   [`PlayViewport.vue`](../apps/arena-client/src/pages/PlayViewport.vue)
-  root beside its audio sibling — today the shipped notable-event VFX consumers
-  `useStrikeBlockedVfx` (WP-647) and the wound-delta `useWoundVfx` (WP-650) mount
-  there; a consolidated `useNotableEventVfx` dispatcher is the future
-  generalization once a third notable-event effect lands.
+  root beside its audio sibling. Every other shipped consumer mounts there too:
+  the notable-event cursors `useStrikeBlockedVfx` (WP-647), `useTransformVfx`
+  (WP-672), `useExcessiveViolenceVfx` (WP-746) and `useVillainSlashVfx` (WP-755),
+  plus the delta consumers `useWoundVfx` (WP-650), `useMastermindHitVfx` and
+  `useVictoryFinaleVfx` (WP-690). The consolidated `useNotableEventVfx`
+  dispatcher this list once anticipated "once a third notable-event effect
+  lands" was never built: each consumer still keeps its own append-only cursor
+  or last-seen value.
 - **One** full-bleed overlay —
   [`VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
   (the single overlay canvas of the
@@ -1279,6 +1324,10 @@ priority order is fixed and non-negotiable:
 
 ## Interactions
 
+- **[Visual Effects Design Ancestry](visual-effects-design-ancestry.md).** The
+  background page: which Candy Crush, Fruit Ninja and Hearthstone patterns this
+  layer adopted, which are proposed against this contract, and which it
+  deliberately does not copy. It adds no trigger and changes no tier boundary.
 - **[Design System Overview](design-system-overview.md).** The parent
   map. Its [Shared Trigger Spine](design-system-overview.md#shared-trigger-spine)
   is the canonical event vocabulary this page reacts to; that shared table
@@ -1389,7 +1438,7 @@ priority order is fixed and non-negotiable:
 ## Code Touchpoints
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — the eleven `NotableGameEventType` variants and their payloads
+  — the twelve `NotableGameEventType` variants and their payloads
   (`appliedEffects`, `bystandersRescued`, `narrative`, `resolverKey`)
 - [`packages/game-engine/src/events/notableEvents.compose.ts`](../packages/game-engine/src/events/notableEvents.compose.ts)
   — where `appliedEffects` keyword labels (wound / KO / capture) are composed
@@ -1415,12 +1464,30 @@ priority order is fixed and non-negotiable:
   `prefers-reduced-motion` + `shouldRender`
 - [`apps/arena-client/src/components/play/VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)
   — **shipped (WP-556):** the single overlay canvas + call-out word layer; also
-  hosts the shield-block beat (WP-647) and the wound vignette (WP-650)
+  hosts the shield-block beat (WP-647), the wound vignette (WP-650), the
+  transform surge (WP-672), the Excessive Violence slash (WP-746), the
+  mastermind-hit beat and victory finale (WP-690), and the villain slash with its
+  blade trail (WP-755 / WP-756)
 - [`apps/arena-client/src/composables/useStrikeBlockedVfx.ts`](../apps/arena-client/src/composables/useStrikeBlockedVfx.ts) + [`vfx/strikeBlockedVfxManifest.ts`](../apps/arena-client/src/vfx/strikeBlockedVfxManifest.ts)
   — **shipped (WP-647..651):** the first notable-event VFX consumer (append-only
   cursor over `notableEvents`) + the `threatKind` → burst-colour manifest (five classes)
 - [`apps/arena-client/src/composables/useWoundVfx.ts`](../apps/arena-client/src/composables/useWoundVfx.ts) + [`useWoundCue.ts`](../apps/arena-client/src/composables/useWoundCue.ts)
   — **shipped (WP-650):** the local-seat `woundCount`-delta vignette + audio thud
+- [`apps/arena-client/src/composables/useTransformVfx.ts`](../apps/arena-client/src/composables/useTransformVfx.ts) + [`vfx/transformVfxManifest.ts`](../apps/arena-client/src/vfx/transformVfxManifest.ts)
+  — **shipped (WP-672):** the `transformResolved` cursor + the gamma-green surge spec
+- [`apps/arena-client/src/composables/useExcessiveViolenceVfx.ts`](../apps/arena-client/src/composables/useExcessiveViolenceVfx.ts) + [`vfx/excessiveViolenceVfxManifest.ts`](../apps/arena-client/src/vfx/excessiveViolenceVfxManifest.ts)
+  — **shipped (WP-746):** the `excessiveViolenceFired` cursor + the sword-blade burst spec
+- [`apps/arena-client/src/composables/useMastermindHitVfx.ts`](../apps/arena-client/src/composables/useMastermindHitVfx.ts) + [`useVictoryFinaleVfx.ts`](../apps/arena-client/src/composables/useVictoryFinaleVfx.ts)
+  — **shipped (WP-690):** the `tacticsDefeated` count-delta ladder + the
+  seed-on-first-frame heroes-win finale
+- [`apps/arena-client/src/composables/useVillainSlashVfx.ts`](../apps/arena-client/src/composables/useVillainSlashVfx.ts) + [`vfx/villainSlashVfxManifest.ts`](../apps/arena-client/src/vfx/villainSlashVfxManifest.ts) + [`vfx/villainSlashGeometry.ts`](../apps/arena-client/src/vfx/villainSlashGeometry.ts)
+  — **shipped (WP-755):** the `fightResolved` cursor, the slice palette and the
+  cut geometry
+- [`apps/arena-client/src/composables/useSlashGesture.ts`](../apps/arena-client/src/composables/useSlashGesture.ts) + [`useSlashGestureSetting.ts`](../apps/arena-client/src/composables/useSlashGestureSetting.ts)
+  — **shipped (WP-756 / WP-761):** the stroke-crossing fight input and its 🗡️ toggle
+- [`apps/arena-client/src/components/play/HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue) + [`handArc.ts`](../apps/arena-client/src/components/play/handArc.ts) + [`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)
+  — **shipped (WP-699):** the hand arc geometry, the hover straighten + neighbour
+  nudge, and the gated hover lift
 - [`apps/arena-client/src/components/play/AudioControls.vue`](../apps/arena-client/src/components/play/AudioControls.vue)
   — **shipped (WP-556):** hosts the unified Effect-Intensity control (its
   `off` also mutes audio)
@@ -1436,14 +1503,18 @@ priority order is fixed and non-negotiable:
 ## Acceptance Criteria
 
 **WP-556 shipped the combo-flash foundation** and met the combo-scoped,
-accessibility, and determinism criteria below (✅). The **notable-event
-Tier-1 set** (▫) is the next WP against this same bar:
+accessibility, and determinism criteria below (✅). Two of the three
+**notable-event Tier-1** triggers have since shipped; the third (▫) is the
+remaining WP against this same bar:
 
 - ✅ Combo VFX triggers from `UIState.game.lastPlayEffectsFired`, using the
   locked [Combo Tier Contract](#combo-tier-contract) mapping.
-- ▫ Event VFX triggers from `UIState.notableEvents` for the Tier-1 set
-  (`mastermindStrikeResolved`, `mastermindDefeated`, `fightResolved`) —
-  **not yet built; the next WP.**
+- ✅ `fightResolved` — the [villain slash](#surface-villain-slash) (WP-755).
+- ✅ `mastermindDefeated` — the [heroes-win victory finale](#shipped-victory-finale),
+  keyed off the projected `gameOver.outcome` so it also fires on the Final Blow
+  (WP-690 / WP-687).
+- ▫ `mastermindStrikeResolved` — the Master Strike vignette — **not yet built;
+  the one Tier-1 trigger left.**
 - ✅ Effects continue functioning after a reconnect and a full `UIState`
   refresh (no dependence on client history beyond the documented
   scalar-change tracking).
@@ -1514,14 +1585,25 @@ pure client render — each needs a signal decision before it can ship:
   excluded from the hand-presentation work (WP-699, which ships the [hover
   lift](#card-interaction-feel) + [hand arc](#card-interaction-feel)). Recorded
   here so a future reader does not re-propose it against the same false premise.
-- **Opponent-play reveal signal.** The [reveal moment](#card-interaction-feel)
-  has **no engine event**: `playCard` emits no notable event, so an opponent's
-  play reaches the client only as `UIState` deltas and a game-log line.
-  Showing "the opponent just played *X*" dramatically needs either a new
-  notable event or a decision to drive the reveal off the projected
-  log / board delta. This is the same class of gap as the deferred
-  [`escapeResolved`](#decisions-pending) — a dramatic moment with no ready
-  hook.
+  The hand cue that *does* carry information is the superpower-ready rim
+  (drafted as WP-776): the engine projects, for the owner only, which hand cards'
+  superpower conditions already hold for the cards in play, so the rim says
+  "play this now and it chains" rather than "this is playable".
+- **Ally-play reveal signal.** The [reveal moment](#card-interaction-feel)
+  has **no engine event**: `playCard` emits no notable event, so another seat's
+  play reaches the client only as `UIState` deltas and a game-log line. The
+  "board delta" route is narrower than it looks: **D-12803** redacts every other
+  seat's `inPlayCards` / `inPlayDisplay`, so a viewer sees that seat's
+  `inPlayCount` tick up but never *which* card arrived. D-12803's own rationale
+  concedes that in-play cards are face-up at the physical table; the redaction
+  was a wireframe and payload call, not information hiding. So the cheaper route
+  is to supersede D-12803 (make in-play cards public) rather than add a
+  `cardPlayed` event: that gives the reveal a typed delta to animate (the
+  `useWoundVfx` pattern) and gives the table lasting visibility of what a teammate
+  played this turn. Driving the reveal off the game log stays ruled out (see
+  [Edge Cases](#edge-cases)). Until then this is the same class of gap as the
+  deferred [`escapeResolved`](#decisions-pending) — a dramatic moment with no
+  ready hook.
 
 ### Implementation decisions pending
 
@@ -1530,17 +1612,17 @@ pure client render — each needs a signal decision before it can ship:
   word and impact pulse; no `tsparticles`, no GSAP (see
   [library posture](#library-posture)). A later effect class that genuinely
   needs a timeline engine would reopen this with a `DECISIONS.md` entry.
-- **Combo density scaling past T4** — `lastPlayEffectsFired` is unbounded
-  above; decide whether the visual keeps scaling particle *density* past the
-  apex `>= 5` tier or hard-caps at T4 for the performance budget. (Tier
-  *boundaries* stay locked either way.) The **apex `LEGENDARY!` rung itself is
-  resolved and shipped:** WP-425 / D-24246 added the fourth shared
-  `comboTierForCount` tier (`>= 5 → legendary`) and shipped its audio sting,
-  and WP-556 shipped the visual call-out off the same boundary (see
-  [synergy call-out](#synergy-callout)). What stays open here is only whether
-  particle *density* keeps climbing past `>= 5` or the shipped `200`-particle
-  cap is the ceiling. A *fifth* tier would be a further `DECISIONS.md` change
-  adding it for both layers at once.
+- ~~**Combo density scaling past T4**~~ — **resolved as shipped (WP-556):**
+  particle density does **not** climb past the apex. The burst size is keyed to
+  the tier, not the raw count, and the `legendary` tier is a fixed 200 particles
+  in [`comboVfxManifest.ts`](../apps/arena-client/src/vfx/comboVfxManifest.ts) —
+  the [performance budget](#performance-budget) ceiling — so a chain of 9 throws
+  the same burst as a chain of 5. The apex stays rare by getting no bigger. (The
+  **apex `LEGENDARY!` rung** itself: WP-425 / D-24246 added the fourth shared
+  `comboTierForCount` tier (`>= 5 → legendary`) with its audio sting, and WP-556
+  shipped the visual call-out off the same boundary — see
+  [synergy call-out](#synergy-callout).) A *fifth* tier would be a further
+  `DECISIONS.md` change adding it for both layers at once.
 - **Performance-budget figures** — ratify or retune the numbers above
   against real mobile hardware.
 
@@ -1766,7 +1848,7 @@ regenerate with `python block-shield.py`.*
 ## References
 
 - [`packages/game-engine/src/events/notableEvents.types.ts`](../packages/game-engine/src/events/notableEvents.types.ts)
-  — `NotableGameEventType` (eleven locked variants) + payloads; header notes
+  — `NotableGameEventType` (twelve locked variants) + payloads; header notes
   the raw `G.messages` field is not itself projected (the log's content is,
   as `UIState.log`) and `escapeResolved` is deferred
 - [`packages/game-engine/src/ui/uiState.types.ts`](../packages/game-engine/src/ui/uiState.types.ts),
@@ -1793,7 +1875,12 @@ regenerate with `python block-shield.py`.*
   projected), D-24159 / WP-367 (the deck-exhaustion final-turn
   **tie**), D-24518 (the engine drops every `pending*` choice on a mastermind
   vanquish so no block-all prompt dangles over the victory finale — an engine
-  guarantee the [Edge Cases](#edge-cases) entry relies on)
+  guarantee the [Edge Cases](#edge-cases) entry relies on), D-24584 / D-24585 /
+  D-24592 (the villain slash, slash to fight, and the long-press slash), D-12803
+  (other seats' in-play cards redacted — the ally-reveal blocker)
+- [Visual Effects Design Ancestry](visual-effects-design-ancestry.md) — which
+  Candy Crush, Fruit Ninja and Hearthstone patterns this layer adopted, which are
+  proposed, and which it deliberately does not copy
 - VFX / animation libraries (confirm each license at adoption):
   - [canvas-confetti](https://github.com/catdad/canvas-confetti) (MIT)
   - [tsparticles](https://github.com/tsparticles/tsparticles) (MIT)
