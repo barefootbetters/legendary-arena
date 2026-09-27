@@ -6,7 +6,7 @@ import {
   type UISharedPilesState,
   type UITurnEconomyState,
 } from '@legendary-arena/game-engine';
-import { useTurnActions } from '../../composables/useTurnActions';
+import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import type { GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
 import type { SubmitMove } from './uiMoveName.types';
@@ -53,6 +53,14 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
+    // recruit and fight for the rest of a turn in which the viewer healed
+    // (D-24180 heal lock), so the button gate must see it too.
+    hasHealedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     economy: {
       type: Object as PropType<UITurnEconomyState>,
       required: true,
@@ -77,6 +85,10 @@ export default defineComponent({
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canRecruitOfficer();
       if (!stage.allowed) {
         return stage;
+      }
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
       }
       if (props.piles.officersCount <= 0) {
         return { allowed: false, reason: 'No S.H.I.E.L.D. Officers remain in the supply.' };

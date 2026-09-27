@@ -830,6 +830,7 @@ export default defineComponent({
                   :mastermind="snapshot.mastermind"
                   :current-stage="snapshot.game.currentStage"
                   :is-viewer-turn="isViewerTurn"
+                  :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                   :economy="snapshot.economy"
                   :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
                   :is-game-over="isGameOver"
@@ -852,6 +853,7 @@ export default defineComponent({
                 :piles="snapshot.piles"
                 :current-stage="snapshot.game.currentStage"
                 :is-viewer-turn="isViewerTurn"
+                :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                 :economy="snapshot.economy"
                 :submit-move="submitMove"
               />
@@ -865,6 +867,7 @@ export default defineComponent({
               :decks="snapshot.decks"
               :current-stage="snapshot.game.currentStage"
               :is-viewer-turn="isViewerTurn"
+              :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
               :economy="snapshot.economy"
               :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
               :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
@@ -881,6 +884,7 @@ export default defineComponent({
                 :decks="snapshot.decks"
                 :current-stage="snapshot.game.currentStage"
                 :is-viewer-turn="isViewerTurn"
+                :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                 :economy="snapshot.economy"
                 :submit-move="submitMove"
               />

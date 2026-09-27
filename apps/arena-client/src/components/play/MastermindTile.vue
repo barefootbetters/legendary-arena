@@ -4,7 +4,7 @@ import type {
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
-import { useTurnActions } from '../../composables/useTurnActions';
+import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
@@ -70,6 +70,14 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
+    // recruit and fight for the rest of a turn in which the viewer healed
+    // (D-24180 heal lock), so the button gate must see it too.
+    hasHealedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     economy: {
       type: Object as PropType<UITurnEconomyState>,
       required: true,
@@ -103,6 +111,11 @@ export default defineComponent({
       if (!stage.allowed) {
         return false;
       }
+      // why: D-24614 — after a heal the Fight is disabled by the heal lock, not
+      // by cost, so the badge must not go loud and blame the attack total.
+      if (!healLockGate(props.hasHealedThisTurn).allowed) {
+        return false;
+      }
       return !useCardCostGating(props.economy).canFight(mastermindFightCost()).allowed;
     }
 
@@ -124,6 +137,10 @@ export default defineComponent({
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightMastermind();
       if (!stage.allowed) {
         return stage;
+      }
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
       }
       const cost = useCardCostGating(props.economy).canFight(mastermindFightCost());
       if (!cost.allowed) {

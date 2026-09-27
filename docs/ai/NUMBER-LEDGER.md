@@ -1183,3 +1183,4 @@ section below) and the allocation protocol in
 - D-24611 — turn-handoff-banner (WP-774. Locks the turn-handoff trigger (active-player change, seeded on the first frame), its accessibility gating, and the seat-label rule. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - D-24612 — board-affordability-cues (WP-775. Locks the unaffordable-cost cue rule and the slash-target rim; records why no End Turn cue is built. reserved 2026-09-26, claude/reserve-game-feel-wps)
 - D-24613 — superpower-ready-glow (WP-776. Locks the owner-only per-hand-card superpower-ready projection field and its condition gate set. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- D-24614 — heal-lock-board-buttons (direct fix, no WP — HQRow / CityRow / MastermindTile / SharedDecks take hasHealedThisTurn and disable recruit + fight after a heal, mirroring the D-24180 engine heal lock. D-24610..24613 held by open PR #2439. reserved 2026-09-26, claude/heal-lock-board-buttons)

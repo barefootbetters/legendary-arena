@@ -198,3 +198,23 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
     assert.match(wrapper.find('[data-testid="play-shared-deck-bystanders"]').text(), /\[27\]/);
   });
 });
+
+describe('SharedDecks — heal lock (D-24180 / D-24614)', () => {
+  test('after a heal the officer buy is disabled with the heal-lock tooltip and a click submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles(),
+        currentStage: 'main',
+        hasHealedThisTurn: true,
+        economy: economy({ recruit: 5, availableRecruit: 5 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-officer"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.match(button.attributes('title')!, /cannot recruit or fight after healing this turn/);
+    await button.trigger('click');
+    assert.equal(calls.length, 0);
+  });
+});

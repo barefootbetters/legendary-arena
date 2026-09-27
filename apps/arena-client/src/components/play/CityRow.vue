@@ -7,7 +7,7 @@ import type {
 } from '@legendary-arena/game-engine';
 import { useCityRow, type CityCell } from '../../composables/useCityRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
-import { useTurnActions } from '../../composables/useTurnActions';
+import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useSlashGesture } from '../../composables/useSlashGesture';
 import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting';
 import CardTile from './CardTile.vue';
@@ -75,6 +75,14 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
+    // recruit and fight for the rest of a turn in which the viewer healed
+    // (D-24180 heal lock), so the button gate must see it too.
+    hasHealedThisTurn: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     economy: {
       type: Object as PropType<UITurnEconomyState>,
       required: true,
@@ -100,6 +108,10 @@ export default defineComponent({
       if (!stage.allowed) {
         return stage;
       }
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
+      }
       // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightCost,
       // the same authority the fightVillain guard reads (captured Heroes, the
       // Dark-Portal space bonus, Killbot / Skrull overlays; Patrol / Guard are
@@ -118,6 +130,11 @@ export default defineComponent({
       }
       const stage = useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain();
       if (!stage.allowed) {
+        return false;
+      }
+      // why: D-24614 — after a heal the Fight is disabled by the heal lock, not
+      // by cost, so the badge must not go loud and blame the attack total.
+      if (!healLockGate(props.hasHealedThisTurn).allowed) {
         return false;
       }
       return !useCardCostGating(props.economy).canFight(cell.card.fightCost).allowed;

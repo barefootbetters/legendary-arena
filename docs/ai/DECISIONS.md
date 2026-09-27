@@ -45438,4 +45438,26 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24614 — Heal lock on the board buttons: HQ, City, Mastermind and Officer buttons disable after a heal (Active 2026-09-26 — direct fix, no WP; client mirror of D-24180)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `apps/arena-client` only, no engine change).
+
+**Context.** D-24180 made recruit and fight mutually exclusive with Healing: once `G.hasHealedThisTurn` is set, `recruitHero`, `recruitOfficer`, `fightVillain` and `fightMastermind` silently return. The engine projects the flag as `UIState.game.hasHealedThisTurn`, but only `TurnActionBar` received it (for `canHealWounds`). `HQRow`, `CityRow`, `MastermindTile` and `SharedDecks` called `useTurnActions(currentStage, isViewerTurn)`, so after a heal their Recruit / Fight buttons stayed enabled and did nothing when clicked. The CityRow slash-to-fight gesture reads the same `gateForCell`, so it offered the same dead targets.
+
+**Decision.**
+
+1. **One heal-lock predicate.** `useTurnActions.ts` exports `healLockGate(hasHealedThisTurn)`, which returns `{ allowed: false, reason: 'You cannot recruit or fight after healing this turn.' }` after a heal. The composable's `canFightVillain` / `canRecruitHero` / `canRecruitOfficer` / `canFightMastermind` apply it after the turn and stage checks, so a caller that passes the positional `hasHealedThisTurn` gets the engine-faithful gate.
+2. **Board components.** The four components take a new optional `hasHealedThisTurn` prop (default `false`) and apply `healLockGate` right after the stage gate. Precedence is turn → stage → heal lock → resource → structural, so the tooltip names the real blocker, not the attack or recruit total. `PlayDesktop.vue` and `PlayMobile.vue` pass `snapshot.game.hasHealedThisTurn` to all four.
+3. **Fight N badge.** The loud unaffordable badge in `CityRow` and `MastermindTile` explains a cost-disabled Fight. Under the heal lock it stays quiet, because cost is not what disables the button.
+4. **Slash gesture and WP-775.** The slash gesture and WP-775's drafted fightable rim both read `gateForCell`, so both follow the heal lock with no further change.
+5. **No engine, UIState, or replay impact.** `hasHealedThisTurn` was already projected and passed through the audience filter (WP-380), so the five-step UIState contract is untouched. No hashed state changes.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4547/0, arena-client 2156/0); `arena-client typecheck` clean. New tests: `healLockGate` and the four composable gates (blocked after a heal, allowed without one, turn and stage reasons outrank it); per component, disabled plus heal-lock tooltip plus a click that submits nothing (HQRow, CityRow, MastermindTile, SharedDecks); the heal lock outranking the HQ cost tooltip; a CityRow slash stroke submitting nothing after a heal; the CityRow and Mastermind unaffordable badge staying quiet under the heal lock.
+
+**D-24026 live-on-surface:** PENDING — on `play.legendary-arena.com` after deploy: heal with a Wound in hand, then confirm the HQ heroes, City villains, Mastermind and Officer buttons are disabled with the heal-lock tooltip.
+
+**Reserved by:** NUMBER-LEDGER D-24614. Related: D-24180 (heal lock), D-24181 (WP-380 Heal Wounds UI), D-24574 (WP-750 fight-cost gating), D-24612 (WP-775 board affordability cues).
+
+---
+
 Protect this file.
