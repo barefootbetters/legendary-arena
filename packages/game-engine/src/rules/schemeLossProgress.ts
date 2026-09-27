@@ -368,12 +368,12 @@ function collectResourceConditions(
     // Bank Robbery) tracks BYSTANDERS carried into the escaped pile, so it gets
     // its own kind; a villain-counting one (Negative Zone) stays 'escaped-pile'.
     let kind: SchemeLossKind = 'escaped-pile';
-    if (condition.cardType === 'bystander') {
+    if (condition.cardTypes.includes('bystander')) {
       kind = 'escaped-bystander';
     }
     conditions.push({
       kind,
-      progress: countEscapedPileByType(gameState, condition.cardType),
+      progress: countEscapedPileByType(gameState, condition.cardTypes),
       threshold: condition.threshold,
       isThresholdReported: true,
     });

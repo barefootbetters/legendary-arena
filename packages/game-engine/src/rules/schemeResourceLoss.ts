@@ -59,22 +59,23 @@ function resolveEscapedPileEntryType(
 }
 
 /**
- * Counts entries in the Escaped Villains pile whose card type matches.
+ * Counts entries in the Escaped Villains pile whose card type is one of `cardTypes`.
  *
  * Uses an explicit `for...of` loop (no `.reduce()`), classifying each entry
  * via resolveEscapedPileEntryType so supply bystanders are counted too.
  *
  * @param gameState - The current game state (read-only).
- * @param cardType - The RevealedCardType to count.
+ * @param cardTypes - The RevealedCardTypes to count.
  * @returns The number of matching entries in `G.escapedPile`.
  */
 export function countEscapedPileByType(
   gameState: LegendaryGameState,
-  cardType: RevealedCardType,
+  cardTypes: readonly RevealedCardType[],
 ): number {
   let matchCount = 0;
   for (const escapedCardId of gameState.escapedPile) {
-    if (resolveEscapedPileEntryType(gameState, escapedCardId) === cardType) {
+    const entryType = resolveEscapedPileEntryType(gameState, escapedCardId);
+    if (entryType !== undefined && cardTypes.includes(entryType)) {
       matchCount = matchCount + 1;
     }
   }
@@ -87,7 +88,7 @@ export function countEscapedPileByType(
  * Reads `G.convertedVillainOrigins` (absent for non-converting schemes → 0). Uses
  * an explicit `for...of` loop (no `.reduce()`). This counts converted cards (e.g.
  * Killbots) DISTINCTLY from real villains — a converted card is typed `'villain'`
- * for routing, so `countEscapedPileByType(gs, 'villain')` would wrongly include it.
+ * for routing, so `countEscapedPileByType(gs, ['villain'])` would wrongly include it.
  *
  * @param gameState - The current game state (read-only).
  * @param origin - The converted origin to count (e.g. 'killbot').
@@ -144,10 +145,12 @@ export function applyEscapedPileResourceLoss(
   // must be counted by origin, not by the shared 'villain' type).
   const matchCount =
     condition.kind === 'escaped-pile-count'
-      ? countEscapedPileByType(gameState, condition.cardType)
+      ? countEscapedPileByType(gameState, condition.cardTypes)
       : countEscapedByConvertedOrigin(gameState, condition.origin);
   const matchLabel =
-    condition.kind === 'escaped-pile-count' ? condition.cardType : condition.origin;
+    condition.kind === 'escaped-pile-count'
+      ? condition.cardTypes.join('/')
+      : condition.origin;
 
   if (matchCount >= condition.threshold) {
     // why: SCHEME_LOSS is set HERE, in the escape path, rather than derived
