@@ -501,6 +501,17 @@ const ADVERSARY_STAT_ICON_PATTERN =
 // Non-global so `.exec` is stateless. The optional " N" covers the ff04 space form.
 const FOCUS_COST_PATTERN = /\[keyword:Focus(?:\s+\d+)?\]/i;
 
+// why: D-24622 — "[keyword:Lightshow]: <effect>" is a gated ability (rules v23 ~L1616): once per
+// turn, only when at least two Lightshow cards were played this turn, the player uses a SINGLE
+// Lightshow ability from any of those cards. No Lightshow handler exists, so the Step 2b/3
+// extractors fired every Lightshow line's icon as an unconditional grant on every play (the
+// live bug, match 19720cb4: a lone Blazing Flare granted +2 recruit; two Blazing Flares plus
+// Twin Blast granted all three abilities). Every icon from the Lightshow token to the end of
+// the line is suppressed, so the line emits no grant and keeps its honest `lightshow`
+// unresolved marker until the Lightshow executor (count + once-per-turn single choice) exists.
+// Non-global so `.exec` is stateless.
+const LIGHTSHOW_GATE_PATTERN = /\[keyword:Lightshow\]/i;
+
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for VP-cost-threshold in reveal lines: "2[icon:vp] or less". Non-global; first match only. */
 const VP_COST_THRESHOLD_PATTERN = /(\d+)\s*\[icon:vp\]\s*or less/;
@@ -910,6 +921,23 @@ function computeFocusGatedRanges(abilityText: string): Array<{ start: number; en
 }
 
 /**
+ * Computes the Lightshow-gated character range of an ability line (D-24622): from the first
+ * `[keyword:Lightshow]` token to the end of the line. The gated effect sits in this range, so
+ * the icon-magnitude (Step 2b) and icon→keyword (Step 3) extractors skip every icon in it
+ * until a Lightshow executor exists.
+ *
+ * @param abilityText - The raw ability line.
+ * @returns The single Lightshow-gated range, or an empty array when the line has no Lightshow gate.
+ */
+function computeLightshowGatedRanges(abilityText: string): Array<{ start: number; end: number }> {
+  const lightshowMatch = LIGHTSHOW_GATE_PATTERN.exec(abilityText);
+  if (lightshowMatch === null) {
+    return [];
+  }
+  return [{ start: lightshowMatch.index, end: abilityText.length }];
+}
+
+/**
  * Returns whether a match span `[matchStart, matchEnd)` overlaps any suppressed condition
  * icon range (WP-660 / D-24471). Used to skip an icon the extractors would otherwise read
  * as a resource grant.
@@ -1085,6 +1113,11 @@ function parseAbilityText(
   // cost and the effect it buys), so neither is read as a free grant (The Power Cosmic +9 bug).
   for (const focusGatedRange of computeFocusGatedRanges(abilityText)) {
     suppressedIconRanges.push(focusGatedRange);
+  }
+  // why: D-24622 — also suppress every icon in a Lightshow-gated segment, so an ungated
+  // Lightshow ability is never a free grant (the lone-Blazing-Flare +2 recruit bug).
+  for (const lightshowGatedRange of computeLightshowGatedRanges(abilityText)) {
+    suppressedIconRanges.push(lightshowGatedRange);
   }
   const effects: HeroEffectDescriptor[] = [];
   // why: D-24031 — composition markers (Berserk) accumulate here as deep copies of their
