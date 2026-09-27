@@ -1,0 +1,103 @@
+# EC-814 — Split-face discard fidelity (Execution Checklist)
+
+**Source:** docs/ai/work-packets/WP-777-split-face-discard-fidelity.md
+**Layer:** Game Engine + card data
+
+## Before Starting
+- [ ] `pnpm --filter @legendary-arena/registry --filter @legendary-arena/game-engine build` exits 0
+- [ ] `pnpm --filter @legendary-arena/game-engine test` exits 0 (record the baseline count; draft-time 4547/0 @ `19b83c50`)
+- [ ] Confirm on `main`: Attune / New Wings / Pumpkin Bombs lines carry no marker. Attune and New Wings are face a (`sides[0]`).
+      The D-24185 precondition (`coreMoves.impl.ts` ~L523) runs before the split park (~L552).
+- [ ] `git grep -n matchReadsConditionType -- packages/game-engine/src` — present (WP-743 merged) → reuse; absent → add per Locked Values.
+- [ ] Every `discardFromHand(G, X, …)` caller passes the discarding player as `X`; else STOP (session protocol).
+- [ ] EXACT target file set = `## Files to Produce`; any file outside it is a FAIL, surfaced as a blocker.
+
+## Locked Values (do not re-derive)
+- Markers (curated map entries, `abilityIndex` 0-based):
+  - `bkwd` / `falcon-winter-soldier` / `attune` / 0 → `[keyword:discard-to-play:1]`
+  - `bkwd` / `falcon-winter-soldier` / `new-wings` / 0 → `[keyword:discard-threshold:1]`
+  - `vill` / `green-goblin` / `pumpkin-bombs` / 1 → `[keyword:discard-threshold:1]`
+  - `VALID_TOKEN_PATTERN` gains `^\[keyword:discard-threshold:[1-9]\d*\]$`, with a `// why:` line in the WP-665 style.
+- **Condition:** marker `discard-threshold:N` → `{ type: 'cardsDiscardedThisTurnAtLeast', value: '<N>' }`
+  (a marker→condition arm beside `draw-threshold`, before the unresolved-marker fallback). `value` is the captured digit string (`HeroCondition.value` is a `string`), e.g. `'1'`.
+- `CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE = 'cardsDiscardedThisTurnAtLeast'` (exported, `heroConditions.evaluate.ts`).
+- `evaluateCondition`: `(G.cardsDiscardedThisTurn?.[playerID] ?? 0) >= N`. A `NaN` threshold → `false`.
+  Describe: `it needs ${value} or more cards discarded this turn — you have discarded ${count}`.
+- `WAIT_AND_SEE_CONDITION_TYPES` += `'cardsDiscardedThisTurnAtLeast'`, appended after main's entries at execution; the pin mirrors main + this. Ledger map += `'discard-threshold': 'cardsDiscardedThisTurnAtLeast'`.
+- `G.cardsDiscardedThisTurn?: Record<string, number>` — keyed by the discarding playerID; +1 in `discardFromHand` after a
+  found move, before the reaction checks, only when `matchReadsConditionType(G, 'cardsDiscardedThisTurnAtLeast')`;
+  lazy-init there; guarded delete beside `clearDeferredConditionalGrants` in `game.ts` AND `simulation/onBeginParity.ts`.
+- `matchReadsConditionType(G, conditionType: string): boolean` — WP-743 §C signature; `for…of` over `G.heroAbilityHooks`
+  (absent → false); true iff any hook condition has that type.
+- `isSplitFacePayable(G, playerID, faceExtId): boolean` — `getDiscardToPlayCost(G, faceExtId) === 0` **or** the player's hand length ≥ that cost.
+- `isSplitFaceBindable(G, playerID, faceExtId, otherFaceExtId): boolean` — `isSplitFacePayable(face) || !isSplitFacePayable(other)` (anti-freeze).
+- `resolveSplitFaceChoice`: after `chosenExtId`, unbindable → pushLog (`'neutral'`, card-attributed to the chosen face;
+  `name` from `G.cardDisplayData`, `cost` = `getDiscardToPlayCost`)
+  `Player ${playerID} could not choose ${name} — it requires discarding ${cost} card(s) but their hand does not hold enough cards to discard; choose the other side.`
+  then return (no relabel / economy / ability / shift; queue intact).
+- `playCard`: D-24185 precondition skipped iff `isSplitCardInstance(G, args.cardId)`; non-split unchanged.
+- Bot: playCard enumeration mirrors the split bypass; split short-circuit → `'a'` if bindable else `'b'` (length 1).
+- `UISplitFaceOption` gains two **optional** fields; the builder always populates both, for both faces:
+  - `isSelectable?: boolean` = `isSplitFaceBindable(G, pending.playerID, thisFace, otherFace)`
+  - `discardToPlayCost?: number` = `getDiscardToPlayCost(G, thisFace)` (0 when none)
+
+## Guardrails
+- Card data only via the curated map + apply mode; `pnpm cards:check` reproduces the bytes.
+- Sentinel `finalStateHash` / `PRE_WP080_HASH` byte-unchanged — a moved oracle is a gating bug, never a re-pin.
+- No new move, pending queue, `HeroKeyword`, or handler; moves / `HERO_KEYWORDS` / `HERO_EFFECT_HANDLERS` pins unchanged.
+- Attune's cost is paid by the EXISTING discard-to-play park → `resolveDiscardToPlay` → `discardFromHand` path.
+- Hand discards only (the chokepoint); deck-top discards NOT counted (D-24616 §4). Cleanup discard NOT counted.
+  `replay/replay.execute.ts` untouched (D-24322) — the counter accumulating there is expected, not a bug.
+- Bot never submits a move the guard rejects. Moves never throw; `for…of` only; full file contents.
+- The `WAIT_AND_SEE` exact-list + lockstep pin extensions are intended behavior changes — say so in the commit body.
+- Generated artifacts regenerated by their scripts, never hand-edited; the runtime-observed diff attributed to bkwd/vill boards.
+
+## Required `// why:` Comments
+- The `discard-threshold` marker arm (the `draw-threshold` precedent; "If you discarded any cards this turn").
+- The counter increment: chokepoint covers every card-effect hand discard; gated lazy for hash safety; per-player because
+  a non-active player can be made to discard.
+- Both turn-boundary deletes ("this turn" window; guarded so unset is byte-unchanged).
+- The bot playCard-enumeration split bypass (mirrors the move).
+- The playCard split bypass: the face is unknown until the choice; D-24615 binds a side's cost at the choice.
+- The face-bind guard + the anti-freeze fallback. The bot's bindable pick (legalMoves ↔ guard parity).
+- `types.ts` `cardsDiscardedThisTurn?` (gated lazy, per-player, turn-scoped); the `VALID_TOKEN_PATTERN` addition;
+  the `WAIT_AND_SEE_CONDITION_TYPES` append (whole-turn numeric one-shot).
+- The face-bind rejection log (a fresh frame resets the picker latch).
+- The two optional projection fields (optional only to keep arena-client fixtures compiling; builder always sets them).
+
+## Files to Produce
+- `scripts/convert-cards/inputs/hero-ability-markers.json`, `scripts/convert-cards/apply-hero-ability-markers.mjs`, `scripts/hero-mechanic-ledger.mjs` — **modified**
+- `data/cards/bkwd.json`, `data/cards/vill.json` — **regenerated**
+- `packages/game-engine/src/{setup/heroAbility.setup,hero/heroConditions.evaluate,hero/deferredConditionalGrants,types,moves/discardFromHand,game,simulation/onBeginParity}.ts` — **modified**
+- `packages/game-engine/src/{moves/splitFaceChoice.resolve,moves/coreMoves.impl,simulation/ai.legalMoves,ui/uiState.types,ui/uiState.build}.ts` — **modified**
+- `packages/game-engine/src/ui/uiState.filter.ts` — **conditional** (only if the spread does not carry the fields)
+- Tests (**modified**): `game`, `simulation/onBeginParity`, `rules/heroAbility.setup`, `hero/deferredConditionalGrants`, `hero/heroConditions.evaluate`,
+  `hero/heroEffects.execute`, `moves/discardFromHand`, `moves/splitFaceChoice.resolve`, `moves/resolveDiscardToPlay`,
+  `simulation/ai.legalMoves`, `ui/uiState.filter`, `ui/uiState.build` (`.test.ts`)
+- Regenerated: `docs/ai/coverage/hero-mechanic-ledger.{json,csv}`, `data/metadata/{card-mechanics,effect-implementation-index}.json`,
+  `docs/ai/coverage/runtime-observed-hollows.json`; **conditional** `scripts/coverage/hero-effect-coverage.baseline.json`,
+  `apps/dashboard/src/composables/useInPlayCoverage.test.ts` (feed-bound pin only)
+- `docs/ai/{STATUS,DECISIONS}.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`, `wiki/split-card.md` — **modified**
+
+## After Completing
+- [ ] `pnpm -r build` exits 0; `pnpm -r --no-bail test` 0 failures; engine before/after counts recorded
+- [ ] `pnpm --filter @legendary-arena/arena-client typecheck` exits 0 (+ `@legendary-arena/dashboard typecheck` if its pin moved)
+- [ ] Non-vacuous: reverting (a) face-bind guard, (b) counter increment, (c) marker arm, (d) bot pick, (e) either turn-boundary
+      delete each fails ≥1 new test (report). Plus an absent → no-key oracle-safety pin in `game.test.ts` and `onBeginParity.test.ts`. Attune hook-shape pin: exactly one `discard-to-play` effect, magnitude 1.
+- [ ] `replayFixtures.test.ts` green + `git diff --exit-code -- packages/game-engine/src/test/fixtures/games` exits 0
+- [ ] `cards:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `sim:runtime-observed:check` exit 0;
+      ledger `discard-threshold` rows read `condition`
+- [ ] `git status --porcelain` ⊆ Files to Produce (revert line-ending-only build churn)
+- [ ] Live (D-24026): manual Falcon & Winter Soldier match — Attune parks the discard; empty-hand Attune logs + picker re-enables + Atone binds; New Wings +4 only after a discard;
+      Play Diagnostics `uiStateSnapshot` shows both new face fields; matchId in STATUS.md
+- [ ] Read-only psql count of stored `competitive_scores` rows with `falcon-winter-soldier` / `green-goblin` in `team_key` handed to Jeff
+- [ ] `docs/ai/STATUS.md` updated; D-24615 / D-24616 → Active; `wiki/split-card.md` Edge Cases updated
+- [ ] WORK_INDEX WP-777 `[x]` with date; EC_INDEX EC-814 → Done; mindmap `📝`→`✅`; `pnpm roadmap:counts:write` + `:check` exit 0
+
+## Common Failure Smells
+- Sentinel hash moved → the counter write is not gated on `matchReadsConditionType`, or a turn-boundary delete is unguarded.
+- A split Attune card can't be played from a one-card hand → the playCard bypass is missing.
+- Bot sim hangs / FAULTs on a Falcon board → the short-circuit still returns `'a'` unconditionally.
+- New Wings never fires after a later discard → the type is missing from `WAIT_AND_SEE_CONDITION_TYPES`.
+- Ledger rows read `unsupported` → the `hero-mechanic-ledger.mjs` map entry is missing.
+- New Wings fires on another player's discard → the evaluator reads a global count instead of `[playerID]`.

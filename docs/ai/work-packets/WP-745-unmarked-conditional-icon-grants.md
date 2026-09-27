@@ -541,7 +541,7 @@ unchanged.
   - `co2e/nick-fury/weapon-bank#0` ("the Bank is empty")
   - `cvwr/speedball/bounce-around#0` ("Bystanders in the city or KO pile")
   - `bkpt/white-wolf/secret-assignment#1` ("a Villain or Mastermind has any Wounds")
-- **Follow-up B: discard event.** `bkwd/falcon-winter-soldier/new-wings#0`,
+- **Follow-up B: discard event** (claimed by WP-777 / D-24616, drafted 2026-09-26). `bkwd/falcon-winter-soldier/new-wings#0`,
   `vill/green-goblin/pumpkin-bombs#1` ("If you discarded any cards this turn"). These need a
   discard signal across many discard sites, and end-of-turn cleanup must be excluded.
 - **Follow-up C: most-recent-Hero icon branch.** `rvlt/darkhawk/travel-to-nullspace#0`,

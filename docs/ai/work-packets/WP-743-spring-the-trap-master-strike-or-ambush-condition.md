@@ -232,6 +232,8 @@ ask.
 - `describeFailedCondition` cases (locked text):
   - `masterStrikePlayedThisTurn` → `it needs a Master Strike played this turn`
   - `masterStrikeOrAmbushPlayedThisTurn` → `it needs a Master Strike or a Villain with an Ambush ability played this turn`
+- **Reuse note (2026-09-26, WP-777):** if WP-777 has landed `matchReadsConditionType` first, reuse
+  it; do not redefine it. The signature and semantics below are identical in both packets.
 - New exported pure helper
   `matchReadsConditionType(G, conditionType: string): boolean`: scans
   `G.heroAbilityHooks` (absent → `false`) with an explicit `for…of`.
