@@ -151,4 +151,81 @@ describe('SplitFaceChoicePrompt (WP-725 / EC-762)', () => {
     await wrapper.find('[data-testid="split-face-b"]').trigger('click');
     assert.equal(calls.length, 1, 'the second click is ignored while submitting');
   });
+
+  // ---------------------------------------------------------------------------
+  // WP-778 / D-24615 — a side's discard-to-play cost (bkwd Attune / Atone)
+  // ---------------------------------------------------------------------------
+
+  /** Attune (face a, costed) / Atone (face b, free), with the served WP-777 fields. */
+  function attunePending(discardToPlayCost: number, isSelectable: boolean): UIPendingSplitFaceChoice {
+    return {
+      playerID: 'player-0',
+      faceA: { extId: 'bkwd/falcon-winter-soldier/attune#0', name: 'Attune', cost: 3, attack: 0, recruit: 3, isSelectable, discardToPlayCost },
+      faceB: { extId: 'bkwd/falcon-winter-soldier/atone#0', name: 'Atone', cost: 3, attack: 0, recruit: 0, isSelectable: true, discardToPlayCost: 0 },
+      leftFace: 'a',
+    };
+  }
+
+  test('a one-card discard cost shows "Discard a card to play this side"', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: attunePending(1, true), viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="split-face-a-cost"]').text(), 'Discard a card to play this side');
+    assert.ok(!wrapper.find('[data-testid="split-face-a-blocked"]').exists(), 'a payable side shows no blocked hint');
+    assert.equal(wrapper.find('[data-testid="split-face-a"]').attributes('disabled'), undefined, 'a payable side is enabled');
+  });
+
+  test('a two-card cost the hand cannot pay shows the plural cost line and "Not enough cards in hand to discard"', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: attunePending(2, false), viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="split-face-a-cost"]').text(), 'Discard 2 cards to play this side');
+    assert.equal(wrapper.find('[data-testid="split-face-a-blocked"]').text(), 'Not enough cards in hand to discard');
+  });
+
+  test('absent fields and a zero cost render as before WP-778: no cost line, no hint, enabled', () => {
+    const { submitMove } = recorder();
+    const absent = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: mockPending, viewerPlayerId: 'player-0', submitMove },
+    });
+    const zeroCost = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: attunePending(1, true), viewerPlayerId: 'player-0', submitMove },
+    });
+    for (const face of ['a', 'b'] as const) {
+      assert.ok(!absent.find(`[data-testid="split-face-${face}-cost"]`).exists(), `no cost line on face ${face} without the fields`);
+      assert.ok(!absent.find(`[data-testid="split-face-${face}-blocked"]`).exists(), `no hint on face ${face} without the fields`);
+      assert.equal(absent.find(`[data-testid="split-face-${face}"]`).attributes('disabled'), undefined, `face ${face} enabled`);
+    }
+    assert.ok(!zeroCost.find('[data-testid="split-face-b-cost"]').exists(), 'a zero-cost side (Atone) shows no cost line');
+  });
+
+  test('an unselectable side is disabled with "No card in hand to discard" and never submits, even with disabled removed', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: attunePending(1, false), viewerPlayerId: 'player-0', submitMove },
+    });
+    const attune = wrapper.find('[data-testid="split-face-a"]');
+    assert.notEqual(attune.attributes('disabled'), undefined, 'the unselectable side is disabled');
+    assert.equal(attune.attributes('aria-disabled'), 'true', 'aria-disabled mirrors disabled');
+    assert.equal(wrapper.find('[data-testid="split-face-a-blocked"]').text(), 'No card in hand to discard');
+    // why: @vue/test-utils skips trigger() on a disabled element, so a plain click cannot prove the
+    // onChoose guard — remove the attribute to force the click through to the handler.
+    (attune.element as HTMLButtonElement).removeAttribute('disabled');
+    await attune.trigger('click');
+    assert.deepEqual(calls, [], 'the onChoose guard refuses the unselectable side');
+  });
+
+  test('a blocked click does not set the submit latch: the other side then submits exactly once', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SplitFaceChoicePrompt, {
+      props: { pendingSplitFaceChoice: attunePending(1, false), viewerPlayerId: 'player-0', submitMove },
+    });
+    const attune = wrapper.find('[data-testid="split-face-a"]');
+    (attune.element as HTMLButtonElement).removeAttribute('disabled');
+    await attune.trigger('click');
+    await wrapper.find('[data-testid="split-face-b"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveSplitFaceChoice', args: { face: 'b' } }]);
+  });
 });

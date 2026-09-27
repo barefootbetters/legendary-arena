@@ -29,7 +29,13 @@ import AbilityText from "./AbilityText.vue";
  *
  * Per D-6512: uses `defineComponent({ setup() { return {...} } })`.
  *
+ * // why: WP-778 / D-24615 — a side with a discard-to-play cost ("To play this side, you must
+ * discard a card", bkwd Attune) shows its cost, and a side the hand cannot pay is disabled with the
+ * reason. Both come from the served `isSelectable` / `discardToPlayCost` fields verbatim — the client
+ * never counts the hand itself (D-20105).
+ *
  * @see WP-725 §Scope (In) — inline picker spec
+ * @see WP-778 §Locked Contract Values — cost line, blocked hint, guard-before-latch
  * @see EC-762 Locked Values — move args, double-submit guard, AbilityText routing
  * @see DECISIONS.md D-24546
  */
@@ -92,10 +98,51 @@ export default defineComponent({
       return [faceAEntry, faceBEntry];
     });
 
-    function onChoose(face: "a" | "b"): void {
-      if (isSubmitting.value) return;
+    /**
+     * Whether a face's button is disabled: while a submit is in flight, or when the engine says the
+     * face is not selectable.
+     *
+     * // why: WP-778 / D-24615 — the engine rejects a side whose discard-to-play cost the hand cannot
+     * pay (bkwd Attune from an empty hand), so the button must not offer it. `isSelectable` is
+     * optional in the engine type: absent means selectable (today's render), so compare to `false`
+     * explicitly rather than reading `!option.isSelectable`.
+     */
+    function isFaceDisabled(option: UISplitFaceOption): boolean {
+      return isSubmitting.value || option.isSelectable === false;
+    }
+
+    /** The served discard cost of a face; an absent field means no cost (today's render). */
+    function faceDiscardCost(option: UISplitFaceOption): number {
+      return option.discardToPlayCost ?? 0;
+    }
+
+    /** The "Discard … to play this side" line for a costed face (empty when the face is free). */
+    function costLabel(option: UISplitFaceOption): string {
+      const cost = faceDiscardCost(option);
+      if (cost <= 0) {
+        return "";
+      }
+      if (cost === 1) {
+        return "Discard a card to play this side";
+      }
+      return `Discard ${String(cost)} cards to play this side`;
+    }
+
+    /** Why an unselectable face is disabled (singular for a one-card cost, plural otherwise). */
+    function blockedHint(option: UISplitFaceOption): string {
+      if (faceDiscardCost(option) <= 1) {
+        return "No card in hand to discard";
+      }
+      return "Not enough cards in hand to discard";
+    }
+
+    /** Submits the chosen side, unless its button is disabled or a submit is already in flight. */
+    function onChoose(entry: { face: "a" | "b"; option: UISplitFaceOption }): void {
+      // why: the disabled guard runs BEFORE the latch. A latch set by a blocked click would disable
+      // the other side too, and no server frame would arrive to reset it (no move was sent).
+      if (isFaceDisabled(entry.option)) return;
       isSubmitting.value = true;
-      props.submitMove("resolveSplitFaceChoice", { face });
+      props.submitMove("resolveSplitFaceChoice", { face: entry.face });
     }
 
     return {
@@ -103,6 +150,9 @@ export default defineComponent({
       shouldRender,
       orderedFaces,
       economyLabel,
+      isFaceDisabled,
+      costLabel,
+      blockedHint,
       onChoose,
     };
   },
@@ -125,12 +175,22 @@ export default defineComponent({
         type="button"
         class="split-face-prompt__btn"
         :data-testid="`split-face-${entry.face}`"
-        :disabled="isSubmitting"
-        :aria-disabled="isSubmitting ? 'true' : undefined"
-        @click="onChoose(entry.face)"
+        :disabled="isFaceDisabled(entry.option)"
+        :aria-disabled="isFaceDisabled(entry.option) ? 'true' : undefined"
+        @click="onChoose(entry)"
       >
         <span class="split-face-prompt__name">{{ entry.option.name }}</span>
         <span v-if="economyLabel(entry.option)" class="split-face-prompt__economy">{{ economyLabel(entry.option) }}</span>
+        <span
+          v-if="costLabel(entry.option)"
+          class="split-face-prompt__cost"
+          :data-testid="`split-face-${entry.face}-cost`"
+        >{{ costLabel(entry.option) }}</span>
+        <span
+          v-if="entry.option.isSelectable === false"
+          class="split-face-prompt__blocked"
+          :data-testid="`split-face-${entry.face}-blocked`"
+        >{{ blockedHint(entry.option) }}</span>
         <AbilityText v-if="entry.option.abilityText" :text="entry.option.abilityText" />
       </button>
     </div>
@@ -183,5 +243,9 @@ export default defineComponent({
 
 .split-face-prompt__economy {
   font-variant-numeric: tabular-nums;
+}
+
+.split-face-prompt__blocked {
+  font-style: italic;
 }
 </style>
