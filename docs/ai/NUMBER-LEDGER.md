@@ -412,6 +412,10 @@ high-water: 422
 - WP-770 — indestructible-man-client (App arena-client. Elite Assassin chooser + shuffle-fight affordance on the Mastermind tile. BLOCKED on WP-768. reserved 2026-09-26, claude/special-masterminds-draft)
 - WP-771 — killmonger-client (App arena-client. Wound-him button + Mastermind wounds badge. BLOCKED on WP-769. reserved 2026-09-26, claude/special-masterminds-draft)
 - WP-772 — divided-card-off-play-traits (Engine. A split / Divided hero card off-play counts as all of both faces' classes/teams/names, multicolored, and summed printed numbers; in-play unchanged. reserved 2026-09-26, claude/objective-ramanujan-5bf9f8)
+- WP-773 — bot-ally-turn-pacing (Server, apps/server bot-ally driver. A readable pause between a bot ally's moves so a solo player can follow its turn; the per-turn pause budget keeps a paced turn inside the 15 s ownership-lease TTL (D-24256 unchanged). reserved 2026-09-26, claude/reserve-game-feel-wps)
+- WP-774 — turn-handoff-banner (App arena-client. YOUR TURN / ally-name banner + turn-start sting on an active-player change; the HUD shows seat names instead of raw seat ids. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- WP-775 — board-affordability-cues (App arena-client. An unaffordable cue on every cost the player reads (HQ heroes, and City villains / the Mastermind at their printed cost, extending the WP-750 badge treatment) and a rim on the villains a slash would fight. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- WP-776 — superpower-ready-glow (Game Engine + App arena-client. Owner-only per-hand-card projection of whether a card's superpower condition already holds for what is in play (WP-710 heroConditionHoldsForInPlay), rendered as a rim on the hand card. reserved 2026-09-26, claude/reserve-game-feel-wps)
 ## EC
 
 high-water: 457
@@ -784,6 +788,10 @@ high-water: 457
 - EC-807 — indestructible-man-client (WP-770; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
 - EC-808 — killmonger-client (WP-771; App arena-client. reserved 2026-09-26, claude/special-masterminds-draft)
 - EC-809 — divided-card-off-play-traits (WP-772; Engine. reserved 2026-09-26, claude/objective-ramanujan-5bf9f8)
+- EC-810 — bot-ally-turn-pacing (WP-773; Server. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- EC-811 — turn-handoff-banner (WP-774; App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- EC-812 — board-affordability-cues (WP-775; App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- EC-813 — superpower-ready-glow (WP-776; Game Engine + App arena-client. reserved 2026-09-26, claude/reserve-game-feel-wps)
 ## D
 
 high-water: 24241
@@ -1171,3 +1179,7 @@ section below) and the allocation protocol in
 - D-24605 — adversary-stat-icon-suppression (direct fix, no WP — an unsigned [icon:attack] that states an Adversary's printed attack ("as if it were a N[icon:attack] … Villain", "N[icon:attack] or less", "Villain of N [icon:attack]") is suppressed at parse, never a player grant; Wong Face Your Demons line 0 + 5 siblings. renumbered from D-24599 (collided with deck-runout-loss-log-text on main) 2026-09-26; reserved 2026-09-25, claude/wong-darkhold-demon-flavor)
 - D-24609 — negative-zone-escaped-henchmen (direct fix, no WP — Negative Zone Prison Breakout's "If 12 Villains escape" counts escaped henchmen too, per rules v23 §"Henchmen Are Villains/Adversaries" + §"Schemes that Count Escaped Villains"; escaped-pile-count condition takes cardTypes[]. D-24604 held by open PR (divided-card-off-play-traits). renumbered from D-24605 (main assigned it to adversary-stat-icon-suppression); D-24606..24608 taken or held. reserved 2026-09-26, claude/nzpb-escaped-henchmen)
 - D-24608 — victory-pile-pick-henchmen (direct fix, no WP — a henchman in your Victory Pile is "a Villain in your Victory Pile" for [keyword:victory-villain-attack] (antm Ebony Blade) per rules v23 §"Henchmen Are Villains/Adversaries"; getEligibleVictoryVillains includes henchman. D-24606 taken on main by focus-cost-icon-suppression; D-24607 held by open PR #2432. reserved 2026-09-26, claude/suspicious-bardeen-afeddd)
+- D-24610 — bot-ally-turn-pacing (WP-773. Locks the inter-move pacing delay for bot-ally turns and the per-turn pause budget that keeps a paced turn inside the lease TTL. D-24607..24609 held by open PRs #2432 / #2434 / #2426. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- D-24611 — turn-handoff-banner (WP-774. Locks the turn-handoff trigger (active-player change, seeded on the first frame), its accessibility gating, and the seat-label rule. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- D-24612 — board-affordability-cues (WP-775. Locks the unaffordable-cost cue rule and the slash-target rim; records why no End Turn cue is built. reserved 2026-09-26, claude/reserve-game-feel-wps)
+- D-24613 — superpower-ready-glow (WP-776. Locks the owner-only per-hand-card superpower-ready projection field and its condition gate set. reserved 2026-09-26, claude/reserve-game-feel-wps)
