@@ -157,6 +157,28 @@ const ANY_KEYWORD_TOKEN_PATTERN = /\[keyword:([^\]]+)\]/g;
 /** Regex for the token bodies KEYWORD_PATTERN does match (`Name` or `Name:N`). */
 const MATCHED_KEYWORD_BODY_PATTERN = /^[a-zA-Z][a-zA-Z-]*(?::\d+)?$/;
 
+// why: D-24624 — an ungated line that LEADS with an unmatched keyword token ("[keyword:Soaring
+// Flight]", "[keyword:Excessive Kindness]: Draw a card.") is that keyword's printed ability, so
+// its hollow takes the keyword's printed timing rather than the onPlay default.
+/** Regex for a `[keyword:...]` token at the very start of a line. */
+const LEADING_KEYWORD_TOKEN_PATTERN = /^\s*\[keyword:([^\]]+)\]/;
+
+// why: D-24624 — printed timings from data/metadata/keywords-full.json for unmatched keywords
+// that do NOT resolve at play. The hollow is still observed when the card is played (the only
+// detection site), but it is labelled with this timing so the log and the runtime ledger never
+// claim a play-time effect. Keys use the collectUnmatchedKeywordSlugs normalization. Soaring
+// Flight / "When Recruited" / Excessive Kindness fire on recruit; Excessive Violence and Piercing
+// Energy are spent when fighting; Switcheroo is used by revealing the card instead of playing it.
+/** Printed non-play timing for unmatched keyword names that lead a line. */
+const UNMATCHED_KEYWORD_TIMINGS: Readonly<Record<string, HeroAbilityTiming>> = {
+  'soaring-flight': 'onRecruit',
+  '"when-recruited"-abilities': 'onRecruit',
+  'excessive-kindness': 'onRecruit',
+  'excessive-violence': 'onFight',
+  'piercing-energy': 'onFight',
+  switcheroo: 'onReveal',
+};
+
 // why: D-24044 — the ANCHORED Empowered parameter tail. The color must immediately follow
 // the `[keyword:Empowered]` token as `by [hc:COLOR]` (the `^` anchors to the text right after
 // the marker — a broad forward scan could wrongly bind a later, unrelated [hc:...] to
@@ -2321,8 +2343,12 @@ function parseAbilityText(
   // a passed gate fired nothing and reported nothing (cvwr Tsunami of Justice). Such a line
   // records its `rule:<concept>` tokens, else its unmatched multi-word `[keyword:X N]` names
   // (normalized like the coverage probe, so runtime and ledger rows share one key), else
-  // `gate-only`. Ungated fully-empty lines keep the D-24618 rule-token-only behavior.
+  // `gate-only`.
+  // why: D-24624 — an UNGATED fully-empty line records its unmatched keyword names too
+  // ("[keyword:Soaring Flight]", "[keyword:Danger Sense 2]"): same order (rule tokens first),
+  // but no `gate-only` fallback, so plain-English flavor text still builds an empty hook.
   const lineResolvedOnlyItsGate = uniqueKeywords.length === 1 && uniqueKeywords[0] === 'conditional';
+  let ungatedKeywordTiming: HeroAbilityTiming | undefined;
   if (
     (uniqueKeywords.length === 0 || lineResolvedOnlyItsGate) &&
     effects.length === 0 &&
@@ -2331,15 +2357,16 @@ function parseAbilityText(
     !REMINDER_TEXT_PATTERN.test(abilityText)
   ) {
     unresolvedMarkers.push(...collectRuleTokenMarkers(abilityText));
-    if (lineResolvedOnlyItsGate) {
-      for (const keywordSlug of collectUnmatchedKeywordSlugs(abilityText)) {
-        if (!unresolvedMarkers.includes(keywordSlug)) {
-          unresolvedMarkers.push(keywordSlug);
-        }
+    for (const keywordSlug of collectUnmatchedKeywordSlugs(abilityText)) {
+      if (!unresolvedMarkers.includes(keywordSlug)) {
+        unresolvedMarkers.push(keywordSlug);
       }
-      if (unresolvedMarkers.length === 0) {
-        unresolvedMarkers.push(GATE_ONLY_MARKER);
-      }
+    }
+    if (lineResolvedOnlyItsGate && unresolvedMarkers.length === 0) {
+      unresolvedMarkers.push(GATE_ONLY_MARKER);
+    }
+    if (!lineResolvedOnlyItsGate) {
+      ungatedKeywordTiming = findLeadingUnmatchedKeywordTiming(abilityText);
     }
   }
 
@@ -2355,6 +2382,11 @@ function parseAbilityText(
       timing = keywordDefaultTiming;
       break;
     }
+  }
+  // why: D-24624 — a marker-only line led by a recruit / fight / reveal keyword takes that
+  // printed timing (the line resolved no keyword, so the loop above left it at onPlay).
+  if (ungatedKeywordTiming !== undefined) {
+    timing = ungatedKeywordTiming;
   }
   const timingMatch = TIMING_PATTERN.exec(abilityText);
   if (timingMatch !== null) {
@@ -2428,6 +2460,27 @@ function collectUnmatchedKeywordSlugs(abilityText: string): string[] {
     tokenMatch = tokenRegex.exec(abilityText);
   }
   return keywordSlugs;
+}
+
+/**
+ * Returns the printed non-play timing of the unmatched keyword that leads a line, if any
+ * (D-24624). Only a line whose FIRST token is the keyword qualifies — a sentence that merely
+ * mentions it ("All Heroes you recruit this turn have [keyword:Soaring Flight].") is a play
+ * effect and keeps onPlay.
+ *
+ * @param abilityText - One hero ability line.
+ * @returns The keyword's timing from UNMATCHED_KEYWORD_TIMINGS, or undefined.
+ */
+function findLeadingUnmatchedKeywordTiming(abilityText: string): HeroAbilityTiming | undefined {
+  const leadingMatch = LEADING_KEYWORD_TOKEN_PATTERN.exec(abilityText);
+  if (leadingMatch === null) {
+    return undefined;
+  }
+  const leadingSlugs = collectUnmatchedKeywordSlugs(leadingMatch[0]);
+  if (leadingSlugs.length === 0) {
+    return undefined;
+  }
+  return UNMATCHED_KEYWORD_TIMINGS[leadingSlugs[0]!];
 }
 
 /**
