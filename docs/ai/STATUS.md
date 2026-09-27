@@ -9,7 +9,7 @@
 
 ### D-24608 — Henchmen count for The Ebony Blade's "a Villain in your Victory Pile" pick (direct fix) (2026-09-26)
 
-**User-visible on `play.legendary-arena.com` (after deploy).** The Ebony Blade (`antm`) now lets you pick
+**User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** The Ebony Blade (`antm`) now lets you pick
 a henchman from your Victory Pile and gain its printed attack, as Universal Rules v23 prints ("Henchman
 Villain cards are indeed Villains"). Before, henchmen were filtered out: a Victory Pile holding only
 henchmen made the ability do nothing, and the pick list never showed them.
@@ -23,12 +23,12 @@ henchmen made the ability do nothing, and the pick list never showed them.
   package. Tests intentionally flipped from "henchman excluded" to "henchman eligible"; the
   non-villain no-op cases now use a bystander. `ledger:numbers`, `sim:runtime-observed`,
   `sim:coverage`, `effect-index`, `ledger:heroes` checks all pass.
-- **Live-verify (D-24026):** pending. Play The Ebony Blade with a henchman in the Victory Pile; the
-  henchman should be listed, and picking it should add its printed attack.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator played The Ebony Blade with a henchman
+  in the Victory Pile after #2434 deployed: the henchman was listed, and picking it added its printed attack.
 
 ### D-24609 — Negative Zone Prison Breakout counts escaped henchmen toward its 12 (direct fix) (2026-09-26)
 
-**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** In Negative
+**User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** In Negative
 Zone Prison Breakout, escaped henchmen now count toward "If 12 Villains escape", as Universal Rules
 v23 prints ("Henchman Villain cards are indeed Villains"). Before this, only non-henchman Villains
 counted, even though the scheme's setup adds an extra Henchman group. Escaped Bystanders still do not
@@ -40,8 +40,8 @@ count. The danger meter's escaped count includes henchmen too.
 - **Counts and gates.** Engine 4501/0 (one test intentionally flipped to "a henchman counts").
   `pnpm -r --no-bail test` → 0 fail; the core oracles and the `sim:runtime-observed` /
   `sim:coverage` checks are unchanged.
-- **Live-verify (D-24026): operator-pending.** Start Negative Zone Prison Breakout and let a henchman
-  escape: the danger meter's escaped count goes up by one.
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator ran Negative Zone Prison Breakout after
+  #2426 deployed: a henchman escape raised the escaped count by one.
 
 ### D-24603 — Henchmen are Villains for "Whenever you defeat a Villain or Mastermind" (direct fix) (2026-09-26)
 
