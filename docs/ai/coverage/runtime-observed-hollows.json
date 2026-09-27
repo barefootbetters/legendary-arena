@@ -7,10 +7,10 @@
   },
   "summary": {
     "distinctMechanics": 32,
-    "totalObservations": 3524,
+    "totalObservations": 3533,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 505,
+      "no-handler": 514,
       "unsupported-keyword": 0,
       "parse-unrecognized": 3019
     }
@@ -1187,10 +1187,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 505,
+      "hitCount": 514,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 505,
+        "no-handler": 514,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },

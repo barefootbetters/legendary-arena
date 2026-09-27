@@ -69,6 +69,12 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Has an evaluateCondition case (heroConditions.evaluate.ts) — the lockstep the
   // drift pin below enforces.
   'cardsDrawnThisTurnAtLeast',
+  // why: WP-777 / D-24616 — "If you discarded any cards this turn" (New Wings, Pumpkin
+  // Bombs) is a whole-turn numeric threshold: a card played before the discard waits and
+  // grants once when a later card-effect hand discard this turn reaches N. Has an
+  // evaluateCondition case (heroConditions.evaluate.ts) — the lockstep the drift pin
+  // below enforces.
+  'cardsDiscardedThisTurnAtLeast',
 ];
 
 /**

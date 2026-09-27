@@ -613,6 +613,56 @@ describe('LegendaryGame', () => {
     );
   });
 
+  it('play-phase onBegin deletes the per-turn discard count, and never creates it (WP-777 / D-24616)', () => {
+    // why: pins a WIRE plus oracle safety. A count surviving into the next turn would let New
+    // Wings / Pumpkin Bombs fire with no discard (the over-credit WP-777 removes), and a key
+    // created on a G that never had one would move the sentinel hash oracles.
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without a discard count. */
+    function makeTurnStartState(withCount: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withCount) {
+        state.cardsDiscardedThisTurn = { '0': 2, '1': 1 };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const counted = makeTurnStartState(true);
+    onBegin!(context(counted));
+    assert.equal('cardsDiscardedThisTurn' in counted, false, 'the count is deleted at the turn boundary');
+
+    const neverCounted = makeTurnStartState(false);
+    onBegin!(context(neverCounted));
+    assert.equal('cardsDiscardedThisTurn' in neverCounted, false, 'no key is created on a G that never had one');
+  });
+
   it('defines a TOP-LEVEL endIf that returns the evaluateEndgame result for a terminal G and undefined for a mid-game G (WP-411 / D-24223 — AC-1)', () => {
     // why: AC-1 — the fix is a TOP-LEVEL LegendaryGame.endIf (sibling of
     // moves/phases), NOT a phase endIf. Only a top-level endIf sets

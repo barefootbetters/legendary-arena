@@ -430,14 +430,27 @@
       "hidden": true
     },
     {
+      "slug": "discard-threshold",
+      "label": "Discard Threshold",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 2,
+      "cardIds": [
+        "bkwd/falcon-winter-soldier",
+        "vill/green-goblin"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "discard-to-play",
       "label": "Discard To Play",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 10,
+      "cardCount": 11,
       "cardIds": [
         "amwp/cassie-lang",
         "asrd/beta-ray-bill",
+        "bkwd/falcon-winter-soldier",
         "co2e/cyclops",
         "core/cyclops",
         "cosm/adam-warlock",
@@ -2618,6 +2631,8 @@
     "bkwd/falcon-winter-soldier": {
       "mechanics": [
         "dark-memories",
+        "discard-threshold",
+        "discard-to-play",
         "dodge",
         "draw"
       ]
@@ -4020,6 +4035,7 @@
     },
     "vill/green-goblin": {
       "mechanics": [
+        "discard-threshold",
         "dodge"
       ]
     },

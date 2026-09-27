@@ -19,6 +19,8 @@ import {
   heroConditionHoldsForInPlay,
   countDistinctHeroClassesYouHave,
   SEQUENCE_GATE_CONDITION_TYPES,
+  CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE,
+  matchReadsConditionType,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
 import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
@@ -1758,5 +1760,66 @@ describe('both-sides expansion in rules-facing condition reads (WP-780 / D-24619
     assert.equal(countOtherInPlayMatchingCondition(marked, '0', { type: 'heroClassMatch', value: 'strength' }, OTHER), 1);
     assert.equal(countDistinctHeroClassesYouHave(marked, '0'), 3);
     assert.match(describeFailedCondition(marked, '0', { type: 'playedThisTurn', value: '9' }), /you have played 3$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-777 / D-24616 — "If you discarded any cards this turn"
+// ---------------------------------------------------------------------------
+
+describe('cardsDiscardedThisTurnAtLeast (WP-777 / D-24616)', () => {
+  const DISCARD_CONDITION = { type: CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE, value: '1' };
+
+  it('the constant is the literal the setup marker arm emits', () => {
+    assert.equal(CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE, 'cardsDiscardedThisTurnAtLeast');
+  });
+
+  it('is false with no counter and true once this player has discarded', () => {
+    const noCounter = makeTestState();
+    assert.equal(evaluateCondition(noCounter, '0', DISCARD_CONDITION), false);
+    const discarded = makeTestState();
+    discarded.cardsDiscardedThisTurn = { '0': 1 };
+    assert.equal(evaluateCondition(discarded, '0', DISCARD_CONDITION), true);
+  });
+
+  it("another player's discard does not satisfy this player's condition", () => {
+    const G = makeTestState();
+    G.cardsDiscardedThisTurn = { '1': 3 };
+    assert.equal(evaluateCondition(G, '0', DISCARD_CONDITION), false);
+  });
+
+  it('a malformed threshold is a safe false', () => {
+    const G = makeTestState();
+    G.cardsDiscardedThisTurn = { '0': 5 };
+    assert.equal(evaluateCondition(G, '0', { type: CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE, value: 'x' }), false);
+  });
+
+  it('describes the failure with the player count', () => {
+    const G = makeTestState();
+    assert.equal(
+      describeFailedCondition(G, '0', DISCARD_CONDITION),
+      'it needs 1 or more cards discarded this turn — you have discarded 0',
+    );
+  });
+
+  it('matchReadsConditionType finds a reading hook and is false otherwise', () => {
+    const readingHook = {
+      cardId: 'bkwd/falcon-winter-soldier/new-wings#0',
+      timing: 'onPlay',
+      keywords: ['attack'],
+      conditions: [DISCARD_CONDITION],
+      effects: [{ type: 'attack', magnitude: 4 }],
+    } as unknown as HeroAbilityHook;
+    const unrelatedHook = {
+      cardId: 'core/hulk/smash#0',
+      timing: 'onPlay',
+      keywords: ['attack'],
+      effects: [{ type: 'attack', magnitude: 2 }],
+    } as unknown as HeroAbilityHook;
+    assert.equal(matchReadsConditionType(makeTestState({ heroAbilityHooks: [unrelatedHook, readingHook] }), CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE), true);
+    assert.equal(matchReadsConditionType(makeTestState({ heroAbilityHooks: [unrelatedHook] }), CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE), false);
+    const noHooks = makeTestState();
+    delete (noHooks as { heroAbilityHooks?: unknown }).heroAbilityHooks;
+    assert.equal(matchReadsConditionType(noHooks, CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE), false);
   });
 });

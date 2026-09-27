@@ -21,6 +21,47 @@ import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { offPlayCardTraits, playedCardIdsThisTurn } from './splitCard.logic.js';
 
+// why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
+// (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
+// wait-and-see list and the discardFromHand counter gate all key on this value, so a
+// named constant keeps them from drifting apart.
+export const CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE = 'cardsDiscardedThisTurnAtLeast';
+
+// ---------------------------------------------------------------------------
+// matchReadsConditionType — does any hook in this match read a condition?
+// ---------------------------------------------------------------------------
+
+/**
+ * Reports whether any hero ability hook in this match carries a condition of the
+ * given type.
+ *
+ * // why: WP-777 / D-24616 (the WP-743 §C signature) — a per-turn tracker that only
+ * one or two cards read is written only when this match can read it, so a match
+ * without those cards keeps a byte-identical G and the sentinel hash oracles never
+ * move. G.heroAbilityHooks is built once at setup and never changes, so the answer is
+ * stable for the whole match. Explicit for...of loops; no .reduce().
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @param conditionType - The HeroCondition.type to look for.
+ * @returns true when at least one hook has a condition of that type.
+ */
+export function matchReadsConditionType(
+  G: LegendaryGameState,
+  conditionType: string,
+): boolean {
+  if (!Array.isArray(G.heroAbilityHooks)) {
+    return false;
+  }
+  for (const hook of G.heroAbilityHooks) {
+    for (const condition of hook.conditions ?? []) {
+      if (condition.type === conditionType) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
 // ---------------------------------------------------------------------------
@@ -211,6 +252,22 @@ export function evaluateCondition(
       }
 
       return G.turnEconomy.cardsDrawn >= drawThreshold;
+    }
+
+    case CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-777 / D-24616 — "If you discarded any cards this turn" (New Wings,
+      // Pumpkin Bombs). Reads THIS player's entry of G.cardsDiscardedThisTurn, the
+      // per-player count of card-effect hand discards kept at the discardFromHand
+      // chokepoint. Per-player because a Master Strike or Covering Fire can make another
+      // player discard during this turn, and that discard is theirs, not yours. An
+      // absent map or entry means nothing was discarded (the counter is lazy).
+      const discardThreshold = parseInt(condition.value, 10);
+      // why: safe-skip malformed data (mirrors cardsDrawnThisTurnAtLeast's NaN guard).
+      if (Number.isNaN(discardThreshold)) {
+        return false;
+      }
+
+      return (G.cardsDiscardedThisTurn?.[playerID] ?? 0) >= discardThreshold;
     }
 
     case 'distinctHeroCostsAtLeast': {
@@ -782,6 +839,13 @@ export function describeFailedCondition(
       // count the gate compares (the "drew N cards this turn" wait-and-see window). The
       // count excludes the start-of-turn refill, so it reflects cards drawn from effects.
       return `it needs ${condition.value} or more cards drawn this turn — you have drawn ${G.turnEconomy.cardsDrawn}`;
+
+    case CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-777 / D-24616 — quotes this player's per-turn hand-discard count, the
+      // value the gate compares (absent counter = nothing discarded yet).
+      const discardedCount = G.cardsDiscardedThisTurn?.[playerID] ?? 0;
+      return `it needs ${condition.value} or more cards discarded this turn — you have discarded ${discardedCount}`;
+    }
 
     case 'distinctHeroCostsAtLeast': {
       const distinct = countDistinctHeroCostsInHandOrPlay(G, playerID);

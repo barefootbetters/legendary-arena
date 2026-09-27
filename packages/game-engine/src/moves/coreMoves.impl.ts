@@ -520,8 +520,15 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   // granted (the bug this fixes: the cost was silently skipped and the power
   // leaked). This runs as part of validation, before the hand removal, so the
   // "validate → gate → mutate → void" move contract is preserved.
+  // why: WP-777 / D-24615 — a split card is exempt: its side (and so its cost) is not known
+  // until resolveSplitFaceChoice, which binds a side's cost there. Checking here would read
+  // the PLAYED id's face — e.g. reject Attune / Atone from a one-card hand though Atone is free.
   const discardToPlayCost = getDiscardToPlayCost(G, args.cardId);
-  if (discardToPlayCost > 0 && playerZones.hand.length < discardToPlayCost + 1) {
+  if (
+    discardToPlayCost > 0 &&
+    playerZones.hand.length < discardToPlayCost + 1 &&
+    !isSplitCardInstance(G, args.cardId)
+  ) {
     pushLog(
       G,
       // why: WP-417 — an empty economy clause here: the play was REJECTED, so no

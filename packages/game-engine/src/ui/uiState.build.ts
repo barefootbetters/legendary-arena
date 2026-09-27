@@ -96,7 +96,7 @@ import type {
 // byte-identical to what resolveVictoryPileCardPick re-filters at resolve time
 // (the round-trip rule) — never a re-implemented filter.
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
-import { splitInstanceIntoBaseAndCopy } from '../moves/splitFaceChoice.resolve.js';
+import { isSplitFaceBindable, splitInstanceIntoBaseAndCopy } from '../moves/splitFaceChoice.resolve.js';
 // why: D-24139 — reuse the engine's authoritative 0-cost discard eligibility helper so
 // the projected list is byte-identical to what resolveReturnZeroCostDiscard validates
 // at resolve time (the round-trip rule) — never a re-implemented filter.
@@ -104,7 +104,11 @@ import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostD
 // why: WP-383 / D-24184 — reuse the engine's authoritative discard-to-play eligibility
 // helper (the chooser's whole hand) so the projected list is byte-identical to what
 // resolveDiscardToPlay validates at resolve time (the round-trip rule).
-import { getEligibleDiscardToPlayCards, hasPendingDiscardToPlay } from '../moves/resolveDiscardToPlay.js';
+import {
+  getDiscardToPlayCost,
+  getEligibleDiscardToPlayCards,
+  hasPendingDiscardToPlay,
+} from '../moves/resolveDiscardToPlay.js';
 import { getEligibleSmashDiscardCards } from '../moves/smashDiscard.resolve.js';
 import { getEligiblePutHandOnDeckTopCards } from '../moves/putHandOnDeckTop.resolve.js';
 import { DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
@@ -1676,6 +1680,10 @@ export function buildUIState(
       cost: faceADisplay?.cost ?? null,
       attack: faceAStats?.attack ?? 0,
       recruit: faceAStats?.recruit ?? 0,
+      // why: WP-777 / D-24615 — always set: whether the engine accepts this side now, and its
+      // discard cost, so the picker can disable an unpayable side and say why (WP-778).
+      isSelectable: isSplitFaceBindable(gameState, frontSplit.playerID, frontSplit.faceA, frontSplit.faceB),
+      discardToPlayCost: getDiscardToPlayCost(gameState, frontSplit.faceA),
     };
     if (faceADisplay?.abilityText !== undefined) {
       faceA.abilityText = faceADisplay.abilityText;
@@ -1688,6 +1696,8 @@ export function buildUIState(
       cost: faceBDisplay?.cost ?? null,
       attack: faceBStats?.attack ?? 0,
       recruit: faceBStats?.recruit ?? 0,
+      isSelectable: isSplitFaceBindable(gameState, frontSplit.playerID, frontSplit.faceB, frontSplit.faceA),
+      discardToPlayCost: getDiscardToPlayCost(gameState, frontSplit.faceB),
     };
     if (faceBDisplay?.abilityText !== undefined) {
       faceB.abilityText = faceBDisplay.abilityText;

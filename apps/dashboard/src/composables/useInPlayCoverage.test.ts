@@ -471,9 +471,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // those plays cost a discard and the fixed-seed boards that play them shift trajectory.
   // totalObs 4349 -> 4354; resolvedObs stays 1135, so percentResolved holds at 26.1
   // (1135 / 4354). A sweep-trajectory artifact, not a regression.
+  // 2026-09-26 (WP-777 / D-24615 + D-24616, re-pin): bkwd Attune now pays its discard cost and
+  // New Wings grants +4 only after a discard, so the bkwd board's fixed-seed trajectory shifts
+  // (per-board tally vs main: bkwd 285 -> 294, all undercover; every other board
+  // byte-identical). totalObs 4354 -> 4363; resolvedObs stays 1135, so percentResolved
+  // 26.1 -> 26.0 (1135 / 4363). A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 4354);
-  assert.equal(view.percentResolved.value, 26.1);
+  assert.equal(view.totalObs.value, 4363);
+  assert.equal(view.percentResolved.value, 26);
   assert.ok(view.remaining.value.length > 0);
 });
 

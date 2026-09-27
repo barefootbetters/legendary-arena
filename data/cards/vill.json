@@ -466,7 +466,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Dodge]",
-            "If you discarded any cards this turn, you get +2[icon:attack]."
+            "If you discarded any cards this turn, you get +2[icon:attack]. [keyword:discard-threshold:1]"
           ]
         },
         {

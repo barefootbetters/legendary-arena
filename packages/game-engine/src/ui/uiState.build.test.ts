@@ -2419,3 +2419,24 @@ describe('buildUIState — City fightCost includes villain Blood Frenzy for the 
     assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 3 + 2);
   });
 });
+
+// why: WP-777 / D-24615 — D-24372 runtime keyset pin. The two per-face fields are OPTIONAL in the
+// type, so no `satisfies` pin could catch the builder dropping them; assert them on a BUILT
+// projection instead.
+describe('buildUIState — split-face option keyset (WP-777 / D-24615)', () => {
+  it('always projects isSelectable and discardToPlayCost on both faces', () => {
+    const gameState = createTestGameState();
+    const faceA = 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId;
+    const faceB = 'cvwr/captain-america-secret-avenger/inspire-a-nation#1' as CardExtId;
+    gameState.pendingSplitFaceChoices = [{ playerID: '0', sourceCardId: faceA, faceA, faceB }];
+
+    const projected = buildUIState(gameState, mockCtx).pendingSplitFaceChoice!;
+    for (const option of [projected.faceA, projected.faceB]) {
+      const keys = Object.keys(option);
+      assert.ok(keys.includes('isSelectable'), 'isSelectable is always projected');
+      assert.ok(keys.includes('discardToPlayCost'), 'discardToPlayCost is always projected');
+    }
+    assert.equal(projected.faceA.isSelectable, true, 'an uncosted face is selectable');
+    assert.equal(projected.faceA.discardToPlayCost, 0);
+  });
+});

@@ -2399,6 +2399,15 @@ export interface LegendaryGameState {
   // player input and needs no prompt — it re-checks itself at the per-move hook.
   /** Numeric-threshold hero gates awaiting their threshold this turn; absent when none. */
   deferredConditionalGrants?: DeferredConditionalGrant[];
+  // why: WP-777 / D-24616 — per-player count of card-effect HAND discards this turn, read
+  // by the "If you discarded any cards this turn" condition (New Wings, Pumpkin Bombs).
+  // Keyed by the DISCARDING player: a Master Strike or Covering Fire can make a non-active
+  // player discard, and discardFromHand has no ctx to tell who is active. GATED and LAZY —
+  // written by discardFromHand only when some hook in this match reads the condition, and
+  // deleted at the turn boundary — so a match without those cards never carries the field
+  // and both sentinel oracles stay byte-unchanged. End-of-turn cleanup is not counted.
+  /** Card-effect hand discards per player this turn; absent when nothing reads it or nothing was discarded. */
+  cardsDiscardedThisTurn?: Record<string, number>;
 
   // why: WP-656 / D-24467 — the per-move EDGE signal that the current player just
   // defeated a City Villain (fightVillain) or a Mastermind tactic (fightMastermind)

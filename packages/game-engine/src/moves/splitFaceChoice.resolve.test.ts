@@ -31,8 +31,12 @@ import {
   isSplitCardInstance,
   parkSplitFaceChoice,
   playBothSplitFaces,
+  isSplitFacePayable,
+  isSplitFaceBindable,
 } from './splitFaceChoice.resolve.js';
 import { playCard, drawCards } from './coreMoves.impl.js';
+import { resolveDiscardToPlay } from './resolveDiscardToPlay.js';
+import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import type { LegendaryGameState, PendingSplitFaceChoice } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -373,5 +377,112 @@ describe('playBothSplitFaces + the playCard Penumbra branch (WP-780 / D-24619)',
     playCard(makeMoveContext(inactive, '0'), { cardId: FACE_A });
     assert.equal(hasPendingSplitFaceChoice(inactive), true, 'the picker parks as today');
     assert.equal(inactive.turnEconomy.bothSidesPlayedCardIds, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-777 / D-24615 — a split face's discard-to-play cost binds at the face choice
+// ---------------------------------------------------------------------------
+
+const ATTUNE = 'bkwd/falcon-winter-soldier/attune#4' as CardExtId;
+const ATONE = 'bkwd/falcon-winter-soldier/atone#4' as CardExtId;
+const ATTUNE_SPLIT_FACES = { 'bkwd/falcon-winter-soldier/attune': 'bkwd/falcon-winter-soldier/atone' };
+const HAND_CARD = 'core/spider-man/astonishing-strength#0' as CardExtId;
+const NEW_WINGS = 'bkwd/falcon-winter-soldier/new-wings#0' as CardExtId;
+
+/** Attune's regenerated hook: "To play this side, you must discard a card. [keyword:discard-to-play:1]". */
+const ATTUNE_COST_HOOK = {
+  cardId: ATTUNE, timing: 'onPlay', keywords: ['discard-to-play'],
+  effects: [{ type: 'discard-to-play', magnitude: 1 }],
+} as unknown as HeroAbilityHook;
+
+/** A New Wings hook, so the match reads cardsDiscardedThisTurnAtLeast (turns the counter on). */
+const NEW_WINGS_HOOK = {
+  cardId: NEW_WINGS, timing: 'onPlay', keywords: ['attack'],
+  conditions: [{ type: 'cardsDiscardedThisTurnAtLeast', value: '1' }],
+  effects: [{ type: 'attack', magnitude: 4 }],
+} as unknown as HeroAbilityHook;
+
+/** A state with Attune / Atone in play (or in hand), parked, with Attune's cost hook. */
+function makeAttuneState(hand: CardExtId[], parked: boolean, extraHooks: HeroAbilityHook[] = []): LegendaryGameState {
+  const gameState = makeTestGameState(
+    { '0': { hand, inPlay: parked ? [ATTUNE] : [] } },
+    {
+      splitFaces: ATTUNE_SPLIT_FACES,
+      cardStats: { [ATTUNE]: stat(0, 3, 3), [ATONE]: stat(0, 0, 3) },
+      ...(parked
+        ? { pendingSplitFaceChoices: [{ playerID: '0', sourceCardId: ATTUNE, faceA: ATTUNE, faceB: ATONE }] }
+        : {}),
+    },
+  );
+  gameState.heroAbilityHooks = [ATTUNE_COST_HOOK, ...extraHooks];
+  gameState.cardDisplayData = {
+    [ATTUNE]: { name: 'Attune' }, [ATONE]: { name: 'Atone' },
+  } as unknown as LegendaryGameState['cardDisplayData'];
+  return gameState;
+}
+
+describe('isSplitFacePayable + isSplitFaceBindable (WP-777 / D-24615)', () => {
+  it('a costed face is payable only with enough hand cards; a free face always is', () => {
+    const emptyHand = makeAttuneState([], true);
+    assert.equal(isSplitFacePayable(emptyHand, '0', ATTUNE), false);
+    assert.equal(isSplitFacePayable(emptyHand, '0', ATONE), true);
+    const oneCard = makeAttuneState([HAND_CARD], true);
+    assert.equal(isSplitFacePayable(oneCard, '0', ATTUNE), true);
+  });
+
+  it('bindable = payable, or neither face payable (anti-freeze)', () => {
+    const emptyHand = makeAttuneState([], true);
+    assert.equal(isSplitFaceBindable(emptyHand, '0', ATTUNE, ATONE), false, 'Attune blocked while Atone is free');
+    assert.equal(isSplitFaceBindable(emptyHand, '0', ATONE, ATTUNE), true);
+    const bothCosted = makeAttuneState([], true, [{ ...ATTUNE_COST_HOOK, cardId: ATONE } as HeroAbilityHook]);
+    assert.equal(isSplitFaceBindable(bothCosted, '0', ATTUNE, ATONE), true, 'neither payable → either binds');
+    assert.equal(isSplitFaceBindable(bothCosted, '0', ATONE, ATTUNE), true);
+  });
+});
+
+describe('resolveSplitFaceChoice — Attune discard cost (WP-777 / D-24615)', () => {
+  it('rejects Attune from an empty hand: queue intact, no economy, one "could not choose" line', () => {
+    const gameState = makeAttuneState([], true);
+    const messagesBefore = gameState.messages.length;
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'a' });
+    assert.equal(gameState.pendingSplitFaceChoices?.length, 1, 'the choice stays open');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no +3 recruit leaked');
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATTUNE]);
+    assert.equal(gameState.pendingDiscardToPlay, undefined, 'no cost parked');
+    const newMessages = gameState.messages.slice(messagesBefore);
+    assert.equal(newMessages.length, 1);
+    assert.deepEqual(newMessages[0], {
+      text: 'Player 0 could not choose Attune — it requires discarding 1 card(s) but their hand does not hold enough cards to discard; choose the other side.',
+      outcome: 'neutral',
+      card: ATTUNE,
+    });
+  });
+
+  it('Atone still binds from an empty hand', () => {
+    const gameState = makeAttuneState([], true);
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'b' });
+    assert.equal(gameState.pendingSplitFaceChoices?.length ?? 0, 0);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATONE]);
+  });
+
+  it('Attune with a card in hand grants +3 recruit and parks the discard; paying it discards and counts', () => {
+    const gameState = makeAttuneState([HAND_CARD], true, [NEW_WINGS_HOOK]);
+    resolveSplitFaceChoice(makeMoveContext(gameState, '0'), { face: 'a' });
+    assert.equal(gameState.turnEconomy.recruit, 3);
+    assert.deepEqual(gameState.pendingDiscardToPlay, [{ playerID: '0', sourceCardId: ATTUNE, remaining: 1 }]);
+    resolveDiscardToPlay(makeMoveContext(gameState, '0') as Parameters<typeof resolveDiscardToPlay>[0], { cardId: HAND_CARD });
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepEqual(gameState.playerZones['0']!.discard, [HAND_CARD]);
+    assert.equal(gameState.pendingDiscardToPlay?.length ?? 0, 0);
+    assert.deepEqual(gameState.cardsDiscardedThisTurn, { '0': 1 });
+  });
+
+  it('playCard commits a split card whose face a is costed, even from a one-card hand', () => {
+    const gameState = makeAttuneState([ATTUNE], false);
+    playCard(makeMoveContext(gameState, '0'), { cardId: ATTUNE });
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepEqual(gameState.playerZones['0']!.inPlay, [ATTUNE]);
+    assert.equal(gameState.pendingSplitFaceChoices?.length, 1, 'the side choice is parked');
   });
 });

@@ -23,6 +23,35 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import {
+  CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE,
+  matchReadsConditionType,
+} from '../hero/heroConditions.evaluate.js';
+
+/**
+ * Counts one card-effect hand discard for a player this turn (WP-777 / D-24616).
+ *
+ * // why: this chokepoint sees EVERY card-effect hand discard (the discardFromHand
+ * drift test keeps it so; end-of-turn cleanup is deliberately not routed here), so one
+ * increment covers Dodge, discard-to-play costs, Smash, Do-Over, Covering Fire, Master
+ * Strikes and Scheme Twists for "If you discarded any cards this turn". Keyed by the
+ * discarding player because a non-active player can be made to discard on another
+ * player's turn. GATED on a hook in this match reading the condition and lazily created,
+ * so a match without New Wings / Pumpkin Bombs keeps a byte-identical G (no sentinel
+ * re-pin). The turn boundary deletes the map.
+ *
+ * @param G - The game state, mutated in place (counter incremented).
+ * @param playerID - The player whose hand card was just discarded.
+ */
+function recordCardDiscardedThisTurn(G: LegendaryGameState, playerID: string): void {
+  if (!matchReadsConditionType(G, CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE)) {
+    return;
+  }
+  if (G.cardsDiscardedThisTurn === undefined) {
+    G.cardsDiscardedThisTurn = {};
+  }
+  G.cardsDiscardedThisTurn[playerID] = (G.cardsDiscardedThisTurn[playerID] ?? 0) + 1;
+}
 
 /**
  * Whether a card carries the reactive `return-on-discard` keyword.
@@ -181,6 +210,7 @@ export function discardFromHand(
   }
   playerZones.hand = moveResult.from;
   playerZones.discard = moveResult.to;
+  recordCardDiscardedThisTurn(G, playerID);
   checkReturnOnDiscard(G, playerID, cardId);
   // why: WP-705 / D-24526 — a second reactive on-discard keyword at the same chokepoint;
   // a card carries at most one (Cyclops = return-on-discard, Guerrilla Warfare =

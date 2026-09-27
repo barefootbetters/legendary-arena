@@ -3362,6 +3362,28 @@ describe('filterUIStateForAudience — pendingSplitFaceChoice redaction + leftFa
     assert.equal(result.pendingSplitFaceChoice!.leftFace, 'a');
   });
 
+  it('isSelectable / discardToPlayCost survive the filter for the chooser (WP-777 / D-24615)', () => {
+    // why: UIState five-step contract, step 4 — the two optional per-face fields must reach the
+    // chooser, or WP-778's picker can never disable an unpayable side. Face a is costed
+    // (discard-to-play:1) and the chooser's hand is empty, so face a is not selectable.
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    const faceA = 'cvwr/captain-america-secret-avenger/inspire-a-man#1' as CardExtId;
+    const faceB = 'cvwr/captain-america-secret-avenger/inspire-a-nation#1' as CardExtId;
+    gameState.pendingSplitFaceChoices = [{ playerID: '0', sourceCardId: faceA, faceA, faceB }];
+    gameState.playerZones['0']!.hand = [];
+    gameState.heroAbilityHooks = [
+      ...gameState.heroAbilityHooks,
+      { cardId: faceA, timing: 'onPlay', keywords: ['discard-to-play'], effects: [{ type: 'discard-to-play', magnitude: 1 }] },
+    ] as LegendaryGameState['heroAbilityHooks'];
+
+    const chooserView = filterUIStateForAudience(buildUIState(gameState, mockCtx), PLAYER_0);
+    assert.equal(chooserView.pendingSplitFaceChoice!.faceA.isSelectable, false);
+    assert.equal(chooserView.pendingSplitFaceChoice!.faceA.discardToPlayCost, 1);
+    assert.equal(chooserView.pendingSplitFaceChoice!.faceB.isSelectable, true);
+    assert.equal(chooserView.pendingSplitFaceChoice!.faceB.discardToPlayCost, 0);
+  });
+
   it('an opponent and a spectator do NOT see pendingSplitFaceChoice', () => {
     const uiState = createSplitFaceChoiceUIState(true);
     assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingSplitFaceChoice, undefined);
