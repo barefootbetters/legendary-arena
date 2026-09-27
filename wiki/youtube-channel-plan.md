@@ -20,7 +20,7 @@ status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
   - ../docs/01-VISION.md
-last-reviewed: 2026-09-02
+last-reviewed: 2026-09-27
 ---
 
 This page mirrors the authoritative source at
@@ -45,7 +45,9 @@ series:
 | Across the Table (interview + gameplay) | B (Narrative) | L3 Community + L4 Recognition | Phased: solo weeks 1-4, guest week 5+ |
 | Arena Clips (Shorts) | All | All (discovery layer) | 3-5 per week |
 
-## Core Principles
+## Mechanics
+
+### Core Principles
 
 1. **One Video = One Goal** — each video declares exactly one primary
    goal (play-conversion, email-signup, or subscriber-growth)
@@ -57,7 +59,7 @@ series:
 5. **Session > Single Video** — every end screen links to the next
    video in the binge path
 
-## SB7 Framework for Video
+### SB7 Framework for Video
 
 Every video employs the seven StoryBrand elements:
 
@@ -75,7 +77,7 @@ Every video employs the seven StoryBrand elements:
   vs. what life looks like when you do.
 - **Identity Transformation:** Frustrated player → Respected competitor.
 
-## Community Posts
+### Community Posts
 
 A fifth engagement surface beyond the four video series, now enabled on the
 channel. The composer offers five post types — map each to a job:
@@ -96,19 +98,7 @@ unlicensed IP, gated the same way as a public video (see
 don't show licensed card art are unaffected. Full content-type table and
 cadence live in the authoritative marketing-repo doc.
 
-## Key References
-
-- **YouTube Channel Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
-- **Video Commerce Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md) — the fourth "gear purchase" conversion goal and in-video product tagging
-- **Go-to-Market Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
-- **Revenue Operating Spec** — [ewiki mirror](https://ewiki.legendary-arena.com/revenue-operating-spec/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/revenue-operating-spec.md)
-- **Production workflow:** [Video Production Workflow](video-production-workflow.md)
-- **Homepage strategy:** [Homepage Spec](homepage-spec.md),
-  [Homepage Appendix](homepage-appendix.md)
-- **Content framework:** [Homepage Review Template](homepage-review-template.md)
-  § Content Framework (Mode A/B/C)
-
-## Success Criteria
+### Success Criteria
 
 The system is working when these trends improve over a rolling 30-day
 window:
@@ -120,3 +110,44 @@ window:
 - Play conversions increasing
 - Production time per video decreasing
 - Session watch time increasing
+
+## Interactions
+
+- [Homepage Spec](homepage-spec.md) and [Homepage Appendix](homepage-appendix.md)
+  — the channel is the homepage's transitional CTA; every video and Community
+  post publishes to it.
+- [Homepage Review Template](homepage-review-template.md) — supplies the Mode
+  A/B/C content framework (Sales, Narrative, Authority) the four series map to.
+- [Video Production Workflow](video-production-workflow.md) and
+  [Gameplay Video Production (YouTube)](gameplay-video-production-youtube.md) —
+  how the videos this plan calls for are actually made and published.
+- [Video Commerce](video-commerce.md) — adds the fourth conversion goal, gear
+  purchase, and in-video product tagging, alongside the three goals in *One
+  Video = One Goal*.
+- [IP Licensing](ip-licensing.md) — gates any public post or video that shows
+  Marvel / *Legendary* card art.
+
+## Edge Cases
+
+- **Community posts cannot be unlisted.** A post is public the moment it
+  publishes, so an Image, Image poll or Video post showing licensed card art is
+  immediate public exposure and falls under the same gate as a public video.
+  Text polls, quizzes and text-only posts are unaffected.
+- **Mirror drift.** This page mirrors the marketing repo's plan; if the two
+  disagree, the marketing repo copy wins, and this page should be re-synced
+  rather than treated as the source.
+- **Guest-dependent series.** *Across the Table* is interview plus gameplay,
+  but it runs solo for weeks 1–4 and brings in guests only from week 5, so its
+  early episodes carry the gameplay half without the interview.
+
+## References
+
+- **YouTube Channel Plan** — [ewiki mirror (this page)](https://ewiki.legendary-arena.com/youtube-channel-plan/) · [marketing repo — authoritative](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/youtube-channel-plan.md)
+- **Video Commerce Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/video-commerce/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/video-commerce-plan.md) — the fourth "gear purchase" conversion goal and in-video product tagging
+- **Go-to-Market Plan** — [ewiki mirror](https://ewiki.legendary-arena.com/go-to-market-plan/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/go-to-market-plan.md)
+- **Revenue Operating Spec** — [ewiki mirror](https://ewiki.legendary-arena.com/revenue-operating-spec/) · [marketing repo](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/marketing/revenue-operating-spec.md)
+- **Production workflow:** [Video Production Workflow](video-production-workflow.md)
+- **Homepage strategy:** [Homepage Spec](homepage-spec.md),
+  [Homepage Appendix](homepage-appendix.md)
+- **Content framework:** [Homepage Review Template](homepage-review-template.md)
+  § Content Framework (Mode A/B/C)
