@@ -349,13 +349,21 @@ Cross-cutting governance, methodology, and readiness assessments.
   resolutions to test against, and the still-open question of fluid
   desktop scaling and an ultra-wide max-width cap.
 - [Visual Effects Framework](visual-effects.md) — *(draft, research)* the
-  in-game "juice" layer: escalating chain-reaction combo flashes off
-  `UIState.game.lastPlayEffectsFired` (buildable today, mirroring the
-  shipped audio combo cue), particle bursts, screen-shake, card motion,
-  and full-screen finales. The visual twin of Sound Effects; wired to the
-  Design System Overview's shared trigger spine. Includes the MIT-first
+  in-game "juice" layer: the shipped combo flash + synergy call-out off
+  `UIState.game.lastPlayEffectsFired` (WP-556), the notable-event beats
+  (shield block, wound vignette, transform, Excessive Violence, villain
+  slash), the mastermind-hit ladder and heroes-win finale, slash to fight, and
+  the hand lift and arc; plus the still-draft Master Strike vignette, action-move
+  cues and scheme-wins / tie finales. The visual twin of Sound Effects; wired to
+  the Design System Overview's shared trigger spine. Includes the MIT-first
   library posture, GPU-cheap performance budget, and the mandatory
   `prefers-reduced-motion` accessibility gate.
+- [Visual Effects Design Ancestry](visual-effects-design-ancestry.md) —
+  *(draft, research)* background for the Visual Effects Framework: which
+  *Candy Crush* (named cascades), *Fruit Ninja* (stroke-as-attack) and
+  *Hearthstone* (cards as objects, a readable table) patterns the juice layer
+  has adopted, which are proposed against the same contract, and which it
+  deliberately does not copy.
 - [Sound Effects](sound-effects.md) — *(draft, research)* design
   reference for adding audio to `play.legendary-arena.com`: maps the
   client-visible signals (notable events, `appliedEffects` for
