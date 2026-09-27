@@ -1918,6 +1918,71 @@ dispute.
   was actually making, about the ritual it had paid to see, was never on the
   menu. The lens takes no side on policing; Kaepernick's claim
   stands or falls on its own evidence. It reads who got to define the Sunday.
+- **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
+  novel is not the secular book it is often taught as. Golding wrote in "Fable"
+  (*The Hot Gates*, 1965), as it is commonly quoted: "Man is a fallen being. He
+  is gripped by original sin." In 1980 he said plainly, "I believe in God." The
+  title is Beelzebub — the Hebrew *Ba'al zevuv*, "lord of the flies." Simon, the
+  one boy who sees the truth, is read as a Christ-figure by critics, by study
+  guides and, by several accounts, by Golding himself — and the tribe kills him.
+  The book's diagnosis is the Fall.
+
+  What it lacks is the rest of the story. The boys hunt pigs, chant over the
+  kill, and mount a pig's head on a stick that tells Simon there is no escaping
+  it. They end where the prodigal son ended: "he would fain have filled his belly
+  with the husks that the swine did eat: and no man gave unto him" (Luke 15:16).
+  But they never reach the next verse: "And when he came to himself…" (15:17). No
+  one on the island comes to himself. Rescue arrives as a naval officer off a
+  warship — a grown man at war, come to collect children who had been waging
+  their own — and Ralph weeps "for the end of innocence, the darkness of man's
+  heart." That is grief with no Father on the road: "when he was yet a great way
+  off, his father saw him, and had compassion, and ran, and fell on his neck, and
+  kissed him" (15:20). The downward pull here is subtle precisely because the
+  diagnosis is true. The damage is in stopping there. Taught on its own, the
+  pigsty becomes the whole truth about a person, and the lie underneath it goes
+  unanswered — that no one can come to himself, that there is no road home, that
+  the Father is not watching for him.
+
+  Then run the lens on the people who mandate it, beyond the teacher, the student
+  and the parent. Question 1 belongs to the exam boards: it is a current set text
+  on AQA's GCSE English Literature specification, Eduqas reported it among the
+  most popular choices in 2025, and when Wales rewrote its GCSE for 2025 it
+  dropped *Of Mice and Men* and *To Kill a Mockingbird* and kept *Lord of the
+  Flies*. The boards choose the text, write the questions and set the mark
+  schemes. Question 2 belongs to the study-guide industry, and it is split:
+  Fishtank Learning teaches Genesis 2–3, Beelzebub and Simon as a Christ-figure;
+  SparkNotes calls Simon "Christ-like"; LitCharts lists "Spirituality and
+  Religion" as a theme without naming original sin; CommonLit leaves religion
+  out. "Human nature" is the secular translation of original sin, and the test is
+  whether a student learns the author's thesis as the author's. Question 4 is
+  kept by the American Library Association, whose "Banned & Challenged Classics"
+  list ranks the book eighth and files a 1981 objection from Owen, North
+  Carolina — that it was "demoralizing inasmuch as it implies that man is little
+  more than an animal" — as a challenge. Golding did not think man an animal; he
+  thought him fallen. Question 5 is the exam itself: a student whose school set
+  the text has no door out.
+
+  Three mechanisms keep the seat filled. The machine outlives its maker:
+  rereading the book in 1972, Golding found it "boring and crude. The language is
+  O-level stuff," and the O-level's successor still sets it. The money renews
+  itself: the Golding estate reports more than fifty million copies sold, and a
+  set text is a market re-created every year. And the seal does the arguing: the
+  1983 Nobel Prize, awarded for novels that "illuminate the human condition,"
+  ends the question of whether the book belongs on the list. The syllabus keeps
+  the diagnosis and drops the theology that named it. The chapter it leaves out is
+  Luke 15: "For this my son was dead, and is alive again; he was lost, and is
+  found" (15:24).
+
+  Which book, then — the one about living with the pigs, or the one that
+  completes the story? The second, and choosing it costs nothing, because the
+  Prodigal Son already contains everything *Lord of the Flies* teaches: the far
+  country, the "riotous living," the famine, the hired hand feeding swine and
+  envying their husks. Luke tells the truth about the pigsty as plainly as Golding
+  does; the parable gives the diagnosis and the cure together. What *Lord of the
+  Flies* adds is a longer stay in the pigsty, and no one needs a syllabus for
+  that — life supplies it daily. What people can go a whole life without hearing
+  is verse 17 and verse 20: that a person can come to himself, and that the
+  Father is already watching the road and runs to meet him.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
@@ -2761,6 +2826,19 @@ choice for the operator, never make it silently.
   the *Dallas Morning News* on [the divided reaction](https://www.dallasnews.com/news/politics/2022/12/08/texas-reaction-divided-over-us-prisoner-swap-to-release-brittney-griner-from-russia/);
   the *Washington Examiner* on [Bolton's account](https://www.washingtonexaminer.com/policy/foreign/john-bolton-paul-whelan-viktor-bout-swap-turned-down-trump);
   and CNN on [the August 2024 exchange](https://www.cnn.com/2024/08/01/politics/russia-us-prisoner-swap/index.html).
+  For *Lord of the Flies*: Golding's statements as collected on
+  [Wikiquote](https://en.wikiquote.org/wiki/William_Golding) (citing *The Hot
+  Gates*, 1965, and *A Moving Target*, 1982); the
+  [Parable of the Prodigal Son, Luke 15](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/15?lang=eng)
+  (KJV); AQA's [GCSE English Literature 8702 specification](https://www.aqa.org.uk/subjects/english/gcse/english-literature-8702/specification/subject-content/modern-texts-and-poetry);
+  KentOnline (23 December 2024) on the 2025 Welsh GCSE text changes;
+  [Fishtank Learning's unit](https://www.fishtanklearning.org/curriculum/ela/9th-grade/lord-of-the-flies/),
+  [LitCharts' themes](https://www.litcharts.com/lit/lord-of-the-flies/themes) and
+  [CommonLit's guide](https://www.commonlit.org/blog/rule-the-school-with-this-novel-guide-for-lord-of-the-flies/);
+  the ALA-derived [Banned & Challenged Classics list](https://research.gfcmsu.edu/bannedbooks/ChallengedClassics);
+  Mental Floss on [Golding's 1972 verdict](https://www.mentalfloss.com/article/62962);
+  the [Golding estate](https://www.william-golding.co.uk/about/) on sales; and the
+  [1983 Nobel Prize citation](https://www.nobelprize.org/prizes/literature/1983/summary/).
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the
