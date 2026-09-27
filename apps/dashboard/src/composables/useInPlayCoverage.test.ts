@@ -461,9 +461,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // undercover +9, mgtg artifact +3, msis sacrifice -1; every other board byte-identical).
   // totalObs 3967 -> 3977; resolvedObs stays 1135, so percentResolved 28.6 -> 28.5
   // (1135 / 3977). A sweep-trajectory artifact, not a regression.
+  // 2026-09-26 (D-24615, re-pin): a hero line whose only markup is `[rule:X]` (Shard,
+  // Sidekick, multicolored, Divided Card) now flags an honest `rule:<concept>`
+  // parse-unrecognized hollow instead of passing as flavor text. Parse-only, no gameplay
+  // change, so no trajectory shifts: the feed gains exactly 372 observations (rule:shard 317,
+  // rule:sidekick 47, rule:multicolored 8) and totalObs 3977 -> 4349. resolvedObs stays 1135,
+  // so percentResolved 28.5 -> 26.1 (1135 / 4349). Newly visible hollow surface, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 3977);
-  assert.equal(view.percentResolved.value, 28.5);
+  assert.equal(view.totalObs.value, 4349);
+  assert.equal(view.percentResolved.value, 26.1);
   assert.ok(view.remaining.value.length > 0);
 });
 

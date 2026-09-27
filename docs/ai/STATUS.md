@@ -7,6 +7,29 @@
 
 ## Current State
 
+### D-24615 — `[rule:X]`-only hero lines now surface as hollow effects (direct fix) (2026-09-26)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Play Diagnostics' hollow-effect table now
+lists hero abilities whose only markup is a `[rule:X]` token. Before, those lines built an empty hook
+that looked like flavor text, so they did nothing and reported nothing. Cloak & Dagger's Penumbra
+(`rule:divided-card`) was played 4 times in operator match `19720cb4` with no hollow record. Shard
+(`rule:shard`), Sidekick (`rule:sidekick`) and multicolored (`rule:multicolored`) lines are caught too.
+
+- **Engine.** Parser Step 4b: a line that resolved nothing and carries `[rule:X]` records `rule:<concept>`
+  as an unresolved marker, so the WP-257 detector flags it `parse-unrecognized`. Plurals fold to the
+  singular, and whole-line reminder parentheticals are exempt. Lines that already resolved an effect are
+  byte-identical. Parse-only: no gameplay, `G`, or hash change.
+- **Pins re-pinned.** `sim:coverage` baseline hooks 6286→6310 and noEffect 2580→2604; executable holds at
+  2652 (WP-257 dedupe effect, no line went dark). `runtime-observed-hollows.json` 29→32 mechanics and
+  +372 observations. Dashboard `useInPlayCoverage` totalObs 3977→4349, percentResolved 28.5→26.1.
+- **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package
+  (engine 4554/0, dashboard 505/0, registry-viewer 307/0). `sim:coverage --check`,
+  `sim:runtime-observed:check`, `ledger:heroes:check` and `ledger:numbers:check` pass.
+- **Next.** Penumbra's actual effect is scoped as WP-777 / EC-814 / D-24616 (split-card "play both
+  sides").
+- **Live-verify (D-24026):** pending. Play Penumbra and confirm the diagnostics hollow table lists
+  `rule:divided-card`.
+
 ### WP-772 — Divided Card off-play traits: a split hero counts as both halves until it is played (EC-809 / D-24604) (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Split

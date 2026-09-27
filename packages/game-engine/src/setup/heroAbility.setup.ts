@@ -123,6 +123,26 @@ const TEAM_PATTERN = /\[team:([^\]]+)\]/g;
 /** Regex for [keyword:X] or [keyword:X:N] keyword markup (N = non-negative integer). */
 const KEYWORD_PATTERN = /\[keyword:([a-zA-Z][a-zA-Z-]*)(?::(\d+))?\]/g;
 
+// why: D-24615 — a `[rule:X]` token names a rules concept (Shard, Sidekick, Divided Card).
+// The parser models none of them, so a line whose ONLY markup is `[rule:X]` resolved to an
+// empty hook that looked exactly like flavor text and never flagged hollow (Penumbra).
+/** Regex for [rule:X] rules-concept markup. */
+const RULE_TOKEN_PATTERN = /\[rule:([^\]]+)\]/g;
+
+// why: D-24615 — a line wholly wrapped in parentheses is printed reminder text ("(Each
+// [rule:Divided Card] has two different card names.)"), not an ability; it must not flag.
+/** Regex for a whole-line parenthetical reminder. */
+const REMINDER_TEXT_PATTERN = /^\s*\(.*\)\s*$/;
+
+// why: D-24615 — plural rule tokens fold onto their singular concept so the hollow
+// mechanic aggregates one row per concept ("Gain 2 [rule:Shards]" and "Gain a
+// [rule:Shard]" are the same missing mechanic).
+/** Plural `[rule:X]` slugs mapped to their singular concept slug. */
+const RULE_TOKEN_SINGULAR: Readonly<Record<string, string>> = {
+  shards: 'shard',
+  sidekicks: 'sidekick',
+};
+
 // why: D-24044 — the ANCHORED Empowered parameter tail. The color must immediately follow
 // the `[keyword:Empowered]` token as `by [hc:COLOR]` (the `^` anchors to the text right after
 // the marker — a broad forward scan could wrongly bind a later, unrelated [hc:...] to
@@ -2230,6 +2250,32 @@ function parseAbilityText(
       } else {
         effects.push({ type: keyword });
       }
+    }
+  }
+
+  // Step 4b: surface an unmodeled [rule:X] line as an honest hollow.
+  // why: D-24615 — a line that resolved NOTHING (no keyword, effect, composition, or other
+  // unresolved marker) but carries a `[rule:X]` token is an ability the engine does not
+  // model, not flavor text. Record `rule:<concept>` so detectHollowHeroHook flags it
+  // `parse-unrecognized`. Scoped to fully-empty lines so a line that already resolved an
+  // effect keeps its hook byte-identical, and reminder parentheticals are exempt.
+  if (
+    uniqueKeywords.length === 0 &&
+    effects.length === 0 &&
+    primitiveEffects.length === 0 &&
+    unresolvedMarkers.length === 0 &&
+    !REMINDER_TEXT_PATTERN.test(abilityText)
+  ) {
+    const ruleTokenRegex = new RegExp(RULE_TOKEN_PATTERN.source, 'g');
+    let ruleTokenMatch: RegExpExecArray | null = ruleTokenRegex.exec(abilityText);
+    while (ruleTokenMatch !== null) {
+      const ruleSlug = ruleTokenMatch[1]!.trim().toLowerCase().replace(/\s+/g, '-');
+      const conceptSlug = RULE_TOKEN_SINGULAR[ruleSlug] ?? ruleSlug;
+      const ruleMarker = `rule:${conceptSlug}`;
+      if (!unresolvedMarkers.includes(ruleMarker)) {
+        unresolvedMarkers.push(ruleMarker);
+      }
+      ruleTokenMatch = ruleTokenRegex.exec(abilityText);
     }
   }
 
