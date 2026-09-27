@@ -33,6 +33,7 @@ import {
   composeStrikeBlockedNarrative,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 
 // ---------------------------------------------------------------------------
 // Internal — narrative name lookup
@@ -127,7 +128,9 @@ function revealOrPunish(
       let matchFound = false;
 
       for (const cardId of playerHand) {
-        const traits = gameState.cardTraits[cardId];
+        // why: WP-772 / D-24604 — the reveal is from the HAND (off play), so a split card counts
+        // as both halves' classes (rules v23 p.49), resolved through the split-face map.
+        const traits = offPlayCardTraits(gameState, cardId);
         if (!traits) continue;
 
         // why: WP-703 / D-24523 — on a heroClass field a dual-class card matches on EITHER printed class.

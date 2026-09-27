@@ -6551,6 +6551,23 @@ describe('heroEffectRevealHeroDeckAttack (WP-668 / D-24481 — Jade Giantess)', 
       'the revealed top cards rotated to the bottom in look order, deck length unchanged');
   });
 
+  it('WP-772 / D-24604: a split Hero-Deck card contributes the total of both halves’ printed attack', () => {
+    const splitFaceA = 'cvwr/luke-cage/split-a#0';
+    const splitFaceB = 'cvwr/luke-cage/split-b#0';
+    const gameState = makeTestState({
+      inPlay: [JADE_ID],
+      turnEconomyRecruit: 2, // floor(2 / 2) = 1 reveal
+      heroDeck: [splitFaceA],
+      cardStats: { [splitFaceA]: heroStat(2), [splitFaceB]: heroStat(3) },
+      heroAbilityHooks: [jadeHook()],
+    });
+    gameState.splitFaces = { 'cvwr/luke-cage/split-a': 'cvwr/luke-cage/split-b' } as LegendaryGameState['splitFaces'];
+
+    executeHeroEffects(gameState, makeMockCtx(), '0', JADE_ID);
+
+    assert.equal(gameState.turnEconomy.attack, 5, 'off play, the printed Attack is 2 + 3');
+  });
+
   it('reveals nothing and grants nothing below the divisor, with a neutral log line (AC-2)', () => {
     const gameState = makeTestState({
       inPlay: [JADE_ID],

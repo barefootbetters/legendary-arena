@@ -24,6 +24,7 @@ import { refillHqSlot } from '../board/city.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -77,7 +78,9 @@ function hqHeroMatchesFilter(
   if (filter === undefined) {
     return true;
   }
-  const trait = G.cardTraits?.[cardId];
+  // why: WP-772 / D-24604 — an HQ card is off play, so a split card matches on either half's
+  // class (rules v23 p.49), resolved through the split-face map.
+  const trait = offPlayCardTraits(G, cardId);
   if (trait === undefined) {
     return false;
   }

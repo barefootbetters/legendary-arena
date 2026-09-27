@@ -17,6 +17,7 @@ import {
   findFailedCondition,
   describeFailedCondition,
   heroConditionHoldsForInPlay,
+  countDistinctHeroClassesYouHave,
   SEQUENCE_GATE_CONDITION_TYPES,
 } from './heroConditions.evaluate.js';
 import type { HeroConditionCardData } from './heroConditions.evaluate.js';
@@ -1667,5 +1668,43 @@ describe('sunlightInEffect / moonlightInEffect (WP-765 / D-24598)', () => {
     assert.doesNotThrow(() => evaluateCondition(minimal, '0', { type: 'sunlightInEffect', value: '' }));
     assert.equal(evaluateCondition(minimal, '0', { type: 'sunlightInEffect', value: '' }), false);
     assert.equal(evaluateCondition(minimal, '0', { type: 'moonlightInEffect', value: '' }), false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-772 / D-24604 — Divided Card off-play traits (a split card off play counts
+// as both halves' classes; in play only as the chosen face)
+// ---------------------------------------------------------------------------
+
+describe('Divided Card off-play classes (WP-772 / D-24604)', () => {
+  const SPLIT_FACE_A = 'cvwr/captain-america-secret-avenger/inspire-a-man#0';
+  const SPLIT_FACE_B = 'cvwr/captain-america-secret-avenger/inspire-a-nation#0';
+  const SPLIT_TRAITS = {
+    [SPLIT_FACE_A]: { heroClass: 'instinct', team: 'avengers' },
+    [SPLIT_FACE_B]: { heroClass: 'strength', team: 'avengers' },
+  };
+
+  /** Adds the split-face map for the Captain America split card to a test state. */
+  function withSplitFaces(gameState: LegendaryGameState): LegendaryGameState {
+    gameState.splitFaces = {
+      'cvwr/captain-america-secret-avenger/inspire-a-man': 'cvwr/captain-america-secret-avenger/inspire-a-nation',
+    } as LegendaryGameState['splitFaces'];
+    return gameState;
+  }
+
+  it('X-Gene: a split card in the discard pile satisfies the gate for its face-b class', () => {
+    const gameState = withSplitFaces(makeTestState({ discard: [SPLIT_FACE_A], cardTraits: SPLIT_TRAITS }));
+    assert.equal(
+      evaluateCondition(gameState, '0', { type: 'heroClassInDiscardPile', value: 'strength' }),
+      true,
+      'the face-b class (strength) counts while the card is in the discard pile',
+    );
+  });
+
+  it('distinct classes you have: a hand split card contributes 2, the same card in play only 1', () => {
+    const inHand = withSplitFaces(makeTestState({ hand: [SPLIT_FACE_A], cardTraits: SPLIT_TRAITS }));
+    assert.equal(countDistinctHeroClassesYouHave(inHand, '0'), 2, 'in hand: both halves count');
+    const inPlay = withSplitFaces(makeTestState({ inPlay: [SPLIT_FACE_A], cardTraits: SPLIT_TRAITS }));
+    assert.equal(countDistinctHeroClassesYouHave(inPlay, '0'), 1, 'in play: only the chosen face counts');
   });
 });

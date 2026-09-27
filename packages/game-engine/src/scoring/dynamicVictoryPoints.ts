@@ -10,13 +10,15 @@
  * The two differ in scope: Supreme HYDRA counts villains in the victory pile only,
  * while Ultron counts tech Heroes across ALL the player's cards (every zone). So
  * the resolver takes both the victory pile and the player's full card list plus the
- * card-trait snapshot. Pure — no `G` mutation, no engine randomness, no I/O. No
+ * card-trait view. Pure — no `G` mutation, no engine randomness, no I/O. No
  * boardgame.io imports. Ultron is the second dynamic-VP card, so the multi-card
  * resolver shape is now earned (duplicate-first per `.claude/rules/code-style.md`
  * §Abstraction).
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import type { LegendaryGameState } from '../types.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 
 /** Supreme HYDRA's base victory-point worth before the per-HYDRA bonus. */
 export const SUPREME_HYDRA_BASE_VP = 3;
@@ -31,26 +33,48 @@ export const ULTRON_BASE_VP = 2;
 export const ULTRON_BONUS_PER_TECH_HERO = 1;
 
 /**
- * Counts the `[hc:tech]` Hero cards among a list of the player's card ext_ids.
+ * Whether a trait entry is a `[hc:tech]` Hero (tech on either printed class).
  *
- * Pure — reads only the `cardTraits` setup snapshot. Only Hero cards carry a
+ * @param trait - A card's trait entry, or undefined when the card has none.
+ * @returns true when either class slot is `'tech'`.
+ */
+function isTechHeroTrait(
+  trait: { heroClass: string | null; heroClass2?: string | null } | undefined,
+): boolean {
+  // why: only Hero cards carry a heroClass; non-hero cards are null/absent and
+  // are not counted. Optional-chain so an absent entry reads as undefined, not a throw.
+  // why: WP-703 / D-24523 — a dual-class tech card (tech on either printed class) counts.
+  return trait?.heroClass === 'tech' || trait?.heroClass2 === 'tech';
+}
+
+/**
+ * Counts the `[hc:tech]` Hero cards among a player's cards, split by zone.
+ *
+ * Pure — reads only `G.cardTraits` and the split-face map. Only Hero cards carry a
  * `heroClass`; non-hero cards (starting S.H.I.E.L.D. cards, wounds, villains,
  * henchmen, bystanders) are `null`/absent in `cardTraits` and are not counted.
  *
- * @param cardIds - The player's card ext_ids (any/all zones).
- * @param cardTraits - The setup card-trait snapshot (`heroClass` / `team` per card).
- * @returns The number of ext_ids whose `heroClass` is `'tech'`.
+ * @param G - Game state (read-only: G.cardTraits and the split-face map).
+ * @param offPlayCardIds - The player's card ext_ids in every zone except inPlay.
+ * @param inPlayCardIds - The player's in-play card ext_ids.
+ * @returns The number of tech Hero cards.
  */
 export function countTechHeroesAmongCards(
-  cardIds: readonly CardExtId[],
-  cardTraits: Record<CardExtId, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
+  G: LegendaryGameState,
+  offPlayCardIds: readonly CardExtId[],
+  inPlayCardIds: readonly CardExtId[],
 ): number {
   let techHeroCount = 0;
-  for (const cardId of cardIds) {
-    // why: only Hero cards carry a heroClass; non-hero cards are null/absent and
-    // are not counted. Optional-chain so an absent entry reads as undefined, not a throw.
-    // why: WP-703 / D-24523 — a dual-class tech card (tech on either printed class) counts.
-    if (cardTraits[cardId]?.heroClass === 'tech' || cardTraits[cardId]?.heroClass2 === 'tech') {
+  // why: WP-772 / D-24604 — only the off-play portion takes the split-face map's both-halves
+  // view (rules v23 p.49: a Divided Card anywhere but in play counts as all its classes); an
+  // in-play split card counts only as its chosen face.
+  for (const cardId of offPlayCardIds) {
+    if (isTechHeroTrait(offPlayCardTraits(G, cardId))) {
+      techHeroCount++;
+    }
+  }
+  for (const cardId of inPlayCardIds) {
+    if (isTechHeroTrait(G.cardTraits?.[cardId])) {
       techHeroCount++;
     }
   }
@@ -77,21 +101,24 @@ export function isHydraGroupVillain(extId: CardExtId): boolean {
  * VP-modifier villain, or null when the card has no dynamic rule (the caller
  * then uses the printed-VP / fallback path).
  *
- * Pure — reads only the ext_id strings and the `cardTraits` snapshot; no `G`
- * mutation, no `ctx`.
+ * Pure — reads only the ext_id strings, `G.cardTraits` and the split-face map; no
+ * `G` mutation, no `ctx`.
  *
  * @param cardId - The victory-pile card being scored.
  * @param victoryPile - The scoring player's full victory pile (ext_id strings).
- * @param allPlayerCardIds - Every card the scoring player owns across all zones
- *   (deck + hand + discard + inPlay + victory).
- * @param cardTraits - The setup card-trait snapshot (`heroClass` / `team` per card).
+ * @param offPlayCardIds - Every card the scoring player owns outside inPlay
+ *   (deck + hand + discard + victory).
+ * @param inPlayCardIds - The scoring player's in-play cards (non-empty at game end
+ *   when, e.g., the Mastermind is defeated mid-turn).
+ * @param G - Game state (read-only: G.cardTraits and the split-face map).
  * @returns The card's dynamic VP, or null when it carries no dynamic rule.
  */
 export function computeDynamicVillainVictoryPoints(
   cardId: CardExtId,
   victoryPile: readonly CardExtId[],
-  allPlayerCardIds: readonly CardExtId[],
-  cardTraits: Record<CardExtId, { heroClass: string | null; heroClass2?: string | null; team: string | null }>,
+  offPlayCardIds: readonly CardExtId[],
+  inPlayCardIds: readonly CardExtId[],
+  G: LegendaryGameState,
 ): number | null {
   // why: `[icon:piercing]` renders Victory Points in this card data (corroborated
   // across the corpus: Ultron, amwp, 3dtc). Supreme HYDRA is the FIRST card-text VP
@@ -118,7 +145,7 @@ export function computeDynamicVillainVictoryPoints(
     // D-24362.
     return (
       ULTRON_BASE_VP +
-      ULTRON_BONUS_PER_TECH_HERO * countTechHeroesAmongCards(allPlayerCardIds, cardTraits)
+      ULTRON_BONUS_PER_TECH_HERO * countTechHeroesAmongCards(G, offPlayCardIds, inPlayCardIds)
     );
   }
 

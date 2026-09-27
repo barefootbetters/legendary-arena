@@ -4619,3 +4619,39 @@ describe('executeVillainAbilities — ko-up-to-from-discard-current (Salomé, WP
     assert.equal(G.messages![0]!.outcome, 'blocked');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-772 / D-24604 — Divided Card off-play traits in villain trait checks
+// ---------------------------------------------------------------------------
+
+describe('executeVillainAbilities — reveal-or-wound with a split card (WP-772 / D-24604)', () => {
+  const SPLIT_FACE_A = 'cvwr/captain-america-secret-avenger/inspire-a-man#0' as CardExtId; // instinct
+  const SPLIT_FACE_B = 'cvwr/captain-america-secret-avenger/inspire-a-nation#0' as CardExtId; // strength
+  const SPLIT_TRAITS: Record<string, { heroClass: string | null; team: string | null }> = {
+    [SPLIT_FACE_A]: { heroClass: 'instinct', team: 'avengers' },
+    [SPLIT_FACE_B]: { heroClass: 'strength', team: 'avengers' },
+  };
+
+  it('a split card in HAND reveals for its face-b class; the same card IN PLAY as face a does not', () => {
+    const G = makeG({
+      hooks: [{
+        cardId: 'v-reveal-strength' as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [{ primitive: 'reveal-or-wound', requireKind: 'hero-class', requireValue: 'strength' }],
+      }],
+      playerZones: {
+        '0': { deck: [], hand: [SPLIT_FACE_A], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [SPLIT_FACE_A], victory: [] },
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: SPLIT_TRAITS,
+    });
+    G.splitFaces = {
+      'cvwr/captain-america-secret-avenger/inspire-a-man': 'cvwr/captain-america-secret-avenger/inspire-a-nation',
+    } as LegendaryGameState['splitFaces'];
+    executeVillainAbilities(G, CTX, 'v-reveal-strength' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'hand split card counts as strength — no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'played as face a (instinct) — wounded');
+  });
+});

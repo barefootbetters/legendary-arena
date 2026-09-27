@@ -34,6 +34,7 @@ import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
 import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -611,7 +612,9 @@ function selectLowestCostHero(
       // precedent in this file — legacy test states predate G.cardTraits
       // (WP-179) and leave it undefined. Production setup always builds it.
       // A missing map means nothing matches rather than a throw (AC-9).
-      const traitEntry = gameState.cardTraits?.[cardExtId];
+      // why: WP-772 / D-24604 — every caller passes a HAND (off play), so a split card counts
+      // as both halves' classes (rules v23 p.49), resolved through the split-face map.
+      const traitEntry = offPlayCardTraits(gameState, cardExtId);
       if (traitKind === 'non-grey') {
         // why: WP-398 — the rulebook "Grey Heroes" are grey cards with NO Hero
         // Class, so non-grey ⟺ heroClass != null. This is an EXISTENCE gate,

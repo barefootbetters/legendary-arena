@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 29,
-    "totalObservations": 3141,
+    "totalObservations": 3152,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 496,
+      "no-handler": 505,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 2645
+      "parse-unrecognized": 2647
     }
   },
   "byMechanic": {
@@ -99,12 +99,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 168,
+      "hitCount": 171,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 168
+        "parse-unrecognized": 171
       },
       "examples": [
         {
@@ -737,12 +737,12 @@
       ]
     },
     "sacrifice": {
-      "hitCount": 12,
+      "hitCount": 11,
       "lastSeenTurn": 25,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 12
+        "parse-unrecognized": 11
       },
       "examples": [
         {
@@ -1064,10 +1064,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 496,
+      "hitCount": 505,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 496,
+        "no-handler": 505,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },

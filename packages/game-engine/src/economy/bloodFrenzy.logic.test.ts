@@ -155,3 +155,34 @@ describe('Blood Frenzy scoring parity (WP-765 / D-24598)', () => {
     assert.equal(countDistinctVictoryPointValues(G, '0'), 4, 'distinct values {3, 1, 2, 6}');
   });
 });
+
+describe('Ultron VP with a split card (WP-772 / D-24604)', () => {
+  it('counts a deck split card with a [Tech] face b, not an in-play face-a non-Tech choice; final score agrees', () => {
+    const ultron = 'core-villain-masters-of-evil-ultron-01';
+    const deckCopy = 'cvwr/iron-man-split/non-tech-half#0';
+    const deckCopyFaceB = 'cvwr/iron-man-split/tech-half#0';
+    const playedCopy = 'cvwr/iron-man-split/non-tech-half#1';
+    const playedCopyFaceB = 'cvwr/iron-man-split/tech-half#1';
+    const G = makeVictoryState({
+      victory: [ultron],
+      villainDeckCardTypes: { [ultron]: 'villain' },
+    });
+    G.playerZones['0']!.deck = [deckCopy];
+    G.playerZones['0']!.inPlay = [playedCopy];
+    G.cardTraits = {
+      [deckCopy]: { heroClass: 'strength', team: 'avengers' },
+      [deckCopyFaceB]: { heroClass: 'tech', team: 'avengers' },
+      [playedCopy]: { heroClass: 'strength', team: 'avengers' },
+      [playedCopyFaceB]: { heroClass: 'tech', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    G.splitFaces = {
+      'cvwr/iron-man-split/non-tech-half': 'cvwr/iron-man-split/tech-half',
+    } as LegendaryGameState['splitFaces'];
+
+    const liveVp = victoryPointValueForCard(G, '0', ultron);
+    // why: Ultron base 2 + 1 tech Hero — the deck copy counts via its face-b [Tech] half; the
+    // in-play copy was played as its non-Tech face, so it counts only as that face.
+    assert.equal(liveVp, 3);
+    assert.equal(computeFinalScores(G).players[0]!.villainVP, liveVp, 'final score == live Ultron VP');
+  });
+});

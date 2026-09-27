@@ -14,6 +14,8 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
+import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import type { CardTraitEntry } from '../state/cardTraits.types.js';
 
 /**
  * Returns the defeat requirement for a villain instance, or null when it has
@@ -59,19 +61,39 @@ export function playerMeetsDefeatRequirement(
 
   // why: D-24076 — "have" is hand OR in play only. Scan both zones; the deck,
   // discard, and victory piles are intentionally excluded (operator decision).
-  const candidateCardIds: CardExtId[] = [...zones.hand, ...zones.inPlay];
-  for (const candidateCardId of candidateCardIds) {
-    const trait = state.cardTraits[candidateCardId];
-    if (trait === undefined) {
-      continue;
-    }
-    if (requirement.kind === 'team' && trait.team === requirement.value) {
+  // why: WP-772 / D-24604 — the zones are scanned separately because only the HAND is off
+  // play: a split card in hand counts as both halves' classes (rules v23 p.49, via the
+  // split-face map), while a played split card counts only as its chosen face.
+  for (const handCardId of zones.hand) {
+    if (traitMeetsDefeatRequirement(offPlayCardTraits(state, handCardId), requirement)) {
       return true;
     }
-    // why: WP-703 / D-24523 — a dual-class card matches a hero-class requirement on either printed class.
-    if (requirement.kind === 'hero-class' && (trait.heroClass === requirement.value || trait.heroClass2 === requirement.value)) {
+  }
+  for (const playedCardId of zones.inPlay) {
+    if (traitMeetsDefeatRequirement(state.cardTraits[playedCardId], requirement)) {
       return true;
     }
   }
   return false;
+}
+
+/**
+ * Returns whether one card's trait entry satisfies a villain defeat requirement.
+ *
+ * @param trait - The card's trait entry (off-play view for a hand card), or undefined.
+ * @param requirement - The villain's defeat requirement.
+ * @returns True when the trait matches the requirement's team or hero class.
+ */
+function traitMeetsDefeatRequirement(
+  trait: CardTraitEntry | undefined,
+  requirement: VillainDefeatRequirement,
+): boolean {
+  if (trait === undefined) {
+    return false;
+  }
+  if (requirement.kind === 'team' && trait.team === requirement.value) {
+    return true;
+  }
+  // why: WP-703 / D-24523 — a dual-class card matches a hero-class requirement on either printed class.
+  return requirement.kind === 'hero-class' && (trait.heroClass === requirement.value || trait.heroClass2 === requirement.value);
 }
