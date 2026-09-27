@@ -21,6 +21,22 @@ other side still plays. With a card in hand, the side plays and the discard prom
   +3 Attack from an empty hand).
 - **Live-verify (D-24026):** pending — see D-24621.
 
+### WP-778 — The side picker shows a discard cost and blocks an unpayable side (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When you play a split card whose side
+costs a discard (bkwd Attune: "To play this side, you must discard a card"), the "Choose a side" picker
+now says "Discard a card to play this side" under that side. With no other card in hand, that side is
+greyed out with "No card in hand to discard", and the other side (Atone) stays clickable. Sides with no
+cost look exactly as before.
+
+- **Client only.** `SplitFaceChoicePrompt.vue` renders WP-777's served `isSelectable` /
+  `discardToPlayCost` fields as-is. A blocked side is refused before the submit latch, so it can never
+  lock the other side.
+- **Counts and gates.** Picker file 9 → 14 tests, 0 fail; arena-client 2157/0 → 2162/0; vue-tsc 0.
+- **Live-verify (D-24026):** pending. In a manual Falcon & Winter Soldier match, play Attune / Atone with
+  an empty hand (Attune greyed out with the reason; Atone works) and with a card in hand (Attune shows
+  the cost line and binds).
+
 ### WP-777 — Attune pays its discard cost; New Wings / Pumpkin Bombs need a discard (2026-09-26)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Two scoring over-credits on the bkwd
