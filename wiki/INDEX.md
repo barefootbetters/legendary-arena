@@ -175,7 +175,7 @@ Cross-cutting governance, methodology, and readiness assessments.
   framework (§20–26), the NG-1…NG-8 monetization bright lines and the
   open commercial space beside them, and the "no margin, no mission"
   funding model. Cites VISION; defines nothing.
-- [Soul of Legendary Arena](soul-of-legendary-arena.md) — *(draft)* the
+- [Soul of Legendary Arena](soul-of-legendary-arena.md) — the
   thematic-soul essay: the game as *stewardship, not reinvention*. Names
   the modern "tear down the mentor / retcon the classic hero" pattern and
   the self-made-hero lie, draws the honoring-vs-flattening line (addition
@@ -184,6 +184,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   (Content Authenticity), the deck-builder as a humility engine, and the
   character-history content loop. Interprets VISION and the Soul / Authorial
   Voice principle; defines nothing.
+
+  > No Dad with a wayward son has ever said, "If only my boy would read that
+  > award-winning book about the pigsty, *Lord of the Flies*." Every Dad wants
+  > his son to know something else: that he can change, leave the pigsty, and
+  > start down the road home — the road his Dad is already watching, ready to
+  > run and meet him.
 - [Legendary Arena — Tribe and Trust](legendary-arena-tribe-and-trust.md) —
   *(draft, research)* the "filtering is the product" growth thesis: the
   four-layer trust fence (gate → quarantine → community flag →
