@@ -45469,7 +45469,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ### D-24614 — Heal lock on the board buttons: HQ, City, Mastermind and Officer buttons disable after a heal (Active 2026-09-26 — direct fix, no WP; client mirror of D-24180)
 
-**Status:** Active — landed 2026-09-26 (direct fix; `apps/arena-client` only, no engine change).
+**Status:** Active — landed 2026-09-27 as #2442 (direct fix; `apps/arena-client` only, no engine change). Live-verified 2026-09-27.
 
 **Context.** D-24180 made recruit and fight mutually exclusive with Healing: once `G.hasHealedThisTurn` is set, `recruitHero`, `recruitOfficer`, `fightVillain` and `fightMastermind` silently return. The engine projects the flag as `UIState.game.hasHealedThisTurn`, but only `TurnActionBar` received it (for `canHealWounds`). `HQRow`, `CityRow`, `MastermindTile` and `SharedDecks` called `useTurnActions(currentStage, isViewerTurn)`, so after a heal their Recruit / Fight buttons stayed enabled and did nothing when clicked. The CityRow slash-to-fight gesture reads the same `gateForCell`, so it offered the same dead targets.
 
@@ -45485,7 +45485,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in every package (engine 4547/0, arena-client 2156/0); `arena-client typecheck` clean. New tests: `healLockGate` and the four composable gates (blocked after a heal, allowed without one, turn and stage reasons outrank it); per component, disabled plus heal-lock tooltip plus a click that submits nothing (HQRow, CityRow, MastermindTile, SharedDecks); the heal lock outranking the HQ cost tooltip; a CityRow slash stroke submitting nothing after a heal; the CityRow and Mastermind unaffordable badge staying quiet under the heal lock.
 
-**D-24026 live-on-surface:** PENDING — on `play.legendary-arena.com` after deploy: heal with a Wound in hand, then confirm the HQ heroes, City villains, Mastermind and Officer buttons are disabled with the heal-lock tooltip.
+**D-24026 live-on-surface:** PASS (CLOSED) 2026-09-27, operator-verified on `play.legendary-arena.com` (build `a51f0d7`, which includes the #2442 merge `897738c`; match `eVJ6PxcCZP_`, Loki / Midtown Bank Robbery). On turn 3 the player played four cards, used Healing (log 3.2.5), then hovered the board: the HQ, City, Mastermind and Officer buttons were disabled and showed "You cannot recruit or fight after healing this turn." An earlier attempt had shown no tooltip because #2442 had not merged (merge conflict) and because `CardTile`'s own title hid the reason; both were fixed before this pass.
 
 **Reserved by:** NUMBER-LEDGER D-24614. Related: D-24180 (heal lock), D-24181 (WP-380 Heal Wounds UI), D-24574 (WP-750 fight-cost gating), D-24612 (WP-775 board affordability cues).
 
