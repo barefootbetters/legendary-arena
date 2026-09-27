@@ -42,10 +42,20 @@ Falcon & Winter Soldier split cards are gone (operator match `19720cb4`):
 - **Pins re-pinned.** `runtime-observed-hollows.json` +9 (bkwd board only, per-board tally). Dashboard
   `useInPlayCoverage` totalObs 4354→4363, percentResolved 26.1→26.0.
 - **Next.** WP-778 (picker disables an unpayable side) is unblocked.
-- **Live-verify (D-24026):** pending. In a manual Falcon & Winter Soldier match: choose Attune with a
-  card in hand → the discard prompt appears; with an empty hand → the "could not choose" line logs,
-  the picker re-enables and Atone binds; New Wings with no discard that turn → no +4, after a discard
-  → +4; Play Diagnostics `uiStateSnapshot` shows `isSelectable` / `discardToPlayCost` on both faces.
+- **Live-verify (D-24026): PASS 2026-09-27** on `gitSha 803f6a5` (the WP-778 merge; contains WP-777),
+  manual 1p Loki / Midtown Bank Robbery match `k_LplFQz3kv` (operator log
+  `loki-Midtown-Bank-Robbery-LOG-1p-winter.txt`):
+  - **Attune pays its cost.** Every Attune choice (e.g. 9.2.4 → 9.2.5, 12.2.8 → 12.2.9, 14.2.5 → 14.2.6)
+    is followed by "discarded … to pay the cost of Attune"; Atone choices (6.2.2, 7.2.4, 18.2.10) cost
+    nothing.
+  - **New Wings gate.** 19.2.3: New Wings chosen with no discard that turn → "waiting — it needs 1 or more
+    cards discarded this turn — you have discarded 0"; no discard followed, no +4. All five grants
+    (20.2.12, 24.2.6, 26.2.13, 31.2.6, 33.2.9) came after a same-turn hand discard.
+  - **Cross-check.** cvwr Manly Dullard (a split card whose side gained discard-to-play in D-24620) also
+    paid its cost at the side choice (10.2.2 → 10.2.3), exercising the D-24615 path on a second card.
+  - **Not exercised live:** the empty-hand Attune rejection (a card was always in hand when Attune was
+    chosen) — covered by the engine tests only. The diagnostics snapshot was taken with no side choice
+    pending, so it cannot show the new per-face fields.
 
 ### WP-780 — Penumbra plays both sides of a Divided Card (EC-817 / D-24619) (2026-09-26)
 
