@@ -476,9 +476,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (per-board tally vs main: bkwd 285 -> 294, all undercover; every other board
   // byte-identical). totalObs 4354 -> 4363; resolvedObs stays 1135, so percentResolved
   // 26.1 -> 26.0 (1135 / 4363). A sweep-trajectory artifact, not a regression.
+  // 2026-09-27 (D-24623, re-pin): a hero line whose only resolved piece is its play gate
+  // ([hc:X]: / [team:X]: / a condition keyword) now flags an honest parse-unrecognized hollow
+  // (gate-only, a gated rule:<concept>, or its multi-word keyword name) instead of firing
+  // nothing silently. Parse-only, no gameplay change, so no trajectory shifts: every existing
+  // mechanic's count is byte-identical and the feed gains 21 mechanics (gate-only 460, rule:shard
+  // +95, thrones-favor 98, danger-sense 73, woman-out-of-time 69, …). totalObs 4363 -> 5397
+  // (+1034; the raw feed rose +1036, liberate's committed-seed peak of 2 absorbs 2). resolvedObs
+  // stays 1135, so percentResolved 26.0 -> 21.0 (1135 / 5397). Newly visible hollow surface.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 4363);
-  assert.equal(view.percentResolved.value, 26);
+  assert.equal(view.totalObs.value, 5397);
+  assert.equal(view.percentResolved.value, 21);
   assert.ok(view.remaining.value.length > 0);
 });
 

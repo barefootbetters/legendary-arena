@@ -45595,4 +45595,34 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 ---
 
+### D-24623 — A hero line whose only resolved piece is its play gate is an honest `parse-unrecognized` hollow (Active 2026-09-27 — direct fix, no WP; sibling of D-24618, extends the WP-257 / D-24034 unresolved-marker contract)
+
+**Status:** Active — landed 2026-09-27 (direct fix; parser Step 4b in `packages/game-engine/src/setup/heroAbility.setup.ts` plus the gate-failed log wording in `packages/game-engine/src/hero/heroEffects.execute.ts`).
+
+**Context.** A gate — `[hc:X]:`, `[team:X]:`, or a condition keyword such as Outwit, Savior, Worthy or `recruit-threshold` — parses to `conditions` plus the `conditional` keyword. When the body after it carries no effect markup, the hook has conditions and nothing else. `detectHollowHeroHook` skips a hook that declares no effect, primitive or unresolved marker, so a passed gate fired nothing and reported nothing. A failed gate logged "did not activate — it needs another X Hero played this turn", which implies the card works. Found via operator match `VP1KNXl2ENQ` turn 13: cvwr Storm & Black Panther Tsunami of Justice ("[hc:covert]: You may KO a card from your hand or discard pile.") passed its gate with no effect trace and no hollow record.
+
+**Measured inert set.** A scan of every hero through `buildHeroAbilityHooks` found 260 gate-only hooks on 254 cards. All were `onPlay` with keywords exactly `['conditional']`, and none is referenced by any card-keyed allowlist, fusion or executor in engine code. Breakdown: about 150 are plain English after the gate. The other ~110 carry a multi-word or space-magnitude `[keyword:X N]` token that `KEYWORD_PATTERN` cannot match, so it was silently dropped (Microscopic Size-Changing 13, Thrones Favor 6, Man Out of Time 6, Danger Sense 6, and others), or a gated `[rule:X]` token that D-24618's fully-empty scope skipped. One is a whole-line reminder parenthetical (anni Brainstorm Protégé of Dr. Doom), which stays exempt. The task's ~123 text-scan figure counted only leading `[hc:]` / `[team:]` gates. The hook scan also catches condition-keyword gates, non-leading gate tokens, and gates over unmatched keyword tokens.
+
+**Decision.**
+
+1. **Step 4b widened.** A line that resolved nothing except its gate (keywords exactly `['conditional']`, no effect, no primitive, no unresolved marker, not a whole-line reminder) records, in order: its `rule:<concept>` tokens (D-24618 slugging), then the names of its unmatched `[keyword:...]` tokens, then `gate-only` if it recorded nothing else. Unmatched keyword names use the `scripts/hero-effect-coverage.mjs` normalization (lower-case, trailing magnitude dropped, whitespace to hyphen, so "Danger Sense 2" becomes `danger-sense`). Runtime rows and ledger rows then share one key. Ungated fully-empty lines keep the D-24618 rule-token-only behavior.
+2. **Honest log for a gated hollow body.** When a gate fails on a hook whose declared body is entirely hollow (≥1 effect or unresolved marker, no executable effect), the log line still names the failed condition and ends "Its effect is not supported yet." The wait-and-see variant replaces "It will apply if you reach it this turn." with the same sentence. Hooks with an executable effect keep their exact wording. `G.messages` is excluded from `finalStateHash` (D-24081), and no replay fixture pins a gated-hollow line.
+3. **No gameplay change.** Parse-time provenance plus log wording only. Nothing executes differently, no `G` field is added, and the `finalStateHash` / PAR oracles are unchanged (engine suite green, including `replayFixtures.test.ts`).
+
+**Pin impacts (all re-pinned in this change).**
+- `sim:coverage` baseline: `hooks` 6315→6319 and `noEffect` 2575→2579, all in `rlmk`. `executable` is unchanged. This is the WP-257 dedupe effect: markers made previously identical per-hero hooks distinct. No line went dark.
+- `runtime-observed-hollows.json`: 32→53 distinct mechanics, observations 3533→4569 (+1036). Every pre-existing mechanic's count is byte-identical except `rule:shard` 320→415 (its gated lines now record it), so there is no trajectory shift. The largest new rows are `gate-only` 460, `thrones-favor` 98, `danger-sense` 73, `woman-out-of-time` 69, `man-out-of-time` 52 and `microscopic-size-changing` 30.
+- Dashboard `useInPlayCoverage` pin: totalObs 4363→5397 (`liberate`'s committed peak of 2 absorbs 2 of the +1036). resolvedObs holds at 1135, so percentResolved 26.0→21.0.
+- `ledger:heroes:check` (780 rows), `ledger:villains:check`, `effect-index:check` and `mechanics:metadata:check` are unchanged.
+
+**Gates.** After `pnpm -r build`, `pnpm -r --no-bail test` → 0 fail in every package (engine 4650/0, dashboard 505/0, arena-client 2157/0, server 1430 pass / 0 fail with DB-backed tests skipped). New `hero/gateOnlyHollow.test.ts` covers Tsunami of Justice (gate-only), a Savior gate over "Man Out of Time", space-magnitude and Microscopic tokens, a gated `[rule:Sidekick]`, the reminder exemption, the resolved-line exemption, a passed gate recording the hollow end to end, and both log wordings. Every Coverage & Ledger CI gate passes.
+
+**Follow-up (not in this change).** 154 **ungated** hero lines carry a `[keyword:...]` token and still build a fully empty hook, because `KEYWORD_PATTERN` drops multi-word tokens and Step 4b only names `[rule:X]` there. Top names: Soaring Flight 16, Excessive Violence 12 (non-allowlisted cards), Piercing Energy 11, Danger Sense 10, Versatile 9. Several are static or recruit-time keywords, so the fix needs a timing call, not just a marker. Separately, the 13 `[keyword:Microscopic Size-Changing]` lines and 8 unmarked plain-text "(Microscopic) Size-Changing [hc:X]" lines parse their cost-reduction classes as play gates. They now surface honestly as hollows, but their conditions are spurious.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play Tsunami of Justice (or any `[hc:X]: <plain text>` hero) with another hero of that class in play, and confirm the Play Diagnostics hollow table lists `gate-only`. Play it without that class and confirm the log line ends "Its effect is not supported yet."
+
+**Reserved by:** NUMBER-LEDGER D-24623. Related: D-24618 (rule-token sibling), D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24082 (WP-295 gate log), D-24375 (WP-566 named failed condition), D-24377 (WP-568 wait-and-see), D-24081 (messages outside the hash).
+
+---
+
 Protect this file.

@@ -2,8 +2,8 @@
   "corpus": {
     "executable": 2657,
     "heroes": 324,
-    "hooks": 6315,
-    "noEffect": 2575,
+    "hooks": 6319,
+    "noEffect": 2579,
     "parsedNotExecuted": 1083
   },
   "perSet": {
@@ -154,8 +154,8 @@
     },
     "rlmk": {
       "executable": 45,
-      "hooks": 120,
-      "noEffect": 75
+      "hooks": 124,
+      "noEffect": 79
     },
     "rvlt": {
       "executable": 61,
