@@ -39,7 +39,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createRegistryFromLocalFiles } from '../packages/registry/dist/index.js';
-import { buildHeroAbilityHooks } from '../packages/game-engine/dist/setup/heroAbility.setup.js';
+import {
+  buildHeroAbilityHooks,
+  HERO_PARSER_RECOGNIZED_MARKER_NAMES,
+} from '../packages/game-engine/dist/setup/heroAbility.setup.js';
 // why: the known-markup vocabulary is sourced from the engine's canonical
 // HERO_KEYWORDS array (single source of truth) instead of a duplicated local
 // literal, so the unsupported-mechanic scan can never drift from the parser.
@@ -64,6 +67,12 @@ const BASELINE_PATH = join(REPO_ROOT, 'scripts', 'coverage', 'hero-effect-covera
 const SCHEMA_VERSION = 1;
 
 const KNOWN_MARKUP_KEYWORDS = new Set([...HERO_KEYWORDS, ...HERO_COMPOSITION_MARKER_NAMES]);
+
+// why: non-HeroKeyword markers the parser consumes (condition markers such as
+// discard-threshold / savior, modifier markers such as reveal-count). Sourced from the
+// engine dist, like the two vocabularies above. Unlike those, membership alone does not
+// make a token supported — see isParserRecognizedForHero.
+const PARSER_RECOGNIZED_MARKERS = new Set(HERO_PARSER_RECOGNIZED_MARKER_NAMES);
 
 // why: the keywords whose executor branch actually mutates G today (mirrors
 // MVP_KEYWORDS in heroEffects.execute.ts). This list is INFORMATIONAL ONLY —
@@ -184,6 +193,21 @@ function classifyMechanicName(normalizedName) {
 }
 
 /**
+ * Reports whether the parser really consumed a non-HeroKeyword marker for this hero.
+ *
+ * A recognized name still counts as unsupported when this hero's hooks leave it in
+ * `unresolvedMarkers` — the gated arms (sunlight / moonlight on an unmodeled day-night
+ * line, teleport / x-gene off their card allowlists) resolve only for some heroes.
+ *
+ * @param {string} name - the classified mechanic name.
+ * @param {Set<string>} heroUnresolvedMarkers - union of this hero's hook unresolvedMarkers.
+ * @returns {boolean} true when the parser consumed the marker for this hero.
+ */
+function isParserRecognizedForHero(name, heroUnresolvedMarkers) {
+  return PARSER_RECOGNIZED_MARKERS.has(name) && !heroUnresolvedMarkers.has(name);
+}
+
+/**
  * Walks the whole hero corpus once and returns the structured coverage report
  * plus human-report extras (the fully-dark heroes with their ability text).
  *
@@ -248,12 +272,22 @@ function analyzeCorpus(registry) {
     // why: scan ALL of this hero's ability text for [keyword:X] tokens whose
     // normalized name is not a recognized HERO_KEYWORD — these are mechanics the
     // engine cannot model yet (the "missing mechanics" tail of NO_EFFECT).
+    const heroUnresolvedMarkers = new Set();
+    for (const hook of hooks) {
+      for (const marker of hook.unresolvedMarkers ?? []) {
+        heroUnresolvedMarkers.add(marker);
+      }
+    }
     for (const ability of info.abilities) {
       const markupPattern = /\[keyword:([^\]]+)\]/g;
       let match;
       while ((match = markupPattern.exec(ability)) !== null) {
         const name = classifyMechanicName(normalizeMechanicToken(match[1]));
-        if (name !== '' && !KNOWN_MARKUP_KEYWORDS.has(name)) {
+        if (
+          name !== '' &&
+          !KNOWN_MARKUP_KEYWORDS.has(name) &&
+          !isParserRecognizedForHero(name, heroUnresolvedMarkers)
+        ) {
           unsupportedMechanics[name] = (unsupportedMechanics[name] ?? 0) + 1;
         }
       }

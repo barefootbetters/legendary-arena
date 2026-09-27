@@ -13,7 +13,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHeroAbilityHooks } from './heroAbility.setup.js';
+import { buildHeroAbilityHooks, HERO_PARSER_RECOGNIZED_MARKER_NAMES } from './heroAbility.setup.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -1741,5 +1741,38 @@ describe('buildHeroAbilityHooks — play-both-sides (WP-780 / D-24619)', () => {
     assert.deepEqual(hook.effects, [{ type: 'play-both-sides' }], 'no magnitude on the effect');
     assert.equal(hook.unresolvedMarkers, undefined, 'the resolved keyword retires the rule:divided-card marker');
     assert.equal(hook.conditions, undefined, 'no class / team gate');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// HERO_PARSER_RECOGNIZED_MARKER_NAMES — the coverage probe's recognized-marker list
+// ---------------------------------------------------------------------------
+
+describe('HERO_PARSER_RECOGNIZED_MARKER_NAMES — every listed name reaches a parser arm', () => {
+  // why: teleport / x-gene resolve only on their card allowlists; a mock card is off
+  // both, so the parser must leave them unresolved (the probe's per-hero fail-safe).
+  const ALLOWLIST_GATED_NAMES = new Set<string>(['teleport', 'x-gene']);
+
+  for (const markerName of HERO_PARSER_RECOGNIZED_MARKER_NAMES) {
+    it(`${markerName} reaches its parser arm`, () => {
+      const registry = makeRegistry('test', 'marker-hero', [
+        { slug: 'marker-card', abilities: [`You get +2[icon:attack]. [keyword:${markerName}:2]`] },
+      ]);
+      const hooks = buildHeroAbilityHooks(registry, makeConfig('test/marker-hero'));
+      assert.equal(hooks.length, 1, 'one hook for the one ability line');
+      const unresolvedMarkers = hooks[0]!.unresolvedMarkers ?? [];
+      if (ALLOWLIST_GATED_NAMES.has(markerName)) {
+        assert.deepEqual(unresolvedMarkers, [markerName], 'off-allowlist gated marker stays unresolved');
+      } else {
+        assert.deepEqual(unresolvedMarkers, [], 'recognized marker leaves no unresolved entry');
+      }
+    });
+  }
+
+  it('lists no HeroKeyword (those are already known to the probe)', () => {
+    const heroKeywordNames = new Set<string>(HERO_KEYWORDS);
+    for (const markerName of HERO_PARSER_RECOGNIZED_MARKER_NAMES) {
+      assert.equal(heroKeywordNames.has(markerName), false, `${markerName} is a HeroKeyword`);
+    }
   });
 });

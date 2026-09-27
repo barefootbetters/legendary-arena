@@ -340,6 +340,33 @@ const RECOGNIZED_NON_KEYWORD_MARKERS: ReadonlySet<string> = new Set<string>([
   'reveal-reorder',
 ]);
 
+// why: the coverage probe (scripts/hero-effect-coverage.mjs) labels any `[keyword:X]`
+// token outside HERO_KEYWORDS + HERO_COMPOSITION_MARKER_NAMES as an "unsupported
+// mechanic". These names are NOT HeroKeywords yet ARE consumed by a dedicated arm of
+// parseAbilityText (condition markers, modifier markers), so without this list the probe
+// mislabels them. The probe still counts one as unsupported for a hero whose hooks leave
+// it in unresolvedMarkers — which is how the gated arms (sunlight / moonlight on an
+// unmodeled day-night line, teleport / x-gene off their card allowlists) stay honest, and
+// why a name left here after its arm is removed fails safe (the fallback flags it).
+/** Non-HeroKeyword `[keyword:X]` names the hero ability parser recognizes. */
+export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
+  ...RECOGNIZED_NON_KEYWORD_MARKERS,
+  'spectrum',
+  'sunlight',
+  'moonlight',
+  'recruit-threshold',
+  'draw-threshold',
+  'discard-threshold',
+  'outwit',
+  'worthy',
+  'savior',
+  'antics',
+  'defeated-villain-or-mastermind',
+  'first-hero-condition',
+  'teleport',
+  'x-gene',
+];
+
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
 // ALREADY-BUILT reward executor; only these four are seeded. An unseeded reward
 // (e.g. a not-yet-built gain-shard) emits no descriptor — such a marker can
