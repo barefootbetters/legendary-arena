@@ -467,8 +467,12 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // change, so no trajectory shifts: the feed gains exactly 372 observations (rule:shard 317,
   // rule:sidekick 47, rule:multicolored 8) and totalObs 3977 -> 4349. resolvedObs stays 1135,
   // so percentResolved 28.5 -> 26.1 (1135 / 4349). Newly visible hollow surface, not a regression.
+  // 2026-09-26 (D-24620, re-pin): six more hero lines now charge the discard-to-play cost, so
+  // those plays cost a discard and the fixed-seed boards that play them shift trajectory.
+  // totalObs 4349 -> 4354; resolvedObs stays 1135, so percentResolved holds at 26.1
+  // (1135 / 4354). A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 4349);
+  assert.equal(view.totalObs.value, 4354);
   assert.equal(view.percentResolved.value, 26.1);
   assert.ok(view.remaining.value.length > 0);
 });

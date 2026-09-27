@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1948,
+    "totalEntries": 1954,
     "byScope": {
-      "hero": 770,
+      "hero": 776,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 532,
+      "executable": 538,
       "deferred": 16,
       "condition": 45,
       "unsupported": 301,
@@ -1382,6 +1382,23 @@
         {
           "slug": "shrink-away",
           "name": "Shrink Away"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/cassie-lang",
+      "name": "Cassie Lang",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "start-small",
+          "name": "Start Small"
         }
       ]
     },
@@ -2836,6 +2853,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "asrd/beta-ray-bill",
+      "name": "Beta Ray Bill",
+      "set": "asrd",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "hope-of-the-korbinites",
+          "name": "Hope of the Korbinites"
+        }
+      ]
     },
     {
       "extId": "asrd/beta-ray-bill",
@@ -8023,6 +8057,23 @@
       ]
     },
     {
+      "extId": "cosm/adam-warlock",
+      "name": "Adam Warlock",
+      "set": "cosm",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "regenerative-cocoon",
+          "name": "Regenerative Cocoon"
+        }
+      ]
+    },
+    {
       "extId": "cosm/captain-mar-vell",
       "name": "Captain Mar-Vell",
       "set": "cosm",
@@ -8932,6 +8983,23 @@
         {
           "slug": "massive-warrior",
           "name": "Massive Warrior"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/hercules",
+      "name": "Hercules",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "manly-dullard",
+          "name": "Manly Dullard"
         }
       ]
     },
@@ -18146,6 +18214,44 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "rvlt/photon",
+      "name": "Photon",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "discard-to-play",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
+      "wp": "WP-383",
+      "decision": "D-24184",
+      "designs": [
+        {
+          "slug": "infrared-conversion",
+          "name": "Infrared Conversion"
+        },
+        {
+          "slug": "ultraviolet-radiation",
+          "name": "Ultraviolet Radiation"
+        }
+      ]
+    },
+    {
+      "extId": "rvlt/photon",
+      "name": "Photon",
+      "set": "rvlt",
+      "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "infrared-conversion",
+          "name": "Infrared Conversion"
+        }
+      ]
     },
     {
       "extId": "rvlt/photon",
@@ -28325,6 +28431,7 @@
     "amwp/cassie-lang": {
       "scope": "hero",
       "mechanics": [
+        "discard-to-play",
         "microscopic-size-changing",
         "size-changing"
       ]
@@ -28805,6 +28912,7 @@
     "asrd/beta-ray-bill": {
       "scope": "hero",
       "mechanics": [
+        "discard-to-play",
         "draw",
         "optional-discard-draw",
         "thrown-artifact",
@@ -30411,7 +30519,8 @@
     "cosm/adam-warlock": {
       "scope": "hero",
       "mechanics": [
-        "burn-shards"
+        "burn-shards",
+        "discard-to-play"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -30791,6 +30900,7 @@
     "cvwr/hercules": {
       "scope": "hero",
       "mechanics": [
+        "discard-to-play",
         "draw",
         "reveal-ko"
       ]
@@ -34061,6 +34171,8 @@
     "rvlt/photon": {
       "scope": "hero",
       "mechanics": [
+        "discard-to-play",
+        "draw",
         "hyperspeed",
         "last-stand"
       ]

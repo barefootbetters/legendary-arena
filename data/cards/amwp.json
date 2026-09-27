@@ -501,7 +501,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:vp] or less, draw a card."
+            "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:vp] or less, draw a card. [keyword:discard-to-play:1]"
           ]
         },
         {

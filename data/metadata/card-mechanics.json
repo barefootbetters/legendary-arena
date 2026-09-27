@@ -434,10 +434,15 @@
       "label": "Discard To Play",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 5,
+      "cardCount": 10,
       "cardIds": [
+        "amwp/cassie-lang",
+        "asrd/beta-ray-bill",
         "co2e/cyclops",
         "core/cyclops",
+        "cosm/adam-warlock",
+        "cvwr/hercules",
+        "rvlt/photon",
         "ssw2/ruby-summers",
         "vill/juggernaut",
         "xmen/havok"
@@ -515,7 +520,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 100,
+      "cardCount": 101,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -582,6 +587,7 @@
         "pttr/scarlet-spider",
         "rlmk/crystal",
         "rvlt/darkhawk",
+        "rvlt/photon",
         "rvlt/ronin",
         "rvlt/war-machine",
         "shld/deathlok",
@@ -2416,6 +2422,7 @@
     },
     "amwp/cassie-lang": {
       "mechanics": [
+        "discard-to-play",
         "microscopic-size-changing",
         "size-changing"
       ]
@@ -2520,6 +2527,7 @@
     },
     "asrd/beta-ray-bill": {
       "mechanics": [
+        "discard-to-play",
         "draw",
         "optional-discard-draw",
         "thrown-artifact",
@@ -2894,7 +2902,8 @@
     },
     "cosm/adam-warlock": {
       "mechanics": [
-        "burn-shards"
+        "burn-shards",
+        "discard-to-play"
       ]
     },
     "cosm/captain-mar-vell": {
@@ -2972,6 +2981,7 @@
     },
     "cvwr/hercules": {
       "mechanics": [
+        "discard-to-play",
         "draw",
         "reveal-ko"
       ]
@@ -3653,6 +3663,8 @@
     },
     "rvlt/photon": {
       "mechanics": [
+        "discard-to-play",
+        "draw",
         "hyperspeed",
         "last-stand"
       ]

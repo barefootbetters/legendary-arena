@@ -43,7 +43,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "To play this, you must discard a card.",
+            "To play this, you must discard a card. [keyword:discard-to-play:1]",
             "When you draw a new hand of cards at the end of this turn, draw two extra cards."
           ]
         },

@@ -6,7 +6,8 @@
     "Web-Shooters (core/spider-man) is NOT included — WP-215 already applied rescue:1 and reveal markup to those two lines. The idempotence guard would skip them, but we omit them from the map to keep it authoritative for WP-216 additions only.",
     "Amendment (inline, EC-248 fold): AC #11 and EC §After Completing originally asserted grep count=1 for rescue:1 in core.json. Execution confirmed core/black-widow/mission-accomplished is an in-scope candidate (discovered by --propose). Count updated to 2 (web-shooters from WP-215 + mission-accomplished from WP-216). Corrected in WP-216 AC #11 and EC-248 §After Completing as part of Commit A.",
     "WP-225 / EC-257 (D-22501) — draw sweep: appends [keyword:draw:N] (N ∈ {1,2,3}) to 98 fixed-count hero draw lines across 30 sets (83 draw:1, 13 draw:2, 2 draw:3). Detector: the trimmed whole line equals 'Draw a|one|two|three card(s).', optionally one leading [hc:X]:/[team:X]: condition the executor already evaluates, excluding any line containing 'Reveal' or an existing [keyword:] token.",
-    "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes ≥ 4 are not emitted and have no _deferred entry — the grammar permits N ≥ 1 but the corpus maximum is 3, so no real ≥ 4 line exists to mark or defer (D-22501)."
+    "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes ≥ 4 are not emitted and have no _deferred entry — the grammar permits N ≥ 1 but the corpus maximum is 3, so no real ≥ 4 line exists to mark or defer (D-22501).",
+    "D-24620 — discard-to-play sweep: WP-383 (D-24184) marked only the \"To play this card, you must discard a card from your hand.\" wording; the shorter \"To play this, you must discard a card.\" form on six more hero lines (amwp/cassie-lang/start-small, asrd/beta-ray-bill/hope-of-the-korbinites, cosm/adam-warlock/regenerative-cocoon, cvwr/hercules/manly-dullard, rvlt/photon/infrared-conversion, rvlt/photon/ultraviolet-radiation) now carries [keyword:discard-to-play:1]. rvlt Infrared Conversion prints \"Draw two cards.\" on the same line, so it also carries [keyword:draw:2]. The amwp Start Small Victory-Pile-gated draw stays deferred. Not marked: the bkwd Attune split face (WP-777 / D-24615), the asrd Thrown Artifact \"To throw this\" line (unmodeled Artifact mechanic), and wpnx Massive Blood Loss (a Wound card, not a hero)."
   ],
   "2099": [
     {
@@ -524,6 +525,12 @@
       "cardSlug": "channel-cosmic-power",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "adam-warlock",
+      "cardSlug": "regenerative-cocoon",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
     }
   ],
   "cvwr": [
@@ -658,6 +665,12 @@
       "cardSlug": "hot-bowl-of-soup",
       "abilityIndex": 0,
       "markupToken": "[keyword:ko-wound]"
+    },
+    {
+      "heroSlug": "hercules",
+      "cardSlug": "manly-dullard",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
     }
   ],
   "dkcy": [
@@ -1324,6 +1337,12 @@
       "cardSlug": "anticipate",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "cassie-lang",
+      "cardSlug": "start-small",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:discard-to-play:1]"
     }
   ],
   "anni": [
@@ -1426,6 +1445,12 @@
       "cardSlug": "bio-engineered-cyborg",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-discard-draw:1]"
+    },
+    {
+      "heroSlug": "beta-ray-bill",
+      "cardSlug": "hope-of-the-korbinites",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
     }
   ],
   "bkpt": [
@@ -1774,6 +1799,24 @@
       "cardSlug": "storm-of-arrows",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "photon",
+      "cardSlug": "infrared-conversion",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "photon",
+      "cardSlug": "infrared-conversion",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "photon",
+      "cardSlug": "ultraviolet-radiation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-to-play:1]"
     }
   ],
   "shld": [
@@ -2418,6 +2461,14 @@
       "abilityIndex": 1,
       "abilityText": "[keyword:X-Gene] [hc:instinct]: Count the[hc:instinct] cards in your discard pile. [keyword:Berserk] that many times.",
       "reason": "WP-723 / D-24544 — X-Gene deferred: the effect is a COUNT-SCALED re-trigger ('Berserk that many times', once per Instinct card in the discard pile). Modeling it needs a discard-class HeroCountSource plus a count-scaled Berserk re-trigger primitive node, neither of which exists. NOT added to X_GENE_CARDS, so its [keyword:X-Gene] stays an honest parse-unrecognized hollow (the two tractable X-Gene cards, adamantium-foot-claws + bioengineered-assassin, are marked in the xmen block above)."
+    },
+    {
+      "setAbbr": "amwp",
+      "heroSlug": "cassie-lang",
+      "cardSlug": "start-small",
+      "abilityIndex": 1,
+      "abilityText": "To play this, you must discard a card. Then, if you have a Villain in your Victory Pile worth 2[icon:vp] or less, draw a card.",
+      "reason": "D-24620 — the discard-to-play cost on this line IS marked; only the trailing draw is deferred. It is gated on a Victory-Pile predicate (a Villain worth 2VP or less) that is not a [hc:X]:/[team:X]: condition the parser evaluates, so [keyword:draw:1] would fire unconditionally — an over-credit."
     }
   ]
 }

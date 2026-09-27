@@ -356,7 +356,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "To play this, you must discard a card. Draw two cards."
+            "To play this, you must discard a card. Draw two cards. [keyword:discard-to-play:1] [keyword:draw:2]"
           ]
         },
         {
@@ -371,7 +371,7 @@
           "attack": "3+",
           "recruit": null,
           "abilities": [
-            "To play this, you must discard a card.",
+            "To play this, you must discard a card. [keyword:discard-to-play:1]",
             "[hc:ranged]: [keyword:Hyperspeed 3]"
           ]
         },

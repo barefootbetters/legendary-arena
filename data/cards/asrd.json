@@ -27,7 +27,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "To play this, you must discard a card.",
+            "To play this, you must discard a card. [keyword:discard-to-play:1]",
             "Then, if you are [keyword:Worthy], draw a card. [keyword:draw:1]"
           ]
         },

@@ -140,12 +140,12 @@
       ]
     },
     "bridge": {
-      "hitCount": 14,
+      "hitCount": 9,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 14
+        "parse-unrecognized": 9
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 43,
+      "hitCount": 42,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 43
+        "parse-unrecognized": 42
       },
       "examples": [
         {
@@ -491,12 +491,12 @@
       ]
     },
     "heist": {
-      "hitCount": 50,
-      "lastSeenTurn": 30,
+      "hitCount": 48,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 50
+        "parse-unrecognized": 48
       },
       "examples": [
         {
@@ -778,12 +778,12 @@
       ]
     },
     "rule:shard": {
-      "hitCount": 317,
+      "hitCount": 320,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 317
+        "parse-unrecognized": 320
       },
       "examples": [
         {
@@ -982,12 +982,12 @@
       ]
     },
     "streets": {
-      "hitCount": 57,
+      "hitCount": 62,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 57
+        "parse-unrecognized": 62
       },
       "examples": [
         {
