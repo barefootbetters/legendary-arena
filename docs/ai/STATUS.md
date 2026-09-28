@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-785 — The play landing is now an Arena entrance with one Enter Arena; the old lobby is the Arena Workshop (EC-822 / D-24633) (2026-09-28)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** The bare landing URL shows a dark, art-led
+entrance: Magneto's card art, "The Arena Awaits", the encounter line, and one maroon **Enter Arena**. Signed
+in, one click creates and joins a solo featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank
+Robbery; Spider-Man, Hulk, Wolverine). Signed out, it goes to sign-in as before (WP-788 will make it a guest
+match once WP-787 lands). Every old lobby control is unchanged under **Arena Workshop**
+(`?route=workshop`; invite links `?route=lobby&match=…` still open it).
+
+- **Client only.** `ArenaEntrance.vue` + `featuredTable.ts` (new), `App.vue` routing (`workshopRoute` /
+  `hasMatchParam`), the Workshop `<h1>`. The featured table is pinned against `data/cards/core.json`,
+  including Magneto's Always Leads, which the engine does not enforce.
+- **Counts and gates.** arena-client 2175 → 2189 / 0 fail (+14); vue-tsc 0 before and after. The empty-query
+  routing test changed on purpose (it now expects the entrance). Built dist checked in headless Chrome: the
+  stage stays dark in both themes, no overflow at 390px, no page errors.
+- **Navigation side effects.** Header "Play", endgame "Back to Lobby", the bot-stall escape, and the login
+  success path now land on the entrance rather than the Workshop.
+- **Live-verify (D-24026):** pending. Signed in: `/` → dark entrance in both themes → Enter Arena → a solo
+  Magneto / Brotherhood / Midtown match. Signed out → login. `?route=workshop` → the old lobby.
+
 ### WP-787 / EC-824 — Guest solo create: a signed-out visitor can start one solo featured table (2026-09-28)
 
 **No user-observable change — infrastructure only.** New `POST /api/match/create-guest-solo` (Auth `guest`, bodyless) creates a 1-player unlisted match on a server-fixed featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank Robbery; Spider-Man, Hulk, Wolverine), joins seat `'0'` as `Guest`, and returns `{ matchId, seat: '0', credentials }`. The seat is rowless, so the match is Casual and cannot be submitted. A signed-out player sees it only after the client adoption WP (WP-788) wires WP-785's Enter Arena to it. D-24635 is Active and amends D-24092's ungated taste.
