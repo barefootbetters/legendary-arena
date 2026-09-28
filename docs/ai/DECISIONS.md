@@ -45783,4 +45783,47 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24633 — The play landing seats a first-time player at one legal featured table; the old lobby becomes Arena Workshop (Drafted 2026-09-28; not yet landed — WP-785 / EC-822)
+
+**Context.** The bare `play.legendary-arena.com` URL opens a form-first operator console (display name, AI policy, delay in ms, LAGN upload, raw count validation). Two outside design reviews (ewiki Play Lobby UX Direction) agree that the first screen should be the encounter with one primary action, and that every existing control should be kept.
+
+**Decision.**
+1. The bare landing URL renders the Arena entrance. One **Enter Arena** creates a curated **solo featured table** through the existing create-and-join launcher: Magneto + Brotherhood (his printed Always Leads) + Sentinel against Midtown Bank Robbery, with Spider-Man, Hulk, and Wolverine.
+2. The featured table is a client constant, pinned by a test against `data/cards/core.json` (slugs exist, Always Leads honored, 1-player counts). The engine does not check Always Leads, so the test is the guarantee. A rotating or server-sourced featured table is a later decision.
+3. Every existing lobby control, id, and test id is kept, unchanged, as **Arena Workshop** (`?route=workshop`; `?route=lobby` and any `?match=` without full live params also open it, so WP-369 invite links keep working).
+4. Sign-in behavior is unchanged: a signed-out Enter Arena bounces to `?route=login`. The Access Model promise of a guest solo match (D-24092) needs a server guest-create path and is out of this decision's scope.
+
+**Reserved by:** NUMBER-LEDGER D-24633. Related: D-24092 (Access Model), D-24446 (public match LAGN), WP-092 / WP-254 / WP-371 (loadout intake and composition gate), WP-369 (invite links).
+
+---
+
+### D-24634 — The battle brief lives in the engine's lobby phase and replaces the two-click ready/start with one frame-gated button (Drafted 2026-09-28; not yet landed — WP-786 / EC-823)
+
+**Context.** Every match opens on the play route in the `lobby` phase with the board hidden and three bare buttons (Mark Ready / Mark Not Ready / Start Match). Solo and bot-ally players must click two of them before play starts.
+
+**Decision.**
+1. The battle brief is a client overlay mounted once at the `PlayViewport` root. It renders only while `game.phase === 'lobby'`.
+2. It reads only data already served: UIState `mastermind` / `scheme` display and `gameText` (Always Leads, Setup, Evil Wins lines, rendered through `AbilityText`), `players.length`, and group / hero names from the public match LAGN (D-24446) via `summarizeLoadout`. No UIState field is added; the Board-Visible Field Rule is not triggered.
+3. Its one **Begin the Battle** button sends `setPlayerReady { ready: true }`, then, only after the next server frame advances `_stateID` (`useConnectionStore().lastStateId`), `startMatchIfReady {}`. Both lobby moves are `client: false` (D-10008), so a same-tick second submit carries a stale `_stateID` and the server drops it. The engine still decides when play starts; in a multi-human match the last seat to enter starts it, and `LobbyControls` remains the recovery path.
+4. `LobbyControls` stays underneath, unchanged. The brief is distinct from the player-written Battle Plan (WP-635/637), which it does not embed.
+
+**Reserved by:** NUMBER-LEDGER D-24634. Related: D-10010 (ready by dispatching player), D-16501 (PlayMobile has no matchId), D-24446, WP-100 (lobby phase), WP-369 / WP-637 (viewport-root overlays).
+
+---
+
+### D-24635 — A signed-out visitor may create one solo match on a server-fixed featured table (Drafted 2026-09-28; not yet landed — WP-787 / EC-824)
+
+**Context.** D-24092's Access Model promises a guest "at least one solo match against a villain/mastermind AI without an account", but its locked choice made the spectator surface (Watch Bot Play) the only ungated taste, and every create path requires a session. WP-785's entrance therefore bounces signed-out visitors to sign-in.
+
+**Decision.**
+1. New route `POST /api/match/create-guest-solo`, Auth `guest`, bodyless. It creates a 1-player, **unlisted** match on a **server-fixed** featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank Robbery; Spider-Man, Hulk, Wolverine — identical to WP-785's), joins seat `'0'` as `Guest` over the internal-delegation loopback, and returns `{ matchId, seat, credentials }`. An unauthenticated caller cannot choose a composition.
+2. The seat is rowless (D-24120): no `legendary.*` write of any kind. The match is Casual (D-24172 rule 2) and not submittable (no session → 401; a signed-in caller → `not_owner`). The account wall stays on the second action — save, score, multiplayer — as D-24092 places it. This **amends** D-24092's locked choice: it widens the ungated taste from "the spectator surface" to "the spectator surface plus one solo table".
+3. Abuse bounds: a per-connection token bucket (5 creates per minute) keyed by `cf-connecting-ip`, else `request.ip` (a proxy hop, since Koa `app.proxy` is off), and a process-wide cap of 200 guest-solo creates per rolling 2 hours (503 when full). Both the API host and the direct onrender.com origin answer `Server: cloudflare` (Render's edge is Cloudflare), so the header's delivery and forgeability are unverified until live: a key-source log line and a two-network live check settle it, and the cap is the hard bound either way. Unfinished matches are reaped after 24 h by the existing reaper.
+4. The limiter lives in a shared helper (`tokenBucketRateLimiter.mjs`) because this is the third copy. Moving the analytics and join-as-guest limiters onto it — which also changes their keying away from the proxy hop — is a follow-up.
+5. `/api/match/create`, `/api/match/join`, the D-24094 native guard, and autoplay are unchanged. D-24094's "an account is required to play a seat by any path" is narrowed for this one server-owned, secret-carrying route (the D-24437 / D-24441 guest seats are precedent). A client adoption WP wires the WP-785 entrance's signed-out Enter Arena to this route.
+
+**Reserved by:** NUMBER-LEDGER D-24635. Related: D-24092, D-24093, D-24094, D-24120, D-24172, D-24437, D-24441, D-24451, D-9905, D-11804, D-24633.
+
+---
+
 Protect this file.
