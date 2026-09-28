@@ -317,3 +317,72 @@ describe('HandRow (WP-699) — hand arc + gated hover lift', () => {
     assert.equal(tiles[1]!.classes().includes('card-tile--lift-enabled'), false);
   });
 });
+
+describe('HandRow (WP-783) — Phase button on phasable hand cards', () => {
+  test('renders a Phase button only for cards listed in phasingCardIds', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cvwr/vision/solar-energy#0', 'plain-card', 'cvwr/wiccan/astral-projection#1'],
+        handDisplay: [
+          display('cvwr/vision/solar-energy#0', 'Solar Energy'),
+          display('plain-card', 'Plain Card'),
+          display('cvwr/wiccan/astral-projection#1', 'Astral Projection'),
+        ],
+        currentStage: 'main',
+        submitMove,
+        phasingCardIds: ['cvwr/vision/solar-energy#0', 'cvwr/wiccan/astral-projection#1'],
+      },
+    });
+    const phaseButtons = wrapper.findAll('[data-testid="play-hand-phase"]');
+    assert.equal(phaseButtons.length, 2, 'one Phase button per listed card');
+    assert.equal(phaseButtons[0]!.attributes('data-card-id'), 'cvwr/vision/solar-energy#0');
+    assert.equal(phaseButtons[1]!.attributes('data-card-id'), 'cvwr/wiccan/astral-projection#1');
+    assert.equal(phaseButtons[0]!.text(), 'Phase');
+    assert.equal(phaseButtons[0]!.attributes('aria-label'), 'Phase Solar Energy', 'the accessible label names the card');
+  });
+
+  test('renders no Phase button when phasingCardIds is absent (default [])', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: { handCards: ['cvwr/vision/solar-energy#0'], currentStage: 'main', submitMove },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-hand-phase"]').length, 0);
+  });
+
+  test('the Phase button is a sibling of the play-card button, never nested inside it', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['phasing-card'],
+        currentStage: 'main',
+        submitMove,
+        phasingCardIds: ['phasing-card'],
+      },
+    });
+    const playButton = wrapper.find('[data-testid="play-hand-card"]');
+    const phaseButton = wrapper.find('[data-testid="play-hand-phase"]');
+    assert.equal(playButton.find('[data-testid="play-hand-phase"]').exists(), false, 'not nested in the play button');
+    assert.equal(
+      phaseButton.element.parentElement,
+      playButton.element.parentElement,
+      'both buttons share the same <li> parent',
+    );
+    assert.equal(phaseButton.element.parentElement!.tagName, 'LI');
+    assert.ok(phaseButton.classes().includes('hand-card__phase'), 'carries the overlay class');
+  });
+
+  test('clicking Phase submits phaseCard({ cardId }) and does not play the card', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['plain-card', 'phasing-card'],
+        currentStage: 'main',
+        submitMove,
+        phasingCardIds: ['phasing-card'],
+      },
+    });
+    await wrapper.find('[data-testid="play-hand-phase"]').trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'phaseCard', args: { cardId: 'phasing-card' } }]);
+  });
+});

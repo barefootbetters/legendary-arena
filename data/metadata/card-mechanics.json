@@ -1200,7 +1200,7 @@
       "slug": "phasing",
       "label": "Phasing",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 4,
       "cardIds": [
         "cvwr/cloak-dagger",

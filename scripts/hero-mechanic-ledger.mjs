@@ -100,6 +100,8 @@ const PRIMITIVE_INTERPRETER_MODULE = 'packages/game-engine/src/hero/effectPrimit
 const MOVE_EXECUTED_HANDLER_MODULES = {
   'wall-crawl': 'packages/game-engine/src/moves/recruitHero.ts',
   'dodge': 'packages/game-engine/src/moves/dodgeCard.ts',
+  // why: WP-783 / D-24629 — phasing executes via the phaseCard hand-swap move.
+  'phasing': 'packages/game-engine/src/moves/phaseCard.ts',
 };
 const UNMARKED_MECHANIC = '(unmarked)';
 

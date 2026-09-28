@@ -5329,6 +5329,75 @@ describe('executeHeroEffects — Dodge keyword at play time (WP-275 / D-24051)',
 });
 
 // ---------------------------------------------------------------------------
+// WP-783 / D-24629 — Phasing keyword at play time
+//
+// Phasing never does anything on play: the real executor is the phaseCard hand move
+// (phaseCard.test.ts). Its onPlay hook is still visited when the Hero is played, so the
+// visit must be a benign, not-hollow no-op — the dodge template above.
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects — Phasing keyword at play time (WP-783 / D-24629)', () => {
+  const mockCtx = makeMockCtx();
+
+  /** Reads the lazy-init diagnostics records (empty array when never written). */
+  function records(gameState: LegendaryGameState) {
+    return gameState.diagnostics?.hollowEffects ?? [];
+  }
+
+  /**
+   * A Phasing Hero exactly as the parser emits it: a bare `[keyword:Phasing]` onPlay hook
+   * with a no-magnitude effect, plus a second printed line granting +2 attack.
+   */
+  function phasingState() {
+    return makeTestState({
+      deck: ['deck-card'],
+      hand: ['other-card'],
+      inPlay: ['phasing-hero'],
+      heroAbilityHooks: [
+        {
+          cardId: 'phasing-hero' as string,
+          timing: 'onPlay',
+          keywords: ['phasing'],
+          effects: [{ type: 'phasing' }],
+        },
+        {
+          cardId: 'phasing-hero' as string,
+          timing: 'onPlay',
+          keywords: ['attack'],
+          effects: [{ type: 'attack', magnitude: 2 }],
+        },
+      ],
+    });
+  }
+
+  it('playing a Phasing Hero changes nothing beyond its other lines (no swap at play time)', () => {
+    const gameState = phasingState();
+    executeHeroEffects(gameState, mockCtx, '0', 'phasing-hero' as string);
+    assert.equal(gameState.turnEconomy.attack, 2, 'the other printed line still grants +2 attack');
+    assert.equal(gameState.turnEconomy.recruit, 0, 'no recruit granted at play time');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-card'], 'deck is unchanged (no swap, no draw)');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['other-card'], 'hand is unchanged');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'discard is unchanged');
+  });
+
+  it('playing a Phasing Hero records NO phasing hollow', () => {
+    const gameState = phasingState();
+    executeHeroEffects(gameState, mockCtx, '0', 'phasing-hero' as string);
+    assert.equal(records(gameState).length, 0, 'no hollow recorded for the hand-action keyword');
+  });
+
+  it('phasing is a hand-action MVP_KEYWORD with no play-time handler / reveal translation', () => {
+    // why: WP-783 / D-24629 — membership marks it ledger-executable and keeps the play-time
+    // hook not-hollow; the phaseCard move is the executor, so it must not gain a handler.
+    assert.ok(HAND_ACTION_EXECUTED_KEYWORDS.includes('phasing'), 'phasing ∈ HAND_ACTION_EXECUTED_KEYWORDS');
+    assert.ok(MVP_KEYWORDS.has('phasing'), 'phasing ∈ MVP_KEYWORDS');
+    assert.equal(HANDLED_KEYWORDS.has('phasing' as HeroKeyword), false, 'phasing ∉ HANDLED_KEYWORDS');
+    assert.equal(HERO_EFFECT_HANDLERS['phasing' as HeroKeyword], undefined, 'phasing ∉ HERO_EFFECT_HANDLERS');
+    assert.equal(revealRulesForLegacyKeyword('phasing' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // WP-285 / D-24067 — victory-villain-attack park site (AC-8)
 // ---------------------------------------------------------------------------
 

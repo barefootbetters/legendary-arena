@@ -178,3 +178,45 @@ describe('PlayMobile (WP-129)', () => {
     assert.ok(heroIndex < barIndex, 'both prompts are above the TurnActionBar in DOM order');
   });
 });
+
+describe('PlayMobile Phase-button wiring (WP-783 / D-24629)', () => {
+  // why: the page is where economy.phasingOptions becomes HandRow's phasingCardIds
+  // prop. A HandRow unit test with an injected prop cannot catch a page that never
+  // passes it, so this mounts the real page from a snapshot.
+  /**
+   * Builds a play-phase snapshot whose viewer holds one Phasing card and one plain card.
+   *
+   * @returns The snapshot.
+   */
+  function phasingSnapshot(): UIState {
+    const frame = snapshot();
+    frame.players[0]!.handCards = ['cvwr/vision/solar-energy#0', 'plain-card'];
+    frame.players[0]!.handCount = 2;
+    frame.players[0]!.handDisplay = [
+      { extId: 'cvwr/vision/solar-energy#0', name: 'Solar Energy', imageUrl: '', cost: 3 },
+      { extId: 'plain-card', name: 'Plain Card', imageUrl: '', cost: 2 },
+    ];
+    return frame;
+  }
+
+  test('a snapshot with economy.phasingOptions renders exactly one Phase button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = phasingSnapshot();
+    frame.economy.phasingOptions = ['cvwr/vision/solar-energy#0'];
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    const phaseButtons = wrapper.findAll('[data-testid="play-hand-phase"]');
+    assert.equal(phaseButtons.length, 1);
+    assert.equal(phaseButtons[0]!.attributes('data-card-id'), 'cvwr/vision/solar-energy#0');
+  });
+
+  test('a snapshot without economy.phasingOptions renders no Phase button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(phasingSnapshot());
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="play-hand-card"]').length, 2, 'the hand is rendered');
+    assert.equal(wrapper.findAll('[data-testid="play-hand-phase"]').length, 0);
+  });
+});
