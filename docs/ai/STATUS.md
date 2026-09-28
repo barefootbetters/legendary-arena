@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-786 — A battle brief now opens every match; Begin the Battle replaces Mark Ready + Start Match (EC-823 / D-24634) (2026-09-28)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Every match opens in the engine's lobby phase.
+Instead of three bare buttons, a **Battle Brief** panel shows the Mastermind with its Always Leads line, the
+Scheme with its Setup and Evil Wins lines, the villain groups, henchmen, and heroes by name, and the seat
+count. **Begin the Battle** readies the player and starts the match (solo and bot-ally: one click, no Mark
+Ready / Start Match). In a multi-human match, play starts when the last seat begins; the old buttons stay
+underneath (Hide brief) as the recovery path.
+
+- **Client only.** `BattleBrief.vue` (new), mounted once in `PlayViewport.vue`. It reads existing UIState
+  fields and the public match loadout; no new UIState field, move, engine, or server change.
+- **The frame gate.** Both lobby moves are server-only (`client: false`), so the start request waits for
+  the server frame that confirms the ready. Sending both at once would silently drop the start; a
+  mutation check proves the test catches that.
+- **Counts and gates.** arena-client 2175 → 2184 / 0 fail (+9); vue-tsc 0 before and after. Rendered in
+  headless Chrome from a throwaway lobby-phase fixture build (reverted): both themes, desktop and phone,
+  no overflow, no page errors.
+- **Live-verify (D-24026):** pending. Solo match → the brief shows Always Leads, Setup / Evil Wins, the
+  lineup, "1 seat at the table" → Begin the Battle → the board, no other click. Repeat with a bot ally.
+
 ### WP-785 — The play landing is now an Arena entrance with one Enter Arena; the old lobby is the Arena Workshop (EC-822 / D-24633) (2026-09-28)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The bare landing URL shows a dark, art-led

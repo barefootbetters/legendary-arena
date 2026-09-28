@@ -45799,7 +45799,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24634 — The battle brief lives in the engine's lobby phase and replaces the two-click ready/start with one frame-gated button (Drafted 2026-09-28; not yet landed — WP-786 / EC-823)
+### D-24634 — The battle brief lives in the engine's lobby phase and replaces the two-click ready/start with one frame-gated button (Active 2026-09-28 — WP-786 / EC-823)
 
 **Context.** Every match opens on the play route in the `lobby` phase with the board hidden and three bare buttons (Mark Ready / Mark Not Ready / Start Match). Solo and bot-ally players must click two of them before play starts.
 

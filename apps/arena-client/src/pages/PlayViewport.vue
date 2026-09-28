@@ -10,6 +10,7 @@ import GameLogCopyButton from '../components/GameLogCopyButton.vue';
 import ViewLoadoutButton from '../components/ViewLoadoutButton.vue';
 import WaitingForPlayersPanel from '../components/WaitingForPlayersPanel.vue';
 import BattlePlanPanel from '../components/BattlePlanPanel.vue';
+import BattleBrief from '../components/play/BattleBrief.vue';
 import HollowEffectsPanel from '../components/play/HollowEffectsPanel.vue';
 import DeckProbabilityPanel from '../components/play/DeckProbabilityPanel.vue';
 import AudioControls from '../components/play/AudioControls.vue';
@@ -133,7 +134,7 @@ export function computeCasualCoachMatchId(
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -537,6 +538,13 @@ export default defineComponent({
       // (which phase is editable) — never writes G/ctx/UIState, never submitMove.
     -->
     <BattlePlanPanel />
+    <!--
+      // why: WP-786 / D-24634 — mounted ONCE at the shared viewport root so the
+      // battle brief covers BOTH <PlayMobile> and <PlayDesktop> (PlayMobile has no
+      // matchId, D-16501). It renders only in the engine's lobby phase and sends
+      // only setPlayerReady, then startMatchIfReady after the next server frame.
+    -->
+    <BattleBrief :submit-move="submitMove" :match-id="matchId" />
     <!--
       // why: WP-258 — mounted ONCE here at the shared viewport root (the
       // Mounting Rule's shared-child case), alongside <DiagnosticExportButton>,
