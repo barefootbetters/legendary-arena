@@ -26287,6 +26287,8 @@ Protect this file.
 
 **Status:** **Active** (policy ratified 2026-07-04) — decision-only; implementing WP TBD.
 
+**Amended by D-24635 (2026-09-28, WP-787):** the ungated taste is now the spectator surface **plus** one solo match on a server-fixed featured table (`POST /api/match/create-guest-solo`, rowless and Casual).
+
 **Context.** The full account + email-capture path already ships: Hanko sign-in on `play` (WP-099…175) with first-sign-in auto-provisioning (WP-174) writing the verified email to `legendary.players.email`. What was never decided is the **access gate** — whether a player must hold an account before playing, and where the wall sits. The business goal is a marketable email list; the vision constraint is that "accessibility" is protected ahead of features (VISION §Financial Sustainability, Operational Guardrails) and the game is cooperative hero-vs-villain, so solo-vs-AI play needs no second human. Neither VISION (before this decision), `wiki/profile-login.md`, nor D-24084 (which decides only *where* login lives) addressed the gate. VISION §Financial Sustainability now carries the policy parent (§Access Model) that this entry implements.
 
 **Decision.** A free game account SHALL be required to reach **multiplayer matchmaking and any account-persisted surface** — saved profile, loadout library, stats, leaderboard entry, replay verification. It SHALL NOT be required to reach a **first taste of play**: a guest MAY play the tutorial and at least one solo match against a villain/mastermind AI without an account. The account wall is placed on the *second* action (matchmake / save / persist), not the front door.
@@ -45811,7 +45813,9 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24635 — A signed-out visitor may create one solo match on a server-fixed featured table (Drafted 2026-09-28; not yet landed — WP-787 / EC-824)
+### D-24635 — A signed-out visitor may create one solo match on a server-fixed featured table
+
+**Status:** Active — landed 2026-09-28 with WP-787 / EC-824 (`apps/server/src/match/guestSoloRoutes.mjs`, `apps/server/src/match/tokenBucketRateLimiter.mjs`, one registration in `apps/server/src/server.mjs`, a new `api-endpoints.md` row). The live check (item 3's key source) is pending the post-deploy D-24026 verify.
 
 **Context.** D-24092's Access Model promises a guest "at least one solo match against a villain/mastermind AI without an account", but its locked choice made the spectator surface (Watch Bot Play) the only ungated taste, and every create path requires a session. WP-785's entrance therefore bounces signed-out visitors to sign-in.
 
