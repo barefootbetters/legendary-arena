@@ -118,6 +118,12 @@ const HERO_CLASS_PATTERN = /\[hc:([^\]]+)\]/g;
 /** Regex for [team:X] team condition markup. */
 const TEAM_PATTERN = /\[team:([^\]]+)\]/g;
 
+// why: D-24628 — the printed play-gate prefix: one or more [hc:X] / [team:X] tokens at the very
+// start of a line, then a colon ("[hc:strength]:", "[team:shield][team:shield][team:shield]:").
+// Keyword-led prefixes ("[keyword:X-Gene] [team:x-men]:") deliberately do not match.
+/** Regex for a leading [hc:X] / [team:X] gate prefix ending in a colon. */
+const LEADING_GATE_PREFIX_PATTERN = /^\s*(?:\[(?:hc|team):[^\]]+\]\s*)+:/;
+
 // why: optional :N suffix carries magnitude for rescue/reveal effects (D-21503)
 // why: hyphen allowed in keyword names to support reveal-ko and reveal-min tokens (D-21701, D-21702)
 /** Regex for [keyword:X] or [keyword:X:N] keyword markup (N = non-negative integer). */
@@ -714,6 +720,21 @@ const DAY_NIGHT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
   'nmut/mirage/haunted-by-the-demon-bear:moonlight',
 ]);
 
+// why: D-24628 — lines whose resource grant depends on an unmodeled cost or event clause, keyed
+// `{setAbbr}/{heroSlug}/{cardSlug}`. They keep their printed play gate, drop the parsed grant, and
+// record CONDITIONAL_GRANT_UNMODELED_MARKER, until a follow-up models the clause.
+const CONDITIONAL_GRANT_UNMODELED_LINES: ReadonlySet<string> = new Set<string>([
+  'bkpt/general-okoye/direct-the-agents-of-wakanda',
+  'vill/magneto/mutants-will-rule',
+]);
+
+// why: D-24628 — one shared mechanic name so these lines aggregate as one runtime hollow row.
+/** Unresolved marker recorded for an unmodeled conditional resource grant. */
+const CONDITIONAL_GRANT_UNMODELED_MARKER = 'unmodeled-conditional-grant';
+
+/** Regex for a printed attack or recruit icon. */
+const RESOURCE_ICON_PATTERN = /\[icon:(?:attack|recruit)\]/;
+
 // why: WP-765 / D-24598 — the two day/night condition types. Kept as a named set so the
 // unmodeled-line suppression can keep ONLY the day/night gate on such a line.
 const DAY_NIGHT_CONDITION_TYPES: ReadonlySet<string> = new Set<string>([
@@ -938,6 +959,7 @@ function parseAbilityText(
     teleportOnDiscardSupported?: boolean;
     xGeneSupported?: boolean;
     dayNightUnmodeled?: boolean;
+    conditionalGrantUnmodeled?: boolean;
   } = {},
 ): {
   keywords: HeroKeyword[];
@@ -963,6 +985,9 @@ function parseAbilityText(
   // why: WP-765 / D-24598 — true only for a DAY_NIGHT_UNMODELED_LINES line (see the Step 2 arm
   // and the unmodeled-line suppression before the 'conditional' keyword below).
   const dayNightUnmodeled = options.dayNightUnmodeled === true;
+  // why: D-24628 — true only for a CONDITIONAL_GRANT_UNMODELED_LINES card, resolved by the caller
+  // (see the suppression before the 'conditional' keyword below).
+  const conditionalGrantUnmodeled = options.conditionalGrantUnmodeled === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -1022,6 +1047,14 @@ function parseAbilityText(
   // not block the play on "another shield Hero played this turn" (live bug: Pure Fury blocked
   // whenever no shield Hero preceded it — 2p Red Skull / Midtown match yqj7YblJCt4).
   const lineHasPureFury = abilityText.includes('[keyword:pure-fury]');
+  // why: D-24628 — when a line opens with an explicit gate prefix of [hc:X] / [team:X] tokens
+  // and a colon ("[hc:strength]: Return a [team:shield] Hero…"), that prefix IS the play gate;
+  // a [team:Y] after the colon names a target or criterion, not "another Y Hero played this
+  // turn" (live: Cannonball Natural Leader logged "needs another shield Hero", match 039e3dce).
+  // Lines with no such prefix keep the old behavior, because their inline [team:X] can be a
+  // plain-English condition ("if you played another [team:shield] Hero") or a count gate.
+  const leadingGatePrefixMatch = LEADING_GATE_PREFIX_PATTERN.exec(abilityText);
+  const leadingGatePrefixLength = leadingGatePrefixMatch === null ? 0 : leadingGatePrefixMatch[0].length;
   // why: WP-673 / D-24488 — when the line carries the worthy count-scaled marker,
   // its `[keyword:Worthy]` token is the COUNT CRITERION ("each other card … that
   // makes you Worthy"), not a heroCostAtLeastInHandOrPlay play-gate — so Step 2
@@ -1152,7 +1185,10 @@ function parseAbilityText(
     // the reveal CRITERION ("if it's an [team:x-men] Hero, draw it"), captured by the
     // [keyword:reveal:team-X:draw] marker — so emit NO requiresTeam gate (Card Shark / HYDRA
     // Half-Wit; the live "needs another x-men Hero played this turn" mis-gate this removes).
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury && !lineHasRevealTraitCriterion) {
+    // why: D-24628 — likewise a [team:X] in the body after an explicit leading gate prefix is
+    // descriptive (see leadingGatePrefixLength), so emit NO requiresTeam gate for it.
+    const isBodyTokenAfterGatePrefix = leadingGatePrefixLength > 0 && teamMatch.index >= leadingGatePrefixLength;
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury && !lineHasRevealTraitCriterion && !isBodyTokenAfterGatePrefix) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -2173,6 +2209,25 @@ function parseAbilityText(
       }
     }
     conditions.splice(0, conditions.length, ...dayNightConditions);
+  }
+
+  // Unmodeled conditional-grant suppression: drop the parsed attack/recruit grant, keep the
+  // play gate, and record an honest hollow.
+  // why: D-24628 — the grant on these lines is earned only by a clause the engine does not model
+  // ("KO a [team:shield] Hero or Wound … to get +2[icon:attack]", "If a Bindings is gained this
+  // way, you get +1[icon:recruit]"), so the icon read would fire it for free. A spurious
+  // requiresTeam gate from the body [team:X] used to hide that only some of the time.
+  if (conditionalGrantUnmodeled) {
+    const keywordsWithoutResourceIcons: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack' && keyword !== 'recruit') {
+        keywordsWithoutResourceIcons.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutResourceIcons;
+    magnitudes.delete('attack');
+    magnitudes.delete('recruit');
+    unresolvedMarkers.push(CONDITIONAL_GRANT_UNMODELED_MARKER);
   }
 
   // If conditions were found, add 'conditional' keyword
@@ -3863,6 +3918,11 @@ export function buildHeroAbilityHooks(
           teleportOnDiscardSupported,
           xGeneSupported,
           dayNightUnmodeled,
+          // why: D-24628 — drop the free grant on an unmodeled conditional-grant line. The key is
+          // per card, so only the line that prints the resource icon qualifies (not its Dodge line).
+          conditionalGrantUnmodeled:
+            CONDITIONAL_GRANT_UNMODELED_LINES.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) &&
+            RESOURCE_ICON_PATTERN.test(abilityText),
         });
 
         // why: freshly-constructed hook per instance — copies never alias a

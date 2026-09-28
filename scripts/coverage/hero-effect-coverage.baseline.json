@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 2657,
+    "executable": 2651,
     "heroes": 324,
     "hooks": 6380,
-    "noEffect": 2595,
+    "noEffect": 2601,
     "parsedNotExecuted": 1128
   },
   "perSet": {
@@ -38,9 +38,9 @@
       "noEffect": 50
     },
     "bkpt": {
-      "executable": 59,
+      "executable": 58,
       "hooks": 135,
-      "noEffect": 76
+      "noEffect": 77
     },
     "bkwd": {
       "executable": 30,
@@ -183,9 +183,9 @@
       "noEffect": 84
     },
     "vill": {
-      "executable": 130,
+      "executable": 125,
       "hooks": 288,
-      "noEffect": 79
+      "noEffect": 84
     },
     "vnom": {
       "executable": 20,
