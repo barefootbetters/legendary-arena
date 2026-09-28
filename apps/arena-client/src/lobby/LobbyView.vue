@@ -1136,7 +1136,7 @@ export default defineComponent({
 
 <template>
   <section class="lobby-view" data-testid="lobby-view">
-    <h1>Legendary Arena — Lobby</h1>
+    <h1>Arena Workshop</h1>
 
     <p
       v-if="errorMessage !== null"

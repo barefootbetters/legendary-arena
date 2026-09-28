@@ -11,6 +11,7 @@ import {
 import ArenaHud from './components/hud/ArenaHud.vue';
 import AppShell from './components/branding/AppShell.vue';
 import LobbyView from './lobby/LobbyView.vue';
+import ArenaEntrance from './lobby/ArenaEntrance.vue';
 import PlayViewport from './pages/PlayViewport.vue';
 import ConnectionStatusBanner from './components/ConnectionStatusBanner.vue';
 import {
@@ -99,6 +100,8 @@ interface ParsedQuery {
   meRoute: boolean;
   adminBillingRoute: boolean;
   loginRoute: boolean;
+  workshopRoute: boolean;
+  hasMatchParam: boolean;
   returnTo: string | null;
 }
 
@@ -153,6 +156,13 @@ function parseQuery(search: string): ParsedQuery {
   const meRoute = routeParam === 'me';
   const adminBillingRoute = routeParam === 'admin-billing';
   const loginRoute = routeParam === 'login';
+  // why: WP-785 — `?route=workshop` opens today's lobby as the Arena Workshop.
+  // `?route=lobby` is accepted too because WP-369 invite links use
+  // `?route=lobby&match=<id>`. Named like its `meRoute` / `loginRoute` siblings.
+  const workshopRoute = routeParam === 'workshop' || routeParam === 'lobby';
+  // why: WP-785 — any non-empty `?match=` without full live params (an invite
+  // link or a stale leftover) keeps landing on the Workshop, not the entrance.
+  const hasMatchParam = matchID !== null;
   // why: dev-only route — `?fixture=mid-turn&play=1` renders PlayViewport
   // instead of ArenaHud so the gameplay mat can be previewed with fixture data
   const playFixture = params.get('play') === '1';
@@ -167,6 +177,8 @@ function parseQuery(search: string): ParsedQuery {
     meRoute,
     adminBillingRoute,
     loginRoute,
+    workshopRoute,
+    hasMatchParam,
     returnTo,
   };
 }
@@ -230,6 +242,7 @@ export default defineComponent({
     AppShell,
     ArenaHud,
     LobbyView,
+    ArenaEntrance,
     PlayViewport,
     ConnectionStatusBanner,
     PlayerProfilePage,
@@ -276,6 +289,9 @@ export default defineComponent({
     const playerID = liveParams?.playerID ?? '';
     const profileHandle = parsed.profileHandle ?? '';
     const shareSlug = parsed.shareSlug ?? '';
+    // why: WP-785 / D-24633 — inside the lobby route, the bare landing URL shows
+    // the Arena entrance; an explicit Workshop route or a `?match=` shows LobbyView.
+    const showWorkshop = parsed.workshopRoute || parsed.hasMatchParam;
 
     const liveClient = ref<LiveClientHandle | null>(null);
     // why: `import.meta.env` is Vite-provided; in the node:test runner there
@@ -436,6 +452,7 @@ export default defineComponent({
       playerID,
       profileHandle,
       shareSlug,
+      showWorkshop,
       isDev,
       submitMove,
       resync,
@@ -494,8 +511,11 @@ export default defineComponent({
           <span>player: {{ playerID }}</span>
         </footer>
       </template>
-      <template v-else>
+      <template v-else-if="showWorkshop">
         <LobbyView />
+      </template>
+      <template v-else>
+        <ArenaEntrance />
       </template>
     </main>
   </AppShell>

@@ -755,7 +755,9 @@ describe('App routing', () => {
     resetLiveClientCallLog();
   });
 
-  test('empty query string → <LobbyView /> renders (route="lobby")', () => {
+  // why: WP-785 / D-24633 — an intentional product change: the bare landing URL
+  // now renders the Arena entrance; today's lobby is the Arena Workshop.
+  test('empty query string → <ArenaEntrance /> renders (route="lobby")', () => {
     const wrapper = mount(App, { props: { searchOverride: '' } });
     mountedWrappers.push(wrapper);
 
@@ -763,9 +765,30 @@ describe('App routing', () => {
       wrapper.find('[data-testid="app-root"]').attributes('data-route'),
       'lobby',
     );
-    assert.equal(wrapper.find('[data-testid="lobby-view"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="arena-entrance"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="lobby-view"]').exists(), false);
     assert.equal(wrapper.find('[data-testid="arena-hud"]').exists(), false);
     assert.equal(getLiveClientCallLog().length, 0);
+  });
+
+  test('?route=workshop → <LobbyView /> renders as the Arena Workshop (WP-785)', () => {
+    const wrapper = mount(App, { props: { searchOverride: '?route=workshop' } });
+    mountedWrappers.push(wrapper);
+
+    assert.equal(
+      wrapper.find('[data-testid="app-root"]').attributes('data-route'),
+      'lobby',
+    );
+    assert.equal(wrapper.find('[data-testid="lobby-view"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="arena-entrance"]').exists(), false);
+  });
+
+  test('?route=lobby → <LobbyView /> renders (the WP-369 invite-link alias, WP-785)', () => {
+    const wrapper = mount(App, { props: { searchOverride: '?route=lobby' } });
+    mountedWrappers.push(wrapper);
+
+    assert.equal(wrapper.find('[data-testid="lobby-view"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="arena-entrance"]').exists(), false);
   });
 
   test('?match=...&player=...&credentials=... → live branch renders ArenaHud and invokes createLiveClient', () => {
