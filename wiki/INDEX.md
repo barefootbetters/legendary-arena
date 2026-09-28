@@ -1,7 +1,7 @@
 # Wiki Index
 
-> **75 / 77** entity pages.
-> Last regenerated: 2026-09-07.
+> **75 / 78** entity pages.
+> Last regenerated: 2026-09-28.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
 > [README.md](README.md) for purpose, conventions, and authority —
 > including [§ Tradeoffs](README.md#tradeoffs) on what the LLM-wiki
@@ -413,6 +413,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   **shared/table** badges, **retroactive** awards, **tiered** 5/4/3/2 team
   badges, and a solo mastery lane. States a point of view; a WP + DECISIONS
   owns any real system.
+- [Play Lobby UX Direction](play-lobby-ux-direction.md) — *(draft, research)*
+  two outside reviews of the `play` lobby (Copilot's Riot-portfolio study,
+  Grok's brand-anchored critique) checked against `LobbyView.vue`, with
+  agreement, divergence, and one reconciled direction: a one-click legal
+  featured table, a scenario-first flow (Challenge → Roster → Table → Brief →
+  **Enter Arena**), the current console kept as **Arena Workshop**, and a
+  7-step priority order. Records a direction; no decision is made.
 
 ## Tutorial
 
