@@ -160,6 +160,41 @@ before the home screen has a single portrait.
 Use Riot for *discipline*: one decision per screen, one primary action, and
 colour as state. Use the game's own canon for *meaning*.
 
+### The Riot references, one lesson each
+
+The Copilot study takes one lesson from each title. The right-hand column
+shows where each lesson lands in the reconciled direction above. None of
+them borrows Riot art or chrome.
+
+| Title | Lesson | Lands as |
+|---|---|---|
+| League of Legends | Separate the player's intentions; each gets its own front door | Grok's four intentions (Fight · Watch · Resume · Workshop), not a mode grid |
+| 2XKO | Lead with the contest; setup comes after the decision to fight | Priority 1: a cinematic landing with one **Enter Arena** |
+| Wild Rift | One decision per screen, primary action in thumb reach | The five-step reconciled flow, at every viewport ([Responsive Viewport Targets](responsive-viewport-targets.md)) |
+| VALORANT | Restraint: strong type, narrow palette, colour carries state | The token mapping in the divergence table |
+| Teamfight Tactics | Visible progress that stays warm, not a statistics dashboard | Priority 7: lightweight standing. Scoring weights stay public (no hidden factors) |
+| Legends of Runeterra | One card, three jobs: registry, loadout, in-session | The three-density card model, built card by card |
+
+### Stable core, experimental edge
+
+Riot's R&D office describes
+[incubation as a wide funnel](https://www.riotgames.com/en/r-and-d-office/incubation-exploration-with-a-plan)
+narrowed to the few ideas that earn a prototype. The studio has since
+[refocused on fewer, higher-impact projects](https://www.riotgames.com/en/news/2024-player-update).
+Carried over to the lobby:
+
+- **Core.** What every player depends on, and what must not move under
+  them: creating a table, cooperative play, turn flow, the Mastermind fight,
+  card resolution, and rejoining.
+- **Edge.** Draft formats, alternate Schemes, gauntlet and tournament
+  experiments, spectator presentation, and bot stances. Copilot's name for
+  this space is **Arena Labs**: a labeled area, so an experiment never
+  silently changes the rules of a scored table.
+
+Arena Labs is a label, not a scheduled surface. It matters once a second
+experiment exists that needs separating from the core. Until then,
+gauntlets and seed challenges already cover the edge.
+
 ## Interactions
 
 - **[Battle Plan](../docs/ai/work-packets/WP-635-battle-plan-api.md)**
@@ -193,10 +228,13 @@ colour as state. Use the game's own canon for *meaning*.
 
 ## Edge Cases
 
-- **Unverified external claims.** Copilot attributes to Riot an announcement
-  that active 2XKO development ends at the end of 2026, citing low
-  retention. It was not verified for this page. Treat it as reported, not as
-  fact. The design lesson stands either way.
+- **The 2XKO claim is verified.** On 2026-08-20 Riot
+  [announced](https://www.riotgames.com/en/news/2xko-active-development-ends-december-2026)
+  that active 2XKO development ends in December 2026. The servers stay up.
+  Riot's stated reason is retention: not enough players "stick with the game
+  to get to a path toward sustainability." That was despite reliable netcode,
+  a ranked ladder, regular content, and a free-to-play door. Both reviews
+  draw the same lesson from it.
 - **Copilot's source links are omitted on purpose.** Copilot cited documents
   from a non-project SharePoint tenant. They are not repo artifacts and are
   not reproduced here. The repo WPs cited above are the canonical copies of
@@ -243,3 +281,6 @@ colour as state. Use the game's own canon for *meaning*.
 - [WP-635 — Battle Plan API](../docs/ai/work-packets/WP-635-battle-plan-api.md)
 - [WP-637 — Battle Plan Client Panel](../docs/ai/work-packets/WP-637-battle-plan-client-panel.md)
 - External design reviews: Copilot and Grok, 2026-09-28 (operator-supplied; not repo artifacts)
+- Riot Games, [2XKO Active Development Will End in December 2026](https://www.riotgames.com/en/news/2xko-active-development-ends-december-2026) (2026-08-20)
+- Riot Games, [Incubation: Exploration With a Plan](https://www.riotgames.com/en/r-and-d-office/incubation-exploration-with-a-plan) (R&D Office)
+- Riot Games, [Changes at Riot and the Road Ahead](https://www.riotgames.com/en/news/2024-player-update) (2024)
