@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-25
+last-reviewed: 2026-09-28
 ---
 
 # Soul of Legendary Arena
@@ -1936,7 +1936,17 @@ dispute.
   guides and, by several accounts, by Golding himself — and the tribe kills him.
   The book's diagnosis is the Fall.
 
-  What it lacks is the rest of the story. The boys hunt pigs, chant over the
+  What it lacks is the rest of the story, at both ends. Luke begins the parable
+  at home, not in the pigsty: "A certain man had two sons" (Luke 15:11). The boy
+  is a son before the far country, a son in it, and still "this my son" when he
+  comes home (15:24). His rehearsed speech, "am no more worthy to be called thy
+  son" (15:19, 21), is the pigsty's last lie, and the father never answers it.
+  That first verse is every person's: "The Spirit itself beareth witness with our
+  spirit, that we are the children of God" (Romans 8:16). *Lord of the Flies* has
+  no first verse. It opens on the beach, and the boys are never told whose they
+  are.
+
+  The boys hunt pigs, chant over the
   kill, and mount a pig's head on a stick that tells Simon there is no escaping
   it. They end where the prodigal son ended: "he would fain have filled his belly
   with the husks that the swine did eat: and no man gave unto him" (Luke 15:16).
@@ -1990,8 +2000,11 @@ dispute.
   does; the parable gives the diagnosis and the cure together. What *Lord of the
   Flies* adds is a longer stay in the pigsty, and no one needs a syllabus for
   that — life supplies it daily. What people can go a whole life without hearing
-  is verse 17 and verse 20: that a person can come to himself, and that the
-  Father is already watching the road and runs to meet him.
+  is how the story begins and how it ends: verse 11, that they are sons and
+  daughters before they are anything else; verse 17, that a person can come to
+  himself; and verse 20, that the Father is already watching the road and runs
+  to meet him — "when he was yet a great way off, his father saw him, and had
+  compassion, and ran, and fell on his neck, and kissed him."
 
   No Dad with a wayward son has ever said, "If only my boy would read that
   award-winning book about the pigsty, *Lord of the Flies*." Every Dad wants his
@@ -2845,6 +2858,7 @@ choice for the operator, never make it silently.
   [Wikiquote](https://en.wikiquote.org/wiki/William_Golding) (citing *The Hot
   Gates*, 1965, and *A Moving Target*, 1982); the
   [Parable of the Prodigal Son, Luke 15](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/15?lang=eng)
+  (KJV) and [Romans 8:16](https://www.churchofjesuschrist.org/study/scriptures/nt/rom/8?lang=eng&id=p16#p16)
   (KJV); AQA's [GCSE English Literature 8702 specification](https://www.aqa.org.uk/subjects/english/gcse/english-literature-8702/specification/subject-content/modern-texts-and-poetry);
   KentOnline (23 December 2024) on the 2025 Welsh GCSE text changes;
   [Fishtank Learning's unit](https://www.fishtanklearning.org/curriculum/ela/9th-grade/lord-of-the-flies/),
