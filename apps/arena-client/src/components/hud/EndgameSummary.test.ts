@@ -131,6 +131,38 @@ describe('EndgameSummary — guest sign-in prompt', () => {
   });
 });
 
+// why: D-24630 — an expired sign-in on an account-bound seat is NOT a guest: the
+// match is still savable, so the panel must never claim "you played as a guest".
+describe('EndgameSummary — expired-session sign-in prompt (D-24630)', () => {
+  test('shows the save-this-match prompt with a returnTo=live login CTA, never the guest copy', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, showSessionExpiredSignIn: true },
+    });
+    const prompt = wrapper.find('[data-testid="arena-hud-session-expired-sign-in"]');
+    assert.ok(prompt.exists(), 'the expired-session prompt renders');
+    assert.equal(prompt.attributes('aria-label'), 'sign in to save this match');
+    assert.equal(prompt.find('.guest-score-prompt-headline').text(), 'Your sign-in expired');
+    assert.equal(prompt.find('.guest-score-prompt-cta').attributes('href'), '?route=login&returnTo=live');
+    assert.ok(!wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+    assert.ok(!wrapper.text().includes('as a guest'), 'no guest copy for an account-bound seat');
+  });
+
+  test('hides the expired-session prompt once a competitive score is present', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: score(), showSessionExpiredSignIn: true },
+    });
+    assert.ok(!wrapper.find('[data-testid="arena-hud-session-expired-sign-in"]').exists());
+  });
+
+  test('a true guest still gets the guest prompt, not the expired-session prompt', () => {
+    const wrapper = mount(EndgameSummary, {
+      props: { gameOver: gameOver(), competitiveScore: null, showGuestSignIn: true },
+    });
+    assert.ok(wrapper.find('[data-testid="arena-hud-guest-sign-in"]').exists());
+    assert.ok(!wrapper.find('[data-testid="arena-hud-session-expired-sign-in"]').exists());
+  });
+});
+
 describe('EndgameSummary — casual (unscored) coach panel (WP-752)', () => {
   test('shows the coach panel keyed by match id when unscored and casualCoachMatchId is set', async () => {
     // gameOver() carries no `scores`, so this also proves the panel is a sibling of

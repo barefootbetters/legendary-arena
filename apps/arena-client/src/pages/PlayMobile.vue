@@ -189,6 +189,13 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    // why: D-24630 — prop-drilled PlayViewport → here → EndgameSummary: the
+    // viewer's sign-in expired on an account-bound seat, so the panel offers
+    // sign-in-to-save for THIS match instead of the guest copy.
+    showSessionExpiredSignIn: {
+      type: Boolean,
+      default: false,
+    },
     // why: WP-752 / D-24576 — prop-drilled PlayViewport → here → EndgameSummary: the
     // match id for the casual (unscored) AI coach panel, computed once in PlayViewport
     // (computeCasualCoachMatchId). Forwarded to BOTH play surfaces, unlike matchId
@@ -526,6 +533,7 @@ export default defineComponent({
         :competitive-score="competitiveScore"
         :seat-identities="seatIdentities"
         :show-guest-sign-in="showGuestSignIn"
+        :show-session-expired-sign-in="showSessionExpiredSignIn"
         :casual-coach-match-id="casualCoachMatchId"
       />
       <LobbyControls v-if="isLobbyPhase" :submit-move="submitMove" />

@@ -177,6 +177,15 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    // why: D-24630 — the viewer WAS signed in, but the sign-in expired before
+    // gameover. The seat is still owned by the account bound at join (D-24119), so
+    // unlike a guest this match CAN be saved: signing back in returns to the match
+    // and submits it. Threaded from PlayViewport (submissionStatus ===
+    // 'session-expired').
+    showSessionExpiredSignIn: {
+      type: Boolean,
+      default: false,
+    },
     // why: INFRA (endgame seat names) — the per-seat identity roster
     // ({ playerId, isBot, handle }) fetched on gameover (PlayViewport →
     // useSeatIdentitiesOnGameover), so the co-op VP recap labels seats
@@ -658,6 +667,25 @@ export default defineComponent({
            from the play surface even with `?match=` still in the URL. A plain
            anchor (full navigation) is fine here — the match is already over. -->
       <a class="guest-score-prompt-cta" href="?route=login">Sign in</a>
+    </section>
+
+    <!-- why: D-24630 — an expired sign-in on an account-bound seat, NOT a guest
+         seat: the match is still savable, so the copy says so instead of "you
+         played as a guest". `returnTo=live` makes the LoginPage send the player
+         back to this match (via the sessionStorage pending-submit marker, which
+         keeps the seat credentials out of the login URL), where the submit fires
+         once the session hydrates. Reuses the guest prompt's styling. -->
+    <section
+      v-if="showSessionExpiredSignIn && !competitiveScore"
+      class="guest-score-prompt"
+      data-testid="arena-hud-session-expired-sign-in"
+      aria-label="sign in to save this match"
+    >
+      <p class="guest-score-prompt-headline">Your sign-in expired</p>
+      <p class="guest-score-prompt-detail">
+        Sign in to save this match. You’ll come straight back here and your result will be submitted.
+      </p>
+      <a class="guest-score-prompt-cta" href="?route=login&amp;returnTo=live">Sign in to save this match</a>
     </section>
 
     <dl v-if="hasPar && gameOver.par" class="par-breakdown">

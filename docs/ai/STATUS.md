@@ -7,6 +7,14 @@
 
 ## Current State
 
+### D-24630 — An expired sign-in is no longer shown as a guest match, and the match can still be saved (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** If your sign-in expires during a match, the end screen now says "Your sign-in expired — Sign in to save this match" instead of "You played this match as a guest". Signing in brings you straight back to the match and submits your score. Guests see the same prompt as before.
+
+- **Client only.** The server already lets the account bound to the seat at join submit by matchId (D-24119). The Hanko SDK has no silent refresh, so signing in again is the recovery.
+- **Counts and gates.** arena-client `test` 2184/0 (+17) and `typecheck` 0; full-repo `--no-bail` run 0 fail (session-expiry composable, pending-submit marker and LoginPage destination, EndgameSummary prompt).
+- **Live-verify (D-24026):** pending. Sign out in another tab mid-match, finish it, sign in from the end screen, and confirm the score submits.
+
 ### D-24626 — Hollow effects panel groups repeated rows (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The Play Diagnostics Hollow effects panel now
