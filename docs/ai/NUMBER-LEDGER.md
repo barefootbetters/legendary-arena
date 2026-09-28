@@ -426,6 +426,7 @@ high-water: 422
 - WP-785 — lobby-arena-entrance (App arena-client. A dark, art-led lobby landing with one Enter Arena that seats the player at a legal featured table in one click; the current lobby controls move intact behind an Arena Workshop entry. Priority 1 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - WP-786 — battle-brief (App arena-client. A battle brief shown between match creation and the play board: Mastermind + Always Leads, Scheme + twist count, villain and henchman groups, hero lineup, seats, one Enter Arena. Priority 2 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - WP-787 — guest-solo-create (Server. An unauthenticated endpoint that creates one solo (1-player) featured-table match for a signed-out visitor and returns seat credentials, delivering the Access Model's guest first-taste solo match (D-24092); guest seats stay rowless and unranked. reserved 2026-09-28, claude/reserve-guest-solo-create)
+- WP-788 — guest-solo-client (App arena-client. The WP-785 entrance's signed-out Enter Arena calls WP-787's POST /api/match/create-guest-solo and seats the visitor as a guest, instead of bouncing to sign-in; guest copy and 429/503 handling. Depends on WP-785 + WP-787. reserved 2026-09-28, claude/reserve-guest-solo-client)
 
 ## EC
 
@@ -813,6 +814,7 @@ high-water: 457
 - EC-822 — lobby-arena-entrance (WP-785; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - EC-823 — battle-brief (WP-786; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - EC-824 — guest-solo-create (WP-787; Server. reserved 2026-09-28, claude/reserve-guest-solo-create)
+- EC-825 — guest-solo-client (WP-788; App arena-client. reserved 2026-09-28, claude/reserve-guest-solo-client)
 
 ## D
 
@@ -1224,3 +1226,4 @@ section below) and the allocation protocol in
 - D-24633 — lobby-arena-entrance (WP-785. Locks the player-path default: one Enter Arena on a curated, composition-legal featured table; every existing lobby control kept under Arena Workshop, none removed. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - D-24634 — battle-brief (WP-786. Locks where the battle brief sits between create and board, and which client-visible data it reads. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - D-24635 — guest-solo-create (WP-787. Locks the guest solo create contract: endpoint, auth value, server-supplied composition, abuse limits, and the unranked / no-domain-row posture. reserved 2026-09-28, claude/reserve-guest-solo-create)
+- D-24636 — guest-solo-client (WP-788. Locks the signed-out entrance behavior: guest play via the guest-solo route, the guest copy, and the error fallbacks; supersedes D-24633 §4's sign-in bounce. reserved 2026-09-28, claude/reserve-guest-solo-client)
