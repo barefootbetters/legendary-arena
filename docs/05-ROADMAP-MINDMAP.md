@@ -878,7 +878,7 @@ mindmap
         ["WP-377 ✅ Ranked eligibility: seat-count-complete roster guard (server) — hardens computeRankedEligibility so ranked ⇔ readSeatAccounts(matchId).length === seatCount AND areAllMutualFriends(roster), plus a botSeats-tag short-circuit — closes the DESIGN §5b leak where a rowless (bot/guest) seat yields a short roster that is vacuously ranked, letting a 1-human+1-bot match submit a ranked score. Predicate is !== seatCount (NOT < 2) so genuine solo stays vacuously ranked; fail-safe Casual preserved (extends the WP-354 try/catch); by-hash ?? true default untouched; guard lives only in computeRankedEligibility. Landable independently of WP-375 (the seat-count backstop is a no-op for all-human matches; the tag short-circuit activates once WP-375 writes it). No migration (is_ranked_eligible exists, WP-354/029). Gates WP-376 production exposure. Open at execution: seat-count source (ctx.numPlayers recommended / playerZones). EC-406; reserves D-24172 (amends D-24146)"]
 
       Play Lobby Entrance (2026-09)
-        ["WP-785 📝 Lobby Arena entrance one Enter Arena on a legal featured table arena-client DRAFTED 2026-09-28 EC-822 D-24633 reserved. Old lobby kept as Arena Workshop"]
+        ["WP-785 ✅ Lobby Arena entrance one Enter Arena on a legal featured table arena-client EC-822 D-24633 Active DONE 2026-09-28. Old lobby kept as Arena Workshop"]
         ["WP-786 📝 Battle brief in the lobby phase Mastermind Scheme lineup seats and one Begin the Battle arena-client DRAFTED 2026-09-28 EC-823 D-24634 reserved"]
         ["WP-787 ✅ Guest solo create a signed-out visitor plays one solo featured table server EC-824 D-24635 Active DONE 2026-09-28. Rowless Casual rate-limited and capped"]
         ["WP-788 📝 Guest solo client a signed-out Enter Arena plays the featured table as a guest arena-client DRAFTED 2026-09-28 EC-825 D-24636 reserved BLOCKED on WP-785 and WP-787"]
@@ -967,13 +967,13 @@ mindmap
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 171/171 | — |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
-| Play Lobby Entrance (2026-09) | 1/4 | 3 open |
+| Play Lobby Entrance (2026-09) | 2/4 | 2 open |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **761/779 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 17 open |
+| **Total** | **762/779 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 16 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 18):** WP-788 open; WP-786 open; WP-785 open; WP-782 open; WP-781 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-749 open; WP-745 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 17):** WP-788 open; WP-786 open; WP-782 open; WP-781 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-749 open; WP-745 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

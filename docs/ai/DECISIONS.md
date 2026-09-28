@@ -45785,7 +45785,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24633 — The play landing seats a first-time player at one legal featured table; the old lobby becomes Arena Workshop (Drafted 2026-09-28; not yet landed — WP-785 / EC-822)
+### D-24633 — The play landing seats a first-time player at one legal featured table; the old lobby becomes Arena Workshop (Active 2026-09-28 — WP-785 / EC-822)
 
 **Context.** The bare `play.legendary-arena.com` URL opens a form-first operator console (display name, AI policy, delay in ms, LAGN upload, raw count validation). Two outside design reviews (ewiki Play Lobby UX Direction) agree that the first screen should be the encounter with one primary action, and that every existing control should be kept.
 
