@@ -45697,6 +45697,45 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Reserved by:** NUMBER-LEDGER D-24626. Related: D-24034 (WP-257 records), WP-258 / EC-289 (panel), D-24618, D-24623, D-24624.
 
+### D-24628 — A `[team:X]` in the body after an explicit gate prefix is descriptive, not a play gate; two unmodeled conditional grants become honest hollows (Active 2026-09-27 — direct fix, no WP; extends the D-24470 / D-24498 / D-24530 descriptive-token suppression)
+
+**Status:** Active — landed 2026-09-27 (direct fix; parser Step 1b plus a conditional-grant suppression in `packages/game-engine/src/setup/heroAbility.setup.ts`).
+
+**Context.** Step 1b turns every inline `[team:X]` into a `requiresTeam` play gate unless a per-marker `lineHas*` flag suppresses it. Live game `039e3dce` (Loki / Midtown Bank Robbery, solo) exposed the problem. xmen Cannonball *Natural Leader* reads "[hc:strength]: Return a [team:shield]Hero from your discard pile to your hand.", but its gate required another SHIELD Hero. On turn 14, with Strength already satisfied, the log said "needs another shield Hero played this turn." A corpus scan found 75 hero lines with a `[team:X]` outside the leading gate prefix. Many are genuine conditions written in plain English, or count gates, e.g. "if you played another [team:shield] Hero", "for each other [team:shield] Hero you played this turn". A blanket rule would create phantom grants.
+
+**Decision.**
+1. **Body tokens after an explicit prefix are descriptive.** Consider a line that opens with one or more `[hc:X]` / `[team:X]` tokens and a colon (`LEADING_GATE_PREFIX_PATTERN`). A `[team:Y]` after that colon emits no `requiresTeam`, because the printed prefix *is* the gate. Two kinds of line keep the old behavior: lines with no such prefix, and keyword-led prefixes (`[keyword:X-Gene] [team:x-men]:`, `[keyword:When Recruited] [team:X]:`).
+2. **Unmodeled conditional grants drop their free grant.** Two lines print a resource grant that is earned only by a clause the engine does not model:
+   - bkpt Okoye *Direct the Agents of Wakanda*: "KO a [team:shield] Hero or Wound … to get +2[icon:attack]".
+   - vill Magneto *Mutants Will Rule*: "If a Bindings is gained this way, you get +1[icon:recruit]".
+
+   Their icons parsed to flat grants, and the spurious body gate had only been hiding that some of the time. `CONDITIONAL_GRANT_UNMODELED_LINES` (keyed per card, applied only to the line that prints an attack / recruit icon) keeps the play gate, drops the attack / recruit grant, and records `unmodeled-conditional-grant` so the line shows as a `parse-unrecognized` hollow. This mirrors the D-24598 day/night unmodeled-line suppression.
+
+**Measured effect (21 hooks change).**
+- **Real gate removals (7 cards):** Natural Leader, co2e Nick Fury Battlefield Promotion, wwhk Rick Jones Hacktivist, shld Deathlok Reanimate into Service, shld Mockingbird Take Cover, Okoye, and Magneto Mutants Will Rule.
+  - The first five are hollow bodies (`gate-only` or the unhandled bare `undercover`). They gain a correct log and correct hollow reporting, and nothing new executes.
+  - Okoye and Magneto lose a phantom grant (above).
+- **Same-team body repeats dropped (14 hooks):** e.g. "[team:avengers]: … for each other [team:avengers] Hero". Identical `requiresTeam` conditions are idempotent under AND (`evaluateAllConditions`; only the separate `bothCondition` counts matches), so behavior is unchanged.
+
+**Known limits / follow-ups.** The same bug class exists for a body `[hc:X]` (Step 1a); this change leaves it alone. vill Magneto *Master of Magnetism* ("+2[icon:attack] for each Bindings gained") is still a phantom flat grant behind its correct Brotherhood gate; this change does not alter it.
+
+**Pin impacts (all re-pinned in this change).**
+- `sim:coverage` baseline: `executable` 2657→2651 and `noEffect` 2595→2601 (bkpt 59→58, vill 130→125). The count is per physical copy: 1 Okoye card plus 5 copies of Mutants Will Rule. This is an intentional removal of phantom grants.
+- `runtime-observed-hollows.json`: 77→78 mechanics, observations 7080→7081. The new row is `unmodeled-conditional-grant` with 1 observation, and no existing row moved, so no simulated trajectory shifted.
+- Dashboard `useInPlayCoverage` pin: totalObs 8006→8007. resolvedObs holds at 1235, and percentResolved stays 15.4.
+
+**Gates.** Engine 4671/0, including `replayFixtures.test.ts`, so `finalStateHash` is unchanged. New `hero/bodyTeamTokenGate.test.ts` (8 tests) covers:
+- Natural Leader and Hacktivist losing the body gate.
+- The three-token SHIELD prefix keeping exactly three conditions.
+- A prefix-less plain-English line and a keyword-led prefix keeping their gates.
+- Okoye and Magneto dropping the free grant, with Magneto's Dodge line untouched.
+- A card not on the allowlist, with the same text, keeping its parsed grant.
+
+**D-24026 live-on-surface:** pending. Play Natural Leader with a Strength Hero and no SHIELD Hero, and confirm the log reports the `gate-only` hollow and never says "needs another shield Hero".
+
+**Reserved by:** NUMBER-LEDGER D-24628. Related: D-24470 / D-24498 / D-24530 / D-24550 (descriptive-token suppressions), D-24598 (unmodeled-line grant suppression), D-24570 (parsed-grant suppression), D-24623 (gate-only hollow).
+
+
 ---
 
 ### D-24629 — Phasing swaps a Phasing card in hand with the top card of your deck (WP-783 / EC-820) (Active 2026-09-27)

@@ -495,8 +495,12 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // move), so its 98 runtime hollows leave the live feed and its committed-seed peak of 100
   // moves into resolvedObs with the denominator held. totalObs stays 8006; resolvedObs
   // 1135 -> 1235, so percentResolved 14.2 -> 15.4 (1235 / 8006). No other mechanic's count moved.
+  // 2026-09-28 (D-24628, re-pin): Okoye's Direct the Agents and Magneto's Mutants Will Rule drop
+  // their free +2 attack / +1 recruit (earned only by an unmodeled KO cost / Bindings clause) and
+  // record an honest unmodeled-conditional-grant hollow. One new row (1 observation); no existing
+  // row moved. totalObs 8006 -> 8007; resolvedObs stays 1235, so percentResolved stays 15.4.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8006);
+  assert.equal(view.totalObs.value, 8007);
   assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });
