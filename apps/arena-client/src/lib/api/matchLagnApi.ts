@@ -29,8 +29,9 @@ export type MatchLagnResult =
  *
  * @param matchId - The match id (from the `?match=` URL parameter).
  * @param authToken - The current session bearer, or `null` for a guest (the
- *                    request then omits the `Authorization` header and the server
- *                    returns `401`).
+ *                    request then omits the `Authorization` header). The read
+ *                    is public (`guest` auth, D-24446), so a guest request is
+ *                    served like an authenticated one.
  * @returns `{ ok: true, lagn }` on 200; `{ ok: false, status }` on a non-200; and
  *          `{ ok: false, status: 0 }` on a network failure or an unparseable 200
  *          body. Never throws.

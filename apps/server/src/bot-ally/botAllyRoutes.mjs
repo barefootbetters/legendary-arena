@@ -681,12 +681,15 @@ export function registerBotAllyRoutes(router, context) {
 
       // Step 4: auto-ready each bot seat. The endpoint MUST NOT start the match
       // itself.
-      // why: the human readying seat 0 is what reaches readyCount ===
-      // requiredPlayers and starts the match (lobby.validate.ts:63). Bot seats
-      // are readied here (before the human arrives) so, once seat 0 readies,
-      // the match starts immediately and the human never sees "1 of 2". Ready is
-      // dispatched as each bot playerID (setPlayerReady keys off the dispatching
-      // seat, not ctx.currentPlayer — lobby.moves.ts:37).
+      // why: bot seats are readied here (before the human arrives) so that once
+      // the human readies seat 0, readyCount reaches requiredPlayers and
+      // validateCanStartMatch passes (lobby.validate.ts). Readying does NOT
+      // start the match — setPlayerReady only writes G.lobby.ready and never
+      // changes phase; the lobby → play transition happens only when the
+      // client dispatches startMatchIfReady (lobby.moves.ts, from
+      // LobbyControls.vue's Start Match button). Ready is dispatched as each
+      // bot playerID (setPlayerReady keys off the dispatching seat, not
+      // ctx.currentPlayer — lobby.moves.ts, D-10010).
       for (const seat of botSeats) {
         await submit({ seat, moveName: 'setPlayerReady', moveArgs: { ready: true } });
       }
