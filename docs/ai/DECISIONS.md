@@ -45461,7 +45461,7 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Follow-up.** Penumbra itself is scoped as WP-780 / EC-817 / D-24619 on the WP-724 / WP-772 split-card substrate. Shard (cosm / gotg) and Sidekick (WP-086) stay honest hollows until their executors land.
 
-**D-24026 live-on-surface:** pending. Re-pointed 2026-09-27: WP-780 (D-24619) made Penumbra executable, so it can no longer demonstrate this hollow. The 2026-09-27 Penumbra match `VP1KNXl2ENQ` correctly lists no `rule:divided-card`. On the deployed client, play a `[rule:Shard]` or `[rule:Sidekick]` hero line (for example cosm Adam Warlock's Transmute Matter, "Gain a [rule:Shard].") and confirm the Play Diagnostics hollow table lists `rule:shard` / `rule:sidekick`.
+**D-24026 live-on-surface:** verified 2026-09-27 — match `b309dd2b` (2026-09-27, solo Loki / Midtown Bank Robbery; cvwr Cloak & Dagger + Storm & Black Panther, bkwd Falcon & Winter Soldier): cvwr King & Queen of Wakanda ("…Gain that many [rule:Sidekicks].") logged the `rule:sidekick` parse-unrecognized hollow on every play (log 11.2.2, 14.2.2, 17.2.5, 18.2.2) and the Play Diagnostics hollow table listed it; the same held in the two earlier cvwr matches that day. History: re-pointed 2026-09-27: WP-780 (D-24619) made Penumbra executable, so it can no longer demonstrate this hollow. The 2026-09-27 Penumbra match `VP1KNXl2ENQ` correctly lists no `rule:divided-card`. On the deployed client, play a `[rule:Shard]` or `[rule:Sidekick]` hero line (for example cosm Adam Warlock's Transmute Matter, "Gain a [rule:Shard].") and confirm the Play Diagnostics hollow table lists `rule:shard` / `rule:sidekick`.
 
 **Reserved by:** NUMBER-LEDGER D-24618. Related: D-24033 / D-24034 (WP-257), D-24035 (WP-259), D-24546 (WP-724), D-24604 (WP-772).
 
@@ -45673,7 +45673,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Tests.** `splitFaceChoice.resolve.test.ts`: Attune unpayable / Atone payable (face-b entry, no marker, one skip line), both payable (cost parked, marked), neither payable (face a plays, face b skipped). `penumbraPlayBothSides.test.ts`: real-cvwr Manly Dullard from an empty hand is skipped (no +3 Attack, no marker, no handler line). With a card in hand, the +3 lands and paying the parked cost discards it. The old test asserting "face b attack is still granted" on an empty hand pinned the bug. It is rewritten here because the behaviour intentionally changed. The three skip tests fail against the pre-fix source.
 
-**D-24026 live-on-surface:** pending. On `play.legendary-arena.com`, with Cloak & Dagger and Hercules: play Penumbra, then Boy Genius / Manly Dullard with no other card in hand and an empty deck. Confirm the "could not play side b, Manly Dullard" line and no +3 Attack.
+**D-24026 live-on-surface:** verified 2026-09-27 on the Attune / Atone (face a unpayable) path — match `b309dd2b` (2026-09-27, solo Loki / Midtown Bank Robbery; cvwr Cloak & Dagger + Storm & Black Panther, bkwd Falcon & Winter Soldier). Penumbra was played, then Attune / Atone as the last card in hand. Log 21.2.53: "could not play side a, Attune — it requires discarding 1 card(s) but their hand does not hold enough cards to discard, so that side is skipped". No Attune recruit, no discard prompt, and Atone resolved (21.2.54). The Manly Dullard (face b) skip needs an empty deck and discard pile under Boy Genius's draw, so it is pinned by unit test only.
 
 **Reserved by:** NUMBER-LEDGER D-24625. Related: D-24615 (WP-777), D-24619 (WP-780), D-24620, D-24185.
 

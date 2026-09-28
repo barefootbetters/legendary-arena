@@ -10,7 +10,7 @@
 ### D-24625 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** With Penumbra active, a split card side
-that costs a discard (Hercules's Manly Dullard, Falcon & Winter Soldier's Attune) no longer grants its
+that costs a discard (Falcon & Winter Soldier's Attune; Hercules's Manly Dullard only when Boy Genius's draw finds nothing) no longer grants its
 Attack / Recruit when your hand has no card to discard. That side is skipped with a log line, and the
 other side still plays. With a card in hand, the side plays and the discard prompt appears as before.
 
@@ -19,7 +19,7 @@ other side still plays. With a card in hand, the side plays and the discard prom
   A lone face-b play is entered as the face-b id.
 - **Tests.** 3 new + 1 rewritten + 1 new real-cvwr case. The rewritten test had pinned the bug (face b
   +3 Attack from an empty hand).
-- **Live-verify (D-24026):** pending — see D-24625.
+- **Live-verify (D-24026):** verified — match `b309dd2b` (2026-09-27, solo Loki / Midtown Bank Robbery; cvwr Cloak & Dagger + Storm & Black Panther, bkwd Falcon & Winter Soldier). With Penumbra active, Attune / Atone was played as the last card in hand: log 21.2.53 "could not play side a, Attune … so that side is skipped", no Attune recruit, and Atone still resolved (21.2.54).
 
 ### D-24624 — Ungated multi-word keyword lines now surface as hollow effects (direct fix) (2026-09-27)
 
@@ -173,8 +173,7 @@ that looked like flavor text, so they did nothing and reported nothing. Cloak & 
   `sim:runtime-observed:check`, `ledger:heroes:check` and `ledger:numbers:check` pass.
 - **Next.** Penumbra's actual effect is scoped as WP-780 / EC-817 / D-24619 (split-card "play both
   sides").
-- **Live-verify (D-24026):** pending. Play Penumbra and confirm the diagnostics hollow table lists
-  `rule:divided-card`.
+- **Live-verify (D-24026):** verified via `rule:sidekick` (Penumbra became executable under WP-780) — match `b309dd2b` (2026-09-27, solo Loki / Midtown Bank Robbery; cvwr Cloak & Dagger + Storm & Black Panther, bkwd Falcon & Winter Soldier): King & Queen of Wakanda logged `rule:sidekick` four times (log 11.2.2 first) and the Play Diagnostics hollow table listed it.
 
 ### WP-772 — Divided Card off-play traits: a split hero counts as both halves until it is played (EC-809 / D-24604) (2026-09-26)
 
