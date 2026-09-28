@@ -33,8 +33,17 @@ jobs:
             git log --format='%s' -n 1 "$SHA" > "$MSG_FILE"
             SUBJECT=$(cat "$MSG_FILE")
 
+            # why: D-24632 — tell the hook when this commit is a real merge
+            # (2+ parents) so it can accept git's default merge-from-main
+            # subject; the hook owns the subject pattern (one copy, no drift).
+            PARENT_COUNT=$(git rev-list --parents -n 1 "$SHA" | wc -w)
+            IS_MERGE=0
+            if [ "$PARENT_COUNT" -gt 2 ]; then
+              IS_MERGE=1
+            fi
+
             echo "::group::Commit $SHA — $SUBJECT"
-            if .githooks/commit-msg "$MSG_FILE" 2>&1; then
+            if COMMIT_HYGIENE_IS_MERGE="$IS_MERGE" .githooks/commit-msg "$MSG_FILE" 2>&1; then
               echo "✅ Passed"
               PASSED=$((PASSED + 1))
             else

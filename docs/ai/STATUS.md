@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24632 — Auto-fix's merge-from-main commit no longer fails the commit check (direct fix) (2026-09-28)
+
+**Developer-facing only.** When Auto-fix resolves a PR's conflict by merging main in, git's default "Merge remote-tracking branch 'origin/main' into …" commit now passes the commit-message check, so the PR no longer needs a squash and force-push to go green. Only a real merge of main qualifies; every other commit still needs `EC-###:` / `SPEC:` / `INFRA:`.
+
+- **Tooling only.** `.githooks/commit-msg` (one shared rule), the commit-hygiene CI job (passes a merge flag), and the 01.3 reference doc.
+- **Counts and gates.** `pnpm guard:test` 22/0 (+5 hook tests).
+
 ### D-24628 — Natural Leader and six sibling cards stop demanding a team their text only names (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Cannonball's Natural Leader no longer logs "needs
