@@ -40,8 +40,7 @@ play-time effect.
   unchanged at 2657. `runtime-observed-hollows.json` 53→78 mechanics and 4569→7178 observations; only
   rows for the named keywords moved. Dashboard `useInPlayCoverage` totalObs 5397→8006, percentResolved
   21.0→14.2.
-- **Live-verify (D-24026):** pending. Play Cannonball Kinetic Blast Field and confirm `soaring-flight`
-  at `onRecruit` in the diagnostics hollow table.
+- **Live-verify (D-24026):** verified — match `039e3dce` (2026-09-27, solo Loki / Midtown Bank Robbery; cvwr Storm & Black Panther, bkwd Falcon & Winter Soldier, xmen Cannonball). Kinetic Blast Field, Natural Leader and Carry to the Air logged `soaring-flight` at `onRecruit` each time they were played (first at log 3.2.5), recorded at play time as designed. Atone's "[keyword:Dark Memories]." logged `dark-memories` at `onPlay`, which covers the default-timing half.
 
 ### D-24623 — Gate-only hero lines now surface as hollow effects (direct fix) (2026-09-27)
 
