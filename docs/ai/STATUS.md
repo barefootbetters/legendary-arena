@@ -18,8 +18,7 @@ Download-diagnostics export still carries every raw record.
   UIState change.
 - **Counts and gates.** arena-client `test` 2167/0 (+5) and `typecheck` 0. Verified in the dev client with the
   Cannonball match's records injected.
-- **Live-verify (D-24026):** pending. Play Cannonball (or any repeated hollow) and confirm one row per
-  card and mechanic, with a count and turn list.
+- **Live-verify (D-24026):** verified 2026-09-27 — deploy-confirmed-SHA + bundle-content form (the WP-258 precedent): play.legendary-arena.com serves `index-BK6OvDeJ.js` built from `db07ea4` (which contains #2477), and that bundle carries the grouped-panel code (`hollow-effects-summary`, `hollow-effects-count`). Operator Cannonball match (2026-09-27, Loki / Midtown Bank Robbery; xmen Cannonball, bkwd Falcon & Winter Soldier, cvwr Storm & Black Panther; client `db07ea4`) produced 36 hollow records, which group into 6 rows: Kinetic Blast Field soaring-flight onRecruit ×13, Carry to the Air ×8 onRecruit / ×4 onPlay, Natural Leader ×6, Human Cannon ×3, Atone dark-memories ×2. **Operator-viewed:** the end-of-match panel read "Hollow effects 36 across 6 abilities" with exactly those six rows, each with a ×count and turn list (Kinetic Blast Field ×13 over 11 distinct turns — two copies fired on some turns).
 
 ### D-24625 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
 

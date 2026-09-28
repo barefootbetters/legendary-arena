@@ -45693,7 +45693,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** arena-client `test` 2167/0 (+5: a grouping render test in `HollowEffectsPanel.test.ts`, 4 helper tests in `hollowEffects.group.test.ts`), and `typecheck` 0. Checked in the dev client (`?fixture=mid-turn&play=1`) with the Cannonball match's own records injected: 16 records rendered as 8 rows with counts and turn lists; no horizontal overflow at desktop width, and the panel stays on screen at 375px.
 
-**D-24026 live-on-surface:** pending. After deploy, play any match that logs a repeated hollow (e.g. Cannonball) and confirm the panel shows one row per card and mechanic, with a count and turn list.
+**D-24026 live-on-surface:** verified 2026-09-27 — deploy-confirmed-SHA + bundle-content form (the WP-258 precedent): play.legendary-arena.com serves `index-BK6OvDeJ.js` built from `db07ea4` (which contains #2477), and that bundle carries the grouped-panel code (`hollow-effects-summary`, `hollow-effects-count`). Operator Cannonball match (2026-09-27, Loki / Midtown Bank Robbery; xmen Cannonball, bkwd Falcon & Winter Soldier, cvwr Storm & Black Panther; client `db07ea4`) produced 36 hollow records, which group into 6 rows: Kinetic Blast Field soaring-flight onRecruit ×13, Carry to the Air ×8 onRecruit / ×4 onPlay, Natural Leader ×6, Human Cannon ×3, Atone dark-memories ×2. **Operator-viewed:** the end-of-match panel read "Hollow effects 36 across 6 abilities" with exactly those six rows, each with a ×count and turn list (Kinetic Blast Field ×13 over 11 distinct turns — two copies fired on some turns).
 
 **Reserved by:** NUMBER-LEDGER D-24626. Related: D-24034 (WP-257 records), WP-258 / EC-289 (panel), D-24618, D-24623, D-24624.
 
