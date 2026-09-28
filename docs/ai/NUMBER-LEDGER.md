@@ -423,6 +423,9 @@ high-water: 422
 - WP-778 — split-face-cost-picker (App arena-client. SplitFaceChoicePrompt disables a face whose discard cost the hand cannot pay. Depends on WP-777. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - WP-783 — phasing-hand-swap (Game Engine + App arena-client. The Phasing keyword: a player-initiated phaseCard move swaps a Phasing hero card in hand with the top card of the deck during your main stage; owner-only projection of phasable hand cards; a Phase button on the hand card; the false onPlay phasing hollow retires. WP-782 / EC-819 / D-24627..24628 held by open PR #2476. reserved 2026-09-27, claude/reserve-phasing)
 - WP-784 — deck-top-discards-count (Engine. "If you discarded any cards this turn" (New Wings, Pumpkin Bombs) also counts cards discarded from the top of a deck — Berserk, reveal-and-discard, Steal Abilities — not only hand discards; revises D-24616 §4. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
+- WP-785 — lobby-arena-entrance (App arena-client. A dark, art-led lobby landing with one Enter Arena that seats the player at a legal featured table in one click; the current lobby controls move intact behind an Arena Workshop entry. Priority 1 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- WP-786 — battle-brief (App arena-client. A battle brief shown between match creation and the play board: Mastermind + Always Leads, Scheme + twist count, villain and henchman groups, hero lineup, seats, one Enter Arena. Priority 2 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+
 ## EC
 
 high-water: 457
@@ -806,6 +809,9 @@ high-water: 457
 - EC-820 — phasing-hand-swap (WP-783; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-phasing)
 - EC-821 — deck-top-discards-count (WP-784; Engine. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
 - EC-819 — soaring-flight (WP-782; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-team-gate-soaring-flight)
+- EC-822 — lobby-arena-entrance (WP-785; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- EC-823 — battle-brief (WP-786; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+
 ## D
 
 high-water: 24241
@@ -1213,3 +1219,5 @@ section below) and the allocation protocol in
 - D-24628 — body-team-token-not-a-gate (direct fix, no WP — on a line that opens with an explicit [hc:X]/[team:X] gate prefix and ':', a [team:Y] token after the colon is descriptive (a target / criterion), not a requiresTeam play-gate; xmen Cannonball Natural Leader, bkpt Okoye, co2e Battlefield Promotion, shld Deathlok / Mockingbird, vill Magneto, wwhk Rick Jones. D-24622 held by open PR #2444. renumbered 2026-09-27 from D-24626 (taken on main by hollow-panel-grouping, #2477). reserved 2026-09-27, claude/reserve-team-gate-soaring-flight)
 - D-24631 — deck-top-discards-count (WP-784. Locks which discards count toward cardsDiscardedThisTurn: card-effect hand discards plus deck-top discards to the discard pile; cleanup and gained cards excluded. D-24630 held by open PR #2483. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
 - D-24632 — merge-from-main-commit-exemption (direct fix, no WP — .githooks/commit-msg accepts git's default merge-from-main subject ("Merge remote-tracking branch 'origin/main' into <branch>") on a genuine merge only (MERGE_HEAD locally, or 2+ parents flagged by the commit-hygiene CI job); other merges and hand-written merge subjects still need a prefix. reserved 2026-09-28, claude/commit-hygiene-merge-commits)
+- D-24633 — lobby-arena-entrance (WP-785. Locks the player-path default: one Enter Arena on a curated, composition-legal featured table; every existing lobby control kept under Arena Workshop, none removed. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- D-24634 — battle-brief (WP-786. Locks where the battle brief sits between create and board, and which client-visible data it reads. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
