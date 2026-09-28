@@ -425,6 +425,7 @@ high-water: 422
 - WP-784 — deck-top-discards-count (Engine. "If you discarded any cards this turn" (New Wings, Pumpkin Bombs) also counts cards discarded from the top of a deck — Berserk, reveal-and-discard, Steal Abilities — not only hand discards; revises D-24616 §4. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
 - WP-785 — lobby-arena-entrance (App arena-client. A dark, art-led lobby landing with one Enter Arena that seats the player at a legal featured table in one click; the current lobby controls move intact behind an Arena Workshop entry. Priority 1 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - WP-786 — battle-brief (App arena-client. A battle brief shown between match creation and the play board: Mastermind + Always Leads, Scheme + twist count, villain and henchman groups, hero lineup, seats, one Enter Arena. Priority 2 of the ewiki Play Lobby UX Direction. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- WP-787 — guest-solo-create (Server. An unauthenticated endpoint that creates one solo (1-player) featured-table match for a signed-out visitor and returns seat credentials, delivering the Access Model's guest first-taste solo match (D-24092); guest seats stay rowless and unranked. reserved 2026-09-28, claude/reserve-guest-solo-create)
 
 ## EC
 
@@ -811,6 +812,7 @@ high-water: 457
 - EC-819 — soaring-flight (WP-782; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-team-gate-soaring-flight)
 - EC-822 — lobby-arena-entrance (WP-785; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - EC-823 — battle-brief (WP-786; App arena-client. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- EC-824 — guest-solo-create (WP-787; Server. reserved 2026-09-28, claude/reserve-guest-solo-create)
 
 ## D
 
@@ -1221,3 +1223,4 @@ section below) and the allocation protocol in
 - D-24632 — merge-from-main-commit-exemption (direct fix, no WP — .githooks/commit-msg accepts git's default merge-from-main subject ("Merge remote-tracking branch 'origin/main' into <branch>") on a genuine merge only (MERGE_HEAD locally, or 2+ parents flagged by the commit-hygiene CI job); other merges and hand-written merge subjects still need a prefix. reserved 2026-09-28, claude/commit-hygiene-merge-commits)
 - D-24633 — lobby-arena-entrance (WP-785. Locks the player-path default: one Enter Arena on a curated, composition-legal featured table; every existing lobby control kept under Arena Workshop, none removed. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
 - D-24634 — battle-brief (WP-786. Locks where the battle brief sits between create and board, and which client-visible data it reads. reserved 2026-09-28, claude/reserve-lobby-entrance-wps)
+- D-24635 — guest-solo-create (WP-787. Locks the guest solo create contract: endpoint, auth value, server-supplied composition, abuse limits, and the unranked / no-domain-row posture. reserved 2026-09-28, claude/reserve-guest-solo-create)
