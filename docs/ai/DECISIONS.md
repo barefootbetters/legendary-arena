@@ -45679,4 +45679,24 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24626 — The Play Diagnostics Hollow effects panel shows one row per distinct gap, not one per play (Active 2026-09-27 — direct fix, no WP; presentation change to the WP-258 / EC-289 panel)
+
+**Status:** Active — landed 2026-09-27 (arena-client only: `HollowEffectsPanel.vue` + new `hollowEffects.group.ts`).
+
+**Context.** The engine records one hollow per play (WP-257), and the panel rendered one row per record. After D-24618 / D-24623 / D-24624 surfaced far more hollows, a single 27-turn Cannonball match filled the panel with 64 rows, mostly three cards repeating every turn. The Card column showed only `cardType` ("hero"), so a row never said which card it was.
+
+**Decision.**
+1. Rows group by (card extId without its `#n` copy suffix, mechanic, timing, reason), in first-seen order. Each row shows the card name, `cardType`, mechanic, timing, reason, a ×count, and the distinct turns it fired on. The heading adds "N across M abilities". EC-289's locked fields (cardType, mechanic, timing, reason, turn) are all still rendered.
+2. The card name is formatting-only: the last extId segment, title-cased (`xmen/cannonball/kinetic-blast-field#1` → "Kinetic Blast Field"). This is the PlayedCardsRow / HandRow fallback. The full extId is the row tooltip. `HollowEffectRecord` carries no display name, and adding one would be a five-step UIState contract change for a debug panel.
+3. Presentation only. `UIState.hollowEffects` and the Download-diagnostics export still carry every raw record. Nothing changes in the engine.
+4. The panel is now up to 42rem wide, capped at the viewport width minus 16px, so it no longer runs off a phone screen.
+
+**Gates.** arena-client `test` 2167/0 (+5: a grouping render test in `HollowEffectsPanel.test.ts`, 4 helper tests in `hollowEffects.group.test.ts`), and `typecheck` 0. Checked in the dev client (`?fixture=mid-turn&play=1`) with the Cannonball match's own records injected: 16 records rendered as 8 rows with counts and turn lists; no horizontal overflow at desktop width, and the panel stays on screen at 375px.
+
+**D-24026 live-on-surface:** pending. After deploy, play any match that logs a repeated hollow (e.g. Cannonball) and confirm the panel shows one row per card and mechanic, with a count and turn list.
+
+**Reserved by:** NUMBER-LEDGER D-24626. Related: D-24034 (WP-257 records), WP-258 / EC-289 (panel), D-24618, D-24623, D-24624.
+
+---
+
 Protect this file.
