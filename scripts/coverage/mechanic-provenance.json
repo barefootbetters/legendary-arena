@@ -32,6 +32,7 @@
     "shuffle-discard-empty-reward": { "wp": "WP-356", "decision": "D-24148" },
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },
     "dodge": { "wp": "WP-275", "decision": "D-24051" },
+    "phasing": { "wp": "WP-783", "decision": "D-24629" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },
     "empowered": { "wp": "WP-267", "decision": "D-24044" },
     "gainWoundEachPlayer": { "wp": "WP-185", "decision": "D-18502" },

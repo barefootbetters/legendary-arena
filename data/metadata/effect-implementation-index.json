@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 540,
+      "executable": 544,
       "deferred": 16,
       "condition": 47,
-      "unsupported": 301,
+      "unsupported": 297,
       "unmarked": 1050,
       "subsystem": 4
     }
@@ -8882,10 +8882,10 @@
       "set": "cvwr",
       "scope": "hero",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
+      "wp": "WP-783",
+      "decision": "D-24629",
       "designs": [
         {
           "slug": "fight",
@@ -9383,10 +9383,10 @@
       "set": "cvwr",
       "scope": "hero",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
+      "wp": "WP-783",
+      "decision": "D-24629",
       "designs": [
         {
           "slug": "harder-than-diamond",
@@ -9458,10 +9458,10 @@
       "set": "cvwr",
       "scope": "hero",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
+      "wp": "WP-783",
+      "decision": "D-24629",
       "designs": [
         {
           "slug": "astral-projection",
@@ -14429,10 +14429,10 @@
       "set": "msis",
       "scope": "hero",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
+      "wp": "WP-783",
+      "decision": "D-24629",
       "designs": [
         {
           "slug": "invoke-the-time-stone",

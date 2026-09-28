@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue';
-import type { UICardDisplay } from '@legendary-arena/game-engine';
+import type { CardExtId, UICardDisplay } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
 import { computeHandArc } from './handArc';
@@ -59,6 +59,16 @@ export default defineComponent({
       type: Function as PropType<SubmitMove>,
       required: true,
     },
+    /**
+     * WP-783 / D-24629 — the hand cards the engine says may be phased right now
+     * (`economy.phasingOptions`, active player only). Each listed card gets a
+     * **Phase** button. The client never decides legality; it only renders this list.
+     */
+    phasingCardIds: {
+      type: Array as PropType<readonly CardExtId[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     // why: a Wound (WOUND_EXT_ID) carries no play value and CANNOT be played
@@ -78,6 +88,14 @@ export default defineComponent({
         return;
       }
       props.submitMove('playCard', { cardId });
+    }
+
+    function isPhasable(cardId: string): boolean {
+      return props.phasingCardIds.includes(cardId);
+    }
+
+    function onPhase(cardId: string): void {
+      props.submitMove('phaseCard', { cardId });
     }
 
     function buttonReason(cardId: string): string | null {
@@ -180,6 +198,8 @@ export default defineComponent({
 
     return {
       onPlay,
+      isPhasable,
+      onPhase,
       buttonReason,
       buttonDisabled,
       displayName,
@@ -240,6 +260,22 @@ export default defineComponent({
             :hand-lift="true"
           />
         </button>
+        <!-- why: WP-783 / D-24629 — the Phase button is a SIBLING of the play-card
+             button inside the <li>, never nested in it: interactive elements
+             cannot nest (a button inside a button is invalid HTML and its click
+             would also play the card). Rendered only for cards the engine lists
+             in economy.phasingOptions; the engine re-validates on submit. -->
+        <button
+          v-if="isPhasable(cardId)"
+          type="button"
+          class="hand-card__phase"
+          data-testid="play-hand-phase"
+          :data-card-id="cardId"
+          :aria-label="`Phase ${displayName(cardId, index)}`"
+          @click="onPhase(cardId)"
+        >
+          Phase
+        </button>
       </li>
     </ul>
   </section>
@@ -281,6 +317,9 @@ export default defineComponent({
 }
 
 .hand-card {
+  /* why: WP-783 — the containing block for the absolutely positioned Phase
+     button; the <li> box and the arc geometry are otherwise unchanged. */
+  position: relative;
   flex: 0 0 auto;
   /* why: rotate about the bottom-centre so cards splay like a held fan rather
      than pivoting from their middle. */
@@ -299,6 +338,46 @@ export default defineComponent({
   background: transparent;
   cursor: inherit;
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-783 / D-24629 — the Phase button overlays the tile's LEFT edge. That
+   anchor is what keeps it visible: a later card overlaps only the RIGHT part of
+   an earlier one when the fan tightens (down to -40px). Each transformed <li> is
+   its own stacking context, so this z-index only lifts the button above its own
+   CardTile, never above a neighbouring card. The explicit padding / border /
+   background / cursor override the scoped .hand-card button reset above. */
+.hand-card .hand-card__phase {
+  position: absolute;
+  left: 2px;
+  bottom: 2.25rem;
+  z-index: 1;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 0.3rem;
+  background: rgba(40, 24, 88, 0.92);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.hand-card .hand-card__phase:hover,
+.hand-card .hand-card__phase:focus-visible {
+  background: rgba(88, 56, 176, 0.95);
+}
+
+.hand-card .hand-card__phase:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+/* why: WP-783 — mirror the hover lift for keyboard focus, so a focused Phase
+   button (or play button) is never covered by the neighbouring card. */
+.hand-card:focus-within {
+  z-index: 5;
 }
 
 @media (hover: hover) {

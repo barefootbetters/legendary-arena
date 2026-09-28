@@ -47,6 +47,7 @@ import type {
 import type { NotableGameEvent } from '../events/notableEvents.types.js';
 import type { EffectTrace } from '../diagnostics/hollowEffect.types.js';
 import { buildUIState } from './uiState.build.js';
+import { filterUIStateForAudience } from './uiState.filter.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
@@ -896,6 +897,89 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     assert.ok(
       !('excessiveViolenceAvailable' in absent.economy),
       'a turn with no enrolled EV card must omit the availability cue entirely',
+    );
+  });
+
+  it('UITurnEconomyState.phasingOptions is pinned on a BUILT and FILTERED projection (WP-783)', () => {
+    // why: WP-783 / D-24629 — phasingOptions is OPTIONAL and omit-when-absent, so a
+    // `satisfies`/literal pin gives it NO drift protection (WP-563 / D-24372). Only a
+    // keyset assertion on a REAL built projection — with a Phasing card in hand in the
+    // `main` stage — catches buildUIState dropping it, and the same keyset on the
+    // active player's FILTERED projection catches the audience whitelist dropping it
+    // (the EC-206 failure mode).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    // why: materialize a phasable hand card — the main stage, a Phasing hook on a hand
+    // card, and a non-empty deck — so the options project (absent otherwise).
+    gameState.currentStage = 'main';
+    gameState.playerZones['0']!.hand = ['phasing-card', 'plain-card'];
+    gameState.playerZones['0']!.deck = ['deck-top'];
+    gameState.heroAbilityHooks = [
+      { cardId: 'phasing-card', timing: 'onPlay', keywords: ['phasing'], effects: [{ type: 'phasing' }] },
+    ];
+    const present = buildUIState(gameState, uiCtx);
+    const expectedKeys = [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'phasingOptions',
+      'piercing',
+      'recruit',
+      'woundsDrawn',
+    ];
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), expectedKeys);
+    assert.deepStrictEqual(present.economy.phasingOptions, ['phasing-card']);
+
+    const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(filtered.economy).sort(), expectedKeys);
+    assert.deepStrictEqual(filtered.economy.phasingOptions, ['phasing-card']);
+
+    // why: no phasable card (the Phasing card left the hand) must project the key
+    // ABSENT, not [] — the omit-when-absent build-side contract.
+    gameState.playerZones['0']!.hand = ['plain-card'];
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(
+      !('phasingOptions' in absent.economy),
+      'a hand with no phasable card must omit phasingOptions entirely',
     );
   });
 

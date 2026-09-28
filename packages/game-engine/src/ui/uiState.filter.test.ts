@@ -2697,6 +2697,42 @@ describe('filterUIStateForAudience — Excessive Violence availability cue (WP-7
   });
 });
 
+describe('filterUIStateForAudience — Phasing options (WP-783 / D-24629)', () => {
+  // why: the Phasing options name cards in the active player's hand, so they ride the
+  // active-player-only economy block: they must survive the whitelist for the active
+  // player (as a copy, not an alias), be omitted when absent, and NEVER reach a
+  // non-active player or a spectator (REDACTED_ECONOMY).
+  it('passes phasingOptions through for the active player as a copied array', () => {
+    const uiState = createTestUIState();
+    uiState.economy.phasingOptions = ['phasing-a', 'phasing-b'];
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepStrictEqual(result.economy.phasingOptions, ['phasing-a', 'phasing-b']);
+    assert.notEqual(
+      result.economy.phasingOptions,
+      uiState.economy.phasingOptions,
+      'the filtered array is a copy, never an alias of the input',
+    );
+  });
+
+  it('omits phasingOptions for the active player when absent (omit-when-absent)', () => {
+    const uiState = createTestUIState();
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.ok(!('phasingOptions' in result.economy));
+  });
+
+  it('never exposes phasingOptions to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.phasingOptions = ['phasing-a'];
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(
+        !('phasingOptions' in result.economy),
+        'non-active audiences see REDACTED_ECONOMY without the Phasing options',
+      );
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // gameOver survives the audience filter for EVERY seat (report-card delivery)
 // ---------------------------------------------------------------------------

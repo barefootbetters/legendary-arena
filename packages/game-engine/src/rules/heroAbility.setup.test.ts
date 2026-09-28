@@ -580,6 +580,7 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'ko-wound', // why: WP-721 / D-24542 — rewardless auto-resolving sibling of ko-wound-reward ("You may KO a Wound from your hand or discard pile." with NO reward clause)
       'wall-crawl', // why: D-24049 — recruit-time-executed keyword
       'dodge', // why: D-24051 — hand-action-executed keyword (the dodgeCard move)
+      'phasing', // why: WP-783 / D-24629 — hand-action-executed keyword (the phaseCard move)
       'undercover', // why: WP-678 / D-24494 (supersedes D-24060) — Undercover descriptive token; bare form is an honest hollow (no source zone → no handler)
       'undercover-hand-shield-hero', // why: WP-678 / D-24494 — "send a [team:shield] Hero from your hand Undercover" → Victory Pile (1 VP)
       'undercover-officer-stack', // why: WP-678 / D-24494 — "send a card from the S.H.I.E.L.D. Officer Stack Undercover" → Victory Pile (1 VP)
@@ -636,8 +637,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      74,
-      'HERO_KEYWORDS must have exactly 74 entries',
+      75,
+      'HERO_KEYWORDS must have exactly 75 entries',
     );
 
     assert.deepStrictEqual(
@@ -1635,6 +1636,27 @@ describe('buildHeroAbilityHooks — Size-Changing class-grant (WP-290 / D-24074)
     assert.ok((hook.keywords as string[]).includes('size-changing'), 'keyword still recognized');
     assert.equal(hook.sizeChangingClasses, undefined, 'no grant assigned (empty list omitted)');
     assert.ok(!(hook.unresolvedMarkers ?? []).includes('size-changing'), 'no unresolved marker, no hollow');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-783 — Phasing parse (D-24629)
+//
+// A bare `[keyword:Phasing]` line (every printed Phasing line in cvwr / msis) is consumed
+// by the parser's generic valid-keyword branch now that `phasing` is a HeroKeyword. It must
+// resolve to `keywords ['phasing']` with no unresolved marker, so it records no hollow.
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — Phasing keyword (WP-783 / D-24629)', () => {
+  it('"[keyword:Phasing]" → keywords [phasing], no unresolved marker', () => {
+    const registry = makeHeroRegistry('cvwr', 'phasing-hero', [
+      { slug: 'phasing-card', rarityLabel: 'Common 1', abilities: ['[keyword:Phasing]'] },
+    ]);
+    const config: MatchSetupConfig = { ...createTestConfig(), heroDeckIds: ['cvwr/phasing-hero'] };
+    const hook = buildHeroAbilityHooks(registry, config)[0]!;
+
+    assert.deepStrictEqual(hook.keywords, ['phasing'], 'the line resolves to exactly the phasing keyword');
+    assert.equal(hook.unresolvedMarkers, undefined, 'the recognized keyword records no unresolved marker');
   });
 });
 
