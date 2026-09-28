@@ -138,6 +138,9 @@ export type UiMoveName =
   // why: WP-380 / D-24181 — surfaces the WP-379 Wound "Healing" ability (engine
   // healWounds). Dispatched with an empty payload; the move takes no arguments.
   | 'healWounds'
+  // why: WP-783 / D-24629 — surfaces the Phasing hand swap (engine phaseCard). Dispatched as
+  // { cardId } from the Phase button on a phasable hand card; the engine decides legality.
+  | 'phaseCard'
   // why: WP-502 / D-24306 — surfaces the "End Game" control (engine endMatchEarly).
   // Dispatched with an empty payload; the move takes no arguments. Latches the
   // MATCH_ENDED_EARLY endgame counter so the match ends for every seat.

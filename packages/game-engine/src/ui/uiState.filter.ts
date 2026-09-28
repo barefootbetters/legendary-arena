@@ -457,6 +457,13 @@ export function filterUIStateForAudience(
       ...(uiState.economy.excessiveViolenceAvailable === true
         ? { excessiveViolenceAvailable: true as const }
         : {}),
+      // why: WP-783 / D-24629 — the Phasing options name cards in the owner's hand, so
+      // they pass through for the ACTIVE player only, as a copied array, omit-when-absent.
+      // REDACTED_ECONOMY (non-active players + spectators) never carries them. A field that
+      // reaches buildUIState but not this whitelist is silently dropped (the EC-206 failure).
+      ...(uiState.economy.phasingOptions !== undefined && uiState.economy.phasingOptions.length > 0
+        ? { phasingOptions: [...uiState.economy.phasingOptions] }
+        : {}),
     };
   } else {
     // why: non-active players and spectators do not see economy details

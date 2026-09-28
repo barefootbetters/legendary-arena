@@ -243,7 +243,7 @@ cosm/ronan-the-accuser,Ronan the Accuser,cosm,rescue,executable,WP-215,D-21501,p
 cosm/yondu,Yondu,cosm,burn-shards,unsupported,,,,whistling-arrow
 cosm/yondu,Yondu,cosm,danger-sense,unsupported,,,,anticipate-their-movements|interstellar-hunter
 cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,(unmarked),unmarked,,,,
-cvwr/cloak-dagger,Cloak & Dagger,cvwr,phasing,unsupported,,,,fight|flee
+cvwr/cloak-dagger,Cloak & Dagger,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,fight|flee
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,play-both-sides,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides,penumbra
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,darkness
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,light
@@ -270,10 +270,10 @@ cvwr/stature,Stature,cvwr,size-changing,executable,WP-290,D-24074,packages/game-
 cvwr/storm-black-panther,Storm & Black Panther,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-clues|gathering-rain-clouds
 cvwr/tigra,Tigra,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ferocity
 cvwr/tigra,Tigra,cvwr,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,supernatural-senses
-cvwr/vision,Vision,cvwr,phasing,unsupported,,,,harder-than-diamond|insubstantial-accomplishments|lighter-than-air|solar-energy|through-solid-objects
+cvwr/vision,Vision,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,harder-than-diamond|insubstantial-accomplishments|lighter-than-air|solar-energy|through-solid-objects
 cvwr/vision,Vision,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,harder-than-diamond|lighter-than-air
 cvwr/wiccan,Wiccan,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,supersonic-speed|supersonic-spells
-cvwr/wiccan,Wiccan,cvwr,phasing,unsupported,,,,astral-projection|sorcerous-illusions
+cvwr/wiccan,Wiccan,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,astral-projection|sorcerous-illusions
 dead/bob-agent-of-hydra,"Bob, Agent of HYDRA",dead,excessive-violence,unsupported,,,,bullets-flying-bob-hiding|epic-middle-manager
 dead/bob-agent-of-hydra,"Bob, Agent of HYDRA",dead,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,hydra-half-wit
 dead/deadpool,Deadpool,dead,excessive-violence,unsupported,,,,deadpool-rage
@@ -391,7 +391,7 @@ msis/bruce-banner,Bruce Banner,msis,ko-wound-reward,executable,WP-382,D-24183,pa
 msis/bruce-banner,Bruce Banner,msis,sacrifice,unsupported,,,,burst-of-rage|reverse-the-snap
 msis/captain-marvel,Captain Marvel,msis,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,dawning-hope|infused-by-the-tesseract
 msis/captain-marvel,Captain Marvel,msis,endgame,unsupported,,,,infused-by-the-tesseract|return-from-the-stars|time-to-end-it|turning-point
-msis/doctor-strange,Doctor Strange,msis,phasing,unsupported,,,,invoke-the-time-stone|open-portals|sift-futures
+msis/doctor-strange,Doctor Strange,msis,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,invoke-the-time-stone|open-portals|sift-futures
 msis/doctor-strange,Doctor Strange,msis,sacrifice,unsupported,,,,1-in-14-000-065|invoke-the-time-stone
 msis/wanda-vision,Wanda & Vision,msis,reveal-odd-draw,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-odd-draw,witchcraft
 msis/wanda-vision,Wanda & Vision,msis,sacrifice,unsupported,,,,let-go|we-have-to-destroy-it

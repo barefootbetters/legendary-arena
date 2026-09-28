@@ -63,6 +63,7 @@ import { exorciseHauntedHero } from './moves/exorciseHauntedHero.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
+import { phaseCard } from './moves/phaseCard.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
@@ -547,6 +548,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // (client: false) per D-10008 — it mutates real G (playerZones.hand / G.ko),
     // absent on UIState.
     healWounds: { move: healWounds, client: false },
+    // why: WP-783 / D-24629 — phaseCard is a non-core, internally-stage-gated move (the
+    // dodgeCard pattern), NOT a core move; registered here so the player can swap a
+    // Phasing card in hand with the top card of their deck. Server-only (client: false)
+    // per D-10008 — it mutates real G (playerZones), absent on UIState. Not emitted by
+    // getLegalMoves, so bots never phase.
+    phaseCard: { move: phaseCard, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
     // (endedEarly tie) for every seat via the top-level endIf. Server-only

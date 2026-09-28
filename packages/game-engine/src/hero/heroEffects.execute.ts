@@ -328,7 +328,14 @@ export const RECRUIT_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['wall-cra
 // different times and a premature merge would blur that); NOT added to HANDLED_KEYWORDS
 // (that demands a handler and would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS
 // bidirectional test).
-export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['dodge'];
+export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
+  'dodge',
+  // why: WP-783 / D-24629 — phasing is executed by the phaseCard hand move (swap a
+  // Phasing card in hand with the top card of the deck), not on play. Same category and
+  // same two reasons as dodge above: ledger-`executable`, and the play-time visit of its
+  // onPlay hook classifies `applied` (no hollow) while the no-magnitude effect no-ops.
+  'phasing',
+];
 
 // why: WP-678 / D-24494 (supersedes D-24060) — the WP-282 face-down-execution category is
 // retired. Undercover no longer executes via a face-down store (that model was dead code —

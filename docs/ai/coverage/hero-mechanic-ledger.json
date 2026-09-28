@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 780,
     "byStatus": {
-      "executable": 383,
+      "executable": 387,
       "deferred": 16,
       "condition": 47,
-      "unsupported": 300,
+      "unsupported": 296,
       "unmarked": 32,
       "subsystem": 2
     },
@@ -4473,10 +4473,10 @@
       "heroName": "Cloak & Dagger",
       "set": "cvwr",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-783",
+      "decision": "D-24629",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
       "designs": [
         {
           "slug": "fight",
@@ -4950,10 +4950,10 @@
       "heroName": "Vision",
       "set": "cvwr",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-783",
+      "decision": "D-24629",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
       "designs": [
         {
           "slug": "harder-than-diamond",
@@ -5022,10 +5022,10 @@
       "heroName": "Wiccan",
       "set": "cvwr",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-783",
+      "decision": "D-24629",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
       "designs": [
         {
           "slug": "astral-projection",
@@ -7185,10 +7185,10 @@
       "heroName": "Doctor Strange",
       "set": "msis",
       "mechanic": "phasing",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-783",
+      "decision": "D-24629",
+      "handler": "packages/game-engine/src/moves/phaseCard.ts",
       "designs": [
         {
           "slug": "invoke-the-time-stone",

@@ -921,6 +921,7 @@ export default defineComponent({
                     :current-stage="snapshot.game.currentStage"
                     :is-viewer-turn="isViewerTurn"
                     :submit-move="submitMove"
+                    :phasing-card-ids="snapshot.economy.phasingOptions ?? []"
                   />
                 </div>
                 <div class="play-desktop__cockpit-side">

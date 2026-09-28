@@ -23,6 +23,7 @@
 import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
+import type { CardExtId } from "../state/zones.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
@@ -788,6 +789,16 @@ export interface UITurnEconomyState {
    * card identities.
    */
   excessiveViolenceAvailable?: boolean;
+  /**
+   * WP-783 / D-24629 — the hand cards the active player may phase right now
+   * (swap with the top card of their deck), exactly `phasingOptions(G,
+   * currentPlayer)` from `moves/phaseCard.ts` — the same predicate the
+   * `phaseCard` move validates against. Drives the client **Phase** button on
+   * each listed hand card. Omit-when-absent (present only when non-empty) and
+   * active-player-only (absent from `REDACTED_ECONOMY`): it names cards in the
+   * owner's hand, which no other seat may see.
+   */
+  phasingOptions?: CardExtId[];
 }
 
 /**

@@ -491,9 +491,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 162, piercing-energy 143, …) and only rows for those same keywords grow (soaring-flight
   // 14 -> 276, danger-sense 73 -> 357, versatile 12 -> 161, …). totalObs 5397 -> 8006 (+2609,
   // equal to the raw feed rise). resolvedObs stays 1135, so percentResolved 21.0 -> 14.2.
+  // 2026-09-27 (WP-783 / D-24629, re-pin): phasing flips to executable (the phaseCard hand
+  // move), so its 98 runtime hollows leave the live feed and its committed-seed peak of 100
+  // moves into resolvedObs with the denominator held. totalObs stays 8006; resolvedObs
+  // 1135 -> 1235, so percentResolved 14.2 -> 15.4 (1235 / 8006). No other mechanic's count moved.
   const view = useInPlayCoverage();
   assert.equal(view.totalObs.value, 8006);
-  assert.equal(view.percentResolved.value, 14.2);
+  assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });
 

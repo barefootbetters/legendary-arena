@@ -15,6 +15,37 @@
 - **Counts and gates.** arena-client `test` 2184/0 (+17) and `typecheck` 0; full-repo `--no-bail` run 0 fail (session-expiry composable, pending-submit marker and LoginPage destination, EndgameSummary prompt).
 - **Live-verify (D-24026):** pending. Sign out in another tab mid-match, finish it, sign in from the end screen, and confirm the score submits.
 
+### WP-783 — Phasing swaps a Phasing card in hand with the top card of your deck (EC-820 / D-24629) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On your turn, in the main step with no
+choice open, each Phasing card in your hand (cvwr Cloak & Dagger / Vision / Wiccan, msis Doctor
+Strange) shows a **Phase** button. Pressing it puts that card on top of your deck and gives you the
+top card instead. The log reads "Player N phased <card> onto the top of their deck and took the top
+card into their hand." and never names the card you took. Play Diagnostics no longer lists
+`phasing` as a hollow effect.
+
+- **Engine.** `phasing` is a hand-action `HeroKeyword` beside Dodge (no handler, nothing on play).
+  New `phaseCard({ cardId })` move; `phasingOptions(G, playerId)` is the single legality predicate
+  for the move and the new owner-only `economy.phasingOptions` projection. An empty deck reshuffles
+  the discard first. The swap is not a draw or a play: no `turnEconomy` write, the draw lock does not
+  block it, and there is no per-turn limit. Bots never phase, so PAR models Phasing heroes without
+  the swap.
+- **Client.** `HandRow.vue` renders the Phase button as a sibling of the card's play button,
+  anchored to the tile's left edge; `PlayDesktop` / `PlayMobile` pass `economy.phasingOptions`.
+- **Pins and feeds.** `HERO_KEYWORDS` 74→75 (×3), moves 45→46. Hero mechanic ledger: the four
+  Phasing rows read `executable`. Runtime-observed: the `phasing` row (98 obs) is gone
+  (7178→7080). Dashboard in-play pin: totalObs 8006 unchanged, percentResolved 14.2→15.4. The
+  sentinel / PAR oracles are unchanged.
+- **Counts and gates.** After `pnpm -r build`, `pnpm -r --no-bail test` has 0 failures in every
+  package: engine 4663→4692/0, arena-client 2167→2175/0, dashboard 505/0, registry-viewer 307/0,
+  server 1636 (1430 pass, rest skipped)/0. arena-client `typecheck` 0; dashboard `typecheck` /
+  `lint` / `format:check` 0. `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`,
+  `sim:runtime-observed:check`, `sim:coverage --check`, `cards:check`, `ledger:numbers:check`,
+  `workindex:*:check` and `roadmap:counts:check` all pass.
+- **Live-verify (D-24026): pending.** Post-deploy, in a Cloak & Dagger match, press **Phase** on a
+  hand card: the card leaves the hand, a different card arrives, the log line appears, and the
+  Hollow effects panel no longer lists `phasing`.
+
 ### D-24626 — Hollow effects panel groups repeated rows (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The Play Diagnostics Hollow effects panel now
@@ -103,9 +134,12 @@ cost look exactly as before.
   `discardToPlayCost` fields as-is. A blocked side is refused before the submit latch, so it can never
   lock the other side.
 - **Counts and gates.** Picker file 9 → 14 tests, 0 fail; arena-client 2157/0 → 2162/0; vue-tsc 0.
-- **Live-verify (D-24026):** pending. In a manual Falcon & Winter Soldier match, play Attune / Atone with
-  an empty hand (Attune greyed out with the reason; Atone works) and with a card in hand (Attune shows
-  the cost line and binds).
+- **Live-verify (D-24026): PASS 2026-09-27 (cost line)** on `gitSha 803f6a5`, match `k_LplFQz3kv`: Jeff
+  confirmed the "Choose a side" picker showed "Discard a card to play this side" under Attune, and choosing
+  it bound Attune and parked the discard (log 9.2.4 → 9.2.5 and every later Attune). **Not observed live:**
+  the greyed-out "No card in hand to discard" state — a card was always in hand when Attune came up. It is
+  covered by the picker tests (disabled + hint + guard proof) and needs no separate verification unless a
+  report says otherwise.
 
 ### WP-777 — Attune pays its discard cost; New Wings / Pumpkin Bombs need a discard (2026-09-26)
 

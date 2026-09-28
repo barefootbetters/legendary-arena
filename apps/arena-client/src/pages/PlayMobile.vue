@@ -650,6 +650,7 @@ export default defineComponent({
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
             :submit-move="submitMove"
+            :phasing-card-ids="snapshot.economy.phasingOptions ?? []"
           />
         </section>
         <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)

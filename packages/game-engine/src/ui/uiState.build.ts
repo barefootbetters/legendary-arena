@@ -121,6 +121,9 @@ import { getEligibleGiveHqHeroCards } from '../moves/giveHqHeroChoice.resolve.js
 // predicate resolveCopyPowersChoice validates against, so the projected list is
 // byte-identical to what the resolve move accepts (the round-trip rule).
 import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js';
+// why: WP-783 / D-24629 — the phasable-hand-card list is the SAME predicate the phaseCard
+// move validates against (one legality authority), so the button never offers a no-op.
+import { phasingOptions } from '../moves/phaseCard.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
@@ -1011,6 +1014,7 @@ export function buildUIState(
   //
   const piercing = gameState.turnEconomy.piercing;
   const woundsDrawn = gameState.turnEconomy.woundsDrawn;
+  const currentPhasingOptions = phasingOptions(gameState, ctx.currentPlayer);
   const economy = {
     attack: gameState.turnEconomy.attack,
     recruit: gameState.turnEconomy.recruit,
@@ -1038,6 +1042,10 @@ export function buildUIState(
     gameState.turnEconomy.excessiveViolenceUsedThisTurn !== true
       ? { excessiveViolenceAvailable: true as const }
       : {}),
+    // why: WP-783 / D-24629 — project the Phasing options omit-when-absent (present only
+    // when at least one hand card is phasable), so a turn without Phasing keeps the
+    // economy block byte-identical and the client renders Phase buttons only when legal.
+    ...(currentPhasingOptions.length > 0 ? { phasingOptions: currentPhasingOptions } : {}),
   };
 
   // --- 8. Project log ---

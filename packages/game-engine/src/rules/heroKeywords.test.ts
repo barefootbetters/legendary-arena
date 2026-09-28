@@ -62,12 +62,13 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 74 entries after WP-780 play-both-sides', () => {
+  it('HERO_KEYWORDS array has exactly 75 entries after WP-783 phasing', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      74,
-      'HERO_KEYWORDS must have exactly 74 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619))',
+      75,
+      'HERO_KEYWORDS must have exactly 75 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629))',
     );
+    assert.ok(HERO_KEYWORDS.includes('phasing'), 'phasing must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('play-both-sides'), 'play-both-sides must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('optional-ko-your-hero'), 'optional-ko-your-hero must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('blood-frenzy'), 'blood-frenzy must be in HERO_KEYWORDS array');

@@ -584,3 +584,29 @@ describe('PlayDesktop notable-event overlay integration (WP-201)', () => {
     assert.equal(overlay.attributes('data-event-type'), 'mastermindStrikeResolved');
   });
 });
+
+describe('PlayDesktop Phase-button wiring (WP-783 / D-24629)', () => {
+  // why: the page is where economy.phasingOptions becomes HandRow's phasingCardIds
+  // prop. A HandRow unit test with an injected prop cannot catch a page that never
+  // passes it, so this mounts the real page from a snapshot.
+  test('a snapshot with economy.phasingOptions renders exactly one Phase button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.economy.phasingOptions = ['iron-man-tech'];
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    const phaseButtons = wrapper.findAll('[data-testid="play-hand-phase"]');
+    assert.equal(phaseButtons.length, 1);
+    assert.equal(phaseButtons[0]!.attributes('data-card-id'), 'iron-man-tech');
+  });
+
+  test('a snapshot without economy.phasingOptions renders no Phase button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('[data-testid="play-hand-row"]').exists(), true, 'the hand row is mounted');
+    assert.equal(wrapper.findAll('[data-testid="play-hand-phase"]').length, 0);
+  });
+});
