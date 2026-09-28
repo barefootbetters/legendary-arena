@@ -95,9 +95,12 @@ cost look exactly as before.
   `discardToPlayCost` fields as-is. A blocked side is refused before the submit latch, so it can never
   lock the other side.
 - **Counts and gates.** Picker file 9 → 14 tests, 0 fail; arena-client 2157/0 → 2162/0; vue-tsc 0.
-- **Live-verify (D-24026):** pending. In a manual Falcon & Winter Soldier match, play Attune / Atone with
-  an empty hand (Attune greyed out with the reason; Atone works) and with a card in hand (Attune shows
-  the cost line and binds).
+- **Live-verify (D-24026): PASS 2026-09-27 (cost line)** on `gitSha 803f6a5`, match `k_LplFQz3kv`: Jeff
+  confirmed the "Choose a side" picker showed "Discard a card to play this side" under Attune, and choosing
+  it bound Attune and parked the discard (log 9.2.4 → 9.2.5 and every later Attune). **Not observed live:**
+  the greyed-out "No card in hand to discard" state — a card was always in hand when Attune came up. It is
+  covered by the picker tests (disabled + hint + guard proof) and needs no separate verification unless a
+  report says otherwise.
 
 ### WP-777 — Attune pays its discard cost; New Wings / Pumpkin Bombs need a discard (2026-09-26)
 
