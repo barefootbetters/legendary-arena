@@ -56,7 +56,8 @@
 - `apps/server/src/match/guestSoloRoutes.test.ts` — **new** (10 tests, one `describe`; spy pool + spy store; test 5 also pins the
   one-time key-source log, test 8 also proves a native failure records no capacity entry)
 - `apps/server/src/server.mjs` — **modified** (one import + one registration)
-- `docs/ai/REFERENCE/api-endpoints.md` — **modified** (one new whole row, `Wired`, `guest`, bodyless, WP-787)
+- `docs/ai/REFERENCE/api-endpoints.md` — **modified** (one new whole row, `Wired`, `guest`, bodyless, WP-787; the native
+  `/games/legendary-arena/create` and `/{matchID}/join` rows replaced whole to list `POST /api/match/create-guest-solo` as a secret-carrying caller)
 - `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified**
 
 ## After Completing

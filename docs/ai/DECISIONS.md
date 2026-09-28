@@ -45826,4 +45826,20 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24636 — A signed-out Enter Arena plays the featured table as a guest (Drafted 2026-09-28; not yet landed — WP-788 / EC-825)
+
+**Context.** D-24633 §4 kept the WP-785 entrance's signed-out click as a bounce to sign-in, because no guest create path existed. D-24635 (WP-787) adds `POST /api/match/create-guest-solo`, delivering D-24092's promise of one solo match without an account on the server side.
+
+**Decision.**
+1. Signed out, the entrance's **Enter Arena** calls `POST /api/match/create-guest-solo` (no Authorization header, no body) and navigates to the returned guest play URL (`buildGuestPlayUrl`). It never calls the authed create or join. Signed-in behavior is unchanged.
+2. The signed-out helper reads "You’ll play as a guest. Sign in to save your results." with **Sign in** as a link, so the account offer stays visible; the existing gameover "Sign in to save your results" prompt is the conversion point.
+3. Failures show status-mapped player copy (429 throttled, 503 full, anything else generic), each offering sign-in, and re-enable the button. The server's own sentences are not shown to players.
+4. The client `FEATURED_TABLE` and the server `GUEST_SOLO_FEATURED_TABLE` are pinned equal (same sorted ids, same four counts, with a non-vacuous drifted-table negative) by a test that reads the server file as text (arena-client never imports `apps/server`).
+5. Known limitation: a signed-in visitor who clicks before their session hydrates is treated as signed out and gets a guest match; an `isSessionHydrating` flag is a follow-up.
+6. Supersedes D-24633 §4.
+
+**Reserved by:** NUMBER-LEDGER D-24636. Related: D-24092, D-24093 (the authed create/join sign-in redirect still holds for signed-in players), D-24633, D-24635, D-24441 (join-as-guest status mapping precedent), D-24630 (open PR #2483; its session-expired status needs a token, so a guest seat never reaches it).
+
+---
+
 Protect this file.
