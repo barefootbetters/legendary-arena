@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-787 / EC-824 — Guest solo create: a signed-out visitor can start one solo featured table (2026-09-28)
+
+**No user-observable change — infrastructure only.** New `POST /api/match/create-guest-solo` (Auth `guest`, bodyless) creates a 1-player unlisted match on a server-fixed featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank Robbery; Spider-Man, Hulk, Wolverine), joins seat `'0'` as `Guest`, and returns `{ matchId, seat: '0', credentials }`. The seat is rowless, so the match is Casual and cannot be submitted. A signed-out player sees it only after the client adoption WP (WP-788) wires WP-785's Enter Arena to it. D-24635 is Active and amends D-24092's ungated taste.
+
+- **Abuse bounds, before any fetch.** A per-connection token bucket (5 per minute) keyed by `cf-connecting-ip`, else `request.ip`, else `'unknown'`; then a process-wide cap of 200 creations per 2 hours (503). New shared `tokenBucketRateLimiter.mjs`. The analytics (D-20503) and join-as-guest (D-24441) limiters still key on `request.ip` (a proxy hop). Moving them onto the helper is the D-24635 §4 follow-up, and it should wait for the live key-source result below.
+- **Counts.** Server 1636 / 265 suites / 1430 pass → 1651 / 267 / 1445 pass, 0 fail, 206 skipped. `pnpm -r build` 0.
+- **Live check.** Local live-server smoke passed: 200; unlisted; seat 0 `Guest`; the LAGN read shows Magneto / Midtown / Brotherhood; the sixth call from one key gets 429 and a second key gets 200; the key-source log names no IP; no seat-account row. The **production** D-24026 check is operator-pending: two networks, and the `[guest-solo] rate-limit key source:` line in the Render logs. If that line reads `request.ip`, or network B also gets 429, the per-connection limit is shared by everyone and the 200 cap is the only bound.
+
 ### D-24632 — Auto-fix's merge-from-main commit no longer fails the commit check (direct fix) (2026-09-28)
 
 **Developer-facing only.** When Auto-fix resolves a PR's conflict by merging main in, git's default "Merge remote-tracking branch 'origin/main' into …" commit now passes the commit-message check, so the PR no longer needs a squash and force-push to go green. Only a real merge of main qualifies; every other commit still needs `EC-###:` / `SPEC:` / `INFRA:`.
