@@ -420,6 +420,7 @@ high-water: 422
 - WP-781 — lightshow-executor (Game Engine + App arena-client. The Lightshow keyword executor: count Lightshow cards played this turn; once per turn at 2+, an optional single-ability choice from those cards; retires the D-24622 lightshow hollow. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
 - WP-777 — split-face-discard-fidelity (Engine + card data. bkwd Falcon & Winter Soldier split faces: Attune "To play this side, you must discard a card" enforced as a face-bind cost, and New Wings "If you discarded any cards this turn" gated on a per-turn discard count; both over-credited in match 19720cb4. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - WP-778 — split-face-cost-picker (App arena-client. SplitFaceChoicePrompt disables a face whose discard cost the hand cannot pay. Depends on WP-777. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
+- WP-783 — phasing-hand-swap (Game Engine + App arena-client. The Phasing keyword: a player-initiated phaseCard move swaps a Phasing hero card in hand with the top card of the deck during your main stage; owner-only projection of phasable hand cards; a Phase button on the hand card; the false onPlay phasing hollow retires. WP-782 / EC-819 / D-24627..24628 held by open PR #2476. reserved 2026-09-27, claude/reserve-phasing)
 ## EC
 
 high-water: 457
@@ -800,6 +801,7 @@ high-water: 457
 - EC-814 — split-face-discard-fidelity (WP-777; Engine + card data. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - EC-815 — split-face-cost-picker (WP-778; App arena-client. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - EC-818 — lightshow-executor (WP-781; Game Engine + App arena-client. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
+- EC-820 — phasing-hand-swap (WP-783; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-phasing)
 ## D
 
 high-water: 24241
@@ -1202,3 +1204,4 @@ section below) and the allocation protocol in
 - D-24623 — gate-only-hollow (direct fix, no WP — a hero line whose only resolved piece is its play gate ([hc:X]: / [team:X]: / a condition keyword such as Outwit or Savior) records rule:<concept>, its unmatched multi-word [keyword:X N] name, or gate-only as an unresolved marker so the WP-257 detector flags it parse-unrecognized instead of silently firing nothing; cvwr Tsunami of Justice. D-24621 held by open PRs #2468 / #2451, D-24622 by #2444. reserved 2026-09-27, claude/happy-torvalds-ea4a8b)
 - D-24624 — ungated-keyword-hollow (direct fix, no WP — an ungated hero line whose only markup is a multi-word / space-magnitude [keyword:X N] token KEYWORD_PATTERN cannot match records the keyword name as an unresolved marker so the WP-257 detector flags it parse-unrecognized; a line led by a recruit / fight / reveal keyword (Soaring Flight, "When Recruited", Excessive Kindness / Excessive Violence, Piercing Energy / Switcheroo) carries that printed timing. Closes the D-24623 follow-up. D-24623 held by open PR #2469. reserved 2026-09-27, claude/infallible-bell-601b4b)
 - D-24626 — hollow-panel-grouping (direct fix, no WP — the arena-client Hollow effects panel groups records by card / mechanic / timing / reason with a count, turn list and humanized card name; raw records and the diagnostics export unchanged. reserved 2026-09-27, claude/hollow-panel-grouping)
+- D-24629 — phasing-hand-swap (WP-783. Locks the phaseCard move contract, when Phasing is usable (active player, main stage, no per-turn limit), the empty-deck behavior, bot exclusion, and the owner-only phasable-hand projection. reserved 2026-09-27, claude/reserve-phasing)
