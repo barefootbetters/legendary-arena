@@ -185,6 +185,36 @@ Deferred by both: League-style mode grid, Ranked Arena as a headline,
 parchment/comic chrome, daily quests or gacha language, and 15 card frames
 before the home screen has a single portrait.
 
+### Mockups — priorities 1 and 2
+
+Priorities 1 and 2 are drafted as **WP-785** (the Arena entrance) and **WP-786** (the battle
+brief), with **WP-787** (a server route that lets a signed-out visitor play the featured table as a
+guest). The images below are HTML mockups rendered at desktop (1440 × 900) and phone (390 wide)
+sizes, using the live card art. Every word on them is the copy the WPs lock. They are illustrative:
+where a mockup and a WP differ, the WP wins. The display font (Bebas Neue) is loaded here but not yet
+by the play client, and the brief's rules lines will render through `AbilityText`, so type details
+will differ slightly.
+
+**The entrance (WP-785).** The bare `play.legendary-arena.com` URL shows the featured encounter and
+one maroon **Enter Arena**. One click seats the player at a legal solo table: Magneto with the
+Brotherhood (his printed Always Leads) and Sentinel against Midtown Bank Robbery, with Spider-Man,
+Hulk, and Wolverine. Today's lobby stays intact behind **Arena Workshop**.
+
+![Arena entrance on desktop, signed in: a dark navy stage with the gold-accented heading THE ARENA AWAITS, the line "Magneto and the Brotherhood are robbing Midtown Bank.", the roster line, a maroon ENTER ARENA button, and an Arena Workshop link beneath; Magneto's Mastermind card art sits large on the right.](/play-lobby-ux-direction/entrance-desktop.jpg)
+
+![Arena entrance on a phone, signed out: Magneto's card art on top, then FEATURED TABLE, THE ARENA AWAITS, the encounter and roster lines, a full-width ENTER ARENA button with "Sign in to take your seat. Your account is free." under it, and the Arena Workshop link at the bottom.](/play-lobby-ux-direction/entrance-mobile-signed-out.jpg "width=40%")
+
+**The battle brief (WP-786).** Every match already opens in the engine's `lobby` phase with the
+board hidden. The brief fills that moment: the Mastermind and its Always Leads line, the Scheme's
+Setup and Evil Wins lines, the villain groups, henchmen, and heroes by name, and the seat count.
+**Begin the Battle** readies the player and starts the match after the next server frame (both
+lobby moves are server-only, so sending them in one tick would drop the start). The existing
+Mark Ready / Start Match buttons stay underneath as the recovery path.
+
+![Battle brief on desktop: a centered dark panel titled BATTLE BRIEF with a Magneto card and "Always Leads: Brotherhood", a Midtown Bank Robbery card with its Setup and Evil Wins lines, three tiles for Villain groups (Brotherhood), Henchmen (Sentinel), and Heroes (Spider-Man, Hulk, Wolverine), "1 seat at the table", a Hide brief link, and a maroon BEGIN THE BATTLE button; the Battle Plan and View loadout overlays sit in their corners and the three existing lobby buttons show below the panel.](/play-lobby-ux-direction/battle-brief-desktop.jpg)
+
+![Battle brief on a phone: the same content stacked in one column, with a full-width BEGIN THE BATTLE button and the Hide brief link under it.](/play-lobby-ux-direction/battle-brief-mobile.jpg "width=40%")
+
 ### Design principle (Grok)
 
 > The lobby is the moment the table sits down, reads the scheme out loud,
@@ -220,19 +250,20 @@ gauntlets and seed challenges already cover the edge.
   (WP-635/637). The reviews use "Battle Plan" loosely. What ships is a
   **player-authored, three-phase free-text document** (`pre_battle` /
   `battle_adjustments` / `post_battle`) in an overlay panel, not a
-  setup-summary screen. The brief proposed here would be an
-  **engine-derived setup read-out** (Mastermind + Always Leads, Scheme +
-  twist count, city/escape threat, hero lineup, seats) with the existing
-  `pre_battle` phase embedded as the team's shared plan.
+  setup-summary screen. The brief (WP-786) is an **engine-derived setup
+  read-out** (Mastermind + Always Leads, Scheme Setup / Evil Wins lines, the
+  lineup, seats). It does not embed the Battle Plan; the Battle Plan panel stays
+  available beside it.
 - **Bot allies** (WP-375/376, liveness WPs 414–426). Only two policies exist
   today: `competent` and `random`. Grok's "Steady / Aggressive / Teaching"
   stances are presentation over `competent`, except **Teaching**, which
   would need new explain-the-move behaviour.
 - **Watch** — the autoplay route and spectator view models
   ([WP-029](../docs/ai/work-packets/WP-029-spectator-permissions-view-models.md)).
-- **Featured table** — natural sources are a [Seed Challenge](seed-challenges.md)
-  or a gauntlet config (see [Leaderboard](leaderboard.md)). Both are
-  deterministic and legal by construction.
+- **Featured table** — WP-785 (client) and WP-787 (server) each hold the same
+  fixed table as a constant, pinned by tests against the card data. Later
+  rotation sources could be a [Seed Challenge](seed-challenges.md) or a gauntlet
+  config (see [Leaderboard](leaderboard.md)).
 - **Standing** — `legends.legendary-arena.com`
   ([WP-143](../docs/ai/work-packets/WP-143-legends-attract-board.md)), linked
   from the lobby as "your record." Grok's evidence-of-play standing lines up
@@ -240,7 +271,9 @@ gauntlets and seed challenges already cover the edge.
   un-farmable table badges), which argues the same position on its own.
 - **Loadout preview** — [LAGN v1](lagn-v1.md) parse via WP-092 intake.
 - **Identity** — [Guest Accounts](guest-accounts.md) govern who can sit
-  down without signing in.
+  down without signing in. WP-787 adds an unauthenticated guest-solo create so
+  a signed-out visitor gets the one free solo match the vision's Access Model
+  promises (D-24092); the seat is rowless and the match is Casual.
 - **Look** — [Branding](branding.md) tokens and
   [Design System Overview](design-system-overview.md). Layout targets:
   [Responsive Viewport Targets](responsive-viewport-targets.md).
@@ -275,18 +308,20 @@ gauntlets and seed challenges already cover the edge.
 
 ## Open Questions
 
-- Which of the seven priorities become Work Packets, and in what order?
-  Nothing here is scheduled.
+- Priorities 1 and 2 are drafted (WP-785, WP-786), plus the guest-solo
+  server route (WP-787). A client WP that sends a signed-out Enter Arena to
+  WP-787's route is not yet drafted. Priorities 3–7 are not scheduled.
 - Is **Arena Workshop** public (a secondary link) or gated (signed-in /
   admin)? That is a product call for DECISIONS.md.
-- What supplies the featured table: a seed challenge, the current
-  gauntlet's config, or a hand-curated rotation?
+- What supplies the featured table once it rotates: a seed challenge, the
+  current gauntlet's config, or a hand-curated list? (Today: one fixed table.)
 - Do bot "stances" map 1:1 onto policies, or does **Teaching** justify a
   new policy?
-- Does the brief need a new `UIState` or pre-match projection? If it reads
-  engine-derived setup data client-side, the
-  [Board-Visible Field Rule](../.claude/rules/architecture.md) applies to
-  any field added.
+- The brief needs no new `UIState` field (WP-786 reads existing fields and the
+  public match loadout). If a later version wants a structured Always Leads or
+  setup-twist total, the
+  [Board-Visible Field Rule](../.claude/rules/architecture.md) applies to that
+  field.
 
 ## References
 
