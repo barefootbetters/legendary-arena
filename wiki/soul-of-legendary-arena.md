@@ -1930,8 +1930,10 @@ dispute.
 - **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
   novel is not the secular book it is often taught as. Golding wrote in "Fable"
   (*The Hot Gates*, 1965), as it is commonly quoted: "Man is a fallen being. He
-  is gripped by original sin." In 1980 he said plainly, "I believe in God." The
-  title is Beelzebub — the Hebrew *Ba'al zevuv*, "lord of the flies." Simon, the
+  is gripped by original sin." He knew the doctrine of the Fall, then wrote a
+  whole novel about it and left God out, like King Noah's priests, whom Abinadi
+  asked, "If ye teach the law of Moses why do ye not keep it?" (Mosiah 12:29).
+  The title is Beelzebub — the Hebrew *Ba'al zevuv*, "lord of the flies." Simon, the
   one boy who sees the truth, is read as a Christ-figure by critics, by study
   guides and, by several accounts, by Golding himself — and the tribe kills him.
   The book's diagnosis is the Fall.
