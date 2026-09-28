@@ -950,6 +950,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-822 | WP-785    | Arena Client (`lobby/ArenaEntrance.vue` [new] + `lobby/featuredTable.ts` [new] + `App.vue` workshop routing + `LobbyView.vue` h1) | **WP-785 — Lobby Arena entrance.** | Draft |
 | EC-823 | WP-786    | Arena Client (`components/play/BattleBrief.vue` [new] + `PlayViewport.vue` mount) | **WP-786 — Battle brief.** | Draft |
 | EC-824 | WP-787    | Server (`match/guestSoloRoutes.mjs` [new] + `match/tokenBucketRateLimiter.mjs` [new] + `server.mjs` registration + `api-endpoints.md` row) | **WP-787 — Guest solo create.** | Draft |
+| EC-825 | WP-788    | Arena Client (`lobbyApi.ts` `createGuestSoloMatch` + `ArenaEntrance.vue` guest branch + featured-table drift test) | **WP-788 — Guest solo client.** BLOCKED on WP-785 + WP-787. | Draft |
 ---
 
 ## Rules

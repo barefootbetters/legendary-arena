@@ -174,7 +174,11 @@ response shape differ from Assumes, STOP. Stop and ask on any item not locked he
   villain-group slugs.
 - `apps/server/src/server.mjs` — import + one `registerGuestSoloRoutes(server.router, botAllyContext)`
   after `registerGuestAccessRoutes`, with a `// why:`.
-- `docs/ai/REFERENCE/api-endpoints.md` — one new whole row (D-11804): Status `Wired`; Method `POST`;
+- `docs/ai/REFERENCE/api-endpoints.md` — **also** replace the native
+  `POST /games/legendary-arena/create` and `POST /games/legendary-arena/{matchID}/join` rows whole
+  (D-11804) to add `POST /api/match/create-guest-solo` (guest-solo, WP-787) to their lists of
+  server-internal loopback callers that carry the secret (the lists #2497 wrote). **And** one new whole
+  row (D-11804): Status `Wired`; Method `POST`;
   Path `/api/match/create-guest-solo`; Auth `guest`; Request "(none — bodyless POST, no `koaBody()`;
   any body ignored)"; Response "`200 → { matchId, seat: '0', credentials }`; `429` over the rate limit;
   `503` at capacity; `502` game server unreachable; native status passed through on failure;
@@ -186,8 +190,6 @@ response shape differ from Assumes, STOP. Stop and ask on any item not locked he
 - Any client change, including WP-785's signed-out path (a client adoption WP calls this route, then
   navigates with `buildGuestPlayUrl`).
 - Moving the analytics and join-as-guest limiters onto the shared helper (and so re-keying them).
-- A catalog row for `POST /api/match/autoplay`, and the stale "secret-carrying callers" note on the
-  native create/join rows (pre-existing papercuts; separate small fixes).
 - Tutorial mode, multi-seat or bot-ally guest play, guest Battle Plan headers, a persisted or shared
   limiter, an env kill switch, and retention for `bgio.replay_artifacts`.
 
@@ -212,7 +214,8 @@ response shape differ from Assumes, STOP. Stop and ask on any item not locked he
 - `apps/server/src/match/guestSoloRoutes.mjs` — **new** (the route, featured table, capacity)
 - `apps/server/src/match/guestSoloRoutes.test.ts` — **new** (10 tests)
 - `apps/server/src/server.mjs` — **modified** (one import + one registration)
-- `docs/ai/REFERENCE/api-endpoints.md` — **modified** (one new whole row)
+- `docs/ai/REFERENCE/api-endpoints.md` — **modified** (one new whole row + the two native create / join rows
+  replaced whole to list the new secret-carrying caller)
 - Governance: `docs/ai/STATUS.md`, `docs/ai/DECISIONS.md` (D-24635 → Active; a one-line "amended by
   D-24635" pointer on D-24092), `docs/ai/work-packets/WORK_INDEX.md`,
   `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`.
@@ -238,7 +241,8 @@ No other files may be modified.
 6. A native failure passes its status with the locked error prefix; a network failure → 502; neither
    records a capacity entry.
 7. The featured table passes `checkPlayerCountComposition` at 1 player and honors Magneto's Always Leads.
-8. `api-endpoints.md` carries the new whole row; the `/api/match/create` and `/join` rows are unchanged.
+8. `api-endpoints.md` carries the new whole row, and the native create / join rows list the new
+   secret-carrying caller; the `/api/match/create` and `/api/match/join` rows are unchanged.
 9. The server suite goes 1636 → 1651 tests, 1430 → 1445 pass, 0 fail, 206 skipped; suites 265 → 267;
    `pnpm -r build` exits 0.
 
@@ -320,8 +324,9 @@ All 21 sections satisfied or N/A:
 - **§20 Funding:** N/A — a server route with no UI; its only copy is the 429 / 503 / 502 error text; no
   donate or support copy.
 - **§21 API Catalog:** triggered — one new whole row `POST /api/match/create-guest-solo` (`Wired`,
-  `guest`, bodyless, WP-787) per D-11804; `/api/match/create` and `/join` rows unchanged; new helper
-  exports are internal (not `Library-only`).
+  `guest`, bodyless, WP-787) and the native `/games/legendary-arena/create` and `/{matchID}/join` rows
+  replaced whole to add it as a secret-carrying caller, per D-11804; `/api/match/create` and
+  `/api/match/join` rows unchanged; new helper exports are internal (not `Library-only`).
 
 ## Gate Verdicts
 
@@ -340,3 +345,7 @@ All 21 sections satisfied or N/A:
   flag, consistent with closure isolation; tests 5 and 8 extended to cover the one-time log and "a
   native failure records no capacity entry", count unchanged at +15; catalog column `Path`; WP↔EC
   verbatim). **Pre-flight READY / lint PASS confirmed.**
+- **SPEC correction 2026-09-28 (drafted with WP-788):** #2497 landed the autoplay catalog row and
+  rewrote the native create / join rows to list every secret-carrying loopback caller. The stale
+  Out-of-Scope bullet is removed, and §21 now also replaces those two native rows whole to add this
+  route. Scope-neutral for code; +1 catalog edit in an already-allowlisted file.
