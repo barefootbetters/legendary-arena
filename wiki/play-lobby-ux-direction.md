@@ -52,6 +52,11 @@ reconciled direction. **Nothing here is a decision.** An item takes effect
 only when a Work Packet adopts it, and the design calls behind it go in
 [DECISIONS.md](../docs/ai/DECISIONS.md).
 
+Copilot's Riot-portfolio references (League of Legends, 2XKO, Wild Rift,
+VALORANT, Teamfight Tactics, Legends of Runeterra, Riot R&D) are recorded
+below as research inputs. They are not adopted as a mode taxonomy or a visual
+skin.
+
 ## Mechanics
 
 ### What the lobby is today (verified against code)
@@ -106,6 +111,35 @@ problem.
 | **Bots** | "AI teammates" as a Labs item | Bots as named seats with a stance; Watch as a public table and the cheapest tutorial | **Grok.** Bot allies already ship (WP-375/376). This is presentation work, not new R&D. |
 | **Roadmap shape** | 9 phases over 4 quarters | 7 ordered, visible-without-engine changes | **Grok's order.** Copilot's first three (home, guided create, brief) match Grok's first two. Everything after that is contingent on how players use them. |
 
+### Reference games (Copilot pattern study)
+
+Copilot did not recommend copying one title. It recommended a mixture of
+Riot portfolio patterns. Those titles are research inputs, not product
+requirements. The table records the claimed lesson, what transfers to
+Legendary Arena, what does not, and where it lands on this page, so a later
+WP can cite "Wild Rift's disclosure, not League's mode grid" without
+re-arguing it. None of it borrows Riot art or chrome.
+
+| Source | Claimed lesson (Copilot) | What transfers | What does not transfer | Reconciled use on this page |
+|---|---|---|---|---|
+| League of Legends | Distinct play intentions (ranked, ARAM, normals, limited modes) instead of one long setup page; temporary modes as a controlled experiment surface | One intention per entry point. Fight, Watch, import, and diagnostics do not share one scroll. | League's mode grid (Ranked / ARAM / Normal / Labs) as the lobby layout. Campaign and Ranked are not live intentions here. | Four intentions: Fight · Watch · Resume · Workshop. Add a mode only when two real intentions need separating. |
+| 2XKO | Lead with the fantasy and the contest; explain configuration after. Bold arena presentation. | The first impression is the encounter, not the form. The primary action sits on the composition (Mastermind vs heroes). | A ranked ladder climb as the reason the product exists. 2XKO's end of active development is the caution, not the aesthetic. | Cinematic landing + featured table (priority 1). Ranking is a score against PAR after play, not a lobby headline. |
+| Wild Rift | Progressive disclosure on a small screen: do → party → loadout → review → enter. Thumb-level primary actions; sheets instead of a wall of fields. | One decision per screen. LAGN upload, pasted JSON, ms delay, and policy names leave the player path. | Mobile-MOBA chrome, copied bottom navigation, or a five-step wizard that still asks engineer questions. | The reconciled flow below (Intention → Challenge → Roster → Table → Brief), at every viewport ([Responsive Viewport Targets](responsive-viewport-targets.md)). |
+| VALORANT | Interface discipline: strong type, limited palette, one dominant action, information that reads at a glance | Mission-brief density. Colour as state, not decoration. One maroon primary action. | Tactical-shooter aesthetic, angular militarized framing, or a six-colour palette invented beside the token system. | The battle brief as the signature screen (priority 2). Copilot's state meanings mapped onto existing tokens (divergence table above). |
+| Teamfight Tactics | Visible journey plus personality; ranked performance as a path, not a dashboard | Evidence of play without turning the lobby into a stats sheet. Warmth is allowed. | Initiate → Legend tier names, cups, and trials before the core fight is sticky. Hidden MMR-style weights. | Lightweight standing on `legends` (WP-143) + [Awards and Badges](awards-and-badges.md) (priority 7). No grind track; the vision forbids hidden scoring factors. |
+| Legends of Runeterra | Cards are the primary object; collection, deck-builder, and in-match need different densities | The three-density card model. Keyword icons, fixed stat positions, printed text kept apart from modifiers. | Building the full card system before the home screen has a single portrait. | Challenge card first; the other densities wait for real Heroes / Loadouts destinations. |
+| Riot R&D | Wide incubation funnel, then fewer high-impact bets; a stable live core kept apart from the experimental layer | Stable core vs experimental edge (see *Stable core, experimental edge* below). | Treating Ranked, seasons, or Labs as the next scheduled product line. Copying Riot's org model. | Scaffold-then-spec: observe the featured-table entrance before formalizing a broader visual system. |
+
+**The mixture Copilot proposed:** structure from League, energy from 2XKO,
+mobile clarity from Wild Rift, competitive precision from VALORANT,
+personality from TFT, card presentation from Runeterra, discipline from Riot
+R&D.
+
+**The mixture this page keeps:** Riot for *discipline* (one decision per
+screen, one primary action, colour as state). Legendary Arena's own canon
+for *meaning* (Mastermind + Scheme as the story; the lobby as the table
+sitting down). See the design principle below.
+
 ### Reconciled player flow
 
 ```
@@ -159,21 +193,6 @@ before the home screen has a single portrait.
 
 Use Riot for *discipline*: one decision per screen, one primary action, and
 colour as state. Use the game's own canon for *meaning*.
-
-### The Riot references, one lesson each
-
-The Copilot study takes one lesson from each title. The right-hand column
-shows where each lesson lands in the reconciled direction above. None of
-them borrows Riot art or chrome.
-
-| Title | Lesson | Lands as |
-|---|---|---|
-| League of Legends | Separate the player's intentions; each gets its own front door | Grok's four intentions (Fight · Watch · Resume · Workshop), not a mode grid |
-| 2XKO | Lead with the contest; setup comes after the decision to fight | Priority 1: a cinematic landing with one **Enter Arena** |
-| Wild Rift | One decision per screen, primary action in thumb reach | The five-step reconciled flow, at every viewport ([Responsive Viewport Targets](responsive-viewport-targets.md)) |
-| VALORANT | Restraint: strong type, narrow palette, colour carries state | The token mapping in the divergence table |
-| Teamfight Tactics | Visible progress that stays warm, not a statistics dashboard | Priority 7: lightweight standing. Scoring weights stay public (no hidden factors) |
-| Legends of Runeterra | One card, three jobs: registry, loadout, in-session | The three-density card model, built card by card |
 
 ### Stable core, experimental edge
 
@@ -233,8 +252,11 @@ gauntlets and seed challenges already cover the edge.
   that active 2XKO development ends in December 2026. The servers stay up.
   Riot's stated reason is retention: not enough players "stick with the game
   to get to a path toward sustainability." That was despite reliable netcode,
-  a ranked ladder, regular content, and a free-to-play door. Both reviews
-  draw the same lesson from it.
+  a ranked ladder, regular content, and a free-to-play door. The *fact of the
+  announcement* is verified against Riot's own post; any cause analysis past
+  Riot's statement is reported, not verified. Both reviews draw the same
+  lesson from it: don't lead with ranked infrastructure. That lesson is
+  product-level and says nothing about lobby chrome.
 - **Copilot's source links are omitted on purpose.** Copilot cited documents
   from a non-project SharePoint tenant. They are not repo artifacts and are
   not reproduced here. The repo WPs cited above are the canonical copies of
@@ -282,5 +304,7 @@ gauntlets and seed challenges already cover the edge.
 - [WP-637 — Battle Plan Client Panel](../docs/ai/work-packets/WP-637-battle-plan-client-panel.md)
 - External design reviews: Copilot and Grok, 2026-09-28 (operator-supplied; not repo artifacts)
 - Riot Games, [2XKO Active Development Will End in December 2026](https://www.riotgames.com/en/news/2xko-active-development-ends-december-2026) (2026-08-20)
-- Riot Games, [Incubation: Exploration With a Plan](https://www.riotgames.com/en/r-and-d-office/incubation-exploration-with-a-plan) (R&D Office)
-- Riot Games, [Changes at Riot and the Road Ahead](https://www.riotgames.com/en/news/2024-player-update) (2024)
+- Riot Games, [Incubation: Exploration With a Plan](https://www.riotgames.com/en/r-and-d-office/incubation-exploration-with-a-plan) (R&D Office, 2020-06-18; R&D lifecycle, not a lobby spec)
+- Riot Games, [Changes at Riot and the Road Ahead](https://www.riotgames.com/en/news/2024-player-update) (2024-01-22; fewer, higher-impact projects)
+- [Branding](branding.md) — token mapping for Copilot's colour-state list
+- [Responsive Viewport Targets](responsive-viewport-targets.md) — the Wild Rift lesson (one decision per screen) held to this project's breakpoints
