@@ -7,6 +7,27 @@
 
 ## Current State
 
+### D-24628 — Natural Leader and six sibling cards stop demanding a team their text only names (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Cannonball's Natural Leader no longer logs "needs
+another shield Hero played this turn" (live game `039e3dce`, turn 14). The fix is general. When a hero line
+opens with its printed gate ("[hc:strength]:"), a team named later in the text ("Return a [team:shield] Hero")
+is a target, not a second requirement. Seven cards change: Natural Leader, Nick Fury's Battlefield Promotion
+(co2e), Rick Jones's Hacktivist, Deathlok's Reanimate into Service, Mockingbird's Take Cover, Okoye's Direct
+the Agents of Wakanda, and Magneto's Mutants Will Rule. Okoye's and Magneto's lines no longer hand out a free
++2 attack / +1 recruit. That grant is earned only by a KO cost or "if a Bindings is gained", which the engine
+does not model, so those lines now show as honest hollows.
+
+- **Engine.** Step 1b skips a `[team:Y]` after a leading `[hc:X]` / `[team:X]` gate prefix. Lines with no
+  prefix, or a keyword-led prefix, are unchanged. A two-card `CONDITIONAL_GRANT_UNMODELED_LINES` keeps
+  their gates, drops the free grant, and records `unmodeled-conditional-grant`.
+- **Pins re-pinned.** `sim:coverage` executable 2657→2651 (1 Okoye card + 5 copies of Mutants Will Rule;
+  intentional). `runtime-observed-hollows.json` gets one new row with 1 observation; no existing row moved.
+  Dashboard totalObs 8006→8007, percentResolved stays 15.4.
+- **Follow-ups.** The same bug class for a body `[hc:X]`. Magneto's Master of Magnetism "+2 per Bindings" is
+  still a flat grant.
+- **Live-verify (D-24026):** pending. Play Natural Leader with a Strength Hero and no SHIELD Hero.
+
 ### WP-783 — Phasing swaps a Phasing card in hand with the top card of your deck (EC-820 / D-24629) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On your turn, in the main step with no
