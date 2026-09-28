@@ -7,6 +7,20 @@
 
 ## Current State
 
+### D-24626 — Hollow effects panel groups repeated rows (direct fix) (2026-09-27)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** The Play Diagnostics Hollow effects panel now
+shows one row per card and gap, with the card's name, a ×count, and the turns it fired, under a
+"N across M abilities" heading. A Cannonball match that listed 64 near-identical rows now reads as 8. The
+Download-diagnostics export still carries every raw record.
+
+- **Client only.** `HollowEffectsPanel.vue` plus a pure `hollowEffects.group.ts` helper. No engine or
+  UIState change.
+- **Counts and gates.** arena-client `test` 2167/0 (+5) and `typecheck` 0. Verified in the dev client with the
+  Cannonball match's records injected.
+- **Live-verify (D-24026):** pending. Play Cannonball (or any repeated hollow) and confirm one row per
+  card and mechanic, with a count and turn list.
+
 ### D-24625 — Under Penumbra, a split side you cannot pay for is skipped (direct fix) (2026-09-27)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** With Penumbra active, a split card side

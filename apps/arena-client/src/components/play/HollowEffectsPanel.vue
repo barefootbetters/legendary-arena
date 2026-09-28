@@ -3,6 +3,8 @@ import { defineComponent, computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import type { HollowEffectRecord } from '@legendary-arena/game-engine';
 import { useUiStateStore } from '../../stores/uiState';
+import { groupHollowEffects } from './hollowEffects.group';
+import type { HollowEffectGroup } from './hollowEffects.group';
 
 /**
  * Compact, unobtrusive debug panel listing the hollow effects observed in the
@@ -13,7 +15,8 @@ import { useUiStateStore } from '../../stores/uiState';
  *
  * It reads the engine projection `useUiStateStore().snapshot?.hollowEffects`
  * (surfaced from the runtime G.diagnostics channel by WP-258) and renders one
- * row per record — cardType, mechanic, timing, reason, turn. It is purely
+ * row per (card, mechanic, timing, reason) — card name, cardType, mechanic,
+ * timing, reason, count, and the turns it fired on (D-24626). It is purely
  * presentational: it never interprets game state, never imports the engine
  * runtime, and only consumes the read-only UIState projection.
  *
@@ -44,7 +47,23 @@ export default defineComponent({
       () => snapshot.value?.hollowEffects ?? [],
     );
 
-    return { hollowEffects };
+    // why: D-24626 — one row per distinct gap, not per play. The raw records stay
+    // untouched in the snapshot, so the Download-diagnostics export is unchanged.
+    const hollowEffectGroups = computed<HollowEffectGroup[]>(
+      () => groupHollowEffects(hollowEffects.value),
+    );
+
+    /**
+     * Formats a group's turn list for the Turns column.
+     *
+     * @param turns - The group's distinct turns, ascending.
+     * @returns The turns joined with commas.
+     */
+    function formatTurns(turns: number[]): string {
+      return turns.join(', ');
+    }
+
+    return { hollowEffects, hollowEffectGroups, formatTurns };
   },
 });
 </script>
@@ -56,35 +75,45 @@ export default defineComponent({
     data-testid="hollow-effects-panel"
     aria-label="Hollow effects observed this match"
   >
-    <h2 class="hollow-effects-title">Hollow effects</h2>
+    <h2 class="hollow-effects-title">
+      Hollow effects
+      <span class="hollow-effects-summary" data-testid="hollow-effects-summary">
+        {{ hollowEffects.length }} across {{ hollowEffectGroups.length }}
+        {{ hollowEffectGroups.length === 1 ? 'ability' : 'abilities' }}
+      </span>
+    </h2>
     <table class="hollow-effects-table">
       <thead>
         <tr>
           <th scope="col">Card</th>
+          <th scope="col">Type</th>
           <th scope="col">Mechanic</th>
           <th scope="col">Timing</th>
           <th scope="col">Reason</th>
-          <th scope="col">Turn</th>
+          <th scope="col">Count</th>
+          <th scope="col">Turns</th>
         </tr>
       </thead>
       <tbody>
         <!--
-          // why: source-array index is a stable :key for the life of a single
-          // UIState. The channel is append-only within a match (bounded by the
-          // engine cap), so reusing the index cannot trigger spurious DOM
-          // thrash. A new snapshot tears the list down and rebuilds it.
+          // why: groups are built in first-seen order from an append-only channel,
+          // so a group's index is stable for the life of a single UIState. A new
+          // snapshot tears the list down and rebuilds it.
         -->
         <tr
-          v-for="(record, index) in hollowEffects"
+          v-for="(group, index) in hollowEffectGroups"
           :key="index"
           :data-index="index"
+          :title="group.cardKey"
           data-testid="hollow-effects-row"
         >
-          <td data-testid="hollow-effects-cardType">{{ record.cardType }}</td>
-          <td data-testid="hollow-effects-mechanic">{{ record.mechanic }}</td>
-          <td data-testid="hollow-effects-timing">{{ record.timing }}</td>
-          <td data-testid="hollow-effects-reason">{{ record.reason }}</td>
-          <td data-testid="hollow-effects-turn">{{ record.turn }}</td>
+          <td data-testid="hollow-effects-cardName">{{ group.cardName }}</td>
+          <td data-testid="hollow-effects-cardType">{{ group.cardType }}</td>
+          <td data-testid="hollow-effects-mechanic">{{ group.mechanic }}</td>
+          <td data-testid="hollow-effects-timing">{{ group.timing }}</td>
+          <td data-testid="hollow-effects-reason">{{ group.reason }}</td>
+          <td data-testid="hollow-effects-count">×{{ group.count }}</td>
+          <td data-testid="hollow-effects-turn" class="hollow-effects-turns">{{ formatTurns(group.turns) }}</td>
         </tr>
       </tbody>
     </table>
@@ -96,7 +125,9 @@ export default defineComponent({
   position: fixed;
   bottom: 8px;
   right: 8px;
-  max-width: 28rem;
+  /* why: wide enough for the grouped columns plus the vertical scrollbar, but never
+     wider than the viewport, so the fixed panel cannot spill off a phone screen. */
+  max-width: min(42rem, calc(100vw - 16px));
   max-height: 14rem;
   overflow-y: auto;
   padding: 6px 10px;
@@ -118,6 +149,12 @@ export default defineComponent({
   font-weight: 700;
 }
 
+.hollow-effects-summary {
+  margin-left: 6px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
 .hollow-effects-table {
   border-collapse: collapse;
   width: 100%;
@@ -129,6 +166,13 @@ export default defineComponent({
   padding: 1px 6px 1px 0;
   text-align: left;
   white-space: nowrap;
+}
+
+/* why: a hollow card played every turn has a long turn list; wrap it instead of
+   widening the panel past the play surface. */
+.hollow-effects-table td.hollow-effects-turns {
+  white-space: normal;
+  min-width: 6rem;
 }
 
 .hollow-effects-table th {
