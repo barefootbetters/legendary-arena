@@ -77,6 +77,7 @@ import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { registerBotAllyRoutes, rehydrateBotAllyDrivers } from './bot-ally/botAllyRoutes.mjs';
 import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
 import { registerGuestAccessRoutes } from './match/guestAccessRoutes.mjs';
+import { registerGuestSoloRoutes } from './match/guestSoloRoutes.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -1408,6 +1409,14 @@ export async function startServer() {
   // (the same rowless secret-join as add-guest, D-24120 → Casual). The friendlier
   // password alternative to the WP-628 credential link for a walk-up guest.
   registerGuestAccessRoutes(server.router, botAllyContext);
+
+  // why: WP-787 / D-24635 — the signed-out guest solo create (POST
+  // /api/match/create-guest-solo, Auth guest): one 1-player unlisted match on a
+  // server-fixed featured table, seat '0' secret-joined as Guest with no
+  // match_seat_accounts row (D-24120 → Casual). Uses only the bundle's serverUrl
+  // + internal-delegation secret; the per-connection rate limit and the
+  // process-wide cap live inside the registration closure.
+  registerGuestSoloRoutes(server.router, botAllyContext);
 
   // why: WP-375 / D-24170 restart policy — in-memory bot-ally drivers are lost
   // on restart; re-register a driver for every still-active bot-ally match so a
