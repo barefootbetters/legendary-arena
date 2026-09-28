@@ -29,6 +29,29 @@ if [ -z "$SUBJECT" ]; then
   exit 1
 fi
 
+# --- Rule 0: git's own merge-from-main commit (per D-24632) ---
+# why: syncing a PR branch with main (the desktop app's Auto-fix conflict
+# resolution, or a manual `git merge origin/main`) produces a merge commit
+# whose subject git writes itself ("Merge remote-tracking branch 'origin/main'
+# into <branch>"). It carries no work of its own, and rewriting it needs a
+# force-push, so it would leave the PR's commit-hygiene check permanently red.
+# Exempt ONLY a genuine merge (MERGE_HEAD present locally, or the CI job's
+# COMMIT_HYGIENE_IS_MERGE=1 for a commit with 2+ parents) whose subject is
+# git's default wording for merging main. Checked before Rule 1 because a
+# branch name can contain a forbidden word (claude/fix-debug-panel). A
+# hand-written merge subject, or a merge of any other branch, still needs a
+# prefix. PRs are squash-merged, so these commits do not reach main's history.
+IS_MERGE_COMMIT=0
+if [ "${COMMIT_HYGIENE_IS_MERGE:-0}" = "1" ]; then
+  IS_MERGE_COMMIT=1
+elif git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  IS_MERGE_COMMIT=1
+fi
+if [ "$IS_MERGE_COMMIT" -eq 1 ] \
+  && echo "$SUBJECT" | grep -qE "^Merge (remote-tracking )?branch '(origin/)?main'( of [^ ]+)?( into [^ ]+)?$"; then
+  exit 0
+fi
+
 # --- Rule 1: Forbidden patterns ---
 FORBIDDEN="WIP|wip|fix stuff|misc|tmp|updates|changes|debug"
 echo "$SUBJECT" | grep -qiE "$FORBIDDEN" && {

@@ -422,6 +422,7 @@ high-water: 422
 - WP-777 — split-face-discard-fidelity (Engine + card data. bkwd Falcon & Winter Soldier split faces: Attune "To play this side, you must discard a card" enforced as a face-bind cost, and New Wings "If you discarded any cards this turn" gated on a per-turn discard count; both over-credited in match 19720cb4. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - WP-778 — split-face-cost-picker (App arena-client. SplitFaceChoicePrompt disables a face whose discard cost the hand cannot pay. Depends on WP-777. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - WP-783 — phasing-hand-swap (Game Engine + App arena-client. The Phasing keyword: a player-initiated phaseCard move swaps a Phasing hero card in hand with the top card of the deck during your main stage; owner-only projection of phasable hand cards; a Phase button on the hand card; the false onPlay phasing hollow retires. WP-782 / EC-819 / D-24627..24628 held by open PR #2476. reserved 2026-09-27, claude/reserve-phasing)
+- WP-784 — deck-top-discards-count (Engine. "If you discarded any cards this turn" (New Wings, Pumpkin Bombs) also counts cards discarded from the top of a deck — Berserk, reveal-and-discard, Steal Abilities — not only hand discards; revises D-24616 §4. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
 ## EC
 
 high-water: 457
@@ -803,6 +804,7 @@ high-water: 457
 - EC-815 — split-face-cost-picker (WP-778; App arena-client. reserved 2026-09-26, claude/reserve-split-discard-fidelity)
 - EC-818 — lightshow-executor (WP-781; Game Engine + App arena-client. renumbered 2026-09-27 from WP-777 / EC-814 / D-24616 after a collision with the merged split-face WP-777 (#2443); reserved 2026-09-26, claude/reserve-lightshow-executor)
 - EC-820 — phasing-hand-swap (WP-783; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-phasing)
+- EC-821 — deck-top-discards-count (WP-784; Engine. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
 - EC-819 — soaring-flight (WP-782; Game Engine + App arena-client. reserved 2026-09-27, claude/reserve-team-gate-soaring-flight)
 ## D
 
@@ -1210,3 +1212,5 @@ section below) and the allocation protocol in
 - D-24629 — phasing-hand-swap (WP-783. Locks the phaseCard move contract, when Phasing is usable (active player, main stage, no per-turn limit), the empty-deck behavior, bot exclusion, and the owner-only phasable-hand projection. reserved 2026-09-27, claude/reserve-phasing)
 - D-24630 — expired-session-score-submit (direct fix, no WP — arena-client tells an expired sign-in on an account-bound seat apart from a true guest at gameover: new `session-expired` submission status, "Your sign-in expired — sign in to save this match" prompt, sessionStorage pending-submit marker + LoginPage `returnTo=live` round trip, deferred submit when a token reappears, 401 → session-expired. No server change: by-matchId ownership comes from the seat bound at join (D-24119). D-24627 held by open PRs #2476 / #2481, D-24628 by #2476 / #2479. reserved 2026-09-27, claude/objective-stonebraker-0d44fb)
 - D-24628 — body-team-token-not-a-gate (direct fix, no WP — on a line that opens with an explicit [hc:X]/[team:X] gate prefix and ':', a [team:Y] token after the colon is descriptive (a target / criterion), not a requiresTeam play-gate; xmen Cannonball Natural Leader, bkpt Okoye, co2e Battlefield Promotion, shld Deathlok / Mockingbird, vill Magneto, wwhk Rick Jones. D-24622 held by open PR #2444. renumbered 2026-09-27 from D-24626 (taken on main by hollow-panel-grouping, #2477). reserved 2026-09-27, claude/reserve-team-gate-soaring-flight)
+- D-24631 — deck-top-discards-count (WP-784. Locks which discards count toward cardsDiscardedThisTurn: card-effect hand discards plus deck-top discards to the discard pile; cleanup and gained cards excluded. D-24630 held by open PR #2483. reserved 2026-09-28, claude/reserve-deck-top-discards-count)
+- D-24632 — merge-from-main-commit-exemption (direct fix, no WP — .githooks/commit-msg accepts git's default merge-from-main subject ("Merge remote-tracking branch 'origin/main' into <branch>") on a genuine merge only (MERGE_HEAD locally, or 2+ parents flagged by the commit-hygiene CI job); other merges and hand-written merge subjects still need a prefix. reserved 2026-09-28, claude/commit-hygiene-merge-commits)

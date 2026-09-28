@@ -45791,4 +45791,22 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24632 — Git's default merge-from-main commit passes the commit-message check (Active 2026-09-28 — direct fix, no WP; commit-hygiene tooling)
+
+**Status:** Active — landed 2026-09-28 (`.githooks/commit-msg`, `.github/workflows/commit-hygiene.yml`, `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md`, new `scripts/commit-msg-merge-exemption.test.ts` wired into `pnpm guard:test`).
+
+**Context.** When the desktop app's Auto-fix resolves a PR's conflict with `main`, it merges `origin/main` into the PR branch, and git writes the subject "Merge remote-tracking branch 'origin/main' into <branch>". The commit-hygiene job fed that subject to `.githooks/commit-msg`, which rejected it for having no `EC-###:` / `SPEC:` / `INFRA:` prefix. Removing the commit needs a history rewrite and a force-push, so the PR's check stayed red. PR #2483 (D-24630) hit this after three conflict syncs in one day and needed a manual squash and force-push to recover.
+
+**Decision.**
+1. `.githooks/commit-msg` gains a Rule 0: exit 0 when the commit is a genuine merge AND its subject is git's default wording for merging main: `^Merge (remote-tracking )?branch '(origin/)?main'( of [^ ]+)?( into [^ ]+)?$`. It is checked before Rule 1 because a branch name can contain a forbidden word (`claude/fix-debug-panel`).
+2. "Genuine merge" means `MERGE_HEAD` exists (local hook, while a merge is being concluded) or `COMMIT_HYGIENE_IS_MERGE=1`. The commit-hygiene CI job sets that flag when the commit has 2+ parents (`git rev-list --parents -n 1`). The subject pattern lives only in the hook, so the two enforcement sites cannot drift.
+3. The exemption does not cover a hand-written merge subject, a merge of any branch other than `main` / `origin/main`, or the default subject on a non-merge commit. All of these still need a prefix.
+4. Nothing else changes. The `ec-code-traceability` and `reward-integrity` jobs already passed merge commits (a merge commit's own `git diff-tree` is empty). PRs are squash-merged (every PR since July 2026), so these subjects do not reach `main`'s history.
+
+**Gates.** `pnpm guard:test` 22/0 (+5 in `commit-msg-merge-exemption.test.ts`, which runs the real hook: default subjects pass on a merge; the same subject on a non-merge fails; other-branch and hand-written merges fail; prefixed subjects unaffected). Checked against `main`'s unmodified hook: it rejects the default merge subject (exit 1), and the new hook accepts it (exit 0).
+
+**Reserved by:** NUMBER-LEDGER D-24632. Related: D-20801 (INFRA: on code), D-24444 (reward-integrity guard), D-24630 / PR #2483 (the trigger).
+
+---
+
 Protect this file.
