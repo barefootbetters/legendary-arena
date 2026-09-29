@@ -22,6 +22,7 @@ source:
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
+  - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
 last-reviewed: 2026-09-29
 ---
 
@@ -1188,10 +1189,14 @@ real-use week, and Day 14 `/level-up` at the end of the thin platform.
 The brain did not start from zero. Two pieces were already on disk before the
 map was chosen:
 
-- **A private top-node repo: `jefferyjjensen-corporate-memory`** (GitHub
-  `barefootbetters`, private, started 2026-06-12). It holds an owner profile, a
+- **A private top-node repo: `jefferyjjensen-corporate-memory`**, checked out
+  at `C:\www\jefferyjjensen-corporate-memory` (GitHub
+  `barefootbetters/jefferyjjensen-corporate-memory`, private, started
+  2026-06-12). Its checkout sits under `C:\www\`, off pCloud, which is the
+  correct place for a Git checkout per the [Workspace Map](workspace-map.md).
+  It holds an owner profile, a
   `portfolio.md` routing map of which business keeps its memory where, an
-  append-only `decision-log.md`, prompt templates, and a plan for a local personal
+  append-only `decision-log.md` (now `decisions/log.md`), prompt templates, and a plan for a local personal
   AI stack (Ollama + Open WebUI on Windows). Its stated design, *distributed,
   repo-local memory with this repo as the top node*, is the same shape as this
   page's rule of a per-domain corpus with one brain that reads across it. It
@@ -1521,6 +1526,18 @@ This is the summary index; the individual gotchas and their nuances live in
 - **[Workspace Map](workspace-map.md)** — the three-surface rule (git / pCloud /
   hosted). A second brain adds a consumer that reads across all three, which
   sharpens the "which surface owns this?" question the map answers.
+- **Corporate memory — the ship** (`C:\www\jefferyjjensen-corporate-memory`,
+  private repo `barefootbetters/jefferyjjensen-corporate-memory`). This is the
+  top node of a distributed, repo-local memory system, and since 2026-09-29 it
+  is the platform repo this page calls the ship. Its `README.md` and
+  `docs/01-REPO-FOLDER-STRUCTURE.md` own its layout and rules. This page owns
+  only the design, so the two do not restate each other. It routes to
+  per-business memory rather than holding it: Legendary Arena's business layer
+  lives in the marketing repo at
+  `C:\www\legendary-arena-com\docs\corporate-memory\` (business brief,
+  decision log, KPIs, open questions), and the governed engine corpus stays in
+  this repo. Nothing in it is published to the ewiki; see
+  [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
 - **[Development Workflow](development-workflow.md)** — Claude Code as the
   develop-from-anywhere agent is the concrete, shipping instance of the
   "replaceable agent" layer described here.
@@ -1968,6 +1985,14 @@ This is the summary index; the individual gotchas and their nuances live in
   the clean-machine recovery clone. That repo does not exist, so the docs were
   corrected to `barefootbetters/...`.
 
+- **2026-09-29 — corporate-memory referenced as the ship (descriptive, no
+  re-lock).** The ship's checkout path `C:\www\jefferyjjensen-corporate-memory`
+  is now in the page's `source:` list, in [What already exists](#what-already-exists-2026-09-29),
+  in [Interactions](#interactions), and in [References](#references). It also
+  gets a row in the [Workspace Map](workspace-map.md) Git-repositories table.
+  Corporate memory gets **no ewiki page of its own**: its README is the single
+  description, and the ewiki records only its role and location.
+
 ## Open Questions
 
 The architecture and governance vehicle are locked by
@@ -2102,6 +2127,10 @@ is built.
   — the voice/mobile operator addendum: Tailscale Serve setup, the voice-mode
   system prompt (spoken answer + verbal pointer), and the
   do-this-week-vs-after-the-box checklist. Executable detail this page defers.
+- `C:\www\jefferyjjensen-corporate-memory` (private GitHub
+  `barefootbetters/jefferyjjensen-corporate-memory`) — the ship. Start with its
+  `README.md` (layout, update rules, attribution) and `decisions/log.md` (the
+  2026-09-29 entry records the AIS-OS merge). Private; not mirrored here.
 - [Nate Herk — `nateherkai/AIS-OS`](https://github.com/nateherkai/AIS-OS)
   (MIT, © 2026 Nate Herk; README read 2026-09-29) — the "map": an AI operating
   system starter kit for Claude Code and Codex (`CLAUDE.md` / `AGENTS.md`,
