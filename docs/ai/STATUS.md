@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-787 — Production live-verify PASS: the guest-solo rate limit keys per connection (D-24026) (2026-09-29)
+
+Run by Jeff against `api.legendary-arena.com`, with read-only production DB checks by Claude.
+
+- **Route live.** A signed-out POST returned `{ matchId, seat: "0", credentials }`. Match `3jMEoNQTxDW`
+  in `bgio.matches`: unlisted, seat 0 `Guest`, `core/magneto` + `["core/brotherhood"]` + `["core/sentinel"]`,
+  3 heroes, phase `lobby`, 1 seat. **0 `legendary.match_seat_accounts` rows** and 0 bot rows for it.
+- **Key source.** Render log `2026-09-29T22:33:01Z [guest-solo] rate-limit key source: cf-connecting-ip`
+  — the header reaches Node; the limiter does not fall back to the proxy hop.
+- **Per-connection limit.** Home Wi-Fi (68.96.201.172): 5 × `200`, then `429`. Phone hotspot forced to
+  IPv4: 5 × `200`, then `429`. Second network: a Wi-Fi call 31 s after a hotspot run returned `200`.
+- **Dual-stack note.** On the hotspot's default dual-stack path, six calls all returned `200`: curl's Happy
+  Eyeballs alternated IPv6 (`2607:fb90:…`, stable) and IPv4 (`172.56.208.28`), and each address has its own
+  bucket, so a dual-stack client gets up to 10 per minute. Bounded and accepted; keying IPv6 by /64 is a
+  cheap hardening follow-up. The 200-per-2-hours process cap is the hard bound either way.
+- **Unblocks** WP-788 (EC-825 Before Starting) and the D-24635 §4 limiter migration (analytics +
+  join-as-guest onto the shared helper, since the helper's `cf-connecting-ip` key is now proven).
+
 ### D-24638 — The battle brief links back to the Arena Workshop (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On a match's pre-game screen, the Battle Brief
@@ -45,7 +63,7 @@ underneath (Hide brief) as the recovery path.
 entrance: Magneto's card art, "The Arena Awaits", the encounter line, and one maroon **Enter Arena**. Signed
 in, one click creates and joins a solo featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank
 Robbery; Spider-Man, Hulk, Wolverine). Signed out, it goes to sign-in as before (WP-788 will make it a guest
-match once WP-787 lands). Every old lobby control is unchanged under **Arena Workshop**
+match; WP-787's route is live). Every old lobby control is unchanged under **Arena Workshop**
 (`?route=workshop`; invite links `?route=lobby&match=…` still open it).
 
 - **Client only.** `ArenaEntrance.vue` + `featuredTable.ts` (new), `App.vue` routing (`workshopRoute` /

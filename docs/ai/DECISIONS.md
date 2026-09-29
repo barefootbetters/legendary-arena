@@ -45826,6 +45826,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 4. The limiter lives in a shared helper (`tokenBucketRateLimiter.mjs`) because this is the third copy. Moving the analytics and join-as-guest limiters onto it — which also changes their keying away from the proxy hop — is a follow-up.
 5. `/api/match/create`, `/api/match/join`, the D-24094 native guard, and autoplay are unchanged. D-24094's "an account is required to play a seat by any path" is narrowed for this one server-owned, secret-carrying route (the D-24437 / D-24441 guest seats are precedent). A client adoption WP wires the WP-785 entrance's signed-out Enter Arena to this route.
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Production keys on `cf-connecting-ip` (Render log line); per-connection limiting holds on two networks (5 × 200 then 429 each; a second network 200). A dual-stack client holds two buckets (IPv4 + IPv6) — bounded by the §3 cap; /64 grouping for IPv6 is an optional hardening follow-up.
+
 **Reserved by:** NUMBER-LEDGER D-24635. Related: D-24092, D-24093, D-24094, D-24120, D-24172, D-24437, D-24441, D-24451, D-9905, D-11804, D-24633.
 
 ---
