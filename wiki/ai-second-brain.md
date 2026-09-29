@@ -221,7 +221,7 @@ are genuine choices deferred to the build (see [Open Questions](#open-questions)
 | Voice legs (STT/TTS) = local Whisper + Piper; hosted only if local fails, never sensitive domains | **Preferred** |
 | Spoken answer short with a verbal pointer; full citations render in the chat pane | **Preferred** |
 | Platform repo = one private repo that follows Nate Herk's AIS-OS kit (MIT), live from pilot Day 1 ([the ship, the map, the captain](#the-ship-the-map-and-the-captain-platform-repo)) | **Preferred** |
-| Which repo is the ship: reuse `jefferyjjensen-corporate-memory` (recommended) or a new `second-brain` | **Open** |
+| The ship is the existing private `jefferyjjensen-corporate-memory` repo (decided 2026-09-29), not a new `second-brain` | **Preferred** |
 | Ingestion: retrieval framework vs pure-custom | **Open** |
 | Model roster and local/hosted mix | **Open** |
 
@@ -1137,8 +1137,8 @@ under review like any other governed artifact.
 The repo question ([Open Questions](#open-questions) #6) has a working metaphor
 from an operator voice session on 2026-09-29, and it keeps the roles straight:
 
-- **The ship is the plumbing repo** — one private repo (recommended: the existing
-  `jefferyjjensen-corporate-memory`, see [What already exists](#what-already-exists-2026-09-29)) holding the
+- **The ship is the plumbing repo** — one private repo (the existing
+  `jefferyjjensen-corporate-memory`, chosen 2026-09-29; see [What already exists](#what-already-exists-2026-09-29)) holding the
   operating manuals, skills, connection registry, and later the `docker-compose`,
   ingestion, knowledge-query MCP server, and schema. It is hull and engine room.
   It does **not** carry the cargo: the corpus stays per-domain and owned, and the
@@ -1204,25 +1204,36 @@ map was chosen:
   [Positioning](#positioning-the-owner-stays-captain) demo describes: public
   argument on a hosted page, personal words kept in an owned store. The note sits
   in a plain local folder with no Git history and no backup set, so it does not
-  yet meet *Deterministic Recovery*. Moving it into a versioned repo is the first
-  housekeeping step.
+  yet meet *Deterministic Recovery*. **Done 2026-09-29:** it now lives at
+  `notes/the-exit-or-the-next-step.md` in the ship, and the loose folder is gone.
 
-**How the ship is launched (Preferred; steps in runbook §0 and Phase 1).**
-*Recommended:* **make `jefferyjjensen-corporate-memory` the ship** instead of
-opening a third home. It is already private, already the top node, and already
-holds the pieces the map would create. Add AIS-OS as an `upstream` remote, bring
-in its skills, `connections.md`, and `CLAUDE.md` / `AGENTS.md`, and merge the
-overlaps: `owner-profile.md` serves as `context/`, and the existing
-`decision-log.md` serves as `decisions/log.md`. Personal captures like the
-2026-09-10 note go into a `notes/` folder there.
-*Alternative:* a new private `second-brain` repo seeded from AIS-OS, with
-corporate-memory routed to as the personal domain. Either way, do not use a
-GitHub fork of AIS-OS: a fork of a public repo stays public, and the ship names
-real systems. Keep `upstream` so later map revisions can be pulled and reviewed
-like any other change. Keep the MIT `LICENSE` and the framework attribution; the
-README asks that the Three Ms and Four Cs not be repackaged as someone else's.
-Which repo is the ship is still **Open** until the operator picks
-([Open Questions](#open-questions) #6).
+**How the ship was launched (decided 2026-09-29; steps in runbook Phase 1).**
+**`jefferyjjensen-corporate-memory` is the ship**, rather than a third home. It
+was already private, already the top node, and already held the pieces the map
+would create. AIS-OS was merged in on a branch with
+`--allow-unrelated-histories` and is tracked as the `upstream` remote, so later
+map revisions merge the same way and get reviewed like any other change. How
+the overlaps were resolved:
+
+- **Decision log:** the repo's `decision-log.md` moved to `decisions/log.md`,
+  because the kit's skills write to that path and the kit itself warns against
+  parallel logs.
+- **Context:** `owner-profile.md` + `portfolio.md` stay at the root and act as
+  the context layer beside `context/`.
+- **README:** the repo's own README was kept.
+- **`.gitignore`:** both files were combined, so `brainstorms/` + `audits/`
+  stay local.
+- **License:** the kit's MIT `LICENSE` became `LICENSE-AIS-OS`, covering only
+  the kit's files. A root MIT file would have mislabelled the owner's private
+  framework.
+- **Demo media:** the kit's 30 MB of demo media was dropped from the files.
+- **Captures:** personal captures go in `notes/`.
+
+A GitHub fork was never an option: a fork of a public repo stays public, and
+the ship names real systems. The framework attribution stays in the README;
+Nate Herk's README asks that the Three Ms and Four Cs not be repackaged as
+someone else's. The merge is
+[barefootbetters/jefferyjjensen-corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1).
 
 ### Positioning: the owner stays captain
 
@@ -1947,6 +1958,15 @@ This is the summary index; the individual gotchas and their nuances live in
   "reuse corporate-memory as the ship," with a new repo as the alternative. Which
   repo is the ship is now an **Open** row. The header's "nothing is running"
   wording was narrowed to "the platform is not running; the corpus has begun."
+  *Then decided the same day:* the operator chose corporate-memory as the ship.
+  AIS-OS was merged into it
+  ([barefootbetters/jefferyjjensen-corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1)),
+  and the Open row became Preferred. The captures note moved into `notes/`.
+  `decision-log.md` moved to `decisions/log.md` so the kit's skills write to
+  one log. The kit's license became `LICENSE-AIS-OS`, scoped to its own files.
+  The repo's docs had recorded a `jefferyjjensen/...` GitHub remote, including
+  the clean-machine recovery clone. That repo does not exist, so the docs were
+  corrected to `barefootbetters/...`.
 
 ## Open Questions
 
@@ -2035,10 +2055,10 @@ is built.
      the pilot's own artifacts (operating manuals, routing, skills, the connection
      registry) *are* repo content, and Nate Herk's AIS-OS kit supplies a ready
      layout for them. The Docker and ingestion plumbing still arrive in Phase 5;
-     the ship just exists first. *Open:* which repo is the ship. The
-     recommendation is to reuse the private `jefferyjjensen-corporate-memory`
-     top-node repo (2026-06), which already holds the owner profile, portfolio
-     routing, and decision log, rather than open a third home. See
+     the ship just exists first. *Decided 2026-09-29:* the ship is the private
+     `jefferyjjensen-corporate-memory` top-node repo (2026-06), which already
+     held the owner profile, portfolio routing, and decision log, rather than a
+     third home. See
      [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
    - **The corpus** — **per-domain and owned, never one mega-repo.** Each domain
      keeps its own home (Legendary Arena's already lives in the engine repo); the

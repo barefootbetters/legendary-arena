@@ -58,9 +58,9 @@
   it is cross-domain, not Legendary Arena. It follows Nate Herk's
   [AIS-OS](https://github.com/nateherkai/AIS-OS) starter kit (MIT), kept as
   `upstream` (the "ship" follows the "map"; ewiki *The ship, the map, and the
-  captain*). **Recommended ship: the existing private
-  `jefferyjjensen-corporate-memory` repo** (the top node since 2026-06), not a
-  new repo; the operator confirms (ewiki *Open Questions* #6). The **corpus is
+  captain*). **The ship is the existing private
+  `jefferyjjensen-corporate-memory` repo** (the top node since 2026-06), chosen
+  2026-09-29 over a new repo (ewiki *Open Questions* #6). The **corpus is
   per-domain and owned**: each domain keeps its own home, sensitive domains
   (client engineering, formulations) live in **neither the engine repo nor any
   hosted surface**, and that includes the ship's private GitHub remote.
@@ -491,12 +491,11 @@ pilot") in the census, or 3 days evaporates.
 - [ ] Local clones of `DECISIONS.md`, the working WP/EC set, the wiki Markdown, the
       Architecture Inventory; [Data & File Locations](../../wiki/data-file-locations.md)
       open for the Legendary Arena slice.
-- [ ] **Repo decision (see §0):** design docs stay in the engine repo; platform
-      code gets its own private repo **on Phase 1 Day 1**, following AIS-OS,
-      never in the engine repo. Pick the ship: **reuse
-      `jefferyjjensen-corporate-memory` (recommended)** or open a new
-      `second-brain`. Corpus is per-domain and owned; nothing sensitive goes into
-      the engine repo, onto ewiki, or to the ship's remote.
+- [x] **Repo decision (see §0):** design docs stay in the engine repo; the
+      platform lives in its own private repo, never the engine repo. **Decided
+      2026-09-29: the ship is `jefferyjjensen-corporate-memory`.** Corpus is
+      per-domain and owned; nothing sensitive goes into the engine repo, onto
+      ewiki, or to the ship's remote.
 - [ ] Decision: **co-locate to bootstrap**, dedicated host later.
 - [ ] Decision: **no LiteLLM / Open WebUI / voice in the 3-day window.**
 - [ ] Decision: ingestion = skip or pure-custom this week; do **not** pin
@@ -506,53 +505,37 @@ pilot") in the census, or 3 days evaporates.
 
 ### Phase 1 — Day 1: Census + navigation substrate (no Docker, no models)
 
-- [ ] **Launch the ship.** Never a GitHub fork of AIS-OS: a fork of a public repo
-      stays public. Take one path.
-
-      **Path A (recommended): the existing corporate-memory repo becomes the
-      ship.** Merge the map in on a branch, so later map revisions can be merged
-      the same way:
+- [x] **Launch the ship (done 2026-09-29,
+      [corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1)).**
+      AIS-OS was merged into `jefferyjjensen-corporate-memory` on a branch.
+      Never a GitHub fork: a fork of a public repo stays public. Later map
+      revisions merge the same way, as a reviewed branch:
 
       ```bash
       cd /c/www/jefferyjjensen-corporate-memory
-      git remote add upstream https://github.com/nateherkai/AIS-OS.git
       git fetch upstream
-      git switch -c adopt-ais-os
-      git merge upstream/main --allow-unrelated-histories --no-commit
+      git switch -c map-update-<date>
+      git merge upstream/main
       ```
 
-      Resolve the overlaps by hand. Keep this repo's `README.md`. Keep
-      `decision-log.md` as the decision log and drop the kit's empty
-      `decisions/log.md`. Treat `owner-profile.md` + `portfolio.md` as the
-      `context/` layer. Union the two `.gitignore` files so `brainstorms/` and
-      `audits/` stay ignored. Keep AIS-OS's `LICENSE` and attribution. Review the
-      result, then commit and push.
-
-      **Path B: a new private `second-brain` repo** that routes to
-      corporate-memory as the personal domain:
-
-      ```bash
-      git clone https://github.com/nateherkai/AIS-OS.git second-brain
-      cd second-brain
-      git remote rename origin upstream
-      git remote add origin git@github.com:<owner>/second-brain.git
-      git push -u origin main
-      ```
-
-      Either path: add an ignore rule for any host-local owner-only context, and
-      pull map revisions later with `git fetch upstream`, reviewed like any other
-      change.
-- [ ] **Bring existing captures aboard.** Move
-      `C:\www\secondbrain\the-exit-or-the-next-step.md` (2026-09-10) into the
-      ship's `notes/` folder so it has Git history and a backup. Until then it
-      fails *Deterministic Recovery*.
-- [ ] **Follow the map's Day 1.** Run `/onboard` (on Path A, answer it against
-      the existing owner profile rather than overwriting it). Then apply the
+      Standing resolutions, reapplied on every map merge:
+      - Keep the ship's `README.md`.
+      - `decisions/log.md` is the ship's own log (moved there from
+        `decision-log.md`, since the kit's skills write to that path). Keep ours.
+      - The kit's license lives at `LICENSE-AIS-OS` and covers its files only.
+      - `docs/media/` stays out.
+      - `.gitignore` keeps `brainstorms/` and `audits/` ignored.
+- [x] **Bring existing captures aboard (done 2026-09-29).** The 2026-09-10 note
+      is now `notes/the-exit-or-the-next-step.md` in the ship; the unversioned
+      `C:\www\secondbrain\` folder is gone.
+- [ ] **Follow the map's Day 1.** Run `/onboard`, answering it against the
+      existing owner profile rather than overwriting it. Then apply the
       captain's calls (ewiki *The ship, the map, and the captain*): the decision
       log records ship and personal decisions only (Legendary Arena decisions
-      stay in `DECISIONS.md`); `connections.md` gets write-scope and
-      `sensitivity` columns; the context layer holds routing and hosted-OK facts
-      only.
+      stay in `DECISIONS.md`); every tool `/onboard` adds to `connections.md`
+      gets its write scope and `sensitivity` filled in (the columns and the ship
+      rules in `CLAUDE.md` / `AGENTS.md` landed with the merge); the context layer
+      holds routing and hosted-OK facts only.
 - [ ] Create `KNOWLEDGE_INVENTORY.md` **on the box** (not on ewiki). Every source
       carries: path, domain, class (Authoritative / Reference / Transient),
       retrieval (navigate / vector / skip), backup class, owner.
