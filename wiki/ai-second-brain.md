@@ -39,8 +39,11 @@ last-reviewed: 2026-09-29
 > `status: draft`: cite it, but treat every unbuilt claim as a plan, not a fact.
 >
 > **Scope note.** The knowledge this platform indexes spans more than Legendary
-> Arena — engineering consulting work, Barefoot Betters, and cross-project
-> research all sit under the same roof. The *platform* is shared operator
+> Arena. The operator's civil and GIS engineering knowledge, Barefoot Betters,
+> the consulting notes-migration service, and cross-project research all sit
+> under the same roof. Engineering knowledge is the operator's by default;
+> only material he flags as belonging to his employer, Willdan Engineering,
+> stays out. The *platform* is shared operator
 > infrastructure; only some of the *knowledge* is Legendary Arena's. That
 > breadth is deliberate (one brain, many domains) but is worth naming, because
 > it is wider than the rest of this wiki's remit.
@@ -137,8 +140,9 @@ make accumulated knowledge easier to find, verify, and apply.**
 4. **Support higher-quality thinking.** By organizing information and surfacing
    relevant context, the platform helps the operator research, analyze, compare
    options, identify risks, and decide with more of the picture in view.
-5. **Provide continuity across domains.** Engineering consulting, Legendary
-   Arena, Barefoot Betters, governance, and research all contribute knowledge;
+5. **Provide continuity across domains.** Civil and GIS engineering, Legendary
+   Arena, Barefoot Betters, consulting, governance, and research all contribute
+   knowledge;
    the platform is one memory system spanning many domains without forcing them
    into a single source repository.
 6. **Enable AI-assisted work without surrendering ownership.** Models, tools, and
@@ -296,9 +300,10 @@ Ubuntu 24.04 LTS  (dedicated host is the end-state; co-located w/ prod OK to boo
 │                                #   Cloudflare Access / Authelia in front
 │
 └── Knowledge repositories
-    ├── Engineering              # consulting: wells, bridges, Caltrans, GIS, cost data
+    ├── Engineering              # civil + GIS: wells, bridges, Caltrans, GIS, cost data
     ├── Legendary Arena          # WPs, ECs, DECISIONS, ARCHITECTURE, wiki
     ├── Barefoot Betters         # formulation research, ingredient studies, blog
+    ├── Consulting               # notes-migration service: service notes only
     ├── Governance               # cross-project rules, checklists, playbooks
     └── Research                 # reference material, notes, sources
 ```
@@ -688,6 +693,7 @@ that the MCP layer can read and the vector store can index:
 | Engineering | Well and bridge projects, Caltrans research, cost databases, GIS workflows |
 | Legendary Arena | Work Packets, Execution Checklists, `DECISIONS.md`, architecture docs, this wiki |
 | Barefoot Betters | Formulation research, ingredient studies, blog references |
+| Consulting | Notes about the notes-migration service (each client's own notes live in that client's repo, never here) |
 | Governance | Cross-project rules, lint checklists, operator playbooks |
 | Research | Reference material, notes, cited external sources |
 
@@ -2045,6 +2051,16 @@ This is the summary index; the individual gotchas and their nuances live in
   truncated copy of the page, so its claims that Success criteria, Open
   Questions, and the ship / map / captain section were missing, and its
   rewritten draft, were not adopted.
+- **2026-09-29 — engineering and consulting named as separate domains
+  (descriptive, no re-lock).** The page had called the Engineering domain
+  "engineering consulting." The operator's engineering is civil and GIS
+  engineering, and he works for Willdan Engineering; "consulting" is now the
+  notes-migration service. The Scope note, Goal 5, the stack diagram, and the
+  domain table now name them separately. The Scope note also records the
+  ownership rule: engineering knowledge is the operator's by default, and only
+  material he flags as Willdan's stays out. Sensitivity examples elsewhere
+  ("client engineering data, formulations") are about which model may see a
+  thing, not who owns it, so they stay.
 
 ## Open Questions
 
