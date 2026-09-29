@@ -3,6 +3,7 @@ import { computed, defineComponent, ref } from 'vue';
 
 import { useAuthStore } from '../stores/auth';
 import { launchMatchFromComposition } from './useCreateMatchFromComposition';
+import { buildGuestPlayUrl, createGuestSoloMatch } from './lobbyApi';
 import {
   FEATURED_PLAYER_COUNT,
   FEATURED_TABLE,
@@ -14,10 +15,29 @@ import {
 const FEATURED_PLAYER_NAME = 'Player';
 
 /**
+ * Maps a failed guest start to player copy. Every branch offers sign-in.
+ *
+ * @param status The HTTP status attached to the thrown error, or undefined.
+ * @returns The sentence shown in the entrance's error line.
+ */
+function guestErrorMessage(status: number | undefined): string {
+  // why: player copy instead of the server's generic sentence (the join-as-guest
+  // precedent); the thrown message also carries the endpoint URL.
+  if (status === 429) {
+    return 'Too many guest games were started from this connection. Sign in to play now, or try again in a minute.';
+  } else if (status === 503) {
+    return 'Guest play is full right now. Sign in to play now, or try again in a few minutes.';
+  } else {
+    return 'The guest game could not be started. Sign in to play, or try again.';
+  }
+}
+
+/**
  * The Arena entrance (WP-785 / D-24633): the bare landing URL's first screen.
- * It shows the featured encounter and one Enter Arena button that creates and
- * joins the featured solo table through the existing launcher. It makes no
- * request on mount; today's lobby stays reachable as the Arena Workshop.
+ * It shows the featured encounter and one Enter Arena button. Signed in, it
+ * creates and joins the featured solo table through the existing launcher;
+ * signed out, it starts a guest solo match on the same table (WP-788 / D-24636).
+ * It makes no request on mount; today's lobby stays reachable as the Workshop.
  */
 export default defineComponent({
   name: 'ArenaEntrance',
@@ -35,9 +55,31 @@ export default defineComponent({
     });
 
     /**
-     * Creates and joins the featured table, or sends a signed-out visitor to
-     * sign in. The latch blocks a second click; it stays set on success because
-     * the launcher is already navigating to the play route.
+     * Starts a guest solo match for a signed-out visitor and navigates to it.
+     * The latch stays set on success because the page is navigating away.
+     */
+    async function enterAsGuest(): Promise<void> {
+      if (isEntering.value) {
+        return;
+      }
+      isEntering.value = true;
+      errorMessage.value = '';
+      try {
+        const { matchId, seat, credentials } = await createGuestSoloMatch();
+        // why: buildGuestPlayUrl returns a FULL absolute URL, so navigate via
+        // location.href (not .search, which expects a relative query).
+        window.location.href = buildGuestPlayUrl(matchId, seat, credentials);
+      } catch (guestError) {
+        isEntering.value = false;
+        const status = (guestError as { status?: unknown }).status;
+        errorMessage.value = guestErrorMessage(typeof status === 'number' ? status : undefined);
+      }
+    }
+
+    /**
+     * Creates and joins the featured table, or starts a guest match for a
+     * signed-out visitor. The latch blocks a second click; it stays set on
+     * success because the page is already navigating to the play route.
      */
     async function enterArena(): Promise<void> {
       if (isEntering.value) {
@@ -45,7 +87,7 @@ export default defineComponent({
       }
       const authToken = authStore.token;
       if (authToken === null) {
-        window.location.search = '?route=login';
+        await enterAsGuest();
         return;
       }
       isEntering.value = true;
@@ -98,7 +140,9 @@ export default defineComponent({
           {{ enterLabel }}
         </button>
         <p v-if="isSignedOut" class="arena-entrance__helper">
-          Sign in to take your seat. Your account is free.
+          You’ll play as a guest.
+          <a href="?route=login" data-testid="arena-sign-in-link">Sign in</a>
+          to save your results.
         </p>
         <p
           v-if="errorMessage !== ''"
@@ -223,6 +267,11 @@ export default defineComponent({
   margin: 0;
   font-size: 14px;
   opacity: 0.75;
+}
+
+.arena-entrance__helper a {
+  font-weight: 600;
+  color: var(--arena-stage-accent);
 }
 
 .arena-entrance__error {

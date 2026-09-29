@@ -1,7 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { addGuest, createMatch, createMatchWithBot, fetchMatch, joinMatch, listMatches, serverUrl, setGuestAccess, joinAsGuest, readGuestAccessMeta } from './lobbyApi';
+import { addGuest, createMatch, createMatchWithBot, createGuestSoloMatch, fetchMatch, joinMatch, listMatches, serverUrl, setGuestAccess, joinAsGuest, readGuestAccessMeta } from './lobbyApi';
 import type { LobbyMatchSummary } from './lobbyApi';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { parseLoadoutJson } from './parseLoadoutJson';
@@ -322,6 +322,33 @@ describe('lobbyApi (WP-090)', () => {
         assert.ok(error instanceof Error);
         assert.match(error.message, /Failed to join match m1 as a guest/);
         assert.equal((error as { status?: number }).status, 401);
+        return true;
+      },
+    );
+  });
+
+  test('createGuestSoloMatch POSTs with no headers and no body and returns { matchId, seat, credentials } (WP-788)', async () => {
+    installFetchStub(() =>
+      jsonResponse(200, { matchId: 'g1', seat: '0', credentials: 'guest-solo-cred' }),
+    );
+
+    const result = await createGuestSoloMatch();
+    assert.deepEqual(result, { matchId: 'g1', seat: '0', credentials: 'guest-solo-cred' });
+    assert.equal(calls[0]!.url, `${serverUrl}/api/match/create-guest-solo`);
+    assert.equal(calls[0]!.init?.method, 'POST');
+    // why: a CORS simple request — no headers object at all and no body.
+    assert.equal(calls[0]!.init?.headers, undefined);
+    assert.equal(calls[0]!.init?.body, undefined);
+  });
+
+  test('createGuestSoloMatch throws a full-sentence error with status 429 attached (WP-788)', async () => {
+    installFetchStub(() => textResponse(429, 'Too many guest matches were started from this connection.'));
+
+    await assert.rejects(
+      () => createGuestSoloMatch(),
+      (error: Error & { status?: number }) => {
+        assert.equal(error.status, 429);
+        assert.match(error.message, /^Failed to start a guest match at .*: server returned HTTP 429\./);
         return true;
       },
     );
