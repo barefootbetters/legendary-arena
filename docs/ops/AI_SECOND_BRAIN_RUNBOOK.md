@@ -1,6 +1,6 @@
 # AI Second Brain — Build & Operate Runbook — Legendary Arena
 
-> **Last updated:** 2026-08-11
+> **Last updated:** 2026-09-29
 >
 > The **executable** companion to the descriptive ewiki page
 > [AI Second Brain](../../wiki/ai-second-brain.md). That page and
@@ -49,15 +49,19 @@
   per-phase gates, and the non-goals, all in one place. Honest estimate: **~3 days
   to a usable navigation brain, ~2 weeks to the thin owned platform, ~a month
   before LiteLLM / Open WebUI / voice earn their operating cost.**
-- **Repo layout (settled going in).** Design docs (this runbook, the ewiki page,
-  D-24341) stay in the **engine repo**. The **platform code** (docker-compose,
-  ingestion, the knowledge-query MCP server, schema, skills) gets its **own
-  `second-brain` repo at the thin-platform stage (§12 Phase 3), not the engine
-  repo** — the engine repo's WP/EC + reward-integrity CI would wrongly gate infra
-  commits, and it is cross-domain, not Legendary Arena. The **corpus is per-domain
-  and owned**: each domain keeps its own home, sensitive domains (client
-  engineering, formulations) live in **neither the engine repo nor any hosted
-  surface**. See ewiki *Open Questions* #6.
+- **Repo layout (settled going in; timing revised 2026-09-29).** Design docs
+  (this runbook, the ewiki page, D-24341) stay in the **engine repo**. The
+  **platform code** (operating manuals, skills, connection registry, then
+  docker-compose, ingestion, the knowledge-query MCP server, schema) gets its
+  **own private `second-brain` repo, created on §12 Phase 1 (Day 1), not the
+  engine repo** — the engine repo's WP/EC + reward-integrity CI would wrongly gate
+  infra commits, and it is cross-domain, not Legendary Arena. It is seeded from
+  Nate Herk's [AIS-OS](https://github.com/nateherkai/AIS-OS) starter kit (MIT)
+  kept as `upstream` (the "ship" follows the "map"; ewiki *The ship, the map, and
+  the captain*). The **corpus is per-domain and owned**: each domain keeps its own
+  home, sensitive domains (client engineering, formulations) live in **neither the
+  engine repo nor any hosted surface** — including the private `second-brain`
+  GitHub remote. See ewiki *Open Questions* #6.
 
 > **Safety guardrails (non-negotiable — from the design record).**
 > - **Read-only connectors first.** Every MCP server gets its own least-privilege
@@ -437,7 +441,8 @@ Binary — the pilot is working when all pass:
 
 ## 11. Explicitly deferred (do NOT build in the pilot)
 
-From the ewiki *Scope boundaries* — these are out of scope until the pilot has
+From the ewiki *Architectural invariants vs. implementation choices* and
+*Non-goals* — these are out of scope until the pilot has
 been used for real work, failures captured, and restore rehearsed:
 
 - Additional domains or additional vector corpora beyond the one pilot corpus.
@@ -485,9 +490,10 @@ pilot") in the census, or 3 days evaporates.
       Architecture Inventory; [Data & File Locations](../../wiki/data-file-locations.md)
       open for the Legendary Arena slice.
 - [ ] **Repo decision (see §0):** design docs stay in the engine repo; platform
-      code gets its own `second-brain` repo **at Phase 3**, not before and not in
-      the engine repo; corpus is per-domain and owned; nothing sensitive in the
-      engine repo or on ewiki.
+      code gets its own private `second-brain` repo **on Phase 1 Day 1**, seeded
+      from AIS-OS, never in the engine repo; corpus is per-domain and owned;
+      nothing sensitive in the engine repo, on ewiki, or pushed to the
+      `second-brain` remote.
 - [ ] Decision: **co-locate to bootstrap**, dedicated host later.
 - [ ] Decision: **no LiteLLM / Open WebUI / voice in the 3-day window.**
 - [ ] Decision: ingestion = skip or pure-custom this week; do **not** pin
@@ -497,6 +503,27 @@ pilot") in the census, or 3 days evaporates.
 
 ### Phase 1 — Day 1: Census + navigation substrate (no Docker, no models)
 
+- [ ] **Launch the ship.** Create an empty **private** GitHub repo
+      `second-brain`, then seed it from the map. Not a GitHub fork: a fork of a
+      public repo stays public.
+
+      ```bash
+      git clone https://github.com/nateherkai/AIS-OS.git second-brain
+      cd second-brain
+      git remote rename origin upstream
+      git remote add origin git@github.com:<owner>/second-brain.git
+      git push -u origin main
+      ```
+
+      Keep `LICENSE` and the framework attribution. Before the first push after
+      `/onboard`, confirm `brainstorms/` and `audits/` are still gitignored and add
+      an ignore rule for any host-local owner-only context. Pull map revisions
+      later with `git fetch upstream` and review them like any other change.
+- [ ] **Follow the map's Day 1.** Run `/onboard`. Then apply the captain's calls
+      (ewiki *The ship, the map, and the captain*): `decisions/log.md` records
+      ship decisions only (Legendary Arena decisions stay in `DECISIONS.md`);
+      `connections.md` gets write-scope and `sensitivity` columns; `context/` holds
+      routing and hosted-OK facts only.
 - [ ] Create `KNOWLEDGE_INVENTORY.md` **on the box** (not on ewiki). Every source
       carries: path, domain, class (Authoritative / Reference / Transient),
       retrieval (navigate / vector / skip), backup class, owner.
@@ -597,5 +624,5 @@ pilot") in the census, or 3 days evaporates.
 No always-on ingestion; no vectorizing DECISIONS / WPs / ECs / runbooks; no
 CRM / PM / mail-archive / Git replacement; no multi-agent orchestration as an
 authority; no knowledge graph; no residential-ISP system of record; no publishing
-formulation or client detail onto ewiki. (These mirror §11 and the ewiki *Scope
-boundaries*; expanding past any of them is a fresh decision against D-24341.)
+formulation or client detail onto ewiki. (These mirror §11 and the ewiki
+*Non-goals*; expanding past any of them is a fresh decision against D-24341.)
