@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24638 — The battle brief links back to the Arena Workshop (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On a match's pre-game screen, the Battle Brief
+now shows **Back to the Arena Workshop** under the seat count, so a player can leave to load a different
+LAGN loadout (or add a bot ally, or join by match ID) without hunting for the header link.
+
+- **Client only.** `BattleBrief.vue` + one test. No move, no request; the frame-gated Begin the Battle is
+  unchanged.
+- **Counts.** arena-client 2198 → 2199 / 0 fail; vue-tsc 0.
+- **Live-verify (D-24026):** pending. Open any match before it starts → the brief shows the link → it
+  opens the Workshop with the loadout import.
+
 ### WP-786 — A battle brief now opens every match; Begin the Battle replaces Mark Ready + Start Match (EC-823 / D-24634) (2026-09-28)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Every match opens in the engine's lobby phase.

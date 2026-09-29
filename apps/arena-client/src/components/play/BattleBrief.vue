@@ -294,6 +294,16 @@ export default defineComponent({
         >
           Waiting for the rest of the table…
         </p>
+        <!-- why: D-24638 — the brief covers the pre-game screen, so it offers the
+             way back to the Workshop (loadouts, bot allies, join by ID) instead of
+             leaving the header "Play" link as the only exit. -->
+        <a
+          class="battle-brief__workshop"
+          href="?route=workshop"
+          data-testid="battle-brief-workshop-link"
+        >
+          Back to the Arena Workshop
+        </a>
       </div>
       <div class="battle-brief__actions">
         <button type="button" class="battle-brief__hide" @click="hideBrief">Hide brief</button>
@@ -446,6 +456,14 @@ export default defineComponent({
 
 .battle-brief__waiting {
   opacity: 0.75;
+}
+
+.battle-brief__workshop {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: inherit;
+  opacity: 0.8;
 }
 
 .battle-brief__actions {

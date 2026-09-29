@@ -250,6 +250,16 @@ describe('BattleBrief (WP-786)', () => {
     assert.equal(oneSeat.wrapper.find('[data-testid="battle-brief-waiting"]').exists(), false);
   });
 
+  test('the brief links back to the Arena Workshop (D-24638)', async () => {
+    stubLagn(200);
+    const { wrapper, moves } = mountBrief(buildSnapshot());
+    await flushPromises();
+    const link = wrapper.find('[data-testid="battle-brief-workshop-link"]');
+    assert.equal(link.attributes('href'), '?route=workshop');
+    assert.match(link.text(), /Back to the Arena Workshop/);
+    assert.equal(moves.length, 0);
+  });
+
   test('Hide brief leaves only the Show button, and Show restores the brief, with no move', async () => {
     stubLagn(200);
     const { wrapper, moves } = mountBrief(buildSnapshot());

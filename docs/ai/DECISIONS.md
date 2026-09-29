@@ -45846,4 +45846,19 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24638 — The battle brief links back to the Arena Workshop (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** WP-786's battle brief covers a match's pre-game (`lobby` phase) screen, and its only controls are Begin the Battle and Hide brief. Jeff, wanting to load a different LAGN game from inside a match, found no way back except the header "Play" link, which lands on the WP-785 entrance, not the Workshop where loadouts are imported.
+
+**Decision.**
+1. The brief's footer gains a secondary link, **Back to the Arena Workshop** (`href="?route=workshop"`, `data-testid="battle-brief-workshop-link"`), under the seat count. Begin the Battle stays the one primary action.
+2. It is a plain navigation link: no move, no request, no change to the frame-gated start. Leaving an unstarted match is harmless (the reaper removes it after 24 h).
+3. Amends D-24634 §-level copy (the brief's locked copy and test ids) additively; nothing else in D-24634 changes.
+
+**Gates.** arena-client 2198 → 2199 / 0 fail (+1 test pinning the link's href and text, and that it sends no move); vue-tsc 0.
+
+**Reserved by:** NUMBER-LEDGER D-24638. Related: D-24634 (battle brief), D-24633 (Arena Workshop route), WP-786, WP-785.
+
+---
+
 Protect this file.
