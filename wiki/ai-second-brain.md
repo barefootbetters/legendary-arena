@@ -33,14 +33,15 @@ last-reviewed: 2026-09-29
 > owned locally and durable, while the AI models and agent frameworks that read
 > it stay swappable. The *platform* described here is not running yet, but the
 > *corpus* has started (see [What already exists](#what-already-exists-2026-09-29)).
+> **Progress at a glance: [Build status](#build-status).**
 > The architecture
 > is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
 > standalone architecture record, **not** an engine Work Packet (the platform
 > crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
 > pattern. The executable build runbook lives at
 > [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
-> — an operator runbook, not an engine Work Packet — but nothing there has been
-> run yet. The page stays `status: draft` — cite this record, but treat every
+> — an operator runbook, not an engine Work Packet. Only its Phase 1 repo
+> steps have run so far. The page stays `status: draft` — cite this record, but treat every
 > unbuilt claim as a plan, not a fact, until the platform is built.
 >
 > **Scope note.** The knowledge this platform indexes spans more than Legendary
@@ -78,6 +79,37 @@ the two separate is intentional: infrastructure provisioning and knowledge
 architecture drift at different rates and answer to different concerns.
 
 ## Mechanics
+
+### Build status
+
+*The progress view, updated at each milestone. The design is the rest of this
+page; the phased steps are in
+[runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased);
+the brain's private contents live in the ship repo,
+[`barefootbetters/jefferyjjensen-corporate-memory`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory) (private — open it
+on GitHub while signed in; its Markdown renders as pages). Personal context
+(priorities, voice, notes) is linked from here, never copied here.*
+
+**As of 2026-09-29: the ship is launched and onboarded; no platform services run
+yet.**
+
+| Milestone | Status | Date | Where to look |
+|---|---|---|---|
+| Architecture locked | Done | 2026-08-11 | [D-24341](../docs/ai/DECISIONS.md#d-24341) |
+| Build runbook drafted | Done | 2026-08-11 | [Runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md) |
+| First proof of *Model Independence* (endgame coach routing shim) | Done | 2026-08-24 | [Gateway routing](#gateway-routing-for-the-endgame-coach-decision-sketch) |
+| Map chosen: Nate Herk's AIS-OS kit | Done | 2026-09-29 | [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo) |
+| Ship launched: corporate-memory merged with AIS-OS | Done | 2026-09-29 | [corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1) |
+| First personal capture versioned in `notes/` | Done | 2026-09-29 | [`notes/`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/tree/main/notes) |
+| `/onboard` — Day-1 context written | Done | 2026-09-29 | [corporate-memory#2](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/2); [`context/priorities.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/priorities.md) |
+| Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
+| Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
+| Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
+| Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
+| Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
+
+Open intake items: two answers are still marked `[CONFIRM]` in
+[`aios-intake.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/aios-intake.md).
 
 ### Goals
 
@@ -1992,6 +2024,13 @@ This is the summary index; the individual gotchas and their nuances live in
   gets a row in the [Workspace Map](workspace-map.md) Git-repositories table.
   Corporate memory gets **no ewiki page of its own**: its README is the single
   description, and the ewiki records only its role and location.
+- **2026-09-29 — Build status added (descriptive, no re-lock).** A
+  [Build status](#build-status) subsection at the top of Mechanics gives a
+  dated milestone table (done / next / scheduled / not started), linked from
+  the top banner, so progress can be read on the wiki after the chat that
+  produced it is gone. It links to the private ship repo for personal context
+  and copies none of it here. The banner's "nothing in the runbook has run"
+  wording was narrowed to "only its Phase 1 repo steps have run."
 
 ## Open Questions
 
