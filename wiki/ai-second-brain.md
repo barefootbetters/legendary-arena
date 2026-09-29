@@ -102,6 +102,7 @@ yet.**
 | Ship launched: corporate-memory merged with AIS-OS | Done | 2026-09-29 | [corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1) |
 | First personal capture versioned in `notes/` | Done | 2026-09-29 | [`notes/`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/tree/main/notes) |
 | `/onboard` — Day-1 context written | Done | 2026-09-29 | [corporate-memory#2](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/2); [`context/priorities.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/priorities.md) |
+| Note skeleton: `inbox/`, `engineering/`, `research/`, `consulting/`, the note template, README note rules; first note (Mastermind exit cost) | Done | 2026-09-29 | [corporate-memory#3](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/3); [`_templates/note.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/_templates/note.md); [`notes/mastermind-exit-cost.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/notes/mastermind-exit-cost.md) |
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
@@ -2031,6 +2032,11 @@ This is the summary index; the individual gotchas and their nuances live in
   produced it is gone. It links to the private ship repo for personal context
   and copies none of it here. The banner's "nothing in the runbook has run"
   wording was narrowed to "only its Phase 1 repo steps have run."
+- **2026-09-29 — Build status: note skeleton row (descriptive).** Added the
+  corporate-memory#3 milestone to [Build status](#build-status): shallow folders,
+  the note template (domain, sensitivity, `publish: false`), the README note rules,
+  a `consulting/` folder for notes about the notes-migration service (client notes
+  never enter the ship), and the first note, on Mastermind exit cost.
 
 ## Open Questions
 
