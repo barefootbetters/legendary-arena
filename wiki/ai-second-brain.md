@@ -22,7 +22,7 @@ source:
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
-last-reviewed: 2026-09-22
+last-reviewed: 2026-09-29
 ---
 
 # AI Second Brain
@@ -30,7 +30,9 @@ last-reviewed: 2026-09-22
 > **Proposed architecture — not yet built.** This page records a *design
 > intent*: a self-hosted knowledge platform where organizational knowledge is
 > owned locally and durable, while the AI models and agent frameworks that read
-> it stay swappable. No component described here is running yet. The architecture
+> it stay swappable. The *platform* described here is not running yet, but the
+> *corpus* has started (see [What already exists](#what-already-exists-2026-09-29)).
+> The architecture
 > is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
 > standalone architecture record, **not** an engine Work Packet (the platform
 > crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
@@ -218,6 +220,8 @@ are genuine choices deferred to the build (see [Open Questions](#open-questions)
 | Voice = Open WebUI conversation mode over Tailscale Serve HTTPS | **Preferred** |
 | Voice legs (STT/TTS) = local Whisper + Piper; hosted only if local fails, never sensitive domains | **Preferred** |
 | Spoken answer short with a verbal pointer; full citations render in the chat pane | **Preferred** |
+| Platform repo = one private repo that follows Nate Herk's AIS-OS kit (MIT), live from pilot Day 1 ([the ship, the map, the captain](#the-ship-the-map-and-the-captain-platform-repo)) | **Preferred** |
+| The ship is the existing private `jefferyjjensen-corporate-memory` repo (decided 2026-09-29), not a new `second-brain` | **Preferred** |
 | Ingestion: retrieval framework vs pure-custom | **Open** |
 | Model roster and local/hosted mix | **Open** |
 
@@ -1128,6 +1132,147 @@ the `.claude/rules/*.md` enforcement files, and the memory index are exactly
 these files — high-signal, version-controlled, loaded every session, and edited
 under review like any other governed artifact.
 
+### The ship, the map, and the captain (platform repo)
+
+The repo question ([Open Questions](#open-questions) #6) has a working metaphor
+from an operator voice session on 2026-09-29, and it keeps the roles straight:
+
+- **The ship is the plumbing repo** — one private repo (the existing
+  `jefferyjjensen-corporate-memory`, chosen 2026-09-29; see [What already exists](#what-already-exists-2026-09-29)) holding the
+  operating manuals, skills, connection registry, and later the `docker-compose`,
+  ingestion, knowledge-query MCP server, and schema. It is hull and engine room.
+  It does **not** carry the cargo: the corpus stays per-domain and owned, and the
+  ship only *routes* to it.
+- **The map is Nate Herk's AIS-OS starter kit**
+  ([`nateherkai/AIS-OS`](https://github.com/nateherkai/AIS-OS), MIT) — a public,
+  Markdown-first "AI operating system" layout for Claude Code and Codex, with a
+  build order (Day 1 `/onboard`, use it for a week, Day 7 `/audit`, Day 14
+  `/level-up`) and his **Four Cs** layer model: *Context → Connections +
+  Capabilities → Cadence*. Most of the map is already the route this page draws,
+  arrived at independently, which is why following it is cheap.
+- **The captain is the operator.** The captain follows the map and holds the helm:
+  where the map and this ship's charter disagree, the charter wins — the
+  [Locked](#locked-architecture-decisions) rows and
+  [Design principles](#design-principles). The agents (Claude Code, Codex, whatever
+  comes next) are crew: useful, replaceable, never in command (*Human Authority*).
+
+**Following the map, piece by piece.** Read from the AIS-OS README as of
+2026-09-29 (the repo description says five skills; the README ships six):
+
+| On the map (AIS-OS) | What it does | Where it lands here | Captain's call |
+|---|---|---|---|
+| `CLAUDE.md` + `AGENTS.md` | Matching operating manuals for Claude Code and Codex | [Persistent context files](#persistent-context-files) | **Adopt.** Two manuals for two agents is *Model Independence* at the harness layer. |
+| `context/` filled by `/onboard` | A 7-question interview that writes the Day-1 business context | Operating context, not facts | **Adopt, with a fence.** Routing and hosted-OK facts only; anything owner-only stays on the owned host, gitignored, never pushed. |
+| `/link` | Adds the smallest route to a new source and checks it resolves, without copying the source in | `INDEX.md` discipline ([Knowledge repositories](#knowledge-repositories)) | **Adopt as is.** It is the points-never-duplicates rule. |
+| `connections.md` | Registry of every system the AI OS can reach | *Read-Only Connectors First*; least-privilege credentials per MCP server | **Adopt, and add two columns:** each connection's write scope and its `sensitivity`. |
+| `decisions/log.md` | Append-only decision log | Platform decisions only | **Narrow it.** Legendary Arena decisions stay in `DECISIONS.md`; the ship's log records ship decisions. No second truth store. |
+| `/grill-me` → `brainstorms/` (gitignored) | Interview answers saved as dated Markdown; tentative ideas stay labelled | [Knowledge extraction](#knowledge-extraction-operator-triggered); Transient class | **Adopt.** Moving a capture into `context/` stays an operator-confirmed act. |
+| `/audit` → `audits/` (gitignored) | Evidence-scored reliability: retrieval probes, freshness, source authority, findings tracked across runs | [Success criteria](#success-criteria) + runbook §8 `audit-index` | **Adopt, then extend** with the citation verifier and the ~20-question eval set. |
+| `/level-up` | One shipped improvement per week; repairs before new skills | *Every Failure Upgrades the System* | **Adopt.** |
+| `/3d-brain` | Local-only 3D viewer over selected Markdown folders | A viewer, like Obsidian | **Optional.** Never the system of record. |
+| Four Cs order — Cadence last | "Don't automate workflows that don't work manually" | *Incremental Automation* | **Adopt the order.** Cadence starts as the propose-only scheduled compile ([Architectural invariants](#architectural-invariants-vs-implementation-choices)): it writes to a review folder, never to `INDEX.md` or governance. |
+| "Workflows beat agents", Kill Switch | Part of his Three Ms "Machine" guidance | *Permissions Beat Prompts*; minimal orchestration | **Aligned.** |
+
+**Where the ship needs plumbing the map does not draw.** AIS-OS is a
+single-folder kit that runs on hosted Claude or Codex. It has no sensitivity
+axis, no owned vector layer, no shared retrieval surface, no restore drill, and
+no rule that governance is navigated rather than embedded. Those are this page's
+additions, and they are what the ship's later phases carry: Postgres + `pgvector`
+over one reference corpus, the knowledge-query MCP server, LiteLLM, voice, and a
+rehearsed restore ([runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)). The
+map's calendar lines up with the runbook's: Day 7 `/audit` falls after the Phase 4
+real-use week, and Day 14 `/level-up` at the end of the thin platform.
+
+#### What already exists (2026-09-29)
+
+The brain did not start from zero. Two pieces were already on disk before the
+map was chosen:
+
+- **A private top-node repo: `jefferyjjensen-corporate-memory`** (GitHub
+  `barefootbetters`, private, started 2026-06-12). It holds an owner profile, a
+  `portfolio.md` routing map of which business keeps its memory where, an
+  append-only `decision-log.md`, prompt templates, and a plan for a local personal
+  AI stack (Ollama + Open WebUI on Windows). Its stated design, *distributed,
+  repo-local memory with this repo as the top node*, is the same shape as this
+  page's rule of a per-domain corpus with one brain that reads across it. It
+  already covers the map's `context/`, `decisions/log.md`, and routing.
+- **The first personal capture: `C:\www\secondbrain\the-exit-or-the-next-step.md`**
+  (2026-09-10). It is the personal side of the soul page's section
+  [*The burden you didn't earn*](soul-of-legendary-arena.md#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses).
+  The wiki carries the product-facing argument; the owned brain carries the
+  owner's own landing. That is the two-layer shape the
+  [Positioning](#positioning-the-owner-stays-captain) demo describes: public
+  argument on a hosted page, personal words kept in an owned store. The note sits
+  in a plain local folder with no Git history and no backup set, so it does not
+  yet meet *Deterministic Recovery*. **Done 2026-09-29:** it now lives at
+  `notes/the-exit-or-the-next-step.md` in the ship, and the loose folder is gone.
+
+**How the ship was launched (decided 2026-09-29; steps in runbook Phase 1).**
+**`jefferyjjensen-corporate-memory` is the ship**, rather than a third home. It
+was already private, already the top node, and already held the pieces the map
+would create. AIS-OS was merged in on a branch with
+`--allow-unrelated-histories` and is tracked as the `upstream` remote, so later
+map revisions merge the same way and get reviewed like any other change. How
+the overlaps were resolved:
+
+- **Decision log:** the repo's `decision-log.md` moved to `decisions/log.md`,
+  because the kit's skills write to that path and the kit itself warns against
+  parallel logs.
+- **Context:** `owner-profile.md` + `portfolio.md` stay at the root and act as
+  the context layer beside `context/`.
+- **README:** the repo's own README was kept.
+- **`.gitignore`:** both files were combined, so `brainstorms/` + `audits/`
+  stay local.
+- **License:** the kit's MIT `LICENSE` became `LICENSE-AIS-OS`, covering only
+  the kit's files. A root MIT file would have mislabelled the owner's private
+  framework.
+- **Demo media:** the kit's 30 MB of demo media was dropped from the files.
+- **Captures:** personal captures go in `notes/`.
+
+A GitHub fork was never an option: a fork of a public repo stays public, and
+the ship names real systems. The framework attribution stays in the README;
+Nate Herk's README asks that the Three Ms and Four Cs not be repackaged as
+someone else's. The merge is
+[barefootbetters/jefferyjjensen-corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1).
+
+### Positioning: the owner stays captain
+
+The same voice session recorded *why* this architecture matters beyond one
+operator. The common fear about AI is loss of control — over your data, over who
+can see it, and over whose words come back to you. This design answers that
+fear with structure, not reassurance:
+
+1. **The data never leaves.** The knowledge lives in the owned store; nothing
+   about the architecture requires handing it to a vendor.
+2. **The model is swappable.** It is a worker reached through one retrieval
+   surface, replaced by config ([The agent layer is replaceable](#the-agent-layer-is-replaceable)).
+3. **The answers are your own words coming back, cited.** *Retrieval Before
+   Generation* means the system returns what you wrote, with sources, not text a
+   model invented.
+
+**Model-layer oversight is a reason for an owned store.** Public calls to put AI
+models under government oversight concentrate access at the model and vendor
+layer. Whatever the intent, whoever can inspect that layer can inspect what flows
+through it, and the operator named that as a surveillance risk they do not want.
+An owned store shrinks the exposure to what a single query sends a hosted model,
+and owner-only domains send nothing (the `sensitivity` axis routes them to a local
+model). It does not make hosted inference private, and the page does not claim
+that. The shape matches the [vendor-memory callout](#design-principles): the
+protection is a property of *where the memory lives*.
+
+**The demo that sells it.** Someone with fifteen years of personal study notes is
+preparing a talk. They ask, *"show me everything I've written about covenant,"*
+and get their own passages back, cross-referenced and cited. Hours of scrolling
+become one question. For devotional material, "your own words, not
+machine-written content" is the selling point, and it is also the content class a
+vendor-hosted memory has been observed to decline to keep. Architecturally, an
+archive like that is Reference raw source (the vector layer's intended use) plus
+compiled pages, all on the owner's hardware.
+
+**What you want for yourself is what you would sell.** The operator's own
+brain and a customer's are the same ship on the same map. How that becomes an
+offering is [Open Questions](#open-questions) #7.
+
 ### Backup and recovery
 
 Owning the knowledge base means owning its durability. The discipline mirrors
@@ -1786,6 +1931,42 @@ This is the summary index; the individual gotchas and their nuances live in
   no free text); and gating the live-model eval in CI (a `COACH_MODEL` swap is a
   Render env change CI never sees). **No Locked row changed**, no `DECISIONS.md`
   entry for the page; D-24559 belongs to the coach WP.
+- **2026-09-29 — the ship, the map, and the captain (Preferred / Open, no
+  re-lock).** Recorded an operator voice session. **Repo:** the platform repo
+  (the "ship") is now created on **pilot Day 1**, seeded from Nate Herk's AIS-OS
+  starter kit (the "map", MIT) with AIS-OS kept as `upstream` and a private
+  `origin`, not a public fork. This reverses the earlier "create it at the
+  thin-platform stage" timing, because the pilot's manuals, routing, and skills
+  are already repo content. A piece-by-piece table maps each AIS-OS file and
+  skill onto this design with the operator's (the "captain's") call: adopt,
+  narrow, or extend. `decisions/log.md` is limited to ship decisions, `context/`
+  is fenced to hosted-OK facts, and `connections.md` gains write-scope and
+  sensitivity columns. Open Question #6's public-skeleton question is resolved
+  (AIS-OS *is* the public skeleton). **Positioning:** a new section records the
+  structural answer to AI-control fears (data never leaves, the model is
+  swappable, the answers are your own words with citations), model-layer
+  oversight as a surveillance reason for an owned store, and a personal study
+  archive answering "everything I've written about covenant" as the demo. New
+  Open Question #7 covers productizing it: one ship per customer, with MIT
+  attribution kept. **No Locked row changed**, no `DECISIONS.md` entry.
+  *Same-day follow-up:* recorded [What already exists](#what-already-exists-2026-09-29).
+  The corpus had already started with the first personal capture
+  (`C:\www\secondbrain\`, 2026-09-10, the personal side of the soul page's
+  *The burden you didn't earn*), and the private `jefferyjjensen-corporate-memory`
+  top-node repo (2026-06) already covers the map's context, routing, and decision
+  log. The recommendation changed from "open a new `second-brain` repo" to
+  "reuse corporate-memory as the ship," with a new repo as the alternative. Which
+  repo is the ship is now an **Open** row. The header's "nothing is running"
+  wording was narrowed to "the platform is not running; the corpus has begun."
+  *Then decided the same day:* the operator chose corporate-memory as the ship.
+  AIS-OS was merged into it
+  ([barefootbetters/jefferyjjensen-corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1)),
+  and the Open row became Preferred. The captures note moved into `notes/`.
+  `decision-log.md` moved to `decisions/log.md` so the kit's skills write to
+  one log. The kit's license became `LICENSE-AIS-OS`, scoped to its own files.
+  The repo's docs had recorded a `jefferyjjensen/...` GitHub remote, including
+  the clean-machine recovery clone. That repo does not exist, so the docs were
+  corrected to `barefootbetters/...`.
 
 ## Open Questions
 
@@ -1865,22 +2046,50 @@ is built.
      [D-24341](../docs/ai/DECISIONS.md#d-24341)) — **stay in the engine repo**,
      cross-referenced with the rest of the Legendary Arena governance corpus.
    - **Platform code** (`docker-compose`, ingestion, the knowledge-query MCP
-     server, schema DDL, skills) — **its own `second-brain` repo, created at the
-     thin-platform stage, not the engine repo.** Two reasons: the engine repo's
-     WP/EC + reward-integrity CI would wrongly gate cross-domain infra commits, and
-     the platform is shared operator infrastructure (*only some of the knowledge is
-     Legendary Arena's* — see the Scope note up top). It does not exist during the
-     3-day navigation pilot, so the repo is premature until there is code to hold.
+     server, schema DDL, skills) — **its own private repo, not the engine repo.**
+     Two reasons: the engine repo's WP/EC + reward-integrity CI would
+     wrongly gate cross-domain infra commits, and the platform is shared operator
+     infrastructure (*only some of the knowledge is Legendary Arena's* — see the
+     Scope note up top). **Revised 2026-09-29: create it on pilot Day 1, not at the
+     thin-platform stage.** The old reason to wait was "no code to hold yet," but
+     the pilot's own artifacts (operating manuals, routing, skills, the connection
+     registry) *are* repo content, and Nate Herk's AIS-OS kit supplies a ready
+     layout for them. The Docker and ingestion plumbing still arrive in Phase 5;
+     the ship just exists first. *Decided 2026-09-29:* the ship is the private
+     `jefferyjjensen-corporate-memory` top-node repo (2026-06), which already
+     held the owner profile, portfolio routing, and decision log, rather than a
+     third home. See
+     [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
    - **The corpus** — **per-domain and owned, never one mega-repo.** Each domain
      keeps its own home (Legendary Arena's already lives in the engine repo); the
      brain *reads across* them rather than duplicating ownership. Sensitive domains
      (client engineering data, formulations) live in **neither the engine repo nor
      any hosted surface** — the same publishing boundary that keeps the
      `KNOWLEDGE_INVENTORY` on the owned host ([Pilot scope](#pilot-scope-recommended-first-vertical);
-     [Edge Cases](#edge-cases)). *Still open:* the concrete repo names/hosts for the
-     non-Legendary-Arena domains, and whether the `second-brain` platform repo is
-     public-skeleton + private-config or fully private. **Preferred / Open** —
-     nothing here touches a Locked row or needs a new `DECISIONS.md` entry.
+     [Edge Cases](#edge-cases)). *Resolved 2026-09-29:* the "public skeleton +
+     private config" split already exists. AIS-OS is the public skeleton (the
+     `upstream` remote), and the ship is the **private** repo holding config and
+     plumbing. Owner-only material stays host-local and gitignored even there,
+     because a private GitHub repo is still a hosted surface. *Still open:* the
+     concrete repo names/hosts for the non-Legendary-Arena domains. **Preferred /
+     Open** — nothing here touches a Locked row or needs a new `DECISIONS.md`
+     entry.
+7. **Productizing the ship — how does "what you'd want for yourself" become an
+   offering?** (Raised 2026-09-29; see
+   [Positioning](#positioning-the-owner-stays-captain).) *Provisional shape:*
+   **one ship per customer.** Each customer gets their own copy of the private
+   repo, their own corpus, and their own hardware or owned VPS. Tenancy comes from
+   replication, not a multi-tenant service, so every instance keeps the v1
+   single-operator shape and the "your data never leaves" promise stays literally
+   true. *Open:* which business line sells it; packaging and price (setup service,
+   subscription, or managed care of a customer-owned host); the per-customer host
+   default (a local machine is fine for a personal study archive that serves no one
+   else, and the residential-ISP caution in [Edge Cases](#edge-cases) applies only
+   to always-on servers); and brand. On brand, the map is MIT, so building on it is
+   allowed, but its README asks that the Three Ms and Four Cs not be repackaged as
+   one's own. A sold offering keeps the license and attribution and brands its own
+   layer: the plumbing, the governance, and the setup work. **Open** — a business
+   decision, not an architecture one.
 
 ## References
 
@@ -1893,6 +2102,13 @@ is built.
   — the voice/mobile operator addendum: Tailscale Serve setup, the voice-mode
   system prompt (spoken answer + verbal pointer), and the
   do-this-week-vs-after-the-box checklist. Executable detail this page defers.
+- [Nate Herk — `nateherkai/AIS-OS`](https://github.com/nateherkai/AIS-OS)
+  (MIT, © 2026 Nate Herk; README read 2026-09-29) — the "map": an AI operating
+  system starter kit for Claude Code and Codex (`CLAUDE.md` / `AGENTS.md`,
+  `context/`, `connections.md`, `decisions/log.md`, and six skills), plus the
+  Three Ms of AI™ and Four Cs of an AI OS™ frameworks (trademarks of Nate Herk).
+  It is the layout the platform repo follows; see
+  [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline

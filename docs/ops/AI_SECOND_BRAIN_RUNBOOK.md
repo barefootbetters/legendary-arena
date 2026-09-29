@@ -1,6 +1,6 @@
 # AI Second Brain — Build & Operate Runbook — Legendary Arena
 
-> **Last updated:** 2026-08-11
+> **Last updated:** 2026-09-29
 >
 > The **executable** companion to the descriptive ewiki page
 > [AI Second Brain](../../wiki/ai-second-brain.md). That page and
@@ -49,15 +49,21 @@
   per-phase gates, and the non-goals, all in one place. Honest estimate: **~3 days
   to a usable navigation brain, ~2 weeks to the thin owned platform, ~a month
   before LiteLLM / Open WebUI / voice earn their operating cost.**
-- **Repo layout (settled going in).** Design docs (this runbook, the ewiki page,
-  D-24341) stay in the **engine repo**. The **platform code** (docker-compose,
-  ingestion, the knowledge-query MCP server, schema, skills) gets its **own
-  `second-brain` repo at the thin-platform stage (§12 Phase 3), not the engine
-  repo** — the engine repo's WP/EC + reward-integrity CI would wrongly gate infra
-  commits, and it is cross-domain, not Legendary Arena. The **corpus is per-domain
-  and owned**: each domain keeps its own home, sensitive domains (client
-  engineering, formulations) live in **neither the engine repo nor any hosted
-  surface**. See ewiki *Open Questions* #6.
+- **Repo layout (settled going in; timing revised 2026-09-29).** Design docs
+  (this runbook, the ewiki page, D-24341) stay in the **engine repo**. The
+  **platform code** (operating manuals, skills, connection registry, then
+  docker-compose, ingestion, the knowledge-query MCP server, schema) gets its
+  **own private repo, live from §12 Phase 1 (Day 1), not the engine repo** — the
+  engine repo's WP/EC + reward-integrity CI would wrongly gate infra commits, and
+  it is cross-domain, not Legendary Arena. It follows Nate Herk's
+  [AIS-OS](https://github.com/nateherkai/AIS-OS) starter kit (MIT), kept as
+  `upstream` (the "ship" follows the "map"; ewiki *The ship, the map, and the
+  captain*). **The ship is the existing private
+  `jefferyjjensen-corporate-memory` repo** (the top node since 2026-06), chosen
+  2026-09-29 over a new repo (ewiki *Open Questions* #6). The **corpus is
+  per-domain and owned**: each domain keeps its own home, sensitive domains
+  (client engineering, formulations) live in **neither the engine repo nor any
+  hosted surface**, and that includes the ship's private GitHub remote.
 
 > **Safety guardrails (non-negotiable — from the design record).**
 > - **Read-only connectors first.** Every MCP server gets its own least-privilege
@@ -437,7 +443,8 @@ Binary — the pilot is working when all pass:
 
 ## 11. Explicitly deferred (do NOT build in the pilot)
 
-From the ewiki *Scope boundaries* — these are out of scope until the pilot has
+From the ewiki *Architectural invariants vs. implementation choices* and
+*Non-goals* — these are out of scope until the pilot has
 been used for real work, failures captured, and restore rehearsed:
 
 - Additional domains or additional vector corpora beyond the one pilot corpus.
@@ -484,10 +491,11 @@ pilot") in the census, or 3 days evaporates.
 - [ ] Local clones of `DECISIONS.md`, the working WP/EC set, the wiki Markdown, the
       Architecture Inventory; [Data & File Locations](../../wiki/data-file-locations.md)
       open for the Legendary Arena slice.
-- [ ] **Repo decision (see §0):** design docs stay in the engine repo; platform
-      code gets its own `second-brain` repo **at Phase 3**, not before and not in
-      the engine repo; corpus is per-domain and owned; nothing sensitive in the
-      engine repo or on ewiki.
+- [x] **Repo decision (see §0):** design docs stay in the engine repo; the
+      platform lives in its own private repo, never the engine repo. **Decided
+      2026-09-29: the ship is `jefferyjjensen-corporate-memory`.** Corpus is
+      per-domain and owned; nothing sensitive goes into the engine repo, onto
+      ewiki, or to the ship's remote.
 - [ ] Decision: **co-locate to bootstrap**, dedicated host later.
 - [ ] Decision: **no LiteLLM / Open WebUI / voice in the 3-day window.**
 - [ ] Decision: ingestion = skip or pure-custom this week; do **not** pin
@@ -497,6 +505,37 @@ pilot") in the census, or 3 days evaporates.
 
 ### Phase 1 — Day 1: Census + navigation substrate (no Docker, no models)
 
+- [x] **Launch the ship (done 2026-09-29,
+      [corporate-memory#1](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/1)).**
+      AIS-OS was merged into `jefferyjjensen-corporate-memory` on a branch.
+      Never a GitHub fork: a fork of a public repo stays public. Later map
+      revisions merge the same way, as a reviewed branch:
+
+      ```bash
+      cd /c/www/jefferyjjensen-corporate-memory
+      git fetch upstream
+      git switch -c map-update-<date>
+      git merge upstream/main
+      ```
+
+      Standing resolutions, reapplied on every map merge:
+      - Keep the ship's `README.md`.
+      - `decisions/log.md` is the ship's own log (moved there from
+        `decision-log.md`, since the kit's skills write to that path). Keep ours.
+      - The kit's license lives at `LICENSE-AIS-OS` and covers its files only.
+      - `docs/media/` stays out.
+      - `.gitignore` keeps `brainstorms/` and `audits/` ignored.
+- [x] **Bring existing captures aboard (done 2026-09-29).** The 2026-09-10 note
+      is now `notes/the-exit-or-the-next-step.md` in the ship; the unversioned
+      `C:\www\secondbrain\` folder is gone.
+- [ ] **Follow the map's Day 1.** Run `/onboard`, answering it against the
+      existing owner profile rather than overwriting it. Then apply the
+      captain's calls (ewiki *The ship, the map, and the captain*): the decision
+      log records ship and personal decisions only (Legendary Arena decisions
+      stay in `DECISIONS.md`); every tool `/onboard` adds to `connections.md`
+      gets its write scope and `sensitivity` filled in (the columns and the ship
+      rules in `CLAUDE.md` / `AGENTS.md` landed with the merge); the context layer
+      holds routing and hosted-OK facts only.
 - [ ] Create `KNOWLEDGE_INVENTORY.md` **on the box** (not on ewiki). Every source
       carries: path, domain, class (Authoritative / Reference / Transient),
       retrieval (navigate / vector / skip), backup class, owner.
@@ -597,5 +636,5 @@ pilot") in the census, or 3 days evaporates.
 No always-on ingestion; no vectorizing DECISIONS / WPs / ECs / runbooks; no
 CRM / PM / mail-archive / Git replacement; no multi-agent orchestration as an
 authority; no knowledge graph; no residential-ISP system of record; no publishing
-formulation or client detail onto ewiki. (These mirror §11 and the ewiki *Scope
-boundaries*; expanding past any of them is a fresh decision against D-24341.)
+formulation or client detail onto ewiki. (These mirror §11 and the ewiki
+*Non-goals*; expanding past any of them is a fresh decision against D-24341.)
