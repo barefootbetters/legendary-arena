@@ -28,21 +28,15 @@ last-reviewed: 2026-09-29
 
 # AI Second Brain
 
-> **Proposed architecture — not yet built.** This page records a *design
-> intent*: a self-hosted knowledge platform where organizational knowledge is
-> owned locally and durable, while the AI models and agent frameworks that read
-> it stay swappable. The *platform* described here is not running yet, but the
-> *corpus* has started (see [What already exists](#what-already-exists-2026-09-29)).
-> **Progress at a glance: [Build status](#build-status).**
-> The architecture
-> is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
-> standalone architecture record, **not** an engine Work Packet (the platform
-> crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
-> pattern. The executable build runbook lives at
-> [`docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)
-> — an operator runbook, not an engine Work Packet. Only its Phase 1 repo
-> steps have run so far. The page stays `status: draft` — cite this record, but treat every
-> unbuilt claim as a plan, not a fact, until the platform is built.
+> **Proposed architecture — partly built.** A self-hosted knowledge platform
+> where organizational knowledge is owned and durable, and the AI models and
+> agents that read it are swappable. The platform services are not running yet;
+> the corpus and its repo have started. **Progress: [Build status](#build-status).**
+> The architecture is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341),
+> a standalone architecture record rather than an engine Work Packet; the build
+> steps live in the
+> [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md). The page stays
+> `status: draft`: cite it, but treat every unbuilt claim as a plan, not a fact.
 >
 > **Scope note.** The knowledge this platform indexes spans more than Legendary
 > Arena — engineering consulting work, Barefoot Betters, and cross-project
@@ -81,6 +75,11 @@ architecture drift at different rates and answer to different concerns.
 ## Mechanics
 
 ### Build status
+
+*Three words the table uses: the **ship** is the private repo that holds the
+brain; the **map** is Nate Herk's AIS-OS starter kit, whose Day 1 / 2 / 7 / 14
+steps the table follows; the **captain** is the operator. Full account:
+[The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).*
 
 *The progress view, updated at each milestone. The design is the rest of this
 page; the phased steps are in
@@ -357,7 +356,7 @@ problems.
 Two tiers, chosen per corpus:
 
 - **Exact / navigational retrieval — the default.** Governed, structured,
-  context-sensitive documents (`DECISIONS.md`, Work Packets, Execution Contracts,
+  context-sensitive documents (`DECISIONS.md`, Work Packets, Execution Checklists,
   design docs, Disaster Recovery runbooks, the Architecture Inventory, this wiki)
   are reached by **direct reference, grep, and per-domain index navigation** via
   the Filesystem / Git / PostgreSQL MCP servers — **not** chunked and embedded.
@@ -1038,7 +1037,7 @@ feature reaching across the network.
 The knowledge base is only half the platform; the other half is *how work runs
 against it*. The operating model is a repeatable loop rather than one-shot
 prompting — **Plan → Build → Verify → Improve** — which maps onto the repo's
-existing Work Packet / Execution Contract / gate / acceptance-criteria discipline:
+existing Work Packet / Execution Checklist / gate / acceptance-criteria discipline:
 
 1. **Plan** with routed context (goal, authoritative sources, non-goals, risks,
    acceptance criteria) before a substantial task begins.
@@ -1394,7 +1393,7 @@ as a real pain point justifies it; none is a property the platform must keep:
 - **No general knowledge graph in v1.** A sprawling entity graph
   (`Usona → culvert → survey monument → …`) is complexity without matching payoff
   today. The one graph worth considering later is the **governance chain** the
-  repo already implies (Work Packet → Execution Contract → Decision → Change →
+  repo already implies (Work Packet → Execution Checklist → Decision → Change →
   Release), because those links are real and queryable (see
   [Open Questions](#open-questions)).
 
@@ -1446,7 +1445,7 @@ in the [operator runbook](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)).
 The first useful slice:
 
 - **Navigation only** over the Legendary Arena governance corpus — `DECISIONS.md`,
-  a small working set of Work Packets and Execution Contracts, and this wiki —
+  a small working set of Work Packets and Execution Checklists, and this wiki —
   reached exclusively via the Filesystem / Git MCP servers and per-domain
   `INDEX.md` files. It is the best-defined domain today and needs no vector layer.
 - **One reference corpus** for the first vector layer — a single high-volume,
@@ -2037,6 +2036,15 @@ This is the summary index; the individual gotchas and their nuances live in
   the note template (domain, sensitivity, `publish: false`), the README note rules,
   a `consulting/` folder for notes about the notes-migration service (client notes
   never enter the ship), and the first note, on Mastermind exit cost.
+- **2026-09-29 — review fixes from an external (Grok) read (descriptive, no
+  re-lock).** Three edits: "Execution Contract(s)" normalized to the repo's term,
+  Execution Checklist, in the five places outside History; a one-sentence
+  definition of ship / map / captain added above the [Build status](#build-status)
+  table, so it reads on its own; and the top banner cut to about half, keeping
+  the status warning and the D-24341 citation. The review was based on a
+  truncated copy of the page, so its claims that Success criteria, Open
+  Questions, and the ship / map / captain section were missing, and its
+  rewritten draft, were not adopted.
 
 ## Open Questions
 
@@ -2091,7 +2099,7 @@ is built.
    to its own** — resource contention with the game server, a resident local
    model, concurrent load, or a larger vector corpus.
 4. **A governance-chain graph — later, if ever.** The Work Packet → Execution
-   Contract → Decision → Change → Release chain is the one relationship graph with
+   Checklist → Decision → Change → Release chain is the one relationship graph with
    real payoff; a general knowledge graph is a v1 non-goal, deferred as an
    implementation choice (see
    [Architectural invariants vs. implementation choices](#architectural-invariants-vs-implementation-choices)). *Gate:*
