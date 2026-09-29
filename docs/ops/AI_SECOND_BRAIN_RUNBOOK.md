@@ -53,15 +53,17 @@
   (this runbook, the ewiki page, D-24341) stay in the **engine repo**. The
   **platform code** (operating manuals, skills, connection registry, then
   docker-compose, ingestion, the knowledge-query MCP server, schema) gets its
-  **own private `second-brain` repo, created on §12 Phase 1 (Day 1), not the
-  engine repo** — the engine repo's WP/EC + reward-integrity CI would wrongly gate
-  infra commits, and it is cross-domain, not Legendary Arena. It is seeded from
-  Nate Herk's [AIS-OS](https://github.com/nateherkai/AIS-OS) starter kit (MIT)
-  kept as `upstream` (the "ship" follows the "map"; ewiki *The ship, the map, and
-  the captain*). The **corpus is per-domain and owned**: each domain keeps its own
-  home, sensitive domains (client engineering, formulations) live in **neither the
-  engine repo nor any hosted surface** — including the private `second-brain`
-  GitHub remote. See ewiki *Open Questions* #6.
+  **own private repo, live from §12 Phase 1 (Day 1), not the engine repo** — the
+  engine repo's WP/EC + reward-integrity CI would wrongly gate infra commits, and
+  it is cross-domain, not Legendary Arena. It follows Nate Herk's
+  [AIS-OS](https://github.com/nateherkai/AIS-OS) starter kit (MIT), kept as
+  `upstream` (the "ship" follows the "map"; ewiki *The ship, the map, and the
+  captain*). **Recommended ship: the existing private
+  `jefferyjjensen-corporate-memory` repo** (the top node since 2026-06), not a
+  new repo; the operator confirms (ewiki *Open Questions* #6). The **corpus is
+  per-domain and owned**: each domain keeps its own home, sensitive domains
+  (client engineering, formulations) live in **neither the engine repo nor any
+  hosted surface**, and that includes the ship's private GitHub remote.
 
 > **Safety guardrails (non-negotiable — from the design record).**
 > - **Read-only connectors first.** Every MCP server gets its own least-privilege
@@ -490,10 +492,11 @@ pilot") in the census, or 3 days evaporates.
       Architecture Inventory; [Data & File Locations](../../wiki/data-file-locations.md)
       open for the Legendary Arena slice.
 - [ ] **Repo decision (see §0):** design docs stay in the engine repo; platform
-      code gets its own private `second-brain` repo **on Phase 1 Day 1**, seeded
-      from AIS-OS, never in the engine repo; corpus is per-domain and owned;
-      nothing sensitive in the engine repo, on ewiki, or pushed to the
-      `second-brain` remote.
+      code gets its own private repo **on Phase 1 Day 1**, following AIS-OS,
+      never in the engine repo. Pick the ship: **reuse
+      `jefferyjjensen-corporate-memory` (recommended)** or open a new
+      `second-brain`. Corpus is per-domain and owned; nothing sensitive goes into
+      the engine repo, onto ewiki, or to the ship's remote.
 - [ ] Decision: **co-locate to bootstrap**, dedicated host later.
 - [ ] Decision: **no LiteLLM / Open WebUI / voice in the 3-day window.**
 - [ ] Decision: ingestion = skip or pure-custom this week; do **not** pin
@@ -503,9 +506,30 @@ pilot") in the census, or 3 days evaporates.
 
 ### Phase 1 — Day 1: Census + navigation substrate (no Docker, no models)
 
-- [ ] **Launch the ship.** Create an empty **private** GitHub repo
-      `second-brain`, then seed it from the map. Not a GitHub fork: a fork of a
-      public repo stays public.
+- [ ] **Launch the ship.** Never a GitHub fork of AIS-OS: a fork of a public repo
+      stays public. Take one path.
+
+      **Path A (recommended): the existing corporate-memory repo becomes the
+      ship.** Merge the map in on a branch, so later map revisions can be merged
+      the same way:
+
+      ```bash
+      cd /c/www/jefferyjjensen-corporate-memory
+      git remote add upstream https://github.com/nateherkai/AIS-OS.git
+      git fetch upstream
+      git switch -c adopt-ais-os
+      git merge upstream/main --allow-unrelated-histories --no-commit
+      ```
+
+      Resolve the overlaps by hand. Keep this repo's `README.md`. Keep
+      `decision-log.md` as the decision log and drop the kit's empty
+      `decisions/log.md`. Treat `owner-profile.md` + `portfolio.md` as the
+      `context/` layer. Union the two `.gitignore` files so `brainstorms/` and
+      `audits/` stay ignored. Keep AIS-OS's `LICENSE` and attribution. Review the
+      result, then commit and push.
+
+      **Path B: a new private `second-brain` repo** that routes to
+      corporate-memory as the personal domain:
 
       ```bash
       git clone https://github.com/nateherkai/AIS-OS.git second-brain
@@ -515,15 +539,20 @@ pilot") in the census, or 3 days evaporates.
       git push -u origin main
       ```
 
-      Keep `LICENSE` and the framework attribution. Before the first push after
-      `/onboard`, confirm `brainstorms/` and `audits/` are still gitignored and add
-      an ignore rule for any host-local owner-only context. Pull map revisions
-      later with `git fetch upstream` and review them like any other change.
-- [ ] **Follow the map's Day 1.** Run `/onboard`. Then apply the captain's calls
-      (ewiki *The ship, the map, and the captain*): `decisions/log.md` records
-      ship decisions only (Legendary Arena decisions stay in `DECISIONS.md`);
-      `connections.md` gets write-scope and `sensitivity` columns; `context/` holds
-      routing and hosted-OK facts only.
+      Either path: add an ignore rule for any host-local owner-only context, and
+      pull map revisions later with `git fetch upstream`, reviewed like any other
+      change.
+- [ ] **Bring existing captures aboard.** Move
+      `C:\www\secondbrain\the-exit-or-the-next-step.md` (2026-09-10) into the
+      ship's `notes/` folder so it has Git history and a backup. Until then it
+      fails *Deterministic Recovery*.
+- [ ] **Follow the map's Day 1.** Run `/onboard` (on Path A, answer it against
+      the existing owner profile rather than overwriting it). Then apply the
+      captain's calls (ewiki *The ship, the map, and the captain*): the decision
+      log records ship and personal decisions only (Legendary Arena decisions
+      stay in `DECISIONS.md`); `connections.md` gets write-scope and
+      `sensitivity` columns; the context layer holds routing and hosted-OK facts
+      only.
 - [ ] Create `KNOWLEDGE_INVENTORY.md` **on the box** (not on ewiki). Every source
       carries: path, domain, class (Authoritative / Reference / Transient),
       retrieval (navigate / vector / skip), backup class, owner.

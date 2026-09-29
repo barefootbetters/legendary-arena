@@ -30,7 +30,9 @@ last-reviewed: 2026-09-29
 > **Proposed architecture — not yet built.** This page records a *design
 > intent*: a self-hosted knowledge platform where organizational knowledge is
 > owned locally and durable, while the AI models and agent frameworks that read
-> it stay swappable. No component described here is running yet. The architecture
+> it stay swappable. The *platform* described here is not running yet, but the
+> *corpus* has started (see [What already exists](#what-already-exists-2026-09-29)).
+> The architecture
 > is locked by [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — a
 > standalone architecture record, **not** an engine Work Packet (the platform
 > crosses no engine layer), mirroring the Ubuntu Lab Provisioning governance
@@ -218,7 +220,8 @@ are genuine choices deferred to the build (see [Open Questions](#open-questions)
 | Voice = Open WebUI conversation mode over Tailscale Serve HTTPS | **Preferred** |
 | Voice legs (STT/TTS) = local Whisper + Piper; hosted only if local fails, never sensitive domains | **Preferred** |
 | Spoken answer short with a verbal pointer; full citations render in the chat pane | **Preferred** |
-| Platform repo = a private `second-brain` repo seeded from Nate Herk's AIS-OS kit (MIT) on pilot Day 1 ([the ship, the map, the captain](#the-ship-the-map-and-the-captain-platform-repo)) | **Preferred** |
+| Platform repo = one private repo that follows Nate Herk's AIS-OS kit (MIT), live from pilot Day 1 ([the ship, the map, the captain](#the-ship-the-map-and-the-captain-platform-repo)) | **Preferred** |
+| Which repo is the ship: reuse `jefferyjjensen-corporate-memory` (recommended) or a new `second-brain` | **Open** |
 | Ingestion: retrieval framework vs pure-custom | **Open** |
 | Model roster and local/hosted mix | **Open** |
 
@@ -1134,7 +1137,8 @@ under review like any other governed artifact.
 The repo question ([Open Questions](#open-questions) #6) has a working metaphor
 from an operator voice session on 2026-09-29, and it keeps the roles straight:
 
-- **The ship is the plumbing repo** — a private `second-brain` repo holding the
+- **The ship is the plumbing repo** — one private repo (recommended: the existing
+  `jefferyjjensen-corporate-memory`, see [What already exists](#what-already-exists-2026-09-29)) holding the
   operating manuals, skills, connection registry, and later the `docker-compose`,
   ingestion, knowledge-query MCP server, and schema. It is hull and engine room.
   It does **not** carry the cargo: the corpus stays per-domain and owned, and the
@@ -1179,13 +1183,46 @@ rehearsed restore ([runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md)). The
 map's calendar lines up with the runbook's: Day 7 `/audit` falls after the Phase 4
 real-use week, and Day 14 `/level-up` at the end of the thin platform.
 
-**How the ship is launched (Preferred; steps in runbook §0 and Phase 1).** Clone
-AIS-OS, rename its remote to `upstream`, and push to a new **private**
-`second-brain` repo as `origin`. Do not use a GitHub fork: a fork of a public repo
-stays public, and the ship's `context/` and `connections.md` name real systems.
-Keep `upstream` so later map revisions can be pulled and reviewed like any other
-change. Keep the MIT `LICENSE` and the framework attribution; the README asks
-that the Three Ms and Four Cs not be repackaged as someone else's.
+#### What already exists (2026-09-29)
+
+The brain did not start from zero. Two pieces were already on disk before the
+map was chosen:
+
+- **A private top-node repo: `jefferyjjensen-corporate-memory`** (GitHub
+  `barefootbetters`, private, started 2026-06-12). It holds an owner profile, a
+  `portfolio.md` routing map of which business keeps its memory where, an
+  append-only `decision-log.md`, prompt templates, and a plan for a local personal
+  AI stack (Ollama + Open WebUI on Windows). Its stated design, *distributed,
+  repo-local memory with this repo as the top node*, is the same shape as this
+  page's rule of a per-domain corpus with one brain that reads across it. It
+  already covers the map's `context/`, `decisions/log.md`, and routing.
+- **The first personal capture: `C:\www\secondbrain\the-exit-or-the-next-step.md`**
+  (2026-09-10). It is the personal side of the soul page's section
+  [*The burden you didn't earn*](soul-of-legendary-arena.md#the-burden-you-didnt-earn--suffering-that-forms-not-suffering-that-excuses).
+  The wiki carries the product-facing argument; the owned brain carries the
+  owner's own landing. That is the two-layer shape the
+  [Positioning](#positioning-the-owner-stays-captain) demo describes: public
+  argument on a hosted page, personal words kept in an owned store. The note sits
+  in a plain local folder with no Git history and no backup set, so it does not
+  yet meet *Deterministic Recovery*. Moving it into a versioned repo is the first
+  housekeeping step.
+
+**How the ship is launched (Preferred; steps in runbook §0 and Phase 1).**
+*Recommended:* **make `jefferyjjensen-corporate-memory` the ship** instead of
+opening a third home. It is already private, already the top node, and already
+holds the pieces the map would create. Add AIS-OS as an `upstream` remote, bring
+in its skills, `connections.md`, and `CLAUDE.md` / `AGENTS.md`, and merge the
+overlaps: `owner-profile.md` serves as `context/`, and the existing
+`decision-log.md` serves as `decisions/log.md`. Personal captures like the
+2026-09-10 note go into a `notes/` folder there.
+*Alternative:* a new private `second-brain` repo seeded from AIS-OS, with
+corporate-memory routed to as the personal domain. Either way, do not use a
+GitHub fork of AIS-OS: a fork of a public repo stays public, and the ship names
+real systems. Keep `upstream` so later map revisions can be pulled and reviewed
+like any other change. Keep the MIT `LICENSE` and the framework attribution; the
+README asks that the Three Ms and Four Cs not be repackaged as someone else's.
+Which repo is the ship is still **Open** until the operator picks
+([Open Questions](#open-questions) #6).
 
 ### Positioning: the owner stays captain
 
@@ -1901,6 +1938,15 @@ This is the summary index; the individual gotchas and their nuances live in
   archive answering "everything I've written about covenant" as the demo. New
   Open Question #7 covers productizing it: one ship per customer, with MIT
   attribution kept. **No Locked row changed**, no `DECISIONS.md` entry.
+  *Same-day follow-up:* recorded [What already exists](#what-already-exists-2026-09-29).
+  The corpus had already started with the first personal capture
+  (`C:\www\secondbrain\`, 2026-09-10, the personal side of the soul page's
+  *The burden you didn't earn*), and the private `jefferyjjensen-corporate-memory`
+  top-node repo (2026-06) already covers the map's context, routing, and decision
+  log. The recommendation changed from "open a new `second-brain` repo" to
+  "reuse corporate-memory as the ship," with a new repo as the alternative. Which
+  repo is the ship is now an **Open** row. The header's "nothing is running"
+  wording was narrowed to "the platform is not running; the corpus has begun."
 
 ## Open Questions
 
@@ -1980,8 +2026,8 @@ is built.
      [D-24341](../docs/ai/DECISIONS.md#d-24341)) — **stay in the engine repo**,
      cross-referenced with the rest of the Legendary Arena governance corpus.
    - **Platform code** (`docker-compose`, ingestion, the knowledge-query MCP
-     server, schema DDL, skills) — **its own `second-brain` repo, not the engine
-     repo.** Two reasons: the engine repo's WP/EC + reward-integrity CI would
+     server, schema DDL, skills) — **its own private repo, not the engine repo.**
+     Two reasons: the engine repo's WP/EC + reward-integrity CI would
      wrongly gate cross-domain infra commits, and the platform is shared operator
      infrastructure (*only some of the knowledge is Legendary Arena's* — see the
      Scope note up top). **Revised 2026-09-29: create it on pilot Day 1, not at the
@@ -1989,7 +2035,10 @@ is built.
      the pilot's own artifacts (operating manuals, routing, skills, the connection
      registry) *are* repo content, and Nate Herk's AIS-OS kit supplies a ready
      layout for them. The Docker and ingestion plumbing still arrive in Phase 5;
-     the ship just exists first. See
+     the ship just exists first. *Open:* which repo is the ship. The
+     recommendation is to reuse the private `jefferyjjensen-corporate-memory`
+     top-node repo (2026-06), which already holds the owner profile, portfolio
+     routing, and decision log, rather than open a third home. See
      [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
    - **The corpus** — **per-domain and owned, never one mega-repo.** Each domain
      keeps its own home (Legendary Arena's already lives in the engine repo); the
@@ -1999,8 +2048,8 @@ is built.
      `KNOWLEDGE_INVENTORY` on the owned host ([Pilot scope](#pilot-scope-recommended-first-vertical);
      [Edge Cases](#edge-cases)). *Resolved 2026-09-29:* the "public skeleton +
      private config" split already exists. AIS-OS is the public skeleton (the
-     `upstream` remote), and `second-brain` is the **private** repo holding config
-     and plumbing. Owner-only material stays host-local and gitignored even there,
+     `upstream` remote), and the ship is the **private** repo holding config and
+     plumbing. Owner-only material stays host-local and gitignored even there,
      because a private GitHub repo is still a hosted surface. *Still open:* the
      concrete repo names/hosts for the non-Legendary-Arena domains. **Preferred /
      Open** — nothing here touches a Locked row or needs a new `DECISIONS.md`
@@ -2038,7 +2087,7 @@ is built.
   system starter kit for Claude Code and Codex (`CLAUDE.md` / `AGENTS.md`,
   `context/`, `connections.md`, `decisions/log.md`, and six skills), plus the
   Three Ms of AI™ and Four Cs of an AI OS™ frameworks (trademarks of Nate Herk).
-  It seeds the `second-brain` platform repo; see
+  It is the layout the platform repo follows; see
   [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
