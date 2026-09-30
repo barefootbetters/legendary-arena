@@ -45830,6 +45830,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-09-29: PASS.** Production keys on `cf-connecting-ip` (Render log line); per-connection limiting holds on two networks (5 × 200 then 429 each; a second network 200). A dual-stack client holds two buckets (IPv4 + IPv6) — bounded by the §3 cap; /64 grouping for IPv6 is an optional hardening follow-up.
 
+**§3 amended by D-24640 (2026-09-29):** an IPv6 key is grouped to its /64 prefix, and an IPv4-mapped IPv6 key is keyed as its IPv4 address.
+
 **Reserved by:** NUMBER-LEDGER D-24635. Related: D-24092, D-24093, D-24094, D-24120, D-24172, D-24437, D-24441, D-24451, D-9905, D-11804, D-24633.
 
 ---
@@ -45876,6 +45878,24 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 4. Determinism: `G.notableEvents` is hashed, but the core sentinel plays no Gambit, so both oracles are unchanged (verified: replayFixtures green, fixtures untouched). Display-only; no game state or scoring change.
 
 **Reserved by:** NUMBER-LEDGER D-24639. Related: D-24521 (WP-702), D-24541 (WP-719 Covering Fire), D-24516 / D-24547 (the heroEffectResolved overlay).
+
+---
+
+### D-24640 — Guest-solo rate-limit keys group an IPv6 caller by its /64 (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** D-24635 §3 keys the guest-solo token bucket (5 creates per minute) on the raw `cf-connecting-ip`, else `request.ip`. The 2026-09-29 live-verify (PR #2513) confirmed per-connection keying in production, but an IPv6 caller is keyed by its full address, and a host picks addresses inside its /64 at will (privacy addresses). Each rotation minted a fresh 5-per-minute bucket; only the process-wide cap bounded it.
+
+**Decision.**
+1. `resolveRateLimitKey` passes its key through a new `normalizeRateLimitAddress` (`apps/server/src/match/tokenBucketRateLimiter.mjs`). An IPv6 address, full or `::`-compressed, in any case, is keyed by its /64 prefix: `2607:fb90:8704:ead::1` → `2607:fb90:8704:ead::/64`.
+2. An IPv4-mapped IPv6 address (`::ffff:a.b.c.d`, or its hex-tail or expanded form) is keyed as the plain IPv4 address, so it shares that address's bucket.
+3. IPv4, `'unknown'`, and anything that does not parse as IPv6 are returned unchanged, so a malformed value keeps its own bucket.
+4. The returned `source` values (`cf-connecting-ip` / `request.ip` / `unknown`) and the once-per-process source log line are unchanged. The key is still never logged.
+5. Trade-off accepted: hosts sharing one /64 share one bucket, the same as hosts behind one IPv4 NAT address today. A dual-stack client still holds two buckets (IPv4 + IPv6), as D-24635 accepted.
+6. Scope: guest-solo is the only caller today. When the D-24635 §4 migration moves the analytics and join-as-guest limiters onto the shared helper, they inherit /64 keying.
+
+**Gates.** server 1651 → 1657 tests / 0 fail (+6 limiter tests: one /64 shares a key and a bucket, different /64s differ, IPv4 unchanged, mapped IPv4, malformed left as-is).
+
+**Reserved by:** NUMBER-LEDGER D-24640. Related: D-24635 (§3 amended), D-24441 / D-20503 (the limiter pattern), D-24026 (the live-verify that surfaced it).
 
 ---
 

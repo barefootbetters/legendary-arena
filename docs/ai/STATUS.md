@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24640 — Guest-solo rate limit groups an IPv6 caller by its /64 (direct fix) (2026-09-29)
+
+**Server hardening, no visible change for a normal player.** A signed-out visitor on IPv6 can no longer
+get a fresh 5-per-minute guest-solo allowance by rotating addresses inside their own /64. An IPv4-mapped
+IPv6 caller now shares its IPv4 address's allowance.
+
+- **Server only.** `tokenBucketRateLimiter.mjs` (`normalizeRateLimitAddress`) + 6 unit tests. Amends D-24635 §3.
+  Key-source log line and `source` values unchanged.
+- **Counts.** server 1651 → 1657 tests / 0 fail (1445 → 1451 pass; 206 DB-backed skips unchanged).
+- **Live-verify (D-24026):** pending. From an IPv6 connection, 5 creates → 200 then 429; a create from a
+  second address in the same /64 → still 429.
+
 ### D-24639 — Hypnotic Charm in a 1-player game shows that it had no other deck (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Playing Gambit's Hypnotic Charm with its Instinct half active in a
