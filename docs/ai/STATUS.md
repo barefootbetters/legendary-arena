@@ -78,8 +78,9 @@ account area shows its "..." placeholder while the sign-in loads, then the playe
 
 - **Client only.** `useAuthNav.ts` also waits on D-24640's `isSessionHydrating`. No server change.
 - **Counts.** arena-client 2212 → 2217 / 0 fail; vue-tsc 0.
-- **Live-verify (D-24026):** pending. Signed in, hard-reload the bare URL → the header shows "..." and never
-  "Sign in" before the signed-in nav appears.
+- **Live-verify (D-24026): PASS (2026-09-29, Jeff, production build `4d12c03`).** Signed in, reloading the bare
+  URL showed the signed-in nav ("My account", then the display name "Jeff") and never "Sign in". The "..."
+  placeholder was too brief to see without throttling; the pass condition is the absence of "Sign in".
 
 ### D-24640 — The Arena entrance waits for your sign-in to load before Enter Arena (direct fix) (2026-09-29)
 
@@ -90,9 +91,13 @@ signed out. Their match is then created signed in, so its result can be saved.
 
 - **Client only.** `App.vue` provides `isSessionHydrating`; `ArenaEntrance.vue` waits on it. No server change.
 - **Counts.** arena-client 2206 → 2212 / 0 fail; vue-tsc 0.
-- **Live-verify (D-24026):** pending. Signed in, hard-reload the bare URL → the button is briefly disabled with
-  "Checking your sign-in…" and no guest line → Enter Arena creates a signed-in match (no `create-guest-solo`
-  request in the network panel).
+- **Live-verify (D-24026): PASS (2026-09-29, Jeff, production build `4d12c03`).** Signed in, Enter Arena from
+  the bare URL created match `L8zjajy1P-n` on the featured table (Magneto / Midtown Bank Robbery; Spider-Man,
+  Hulk, Wolverine; 1 player). Heroes win on turn 13, 40 VP (checked against `data/cards/core.json`), and the
+  gameover screen showed "Score submitted to the leaderboard" for Player 1 (@jeff). A guest match would have
+  been refused as `not_owner`, so the match was created signed in. The transient "Checking your sign-in…"
+  state was not captured (the sign-in check settles too fast to see without throttling); the unit and App
+  tests cover it.
 
 ### D-24639 — Hypnotic Charm in a 1-player game shows that it had no other deck (direct fix) (2026-09-29)
 

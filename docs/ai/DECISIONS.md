@@ -45911,6 +45911,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** arena-client 2206 → 2212 / 0 fail (+3 ArenaEntrance: disabled + no request while hydrating, settles signed-in → create + join, settles signed-out → guest; +3 App: a click during a held broker hydration sends no match request then creates signed in, settles with no session → guest, no tenant → never held). Against the unfixed entrance, 3 of the 6 fail. vue-tsc 0.
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Production build `4d12c03`: signed in, Enter Arena from the bare URL created match `L8zjajy1P-n` on the featured table, and gameover showed "Score submitted to the leaderboard" for @jeff (a guest match would be refused as `not_owner`). The transient "Checking your sign-in…" state settles too fast to see unthrottled; tests cover it.
+
 **Reserved by:** NUMBER-LEDGER D-24640. Related: D-24636 (WP-788, §5 amended), D-24633 (WP-785 entrance), D-24635 (guest-solo create), D-17501 (provide/inject for auth lifecycle flags), PR #547 (lobby background hydration).
 
 ---
@@ -45925,6 +45927,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 3. `AuthNavState.isBootstrapping` is typed `ComputedRef<boolean>` (was `Ref<boolean>`); `Header.vue` reads it the same way.
 
 **Gates.** arena-client 2212 → 2217 / 0 fail (+3 Header: placeholder and no Sign in while hydrating, settles signed in → signed-in nav, settles signed out → Sign in; +2 useAuthNav: bootstrapping true while hydrating, no profile fetch while hydrating). Against the unfixed composable, 3 of the 5 fail. vue-tsc 0.
+
+**Live-verify (D-24026), 2026-09-29: PASS.** Production build `4d12c03`: signed in, a reload of the bare URL showed the signed-in nav and never "Sign in".
 
 **Reserved by:** NUMBER-LEDGER D-24641. Related: D-24640 (the `isSessionHydrating` flag), D-17501 (provide/inject for auth lifecycle flags), WP-175 (auth nav), WP-330 / D-24116 (display label fetch), PR #547.
 
