@@ -16,6 +16,18 @@ D-24632. A new SessionStart guard resets `core.hooksPath` to the relative `.gith
 - **Tooling only.** `scripts/git/ensure-worktree-hooks-path.mjs` + `.claude/settings.json` + 5 tests in
   `pnpm guard:test`; 01.8 / 01.3 docs.
 
+### D-24642 — Guest-solo rate limit groups an IPv6 caller by its /64 (direct fix) (2026-09-29)
+
+**Server hardening, no visible change for a normal player.** A signed-out visitor on IPv6 can no longer
+get a fresh 5-per-minute guest-solo allowance by rotating addresses inside their own /64. An IPv4-mapped
+IPv6 caller now shares its IPv4 address's allowance.
+
+- **Server only.** `tokenBucketRateLimiter.mjs` (`normalizeRateLimitAddress`) + 6 unit tests. Amends D-24635 §3.
+  Key-source log line and `source` values unchanged.
+- **Counts.** server 1651 → 1657 tests / 0 fail (1445 → 1451 pass; 206 DB-backed skips unchanged).
+- **Live-verify (D-24026):** pending. From an IPv6 connection, 5 creates → 200 then 429; a create from a
+  second address in the same /64 → still 429.
+
 ### D-24641 — The header no longer shows "Sign in" to a signed-in player while their sign-in loads (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On the landing page and in a match, the header's
