@@ -45864,6 +45864,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Amended:** §5 (the hydration race) is resolved by D-24640 (2026-09-29).
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Signed out on production build `f75289b`: the guest line showed, Enter Arena created guest match `Y1lA03QkAC9` on the Battle Brief, a real gameover (scheme-wins, turn 15) showed "Sign in to save your results" linking to `?route=login`. The signed-in path is unchanged (D-24640 live-verify).
+
 **Reserved by:** NUMBER-LEDGER D-24636. Related: D-24092, D-24093 (the authed create/join sign-in redirect still holds for signed-in players), D-24633, D-24635, D-24441 (join-as-guest status mapping precedent), D-24630 (open PR #2483; its session-expired status needs a token, so a guest seat never reaches it).
 
 ---
@@ -45911,6 +45913,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** arena-client 2206 → 2212 / 0 fail (+3 ArenaEntrance: disabled + no request while hydrating, settles signed-in → create + join, settles signed-out → guest; +3 App: a click during a held broker hydration sends no match request then creates signed in, settles with no session → guest, no tenant → never held). Against the unfixed entrance, 3 of the 6 fail. vue-tsc 0.
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Production build `4d12c03`: signed in, Enter Arena from the bare URL created match `L8zjajy1P-n` on the featured table, and gameover showed "Score submitted to the leaderboard" for @jeff (a guest match would be refused as `not_owner`). The transient "Checking your sign-in…" state settles too fast to see unthrottled; tests cover it.
+
 **Reserved by:** NUMBER-LEDGER D-24640. Related: D-24636 (WP-788, §5 amended), D-24633 (WP-785 entrance), D-24635 (guest-solo create), D-17501 (provide/inject for auth lifecycle flags), PR #547 (lobby background hydration).
 
 ---
@@ -45925,6 +45929,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 3. `AuthNavState.isBootstrapping` is typed `ComputedRef<boolean>` (was `Ref<boolean>`); `Header.vue` reads it the same way.
 
 **Gates.** arena-client 2212 → 2217 / 0 fail (+3 Header: placeholder and no Sign in while hydrating, settles signed in → signed-in nav, settles signed out → Sign in; +2 useAuthNav: bootstrapping true while hydrating, no profile fetch while hydrating). Against the unfixed composable, 3 of the 5 fail. vue-tsc 0.
+
+**Live-verify (D-24026), 2026-09-29: PASS.** Production build `4d12c03`: signed in, a reload of the bare URL showed the signed-in nav and never "Sign in".
 
 **Reserved by:** NUMBER-LEDGER D-24641. Related: D-24640 (the `isSessionHydrating` flag), D-17501 (provide/inject for auth lifecycle flags), WP-175 (auth nav), WP-330 / D-24116 (display label fetch), PR #547.
 
@@ -45978,6 +45984,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 5. Log: when the current player's pick is pending, the Ambush / Escape line reads "the active player must KO a hero; other players KO’d <names>", so other players' auto-KOs stay visible. Each pick is named at resolve time, as before.
 
 **Gates.** game-engine 4709 → 4715 / 0 fail on top of D-24645 (+4 villain-effect: current player parks a discard-only pick for two while others auto-KO; the pick refuses a hand card, KOs twice from the discard and clears; identical copies auto-resolve; Escape parks a hand-only pick. +1 bot: a discard entry offers a discard card. +1 composer: pending with other players' names). Against the old engine, 5 of the 6 fail. The sentinel replay and hash fixtures are unchanged (no fixture parks Juggernaut's choice). `sim:runtime-observed` regenerated: the sweep's bot now resolves the choice through `getLegalMoves`, so observations moved 7081 → 7098 with the same 78 mechanics and 0 dropped. The dashboard `useInPlayCoverage` totalObs pin moves with it (8007 → 8024; percentResolved stays 15.4). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, and the ledger checks are current.
+
+**Live-verify (D-24026), 2026-09-29: PASS for the Escape (hand) branch.** Production build `f75289b`, match `Y1lA03QkAC9`: Juggernaut's Escape with six starters in hand parked "Choose a Hero to KO (2 remaining)" offering hand cards only; both picks were named in the log and the prompt cleared. The Ambush (discard) branch is still pending (its only reveal hit an empty discard, a correct no-op).
 
 **Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
 
