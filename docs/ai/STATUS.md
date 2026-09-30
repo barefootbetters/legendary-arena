@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24643 — Every worktree runs its own branch's commit hooks (direct fix, commit-hygiene tooling) (2026-09-29)
+
+**Developer tooling, no player-visible change.** Most local worktrees were running the canonical checkout's
+stale commit hooks (an absolute `core.hooksPath`), so git's own merge-from-main subject was rejected despite
+D-24632. A new SessionStart guard resets `core.hooksPath` to the relative `.githooks` per worktree.
+
+- **Tooling only.** `scripts/git/ensure-worktree-hooks-path.mjs` + `.claude/settings.json` + 5 tests in
+  `pnpm guard:test`; 01.8 / 01.3 docs.
+
 ### D-24642 — Guest-solo rate limit groups an IPv6 caller by its /64 (direct fix) (2026-09-29)
 
 **Server hardening, no visible change for a normal player.** A signed-out visitor on IPv6 can no longer
