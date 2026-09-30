@@ -7,6 +7,19 @@
 
 ## Current State
 
+### D-24647 — Analytics and guest-password join limits are per player, not site-wide (direct fix) (2026-09-29)
+
+**Server fix, visible only under load.** The analytics capture limit (60 events/min) and the guest-password join
+limit (10 attempts/min) were keyed on the proxy hop every request shares, so each was one bucket for the whole site.
+One busy or abusive client could lock every guest out of password joins for a minute. Both now key per connection,
+like guest-solo, on the shared limiter.
+
+- **Server only.** `analytics.routes.ts` + `guestAccessRoutes.mjs` move onto `tokenBucketRateLimiter.mjs`; the two
+  private limiter copies are deleted. Capacities, windows and 429 bodies unchanged. Completes D-24635 §4.
+- **Counts.** server 1657 → 1659 tests / 0 fail (1451 → 1453 pass; 206 DB-backed skips unchanged).
+- **Live-verify (D-24026):** pending. From one connection, 11 join-as-guest attempts → the 11th is 429; a second
+  network → not 429 in the same minute.
+
 ### D-24646 — Overlays and the game log show card and effect names, not internal ids (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Four text fixes from the WP-788 live-verify match:

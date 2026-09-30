@@ -308,6 +308,37 @@ describe('POST /api/analytics/events (WP-205 / D-20503)', () => {
     assert.deepStrictEqual(exceedContext.body, { code: 'rate_limited' });
   });
 
+  test('rate limit keys per connection (cf-connecting-ip), not the shared proxy hop (D-24647)', async () => {
+    const { router, routes } = makeRouter();
+    const fake = makeQueryFake([]);
+    registerAnalyticsRoutes(router as unknown as Parameters<typeof registerAnalyticsRoutes>[0], fake.database, makeDeps({ rateLimitCapacity: 1 }));
+    const handler = findRoute(routes, 'POST', '/api/analytics/events').handler;
+    const event = { event_type: 'direct', user_id: null, session_id: 's', timestamp: VALID_TIMESTAMP };
+    // why: every production caller shares `request.ip` (the proxy hop), so the
+    // fake gives them all the same one and differs only in cf-connecting-ip.
+    const fromConnection = (address: string): TestKoaContext => {
+      const context = makeKoaContext({ body: event, ip: '10.0.0.1' });
+      return Object.assign(context, { req: { headers: { 'cf-connecting-ip': address } } });
+    };
+
+    const first = fromConnection('198.51.100.4');
+    await handler(first);
+    assert.equal(first.status, 202);
+    const otherCaller = fromConnection('203.0.113.9');
+    await handler(otherCaller);
+    assert.equal(otherCaller.status, 202, 'a second caller behind the same proxy hop has its own bucket');
+    const firstAgain = fromConnection('198.51.100.4');
+    await handler(firstAgain);
+    assert.equal(firstAgain.status, 429, 'the first caller is still limited');
+
+    const ipv6Caller = fromConnection('2001:db8:1:2::1');
+    await handler(ipv6Caller);
+    assert.equal(ipv6Caller.status, 202);
+    const sameSlash64 = fromConnection('2001:db8:1:2::99');
+    await handler(sameSlash64);
+    assert.equal(sameSlash64.status, 429, 'an IPv6 caller rotating inside its /64 shares one bucket');
+  });
+
   test('anonymous event (user_id: null) → 202 with user_id_hash = NULL bound', async () => {
     const { router, routes } = makeRouter();
     const fake = makeQueryFake([]);

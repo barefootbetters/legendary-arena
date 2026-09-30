@@ -7,7 +7,7 @@
  *   * `POST /api/analytics/events` — `guest`; accepts single
  *     `AnalyticsEventCapturePayload` OR batch
  *     `AnalyticsEventBatchPayload` (≤50 events; ≤100 KB batch;
- *     ≤8 KB single). Per-IP rate limit (60 EVENTS/min via in-memory
+ *     ≤8 KB single). Per-connection rate limit (60 EVENTS/min via in-memory
  *     token bucket — NOT 60 requests; batch of N consumes N tokens
  *     per D-20503 tightening). Hashes `user_id` at the route
  *     boundary BEFORE any INSERT per D-20502. Status-code domain
@@ -92,6 +92,7 @@ import { hashUserId } from './userIdHash.js';
 // jsonLimit (1mb) exceeds the route's 100 KB batch cap, so the route's own
 // size check stays authoritative.
 import koaBody from 'koa-body';
+import { createTokenBucketRateLimiter, resolveRateLimitKey } from '../match/tokenBucketRateLimiter.mjs';
 
 /**
  * Closed-set re-statement of the orchestrator's
@@ -141,6 +142,7 @@ interface KoaAnalyticsRequest extends SessionTokenRequest {
 }
 
 interface KoaAnalyticsContext {
+  req?: { headers?: Record<string, string | string[] | undefined> };
   request: KoaAnalyticsRequest;
   status: number;
   body: unknown;
@@ -159,8 +161,8 @@ interface KoaRouter {
   ): unknown;
 }
 
-// why: D-20503 — per-IP token bucket capacity (60 events per 60s
-// per IP). Locked default; overridable via deps for tests that
+// why: D-20503 — per-connection token bucket capacity (60 events per
+// 60s per connection key, D-24647). Locked default; overridable via deps for tests that
 // exercise the at-limit branch without seeding 60 fixture events.
 // Capacity is on EVENTS, not REQUESTS (a batch of N consumes N
 // tokens per the D-20503 tightening — batching cannot bypass the
@@ -372,52 +374,6 @@ function validatePayload(
   };
 }
 
-// why: D-20503 — per-IP token bucket lifecycle. Buckets refill
-// linearly within the 60s window. Process-local state (Map<string,
-// BucketState>); multi-instance deployments share no state. A
-// future redis-backed limiter is a hardening WP if/when
-// multi-instance lands. Documented inline here so a reader doesn't
-// accidentally rely on cross-instance enforcement.
-interface BucketState {
-  tokens: number;
-  lastRefill: number;
-}
-
-function makeRateLimiter(capacity: number, now: () => number): {
-  consume: (ip: string, count: number) => boolean;
-} {
-  const buckets = new Map<string, BucketState>();
-  return {
-    consume(ip, count) {
-      const currentTime = now();
-      const existing = buckets.get(ip);
-      let state: BucketState;
-      if (existing === undefined) {
-        state = { tokens: capacity, lastRefill: currentTime };
-        buckets.set(ip, state);
-      } else {
-        state = existing;
-        const elapsed = currentTime - state.lastRefill;
-        if (elapsed >= RATE_LIMIT_WINDOW_MS) {
-          // why: full refill once the window has expired; the
-          // bucket effectively resets to capacity. Linear refill
-          // within a sub-window is intentionally NOT implemented
-          // — the simpler whole-window reset matches the
-          // "60/min" mental model and is harder to game with
-          // burst patterns.
-          state.tokens = capacity;
-          state.lastRefill = currentTime;
-        }
-      }
-      if (state.tokens < count) {
-        return false;
-      }
-      state.tokens = state.tokens - count;
-      return true;
-    },
-  };
-}
-
 // why: D-10403 — dispatch closed-set SessionValidationCode values
 // to the locked HTTP status. 'unknown_account' returns 401 (NOT
 // 403) per the account-existence-probe defense. All 4 401-mapped
@@ -442,10 +398,13 @@ export function registerAnalyticsRoutes(
   deps: AnalyticsRouteDependencies,
 ): void {
   const now = deps.now ?? (() => Date.now());
-  const rateLimiter = makeRateLimiter(
-    deps.rateLimitCapacity ?? DEFAULT_RATE_LIMIT_CAPACITY,
+  // why: the shared limiter (D-24635 §4 / D-24647): whole-window reset, and
+  // process-local, so a multi-instance deploy shares no state.
+  const rateLimiter = createTokenBucketRateLimiter({
+    capacity: deps.rateLimitCapacity ?? DEFAULT_RATE_LIMIT_CAPACITY,
+    windowMs: RATE_LIMIT_WINDOW_MS,
     now,
-  );
+  });
 
   router.post('/api/analytics/events', koaBody(), async (koaContext) => {
     // why: D-11504 — Cache-Control MUST be the literal first
@@ -457,7 +416,10 @@ export function registerAnalyticsRoutes(
       // have no session token; gating capture would discard the
       // entire pre-signup attribution surface. The rate limit +
       // body cap are the always-open defenses.
-      const requestIp = typeof koaContext.request.ip === 'string' ? koaContext.request.ip : 'unknown';
+      // why: keyed per connection (cf-connecting-ip, an IPv6 caller grouped to
+      // its /64), not `request.ip`, which is the proxy hop every caller shares
+      // (D-24647).
+      const { key: rateLimitKey } = resolveRateLimitKey(koaContext);
       const rawBody = koaContext.request.body;
       if (rawBody === undefined || rawBody === null || typeof rawBody !== 'object') {
         koaContext.status = 400;
@@ -515,7 +477,7 @@ export function registerAnalyticsRoutes(
       // FULL batch with 429 (no partial accept). The full payload
       // is dropped — no rows inserted.
       const eventCount = eventsToProcess.length;
-      if (rateLimiter.consume(requestIp, eventCount) === false) {
+      if (rateLimiter.consume(rateLimitKey, eventCount) === false) {
         koaContext.status = 429;
         koaContext.body = { code: 'rate_limited' };
         return;

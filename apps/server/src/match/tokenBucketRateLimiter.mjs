@@ -15,17 +15,16 @@
  *      prefix (D-24642), so a caller cannot mint fresh buckets by rotating
  *      addresses inside its own /64.
  *
- * // why: this is the third token-bucket copy in apps/server (analytics,
- * join-as-guest, guest-solo), and the code-style rule is to abstract at the third
- * copy. The two older copies key on `request.ip` alone, so moving them here
- * changes how they key requests — that migration is a recorded follow-up
- * (D-24635 §4), not part of WP-787.
+ * // why: one limiter for all three public limits (analytics, join-as-guest,
+ * guest-solo) — abstracted at the third copy (D-24635 §4). The analytics and
+ * join-as-guest routes moved onto it with D-24647, which also moved their key off
+ * `request.ip` (the proxy hop every caller shares) onto `resolveRateLimitKey`.
  *
  * Process-local: a restart resets every bucket, and a multi-instance deploy
  * shares no state (the D-20503 / D-24094 posture).
  *
- * Authority: WP-787; EC-824; D-24635 (§3 amended by D-24642); D-24441 and
- * D-20503 (the pattern copied).
+ * Authority: WP-787; EC-824; D-24635 (§3 amended by D-24642); D-24647 (the
+ * analytics and join-as-guest migration); D-24441 and D-20503 (the pattern).
  */
 
 /**
