@@ -7,6 +7,20 @@
 
 ## Current State
 
+### D-24644 — Juggernaut lets you choose which Heroes to KO (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When Juggernaut ambushes ("Each player KOs two Heroes from
+their discard pile") or escapes ("…from their hand"), the player whose turn it is now picks the two Heroes from a
+"Choose a Hero to KO (2 remaining)" prompt, limited to that pile. Before, the game picked for you (usually two
+S.H.I.E.L.D. starters). No prompt appears when the choice is forced: two or fewer Heroes there, or all identical
+copies. Other players in a multiplayer game still have theirs picked automatically.
+
+- **Engine only.** It reuses the existing KO-a-Hero prompt; no client change.
+- **Counts.** game-engine 4709 → 4715 / 0 fail; `sim:runtime-observed` regenerated (7081 → 7098 observations,
+  same 78 mechanics); other CI data gates current; no replay or hash re-pin.
+- **Live-verify (D-24026):** pending. Reveal Juggernaut with 3+ different Heroes in your discard pile → the prompt
+  asks for two, from the discard only.
+
 ### D-24645 — Magneto's Xavier's Nemesis and Electromagnetic Bubble now count X-Men Heroes in your hand (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When you defeat Magneto's **Xavier's Nemesis**, every X-Men

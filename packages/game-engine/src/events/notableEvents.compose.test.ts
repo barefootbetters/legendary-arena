@@ -232,6 +232,13 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     assert.equal(line, 'the active player must KO a hero');
   });
 
+  it('D-24644: a pending each-player KO keeps the other players auto-KO names', () => {
+    const line = composeEffectResultLogLine([
+      { keyword: 'koHeroEachPlayerMag2', targetNames: ['S.H.I.E.L.D. Agent', 'Hulk'], pending: true },
+    ]);
+    assert.equal(line, 'the active player must KO a hero; other players KO’d S.H.I.E.L.D. Agent, Hulk');
+  });
+
   it('renders the bare generic label for a no-target effect (wound / bystander)', () => {
     const line = composeEffectResultLogLine([
       { keyword: 'gainWoundEachPlayer', targetNames: [] },

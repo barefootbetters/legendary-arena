@@ -108,6 +108,22 @@ describe('getLegalMoves — pending-KO short-circuit (WP-242 / D-24009)', () => 
     assert.equal((only.args as { zone: string }).zone, 'hand', 'never a discard/inPlay target');
   });
 
+  test('D-24644: a DISCARD-scoped entry (Juggernaut Ambush) offers the legacy discard default, never a hand card', () => {
+    const gameState = makeG({
+      hand: ['hero-a' as CardExtId],
+      discard: ['hero-z' as CardExtId, 'starting-shield-agent' as CardExtId, 'hero-m' as CardExtId],
+      currentStage: 'start',
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], remaining: 2 }],
+    });
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    // why: a hand target would be rejected by the discard-scoped resolve (freeze);
+    // starter-first matches the pre-D-24644 auto-pick.
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'discard', cardId: 'starting-shield-agent' });
+  });
+
   test('short-circuit fires regardless of stage (board frozen)', () => {
     const gameState = makeG({
       hand: ['hero-a' as CardExtId, 'hero-b' as CardExtId],

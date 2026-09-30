@@ -920,12 +920,22 @@ function villainEffectKoHero(
   // and contributes no target. This only reads the resolver's return — it does
   // NOT post-process the mutation (D-18902 mutation-location lock preserved).
   const targets: CardExtId[] = [];
+  let parked = false;
   for (const playerId of playerIds) {
     // why: D-24280 — a `zone`-bearing descriptor (Juggernaut's discard/hand
     // source-restricted KO) uses the zone-locked resolver, which KOs `repetitions`
     // heroes from ONLY that zone (no discard→hand→inPlay fallback). Absent zone is
     // the byte-unchanged legacy path (koOneHeroForPlayer, per-iteration).
     if (descriptor.zone !== undefined) {
+      // why: D-24644 — "Each player KOs two Heroes from their discard pile" is each
+      // player's own choice, so the CURRENT player picks (the D-24386 Red Skull split);
+      // other players still auto-pick, because pending choices are current-player
+      // scoped (D-24284). A forced KO (no more Heroes than owed, or every copy
+      // identical) auto-resolves with no prompt.
+      if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, descriptor.zone, repetitions)) {
+        parked = true;
+        continue;
+      }
       const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
       for (const koedId of koedIds) {
         targets.push(koedId);
@@ -939,7 +949,45 @@ function villainEffectKoHero(
       }
     }
   }
-  return { targets };
+  // why: D-24644 — `targets` still names the other players' auto-KOs; pending marks
+  // the current player's parked pick (named at resolve time by resolveKoHeroChoice).
+  return parked ? { targets, pending: true } : { targets };
+}
+
+/**
+ * Parks the current player's zone-locked "KO N Heroes from your <zone>" choice when
+ * they have a real one (D-24644): more Heroes in that zone than the count owed AND at
+ * least two distinct options. Otherwise returns false and the caller auto-resolves
+ * the forced KO with `koHeroesFromZoneForPlayer`.
+ *
+ * @param G - Game state (the pending queue is lazily created on a park).
+ * @param playerId - The current player.
+ * @param zone - The zone the printed effect restricts the KO to.
+ * @param magnitude - How many Heroes the player must KO from that zone.
+ * @returns True when a pending choice was parked.
+ */
+function parkZoneKoChoice(
+  G: LegendaryGameState,
+  playerId: string,
+  zone: 'discard' | 'hand',
+  magnitude: number,
+): boolean {
+  const zones = G.playerZones[playerId];
+  if (!zones) return false;
+  const allowedZones: readonly KoHeroTarget['zone'][] = [zone];
+  // why: mirror the current-player ko-hero parker (WP-492 / D-24298): a choice exists
+  // only when the player can spare some Heroes AND the options are not all identical.
+  // A KO never grows the option count, so a forced start stays forced throughout.
+  if (countKoableHeroes(zones, allowedZones) <= magnitude) return false;
+  if (buildKoEligibleTargets(zones, allowedZones).length < 2) return false;
+  if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
+  const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId, zones: allowedZones };
+  // why: omit `remaining` for a single KO (absent ≡ 1), matching the WP-492 parker.
+  if (magnitude >= 2) {
+    entry.remaining = magnitude;
+  }
+  G.pendingKoHeroChoices.push(entry);
+  return true;
 }
 
 /**

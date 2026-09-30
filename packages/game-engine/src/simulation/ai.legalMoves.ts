@@ -592,9 +592,15 @@ export function getLegalMoves(
     // accepts, or the block-all guard never lifts (the legalMoves↔guard divergence).
     const front = gameState.pendingKoHeroChoices![0]!;
     let defaultTarget: KoHeroTarget | null;
-    if (front.zones !== undefined) {
+    if (front.zones !== undefined && front.zones.includes('hand')) {
       const handTarget = selectRedSkullKoTarget(gameState, zones.hand);
       defaultTarget = handTarget === null ? null : { zone: 'hand', cardId: handTarget };
+    } else if (front.zones !== undefined && front.zones.includes('discard')) {
+      // why: D-24644 — Juggernaut's Ambush parks a discard-only entry. Offer the legacy
+      // discard default (selectDefaultKoTarget over the discard alone: starter-first,
+      // then lexical), which is the card the pre-D-24644 auto-pick KO'd. Offering a
+      // hand card here would be rejected and the block-all guard would never lift.
+      defaultTarget = selectDefaultKoTarget({ ...zones, hand: [], inPlay: [] });
     } else {
       defaultTarget = selectDefaultKoTarget(zones);
     }

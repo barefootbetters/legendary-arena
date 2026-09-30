@@ -24780,6 +24780,8 @@ Protect this file.
 
 **D-24006: koHeroCurrentPlayer Becomes Interactive (Park → Resolve); Each-Player Variants Stay Auto**
 
+**Amended:** for Juggernaut's zone-restricted each-player KO (`ko-hero:each:N:discard|hand`), the current player now chooses (D-24644, 2026-09-29). The other each-player variants and non-current players stay auto.
+
 The `koHeroCurrentPlayer` villain Fight effect no longer auto-picks the KO target. It computes eligible targets across the current player's discard + hand + inPlay (carrying the D-20603 zone union into the interactive set), then: 0 eligible → silent no-op; exactly 1 → auto-KO that card (no decision to make); ≥2 → park a player choice. This supersedes the WP-185 §Out-of-Scope auto-resolution deferral for the current-player case only. `koHeroEachPlayer` / `koHeroEachPlayerMag2` remain auto-resolved (non-active players choosing off-turn is a deferred turn-flow change).
 
 **Packet:** WP-242 (EC-273).
@@ -35203,6 +35205,8 @@ deferred — conservatism over coverage. `inPlay` is not an admissible zone (no 
 "from their inPlay" text); the `zone` param is honored only on the `each` branch (no
 current-player zone-restricted KO in the corpus); the interactive-choice upgrade is
 out of scope (the each-player KO stays auto-resolved, D-18902).
+
+**Amended:** the "stays auto-resolved" clause is superseded for the current player by D-24644 (2026-09-29): Juggernaut's zone-restricted KO parks a zone-only pick for the current player when they have a real choice; other players still auto-pick.
 
 **Determinism.** No `ctx.random.*` / `Math.random` / I/O; no new `G` field; KO via
 `zoneOps` helpers; no `.reduce()`. Marking makes Juggernaut apply a **real hashed KO**
@@ -45953,6 +45957,23 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Gates.** `pnpm guard:test` +5 (a foreign worktree override is reset; a stale absolute shared value is overridden for this worktree only; relative and own-absolute values are left alone silently; unset is set; outside a repo it exits 0 silently).
 
 **Reserved by:** NUMBER-LEDGER D-24643. Related: D-24632 (merge-from-main exemption), PR #2488 (hook-test isolation), PR #2516 (the trigger), D-24642.
+
+---
+
+### D-24644 — Juggernaut's "Each player KOs two Heroes from their discard pile / hand" lets the current player choose which (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** Juggernaut's Ambush ("Each player KOs two Heroes from their discard pile", `[effect:ko-hero:each:2:discard]`) and Escape ("…from their hand", `…:hand`) were auto-resolved for every player (D-24280 kept "the each-player KO stays auto-resolved"; D-24006). The engine picked starter S.H.I.E.L.D. cards first, then lexical ext_id order. In Jeff's match `L8zjajy1P-n` (turn 4) the Ambush KO'd two S.H.I.E.L.D. Agents with no prompt. The printed effect is each player's own choice, the same reading D-24386 applied to Red Skull's "KO a Hero from their hand".
+
+**Decision.**
+1. For the **current player**, the zone-locked KO parks a `PendingKoHeroChoice` with `zones: [<zone>]` and `remaining: N` when they have a real choice: more Heroes in that zone than the count owed **and** at least two distinct options. A forced KO (no more Heroes than owed, or every copy identical) still auto-resolves with no prompt, as does an empty zone.
+2. **Other players** still auto-pick (starter-first). Pending choices are current-player scoped (D-24284; the D-24386 Red Skull split).
+3. No new move, `G` field, or UI component. `resolveKoHeroChoice` already honours `zones` and `remaining`, auto-finishes any forced remainder, and the existing prompt renders "Choose a Hero to KO (2 remaining)" grouped under "From your discard" / "From your hand".
+4. Bot default: a discard-only entry offers the legacy discard default (`selectDefaultKoTarget` over the discard alone). Before this, any `zones` entry was treated as hand-only, which would have frozen the bot on a discard entry. A hand-only entry keeps the Red Skull lowest-cost pick.
+5. Log: when the current player's pick is pending, the Ambush / Escape line reads "the active player must KO a hero; other players KO’d <names>", so other players' auto-KOs stay visible. Each pick is named at resolve time, as before.
+
+**Gates.** game-engine 4709 → 4715 / 0 fail on top of D-24645 (+4 villain-effect: current player parks a discard-only pick for two while others auto-KO; the pick refuses a hand card, KOs twice from the discard and clears; identical copies auto-resolve; Escape parks a hand-only pick. +1 bot: a discard entry offers a discard card. +1 composer: pending with other players' names). Against the old engine, 5 of the 6 fail. The sentinel replay and hash fixtures are unchanged (no fixture parks Juggernaut's choice). `sim:runtime-observed` regenerated: the sweep's bot now resolves the choice through `getLegalMoves`, so observations moved 7081 → 7098 with the same 78 mechanics and 0 dropped. The dashboard `useInPlayCoverage` totalObs pin moves with it (8007 → 8024; percentResolved stays 15.4). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, and the ledger checks are current.
+
+**Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
 
 ---
 

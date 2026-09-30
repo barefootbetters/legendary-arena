@@ -2126,6 +2126,87 @@ describe('executeVillainAbilities — ko-hero:each:N:zone (WP-463 / D-24280)', (
       'no unmarked-ability breadcrumb — the line is now handled',
     );
   });
+
+  // why: D-24644 — "Each player KOs two Heroes from their discard pile" is each
+  // player's choice. The CURRENT player now picks when they have a real choice;
+  // other players still auto-pick (pending choices are current-player scoped).
+  it('D-24644: the current player with a real choice gets a discard-only pick for two; others auto-KO', () => {
+    const heroA = 'core/x/a#0' as CardExtId;
+    const heroB = 'core/x/b#0' as CardExtId;
+    const other = 'core/x/p1#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [AGENT, heroA, heroB], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [other], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', zones: ['discard'], remaining: 2 },
+    ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT, heroA, heroB], 'nothing auto-KOd for the chooser');
+    assert.deepStrictEqual(G.ko, [other], 'the other player auto-KOd');
+    // why: the fire site composes the log line from this result; pending plus the
+    // other player's target renders "the active player must KO a hero; other players
+    // KO’d …" (pinned in notableEvents.compose.test.ts).
+    assert.equal(results[0]!.pending, true);
+    assert.deepStrictEqual(results[0]!.targets, [other]);
+  });
+
+  it('D-24644: the parked pick KOs only from the discard, twice, then clears', () => {
+    const heroA = 'core/x/a#0' as CardExtId;
+    const heroB = 'core/x/b#0' as CardExtId;
+    const heroHand = 'core/x/hand#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [heroHand], discard: [AGENT, heroA, heroB], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    const moveContext = { G, playerID: '0' } as unknown as Parameters<typeof resolveKoHeroChoice>[0];
+    resolveKoHeroChoice(moveContext, { zone: 'hand', cardId: heroHand });
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [heroHand], 'a hand pick is refused');
+    resolveKoHeroChoice(moveContext, { zone: 'discard', cardId: heroB });
+    assert.equal(G.pendingKoHeroChoices?.[0]?.remaining, 1, 'one KO still owed');
+    resolveKoHeroChoice(moveContext, { zone: 'discard', cardId: heroA });
+    assert.deepStrictEqual(G.ko, [heroB, heroA], 'the two picks, not the starter');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT]);
+    assert.equal(G.pendingKoHeroChoices?.length, 0, 'queue cleared');
+  });
+
+  it('D-24644: a forced KO (all copies identical) still auto-resolves with no prompt', () => {
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onAmbush', 'discard')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [AGENT, AGENT, AGENT], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onAmbush');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park');
+    assert.deepStrictEqual(G.ko, [AGENT, AGENT]);
+  });
+
+  it('D-24644: the Escape (hand) line parks a hand-only pick for the current player', () => {
+    const heroA = 'core/x/a#0' as CardExtId;
+    const heroB = 'core/x/b#0' as CardExtId;
+    const heroC = 'core/x/c#0' as CardExtId;
+    const G = makeG({
+      hooks: [zoneHook('v-jugg', 'onEscape', 'hand')],
+      playerZones: {
+        '0': { deck: [], hand: [heroA, heroB, heroC], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-jugg' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', zones: ['hand'], remaining: 2 },
+    ]);
+    assert.deepStrictEqual(G.ko, []);
+  });
 });
 
 describe('executeVillainAbilities — safe-skip paths', () => {
