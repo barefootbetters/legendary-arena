@@ -499,8 +499,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // their free +2 attack / +1 recruit (earned only by an unmodeled KO cost / Bindings clause) and
   // record an honest unmodeled-conditional-grant hollow. One new row (1 observation); no existing
   // row moved. totalObs 8006 -> 8007; resolvedObs stays 1235, so percentResolved stays 15.4.
+  // 2026-09-29 (D-24644, re-pin): Juggernaut's Ambush / Escape KO parks a choice for the current
+  // player, which the sweep's bot resolves through getLegalMoves, so game trajectories shift
+  // (the feed was regenerated: 7081 -> 7098 raw observations, same 78 mechanics, 0 dropped).
+  // totalObs 8007 -> 8024 (+17, equal to the raw feed rise); resolvedObs stays 1235, so
+  // percentResolved stays 15.4.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8007);
+  assert.equal(view.totalObs.value, 8024);
   assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });
