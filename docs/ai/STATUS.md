@@ -7,6 +7,30 @@
 
 ## Current State
 
+### D-24648 — Diving Block start-stage freeze fix (direct fix; drafted 2026-09-20 as D-24544, landed 2026-09-29)
+
+A start-stage villain-escape Wound that opened a Diving Block reveal/decline seat choice for
+the ACTIVE player froze the turn at `currentStage: start` until the player reloaded (operator
+report, Red Skull / Midtown 2p turn 25). The engine + saved state were clean and advanceable —
+the freeze was on the client.
+
+**Primary (client) cause + fix:** the reveal one-click auto-advance watcher
+(`TurnActionBar.vue maybeAutoAdvanceReveal`) is gated on `anyPendingChoice()`, which OMITTED
+`hasPendingSeatChoice`. So the watcher fired `advanceStage` while the Diving Block choice was
+open, the engine block-all rejected it, and `isAutoAdvancing` latched — never re-advancing once
+the choice cleared. Added `hasPendingSeatChoice` to `anyPendingChoice()` (the auto-advance now
+waits for the seat choice, exactly like a Master-Strike KO) + gated End Turn / Pass Priority /
+Heal on it in `useTurnActions`; threaded through `PlayDesktop.vue` / `PlayMobile.vue`.
+
+**Secondary (engine) robustness:** the WP-684 seat-choice `setActivePlayers` stage-ride no
+longer rides the ACTIVE player (they already accept moves as `currentPlayer`); when they are the
+only addressed seat the framework call is skipped entirely. Non-active recipients still ride.
+Determinism-safe (framework event, not `G`/hash).
+
+**Verified:** game-engine 4717 → 4723 / 0 fail, arena-client 2237 → 2239 / 0 fail (rebased onto main 2026-09-29; 3973/0 and 1873/0 at authoring) (both with non-vacuous regression tests),
+`vue-tsc --noEmit` 0, `pnpm -r build` 0. Fix-forward (no WP); D-24648. D-24026 live-verify
+operator-pending on `play.legendary-arena.com`.
+
 ### D-24647 — Analytics and guest-password join limits are per player, not site-wide (direct fix) (2026-09-29)
 
 **Server fix, visible only under load.** The analytics capture limit (60 events/min) and the guest-password join
