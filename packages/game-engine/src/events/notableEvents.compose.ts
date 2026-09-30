@@ -469,6 +469,25 @@ export function composeHeroRevealTopNarrative(
   return `"${sourceCardName}" revealed "${revealedCardName}" (cost ${String(cost)}) — ${outcomeText}.`;
 }
 
+/**
+ * Composes the single-sentence narrative for a `heroEffectResolved` event when an
+ * "each other player's deck" reveal finds no other deck (D-24639 — Hypnotic Charm's
+ * Instinct half in a 1-player game, or every other deck and discard exhausted).
+ *
+ * Pure + byte-stable, third person with no "Player N" prefix (the sibling
+ * composers' voice). The source name is resolved by the fire site.
+ *
+ * // why: D-24639 — the printed "each other player's deck" has nothing to act on without
+ * another deck, so nothing happens (like Covering Fire in a 1-player game), but the player
+ * should SEE that the ability resolved rather than wonder whether it was skipped.
+ *
+ * @param sourceCardName - Human-facing name of the hero card whose ability resolved.
+ * @returns A single English sentence for the notable-event overlay.
+ */
+export function composeNoOtherDeckNarrative(sourceCardName: string): string {
+  return `"${sourceCardName}" had no other player's deck to reveal.`;
+}
+
 // ---------------------------------------------------------------------------
 // Excessive Violence fire narrative (WP-746)
 // ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ import {
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
+  composeNoOtherDeckNarrative,
   composeExcessiveViolenceFiredNarrative,
 } from './notableEvents.compose.js';
 
@@ -484,6 +485,15 @@ describe('composeExcessiveViolenceFiredNarrative (WP-746)', () => {
     assert.equal(
       composeExcessiveViolenceFiredNarrative('Player 0', 2),
       composeExcessiveViolenceFiredNarrative('Player 0', 2),
+    );
+  });
+});
+
+describe('composeNoOtherDeckNarrative (D-24639)', () => {
+  it('names the source card and says there was no other deck to reveal', () => {
+    assert.equal(
+      composeNoOtherDeckNarrative('Hypnotic Charm'),
+      "\"Hypnotic Charm\" had no other player's deck to reveal.",
     );
   });
 });

@@ -91,6 +91,7 @@ import {
   composeTransformNarrative,
   composeHeroRevealAttackNarrative,
   composeHeroRevealTopNarrative,
+  composeNoOtherDeckNarrative,
   composeExcessiveViolenceFiredNarrative,
 } from '../events/notableEvents.compose.js';
 
@@ -3166,14 +3167,14 @@ function heroEffectRevealTopDispose(
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
  * @param playerID - The active player who played the card.
- * @param _cardId - The played card (unused; the choice carries only the revealed tops).
+ * @param cardId - The played card (names the source on the D-24639 no-other-deck overlay).
  * @param _effect - The `{ type: 'reveal-top-dispose-others' }` descriptor (no magnitude).
  */
 function heroEffectRevealTopDisposeOthers(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   _effect: HeroEffectDescriptor,
 ): void {
   const revealedTops: RevealedTopEntry[] = [];
@@ -3187,6 +3188,17 @@ function heroEffectRevealTopDisposeOthers(
     // why: reachable no-op — no OTHER seat had a revealable deck top (a solo game, or every
     // other deck + discard exhausted). Nothing parked. G.messages hash-excluded (D-24081).
     pushLog(G, `Player ${playerID} had no other player's deck top to reveal (reveal-top).`, 'blocked');
+    // why: D-24639 — Jeff's ruling: in a 1-player game the printed "each other player's deck"
+    // does nothing (like Covering Fire there), but the player must SEE that it resolved. Emit a
+    // card-less heroEffectResolved "Hero Ability" overlay line. Guarded on G.notableEvents (the
+    // minimal test builder omits it). Hashed, but the core sentinel plays no Gambit (inert there).
+    if (Array.isArray(G.notableEvents)) {
+      G.notableEvents.push({
+        type: 'heroEffectResolved',
+        playerId: playerID,
+        narrative: composeNoOtherDeckNarrative(resolveTransformCardName(G, cardId)),
+      });
+    }
     return;
   }
   parkRevealTopDispose(G, playerID, revealedTops);

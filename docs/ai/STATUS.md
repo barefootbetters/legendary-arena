@@ -7,6 +7,19 @@
 
 ## Current State
 
+### D-24639 — Hypnotic Charm in a 1-player game shows that it had no other deck (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Playing Gambit's Hypnotic Charm with its Instinct half active in a
+1-player game now shows a "Hero Ability" overlay line: `"Hypnotic Charm" had no other player's deck to reveal.` Nothing else
+changes — the printed "each other player's deck" has nothing to act on (like Covering Fire in a 1-player game). Before, the
+only trace was a log line, so it looked like the card had been skipped.
+
+- **Engine.** `heroEffectRevealTopDisposeOthers` emits a card-less `heroEffectResolved` event via the new pure
+  `composeNoOtherDeckNarrative`; no client change.
+- **Counts and gates.** Engine 4700/0 → 4703/0 (+3; revert proof fails the new solo test). Sentinel / replay oracles unchanged;
+  `sim:runtime-observed:check` and `sim:coverage --check` pass.
+- **Live-verify (D-24026):** pending. In a 1-player match, play Hypnotic Charm with another Instinct hero in play and confirm
+  the overlay line appears after the own-deck discard-or-keep prompt.
 ### WP-788 — A signed-out Enter Arena now starts a guest match (EC-825 / D-24636) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A signed-out visitor on the entrance sees

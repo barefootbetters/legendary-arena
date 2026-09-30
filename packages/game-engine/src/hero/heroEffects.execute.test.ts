@@ -4022,6 +4022,44 @@ describe('executeHeroEffects reveal-top-dispose park (WP-702 / D-24521)', () => 
       'the no-other-seat no-op appends a game-log line',
     );
   });
+
+  it('reveal-top-dispose-others in a solo game shows a visible no-op overlay line (D-24639)', () => {
+    const gameState = makeTestState({
+      deck: ['p0-top'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose-others'], effects: [{ type: 'reveal-top-dispose-others' }] },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    // why: D-24639 — nothing happens without another deck (like Covering Fire solo), but the
+    // player sees one card-less "Hero Ability" line naming the source card (raw id here: no
+    // display data in this fixture).
+    assert.deepEqual(gameState.notableEvents, [
+      { type: 'heroEffectResolved', playerId: '0', narrative: "\"hero-x\" had no other player's deck to reveal." },
+    ]);
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['p0-top'], 'the own deck is untouched');
+  });
+
+  it('reveal-top-dispose-others with another deck parks the choice and emits NO no-op line (D-24639)', () => {
+    const gameState = makeTestState({
+      deck: ['p0-top'],
+      inPlay: ['hero-x'],
+      heroAbilityHooks: [
+        { cardId: 'hero-x', timing: 'onPlay', keywords: ['reveal-top-dispose-others'], effects: [{ type: 'reveal-top-dispose-others' }] },
+      ],
+    });
+    gameState.notableEvents = [];
+    gameState.playerZones['1'] = { ...gameState.playerZones['0']!, deck: ['p1-top'], hand: [], discard: [], inPlay: [], victory: [] };
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingRevealTopDispose?.length, 1, 'the choice parks as before');
+    assert.equal(gameState.notableEvents.length, 0, 'the prompt shows the card; no overlay line');
+  });
 });
 
 // ---------------------------------------------------------------------------
