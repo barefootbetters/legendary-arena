@@ -45865,4 +45865,18 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24639 — Hypnotic Charm's "each other player's deck" shows a visible no-op in a 1-player game (Active 2026-09-29 — direct fix, no WP)
+
+**Context.** Gambit's Hypnotic Charm Instinct half ("Do the same thing to each other player's deck", `reveal-top-dispose-others`, WP-702 / D-24521) has nothing to act on in a 1-player game. The engine logged "had no other player's deck top to reveal" but showed nothing on the board, so in match `b8KeKuLE5Tb` Jeff could not tell whether it had resolved. Hawkeye's Covering Fire in a 1-player game opens its prompt, and the chosen branch affects nobody.
+
+**Decision (Jeff, 2026-09-29).**
+1. Keep the printed rules: with no other deck (a 1-player game, or every other deck and discard exhausted), nothing is revealed, discarded or parked.
+2. Make it visible: emit one card-less `heroEffectResolved` event with the narrative `"<card>" had no other player's deck to reveal.` (new pure composer `composeNoOtherDeckNarrative`), which the arena-client "Hero Ability" overlay renders with no client change. The existing log line is kept.
+3. Rejected: an empty discard-or-keep prompt (literal Covering Fire parity with nothing to show) and a solo house rule that reveals the Hero Deck instead.
+4. Determinism: `G.notableEvents` is hashed, but the core sentinel plays no Gambit, so both oracles are unchanged (verified: replayFixtures green, fixtures untouched). Display-only; no game state or scoring change.
+
+**Reserved by:** NUMBER-LEDGER D-24639. Related: D-24521 (WP-702), D-24541 (WP-719 Covering Fire), D-24516 / D-24547 (the heroEffectResolved overlay).
+
+---
+
 Protect this file.
