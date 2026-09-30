@@ -41,8 +41,8 @@ like guest-solo, on the shared limiter.
 - **Server only.** `analytics.routes.ts` + `guestAccessRoutes.mjs` move onto `tokenBucketRateLimiter.mjs`; the two
   private limiter copies are deleted. Capacities, windows and 429 bodies unchanged. Completes D-24635 §4.
 - **Counts.** server 1657 → 1659 tests / 0 fail (1451 → 1453 pass; 206 DB-backed skips unchanged).
-- **Live-verify (D-24026):** pending. From one connection, 11 join-as-guest attempts → the 11th is 429; a second
-  network → not 429 in the same minute.
+- **Live-verify (D-24026), 2026-09-29: PASS.** Production runs `21cfea9`. From one connection, 10 join-as-guest
+  attempts → 400 and the 11th → 429; 51 s later a second network → 400 (the old site-wide bucket would have been 429).
 
 ### D-24646 — Overlays and the game log show card and effect names, not internal ids (direct fix) (2026-09-29)
 
