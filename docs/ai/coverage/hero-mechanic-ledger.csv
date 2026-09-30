@@ -106,6 +106,7 @@ bkpt/white-wolf,White Wolf,bkpt,wound-the-mastermind,unsupported,,,,reflective-v
 bkwd/black-widow,Black Widow,bkwd,dark-memories,unsupported,,,,widows-bite
 bkwd/black-widow,Black Widow,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,evasive-acrobatics|weave-a-web-of-spies|widows-bite
 bkwd/black-widow,Black Widow,bkwd,undercover,deferred,WP-282,D-24060,,infiltrate-the-conspiracy|weave-a-web-of-spies
+bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,dark-memories,unsupported,,,,atone|captain-americas-legacy
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,discard-threshold,condition,,,,new-wings
 bkwd/falcon-winter-soldier,Falcon & Winter Soldier,bkwd,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,attune
@@ -123,13 +124,16 @@ bkwd/yelena-belova,Yelena Belova,bkwd,undercover,deferred,WP-282,D-24060,,destro
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,,destroy-the-red-room|twilight-ops|unveil-identity
 ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,,sniper-squad|spy-network
 ca75/agent-x-13,Agent X-13,ca75,savior,condition,,,,mobilize-for-war
+ca75/captain-america-falcon,Captain America (Falcon),ca75,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,star-spangled-hero
 ca75/captain-america-falcon,Captain America (Falcon),ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,aerial-catch
 ca75/captain-america-falcon,Captain America (Falcon),ca75,savior,condition,,,,star-spangled-hero|winged-salvation
+ca75/captain-america-1941,Captain America 1941,ca75,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,storm-the-beachhead
 ca75/captain-america-1941,Captain America 1941,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,devoted-patriot|liberate-the-prisoners
 ca75/captain-america-1941,Captain America 1941,ca75,out-of-time,unsupported,,,,devoted-patriot|punch-evil-in-the-face|storm-the-beachhead
 ca75/captain-america-1941,Captain America 1941,ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,liberate-the-prisoners
 ca75/captain-america-1941,Captain America 1941,ca75,savior,condition,,,,liberate-the-prisoners|punch-evil-in-the-face
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,out-of-time,unsupported,,,,shadow-of-wars-past
+ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,international-strike-force
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,save-the-world
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,savior,condition,,,,international-strike-force|save-the-world|shadow-of-wars-past
 ca75/winter-soldier,Winter Soldier,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sniper-nest
@@ -158,7 +162,8 @@ co2e/black-widow,Black Widow,co2e,attack-per-count,executable,WP-247,D-24016,pac
 co2e/black-widow,Black Widow,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,intelligence-network
 co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,dangerous-rescue
 co2e/black-widow,Black Widow,co2e,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,gather-intel|intelligence-network
-co2e/captain-america,Captain America,co2e,(unmarked),unmarked,,,,
+co2e/captain-america,Captain America,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,a-day-unlike-any-other|perfect-teamwork
+co2e/captain-america,Captain America,co2e,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
 co2e/emma-frost,Emma Frost,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
@@ -242,7 +247,7 @@ cosm/ronan-the-accuser,Ronan the Accuser,cosm,contest-of-champions,unsupported,,
 cosm/ronan-the-accuser,Ronan the Accuser,cosm,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,rally-kree-warriors
 cosm/yondu,Yondu,cosm,burn-shards,unsupported,,,,whistling-arrow
 cosm/yondu,Yondu,cosm,danger-sense,unsupported,,,,anticipate-their-movements|interstellar-hunter
-cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,(unmarked),unmarked,,,,
+cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,bold-leadership
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,fight|flee
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,play-both-sides,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides,penumbra
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,darkness
@@ -385,6 +390,7 @@ mgtg/rocket-groot,Rocket & Groot,mgtg,excessive-violence,unsupported,,,,gravity-
 mgtg/rocket-groot,Rocket & Groot,mgtg,triggered-artifact,unsupported,,,,gravity-mines
 mgtg/star-lord,Star-Lord,mgtg,artifact,unsupported,,,,borrowed-nova-blaster|dont-need-that-stuff|expandable-helmet|give|hadron-enforcer|starship-sensors|take
 mgtg/star-lord,Star-Lord,mgtg,triggered-artifact,unsupported,,,,borrowed-nova-blaster|expandable-helmet|hadron-enforcer|starship-sensors
+msis/black-panther,Black Panther,msis,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,fateful-return
 msis/black-panther,Black Panther,msis,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,wakanda-forever
 msis/black-panther,Black Panther,msis,sacrifice,unsupported,,,,great-many-lives-lost
 msis/bruce-banner,Bruce Banner,msis,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,hulkbuster-armor
@@ -424,7 +430,8 @@ msmc/warpath,Warpath,msmc,tactical-formation,unsupported,,,,dangerous-maneuver
 msp1/black-widow,Black Widow,msp1,defeat-with-bystander,executable,WP-486,D-24291,packages/game-engine/src/hero/heroEffects.execute.ts#defeat-with-bystander,silent-sniper
 msp1/black-widow,Black Widow,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mission-accomplished
 msp1/black-widow,Black Widow,msp1,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,mission-accomplished
-msp1/captain-america,Captain America,msp1,(unmarked),unmarked,,,,
+msp1/captain-america,Captain America,msp1,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,perfect-teamwork
+msp1/captain-america,Captain America,msp1,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
 msp1/hawkeye,Hawkeye,msp1,covering-fire,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#covering-fire,covering-fire
 msp1/hawkeye,Hawkeye,msp1,defeated-villain-or-mastermind,condition,,,,impossible-trick-shot
 msp1/hawkeye,Hawkeye,msp1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw

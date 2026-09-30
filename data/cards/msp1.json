@@ -136,7 +136,7 @@
           "attack": null,
           "recruit": "0+",
           "abilities": [
-            "You get +1[icon:recruit] for each color of Hero you have."
+            "You get +1[icon:recruit] for each color of Hero you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -151,7 +151,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each color of Hero you have."
+            "You get +1[icon:attack] for each color of Hero you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {

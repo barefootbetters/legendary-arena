@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1958,
+    "totalEntries": 1965,
     "byScope": {
-      "hero": 780,
+      "hero": 787,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 544,
+      "executable": 554,
       "deferred": 16,
       "condition": 47,
       "unsupported": 297,
-      "unmarked": 1050,
+      "unmarked": 1047,
       "subsystem": 4
     }
   },
@@ -3941,6 +3941,23 @@
       "name": "Falcon & Winter Soldier",
       "set": "bkwd",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "captain-americas-legacy",
+          "name": "Captain America's Legacy"
+        }
+      ]
+    },
+    {
+      "extId": "bkwd/falcon-winter-soldier",
+      "name": "Falcon & Winter Soldier",
+      "set": "bkwd",
+      "scope": "hero",
       "mechanic": "dark-memories",
       "status": "unsupported",
       "handler": "",
@@ -4478,6 +4495,23 @@
       "name": "Captain America 1941",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "storm-the-beachhead",
+          "name": "Storm the Beachhead"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-1941",
+      "name": "Captain America 1941",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -4562,6 +4596,23 @@
       "name": "Captain America (Falcon)",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "star-spangled-hero",
+          "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "rescue",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
@@ -4609,6 +4660,23 @@
         {
           "slug": "shadow-of-wars-past",
           "name": "Shadow of Wars Past"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "international-strike-force",
+          "name": "International Strike Force"
         }
       ]
     },
@@ -5982,11 +6050,38 @@
       "name": "Captain America",
       "set": "co2e",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "a-day-unlike-any-other",
+          "name": "A Day Unlike Any Other"
+        },
+        {
+          "slug": "perfect-teamwork",
+          "name": "Perfect Teamwork"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/captain-america",
+      "name": "Captain America",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "avengers-assemble",
+          "name": "Avengers Assemble!"
+        }
+      ]
     },
     {
       "extId": "co2e/cyclops",
@@ -8870,11 +8965,17 @@
       "name": "Captain America, Secret Avenger",
       "set": "cvwr",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "bold-leadership",
+          "name": "Bold Leadership"
+        }
+      ]
     },
     {
       "extId": "cvwr/cloak-dagger",
@@ -14306,6 +14407,23 @@
       "name": "Black Panther",
       "set": "msis",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "fateful-return",
+          "name": "Fateful Return"
+        }
+      ]
+    },
+    {
+      "extId": "msis/black-panther",
+      "name": "Black Panther",
+      "set": "msis",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -15837,11 +15955,34 @@
       "name": "Captain America",
       "set": "msp1",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "perfect-teamwork",
+          "name": "Perfect Teamwork"
+        }
+      ]
+    },
+    {
+      "extId": "msp1/captain-america",
+      "name": "Captain America",
+      "set": "msp1",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "avengers-assemble",
+          "name": "Avengers Assemble!"
+        }
+      ]
     },
     {
       "extId": "msp1/hawkeye",
@@ -29268,6 +29409,7 @@
     "bkwd/falcon-winter-soldier": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "dark-memories",
         "discard-threshold",
         "discard-to-play",
@@ -29406,6 +29548,7 @@
     "ca75/captain-america-1941": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "out-of-time",
         "rescue",
@@ -29415,6 +29558,7 @@
     "ca75/captain-america-falcon": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "rescue",
         "savior"
       ]
@@ -29423,6 +29567,7 @@
       "scope": "hero",
       "mechanics": [
         "out-of-time",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
@@ -29926,7 +30071,8 @@
     "co2e/captain-america": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "attack-per-count",
+        "recruit-per-count"
       ]
     },
     "co2e/cyclops": {
@@ -30936,7 +31082,7 @@
     "cvwr/captain-america-secret-avenger": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "recruit-per-count"
       ]
     },
     "cvwr/cloak-dagger": {
@@ -32870,6 +33016,7 @@
     "msis/black-panther": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "sacrifice"
       ]
@@ -33363,7 +33510,8 @@
     "msp1/captain-america": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "attack-per-count",
+        "recruit-per-count"
       ]
     },
     "msp1/hawkeye": {
