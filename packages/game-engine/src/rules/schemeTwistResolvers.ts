@@ -559,13 +559,16 @@ function midtownBankRobbery(
       captured = captured + 1;
     }
 
+    // why: D-24646 — the log is player-facing, so name the villain (e.g. "Sabretooth")
+    // instead of printing its ext_id.
+    const bankOccupantName = resolveCardName(gameState, bankOccupant);
     if (captured === 0) {
-      pushLog(gameState, 
-        `[Midtown Bank Robbery] Twist: villain "${bankOccupant}" in Bank found no bystanders to capture (supply empty).`,
+      pushLog(gameState,
+        `[Midtown Bank Robbery] Twist: villain "${bankOccupantName}" in Bank found no bystanders to capture (supply empty).`,
       );
     } else {
       pushLog(gameState, 
-        `[Midtown Bank Robbery] Twist: villain "${bankOccupant}" in Bank captured ${captured} bystander(s).`,
+        `[Midtown Bank Robbery] Twist: villain "${bankOccupantName}" in Bank captured ${captured} bystander(s).`,
       );
     }
   }

@@ -120,8 +120,22 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
   if (result.targetNames.length > 0) {
     return `${label} (${result.targetNames.join(', ')})`;
   }
+  // why: D-24646 — the KO labels are past tense ("every player KO’d two heroes"), so a KO
+  // that found no Hero to take (an empty discard pile, say) must not claim one happened.
+  const noTargetLabel = NO_TARGET_KO_LABELS[result.keyword];
+  if (noTargetLabel !== undefined) {
+    return noTargetLabel;
+  }
   return label;
 }
+
+// why: D-24646 — the resolved-nothing wording for the three KO-a-Hero keywords, the only
+// labels that describe a KO as done. Other keywords (wounds, captures) keep their label.
+const NO_TARGET_KO_LABELS: Readonly<Partial<Record<VillainEffectKeyword, string>>> = {
+  koHeroCurrentPlayer: 'the active player had no hero to KO',
+  koHeroEachPlayer: 'no player had a hero to KO',
+  koHeroEachPlayerMag2: 'no player had a hero to KO',
+};
 
 // ---------------------------------------------------------------------------
 // Fight narrative

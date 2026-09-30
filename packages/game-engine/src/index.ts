@@ -13,6 +13,7 @@ export type {
   MatchSelection,
   PendingKoHeroChoice,
   HqHaunter,
+  VillainEffectKeyword,
 } from "./types.js";
 export type {
   Zone,

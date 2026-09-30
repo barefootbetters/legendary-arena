@@ -359,6 +359,31 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
     );
   });
 
+  // why: D-24646 — the capture line is player-facing; it names the Bank villain.
+  it('D-24646: names the Bank villain in the capture log line, not its ext_id', () => {
+    const gameState = makeMidtownState({
+      bankVillain: 'core/magneto-001',
+      bystanderCount: 5,
+      nextCardId: 'villain-next',
+      nextCardType: 'villain',
+    });
+    gameState.cardDisplayData = {
+      'core/magneto-001': { name: 'Sabretooth', imageUrl: '', cost: null },
+    } as unknown as typeof gameState.cardDisplayData;
+
+    schemeTwistHandler(
+      gameState,
+      makeRevealContext(),
+      { cardId: 'twist-card' },
+      DEFAULT_IMPLEMENTATION_MAP,
+    );
+
+    const captureLine = gameState.messages.find((message) => message.text.includes('in Bank captured'));
+    assert.ok(captureLine, 'a capture line was logged');
+    assert.match(captureLine.text, /villain "Sabretooth" in Bank captured 2 bystander\(s\)\./);
+    assert.doesNotMatch(captureLine.text, /core\/magneto-001/);
+  });
+
   it('logs a no-capture message when the Bank is empty', () => {
     const gameState = makeMidtownState({
       bystanderCount: 5,

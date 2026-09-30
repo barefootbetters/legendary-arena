@@ -7,6 +7,20 @@
 
 ## Current State
 
+### D-24646 — Overlays and the game log show card and effect names, not internal ids (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Four text fixes from the WP-788 live-verify match:
+- An Ambush that KOs nothing (Juggernaut on an empty discard pile) now says "no player had a hero to KO" instead of
+  claiming two heroes were KO'd.
+- The Ambush / Fight overlay's effect chip reads "Each player KOs two Heroes" instead of `koHeroEachPlayerMag2` (all 10
+  effect keywords are labeled).
+- Midtown Bank Robbery's twist log names the Bank villain ("Sabretooth") instead of its card id.
+- The Bystander! overlay is titled "Bystander" instead of `bystander-villain-deck-08`.
+
+- **Counts.** game-engine 4715 → 4717 / 0 fail; arena-client 2217 → 2220 / 0 fail; vue-tsc 0; no fixture re-pin.
+- **Live-verify (D-24026):** pending. Midtown featured table: a Bystander reveal is titled "Bystander", and a twist with a
+  villain in the Bank logs its name.
+
 ### D-24644 — Juggernaut lets you choose which Heroes to KO (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When Juggernaut ambushes ("Each player KOs two Heroes from
