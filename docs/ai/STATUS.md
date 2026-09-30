@@ -7,6 +7,17 @@
 
 ## Current State
 
+### D-24641 — The header no longer shows "Sign in" to a signed-in player while their sign-in loads (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On the landing page and in a match, the header's
+account area shows its "..." placeholder while the sign-in loads, then the player's name and Sign out (or
+**Sign in** for a signed-out visitor). Before, a signed-in player briefly saw **Sign in**.
+
+- **Client only.** `useAuthNav.ts` also waits on D-24640's `isSessionHydrating`. No server change.
+- **Counts.** arena-client 2212 → 2217 / 0 fail; vue-tsc 0.
+- **Live-verify (D-24026):** pending. Signed in, hard-reload the bare URL → the header shows "..." and never
+  "Sign in" before the signed-in nav appears.
+
 ### D-24640 — The Arena entrance waits for your sign-in to load before Enter Arena (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A signed-in player who opens the landing page no

@@ -45899,6 +45899,21 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24641 — The header's auth nav shows its placeholder while the session hydrates in the background (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** The brand header's auth nav (`useAuthNav`, WP-175) shows a "..." placeholder only while `isAuthBootstrapping` is true. On the lobby and `live` routes that flag is `false` from the start and the session hydrates in the background (PR #547), so a signed-in player saw **Sign in** in the header until the token arrived — the same window D-24640 closed on the Arena entrance.
+
+**Decision.**
+1. `useAuthNav`'s `isBootstrapping` becomes a computed of `isAuthBootstrapping || isSessionHydrating` (the D-24640 injected flag). The header shows its placeholder for the whole hydration window on every route, then **Sign in** or the signed-in nav once it settles. The owner-profile fetch waits for the same settle.
+2. The `isSessionHydrating` inject default is `false`, so a mount without App keeps the existing `isAuthBootstrapping`-only behavior (whose own fail-safe `true` default is unchanged).
+3. `AuthNavState.isBootstrapping` is typed `ComputedRef<boolean>` (was `Ref<boolean>`); `Header.vue` reads it the same way.
+
+**Gates.** arena-client 2212 → 2217 / 0 fail (+3 Header: placeholder and no Sign in while hydrating, settles signed in → signed-in nav, settles signed out → Sign in; +2 useAuthNav: bootstrapping true while hydrating, no profile fetch while hydrating). Against the unfixed composable, 3 of the 5 fail. vue-tsc 0.
+
+**Reserved by:** NUMBER-LEDGER D-24641. Related: D-24640 (the `isSessionHydrating` flag), D-17501 (provide/inject for auth lifecycle flags), WP-175 (auth nav), WP-330 / D-24116 (display label fetch), PR #547.
+
+---
+
 ### D-24637 — Auto-resolving reveals always show the revealed card (Drafted 2026-09-29; not yet landed — WP-789 / EC-826)
 
 **Context.** D-24547 (WP-726) surfaced the auto-resolving deck-top reveal family on the `heroEffectResolved` overlay, but §2 emitted only when a reveal "realized work", and the event carried no card id. In Jeff's match `b8KeKuLE5Tb` (1p Red Skull), every Card Shark miss (a non-X-Men card left on top) emitted nothing, and hits / High Stakes Jackpot showed a text line only — so the player was never shown the card that is now their next draw. D-24547 named the card image (`revealedCardId`) as a follow-up.
