@@ -46071,6 +46071,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** server 1657 → 1659 tests / 0 fail (+2 route tests: two callers behind the same proxy hop with different `cf-connecting-ip` get separate buckets, and the first stays limited; for analytics, two addresses in one IPv6 /64 share a bucket). Both new tests fail against the pre-migration code.
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Production runs `21cfea9` (#2525). Join-as-guest with an empty body (the attempt is counted before the body is read, so there is no DB work and nothing is created): from one connection, attempts 1–10 → 400 and the 11th → 429, reproduced on two networks. Then, 51 s after a burst from a T-Mobile hotspot (`172.56.210.100`) had hit 429, an attempt from home Wi-Fi (`68.96.201.172`) → 400. The old site-wide bucket would have answered 429, so the limit is per connection.
+
 **Reserved by:** NUMBER-LEDGER D-24647. Related: D-24635 (§4 done), D-24642 (the key's /64 grouping and the forgeability check), D-20503, D-24441, D-11804.
 
 ---
