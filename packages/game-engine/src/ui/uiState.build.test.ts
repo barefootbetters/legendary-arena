@@ -2440,3 +2440,34 @@ describe('buildUIState — split-face option keyset (WP-777 / D-24615)', () => {
     assert.equal(projected.faceA.discardToPlayCost, 0);
   });
 });
+
+describe('buildUIState — notableEventCards (WP-789 / D-24637)', () => {
+  it('holds one entry per distinct revealedCardId, in first-appearance order, with display resolved', () => {
+    const gameState = createTestGameState();
+    (gameState as { cardDisplayData: Record<CardExtId, UICardDisplay> }).cardDisplayData = {
+      'reveal-b': { extId: 'reveal-b', name: 'Revealed B', imageUrl: 'https://images.legendary-arena.com/b.webp', cost: 2 },
+      'reveal-a': { extId: 'reveal-a', name: 'Revealed A', imageUrl: 'https://images.legendary-arena.com/a.webp', cost: 1 },
+    };
+    gameState.notableEvents = [
+      { type: 'heroEffectResolved', playerId: '0', narrative: 'first', revealedCardId: 'reveal-b' },
+      { type: 'heroEffectResolved', playerId: '0', narrative: 'no card' },
+      { type: 'heroEffectResolved', playerId: '0', narrative: 'second', revealedCardId: 'reveal-a' },
+      { type: 'heroEffectResolved', playerId: '0', narrative: 'repeat', revealedCardId: 'reveal-b' },
+    ];
+
+    const result = buildUIState(gameState, mockCtx);
+
+    assert.deepStrictEqual(result.notableEventCards?.map((entry) => entry.extId), ['reveal-b', 'reveal-a']);
+    assert.equal(result.notableEventCards?.[0]!.display.name, 'Revealed B');
+    assert.equal(result.notableEventCards?.[1]!.display.imageUrl, 'https://images.legendary-arena.com/a.webp');
+  });
+
+  it('is omitted (key absent) when no reveal event exists', () => {
+    const gameState = createTestGameState();
+    gameState.notableEvents = [
+      { type: 'heroEffectResolved', playerId: '0', narrative: 'a Jade Giantess reveal carries no card id' },
+    ];
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(Object.keys(result).includes('notableEventCards'), false);
+  });
+});

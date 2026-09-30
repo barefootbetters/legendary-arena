@@ -239,6 +239,31 @@ function buildDisplayEntries(
   return entries;
 }
 
+// why: WP-789 / D-24637 §3 — a revealed deck-top card often stays in the deck,
+// outside every projected zone, so the overlay could not resolve its name or
+// image. Dedupe the `heroEffectResolved.revealedCardId`s in first-appearance order,
+// then reuse buildDisplayEntries (as transformDeck does) for the per-entry copy.
+/**
+ * Builds the public display entries for every distinct revealed card named by a
+ * `heroEffectResolved` notable event, in first-appearance order.
+ */
+function buildNotableEventCards(gameState: LegendaryGameState): UIDisplayEntry[] {
+  const revealedCardIds: string[] = [];
+  const seenCardIds = new Set<string>();
+  for (const notableEvent of gameState.notableEvents) {
+    if (notableEvent.type !== 'heroEffectResolved') {
+      continue;
+    }
+    const revealedCardId = notableEvent.revealedCardId;
+    if (revealedCardId === undefined || seenCardIds.has(revealedCardId)) {
+      continue;
+    }
+    seenCardIds.add(revealedCardId);
+    revealedCardIds.push(revealedCardId);
+  }
+  return buildDisplayEntries(revealedCardIds, gameState);
+}
+
 // why: D-24020 — a SINGLE deterministic mapping from WP-248's reward
 // (rewardType + magnitude) to the player-facing label rendered in the
 // optional-KO-reward prompt. Defined ONCE here — never an ad-hoc or per-card
@@ -1143,6 +1168,8 @@ export function buildUIState(
     gameState.transformDeck,
     gameState,
   );
+
+  const notableEventCards = buildNotableEventCards(gameState);
 
   // --- 13. Project pending hero choice ---
   // why: D-22201 + WP-222 — resolveDisplay() produces a fresh shallow copy of
@@ -2333,6 +2360,8 @@ export function buildUIState(
     // arena client warms at match start. Always populated ([] for an empty
     // match); optional in the type only for fixture back-compat (see the type).
     matchCardImageUrls: buildMatchCardImageManifest(gameState.cardDisplayData),
+    // why: WP-789 / D-24637 — conditional spread; omitted when no reveal event exists.
+    ...(notableEventCards.length > 0 ? { notableEventCards } : {}),
     ...(gameOver !== undefined ? { gameOver } : {}),
     // why: WP-367 / D-24159 — conditional spread; the final-turn banner data is
     // omitted unless a deck has been exhausted (no `finalTurn: undefined` literal

@@ -667,6 +667,15 @@ export function filterUIStateForAudience(
     result.transformDeck = deepCopyDisplayEntries(uiState.transformDeck);
   }
 
+  // why: WP-789 / D-24637 — the revealed cards behind `heroEffectResolved` overlay
+  // events are PUBLIC (a revealed card is shown at the table; the event itself is
+  // public), so the entries pass through for EVERY audience, copied entry-by-entry
+  // like transformDeck. Optional, so a missing pass-through would be silently dropped
+  // at this whitelist (the Board-Visible Field Rule) and a miss would show a raw id.
+  if (uiState.notableEventCards !== undefined) {
+    result.notableEventCards = deepCopyDisplayEntries(uiState.notableEventCards);
+  }
+
   if (uiState.gameOver !== undefined) {
     result.gameOver = { ...uiState.gameOver };
   }

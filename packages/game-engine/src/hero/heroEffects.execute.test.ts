@@ -1994,7 +1994,7 @@ describe('executeHeroEffects', () => {
       'a reveal that parks a choose-discard-or-return choice emits no overlay event (avoids double-surfacing).');
   });
 
-  it('does NOT emit on a blocked reveal (predicate did not match) (WP-726)', () => {
+  it('emits on a blocked reveal (predicate did not match) — the card is shown, left on top (WP-726 → WP-789)', () => {
     const gameState = makeTestState({
       inPlay: ['hero-x'],
       deck: ['starter-agent'],
@@ -2016,7 +2016,12 @@ describe('executeHeroEffects', () => {
 
     executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
 
-    assert.equal(gameState.notableEvents.length, 0, 'a blocked (no-match) reveal emits no overlay event.');
+    assert.equal(gameState.notableEvents.length, 1, 'a blocked (no-match) reveal emits one overlay event (D-24637).');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type === 'heroEffectResolved' && event.revealedCardId, 'starter-agent',
+      'the event carries the revealed card id.');
+    assert.ok(event.type === 'heroEffectResolved' && event.narrative.endsWith('— left on top.'),
+      'the miss narrative says the card was left on top.');
   });
 
   it('does not throw when notableEvents is absent — the emit is guarded (WP-726)', () => {
@@ -2043,6 +2048,190 @@ describe('executeHeroEffects', () => {
       executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
     }, 'the guarded emit must not throw when G.notableEvents is absent.');
     assert.equal(gameState.turnEconomy.attack, 3, 'the reveal grant still fires when the overlay guard skips.');
+  });
+
+  // -------------------------------------------------------------------------
+  // WP-789 / D-24637 — every auto-resolving reveal shows the revealed card: a miss
+  // emits too ("left on top"), every reveal event carries revealedCardId, and a
+  // reorder reveal that parks its prompt suppresses its misses.
+  // -------------------------------------------------------------------------
+  const cardSharkRules = [{ predicate: { kind: 'team' as const, traitValue: 'x-men' }, actions: [{ kind: 'draw' as const }] }];
+  const revealStat = (cost: number) => ({ attack: 0, recruit: 0, cost, fightCost: 0, fightCostMode: 'static' as const, fightCostBase: 0 });
+
+  /**
+   * Builds a Card Shark-shape (`reveal:team-x-men:draw`) state with the given deck.
+   */
+  function makeCardSharkState(deck: string[]): LegendaryGameState {
+    const gameState = makeTestState({
+      inPlay: ['card-shark'],
+      deck,
+      hand: [],
+      cardStats: { 'x-hero': revealStat(5), 'non-xmen-top': revealStat(5), 'second-card': revealStat(2) },
+      cardTraits: { 'x-hero': { heroClass: 'ranged', team: 'x-men' }, 'non-xmen-top': { heroClass: 'tech', team: 'shield' } },
+      heroAbilityHooks: [
+        {
+          cardId: 'card-shark' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 1, revealRules: cardSharkRules }],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+    return gameState;
+  }
+
+  it('a Card Shark miss emits one event with revealedCardId and "— left on top." (WP-789)', () => {
+    const gameState = makeCardSharkState(['non-xmen-top', 'second-card']);
+
+    executeHeroEffects(gameState, mockCtx, '0', 'card-shark' as string);
+
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one event for the miss.');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type, 'heroEffectResolved');
+    assert.equal(event.type === 'heroEffectResolved' && event.revealedCardId, 'non-xmen-top',
+      'the event names the card left on top.');
+    assert.equal(event.type === 'heroEffectResolved' && event.narrative,
+      '"card-shark" revealed "non-xmen-top" (cost 5) — left on top.');
+  });
+
+  it('a Card Shark hit emits one event with revealedCardId and the unchanged "drew it" narrative (WP-789)', () => {
+    const gameState = makeCardSharkState(['x-hero']);
+
+    executeHeroEffects(gameState, mockCtx, '0', 'card-shark' as string);
+
+    assert.equal(gameState.notableEvents.length, 1, 'exactly one event for the hit.');
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type === 'heroEffectResolved' && event.revealedCardId, 'x-hero');
+    assert.equal(event.type === 'heroEffectResolved' && event.narrative,
+      '"card-shark" revealed "x-hero" (cost 5) — drew it.');
+  });
+
+  it('a reveal-cost-attack (High Stakes Jackpot) event carries revealedCardId (WP-789)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      turnEconomyAttack: 0,
+      cardStats: { 'hero-y': revealStat(3) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-cost-attack'],
+          effects: [legacyRevealEffect('reveal-cost-attack', undefined)],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.notableEvents.length, 1);
+    const event = gameState.notableEvents[0]!;
+    assert.equal(event.type === 'heroEffectResolved' && event.revealedCardId, 'hero-y',
+      'the revealed card (still on the deck) is carried on the event.');
+  });
+
+  it('the parking reveal-attack-choose still emits nothing — even when its top card is a miss (WP-789)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      deck: ['hero-y'],
+      hand: [],
+      turnEconomyAttack: 0,
+      cardStats: { 'hero-y': revealStat(0) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal-attack-choose'],
+          effects: [legacyRevealEffect('reveal-attack-choose', 1)],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.notableEvents.length, 0,
+      'a choose-discard-or-return reveal surfaces via its prompt, never the overlay (D-24547 double-surface rule).');
+  });
+
+  it('game state is unchanged by the emit: deck, turnEconomy and the reveal log line for a miss and a hit (WP-789)', () => {
+    const missState = makeCardSharkState(['non-xmen-top', 'second-card']);
+    executeHeroEffects(missState, mockCtx, '0', 'card-shark' as string);
+    assert.deepEqual(missState.playerZones['0']!.deck, ['non-xmen-top', 'second-card'], 'miss: deck order intact.');
+    assert.deepEqual(missState.playerZones['0']!.hand, [], 'miss: nothing drawn.');
+    assert.equal(missState.turnEconomy.attack, 0, 'miss: no attack.');
+    assert.equal(missState.turnEconomy.recruit, 0, 'miss: no recruit.');
+    assert.equal(missState.turnEconomy.cardsDrawn, 0, 'miss: no effect-draw counted.');
+    const missLines = missState.messages.filter((entry) => entry.text.includes(' revealed '));
+    assert.deepEqual(missLines.map((entry) => entry.text),
+      ['Player 0 revealed non-xmen-top (non-xmen-top) (cost 5) — no branch matched (left on top).'],
+      'miss: the reveal log line is the unchanged WP-325 blocked line.');
+
+    const hitState = makeCardSharkState(['x-hero', 'second-card']);
+    executeHeroEffects(hitState, mockCtx, '0', 'card-shark' as string);
+    assert.deepEqual(hitState.playerZones['0']!.deck, ['second-card'], 'hit: the revealed card left the deck.');
+    assert.deepEqual(hitState.playerZones['0']!.hand, ['x-hero'], 'hit: the revealed card was drawn.');
+    assert.equal(hitState.turnEconomy.attack, 0, 'hit: no attack.');
+    assert.equal(hitState.turnEconomy.recruit, 0, 'hit: no recruit.');
+    assert.equal(hitState.turnEconomy.cardsDrawn, 0, 'hit: the reveal draw is not an effect-draw count.');
+    const hitLines = hitState.messages.filter((entry) => entry.text.includes(' revealed '));
+    assert.deepEqual(hitLines.map((entry) => entry.text),
+      ['Player 0 revealed x-hero (x-hero) (cost 5) — a x-men card matched: drew it.'],
+      'hit: the reveal log line is the unchanged WP-325 matched line.');
+  });
+
+  it('a reveal-reorder that parks its reorder prompt emits hit events only — its misses are suppressed (WP-789)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      // reveal 3: two expensive cards stay on top (misses), one cheap card is drawn (hit).
+      deck: ['keep-a', 'keep-b', 'draw-c'],
+      cardStats: { 'keep-a': revealStat(3), 'keep-b': revealStat(4), 'draw-c': revealStat(0) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2), reorderRemainder: true }],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReorderChoices?.length, 1, 'the reorder prompt parked.');
+    const revealedIds = gameState.notableEvents.map((event) => (event.type === 'heroEffectResolved' ? event.revealedCardId : undefined));
+    assert.deepEqual(revealedIds, ['draw-c'], 'only the hit surfaces; the prompt shows the left-on-top cards.');
+  });
+
+  it('a reveal-reorder that parks NO prompt flushes every event in reveal order: miss, hit, hit (WP-789)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-x'],
+      // reveal 3: keep-a stays (miss), then draw-b and draw-c are drawn (hits); 1 remains, so no park.
+      deck: ['keep-a', 'draw-b', 'draw-c'],
+      cardStats: { 'keep-a': revealStat(3), 'draw-b': revealStat(0), 'draw-c': revealStat(1) },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-x' as string,
+          timing: 'onPlay',
+          keywords: ['reveal'],
+          effects: [{ type: 'reveal', revealCount: 3, revealRules: revealRulesForLegacyKeyword('reveal', 2), reorderRemainder: true }],
+        },
+      ],
+    });
+    gameState.notableEvents = [];
+
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x' as string);
+
+    assert.equal(gameState.pendingReorderChoices?.length ?? 0, 0, 'a single-card remainder parks no prompt.');
+    const revealedIds = gameState.notableEvents.map((event) => (event.type === 'heroEffectResolved' ? event.revealedCardId : undefined));
+    assert.deepEqual(revealedIds, ['keep-a', 'draw-b', 'draw-c'], 'every revealed card surfaces, in reveal order.');
+    const firstEvent = gameState.notableEvents[0]!;
+    assert.ok(firstEvent.type === 'heroEffectResolved' && firstEvent.narrative.endsWith('— left on top.'),
+      'the first event is the miss.');
   });
 
   // -------------------------------------------------------------------------

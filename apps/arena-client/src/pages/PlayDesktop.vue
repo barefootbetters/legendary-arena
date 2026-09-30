@@ -343,6 +343,13 @@ export default defineComponent({
       }
       const koTop = current.koPile.topCard;
       if (koTop !== null) store(koTop.extId, koTop.display);
+      // why: WP-789 / D-24637 — a revealed deck-top card usually stays in the deck,
+      // outside every zone above, so the engine projects its display separately.
+      if (current.notableEventCards !== undefined) {
+        for (const entry of current.notableEventCards) {
+          store(entry.extId, entry.display);
+        }
+      }
 
       return result;
     });

@@ -110,6 +110,13 @@ export interface UIState {
   // populates it ([] for a non-transform game). Projection-only: G.transformDeck
   // already exists, so this adds NO new G field and NO state-hash surface.
   transformDeck?: UIDisplayEntry[];
+  // why: WP-789 / D-24637 §3 — a revealed deck-top card often stays in the deck
+  // (a miss, High Stakes Jackpot), outside every projected zone, so the client's
+  // overlay lookup could not resolve its name or image. One public display entry per
+  // DISTINCT `heroEffectResolved.revealedCardId` in `notableEvents`, in
+  // first-appearance order. Omitted when there are none. Projection-only: no new G
+  // field and no state-hash surface.
+  notableEventCards?: UIDisplayEntry[];
   // why: WP-410 / D-24222 — the deduped set of every non-empty card-face image
   // URL this match can show (from G.cardDisplayData). The arena client warms these
   // into the browser image cache at match start so a card paints from cache on
