@@ -45840,6 +45840,10 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-09-29: PASS.** Production keys on `cf-connecting-ip` (Render log line); per-connection limiting holds on two networks (5 × 200 then 429 each; a second network 200). A dual-stack client holds two buckets (IPv4 + IPv6) — bounded by the §3 cap; /64 grouping for IPv6 is an optional hardening follow-up.
 
+**Follow-up (2026-09-29, D-24642 live-verify):**
+- The two buckets above were not IPv4 + IPv6. The API has no AAAA record, so the hotspot's two keys must have been two IPv4 exit addresses (carrier NAT). A client whose carrier rotates exit addresses per connection gets a bucket per address; the §3 process-wide cap remains the bound.
+- The header is not forgeable. A client-supplied `cf-connecting-ip` is refused by Cloudflare's edge (403, error code 1000) on both `api.legendary-arena.com` and `legendary-arena-server.onrender.com`, before Render sees it. This settles §3's open forgeability question.
+
 **§3 amended by D-24642 (2026-09-29):** an IPv6 key is grouped to its /64 prefix, and an IPv4-mapped IPv6 key is keyed as its IPv4 address.
 
 **Reserved by:** NUMBER-LEDGER D-24635. Related: D-24092, D-24093, D-24094, D-24120, D-24172, D-24437, D-24441, D-24451, D-9905, D-11804, D-24633.
@@ -45939,6 +45943,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 6. Scope: guest-solo is the only caller today. When the D-24635 §4 migration moves the analytics and join-as-guest limiters onto the shared helper, they inherit /64 keying.
 
 **Gates.** server 1651 → 1657 tests / 0 fail (+6 limiter tests: one /64 shares a key and a bucket, different /64s differ, IPv4 unchanged, mapped IPv4, malformed left as-is).
+
+**Live-verify (D-24026), 2026-09-29: deployed; the IPv6 path is not reachable in production.** `/api/version` reports `f75289b`, which contains #2516. `api.legendary-arena.com` and `legendary-arena-server.onrender.com` publish A records only (no AAAA), so no client reaches the API over IPv6. From a host holding three addresses in one /64, all three `curl -6` creates failed to connect, and the IPv4 control create returned 200. `cf-connecting-ip` therefore always carries an IPv4 address in production today. The /64 grouping is latent: its only coverage is the unit tests, and it takes effect if the API ever gains an AAAA record (for example, by proxying it through Cloudflare).
 
 **Reserved by:** NUMBER-LEDGER D-24642. Related: D-24635 (§3 amended), D-24441 / D-20503 (the limiter pattern), D-24026 (the live-verify that surfaced it).
 

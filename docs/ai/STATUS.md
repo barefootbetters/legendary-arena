@@ -51,8 +51,10 @@ IPv6 caller now shares its IPv4 address's allowance.
 - **Server only.** `tokenBucketRateLimiter.mjs` (`normalizeRateLimitAddress`) + 6 unit tests. Amends D-24635 §3.
   Key-source log line and `source` values unchanged.
 - **Counts.** server 1651 → 1657 tests / 0 fail (1445 → 1451 pass; 206 DB-backed skips unchanged).
-- **Live-verify (D-24026):** pending. From an IPv6 connection, 5 creates → 200 then 429; a create from a
-  second address in the same /64 → still 429.
+- **Live-verify (D-24026), 2026-09-29: deployed; IPv6 path not reachable.** Production runs `f75289b` (contains
+  #2516). The API host has no IPv6 (A records only), so every client arrives over IPv4, and the /64 grouping stays
+  latent until the API gains an AAAA record. IPv4 create 200 (unchanged). A forged `cf-connecting-ip` is refused by
+  Cloudflare's edge (403, error 1000) on both API hosts, so the key cannot be spoofed (settles D-24635 §3).
 
 ### D-24641 — The header no longer shows "Sign in" to a signed-in player while their sign-in loads (direct fix) (2026-09-29)
 
