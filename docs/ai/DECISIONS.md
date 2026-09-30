@@ -45864,6 +45864,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Amended:** §5 (the hydration race) is resolved by D-24640 (2026-09-29).
 
+**Live-verify (D-24026), 2026-09-29: PASS.** Signed out on production build `f75289b`: the guest line showed, Enter Arena created guest match `Y1lA03QkAC9` on the Battle Brief, a real gameover (scheme-wins, turn 15) showed "Sign in to save your results" linking to `?route=login`. The signed-in path is unchanged (D-24640 live-verify).
+
 **Reserved by:** NUMBER-LEDGER D-24636. Related: D-24092, D-24093 (the authed create/join sign-in redirect still holds for signed-in players), D-24633, D-24635, D-24441 (join-as-guest status mapping precedent), D-24630 (open PR #2483; its session-expired status needs a token, so a guest seat never reaches it).
 
 ---
@@ -45982,6 +45984,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 5. Log: when the current player's pick is pending, the Ambush / Escape line reads "the active player must KO a hero; other players KO’d <names>", so other players' auto-KOs stay visible. Each pick is named at resolve time, as before.
 
 **Gates.** game-engine 4709 → 4715 / 0 fail on top of D-24645 (+4 villain-effect: current player parks a discard-only pick for two while others auto-KO; the pick refuses a hand card, KOs twice from the discard and clears; identical copies auto-resolve; Escape parks a hand-only pick. +1 bot: a discard entry offers a discard card. +1 composer: pending with other players' names). Against the old engine, 5 of the 6 fail. The sentinel replay and hash fixtures are unchanged (no fixture parks Juggernaut's choice). `sim:runtime-observed` regenerated: the sweep's bot now resolves the choice through `getLegalMoves`, so observations moved 7081 → 7098 with the same 78 mechanics and 0 dropped. The dashboard `useInPlayCoverage` totalObs pin moves with it (8007 → 8024; percentResolved stays 15.4). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, and the ledger checks are current.
+
+**Live-verify (D-24026), 2026-09-29: PASS for the Escape (hand) branch.** Production build `f75289b`, match `Y1lA03QkAC9`: Juggernaut's Escape with six starters in hand parked "Choose a Hero to KO (2 remaining)" offering hand cards only; both picks were named in the log and the prompt cleared. The Ambush (discard) branch is still pending (its only reveal hit an empty discard, a correct no-op).
 
 **Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
 

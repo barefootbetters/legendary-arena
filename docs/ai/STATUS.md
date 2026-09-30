@@ -32,8 +32,12 @@ copies. Other players in a multiplayer game still have theirs picked automatical
 - **Engine only.** It reuses the existing KO-a-Hero prompt; no client change.
 - **Counts.** game-engine 4709 → 4715 / 0 fail; `sim:runtime-observed` regenerated (7081 → 7098 observations,
   same 78 mechanics); other CI data gates current; no replay or hash re-pin.
-- **Live-verify (D-24026):** pending. Reveal Juggernaut with 3+ different Heroes in your discard pile → the prompt
-  asks for two, from the discard only.
+- **Live-verify (D-24026): PASS for the Escape (hand) branch (2026-09-29, Claude in the built-in browser, production
+  build `f75289b`).** Guest match `Y1lA03QkAC9`, turn 11: Juggernaut escaped with six S.H.I.E.L.D. starters in hand and
+  the prompt read "Choose a Hero to KO (2 remaining)", offering only "From Your Hand" (Agent, Trooper; copies shown
+  once). The log read "Escape effect: the active player must KO a hero.", then each pick was named ("KO'd S.H.I.E.L.D.
+  Agent", "KO'd S.H.I.E.L.D. Trooper") and the prompt cleared. The Ambush (discard) branch was not exercised: the
+  turn-3 Ambush hit an empty discard pile, a correct no-op. It shares the same parker, so it stays pending.
 
 ### D-24645 — Magneto's Xavier's Nemesis and Electromagnetic Bubble now count X-Men Heroes in your hand (direct fix) (2026-09-29)
 
@@ -128,9 +132,12 @@ a retry. Signed-in play is unchanged. Delivers the Access Model's free solo tast
   fails the drift pin; the old sign-in bounce fails the signed-out tests.
 - **Known limitation.** A signed-in visitor who clicks before their session hydrates is treated as signed
   out and gets a guest match (the D-24636 hydration race); an `isSessionHydrating` flag is a follow-up.
-- **Live-verify (D-24026):** pending. Private window → `/` shows the guest line → Enter Arena → a guest
-  Magneto / Midtown match on the Battle Brief → play to a real gameover → "Sign in to save your results".
-  Signed in → the authed path, unchanged.
+- **Live-verify (D-24026): PASS (2026-09-29, Claude in the built-in browser, signed out, production build `f75289b`).**
+  `/` showed "You’ll play as a guest. Sign in to save your results." → Enter Arena created guest match `Y1lA03QkAC9`
+  on the Battle Brief (Magneto / Brotherhood / Sentinel vs Midtown Bank Robbery; Spider-Man, Hulk, Wolverine) → played
+  to a real engine gameover on turn 15 ("Outcome: scheme-wins", 8/8 Bystanders carried away) → the endgame showed
+  "Sign in to save your results" with a Sign in link to `?route=login`, and no API error in the console. Signed in,
+  the authed path is unchanged (D-24640 live-verify, match `L8zjajy1P-n`, score submitted as @jeff).
 
 ### WP-787 — Production live-verify PASS: the guest-solo rate limit keys per connection (D-24026) (2026-09-29)
 
