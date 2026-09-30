@@ -45895,4 +45895,19 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24631 — Deck-top discards count as "you discarded" (Drafted 2026-09-28; not yet landed — WP-784 / EC-821)
+
+**Context.** D-24616 §4 counted only card-effect hand discards toward `cardsDiscardedThisTurnAtLeast` (New Wings, Pumpkin Bombs), leaving deck-top discards as an open ruling. Jeff ruled (2026-09-28) that a card discarded from the top of a deck is "you discarded". The rulebook's own Berserk text uses the same verb ("discard the top card of your deck").
+
+**Decision.**
+1. "Discarded this turn" = card-effect hand discards + deck-top discards to the discard pile. Cleanup, gained cards, and KOs do not count.
+2. The existing gated counter is exported as `recordCardDiscardedThisTurn(G, playerID, count = 1)`. It is the single writer of `G.cardsDiscardedThisTurn`, called by `discardFromHand` and after each successful move at the eight deck→discard sites, for the DECK OWNER (reveal-top-dispose's `ownerPlayerID`; each player for Steal Abilities and the Doctor Octopus strike). Owner-keyed per D-24616 §2: the discard is the deck owner's, not the chooser's, so the active player choosing to discard another player's deck top (Hypnotic Charm's others variant) is not credited. (Confirmed by Jeff 2026-09-29: the discard counts only for the deck's owner.) A non-active owner's entry is never read that turn and is deleted at the turn boundary.
+3. No new chokepoint helper: the sites carry contracts one helper would break (a `found` return that aborts a reveal rule, an empty-deck reshuffle, data-driven primitive zones, a batch deck rebuild). A drift guard pins the set of files using the deck→discard idiom so a new site cannot silently skip counting.
+4. Reactions (return-on-discard, teleport-on-discard) stay hand-only; a deck-top trigger for them is a separate ruling.
+5. Gating, laziness, the turn-boundary deletes, and the sentinel-hash posture are unchanged from D-24616. Stored competitive rows stay frozen (D-24616 §5).
+
+**Reserved by:** NUMBER-LEDGER D-24631. Related: D-24616 (§4 revised), D-24301, D-24377, D-24582, D-24401, D-24580, D-24512, D-24200, D-24288, D-24521.
+
+---
+
 Protect this file.
