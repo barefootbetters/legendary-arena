@@ -1,5 +1,5 @@
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue';
+import { computed, defineComponent, inject, ref, type Ref } from 'vue';
 
 import { useAuthStore } from '../stores/auth';
 import { launchMatchFromComposition } from './useCreateMatchFromComposition';
@@ -37,7 +37,8 @@ function guestErrorMessage(status: number | undefined): string {
  * It shows the featured encounter and one Enter Arena button. Signed in, it
  * creates and joins the featured solo table through the existing launcher;
  * signed out, it starts a guest solo match on the same table (WP-788 / D-24636).
- * It makes no request on mount; today's lobby stays reachable as the Workshop.
+ * While the session is still hydrating it takes neither path (D-24640). It
+ * makes no request on mount; today's lobby stays reachable as the Workshop.
  */
 export default defineComponent({
   name: 'ArenaEntrance',
@@ -45,8 +46,16 @@ export default defineComponent({
     const authStore = useAuthStore();
     const isEntering = ref(false);
     const errorMessage = ref('');
+    // why: D-24640 — App.vue hydrates the session in the background here, so
+    // `token === null` means "signed out" only once hydration settles; a click
+    // before then would start a guest match for a signed-in player. The false
+    // default keeps a mount without App (tests, isolated renders) on the
+    // WP-788 behavior instead of locking the button forever.
+    const isSessionHydrating = inject<Ref<boolean>>('isSessionHydrating', ref(false));
 
-    const isSignedOut = computed<boolean>(() => authStore.token === null);
+    const isSignedOut = computed<boolean>(
+      () => !isSessionHydrating.value && authStore.token === null,
+    );
     const enterLabel = computed<string>(() => {
       if (isEntering.value) {
         return 'Entering…';
@@ -78,11 +87,12 @@ export default defineComponent({
 
     /**
      * Creates and joins the featured table, or starts a guest match for a
-     * signed-out visitor. The latch blocks a second click; it stays set on
-     * success because the page is already navigating to the play route.
+     * signed-out visitor. Does nothing while the session is hydrating. The
+     * latch blocks a second click; it stays set on success because the page
+     * is already navigating to the play route.
      */
     async function enterArena(): Promise<void> {
-      if (isEntering.value) {
+      if (isEntering.value || isSessionHydrating.value) {
         return;
       }
       const authToken = authStore.token;
@@ -107,6 +117,7 @@ export default defineComponent({
     return {
       labels: FEATURED_TABLE_LABELS,
       isEntering,
+      isSessionHydrating,
       isSignedOut,
       enterLabel,
       errorMessage,
@@ -134,11 +145,19 @@ export default defineComponent({
           type="button"
           class="arena-entrance__enter"
           data-testid="arena-enter"
-          :disabled="isEntering"
+          :disabled="isEntering || isSessionHydrating"
           @click="enterArena"
         >
           {{ enterLabel }}
         </button>
+        <p
+          v-if="isSessionHydrating"
+          class="arena-entrance__helper"
+          data-testid="arena-checking-sign-in"
+          role="status"
+        >
+          Checking your sign-in…
+        </p>
         <p v-if="isSignedOut" class="arena-entrance__helper">
           You’ll play as a guest.
           <a href="?route=login" data-testid="arena-sign-in-link">Sign in</a>

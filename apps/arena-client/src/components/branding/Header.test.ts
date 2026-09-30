@@ -3,7 +3,7 @@ import '../../testing/jsdom-setup';
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import Header from './Header.vue';
@@ -14,6 +14,7 @@ import { useAuthStore } from '../../stores/auth';
  */
 function mountHeader(options?: {
   isBootstrapping?: boolean;
+  isHydrating?: boolean;
   token?: string | null;
 }) {
   const pinia = createPinia();
@@ -28,6 +29,7 @@ function mountHeader(options?: {
       plugins: [pinia],
       provide: {
         isAuthBootstrapping: ref(options?.isBootstrapping ?? false),
+        isSessionHydrating: ref(options?.isHydrating ?? false),
       },
     },
   });
@@ -79,6 +81,50 @@ describe('BrandHeader auth nav (WP-175)', () => {
         wrapper.find('[data-testid="auth-nav-sign-out"]').exists(),
         false,
       );
+    });
+  });
+
+  // why: D-24641 — on the lobby / live routes isAuthBootstrapping is false
+  // while the session hydrates in the background; the nav must not show a
+  // signed-in player "Sign in" during that window.
+  describe('background session hydration (D-24641)', () => {
+    test('while the session hydrates, the placeholder shows and "Sign in" does not', () => {
+      const wrapper = mountHeader({ isBootstrapping: false, isHydrating: true });
+      assert.equal(wrapper.find('[data-testid="auth-nav-bootstrapping"]').exists(), true);
+      assert.equal(wrapper.find('[data-testid="auth-nav-sign-in"]').exists(), false);
+    });
+
+    test('when hydration settles with a token, the signed-in nav replaces the placeholder', async () => {
+      const isSessionHydrating = ref(true);
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const wrapper = mount(Header, {
+        global: {
+          plugins: [pinia],
+          provide: { isAuthBootstrapping: ref(false), isSessionHydrating },
+        },
+      });
+      useAuthStore().bootstrapFromCachedToken('tok-1');
+      isSessionHydrating.value = false;
+      await nextTick();
+      assert.equal(wrapper.find('[data-testid="auth-nav-bootstrapping"]').exists(), false);
+      assert.equal(wrapper.find('[data-testid="auth-nav-sign-in"]').exists(), false);
+      assert.equal(wrapper.find('[data-testid="auth-nav-sign-out"]').exists(), true);
+    });
+
+    test('when hydration settles with no session, "Sign in" appears', async () => {
+      const isSessionHydrating = ref(true);
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const wrapper = mount(Header, {
+        global: {
+          plugins: [pinia],
+          provide: { isAuthBootstrapping: ref(false), isSessionHydrating },
+        },
+      });
+      isSessionHydrating.value = false;
+      await nextTick();
+      assert.equal(wrapper.find('[data-testid="auth-nav-sign-in"]').exists(), true);
     });
   });
 

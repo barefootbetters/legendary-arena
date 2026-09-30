@@ -27,6 +27,7 @@ import {
   getCurrentTokenFromHandle,
   initializeHankoClient,
   subscribeToSessionEvents,
+  type HankoClientInitOptions,
 } from './auth/hankoClient';
 import { isGuardedRoute, shouldHydrateSession } from './auth/routeAuthPolicy';
 import { useAuthStore } from './stores/auth';
@@ -260,6 +261,17 @@ export default defineComponent({
       type: String as () => string | null,
       default: null,
     },
+    // why: D-24640 testing seam, same posture as `searchOverride`. node:test
+    // has no broker tenant, so the background hydration never runs; a test
+    // passes a tenant URL plus a fake broker factory to hold hydration open.
+    // Production callers never pass it.
+    hankoOverride: {
+      type: Object as () => {
+        readonly tenantBaseUrl: string;
+        readonly factory: NonNullable<HankoClientInitOptions['__hankoFactory']>;
+      } | null,
+      default: null,
+    },
   },
   setup(props) {
     // why: WP-378 — the single analytics instrumentation mount point. Observes
@@ -333,8 +345,17 @@ export default defineComponent({
     const isAuthBootstrapping = ref(routeIsGuarded);
     provide('isAuthBootstrapping', isAuthBootstrapping);
 
+    // why: D-24640 — the lobby's background hydration left no signal, so the
+    // Arena entrance read `token === null` mid-hydration as "signed out" and a
+    // signed-in click started a guest match. `isSessionHydrating` is true only
+    // while the broker call is in flight, on every hydrating route; it is kept
+    // apart from `isAuthBootstrapping`, which also gates render. Provided like
+    // `isAuthBootstrapping` (D-17501): transient app lifecycle, not auth state.
+    const isSessionHydrating = ref(false);
+    provide('isSessionHydrating', isSessionHydrating);
+
     if (shouldHydrateSession(initialRoute) === true) {
-      const tenantBaseUrl = readTenantBaseUrl();
+      const tenantBaseUrl = props.hankoOverride?.tenantBaseUrl ?? readTenantBaseUrl();
       if (tenantBaseUrl === '') {
         // why: no tenant configured (test runs, missing build-time env). A
         // guarded route routes immediately to the LoginPage's 'unavailable'
@@ -346,9 +367,14 @@ export default defineComponent({
         }
         isAuthBootstrapping.value = false;
       } else {
+        isSessionHydrating.value = true;
         void (async () => {
           try {
-            const handle = await initializeHankoClient({ tenantBaseUrl });
+            const initOptions: HankoClientInitOptions =
+              props.hankoOverride === null
+                ? { tenantBaseUrl }
+                : { tenantBaseUrl, __hankoFactory: props.hankoOverride.factory };
+            const handle = await initializeHankoClient(initOptions);
             const token = getCurrentTokenFromHandle(handle);
             if (token === null) {
               // why: only a guarded route redirects to login when no cached
@@ -391,6 +417,7 @@ export default defineComponent({
             }
           } finally {
             isAuthBootstrapping.value = false;
+            isSessionHydrating.value = false;
           }
         })();
       }
