@@ -511,8 +511,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // mechanics, 0 dropped; gate-only 462 -> 470, man-out-of-time 93 -> 83, rule:sidekick
   // 47 -> 43). totalObs 8024 -> 8018 (-6, equal to the raw feed drop); resolvedObs stays 1235,
   // so percentResolved stays 15.4. A sweep-trajectory artifact, not a regression.
+  // 2026-09-29 (D-24622, re-pin): every icon on a [keyword:Lightshow] line is suppressed at
+  // parse, so the 14 xmen Lightshow lines are honest lightshow hollows instead of phantom
+  // grants, and the xmen boards' fixed-seed trajectories shift with the lost free resources
+  // (feed regenerated on top of #2449: 7092 -> 7102 raw observations; lightshow 66 -> 100,
+  // piercing-energy 140 -> 133, soaring-flight 278 -> 268, x-gene 25 -> 18). Against the seed
+  // peaks (lightshow 69, x-gene 23) that is +31 -7 -10 -2: totalObs 8018 -> 8030. resolvedObs
+  // stays 1235, so percentResolved stays 15.4 (1235 / 8030). Newly visible hollow surface.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8018);
+  assert.equal(view.totalObs.value, 8030);
   assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });

@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 2651,
+    "executable": 2616,
     "heroes": 324,
     "hooks": 6380,
-    "noEffect": 2601,
+    "noEffect": 2636,
     "parsedNotExecuted": 1128
   },
   "perSet": {
@@ -208,9 +208,9 @@
       "noEffect": 121
     },
     "xmen": {
-      "executable": 160,
+      "executable": 125,
       "hooks": 367,
-      "noEffect": 183
+      "noEffect": 218
     }
   },
   "schemaVersion": 1,
