@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7081,
+    "totalObservations": 7098,
     "hollowEffectsDropped": 0,
     "byReason": {
-      "no-handler": 514,
+      "no-handler": 518,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 6567
+      "parse-unrecognized": 6580
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 171,
+      "hitCount": 175,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 171
+        "parse-unrecognized": 175
       },
       "examples": [
         {
@@ -346,7 +346,7 @@
     },
     "burn-2-shards": {
       "hitCount": 42,
-      "lastSeenTurn": 28,
+      "lastSeenTurn": 27,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -386,12 +386,12 @@
       ]
     },
     "burn-4-shards": {
-      "hitCount": 5,
-      "lastSeenTurn": 26,
+      "hitCount": 7,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 5
+        "parse-unrecognized": 7
       },
       "examples": [
         {
@@ -407,7 +407,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "cosm/adam-warlock/soulblast#1",
+          "cardId": "cosm/adam-warlock/soulblast#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -419,7 +419,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "cosm/adam-warlock/soulblast#2",
+          "cardId": "cosm/adam-warlock/soulblast#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -667,14 +667,20 @@
       ]
     },
     "cyber-mod": {
-      "hitCount": 9,
+      "hitCount": 10,
       "lastSeenTurn": 22,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 9
+        "parse-unrecognized": 10
       },
       "examples": [
+        {
+          "cardId": "2099/ghost-rider-2099/cyber-specter#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "2099/ghost-rider-2099/cyber-specter#0",
           "cardType": "hero",
@@ -698,22 +704,16 @@
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "2099/ghost-rider-2099/cyber-specter#3",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
         }
       ]
     },
     "danger-sense": {
-      "hitCount": 357,
+      "hitCount": 352,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 357
+        "parse-unrecognized": 352
       },
       "examples": [
         {
@@ -1064,12 +1064,12 @@
       ]
     },
     "fated-future": {
-      "hitCount": 15,
+      "hitCount": 17,
       "lastSeenTurn": 23,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 17
       },
       "examples": [
         {
@@ -1146,12 +1146,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 460,
+      "hitCount": 462,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 460
+        "parse-unrecognized": 462
       },
       "examples": [
         {
@@ -1433,12 +1433,12 @@
       ]
     },
     "lightshow": {
-      "hitCount": 67,
+      "hitCount": 66,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 67
+        "parse-unrecognized": 66
       },
       "examples": [
         {
@@ -1843,12 +1843,12 @@
       ]
     },
     "piercing-energy": {
-      "hitCount": 143,
+      "hitCount": 140,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 143
+        "parse-unrecognized": 140
       },
       "examples": [
         {
@@ -1995,12 +1995,12 @@
       ]
     },
     "rule:shard": {
-      "hitCount": 415,
+      "hitCount": 424,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 415
+        "parse-unrecognized": 424
       },
       "examples": [
         {
@@ -2200,12 +2200,12 @@
       ]
     },
     "soaring-flight": {
-      "hitCount": 276,
+      "hitCount": 278,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 276
+        "parse-unrecognized": 278
       },
       "examples": [
         {
@@ -2714,10 +2714,10 @@
       ]
     },
     "undercover": {
-      "hitCount": 514,
+      "hitCount": 518,
       "lastSeenTurn": 30,
       "byReason": {
-        "no-handler": 514,
+        "no-handler": 518,
         "unsupported-keyword": 0,
         "parse-unrecognized": 0
       },
@@ -2772,12 +2772,12 @@
       ]
     },
     "versatile": {
-      "hitCount": 161,
+      "hitCount": 163,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 161
+        "parse-unrecognized": 163
       },
       "examples": [
         {
@@ -3018,12 +3018,12 @@
       ]
     },
     "x-gene": {
-      "hitCount": 27,
+      "hitCount": 25,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 27
+        "parse-unrecognized": 25
       },
       "examples": [
         {

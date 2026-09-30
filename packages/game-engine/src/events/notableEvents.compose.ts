@@ -109,6 +109,11 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     // picks via resolveKoHeroChoice later, so name no target here. The resolved
     // hero IS named at resolve time — resolveKoHeroChoice pushes a "Player N KO'd
     // <name>" log line (the WP-316 §Scope Out resolve-time-naming follow-up).
+    if (result.targetNames.length > 0) {
+      // why: D-24644 — an each-player KO parks only the active player's pick; the
+      // other players' auto-KOs already happened and are still named.
+      return `the active player must KO a hero; other players KO’d ${result.targetNames.join(', ')}`;
+    }
     return 'the active player must KO a hero';
   }
   const label = labelForEffect(result.keyword);
