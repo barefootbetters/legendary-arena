@@ -45879,4 +45879,20 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24637 — Auto-resolving reveals always show the revealed card (Drafted 2026-09-29; not yet landed — WP-789 / EC-826)
+
+**Context.** D-24547 (WP-726) surfaced the auto-resolving deck-top reveal family on the `heroEffectResolved` overlay, but §2 emitted only when a reveal "realized work", and the event carried no card id. In Jeff's match `b8KeKuLE5Tb` (1p Red Skull), every Card Shark miss (a non-X-Men card left on top) emitted nothing, and hits / High Stakes Jackpot showed a text line only — so the player was never shown the card that is now their next draw. D-24547 named the card image (`revealedCardId`) as a follow-up.
+
+**Decision.**
+1. `applyRevealRules` emits one `heroEffectResolved` event for EVERY non-parking reveal, hit or miss (revises D-24547 §2). A miss reads `"<source>" revealed "<card>" (cost N) — left on top.` Parking reveals (`choose-discard-or-return`) still emit nothing (their prompt shows the card).
+2. `HeroEffectResolvedEvent` gains optional `revealedCardId?: CardExtId`, set only by that emit (mirrors `ambushResolved` / `bystanderRevealed`). A revealed card is public at the table, so the public projection carries it.
+3. A revealed card often stays in the deck, outside every projected zone, so `UIState.notableEventCards?: UIDisplayEntry[]` (public, one entry per distinct `revealedCardId`, omitted when none) carries its display. The arena-client folds it into the overlay's card lookup and renders the card's name and image for `heroEffectResolved` only. No client rule logic (D-20105).
+3a. Multi-card reveals: when a reveal is marked `reorderRemainder`, ALL its events are buffered in reveal order; after the reveal, all are emitted if no reorder prompt parked, otherwise only the hits (the prompt already shows the remainder). Every other reveal — single-card, or multi-card without a reorder marker (e.g. the co2e Spider-Man card, whose missing `reveal-reorder` marker is a separate data fix) — raises one overlay per revealed card, hit or miss, each with the WP-697 sound; that volume is intended (a reveal is shown). Residual edge: a reorder-family HIT that leaves the card on the deck would double-surface; no current card does.
+3b. Size: `notableEventCards` grows monotonically with the append-only `G.notableEvents`, bounded by the distinct per-copy revealed ids (at most roughly each player's deck size), and is sent on every frame.
+4. Display-only: game state, the reveal grant, deck order and the `G.messages` line are byte-identical; `G.notableEvents` changes only for reveal-family plays, and the core sentinel plays none (hash oracles unchanged). Accepted window: because `G.notableEvents` is hashed, a competitive match captured before the deploy with a reveal event but submitted after it fails replay verification (competition.logic ~L833) — the same window WP-726 carried; it closes as pre-deploy matches age out.
+
+**Reserved by:** NUMBER-LEDGER D-24637. Related: D-24547 (§2 revised), D-24516, D-12803, D-20002, D-20105.
+
+---
+
 Protect this file.
