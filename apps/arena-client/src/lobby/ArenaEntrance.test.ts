@@ -2,6 +2,7 @@ import '../testing/jsdom-setup';
 
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { ref } from 'vue';
 import { setActivePinia, createPinia } from 'pinia';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 
@@ -250,4 +251,64 @@ test('any other failure, or a network error with no status, shows the generic co
   await flushPromises();
   assert.equal(networkError.find('[data-testid="arena-enter-error"]').text(), generic);
   assert.equal(networkError.find('[data-testid="arena-enter"]').attributes('disabled'), undefined);
+});
+
+/**
+ * Mounts the entrance with App's `isSessionHydrating` flag provided, signed out
+ * until the test sets a session (the moment hydration would populate it).
+ *
+ * @returns The mounted wrapper and the provided flag.
+ */
+function mountHydratingEntrance() {
+  setActivePinia(createPinia());
+  const isSessionHydrating = ref(true);
+  const wrapper = mount(ArenaEntrance, {
+    global: { provide: { isSessionHydrating } },
+  });
+  return { wrapper, isSessionHydrating };
+}
+
+// why: D-24640 — amends D-24636 §5. A signed-in visitor whose session is still
+// hydrating has `token === null`; the entrance must not read that as signed out.
+test('while the session hydrates: button disabled, "Checking your sign-in…" shown, no guest helper, and a click sends nothing', async () => {
+  stubLaunchSuccess();
+  const { wrapper } = mountHydratingEntrance();
+  const button = wrapper.find('[data-testid="arena-enter"]');
+  assert.equal(button.attributes('disabled'), '');
+  assert.equal(button.text(), 'Enter Arena');
+  assert.equal(wrapper.find('[data-testid="arena-checking-sign-in"]').text(), 'Checking your sign-in…');
+  assert.equal(wrapper.find('[data-testid="arena-sign-in-link"]').exists(), false);
+  assert.doesNotMatch(wrapper.text(), /You’ll play as a guest/);
+  button.element.removeAttribute('disabled');
+  await button.trigger('click');
+  await flushPromises();
+  assert.equal(recordedRequests.length, 0);
+});
+
+test('hydration settling signed in: the click takes the signed-in create + join, never create-guest-solo', async () => {
+  stubLaunchSuccess();
+  const { wrapper, isSessionHydrating } = mountHydratingEntrance();
+  useAuthStore().bootstrapFromCachedToken('token-1');
+  isSessionHydrating.value = false;
+  await flushPromises();
+  assert.equal(wrapper.find('[data-testid="arena-checking-sign-in"]').exists(), false);
+  assert.equal(wrapper.find('[data-testid="arena-sign-in-link"]').exists(), false);
+  await wrapper.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(recordedRequests.some((request) => request.url.endsWith('/api/match/create-guest-solo')), false);
+  assert.ok(recordedRequests[0]!.url.endsWith('/api/match/create'));
+  assert.ok(recordedRequests[1]!.url.endsWith('/api/match/join'));
+});
+
+test('hydration settling signed out: the guest helper appears and the click starts a guest match', async () => {
+  stubGuestFailure(503);
+  const { wrapper, isSessionHydrating } = mountHydratingEntrance();
+  isSessionHydrating.value = false;
+  await flushPromises();
+  assert.equal(wrapper.find('[data-testid="arena-checking-sign-in"]').exists(), false);
+  assert.match(wrapper.text(), /You’ll play as a guest\. Sign in to save your results\./);
+  await wrapper.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(recordedRequests.length, 1);
+  assert.ok(recordedRequests[0]!.url.endsWith('/api/match/create-guest-solo'));
 });

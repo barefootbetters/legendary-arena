@@ -70,6 +70,7 @@ afterEach(() => {
  */
 function mountAuthNav(options?: {
   isBootstrapping?: boolean;
+  isHydrating?: boolean;
   token?: string | null;
 }): { state: AuthNavState; pinia: ReturnType<typeof createPinia> } {
   const pinia = createPinia();
@@ -94,6 +95,7 @@ function mountAuthNav(options?: {
       plugins: [pinia],
       provide: {
         isAuthBootstrapping: ref(options?.isBootstrapping ?? false),
+        isSessionHydrating: ref(options?.isHydrating ?? false),
       },
     },
   });
@@ -155,6 +157,22 @@ describe('useAuthNav (WP-175)', () => {
     mountAuthNav({ token: 'tok-abc' });
     await flushPromises();
     assert.equal(fetchCallCount, 1);
+  });
+
+  test('D-24641: isBootstrapping is true while the session hydrates, even with isAuthBootstrapping false', () => {
+    const { state } = mountAuthNav({ isBootstrapping: false, isHydrating: true });
+    assert.equal(state.isBootstrapping.value, true);
+  });
+
+  test('D-24641: no owner-profile fetch while a signed-in session is still hydrating', async () => {
+    let profileFetches = 0;
+    stubFetch(() => {
+      profileFetches += 1;
+      return new Response('{}', { status: 401 });
+    });
+    mountAuthNav({ isBootstrapping: false, isHydrating: true, token: 'tok-1' });
+    await flushPromises();
+    assert.equal(profileFetches, 0);
   });
 
   test('isBootstrapping defaults to true when no provide is injected', () => {

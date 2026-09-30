@@ -12,7 +12,7 @@
  *      count against, and names where it came from so a caller can log the source
  *      without ever logging the address itself.
  *   3. `normalizeRateLimitAddress(address)` — groups an IPv6 address to its /64
- *      prefix (D-24640), so a caller cannot mint fresh buckets by rotating
+ *      prefix (D-24642), so a caller cannot mint fresh buckets by rotating
  *      addresses inside its own /64.
  *
  * // why: this is the third token-bucket copy in apps/server (analytics,
@@ -24,7 +24,7 @@
  * Process-local: a restart resets every bucket, and a multi-instance deploy
  * shares no state (the D-20503 / D-24094 posture).
  *
- * Authority: WP-787; EC-824; D-24635 (§3 amended by D-24640); D-24441 and
+ * Authority: WP-787; EC-824; D-24635 (§3 amended by D-24642); D-24441 and
  * D-20503 (the pattern copied).
  */
 
@@ -108,7 +108,7 @@ export function resolveRateLimitKey(koaContext) {
  *
  * // why: /64 is the smallest IPv6 block a single subscriber is normally
  * assigned, and a host picks addresses inside it at will (privacy addresses), so
- * keying the full address hands a caller a fresh bucket per rotation (D-24640).
+ * keying the full address hands a caller a fresh bucket per rotation (D-24642).
  * Hosts sharing one /64 now share a bucket, the same as hosts behind one IPv4
  * NAT address today.
  *

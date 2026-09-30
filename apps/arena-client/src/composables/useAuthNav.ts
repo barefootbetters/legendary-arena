@@ -35,7 +35,7 @@ import { useAuthStore } from '../stores/auth';
 /** Reactive return shape of the auth-nav composable. */
 export interface AuthNavState {
   readonly isSignedIn: ComputedRef<boolean>;
-  readonly isBootstrapping: Ref<boolean>;
+  readonly isBootstrapping: ComputedRef<boolean>;
   readonly displayLabel: Ref<string>;
   readonly signOut: () => Promise<void>;
 }
@@ -102,7 +102,16 @@ export function useAuthNav(): AuthNavState {
   // NOT stored in the Pinia auth store. The ref(true) default is fail-safe:
   // if the provide is missing, the nav renders the bootstrapping placeholder
   // rather than flashing the signed-out state.
-  const isBootstrapping = inject('isAuthBootstrapping', ref(true));
+  const isAuthBootstrapping = inject('isAuthBootstrapping', ref(true));
+  // why: D-24641 — on the lobby and live routes App.vue hydrates the session
+  // in the background with isAuthBootstrapping already false, so the nav
+  // showed "Sign in" to a signed-in player until the token arrived. The
+  // placeholder now also covers that window. The false default leaves a
+  // mount without App on isAuthBootstrapping alone.
+  const isSessionHydrating = inject('isSessionHydrating', ref(false));
+  const isBootstrapping: ComputedRef<boolean> = computed(
+    () => isAuthBootstrapping.value || isSessionHydrating.value,
+  );
 
   // why: starts at the fallback and is updated only when the owner-profile
   // fetch resolves ok — the header never blocks on the network (WP-330).

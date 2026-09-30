@@ -77,7 +77,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.deepEqual(fromNothing, { key: 'unknown', source: 'unknown' });
   });
 
-  test('two IPv6 addresses in one /64 share a key; compressed and expanded forms agree (D-24640)', () => {
+  test('two IPv6 addresses in one /64 share a key; compressed and expanded forms agree (D-24642)', () => {
     const compressed = resolveRateLimitKey(contextWithConnectingIp('2607:fb90:8704:ead::1'));
     const rotated = resolveRateLimitKey(contextWithConnectingIp('2607:fb90:8704:ead:a1b2:c3d4:e5f6:789'));
     const expanded = resolveRateLimitKey(contextWithConnectingIp('2607:FB90:8704:0EAD:0000:0000:0000:0001'));
@@ -86,7 +86,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.equal(expanded.key, compressed.key);
   });
 
-  test('IPv6 addresses in different /64s get different keys (D-24640)', () => {
+  test('IPv6 addresses in different /64s get different keys (D-24642)', () => {
     const first = normalizeRateLimitAddress('2607:fb90:8704:ead::1');
     const neighbour = normalizeRateLimitAddress('2607:fb90:8704:eae::1');
     const prefixOnly = normalizeRateLimitAddress('2001:db8::1');
@@ -95,7 +95,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.equal(prefixOnly, '2001:db8:0:0::/64');
   });
 
-  test('a /64 key shares one bucket across rotated addresses (D-24640)', () => {
+  test('a /64 key shares one bucket across rotated addresses (D-24642)', () => {
     const clock = makeClock(1_000);
     const limiter = createTokenBucketRateLimiter({ capacity: 1, windowMs: 60_000, now: clock.now });
     const first = resolveRateLimitKey(contextWithConnectingIp('2607:fb90:8704:ead::1'));
@@ -104,7 +104,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.equal(limiter.consume(rotated.key, 1), false, 'rotating inside the /64 does not mint a fresh bucket');
   });
 
-  test('IPv4 keys are unchanged (D-24640)', () => {
+  test('IPv4 keys are unchanged (D-24642)', () => {
     assert.deepEqual(resolveRateLimitKey(contextWithConnectingIp('198.51.100.4')), {
       key: '198.51.100.4',
       source: 'cf-connecting-ip',
@@ -113,7 +113,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.equal(normalizeRateLimitAddress('unknown'), 'unknown');
   });
 
-  test('an IPv4-mapped IPv6 address is keyed as its IPv4 address (D-24640)', () => {
+  test('an IPv4-mapped IPv6 address is keyed as its IPv4 address (D-24642)', () => {
     assert.equal(normalizeRateLimitAddress('::ffff:198.51.100.4'), '198.51.100.4');
     assert.equal(normalizeRateLimitAddress('::FFFF:c633:6404'), '198.51.100.4');
     assert.equal(normalizeRateLimitAddress('0:0:0:0:0:ffff:198.51.100.4'), '198.51.100.4');
@@ -121,7 +121,7 @@ describe('tokenBucketRateLimiter (WP-787)', () => {
     assert.deepEqual(fromSocket, { key: '10.0.0.1', source: 'request.ip' });
   });
 
-  test('malformed IPv6-looking input is left as-is (D-24640)', () => {
+  test('malformed IPv6-looking input is left as-is (D-24642)', () => {
     const malformed = [
       '2607:fb90::8704::1',
       '2607:fb90:8704:ead:1:2:3:4:5',

@@ -7,7 +7,7 @@
 
 ## Current State
 
-### D-24640 — Guest-solo rate limit groups an IPv6 caller by its /64 (direct fix) (2026-09-29)
+### D-24642 — Guest-solo rate limit groups an IPv6 caller by its /64 (direct fix) (2026-09-29)
 
 **Server hardening, no visible change for a normal player.** A signed-out visitor on IPv6 can no longer
 get a fresh 5-per-minute guest-solo allowance by rotating addresses inside their own /64. An IPv4-mapped
@@ -18,6 +18,30 @@ IPv6 caller now shares its IPv4 address's allowance.
 - **Counts.** server 1651 → 1657 tests / 0 fail (1445 → 1451 pass; 206 DB-backed skips unchanged).
 - **Live-verify (D-24026):** pending. From an IPv6 connection, 5 creates → 200 then 429; a create from a
   second address in the same /64 → still 429.
+
+### D-24641 — The header no longer shows "Sign in" to a signed-in player while their sign-in loads (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On the landing page and in a match, the header's
+account area shows its "..." placeholder while the sign-in loads, then the player's name and Sign out (or
+**Sign in** for a signed-out visitor). Before, a signed-in player briefly saw **Sign in**.
+
+- **Client only.** `useAuthNav.ts` also waits on D-24640's `isSessionHydrating`. No server change.
+- **Counts.** arena-client 2212 → 2217 / 0 fail; vue-tsc 0.
+- **Live-verify (D-24026):** pending. Signed in, hard-reload the bare URL → the header shows "..." and never
+  "Sign in" before the signed-in nav appears.
+
+### D-24640 — The Arena entrance waits for your sign-in to load before Enter Arena (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A signed-in player who opens the landing page no
+longer risks a guest match by clicking **Enter Arena** too early: while the sign-in loads, the button is disabled
+and reads "Checking your sign-in…" underneath, and the guest line only appears once the visitor is known to be
+signed out. Their match is then created signed in, so its result can be saved.
+
+- **Client only.** `App.vue` provides `isSessionHydrating`; `ArenaEntrance.vue` waits on it. No server change.
+- **Counts.** arena-client 2206 → 2212 / 0 fail; vue-tsc 0.
+- **Live-verify (D-24026):** pending. Signed in, hard-reload the bare URL → the button is briefly disabled with
+  "Checking your sign-in…" and no guest line → Enter Arena creates a signed-in match (no `create-guest-solo`
+  request in the network panel).
 
 ### D-24639 — Hypnotic Charm in a 1-player game shows that it had no other deck (direct fix) (2026-09-29)
 

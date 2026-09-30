@@ -45830,7 +45830,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-09-29: PASS.** Production keys on `cf-connecting-ip` (Render log line); per-connection limiting holds on two networks (5 × 200 then 429 each; a second network 200). A dual-stack client holds two buckets (IPv4 + IPv6) — bounded by the §3 cap; /64 grouping for IPv6 is an optional hardening follow-up.
 
-**§3 amended by D-24640 (2026-09-29):** an IPv6 key is grouped to its /64 prefix, and an IPv4-mapped IPv6 key is keyed as its IPv4 address.
+**§3 amended by D-24642 (2026-09-29):** an IPv6 key is grouped to its /64 prefix, and an IPv4-mapped IPv6 key is keyed as its IPv4 address.
 
 **Reserved by:** NUMBER-LEDGER D-24635. Related: D-24092, D-24093, D-24094, D-24120, D-24172, D-24437, D-24441, D-24451, D-9905, D-11804, D-24633.
 
@@ -45847,6 +45847,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 4. The client `FEATURED_TABLE` and the server `GUEST_SOLO_FEATURED_TABLE` are pinned equal (same sorted ids, same four counts, with a non-vacuous drifted-table negative) by a test that reads the server file as text (arena-client never imports `apps/server`).
 5. Known limitation: a signed-in visitor who clicks before their session hydrates is treated as signed out and gets a guest match; an `isSessionHydrating` flag is a follow-up.
 6. Supersedes D-24633 §4.
+
+**Amended:** §5 (the hydration race) is resolved by D-24640 (2026-09-29).
 
 **Reserved by:** NUMBER-LEDGER D-24636. Related: D-24092, D-24093 (the authed create/join sign-in redirect still holds for signed-in players), D-24633, D-24635, D-24441 (join-as-guest status mapping precedent), D-24630 (open PR #2483; its session-expired status needs a token, so a guest seat never reaches it).
 
@@ -45881,7 +45883,40 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24640 — Guest-solo rate-limit keys group an IPv6 caller by its /64 (direct fix, no WP) (Active 2026-09-29)
+### D-24640 — The Arena entrance waits for the session to hydrate before choosing guest or signed-in (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** On the bare landing URL, App.vue renders the Arena entrance immediately and hydrates the broker session in the background (PR #547 / `shouldHydrateSession`); `isAuthBootstrapping` stays `false` there, so nothing told the entrance hydration was still in flight. The entrance read `token === null` as "signed out", so a signed-in player who clicked **Enter Arena** before hydration finished got a Casual guest match through `POST /api/match/create-guest-solo` (and briefly saw the guest helper line), and at gameover their submit was refused as `not_owner`. D-24636 §5 recorded this as a known limitation.
+
+**Decision.**
+1. App.vue provides a second injected ref, `isSessionHydrating`, true only while the broker call is in flight on any hydrating route (set before `initializeHankoClient`, cleared in its `finally`); `false` when no tenant is configured. It is kept apart from `isAuthBootstrapping`, which also gates render on guarded routes. Provided via provide/inject like `isAuthBootstrapping` (D-17501): transient app lifecycle, not auth-store state.
+2. While it is true, the entrance disables **Enter Arena**, shows "Checking your sign-in…" (`data-testid="arena-checking-sign-in"`, `role="status"`) in place of the guest helper, and its click handler refuses too. Once it settles, the entrance takes the signed-in path (token present) or the WP-788 guest path (no token), unchanged.
+3. The entrance's inject default is `false`, so a mount without App keeps WP-785/788 behavior rather than locking the button.
+4. App.vue gains a `hankoOverride` testing seam (tenant URL + broker factory), same posture as `searchOverride`; production never passes it.
+5. Amends D-24636 §5 (the limitation is resolved); the rest of D-24636 is unchanged.
+6. Open edge (not changed here): a broker call that never settles leaves the button disabled, the same failure mode a guarded route already has on "Preparing sign-in…".
+
+**Gates.** arena-client 2206 → 2212 / 0 fail (+3 ArenaEntrance: disabled + no request while hydrating, settles signed-in → create + join, settles signed-out → guest; +3 App: a click during a held broker hydration sends no match request then creates signed in, settles with no session → guest, no tenant → never held). Against the unfixed entrance, 3 of the 6 fail. vue-tsc 0.
+
+**Reserved by:** NUMBER-LEDGER D-24640. Related: D-24636 (WP-788, §5 amended), D-24633 (WP-785 entrance), D-24635 (guest-solo create), D-17501 (provide/inject for auth lifecycle flags), PR #547 (lobby background hydration).
+
+---
+
+### D-24641 — The header's auth nav shows its placeholder while the session hydrates in the background (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** The brand header's auth nav (`useAuthNav`, WP-175) shows a "..." placeholder only while `isAuthBootstrapping` is true. On the lobby and `live` routes that flag is `false` from the start and the session hydrates in the background (PR #547), so a signed-in player saw **Sign in** in the header until the token arrived — the same window D-24640 closed on the Arena entrance.
+
+**Decision.**
+1. `useAuthNav`'s `isBootstrapping` becomes a computed of `isAuthBootstrapping || isSessionHydrating` (the D-24640 injected flag). The header shows its placeholder for the whole hydration window on every route, then **Sign in** or the signed-in nav once it settles. The owner-profile fetch waits for the same settle.
+2. The `isSessionHydrating` inject default is `false`, so a mount without App keeps the existing `isAuthBootstrapping`-only behavior (whose own fail-safe `true` default is unchanged).
+3. `AuthNavState.isBootstrapping` is typed `ComputedRef<boolean>` (was `Ref<boolean>`); `Header.vue` reads it the same way.
+
+**Gates.** arena-client 2212 → 2217 / 0 fail (+3 Header: placeholder and no Sign in while hydrating, settles signed in → signed-in nav, settles signed out → Sign in; +2 useAuthNav: bootstrapping true while hydrating, no profile fetch while hydrating). Against the unfixed composable, 3 of the 5 fail. vue-tsc 0.
+
+**Reserved by:** NUMBER-LEDGER D-24641. Related: D-24640 (the `isSessionHydrating` flag), D-17501 (provide/inject for auth lifecycle flags), WP-175 (auth nav), WP-330 / D-24116 (display label fetch), PR #547.
+
+---
+
+### D-24642 — Guest-solo rate-limit keys group an IPv6 caller by its /64 (direct fix, no WP) (Active 2026-09-29)
 
 **Context.** D-24635 §3 keys the guest-solo token bucket (5 creates per minute) on the raw `cf-connecting-ip`, else `request.ip`. The 2026-09-29 live-verify (PR #2513) confirmed per-connection keying in production, but an IPv6 caller is keyed by its full address, and a host picks addresses inside its /64 at will (privacy addresses). Each rotation minted a fresh 5-per-minute bucket; only the process-wide cap bounded it.
 
@@ -45895,7 +45930,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** server 1651 → 1657 tests / 0 fail (+6 limiter tests: one /64 shares a key and a bucket, different /64s differ, IPv4 unchanged, mapped IPv4, malformed left as-is).
 
-**Reserved by:** NUMBER-LEDGER D-24640. Related: D-24635 (§3 amended), D-24441 / D-20503 (the limiter pattern), D-24026 (the live-verify that surfaced it).
+**Reserved by:** NUMBER-LEDGER D-24642. Related: D-24635 (§3 amended), D-24441 / D-20503 (the limiter pattern), D-24026 (the live-verify that surfaced it).
 
 ---
 
