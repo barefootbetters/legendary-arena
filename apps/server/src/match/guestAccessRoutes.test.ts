@@ -305,6 +305,30 @@ describe('join-as-guest (public) (WP-630)', () => {
     assert.equal(sqlLog.length, 0);
   });
 
+  test('the join limit keys per connection (cf-connecting-ip), not the shared proxy hop (D-24647)', async () => {
+    const { database } = makeDatabase({});
+    const { joinAsGuest } = collectHandlers(
+      baseContext({ database, db: makeDb({ players: {} }), guestJoinRateLimitCapacity: 1, now: () => 1000 }),
+    );
+    // why: every production caller shares `request.ip` (the proxy hop), so the
+    // fake gives them all the same one and differs only in cf-connecting-ip.
+    const fromConnection = (address: string): FakeContext => {
+      const context = makeContext({ matchId: 'm1', password: 'whatever' }, { ip: '10.0.0.1' });
+      context.req.headers['cf-connecting-ip'] = address;
+      return context;
+    };
+
+    const first = fromConnection('198.51.100.4');
+    await joinAsGuest(first);
+    assert.notEqual(first.status, 429);
+    const otherCaller = fromConnection('203.0.113.9');
+    await joinAsGuest(otherCaller);
+    assert.notEqual(otherCaller.status, 429, 'a second caller behind the same proxy hop has its own bucket');
+    const firstAgain = fromConnection('198.51.100.4');
+    await joinAsGuest(firstAgain);
+    assert.equal(firstAgain.status, 429, 'the first caller is still limited');
+  });
+
   test('does not log or return the plaintext password on any outcome', async () => {
     const logged: string[] = [];
     const originalError = console.error;

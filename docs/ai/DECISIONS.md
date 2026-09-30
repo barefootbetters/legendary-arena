@@ -22729,6 +22729,8 @@ scope that v1 doesn't need.
 2026-06-03 (execution close — flipped to Active).
 **Status:** Active
 
+**Amended by D-24647 (2026-09-29):** the capture limiter now runs on the shared `tokenBucketRateLimiter.mjs` and keys per connection (`cf-connecting-ip`, IPv6 grouped to its /64), not on `request.ip`, which is the proxy hop every caller shares. Capacity (60 events/min) and per-event semantics are unchanged.
+
 ---
 
 ### D-20601 — Dashboard Analytics LIVE-Flip Posture: Single-Source-of-Truth Gate, Cache-Write-Before-Fetch, Cookie-Credentials Auth, Sentinel Non-Regression, Injectable `now()`, Shared Envelope Guard, Console Policy, Per-Key SPA Cache, `source: 'LIVE'` Literal-Locked
@@ -38989,6 +38991,8 @@ Related: WP-015 (the original generic wound), WP-186 / D-18508 (onEscape fire si
 
 _Active 2026-08-31 (server half landed; client half WP-631 pending). Related: D-24437 (Candidate A/B; the standing-pool rejection this stays clear of), D-24438 (the WP-628 link/QR this complements), D-24120 (the rowless Casual seat it reuses), WP-627 (the add-guest secret-join), WP-205/D-20502 (the per-IP rate-limit + salted-hash precedents)._
 
+**Amended by D-24647 (2026-09-29):** the join-as-guest limiter now runs on the shared `tokenBucketRateLimiter.mjs` and keys per connection (`cf-connecting-ip`, IPv6 grouped to its /64), not on `request.ip`, which is the proxy hop every caller shares. Capacity (10/min) and the rate-limit-before-hash ordering are unchanged.
+
 ---
 
 ### D-24442 — `optional-ko-reward` KO source widens to hand ∪ discard ∪ in-play (Active 2026-08-31 — WP-632 / EC-667)
@@ -45835,7 +45839,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 1. New route `POST /api/match/create-guest-solo`, Auth `guest`, bodyless. It creates a 1-player, **unlisted** match on a **server-fixed** featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank Robbery; Spider-Man, Hulk, Wolverine — identical to WP-785's), joins seat `'0'` as `Guest` over the internal-delegation loopback, and returns `{ matchId, seat, credentials }`. An unauthenticated caller cannot choose a composition.
 2. The seat is rowless (D-24120): no `legendary.*` write of any kind. The match is Casual (D-24172 rule 2) and not submittable (no session → 401; a signed-in caller → `not_owner`). The account wall stays on the second action — save, score, multiplayer — as D-24092 places it. This **amends** D-24092's locked choice: it widens the ungated taste from "the spectator surface" to "the spectator surface plus one solo table".
 3. Abuse bounds: a per-connection token bucket (5 creates per minute) keyed by `cf-connecting-ip`, else `request.ip` (a proxy hop, since Koa `app.proxy` is off), and a process-wide cap of 200 guest-solo creates per rolling 2 hours (503 when full). Both the API host and the direct onrender.com origin answer `Server: cloudflare` (Render's edge is Cloudflare), so the header's delivery and forgeability are unverified until live: a key-source log line and a two-network live check settle it, and the cap is the hard bound either way. Unfinished matches are reaped after 24 h by the existing reaper.
-4. The limiter lives in a shared helper (`tokenBucketRateLimiter.mjs`) because this is the third copy. Moving the analytics and join-as-guest limiters onto it — which also changes their keying away from the proxy hop — is a follow-up.
+4. The limiter lives in a shared helper (`tokenBucketRateLimiter.mjs`) because this is the third copy. Moving the analytics and join-as-guest limiters onto it — which also changes their keying away from the proxy hop — is a follow-up. (Done: D-24647, 2026-09-29.)
 5. `/api/match/create`, `/api/match/join`, the D-24094 native guard, and autoplay are unchanged. D-24094's "an account is required to play a seat by any path" is narrowed for this one server-owned, secret-carrying route (the D-24437 / D-24441 guest seats are precedent). A client adoption WP wires the WP-785 entrance's signed-out Enter Arena to this route.
 
 **Live-verify (D-24026), 2026-09-29: PASS.** Production keys on `cf-connecting-ip` (Render log line); per-connection limiting holds on two networks (5 × 200 then 429 each; a second network 200). A dual-stack client holds two buckets (IPv4 + IPv6) — bounded by the §3 cap; /64 grouping for IPv6 is an optional hardening follow-up.
@@ -46026,6 +46030,22 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Gates.** game-engine 4715 → 4717 / 0 fail (+1 composer zero-target wording, +1 Midtown log names the villain). arena-client 2217 → 2220 / 0 fail (+2 overlay: every keyword labeled, a Bystander titled "Bystander"; +1 a named Bystander keeps its name). One existing test changed its example keyword: it used `koHeroEachPlayer` as the "unknown keyword" case, which is the gap fixed here; it now uses a synthetic keyword and still asserts the raw fallback. vue-tsc 0. Verified that vue-tsc fails when a label is removed. `sim:runtime-observed:check` and `sim:coverage --check` current.
 
 **Reserved by:** NUMBER-LEDGER D-24646. Related: D-20102 (overlay label totality), D-24105 (effect-result narrative), D-24644 (Juggernaut KO choice), D-24026 (the live-verify that surfaced these).
+
+---
+
+### D-24647 — The analytics and join-as-guest limiters use the shared per-connection limiter (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** D-24635 §4 left the analytics capture limiter (D-20503) and the join-as-guest limiter (D-24441) as private token-bucket copies keyed on `request.ip`. With Koa's `app.proxy` off, `request.ip` in production is the Cloudflare → Render proxy hop, which every caller shares. So each limiter was effectively a single bucket for the whole internet. A noisy client could exhaust it for everyone (join-as-guest: 10 attempts/min site-wide), and it never throttled one caller more than the rest. The D-24642 live-verify settled that `cf-connecting-ip` is set by Cloudflare's edge and cannot be forged (a client-supplied one gets 403).
+
+**Decision.**
+1. Both routes use `createTokenBucketRateLimiter` + `resolveRateLimitKey` from `apps/server/src/match/tokenBucketRateLimiter.mjs`. Their private `makeRateLimiter` / `makeGuestJoinRateLimiter` copies are deleted.
+2. The key is the guest-solo key: a non-empty `cf-connecting-ip` (an IPv6 address grouped to its /64, an IPv4-mapped one as its IPv4), else `request.ip`, else `'unknown'`.
+3. Unchanged: the capacities (analytics 60 events/min with per-event consumption; join-as-guest 10 attempts/min), the 60 s whole-window reset, rate-limit-before-parse/hash ordering, the 429 bodies, and the process-local posture.
+4. Accepted: a carrier that rotates IPv4 exit addresses per connection gets a bucket per address (D-24635's follow-up). Join-as-guest's real brute-force bound remains the password's scrypt cost, and analytics has no stronger bound than before.
+
+**Gates.** server 1657 → 1659 tests / 0 fail (+2 route tests: two callers behind the same proxy hop with different `cf-connecting-ip` get separate buckets, and the first stays limited; for analytics, two addresses in one IPv6 /64 share a bucket). Both new tests fail against the pre-migration code.
+
+**Reserved by:** NUMBER-LEDGER D-24647. Related: D-24635 (§4 done), D-24642 (the key's /64 grouping and the forgeability check), D-20503, D-24441, D-11804.
 
 ---
 

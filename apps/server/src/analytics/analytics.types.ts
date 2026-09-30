@@ -83,7 +83,7 @@ export type DateRange = '7d' | '14d' | '30d' | '90d';
 // the analytics surface. Five values total:
 // `'invalid_request'` (400 — validator rejection: bad event_type,
 // out-of-bound timestamp, length-bound violation, etc.);
-// `'rate_limited'` (429 — per-IP rate limit consumed);
+// `'rate_limited'` (429 — per-connection rate limit consumed, D-24647);
 // `'payload_too_large'` (413 — body size cap or batch-event cap);
 // `'unauthorized'` (401 — `SessionValidationErrorCode` collapse per
 // D-10403 account-existence-probe defense);

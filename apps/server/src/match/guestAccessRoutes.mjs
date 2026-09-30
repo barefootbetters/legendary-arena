@@ -8,7 +8,7 @@
  *      host in the match sets an optional game NAME and an optional PASSWORD.
  *      Per-field merge: an absent field is left unchanged; an empty string clears
  *      it (so a rename never wipes the password).
- *   2. `POST /api/match/join-as-guest` (public, per-IP rate-limited) — a walk-up
+ *   2. `POST /api/match/join-as-guest` (public, per-connection rate-limited) — a walk-up
  *      guest with no account types the password; on a match the endpoint mints an
  *      anonymous Casual seat via the shared `mintGuestSeat` (the same rowless
  *      secret-join as add-guest, D-24120) and returns `{ matchId, seat, credentials }`.
@@ -26,7 +26,8 @@
  * Authority: WP-630; EC-665; D-24441 (Candidate B password variant); D-24120
  * (rowless non-account seat); D-24094 (internal-delegation secret, via
  * mintGuestSeat); D-11804 (api-endpoints.md obligation); D-9905 (auth posture);
- * D-20503 (the per-IP token-bucket pattern this copies).
+ * D-20503 (the token-bucket pattern); D-24647 (the limiter and its key come from
+ * the shared tokenBucketRateLimiter.mjs, D-24635 §4).
  */
 
 import koaBody from 'koa-body';
@@ -37,14 +38,15 @@ import {
   verifyGuestPassword,
   readGuestAccessMeta,
 } from './guestAccess.logic.js';
+import { createTokenBucketRateLimiter, resolveRateLimitKey } from './tokenBucketRateLimiter.mjs';
 
-// why: D-20503 — per-IP token-bucket window. A guest's join attempts refill once
+// why: D-20503 — per-connection token-bucket window. A guest's join attempts refill once
 // the window expires (whole-window reset, matching the analytics limiter mental
 // model). Process-local; a multi-instance deploy shares no state (a redis-backed
 // limiter is a future hardening WP, the same caveat as the analytics limiter).
 const GUEST_JOIN_RATE_LIMIT_WINDOW_MS = 60_000;
 
-// why: 10 join attempts per minute per IP is generous for a real grandchild
+// why: 10 join attempts per minute per connection is generous for a real grandchild
 // mistyping a short password but throttles automated password guessing. Lower
 // than the analytics 60/min because a wrong guess here is a security event, not
 // a page view. Overridable via context for the at-limit test.
@@ -64,46 +66,6 @@ function statusForSessionValidationCode(code) {
     return 500;
   }
   return 401;
-}
-
-/**
- * A per-IP token-bucket rate limiter. COPIED (not imported) from the analytics
- * `makeRateLimiter` pattern — that one is module-local to analytics.routes.ts and
- * is not exported, and copying avoids a cross-module dependency for a tiny helper.
- * Buckets reset to full capacity once the window expires.
- *
- * @param {number} capacity - Tokens per window per IP.
- * @param {() => number} now - Injected clock (for tests).
- * @returns {{ consume: (ip: string, count: number) => boolean }}
- */
-function makeGuestJoinRateLimiter(capacity, now) {
-  const buckets = new Map();
-  return {
-    consume(ip, count) {
-      const currentTime = now();
-      const existing = buckets.get(ip);
-      let state;
-      if (existing === undefined) {
-        state = { tokens: capacity, lastRefill: currentTime };
-        buckets.set(ip, state);
-      } else {
-        state = existing;
-        const elapsed = currentTime - state.lastRefill;
-        if (elapsed >= GUEST_JOIN_RATE_LIMIT_WINDOW_MS) {
-          // why: whole-window reset once the minute has passed (the analytics
-          // limiter's deliberate simplicity — harder to game with bursts than a
-          // linear sub-window refill).
-          state.tokens = capacity;
-          state.lastRefill = currentTime;
-        }
-      }
-      if (state.tokens < count) {
-        return false;
-      }
-      state.tokens = state.tokens - count;
-      return true;
-    },
-  };
 }
 
 // why: boardgame.io installs koa-body ONLY on its own /games/* routes — there is
@@ -247,7 +209,7 @@ function registerSetGuestAccessRoute(router, context) {
  *
  * @param {import('@koa/router')} router - The boardgame.io server's koa router.
  * @param {object} context - The bot-ally context bundle.
- * @param {{ consume: (ip: string, count: number) => boolean }} rateLimiter - The per-IP limiter.
+ * @param {{ consume: (key: string, count: number) => boolean }} rateLimiter - The per-connection limiter.
  */
 function registerJoinAsGuestRoute(router, context, rateLimiter) {
   router.post('/api/match/join-as-guest', async (koaContext) => {
@@ -256,8 +218,10 @@ function registerJoinAsGuestRoute(router, context, rateLimiter) {
     // why: rate-limit BEFORE any DB or scrypt work — a brute-force guess must be
     // rejected as cheaply as possible, never after a hash computation. This is the
     // ordering the no-plaintext-log + rate-limit-ordering tests pin.
-    const requestIp = typeof koaContext.request.ip === 'string' ? koaContext.request.ip : 'unknown';
-    if (rateLimiter.consume(requestIp, 1) === false) {
+    // why: keyed per connection (cf-connecting-ip, an IPv6 caller grouped to its
+    // /64), not `request.ip`, which is the proxy hop every caller shares (D-24647).
+    const { key } = resolveRateLimitKey(koaContext);
+    if (rateLimiter.consume(key, 1) === false) {
       koaContext.status = 429;
       koaContext.body = {
         error:
@@ -403,10 +367,11 @@ function registerReadGuestAccessRoute(router, context) {
  */
 export function registerGuestAccessRoutes(router, context) {
   const now = context.now ?? (() => Date.now());
-  const rateLimiter = makeGuestJoinRateLimiter(
-    context.guestJoinRateLimitCapacity ?? DEFAULT_GUEST_JOIN_RATE_LIMIT_CAPACITY,
+  const rateLimiter = createTokenBucketRateLimiter({
+    capacity: context.guestJoinRateLimitCapacity ?? DEFAULT_GUEST_JOIN_RATE_LIMIT_CAPACITY,
+    windowMs: GUEST_JOIN_RATE_LIMIT_WINDOW_MS,
     now,
-  );
+  });
   registerSetGuestAccessRoute(router, context);
   registerJoinAsGuestRoute(router, context, rateLimiter);
   registerReadGuestAccessRoute(router, context);
