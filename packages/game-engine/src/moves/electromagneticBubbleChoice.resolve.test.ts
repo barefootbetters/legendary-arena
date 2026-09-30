@@ -18,6 +18,7 @@ import {
   hasPendingElectromagneticBubbleChoice,
 } from './electromagneticBubbleChoice.resolve.js';
 import { resolveElectromagneticBubble } from '../rules/tacticHandlers.js';
+import { consumeDeferredHandInjections } from './deferredHandInjection.logic.js';
 import type { LegendaryGameState, PendingElectromagneticBubbleChoice } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -29,6 +30,7 @@ const NON_XMEN = 'core/iron-man/iron-man#0' as CardExtId;
 function makeTestGameState(
   overrides: {
     inPlay?: CardExtId[];
+    hand?: CardExtId[];
     cardTraits?: Record<string, { team?: string; heroClass?: string }>;
     pendingElectromagneticBubbleChoices?: PendingElectromagneticBubbleChoice[];
   } = {},
@@ -36,7 +38,7 @@ function makeTestGameState(
   const state = {
     currentStage: 'main',
     playerZones: {
-      '0': { deck: [], hand: [], discard: [], inPlay: overrides.inPlay ?? [], victory: [] },
+      '0': { deck: [], hand: overrides.hand ?? [], discard: [], inPlay: overrides.inPlay ?? [], victory: [] },
     },
     piles: { bystanders: [], wounds: [], officers: [], sidekicks: [], horrors: [] },
     messages: [],
@@ -109,6 +111,34 @@ describe('resolveElectromagneticBubble resolver (WP-695 / D-24512)', () => {
     assert.equal(G.deferredHandInjections, undefined, 'no injection until the pick resolves');
     assert.equal(G.pendingElectromagneticBubbleChoices?.length, 1, 'one entry parked');
     assert.deepStrictEqual(G.pendingElectromagneticBubbleChoices![0]!.eligibleCardIds, [XMEN_A, XMEN_B]);
+  });
+
+  // why: D-24645 — "one of your [team:x-men] Heroes" includes the hand (rules v23
+  // "Your Heroes" = hand + cards played this turn). D-24512 offered play only.
+  it('D-24645: auto-records a sole X-Men Hero held in hand when none is in play', () => {
+    const G = makeTestGameState({ inPlay: [NON_XMEN], hand: [XMEN_A], cardTraits: { [XMEN_A]: { team: 'x-men' }, [NON_XMEN]: { team: 'avengers' } } });
+    resolveElectromagneticBubble(G, '0');
+    assert.equal(G.pendingElectromagneticBubbleChoices, undefined, 'no park for a single eligible Hero');
+    assert.deepStrictEqual(G.deferredHandInjections?.['0'], [XMEN_A], 'the held X-Men Hero is recorded');
+  });
+
+  it('D-24645: parks a pick offering in-play X-Men first, then held X-Men', () => {
+    const G = makeTestGameState({ inPlay: [XMEN_B], hand: [XMEN_A, NON_XMEN], cardTraits: { [XMEN_A]: { team: 'x-men' }, [XMEN_B]: { team: 'x-men' }, [NON_XMEN]: { team: 'avengers' } } });
+    resolveElectromagneticBubble(G, '0');
+    assert.deepStrictEqual(G.pendingElectromagneticBubbleChoices![0]!.eligibleCardIds, [XMEN_B, XMEN_A]);
+  });
+
+  it('D-24645: a held Hero chosen, discarded at cleanup, is pulled back into the next hand', () => {
+    const G = makeTestGameState({ inPlay: [XMEN_B], hand: [XMEN_A], pendingElectromagneticBubbleChoices: [{ choiceType: 'electromagnetic-bubble', playerID: '0', eligibleCardIds: [XMEN_B, XMEN_A] }] });
+    resolveElectromagneticBubbleChoice(makeMoveContext(G), { cardId: XMEN_A });
+    const zones = G.playerZones['0']!;
+    // why: end-of-turn cleanup moves the hand and play area to the discard pile.
+    zones.discard = [...zones.inPlay, ...zones.hand];
+    zones.inPlay = [];
+    zones.hand = [];
+    consumeDeferredHandInjections(G, '0', zones);
+    assert.deepStrictEqual(zones.hand, [XMEN_A]);
+    assert.deepStrictEqual(zones.discard, [XMEN_B]);
   });
 
   it('does not false-match a heroClass-only card (team-only eligibility)', () => {

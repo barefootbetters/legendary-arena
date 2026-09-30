@@ -110,7 +110,7 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
     return;
   }
   // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
-  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  // pick freezes the board until the defeating player picks an X-Men Hero.
   if (hasPendingElectromagneticBubbleChoice(G)) {
     return;
   }
@@ -370,7 +370,7 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
     return;
   }
   // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
-  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  // pick freezes the board until the defeating player picks an X-Men Hero.
   if (hasPendingElectromagneticBubbleChoice(G)) {
     return;
   }
@@ -632,7 +632,7 @@ export function endTurn({ G, playerID, events, random }: MoveContext): void {
     return;
   }
   // why: WP-695 / D-24512 — block-all guard: a pending Electromagnetic Bubble X-Men
-  // pick freezes the board until the defeating player picks an in-play X-Men Hero.
+  // pick freezes the board until the defeating player picks an X-Men Hero.
   if (hasPendingElectromagneticBubbleChoice(G)) {
     return;
   }

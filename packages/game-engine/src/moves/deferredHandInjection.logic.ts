@@ -1,7 +1,7 @@
 /**
  * Deferred specific-card hand injection consume (WP-695 / D-24512).
  *
- * Magneto's "Electromagnetic Bubble" tactic records a chosen in-play X-Men Hero in
+ * Magneto's "Electromagnetic Bubble" tactic records a chosen X-Men Hero in
  * `G.deferredHandInjections[playerId]`; it is consumed once at that player's next
  * play-phase `onBegin` fill (game.ts), AFTER the normal hand fill, adding each recorded
  * ext_id to the hand as an extra card and then clearing the key. This is the sibling of

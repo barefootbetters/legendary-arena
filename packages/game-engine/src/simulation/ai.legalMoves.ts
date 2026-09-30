@@ -736,7 +736,7 @@ export function getLegalMoves(
 
   // why: WP-695 / D-24512 — pending Electromagnetic Bubble X-Men pick short-circuit. When the
   // choice is parked the block-all guard freezes every other move, so the bot resolves it
-  // first. The single legal move picks the FIRST eligible in-play X-Men Hero — deterministic
+  // first. The single legal move picks the FIRST eligible X-Men Hero — deterministic
   // (bot-arbitrary but replay-stable — only live human play gets the prompt). Returns a list of
   // length EXACTLY 1 — omitting this path (or the MOVE_MAP entries) hangs the per-turn loop.
   if (hasPendingElectromagneticBubbleChoice(gameState)) {

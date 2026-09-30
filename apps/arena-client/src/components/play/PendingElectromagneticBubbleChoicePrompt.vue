@@ -8,7 +8,7 @@ import type { SubmitMove } from "./uiMoveName.types";
  * (WP-695 / D-24512).
  *
  * Renders iff `pendingElectromagneticBubbleChoice !== undefined AND viewerPlayerId === playerID`.
- * Hidden for opponents and spectators. Displays the eligible in-play X-Men Heroes; clicking
+ * Hidden for opponents and spectators. Displays the eligible X-Men Heroes (in play or in hand, D-24645); clicking
  * one submits `resolveElectromagneticBubbleChoice({ cardId })` to add it to the next hand as
  * a seventh card.
  *

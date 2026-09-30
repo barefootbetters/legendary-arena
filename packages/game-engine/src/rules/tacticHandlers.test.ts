@@ -387,9 +387,14 @@ const XAVIERS_COPY_CARD: CardExtId = 'core-hero-rogue-copy-powers';
  *
  * @param inPlay - The acting player's in-play cards.
  * @param supplySize - Number of Bystanders in the supply pile.
+ * @param hand - The acting player's hand (default empty).
  * @returns A LegendaryGameState carrying only the fields the resolver reads.
  */
-function makeXaviersState(inPlay: CardExtId[], supplySize: number): LegendaryGameState {
+function makeXaviersState(
+  inPlay: CardExtId[],
+  supplySize: number,
+  hand: CardExtId[] = [],
+): LegendaryGameState {
   const bystanders: CardExtId[] = [];
   for (let index = 0; index < supplySize; index++) {
     bystanders.push('pile-bystander');
@@ -397,7 +402,7 @@ function makeXaviersState(inPlay: CardExtId[], supplySize: number): LegendaryGam
   return {
     messages: [],
     playerZones: {
-      '0': { deck: [], hand: [], discard: [], inPlay: [...inPlay], victory: [] },
+      '0': { deck: [], hand: [...hand], discard: [], inPlay: [...inPlay], victory: [] },
       '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     },
     piles: { bystanders },
@@ -437,6 +442,28 @@ describe('resolveXaviersNemesis (WP-691 / D-24508)', () => {
     G.cardCopiedTeams = { [XAVIERS_COPY_CARD]: ['x-men'] };
     resolveXaviersNemesis(G, '0');
     assert.equal(G.playerZones['0']!.victory.length, 1);
+  });
+
+  // why: D-24645 — rules v23 "Your Heroes" = the hand plus the cards played this
+  // turn. D-24508 counted play only; an X-Men Hero still in hand now rescues too.
+  it('D-24645: counts X-Men Heroes in hand as well as in play (1 played + 2 held → 3 rescued)', () => {
+    const G = makeXaviersState([XAVIERS_X_MEN_HERO], 5, [XAVIERS_X_MEN_HERO, XAVIERS_X_MEN_HERO, XAVIERS_NON_X_MEN]);
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 3);
+    assert.match(G.messages[0]!.text, /rescued 3 Bystander\(s\) — one per X-Men Hero in hand or play/);
+  });
+
+  it('D-24645: an X-Men Hero held in hand with none played still rescues one', () => {
+    const G = makeXaviersState([XAVIERS_NON_X_MEN], 5, [XAVIERS_X_MEN_HERO]);
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 1);
+  });
+
+  it('D-24645: a Copy-Powers grant does not apply to a card in hand (printed team only)', () => {
+    const G = makeXaviersState([], 5, [XAVIERS_COPY_CARD]);
+    G.cardCopiedTeams = { [XAVIERS_COPY_CARD]: ['x-men'] };
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 0);
   });
 
   it('routes through dispatchTacticOnFight for ctx.currentPlayer', () => {

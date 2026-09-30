@@ -1364,7 +1364,7 @@ export function buildUIState(
 
   // --- 13b.3c Project pending Electromagnetic Bubble X-Men pick (front of queue) ---
   // why: WP-695 / D-24512 — project the FRONT entry of G.pendingElectromagneticBubbleChoices
-  // with its eligible in-play X-Men Heroes (the snapshot captured at park time) resolved to
+  // with its eligible X-Men Heroes (the snapshot captured at park time) resolved to
   // display data, in in-play order. Reads the SNAPSHOT, not the live zone: the block-all
   // guard freezes the board while pending, and it is exactly what
   // resolveElectromagneticBubbleChoice validates the client's { cardId } against (the

@@ -3,8 +3,8 @@
  * "Electromagnetic Bubble" X-Men Hero pick (WP-695 / D-24512).
  *
  * Called by the defeating (active) player after Electromagnetic Bubble's Fight was
- * defeated with ≥2 in-play X-Men Heroes and parked a PendingElectromagneticBubbleChoice
- * carrying the eligible in-play X-Men ext_ids (`eligibleCardIds`). The player picks ONE;
+ * defeated with ≥2 X-Men Heroes and parked a PendingElectromagneticBubbleChoice
+ * carrying the eligible X-Men ext_ids (`eligibleCardIds`). The player picks ONE;
  * its ext_id is recorded into `G.deferredHandInjections[playerID]`, consumed once at the
  * player's NEXT play-phase `onBegin` fill (game.ts) to add it as an extra (seventh)
  * card. The queue front-pops on success.
@@ -28,7 +28,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 /**
  * Payload for the resolveElectromagneticBubbleChoice move.
  *
- * cardId — the in-play X-Men Hero ext_id to add to the next hand (must be one of the
+ * cardId — the X-Men Hero ext_id to add to the next hand (must be one of the
  *   front pending entry's `eligibleCardIds` snapshot; the round-trip rule).
  */
 export interface ResolveElectromagneticBubbleChoiceArgs {
@@ -60,7 +60,7 @@ export function hasPendingElectromagneticBubbleChoice(G: LegendaryGameState): bo
  * front.choiceType mismatch; cardId not in `eligibleCardIds`.
  *
  * @param context - boardgame.io move context with G and playerID.
- * @param args - the selected { cardId } in-play X-Men Hero to add to the next hand.
+ * @param args - the selected { cardId } X-Men Hero to add to the next hand.
  */
 export function resolveElectromagneticBubbleChoice(
   { G, playerID }: MoveContext,

@@ -39,7 +39,7 @@ import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.
  *   3. Push a `deckReshuffled` notable event iff a reshuffle actually occurred.
  *   4. Consume the one-shot `handSizeOverrides` entry (Doc Ock, D-24300).
  *   5. Consume the deferred hand injection (Electromagnetic Bubble, D-24512) —
- *      it runs AFTER the discard so an in-play X-Men Hero has already moved to
+ *      it runs AFTER the discard so the chosen X-Men Hero (played or held) has moved to
  *      discard where the injection helper can find it, and AFTER the fill so it
  *      lands as the extra (seventh) card on top of the fresh hand.
  *
