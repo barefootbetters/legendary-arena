@@ -881,7 +881,7 @@ mindmap
         ["WP-785 ✅ Lobby Arena entrance one Enter Arena on a legal featured table arena-client EC-822 D-24633 Active DONE 2026-09-28. Old lobby kept as Arena Workshop"]
         ["WP-786 ✅ Battle brief in the lobby phase Mastermind Scheme lineup seats and one Begin the Battle arena-client EC-823 D-24634 Active DONE 2026-09-28"]
         ["WP-787 ✅ Guest solo create a signed-out visitor plays one solo featured table server EC-824 D-24635 Active DONE 2026-09-28. Rowless Casual rate-limited and capped"]
-        ["WP-788 📝 Guest solo client a signed-out Enter Arena plays the featured table as a guest arena-client DRAFTED 2026-09-28 EC-825 D-24636 reserved BLOCKED on WP-785 and WP-787"]
+        ["WP-788 ✅ Guest solo client a signed-out Enter Arena plays the featured table as a guest arena-client EC-825 D-24636 Active DONE 2026-09-29"]
 
       Next Horizons
         ["📦 Core set keyword & ability coverage — get the core set fully playable first, then add sets incrementally (in progress via the effect-authoring grind — e.g. WP-310/316/317)"]
@@ -967,13 +967,13 @@ mindmap
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
 | Gauntlet Leaderboards (Legends) (2026-07) | 171/171 | — |
 | Friends & Ranked Trust (2026-07) | 18/18 | — |
-| Play Lobby Entrance (2026-09) | 3/4 | 1 open |
+| Play Lobby Entrance (2026-09) | 4/4 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **763/779 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 15 open |
+| **Total** | **764/779 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 14 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 16):** WP-788 open; WP-782 open; WP-781 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-749 open; WP-745 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 15):** WP-782 open; WP-781 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-749 open; WP-745 open; WP-743 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

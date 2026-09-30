@@ -45795,6 +45795,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 3. Every existing lobby control, id, and test id is kept, unchanged, as **Arena Workshop** (`?route=workshop`; `?route=lobby` and any `?match=` without full live params also open it, so WP-369 invite links keep working).
 4. Sign-in behavior is unchanged: a signed-out Enter Arena bounces to `?route=login`. The Access Model promise of a guest solo match (D-24092) needs a server guest-create path and is out of this decision's scope.
 
+**Superseded in part:** §4 (the signed-out bounce to sign-in) is superseded by D-24636 (WP-788, 2026-09-29).
+
 **Reserved by:** NUMBER-LEDGER D-24633. Related: D-24092 (Access Model), D-24446 (public match LAGN), WP-092 / WP-254 / WP-371 (loadout intake and composition gate), WP-369 (invite links).
 
 ---
@@ -45832,7 +45834,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24636 — A signed-out Enter Arena plays the featured table as a guest (Drafted 2026-09-28; not yet landed — WP-788 / EC-825)
+### D-24636 — A signed-out Enter Arena plays the featured table as a guest (Active 2026-09-29 — WP-788 / EC-825)
 
 **Context.** D-24633 §4 kept the WP-785 entrance's signed-out click as a bounce to sign-in, because no guest create path existed. D-24635 (WP-787) adds `POST /api/match/create-guest-solo`, delivering D-24092's promise of one solo match without an account on the server side.
 

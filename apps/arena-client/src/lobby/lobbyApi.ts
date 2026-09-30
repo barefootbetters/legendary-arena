@@ -388,6 +388,50 @@ export async function setGuestAccess(
 }
 
 /**
+ * Starts a solo match on the server's fixed featured table for a signed-out
+ * visitor, via the WP-787 **public** `POST /api/match/create-guest-solo`
+ * (D-24635). No account and no composition from the client: the server picks the
+ * table, seats the caller in seat `'0'` as `Guest`, and returns its bgio
+ * credential, which the caller turns into a play URL via {@link buildGuestPlayUrl}.
+ *
+ * @returns The match id, the seat id (`'0'`), and the seat's bgio credential.
+ * @throws Error (with the numeric HTTP `status` attached) on a non-2xx response —
+ *   429 throttled for this connection, 503 guest play at capacity.
+ */
+export async function createGuestSoloMatch(): Promise<{
+  matchId: string;
+  seat: string;
+  credentials: string;
+}> {
+  const endpoint = `${serverUrl}/api/match/create-guest-solo`;
+  // why: a headerless, bodyless POST is a CORS simple request (no preflight), and
+  // the route is public and bodyless (WP-787 / D-24635) — there is no account to
+  // authorize and no composition to send.
+  const response = await fetch(endpoint, { method: 'POST' });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw Object.assign(
+      new Error(
+        `Failed to start a guest match at ${endpoint}: server returned HTTP ${response.status}. ${errorBody}`,
+      ),
+      { status: response.status },
+    );
+  }
+
+  const body = (await response.json()) as {
+    matchId: string;
+    seat: string;
+    credentials: string;
+  };
+  return {
+    matchId: body.matchId,
+    seat: body.seat,
+    credentials: body.credentials,
+  };
+}
+
+/**
  * Joins a match as an anonymous guest by typing the host-set password, via the
  * WP-630 **public** `POST /api/match/join-as-guest` (D-24441). No account, no
  * bearer token — the password + the server's per-IP rate limit are the gate. On

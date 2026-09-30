@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-788 — A signed-out Enter Arena now starts a guest match (EC-825 / D-24636) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A signed-out visitor on the entrance sees
+"You’ll play as a guest. **Sign in** to save your results." One click on Enter Arena starts a solo guest
+match on the featured table (Magneto + Brotherhood + Sentinel vs Midtown Bank Robbery) — no account — and
+lands on the Battle Brief. If guest play is throttled (429) or full (503), a plain message offers sign-in or
+a retry. Signed-in play is unchanged. Delivers the Access Model's free solo taste (D-24092) end to end.
+
+- **Client only.** `lobbyApi.ts` `createGuestSoloMatch` (headerless, bodyless POST to WP-787's route);
+  `ArenaEntrance.vue` guest branch + status-mapped copy + the helper line. A drift pin reads the server's
+  `GUEST_SOLO_FEATURED_TABLE` as text and requires it to equal `FEATURED_TABLE`.
+- **Counts and gates.** arena-client 2199 → 2206 / 0 fail (+7); vue-tsc 0 before and after. The signed-out
+  entrance test changed on purpose (it now expects a guest start). Mutation-checked: a changed server count
+  fails the drift pin; the old sign-in bounce fails the signed-out tests.
+- **Known limitation.** A signed-in visitor who clicks before their session hydrates is treated as signed
+  out and gets a guest match (the D-24636 hydration race); an `isSessionHydrating` flag is a follow-up.
+- **Live-verify (D-24026):** pending. Private window → `/` shows the guest line → Enter Arena → a guest
+  Magneto / Midtown match on the Battle Brief → play to a real gameover → "Sign in to save your results".
+  Signed in → the authed path, unchanged.
+
 ### WP-787 — Production live-verify PASS: the guest-solo rate limit keys per connection (D-24026) (2026-09-29)
 
 Run by Jeff against `api.legendary-arena.com`, with read-only production DB checks by Claude.

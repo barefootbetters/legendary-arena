@@ -101,15 +101,33 @@ test('sends no request on mount', async () => {
   assert.equal(recordedRequests.length, 0);
 });
 
-test('signed out: a click sends no request, shows no error, and leaves the button enabled', async () => {
-  stubLaunchSuccess();
+// why: WP-788 / D-24636 — an INTENTIONAL behavior change. Signed out, Enter Arena
+// now starts a guest solo match instead of bouncing to sign-in (D-24633 §4 is
+// superseded); jsdom never navigates, so the request is what the test observes.
+test('signed out: a click starts one guest solo match and never calls the authed create or join', async () => {
+  let releaseGuest: () => void = () => undefined;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    recordRequest(input, init);
+    await new Promise<void>((resolve) => {
+      releaseGuest = resolve;
+    });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ matchId: 'guest-1', seat: '0', credentials: 'guest-cred' }),
+    } as Response;
+  }) as typeof globalThis.fetch;
   const wrapper = mountEntrance(null);
-  assert.match(wrapper.text(), /Sign in to take your seat\. Your account is free\./);
-  await wrapper.find('[data-testid="arena-enter"]').trigger('click');
+  const button = wrapper.find('[data-testid="arena-enter"]');
+  await button.trigger('click');
+  button.element.removeAttribute('disabled');
+  await button.trigger('click');
+  releaseGuest();
   await flushPromises();
-  assert.equal(recordedRequests.length, 0);
-  assert.equal(wrapper.find('[data-testid="arena-enter-error"]').exists(), false);
-  assert.equal(wrapper.find('[data-testid="arena-enter"]').attributes('disabled'), undefined);
+  assert.equal(recordedRequests.length, 1);
+  assert.ok(recordedRequests[0]!.url.endsWith('/api/match/create-guest-solo'));
+  assert.equal(recordedRequests.some((request) => request.url.endsWith('/api/match/create')), false);
+  assert.equal(recordedRequests.some((request) => request.url.endsWith('/api/match/join')), false);
 });
 
 test('signed in: one create with the featured table at 1 player, then a join for seat 0 as Player', async () => {
@@ -166,4 +184,70 @@ test('the Arena Workshop link points at ?route=workshop', () => {
     wrapper.find('[data-testid="arena-workshop-link"]').attributes('href'),
     '?route=workshop',
   );
+});
+
+/**
+ * Stubs fetch so the guest-solo start fails with the given HTTP status.
+ *
+ * @param status The status the guest route returns.
+ */
+function stubGuestFailure(status: number): void {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    recordRequest(input, init);
+    return { ok: false, status, text: async () => 'server sentence' } as Response;
+  }) as typeof globalThis.fetch;
+}
+
+test('signed out shows the guest helper and a Sign in link; signed in shows neither', () => {
+  stubLaunchSuccess();
+  const signedOut = mountEntrance(null);
+  assert.match(signedOut.text(), /You’ll play as a guest\. Sign in to save your results\./);
+  assert.equal(
+    signedOut.find('[data-testid="arena-sign-in-link"]').attributes('href'),
+    '?route=login',
+  );
+  const signedIn = mountEntrance('token-1');
+  assert.equal(signedIn.find('[data-testid="arena-sign-in-link"]').exists(), false);
+  assert.doesNotMatch(signedIn.text(), /You’ll play as a guest/);
+});
+
+test('a throttled guest start (429) shows the 429 copy and re-enables the button', async () => {
+  stubGuestFailure(429);
+  const wrapper = mountEntrance(null);
+  await wrapper.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(
+    wrapper.find('[data-testid="arena-enter-error"]').text(),
+    'Too many guest games were started from this connection. Sign in to play now, or try again in a minute.',
+  );
+  assert.equal(wrapper.find('[data-testid="arena-enter"]').attributes('disabled'), undefined);
+});
+
+test('a full guest capacity (503) shows the 503 copy', async () => {
+  stubGuestFailure(503);
+  const wrapper = mountEntrance(null);
+  await wrapper.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(
+    wrapper.find('[data-testid="arena-enter-error"]').text(),
+    'Guest play is full right now. Sign in to play now, or try again in a few minutes.',
+  );
+});
+
+test('any other failure, or a network error with no status, shows the generic copy', async () => {
+  const generic = 'The guest game could not be started. Sign in to play, or try again.';
+  stubGuestFailure(500);
+  const serverError = mountEntrance(null);
+  await serverError.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(serverError.find('[data-testid="arena-enter-error"]').text(), generic);
+
+  globalThis.fetch = (async () => {
+    throw new TypeError('Failed to fetch');
+  }) as typeof globalThis.fetch;
+  const networkError = mountEntrance(null);
+  await networkError.find('[data-testid="arena-enter"]').trigger('click');
+  await flushPromises();
+  assert.equal(networkError.find('[data-testid="arena-enter-error"]').text(), generic);
+  assert.equal(networkError.find('[data-testid="arena-enter"]').attributes('disabled'), undefined);
 });

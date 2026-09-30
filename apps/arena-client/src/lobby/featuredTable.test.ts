@@ -122,3 +122,79 @@ test("the art URL is the imageUrl of the mastermind's base card", () => {
   assert.ok(baseCard !== undefined, 'The featured mastermind should have a base card named after it.');
   assert.equal(FEATURED_TABLE_LABELS.artUrl, baseCard.imageUrl);
 });
+
+// why: WP-788 / D-24636 — arena-client may never import `apps/server` (layer
+// rule), so the server's GUEST_SOLO_FEATURED_TABLE is read as source TEXT and
+// compared with FEATURED_TABLE; a guest and a signed-in player must get the
+// same featured table.
+const SERVER_TABLE_URL = new URL('../../../server/src/match/guestSoloRoutes.mjs', import.meta.url);
+
+/**
+ * Isolates the GUEST_SOLO_FEATURED_TABLE object literal from the server source.
+ * The table holds only strings, numbers, and arrays, so the first `}` after the
+ * first `{` closes it.
+ *
+ * @param source The server file's text.
+ * @returns The literal from its opening `{` to its closing `}`.
+ */
+function extractServerTableLiteral(source: string): string {
+  const marker = 'export const GUEST_SOLO_FEATURED_TABLE';
+  const start = source.indexOf(marker);
+  assert.ok(
+    start >= 0,
+    'apps/server/src/match/guestSoloRoutes.mjs no longer exports GUEST_SOLO_FEATURED_TABLE, so it cannot be compared with FEATURED_TABLE in apps/arena-client/src/lobby/featuredTable.ts.',
+  );
+  const withoutComments = source
+    .slice(start)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/[^\n]*/g, '');
+  const open = withoutComments.indexOf('{');
+  const close = withoutComments.indexOf('}', open);
+  return withoutComments.slice(open, close + 1);
+}
+
+/**
+ * Compares a server table literal with FEATURED_TABLE: the same ids (sorted) and
+ * the same four supply counts.
+ *
+ * @param literal The extracted server object literal.
+ * @returns A list of mismatch descriptions; empty when the tables are equal.
+ */
+function compareWithFeaturedTable(literal: string): string[] {
+  const mismatches: string[] = [];
+  const serverIds: string[] = [];
+  for (const match of literal.matchAll(/'([^']*)'|"([^"]*)"/g)) {
+    serverIds.push(match[1] ?? match[2] ?? '');
+  }
+  serverIds.sort();
+  const clientIds = [
+    FEATURED_TABLE.schemeId,
+    FEATURED_TABLE.mastermindId,
+    ...FEATURED_TABLE.villainGroupIds,
+    ...FEATURED_TABLE.henchmanGroupIds,
+    ...FEATURED_TABLE.heroDeckIds,
+  ].sort();
+  if (JSON.stringify(serverIds) !== JSON.stringify(clientIds)) {
+    mismatches.push(`ids differ: server ${JSON.stringify(serverIds)}, client ${JSON.stringify(clientIds)}`);
+  }
+  const counts: Array<[string, number]> = [
+    ['bystandersCount', FEATURED_TABLE.bystandersCount],
+    ['woundsCount', FEATURED_TABLE.woundsCount],
+    ['officersCount', FEATURED_TABLE.officersCount],
+    ['sidekicksCount', FEATURED_TABLE.sidekicksCount],
+  ];
+  for (const [field, value] of counts) {
+    if (!new RegExp(`\\b${field}\\s*:\\s*${value}\\b`).test(literal)) {
+      mismatches.push(`${field} is not ${value} in the server table`);
+    }
+  }
+  return mismatches;
+}
+
+test('the server guest-solo table equals FEATURED_TABLE, and a drifted copy is caught', () => {
+  const literal = extractServerTableLiteral(readFileSync(SERVER_TABLE_URL, 'utf8'));
+  assert.deepEqual(compareWithFeaturedTable(literal), []);
+  const drifted = literal.replace("'core/wolverine'", "'core/storm'");
+  assert.notEqual(drifted, literal, 'The drift probe must actually change the literal.');
+  assert.ok(compareWithFeaturedTable(drifted).length > 0);
+});
