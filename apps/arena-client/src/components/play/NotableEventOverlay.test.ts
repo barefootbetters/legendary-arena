@@ -370,6 +370,49 @@ describe('NotableEventOverlay — narrative is rendered verbatim (WP-201 §Non-N
   });
 });
 
+describe('NotableEventOverlay — player-facing names (D-24646)', () => {
+  test('every engine effect keyword gets a human label, never the raw keyword (Juggernaut Ambush)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: {
+        event: ambushEvent('core-villain-brotherhood-juggernaut-00', [
+          'koHeroEachPlayer',
+          'koHeroEachPlayerMag2',
+          'captureHqHeroRightmost',
+          'captureHqHeroHighestCost',
+          'captureHqHeroLowestCost',
+        ]),
+      },
+    });
+    const labels = wrapper.findAll('.notable-event-overlay__effect-badge').map((badge) => badge.text());
+    assert.deepEqual(labels, [
+      'Each player KOs a Hero',
+      'Each player KOs two Heroes',
+      'Captures the rightmost HQ Hero',
+      'Captures the highest-cost HQ Hero',
+      'Captures the lowest-cost HQ Hero',
+    ]);
+  });
+
+  test('a villain-deck Bystander with no display entry is titled "Bystander", not its ext_id', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: bystanderRevealedEvent('bystander-villain-deck-08'), cardDisplayData: {} },
+    });
+    // why: only the title row is the overlay's own naming; the narrative is engine
+    // text passed through verbatim (D-20002), so it is not asserted here.
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), 'Bystander');
+  });
+
+  test('a card with a display entry keeps its own name (a named Bystander stays named)', () => {
+    const wrapper = mount(NotableEventOverlay, {
+      props: {
+        event: bystanderRevealedEvent('bystander-villain-deck-03'),
+        cardDisplayData: { 'bystander-villain-deck-03': display('bystander-villain-deck-03', 'Aspiring Hero') },
+      },
+    });
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), 'Aspiring Hero');
+  });
+});
+
 describe('NotableEventOverlay — applied-effect badges (WP-201 §AC + D-20005)', () => {
   test('omits the effect-badge row entirely when appliedEffects is empty', () => {
     const wrapper = mount(NotableEventOverlay, {
@@ -466,12 +509,11 @@ describe('NotableEventOverlay — locked humanised effect-label map (WP-201 §Lo
 
 describe('NotableEventOverlay — unknown-keyword fallback (WP-201 §AC — D-20102 totality)', () => {
   test('renders the raw keyword string verbatim when the engine emits a keyword the arena-client map does not recognise', () => {
-    // Synthetic event using a keyword string outside the locked 5-entry map.
-    // `koHeroEachPlayer` is a real VillainEffectKeyword on the engine union
-    // (added by WP-189) but is NOT in the arena-client's locked label map per
-    // WP-201 §Scope (In) — the totality rule says render the raw keyword.
-    // Typecast escape simulates any future engine widening.
-    const unknownKeyword = 'koHeroEachPlayer' as never;
+    // Synthetic event using a keyword string outside the label map. Since D-24646
+    // the map is total over the engine's VillainEffectKeyword union (koHeroEachPlayer,
+    // this test's old example, now has a label), so a deploy skew — an engine ahead
+    // of this bundle — is the only way to reach the fallback. The typecast simulates it.
+    const unknownKeyword = 'futureEffectKeyword' as never;
     const event: NotableGameEvent = {
       type: 'fightResolved',
       playerId: '0',
@@ -482,6 +524,6 @@ describe('NotableEventOverlay — unknown-keyword fallback (WP-201 §AC — D-20
       narrative: 'Fought "thug".',
     };
     const wrapper = mount(NotableEventOverlay, { props: { event } });
-    assert.match(wrapper.text(), /koHeroEachPlayer/);
+    assert.match(wrapper.text(), /futureEffectKeyword/);
   });
 });

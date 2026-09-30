@@ -46000,6 +46000,27 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24646 — Player-facing overlay and log text names cards and effects, not internal ids (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** The WP-788 production live-verify (guest match `Y1lA03QkAC9`) surfaced four player-facing strings showing internals:
+- Juggernaut's Ambush on an empty discard pile narrated "every player KO’d two heroes" although nothing was KO'd.
+- The Ambush overlay's effect chip read `koHeroEachPlayerMag2`: the client label map knew only 5 of the engine's 10 `VillainEffectKeyword` values and fell back to the raw keyword.
+- The Midtown Bank Robbery twist log printed the Bank villain's ext_id (`"core-villain-brotherhood-sabretooth-01"`).
+- The Bystander! overlay was titled `bystander-villain-deck-08`, because its board-built lookup has no entry for a Bystander captured by a city villain.
+
+**Decision.**
+1. `composeEffectResultClause`: a KO-a-Hero effect with no target and no pending pick reads "no player had a hero to KO" (`koHeroEachPlayer`, `koHeroEachPlayerMag2`) or "the active player had no hero to KO" (`koHeroCurrentPlayer`). Other keywords keep their label.
+2. The overlay's `EFFECT_LABELS` is typed `Record<VillainEffectKeyword, string>` and covers all 10 keywords, so a new engine keyword without a label fails vue-tsc (a required check). The engine public index gains a type-only `VillainEffectKeyword` export for this. The raw-keyword fallback stays for a deploy skew (engine ahead of the client bundle).
+3. The Midtown twist log names the Bank villain through the file's existing `resolveCardName`.
+4. The overlay titles a Bystander ext_id (`pile-bystander`, `bystander-villain-deck-NN`) "Bystander" when the lookup has no entry. A card that has a display entry keeps its own name.
+5. Display text only. No rules, state shape, or scoring change. `G.messages` is hash-excluded. The narrative in `G.notableEvents` is hashed, but no replay or hash fixture carries a zero-target KO, so nothing re-pinned (engine suite green, fixtures untouched).
+
+**Gates.** game-engine 4715 → 4717 / 0 fail (+1 composer zero-target wording, +1 Midtown log names the villain). arena-client 2217 → 2220 / 0 fail (+2 overlay: every keyword labeled, a Bystander titled "Bystander"; +1 a named Bystander keeps its name). One existing test changed its example keyword: it used `koHeroEachPlayer` as the "unknown keyword" case, which is the gap fixed here; it now uses a synthetic keyword and still asserts the raw fallback. vue-tsc 0. Verified that vue-tsc fails when a label is removed. `sim:runtime-observed:check` and `sim:coverage --check` current.
+
+**Reserved by:** NUMBER-LEDGER D-24646. Related: D-20102 (overlay label totality), D-24105 (effect-result narrative), D-24644 (Juggernaut KO choice), D-24026 (the live-verify that surfaced these).
+
+---
+
 ### D-24637 — Auto-resolving reveals always show the revealed card (Drafted 2026-09-29; not yet landed — WP-789 / EC-826)
 
 **Context.** D-24547 (WP-726) surfaced the auto-resolving deck-top reveal family on the `heroEffectResolved` overlay, but §2 emitted only when a reveal "realized work", and the event carried no card id. In Jeff's match `b8KeKuLE5Tb` (1p Red Skull), every Card Shark miss (a non-X-Men card left on top) emitted nothing, and hits / High Stakes Jackpot showed a text line only — so the player was never shown the card that is now their next draw. D-24547 named the card image (`revealedCardId`) as a follow-up.

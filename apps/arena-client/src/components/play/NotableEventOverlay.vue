@@ -1,6 +1,6 @@
 <script lang="ts">
 import { computed, defineComponent, type PropType } from 'vue';
-import type { UICardDisplay } from '@legendary-arena/game-engine';
+import type { UICardDisplay, VillainEffectKeyword } from '@legendary-arena/game-engine';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
 import {
   eventCardId,
@@ -51,19 +51,40 @@ export type NotableEventCardLookup = Readonly<Record<string, UICardDisplay>>;
  * use `defineComponent({ setup() { return {...} } })` per D-6512.
  */
 
-// why: locked humanised effect-label map (D-20102). Total over
-// `VILLAIN_EFFECT_KEYWORDS` as locked at WP-185 ship-time (5 entries);
-// adding a sixth tracks with the engine's keyword union. Unknown keywords
-// render the raw keyword string verbatim via the fallback path —
-// silent-skip is forbidden because it would hide real data when the
-// engine expands its vocabulary ahead of an arena-client bundle.
-const EFFECT_LABELS: Readonly<Record<string, string>> = {
+// why: locked humanised effect-label map (D-20102). D-24646 types it as a Record
+// over the engine's VillainEffectKeyword union, so a keyword added to the engine
+// without a label here fails vue-tsc instead of reaching a player as its raw
+// camelCase name (koHeroEachPlayerMag2 did, on Juggernaut's Ambush). The raw
+// fallback in effectLabel remains for a deploy skew (an engine ahead of this bundle).
+const EFFECT_LABELS: Readonly<Record<VillainEffectKeyword, string>> = {
   gainWoundEachPlayer: 'Each player gains a Wound',
   gainWoundCurrentPlayer: 'You gain a Wound',
   koHeroCurrentPlayer: 'KO a Hero',
   heroDeckTopToEscape: 'Hero deck top escapes',
   captureBystander: 'Captures a Bystander',
+  koHeroEachPlayer: 'Each player KOs a Hero',
+  koHeroEachPlayerMag2: 'Each player KOs two Heroes',
+  captureHqHeroRightmost: 'Captures the rightmost HQ Hero',
+  captureHqHeroHighestCost: 'Captures the highest-cost HQ Hero',
+  captureHqHeroLowestCost: 'Captures the lowest-cost HQ Hero',
 };
+
+// why: D-24646 — villain-deck Bystanders (`bystander-villain-deck-NN`) and the supply
+// Bystander (`pile-bystander`) are often absent from the overlay's board-built lookup
+// (a Bystander captured by a city villain is not a board card), so name them generically
+// rather than falling back to the ext_id.
+const SUPPLY_BYSTANDER_EXT_ID = 'pile-bystander';
+const VILLAIN_DECK_BYSTANDER_PREFIX = 'bystander-villain-deck-';
+
+/**
+ * Whether an ext_id is a Bystander card (supply or villain-deck copy).
+ *
+ * @param extId The card ext_id.
+ * @returns True for a Bystander ext_id.
+ */
+function isBystanderExtId(extId: string): boolean {
+  return extId === SUPPLY_BYSTANDER_EXT_ID || extId.startsWith(VILLAIN_DECK_BYSTANDER_PREFIX);
+}
 
 // why: locked chip labels — twelve entries matching `NotableGameEventType`
 // exactly (D-20008 added `mastermindDefeated`; WP-381 / D-24182 added
@@ -95,12 +116,11 @@ function chipLabel(type: string): string {
 }
 
 function effectLabel(keyword: string): string {
-  // why: totality fallback (D-20102) — raw keyword verbatim when the
-  // engine's `VillainEffectKeyword` union has expanded past the
-  // arena-client's locked map. Silent-skip is forbidden; the raw string
-  // surfaces the data so operators see "something new happened" rather
-  // than a swallowed effect.
-  return EFFECT_LABELS[keyword] ?? keyword;
+  // why: totality fallback (D-20102) — raw keyword verbatim when a newer
+  // engine emits a keyword this bundle predates (a deploy skew). Silent-skip
+  // is forbidden; the raw string surfaces the data so operators see
+  // "something new happened" rather than a swallowed effect.
+  return EFFECT_LABELS[keyword as VillainEffectKeyword] ?? keyword;
 }
 
 export default defineComponent({
@@ -141,6 +161,9 @@ export default defineComponent({
       const entry = props.cardDisplayData?.[id];
       if (entry !== undefined && typeof entry.name === 'string') {
         return entry.name;
+      }
+      if (isBystanderExtId(id)) {
+        return 'Bystander';
       }
       return id;
     });

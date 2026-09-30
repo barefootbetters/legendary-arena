@@ -239,6 +239,26 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     assert.equal(line, 'the active player must KO a hero; other players KO’d S.H.I.E.L.D. Agent, Hulk');
   });
 
+  // why: D-24646 — the KO labels are past tense; a KO that found no Hero must not claim one.
+  it('D-24646: a KO effect with no target and no pending pick says nothing was KO’d', () => {
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroEachPlayerMag2', targetNames: [] }]),
+      'no player had a hero to KO',
+    );
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroEachPlayer', targetNames: [] }]),
+      'no player had a hero to KO',
+    );
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroCurrentPlayer', targetNames: [] }]),
+      'the active player had no hero to KO',
+    );
+    assert.equal(
+      composeAmbushNarrative('Juggernaut', [{ keyword: 'koHeroEachPlayerMag2', targetNames: [] }]),
+      '"Juggernaut" ambushed: no player had a hero to KO.',
+    );
+  });
+
   it('renders the bare generic label for a no-target effect (wound / bystander)', () => {
     const line = composeEffectResultLogLine([
       { keyword: 'gainWoundEachPlayer', targetNames: [] },
