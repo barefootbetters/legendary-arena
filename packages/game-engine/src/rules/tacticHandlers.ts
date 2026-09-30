@@ -596,27 +596,38 @@ export function resolveSecretsOfTimeTravel(
 }
 
 /**
- * Counts the acting player's in-play Heroes on the X-Men team — Xavier's Nemesis's
- * "for each of your [team:x-men] Heroes" scan.
+ * Counts the acting player's X-Men Heroes — Xavier's Nemesis's "for each of your
+ * [team:x-men] Heroes" scan, over the hand AND the cards played this turn.
  *
- * Reads effective team membership via `cardHasTeamWhenPlayed` (printed
+ * In play, reads effective team membership via `cardHasTeamWhenPlayed` (printed
  * `G.cardTraits.team` OR a Copy-Powers granted team), so a Rogue Copy Powers card
- * that copied an X-Men Hero counts, matching the printed team faithfully rather
- * than reading `cardTraits.team` directly.
+ * that copied an X-Men Hero counts. In hand, reads the printed team through
+ * `offPlayCardTraits` (a Copy-Powers grant applies only in play; a Divided Card off
+ * play carries its faces' team).
  *
  * @param G - The game state (read-only here).
- * @param inPlay - The acting player's in-play zone, in order.
- * @returns How many in-play cards count as team `x-men`.
+ * @param inPlay - The acting player's played-this-turn cards, in order.
+ * @param hand - The acting player's hand, in order.
+ * @returns How many cards in hand or play count as team `x-men`.
  */
-function countInPlayXMenHeroes(
+function countXMenHeroesYouHave(
   G: LegendaryGameState,
   inPlay: readonly CardExtId[],
+  hand: readonly CardExtId[],
 ): number {
-  // why: explicit loop, not .reduce() — effect application counts as rule work
+  // why: explicit loops, not .reduce() — effect application counts as rule work
   // (.claude/rules/code-style.md Patterns to Avoid).
   let total = 0;
   for (const cardExtId of inPlay) {
     if (cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
+      total = total + 1;
+    }
+  }
+  // why: D-24645 — rules v23 "Your Heroes/Allies" & "Heroes/Allies You Have": these
+  // phrases include the cards in your hand as well as the cards played this turn
+  // (the D-24529 Perfect Teamwork precedent). D-24508 counted play only.
+  for (const cardExtId of hand) {
+    if (offPlayCardTraits(G, cardExtId)?.team === TEAM_X_MEN) {
       total = total + 1;
     }
   }
@@ -628,8 +639,8 @@ function countInPlayXMenHeroes(
  * your [team:x-men] Heroes, rescue a Bystander."
  *
  * Rescues one Bystander from the shared supply (`G.piles.bystanders`, top-of-pile
- * per D-21501) into the defeating player's Victory Pile, once per in-play X-Men
- * Hero. Zero X-Men Heroes rescues nothing; an empty supply stops early. Mutates
+ * per D-21501) into the defeating player's Victory Pile, once per X-Men Hero in
+ * their hand or played this turn (D-24645). Zero X-Men Heroes rescues nothing; an empty supply stops early. Mutates
  * `G.piles.bystanders` and the player's victory zone via `moveCardFromZone`; never
  * throws.
  *
@@ -646,7 +657,11 @@ export function resolveXaviersNemesis(
   }
 
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  const xMenCount = countInPlayXMenHeroes(G, playedCardIdsThisTurn(G, playerZones.inPlay));
+  const xMenCount = countXMenHeroesYouHave(
+    G,
+    playedCardIdsThisTurn(G, playerZones.inPlay),
+    playerZones.hand,
+  );
   let rescuedCount = 0;
   for (let rescueIndex = 0; rescueIndex < xMenCount; rescueIndex++) {
     // why: top-of-pile convention — bystanders[0] is the next available supply
@@ -667,7 +682,7 @@ export function resolveXaviersNemesis(
   }
 
   pushLog(G,
-    `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per in-play X-Men Hero (Xavier's Nemesis).`,
+    `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per X-Men Hero in hand or play (Xavier's Nemesis).`,
     'applied',
   );
 }
@@ -1187,8 +1202,9 @@ export function resolveRuthlessDictator(
 }
 
 /**
- * Collects the acting player's in-play Heroes on the X-Men team — the Electromagnetic
- * Bubble eligibility scan.
+ * Collects the acting player's X-Men Heroes in play, then in hand — the Electromagnetic
+ * Bubble eligibility scan ("one of your [team:x-men] Heroes"; D-24645: rules v23 "Your
+ * Heroes" = hand + cards played this turn).
  *
  * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot (the WP-506 precedent:
  * only Heroes carry a team, so Wounds / Bystanders / the teamless basic S.H.I.E.L.D.
@@ -1198,15 +1214,24 @@ export function resolveRuthlessDictator(
  *
  * @param G - The game state (read-only here; supplies `cardTraits`).
  * @param inPlay - The acting player's in-play zone, in order.
- * @returns The in-play X-Men Hero ext_ids, in play order.
+ * @param hand - The acting player's hand, in order.
+ * @returns The X-Men Hero ext_ids, in-play (play order) before hand (hand order).
  */
-function collectInPlayXMenHeroes(
+function collectXMenHeroesYouHave(
   G: LegendaryGameState,
   inPlay: readonly CardExtId[],
+  hand: readonly CardExtId[],
 ): CardExtId[] {
   const eligible: CardExtId[] = [];
   for (const cardExtId of inPlay) {
     if (G.cardTraits?.[cardExtId]?.team === TEAM_X_MEN) {
+      eligible.push(cardExtId);
+    }
+  }
+  // why: D-24645 — a hand Hero is "one of your Heroes" too. It is discarded at cleanup,
+  // and consumeDeferredHandInjections pulls it back from the discard at the next fill.
+  for (const cardExtId of hand) {
+    if (offPlayCardTraits(G, cardExtId)?.team === TEAM_X_MEN) {
       eligible.push(cardExtId);
     }
   }
@@ -1247,7 +1272,7 @@ export function recordDeferredHandInjection(
  * your [team:x-men] Heroes. When you draw a new hand of cards at the end of this turn,
  * add that Hero to your hand as a seventh card." (WP-695 / D-24512).
  *
- * Scans the DEFEATING player's in-play X-Men Heroes:
+ * Scans the DEFEATING player's X-Men Heroes in play and in hand (D-24645):
  *   0 → a logged no-op (no entry parked);
  *   1 → auto-select the sole Hero inline (record the deferred injection, no park — the
  *       undercover 1→auto precedent: a one-option pick with no decline is just ceremony);
@@ -1267,12 +1292,12 @@ export function resolveElectromagneticBubble(
     return;
   }
 
-  const eligibleCardIds = collectInPlayXMenHeroes(G, playerZones.inPlay);
+  const eligibleCardIds = collectXMenHeroesYouHave(G, playerZones.inPlay, playerZones.hand);
 
   if (eligibleCardIds.length === 0) {
-    // why: 0 in-play X-Men Heroes — a reachable no-op (never a hollow record); nothing to add.
+    // why: 0 X-Men Heroes in play or hand — a reachable no-op (never a hollow record); nothing to add.
     pushLog(G,
-      `Fight effect: Player ${currentPlayer} has no in-play X-Men Hero to add (Electromagnetic Bubble); no effect.`,
+      `Fight effect: Player ${currentPlayer} has no X-Men Hero in hand or play to add (Electromagnetic Bubble); no effect.`,
       'blocked',
     );
     return;
@@ -1303,7 +1328,7 @@ export function resolveElectromagneticBubble(
     eligibleCardIds,
   });
   pushLog(G,
-    `Fight effect: Player ${currentPlayer} — choose an in-play X-Men Hero to add to your next hand (Electromagnetic Bubble).`,
+    `Fight effect: Player ${currentPlayer} — choose an X-Men Hero from your hand or play to add to your next hand (Electromagnetic Bubble).`,
     'neutral',
   );
 }
@@ -1349,7 +1374,7 @@ export function dispatchTacticOnFight(
     return;
   }
   // why: WP-691 / D-24508 — Magneto's Xavier's Nemesis: rescue one Bystander per
-  // in-play X-Men Hero of the defeating player (no player choice).
+  // X-Men Hero in the defeating player's hand or play (D-24645; no player choice).
   if (defeatedTacticId === MAGNETO_XAVIERS_NEMESIS_TACTIC_ID) {
     resolveXaviersNemesis(G, currentPlayer);
     return;
@@ -1411,7 +1436,7 @@ export function dispatchTacticOnFight(
     resolveRuthlessDictator(G, currentPlayer);
     return;
   }
-  // why: WP-695 / D-24512 — Magneto's Electromagnetic Bubble picks an in-play X-Men Hero
+  // why: WP-695 / D-24512 — Magneto's Electromagnetic Bubble picks an X-Men Hero
   // (0 → no-op, 1 → auto inline, ≥2 → park) and defers adding it as a seventh card at the
   // player's next hand fill.
   if (defeatedTacticId === MAGNETO_ELECTROMAGNETIC_BUBBLE_TACTIC_ID) {

@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24645 — Magneto's Xavier's Nemesis and Electromagnetic Bubble now count X-Men Heroes in your hand (direct fix) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When you defeat Magneto's **Xavier's Nemesis**, every X-Men
+Hero you have counts, whether you played it this turn or it is still in your hand: each one rescues a Bystander. With
+**Electromagnetic Bubble**, you can also pick an X-Men Hero from your hand to add to your next hand. Before, only
+cards you had played counted, so a held X-Men Hero was ignored (rules v23 "Your Heroes" = hand + played this turn).
+
+- **Engine only** (`tacticHandlers.ts`), plus comment wording. No new state, move, or UI field.
+- **Counts.** game-engine 4703 → 4709 / 0 fail; CI data gates current, no fixture churn.
+- **Live-verify (D-24026):** pending. Fight Magneto's Xavier's Nemesis while holding an unplayed X-Men Hero (e.g. keep
+  a Wolverine card in hand) → the log's rescue count includes it.
+
 ### D-24643 — Every worktree runs its own branch's commit hooks (direct fix, commit-hygiene tooling) (2026-09-29)
 
 **Developer tooling, no player-visible change.** Most local worktrees were running the canonical checkout's

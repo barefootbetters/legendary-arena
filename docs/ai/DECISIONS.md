@@ -41899,6 +41899,8 @@ tactics, so **no re-pin** — verified: no `.replay.json` / hash-fixture churn.
 rescue). **Coverage:** three `executable` rows in `scripts/coverage/tactic-provenance.json`
 + regenerated `data/metadata/effect-implementation-index.json`.
 
+**Amended:** §2 (Xavier's Nemesis counts in-play X-Men only) is corrected by D-24645 (2026-09-29): "your Heroes" counts the hand as well as the cards played this turn.
+
 ### D-24513 — the extra-turn primitive + Dr. Doom "Secrets of Time Travel" resolution (Active 2026-09-10 — WP-696 / EC-733)
 
 **Context.** Defeating core Dr. Doom's "Secrets of Time Travel" tactic
@@ -42194,6 +42196,8 @@ sentinel `finalStateHash` are byte-identical, **no re-pin**
 precedents), WP-497/D-24300 (`handSizeOverrides` next-hand pattern). **Enables:** any
 future "add a specific card to the next hand" effect (reuses `G.deferredHandInjections`).
 **Reserved by:** WP-695 draft (NUMBER-LEDGER).
+
+**Amended:** the Electromagnetic Bubble eligible set (in-play X-Men only) is corrected by D-24645 (2026-09-29): a held X-Men Hero is eligible too.
 
 ---
 
@@ -45949,6 +45953,23 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Gates.** `pnpm guard:test` +5 (a foreign worktree override is reset; a stale absolute shared value is overridden for this worktree only; relative and own-absolute values are left alone silently; unset is set; outside a repo it exits 0 silently).
 
 **Reserved by:** NUMBER-LEDGER D-24643. Related: D-24632 (merge-from-main exemption), PR #2488 (hook-test isolation), PR #2516 (the trigger), D-24642.
+
+---
+
+### D-24645 — Magneto's Xavier's Nemesis and Electromagnetic Bubble count X-Men Heroes in hand as well as in play (direct fix, no WP) (Active 2026-09-29)
+
+**Context.** Both core Magneto tactics say "your [team:x-men] Heroes": Xavier's Nemesis ("For each of your X-Men Heroes, rescue a Bystander") and Electromagnetic Bubble ("Choose one of your X-Men Heroes…"). Rules v23, "Your Heroes/Allies" & "Heroes/Allies You Have": "These phrases include both the cards in your hand and the cards you have played this turn." D-24508 §2 and D-24512 scanned the play area only, so an X-Men Hero still in hand when the tactic was defeated rescued nothing and could not be picked. Surfaced in Jeff's match `L8zjajy1P-n` (log: "one per in-play X-Men Hero"). It is the same misreading D-24529 corrected for Perfect Teamwork.
+
+**Decision.**
+1. Xavier's Nemesis rescues one Bystander per X-Men Hero in the defeating player's hand **or** played this turn. In play the read stays `cardHasTeamWhenPlayed` (printed team or a Copy-Powers grant). In hand it is the printed team via `offPlayCardTraits`, because a Copy-Powers grant applies only in play.
+2. Electromagnetic Bubble's eligible set is the X-Men Heroes in play (play order) followed by those in hand (hand order). The 0 / 1 / ≥2 handling is unchanged. A held Hero is discarded at cleanup and `consumeDeferredHandInjections` already pulls it back from the discard at the next fill, so no new state is needed.
+3. Cards played this turn that have left play still do not count ("they don't count as 'Your Heroes'"), which is unchanged.
+4. Log wording: "one per X-Men Hero in hand or play" / "choose an X-Men Hero from your hand or play" / "has no X-Men Hero in hand or play". Stale "in-play X-Men" comments in the engine and the Bubble prompt were updated to match.
+5. Amends D-24508 §2 and D-24512 (Electromagnetic Bubble eligibility). No new `G` field, move, or UIState field. The prompt already renders any eligible id through `resolveDisplay`.
+
+**Gates.** game-engine 4703 → 4709 / 0 fail (+3 Xavier's Nemesis: hand + play counted, hand-only counted, a Copy-Powers grant ignored in hand; +3 Electromagnetic Bubble: a sole held Hero auto-recorded, play-then-hand order when parking, a held pick pulled back from the discard at the next fill). Against the old resolvers, 4 of the 6 fail. `sim:coverage --check`, `sim:runtime-observed:check`, `effect-index:check`, `mechanics:metadata:check`, and the hero/villain ledger checks are all current, with no fixture or hash churn.
+
+**Reserved by:** NUMBER-LEDGER D-24645. Related: D-24508 (§2 amended), D-24512 (Bubble eligibility amended), D-24529 (the "you have" = hand + play precedent), D-24391 (effective team in play), D-24619 (both-sides split-card reads).
 
 ---
 

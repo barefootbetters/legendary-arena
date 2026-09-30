@@ -149,7 +149,7 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
   if (hasPendingRuthlessDictatorChoice(G)) { return; }
   // why: block-all guard (WP-695 / D-24512) — while an Electromagnetic Bubble X-Men
   // pick is pending the board is frozen; advanceStage returns with no side effects so
-  // the defeating player picks which in-play X-Men Hero to add before any other action.
+  // the defeating player picks which X-Men Hero to add before any other action.
   if (hasPendingElectromagneticBubbleChoice(G)) { return; }
   // why: block-all guard (WP-476 / D-24284) — while a discard-to-limit choice is
   // pending the board is frozen; advanceStage (at any stage) returns with no side

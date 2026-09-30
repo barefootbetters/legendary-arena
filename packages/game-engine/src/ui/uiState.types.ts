@@ -170,7 +170,7 @@ export interface UIState {
   // next-draw information). Absent (undefined) means no pending reveal-three assignment.
   pendingRevealThreeAssign?: UIPendingRevealThreeAssign;
   // why: WP-695 / D-24512 — projects the FRONT of G.pendingElectromagneticBubbleChoices with
-  // the eligible in-play X-Men Heroes so the defeating player can render the "choose an X-Men
+  // the eligible X-Men Heroes so the defeating player can render the "choose an X-Men
   // Hero to add to your next hand" prompt. Redacted (omitted) for every audience except the
   // chooser (the eligible list is the chooser's own in-play Heroes — a public zone, but the
   // choice is theirs alone, so kept owner-only for consistency with the other pending picks).
@@ -1218,7 +1218,7 @@ export interface UIPendingRevealThreeAssign {
 }
 
 /**
- * One eligible in-play X-Men Hero in a pending Electromagnetic Bubble choice (WP-695 /
+ * One eligible X-Men Hero in a pending Electromagnetic Bubble choice (WP-695 /
  * D-24512). The client renders each eligible Hero and submits
  * `resolveElectromagneticBubbleChoice({ cardId })` for the one the player chooses to add
  * to their next hand. `cardId` is matched against the front pending entry's
@@ -1236,7 +1236,7 @@ export interface UIElectromagneticBubbleEligibleCard {
  * picks — the decision is the chooser's alone).
  *
  * `eligibleCards` is the FRONT pending entry's `eligibleCardIds` snapshot resolved to
- * display data, in in-play order (the in-play X-Men Heroes the player may add). The
+ * display data, in in-play order (the X-Men Heroes the player may add). The
  * client submits `{ cardId }` for the chosen Hero; the engine records it as a deferred
  * hand injection added at the player's next hand fill.
  *

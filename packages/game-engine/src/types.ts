@@ -751,7 +751,7 @@ export interface PendingRevealThreeAssign {
  * Created when the core Magneto mastermind's "Electromagnetic Bubble" tactic Fight is
  * defeated ("Choose one of your [team:x-men] Heroes. When you draw a new hand of cards
  * at the end of this turn, add that Hero to your hand as a seventh card.") AND the
- * defeating player has ≥2 in-play X-Men Heroes to choose among. With 0 in-play X-Men
+ * defeating player has ≥2 X-Men Heroes in hand or play (D-24645) to choose among. With 0 X-Men
  * Heroes the tactic is a logged no-op (no entry parked); with exactly 1 the sole Hero
  * is auto-selected inline (no entry parked — the undercover 1→auto precedent). Parked
  * for the DEFEATING player only; front-popped by resolveElectromagneticBubbleChoice
@@ -759,16 +759,16 @@ export interface PendingRevealThreeAssign {
  * guards).
  *
  * // why: D-24512 — a single pick from a variable eligible set (not a sequential
- * disposition), so it carries only the eligible in-play X-Men ext_ids snapshot. The
+ * disposition), so it carries only the eligible X-Men ext_ids snapshot. The
  * chosen ext_id is written to G.deferredHandInjections (the deferred half), consumed
  * once at the player's next play-phase `onBegin` fill.
  */
 export interface PendingElectromagneticBubbleChoice {
   /** Discriminant; always 'electromagnetic-bubble'. */
   choiceType: 'electromagnetic-bubble';
-  /** The defeating (active) player who picks which in-play X-Men Hero to add. */
+  /** The defeating (active) player who picks which X-Men Hero to add. */
   playerID: string;
-  /** The in-play X-Men Hero ext_ids the player may choose among (snapshot). */
+  /** The X-Men Hero ext_ids the player may choose among (snapshot). */
   eligibleCardIds: CardExtId[];
 }
 
@@ -1800,7 +1800,7 @@ export interface LegendaryGameState {
   // NEXT play-phase `onBegin` fill (after the normal fill), then the key is deleted. A
   // SIBLING to handSizeOverrides, NOT a reuse: handSizeOverrides bumps the fill COUNT and
   // cannot carry WHICH card, whereas Magneto's "Electromagnetic Bubble" injects a chosen
-  // in-play X-Men Hero as a specific seventh card. Written only by the Electromagnetic
+  // X-Men Hero as a specific seventh card. Written only by the Electromagnetic
   // Bubble tactic resolver / its resolve move; read-and-cleared only at the play-phase
   // `onBegin` fill for the keyed player (game.ts), co-located with the handSizeOverrides
   // consume. Gameplay-affecting so it MUST be hashed, but — following the
@@ -1879,7 +1879,7 @@ export interface LegendaryGameState {
 
   // why: WP-695 / D-24512 — FIFO queue of pending Magneto "Electromagnetic Bubble" X-Men
   // Hero picks (at most one, parked for the defeating player when the tactic is defeated
-  // with ≥2 in-play X-Men Heroes). Entries are appended by resolveElectromagneticBubble
+  // with ≥2 X-Men Heroes). Entries are appended by resolveElectromagneticBubble
   // (rules/tacticHandlers.ts); front-popped by resolveElectromagneticBubbleChoice once the
   // pick is recorded into G.deferredHandInjections. Must be undefined or empty at every
   // turn-end. Runtime-only, never persisted (snapshots stay counts-only), mirroring
