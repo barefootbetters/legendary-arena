@@ -115,6 +115,9 @@ describe('computeCasualCoachMatchId (WP-752 / D-24576)', () => {
     already: null,
     failed: null,
     guest: null,
+    // why: D-24630 — an expired session is still headed for scoring after re-login,
+    // so it never gets the casual (unscored) coach panel.
+    'session-expired': null,
     ineligible: 'match-1',
     'ended-early': null,
   };
@@ -127,7 +130,7 @@ describe('computeCasualCoachMatchId (WP-752 / D-24576)', () => {
         status,
       );
     }
-    assert.equal(Object.keys(EXPECTED_BY_STATUS).length, 8);
+    assert.equal(Object.keys(EXPECTED_BY_STATUS).length, 9);
   });
 
   test('an empty match id yields null even when ineligible', () => {

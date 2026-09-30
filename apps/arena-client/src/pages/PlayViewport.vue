@@ -64,6 +64,9 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   submitted: 'Score submitted to the leaderboard.',
   already: 'Your score for this match was already submitted.',
   guest: 'Sign in to submit your score to the leaderboard.',
+  // why: D-24630 — not rendered as a status line (the in-card prompt covers it),
+  // but the Record is exhaustive, and EndgameActions reads the variant.
+  'session-expired': 'Your sign-in expired — sign in to save this match.',
   // why: WP-465 — `par_not_published`: the match is not a ranked-gauntlet loadout, so
   // it is permanently not eligible to be scored. An honest, non-alarming line (not an
   // error — the player did nothing wrong).
@@ -145,6 +148,14 @@ export default defineComponent({
     // matchId prop-drill (D-16501). Defaults to '' so non-live mounts forward
     // an empty value that probes nothing.
     matchId: {
+      type: String,
+      default: '',
+    },
+    // why: D-24630 — this viewer's bgio seat id (from the live `?player=` param),
+    // so the gameover submit can read the public seat roster and tell an expired
+    // sign-in on an account-bound seat apart from a true guest seat. Defaults to
+    // '' on non-live mounts, which the submit composable treats as "unknown".
+    playerId: {
       type: String,
       default: '',
     },
@@ -262,18 +273,21 @@ export default defineComponent({
     // why: WP-339 — on gameover, submit this match's competitive score once (for
     // an authenticated player). toRef keeps matchId reactive so the composable
     // re-arms if a new live match reuses this viewport instance.
-    const { submissionStatus, submittedScore } = useCompetitiveSubmitOnGameover(
-      toRef(props, 'matchId'),
-    );
-
     // why: INFRA (endgame seat names) — on gameover, fetch the per-seat identity
     // roster so the co-op VP recap can label seats "Player N (@handle)" / "(Bot)".
     // The competitive report card gets the same roster from its submit response;
     // this covers the unscored / guest / local matches that fall through to the
     // recap. Public read (runs for guests too); toRef keeps matchId reactive so it
-    // re-arms for a new live match on the same viewport instance.
+    // re-arms for a new live match on the same viewport instance. Created before
+    // the submit hook so it can feed that hook's expired-session check (D-24630).
     const { seatIdentities } = useSeatIdentitiesOnGameover(
       toRef(props, 'matchId'),
+    );
+    // why: D-24630 — the roster + this seat's id let the submit hook tell an
+    // expired sign-in on an account-bound seat from a true guest seat.
+    const { submissionStatus, submittedScore } = useCompetitiveSubmitOnGameover(
+      toRef(props, 'matchId'),
+      { seatIdentities, playerId: toRef(props, 'playerId') },
     );
     const submissionMessage = computed<string>(() => {
       const status = submissionStatus.value;
@@ -283,7 +297,8 @@ export default defineComponent({
       // compile error, not a silent ''). WP-339 — 'guest' also renders no status
       // line: guests get the richer in-card sign-in prompt (EndgameSummary
       // showGuestSignIn), so a second sign-in message would be redundant.
-      if (status === 'idle' || status === 'guest') {
+      // D-24630 — 'session-expired' likewise gets the in-card sign-in-to-save prompt.
+      if (status === 'idle' || status === 'guest' || status === 'session-expired') {
         return '';
       }
       return SUBMISSION_MESSAGES[status];
@@ -293,6 +308,12 @@ export default defineComponent({
     // 'guest'. EndgameSummary uses this to render a sign-in conversion prompt in the
     // otherwise-empty competitive-score slot, instead of leaving dead space.
     const isGuestResult = computed<boolean>(() => submissionStatus.value === 'guest');
+    // why: D-24630 — an account-bound seat whose sign-in expired is NOT a guest:
+    // the match can still be saved after re-login, so EndgameSummary shows the
+    // "sign-in expired — sign in to save this match" prompt instead of guest copy.
+    const isSessionExpiredResult = computed<boolean>(
+      () => submissionStatus.value === 'session-expired',
+    );
 
     // why: WP-752 — computed once here (the only place that holds both matchId and
     // submissionStatus) and passed down to both play surfaces, which only render it.
@@ -441,6 +462,7 @@ export default defineComponent({
       seatIdentities,
       submissionMessage,
       isGuestResult,
+      isSessionExpiredResult,
       casualCoachMatchId,
       isBotAllyStopped,
       botAllyMessage,
@@ -480,6 +502,7 @@ export default defineComponent({
       :competitive-score="submittedScore"
       :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
+      :show-session-expired-sign-in="isSessionExpiredResult"
       :casual-coach-match-id="casualCoachMatchId"
     />
     <PlayDesktop
@@ -492,6 +515,7 @@ export default defineComponent({
       :competitive-score="submittedScore"
       :seat-identities="seatIdentities"
       :show-guest-sign-in="isGuestResult"
+      :show-session-expired-sign-in="isSessionExpiredResult"
       :casual-coach-match-id="casualCoachMatchId"
     />
     <DiagnosticExportButton />

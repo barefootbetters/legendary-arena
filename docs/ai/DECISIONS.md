@@ -45779,6 +45779,32 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24630 — A signed-in seat whose sign-in expired before gameover is "session-expired", not a guest, and is saved after re-login (Active 2026-09-27 — direct fix, no WP; arena-client only)
+
+**Status:** Active — landed 2026-09-27 (arena-client: `useCompetitiveSubmitOnGameover.ts`, new `lib/pendingScoreSubmit.ts`, `LoginPage.vue`, `EndgameSummary.vue`, `PlayViewport.vue` / `PlayDesktop.vue` / `PlayMobile.vue`, `App.vue`).
+
+**Context.** On 2026-09-27 a solo match played as @jefferyjjensen ended with "Sign in to save your results — You played this match as a guest, so it wasn't saved", while the seat line read "Player 1 (@jefferyjjensen)" and earlier matches that day in the same browser had scored. Cause, verified in code: `useCompetitiveSubmitOnGameover` latched `'guest'` and never POSTed whenever `authStore.token === null` at gameover. The live route hydrates the token from the broker cookie (WP-341), but App.vue's Hanko `onSessionExpired` / `onUserLoggedOut` listeners call `clearSession()` mid-match, so an expired session at gameover reads exactly like a guest. The seat label comes from the public seat roster, which reflects the account bound at join, hence the contradiction. (That the broker session expired in this particular match is inferred from the symptoms; the client keeps no log of it.) Two further no-token paths share the fix: the token not yet hydrated when a reload lands at gameover, and a still-held token the server now rejects (401 before the broker's periodic check fires, previously shown as "Couldn't submit").
+
+**Server side needs no change.** `submitCompetitiveScoreByMatchId` resolves ownership with `findReplayOwnershipForAccount(accountId, replayHash)`, where ownership was captured per account-bound seat at match capture (D-24119: fixed at join). So the same account, signed in again, can submit the finished match by matchId. The submit is idempotent (`wasExisting`).
+
+**Silent refresh is not available.** `@teamhanko/hanko-frontend-sdk` 2.6.0 exposes `validateSession()` (a check) and `getSessionToken()`, but no refresh or extend call. The session lifetime is set on the Hanko tenant. Signing in again is the only recovery on the client.
+
+**Decision.**
+1. New `SubmissionStatus` `'session-expired'`. With no token at gameover, the composable returns it instead of `'guest'` when any of these holds: a token was seen on this mount; a pending-submit marker exists for this match; or the public seat roster shows this seat as a human seat with a non-null handle. A null handle proves nothing, because it also covers guests, bots and handleless accounts. The roster lands after gameover, so it can upgrade an earlier `'guest'` latch.
+2. A 401 from the submit also maps to `'session-expired'`, not `'failed'`.
+3. On `'session-expired'` the composable stashes `{ matchId, playerId, credentials }` from the live URL in `sessionStorage` (`legendary-arena:pending-score-submit`). It uses sessionStorage, not `?returnTo=`, so the seat credentials never enter the login page's URL.
+4. The endgame panel shows "Your sign-in expired — Sign in to save this match" with a `?route=login&returnTo=live` CTA. It never shows the guest copy for this case. `LoginPage` adds `live` to its closed `returnTo` set. On sign-in it full-reloads to a URL rebuilt from the marker's three fields (always a same-origin `?match=` query), or to the lobby when no marker exists.
+5. Whenever a token appears after a `'guest'` or `'session-expired'` latch (late hydration, the return from sign-in, or a cross-tab sign-in), the composable posts the deferred submit once. Any settled answer other than 401 clears the marker. If a deferred submit that started from `'guest'` gets `not_owner`, the status stays `'guest'`: it really was a guest seat.
+6. A true guest (no token on this mount, no marker, no account-bound roster seat) keeps the existing `'guest'` copy, unchanged.
+
+**Gates.** `pnpm -r build && pnpm -r --no-bail test` 0 fail in every package (arena-client 2184/0, +17; server 1636/0; game-engine 4663/0); arena-client `typecheck` 0. New tests: 7 in `useCompetitiveSubmitOnGameover.sessionExpiry.test.ts` (mid-match expiry, deferred submit on re-login, return-from-login with late hydration, true guest stays guest, roster upgrade, 401, not_owner keeps guest), 7 in `pendingScoreSubmit.test.ts` (marker round trip and validation, `resolveSignInDestination`), and 3 in `EndgameSummary.test.ts` (expired prompt and CTA, no guest copy, true guest unchanged). The `computeCasualCoachMatchId` truth table gains the new status (→ null).
+
+**D-24026 live-on-surface:** pending. After deploy: sign in, start a solo match, sign out in another tab (or let the session lapse) before the match ends, and finish the match. Expect "Your sign-in expired". Click Sign in, sign in, and confirm you land back on the match with the score submitted.
+
+**Reserved by:** NUMBER-LEDGER D-24630. Related: WP-339 / EC-369 (submit on gameover), WP-341 (live-route hydration), D-24119 (ownership fixed at join), WP-160 / D-16008 (`?route=login`), WP-593 / D-24402 (seat roster), D-24120.
+
+---
+
 ### D-24632 — Git's default merge-from-main commit passes the commit-message check (Active 2026-09-28 — direct fix, no WP; commit-hygiene tooling)
 
 **Status:** Active — landed 2026-09-28 (`.githooks/commit-msg`, `.github/workflows/commit-hygiene.yml`, `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md`, new `scripts/commit-msg-merge-exemption.test.ts` wired into `pnpm guard:test`).

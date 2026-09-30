@@ -26,6 +26,10 @@ import {
 } from '../auth/hankoClient';
 import { useAuthStore } from '../stores/auth';
 import { captureAnalyticsEvent } from '../lib/api/analyticsEmitter';
+import {
+  buildLiveReturnUrl,
+  readPendingScoreSubmit,
+} from '../lib/pendingScoreSubmit';
 
 type LoginPageState =
   | 'initializing'
@@ -33,7 +37,12 @@ type LoginPageState =
   | 'unavailable'
   | 'signing-out';
 
-const GUARDED_RETURN_ROUTES = ['me', 'admin-billing'] as const;
+// why: D-24630 — `live` joins the closed set so an expired-session endgame can
+// send the player back to their finished match. Unlike the guarded routes it is
+// never a bare `?route=live`: the destination is rebuilt from the sessionStorage
+// pending-submit marker (see resolveSignInDestination), and falls back to the
+// lobby when no marker exists.
+const GUARDED_RETURN_ROUTES = ['me', 'admin-billing', 'live'] as const;
 type GuardedReturnRoute = (typeof GUARDED_RETURN_ROUTES)[number];
 
 function isGuardedReturnRoute(
@@ -43,6 +52,23 @@ function isGuardedReturnRoute(
     return false;
   }
   return (GUARDED_RETURN_ROUTES as readonly string[]).includes(value);
+}
+
+/**
+ * The URL to full-reload to after a successful sign-in.
+ *
+ * @param returnTo The validated `?returnTo=` route, or null.
+ * @returns A relative URL: the stashed live match for `live` (D-24630), the
+ *   guarded route for `me` / `admin-billing`, else the lobby (`?route=`).
+ */
+export function resolveSignInDestination(returnTo: GuardedReturnRoute | null): string {
+  if (returnTo === 'live') {
+    const pending = readPendingScoreSubmit();
+    // why: no marker (storage cleared, another tab) — the lobby is the safe
+    // landing; the match stays savable from its URL once the player reopens it.
+    return pending === null ? '?route=' : buildLiveReturnUrl(pending);
+  }
+  return '?route=' + (returnTo ?? '');
 }
 
 function readTenantBaseUrl(): string {
@@ -96,7 +122,7 @@ export default defineComponent({
       // getSessionToken(). A pushState navigation would keep the same
       // Vue app instance; the cached route value would not refresh and
       // the user would still see the LoginPage.
-      window.location.assign('?route=' + (validatedReturnTo ?? ''));
+      window.location.assign(resolveSignInDestination(validatedReturnTo));
     }
 
     onMounted(async () => {
