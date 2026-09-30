@@ -956,7 +956,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-823 | WP-786    | Arena Client (`components/play/BattleBrief.vue` [new] + `PlayViewport.vue` mount) | **WP-786 — Battle brief.** | Done |
 | EC-824 | WP-787    | Server (`match/guestSoloRoutes.mjs` [new] + `match/tokenBucketRateLimiter.mjs` [new] + `server.mjs` registration + `api-endpoints.md` row) | **WP-787 — Guest solo create.** | Done |
 | EC-825 | WP-788    | Arena Client (`lobbyApi.ts` `createGuestSoloMatch` + `ArenaEntrance.vue` guest branch + featured-table drift test) | **WP-788 — Guest solo client.** BLOCKED on WP-785 + WP-787. | Done |
-| EC-826 | WP-789    | Game Engine + Arena Client (`applyRevealRules` emits on a miss + optional `HeroEffectResolvedEvent.revealedCardId`; `eventCardId` branch + reveal card image on `NotableEventOverlay.vue` + `UIState.notableEventCards` (types/build/filter) + `PlayDesktop.vue` lookup fold + reorder event buffer) | **WP-789 — Reveal card visible.** D-24637. | Draft |
+| EC-826 | WP-789    | Game Engine + Arena Client (`applyRevealRules` emits on a miss + optional `HeroEffectResolvedEvent.revealedCardId`; `eventCardId` branch + reveal card image on `NotableEventOverlay.vue` + `UIState.notableEventCards` (types/build/filter) + `PlayDesktop.vue` lookup fold + reorder event buffer) | **WP-789 — Reveal card visible.** D-24637. | Done |
 ---
 
 ## Rules
