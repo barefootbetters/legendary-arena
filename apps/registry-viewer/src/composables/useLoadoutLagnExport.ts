@@ -160,13 +160,15 @@ function compositionToLagnSetup(
   // a blank name shipped every exported loadout with no human-readable entity
   // names (a Red Skull / Super Hero Civil War export showed only bare ext_ids).
   // why: WP-404 / D-24212 — emit the reserve bench as `setup.hero_alternates`,
-  // the same `{ id, name }` shape as `setup.heroes` (the LAGN validator resolves
-  // the name). OMIT the key entirely when the bench is empty or absent — an empty
-  // array asserts "a bench exists and is empty", a different claim, and the
-  // WP-402 gate accepts the block on this 1.5.0 export (>= 1.3.0).
+  // the same `{ id, name }` shape as `setup.heroes`. A bench entry is a hero
+  // ext_id (the same `setAbbr/slug` id space as heroDeckIds — the picker fills it
+  // from the hero list), so it resolves through the same resolver; the old
+  // `name: ""` shipped every bench hero nameless. OMIT the key entirely when the
+  // bench is empty or absent — an empty array asserts "a bench exists and is
+  // empty", a different claim, and the WP-402 gate accepts the block (>= 1.3.0).
   const heroAlternates =
     heroAlternateIds !== undefined && heroAlternateIds.length > 0
-      ? heroAlternateIds.map((id) => ({ id, name: "" }))
+      ? heroAlternateIds.map((id) => ({ id, name: resolveName(id) }))
       : undefined;
   return {
     ...(pools === undefined ? {} : { support_pools: pools }),

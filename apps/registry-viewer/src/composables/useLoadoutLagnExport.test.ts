@@ -406,15 +406,46 @@ test("AC-3 a non-empty bench exports setup.hero_alternates and the document vali
   // why: WP-698 — assert the LAGN_VERSION constant rather than a hardcoded literal,
   // so a future additive-field version bump never re-breaks this unrelated case.
   assert.equal(parsed.lagn_version, LAGN_VERSION, "the current LAGN_VERSION stamp");
+  // why: #1542 — intentional behavior change. No resolver is passed here, so the
+  // default id-fallback applies: a bench name is its ext_id, never "" (the old
+  // hardcoded blank this assertion used to pin).
   assert.deepEqual(
     parsed.setup.hero_alternates,
     [
-      { id: "hero-rogue", name: "" },
-      { id: "hero-gambit", name: "" },
+      { id: "hero-rogue", name: "hero-rogue" },
+      { id: "hero-gambit", name: "hero-gambit" },
     ],
     "the bench maps to the same { id, name } shape as setup.heroes",
   );
   assert(api.isValid.value, "the exported bench document should pass validate()");
+});
+
+test("#1542 bench heroes resolve through the resolver like setup.heroes, never blank", () => {
+  const draft = ref(createValidDraft());
+  draft.value.heroAlternateIds = ["hero-rogue", "hero-unknown-set"];
+  // why: "hero-unknown-set" is deliberately absent from the map — an unresolvable
+  // bench id (a set not loaded) must fall back to its ext_id, never a blank name.
+  const names: Record<string, string> = {
+    "hero-iron-man": "Iron Man",
+    "hero-rogue": "Rogue",
+  };
+  const api = useLoadoutLagnExport(draft, (extId) => names[extId] ?? extId);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for a draft carrying a bench");
+  const parsed = JSON.parse(built.file);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "Iron Man" }]);
+  assert.deepEqual(
+    parsed.setup.hero_alternates,
+    [
+      { id: "hero-rogue", name: "Rogue" },
+      { id: "hero-unknown-set", name: "hero-unknown-set" },
+    ],
+    "a resolvable bench hero carries its display name; an unresolvable one its ext_id",
+  );
+  for (const alternate of parsed.setup.hero_alternates) {
+    assert.notEqual(alternate.name, "", `bench hero ${alternate.id} must never export a blank name`);
+  }
+  assert(api.isValid.value, "the resolved bench document should pass validate()");
 });
 
 // ── Final Blow through LAGN export (WP-698 / D-24517) ───────────────────────
