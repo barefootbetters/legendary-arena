@@ -45781,6 +45781,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Gates.** `pnpm guard:test` 22/0 (+5 in `commit-msg-merge-exemption.test.ts`, which runs the real hook: default subjects pass on a merge; the same subject on a non-merge fails; other-branch and hand-written merges fail; prefixed subjects unaffected). Checked against `main`'s unmodified hook: it rejects the default merge subject (exit 1), and the new hook accepts it (exit 0).
 
+**Follow-up 2026-09-28 (test isolation).** The first version of the hook test ran the hook in the checkout running the tests, so a merge in progress there (a real MERGE_HEAD) made the non-merge rejection case pass the hook and fail the test. Each case now runs in a throwaway `git init` repository with GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE cleared, and a sixth case covers the local MERGE_HEAD path. Verified green both clean and with a MERGE_HEAD planted in the outer worktree.
+
 **Reserved by:** NUMBER-LEDGER D-24632. Related: D-20801 (INFRA: on code), D-24444 (reward-integrity guard), D-24630 / PR #2483 (the trigger).
 
 ---
