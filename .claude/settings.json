@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/prune-empty-claude-branch.mjs\" --report"
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/git/ensure-worktree-hooks-path.mjs\""
           }
         ]
       }

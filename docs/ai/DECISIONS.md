@@ -45914,6 +45914,22 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24643 — Each worktree runs its own branch's commit hooks; a SessionStart guard resets a foreign `core.hooksPath` (direct fix, no WP; commit-hygiene tooling) (Active 2026-09-29)
+
+**Context.** Concluding an Auto-fix merge of `origin/main` into PR #2516, the commit-msg hook rejected git's default subject `Merge remote-tracking branch 'origin/main' into …`, which D-24632 exempts. The hook on main is correct, and it passes the same subject in isolation. The worktree was running a different copy. 16 of 21 local worktrees had a `config.worktree` override `core.hooksPath = C:\pcloud\BB\DEV\legendary-arena\.githooks` (written 2026-09-26/27), and the shared config had the same absolute value. So every one of those worktrees ran the canonical checkout's hooks, from whatever branch that checkout sat on (a 2026-09-11 branch, before D-24632). The documented setting is the relative `.githooks` (`install-ec-hooks.ps1`), which git resolves per worktree.
+
+**Decision.**
+1. New `scripts/git/ensure-worktree-hooks-path.mjs`, registered as a second `SessionStart` hook. When the effective `core.hooksPath` is unset or resolves anywhere other than `<this worktree>/.githooks`, it sets `core.hooksPath = .githooks`. It writes `--worktree` when `extensions.worktreeConfig` is on (else the repo config), so other checkouts are never rewritten. It prints one line when it changes something, is silent otherwise, and always exits 0.
+2. A value already equal to `.githooks`, or an absolute path to this worktree's own `.githooks`, is left alone.
+3. The D-24632 exemption itself is unchanged. The failure was a stale hook copy, not the exemption's regex. CI was never affected, because the commit-hygiene job runs the PR's own `.githooks`.
+4. What wrote the absolute overrides is outside the repo (no repo script writes one) and still unidentified. The guard makes the repo self-healing at each session start regardless.
+
+**Gates.** `pnpm guard:test` +5 (a foreign worktree override is reset; a stale absolute shared value is overridden for this worktree only; relative and own-absolute values are left alone silently; unset is set; outside a repo it exits 0 silently).
+
+**Reserved by:** NUMBER-LEDGER D-24643. Related: D-24632 (merge-from-main exemption), PR #2488 (hook-test isolation), PR #2516 (the trigger), D-24642.
+
+---
+
 ### D-24637 — Auto-resolving reveals always show the revealed card (Drafted 2026-09-29; not yet landed — WP-789 / EC-826)
 
 **Context.** D-24547 (WP-726) surfaced the auto-resolving deck-top reveal family on the `heroEffectResolved` overlay, but §2 emitted only when a reveal "realized work", and the event carried no card id. In Jeff's match `b8KeKuLE5Tb` (1p Red Skull), every Card Shark miss (a non-X-Men card left on top) emitted nothing, and hits / High Stakes Jackpot showed a text line only — so the player was never shown the card that is now their next draw. D-24547 named the card image (`revealedCardId`) as a follow-up.

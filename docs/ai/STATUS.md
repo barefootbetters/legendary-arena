@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24643 — Every worktree runs its own branch's commit hooks (direct fix, commit-hygiene tooling) (2026-09-29)
+
+**Developer tooling, no player-visible change.** Most local worktrees were running the canonical checkout's
+stale commit hooks (an absolute `core.hooksPath`), so git's own merge-from-main subject was rejected despite
+D-24632. A new SessionStart guard resets `core.hooksPath` to the relative `.githooks` per worktree.
+
+- **Tooling only.** `scripts/git/ensure-worktree-hooks-path.mjs` + `.claude/settings.json` + 5 tests in
+  `pnpm guard:test`; 01.8 / 01.3 docs.
+
 ### D-24641 — The header no longer shows "Sign in" to a signed-in player while their sign-in loads (direct fix) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On the landing page and in a match, the header's
