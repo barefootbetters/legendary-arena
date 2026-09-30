@@ -504,8 +504,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (the feed was regenerated: 7081 -> 7098 raw observations, same 78 mechanics, 0 dropped).
   // totalObs 8007 -> 8024 (+17, equal to the raw feed rise); resolvedObs stays 1235, so
   // percentResolved stays 15.4.
+  // 2026-09-29 (#2449, re-pin): the 11 "for each Hero Class you have" lines now scale per
+  // class (recruit/attack-per-count:distinct-hero-classes-played-this-turn) instead of a flat
+  // +N, so the fixed-seed sweep's games that play them take different trajectories (the feed
+  // was regenerated after rebasing onto main: 7098 -> 7092 raw observations, same 78
+  // mechanics, 0 dropped; gate-only 462 -> 470, man-out-of-time 93 -> 83, rule:sidekick
+  // 47 -> 43). totalObs 8024 -> 8018 (-6, equal to the raw feed drop); resolvedObs stays 1235,
+  // so percentResolved stays 15.4. A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8024);
+  assert.equal(view.totalObs.value, 8018);
   assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });
