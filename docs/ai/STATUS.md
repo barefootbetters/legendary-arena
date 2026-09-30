@@ -484,7 +484,7 @@ that looked like flavor text, so they did nothing and reported nothing. Cloak & 
 
 ### WP-772 — Divided Card off-play traits: a split hero counts as both halves until it is played (EC-809 / D-24604) (2026-09-26)
 
-**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** Split
+**User-visible on `play.legendary-arena.com` (live-verify PASS 2026-09-26, D-24026).** Split
 ("Divided") hero cards now follow Universal Rules v23 p.49 everywhere they are not in play:
 - **Off play, both halves count.** In hand, deck, discard pile, HQ, Victory Pile or the Hero Deck, a
   split card counts as **both** of its Hero Classes. So "reveal a [Strength] Hero or gain a Wound",
@@ -510,9 +510,18 @@ Counts and gates:
 - **Stored scores (D-24604 §5).** A read-only prod count (`default_transaction_read_only = on`)
   found **0 of 197** `legendary.competitive_scores` rows with a split hero in `team_key`. Nothing
   needs freezing today.
-- **Live-verify (D-24026) — pending.** In a manual play.legendary-arena.com match with a split hero
-  (e.g. `cvwr/peter-parker`), play a split card as face b. When it cycles back, the picker must
-  appear again. Record the matchId here. Autoplay cannot exercise it (the bot always picks face a).
+- **Live-verify (D-24026) 2026-09-26 — PASS (CLOSED).** Operator's manual solo match
+  `19720cb4-929c-467a-ab31-6a63bfaa85ea`:
+  - **Setup:** `core/loki` / `core/midtown-bank-robbery`, heroes `bkwd/falcon-winter-soldier`,
+    `xmen/aurora-northstar`, `cvwr/cloak-dagger`. Result: heroes win on turn 22.
+  - **Face-b replay, observed three times.** Each face-b card offered the picker again when it came
+    back:
+    - Relocate/Reload #2 chose Reload (15.2.7). It re-prompted at 17.2.5, and at 22.2.8 it switched
+      back to Relocate (face b → a).
+    - New Wings/New Plan #0 chose New Plan (13.2.5) and re-prompted at 14.2.10.
+    - Blazing Flare/Fists #4 chose Fists (17.2.9) and re-prompted at 19.2.8.
+  - **Off-play union: not exercised live.** No Loki Master Strike (turns 1 / 2 / 9 / 16) fired while
+    the hand held a split card with a Strength back half. It stays covered by the unit tests.
 
 ### D-24608 — Henchmen count for The Ebony Blade's "a Villain in your Victory Pile" pick (direct fix) (2026-09-26)
 
