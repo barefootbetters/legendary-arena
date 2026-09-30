@@ -301,6 +301,13 @@ export function useTurnActions(
   // Interplanetary Visitor); blocks End Turn / Pass Priority / Heal at ANY stage (the engine's
   // full block-all guard set freezes the board). Mandatory — every revealed card must be assigned.
   hasPendingRevealThreeAssign: boolean = false,
+  // why: WP-682 / D-24648 — appended LAST (after hasPendingRevealThreeAssign) so existing
+  // positional callers stay valid without edits; degrades gracefully (no gate) when omitted.
+  // True while a WP-684 pending seat choice (Diving Block reveal/decline, Random Acts,
+  // Monarch's Decree) is open; blocks End Turn / Pass Priority / Heal at ANY stage, matching
+  // the engine's hasPendingSeatChoice block-all guard. The seat prompt renders in normal flow
+  // (not a modal), so without this the action bar stayed live over an engine-frozen board.
+  hasPendingSeatChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -552,6 +559,17 @@ export function useTurnActions(
           reason: 'Draw, discard or KO each revealed card before taking another action.',
         };
       }
+      // why: WP-682 / D-24648 — End Turn / Pass Priority blocked at any stage while a WP-684
+      // seat choice (Diving Block reveal/decline, Random Acts, Monarch's Decree) is pending
+      // (the engine's block-all guard returns early on hasPendingSeatChoice). The prompt
+      // renders in normal flow, not a modal, so without this the bar stayed live over a
+      // frozen board.
+      if (hasPendingSeatChoice) {
+        return {
+          allowed: false,
+          reason: 'Resolve the pending seat choice before taking another action.',
+        };
+      }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
       // Magneto discard-to-limit choice is pending (the engine's full block-all guard
       // set freezes the board, mirroring hasPendingScryKoChoice). The choice is
@@ -801,6 +819,15 @@ export function useTurnActions(
           reason: 'Draw, discard or KO each revealed card before taking another action.',
         };
       }
+      if (hasPendingSeatChoice) {
+        // why: WP-682 / D-24648 — the engine's block-all guards block endTurn while
+        // G.pendingSeatChoice is set (Diving Block / Random Acts / Monarch's Decree);
+        // surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Resolve the pending seat choice before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -976,7 +1003,10 @@ export function useTurnActions(
         hasPendingSplitFaceChoice ||
         // why: WP-753 / D-24580 — mirror the engine healWounds block-all guard, which returns
         // early while a reveal-three draw / discard / KO assignment is pending.
-        hasPendingRevealThreeAssign
+        hasPendingRevealThreeAssign ||
+        // why: WP-682 / D-24648 — mirror the engine healWounds block-all guard, which returns
+        // early while a WP-684 seat choice (Diving Block / Random Acts / Monarch's Decree) is pending.
+        hasPendingSeatChoice
       ) {
         return {
           allowed: false,
