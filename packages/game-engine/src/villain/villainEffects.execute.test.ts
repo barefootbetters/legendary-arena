@@ -4054,7 +4054,7 @@ describe('executeVillainAbilities — give-hq-hero-by-trait-to-current (WP-522 /
   });
 });
 
-describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336)', () => {
+describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336; henchmen D-24607)', () => {
   const V_LOW = 'co2e-villain-masters-of-evil-whirlwind-00' as CardExtId;
   const V_MID = 'co2e-villain-radiation-the-leader-00' as CardExtId;
   const V_HIGH = 'co2e-villain-brotherhood-of-mutants-juggernaut-00' as CardExtId;
@@ -4091,7 +4091,7 @@ describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336)'
     const results = executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
     assert.equal(G.city[0], V_HIGH, 'entrance (index 0) now holds the former escape-side Villain');
     assert.equal(G.city[4], V_LOW, 'escape edge (index 4) now holds the former entrance Villain');
-    assert.equal(G.city[2], HENCH, 'the henchman space is untouched');
+    assert.equal(G.city[2], HENCH, 'a henchman between the two extremes is untouched');
     // why: keyword-less → no VillainEffectResult recorded (the log line is the surface).
     assert.deepStrictEqual(results, []);
     assert.match(G.messages![0]!.text, /swapped City spaces/);
@@ -4101,28 +4101,52 @@ describe('executeVillainAbilities — swap-two-city-villains (WP-523 / D-24336)'
 
   it('AC-2 fewer than two City Villains is a reachable no-op (blocked, City unchanged)', () => {
     const G = makeCityG(
-      [V_LOW, HENCH, null, null, null],
-      { [V_LOW]: 'villain', [HENCH]: 'henchman' },
+      [V_LOW, null, null, null, null],
+      { [V_LOW]: 'villain' },
     );
     executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
     assert.equal(G.city[0], V_LOW, 'the lone Villain stays put');
-    assert.equal(G.city[1], HENCH, 'the henchman stays put');
+    assert.equal(G.city[1], null, 'empty spaces stay empty');
     assert.match(G.messages![0]!.text, /fewer than two Villains in the City; no swap/);
     assert.equal(G.messages![0]!.outcome, 'blocked');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
   });
 
-  it('AC-3 never selects a henchman even when it sits at an extreme index', () => {
-    // why: a henchman occupies index 0 (the lowest occupied space); the two swapped spaces
-    // must be the villain-occupied indices 1 and 3, leaving the henchman at 0 in place.
+  it('AC-3 a henchman at an extreme index is a Villain and is selected (D-24607)', () => {
+    // why: D-24607 reversed D-24336's henchman exclusion (rules v23 "Henchman Villain cards
+    // are indeed Villains"). A henchman at index 0 is the lowest occupied space, so it swaps
+    // with the highest (index 3); the Villain at index 1 stays put.
     const G = makeCityG(
       [HENCH, V_LOW, null, V_HIGH, null],
       { [HENCH]: 'henchman', [V_LOW]: 'villain', [V_HIGH]: 'villain' },
     );
     executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
-    assert.equal(G.city[0], HENCH, 'the henchman at the lowest index is never selected');
-    assert.equal(G.city[1], V_HIGH, 'the two Villain spaces (1 and 3) swap');
-    assert.equal(G.city[3], V_LOW, 'the two Villain spaces (1 and 3) swap');
+    assert.equal(G.city[0], V_HIGH, 'the henchman at the lowest index swaps out');
+    assert.equal(G.city[3], HENCH, 'the henchman lands on the highest occupied space');
+    assert.equal(G.city[1], V_LOW, 'the middle Villain is untouched');
+  });
+
+  it('AC-5 one Villain plus one henchman are two Villains — they swap (D-24607)', () => {
+    const G = makeCityG(
+      [V_LOW, HENCH, null, null, null],
+      { [V_LOW]: 'villain', [HENCH]: 'henchman' },
+    );
+    executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[0], HENCH, 'the henchman moves to the entrance');
+    assert.equal(G.city[1], V_LOW, 'the Villain moves to the henchman space');
+    assert.match(G.messages![0]!.text, /swapped City spaces/);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('AC-6 two henchmen and no villain-typed card still swap (D-24607)', () => {
+    const HENCH_TWO = 'henchman-doombot-legion-00' as CardExtId;
+    const G = makeCityG(
+      [null, HENCH, null, HENCH_TWO, null],
+      { [HENCH]: 'henchman', [HENCH_TWO]: 'henchman' },
+    );
+    executeVillainAbilities(G, CTX, 'v-whirl' as CardExtId, 'onAmbush');
+    assert.equal(G.city[1], HENCH_TWO, 'henchmen are Villains — the two swap');
+    assert.equal(G.city[3], HENCH, 'henchmen are Villains — the two swap');
   });
 
   it('AC-4 swaps only the two extreme Villains — a middle Villain and other spaces are unchanged', () => {

@@ -45428,6 +45428,22 @@ WP-750 (the client gates Fight on the engine `fightCost`) and WP-765 (the shared
 
 **Reserved by:** NUMBER-LEDGER D-24604. Related: D-24545, D-24546 (WP-724), D-24523 (dual-class reads), D-24499 ("Heroes you have"), D-24362 (Ultron VP), D-24119 (replay verification), D-14101.
 
+### D-24607 — Henchmen are Villains for Whirlwind's "Two Villains in the city swap spaces" (Active 2026-09-26 — direct fix, no WP; supersedes the D-24336 henchman exclusion)
+
+**Status:** Active — landed 2026-09-26 (direct fix; `packages/game-engine/src/villain/villainEffects.execute.ts` `collectCityVillainIndices` only).
+
+**Context.** D-24336 (WP-523) implemented co2e Whirlwind's Ambush "Two Villains in the city swap spaces." as `swap-two-city-villains` and counted only `villainDeckCardTypes[id] === 'villain'` City occupants, excluding henchmen on the reading that the card says "Villains". Universal Rules v23, §"Henchmen Are Villains/Adversaries": "Henchman Villain cards are indeed Villains." D-24603 reversed the same wrong exclusion for the "Whenever you defeat a Villain" trigger.
+
+**Decision.**
+
+1. **Henchmen are swap candidates.** `collectCityVillainIndices` now collects every City space whose occupant is typed `villain` **or** `henchman`. An unclassified occupant still does not count. Operator-confirmed 2026-09-26.
+2. **Rule B unchanged.** With at least two Villain-occupied spaces, the lowest index swaps with the highest. A henchman at either extreme is now selected. One villain plus one henchman, or two henchmen, now swap; fewer than two occupants is still a reachable no-op.
+3. **Supersedes** only the henchman clause of D-24336 ("henchmen excluded"). Rule B, Whirlwind eligibility, and the no-op posture stand.
+4. **Tests (intentional behaviour change).** Engine unit AC-3 flipped from "never selects a henchman" to "a henchman at an extreme is selected"; AC-2's no-op fixture drops its henchman; new AC-5 (villain + henchman swap) and AC-6 (two henchmen swap). Effect rulings `swap-two-city-villains-swaps-lowest-and-highest` (henchman moved to the escape edge so the ruling proves inclusion) and `…-fewer-than-two-is-noop` (lone Whirlwind) now cite D-24607.
+5. **Replay / oracles.** No hashed oracle includes co2e Masters of Evil (per D-24336), so `finalStateHash` / PAR are unchanged. A past match where Whirlwind ambushed with a henchman at a City extreme diverges on D-24119 re-execution; no gauntlet or competitive pool is migrated.
+
+**Reserved by:** NUMBER-LEDGER D-24607. Related: D-24336 (WP-523), D-24603, D-24119.
+
 ---
 
 ### D-24608 — A henchman in your Victory Pile is "a Villain in your Victory Pile" for the victory-villain-attack pick (Active 2026-09-26 — direct fix, no WP; corrects the WP-285 / D-24067 henchman exclusion)
