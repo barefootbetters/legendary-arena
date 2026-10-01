@@ -46035,7 +46035,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-10-01: Ambush (discard) branch PASS — D-24644 fully verified.** Production build `a296690`: three Ambushes across matches `uElkrTdsBoV` and `F0PLtVpF-9Y` each parked the discard-only pick and logged two player-chosen KOs, including a recruited Crazed Rampage the old starter-first auto-pick would not take.
 
-**Amended (2026-10-01):** §5's pending log clause names the count a two-KO effect owes: "the active player must KO two heroes" for `koHeroEachPlayerMag2` (Juggernaut), so the Ambush / Escape line matches the prompt's "(2 remaining)". One-KO keywords keep "must KO a hero". Seen in Jeff's match `uElkrTdsBoV` (turns 4 and 15). Display text only; no replay or hash fixture carries the pending two-KO narrative.
+**Amended (2026-10-01):** §5's pending log clause names the count a two-KO effect owes: "the active player must KO two heroes" for `koHeroEachPlayerMag2` (Juggernaut), so the Ambush / Escape line matches the prompt's "(2 remaining)". One-KO keywords keep "must KO a hero". Seen in Jeff's match `uElkrTdsBoV` (turns 4 and 15). Display text only; no replay or hash fixture carries the pending two-KO narrative. **Live-verified 2026-10-01** (build `720969b`, match `X9cxcjElN_o`, turn 22): "Escape effect: the active player must KO two heroes." and "Ambush effect: the active player must KO two heroes." — a Juggernaut Escape (hand) and a Juggernaut Ambush (discard) stacked in one reveal chain, resolved in order as four player-chosen KOs with no freeze.
 
 **Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
 
@@ -46076,6 +46076,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 5. Display text only. No rules, state shape, or scoring change. `G.messages` is hash-excluded. The narrative in `G.notableEvents` is hashed, but no replay or hash fixture carries a zero-target KO, so nothing re-pinned (engine suite green, fixtures untouched).
 
 **Gates.** game-engine 4715 → 4717 / 0 fail (+1 composer zero-target wording, +1 Midtown log names the villain). arena-client 2217 → 2220 / 0 fail (+2 overlay: every keyword labeled, a Bystander titled "Bystander"; +1 a named Bystander keeps its name). One existing test changed its example keyword: it used `koHeroEachPlayer` as the "unknown keyword" case, which is the gap fixed here; it now uses a synthetic keyword and still asserts the raw fallback. vue-tsc 0. Verified that vue-tsc fails when a label is removed. `sim:runtime-observed:check` and `sim:coverage --check` current.
+
+**Live-verify (D-24026), 2026-10-01: log half PASS.** Production build `720969b`, match `X9cxcjElN_o`: the Midtown twist names the Bank villain ("Mystique", "Juggernaut", "Sentinel"), and an Ambush with nothing to KO logs "no player had a hero to KO". The overlay title / effect-label items stay pending a visual check (diagnostics do not record overlay text).
 
 **Reserved by:** NUMBER-LEDGER D-24646. Related: D-20102 (overlay label totality), D-24105 (effect-result narrative), D-24644 (Juggernaut KO choice), D-24026 (the live-verify that surfaced these).
 
