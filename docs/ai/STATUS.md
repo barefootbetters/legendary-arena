@@ -99,8 +99,11 @@ like guest-solo, on the shared limiter.
 - The Bystander! overlay is titled "Bystander" instead of `bystander-villain-deck-08`.
 
 - **Counts.** game-engine 4715 → 4717 / 0 fail; arena-client 2217 → 2220 / 0 fail; vue-tsc 0; no fixture re-pin.
-- **Live-verify (D-24026):** pending. Midtown featured table: a Bystander reveal is titled "Bystander", and a twist with a
-  villain in the Bank logs its name.
+- **Live-verify (D-24026): log half PASS (2026-10-01, Jeff, signed-in solo featured table, production build `720969b`,
+  match `X9cxcjElN_o`).** The Midtown twist names the Bank villain (`villain "Mystique" in Bank captured 2 bystander(s)`,
+  and likewise Juggernaut and Sentinel, six times), and a Juggernaut Ambush with no Hero in the discard pile logged
+  "Ambush effect: no player had a hero to KO." The two overlay-only items (the Bystander! title reading "Bystander",
+  the effect label "Each player KOs two Heroes") are not recorded in diagnostics and stay pending a visual check.
 
 ### D-24644 — Juggernaut lets you choose which Heroes to KO (direct fix) (2026-09-29)
 
