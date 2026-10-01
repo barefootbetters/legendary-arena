@@ -2108,6 +2108,27 @@ dispute.
   brilliant mind of the century set out to find human nature and only proved
   what every nurse in his kingdom could have told him.
 
+  **The Professor's confessions.** The essay tested itself against a
+  counterargument written by Grok in the voice of a Liberal Arts Professor, a
+  single woman who taught the book for thirty years (not a real person). Read
+  closely, her objection confesses more than it refutes. She admits the casting
+  double standard is deliberate, a "correction," and calls the book room's
+  choice "a failure of nerve." She also gives away nine things in her own words:
+  (1) the correction's target, "white, male, and Christian," the same churchgoing
+  boy the essay names; (2) her department treats reading as a vehicle for "the
+  causes that department taught her to treat as the point of reading," while
+  faulting the essay for treating the novel as "a delivery system"; (3) assigning
+  Luke 15 "replaces one orthodoxy with another," so the current reading is an
+  orthodoxy too; (4) she stopped the classroom prayer herself "before I had the
+  rank to stop saying it," and credits a Jewish girl as the reason; (5) Simon is
+  "killed by the hymn," the very takeaway that the church boys are the violent
+  ones; (6) her compassion "has to run toward" one child over another by group,
+  the opposite of one measure; (7) her remedy is to "fund the bridge," the
+  institution, where the essay sends a father; (8) she speaks as the one who
+  decides "what their classrooms are allowed to contain"; and (9) "We know which
+  child flinched, and it was not only him," conceding that the fair-haired boy
+  was hurt too.
+
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
 authored through the pipeline):*
