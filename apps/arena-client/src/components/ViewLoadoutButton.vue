@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, onBeforeUnmount, ref, watch } from 'vue';
 
 import { fetchMatchLagn } from '../lib/api/matchLagnApi';
 import { encodeLagnToViewerUrl, REGISTRY_VIEWER_ORIGIN } from '../lib/lagnShareLink';
@@ -32,6 +32,10 @@ import { useAuthStore } from '../stores/auth';
  *
  * @see WP-363 §Scope; EC-393; DECISIONS.md D-24155.
  */
+// why: D-24650 — long enough to read a one-sentence status, short enough that a
+// stale message never lingers over the play surface.
+export const STATUS_CLEAR_DELAY_MS = 8000;
+
 export default defineComponent({
   name: 'ViewLoadoutButton',
   setup() {
@@ -44,6 +48,29 @@ export default defineComponent({
     const statusMessage = ref<string | null>(null);
     const isLoading = ref(false);
     const authStore = useAuthStore();
+
+    // why: D-24650 — the inline status (pop-up blocked / loadout unavailable) used
+    // to stay until the next click on this same button, so a blocked pop-up left a
+    // permanent message on the play surface. It now clears itself after a short
+    // read; a new message restarts the timer.
+    let statusClearTimer: ReturnType<typeof setTimeout> | null = null;
+    watch(statusMessage, (message) => {
+      if (statusClearTimer !== null) {
+        clearTimeout(statusClearTimer);
+        statusClearTimer = null;
+      }
+      if (message !== null) {
+        statusClearTimer = setTimeout(() => {
+          statusMessage.value = null;
+          statusClearTimer = null;
+        }, STATUS_CLEAR_DELAY_MS);
+      }
+    });
+    onBeforeUnmount(() => {
+      if (statusClearTimer !== null) {
+        clearTimeout(statusClearTimer);
+      }
+    });
 
     /**
      * Maps a non-200 fetch status to a full-sentence inline message.
@@ -153,20 +180,15 @@ export default defineComponent({
 </template>
 
 <style scoped>
-/* why: fixed-position, bottom-left, stacked ABOVE the DiagnosticExportButton
-   (which sits at bottom: 8px) so the two utility affordances never overlap.
-   Mirrors the DiagnosticExportButton visual idiom. */
+/* why: D-24650 — positioned by PlayViewport's utility dock (no own fixed
+   corner offset, so it can no longer sit on top of the turn bar's Reveal
+   button). column-reverse keeps the button on the dock's bottom line and puts a
+   status message above it. Mirrors the DiagnosticExportButton visual idiom. */
 .view-loadout {
-  position: fixed;
-  bottom: 40px;
-  left: 8px;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 4px;
   max-width: 260px;
-  /* why: above any game overlay/modal, matching the DiagnosticExportButton
-     z-index — the loadout link stays reachable during play. */
-  z-index: 9999;
 }
 
 .view-loadout-button {

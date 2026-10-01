@@ -46348,4 +46348,21 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24650 — The bottom-left play utilities share one dock that sits in the footer band, so they never cover the turn bar's Reveal button (direct fix, no WP) (Active 2026-10-01)
+
+**Context.** Three always-on play utilities each pinned their own fixed bottom-left corner slot: Download diagnostics (`bottom: 8px`), View cards in Registry Viewer (`bottom: 40px`, WP-363) and Deck odds (`bottom: 72px`, WP-610). Stacked, they rose about 116px above the window bottom. On desktop the board fills the space down to the 55px footer band (WP-688 / D-24502), so the stack covered the turn bar's Step 1 **"Reveal top of Villain Deck"** button. In a live guest game (`FCbIds1BBDp`, 1440×900 and 1600×1050), the element at the Reveal button's center was the View loadout button: a Reveal click opened the loadout tab instead. With pop-ups blocked, its "Your browser blocked the loadout tab…" message then covered Reveal and stayed until the same button was clicked again; the turn could not be started without a reload.
+
+**Decision.**
+1. `PlayViewport` mounts the three utilities inside ONE fixed `play-utility-dock` (`left: 8px; bottom: 8px; z-index: 9999`). The three components drop their own `position: fixed` / corner offsets / z-index. The dock has `pointer-events: none` with `auto` on its items, so its gaps never swallow a board click.
+2. Desktop (≥ 768px): the dock is one row, `align-items: flex-end`. Its top sits 37px above the window bottom (8px + the 29px Deck odds toggle), inside the 55px footer band, so it cannot reach the board. Phones (< 768px, the scrolling PlayMobile column) keep the former vertical stack (`column-reverse`, Download diagnostics at the bottom).
+3. `ViewLoadoutButton`'s inline status (pop-up blocked / loadout unavailable) clears itself after `STATUS_CLEAR_DELAY_MS` (8 s); a new message restarts the timer. The status now renders above the button (`column-reverse`).
+4. Known cosmetic edge: between 768 and about 1000px wide the ~494px row can overlap the centered footer copyright text. The bottom-right AudioControls bar (`bottom: 1rem`) is unchanged.
+5. Client-only layout and copy; no engine, state or move change.
+
+**Gates.** arena-client 2247 / 0 fail (+2: the dock wraps the utilities, mounted once; the status clears at exactly `STATUS_CLEAR_DELAY_MS`, not before); vue-tsc 0. Geometry measured on the live board at 1440×900: footer 55px, dock row top 37px, row width 494px.
+
+**Reserved by:** NUMBER-LEDGER D-24650. Related: WP-363 (View loadout button), WP-610 (Deck odds slot), WP-688 / D-24502 (desktop fit to the footer band), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

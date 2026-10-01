@@ -148,10 +148,9 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: D-24650 — positioned by PlayViewport's utility dock (no own fixed
+   corner offset); the dock carries the z-index that keeps it above overlays. */
 .diagnostic-export-button {
-  position: fixed;
-  bottom: 8px;
-  left: 8px;
   font-size: 12px;
   font-family: monospace;
   padding: 5px 10px;
@@ -162,9 +161,6 @@ export default defineComponent({
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   user-select: none;
-  /* why: a high z-index keeps the export button reachable above any game
-     overlay or modal — the freeze it diagnoses may itself be a stuck overlay. */
-  z-index: 9999;
 }
 
 .diagnostic-export-button:hover {
