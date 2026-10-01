@@ -2076,6 +2076,18 @@ dispute.
   Any mother and any dad knows that by instinct, without the experiment or the
   book.
 
+  Frederick was no village tyrant.
+  [Frederick II](https://en.wikipedia.org/wiki/Frederick_II,_Holy_Roman_Emperor)
+  (1194–1250) was King of Sicily from 1198 (a kingdom that then took in all of
+  southern Italy) and Holy Roman Emperor from 1220. He held court at Palermo and
+  Foggia, and his age called him *Stupor mundi*, the Wonder of the World. The
+  chronicler, [Salimbene di Adam](https://en.wikipedia.org/wiki/Salimbene_di_Adam),
+  was a Franciscan from Parma, a city Frederick besieged in 1247–48, and wrote
+  his *Cronica* in the early 1280s. He was hostile to the emperor, but historians
+  generally trust his record, and he gives no year for the experiment. The most
+  brilliant mind of the century set out to find human nature and only proved
+  what every nurse in his kingdom could have told him.
+
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
 authored through the pipeline):*
