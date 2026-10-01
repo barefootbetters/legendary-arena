@@ -2076,6 +2076,15 @@ dispute.
   Any mother and any dad knows that by instinct, without the experiment or the
   book.
 
+  What Golding cleared off the island before the first page: **parents** (none
+  survive the crash); **God, and a faith that is lived** (the choirboys are only
+  singers; no one prays for help, opens the scriptures, keeps the commandments,
+  serves as Christ served, or is his brother's keeper); **the grown-ups who
+  raise a boy** (no teacher, coach, counselor, or mentor); **who they are** (no
+  boy is told he is a child of God); and **a Father running to save them**. What
+  he kept: **the devil and his temptations**, the pig's head on the stick.
+  Golding removes a Father running to save them, and keeps a devil to kill them.
+
   Frederick was no village tyrant.
   [Frederick II](https://en.wikipedia.org/wiki/Frederick_II,_Holy_Roman_Emperor)
   (1194–1250) was King of Sicily from 1198 (a kingdom that then took in all of
@@ -2084,7 +2093,10 @@ dispute.
   chronicler, [Salimbene di Adam](https://en.wikipedia.org/wiki/Salimbene_di_Adam),
   was a Franciscan from Parma, a city Frederick besieged in 1247–48, and wrote
   his *Cronica* in the early 1280s. He was hostile to the emperor, but historians
-  generally trust his record, and he gives no year for the experiment. The most
+  generally trust his record, and he gives no year for the experiment. Whether
+  every detail is fact or was told against him, and an older story about the
+  Egyptian king Psammetichus in Herodotus runs the same way, the lesson stands.
+  The most
   brilliant mind of the century set out to find human nature and only proved
   what every nurse in his kingdom could have told him.
 
