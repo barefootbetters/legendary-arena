@@ -1952,7 +1952,10 @@ dispute.
 - **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
   novel is not the secular book it is often taught as. A secular literary
   reading usually sums it up as a story about what happens when civilization
-  breaks down and human beings are "left to themselves." Golding did not leave
+  breaks down and human beings are "left to themselves," and its answer is the
+  darkest one on offer: left to themselves, the boys become savages, because
+  the beast was in them. On the last page Ralph weeps "for the end of innocence,
+  the darkness of man's heart." Golding did not leave
   the boys to themselves. He took away their parents, their faith, and every
   grown-up who could raise them, and then left them with a devil on a stick.
   Golding wrote in "Fable"
@@ -2076,7 +2079,9 @@ dispute.
   clappings of the hands, and gestures, and gladness of countenance, and
   blandishments," and they died. Frederick took away the love in a mother's
   voice, and the babies died. Golding took away the love of the Father, and the
-  boys became violent hunters. Neither flawed experiment revealed a nature:
+  boys became violent hunters, then wrote the result down as a verdict on every
+  one of us: "the darkness of man's heart." Man is evil, the experiment says,
+  and left alone he becomes the beast. Neither flawed experiment revealed a nature:
   Frederick's did not show that babies are dumb and only mimic, and Golding's
   did not show that boys are evil and violent. Each revealed a need. A baby needs
   a mother's love to survive, and a boy needs his father's love to become a man.
