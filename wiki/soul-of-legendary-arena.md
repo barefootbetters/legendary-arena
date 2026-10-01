@@ -2045,6 +2045,22 @@ dispute.
   2034. Third, the experiment: like Frederick II's infants, the island removes
   the Father and the goal and then reports the result as human nature.
 
+  The essay also answers the head with an older scene: **Legion** (Mark 5;
+  Luke 8). The man among the tombs is everything the head tells Simon: "no man
+  could bind him, no, not with chains … neither could any man tame him" (Mark
+  5:3–4), and he lived "crying, and cutting himself with stones" (5:5). Then
+  "when he saw Jesus afar off, he ran" (5:6). The spirit answers in the plural,
+  "My name is Legion: for we are many" (5:9), just as Golding's head speaks for
+  the crowd ("we shall do you"). The devils go into the swine, and "the herd ran
+  violently down a steep place into the sea, (they were about two thousand;)"
+  (5:13). The man is found "sitting at the feet of Jesus, clothed, and in his
+  right mind" (Luke 8:35) and is sent home to tell "how great things the Lord
+  hath done for thee, and hath had compassion on thee" (Mark 5:19), the same
+  *compassion* as the father on the road. On Golding's island one pig's head
+  masters Simon: "Simon was inside the mouth. He fell down and lost
+  consciousness." In Mark, a legion obeys one word, and two thousand swine go
+  into the sea.
+
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
 authored through the pipeline):*
@@ -2709,8 +2725,8 @@ operator has declined a caveat, do not bring it back.
 ## References
 
 - [*The Head on the Stick*](https://www.legendary-arena.com/blog/the-head-on-the-stick/) — the long-form *Lord of the Flies* essay
-  (www, September 2026): the mandated-pigsty case, five tactics, and three
-  more mirror instances
+  (www, September 2026): the mandated-pigsty case, Legion (Mark 5), five
+  tactics, and three more mirror instances
 - [docs/01-VISION.md](../docs/01-VISION.md) — Content Authenticity, Rules
   Authenticity, Longevity & Expandability (primary goals 1, 2, 5); the
   good-versus-evil fantasy and player promise
