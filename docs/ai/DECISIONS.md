@@ -46033,6 +46033,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-09-29: PASS for the Escape (hand) branch.** Production build `f75289b`, match `Y1lA03QkAC9`: Juggernaut's Escape with six starters in hand parked "Choose a Hero to KO (2 remaining)" offering hand cards only; both picks were named in the log and the prompt cleared. The Ambush (discard) branch is still pending (its only reveal hit an empty discard, a correct no-op).
 
+**Amended (2026-10-01):** §5's pending log clause names the count a two-KO effect owes: "the active player must KO two heroes" for `koHeroEachPlayerMag2` (Juggernaut), so the Ambush / Escape line matches the prompt's "(2 remaining)". One-KO keywords keep "must KO a hero". Seen in Jeff's match `uElkrTdsBoV` (turns 4 and 15). Display text only; no replay or hash fixture carries the pending two-KO narrative.
+
 **Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
 
 ---
