@@ -1157,7 +1157,7 @@ posture as the rest of the section: a recognizable shape, not a partisan roster.
 | **Stop the story on Friday** | Tell the true middle and leave out the end. The Mastermind's best argument is never a lie about the cross; it is a story that stops before the tomb is empty. | Golding's Simon, killed and never raised; the Prodigal Son taught only to Luke 15:16; a Passion that dwells only on the pain |
 | **No outside that still claims you** | Cut the target off from his origin. Then nothing has to be forbidden: leaving only has to look childish, disloyal, or impossible, and the circle polices itself. | The boys never told whose they are. The answer is the first verse: "A certain man had two sons" (Luke 15:11) |
 | **Dress the disaster as the rescue** | Credit the harm with the help that came in spite of it, so no one looks for the real road home. | The ship came for the smoke of Jack's fire, set to kill Ralph, and a critic called it hopeful. Harm that brings help is still harm |
-| **Run the deprivation experiment** | Remove what a person needs, then report the failure as his nature. | Frederick II's infants, raised without voices, who "could not live without … gladness of countenance"; an island with no Father and no goal |
+| **Run the deprivation experiment** (the "forbidden experiment") | Remove what a person needs, then report the failure as his nature. | Frederick II's infants, raised without voices, who "could not live without … gladness of countenance"; an island with no Father and no goal |
 | **Seal the deliberation** | Publish the verdict, seal the reasoning, and treat dissent as an offense. A sharper form of [withhold the machinery](#withhold-the-machinery--a-deception-every-side-uses). | The Nobel seals its deliberations for fifty years; when Artur Lundkvist dissented from Golding's 1983 prize, the committee chairman said, "He has broken our rules." A court publishes its dissents |
 
 **Reading a Scheme by its fingerprints.** The Mastermind is never in the
@@ -2060,6 +2060,21 @@ dispute.
   masters Simon: "Simon was inside the mouth. He fell down and lost
   consciousness." In Mark, a legion obeys one word, and two thousand swine go
   into the sea.
+
+  **The Forbidden Experiment.** The essay reads Golding's island as a
+  deprivation experiment and sets it beside the original. In the 1200s the
+  Emperor Frederick II had infants raised with food and washing but no one
+  allowed to speak to them, to learn what language people speak by nature. The
+  chronicler Salimbene recorded that "the children could not live without
+  clappings of the hands, and gestures, and gladness of countenance, and
+  blandishments," and they died. Frederick took away the love in a mother's
+  voice, and the babies died. Golding took away the love of the Father, and the
+  boys became violent hunters. Neither flawed experiment revealed a nature:
+  Frederick's did not show that babies are dumb and only mimic, and Golding's
+  did not show that boys are evil and violent. Each revealed a need. A baby needs
+  a mother's love to survive, and a boy needs his father's love to become a man.
+  Any mother and any dad knows that by instinct, without the experiment or the
+  book.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
