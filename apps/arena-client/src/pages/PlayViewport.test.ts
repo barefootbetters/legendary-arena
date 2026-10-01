@@ -39,6 +39,20 @@ describe('PlayViewport (WP-129)', () => {
     assert.equal(wrapper.find('[data-testid="play-mobile"]').exists(), false);
   });
 
+  // why: D-24650 — the bottom-left utilities share one dock (a row on desktop) so
+  // they no longer stack up over the turn bar's Reveal button.
+  test('D-24650: the bottom-left utilities render inside the single utility dock', () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    const wrapper = mount(PlayViewport, {
+      props: { submitMove: noopSubmitMove },
+    });
+    const dock = wrapper.find('[data-testid="play-utility-dock"]');
+    assert.equal(dock.exists(), true);
+    assert.equal(dock.find('[data-testid="diagnostic-export-button"]').exists(), true);
+    assert.equal(wrapper.findAll('[data-testid="diagnostic-export-button"]').length, 1, 'mounted once, inside the dock');
+  });
+
   test('renders <PlayMobile> when viewport is mobile portrait', () => {
     setActivePinia(createPinia());
     installMatchMedia(true);

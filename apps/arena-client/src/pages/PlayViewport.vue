@@ -518,7 +518,21 @@ export default defineComponent({
       :show-session-expired-sign-in="isSessionExpiredResult"
       :casual-coach-match-id="casualCoachMatchId"
     />
-    <DiagnosticExportButton />
+    <!--
+      // why: D-24650 — the three always-on bottom-left utilities (Download
+      // diagnostics, View loadout, Deck odds) share ONE fixed dock instead of each
+      // pinning its own corner offset. Stacked vertically at 8 / 40 / 72px they rose
+      // ~116px above the window bottom, past the ~55px footer band, and covered the
+      // turn bar's "Reveal top of Villain Deck" button on desktop: a Reveal click
+      // opened the loadout tab instead, and a blocked pop-up's message then hid
+      // Reveal entirely. On desktop the dock is one row inside the footer band; on
+      // phones (the scrolling PlayMobile column) it keeps the old vertical stack.
+    -->
+    <div class="play-utility-dock" data-testid="play-utility-dock">
+      <DiagnosticExportButton />
+      <ViewLoadoutButton />
+      <DeckProbabilityPanel />
+    </div>
     <!--
       // why (Jeff feedback): the endgame outcome screen collapses the board and its
       // GameLogPanel Save button behind the "View final board" toggle, leaving the
@@ -536,13 +550,11 @@ export default defineComponent({
     -->
     <GameLogCopyButton />
     <!--
-      // why: WP-363 — mounted ONCE here at the shared viewport root (the same
-      // shared-child case as <DiagnosticExportButton>), so the in-match "View
-      // loadout in Registry Viewer" link covers BOTH the <PlayMobile> and
-      // <PlayDesktop> surfaces. Self-hides when there is no `?match=` (not a
-      // live match), so it adds no DOM outside real play.
+      // why: WP-363 — <ViewLoadoutButton> is mounted ONCE at the shared viewport
+      // root, inside the utility dock above, so the in-match "View loadout in
+      // Registry Viewer" link covers BOTH the <PlayMobile> and <PlayDesktop>
+      // surfaces. Self-hides when there is no `?match=` (not a live match).
     -->
-    <ViewLoadoutButton />
     <!--
       // why: WP-369 — mounted ONCE here at the shared viewport root (the same
       // shared-child case as <ViewLoadoutButton>), so the pre-match "Waiting for
@@ -579,14 +591,11 @@ export default defineComponent({
     -->
     <HollowEffectsPanel />
     <!--
-      // why: WP-607 — mounted ONCE here at the shared viewport root (the single
-      // 01.5 wiring host), so the collapsible Deck Probability Panel (the plain
-      // card counter) covers BOTH the <PlayMobile> and <PlayDesktop> surfaces.
-      // Self-hides (v-if hasData) so it adds no DOM when the WP-606 projection
-      // fields are absent; presentational only (reads the UIState store, no
-      // engine runtime import).
+      // why: WP-607 — <DeckProbabilityPanel> is mounted ONCE at the shared viewport
+      // root, inside the utility dock above, so the collapsible plain card counter
+      // covers BOTH the <PlayMobile> and <PlayDesktop> surfaces. Self-hides (v-if
+      // hasData); presentational only (reads the UIState store).
     -->
-    <DeckProbabilityPanel />
     <!--
       // why: WP-412 — mounted ONCE here at the shared viewport root (the single
       // 01.5 wiring host), so the fixed-position mute/volume control + the
@@ -693,6 +702,43 @@ export default defineComponent({
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
+  }
+}
+
+/* why: D-24650 — the shared bottom-left utility dock. It is the only fixed
+   positioning for Download diagnostics / View loadout / Deck odds; the children
+   are in-flow inside it. pointer-events: none on the dock (auto on its items)
+   so the gaps between items never swallow a click meant for the board.
+   z-index matches the former per-button 9999 so the diagnostics stay reachable
+   above any stuck overlay. Default (phones, < 768px): the former vertical stack,
+   bottom item = Download diagnostics, growing upward. */
+.play-utility-dock {
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100vw - 16px);
+  pointer-events: none;
+}
+
+.play-utility-dock > * {
+  pointer-events: auto;
+}
+
+/* why: D-24650 — on desktop the board fills the space down to the ~55px footer
+   band, so the dock lays its items out as ONE row along the window bottom (the
+   footer band, left of the centered copyright) instead of a stack that rises into
+   the board's turn bar. align-items: flex-end keeps every collapsed item on the
+   bottom line; an expanded Deck odds body grows upward as before. */
+@media (min-width: 768px) {
+  .play-utility-dock {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 8px;
   }
 }
 

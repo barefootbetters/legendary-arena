@@ -7,6 +7,20 @@
 
 ## Current State
 
+### D-24650 — The bottom-left play buttons no longer cover the Reveal button (direct fix) (2026-10-01)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On desktop, "Download diagnostics", "View cards in
+Registry Viewer" and "Deck odds" now sit in one row along the bottom edge, in the footer strip, instead of a stack
+that rose over the turn bar. Before, clicking the middle of **"Reveal top of Villain Deck"** could open the loadout
+tab instead; with pop-ups blocked, a red "blocked the loadout tab" message then covered Reveal until a reload. That
+message now also clears itself after 8 seconds. Phones keep the former vertical stack.
+
+- **Client only.** `PlayViewport.vue` (new utility dock) + `DiagnosticExportButton.vue` / `ViewLoadoutButton.vue` /
+  `DeckProbabilityPanel.vue` (no own fixed offsets) + 2 tests.
+- **Counts.** arena-client 2247 / 0 fail; vue-tsc 0.
+- **Live-verify (D-24026):** pending. At 1440×900 (or any laptop size), the three buttons sit in one bottom row and
+  "Reveal top of Villain Deck" is clickable across its whole width.
+
 ### WP-789 — Reveals show the card you revealed (EC-826 / D-24637) (2026-09-29)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When a Hero reveals the top card of your deck and the
