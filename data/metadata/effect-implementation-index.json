@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1965,
+    "totalEntries": 1967,
     "byScope": {
-      "hero": 787,
+      "hero": 789,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
       "executable": 554,
       "deferred": 16,
-      "condition": 47,
+      "condition": 49,
       "unsupported": 297,
       "unmarked": 1047,
       "subsystem": 4
@@ -14592,6 +14592,23 @@
       "name": "Wanda & Vision",
       "set": "msis",
       "scope": "hero",
+      "mechanic": "master-strike-this-turn",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "grief",
+          "name": "Grief"
+        }
+      ]
+    },
+    {
+      "extId": "msis/wanda-vision",
+      "name": "Wanda & Vision",
+      "set": "msis",
+      "scope": "hero",
       "mechanic": "reveal-odd-draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-odd-draw",
@@ -23110,6 +23127,23 @@
         {
           "slug": "serious-overkill",
           "name": "Serious Overkill"
+        }
+      ]
+    },
+    {
+      "extId": "vnom/venom-rocket",
+      "name": "Venom Rocket",
+      "set": "vnom",
+      "scope": "hero",
+      "mechanic": "master-strike-or-ambush-this-turn",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "spring-the-trap",
+          "name": "Spring the Trap"
         }
       ]
     },
@@ -33045,6 +33079,7 @@
     "msis/wanda-vision": {
       "scope": "hero",
       "mechanics": [
+        "master-strike-this-turn",
         "reveal-odd-draw",
         "sacrifice"
       ]
@@ -36000,6 +36035,7 @@
       "mechanics": [
         "digest",
         "excessive-violence",
+        "master-strike-or-ambush-this-turn",
         "optional-discard-draw",
         "optional-ko-hand-discard"
       ]

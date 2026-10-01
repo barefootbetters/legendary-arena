@@ -518,8 +518,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // piercing-energy 140 -> 133, soaring-flight 278 -> 268, x-gene 25 -> 18). Against the seed
   // peaks (lightshow 69, x-gene 23) that is +31 -7 -10 -2: totalObs 8018 -> 8030. resolvedObs
   // stays 1235, so percentResolved stays 15.4 (1235 / 8030). Newly visible hollow surface.
+  // 2026-09-30 (WP-743 / D-24566, re-pin): Grief (msis) and Spring the Trap (vnom) no longer
+  // grant on every play; they wait for a Master Strike / Ambush Villain this turn, so the msis
+  // and vnom boards' fixed-seed trajectories shift with the lost free resources (feed
+  // regenerated after rebasing onto main: 7102 -> 7103 raw observations, same 78 mechanics, 0
+  // dropped; gate-only 470 -> 471, rule:multicolored 8 -> 9, sacrifice 11 -> 10). totalObs
+  // 8030 -> 8031 (+1, equal to the raw feed rise); resolvedObs stays 1235, so percentResolved
+  // stays 15.4. A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8030);
+  assert.equal(view.totalObs.value, 8031);
   assert.equal(view.percentResolved.value, 15.4);
   assert.ok(view.remaining.value.length > 0);
 });
