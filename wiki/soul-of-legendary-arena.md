@@ -2016,7 +2016,9 @@ dispute.
   itself: the Golding estate reports more than fifty million copies sold, and a
   set text is a market re-created every year. And the seal does the arguing: the
   1983 Nobel Prize, awarded for novels that "illuminate the human condition,"
-  ends the question of whether the book belongs on the list. The syllabus keeps
+  ends the question of whether the book belongs on the list. In plain words, the
+  Nobel committee rewarded Golding for exposing the darkness in man; the
+  critique here is that he leaves out the light that can redeem him. The syllabus keeps
   the diagnosis and drops the theology that named it. The chapter it leaves out is
   Luke 15: "For this my son was dead, and is alive again; he was lost, and is
   found" (15:24).
