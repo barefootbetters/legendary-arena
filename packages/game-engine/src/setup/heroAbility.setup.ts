@@ -409,6 +409,10 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'antics',
   'defeated-villain-or-mastermind',
   'first-hero-condition',
+  // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
+  // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
+  'master-strike-this-turn',
+  'master-strike-or-ambush-this-turn',
   'teleport',
   'x-gene',
 ];
