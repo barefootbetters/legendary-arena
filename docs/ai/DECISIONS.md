@@ -46033,6 +46033,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 **Live-verify (D-24026), 2026-09-29: PASS for the Escape (hand) branch.** Production build `f75289b`, match `Y1lA03QkAC9`: Juggernaut's Escape with six starters in hand parked "Choose a Hero to KO (2 remaining)" offering hand cards only; both picks were named in the log and the prompt cleared. The Ambush (discard) branch is still pending (its only reveal hit an empty discard, a correct no-op).
 
+**Live-verify (D-24026), 2026-10-01: Ambush (discard) branch PASS — D-24644 fully verified.** Production build `a296690`: three Ambushes across matches `uElkrTdsBoV` and `F0PLtVpF-9Y` each parked the discard-only pick and logged two player-chosen KOs, including a recruited Crazed Rampage the old starter-first auto-pick would not take.
+
 **Amended (2026-10-01):** §5's pending log clause names the count a two-KO effect owes: "the active player must KO two heroes" for `koHeroEachPlayerMag2` (Juggernaut), so the Ambush / Escape line matches the prompt's "(2 remaining)". One-KO keywords keep "must KO a hero". Seen in Jeff's match `uElkrTdsBoV` (turns 4 and 15). Display text only; no replay or hash fixture carries the pending two-KO narrative.
 
 **Reserved by:** NUMBER-LEDGER D-24644. Related: D-24280 (amended), D-24006 (amended for this marker), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-20602 (the auto-pick order kept for other players and the bot).
@@ -46051,6 +46053,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 5. Amends D-24508 §2 and D-24512 (Electromagnetic Bubble eligibility). No new `G` field, move, or UIState field. The prompt already renders any eligible id through `resolveDisplay`.
 
 **Gates.** game-engine 4703 → 4709 / 0 fail (+3 Xavier's Nemesis: hand + play counted, hand-only counted, a Copy-Powers grant ignored in hand; +3 Electromagnetic Bubble: a sole held Hero auto-recorded, play-then-hand order when parking, a held pick pulled back from the discard at the next fill). Against the old resolvers, 4 of the 6 fail. `sim:coverage --check`, `sim:runtime-observed:check`, `effect-index:check`, `mechanics:metadata:check`, and the hero/villain ledger checks are all current, with no fixture or hash churn.
+
+**Live-verify (D-24026), 2026-10-01: PASS.** Production build `a296690`, match `F0PLtVpF-9Y` (signed-in solo featured table): Xavier's Nemesis rescued 3 with one X-Men Hero played and two held (Keen Senses, Healing Factor, played after the fight); Electromagnetic Bubble's pick was a held Frenzied Slashing, which returned as the next hand's seventh card.
 
 **Reserved by:** NUMBER-LEDGER D-24645. Related: D-24508 (§2 amended), D-24512 (Bubble eligibility amended), D-24529 (the "you have" = hand + play precedent), D-24391 (effective team in play), D-24619 (both-sides split-card reads).
 

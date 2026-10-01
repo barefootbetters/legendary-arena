@@ -117,8 +117,13 @@ copies. Other players in a multiplayer game still have theirs picked automatical
   build `f75289b`).** Guest match `Y1lA03QkAC9`, turn 11: Juggernaut escaped with six S.H.I.E.L.D. starters in hand and
   the prompt read "Choose a Hero to KO (2 remaining)", offering only "From Your Hand" (Agent, Trooper; copies shown
   once). The log read "Escape effect: the active player must KO a hero.", then each pick was named ("KO'd S.H.I.E.L.D.
-  Agent", "KO'd S.H.I.E.L.D. Trooper") and the prompt cleared. The Ambush (discard) branch was not exercised: the
-  turn-3 Ambush hit an empty discard pile, a correct no-op. It shares the same parker, so it stays pending.
+  Agent", "KO'd S.H.I.E.L.D. Trooper") and the prompt cleared.
+- **Live-verify (D-24026): Ambush (discard) branch PASS (2026-10-01, Jeff, signed-in solo featured table, production build
+  `a296690`).** Three Ambushes across matches `uElkrTdsBoV` (turns 4, 15) and `F0PLtVpF-9Y` (turn 17) each parked the
+  pick ("Ambush effect: the active player must KO a hero.") and logged two player-chosen KOs from the discard pile:
+  Trooper + Trooper, Agent + Trooper, and Agent + **Crazed Rampage** (a recruited Hero the old starter-first auto-pick
+  would never take). D-24644 is fully live-verified. The "must KO two heroes" log wording (#2536) was not yet deployed
+  on `a296690`.
 
 ### D-24645 — Magneto's Xavier's Nemesis and Electromagnetic Bubble now count X-Men Heroes in your hand (direct fix) (2026-09-29)
 
@@ -129,8 +134,12 @@ cards you had played counted, so a held X-Men Hero was ignored (rules v23 "Your 
 
 - **Engine only** (`tacticHandlers.ts`), plus comment wording. No new state, move, or UI field.
 - **Counts.** game-engine 4703 → 4709 / 0 fail; CI data gates current, no fixture churn.
-- **Live-verify (D-24026):** pending. Fight Magneto's Xavier's Nemesis while holding an unplayed X-Men Hero (e.g. keep
-  a Wolverine card in hand) → the log's rescue count includes it.
+- **Live-verify (D-24026): PASS (2026-10-01, Jeff, signed-in solo featured table, production build `a296690`, match
+  `F0PLtVpF-9Y`).** Xavier's Nemesis (turn 13) rescued **3** Bystanders with only one X-Men Hero played before the fight
+  (Frenzied Slashing); the other two were Keen Senses and Healing Factor, held in hand and played afterwards. The log
+  read "one per X-Men Hero in hand or play". Electromagnetic Bubble (turn 12) was defeated with only Healing Factor in
+  play; the pick was Frenzied Slashing #2 from the **hand** (played right after), and it returned as the seventh card of
+  the next hand. Both tactics count held X-Men Heroes.
 
 ### D-24643 — Every worktree runs its own branch's commit hooks (direct fix, commit-hygiene tooling) (2026-09-29)
 
