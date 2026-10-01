@@ -310,6 +310,17 @@ describe('NotableGameEvent JSON round-trip per variant', () => {
     assert.deepStrictEqual(cloned, original);
   });
 
+  it('HeroEffectResolvedEvent with revealedCardId round-trips through JSON.stringify/parse (WP-789)', () => {
+    const original: HeroEffectResolvedEvent = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Card Shark" revealed "S.H.I.E.L.D. Agent" (cost 0) — left on top.',
+      revealedCardId: 'starter-agent',
+    };
+    const cloned = JSON.parse(JSON.stringify(original)) as HeroEffectResolvedEvent;
+    assert.deepStrictEqual(cloned, original);
+  });
+
   it('ExcessiveViolenceFiredEvent round-trips through JSON.stringify/parse', () => {
     const original: ExcessiveViolenceFiredEvent = {
       type: 'excessiveViolenceFired',

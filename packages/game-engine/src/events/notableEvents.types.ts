@@ -423,12 +423,15 @@ export interface TransformResolvedEvent {
  * emission precedent. NOT emitted on any non-realized exit (the below-threshold
  * `neutral` return, the empty-Hero-Deck `blocked` return, or the missing-
  * `turnEconomy` / divisor-≤-0 guard). Minimal payload per D-20001 (no `eventId`
- * / `seq` / `timestamp` / card id — like `healResolved` / `transformResolved`):
- * the source card name and the realized count + magnitude travel inside the
- * composed `narrative`. Public and rendered verbatim by the client (D-20002);
- * presentation parity only, not a new mechanic or reward — the effect already
- * happens, this announces it. Future invisible-work Hero-effect families reuse
- * this same variant with their own narrative composer.
+ * / `seq` / `timestamp`): the source card name and the realized count +
+ * magnitude travel inside the composed `narrative`. Public and rendered verbatim
+ * by the client (D-20002); presentation parity only, not a new mechanic or
+ * reward — the effect already happens, this announces it. Future invisible-work
+ * Hero-effect families reuse this same variant with their own narrative composer.
+ *
+ * The auto-resolving deck-top reveal family (`applyRevealRules`, WP-726 /
+ * D-24547) also emits this variant — once per revealed card, on a hit or a miss
+ * (WP-789 / D-24637) — and is the only emit site that sets `revealedCardId`.
  */
 export interface HeroEffectResolvedEvent {
   /** Discriminator. */
@@ -437,6 +440,14 @@ export interface HeroEffectResolvedEvent {
   playerId: string;
   /** Engine-composed single-sentence English narrative (names the card + realized count + magnitude). */
   narrative: string;
+  /**
+   * The revealed deck-top card (WP-789 / D-24637). Optional: set only by the
+   * `applyRevealRules` emit; every other emit site leaves it absent.
+   */
+  // why: the overlay resolves the revealed card through its id exactly like
+  // `ambushResolved` / `bystanderRevealed`; a revealed card is public at the
+  // table (the engine already names it in the public log line).
+  revealedCardId?: CardExtId;
 }
 
 /**

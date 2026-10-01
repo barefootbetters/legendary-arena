@@ -3426,3 +3426,44 @@ describe('filterUIStateForAudience — pendingSplitFaceChoice redaction + leftFa
     assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingSplitFaceChoice, undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-789 / D-24637 — the reveal event's revealedCardId and the notableEventCards
+// projection are PUBLIC: both must survive the whitelist for every audience.
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — WP-789 revealed card (D-24637)', () => {
+  it('revealedCardId and notableEventCards reach player, opponent, and spectator', () => {
+    const uiState = createTestUIState();
+    uiState.notableEvents = [
+      {
+        type: 'heroEffectResolved',
+        playerId: '0',
+        narrative: '"Card Shark" revealed "S.H.I.E.L.D. Agent" (cost 0) — left on top.',
+        revealedCardId: 'starter-agent',
+      },
+    ];
+    uiState.notableEventCards = [
+      { extId: 'starter-agent', display: { extId: 'starter-agent', name: 'S.H.I.E.L.D. Agent', imageUrl: 'https://images.legendary-arena.com/agent.webp', cost: 0 } },
+    ];
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const event = result.notableEvents[0]!;
+      assert.equal(event.type === 'heroEffectResolved' && event.revealedCardId, 'starter-agent',
+        `revealedCardId survives the filter for ${audience.kind}`);
+      assert.equal(result.notableEventCards?.length, 1,
+        `notableEventCards survives the filter for ${audience.kind}`);
+      assert.equal(result.notableEventCards?.[0]!.display.name, 'S.H.I.E.L.D. Agent');
+      assert.notStrictEqual(result.notableEventCards?.[0], uiState.notableEventCards[0],
+        'each entry is copied (no aliasing)');
+    }
+  });
+
+  it('an absent notableEventCards stays absent (no undefined key)', () => {
+    const uiState = createTestUIState();
+    delete uiState.notableEventCards;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(Object.keys(result).includes('notableEventCards'), false);
+  });
+});

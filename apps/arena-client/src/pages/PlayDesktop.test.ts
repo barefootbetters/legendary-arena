@@ -583,6 +583,40 @@ describe('PlayDesktop notable-event overlay integration (WP-201)', () => {
     assert.equal(overlay.exists(), true);
     assert.equal(overlay.attributes('data-event-type'), 'mastermindStrikeResolved');
   });
+
+  test('a revealed card present only in notableEventCards resolves its name and image (WP-789)', async () => {
+    // why: WP-789 / D-24637 — a Card Shark miss leaves the card in the deck, outside
+    // every zone the lookup folds; only notableEventCards carries its display.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: noopSubmitMove },
+    });
+    await flushPromises();
+
+    const nextFrame = snapshot();
+    nextFrame.notableEvents = [{
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Card Shark" revealed "S.H.I.E.L.D. Agent" (cost 0) — left on top.',
+      revealedCardId: 'deck-only-agent',
+    }];
+    nextFrame.notableEventCards = [{
+      extId: 'deck-only-agent',
+      display: { extId: 'deck-only-agent', name: 'S.H.I.E.L.D. Agent', imageUrl: 'https://images.legendary-arena.com/agent.webp', cost: 0 },
+    }];
+    store.setSnapshot(nextFrame);
+    await nextTick();
+    await nextTick();
+
+    const overlay = wrapper.find('[data-testid="play-notable-event-overlay"]');
+    assert.equal(overlay.exists(), true);
+    assert.equal(overlay.find('.notable-event-overlay__card-name').text(), 'S.H.I.E.L.D. Agent');
+    const image = overlay.find('[data-testid="play-notable-event-overlay-card-image"]');
+    assert.equal(image.exists(), true);
+    assert.equal(image.attributes('src'), 'https://images.legendary-arena.com/agent.webp');
+  });
 });
 
 describe('PlayDesktop Phase-button wiring (WP-783 / D-24629)', () => {

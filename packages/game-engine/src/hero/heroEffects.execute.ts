@@ -43,6 +43,7 @@ import {
   REPEATABLE_DEFEAT_CONDITION_TYPE,
 } from './deferredConditionalGrants.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
+import type { HeroEffectResolvedEvent } from '../events/notableEvents.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
@@ -1807,6 +1808,16 @@ function heroEffectReveal(
     return;
   }
   const revealCount = effect.revealCount ?? 1;
+  // why: WP-789 / D-24637 §3a — a reorder reveal buffers EVERY overlay event (hit or miss)
+  // in reveal order, because a parked reorder prompt already shows the remainder (the
+  // D-24547 double-surface rule): the flush after the loop drops the misses only when the
+  // prompt parked. Buffering all events (not just misses) keeps reveal order on the flush.
+  // A reveal without `reorderRemainder` passes no buffer and emits inline, as before.
+  let deferredEvents: { event: HeroEffectResolvedEvent; isMiss: boolean }[] | undefined;
+  if (effect.reorderRemainder === true) {
+    deferredEvents = [];
+  }
+  let didParkReorder = false;
   // why (D-24024 → D-24027): this is the multi-peek WP-253 deferred. peekOffset indexes
   // the live deck; peekIndex counts iterations. DUAL BOUND — iterate at most revealCount
   // times (peekIndex) AND stop at the deck end (peekOffset >= deck.length); an offset-only
@@ -1850,7 +1861,7 @@ function heroEffectReveal(
       continue;
     }
     const deckLengthBeforeRules = playerZones.deck.length;
-    applyRevealRules(G, playerID, playerZones, cardId, topCardId, revealedCost, rules);
+    applyRevealRules(G, playerID, playerZones, cardId, topCardId, revealedCost, rules, deferredEvents);
     // why: advance the offset ONLY when the deck length is unchanged (the card stayed on the
     // deck). A draw/ko shrank the deck and slid the next card into the same index, so the
     // offset must NOT advance — this is what keeps the WP-253 count=2 test (each iteration
@@ -1881,6 +1892,19 @@ function heroEffectReveal(
         playerID,
         cardIds,
       });
+      didParkReorder = true;
+    }
+  }
+
+  // why: WP-789 / D-24637 §3a — flush the buffered reveal events in reveal order: all of
+  // them when no reorder prompt parked, only the hits when one did (the prompt already
+  // shows the left-on-top cards). Runs after the deck-exhausted `break` exit too.
+  if (deferredEvents !== undefined && Array.isArray(G.notableEvents)) {
+    for (const deferredEntry of deferredEvents) {
+      if (didParkReorder && deferredEntry.isMiss) {
+        continue;
+      }
+      G.notableEvents.push(deferredEntry.event);
     }
   }
 }
@@ -1898,6 +1922,9 @@ function heroEffectReveal(
  * @param topCardId - The peeked deck-top card's CardExtId.
  * @param cost - The peeked card's cost (the predicate input).
  * @param rules - The ordered RevealRule branch-list.
+ * @param deferredEvents - Optional buffer (WP-789 / D-24637 §3a). When provided, the
+ *   overlay event is pushed here (with whether it was a miss) instead of G.notableEvents;
+ *   the reorder-reveal caller flushes it after its loop.
  */
 function applyRevealRules(
   G: LegendaryGameState,
@@ -1907,6 +1934,7 @@ function applyRevealRules(
   topCardId: CardExtId,
   cost: number,
   rules: RevealRule[],
+  deferredEvents?: { event: HeroEffectResolvedEvent; isMiss: boolean }[],
 ): void {
   // why: WP-325 — accumulate the reveal outcome so ONE line summarizes the peeked
   // card (a `continue: true` chain matches more than one rule). The first matched
@@ -1976,29 +2004,43 @@ function applyRevealRules(
     );
   }
   // why: WP-726 / D-24547 — surface the auto-resolving deck-top reveal on the WP-697
-  // heroEffectResolved "Hero Ability" overlay (the deck-top reveal family emitted
-  // nothing observable before — the grant reached only G.messages, which is not
-  // projected to clients). Emit only when the reveal REALIZED work
-  // (revealLogOutcome !== 'blocked' ⇒ a predicate matched) AND did NOT park a choice
-  // (a `choose-discard-or-return` reveal — reveal-attack-choose — surfaces via the
-  // pending-choice UI, so an overlay would double-surface). Guarded on
-  // G.notableEvents (the minimal test builder omits it; a real match seeds []); the
-  // source + revealed names resolve HERE (raw-ext_id fallback) keeping the composer
-  // pure. G.notableEvents IS hashed, but the core-only sentinel plays no deck-top
-  // reveal hero, so this is byte-inert there (WP-697 outcome; verified).
+  // heroEffectResolved "Hero Ability" overlay (the grant otherwise reaches only
+  // G.messages, which is not projected to clients). WP-789 / D-24637 revises D-24547 §2:
+  // emit on EVERY reveal, hit or miss — a miss is exactly when the player needs to see
+  // the card, because it stays on top as their next draw. A reveal that parks a choice
+  // (`choose-discard-or-return` — reveal-attack-choose) still emits nothing: its
+  // pending-choice UI already shows the card, so an overlay would double-surface.
+  // Guarded on G.notableEvents (the minimal test builder omits it; a real match seeds
+  // []); the source + revealed names resolve HERE (raw-ext_id fallback) keeping the
+  // composer pure. G.notableEvents IS hashed, but the core-only sentinel plays no
+  // deck-top reveal hero, so this is byte-inert there (WP-697 outcome; verified).
   if (
-    revealLogOutcome !== 'blocked' &&
     !revealRulesContainAnyAction(rules, ['choose-discard-or-return']) &&
     Array.isArray(G.notableEvents)
   ) {
     const sourceCardName = resolveTransformCardName(G, sourceCardId);
     const revealedCardName = resolveTransformCardName(G, topCardId);
-    const outcomeText = matchedActionPhrases.join(', ');
-    G.notableEvents.push({
+    const isMiss = matchedPredicateText === undefined;
+    let outcomeText: string;
+    if (isMiss) {
+      outcomeText = 'left on top';
+    } else {
+      outcomeText = matchedActionPhrases.join(', ');
+    }
+    // why: WP-789 / D-24637 — revealedCardId lets the overlay resolve and show the
+    // revealed card exactly like `ambushResolved` / `bystanderRevealed`; a revealed
+    // card is public at the table (the log line above already names it).
+    const revealEvent: HeroEffectResolvedEvent = {
       type: 'heroEffectResolved',
       playerId: playerID,
       narrative: composeHeroRevealTopNarrative(sourceCardName, revealedCardName, cost, outcomeText),
-    });
+      revealedCardId: topCardId,
+    };
+    if (deferredEvents !== undefined) {
+      deferredEvents.push({ event: revealEvent, isMiss });
+    } else {
+      G.notableEvents.push(revealEvent);
+    }
   }
 }
 

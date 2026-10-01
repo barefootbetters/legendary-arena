@@ -7,6 +7,25 @@
 
 ## Current State
 
+### WP-789 — Reveals show the card you revealed (EC-826 / D-24637) (2026-09-29)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When a Hero reveals the top card of your deck and the
+reveal resolves on its own (Gambit's Card Shark and High Stakes Jackpot, and the rest of the reveal family), the "Hero
+Ability" overlay now shows the revealed card's image and name. A miss shows too: Card Shark on a non-X-Men card reads
+"… — left on top.", so you see your next draw. A multi-card reveal that opens a reorder prompt shows only its hits (the
+prompt already shows the rest).
+
+- **Engine.** `HeroEffectResolvedEvent.revealedCardId?` (set only by `applyRevealRules`), which now emits on a miss; a
+  reorder-reveal event buffer; a public `UIState.notableEventCards` projection (types, build, filter) so a card still in
+  the deck resolves. No game-state change.
+- **Client.** `eventCardId` branch, the `PlayDesktop` lookup fold, and the card image on `NotableEventOverlay.vue`
+  (`heroEffectResolved` only).
+- **Counts.** game-engine 4717 → 4729 / 0 fail; arena-client 2220 → 2226 / 0 fail; vue-tsc 0; replay fixtures and
+  sentinel hashes byte-unchanged (no re-pin). One authorized test inversion (the WP-726 blocked-reveal test).
+- **Live-verify (D-24026):** pending. In a Gambit match: Card Shark on a non-X-Men top card shows that card's image with
+  "left on top"; High Stakes Jackpot shows the revealed card's image; the Play Diagnostics `uiStateSnapshot` carries
+  `notableEventCards`. Record the matchId here.
+
 ### D-24649 — Hero lines that grant a number-less icon are hollow, not synergy (direct fix) (2026-09-30)
 
 Drafted 2026-09-26 as D-24614; the heal lock on the board buttons took D-24614 first, so it was renumbered on rebase.

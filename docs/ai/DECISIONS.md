@@ -43470,7 +43470,7 @@ to the Dark Dimension* match surfaced Gambit *High Stakes Jackpot* this way, wit
    field, no `NOTABLE_EVENT_TYPES` change; the event rides the already-PUBLIC unconditional
    `UIState.notableEvents` projection (D-12803), so the arena-client overlay renders it with
    **no client source change**.
-2. **Auto-resolve only.** The emit fires only when the reveal realized work
+2. **Auto-resolve only.** *(Revised by D-24637 — WP-789: a miss now emits too, "— left on top.", and every reveal event carries `revealedCardId`.)* The emit fires only when the reveal realized work
    (`revealLogOutcome !== 'blocked'`) AND did NOT park a choice
    (`!revealRulesContainAnyAction(rules, ['choose-discard-or-return'])`). The parking reveals
    (`reveal-attack-choose`; `reveal-top-dispose` / Melter, D-24521 / D-24413) surface via their
@@ -46093,7 +46093,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
-### D-24637 — Auto-resolving reveals always show the revealed card (Drafted 2026-09-29; not yet landed — WP-789 / EC-826)
+### D-24637 — Auto-resolving reveals always show the revealed card (Active 2026-09-29 — WP-789 / EC-826)
 
 **Context.** D-24547 (WP-726) surfaced the auto-resolving deck-top reveal family on the `heroEffectResolved` overlay, but §2 emitted only when a reveal "realized work", and the event carried no card id. In Jeff's match `b8KeKuLE5Tb` (1p Red Skull), every Card Shark miss (a non-X-Men card left on top) emitted nothing, and hits / High Stakes Jackpot showed a text line only — so the player was never shown the card that is now their next draw. D-24547 named the card image (`revealedCardId`) as a follow-up.
 

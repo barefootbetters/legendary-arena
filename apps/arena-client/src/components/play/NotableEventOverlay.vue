@@ -168,6 +168,25 @@ export default defineComponent({
       return id;
     });
 
+    /**
+     * The revealed card's image URL for a `heroEffectResolved` reveal event, or
+     * null when there is no id or no served image.
+     */
+    // why: WP-789 / D-24637 — only the reveal family shows a card image, and only
+    // from served display data (D-20105); an absent id or URL keeps today's render.
+    const cardImageUrl = computed<string | null>(() => {
+      const event = props.event;
+      const id = cardId.value;
+      if (event === null || event.type !== 'heroEffectResolved' || id === null) {
+        return null;
+      }
+      const imageUrl = props.cardDisplayData?.[id]?.imageUrl;
+      if (typeof imageUrl !== 'string' || imageUrl === '') {
+        return null;
+      }
+      return imageUrl;
+    });
+
     const chipText = computed<string>(() => {
       if (props.event === null) return '';
       return chipLabel(props.event.type);
@@ -196,6 +215,7 @@ export default defineComponent({
 
     return {
       cardName,
+      cardImageUrl,
       chipText,
       showEffectBadges,
       appliedEffects,
@@ -225,6 +245,13 @@ export default defineComponent({
         />
         {{ chipText }}
       </span>
+      <img
+        v-if="event.type === 'heroEffectResolved' && cardImageUrl !== null"
+        class="notable-event-overlay__card-image"
+        data-testid="play-notable-event-overlay-card-image"
+        :src="cardImageUrl"
+        :alt="cardName ?? ''"
+      />
       <p class="notable-event-overlay__card-name">{{ cardName }}</p>
       <p class="notable-event-overlay__narrative">{{ event.narrative }}</p>
       <ul
@@ -265,6 +292,13 @@ export default defineComponent({
   align-items: center;
   gap: 0.4rem;
   max-width: 28rem;
+}
+
+/* why: WP-789 — the revealed card's face, kept small so the overlay stays compact. */
+.notable-event-overlay__card-image {
+  max-height: 12rem;
+  width: auto;
+  border-radius: 0.35rem;
 }
 
 .notable-event-overlay[data-event-type="fightResolved"],

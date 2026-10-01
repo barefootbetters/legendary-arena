@@ -57,6 +57,11 @@ export function eventCardId(event: NotableGameEvent): string {
   // the overlay names the bystander via cardDisplayData (NOT '' — a '' would drop
   // the card-name row). Placed before the healResolved '' fallthrough below.
   if (event.type === 'bystanderRevealed') return event.revealedCardId;
+  // why: WP-789 / D-24637 — an auto-resolving deck-top reveal carries the revealed
+  // card's ext_id, so the overlay names (and shows) that card from served display
+  // data. Other heroEffectResolved emitters carry no id, so '' keeps today's render
+  // (no card-name row).
+  if (event.type === 'heroEffectResolved') return event.revealedCardId ?? '';
   // why: WP-381 healResolved, WP-642 deckReshuffled, and WP-644 strikeBlocked
   // carry no card identity (the overlay renders only their chip + narrative), so
   // there is no ext_id to resolve. Returning '' also keeps this helper exhaustive

@@ -527,3 +527,52 @@ describe('NotableEventOverlay — unknown-keyword fallback (WP-201 §AC — D-20
     assert.match(wrapper.text(), /futureEffectKeyword/);
   });
 });
+
+describe('NotableEventOverlay — reveal card image (WP-789 / D-24637)', () => {
+  function revealEvent(revealedCardId?: string): NotableGameEvent {
+    const event: Extract<NotableGameEvent, { type: 'heroEffectResolved' }> = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Card Shark" revealed "S.H.I.E.L.D. Agent" (cost 0) — left on top.',
+    };
+    if (revealedCardId !== undefined) {
+      event.revealedCardId = revealedCardId;
+    }
+    return event;
+  }
+
+  test('renders the revealed card image with its URL and alt for a heroEffectResolved event with revealedCardId', () => {
+    const cardDisplayData: NotableEventCardLookup = {
+      'starter-agent': display('starter-agent', 'S.H.I.E.L.D. Agent'),
+    };
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: revealEvent('starter-agent'), cardDisplayData },
+    });
+    const image = wrapper.find('[data-testid="play-notable-event-overlay-card-image"]');
+    assert.equal(image.exists(), true);
+    assert.equal(image.attributes('src'), 'https://images.legendary-arena.com/starter-agent.png');
+    assert.equal(image.attributes('alt'), 'S.H.I.E.L.D. Agent');
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), 'S.H.I.E.L.D. Agent');
+  });
+
+  test('renders no image when the heroEffectResolved event has no revealedCardId', () => {
+    const cardDisplayData: NotableEventCardLookup = {
+      'starter-agent': display('starter-agent', 'S.H.I.E.L.D. Agent'),
+    };
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: revealEvent(), cardDisplayData },
+    });
+    assert.equal(wrapper.find('[data-testid="play-notable-event-overlay-card-image"]').exists(), false);
+  });
+
+  test('renders no image for a fightResolved event, even with a card id and image', () => {
+    const cardDisplayData: NotableEventCardLookup = {
+      'doom-bot': display('doom-bot', 'Doombot Legion'),
+    };
+    const wrapper = mount(NotableEventOverlay, {
+      props: { event: fightEvent('doom-bot'), cardDisplayData },
+    });
+    assert.equal(wrapper.find('.notable-event-overlay__card-name').text(), 'Doombot Legion');
+    assert.equal(wrapper.find('[data-testid="play-notable-event-overlay-card-image"]').exists(), false);
+  });
+});

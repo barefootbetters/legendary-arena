@@ -100,6 +100,25 @@ describe('eventCardId helper (WP-201 / D-20104)', () => {
   test('returns an empty id for healResolved (no card identity) (WP-381)', () => {
     assert.equal(eventCardId(healEvent(2)), '');
   });
+
+  test('resolves revealedCardId for a heroEffectResolved reveal event (WP-789)', () => {
+    const revealEvent: NotableGameEvent = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Card Shark" revealed "S.H.I.E.L.D. Agent" (cost 0) — left on top.',
+      revealedCardId: 'starter-agent',
+    };
+    assert.equal(eventCardId(revealEvent), 'starter-agent');
+  });
+
+  test('returns an empty id for a heroEffectResolved event without revealedCardId (WP-789)', () => {
+    const jadeGiantessEvent: NotableGameEvent = {
+      type: 'heroEffectResolved',
+      playerId: '0',
+      narrative: '"Jade Giantess" revealed 4 card(s) from the Hero Deck and gained +10 attack.',
+    };
+    assert.equal(eventCardId(jadeGiantessEvent), '');
+  });
 });
 
 describe('useNotableEventStream — safe-skip branches (WP-201 §AC)', () => {
