@@ -89,13 +89,49 @@ test("composition maps to LAGN setup correctly", () => {
   const parsed = JSON.parse(built.file);
   assert.equal(parsed.setup.mastermind.id, "mastermind-loki");
   assert.equal(parsed.setup.scheme.id, "scheme-plot");
-  assert.deepEqual(parsed.setup.villain_groups, [{ id: "villain-brotherhood", name: "" }]);
-  assert.deepEqual(parsed.setup.henchmen_groups, [{ id: "henchman-dark-minions", name: "" }]);
-  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "" }]);
+  // why: with no resolver supplied, the export falls back to the ext_id as the
+  // name (never a blank string) — the safe default this composable ships.
+  assert.deepEqual(parsed.setup.villain_groups, [
+    { id: "villain-brotherhood", name: "villain-brotherhood" },
+  ]);
+  assert.deepEqual(parsed.setup.henchmen_groups, [
+    { id: "henchman-dark-minions", name: "henchman-dark-minions" },
+  ]);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "hero-iron-man" }]);
   assert.equal(parsed.setup.bystanders_count, 30);
   assert.equal(parsed.setup.wounds_count, 30);
   assert.equal(parsed.setup.shield_officers_count, 30);
   assert.equal(parsed.setup.sidekicks_count, 0);
+});
+
+test("a supplied resolver populates real entity names (never blank)", () => {
+  const draft = ref(createValidDraft());
+  // why: regression for the blank-name loadout export (a Red Skull / Super Hero
+  // Civil War export shipped every entity name as ""). A resolver maps each
+  // composition ext_id to its display name; every setup entity must carry it.
+  const names: Record<string, string> = {
+    "mastermind-loki": "Loki",
+    "scheme-plot": "The Grand Plot",
+    "villain-brotherhood": "Brotherhood",
+    "henchman-dark-minions": "Dark Minions",
+    "hero-iron-man": "Iron Man",
+  };
+  const api = useLoadoutLagnExport(draft, (extId) => names[extId] ?? extId);
+
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for valid composition");
+  const parsed = JSON.parse(built.file);
+
+  assert.equal(parsed.setup.mastermind.name, "Loki");
+  assert.equal(parsed.setup.scheme.name, "The Grand Plot");
+  assert.deepEqual(parsed.setup.villain_groups, [
+    { id: "villain-brotherhood", name: "Brotherhood" },
+  ]);
+  assert.deepEqual(parsed.setup.henchmen_groups, [
+    { id: "henchman-dark-minions", name: "Dark Minions" },
+  ]);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "Iron Man" }]);
+  assert.notEqual(parsed.setup.mastermind.name, "");
 });
 
 test("variant/outcome selection required for validation", () => {
@@ -370,15 +406,46 @@ test("AC-3 a non-empty bench exports setup.hero_alternates and the document vali
   // why: WP-698 — assert the LAGN_VERSION constant rather than a hardcoded literal,
   // so a future additive-field version bump never re-breaks this unrelated case.
   assert.equal(parsed.lagn_version, LAGN_VERSION, "the current LAGN_VERSION stamp");
+  // why: #1542 — intentional behavior change. No resolver is passed here, so the
+  // default id-fallback applies: a bench name is its ext_id, never "" (the old
+  // hardcoded blank this assertion used to pin).
   assert.deepEqual(
     parsed.setup.hero_alternates,
     [
-      { id: "hero-rogue", name: "" },
-      { id: "hero-gambit", name: "" },
+      { id: "hero-rogue", name: "hero-rogue" },
+      { id: "hero-gambit", name: "hero-gambit" },
     ],
     "the bench maps to the same { id, name } shape as setup.heroes",
   );
   assert(api.isValid.value, "the exported bench document should pass validate()");
+});
+
+test("#1542 bench heroes resolve through the resolver like setup.heroes, never blank", () => {
+  const draft = ref(createValidDraft());
+  draft.value.heroAlternateIds = ["hero-rogue", "hero-unknown-set"];
+  // why: "hero-unknown-set" is deliberately absent from the map — an unresolvable
+  // bench id (a set not loaded) must fall back to its ext_id, never a blank name.
+  const names: Record<string, string> = {
+    "hero-iron-man": "Iron Man",
+    "hero-rogue": "Rogue",
+  };
+  const api = useLoadoutLagnExport(draft, (extId) => names[extId] ?? extId);
+  const built = api.buildLagnFile();
+  assert(built, "buildLagnFile should return a file for a draft carrying a bench");
+  const parsed = JSON.parse(built.file);
+  assert.deepEqual(parsed.setup.heroes, [{ id: "hero-iron-man", name: "Iron Man" }]);
+  assert.deepEqual(
+    parsed.setup.hero_alternates,
+    [
+      { id: "hero-rogue", name: "Rogue" },
+      { id: "hero-unknown-set", name: "hero-unknown-set" },
+    ],
+    "a resolvable bench hero carries its display name; an unresolvable one its ext_id",
+  );
+  for (const alternate of parsed.setup.hero_alternates) {
+    assert.notEqual(alternate.name, "", `bench hero ${alternate.id} must never export a blank name`);
+  }
+  assert(api.isValid.value, "the resolved bench document should pass validate()");
 });
 
 // ── Final Blow through LAGN export (WP-698 / D-24517) ───────────────────────
