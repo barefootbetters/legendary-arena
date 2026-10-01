@@ -46155,4 +46155,105 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
+### D-24610 — Bot-ally turn pacing: a readable pause between a bot ally's moves (WP-773 / EC-810) (Drafted 2026-09-26; not yet landed)
+
+**Context.**
+- In a solo + bot-ally match the driver plays the bot's whole turn back to back. In `attemptBotTurn` a successful submit goes straight to the next `fetchState`; the only `delay()` calls are submit retry back-offs. Every slash, combo burst and call-out word the bot's moves trigger stacks on the last, and the human cannot follow the turn. `wiki/bot-ally.md` documents this as "no think-time".
+- D-24256 renews the 15 s ownership lease once per poll tick, before the turn. It rejected renewing inside the turn loop, and its TTL rationale assumes a tick is "sub-second when the DB is healthy".
+
+**Decision.**
+1. After each **advanced** bot move the driver awaits `pacingMsForMove(name)`:
+   - `BOT_MOVE_PACING_MS = 800` for board-changing moves (reveal, recruit, fights, exorcise, choice answers). This is Watch Bot Play's default delay between moves (`autoplay.mjs`, `LobbyView.vue`).
+   - `BOT_PLAY_CARD_PACING_MS = 400` for `playCard`.
+   - 0 for `advanceStage` / `endTurn` (`BOT_UNPACED_MOVE_NAMES`).
+2. A per-**tick** budget, `BOT_PACING_BUDGET_MS_PER_TICK = 7200`, caps the summed pauses. It is under half the lease TTL.
+   - It is created once per `driveBotTurn` call and **shared across the D-24230 retry**, so a retried turn cannot take a second budget inside one lease renewal.
+   - The budget sums the constants the driver schedules. No clock is read.
+   - A typical turn (reveal, six plays, two recruits, two fights = 6.4 s) is fully paced; a busier tick runs its tail unpaced.
+3. The pause decision looks only at the move just submitted (no look-ahead), so a paced move that causes a `passed` / `yielded` return is still followed by its pause.
+   - There is no pause on a non-advancing submit, the fault fallback, or the seat-choice path.
+   - A stop during a pause is honoured by the existing loop-top `driver.stopped` bail.
+   - Retry back-offs stay on the module `delay`, never the injectable `pause`.
+4. `movePacingMs`, `playCardPacingMs`, `pacingBudgetMsPerTick` and `pause` are injectable `deps` overrides. Tests inject a recording no-op, so no test awaits real pacing time.
+5. **Amends D-24256's premise, not its mechanism.** The lease is still renewed once per tick and never inside a turn. A healthy paced tick now takes up to about 7.2 s plus DB time, so the "sub-second tick" premise and the residual margin narrow. `botAllyOwnership.mjs`'s TTL comment is updated to match; the TTL stays 15 s.
+6. **Vision §16 reading:** "gameplay must feel instantaneous" concerns lag from computation. Deliberately pacing the *ally's* turn so a person can follow it, as at a tabletop (§4), is not lag. The human's own actions are untouched.
+7. The bot's decisions and their order are unchanged, as are the poll interval, the retry budgets and the step caps. No engine or determinism impact.
+
+**Reserved by:** NUMBER-LEDGER D-24610. Related: D-24170 (the driver), D-24230 (turn retry), D-24244 (shutdown bail), D-24256 (the lease — premise amended), D-24593 (seat-choice path), D-24234 (the client staleness watchdog).
+
+---
+
+### D-24611 — Turn handoff: a YOUR TURN banner, a turn-start sound, and readable seat labels (WP-774 / EC-811) (Drafted 2026-09-26; not yet landed)
+
+**Context.**
+- The HUD prints the bare seat id ("Active: 0"), and so does the ally panel header. Nothing on the play surface announces a turn change, and the auditioned `turn-start.mp3` (live on R2) is not wired.
+- In solo the active seat never changes (only `game.turn` does). With two or more seats the first play turn goes to seat `'1'`.
+- The engine's log narration, which is on screen during play, numbers seats from 0 ("Player 1 drew…" for seat `'1'`), as do two seat-choice prompts. Only the endgame summary numbers seats from 1.
+- No name source is wired into the play surface.
+
+**Decision.**
+1. One pure rule in `apps/arena-client/src/vfx/turnHandoff.ts`: a handoff is a change of `game.activePlayerId` while `game.phase === 'play'` and no `gameOver`. Both the banner and the sound consume it (the shared renderer contract).
+2. The rule seeds on the first non-null frame, so a reload or remount replays nothing. An in-page resync onto a changed seat announces it once. Solo never fires, and nor does a same-seat extra turn.
+3. The banner ("YOUR TURN" / "PLAYER {id}'S TURN") has its own `VfxOverlay` slot: `TURN_BANNER_MS = 1100`, top 16%.
+   - It is gated `shouldRender('word')`; its sweep motion is gated `shouldRender('shake')`, so at `low` and under reduced motion it is a plain fade.
+   - It never replaces, and is never replaced by, the combo word, the takedown words or the victory banner.
+4. The turn-start sound plays only when the turn comes to the viewer's seat.
+5. **Seat labels follow the game log:** "You" for the viewer's seat, "Player {id}" for any other, in the HUD (a polite live region) and the ally panel. They never use the endgame's 1-based `playerLabel`. Unifying all surfaces on one numbering is an engine + hash follow-up; wiring real names is another follow-up.
+
+**Reserved by:** NUMBER-LEDGER D-24611. Related: D-24365 (VFX foundation), D-24507 (seed-on-first-frame consumers), D-24462 (the wound cue pattern), D-24163 (matchData not wired to the client), D-24513 (extra turns).
+
+---
+
+### D-24612 — Board affordability cues: a red cost when you can't afford it, a rim where the Fight button is enabled, and no End Turn cue (WP-775 / EC-812) (Drafted 2026-09-26; not yet landed)
+
+**Context.**
+- An unaffordable HQ hero's card and cost look the same as an affordable one's. The recruit gate only disables the button and adds a tooltip, and a phone never shows the tooltip.
+- City villains and the Mastermind turn their "Fight N" badge red when unaffordable (PR 2413, Jeff feedback — no D-entry until now), but that badge exists only when the projected fight cost differs from the printed one. So a printed-cost villain you can't afford gets no cue.
+- PR 2044 (Jeff feedback) deliberately removed the End Turn accent: "the active Step box is the only guide".
+
+**Decision.**
+1. **The red cost pill.** On the viewer's own Main step only (the button's stage gate — the economy is zeroed for non-active viewers; no cue at game over), the cost the player reads turns red when they can't afford the card:
+   - the "Fight N" badge when it is shown (PR 2413, recorded here);
+   - otherwise every printed-cost element of the `CardTile`, via its new `isCostUnaffordable` prop.
+
+   The pill is a `--color-penalty` fill with white text and a white ring. It covers HQ heroes, City villains and the Mastermind (not while its victory is assured). There is one cost rule: the button's `useCardCostGating` call.
+2. **The fightable rim.** On the viewer's Main step, every villain and the Mastermind whose Fight button is enabled gets an inset rim in `--color-par-positive`. It uses the same predicate as the button, so the rimmed City villains are exactly the slash stroke's candidate set.
+   - It is drawn as an inset `box-shadow` on a `::after` overlay: never `outline` (which would override the `:focus-visible` ring), never a change to the button's border, padding or margin (which would move the slash hit-test rect), and never `pointer-events: none` on the button or tile (D-24585 §4).
+   - It inherits the button's own blind spots (the heal lock, defeat requirements, open pending choices). Applying those to the board buttons is a named follow-up.
+3. **No End Turn cue.** It would reverse PR 2044, and the client cannot honestly compute "no affordable action remains":
+   - `dodgeCard` and `exorciseHauntedHero` have no client surface;
+   - the heal lock and haunting are not applied to the board rows;
+   - defeat requirements, several pending choices and discard-to-play costs are not projected;
+   - recruit-as-attack counts the same points twice.
+
+   A sometimes-wrong "done" cue is worse than none.
+4. The S.H.I.E.L.D. Officer button keeps its existing disabled dim; its "Recruit: 3" does not turn red (accepted). PlayMobile's `isViewerTurn` gains PlayDesktop's game-over guard (parity; defensive while the mobile board hides at game over).
+
+**Reserved by:** NUMBER-LEDGER D-24612. Related: D-24574 (projected fight cost), D-24585 / D-24592 (slash to fight), D-24180 (heal lock), D-2504 (Patrol / Guard unset).
+
+---
+
+### D-24613 — Superpower-ready rim: an owner-only projection of which hand cards will chain if played now (WP-776 / EC-813) (Drafted 2026-09-26; not yet landed)
+
+**Context.** A player learns they sequenced superpowers badly only after the match, from the WP-710 / WP-713 coach "Opportunities" tip. The engine already has the predicate (`heroConditionHoldsForInPlay`, which reuses `evaluateCondition`), and the client may not evaluate conditions (D-20105; D-24531 invariant 5). The play path also silently drops a magnitude-less MVP keyword effect, so a reachable hook can still do nothing: 31 cards carry only such effects behind a gate.
+
+**Decision.**
+1. New owner-only field `UIPlayerState.handSuperpowerReady?: boolean[]`, parallel to `handCards` and a fresh array.
+   - It is set only for the active player during the play phase, via a typed `MatchPhase` constant.
+   - The helper returns all-`false` at once when `inPlay` is empty (Vision §16).
+   - It passes through the audience filter for the owner only, under the five-step Board-Visible Field Rule.
+2. `computeHandSuperpowerReady(G, playerId)`: a hook qualifies only when:
+   - all its conditions are gate types (`SEQUENCE_GATE_CONDITION_TYPES`, filtered before the predicate is called);
+   - it has a reachable handler (`hookHasExecutableEffect`, now exported);
+   - it has an effect that actually dispatches (the new `hookHasDispatchableEffect`, which mirrors all three steps of `executeSingleEffect`'s gate: MVP keyword, valid magnitude, and a play-time handler).
+
+   A card is ready when any qualifying hook has every condition `'holds'` against the live `inPlay`. Split cards, `'unsupported'` (Size-Changing / Copy Powers), and mixed, hollow or magnitude-less hooks are never ready: when unsure, false.
+3. The client renders the flag verbatim, only on enabled hand cards. It draws a static hero-amber inset ring on the tile's `::after` (visible over the art, lifting with the card, never clipped) plus hidden "Superpower ready" text. `CardTile.vue` is unchanged. The only copy is "Superpower ready" (the Synergy two-vocabulary rule).
+4. **Vision §19** ("no in-game AI assistance or prompting") governs AI help. This is a deterministic rule-state readout in the class of the Day/Night badge and the Fight N badge; it recommends and decides nothing (§3). **Confirmed by the operator 2026-09-26.**
+5. No `G` field, no hash input, no committed replay fixture change. Replay snapshots (unfiltered) gain the field for the mover, with no privacy change. Engine, scoring and PAR outcomes are unchanged: `CompetentHeuristic` scores moves from the `UIState`, but no simulation or bot policy reads `handSuperpowerReady`, and none may in WP-776.
+
+**Reserved by:** NUMBER-LEDGER D-24613. Related: D-24533 (the predicate), D-24531 / D-24540 (Synergy Realization), D-24419 (the owner-only `deckCardStats` precedent), D-24372 (runtime drift pins), D-24562 (doubled-icon under-gate), D-24530 (inline team-token gates).
+
+---
+
 Protect this file.
