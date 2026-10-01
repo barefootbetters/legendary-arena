@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-28
+last-reviewed: 2026-09-30
 ---
 
 # Soul of Legendary Arena
@@ -1146,6 +1146,28 @@ Historical masterminds rarely out-fight a united table. They make the table stop
 being united, stop watching the clock, and accept a bad bargain as the only
 adult choice.
 
+#### Five more moves, from *The Head on the Stick*
+
+The long-form essay [*The Head on the Stick*](https://www.legendary-arena.com/blog/the-head-on-the-stick/) (September 2026) worked out
+five moves the catalog above does not name. Each is set down here in the same
+posture as the rest of the section: a recognizable shape, not a partisan roster.
+
+| Tactic | What the operator does | Where the essay shows it |
+|---|---|---|
+| **Stop the story on Friday** | Tell the true middle and leave out the end. The Mastermind's best argument is never a lie about the cross; it is a story that stops before the tomb is empty. | Golding's Simon, killed and never raised; the Prodigal Son taught only to Luke 15:16; a Passion that dwells only on the pain |
+| **No outside that still claims you** | Cut the target off from his origin. Then nothing has to be forbidden: leaving only has to look childish, disloyal, or impossible, and the circle polices itself. | The boys never told whose they are. The answer is the first verse: "A certain man had two sons" (Luke 15:11) |
+| **Dress the disaster as the rescue** | Credit the harm with the help that came in spite of it, so no one looks for the real road home. | The ship came for the smoke of Jack's fire, set to kill Ralph, and a critic called it hopeful. Harm that brings help is still harm |
+| **Run the deprivation experiment** | Remove what a person needs, then report the failure as his nature. | Frederick II's infants, raised without voices, who "could not live without … gladness of countenance"; an island with no Father and no goal |
+| **Seal the deliberation** | Publish the verdict, seal the reasoning, and treat dissent as an offense. A sharper form of [withhold the machinery](#withhold-the-machinery--a-deception-every-side-uses). | The Nobel seals its deliberations for fifty years; when Artur Lundkvist dissented from Golding's 1983 prize, the committee chairman said, "He has broken our rules." A court publishes its dissents |
+
+**Reading a Scheme by its fingerprints.** The Mastermind is never in the
+credits. No memo ties the rooms together, and no one person has to intend the
+result; what can be read is the pattern, which is a tendency, not a law. Pointing
+to one counterexample does not erase it, any more than one quiet turn means the
+Scheme has stopped advancing. That move, "the pattern fails once, so there is no
+pattern," is the false dilemma in a new costume, and the defense is the same:
+refuse the two boxes and apply one measure to every case.
+
 #### In Legendary grammar — a design lens
 
 > **This is a design lens, not a rulebook.** The card sketches below are
@@ -2014,6 +2036,15 @@ dispute.
   down the road home — the road his Dad is already watching, ready to run and
   meet him.
 
+  The long form of this case is the essay
+  [*The Head on the Stick*](https://www.legendary-arena.com/blog/the-head-on-the-stick/). It adds three findings. First, the two fires:
+  the signal fire failed, and the ship came for the smoke of the fire Jack set
+  to kill Ralph. Second, the sealed prize: one of the Swedish Academy's own
+  judges, Artur Lundkvist, broke protocol to call Golding "a small English
+  phenomenon of no great interest," and the deliberations stay sealed until
+  2034. Third, the experiment: like Frederick II's infants, the island removes
+  the Father and the goal and then reports the result as human nature.
+
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
 authored through the pipeline):*
@@ -2468,6 +2499,33 @@ operator supplies and include it; label what cannot be confirmed as *reported,
 not confirmed* rather than dropping it; and raise any proposed omission as a
 choice for the operator, never make it silently.
 
+**Three more instances, recorded in public.** The essay
+[*The Head on the Stick*](https://www.legendary-arena.com/blog/the-head-on-the-stick/) records three more, inside the essay itself:
+
+- **The father's run.** The tool drafted the line that the prodigal's father ran,
+  though a man of his standing did not, and then cut it on its own revision as
+  "commentary, not text." The pigsty, the husks and the far country survived
+  every draft. The only line that disappeared was the one showing how far the
+  Father goes to reach his son. The source turned out to be solid (Kenneth E.
+  Bailey, *The Cross & the Prodigal*). The correct move was to attribute it, not
+  to cut it.
+- **The skin passages.** The tool described a race-swapped hero and a white
+  villain without hesitation. When the author asked what Moses 7 and 2 Nephi 5
+  say, it warned that the passage "would read as a racial claim" before quoting
+  the text. It then brought back a 2013 Church statement three times, the third
+  time after the author had already declined it. One group's portrayal was
+  treated as fair game, and the other's was guarded.
+- **Matt Walsh.** The tool first left him out, calling part of his material
+  off-topic and calling him "wrong on the history" over the 1802 origin of
+  Jefferson's phrase. One question settled it: why did public schools go on
+  praying and reading the Bible for a hundred and sixty years after Jefferson's
+  letter? Walsh was right on the substance.
+
+The pattern is the same one this section names. The tool trimmed first and
+checked later, and each time what it trimmed was the part that pointed toward
+the Father. The correction is the same, too: quote the text first, and once the
+operator has declined a caveat, do not bring it back.
+
 ## Interactions
 
 - **[Vision](vision.md)** — the authority this page interprets. Content
@@ -2650,6 +2708,9 @@ choice for the operator, never make it silently.
 
 ## References
 
+- [*The Head on the Stick*](https://www.legendary-arena.com/blog/the-head-on-the-stick/) — the long-form *Lord of the Flies* essay
+  (www, September 2026): the mandated-pigsty case, five tactics, and three
+  more mirror instances
 - [docs/01-VISION.md](../docs/01-VISION.md) — Content Authenticity, Rules
   Authenticity, Longevity & Expandability (primary goals 1, 2, 5); the
   good-versus-evil fantasy and player promise
