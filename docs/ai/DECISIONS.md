@@ -46251,7 +46251,7 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ### D-24613 — Superpower-ready rim: an owner-only projection of which hand cards will chain if played now (WP-776 / EC-813) (Drafted 2026-09-26; not yet landed)
 
-**Context.** A player learns they sequenced superpowers badly only after the match, from the WP-710 / WP-713 coach "Opportunities" tip. The engine already has the predicate (`heroConditionHoldsForInPlay`, which reuses `evaluateCondition`), and the client may not evaluate conditions (D-20105; D-24531 invariant 5). The play path also silently drops a magnitude-less MVP keyword effect, so a reachable hook can still do nothing: 31 cards carry only such effects behind a gate.
+**Context.** A player learns they sequenced superpowers badly only after the match, from the WP-710 / WP-713 coach "Opportunities" tip. The engine already has the predicate (`heroConditionHoldsForInPlay`, which reuses `evaluateCondition`), and the client may not evaluate conditions (D-20105; D-24531 invariant 5). The play path also silently drops a magnitude-less MVP keyword effect, so a reachable hook can still do nothing: some gated cards carry only such effects (D-24649 now records them as `attack-no-magnitude` / `recruit-no-magnitude` hollows; the drafted "31 cards" count was not re-verified).
 
 **Decision.**
 1. New owner-only field `UIPlayerState.handSuperpowerReady?: boolean[]`, parallel to `handCards` and a fresh array.

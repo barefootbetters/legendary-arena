@@ -7,7 +7,8 @@
 - [ ] `pnpm -r build` exits 0
 - [ ] Engine and arena-client suites exit 0; client `typecheck` 0 (record baseline counts)
 - [ ] Confirm on `main`: `heroConditionHoldsForInPlay` / `SEQUENCE_GATE_CONDITION_TYPES` exported; `executeHeroEffects` reads
-      `getHooksForCard` with no timing filter; `hookHasExecutableEffect` is module-private; `executeSingleEffect` drops an MVP
+      `getHooksForCard` with no timing filter; `hookHasExecutableEffect` and `hookHasDispatchableEffect` are both exported
+      from `heroEffects.execute.ts` and match the locked contract (D-24649 landed them); `executeSingleEffect` drops an MVP
       keyword without a valid magnitude (unless `'ko'` or in `NO_MAGNITUDE_KEYWORDS`); `UICardDisplay` pinned at seven fields.
 - [ ] Confirm the `deckCardStats` owner-only pass-through in `uiState.filter.ts` (the precedent to mirror).
 - [ ] EXACT target file set = `## Files to Produce`; any file outside it is a FAIL, surfaced as a blocker.
@@ -42,7 +43,7 @@
 - Filter to gate types BEFORE calling the predicate (non-gate types can throw in its minimal slice).
 - When unsure, `false`: empty `inPlay`, mixed / hollow / magnitude-less hooks, split cards and `'unsupported'` never light the rim.
 - Pure helper: no `boardgame.io`, no I/O, `for...of`, never throws; no new `G` field; no hash re-pin; typed phase constant.
-- `heroEffects.execute.ts` changes = the export + the new predicate only (reuse `MVP_KEYWORDS`, `HERO_EFFECT_HANDLERS`, the private `NO_MAGNITUDE_KEYWORDS` / `isValidMagnitude`); nothing in `index.ts`.
+- No `heroEffects.execute.ts` change: both predicates already exist (D-24649, 2026-09-30 sync). Reuse them; nothing in `index.ts`.
 - The client renders the flag verbatim — no condition evaluation, no card-text parsing. Copy is "Superpower ready" only
   (never whiff / failed / error / missed / wasted).
 - No-throw sweep: for every `gateType` in `SEQUENCE_GATE_CONDITION_TYPES`, a hand-card hook
@@ -55,12 +56,12 @@
 - Each exclusion (split, mixed, hollow, magnitude-less, `'unsupported'`): a rim must never promise a superpower that won't fire.
 - The gate-type filter before the predicate: non-gate types can throw inside its minimal slice.
 - The empty-`inPlay` short-circuit and the active-player-only build: every push stays cheap (Vision §16).
-- `hookHasDispatchableEffect`: mirrors `executeSingleEffect`'s three-step gate (keyword, magnitude, play-time handler).
+- `hookHasDispatchableEffect`: mirrors `executeSingleEffect`'s three-step gate (keyword, magnitude, play-time handler) — present on `main` with its `// why:` (D-24649).
 - HandRow's enabled-only rule and the `::after` ring on the tile: visible over the art, lifts with the card, cannot be clipped.
 
 ## Files to Produce
 - `packages/game-engine/src/hero/superpowerReady.logic.ts` + `.test.ts` — **new** (incl. the agreement-with-play test)
-- `packages/game-engine/src/hero/heroEffects.execute.ts` — **modified** — export + `hookHasDispatchableEffect`
+- `packages/game-engine/src/hero/heroEffects.execute.ts` — **unchanged** (D-24649 already landed the export + predicate)
 - `packages/game-engine/src/ui/uiState.types.ts` — **modified**
 - `packages/game-engine/src/ui/uiState.build.ts` + `.test.ts` — **modified**
 - `packages/game-engine/src/ui/uiState.filter.ts` + `.test.ts` — **modified**
@@ -72,8 +73,8 @@
 - `docs/ai/{STATUS,DECISIONS}.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified**
 
 ## After Completing
-- [ ] `pnpm -r build` exits 0; client typecheck 0; `pnpm -r --no-bail test` 0 failures; engine ≥ +20, client ≥ +4 tests recorded
-- [ ] Parity sweep green: `MVP_KEYWORDS` × magnitude {undefined, 0, 2, 1.5, -1}, each `HERO_EFFECT_HANDLERS` entry swapped
+- [ ] `pnpm -r build` exits 0; client typecheck 0; `pnpm -r --no-bail test` 0 failures; engine and client deltas recorded (client ≥ +4; the engine delta is smaller than the drafted +20 because the parity sweep already landed with D-24649)
+- [ ] Parity sweep green (already in `hero/heroEffects.dispatchable.test.ts` from D-24649; confirm, do not duplicate): `MVP_KEYWORDS` × magnitude {undefined, 0, 2, 1.5, -1}, each `HERO_EFFECT_HANDLERS` entry swapped
       for a no-op (restored in `finally`) — `executeSingleEffect({} as LegendaryGameState, {}, '0', 'x', { type, magnitude })`
       equals `hookHasDispatchableEffect` on the one-effect hook
 - [ ] Agreement test green over the synthetic `makeRegistry` fixture (Mission Accomplished, printed `[hc:tech]` rescue line):
