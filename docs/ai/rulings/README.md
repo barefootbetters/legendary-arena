@@ -73,6 +73,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `resolve-count-scaled-choice` | `resolveCountScaledChoice` move | the vnom Symbiotic Adaptation count-scaled choose-one (option index selects resource; grant = magnitude × count) |
 | `resolve-electromagnetic-bubble-choice` | `resolveElectromagneticBubbleChoice` move | the Magneto Electromagnetic Bubble in-play-X-Men pick (records a deferred seventh-card injection; round-trip eligibility gate) |
 | `resolve-ruthless-dictator-choice` | `resolveRuthlessDictatorChoice` move | the Red Skull Ruthless Dictator scry-3 disposition (ko / discard / top of a revealed deck-top card) |
+| `resolve-seat-choice` | `resolveSeatChoice` move (one or more submissions) | the foundational non-active / multi-seat choice (atomic all-seats-submitted apply) |
 
 ### Current expectation kinds
 
@@ -92,6 +93,7 @@ list + argument shapes only); nothing here belongs in `packages/lagn-spec`.
 | `turn-economy-flag` | a named boolean `G.turnEconomy` flag (absent = false) equals a boolean | `economyFlag`, `value` |
 | `hq-equal` | the HQ row (`G.hq`) equals an exact occupant list (full slots only) | `cards` |
 | `deferred-hand-injections-equal` | a player's deferred hand injections (`G.deferredHandInjections[player]`, absent = `[]`) equal an exact card list | `player`, `cards` |
+| `pending-seat-choice-open` | whether a seat choice is still open (`G.pendingSeatChoice !== undefined`) equals a boolean | `value` |
 
 ## How to add a ruling
 

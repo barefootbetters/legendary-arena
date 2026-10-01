@@ -95,6 +95,8 @@
  *   Bubble in-play-X-Men pick.
  * - `resolve-ruthless-dictator-choice` — call the `resolveRuthlessDictatorChoice`
  *   move on a parked Red Skull Ruthless Dictator scry-3 disposition choice.
+ * - `resolve-seat-choice` — call the `resolveSeatChoice` move (one or more seat
+ *   submissions) on a parked non-active / multi-seat choice.
  */
 export type RulingScenarioAction =
   | 'fire-villain-effect'
@@ -125,7 +127,8 @@ export type RulingScenarioAction =
   | 'resolve-hero-choice'
   | 'resolve-count-scaled-choice'
   | 'resolve-electromagnetic-bubble-choice'
-  | 'resolve-ruthless-dictator-choice';
+  | 'resolve-ruthless-dictator-choice'
+  | 'resolve-seat-choice';
 
 /**
  * All ruling scenario actions in canonical order. Single source of truth; runtime
@@ -161,6 +164,7 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
   'resolve-count-scaled-choice',
   'resolve-electromagnetic-bubble-choice',
   'resolve-ruthless-dictator-choice',
+  'resolve-seat-choice',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -201,6 +205,8 @@ export const RULING_SCENARIO_ACTIONS: readonly RulingScenarioAction[] = [
  *   only — design the ruling so the refill leaves no `null` gap).
  * - `deferred-hand-injections-equal` — a named player's deferred hand injections
  *   (`G.deferredHandInjections[player]`, absent = `[]`) equal an exact card list.
+ * - `pending-seat-choice-open` — whether a seat choice is still open
+ *   (`G.pendingSeatChoice !== undefined`) equals an exact boolean.
  */
 export type RulingExpectationKind =
   | 'zone-cards-equal'
@@ -216,7 +222,8 @@ export type RulingExpectationKind =
   | 'city-equal'
   | 'turn-economy-flag'
   | 'hq-equal'
-  | 'deferred-hand-injections-equal';
+  | 'deferred-hand-injections-equal'
+  | 'pending-seat-choice-open';
 
 /**
  * All ruling expectation kinds in canonical order. Single source of truth; runtime
@@ -237,6 +244,7 @@ export const RULING_EXPECTATION_KINDS: readonly RulingExpectationKind[] = [
   'turn-economy-flag',
   'hq-equal',
   'deferred-hand-injections-equal',
+  'pending-seat-choice-open',
 ] as const;
 
 // why: D-24524 — the closed set of `G.turnEconomy` fields a `turn-economy-value`
@@ -327,7 +335,7 @@ export interface RulingExpectation {
   queue?: RulingPendingQueue;
   /** `pending-queue-length`: the exact expected queue length. */
   length?: number;
-  /** `boolean-result` / `turn-economy-flag`: the exact expected boolean. */
+  /** `boolean-result` / `turn-economy-flag` / `pending-seat-choice-open`: the exact expected boolean. */
   value?: boolean;
   /** `turn-economy-flag`: which boolean `G.turnEconomy` flag to assert. */
   economyFlag?: RulingEconomyFlag;
@@ -499,6 +507,11 @@ function validateExpectationFields(expected: RulingExpectation, rulingId: string
       }
       if (!isStringArray(expected.cards)) {
         return `Ruling "${rulingId}" has a deferred-hand-injections-equal expectation whose "cards" is not an array of card ext_id strings.`;
+      }
+      return null;
+    case 'pending-seat-choice-open':
+      if (typeof expected.value !== 'boolean') {
+        return `Ruling "${rulingId}" has a pending-seat-choice-open expectation whose "value" is not a boolean.`;
       }
       return null;
     default:
