@@ -63,6 +63,21 @@ export function matchReadsConditionType(
 }
 
 // ---------------------------------------------------------------------------
+// Master Strike / Ambush this-turn condition types (WP-743 / D-24566)
+// ---------------------------------------------------------------------------
+
+// why: WP-743 / D-24566 — named so the setup marker arm, the evaluator case, the
+// describe case, the wait-and-see list and the reveal write-site gate all reference one
+// literal (no cross-file drift). The reveal write-site gates its lazy flag writes on
+// matchReadsConditionType above (shared with WP-777), so a match whose hooks never read
+// a flag never gains that key on G and both hash oracles stay byte-unchanged.
+/** Grief: a Master Strike was played this turn. */
+export const MASTER_STRIKE_THIS_TURN_CONDITION_TYPE = 'masterStrikePlayedThisTurn';
+
+/** Spring the Trap: a Master Strike or an Ambush Villain was played this turn. */
+export const MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE = 'masterStrikeOrAmbushPlayedThisTurn';
+
+// ---------------------------------------------------------------------------
 // evaluateCondition — single condition evaluator
 // ---------------------------------------------------------------------------
 
@@ -373,6 +388,21 @@ export function evaluateCondition(
       // after a qualifying defeat — never sticky. Ignores condition.value (a boolean
       // gate, no threshold). Safe-skip parity: an absent flag reads false, never throws.
       return G.villainOrMastermindDefeatedSinceResolve === true;
+    }
+
+    case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn". A
+      // sticky per-turn predicate (a count >= 1 threshold) read from the gated lazy flag
+      // performVillainReveal sets when a Master Strike reaches the strike pile. Ignores
+      // condition.value. An absent flag reads false, so this never throws.
+      return G.masterStrikePlayedThisTurn === true;
+    }
+
+    case MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE: {
+      // why: WP-743 / D-24566 — Spring the Trap's "If a Master Strike or Villain that has
+      // an Ambush ability was played this turn". Either sticky flag satisfies it; the
+      // ambush flag alone never satisfies Grief's case above. Ignores condition.value.
+      return G.masterStrikePlayedThisTurn === true || G.ambushVillainPlayedThisTurn === true;
     }
 
     case 'heroClassInDiscardPile': {
@@ -872,6 +902,14 @@ export function describeFailedCondition(
       // to quote. The line is the wait-and-see "not yet" phrasing (the ability applies
       // the moment a qualifying defeat lands this turn), matching the recorded log text.
       return 'it needs you to defeat a Villain or Mastermind this turn';
+
+    case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
+      // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
+      return 'it needs a Master Strike played this turn';
+
+    case MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE:
+      // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.
+      return 'it needs a Master Strike or a Villain with an Ambush ability played this turn';
 
     case 'heroClassInDiscardPile':
       // why: D-24544 — X-Gene's discard-pile class-presence gate; a boolean existence

@@ -843,6 +843,12 @@
       "cardSlug": "fateful-return",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]"
+    },
+    {
+      "heroSlug": "wanda-vision",
+      "cardSlug": "grief",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:master-strike-this-turn]"
     }
   ],
   "msp1": [
@@ -2125,6 +2131,12 @@
       "cardSlug": "gruesome-feast",
       "abilityIndex": 0,
       "markupToken": "[keyword:reveal-top-may-ko]"
+    },
+    {
+      "heroSlug": "venom-rocket",
+      "cardSlug": "spring-the-trap",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:master-strike-or-ambush-this-turn]"
     }
   ],
   "dims": [

@@ -265,7 +265,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "If a Master Strike or Villain that has an Ambush ability was played this turn, you get +1[icon:attack]."
+            "If a Master Strike or Villain that has an Ambush ability was played this turn, you get +1[icon:attack]. [keyword:master-strike-or-ambush-this-turn]"
           ]
         },
         {

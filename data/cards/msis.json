@@ -780,7 +780,7 @@
           "attack": null,
           "recruit": "2+",
           "abilities": [
-            "If a Master Strike was completed this turn, you get +2[icon:recruit]."
+            "If a Master Strike was completed this turn, you get +2[icon:recruit]. [keyword:master-strike-this-turn]"
           ]
         },
         {

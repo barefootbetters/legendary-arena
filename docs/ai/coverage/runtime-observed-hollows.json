@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7102,
+    "totalObservations": 7103,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 518,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 6584
+      "parse-unrecognized": 6585
     }
   },
   "byMechanic": {
@@ -1146,12 +1146,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 470,
+      "hitCount": 471,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 470
+        "parse-unrecognized": 471
       },
       "examples": [
         {
@@ -1954,12 +1954,12 @@
       ]
     },
     "rule:multicolored": {
-      "hitCount": 8,
-      "lastSeenTurn": 22,
+      "hitCount": 9,
+      "lastSeenTurn": 23,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 8
+        "parse-unrecognized": 9
       },
       "examples": [
         {
@@ -2118,21 +2118,15 @@
       ]
     },
     "sacrifice": {
-      "hitCount": 11,
-      "lastSeenTurn": 25,
+      "hitCount": 10,
+      "lastSeenTurn": 23,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 11
+        "parse-unrecognized": 10
       },
       "examples": [
         {
-          "cardId": "msis/black-panther/great-many-lives-lost#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
           "cardId": "msis/black-panther/great-many-lives-lost#1",
           "cardType": "hero",
           "timing": "onPlay",
@@ -2140,6 +2134,12 @@
         },
         {
           "cardId": "msis/black-panther/great-many-lives-lost#1",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "msis/bruce-banner/reverse-the-snap#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
