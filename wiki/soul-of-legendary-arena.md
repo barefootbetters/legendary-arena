@@ -2052,7 +2052,7 @@ dispute.
   to kill Ralph. Second, the sealed prize: one of the Swedish Academy's own
   judges, Artur Lundkvist, broke protocol to call Golding "a small English
   phenomenon of no great interest," and the deliberations stay sealed until
-  2034. Third, the experiment: like Frederick II's infants, the island removes
+  2034. Third, [the experiment](#five-more-moves-from-the-head-on-the-stick): like Frederick II's infants, the island removes
   the Father and the goal and then reports the result as human nature.
 
   The essay also answers the head with an older scene: **Legion** (Mark 5;
@@ -2060,8 +2060,8 @@ dispute.
   could bind him, no, not with chains … neither could any man tame him" (Mark
   5:3–4), and he lived "crying, and cutting himself with stones" (5:5). Then
   "when he saw Jesus afar off, he ran" (5:6). The spirit answers in the plural,
-  "My name is Legion: for we are many" (5:9), just as Golding's head speaks for
-  the crowd ("we shall do you"). The devils go into the swine, and "the herd ran
+  "My name is Legion: for we are many" (5:9), just as Golding's head
+  [speaks for the crowd](#the-masterminds-common-tactics-the-grammar-of-manipulation) ("we shall do you"). The devils go into the swine, and "the herd ran
   violently down a steep place into the sea, (they were about two thousand;)"
   (5:13). The man is found "sitting at the feet of Jesus, clothed, and in his
   right mind" (Luke 8:35) and is sent home to tell "how great things the Lord
@@ -2072,7 +2072,7 @@ dispute.
   into the sea.
 
   **The Forbidden Experiment.** The essay reads Golding's island as a
-  deprivation experiment and sets it beside the original. In the 1200s the
+  [deprivation experiment](#five-more-moves-from-the-head-on-the-stick) and sets it beside the original. In the 1200s the
   Emperor Frederick II had infants raised with food and washing but no one
   allowed to speak to them, to learn what language people speak by nature. The
   chronicler Salimbene recorded that "the children could not live without
@@ -2116,23 +2116,26 @@ dispute.
   **The Professor's confessions.** The essay tested itself against a
   counterargument written by Grok in the voice of a Liberal Arts Professor, a
   single woman who taught the book for thirty years (not a real person). Read
-  closely, her objection confesses more than it refutes. She admits the casting
-  double standard is deliberate, a "correction," and calls the book room's
-  choice "a failure of nerve." She also gives away nine things in her own words:
-  (1) the correction's target, "white, male, and Christian," the same churchgoing
-  boy the essay names; (2) her department treats reading as a vehicle for "the
-  causes that department taught her to treat as the point of reading," while
-  faulting the essay for treating the novel as "a delivery system"; (3) assigning
-  Luke 15 "replaces one orthodoxy with another," so the current reading is an
-  orthodoxy too; (4) she stopped the classroom prayer herself "before I had the
-  rank to stop saying it," and credits a Jewish girl as the reason; (5) Simon is
-  "killed by the hymn," the very takeaway that the church boys are the violent
-  ones; (6) her compassion "has to run toward" one child over another by group,
-  the opposite of one measure; (7) her remedy is to "fund the bridge," the
-  institution, where the essay sends a father; (8) she speaks as the one who
-  decides "what their classrooms are allowed to contain"; and (9) "We know which
-  child flinched, and it was not only him," conceding that the fair-haired boy
-  was hurt too.
+  closely, her objection confesses more than it refutes. She is a voice, not a
+  person, so these are what the argument concedes, whoever makes it. She admits
+  the casting double standard is deliberate, a "correction," and calls the book
+  room's choice "a failure of nerve." She also gives away nine things in her own
+  words: (1) the category the correction is aimed at, "white, male, and
+  Christian," which is the churchgoing boy the essay names; (2) her department
+  treats reading as a vehicle for "the causes that department taught her to
+  treat as the point of reading," while faulting the essay for treating the
+  novel as "a delivery system"; (3) assigning Luke 15 "replaces one orthodoxy
+  with another," so the current reading is an
+  [orthodoxy too](#the-pattern-in-the-mirror-ais-secular-default); (4) she stopped the
+  classroom prayer herself "before I had the rank to stop saying it," and
+  [credits a Jewish girl as the reason](#withhold-the-machinery--a-deception-every-side-uses); (5) Simon is "killed by the hymn," the
+  reading the essay predicts a churchgoing boy will take away; (6) her
+  compassion "has to run toward" one child over another by group, the opposite
+  of one measure; (7) she worries that "nobody has to fund the bridge," reaching
+  for the institution's money, where the essay sends a father; (8) she speaks as
+  the one who decides "what their classrooms are allowed to contain"; and (9)
+  "We know which child flinched, and it was not only him," conceding that the
+  fair-haired boy was hurt too, while denying it was the real injury.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
