@@ -525,9 +525,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // dropped; gate-only 470 -> 471, rule:multicolored 8 -> 9, sacrifice 11 -> 10). totalObs
   // 8030 -> 8031 (+1, equal to the raw feed rise); resolvedObs stays 1235, so percentResolved
   // stays 15.4. A sweep-trajectory artifact, not a regression.
+  // 2026-09-30 (D-24649, re-pin; drafted as D-24614): a hero line whose only effects are
+  // magnitude-less icons ("use this bonus [icon:attack] against the Mastermind", "gets no
+  // [icon:attack] from Shards") is now an honest parse-unrecognized hollow instead of a silent
+  // no-op. The feed (regenerated on top of D-24566) gains `attack-no-magnitude` (415 obs) and
+  // `recruit-no-magnitude` (420 obs); every other mechanic's count is byte-identical, so no
+  // trajectory moved. totalObs 8031 -> 8866 (+835, equal to the raw feed rise 7103 -> 7938);
+  // resolvedObs stays 1235, so percentResolved 15.4 -> 13.9 (1235 / 8866). Newly visible hollow
+  // surface, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8031);
-  assert.equal(view.percentResolved.value, 15.4);
+  assert.equal(view.totalObs.value, 8866);
+  assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });
 

@@ -23,10 +23,10 @@ condition held, it also counted as an "assembled" synergy in the endgame Synergy
 - **The Synergy Rate skips it**, and also skips Goblin Glider's gated Dodge-grant line: a clause counts only when
   its body reaches a handler at play (`hookHasDispatchableEffect`, the predicate WP-776 locks, now defined
   once here).
-- **Counts and gates.** Engine 4732/0 → 4743/0 (+11). `pnpm -r --no-bail test` has 0 failures. The
+- **Counts and gates.** Engine 4749/0 → 4760/0 (+11). `pnpm -r --no-bail test` has 0 failures. The
   sentinel / replay / PAR oracles are unchanged (no re-pin). `sim:runtime-observed` gains
-  `attack-no-magnitude` 416 and `recruit-no-magnitude` 420; every other mechanic is byte-identical. The
-  dashboard in-play pin moved 8030 / 15.4 → 8866 / 13.9. The coverage, ledger, effect-index and cards
+  `attack-no-magnitude` 415 and `recruit-no-magnitude` 420; every other mechanic is byte-identical. The
+  dashboard in-play pin moved 8031 / 15.4 → 8866 / 13.9. The coverage, ledger, effect-index and cards
   gates are all green.
 - **Live-verify (D-24026) — pending.** In a play.legendary-arena.com match with `co2e/storm`, play Tidal Wave
   or Lightning Bolt with another [Ranged] hero in play. The log must show the `attack-no-magnitude` hollow
