@@ -7,6 +7,31 @@
 
 ## Current State
 
+### D-24649 — Hero lines that grant a number-less icon are hollow, not synergy (direct fix) (2026-09-30)
+
+Drafted 2026-09-26 as D-24614; the heal lock on the board buttons took D-24614 first, so it was renumbered on rebase.
+
+**User-visible on `play.legendary-arena.com` (live-verify operator-pending, D-24026).** A hero line
+whose only parsed effect is an icon with no number, such as Storm Tidal Wave's "[hc:ranged]: You may
+use this bonus [icon:attack] against the Mastermind instead", did nothing and said nothing. When its
+condition held, it also counted as an "assembled" synergy in the endgame Synergy Rate.
+- **Now it is an honest hollow.** Playing it logs the red `Unhandled effect observed … "attack-no-magnitude"`
+  line and records a `parse-unrecognized` hollow, so `/coverage` and the hollow backlog list it. There are 94
+  such hook shapes across `data/cards` (29 gated, 65 ungated).
+- **A failed gate says so too.** When the gate fails (Tidal Wave with no other [Ranged] hero), the log line
+  now ends "Its effect is not supported yet." (the D-24623 wording), because the body is hollow.
+- **The Synergy Rate skips it**, and also skips Goblin Glider's gated Dodge-grant line: a clause counts only when
+  its body reaches a handler at play (`hookHasDispatchableEffect`, the predicate WP-776 locks, now defined
+  once here).
+- **Counts and gates.** Engine 4732/0 → 4743/0 (+11). `pnpm -r --no-bail test` has 0 failures. The
+  sentinel / replay / PAR oracles are unchanged (no re-pin). `sim:runtime-observed` gains
+  `attack-no-magnitude` 416 and `recruit-no-magnitude` 420; every other mechanic is byte-identical. The
+  dashboard in-play pin moved 8030 / 15.4 → 8866 / 13.9. The coverage, ledger, effect-index and cards
+  gates are all green.
+- **Live-verify (D-24026) — pending.** In a play.legendary-arena.com match with `co2e/storm`, play Tidal Wave
+  or Lightning Bolt with another [Ranged] hero in play. The log must show the `attack-no-magnitude` hollow
+  line, and the endgame Synergy Rate must not count that line. Record the matchId here.
+
 ### D-24648 — Diving Block start-stage freeze fix (direct fix; drafted 2026-09-20 as D-24544, landed 2026-09-29)
 
 A start-stage villain-escape Wound that opened a Diving Block reveal/decline seat choice for

@@ -611,6 +611,26 @@ function isValidMagnitude(magnitude: number | undefined): magnitude is number {
   return true;
 }
 
+/**
+ * Returns whether executeSingleEffect's magnitude pre-gate drops this effect before
+ * its handler runs.
+ *
+ * why: D-24649 — the one copy of the pre-gate rule. executeSingleEffect enforces it;
+ * classifyHeroEffectReason (hollow detection) and hookHasDispatchableEffect (the
+ * Synergy Rate) read it, so the three cannot drift apart. `ko` and every
+ * NO_MAGNITUDE_KEYWORDS member bypass the gate; any other keyword needs a valid
+ * magnitude.
+ *
+ * @param effect - The declared hero effect descriptor.
+ * @returns Whether the pre-gate drops the effect for a missing or invalid magnitude.
+ */
+function failsMagnitudePreGate(effect: HeroEffectDescriptor): boolean {
+  if (effect.type === 'ko' || NO_MAGNITUDE_KEYWORDS.has(effect.type)) {
+    return false;
+  }
+  return !isValidMagnitude(effect.magnitude);
+}
+
 // ---------------------------------------------------------------------------
 // Draw helper (extracted from drawCards move logic)
 // ---------------------------------------------------------------------------
@@ -803,8 +823,12 @@ export function executeHeroEffects(
     // why: WP-765 / D-24598 — day/night conditions are excluded from the clause count: Sunlight /
     // Moonlight is board state, not a synergy the player built, and counting it would log a
     // guaranteed "miss" for one line of every two-line day/night card on every play.
+    // why: D-24649 — the body must DISPATCH at play, not merely be reachable. A hook whose
+    // only effects are magnitude-less icons ("use this bonus [icon:attack] against the
+    // Mastermind") or a keyword with no play-time handler (Goblin Glider's gated Dodge)
+    // does nothing when its condition holds, so counting it would log a fake "assembled".
     const isCountableConditionalClause =
-      countSynergyConditions(hook) > 0 && hookHasExecutableEffect(hook);
+      countSynergyConditions(hook) > 0 && hookHasDispatchableEffect(hook);
 
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
@@ -914,7 +938,7 @@ export function executeHeroEffects(
         assembled: true,
         clauseValue: heroClauseValue(G, playerID, cardId, hook),
       });
-    } else if ((hook.conditions?.length ?? 0) === 0 && hookHasCountScaledValueEffect(hook) && hookHasExecutableEffect(hook)) {
+    } else if ((hook.conditions?.length ?? 0) === 0 && hookHasCountScaledValueEffect(hook) && hookHasDispatchableEffect(hook)) {
       // why: WP-712 / D-24535 — a PURE count-scaled clause (no boolean gate, e.g. Avengers
       // Assemble / Perfect Teamwork "for each color of Hero you have") carries synergy VALUE
       // but has no assembly decision. Record its realized value (= potential, since there is
@@ -982,8 +1006,9 @@ function readTurnNumber(moveContext: unknown): number {
  * `deferred`; any MVP keyword (a direct handler OR a reveal translation exists)
  * is reachable (`applied`); a recognized HeroKeyword with no handler is
  * `no-handler`; a token that is not even a recognized keyword is
- * `unsupported-keyword`. Magnitude validity is a within-handler concern, not a
- * missing handler, so it does not change reachability.
+ * `unsupported-keyword`. A play-time keyword whose descriptor fails the
+ * magnitude pre-gate never reaches its handler, so it is `parse-unrecognized`
+ * (D-24649).
  *
  * @param effect - The declared hero effect descriptor.
  * @returns The reachability classification reason.
@@ -999,9 +1024,19 @@ function classifyHeroEffectReason(effect: HeroEffectDescriptor): EffectExecution
   }
   // why: any MVP keyword has a reachable handler — either a direct
   // HERO_EFFECT_HANDLERS entry or a reveal translation (revealRulesForLegacyKeyword).
-  // Reaching a handler is the not-hollow condition; the magnitude pre-gate inside
-  // executeSingleEffect is internal handler logic, not a missing handler.
+  // Reaching a handler is the not-hollow condition.
   if (MVP_KEYWORDS.has(keyword)) {
+    // why: D-24649 (amends D-24033's "magnitude is a within-handler concern") — the
+    // magnitude pre-gate runs BEFORE the handler, so a descriptor it drops never
+    // reaches one. These are icons the parser read with no number: "use this bonus
+    // [icon:attack] against the Mastermind", "gets no [icon:attack] from Shards".
+    // The line's real mechanic is unparsed, so it is `parse-unrecognized`. Only a
+    // keyword with a play-time handler can be dropped this way: the keywords that
+    // run at recruit / discard / wound time / from the hand have no handler entry,
+    // never pass through this gate, and stay `applied`.
+    if (HERO_EFFECT_HANDLERS[effect.type] !== undefined && failsMagnitudePreGate(effect)) {
+      return 'parse-unrecognized';
+    }
     return 'applied';
   }
   // why: a recognized HeroKeyword with neither a handler nor a deferred entry is
@@ -1043,17 +1078,55 @@ function hookHasCountScaledValueEffect(hook: HeroAbilityHook): boolean {
  * reachable when `classifyHeroEffectReason` is not a hollow reason. The synergy
  * counter uses this to exclude a conditional hook whose effect body is
  * unimplemented — an unbuilt payoff is our backlog, never the player's synergy
- * miss, so it must not enter the per-match Synergy Rate.
+ * miss, so it must not enter the per-match Synergy Rate. Since D-24649 a
+ * magnitude-dropped effect is hollow, so a hook whose only effects are
+ * magnitude-less icons is not executable either.
  *
  * @param hook - The hero ability hook.
  * @returns Whether the hook has a reachable effect body.
  */
-function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
+// why: D-24649 — exported (engine-internal, not re-exported from index.ts) so the
+// parity tests and WP-776's hand-readiness helper reuse it instead of copying it.
+export function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
   if ((hook.primitiveEffects?.length ?? 0) > 0) {
     return true;
   }
   for (const effect of hook.effects ?? []) {
     if (!isHollowReason(classifyHeroEffectReason(effect))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns whether playing a hero hook dispatches at least one effect to a handler
+ * right now (D-24649; the predicate WP-776 locks).
+ *
+ * Mirrors all three steps of executeSingleEffect's gate: the keyword is in
+ * MVP_KEYWORDS, the magnitude passes the pre-gate, and a play-time handler exists.
+ * A composition primitive always reaches the interpreter. Stricter than
+ * hookHasExecutableEffect: a keyword that runs at another time (wall-crawl at
+ * recruit, dodge from the hand, return-on-discard at discard) is executable but
+ * dispatches nothing at play.
+ *
+ * @param hook - The hero ability hook.
+ * @returns Whether playing the hook reaches at least one handler.
+ */
+// why: exported (engine-internal, not re-exported from index.ts) for the Synergy Rate
+// gate below, the executeSingleEffect parity test, and WP-776.
+export function hookHasDispatchableEffect(hook: HeroAbilityHook): boolean {
+  if ((hook.primitiveEffects?.length ?? 0) > 0) {
+    return true;
+  }
+  for (const effect of hook.effects ?? []) {
+    if (!MVP_KEYWORDS.has(effect.type)) {
+      continue;
+    }
+    if (failsMagnitudePreGate(effect)) {
+      continue;
+    }
+    if (HERO_EFFECT_HANDLERS[effect.type] !== undefined) {
       return true;
     }
   }
@@ -1070,6 +1143,13 @@ function hookHasExecutableEffect(hook: HeroAbilityHook): boolean {
  */
 function hookHasHollowBody(hook: HeroAbilityHook): boolean {
   const declaredCount = (hook.effects?.length ?? 0) + (hook.unresolvedMarkers?.length ?? 0);
+  // why: D-24649 — this stays on hookHasExecutableEffect, not hookHasDispatchableEffect.
+  // "Its effect is not supported yet" must agree with what detectHollowHeroHook records when
+  // the same gate passes, and both read classifyHeroEffectReason. Since D-24649 a
+  // magnitude-less-only body is hollow there too, so Storm Tidal Wave's failed gate now says
+  // "not supported yet". The dispatchable predicate would also flag a gated keyword that runs
+  // at another time (Goblin Glider's Dodge grant), which D-24033 classifies `applied`, not
+  // hollow, so the failed-gate line would call unsupported a body the hollow record never does.
   return declaredCount > 0 && !hookHasExecutableEffect(hook);
 }
 
@@ -1163,7 +1243,11 @@ function detectHollowHeroHook(
     if (!isHollowReason(reason)) {
       hasReachable = true;
     } else if (firstHollow === null) {
-      firstHollow = { reason, mechanic: effect.type };
+      // why: D-24649 — a hollow MVP keyword can only be a magnitude-dropped icon (see
+      // classifyHeroEffectReason). Label it `attack-no-magnitude`, not `attack`, so the
+      // log line and the /coverage in-play list do not read as the implemented grant.
+      const mechanic = MVP_KEYWORDS.has(effect.type) ? `${effect.type}-no-magnitude` : effect.type;
+      firstHollow = { reason, mechanic };
     }
   }
 
@@ -5971,10 +6055,8 @@ export function executeSingleEffect(
   // translation (revealRulesForLegacyKeyword) + the per-rule predicates, so the
   // no-magnitude and M=0-valid reveals still fire (D-24024 / pre-flight PS-1). Every
   // other MVP keyword requires a valid magnitude here.
-  if (keyword !== 'ko' && !NO_MAGNITUDE_KEYWORDS.has(keyword)) {
-    if (!isValidMagnitude(effect.magnitude)) {
-      return false;
-    }
+  if (failsMagnitudePreGate(effect)) {
+    return false;
   }
 
   // why: data-driven dispatch (WP-251 / D-24022). An undefined handler reproduces
