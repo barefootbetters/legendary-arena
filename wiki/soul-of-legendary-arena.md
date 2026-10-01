@@ -2077,8 +2077,8 @@ dispute.
   book.
 
   What Golding cleared off the island before the first page: **parents** (none
-  survive the crash); **God, and a faith that is lived** (the choirboys are only
-  singers; no one prays for help, opens the scriptures, keeps the commandments,
+  survive the crash); **God, and a faith that is lived** (the choir wears the
+  cross, but no one prays for help, opens the scriptures, keeps the commandments,
   serves as Christ served, or is his brother's keeper); **the grown-ups who
   raise a boy** (no teacher, coach, counselor, or mentor); **who they are** (no
   boy is told he is a child of God); and **a Father running to save them**. What
@@ -2092,8 +2092,9 @@ dispute.
   Foggia, and his age called him *Stupor mundi*, the Wonder of the World. The
   chronicler, [Salimbene di Adam](https://en.wikipedia.org/wiki/Salimbene_di_Adam),
   was a Franciscan from Parma, a city Frederick besieged in 1247–48, and wrote
-  his *Cronica* in the early 1280s. He was hostile to the emperor, but historians
-  generally trust his record, and he gives no year for the experiment. Whether
+  his *Cronica* in the early 1280s. He was hostile to the emperor. Historians rely on him
+  for Frederick's wars in Italy, but this story is one he tells against the
+  emperor, and he gives no year for it. Whether
   every detail is fact or was told against him, and an older story about the
   Egyptian king Psammetichus in Herodotus runs the same way, the lesson stands.
   The most
