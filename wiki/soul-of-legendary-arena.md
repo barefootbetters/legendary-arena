@@ -1968,6 +1968,22 @@ dispute.
   guides and, by several accounts, by Golding himself — and the tribe kills him.
   The book's diagnosis is the Fall.
 
+  **Who wrote it.** William Golding (1911–1993) was a husband, a father of two,
+  and a schoolmaster for most of his working life: Bishop Wordsworth's School,
+  Salisbury, from 1940 until he retired from teaching in 1962. The boys on the
+  island were written by a man who taught boys every day. The war interrupted
+  the teaching. He spent six years in the Royal Navy, and his
+  [Nobel biography](https://www.nobelprize.org/prizes/literature/1983/golding/biographical/)
+  places him at the sinking of the Bismarck and off the French coast on D-Day,
+  finishing as "Lieutenant in command of a rocket ship." In "Fable" he says the
+  war is where his view of man changed: "Before the Second World War I believed
+  in the perfectibility of social man," but "I had discovered what one man could
+  do to another," and "anyone who moved through those years without
+  understanding that man produces evil as a bee produces honey, must have been
+  blind or wrong in the head." The page does not argue with what he saw. He told
+  the truth about the twentieth century's Friday; the quarrel is with a book
+  that stops there.
+
   What it lacks is the rest of the story, at both ends. Luke begins the parable
   at home, not in the pigsty: "A certain man had two sons" (Luke 15:11). The boy
   is a son before the far country, a son in it, and still "this my son" when he
@@ -3023,8 +3039,12 @@ operator has declined a caveat, do not bring it back.
   [CommonLit's guide](https://www.commonlit.org/blog/rule-the-school-with-this-novel-guide-for-lord-of-the-flies/);
   the ALA-derived [Banned & Challenged Classics list](https://research.gfcmsu.edu/bannedbooks/ChallengedClassics);
   Mental Floss on [Golding's 1972 verdict](https://www.mentalfloss.com/article/62962);
-  the [Golding estate](https://www.william-golding.co.uk/about/) on sales; and the
-  [1983 Nobel Prize citation](https://www.nobelprize.org/prizes/literature/1983/summary/).
+  the [Golding estate](https://www.william-golding.co.uk/about/) on sales; the
+  [1983 Nobel Prize citation](https://www.nobelprize.org/prizes/literature/1983/summary/)
+  and Golding's [Nobel biography](https://www.nobelprize.org/prizes/literature/1983/golding/biographical/)
+  on his teaching and war service; and
+  [Wikipedia](https://en.wikipedia.org/wiki/William_Golding) on his marriage,
+  children, and teaching dates.
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the
