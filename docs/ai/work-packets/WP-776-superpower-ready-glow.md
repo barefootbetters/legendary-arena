@@ -5,7 +5,7 @@
 **User-Visible Surface:** play.legendary-arena.com
 **Lane:** standard two-session (cross-layer; a new client-visible `UIState` field under the
 five-step Board-Visible Field Rule; triggers a `01.6` post-mortem)
-**Baseline:** `origin/main` @ `32fd8ba2` (2026-09-26).
+**Baseline:** `origin/main` @ `32fd8ba2` (2026-09-26); re-synced against `e0d6fc0c` on 2026-09-30 (see the sync note under Non-Negotiable Constraints).
 
 ## Goal
 
@@ -42,8 +42,8 @@ play-time handler (`executeSingleEffect` returns `true`). A handler that finds n
 
 - **WP-710 / D-24533 ✅** — `packages/game-engine/src/hero/heroConditions.evaluate.ts` provides
   `heroConditionHoldsForInPlay(condition, playedCardId, candidateInPlayIds, cardData): 'holds' | 'fails' | 'unsupported'`
-  (~L893) and `SEQUENCE_GATE_CONDITION_TYPES = ['heroClassMatch', 'requiresTeam', 'requiresKeyword']`
-  (~L830). Both are exported from `index.ts` (~L306), together with `HeroConditionCardData`.
+  (~L1015) and `SEQUENCE_GATE_CONDITION_TYPES = ['heroClassMatch', 'requiresTeam', 'requiresKeyword']`
+  (~L952). Both are exported from `index.ts` (~L307), together with `HeroConditionCardData`.
   - It reuses `evaluateCondition` over a minimal `G` slice.
   - It returns `'unsupported'` when the card or any in-play card has a Size-Changing hook or
     `copy-powers`.
@@ -55,12 +55,14 @@ play-time handler (`executeSingleEffect` returns `true`). A handler that finds n
   - `executeHeroEffects` reads `getHooksForCard` with **no timing filter** (every gate-only hook is
     `onPlay` anyway).
   - It ANDs every condition on a hook (`evaluateAllConditions`).
-  - `hookHasExecutableEffect` (~L1028, module-private) checks only that a handler is
-    **reachable**.
+  - `hookHasExecutableEffect` checks only that a handler is **reachable**. (Drafted as
+    module-private; D-24649 / PR #2447 has since exported it, see the 2026-09-30 sync note below.)
   - `executeSingleEffect` then **silently drops** an MVP keyword with no valid magnitude
-    (~L5889: `keyword !== 'ko' && !NO_MAGNITUDE_KEYWORDS.has(keyword)` →
-    `isValidMagnitude(effect.magnitude)`). So a reachable hook can still do nothing (31 cards in
-    today's data carry only magnitude-less `attack` / `recruit` effects behind a gate).
+    (`executeSingleEffect` ~L6037; its pre-gate ~L6058 calls `failsMagnitudePreGate(effect)` ~L627,
+    which is `keyword !== 'ko' && !NO_MAGNITUDE_KEYWORDS.has(keyword)` → `isValidMagnitude(effect.magnitude)`).
+    So a reachable hook can still do nothing: a gated hook
+    whose only effects are magnitude-less `attack` / `recruit`. D-24649 now records these as
+    honest `attack-no-magnitude` / `recruit-no-magnitude` hollows.
 - **Self-exclusion** — `heroClassMatch` and `requiresTeam` skip the card's own instance id. At play
   the card is appended to `inPlay` before its effects run. So "live `inPlay` without the hand
   card" gives the same answer as play for these two types.
@@ -105,7 +107,8 @@ play-time handler (`executeSingleEffect` returns `true`). A handler that finds n
   - **A hook that mixes gate and non-gate conditions.** Real play ANDs them; the predicate sees
     only gates. Today this is one printed line, `asrd/thor/royal-decree`.
   - **A hollow hook**, with no reachable handler.
-  - **A hook whose only effects are dropped for a missing magnitude**, the 31-card class. The new
+  - **A hook whose only effects are dropped for a missing magnitude** (the class D-24649 now
+    records as `attack-no-magnitude` / `recruit-no-magnitude` hollows). The
     `hookHasDispatchableEffect` check covers it.
   - **A split card**, whose face and so hook set is chosen at play.
   - **`'unsupported'`** (Size-Changing / Copy Powers).
@@ -135,8 +138,8 @@ play-time handler (`executeSingleEffect` returns `true`). A handler that finds n
   snapshots gain the field for the mover. There is no privacy change (`handCards` is already
   unfiltered there) and no golden comparison.
 - **In-flight overlaps.**
-  - Open PR #2306 (WP-743) adds non-gate condition types to `heroConditions.evaluate.ts`; the
-    gate-type filter keeps this packet safe.
+  - PR #2306 (WP-743, merged 2026-09-30 as `83f637d9`) added non-gate condition types to
+    `heroConditions.evaluate.ts`; the gate-type filter keeps this packet safe.
   - PlayDesktop / PlayMobile are hub files touched by other open work; the one-line bindings rebase.
   - WP-775 also edits `PlayMobile.vue` (`isViewerTurn`); keep both.
 
@@ -166,12 +169,19 @@ play-time handler (`executeSingleEffect` returns `true`). A handler that finds n
   shipped failure class (PR #1165).
 - **Filter to gate types before calling the predicate.**
 - **When unsure, false** (the exclusions above), never "probably".
-- `hookHasExecutableEffect` is **exported** and reused, not duplicated. The new
-  `hookHasDispatchableEffect` lives beside it and reuses the module's `MVP_KEYWORDS` (exported),
-  `HERO_EFFECT_HANDLERS`, and the private `NO_MAGNITUDE_KEYWORDS` and `isValidMagnitude`. Neither
-  function is added to `index.ts`.
-- `heroConditionHoldsForInPlay`, `evaluateCondition` and the play path are unchanged. The only
-  edits to `heroEffects.execute.ts` are the export and the new predicate.
+- `hookHasExecutableEffect` and `hookHasDispatchableEffect` are reused, not duplicated. **Both
+  already exist on `main`** (D-24649 / PR #2447 exported the first and added the second, matching
+  the Locked Contract below). Neither function is added to `index.ts`.
+- `heroConditionHoldsForInPlay`, `evaluateCondition` and the play path are unchanged. WP-776 makes
+  **no** edit to `heroEffects.execute.ts`.
+
+**2026-09-30 sync note (SPEC):** D-24649 (PR #2447, the magnitude pre-gate hollow fix) landed the
+two predicates and the `hookHasDispatchableEffect` ↔ `executeSingleEffect` parity sweep
+(`hero/heroEffects.dispatchable.test.ts`) before this WP ran. The Locked Contract below is
+unchanged and is what `main` implements. Execution confirms it rather than re-adding it, and does not
+duplicate the parity sweep or the predicate's unit cases. The Locked Contract's semantics are
+unchanged; the only prose edits are the count of MVP keywords without a play-time handler (thirteen →
+fourteen, `phasing` from WP-783) and the "present on `main`" note on `hookHasDispatchableEffect`.
 
 **Session protocol:** if you find a card where the rim and real play disagree in the unsafe
 direction (rim on, superpower does not fire), STOP and report it with the card id. Do not patch
@@ -181,15 +191,16 @@ around it on the client.
 
 - `hero/heroEffects.execute.ts`:
   - `export function hookHasExecutableEffect(hook: HeroAbilityHook): boolean` — body unchanged.
-  - **New** `export function hookHasDispatchableEffect(hook: HeroAbilityHook): boolean` — true when
+  - `export function hookHasDispatchableEffect(hook: HeroAbilityHook): boolean` (present on `main` since D-24649) — true when
     `(hook.primitiveEffects?.length ?? 0) > 0`, or when any `effect` in `hook.effects ?? []` has
     `effect.type` in `MVP_KEYWORDS` **and** (`effect.type === 'ko'` **or**
     `NO_MAGNITUDE_KEYWORDS.has(effect.type)` **or** `isValidMagnitude(effect.magnitude)`) **and**
     `HERO_EFFECT_HANDLERS[effect.type] !== undefined`. Otherwise false. It mirrors all three steps
-    of `executeSingleEffect`'s gate: the keyword, the magnitude, and the play-time handler. Thirteen MVP
-    keywords have no play-time handler: six run at other times (`wall-crawl`, `dodge`,
+    of `executeSingleEffect`'s gate: the keyword, the magnitude, and the play-time handler. Fourteen MVP
+    keywords have no play-time handler: seven run at other times (`wall-crawl`, `dodge`, `phasing`,
     `size-changing`, `return-on-discard`, `teleport-on-discard`, `diving-block`), plus the seven
-    frozen `reveal-*` translations.
+    frozen `reveal-*` translations. (`phasing` joined with WP-783 / D-24629; verified on `e0d6fc0c`:
+    72 MVP keywords, 58 play-time handlers.)
 - New engine module `packages/game-engine/src/hero/superpowerReady.logic.ts` exporting exactly
   `computeHandSuperpowerReady(G: LegendaryGameState, playerId: string): boolean[]`. The result is
   parallel to `G.playerZones[playerId].hand` (same length, same order, a fresh array):
@@ -231,7 +242,7 @@ around it on the client.
 
 ## Scope (In)
 
-### A) Engine helpers — `hero/heroEffects.execute.ts` (export + new predicate), `hero/superpowerReady.logic.ts` (new) + `.test.ts` (new)
+### A) Engine helpers — `hero/superpowerReady.logic.ts` (new) + `.test.ts` (new); `hero/heroEffects.execute.ts` already has both predicates (D-24649)
 - **Helper tests** (real hook shapes):
   - An `[hc:tech]` card in hand with a Tech hero in play → `true`. With a non-Tech hero in play
     → `false`. With empty `inPlay` → all `false` (short-circuit).
@@ -248,10 +259,13 @@ around it on the client.
     - a card with no hooks.
   - A card with two hooks where one qualifies and holds → `true`.
   - The result length equals the hand length, and the array is fresh (not `===` to any `G` array).
-  - `hookHasDispatchableEffect`: primitive-only → `true`; `attack` with magnitude 2 → `true`; bare
+  - `hookHasDispatchableEffect` (already covered case by case in `heroEffects.dispatchable.test.ts`,
+    D-24649; confirm, do not duplicate): primitive-only → `true`; `attack` with magnitude 2 → `true`; bare
     `attack` → `false`; `ko` → `true`; `rescue` without magnitude → `true`; a gated hook whose
     only effect is `wall-crawl` (no play-time handler) → `false`.
-- **Parity sweep (`hookHasDispatchableEffect` ↔ `executeSingleEffect`):**
+- **Parity sweep (`hookHasDispatchableEffect` ↔ `executeSingleEffect`):** already landed with D-24649 in
+  `hero/heroEffects.dispatchable.test.ts`. Confirm it is green and covers the shape below; do not
+  duplicate it.
   - For every keyword in `MVP_KEYWORDS` × magnitude ∈ {undefined, 0, 2, 1.5, -1}, temporarily
     replace each `HERO_EFFECT_HANDLERS` entry with a no-op (restored in `finally`).
   - Assert `executeSingleEffect({} as LegendaryGameState, {}, '0', 'x', { type, magnitude })`
@@ -307,8 +321,8 @@ around it on the client.
 - Counting-condition payoffs (`distinctHeroClassesAtLeast`, wait-and-see types, numeric
   thresholds), relaxing the Size-Changing / Copy Powers `'unsupported'` rule (live `G` has the grant
   maps; a named follow-up), and split-card faces.
-- The Synergy Rate counting the 31 magnitude-less gated lines as "assembled" (WP-708's
-  instrumentation). That is a separate follow-up, not changed here.
+- The Synergy Rate counting the magnitude-less gated lines as "assembled" (WP-708's
+  instrumentation). Fixed separately by D-24649 (PR #2447), not changed here.
 - Pulses, particles or sound on the rim (static in v1). `CardTile.vue` changes.
 - The WP-772 split-card off-play model, bot pacing (WP-773), the turn banner (WP-774), the
   affordability cues (WP-775).
@@ -318,7 +332,7 @@ around it on the client.
 
 Engine (`packages/game-engine/src/`):
 - `hero/superpowerReady.logic.ts` + `.test.ts` — **new** — the helper, its exclusions, and the agreement-with-play test
-- `hero/heroEffects.execute.ts` — **modified** — export `hookHasExecutableEffect`; add `hookHasDispatchableEffect`
+- `hero/heroEffects.execute.ts` — **unchanged** — both predicates already exported (D-24649)
 - `ui/uiState.types.ts` — **modified** — the field + JSDoc
 - `ui/uiState.build.ts` + `.test.ts` — **modified** — active-player build
 - `ui/uiState.filter.ts` + `.test.ts` — **modified** — owner-only pass-through
@@ -370,7 +384,7 @@ pnpm -r build
 
 # Step 2 — engine suite (record before/after counts)
 pnpm --filter @legendary-arena/game-engine test
-# Expected: 0 failures; at least +20 tests (helper ~15, dispatchable 5, projection 6, pin 1 — minus overlaps)
+# Expected: 0 failures; record the delta (helper ~15, projection 6, pin 1 — the dispatchable/parity tests already landed with D-24649)
 
 # Step 3 — client typecheck + suite
 pnpm --filter @legendary-arena/arena-client typecheck
@@ -452,7 +466,7 @@ All 21 sections resolved:
   - `MatchPhase`.
 - **§4 Context:** the rationale, the one-packet rationale, every exclusion and every known limit,
   the confirmed §19 reading, the copy rule, replay snapshots and the in-flight overlaps.
-- **§5 files / §7 deps:** a closed allowlist with one-line purposes (engine 9, client 4, docs 2,
+- **§5 files / §7 deps:** a closed allowlist with one-line purposes (engine 8 after the 2026-09-30 sync, client 4, docs 2,
   governance incl. the post-mortem). No new npm dependency.
 - **§6 naming:** full-word names (`computeHandSuperpowerReady`, `hookHasDispatchableEffect`,
   `handSuperpowerReady`, `hand-card--superpower-ready`, `PLAY_PHASE`). Existing names are reused
