@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7092,
+    "totalObservations": 7102,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 518,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 6574
+      "parse-unrecognized": 6584
     }
   },
   "byMechanic": {
@@ -1433,40 +1433,40 @@
       ]
     },
     "lightshow": {
-      "hitCount": 66,
-      "lastSeenTurn": 30,
+      "hitCount": 100,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 66
+        "parse-unrecognized": 100
       },
       "examples": [
         {
-          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardId": "xmen/aurora-northstar/blazing-flare#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardId": "xmen/aurora-northstar/blazing-flare#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardId": "xmen/aurora-northstar/blazing-flare#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardId": "xmen/aurora-northstar/blazing-flare#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/aurora-northstar/northern-lights#0",
+          "cardId": "xmen/aurora-northstar/blazing-flare#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1843,12 +1843,12 @@
       ]
     },
     "piercing-energy": {
-      "hitCount": 140,
+      "hitCount": 133,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 140
+        "parse-unrecognized": 133
       },
       "examples": [
         {
@@ -1876,7 +1876,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "xmen/banshee/bone-shattering-howl#0",
+          "cardId": "xmen/banshee/sonar-detection#0",
           "cardType": "hero",
           "timing": "onFight",
           "reason": "parse-unrecognized"
@@ -2200,12 +2200,12 @@
       ]
     },
     "soaring-flight": {
-      "hitCount": 278,
+      "hitCount": 268,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 278
+        "parse-unrecognized": 268
       },
       "examples": [
         {
@@ -3018,12 +3018,12 @@
       ]
     },
     "x-gene": {
-      "hitCount": 25,
-      "lastSeenTurn": 26,
+      "hitCount": 18,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 25
+        "parse-unrecognized": 18
       },
       "examples": [
         {

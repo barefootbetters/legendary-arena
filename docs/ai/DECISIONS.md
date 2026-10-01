@@ -46108,8 +46108,6 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 
 ---
 
----
-
 ### D-24648 — Diving Block on the active player's own start-stage Wound froze the turn: the client reveal auto-advance omitted the seat choice; the engine also redundantly stage-rode the active player (fix-forward, cf. D-24467 / D-24496 / D-24515)
 
 **Status:** Active — bug fix, no WP (fix-forward). Drafted 2026-09-20 (PR #2206); landed 2026-09-29.
@@ -46132,5 +46130,29 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Renumbered:** drafted as D-24544; WP-723 (X-Gene) took D-24544 first, so this fix is D-24648. The client wiring was re-applied on top of main's newer pending-choice flags (split-face, reveal-three) when rebased on 2026-09-29.
 
 **Reported by:** operator, 2026-09-20 (Red Skull / Midtown 2p, turn 25). **Reserved by:** NUMBER-LEDGER D-24648.
+
+---
+
+### D-24622 — An ungated Lightshow ability is never a free grant — suppress every icon in the Lightshow-gated segment in the hero-ability parser (Active 2026-09-26 — direct fix, no WP)
+
+**Status:** Active — landed 2026-09-26 (direct parser fix, no WP; the D-24606 Focus / D-24471 / D-24486 positional-suppression precedent).
+
+**Context.** `[keyword:Lightshow]: <effect>` is a gated ability (rules v23 ~L1616; `keywords-full.json` `lightshow`): "Once per turn, if you played at least two Lightshow cards this turn, you can use a single Lightshow ability from any of those cards." Playing three or more still allows only one ability. The engine has no Lightshow handler. `buildHeroAbilityHooks`' icon-magnitude read (Step 2b) and icon→keyword read (Step 3) fired every Lightshow line's icon as an unconditional grant on every play. Operator match `19720cb4-929c-467a-ab31-6a63bfaa85ea` (Core / Loki / Midtown Bank Robbery, 1p) showed it live. On turn 15 a lone Blazing Flare granted +2 recruit. On turn 19 two Blazing Flares plus Twin Blast granted +2, +2 and +3, where the rule allows one ability. Confirmed against the source parser with the real `data/cards/xmen.json`: 9 of the 14 Lightshow lines (35 hook copies) carried a phantom grant, including the "for each Lightshow card you played this turn" scalers, which fired as flat grants (Mach 10 +2 attack, Prismatic Cascade +1 recruit and +1 attack, Light a Spark, Blasting Fireworks). The 5 non-icon lines (Northern Lights, Convert Sound to Light, Citywide Mega-Concert, Inspire the World, Unexpected Explosion) already produced nothing and showed as `lightshow` parse-unrecognized hollows. The same keyword was handled two different ways. These phantom grants over-credit the player and feed competitive scoring (PAR, leaderboard), so this is a fairness defect as well as a fidelity one.
+
+**Decision.** In `setup/heroAbility.setup.ts`, add `LIGHTSHOW_GATE_PATTERN` (`\[keyword:Lightshow\]`) and push the range from the first Lightshow token to the end of the line into the existing `suppressedIconRanges`, beside the D-24606 Focus range. Every Lightshow line now emits no grant and keeps its `lightshow` unresolved marker, so all 14 lines are uniformly honest `parse-unrecognized` hollows. A condition-only gate ("2+ Lightshow cards played") was rejected. It would still fire every Lightshow card's ability instead of the player's single choice, which is the same over-credit. Non-Lightshow lines on the same cards (Light a Spark's and Blasting Fireworks' "Draw a card. [keyword:draw:1]", Soaring Flight) are separate lines and untouched. No marker, card-data, executor or contract change.
+
+**Coverage.** `scripts/coverage/hero-effect-coverage.baseline.json` refreshed: xmen executable 160 → 125, noEffect 183 → 218 (corpus executable 2651 → 2616). `docs/ai/coverage/runtime-observed-hollows.json` regenerated: `lightshow` 66 → 100 `parse-unrecognized` observations, and piercing-energy 140 → 133, soaring-flight 278 → 268 and x-gene 25 → 18 as the xmen boards' fixed-seed trajectories shift with the lost free resources. Total observations 7092 → 7102 (regenerated on top of #2449). The dashboard `useInPlayCoverage` pin moves totalObs 8018 → 8030; resolvedObs is unchanged at 1235, so percentResolved stays 15.4. (Figures re-measured 2026-09-29 after rebasing onto main.) This is newly visible hollow surface, the intended result of removing phantom grants (the D-24606 precedent).
+
+**Determinism.** No sentinel replay or PAR fixture plays these cards. The engine suite passes at 4730/4730 (rebased onto #2449) with no `finalStateHash` / `PRE_WP080_HASH` re-pin.
+
+**Gates.** The focused test `hero/lightshowGateIconSuppression.test.ts` passes 7/7, and 5 of those cases fail against the unfixed parser. `sim:coverage --check` (after the baseline refresh), `sim:runtime-observed:check` (after the regen), `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check` and `ledger:numbers:check` all pass. The dashboard suite passes 505/505.
+
+**Follow-up.** Build the Lightshow executor as a WP. Count the Lightshow cards played this turn. Once per turn, at 2 or more, offer an optional single choice of one Lightshow ability from those cards, usable any time later that turn so the "for each Lightshow card" scalers can grow. Resolve the chosen line through the existing descriptors. Until then these lines do nothing, which is honest.
+
+**D-24026 live-on-surface:** pending. On the deployed client, play a lone Blazing Flare and confirm recruit does not rise.
+
+**Reserved by:** NUMBER-LEDGER D-24622 (D-24614 held by open PR #2442). Related: D-24606 (Focus cost), D-24471 (condition-clause icons), D-24486 (negative-magnitude icons), D-24605 (adversary-stat icons), D-24034 (unresolved markers).
+
+---
 
 Protect this file.
