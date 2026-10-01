@@ -1950,7 +1950,12 @@ dispute.
   menu. The lens takes no side on policing; Kaepernick's claim
   stands or falls on its own evidence. It reads who got to define the Sunday.
 - **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
-  novel is not the secular book it is often taught as. Golding wrote in "Fable"
+  novel is not the secular book it is often taught as. A secular literary
+  reading usually sums it up as a story about what happens when civilization
+  breaks down and human beings are "left to themselves." Golding did not leave
+  the boys to themselves. He took away their parents, their faith, and every
+  grown-up who could raise them, and then left them with a devil on a stick.
+  Golding wrote in "Fable"
   (*The Hot Gates*, 1965), as it is commonly quoted: "Man is a fallen being. He
   is gripped by original sin." He knew the doctrine of the Fall, then wrote a
   whole novel about it and left God out, like King Noah's priests, whom Abinadi
