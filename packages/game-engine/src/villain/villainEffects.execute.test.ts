@@ -2148,7 +2148,7 @@ describe('executeVillainAbilities — ko-hero:each:N:zone (WP-463 / D-24280)', (
     assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT, heroA, heroB], 'nothing auto-KOd for the chooser');
     assert.deepStrictEqual(G.ko, [other], 'the other player auto-KOd');
     // why: the fire site composes the log line from this result; pending plus the
-    // other player's target renders "the active player must KO a hero; other players
+    // other player's target renders "the active player must KO two heroes; other players
     // KO’d …" (pinned in notableEvents.compose.test.ts).
     assert.equal(results[0]!.pending, true);
     assert.deepStrictEqual(results[0]!.targets, [other]);

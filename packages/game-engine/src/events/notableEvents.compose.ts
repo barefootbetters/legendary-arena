@@ -81,7 +81,8 @@ export interface ResolvedEffectResult {
  *
  * Pure + byte-stable. Each result renders as its generic keyword label with the
  * resolved target names appended in parentheses when present, or the fixed
- * "the active player must KO a hero" phrase when the KO is still pending. Clauses
+ * "the active player must KO a hero" phrase ("two heroes" for a two-KO effect) when the
+ * KO is still pending. Clauses
  * join with "; " in dispatch order. The caller supplies the leading
  * `<timing> effect: ` label and the trailing period.
  *
@@ -109,12 +110,19 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     // picks via resolveKoHeroChoice later, so name no target here. The resolved
     // hero IS named at resolve time — resolveKoHeroChoice pushes a "Player N KO'd
     // <name>" log line (the WP-316 §Scope Out resolve-time-naming follow-up).
+    // why: D-24644 amendment — a two-KO effect (Juggernaut's Ambush / Escape) owes two
+    // picks, so the line says so; the prompt's "(2 remaining)" already did. Every other
+    // pending KO keyword owes one.
+    let pendingClause = 'the active player must KO a hero';
+    if (result.keyword === 'koHeroEachPlayerMag2') {
+      pendingClause = 'the active player must KO two heroes';
+    }
     if (result.targetNames.length > 0) {
       // why: D-24644 — an each-player KO parks only the active player's pick; the
       // other players' auto-KOs already happened and are still named.
-      return `the active player must KO a hero; other players KO’d ${result.targetNames.join(', ')}`;
+      return `${pendingClause}; other players KO’d ${result.targetNames.join(', ')}`;
     }
-    return 'the active player must KO a hero';
+    return pendingClause;
   }
   const label = labelForEffect(result.keyword);
   if (result.targetNames.length > 0) {

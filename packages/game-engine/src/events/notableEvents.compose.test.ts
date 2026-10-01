@@ -236,7 +236,8 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     const line = composeEffectResultLogLine([
       { keyword: 'koHeroEachPlayerMag2', targetNames: ['S.H.I.E.L.D. Agent', 'Hulk'], pending: true },
     ]);
-    assert.equal(line, 'the active player must KO a hero; other players KO’d S.H.I.E.L.D. Agent, Hulk');
+    // why: D-24644 amendment — a two-KO effect names the count it owes (was "a hero").
+    assert.equal(line, 'the active player must KO two heroes; other players KO’d S.H.I.E.L.D. Agent, Hulk');
   });
 
   // why: D-24646 — the KO labels are past tense; a KO that found no Hero must not claim one.
@@ -256,6 +257,21 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     assert.equal(
       composeAmbushNarrative('Juggernaut', [{ keyword: 'koHeroEachPlayerMag2', targetNames: [] }]),
       '"Juggernaut" ambushed: no player had a hero to KO.',
+    );
+  });
+
+  it('D-24644 amendment: a pending two-KO effect (Juggernaut) says "two heroes"; one-KO keywords keep "a hero"', () => {
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),
+      'the active player must KO two heroes',
+    );
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroEachPlayer', targetNames: [], pending: true }]),
+      'the active player must KO a hero',
+    );
+    assert.equal(
+      composeAmbushNarrative('Juggernaut', [{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),
+      '"Juggernaut" ambushed: the active player must KO two heroes.',
     );
   });
 
