@@ -1187,13 +1187,14 @@ Strike or Ambush Villain lands later that turn.
 
 - **Engine.** Two markers → two whole-turn wait-and-see conditions (D-24377 shape #1), backed by
   two gated lazy `G` flags written only in `performVillainReveal` and deleted at turn `onBegin`
-  and in `applyOnBeginParity`. New pure helper `matchReadsConditionType` (reused by WP-745).
+  and in `applyOnBeginParity`. The write gate reuses WP-777's `matchReadsConditionType` (D-24616), as does WP-745.
 - **Card data.** 2 lines (`vnom.json`, `msis.json`) via the curated marker map; derived feeds
   regenerated.
 - **Determinism.** Sentinel `finalStateHash` and `PRE_WP080_HASH` byte-unchanged (no re-pin).
-  Runtime-observed sweep 2506 → 2505 observations; dashboard `totalObs` 3011 → 3010.
+  Runtime-observed sweep 7102 → 7103 observations; dashboard `totalObs` 8030 → 8031 (after the
+  2026-09-30 rebase onto main).
 
-Engine 4134 → 4149/0; whole repo `pnpm -r --no-bail test` green; every Coverage & Ledger `:check`
+Engine 4732 → 4749/0 (after the rebase); whole repo `pnpm -r --no-bail test` green; every Coverage & Ledger `:check`
 0. **Follow-up:** the committed `sim:coverage` baseline is stale on `main` beyond this WP (a
 regen rewrites hooks 6333 → 6309 across many sets); `--check` passes, so it was not bundled here.
 **D-24026 live-verify pending:** a Venom Rocket match whose log shows Spring the Trap granting only

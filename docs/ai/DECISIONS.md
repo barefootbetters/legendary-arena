@@ -46307,10 +46307,10 @@ Bystander-only turns.
 
 **Consequences.** Games without these two cards are byte-unchanged: sentinel `finalStateHash`
 and `PRE_WP080_HASH` unchanged, no re-pin. The fixed-seed runtime-observed sweep regenerates
-(2506 → 2505 observations) and the paired dashboard snapshot re-pins (`totalObs` 3011 → 3010,
-`percentResolved` 24.3 → 24.4). With WP-744 (D-24567) in place, a Spring the Trap played before
+(7102 → 7103 observations after the 2026-09-30 rebase onto main) and the paired dashboard
+snapshot re-pins (`totalObs` 8030 → 8031, `percentResolved` holds at 15.4). With WP-744 (D-24567) in place, a Spring the Trap played before
 a same-turn Master Strike also pays out in the sim, PAR and fixture loops. `matchReadsConditionType`
-is the reusable gate for WP-745 (D-24568). Matches already in flight at deploy keep their
+(landed first by WP-777 / D-24616) is the shared gate, reused by WP-745 (D-24568). Matches already in flight at deploy keep their
 setup-time hooks and the old free grants until they end.
 
 **Reserved by:** NUMBER-LEDGER D-24566. Related: D-24377 (wait-and-see), D-24467 (event gate +
