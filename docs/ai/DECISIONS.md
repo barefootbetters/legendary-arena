@@ -46365,4 +46365,20 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24651 — Diving Block can be revealed from the play area, not only from hand (amends D-24499 §1; direct fix, no WP) (Active 2026-10-01)
+
+**Context.** D-24499 §1 counted only the Diving Block copies in the wound recipient's HAND. Rules v23 "Revealing a Card" says you can reveal a card from your hand **or** a card in front of you that you have already played this turn. In live match `SprBgGkJuY0` (Magneto / Midtown Bank Robbery, solo) Captain America's Diving Block was played on turn 9 (9.2.1), then Sabretooth's fight wound landed (9.2.13) with no reveal prompt. The engine was inconsistent with itself: Sabretooth's own "reveal an X-Men Hero" check in the same match (11.2.10) counted a played Storm card.
+
+**Decision.**
+1. `countDivingBlockCopiesInHand` is renamed `countRevealableDivingBlockCopies` and counts Diving Block copies in `playerZones.hand` **plus** `playerZones.inPlay`. `checkDivingBlock` gates on that count. The public engine export is renamed with it (the only consumers are the logic file and its test).
+2. A reveal from play leaves Diving Block in the play area, just as a reveal from hand leaves it in hand. A reveal is not a play or a discard, so the card is never moved.
+3. **Unchanged:** D-24499's one-copy-per-Wound rule. One revealable copy with two simultaneous Wounds still parks exactly one interception. Rules v23 also says the same card can be revealed multiple times in a turn; Jeff has not ruled on whether that lifts the per-Wound limit, so it stays as shipped.
+4. No new `G` field and no hash change. A match where no Diving Block is in play when a Wound lands behaves byte-for-byte as before.
+
+**Gates.** `divingBlock.logic.test.ts` 15 / 0 fail. The hand-count test was renamed with the counter, and 4 tests were added: a played copy counts alongside hand copies; a Wound gained after Diving Block was played parks the reveal choice; revealing the played copy returns the Wound, draws a card and leaves Diving Block in play; one played copy plus two Wounds parks only one interception.
+
+**Reserved by:** NUMBER-LEDGER D-24651. Related: D-24499 / WP-682 (Diving Block), WP-684 (non-active seat choice), D-24497 / D-24645 (rules v23 "your Heroes" = hand + played this turn), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

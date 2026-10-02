@@ -202,7 +202,7 @@ export { gainWound, gainWoundForPlayer } from "./board/wounds.logic.js";
 // why: WP-682 / D-24499 — reactive Diving-Block wound-interception surface.
 export {
   cardCarriesDivingBlock,
-  countDivingBlockCopiesInHand,
+  countRevealableDivingBlockCopies,
   checkDivingBlock,
   hasPendingDivingBlockWounds,
   openDivingBlockSeatChoiceIfNeeded,

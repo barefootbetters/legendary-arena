@@ -17,7 +17,7 @@
  * "each player gains a Wound" scheme), which the shipped active-player-only
  * pending-choice model cannot serve — hence the WP-684 hard dependency. On reveal
  * the just-gained Wound is returned to the supply, a card is drawn, and Diving
- * Block STAYS in hand; on decline the Wound is kept.
+ * Block STAYS where it is (hand or play area — D-24651); on decline the Wound is kept.
  *
  * These are plain G-mutating helpers called from the chokepoint, the play-phase
  * onMove wave-opener, and resolveSeatChoice — NOT boardgame.io moves. No registry
@@ -84,18 +84,24 @@ export function cardCarriesDivingBlock(
 }
 
 /**
- * The number of Diving Block copies the player currently holds IN HAND.
+ * The number of Diving Block copies the player can reveal: in hand OR played this
+ * turn (still in their play area).
  *
  * // why: WP-682 / D-24499 — the ruling is "each simultaneous Wound needs its OWN
- * Diving Block in hand", so the per-Wound park gate compares the count of already
- * pending Diving-Block Wounds for the player against the copies in hand: a player
- * with one copy and two Wounds is offered exactly one reveal.
+ * Diving Block", so the per-Wound park gate compares the count of already pending
+ * Diving-Block Wounds for the player against the revealable copies: a player with
+ * one copy and two Wounds is offered exactly one reveal.
+ * // why: D-24651 — rules v23 "Revealing a Card": "You can reveal a card from your
+ * hand or you can reveal a card in front of you that you have already played this
+ * turn." D-24499 counted the hand only, so a Diving Block played earlier in the turn
+ * could not stop a later Wound (match SprBgGkJuY0, turn 9), while the engine's other
+ * reveal checks (Sabretooth's "reveal an X-Men Hero") already accept played cards.
  *
  * @param G - The game state to inspect (not mutated).
- * @param playerID - The player whose hand is counted.
- * @returns The number of Diving Block cards in the player's hand.
+ * @param playerID - The player whose hand and play area are counted.
+ * @returns The number of Diving Block cards in the player's hand plus play area.
  */
-export function countDivingBlockCopiesInHand(
+export function countRevealableDivingBlockCopies(
   G: LegendaryGameState,
   playerID: string,
 ): number {
@@ -107,6 +113,15 @@ export function countDivingBlockCopiesInHand(
   for (const cardId of playerZones.hand) {
     if (cardCarriesDivingBlock(G, cardId as CardExtId)) {
       copies++;
+    }
+  }
+  // why: the Array.isArray guard mirrors cardCarriesDivingBlock's — minimal test
+  // states (e.g. the Crushing Shockwave tactic fixtures) omit the play area.
+  if (Array.isArray(playerZones.inPlay)) {
+    for (const cardId of playerZones.inPlay) {
+      if (cardCarriesDivingBlock(G, cardId as CardExtId)) {
+        copies++;
+      }
     }
   }
   return copies;
@@ -167,14 +182,14 @@ export function checkDivingBlock(
   playerID: string,
   woundCardId: CardExtId,
 ): void {
-  const copiesInHand = countDivingBlockCopiesInHand(G, playerID);
-  if (copiesInHand === 0) {
+  const revealableCopies = countRevealableDivingBlockCopies(G, playerID);
+  if (revealableCopies === 0) {
     return;
   }
   // why: WP-682 / D-24499 — one Diving Block copy per Wound. A player with fewer
-  // copies than incoming Wounds is offered exactly `copiesInHand` reveals; the rest
+  // copies than incoming Wounds is offered exactly `revealableCopies` reveals; the rest
   // of the Wounds land unpreventably.
-  if (countPendingWoundsForPlayer(G, playerID) >= copiesInHand) {
+  if (countPendingWoundsForPlayer(G, playerID) >= revealableCopies) {
     return;
   }
   if (G.pendingDivingBlockWounds === undefined) {
@@ -324,7 +339,7 @@ export function applyDivingBlockResolvedSeatChoice(
 /**
  * Undoes one just-gained Wound for a revealing seat: removes the Wound from the
  * seat's discard, returns it to the wounds supply, and draws one card. Diving Block
- * is intentionally NOT moved — a reveal keeps it in hand.
+ * is intentionally NOT moved — a reveal leaves it in hand or in play (D-24651).
  *
  * @param G - The game state, mutated in place.
  * @param seat - The revealing seat.
