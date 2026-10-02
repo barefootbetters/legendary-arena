@@ -26,28 +26,32 @@ export interface InfraCostActual {
 // is the `date` stamped on every derived entry so `useInfraCostWatchdog` reads
 // the calendar month/day from it (the composable parses this string, never a
 // wall clock). Update it every time the figures below are refreshed.
-export const INFRA_COST_ACTUALS_AS_OF = '2026-07-27';
+// why: 2026-09-30 is the last day of the September billing period, so the
+// composable's linear end-of-month projection equals the full-month actual.
+export const INFRA_COST_ACTUALS_AS_OF = '2026-09-30';
 
 // why: month-to-date spend per vendor as of INFRA_COST_ACTUALS_AS_OF, read from
-// the vendor billing dashboards. Sourcing, per vendor:
-//   render     — the Render bill's compute + pipeline: legendary-arena-server
-//                ($15.14) + pipeline minutes ($5.00). The Postgres datastore is
-//                billed on the same Render account but tracked as its own vendor
-//                line below, matching the panel's separate Postgres budget.
-//   postgres   — the Render-managed legendary-arena-db datastore ($9.64).
-//   cloudflare — $0: Zero Trust Teams Free + R2 entirely within free-tier limits
-//                (0.21 of 10 GB-months storage, ops under the free ceilings, no
-//                egress fees), confirmed from the Cloudflare billing dashboard.
-//                (The barefootbetters.com Pro plan is a different project.)
-//   hanko      — $0: Starter plan (0 of 10,000 MAU, 0 of 2 projects), confirmed
-//                from the Hanko Cloud billing page.
-// All four figures are real: Render + Postgres exact-dollar from the bill,
-// Cloudflare + Hanko confirmed $0 on their free tiers.
+// the vendor bills. Sourcing, per vendor:
+//   render     — Render invoice 0SPQWPNF-0006 (Sep 1–30 2026, paid 2026-10-01),
+//                compute + pipeline + egress: legendary-arena-server on `pro`
+//                ($85.00) + builds, 6h42m ($5.00) + bandwidth, 6.5 GB ($1.05) +
+//                the ewiki static site ($0.00) = $91.05. The Postgres datastore
+//                is on the same invoice but tracked as its own vendor line below,
+//                matching the panel's separate Postgres budget.
+//   postgres   — the same invoice's legendary-arena-db line on `pro-4gb`
+//                ($55.30, instance + storage).
+//   cloudflare — $0: carried from the 2026-07-27 billing-dashboard check (Zero
+//                Trust Teams Free + R2 within free-tier limits). NOT re-checked
+//                for September — confirm on the next refresh.
+//   hanko      — $0: carried from the 2026-07-27 Hanko Cloud billing check
+//                (Starter plan). NOT re-checked for September.
+// Render + Postgres are exact-dollar from the September invoice (total
+// $146.35); Cloudflare + Hanko are the last confirmed free-tier figures.
 // Order mirrors the canonical INFRA_COST_VENDORS array.
 export const INFRA_COST_ACTUALS: readonly InfraCostActual[] = [
-  { vendor: 'render', monthToDateCents: 2014 },
+  { vendor: 'render', monthToDateCents: 9105 },
   { vendor: 'cloudflare', monthToDateCents: 0 },
-  { vendor: 'postgres', monthToDateCents: 964 },
+  { vendor: 'postgres', monthToDateCents: 5530 },
   { vendor: 'hanko', monthToDateCents: 0 },
 ];
 
