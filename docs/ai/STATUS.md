@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Captain America's Diving Block ("If you would gain a
+Wound, you may reveal this card and draw a card instead") now offers its reveal when the card is already in front of
+you — played earlier this turn — not only when it is in your hand. Before, playing Diving Block and then taking a
+Wound (e.g. from fighting Sabretooth) gave no prompt. Revealing it from play leaves it in play. One Diving Block still
+stops one Wound.
+
+- **Engine only.** `divingBlock.logic.ts` (`countRevealableDivingBlockCopies` counts hand + play area) + 4 tests.
+- **Live-verify (D-24026):** pending. Play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
+  Master Strike: the "Reveal Diving Block" prompt appears, and Diving Block stays in your play area after revealing.
+
 ### D-24650 — The bottom-left play buttons no longer cover the Reveal button (direct fix) (2026-10-01)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On desktop, "Download diagnostics", "View cards in
