@@ -48,6 +48,10 @@ the old behavior until it ends.
     - Magneto stays off at 7 of 8 (5 plain + the one Mastermind-eligible +2).
     - Across all 6 states where restricted attack was held, the client gate matched the engine's legal fights.
       Zero mismatches.
+    - Played out (same match, turn 3). Jeff fought the Rooftops Sentinel holding 5 plain + 2 Rooftops + 2
+      Rooftops-or-Mastermind; the fight was paid from the restricted grants (narrowest first). He then fought
+      the Bank Sabretooth (cost 5) with the untouched 5 plain. Plain-first spending would have left 2 and
+      refused that fight. The match was lost on turn 17 to the scheme (8 Bystanders carried away), unrelated.
 
 ### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
 
