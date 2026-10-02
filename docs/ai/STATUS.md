@@ -26,10 +26,22 @@ the old behavior until it ends.
 - **Counts.** game-engine 4781 → 4838 / 0 fail; arena-client 2247 → 2260 / 0 fail; dashboard 505 / 0; vue-tsc 0;
   replay fixtures and sentinel hashes byte-unchanged (no re-pin). One authorized test edit (the D-24649 Storm Tidal
   Wave case); the dashboard totalObs pin moved 8866 → 8884 with the regenerated sweep feed.
-- **Live-verify (D-24026):** pending. In a match with co2e Storm, play Lightning Bolt: the economy bar shows
-  `+2 only against: Rooftops`; the Rooftops Fight button enables when +2 covers the cost while Sewers and the
-  Mastermind stay disabled; the Play Diagnostics `uiStateSnapshot` carries `economy.restrictedAttack`. Record the
-  matchId here.
+- **Live-verify (D-24026): PASS except the Rooftops-button case (2026-10-02, Jeff, solo Magneto / Midtown Bank
+  Robbery with co2e Storm, production build `2f74774`, match `aFW9yQjIiFa`).**
+  - The Play Diagnostics `uiStateSnapshot` carries
+    `economy.restrictedAttack: [{ remaining: 2, targets: ["rooftops"], label: "Rooftops" }]`.
+  - The Ranged widen is decided at play:
+    - turn 20: Lightning Bolt after Revitalizing Rain logged "only against: Rooftops or Mastermind";
+    - turn 23: Lightning Bolt #1 with no earlier Ranged Hero stayed Rooftops-only; #2, played after #1, widened.
+  - Turn 23 reconciles to the point. Attack was 18 (14 plain + 2 restricted from each Bolt).
+    - The Magneto fight (8) spent Bolt #2's Mastermind-eligible 2 first, then plain.
+    - The Sewers Mystique fight (5) spent plain only.
+    - Bolt #1's Rooftops-only 2 was untouched, ending at `availableAttack: 3`.
+  - The economy bar chip rendered as `Attack: 5/7` + `+2 only against: Rooftops` (Jeff's screen, turn 7 of a second
+    Storm match, matchId not recorded).
+  - **Not yet observed:** the Fight-button gating with a villain on the Rooftops (Rooftops enabled by the +2,
+    Sewers / Mastermind disabled). No villain sat on the Rooftops while restricted attack was held. Unit-tested in
+    `CityRow.test.ts` / `MastermindTile.test.ts`.
 
 ### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
 
