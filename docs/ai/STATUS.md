@@ -26,8 +26,8 @@ the old behavior until it ends.
 - **Counts.** game-engine 4781 → 4838 / 0 fail; arena-client 2247 → 2260 / 0 fail; dashboard 505 / 0; vue-tsc 0;
   replay fixtures and sentinel hashes byte-unchanged (no re-pin). One authorized test edit (the D-24649 Storm Tidal
   Wave case); the dashboard totalObs pin moved 8866 → 8884 with the regenerated sweep feed.
-- **Live-verify (D-24026): PASS except the Rooftops-button case (2026-10-02, Jeff, solo Magneto / Midtown Bank
-  Robbery with co2e Storm, production build `2f74774`, match `aFW9yQjIiFa`).**
+- **Live-verify (D-24026): PASS (2026-10-02, Jeff, solo Magneto / Midtown Bank Robbery with co2e Storm, production
+  build `2f74774`, match `aFW9yQjIiFa`; the Rooftops-button case in match `KBNTuZi_3zb`).**
   - The Play Diagnostics `uiStateSnapshot` carries
     `economy.restrictedAttack: [{ remaining: 2, targets: ["rooftops"], label: "Rooftops" }]`.
   - The Ranged widen is decided at play:
@@ -39,9 +39,15 @@ the old behavior until it ends.
     - Bolt #1's Rooftops-only 2 was untouched, ending at `availableAttack: 3`.
   - The economy bar chip rendered as `Attack: 5/7` + `+2 only against: Rooftops` (Jeff's screen, turn 7 of a second
     Storm match, matchId not recorded).
-  - **Not yet observed:** the Fight-button gating with a villain on the Rooftops (Rooftops enabled by the +2,
-    Sewers / Mastermind disabled). No villain sat on the Rooftops while restricted attack was held. Unit-tested in
-    `CityRow.test.ts` / `MastermindTile.test.ts`.
+  - **Rooftops-button case (match `KBNTuZi_3zb`, turn 3).** Verified by replaying the stored match log read-only
+    through boardgame.io's reducer and evaluating the client Fight gate on the served (active-player-filtered)
+    UIState after every move. The rendered button itself was not observed.
+    - A Sentinel (cost 3) sat on the Rooftops, with a Sabretooth (cost 5) in each of the Sewers and the Bank.
+    - After the first Lightning Bolt (2 plain + 2 Rooftops-only), the Rooftops Fight gate is ON (4 ≥ 3) only
+      because of the restricted +2. The Sewers / Bank gates stay off.
+    - Magneto stays off at 7 of 8 (5 plain + the one Mastermind-eligible +2).
+    - Across all 6 states where restricted attack was held, the client gate matched the engine's legal fights.
+      Zero mismatches.
 
 ### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
 
