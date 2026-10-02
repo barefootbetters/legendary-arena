@@ -429,6 +429,7 @@ high-water: 422
 - WP-788 — guest-solo-client (App arena-client. The WP-785 entrance's signed-out Enter Arena calls WP-787's POST /api/match/create-guest-solo and seats the visitor as a guest, instead of bouncing to sign-in; guest copy and 429/503 handling. Depends on WP-785 + WP-787. reserved 2026-09-28, claude/reserve-guest-solo-client)
 - WP-789 — reveal-card-visible (Game Engine + App arena-client. Auto-resolving deck-top reveals (Card Shark, High Stakes Jackpot and the rest of the reveal family) show the revealed card: the overlay also fires on a miss ("left on top"), and the heroEffectResolved event carries an optional revealedCardId the overlay renders as the card image — the D-24547 named follow-up. reserved 2026-09-29, claude/reserve-reveal-card-visible)
 - WP-790 — location-restricted-attack (Game Engine + App arena-client. Hero attack printed "usable only against Villains in <city space(s)>" — 17 cards, e.g. co2e Storm Lightning Bolt / Tidal Wave — is tracked as restricted attack that can be spent only on fights in the named City spaces, instead of plain attack spendable anywhere. reserved 2026-10-01, claude/reserve-wp790-location-attack)
+- WP-791 — dashboard-overview-business-first (App dashboard. The Overview page leads with whether the business is making or losing money — revenue vs. real costs, engagement, and real health — and carries no MOCK tile; governance widgets move to Pipeline. reserved 2026-10-02, claude/reserve-wp791-overview)
 
 ## EC
 
@@ -819,6 +820,7 @@ high-water: 457
 - EC-825 — guest-solo-client (WP-788; App arena-client. reserved 2026-09-28, claude/reserve-guest-solo-client)
 - EC-826 — reveal-card-visible (WP-789; Game Engine + App arena-client. reserved 2026-09-29, claude/reserve-reveal-card-visible)
 - EC-827 — location-restricted-attack (WP-790; Game Engine + App arena-client. reserved 2026-10-01, claude/reserve-wp790-location-attack)
+- EC-828 — dashboard-overview-business-first (WP-791; App dashboard. reserved 2026-10-02, claude/reserve-wp791-overview)
 
 ## D
 
@@ -1250,3 +1252,4 @@ section below) and the allocation protocol in
 - D-24650 — play-utility-dock (direct fix, no WP — Download diagnostics / View loadout / Deck odds share one fixed bottom-left dock: a row inside the footer band on desktop, the former stack on phones, so they no longer cover the turn bar's Reveal button; the View loadout status clears itself after 8 s. reserved 2026-10-01, claude/reveal-button-overlap)
 - D-24651 — diving-block-played-cards (direct fix, no WP — Diving Block counts copies in hand plus played this turn, per rules v23 "Revealing a Card"; amends D-24499 §1; one-copy-per-Wound unchanged. reserved 2026-10-01, claude/diving-block-played-cards)
 - D-24652 — location-restricted-attack (WP-790 — the restricted-attack pool contract: how "usable only against Villains in <city space>" attack is tracked and spent. reserved 2026-10-01, claude/reserve-wp790-location-attack)
+- D-24653 — dashboard-overview-business-first (WP-791 — the Overview content contract: business-first row order and the no-MOCK-tile-on-Overview rule. reserved 2026-10-02, claude/reserve-wp791-overview)
