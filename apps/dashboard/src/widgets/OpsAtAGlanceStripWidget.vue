@@ -8,20 +8,21 @@
 // three: extract only when a second consumer surfaces, per 00.6
 // §16.1).
 
-import { computed, type Ref } from 'vue';
+import { computed } from 'vue';
 import { useDateRange } from '../composables/useDateRange.js';
 import { usePublicSurfaceHealth } from '../composables/usePublicSurfaceHealth.js';
 import { useErrorRateMonitor } from '../composables/useErrorRateMonitor.js';
 import { useInfraCostWatchdog } from '../composables/useInfraCostWatchdog.js';
-import { useDataFreshness, type DataFreshnessSource } from '../composables/useDataFreshness.js';
-import {
-  fetchUptimeProbes,
-  fetchErrorRateSnapshots,
-  fetchInfraCostEntries,
-} from '../services/mocks.js';
+import { fetchUptimeProbes, fetchErrorRateSnapshots } from '../services/mocks.js';
+import { fetchInfraCostActuals, INFRA_COST_ACTUALS_AS_OF } from '../config/infraCostActuals.js';
 import { computeKpiStatus } from '../utils/kpiStatus.js';
 import { INFRA_COST_BUDGETS } from '../config/infraCostBudgets.js';
-import { INFRA_COST_VENDORS, type KpiSnapshot, type KpiStatus } from '../types/index.js';
+import {
+  INFRA_COST_VENDORS,
+  type KpiSnapshot,
+  type KpiStatus,
+  type ServiceResponse,
+} from '../types/index.js';
 
 const { range } = useDateRange();
 
@@ -32,15 +33,28 @@ const nowMs = Date.now();
 
 const uptimeResponse = computed(() => fetchUptimeProbes(range.value, nowMs));
 const errorResponse = computed(() => fetchErrorRateSnapshots(range.value, nowMs));
-const costResponse = computed(() => fetchInfraCostEntries(range.value, nowMs));
+// why: the cost card reads the same real vendor-bill actuals as the
+// System Health page's Infra Cost Watchdog. It used to read the mock
+// factory, so Overview showed a made-up 6.7% "On track" while System
+// Health showed the real 71.4% with Postgres over budget.
+const costResponse = computed(() => fetchInfraCostActuals());
 
 const health = usePublicSurfaceHealth(() => uptimeResponse.value);
 const monitor = useErrorRateMonitor(() => errorResponse.value);
 const watchdog = useInfraCostWatchdog(() => costResponse.value, INFRA_COST_BUDGETS);
 
-const updatedAtRef: Ref<number | null> = computed(() => health.updatedAt.value);
-const sourceFreshnessRef: Ref<DataFreshnessSource | null> = computed(() => health.source.value);
-const { relativeTime, sourceLabel } = useDataFreshness(updatedAtRef, sourceFreshnessRef);
+/**
+ * Label naming where one card's figure comes from. The strip mixes
+ * sources (uptime and error rate are still mock; cost is the cached
+ * vendor-bill snapshot), so each card carries its own tag instead of
+ * one strip-wide badge that would describe only one of them.
+ */
+function buildSourceTag(source: ServiceResponse<unknown>['source']): string {
+  if (source === 'CACHED') {
+    return `CACHED · as of ${INFRA_COST_ACTUALS_AS_OF}`;
+  }
+  return source;
+}
 
 // why: D-19608 Widget State Gate Pattern — single `state` computed
 // gates the entire render via the 4-arm v-if chain. WP-204 §Widget
@@ -76,6 +90,7 @@ interface StripCard {
   readonly valueLabel: string;
   readonly status: KpiStatus | null;
   readonly statusLabel: string;
+  readonly sourceTag: string;
 }
 
 const worstSurfaceCard = computed<StripCard>(() => {
@@ -91,6 +106,7 @@ const worstSurfaceCard = computed<StripCard>(() => {
       valueLabel: '—',
       status: null,
       statusLabel: '',
+      sourceTag: buildSourceTag(health.source.value),
     };
   }
   // why: locked KpiSnapshot literal per WP-204 §Scope (In) → Widgets
@@ -111,12 +127,17 @@ const worstSurfaceCard = computed<StripCard>(() => {
     direction: 'higher-is-better',
   };
   const status = computeKpiStatus(snapshot) ?? 'on-track';
+  // why: a status chip on mock data is a fabricated verdict — a green
+  // "On track" the operator could act on. Mock cards show the value and
+  // their MOCK tag only; the chip returns when the card reads real data.
+  const isMock = health.source.value === 'MOCK';
   return {
     id: 'worst-surface',
     label: 'Worst surface',
     valueLabel: `${worst.uptimePercent.toFixed(1)}% (${worst.surface})`,
-    status,
-    statusLabel: STATUS_LABEL[status],
+    status: isMock ? null : status,
+    statusLabel: isMock ? '' : STATUS_LABEL[status],
+    sourceTag: buildSourceTag(health.source.value),
   };
 });
 
@@ -129,6 +150,7 @@ const currentErrorRateCard = computed<StripCard>(() => {
       valueLabel: '—',
       status: null,
       statusLabel: '',
+      sourceTag: buildSourceTag(monitor.source.value),
     };
   }
   const rateFraction = monitor.currentRate.value;
@@ -150,12 +172,15 @@ const currentErrorRateCard = computed<StripCard>(() => {
     direction: 'lower-is-better',
   };
   const status = computeKpiStatus(snapshot) ?? 'on-track';
+  // why: same fabricated-verdict rule as the worst-surface card.
+  const isMock = monitor.source.value === 'MOCK';
   return {
     id: 'current-error-rate',
     label: 'Current error rate (1h)',
     valueLabel: `${ratePercent.toFixed(1)}%`,
-    status,
-    statusLabel: STATUS_LABEL[status],
+    status: isMock ? null : status,
+    statusLabel: isMock ? '' : STATUS_LABEL[status],
+    sourceTag: buildSourceTag(monitor.source.value),
   };
 });
 
@@ -175,6 +200,7 @@ const costUtilizationCard = computed<StripCard>(() => {
       valueLabel: '—',
       status: null,
       statusLabel: '',
+      sourceTag: buildSourceTag(watchdog.source.value),
     };
   }
   const utilizationFraction = watchdog.totalBudgetUtilizationRatio.value;
@@ -202,6 +228,7 @@ const costUtilizationCard = computed<StripCard>(() => {
     valueLabel: `${utilizationPercent.toFixed(1)}%`,
     status,
     statusLabel: STATUS_LABEL[status],
+    sourceTag: buildSourceTag(watchdog.source.value),
   };
 });
 
@@ -220,10 +247,6 @@ const cards = computed<readonly StripCard[]>(() => [
   >
     <header class="widget-header">
       <h3>Ops at a Glance</h3>
-      <span v-if="sourceLabel" class="freshness-badge">
-        <span class="source">{{ sourceLabel }}</span>
-        <span class="timestamp">{{ relativeTime }}</span>
-      </span>
     </header>
 
     <div v-if="state === 'loading'" class="widget-loading" aria-hidden="true">
@@ -247,6 +270,7 @@ const cards = computed<readonly StripCard[]>(() => [
       <div class="card-row">
         <article v-for="card in cards" :key="card.id" class="strip-card" :aria-label="card.label">
           <span class="card-label">{{ card.label }}</span>
+          <span class="card-source" :data-source-tag="card.sourceTag">{{ card.sourceTag }}</span>
           <span class="card-value">{{ card.valueLabel }}</span>
           <span
             v-if="card.status !== null"
@@ -293,19 +317,14 @@ const cards = computed<readonly StripCard[]>(() => [
   color: var(--p-text-color);
 }
 
-.freshness-badge {
-  font-size: 0.65rem;
-  color: var(--p-text-muted-color);
-  display: flex;
-  gap: 0.35rem;
-}
-
-.freshness-badge .source {
+.card-source {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  font-weight: 600;
   background: var(--p-surface-border, var(--p-content-border-color));
   color: var(--p-text-color);
-  padding: 0.1rem 0.3rem;
+  padding: 0.05rem 0.3rem;
   border-radius: 3px;
-  font-weight: 600;
 }
 
 .widget-loading {
