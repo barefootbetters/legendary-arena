@@ -5,8 +5,10 @@
  * or a NO_MAGNITUDE_KEYWORDS member) before its handler runs. Before D-24649 the
  * hollow detector and the WP-708 Synergy Rate both called such an effect reachable,
  * so a line like Storm's "[hc:ranged]: You may use this bonus [icon:attack] against
- * the Mastermind instead" — parsed as a bare `{ type: 'attack' }` — logged an
- * "assembled" synergy on every play and never surfaced as hollow.
+ * the Mastermind instead" — then parsed as a bare `{ type: 'attack' }` — logged an
+ * "assembled" synergy on every play and never surfaced as hollow. Since WP-790 /
+ * D-24652 that Storm line is fused into the preceding restricted grant (it widens the
+ * grant to the Mastermind) and its hook keeps only its gate, with no `attack` effect.
  *
  * These tests pin:
  * - hookHasDispatchableEffect (the WP-776 predicate) per case, and a runtime parity
@@ -15,7 +17,8 @@
  *   `<type>-no-magnitude`; a mixed hook and a recruit-time keyword do not;
  * - the Synergy Rate skips a magnitude-less-only gated hook and a gated keyword with
  *   no play-time handler (Goblin Glider's gated Dodge), and still counts a real one;
- * - the real Tidal Wave and Goblin Glider lines parse into exactly those shapes.
+ * - the real Tidal Wave line parses into a gated hook with no `attack` effect (WP-790) and
+ *   the real Goblin Glider line into the gated keyword shape; neither dispatches at play.
  *
  * No boardgame.io imports. node:test + node:assert only.
  */
@@ -247,7 +250,14 @@ describe('real card lines parse into the excluded shapes (D-24649)', () => {
     ]);
     const gated = hooks.filter((hook) => (hook.conditions?.length ?? 0) > 0);
     assert.equal(gated.length, 1, 'one gated hook');
-    assert.deepEqual(gated[0]!.effects?.map((effect) => effect.magnitude), [undefined], 'a bare attack');
+    // why: WP-790 / D-24652 — the follow-up line is fused into the preceding restricted grant
+    // as its Mastermind widen, so the gated hook carries no `attack` effect at all (it used to
+    // carry a bare magnitude-less one). Intentional behavior change; see the EC-827 commit.
+    assert.equal(
+      (gated[0]!.effects ?? []).some((effect) => effect.type === 'attack'),
+      false,
+      'no attack effect on the gated hook',
+    );
     assert.equal(hookHasExecutableEffect(gated[0]!), false);
     assert.equal(hookHasDispatchableEffect(gated[0]!), false);
   });

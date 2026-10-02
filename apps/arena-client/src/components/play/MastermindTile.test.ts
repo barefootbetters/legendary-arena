@@ -655,3 +655,46 @@ describe('MastermindTile — heal lock (D-24180 / D-24614)', () => {
     assert.equal(badge.classes().includes('mastermind__fight-cost--unaffordable'), false);
   });
 });
+
+describe('MastermindTile — restricted "usable only against" attack (WP-790 / D-24652)', () => {
+  // why: availableAttack excludes restricted attack; the tile passes 'mastermind' so a grant
+  // naming the Mastermind enables the fight, and a City-only grant does not.
+  function mountWithRestrictedAttack(restrictedTargets: Array<'rooftops' | 'mastermind'>, over: Partial<UITurnEconomyState> = {}) {
+    const { submitMove } = recorder();
+    return mount(MastermindTile, {
+      props: {
+        mastermind: mastermindLive(),
+        currentStage: 'main',
+        economy: economy({
+          attack: 7,
+          availableAttack: 4,
+          restrictedAttack: [{ remaining: 3, targets: restrictedTargets, label: 'x' }],
+          ...over,
+        }),
+        submitMove,
+      },
+    });
+  }
+
+  test('Mastermind-eligible restricted attack enables the fight', () => {
+    const button = mountWithRestrictedAttack(['mastermind']).find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), undefined);
+  });
+
+  test('City-only restricted attack leaves the fight disabled, with the per-target figure', () => {
+    const button = mountWithRestrictedAttack(['rooftops']).find('[data-testid="play-mastermind-button"]');
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), 'Needs 6 attack, you have 4.');
+  });
+
+  test('the Excessive Violence control counts Mastermind-eligible restricted attack', () => {
+    assert.equal(
+      mountWithRestrictedAttack(['mastermind'], { excessiveViolenceAvailable: true }).find('[data-testid="play-mastermind-ev"]').exists(),
+      true,
+    );
+    assert.equal(
+      mountWithRestrictedAttack(['rooftops'], { excessiveViolenceAvailable: true }).find('[data-testid="play-mastermind-ev"]').exists(),
+      false,
+    );
+  });
+});

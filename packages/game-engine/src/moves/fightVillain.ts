@@ -17,7 +17,8 @@ import type { LegendaryGameState } from '../types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttack, spendFightCost, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatCityVillainCore, which non-fight
 // defeat paths reach without the useExcessiveViolence arg), after the defeat + the extra-attack debit.
@@ -131,6 +132,14 @@ export function fightVillain(
     return;
   }
 
+  // why: WP-790 / D-24652 — the fight's restricted-attack target is the named City space of
+  // the fought index. An index with no named space fails closed (silent return, like the index
+  // guard above) rather than fighting with a target no restricted grant could ever match.
+  const fightTarget = citySpaceNameForIndex(cityIndex);
+  if (fightTarget === undefined) {
+    return;
+  }
+
   // why: Guard blocks access to lower-index City cards. A Guard at a higher
   // index (closer to escape) prevents fighting villains behind it. You must
   // defeat the Guard first. Guard check uses defensive access (G.cardKeywords
@@ -149,10 +158,12 @@ export function fightVillain(
   const baseFightCost = resolveFightCost(G, cardId, ctx.currentPlayer);
   const patrolModifier = getPatrolModifier(cardId, cardKeywords);
   const requiredFightCost = baseFightCost + patrolModifier;
-  // why: WP-580 / D-24389 — getSpendableAttack folds in unspent recruit when the
+  // why: WP-580 / D-24389 — the spendable figure folds in unspent recruit when the
   // recruit-as-attack conversion is active this turn (God of Thunder); equal to
   // getAvailableAttack on every non-conversion turn, so the gate is unchanged there.
-  const spendableAttack = getSpendableAttack(G.turnEconomy);
+  // why: WP-790 / D-24652 — the gate is target-aware: restricted ("usable only against …")
+  // attack counts only when its grant names this City space.
+  const spendableAttack = getSpendableAttackForTarget(G.turnEconomy, fightTarget);
   if (spendableAttack < requiredFightCost) {
     return;
   }
@@ -248,17 +259,22 @@ export function fightVillain(
   // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
   // affordable AND EV has not already been used this turn (once per turn). A false result fights
   // normally (validation-phase silent decline; moves never throw). defeatCityVillainCore does not
-  // touch attack/recruit spendable, so reading getSpendableAttack here is still the pre-spend value.
+  // touch attack/recruit spendable, so reading the spendable figure here is still the pre-spend value.
   const isExcessiveViolenceActive =
     useExcessiveViolence === true &&
-    getSpendableAttack(G.turnEconomy) >= requiredFightCost + 1 &&
+    getSpendableAttackForTarget(G.turnEconomy, fightTarget) >= requiredFightCost + 1 &&
     G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
-  // why: WP-580 / D-24389 — spendFightCost debits attack first, then unspent
-  // recruit when the conversion is active; identical to spendAttack when unset.
+  // why: WP-580 / D-24389 + WP-790 / D-24652 — spendFightCostForTarget debits eligible
+  // restricted attack first (narrowest-first), then plain attack, then unspent recruit when the
+  // conversion is active; identical to spendAttack when no grant and no conversion exist.
   // why: WP-736 / D-24557 — a SINGLE debit of requiredFightCost + the EV extra (0 or 1); never a
   // double-spend. Fire STRICTLY after this debit (RS-1) so a razor-teeth recruit grant cannot
-  // change what spendFightCost pulls under a recruit-as-attack loadout.
-  G.turnEconomy = spendFightCost(G.turnEconomy, requiredFightCost + (isExcessiveViolenceActive ? 1 : 0));
+  // change what the spend pulls under a recruit-as-attack loadout.
+  G.turnEconomy = spendFightCostForTarget(
+    G.turnEconomy,
+    requiredFightCost + (isExcessiveViolenceActive ? 1 : 0),
+    fightTarget,
+  );
   if (isExcessiveViolenceActive) {
     // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
     // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).

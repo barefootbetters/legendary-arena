@@ -127,7 +127,8 @@ import { phasingOptions } from '../moves/phaseCard.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
-import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
+import { getAvailableRecruit, getSpendableAttack, formatAttackTargets } from '../economy/economy.logic.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
 import {
   resolveFightCost,
   resolveMastermindFightCost,
@@ -1040,6 +1041,20 @@ export function buildUIState(
   const piercing = gameState.turnEconomy.piercing;
   const woundsDrawn = gameState.turnEconomy.woundsDrawn;
   const currentPhasingOptions = phasingOptions(gameState, ctx.currentPlayer);
+  // why: WP-790 / D-24652 — project the restricted-attack grants that still have attack left
+  // (Board-Visible Field Rule step 2), with copied `targets` so the projection never aliases G,
+  // and the display label the economy bar shows. availableAttack (getSpendableAttack) excludes
+  // these amounts, so the client needs them to enable a Fight button the engine would accept.
+  const restrictedAttack: { remaining: number; targets: AttackTargetName[]; label: string }[] = [];
+  for (const grant of gameState.turnEconomy.restrictedAttack ?? []) {
+    if (grant.remaining > 0) {
+      restrictedAttack.push({
+        remaining: grant.remaining,
+        targets: [...grant.targets],
+        label: formatAttackTargets(grant.targets),
+      });
+    }
+  }
   const economy = {
     attack: gameState.turnEconomy.attack,
     recruit: gameState.turnEconomy.recruit,
@@ -1071,6 +1086,9 @@ export function buildUIState(
     // when at least one hand card is phasable), so a turn without Phasing keeps the
     // economy block byte-identical and the client renders Phase buttons only when legal.
     ...(currentPhasingOptions.length > 0 ? { phasingOptions: currentPhasingOptions } : {}),
+    // why: WP-790 / D-24652 — omit-when-absent, so a turn with no restricted grant keeps the
+    // economy block byte-identical.
+    ...(restrictedAttack.length > 0 ? { restrictedAttack } : {}),
   };
 
   // --- 8. Project log ---

@@ -24,6 +24,7 @@ import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
 import type { CardExtId } from "../state/zones.types.js";
+import type { AttackTargetName } from "../economy/economy.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
 // declaring a parallel UI type. The projection surfaces the WP-257 runtime
@@ -806,6 +807,17 @@ export interface UITurnEconomyState {
    * owner's hand, which no other seat may see.
    */
   phasingOptions?: CardExtId[];
+  /**
+   * WP-790 / D-24652 — the active player's unspent "usable only against …"
+   * attack, one entry per grant with `remaining > 0`, in grant order: the
+   * amount, where it may be spent, and a display label (e.g. `"Rooftops"`).
+   * `availableAttack` EXCLUDES these amounts; the client adds back the ones
+   * eligible for a given fight target via the engine's
+   * `sumRestrictedAttackForTarget`. Omit-when-absent (present only when at
+   * least one grant has attack left) and active-player-only (absent from
+   * `REDACTED_ECONOMY`).
+   */
+  restrictedAttack?: { remaining: number; targets: AttackTargetName[]; label: string }[];
 }
 
 /**

@@ -13,7 +13,8 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
-import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
+import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
+import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
@@ -868,12 +869,6 @@ export function getLegalMoves(
   }
 
   const stage = gameState.currentStage;
-  // why: WP-580 / D-24389 — getSpendableAttack folds unspent recruit into the
-  // fight-affordability figure when the recruit-as-attack conversion is active,
-  // exactly mirroring the fightVillain / fightMastermind move guard so the bot
-  // never enumerates a fight the reducer would refuse (or skips one it allows).
-  // Equal to getAvailableAttack on every non-conversion turn.
-  const spendableAttack = getSpendableAttack(gameState.turnEconomy);
   const availableRecruit = getAvailableRecruit(gameState.turnEconomy);
 
   // 1. playCard intents — one entry per hand card, in hand order.
@@ -970,7 +965,14 @@ export function getLegalMoves(
       const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
       const requiredFightCost = baseFightCost + patrolModifier;
-      if (spendableAttack >= requiredFightCost) {
+      // why: WP-580 / D-24389 + WP-790 / D-24652 — the per-target spendable figure (unspent
+      // recruit under the recruit-as-attack conversion, plus restricted attack whose grant
+      // names this City space), exactly mirroring the fightVillain move guard so the bot never
+      // enumerates a fight the reducer would refuse (or skips one it allows). An index with no
+      // named space is refused by the move, so it is skipped here too.
+      const fightTarget = citySpaceNameForIndex(cityIndex);
+      if (fightTarget === undefined) continue;
+      if (getSpendableAttackForTarget(gameState.turnEconomy, fightTarget) >= requiredFightCost) {
         legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
       }
     }
@@ -985,7 +987,8 @@ export function getLegalMoves(
     !isMastermindHaunting(gameState)
   ) {
     const mastermindFightCost = resolveMastermindFightCost(gameState);
-    if (spendableAttack >= mastermindFightCost) {
+    // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
+    if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
       legalMoves.push({ name: 'fightMastermind', args: {} });
     }
   }

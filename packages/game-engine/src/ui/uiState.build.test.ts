@@ -2471,3 +2471,42 @@ describe('buildUIState — notableEventCards (WP-789 / D-24637)', () => {
     assert.equal(Object.keys(result).includes('notableEventCards'), false);
   });
 });
+
+describe('buildUIState — economy.restrictedAttack projection (WP-790 / D-24652)', () => {
+  it('projects grants with attack left, with a label, and excludes them from availableAttack', () => {
+    const gameState = createTestGameState();
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      attack: 6,
+      restrictedAttack: [
+        { remaining: 2, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId },
+        { remaining: 0, targets: ['bank'], sourceCardId: 'spent' as CardExtId },
+        { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], sourceCardId: 'wave' as CardExtId },
+      ],
+    };
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(uiState.economy.restrictedAttack, [
+      { remaining: 2, targets: ['rooftops'], label: 'Rooftops' },
+      { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], label: 'Sewers or Bridge or Mastermind' },
+    ]);
+    assert.equal(uiState.economy.attack, 6, 'the total still counts restricted attack');
+    assert.equal(uiState.economy.availableAttack, 1, 'availableAttack excludes the 5 restricted');
+    assert.notEqual(
+      uiState.economy.restrictedAttack?.[0]?.targets,
+      gameState.turnEconomy.restrictedAttack?.[0]?.targets,
+      'targets is a copy, never an alias of G',
+    );
+  });
+
+  it('omits the key when there is no grant with attack left', () => {
+    const gameState = createTestGameState();
+    assert.ok(!('restrictedAttack' in buildUIState(gameState, mockCtx).economy));
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      attack: 2,
+      spentAttack: 2,
+      restrictedAttack: [{ remaining: 0, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }],
+    };
+    assert.ok(!('restrictedAttack' in buildUIState(gameState, mockCtx).economy));
+  });
+});

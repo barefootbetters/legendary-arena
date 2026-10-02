@@ -533,8 +533,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // trajectory moved. totalObs 8031 -> 8866 (+835, equal to the raw feed rise 7103 -> 7938);
   // resolvedObs stays 1235, so percentResolved 15.4 -> 13.9 (1235 / 8866). Newly visible hollow
   // surface, not a regression.
+  // 2026-10-01 (WP-790 / D-24652, re-pin): "usable only against …" attack is now spendable only
+  // on its named targets, so the fixed-seed sweep's bots fight differently whenever an affected
+  // hero (co2e Storm, vill Electro, …) is in the loadout, and Storm's / Electro's Ranged follow-up
+  // line no longer carries a magnitude-less attack. The feed regenerated: 7938 -> 7959 raw
+  // observations, same 80 mechanics, 0 dropped. totalObs 8866 -> 8884; resolvedObs stays 1235,
+  // so percentResolved stays 13.9. A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8866);
+  assert.equal(view.totalObs.value, 8884);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });

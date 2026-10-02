@@ -1101,3 +1101,33 @@ describe('fightMastermind — Haunt (WP-757 / D-24587)', () => {
     );
   });
 });
+
+describe('fightMastermind — restricted "usable only against" attack (WP-790 / D-24652)', () => {
+  it('Mastermind-eligible restricted attack pays for the fight', () => {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({
+        attack: 8,
+        restrictedAttack: [{ remaining: 3, targets: ['bridge', 'mastermind'], sourceCardId: 'bubble' as CardExtId }],
+      }),
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 8);
+    assert.strictEqual(moveContext.G.turnEconomy.restrictedAttack?.[0]?.remaining, 0);
+  });
+
+  it('City-only restricted attack cannot pay for the Mastermind (no G mutation)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({
+        attack: 8,
+        restrictedAttack: [{ remaining: 3, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }],
+      }),
+    });
+    const economyBefore = JSON.parse(JSON.stringify(gameState.turnEconomy));
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
+    assert.deepStrictEqual(moveContext.G.turnEconomy, economyBefore);
+  });
+});

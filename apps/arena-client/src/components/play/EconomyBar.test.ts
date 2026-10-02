@@ -80,3 +80,30 @@ describe('EconomyBar (WP-129)', () => {
     }
   });
 });
+
+describe('EconomyBar — restricted attack chips (WP-790 / D-24652)', () => {
+  test('renders one chip per projected grant with its remaining amount and label', () => {
+    const wrapper = mount(EconomyBar, {
+      props: {
+        economy: economy({
+          attack: 5,
+          availableAttack: 0,
+          restrictedAttack: [
+            { remaining: 2, targets: ['rooftops'], label: 'Rooftops' },
+            { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], label: 'Sewers or Bridge or Mastermind' },
+          ],
+        }),
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="economy-restricted-attack"]');
+    assert.deepEqual(chips.map((chip) => chip.text()), [
+      '+2 only against: Rooftops',
+      '+3 only against: Sewers or Bridge or Mastermind',
+    ]);
+  });
+
+  test('renders no chip when the field is absent', () => {
+    const wrapper = mount(EconomyBar, { props: { economy: economy({ attack: 2, availableAttack: 2 }) } });
+    assert.equal(wrapper.findAll('[data-testid="economy-restricted-attack"]').length, 0);
+  });
+});

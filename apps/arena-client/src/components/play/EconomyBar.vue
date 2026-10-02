@@ -58,6 +58,17 @@ export default defineComponent({
     >
       ⚡ Recruit → Attack this turn
     </span>
+    <!-- why: WP-790 / D-24652 — one chip per restricted ("usable only against …")
+         grant with attack left: the Attack figure above excludes these amounts, so
+         the chip says how much more attack exists and where it can be spent. The
+         engine projects the label; this renders served data only. Active-player-only
+         and omit-when-absent, so no chip renders without a restricted grant. -->
+    <span
+      v-for="(grant, grantIndex) in economy.restrictedAttack ?? []"
+      :key="grantIndex"
+      class="economy-restricted-attack"
+      data-testid="economy-restricted-attack"
+    >+{{ grant.remaining }} only against: {{ grant.label }}</span>
     <span data-testid="play-economy-recruit">
       Recruit: {{ economy.availableRecruit }}/{{ economy.recruit }}
     </span>
@@ -86,6 +97,14 @@ export default defineComponent({
   font-weight: 600;
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--color-foreground, #999);
+  border-radius: 0.75rem;
+}
+
+/* why: WP-790 — the restricted-attack chip uses the same bordered-pill shape as the
+   convert cue (meaning in the text, not colour alone; no animation). */
+.economy-restricted-attack {
+  padding: 0.05rem 0.4rem;
+  border: 1px dashed var(--color-foreground, #999);
   border-radius: 0.75rem;
 }
 </style>

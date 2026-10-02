@@ -283,7 +283,11 @@ export {
   areAllTacticsDefeated,
 } from "./mastermind/mastermind.logic.js";
 export { fightMastermind } from "./moves/fightMastermind.js";
-export type { TurnEconomy, CardStatEntry } from "./economy/economy.types.js";
+export type { TurnEconomy, CardStatEntry, AttackTargetName, RestrictedAttackGrant } from "./economy/economy.types.js";
+// why: WP-790 / D-24652 — the arena-client Fight gates map an engine City index to its
+// restricted-attack target name with the same helper the fightVillain move uses.
+export { citySpaceNameForIndex } from "./board/citySpaceNames.js";
+export type { CitySpaceName } from "./board/citySpaceNames.js";
 export type {
   HeroAbilityHook,
   HeroCondition,
@@ -317,6 +321,13 @@ export {
   spendAttack,
   spendRecruit,
   resetTurnEconomy,
+  getSpendableAttack,
+  getRestrictedAttackRemaining,
+  sumRestrictedAttackForTarget,
+  getSpendableAttackForTarget,
+  addRestrictedAttack,
+  spendFightCostForTarget,
+  formatAttackTargets,
 } from "./economy/economy.logic.js";
 export type {
   CardStatsRegistryReader,

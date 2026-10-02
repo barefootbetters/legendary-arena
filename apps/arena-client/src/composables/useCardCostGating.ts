@@ -21,9 +21,11 @@
  * @see EC-132 §3 disabled-state tooltip precedence
  * @see WP-111 D-11104 (UICardDisplay.cost projection)
  * @see WP-750 D-24574 (Fight gates on the engine's projected fight cost)
+ * @see WP-790 D-24652 (restricted "usable only against …" attack, per fight target)
  */
 
-import type { UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
+import type { AttackTargetName, UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
+import { sumRestrictedAttackForTarget } from '@legendary-arena/game-engine';
 
 export interface GatingResult {
   /** True when the affordance is enabled; false when it should render disabled. */
@@ -36,6 +38,20 @@ export interface GatingResult {
 }
 
 const ALLOWED: GatingResult = { allowed: true, reason: null };
+
+/**
+ * The attack that can pay for a fight against `target`: the projected
+ * `availableAttack` plus the restricted attack whose grant names `target`.
+ *
+ * // why: WP-790 / D-24652 — `availableAttack` excludes restricted ("usable only
+ * against …") attack, which the engine adds back per fight target. The client
+ * calls the engine-exported `sumRestrictedAttackForTarget` — the one eligibility
+ * rule — so the served figure matches the engine gate. No target ⇒ no restricted
+ * attack (the figure is `availableAttack`, unchanged from before WP-790).
+ */
+function attackForTarget(economy: UITurnEconomyState, target: AttackTargetName | undefined): number {
+  return economy.availableAttack + sumRestrictedAttackForTarget(economy.restrictedAttack ?? [], target);
+}
 
 /**
  * Decide whether the active player can recruit a hero with the given
@@ -85,6 +101,7 @@ export function canRecruit(
 export function canFight(
   cost: number | null,
   economy: UITurnEconomyState,
+  target?: AttackTargetName,
 ): GatingResult {
   if (cost === null) {
     return {
@@ -92,10 +109,11 @@ export function canFight(
       reason: 'This card cannot be fought.',
     };
   }
-  if (economy.availableAttack < cost) {
+  const attackAvailable = attackForTarget(economy, target);
+  if (attackAvailable < cost) {
     return {
       allowed: false,
-      reason: `Needs ${cost} attack, you have ${economy.availableAttack}.`,
+      reason: `Needs ${cost} attack, you have ${attackAvailable}.`,
     };
   }
   return ALLOWED;
@@ -107,7 +125,7 @@ export function canFight(
  * `economy.excessiveViolenceAvailable`) AND they can afford one attack MORE
  * than the target's fight cost (the WP-736 `+1` overspend). Takes the same
  * projected fight cost `canFight` takes (WP-750 / D-24574), so the client gate
- * mirrors the engine gate `getSpendableAttack >= requiredFightCost + 1` exactly
+ * mirrors the engine gate `getSpendableAttackForTarget >= requiredFightCost + 1` exactly
  * and the engine stays the sole authority. Returns a plain boolean (this is an enable check
  * for a secondary affordance, not a disabled-tooltip gate).
  *
@@ -118,6 +136,7 @@ export function canFight(
 export function canFightWithExcessiveViolence(
   cost: number | null,
   economy: UITurnEconomyState,
+  target?: AttackTargetName,
 ): boolean {
   if (economy.excessiveViolenceAvailable !== true) {
     return false;
@@ -125,7 +144,7 @@ export function canFightWithExcessiveViolence(
   if (cost === null) {
     return false;
   }
-  return economy.availableAttack >= cost + 1;
+  return attackForTarget(economy, target) >= cost + 1;
 }
 
 /**
@@ -137,13 +156,13 @@ export function useCardCostGating(
   economy: UITurnEconomyState,
 ): {
   canRecruit: (hero: UICardDisplay) => GatingResult;
-  canFight: (cost: number | null) => GatingResult;
-  canFightWithExcessiveViolence: (cost: number | null) => boolean;
+  canFight: (cost: number | null, target?: AttackTargetName) => GatingResult;
+  canFightWithExcessiveViolence: (cost: number | null, target?: AttackTargetName) => boolean;
 } {
   return {
     canRecruit: (hero) => canRecruit(hero, economy),
-    canFight: (cost) => canFight(cost, economy),
-    canFightWithExcessiveViolence: (cost) =>
-      canFightWithExcessiveViolence(cost, economy),
+    canFight: (cost, target) => canFight(cost, economy, target),
+    canFightWithExcessiveViolence: (cost, target) =>
+      canFightWithExcessiveViolence(cost, economy, target),
   };
 }
