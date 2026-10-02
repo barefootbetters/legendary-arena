@@ -23,7 +23,9 @@ source:
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
-last-reviewed: 2026-09-29
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
+  - ../render.yaml
+last-reviewed: 2026-10-02
 ---
 
 # AI Second Brain
@@ -108,6 +110,7 @@ yet.**
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
+| Owned host exists: production moves off Render to an owned VPS (the brain's bootstrap host; vendor being re-checked, see below) | Stalled since 2026-07-25 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Cost baseline](#hosting-and-security-posture) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
@@ -655,6 +658,37 @@ corrupts recall or the store:
   bootstrap floor when embeddings and voice run concurrently**, and the 16 GB
   class is also where a small resident local model or more concurrent agents
   belong.
+- **Cost baseline: what production costs today (September 2026, actual).**
+  Production runs on Render, not on an owned box. Its September bill (invoice
+  `0SPQWPNF-0006`, paid 2026-10-01) was **$146.35**:
+
+  | Line | Render plan | Sep 2026 |
+  |---|---|---|
+  | Game server (`apps/server`) | `pro` web service, 2 CPU / 4 GB | $85.00 |
+  | PostgreSQL (`legendary-arena-db`) | `pro-4gb`, 4 GB / 1 CPU, plus storage | $55.30 |
+  | Builds | 6 h 42 m of pipeline minutes | $5.00 |
+  | Bandwidth | 6.5 GB | $1.05 |
+  | ewiki static site | free | $0.00 |
+
+  That is about **$1,750 a year** for one server and one database. Both plans
+  were raised in July 2026 to cure CPU and memory starvation (the reasons are in
+  `render.yaml`); the dashboard's last cost snapshot, from 2026-07-27, predates
+  the full-month effect and still shows about $30.
+
+  Two consequences for this page. **First, there is no existing box to co-locate
+  on yet.** Render is a PaaS, so the bootstrap co-location depends on the
+  Render → owned-VPS migration recorded in
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md), and that program has
+  not moved since 2026-07-25. Its written target is a DigitalOcean droplet (the
+  `legendary-arena-lab` PLAN, 2026-07-24). As of 2026-10-02 the vendor is being
+  re-checked against NameHero before anything is provisioned; the choice is
+  not recorded yet. **Second, weigh the brain's host budget against $146 a
+  month, not against zero.** The PLAN's target size (4 vCPU / 8 GB, ~$48/mo at
+  DigitalOcean) replaces the whole Render bill, and a 16 GB box that also
+  carries the brain with voice would still cost less than Render charges for
+  production alone. That makes "co-locate to bootstrap" a cost decision, not
+  only a convenience. The resource-contention caution in the deployment callout
+  still applies, and a dedicated host is still the end-state.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -2061,6 +2095,18 @@ This is the summary index; the individual gotchas and their nuances live in
   material he flags as Willdan's stays out. Sensitivity examples elsewhere
   ("client engineering data, formulations") are about which model may see a
   thing, not who owns it, so they stay.
+- **2026-10-02 — hosting cost baseline added (descriptive, no re-lock).** The
+  September 2026 Render bill ($146.35: game server $85.00, Postgres $55.30,
+  builds $5.00, bandwidth $1.05) is now a cost baseline under
+  [Hosting and security posture](#hosting-and-security-posture). Two corrections
+  follow from it. The page said v1 "co-locates on the existing box," but
+  production is on Render, a PaaS, so there is no box yet; the bootstrap host is
+  the owned VPS from the Render migration, and that migration has stalled since
+  2026-07-25. Its written vendor is DigitalOcean; NameHero is being re-checked
+  as the alternative. The brain's host budget is now framed against $146 a month
+  rather than zero. [Build status](#build-status) gained a row for the host, and
+  Open Question 3 points at the baseline. No Locked row moved, and there is no
+  `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2099,7 +2145,12 @@ is built.
    budget**, which lifts quality on the *same* model. All three are tuned at the
    gateway and reopen no Locked row.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
-   the end-state; v1 co-locates on the existing box (D-24341). The lower tier for
+   the end-state; v1 co-locates with production (D-24341). That box does not
+   exist yet: production is still on Render at $146.35/mo (September 2026), and
+   the owned VPS it moves to is the stalled migration in
+   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (see the cost baseline
+   in [Hosting and security posture](#hosting-and-security-posture)). The
+   cost ceiling for the brain is best set against that Render figure. The lower tier for
    the eventual dedicated box is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04
    (NameHero, Hetzner, or DigitalOcean / Vultr / Linode are 2026-08 candidates —
    vendor is unlocked; compare current plans and weight reliability + owned
