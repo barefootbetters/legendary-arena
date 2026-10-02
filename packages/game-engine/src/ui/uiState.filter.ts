@@ -51,6 +51,23 @@ const REDACTED_ECONOMY: UITurnEconomyState = {
 };
 
 /**
+ * Copies the restricted-attack projection entries (WP-790 / D-24652), each with
+ * its own copied `targets` array, so the filtered UIState never aliases the input.
+ *
+ * @param grants - The built projection's restricted-attack entries.
+ * @returns A deep copy of the entries.
+ */
+function copyRestrictedAttackProjection(
+  grants: NonNullable<UITurnEconomyState['restrictedAttack']>,
+): NonNullable<UITurnEconomyState['restrictedAttack']> {
+  const copied: NonNullable<UITurnEconomyState['restrictedAttack']> = [];
+  for (const grant of grants) {
+    copied.push({ remaining: grant.remaining, targets: [...grant.targets], label: grant.label });
+  }
+  return copied;
+}
+
+/**
  * Builds a per-element shallow-copy of City spaces, including the
  * additive `display` payload, to prevent aliasing with the input
  * UIState. Public information — not redacted.
@@ -463,6 +480,14 @@ export function filterUIStateForAudience(
       // reaches buildUIState but not this whitelist is silently dropped (the EC-206 failure).
       ...(uiState.economy.phasingOptions !== undefined && uiState.economy.phasingOptions.length > 0
         ? { phasingOptions: [...uiState.economy.phasingOptions] }
+        : {}),
+      // why: WP-790 / D-24652 — pass the restricted-attack grants through for the ACTIVE player
+      // only (Board-Visible Field Rule step 3), beside the recruit-as-attack cue, omit-when-absent,
+      // copying each entry and its `targets`. REDACTED_ECONOMY (non-active players + spectators)
+      // never carries them. A field that reaches buildUIState but not this whitelist is silently
+      // dropped (the EC-206 failure) and the client would disable affordable Fight buttons.
+      ...(uiState.economy.restrictedAttack !== undefined && uiState.economy.restrictedAttack.length > 0
+        ? { restrictedAttack: copyRestrictedAttackProjection(uiState.economy.restrictedAttack) }
         : {}),
     };
   } else {

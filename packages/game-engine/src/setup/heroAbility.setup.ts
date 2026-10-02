@@ -33,6 +33,8 @@ import {
   buildDynamicEmpoweredComposition,
 } from '../rules/heroCompositions.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 // why: D-18705 / D-18706 — hero hooks must key by the canonical-face slash
 // instance id (the id the played card carries in `G` zones), resolving
 // ability text from the canonical face (sides[0]). The shared emitter is the
@@ -460,6 +462,28 @@ const SHUFFLE_DISCARD_EMPTY_REWARD_SEEDED_REWARDS: ReadonlySet<HeroKeyword> = ne
 // why: extract magnitude from icon-adjacent integers — avoids per-card manual markup (D-21505)
 /** Regex for attack/recruit icon-adjacent magnitude, e.g. "+2[icon:attack]". */
 const ICON_MAGNITUDE_PATTERN = /\+?(\d+)\s*\[icon:(attack|recruit)\]/g;
+
+// why: WP-790 / D-24652 — the printed "usable only against …" clause that follows a
+// `+N[icon:attack]` grant (rules v23, the Liberate entry: a bonus spendable only on the named
+// targets). Matched on the text AFTER the attack icon-magnitude. "usable only to fight …"
+// (mdns Wong Seal the Rift) deliberately does not match.
+/** Regex for the restriction clause, e.g. ", usable only against Villains on the Rooftops." */
+const ATTACK_RESTRICTION_CLAUSE_PATTERN = /,?\s*usable only against (.+?)\.?$/i;
+/** Regex for a Mastermind target word inside the clause ("Commander" is fear/vill wording). */
+const ATTACK_RESTRICTION_MASTERMIND_PATTERN = /\b(mastermind|commander)\b/i;
+/** Regex for an exclusion clause ("other Villains", nmut Karma) — left unmodeled (fails closed). */
+const ATTACK_RESTRICTION_OTHER_PATTERN = /\bother\b/i;
+
+// why: WP-790 / D-24652 — co2e Storm's Ranged follow-up line widens the PRECEDING restricted
+// grant to the Mastermind; it is not a second grant.
+/** Regex for widen (a): "[hc:X]: You may use this bonus [icon:attack] against the Mastermind instead." */
+const ATTACK_RESTRICTION_WIDEN_BONUS_PATTERN =
+  /^\[hc:[a-z]+\]:\s*You may use this bonus \[icon:attack\] against the Mastermind instead\.?$/i;
+// why: WP-790 / D-24652 — vill Electro's Ranged "Instead you may get +N … against the Commander"
+// line is the same grant re-aimed, not a second +N; it fuses only when N matches the grant.
+/** Regex for widen (b): "[hc:X]: Instead you may get +N[icon:attack] usable only against the Commander." */
+const ATTACK_RESTRICTION_WIDEN_INSTEAD_PATTERN =
+  /^\[hc:[a-z]+\]:\s*Instead you may get \+(\d+)\[icon:attack\] usable only against the (Mastermind|Commander)\.?$/i;
 
 // why: WP-660 / D-24471 — an [icon:recruit|attack] token inside a THRESHOLD / RATE
 // CONDITION clause ("made at least N[icon:recruit]", "for every N[icon:recruit]",
@@ -1697,6 +1721,9 @@ function parseAbilityText(
 
   // Step 2b: Extract icon-adjacent magnitudes for attack/recruit keywords.
   // Only sets magnitude if no explicit [keyword:X:N] markup already provided it.
+  // why: WP-790 / D-24652 — remember where the attack icon-magnitude that set the attack
+  // magnitude ENDS, so the restriction clause is read only from the text after it.
+  let attackIconMagnitudeEnd: number | undefined;
   const iconMagnitudeRegex = new RegExp(ICON_MAGNITUDE_PATTERN.source, 'g');
   let iconMagnitudeMatch: RegExpExecArray | null = iconMagnitudeRegex.exec(abilityText);
   while (iconMagnitudeMatch !== null) {
@@ -1711,6 +1738,9 @@ function parseAbilityText(
       const iconMagnitudeValue = parseInt(iconMagnitudeMatch[1]!, 10);
       if (!magnitudes.has(iconKeyword)) {
         magnitudes.set(iconKeyword, iconMagnitudeValue);
+        if (iconKeyword === 'attack') {
+          attackIconMagnitudeEnd = iconMagnitudeMatch.index + iconMagnitudeMatch[0].length;
+        }
       }
     }
     iconMagnitudeMatch = iconMagnitudeRegex.exec(abilityText);
@@ -2440,6 +2470,22 @@ function parseAbilityText(
     }
   }
 
+  // Step 4a: WP-790 / D-24652 — the "usable only against …" restriction clause.
+  // why: set ONLY on an `attack` effect whose magnitude came from the Step 2b icon-magnitude
+  // (a suppressed Focus / Lightshow cost, a magnitude-less "+[icon:attack]" and a keyword
+  // magnitude never reach here). Fails closed: a clause with no recognized target, or with the
+  // word "other" (nmut Karma), leaves the line parsing exactly as before.
+  if (attackIconMagnitudeEnd !== undefined) {
+    const restrictionTargets = parseAttackRestrictionTargets(abilityText.slice(attackIconMagnitudeEnd));
+    if (restrictionTargets !== undefined) {
+      for (const effect of effects) {
+        if (effect.type === 'attack' && effect.magnitude !== undefined) {
+          effect.attackRestriction = { targets: restrictionTargets };
+        }
+      }
+    }
+  }
+
   // Step 4b: surface an unmodeled [rule:X] line as an honest hollow.
   // why: D-24618 — a line that resolved NOTHING (no keyword, effect, composition, or other
   // unresolved marker) but carries a `[rule:X]` token is an ability the engine does not
@@ -2515,6 +2561,122 @@ function parseAbilityText(
     sizeChangingClasses,
     timing,
   };
+}
+
+/**
+ * Parses the targets of a "usable only against …" clause (WP-790 / D-24652).
+ *
+ * @param textAfterAttackIcon - The ability text after the `+N[icon:attack]` grant.
+ * @returns The targets in canonical order (`CITY_SPACE_NAMES` order, then
+ *   `'mastermind'`), or undefined when there is no clause, no recognized target,
+ *   or an "other" exclusion (fail closed).
+ */
+function parseAttackRestrictionTargets(textAfterAttackIcon: string): AttackTargetName[] | undefined {
+  const clauseMatch = ATTACK_RESTRICTION_CLAUSE_PATTERN.exec(textAfterAttackIcon);
+  if (clauseMatch === null) {
+    return undefined;
+  }
+  const clause = clauseMatch[1]!;
+  if (ATTACK_RESTRICTION_OTHER_PATTERN.test(clause)) {
+    return undefined;
+  }
+  const targets: AttackTargetName[] = [];
+  for (const spaceName of CITY_SPACE_NAMES) {
+    if (new RegExp(`\\b${spaceName}\\b`, 'i').test(clause)) {
+      targets.push(spaceName);
+    }
+  }
+  if (ATTACK_RESTRICTION_MASTERMIND_PATTERN.test(clause)) {
+    targets.push('mastermind');
+  }
+  if (targets.length === 0) {
+    return undefined;
+  }
+  return targets;
+}
+
+/**
+ * Returns the restricted `attack` effect on a hook, if any (WP-790 / D-24652).
+ *
+ * @param hook - A per-line hero ability hook.
+ * @returns The hook's `attack` effect that carries `attackRestriction`, else undefined.
+ */
+function findRestrictedAttackEffect(hook: HeroAbilityHook): HeroEffectDescriptor | undefined {
+  for (const effect of hook.effects ?? []) {
+    if (effect.type === 'attack' && effect.attackRestriction !== undefined) {
+      return effect;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Fuses a Ranged "… against the Mastermind instead" follow-up line into the
+ * restricted grant on the immediately preceding line (WP-790 / D-24652).
+ *
+ * When `abilityText` is widen (a) (Storm) or widen (b) (Electro, with N equal to
+ * the preceding grant's magnitude), the preceding grant gets
+ * `widenToMastermindWhen` = a copy of the follow-up's conditions, and the
+ * follow-up hook loses its `attack` effect and `attack` keyword (its conditions
+ * stay). Otherwise nothing changes.
+ *
+ * @param previousLineHook - The hook built from the previous line of the same card, or null.
+ * @param followUpHook - The hook just built from `abilityText`.
+ * @param abilityText - The follow-up line's text.
+ */
+function fuseAttackRestrictionWiden(
+  previousLineHook: HeroAbilityHook | null,
+  followUpHook: HeroAbilityHook,
+  abilityText: string,
+): void {
+  if (previousLineHook === null) {
+    return;
+  }
+  const restrictedEffect = findRestrictedAttackEffect(previousLineHook);
+  if (restrictedEffect === undefined) {
+    return;
+  }
+  const isBonusWiden = ATTACK_RESTRICTION_WIDEN_BONUS_PATTERN.test(abilityText);
+  const insteadMatch = ATTACK_RESTRICTION_WIDEN_INSTEAD_PATTERN.exec(abilityText);
+  const isInsteadWiden =
+    insteadMatch !== null && parseInt(insteadMatch[1]!, 10) === restrictedEffect.magnitude;
+  if (!isBonusWiden && !isInsteadWiden) {
+    return;
+  }
+  // why: WP-790 / D-24652 — the follow-up line is the SAME grant re-aimed at the Mastermind,
+  // not a second grant (Electro's "Instead" would otherwise give +6). The widen conditions are a
+  // fresh array of copied objects (D-13502: never alias the follow-up hook's own conditions).
+  // Electro's Bank/Mastermind amount stays one shared bucket — a known approximation of "one or
+  // the other" recorded in D-24652.
+  const widenConditions: HeroCondition[] = [];
+  for (const condition of followUpHook.conditions ?? []) {
+    widenConditions.push({ ...condition });
+  }
+  restrictedEffect.attackRestriction = {
+    targets: [...restrictedEffect.attackRestriction!.targets],
+    widenToMastermindWhen: widenConditions,
+  };
+  // why: strip the follow-up's attack effect and keyword (conditions kept) so it makes no
+  // second grant and no magnitude-less attack is classified as an `attack-no-magnitude`
+  // hollow (D-24649) for a behavior that is now modeled.
+  const remainingEffects: HeroEffectDescriptor[] = [];
+  for (const effect of followUpHook.effects ?? []) {
+    if (effect.type !== 'attack') {
+      remainingEffects.push(effect);
+    }
+  }
+  if (remainingEffects.length > 0) {
+    followUpHook.effects = remainingEffects;
+  } else {
+    delete followUpHook.effects;
+  }
+  const remainingKeywords: HeroKeyword[] = [];
+  for (const keyword of followUpHook.keywords) {
+    if (keyword !== 'attack') {
+      remainingKeywords.push(keyword);
+    }
+  }
+  followUpHook.keywords = remainingKeywords;
 }
 
 /**
@@ -3917,24 +4079,33 @@ export function buildHeroAbilityHooks(
       if (dayNightBothFusion !== undefined) {
         hooks.push(dayNightBothFusion.hook);
       }
+      // why: WP-790 / D-24652 — the hook built from abilityLines[lineIndex - 1] of THIS instance,
+      // the only valid widen-fusion target. Tracked explicitly (null after every skipped line),
+      // never read as hooks[hooks.length - 1]: the digest / EV / day-night fused hooks above are
+      // pushed before this loop and must never become a fusion target.
+      let previousLineHook: HeroAbilityHook | null = null;
       for (let lineIndex = 0; lineIndex < abilityLines.length; lineIndex++) {
         // why: WP-735 / D-24555 — skip the Digest/Indigestion/upgrade lines the fusion already
         // consumed into the single digest-indigestion hook above.
         if (digestFusion !== undefined && digestFusion.consumedIndices.has(lineIndex)) {
+          previousLineHook = null;
           continue;
         }
         // why: WP-736 / D-24556 — skip the [keyword:Excessive Violence] line the EV fusion consumed
         // into the single excessive-violence hook above.
         if (excessiveViolenceFusion !== undefined && excessiveViolenceFusion.consumedIndices.has(lineIndex)) {
+          previousLineHook = null;
           continue;
         }
         // why: WP-765 / D-24598 — skip the Sunlight / Moonlight / upgrade lines the day-night-both
         // fusion consumed into the single fused hook above.
         if (dayNightBothFusion !== undefined && dayNightBothFusion.consumedIndices.has(lineIndex)) {
+          previousLineHook = null;
           continue;
         }
         const abilityText = abilityLines[lineIndex]!;
         if (typeof abilityText !== 'string' || abilityText.trim() === '') {
+          previousLineHook = null;
           continue;
         }
 
@@ -4027,7 +4198,13 @@ export function buildHeroAbilityHooks(
           hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
         }
 
+        // why: WP-790 / D-24652 — a Ranged "… against the Mastermind instead" line widens the
+        // restricted grant on the immediately preceding line of the same card (Storm, Electro),
+        // and loses its own attack effect + keyword so it never grants twice or reads as hollow.
+        fuseAttackRestrictionWiden(previousLineHook, hook, abilityText);
+
         hooks.push(hook);
+        previousLineHook = hook;
       }
     }
   }

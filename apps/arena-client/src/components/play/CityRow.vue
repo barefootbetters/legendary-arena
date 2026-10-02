@@ -5,6 +5,7 @@ import type {
   UIDecksState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
+import { citySpaceNameForIndex } from '@legendary-arena/game-engine';
 import { useCityRow, type CityCell } from '../../composables/useCityRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
@@ -116,7 +117,13 @@ export default defineComponent({
       // the same authority the fightVillain guard reads (captured Heroes, the
       // Dark-Portal space bonus, Killbot / Skrull overlays; Patrol / Guard are
       // unset per D-2504), never on the printed `display.cost`.
-      const cost = useCardCostGating(props.economy).canFight(cell.card.fightCost);
+      // why: WP-790 / D-24652 — pass the cell's City space so restricted ("usable only
+      // against …") attack eligible here counts, exactly as the fightVillain gate does with
+      // the same citySpaceNameForIndex mapping (the served figure must match the engine gate).
+      const cost = useCardCostGating(props.economy).canFight(
+        cell.card.fightCost,
+        citySpaceNameForIndex(cell.cityIndex),
+      );
       return cost;
     }
 
@@ -137,7 +144,12 @@ export default defineComponent({
       if (!healLockGate(props.hasHealedThisTurn).allowed) {
         return false;
       }
-      return !useCardCostGating(props.economy).canFight(cell.card.fightCost).allowed;
+      // why: WP-790 / D-24652 — the same per-target figure as the enable gate, so the badge
+      // never goes loud on a villain restricted attack can pay for.
+      return !useCardCostGating(props.economy).canFight(
+        cell.card.fightCost,
+        citySpaceNameForIndex(cell.cityIndex),
+      ).allowed;
     }
 
     function hasFightCostBadge(cell: CityCell): boolean {
@@ -166,7 +178,11 @@ export default defineComponent({
       if (!gateForCell(cell).allowed) {
         return false;
       }
-      return useCardCostGating(props.economy).canFightWithExcessiveViolence(cell.card.fightCost);
+      // why: WP-790 / D-24652 — the EV +1 check uses the same per-target figure as the engine.
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(
+        cell.card.fightCost,
+        citySpaceNameForIndex(cell.cityIndex),
+      );
     }
 
     function onFightEV(cityIndex: number): void {

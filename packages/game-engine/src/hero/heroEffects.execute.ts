@@ -48,7 +48,8 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets } from '../economy/economy.logic.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
@@ -1605,6 +1606,10 @@ function heroEffectAttack(
   effect: HeroEffectDescriptor,
 ): void {
   const attackGrant = effect.magnitude as number;
+  if (effect.attackRestriction !== undefined) {
+    heroEffectRestrictedAttack(G, playerID, cardId, attackGrant, effect.attackRestriction);
+    return;
+  }
   G.turnEconomy = addResources(G.turnEconomy, attackGrant, 0);
   // why: WP-417 / D-24237 — an ability-granted attack was silent; only the
   // count-scaled variant (attack-per-count) logged. Both now report the grant.
@@ -1613,6 +1618,45 @@ function heroEffectAttack(
     `Player ${playerID} gained +${attackGrant} attack from ${formatCardRef(G.cardDisplayData, cardId)}.`,
     'applied',
     cardId, // why: WP-438.
+  );
+}
+
+/**
+ * Grants "usable only against …" attack (WP-790 / D-24652).
+ *
+ * The targets are the parsed restriction's targets, plus `'mastermind'` when a
+ * fused Ranged widen (`widenToMastermindWhen`) holds at play. The grant goes
+ * through `addRestrictedAttack`, so it still counts toward the turn's attack.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played hero card.
+ * @param attackGrant - The printed attack magnitude.
+ * @param attackRestriction - The parsed restriction.
+ */
+function heroEffectRestrictedAttack(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  attackGrant: number,
+  attackRestriction: NonNullable<HeroEffectDescriptor['attackRestriction']>,
+): void {
+  const targets: AttackTargetName[] = [...attackRestriction.targets];
+  // why: WP-790 / D-24652 — Storm's / Electro's Ranged "… against the Mastermind instead"
+  // line was fused onto this grant at setup; its conditions are evaluated HERE, at grant time,
+  // so the bucket's eligibility is fixed when the card is played (as the printed text reads).
+  if (
+    attackRestriction.widenToMastermindWhen !== undefined &&
+    !targets.includes('mastermind') &&
+    evaluateAllConditions(G, playerID, attackRestriction.widenToMastermindWhen, cardId)
+  ) {
+    targets.push('mastermind');
+  }
+  G.turnEconomy = addRestrictedAttack(G.turnEconomy, attackGrant, targets, cardId);
+  pushLog(G,
+    `Player ${playerID} gained +${attackGrant} attack (only against: ${formatAttackTargets(targets)}) from ${formatCardRef(G.cardDisplayData, cardId)}.`,
+    'applied',
+    cardId,
   );
 }
 

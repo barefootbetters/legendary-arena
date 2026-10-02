@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 80,
-    "totalObservations": 7938,
+    "totalObservations": 7959,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 518,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7420
+      "parse-unrecognized": 7441
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 415,
+      "hitCount": 414,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 415
+        "parse-unrecognized": 414
       },
       "examples": [
         {
@@ -831,12 +831,12 @@
       ]
     },
     "demolish": {
-      "hitCount": 15,
-      "lastSeenTurn": 29,
+      "hitCount": 17,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 15
+        "parse-unrecognized": 17
       },
       "examples": [
         {
@@ -1187,12 +1187,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 471,
+      "hitCount": 482,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 471
+        "parse-unrecognized": 482
       },
       "examples": [
         {
@@ -1392,12 +1392,12 @@
       ]
     },
     "investigate": {
-      "hitCount": 212,
+      "hitCount": 213,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 212
+        "parse-unrecognized": 213
       },
       "examples": [
         {
@@ -1925,12 +1925,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 420,
-      "lastSeenTurn": 29,
+      "hitCount": 423,
+      "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 420
+        "parse-unrecognized": 423
       },
       "examples": [
         {
@@ -2509,12 +2509,12 @@
       ]
     },
     "switcheroo": {
-      "hitCount": 215,
+      "hitCount": 216,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 215
+        "parse-unrecognized": 216
       },
       "examples": [
         {
@@ -2591,12 +2591,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 204,
+      "hitCount": 207,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 204
+        "parse-unrecognized": 207
       },
       "examples": [
         {
@@ -2673,12 +2673,12 @@
       ]
     },
     "thrown-artifact": {
-      "hitCount": 251,
+      "hitCount": 252,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 251
+        "parse-unrecognized": 252
       },
       "examples": [
         {

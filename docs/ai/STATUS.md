@@ -7,6 +7,30 @@
 
 ## Current State
 
+### WP-790 — "Usable only against …" attack can only be spent there (EC-827 / D-24652) (2026-10-01)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Hero attack printed "usable only against Villains in
+the Sewers or Bridge [or the Mastermind]" now pays only for those fights. Storm's Lightning Bolt +2 pays for a Rooftops
+fight, not a Sewers fight or the Mastermind. With another Ranged Hero played, Storm's "use this bonus against the
+Mastermind instead" also lets it pay for the Mastermind. Electro's Shocking Robbery gives one +3 (Bank, or the
+Mastermind with Ranged), not +6. The economy bar shows each restricted amount as a chip, e.g. `+2 only against:
+Rooftops`, and the Attack figure no longer counts it. Fight buttons enable when restricted attack covers the cost.
+The other cards: cvwr Speedball and Storm & Black Panther, dead Stingray, dims / 3dtc Man-Thing, fear Nerkkod, smhc
+High-Tech Spider-Man, ssw1 Namor and Ultimate Spider-Man, wwhk Namora. A match already in progress at deploy keeps
+the old behavior until it ends.
+
+- **Engine.** Lazy `TurnEconomy.restrictedAttack` + target-aware spend helpers (narrowest-first); the parser reads the
+  clause and fuses the Storm / Electro Ranged lines; both fight moves and the bot gate per target; an active-only
+  `UITurnEconomyState.restrictedAttack` projection.
+- **Client.** `canFight` takes the fight target (CityRow, MastermindTile); EconomyBar chips.
+- **Counts.** game-engine 4781 → 4838 / 0 fail; arena-client 2247 → 2260 / 0 fail; dashboard 505 / 0; vue-tsc 0;
+  replay fixtures and sentinel hashes byte-unchanged (no re-pin). One authorized test edit (the D-24649 Storm Tidal
+  Wave case); the dashboard totalObs pin moved 8866 → 8884 with the regenerated sweep feed.
+- **Live-verify (D-24026):** pending. In a match with co2e Storm, play Lightning Bolt: the economy bar shows
+  `+2 only against: Rooftops`; the Rooftops Fight button enables when +2 covers the cost while Sewers and the
+  Mastermind stay disabled; the Play Diagnostics `uiStateSnapshot` carries `economy.restrictedAttack`. Record the
+  matchId here.
+
 ### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Captain America's Diving Block ("If you would gain a

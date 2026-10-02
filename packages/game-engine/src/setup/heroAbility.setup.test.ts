@@ -1776,3 +1776,200 @@ describe('HERO_PARSER_RECOGNIZED_MARKER_NAMES — every listed name reaches a pa
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-790 / D-24652 — "usable only against …" restricted attack: clause parse + widen fusion
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses one card's printed abilities and returns its hooks.
+ *
+ * @param setAbbr - The set abbreviation.
+ * @param heroSlug - The hero slug.
+ * @param cardSlug - The card slug.
+ * @param abilities - The ability lines, verbatim from data/cards.
+ * @returns The card's hooks (one copy only).
+ */
+function parseRestrictedCard(setAbbr: string, heroSlug: string, cardSlug: string, abilities: string[]) {
+  const hooks = buildHeroAbilityHooks(
+    makeRegistry(setAbbr, heroSlug, [{ slug: cardSlug, abilities }]),
+    makeConfig(`${setAbbr}/${heroSlug}`),
+  );
+  const firstCardId = hooks[0]!.cardId;
+  return hooks.filter((hook) => hook.cardId === firstCardId);
+}
+
+/**
+ * Returns every `attack` effect on the hooks.
+ *
+ * @param hooks - Parsed hooks.
+ * @returns The attack effects, in hook order.
+ */
+function attackEffectsOf(hooks: ReturnType<typeof buildHeroAbilityHooks>) {
+  const attackEffects = [];
+  for (const hook of hooks) {
+    for (const effect of hook.effects ?? []) {
+      if (effect.type === 'attack') {
+        attackEffects.push(effect);
+      }
+    }
+  }
+  return attackEffects;
+}
+
+describe('buildHeroAbilityHooks — restricted attack clause (WP-790 / D-24652)', () => {
+  // why: one row per Context-table card that changes, verbatim from data/cards/*.json.
+  const RESTRICTED_ROWS: Array<{ name: string; set: string; hero: string; card: string; line: string; magnitude: number; targets: string[] }> = [
+    { name: 'co2e Storm Lightning Bolt', set: 'co2e', hero: 'storm', card: 'lightning-bolt',
+      line: 'You get +2[icon:attack] usable only against Villains on the Rooftops.', magnitude: 2, targets: ['rooftops'] },
+    { name: 'co2e Storm Tidal Wave', set: 'co2e', hero: 'storm', card: 'tidal-wave',
+      line: 'You get +3[icon:attack] usable only against Villains in the Sewers or Bridge.', magnitude: 3, targets: ['sewers', 'bridge'] },
+    { name: 'cvwr Speedball Bubble Up', set: 'cvwr', hero: 'speedball', card: 'bubble-up',
+      line: 'You get +3[icon:attack] usable only against Villains on the Bridge or against the Mastermind.', magnitude: 3, targets: ['bridge', 'mastermind'] },
+    { name: 'cvwr Storm & Black Panther Tsunami of Water', set: 'cvwr', hero: 'storm-black-panther', card: 'tsunami-of-water',
+      line: '[hc:ranged]: You get +2[icon:attack] usable only against the Mastermind.', magnitude: 2, targets: ['mastermind'] },
+    { name: 'dead Stingray Superpowered Swimsuit', set: 'dead', hero: 'stingray', card: 'superpowered-swimsuit',
+      line: '[hc:tech]: You get +2[icon:attack], usable only against Villains in the Sewers or Bridge or the Mastermind.', magnitude: 2, targets: ['sewers', 'bridge', 'mastermind'] },
+    { name: 'dims Man-Thing Form from Ooze', set: 'dims', hero: 'man-thing', card: 'form-from-ooze',
+      line: 'You get +2[icon:attack], usable only against Villains in the Sewers or the Mastermind.', magnitude: 2, targets: ['sewers', 'mastermind'] },
+    { name: '3dtc Man-Thing Form from Ooze', set: '3dtc', hero: 'man-thing', card: 'form-from-ooze',
+      line: '[hc:strength]: You get +2[icon:attack] usable only against villains in the Sewers or the Mastermind.', magnitude: 2, targets: ['sewers', 'mastermind'] },
+    { name: 'fear Nerkkod Cudgel of the Deep', set: 'fear', hero: 'nerkkod-breaker-of-oceans', card: 'cudgel-of-the-deep',
+      line: 'When you throw this, you get +3[icon:attack], usable only against Adversaries on the Bridge or the Commander.', magnitude: 3, targets: ['bridge', 'mastermind'] },
+    { name: 'smhc High-Tech Spider-Man Friendly Neighborhood', set: 'smhc', hero: 'high-tech-spider-man', card: 'friendly-neighborhood',
+      line: 'You get +3[icon:attack], usable only against the Mastermind or Villains on the Rooftops or Streets.', magnitude: 3, targets: ['rooftops', 'streets', 'mastermind'] },
+    { name: 'ssw1 Namor Ruler of the Seas', set: 'ssw1', hero: 'namor-the-sub-mariner', card: 'ruler-of-the-seas',
+      line: '[hc:strength]: You get +2[icon:attack], usable only against Villains on the Bridge or the Mastermind.', magnitude: 2, targets: ['bridge', 'mastermind'] },
+    { name: 'ssw1 Ultimate Spider-Man Web-Slinger', set: 'ssw1', hero: 'ultimate-spider-man', card: 'web-slinger',
+      line: 'You get +2[icon:attack], usable only against the Mastermind or Villains on the Rooftops or Bridge.', magnitude: 2, targets: ['rooftops', 'bridge', 'mastermind'] },
+    { name: 'vill Electro Shocking Robbery', set: 'vill', hero: 'electro', card: 'shocking-robbery',
+      line: 'You get +3[icon:attack] usable only against Adversaries in the Bank.', magnitude: 3, targets: ['bank'] },
+    { name: 'wwhk Namora Heart of the Ocean', set: 'wwhk', hero: 'namora', card: 'heart-of-the-ocean',
+      line: 'You get +1[icon:attack], usable only against Villains in the Sewers or Bridge or the Mastermind.', magnitude: 1, targets: ['sewers', 'bridge', 'mastermind'] },
+  ];
+
+  for (const row of RESTRICTED_ROWS) {
+    it(`${row.name}: parses a restricted +${String(row.magnitude)} against ${row.targets.join(', ')}`, () => {
+      const attackEffects = attackEffectsOf(parseRestrictedCard(row.set, row.hero, row.card, [row.line]));
+      assert.equal(attackEffects.length, 1);
+      assert.equal(attackEffects[0]!.magnitude, row.magnitude);
+      assert.deepEqual(attackEffects[0]!.attackRestriction, { targets: row.targets });
+    });
+  }
+
+  it('fails closed: Karma "other Villains", Focus- and Lightshow-gated lines and a plain grant carry no restriction', () => {
+    const unchangedLines = [
+      '[team:x-men]: Choose a Villain in the city. You get +[icon:attack] equal to its VP, usable only against other Villains or the Mastermind.',
+      '[keyword:Focus] 5[icon:recruit] [icon:5] You get +7[icon:attack] usable only against the Mastermind.',
+      '[keyword:Lightshow]: You get +3[icon:attack] usable only against the Mastermind.',
+      'You get +2[icon:attack].',
+      '[keyword:Patrol the Bridge]: If it\'s empty, draw two cards. If it\'s not, you get +5[icon:attack] usable only to fight Villains on the Bridge.',
+    ];
+    for (const line of unchangedLines) {
+      for (const effect of attackEffectsOf(parseRestrictedCard('test', 'test-hero', 'test-card', [line]))) {
+        assert.equal(effect.attackRestriction, undefined, `no restriction on: ${line}`);
+      }
+    }
+  });
+});
+
+describe('buildHeroAbilityHooks — restricted attack widen fusion (WP-790 / D-24652)', () => {
+  const STORM_WIDEN = '[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead.';
+  const ELECTRO_INSTEAD = '[hc:ranged]: Instead you may get +3[icon:attack] usable only against the Commander.';
+
+  it('Storm: the Ranged follow-up widens the preceding grant and loses its attack effect + keyword', () => {
+    const hooks = parseRestrictedCard('co2e', 'storm', 'lightning-bolt', [
+      'You get +2[icon:attack] usable only against Villains on the Rooftops.',
+      STORM_WIDEN,
+    ]);
+    assert.equal(hooks.length, 2);
+    assert.deepEqual(hooks[0]!.effects?.[0]?.attackRestriction, {
+      targets: ['rooftops'],
+      widenToMastermindWhen: [{ type: 'heroClassMatch', value: 'ranged' }],
+    });
+    assert.equal(attackEffectsOf([hooks[1]!]).length, 0, 'follow-up hook has no attack effect');
+    assert.equal(hooks[1]!.keywords.includes('attack'), false, 'follow-up hook has no attack keyword');
+    assert.deepEqual(hooks[1]!.conditions, [{ type: 'heroClassMatch', value: 'ranged' }], 'its gate is kept');
+  });
+
+  it('Electro: the "Instead … Commander" line is the same grant re-aimed — one +3, no second grant', () => {
+    const hooks = parseRestrictedCard('vill', 'electro', 'shocking-robbery', [
+      'You get +3[icon:attack] usable only against Adversaries in the Bank.',
+      ELECTRO_INSTEAD,
+    ]);
+    const attackEffects = attackEffectsOf(hooks);
+    assert.equal(attackEffects.length, 1, 'only one attack grant remains');
+    assert.deepEqual(attackEffects[0]!.attackRestriction, {
+      targets: ['bank'],
+      widenToMastermindWhen: [{ type: 'heroClassMatch', value: 'ranged' }],
+    });
+    assert.equal(hooks[1]!.keywords.includes('attack'), false);
+  });
+
+  it('widenToMastermindWhen deep-equals the follow-up conditions but is a copied array', () => {
+    const hooks = parseRestrictedCard('co2e', 'storm', 'tidal-wave', [
+      'You get +3[icon:attack] usable only against Villains in the Sewers or Bridge.',
+      STORM_WIDEN,
+    ]);
+    const widen = hooks[0]!.effects?.[0]?.attackRestriction?.widenToMastermindWhen;
+    assert.deepEqual(widen, hooks[1]!.conditions);
+    assert.notEqual(widen, hooks[1]!.conditions, 'never the same array');
+    assert.notEqual(widen?.[0], hooks[1]!.conditions?.[0], 'never the same condition object');
+  });
+
+  it('Electro with a mismatched N does not fuse', () => {
+    const hooks = parseRestrictedCard('vill', 'electro', 'shocking-robbery', [
+      'You get +3[icon:attack] usable only against Adversaries in the Bank.',
+      '[hc:ranged]: Instead you may get +4[icon:attack] usable only against the Commander.',
+    ]);
+    assert.equal(hooks[0]!.effects?.[0]?.attackRestriction?.widenToMastermindWhen, undefined);
+    assert.equal(attackEffectsOf([hooks[1]!]).length, 1, 'the follow-up keeps its own grant');
+  });
+
+  it('a non-adjacent widen line does not fuse', () => {
+    const hooks = parseRestrictedCard('co2e', 'storm', 'lightning-bolt', [
+      'You get +2[icon:attack] usable only against Villains on the Rooftops.',
+      'Draw a card.',
+      STORM_WIDEN,
+    ]);
+    assert.equal(hooks[0]!.effects?.[0]?.attackRestriction?.widenToMastermindWhen, undefined);
+    assert.equal(attackEffectsOf([hooks[2]!]).length, 1, 'the unfused follow-up is left as parsed');
+  });
+
+  it('a widen line after an interleaving fused (digest) line does not fuse into an earlier hook', () => {
+    // why: the digest hook is pushed BEFORE the per-line loop and its line is consumed, so the
+    // widen line's immediately preceding line produced no per-line hook. Reading
+    // hooks[hooks.length - 1] would wrongly fuse into the line-0 grant.
+    const hooks = buildHeroAbilityHooks(
+      makeRegistry('vnom', 'venompool', [{
+        slug: 'digest-that-chimichanga',
+        abilities: [
+          'You get +2[icon:attack] usable only against Villains on the Rooftops.',
+          '[keyword:Digest 2]: You get +2[icon:attack].',
+          STORM_WIDEN,
+        ],
+      }]),
+      makeConfig('vnom/venompool'),
+    );
+    const firstCardId = hooks[0]!.cardId;
+    const cardHooks = hooks.filter((hook) => hook.cardId === firstCardId);
+    const grantHook = cardHooks.find((hook) => hook.effects?.[0]?.attackRestriction !== undefined);
+    assert.ok(grantHook, 'the restricted grant hook exists');
+    assert.equal(grantHook!.effects![0]!.attackRestriction!.widenToMastermindWhen, undefined);
+  });
+
+  it('a widen line that opens the next card never fuses into the previous card\'s grant', () => {
+    const hooks = buildHeroAbilityHooks(
+      makeRegistry('co2e', 'storm', [
+        { slug: 'lightning-bolt', abilities: ['You get +2[icon:attack] usable only against Villains on the Rooftops.'] },
+        { slug: 'other-card', abilities: [STORM_WIDEN] },
+      ]),
+      makeConfig('co2e/storm'),
+    );
+    for (const hook of hooks) {
+      for (const effect of hook.effects ?? []) {
+        assert.equal(effect.attackRestriction?.widenToMastermindWhen, undefined, `no cross-card fusion on ${hook.cardId}`);
+      }
+    }
+  });
+});

@@ -16,6 +16,7 @@ import type { HeroKeyword, HeroAbilityTiming } from './heroKeywords.js';
 import type { HeroCountSource, ChooseOneOption } from './heroCountSource.js';
 import type { RevealRule } from './revealRule.js';
 import type { EffectNode } from './effectPrimitive.types.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
 
 // ---------------------------------------------------------------------------
 // HeroAbilityHook — data-only interface
@@ -221,6 +222,16 @@ export interface HeroEffectDescriptor {
   // else nothing. The handler treats an absent array as an empty branch. Other keywords ignore them.
   sunlightEffects?: HeroEffectDescriptor[];
   moonlightEffects?: HeroEffectDescriptor[];
+  // why: WP-790 / D-24652 — for an 'attack' effect, attackRestriction records a printed
+  // "usable only against …" clause: `targets` (canonical order) are where the grant may be
+  // spent. `widenToMastermindWhen` is fused from a following Ranged "… against the Mastermind
+  // instead" line (Storm, Electro): when those conditions hold at play, the grant may also pay
+  // for a Mastermind fight. Absent ≡ plain attack. Plain data (strings + condition objects), so
+  // the hook stays JSON-serializable in G.heroAbilityHooks. Other keywords ignore it.
+  attackRestriction?: {
+    targets: AttackTargetName[];
+    widenToMastermindWhen?: HeroCondition[];
+  };
 }
 
 // ---------------------------------------------------------------------------

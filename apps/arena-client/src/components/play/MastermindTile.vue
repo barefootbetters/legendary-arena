@@ -116,7 +116,7 @@ export default defineComponent({
       if (!healLockGate(props.hasHealedThisTurn).allowed) {
         return false;
       }
-      return !useCardCostGating(props.economy).canFight(mastermindFightCost()).allowed;
+      return !useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind').allowed;
     }
 
     function hasFightCostBadge(): boolean {
@@ -142,7 +142,10 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
-      const cost = useCardCostGating(props.economy).canFight(mastermindFightCost());
+      // why: WP-790 / D-24652 — pass the 'mastermind' target (here, in the cost badge and in the
+      // EV check) so restricted attack whose grant names the Mastermind counts, exactly as the
+      // fightMastermind gate does — the served figure must match the engine gate.
+      const cost = useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind');
       if (!cost.allowed) {
         return cost;
       }
@@ -210,7 +213,7 @@ export default defineComponent({
       if (!gateForFight().allowed) {
         return false;
       }
-      return useCardCostGating(props.economy).canFightWithExcessiveViolence(mastermindFightCost());
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(mastermindFightCost(), 'mastermind');
     }
 
     function onFightEV(): void {
