@@ -110,7 +110,7 @@ yet.**
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
-| Owned host exists: production moves off Render to an owned VPS (the brain's bootstrap host; vendor being re-checked, see below) | Stalled since 2026-07-25 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Cost baseline](#hosting-and-security-posture) |
+| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Stalled since 2026-07-25 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Cost baseline](#hosting-and-security-posture) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
@@ -677,12 +677,11 @@ corrupts recall or the store:
 
   Two consequences for this page. **First, there is no existing box to co-locate
   on yet.** Render is a PaaS, so the bootstrap co-location depends on the
-  Render → owned-VPS migration recorded in
-  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md), and that program has
-  not moved since 2026-07-25. Its written target is a DigitalOcean droplet (the
-  `legendary-arena-lab` PLAN, 2026-07-24). As of 2026-10-02 the vendor is being
-  re-checked against NameHero before anything is provisioned; the choice is
-  not recorded yet. **Second, weigh the brain's host budget against $146 a
+  Render → DigitalOcean migration recorded in
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (the
+  `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02), and that
+  program has not moved since 2026-07-25. NameHero and the other vendors above
+  remain candidates only for the brain's eventual *dedicated* host. **Second, weigh the brain's host budget against $146 a
   month, not against zero.** The PLAN's target size (4 vCPU / 8 GB, ~$48/mo at
   DigitalOcean) replaces the whole Render bill, and a 16 GB box that also
   carries the brain with voice would still cost less than Render charges for
@@ -2101,9 +2100,8 @@ This is the summary index; the individual gotchas and their nuances live in
   [Hosting and security posture](#hosting-and-security-posture). Two corrections
   follow from it. The page said v1 "co-locates on the existing box," but
   production is on Render, a PaaS, so there is no box yet; the bootstrap host is
-  the owned VPS from the Render migration, and that migration has stalled since
-  2026-07-25. Its written vendor is DigitalOcean; NameHero is being re-checked
-  as the alternative. The brain's host budget is now framed against $146 a month
+  the DigitalOcean droplet from the Render migration (vendor reconfirmed
+  2026-10-02), and that migration has stalled since 2026-07-25. The brain's host budget is now framed against $146 a month
   rather than zero. [Build status](#build-status) gained a row for the host, and
   Open Question 3 points at the baseline. No Locked row moved, and there is no
   `DECISIONS.md` entry.
@@ -2147,7 +2145,7 @@ is built.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
    the end-state; v1 co-locates with production (D-24341). That box does not
    exist yet: production is still on Render at $146.35/mo (September 2026), and
-   the owned VPS it moves to is the stalled migration in
+   the DigitalOcean droplet it moves to is the stalled migration in
    [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (see the cost baseline
    in [Hosting and security posture](#hosting-and-security-posture)). The
    cost ceiling for the brain is best set against that Render figure. The lower tier for

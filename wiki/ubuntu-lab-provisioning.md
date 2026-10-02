@@ -23,7 +23,7 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-08-09
+last-reviewed: 2026-10-02
 ---
 
 # Ubuntu Lab Provisioning
@@ -68,8 +68,11 @@ co-located localhost DB), the program's `infra/` artifacts are authoritative.
 
 The operator-capability and disaster-recovery-rehearsal value that first justified
 the box still holds — but the box is no longer exploratory. The move is decided
-(see the callout) and in progress; cost is roughly a wash, so control and
-capability are the drivers, not the bill.
+(see the callout) and in progress. When it was planned in July, cost looked
+roughly even and control was the driver. That changed once Render's plans were
+raised under load: the September 2026 bill was **$146.35**, against about $48 a
+month for the target droplet. Cost is now a driver too (see
+[Cost case](#cost-case-september-2026)).
 
 ## Mechanics
 
@@ -89,6 +92,56 @@ Self-hosting Postgres on this box is now the **chosen** path, not an open
 question: the migration PLAN co-locates the server and database on one host
 (no cross-provider hop). What remains is the disciplined execution and the
 governance transcription noted in the callout — not the architecture decision.
+
+### Cost case (September 2026)
+
+The vendor was reconfirmed as **DigitalOcean** on 2026-10-02. NameHero had been
+named elsewhere, but only as a candidate host for the
+[AI Second Brain](ai-second-brain.md), never for this migration.
+
+What Render charged for September 2026 (invoice `0SPQWPNF-0006`, paid
+2026-10-01):
+
+| Line | Render plan | Sep 2026 | After migration |
+|---|---|---|---|
+| Game server | `pro`, 2 CPU / 4 GB | $85.00 | on the droplet |
+| PostgreSQL | `pro-4gb` plus storage | $55.30 | on the droplet, `localhost` |
+| Builds | 6 h 42 m of pipeline minutes | $5.00 | GitHub Actions deploy |
+| Bandwidth | 6.5 GB | $1.05 | included with the droplet |
+| ewiki static site | free | $0.00 | Cloudflare Pages |
+| **Total** | | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+
+That saves about **$1,180 a year** at 8 GB and about $1,470 at 4 GB, before
+backup storage. Backups go to R2, which is inside its free tier today. Both
+Render plans were raised in July to cure CPU and memory starvation; the reasons
+are recorded in `render.yaml`.
+
+**Cost-reduction order.** These steps are ranked by savings for the effort.
+1. **Restart the migration.** No commits have landed in `legendary-arena-lab`
+   since 2026-07-25, and every month of the stall costs about $100 more than the
+   droplet would. The phases and gates in its PLAN are unchanged.
+2. **Size from data, not from the July incidents.** Before choosing the droplet
+   size, pull September's CPU and memory figures for the server and the
+   database from the Render dashboard. That settles whether the box can start
+   at 4 GB instead of 8 GB.
+3. **Reduce the load, which pays off on any host.**
+   - The bot-ally driver polls every live match every 250 ms
+     (`apps/server/src/bot-ally/botAllyDriver.mjs`). Driving it from state
+     changes instead cuts server CPU and database queries.
+   - Finished `bgio` matches are never pruned, so the database grows without
+     bound. A retention job would stop that, but it must keep the
+     completed-match data that replay verification (D-24119) and the team-key
+     backfill (D-24187) read.
+4. **Trim Render only if cutover is more than a month or two out.**
+   - Build only the server and the packages it depends on
+     (`pnpm --filter @legendary-arena/server... build`) instead of
+     `pnpm -r build`. That goes after the $5 build line.
+   - Step the server from `pro` down to `standard`, which saves $60 a month,
+     but only if the September figures show headroom. Under-provisioning is
+     what caused the July freezes.
+5. **Keep the rollback window short.** Render bills in full while it stays
+   warm, so set the PLAN's "N days" deliberately (for example, 14) and
+   decommission on schedule.
 
 ### Prerequisites & effort
 
