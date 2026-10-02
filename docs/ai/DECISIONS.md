@@ -46321,6 +46321,8 @@ a same-turn Master Strike also pays out in the sim, PAR and fixture loops. `matc
 (landed first by WP-777 / D-24616) is the shared gate, reused by WP-745 (D-24568). Matches already in flight at deploy keep their
 setup-time hooks and the old free grants until they end.
 
+**Live-verify (D-24026), 2026-10-01: no-trigger half PASS.** Match `SprBgGkJuY0` (build `78fc979`): Spring the Trap played on two turns with no Master Strike or Ambush logged the waiting line and granted nothing. The trigger half is pending.
+
 **Reserved by:** NUMBER-LEDGER D-24566. Related: D-24377 (wait-and-see), D-24467 (event gate +
 lazy field), D-24351 (the villain-deck play loop), D-24372 (runtime drift pins), D-24567 (sim
 parity), D-24568 (the WP-745 sweep).
@@ -46343,6 +46345,8 @@ parity), D-24568 (the WP-745 sweep).
 6. **Determinism.** `G.diagnostics` is hash-excluded. The new hollow record also pushes the existing `Unhandled effect observed` `G.messages` line (kept by `computeStateHash`, excluded from `finalStateHash` per D-24081); no sentinel / replay / PAR fixture plays an affected card, so no oracle re-pins. The fixed-seed `sim:runtime-observed` sweep gains `attack-no-magnitude` (416 obs) and `recruit-no-magnitude` (420 obs); every other mechanic's count is byte-identical, so no game trajectory moved. The Synergy Rate of a past match re-executed under D-24119 can differ (display-only, never scored).
 
 **Gates (re-measured after rebasing onto main `83f637d9`, with D-24566).** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in all 12 packages; engine 4749/0 → 4760/0 (+11, `heroEffects.dispatchable.test.ts`), dashboard 505/0. `sim:runtime-observed` regenerated: 78 → 80 mechanics, 7103 → 7938 observations (+835). Dashboard in-play pin re-pinned 8031 / 15.4 → 8866 / 13.9 (newly visible hollow surface; resolvedObs unchanged at 1235). `sim:coverage --check` passes with the committed baseline unchanged; `sim:runtime-observed:check`, `ledger:heroes:check`, `ledger:villains:check`, `mechanics:metadata:check`, `effect-index:check`, `ledger:numbers:check` and `cards:check` all 0.
+
+**Live-verify (D-24026), 2026-10-01: log half PASS.** Match `SprBgGkJuY0` (build `78fc979`): Lightning Bolt behind another Ranged Hero logged the `attack-no-magnitude` parse-unrecognized hollow; played without one it logged the failed gate with "Its effect is not supported yet." The endgame Synergy Rate half is pending (no end screen).
 
 **Reserved by:** NUMBER-LEDGER D-24649 (renumbered from D-24614). Related: D-24033 / D-24034 (WP-257 hollow detection), D-24531 (WP-708 Synergy Rate), D-24535 (WP-712 count-scaled value), D-24613 (WP-776), D-24606 (Focus lines made honest hollows), D-24623 (gate-only hollows and the failed-gate wording).
 
