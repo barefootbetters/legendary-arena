@@ -121,6 +121,22 @@ describe('EconomyBar — restricted attack chips (WP-790 / D-24652)', () => {
     assert.equal(lastChild.querySelectorAll('[data-testid="economy-restricted-attack"]').length, 1);
   });
 
+  test('each chip stacks its amount over its targets (two lines, full text kept)', () => {
+    const wrapper = mount(EconomyBar, {
+      props: {
+        economy: economy({
+          attack: 5,
+          availableAttack: 2,
+          restrictedAttack: [{ remaining: 3, targets: ['sewers', 'bridge'], label: 'Sewers or Bridge' }],
+        }),
+      },
+    });
+    const chip = wrapper.find('[data-testid="economy-restricted-attack"]');
+    assert.equal(chip.find('.economy-restricted-attack__amount').text(), '+3 only against:');
+    assert.equal(chip.find('.economy-restricted-attack__targets').text(), 'Sewers or Bridge');
+    assert.equal(chip.element.textContent, '+3 only against: Sewers or Bridge');
+  });
+
   test('renders no chip when the field is absent', () => {
     const wrapper = mount(EconomyBar, { props: { economy: economy({ attack: 2, availableAttack: 2 }) } });
     assert.equal(wrapper.findAll('[data-testid="economy-restricted-attack"]').length, 0);

@@ -85,7 +85,7 @@ export default defineComponent({
         :key="grantIndex"
         class="economy-restricted-attack"
         data-testid="economy-restricted-attack"
-      >+{{ grant.remaining }} only against: {{ grant.label }}</span>
+      ><span class="economy-restricted-attack__amount">+{{ grant.remaining }} only against:</span> <span class="economy-restricted-attack__targets">{{ grant.label }}</span></span>
     </div>
   </section>
 </template>
@@ -130,9 +130,20 @@ export default defineComponent({
 
 /* why: WP-790 — the restricted-attack chip uses the same bordered-pill shape as the
    convert cue (meaning in the text, not colour alone; no animation). */
+/* why (Jeff feedback): the full text stays ("+2 only against:" / "Rooftops"), stacked on
+   two lines so each chip is about half as wide and two or three sit side by side
+   instead of each taking its own row. The space between the two spans keeps the chip's
+   text content reading "+2 only against: Rooftops" for screen readers. */
 .economy-restricted-attack {
-  padding: 0.05rem 0.4rem;
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0.1rem 0.5rem;
   border: 1px dashed var(--color-foreground, #999);
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
+  line-height: 1.2;
+}
+
+.economy-restricted-attack__targets {
+  font-weight: 600;
 }
 </style>
