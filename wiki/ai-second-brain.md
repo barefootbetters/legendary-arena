@@ -635,15 +635,21 @@ corrupts recall or the store:
 ### Hosting and security posture
 
 - **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
-  the end-state, though the bootstrap build may co-locate on the existing box with
-  isolation (see the deployment callout above). The architecture locks **ownership
-  and open formats, never a provider** — so the vendor is a shopping decision, not
-  an architectural one. As of 2026-08, candidates in this class:
-  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier, familiar support.
+  the end-state. The bootstrap build may co-locate, with isolation, on the
+  **production DigitalOcean droplet** that the Render migration stands up (see
+  the deployment callout above and the cost baseline below). That droplet does
+  not exist yet, so neither does the bootstrap host. The architecture locks
+  **ownership and open formats, never a provider**, so the vendor for the
+  eventual *dedicated* brain host is a shopping decision, not an architectural
+  one. As of 2026-08, candidates in this class were:
+  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier (a 2026-08 figure;
+    get a current quote, since it may be a promo price), familiar support.
   - **Hetzner Cloud** — often the best price/performance for a self-hosted
     Postgres + Docker stack; US and EU regions.
   - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
-    ecosystems and low friction when leaving a PaaS like Render.
+    ecosystems. DigitalOcean is already the production vendor (reconfirmed
+    2026-10-02), so a dedicated brain droplet there shares one account,
+    one backup routine, and one set of runbooks.
 
   Compare current plans before committing rather than treating any one as the
   default; and because a durable knowledge store inherits the Disaster Recovery
