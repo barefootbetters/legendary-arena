@@ -174,8 +174,12 @@ like guest-solo, on the shared limiter.
 - **Live-verify (D-24026): log half PASS (2026-10-01, Jeff, signed-in solo featured table, production build `720969b`,
   match `X9cxcjElN_o`).** The Midtown twist names the Bank villain (`villain "Mystique" in Bank captured 2 bystander(s)`,
   and likewise Juggernaut and Sentinel, six times), and a Juggernaut Ambush with no Hero in the discard pile logged
-  "Ambush effect: no player had a hero to KO." The two overlay-only items (the Bystander! title reading "Bystander",
-  the effect label "Each player KOs two Heroes") are not recorded in diagnostics and stay pending a visual check.
+  "Ambush effect: no player had a hero to KO."
+- **Live-verify (D-24026): overlay half PASS (2026-10-01, Claude in the built-in browser, guest match `FCbIds1BBDp`).**
+  The Bystander! overlay for villain-deck Bystanders (`bystander-villain-deck-02`, `-06`, `-01`) was titled **"Bystander"**,
+  read from the live overlay DOM. The effect-label map in the deployed bundle (`index-C-1TzInv.js`) carries all ten labels,
+  including "Each player KOs two Heroes", and Juggernaut's live Ambush emits `koHeroEachPlayerMag2` (match
+  `X9cxcjElN_o` diagnostics), which that map renders. D-24646 is fully live-verified.
 
 ### D-24644 — Juggernaut lets you choose which Heroes to KO (direct fix) (2026-09-29)
 
