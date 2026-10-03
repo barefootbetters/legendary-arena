@@ -71,9 +71,21 @@ test('wrapLiveDrReadiness badges the server placeholder payload MOCK, not LIVE',
 // The runner has no SFC loader, so the widget's wiring is pinned at the source level.
 const widgetPath = fileURLToPath(new URL('./DrReadinessWidget.vue', import.meta.url));
 
+const endpointsPath = fileURLToPath(new URL('../services/endpoints.ts', import.meta.url));
+
 test('the live fetch unwraps the server envelope before attaching provenance', async () => {
+  // why: the fetch moved to the shared endpoints.ts fetcher (one DR fetch for the
+  // tile and the Overview strip); the unwrap is pinned there, and the tile's
+  // MOCK re-badge of a placeholder payload is pinned on the widget.
+  const endpointsSource = await readFile(endpointsPath, 'utf8');
+  assert.match(
+    endpointsSource,
+    /apiClient\.get<\{ data: DrReadiness \}>\('\/api\/dash\/dr-readiness'\);\s*return liveEnvelope\(response\.data\.data\);/,
+  );
   const source = await readFile(widgetPath, 'utf8');
-  assert.match(source, /return wrapLiveDrReadiness\(response\.data\.data, Date\.now\(\)\);/);
+  assert.match(source, /const response = await fetchDrReadiness\(\);/);
+  assert.match(source, /return wrapLiveDrReadiness\(response\.data, response\.updatedAt\);/);
+  assert.match(source, /useFetch\(fetchDrReadinessForTile\)/);
   assert.doesNotMatch(source, /return response\.data;/);
 });
 

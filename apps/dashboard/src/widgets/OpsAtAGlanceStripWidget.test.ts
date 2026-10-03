@@ -39,14 +39,16 @@ test('the server and DR drill cards read live endpoints through the pure card bu
   const source = await readWidgetSource();
   assert.match(
     source,
-    /import \{ fetchRuntimeHealth, liveEnvelope \} from '\.\.\/services\/endpoints\.js';/,
+    /import \{ fetchDrReadiness, fetchRuntimeHealth \} from '\.\.\/services\/endpoints\.js';/,
   );
   assert.match(
     source,
     /import \{ describeDrDrillCard, describeServerCard \} from '\.\.\/utils\/overviewPulse\.js';/,
   );
-  assert.match(source, /apiClient\.get<\{ data: DrReadiness \}>\('\/api\/dash\/dr-readiness'\)/);
-  assert.match(source, /return liveEnvelope\(response\.data\.data\);/);
+  // why: the DR fetch is the shared endpoints.ts one, which stamps a 2xx LIVE —
+  // never the DR tile's MOCK re-badge, so the Overview shows no MOCK tag (D-24653).
+  assert.match(source, /const drFetch = useFetch\(fetchDrReadiness\);/);
+  assert.doesNotMatch(source, /wrapLiveDrReadiness/);
   assert.match(source, /const view = describeServerCard\(\{/);
   assert.match(source, /const view = describeDrDrillCard\(\{/);
   for (const retired of [
