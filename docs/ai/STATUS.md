@@ -119,9 +119,12 @@ condition held, it also counted as an "assembled" synergy in the endgame Synergy
   `attack-no-magnitude` 415 and `recruit-no-magnitude` 420; every other mechanic is byte-identical. The
   dashboard in-play pin moved 8031 / 15.4 → 8866 / 13.9. The coverage, ledger, effect-index and cards
   gates are all green.
-- **Live-verify (D-24026) — pending.** In a play.legendary-arena.com match with `co2e/storm`, play Tidal Wave
-  or Lightning Bolt with another [Ranged] hero in play. The log must show the `attack-no-magnitude` hollow
-  line, and the endgame Synergy Rate must not count that line. Record the matchId here.
+- **Live-verify (D-24026): log half PASS (2026-10-01, Jeff, signed-in solo Workshop loadout Storm (co2e) / Captain
+  America / Venom Rocket vs Magneto / Midtown, production build `78fc979`, match `SprBgGkJuY0`).** Lightning Bolt with
+  another Ranged Hero played first (Revitalizing Rain, turn 16) logged `Unhandled effect observed: card
+  "co2e/storm/lightning-bolt#1" declared a "attack-no-magnitude" mechanic at onPlay … (parse-unrecognized)`; played as the
+  first Ranged card (turn 13) it logged the failed gate with "Its effect is not supported yet." (item 4). The endgame
+  Synergy Rate half is still pending: the game was not played to an end screen.
 
 ### D-24648 — Diving Block start-stage freeze fix (direct fix; drafted 2026-09-20 as D-24544, landed 2026-09-29)
 
@@ -1326,7 +1329,10 @@ Engine 4732 → 4749/0 (after the rebase); whole repo `pnpm -r --no-bail test` g
 0. **Follow-up:** the committed `sim:coverage` baseline is stale on `main` beyond this WP (a
 regen rewrites hooks 6333 → 6309 across many sets); `--check` passes, so it was not bundled here.
 **D-24026 live-verify pending:** a Venom Rocket match whose log shows Spring the Trap granting only
-on a Master Strike or Ambush turn.
+on a Master Strike or Ambush turn. **No-trigger half PASS (2026-10-01, Jeff, match `SprBgGkJuY0`, build
+`78fc979`):** Spring the Trap played on turns 11 and 15 (no Master Strike or Ambush that turn) logged "ability is
+waiting — it needs a Master Strike or a Villain with an Ambush ability played this turn" and granted no +1. The
+trigger half (played on a Master Strike / Ambush turn) is still pending.
 
 ### WP-746 — Excessive Violence fire feel-beat (EC-783 / D-24569) (2026-09-23)
 
