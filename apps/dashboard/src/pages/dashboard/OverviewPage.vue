@@ -1,24 +1,23 @@
 <script setup lang="ts">
+// why: D-24653 — the Overview answers the survival question first: money
+// (BusinessPulse) → KPIs → engagement → health (Ops strip) → the operator's
+// daily checklist. Every widget here reads LIVE, CACHED, or operator-entered
+// LOCAL data; nothing is MOCK in production. The build/governance widgets moved
+// to Vision & Roadmap, the DAU chart and acquisition strip to Players, and the
+// Alerts panel (no server route) is mounted nowhere. No widget here reads the
+// date range any more, so the range selector is gone too.
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useDateRange } from '../../composables/useDateRange.js';
 import { useGovernanceSnapshot } from '../../composables/useGovernanceSnapshot.js';
 import { useLastVisit } from '../../composables/useLastVisit.js';
 import KpiCard from '../../widgets/KpiCard.vue';
-import DauChartWidget from '../../widgets/DauChartWidget.vue';
-import RevenueChartWidget from '../../widgets/RevenueChartWidget.vue';
-import AlertsPanel from '../../widgets/AlertsPanel.vue';
-import DailyExecutionPanel from '../../widgets/DailyExecutionPanel.vue';
-import VisionCard from '../../widgets/VisionCard.vue';
-import GovernanceThroughputWidget from '../../widgets/GovernanceThroughputWidget.vue';
-import StatusFeedWidget from '../../widgets/StatusFeedWidget.vue';
-import GovernanceKpiStrip from '../../widgets/GovernanceKpiStrip.vue';
-import AcquisitionFunnelStripWidget from '../../widgets/AcquisitionFunnelStripWidget.vue';
+import BusinessPulseWidget from '../../widgets/BusinessPulseWidget.vue';
+import EngagementStripWidget from '../../widgets/EngagementStripWidget.vue';
 import OpsAtAGlanceStripWidget from '../../widgets/OpsAtAGlanceStripWidget.vue';
+import DailyExecutionPanel from '../../widgets/DailyExecutionPanel.vue';
 import type { KpiSnapshot } from '../../types/index.js';
 
 const router = useRouter();
-const { range, setRange, validRanges } = useDateRange();
 
 const governance = useGovernanceSnapshot();
 const { lastVisit, markVisited } = useLastVisit();
@@ -112,25 +111,13 @@ function handleKpiClick(kpi: KpiSnapshot): void {
 
 <template>
   <div class="overview-page">
-    <VisionCard />
-
-    <GovernanceKpiStrip />
-
     <div class="page-header">
       <h1>Overview</h1>
-      <div class="range-selector">
-        <button
-          v-for="rangeOption in validRanges"
-          :key="rangeOption"
-          :class="{ active: range === rangeOption }"
-          @click="setRange(rangeOption)"
-        >
-          {{ rangeOption }}
-        </button>
-      </div>
     </div>
 
     <p class="since-you-last-looked">{{ sinceYouLastLookedLine }}</p>
+
+    <BusinessPulseWidget />
 
     <div class="kpi-grid">
       <KpiCard kpi-id="total_players" @click="handleKpiClick" />
@@ -140,33 +127,11 @@ function handleKpiClick(kpi: KpiSnapshot): void {
       <KpiCard kpi-id="hero_win_rate_30d" @click="handleKpiClick" />
     </div>
 
-    <DailyExecutionPanel />
+    <EngagementStripWidget />
 
-    <div class="overview-governance-grid">
-      <GovernanceThroughputWidget />
-      <StatusFeedWidget />
-    </div>
-
-    <div class="charts-grid">
-      <DauChartWidget />
-      <RevenueChartWidget />
-    </div>
-
-    <!-- why: WP-203 §Scope (In) — the strip lands immediately after the
-         DauChart row (engagement) so the operator's eye moves from
-         engagement → acquisition pressure → alerts. Additive-only:
-         no other Overview widget is removed, hidden, or relocated per
-         the §Non-Negotiable Constraints rule. -->
-    <AcquisitionFunnelStripWidget />
-
-    <!-- why: WP-204 §Scope (In) — the ops strip lands immediately after
-         the acquisition strip so all pre-mortem-grouped strips (revenue
-         trend → acquisition → ops) sit in a vertical run. Additive-only:
-         the existing AlertsPanel render below remains byte-identical
-         apart from this single strip insertion. -->
     <OpsAtAGlanceStripWidget />
 
-    <AlertsPanel />
+    <DailyExecutionPanel />
   </div>
 </template>
 
@@ -189,30 +154,6 @@ function handleKpiClick(kpi: KpiSnapshot): void {
   color: var(--p-text-color);
 }
 
-.range-selector {
-  display: flex;
-  gap: 0.25rem;
-  background: var(--p-content-border-color);
-  border-radius: 6px;
-  padding: 0.2rem;
-}
-
-.range-selector button {
-  padding: 0.4rem 0.75rem;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  font-size: 0.8rem;
-  cursor: pointer;
-  color: var(--p-text-muted-color);
-}
-
-.range-selector button.active {
-  background: var(--p-surface-card, var(--p-content-background));
-  color: var(--p-text-color);
-  font-weight: 600;
-}
-
 .since-you-last-looked {
   margin: -0.75rem 0 0;
   font-size: 0.78rem;
@@ -226,28 +167,8 @@ function handleKpiClick(kpi: KpiSnapshot): void {
   gap: 1rem;
 }
 
-.overview-governance-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1rem;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 1rem;
-}
-
 @media (max-width: 1199px) {
   .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .overview-governance-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .charts-grid {
     grid-template-columns: 1fr;
   }
 }
