@@ -5,6 +5,7 @@ import { useDataFreshness } from '../composables/useDataFreshness.js';
 import { apiClient } from '../services/api.js';
 import {
   mockDrReadiness,
+  wrapLiveDrReadiness,
   type DrillResult,
   type DrReadiness,
 } from '../services/drReadinessMocks.js';
@@ -17,8 +18,7 @@ import type { ServiceResponse } from '../types/index.js';
 
 // why: mock-mode-first (D-20402) — no endpoints.ts edit is in this WP's file
 // allowlist, so the fetch seam lives here: mock in mock mode, else the admin-
-// gated GET /api/dash/dr-readiness (bearer attached by apiClient). Mirrors the
-// `fetchRuntimeHealth` shape (server returns the bare `{ data }` envelope).
+// gated GET /api/dash/dr-readiness (bearer attached by apiClient).
 function isMockMode(): boolean {
   return import.meta.env.VITE_USE_MOCKS === 'true';
 }
@@ -27,15 +27,40 @@ async function fetchDrReadiness(): Promise<ServiceResponse<DrReadiness>> {
   if (isMockMode()) {
     return mockDrReadiness(Date.now());
   }
-  const response = await apiClient.get<ServiceResponse<DrReadiness>>('/api/dash/dr-readiness');
-  return response.data;
+  // why: the server returns the bare `{ data }` envelope (no source, no
+  // updatedAt). Returning `response.data` as-is handed the template the wrapper
+  // instead of the payload, so live mode rendered a blank badge, blank fields,
+  // and an unconditional "On track". Unwrap, then attach provenance.
+  const response = await apiClient.get<{ data: DrReadiness }>('/api/dash/dr-readiness');
+  return wrapLiveDrReadiness(response.data.data, Date.now());
 }
 
 const { data, loading, error, updatedAt, source } = useFetch(fetchDrReadiness);
 const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
 
-const statusLabel = computed(() => (data.value?.overdue ? 'Overdue' : 'On track'));
-const statusTone = computed(() => (data.value?.overdue ? 'saturated' : 'healthy'));
+// why: a placeholder payload (`source: 'mock'`, no DASH_GITHUB_TOKEN) has no real
+// drill history, so a green "On track" would be a fabricated verdict.
+const isPlaceholder = computed(() => data.value?.source === 'mock');
+
+const statusLabel = computed(() => {
+  if (isPlaceholder.value) {
+    return 'Not connected';
+  }
+  if (data.value?.overdue) {
+    return 'Overdue';
+  }
+  return 'On track';
+});
+
+const statusTone = computed(() => {
+  if (isPlaceholder.value) {
+    return 'watch';
+  }
+  if (data.value?.overdue) {
+    return 'saturated';
+  }
+  return 'healthy';
+});
 
 function resultLabel(result: DrillResult): string {
   if (result === 'pass') {
