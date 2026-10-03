@@ -31,8 +31,9 @@ tile reads LIVE, CACHED or operator-entered LOCAL; nothing is MOCK. In productio
 - **Local preview.** Inputs: cash $1,000, other costs $50, royalty 10%, with revenue $0 from a local API stub.
   Result: Royalties $0.00, Costs $196.35, Net −$196.35, Runway 5.1 months. The values persisted across a reload,
   and no MOCK tag showed with `VITE_USE_MOCKS` unset.
-- **Live-verify (D-24026): operator-pending.** On `dashboard.legendary-arena.com/overview` no `MOCK` tag appears;
-  the operator enters real inputs and Net and Runway render.
+- **Live-verify (D-24026): PASS (2026-10-03, Jeff, `dashboard.legendary-arena.com/overview`, after the #2565
+  deploy).** No `MOCK` tag appeared on the Overview, and with Jeff's real operating inputs entered, Net and Runway
+  rendered. The inputs stay in his browser; none is recorded here (the repo is public).
 
 ### WP-790 — "Usable only against …" attack can only be spent there (EC-827 / D-24652) (2026-10-01)
 
