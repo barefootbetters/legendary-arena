@@ -66,12 +66,12 @@ const buildTimestamp = __BUILD_TIMESTAMP__;
 .debug-page h1 {
   margin: 0 0 1.5rem;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--p-text-color);
 }
 
 .debug-section {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 8px;
   padding: 1.25rem;
   margin-bottom: 1rem;
@@ -80,7 +80,7 @@ const buildTimestamp = __BUILD_TIMESTAMP__;
 .debug-section h2 {
   margin: 0 0 1rem;
   font-size: 1rem;
-  color: #334155;
+  color: var(--p-text-color);
 }
 
 .debug-table {
@@ -90,23 +90,23 @@ const buildTimestamp = __BUILD_TIMESTAMP__;
 
 .debug-table td {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--p-content-border-color);
   font-size: 0.85rem;
 }
 
 .debug-table .label {
-  color: #64748b;
+  color: var(--p-text-muted-color);
   width: 180px;
   font-weight: 500;
 }
 
 .debug-table .value {
-  color: #0f172a;
+  color: var(--p-text-color);
   font-family: monospace;
 }
 
 .no-flags {
-  color: #94a3b8;
+  color: var(--p-text-muted-color);
   font-size: 0.85rem;
 }
 
@@ -118,7 +118,7 @@ const buildTimestamp = __BUILD_TIMESTAMP__;
 
 .flags-list li {
   padding: 0.3rem 0.5rem;
-  background: #f1f5f9;
+  background: var(--p-content-border-color);
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.85rem;
