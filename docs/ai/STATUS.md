@@ -7,6 +7,33 @@
 
 ## Current State
 
+### WP-791 — Dashboard Overview, business first (EC-828 / D-24653) (2026-10-03)
+
+**User-visible: dashboard Overview leads with money, engagement, real health** (`dashboard.legendary-arena.com/overview`,
+after deploy). The first row is Revenue (30d), Royalties (30d), Costs (monthly), Net (monthly) and Cash runway.
+Revenue is the live KPI and Costs start from the cached vendor-bill actuals. Cash balance, other fixed monthly costs
+and the royalty rate are entered with "Edit operating inputs" and stored in this browser only, never committed (the
+repo is public). Until they are entered, Royalties, Net and Runway read "Not entered", not $0. Next come the five KPI
+cards, then Engagement: matches started (7d), "Finished with a winner (7d)", "Scored or joined (7d)". Then Ops at a
+Glance (Server uptime graded like System Health, DR drill, Cost), then the Daily Execution checklist. Every Overview
+tile reads LIVE, CACHED or operator-entered LOCAL; nothing is MOCK. In production the DR card reads "Not connected"
+(no `DASH_GITHUB_TOKEN`), not a green verdict.
+
+- **Moved.** Vision card, Governance KPIs, Governance Throughput and the STATUS feed are at the top of Vision &
+  Roadmap ("Build governance"). The DAU chart and Acquisition strip are on Players. The Alerts panel (no server
+  route) is mounted nowhere. The range selector left the Overview.
+- **D-24653 Active.** It records the Overview content contract and amends D-19602: the real royalty rate never goes
+  into `config/revenueDeductions.ts` while the repo is public. It also supersedes the WP-203 / WP-204 additive-only
+  rule.
+- **Counts.** dashboard 508 → 555 / 0 fail; typecheck 0; lint, format:check, test:coverage, build green.
+  `OpsAtAGlanceStripWidget.test.ts` tests 2–3 rewritten for the new cards. Test 1 is token-identical, rewrapped by
+  prettier, which also clears the Dashboard Gates format-check red on main since #2562.
+- **Local preview.** Inputs: cash $1,000, other costs $50, royalty 10%, with revenue $0 from a local API stub.
+  Result: Royalties $0.00, Costs $196.35, Net −$196.35, Runway 5.1 months. The values persisted across a reload,
+  and no MOCK tag showed with `VITE_USE_MOCKS` unset.
+- **Live-verify (D-24026): operator-pending.** On `dashboard.legendary-arena.com/overview` no `MOCK` tag appears;
+  the operator enters real inputs and Net and Runway render.
+
 ### WP-790 — "Usable only against …" attack can only be spent there (EC-827 / D-24652) (2026-10-01)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Hero attack printed "usable only against Villains in
