@@ -72,3 +72,16 @@ test('sourceLabel is "" for null / undefined source and passes a present label t
     mock.timers.reset();
   }
 });
+
+test('sourceLabel maps operator-entered browser data to "LOCAL" (WP-791 / D-24653)', () => {
+  mock.timers.enable({ apis: ['setInterval'] });
+  try {
+    const localSource = useDataFreshness(
+      ref<number | null>(Date.now()),
+      ref<DataFreshnessSource | null>('LOCAL'),
+    );
+    assert.equal(localSource.sourceLabel.value, 'LOCAL', 'browser-stored data -> LOCAL label');
+  } finally {
+    mock.timers.reset();
+  }
+});

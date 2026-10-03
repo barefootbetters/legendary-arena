@@ -6,8 +6,7 @@ import {
   type ChecklistCadence,
   type DailyChecklistItem,
 } from '../composables/useDailyChecklist.js';
-import { useDataFreshness } from '../composables/useDataFreshness.js';
-import type { ServiceResponse } from '../types/index.js';
+import { useDataFreshness, type DataFreshnessSource } from '../composables/useDataFreshness.js';
 
 interface CategoryGroup {
   key: ChecklistCategory;
@@ -50,10 +49,11 @@ const { items, completedCount, totalCount, loadError, loadedAt, toggle, resetAll
   useDailyChecklist();
 
 // why: localStorage is read synchronously in the composable, so the freshness
-// source is the local browser store rather than a network response. 'MOCK'
-// keeps the badge vocabulary consistent with the other dashboard widgets.
+// source is the local browser store rather than a network response. It is the
+// operator's real state, so it reads 'LOCAL' (D-24653), never 'MOCK' — a MOCK
+// tag on the Overview would claim the checklist is made-up data.
 const updatedAt = ref<number | null>(loadedAt.value);
-const source = ref<ServiceResponse<unknown>['source'] | null>('MOCK');
+const source = ref<DataFreshnessSource | null>('LOCAL');
 const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
 
 // why: the four-state widget contract requires a loading state; the data
