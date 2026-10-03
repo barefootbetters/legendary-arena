@@ -16,6 +16,7 @@ import {
 import type { FeedbackTriageItem, UpdateFeedbackStatusBody } from '../types/feedbackTriage.js';
 import type { BillingHealthSparklines } from './billingHealthMocks.js';
 import { normalizeRange } from './normalizeRange.js';
+import { mockDrReadiness, type DrReadiness } from './drReadinessMocks.js';
 import type {
   ServiceResponse,
   KpiSnapshot,
@@ -163,6 +164,26 @@ export async function fetchRuntimeHealth(): Promise<ServiceResponse<RuntimeHealt
   const response = await apiClient.get<ServiceResponse<RuntimeHealthSnapshot>>(
     '/api/dash/system/runtime',
   );
+  return liveEnvelope(response.data.data);
+}
+
+/**
+ * DR-drill readiness (WP-517): mock in mock mode, else the admin-gated
+ * `GET /api/dash/dr-readiness`. The server returns the bare `{ data }` envelope,
+ * so the body is unwrapped and stamped LIVE like every other live fetch here.
+ *
+ * A 2xx placeholder payload (`data.source: 'mock'`, no DASH_GITHUB_TOKEN) is
+ * still stamped LIVE: the fetch was live, and each surface decides how to show
+ * the placeholder. The DR Readiness tile re-badges it MOCK (#2567); the Overview
+ * strip shows "Not connected" with no MOCK tag (D-24653).
+ *
+ * @returns The readiness payload with its provenance.
+ */
+export async function fetchDrReadiness(): Promise<ServiceResponse<DrReadiness>> {
+  if (isMockMode()) {
+    return mockDrReadiness(Date.now());
+  }
+  const response = await apiClient.get<{ data: DrReadiness }>('/api/dash/dr-readiness');
   return liveEnvelope(response.data.data);
 }
 

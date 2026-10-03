@@ -9,9 +9,7 @@
 import { computed } from 'vue';
 import { useFetch } from '../composables/useFetch.js';
 import { useInfraCostWatchdog } from '../composables/useInfraCostWatchdog.js';
-import { apiClient } from '../services/api.js';
-import { fetchRuntimeHealth, liveEnvelope } from '../services/endpoints.js';
-import { mockDrReadiness, type DrReadiness } from '../services/drReadinessMocks.js';
+import { fetchDrReadiness, fetchRuntimeHealth } from '../services/endpoints.js';
 import { fetchInfraCostActuals, INFRA_COST_ACTUALS_AS_OF } from '../config/infraCostActuals.js';
 import { computeKpiStatus } from '../utils/kpiStatus.js';
 import { describeDrDrillCard, describeServerCard } from '../utils/overviewPulse.js';
@@ -23,26 +21,8 @@ import {
   type ServiceResponse,
 } from '../types/index.js';
 
-/** True when the dashboard runs on mock data (VITE_USE_MOCKS). */
-function isMockMode(): boolean {
-  return import.meta.env.VITE_USE_MOCKS === 'true';
-}
-
-// why: the DR fetch seam lives in DrReadinessWidget.vue (no endpoints.ts entry
-// exists for it); it is mirrored here rather than edited there. The server
-// returns a bare { data } envelope, so the live body is wrapped in liveEnvelope
-// — the widget's bare `response.data` would leave `source` undefined and the
-// card's tag blank.
-async function fetchDrReadinessForStrip(): Promise<ServiceResponse<DrReadiness>> {
-  if (isMockMode()) {
-    return mockDrReadiness(Date.now());
-  }
-  const response = await apiClient.get<{ data: DrReadiness }>('/api/dash/dr-readiness');
-  return liveEnvelope(response.data.data);
-}
-
 const runtimeFetch = useFetch(fetchRuntimeHealth);
-const drFetch = useFetch(fetchDrReadinessForStrip);
+const drFetch = useFetch(fetchDrReadiness);
 // why: the cost card reads the same real vendor-bill actuals as the
 // System Health page's Infra Cost Watchdog. It used to read the mock
 // factory, so Overview showed a made-up 6.7% "On track" while System

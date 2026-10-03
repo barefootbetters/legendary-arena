@@ -2,9 +2,8 @@
 import { computed } from 'vue';
 import { useFetch } from '../composables/useFetch.js';
 import { useDataFreshness } from '../composables/useDataFreshness.js';
-import { apiClient } from '../services/api.js';
+import { fetchDrReadiness } from '../services/endpoints.js';
 import {
-  mockDrReadiness,
   wrapLiveDrReadiness,
   type DrillResult,
   type DrReadiness,
@@ -16,26 +15,19 @@ import type { ServiceResponse } from '../types/index.js';
 // the dr-drill-reminder workflow opens (#1298). Answers "are we current on the
 // disaster-recovery drill cadence?" at a glance instead of in a doc nobody reads.
 
-// why: mock-mode-first (D-20402) — no endpoints.ts edit is in this WP's file
-// allowlist, so the fetch seam lives here: mock in mock mode, else the admin-
-// gated GET /api/dash/dr-readiness (bearer attached by apiClient).
-function isMockMode(): boolean {
-  return import.meta.env.VITE_USE_MOCKS === 'true';
-}
-
-async function fetchDrReadiness(): Promise<ServiceResponse<DrReadiness>> {
-  if (isMockMode()) {
-    return mockDrReadiness(Date.now());
+// why: the shared fetcher (services/endpoints.ts) stamps any 2xx LIVE. This tile
+// badges the server's placeholder payload (`source: 'mock'`, no DASH_GITHUB_TOKEN)
+// MOCK instead (#2567), so a live response is re-wrapped through
+// wrapLiveDrReadiness; a mock-mode response already carries MOCK.
+async function fetchDrReadinessForTile(): Promise<ServiceResponse<DrReadiness>> {
+  const response = await fetchDrReadiness();
+  if (response.source !== 'LIVE') {
+    return response;
   }
-  // why: the server returns the bare `{ data }` envelope (no source, no
-  // updatedAt). Returning `response.data` as-is handed the template the wrapper
-  // instead of the payload, so live mode rendered a blank badge, blank fields,
-  // and an unconditional "On track". Unwrap, then attach provenance.
-  const response = await apiClient.get<{ data: DrReadiness }>('/api/dash/dr-readiness');
-  return wrapLiveDrReadiness(response.data.data, Date.now());
+  return wrapLiveDrReadiness(response.data, response.updatedAt);
 }
 
-const { data, loading, error, updatedAt, source } = useFetch(fetchDrReadiness);
+const { data, loading, error, updatedAt, source } = useFetch(fetchDrReadinessForTile);
 const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
 
 // why: a placeholder payload (`source: 'mock'`, no DASH_GITHUB_TOKEN) has no real
