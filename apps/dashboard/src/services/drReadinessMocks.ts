@@ -66,3 +66,26 @@ export function mockDrReadiness(nowMs: number): ServiceResponse<DrReadiness> {
     source: 'MOCK',
   };
 }
+
+/**
+ * Wraps a live `GET /api/dash/dr-readiness` payload — already unwrapped from the
+ * server's bare `{ data }` envelope — in the composable's `ServiceResponse`, so
+ * the tile's freshness badge has a source and a timestamp.
+ *
+ * @param payload The `DrReadiness` body the server returned.
+ * @param nowMs The receive time, used as `updatedAt`.
+ * @returns The payload with `LIVE` provenance, or `MOCK` for a placeholder payload.
+ */
+export function wrapLiveDrReadiness(
+  payload: DrReadiness,
+  nowMs: number,
+): ServiceResponse<DrReadiness> {
+  // why: the server answers 200 with a placeholder payload (`source: 'mock'`)
+  // while DASH_GITHUB_TOKEN is unset, which is the production state today.
+  // Badging that LIVE would present placeholder drill data as real.
+  let freshnessSource: ServiceResponse<DrReadiness>['source'] = 'LIVE';
+  if (payload.source === 'mock') {
+    freshnessSource = 'MOCK';
+  }
+  return { data: payload, updatedAt: nowMs, source: freshnessSource };
+}
