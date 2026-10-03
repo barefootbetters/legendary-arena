@@ -145,8 +145,8 @@ function resultTone(result: DrillResult): string {
 
 <style scoped>
 .widget {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--p-content-background, var(--p-surface-card));
+  border: 1px solid var(--p-content-border-color);
   border-radius: 8px;
   padding: 1.25rem;
 }
@@ -161,18 +161,18 @@ function resultTone(result: DrillResult): string {
 .widget-header h3 {
   margin: 0;
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--p-text-color);
 }
 
 .freshness-badge {
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--p-text-muted-color);
   display: flex;
   gap: 0.35rem;
 }
 
 .freshness-badge .source {
-  background: #f1f5f9;
+  background: var(--p-content-border-color);
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
   font-weight: 600;
@@ -180,7 +180,7 @@ function resultTone(result: DrillResult): string {
 
 .widget-loading .skeleton-block {
   height: 48px;
-  background: #e2e8f0;
+  background: var(--p-content-border-color);
   border-radius: 4px;
   animation: pulse 1.5s infinite;
 }
@@ -196,11 +196,11 @@ function resultTone(result: DrillResult): string {
 }
 
 .widget-error {
-  color: #dc2626;
+  color: color-mix(in srgb, var(--p-red-500) 70%, var(--p-text-color));
   font-size: 0.85rem;
 }
 .widget-empty {
-  color: #94a3b8;
+  color: var(--p-text-muted-color);
   font-size: 0.85rem;
 }
 
@@ -224,11 +224,11 @@ function resultTone(result: DrillResult): string {
 .metric-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--p-text-color);
 }
 .metric-label {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--p-text-muted-color);
 }
 
 .status-chip,
@@ -245,18 +245,18 @@ function resultTone(result: DrillResult): string {
 }
 .status-healthy,
 .result-healthy {
-  background: #dcfce7;
-  color: #166534;
+  background: color-mix(in srgb, var(--p-green-500) 18%, transparent);
+  color: color-mix(in srgb, var(--p-green-500) 70%, var(--p-text-color));
 }
 .status-watch,
 .result-watch {
-  background: #fef9c3;
-  color: #854d0e;
+  background: color-mix(in srgb, var(--p-yellow-500) 18%, transparent);
+  color: color-mix(in srgb, var(--p-yellow-500) 70%, var(--p-text-color));
 }
 .status-saturated,
 .result-saturated {
-  background: #fee2e2;
-  color: #991b1b;
+  background: color-mix(in srgb, var(--p-red-500) 18%, transparent);
+  color: color-mix(in srgb, var(--p-red-500) 70%, var(--p-text-color));
 }
 
 .metric-grid {
@@ -269,16 +269,16 @@ function resultTone(result: DrillResult): string {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #94a3b8;
+  color: var(--p-text-muted-color);
 }
 .metric dd {
   margin: 0.15rem 0 0;
   font-size: 0.9rem;
-  color: #0f172a;
+  color: var(--p-text-color);
 }
 .metric .sub {
   display: block;
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: var(--p-text-muted-color);
 }
 </style>
