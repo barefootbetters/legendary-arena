@@ -77,7 +77,7 @@
       "state": "pending",
       "date": "",
       "evidence": "",
-      "note": "Re-test after D-24651. Played only for attack in match trJwnB0oLeg — no Wound was ever gained. Needs a game where you take a Wound with it in hand."
+      "note": "Re-test after D-24651. Not drawn in the Hulk game (jjChx_MJ2gl). Needs it in hand when Crazed Rampage, Sabretooth or an escape wounds you."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -316,10 +316,10 @@
       "card": "Hulk",
       "ability": "Crazed Rampage",
       "wp": "WP-364",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff)",
+      "note": "Crazed Rampage gave each player a Wound every time it was played."
     },
     {
       "key": "core/hulk|ko-wound-reward",
@@ -327,10 +327,10 @@
       "card": "Hulk",
       "ability": "Unstoppable Hulk",
       "wp": "WP-382",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff)",
+      "note": "Unstoppable Hulk KO'd a Wound from the discard pile for +2 attack, and granted nothing when no Wound was there."
     },
     {
       "key": "core/iron-man|attack-per-count",
@@ -560,8 +560,8 @@
       "wp": "WP-292",
       "state": "partial",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
-      "note": "Defeated twice with an X-Men Hero in play. The blocked case (no X-Men Hero) is untested."
+      "evidence": "Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff)",
+      "note": "Defeated with X-Men in play; with no X-Men Hero (Hulk game) never defeated and escaped twice. Confirm the Fight button was blocked."
     },
     {
       "key": "core-villain-enemies-of-asgard-destroyer|ko-heroes-current-by-trait",
@@ -712,10 +712,10 @@
       "card": "Mystique",
       "ability": "become-scheme-twist",
       "wp": "WP-481",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Fought before it could escape (match trJwnB0oLeg). Needs Mystique to escape the City."
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff)",
+      "note": "Escaped on turn 32 and resolved immediately as a Midtown twist (Bank capture, then the next Villain Deck card)."
     },
     {
       "key": "core-villain-skrulls-paibok-the-power-skrull|give-hq-hero-each-player",
@@ -734,10 +734,10 @@
       "card": "Sabretooth",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
-      "note": "Reveal branch confirmed (X-Men Hero revealed, no Wound). The gain-a-Wound branch is untested."
+      "evidence": "Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff)",
+      "note": "Both branches: revealed an X-Men Hero (no Wound), and with no X-Men Hero gained a Wound."
     },
     {
       "key": "henchman-savage-land-mutates|add-next-hand-size",
@@ -1152,10 +1152,10 @@
       "card": "Midtown Bank Robbery",
       "ability": "Escapes carry Bystanders away; resource-loss Evil Wins",
       "wp": "WP-508",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff)",
+      "note": "Escaping Blob x2 + Mystique carried 6 Bystanders; loss progress read 6 of 8. Evil Wins at 8 not reached."
     },
     {
       "key": "scheme:core/negative-zone-prison-breakout|escape-loss",
