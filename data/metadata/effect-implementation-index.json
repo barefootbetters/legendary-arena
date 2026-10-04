@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1967,
+    "totalEntries": 1969,
     "byScope": {
-      "hero": 789,
+      "hero": 791,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 554,
+      "executable": 556,
       "deferred": 16,
       "condition": 49,
       "unsupported": 297,
@@ -6088,6 +6088,23 @@
       "name": "Cyclops",
       "set": "co2e",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "x-men-united",
+          "name": "X-Men United"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/cyclops",
+      "name": "Cyclops",
+      "set": "co2e",
+      "scope": "hero",
       "mechanic": "discard-to-play",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play",
@@ -7119,6 +7136,23 @@
         {
           "slug": "avengers-assemble",
           "name": "Avengers Assemble!"
+        }
+      ]
+    },
+    {
+      "extId": "core/cyclops",
+      "name": "Cyclops",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "x-men-united",
+          "name": "X-Men United"
         }
       ]
     },
@@ -30112,6 +30146,7 @@
     "co2e/cyclops": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "discard-to-play"
       ]
     },
@@ -30484,6 +30519,7 @@
     "core/cyclops": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "discard-to-play",
         "return-on-discard"
       ]
