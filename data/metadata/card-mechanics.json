@@ -98,7 +98,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 28,
+      "cardCount": 30,
       "cardIds": [
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
@@ -107,9 +107,11 @@
         "ca75/captain-america-falcon",
         "co2e/black-widow",
         "co2e/captain-america",
+        "co2e/cyclops",
         "co2e/iron-man",
         "core/black-widow",
         "core/captain-america",
+        "core/cyclops",
         "core/deadpool",
         "core/iron-man",
         "core/nick-fury",
@@ -2781,6 +2783,7 @@
     },
     "co2e/cyclops": {
       "mechanics": [
+        "attack-per-count",
         "discard-to-play"
       ]
     },
@@ -2870,6 +2873,7 @@
     },
     "core/cyclops": {
       "mechanics": [
+        "attack-per-count",
         "discard-to-play",
         "return-on-discard"
       ]

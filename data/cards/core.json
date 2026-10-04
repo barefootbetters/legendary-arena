@@ -289,7 +289,7 @@
           "attack": "6+",
           "recruit": null,
           "abilities": [
-            "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn."
+            "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn. [keyword:attack-per-count:x-men-played-this-turn:2]"
           ]
         }
       ],

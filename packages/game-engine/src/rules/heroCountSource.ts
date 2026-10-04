@@ -54,7 +54,8 @@ export type HeroCountSource =
   | 'strength-heroes-played-this-turn'
   | 'ranged-heroes-played-this-turn'
   | 'tech-heroes-played-this-turn'
-  | 'covert-heroes-played-this-turn';
+  | 'covert-heroes-played-this-turn'
+  | 'x-men-played-this-turn'; // why: D-24655 — the count of OTHER cards played this turn on the X-Men team (cardHasTeamWhenPlayed, honors Copy-Powers teams per D-24391), the X-Men analogue of avengers-played-this-turn; Cyclops' X-Men United "+2 attack for each other X-Men Hero you played this turn" (core) and its co2e "+1" twin. Self-exclusive. Before this, the line parsed as a flat +2 and under-granted with two or more other X-Men
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -78,6 +79,7 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'ranged-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Ranged-class cards played this turn (self-exclusive); Absorb Energies (ssw1) + the dkcy ranged pair
   'tech-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Tech-class cards played this turn (self-exclusive); the co2e tech line
   'covert-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Covert-class cards played this turn (self-exclusive); the bkwd covert line
+  'x-men-played-this-turn', // why: D-24655 — OTHER X-Men-team cards played this turn (self-exclusive); X-Men United (core + co2e)
 ] as const;
 
 // ---------------------------------------------------------------------------

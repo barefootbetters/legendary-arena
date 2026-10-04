@@ -19,6 +19,18 @@ with it, as the rules say, instead of being KO'd.
 - **Live-verify (D-24026): pending.** In a Skrulls game, let a Villain holding a captured Hero escape. The Hero should
   appear in the Escape Pile and not in the KO pile.
 
+### D-24655 — X-Men United adds +2 attack for each other X-Men Hero you played (direct fix) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Cyclops' **X-Men United** now gives +2 attack for
+*each* other X-Men Hero you played this turn (+1 each on the co2e card). Before, it always gave a flat +2, so a turn
+with two or more other X-Men Heroes came up short. It also now shows on `/coverage` (Cyclops `attack-per-count`).
+
+- **Engine + card data.** New `x-men-played-this-turn` count source, plus a marker on the core and co2e X-Men United
+  lines. No new state, move, or UI field.
+- **Counts.** game-engine 4842 / 0 fail; CI data gates current; no fixture or hash churn.
+- **Live-verify (D-24026): pending.** Play X-Men United after two other X-Men Heroes in one turn; the log should read
+  "Count-scaled attack: +4 (2 per 1 … count 2)".
+
 ### WP-791 — Dashboard Overview, business first (EC-828 / D-24653) (2026-10-03)
 
 **User-visible: dashboard Overview leads with money, engagement, real health** (`dashboard.legendary-arena.com/overview`,

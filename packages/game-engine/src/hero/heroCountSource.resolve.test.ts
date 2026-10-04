@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 14 canonical count-source values', () => {
+  it('contains exactly the 15 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -69,12 +69,14 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'ranged-heroes-played-this-turn',
       'tech-heroes-played-this-turn',
       'covert-heroes-played-this-turn',
+      // why: D-24655 — X-Men United's other-X-Men team count.
+      'x-men-played-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      14,
-      'HERO_COUNT_SOURCES must have exactly 14 entries',
+      15,
+      'HERO_COUNT_SOURCES must have exactly 15 entries',
     );
 
     assert.deepStrictEqual(
@@ -645,6 +647,27 @@ describe('resolveCountSource team-played sources (WP-680)', () => {
     );
   });
 
+  it('x-men-played-this-turn counts OTHER X-Men, self-excluded, wrong team ignored (D-24655)', () => {
+    const gameState = makeStatePlayed(
+      ['x-men-united', 'optic-blast', 'wolverine', 'a-day'],
+      {
+        'x-men-united': { heroClass: 'ranged', team: 'x-men' },
+        'optic-blast': { heroClass: 'ranged', team: 'x-men' },
+        'wolverine': { heroClass: 'instinct', team: 'x-men' },
+        'a-day': { heroClass: 'covert', team: 'avengers' },
+      },
+      {},
+    );
+
+    // why: two OTHER X-Men → count 2, so X-Men United (+2 each) grants +4, not the
+    // flat +2 the line used to parse to. The triggering card and the Avenger are excluded.
+    assert.equal(
+      resolveCountSource(gameState, '0', 'x-men-played-this-turn', 'x-men-united'),
+      2,
+      'counts other X-Men only, excluding the triggering card',
+    );
+  });
+
   it('shield-heroes-played-this-turn counts OTHER S.H.I.E.L.D. cards, self-excluded', () => {
     const gameState = makeStatePlayed(
       ['legendary-commander', 'shield-officer', 'wolverine'],
@@ -858,6 +881,25 @@ describe('explainCountSourceInputs — per-card played-this-turn sources (WP-706
     assert.deepStrictEqual(inputs, ['iron-man#0'], 'the other Avenger only, self-excluded');
     assert.equal(
       resolveCountSource(gameState, '0', 'avengers-played-this-turn', 'a-day#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+
+  it('collects the OTHER X-Men cards, self-excluded, matching the resolver count (D-24655)', () => {
+    const gameState = makeExplainState(
+      ['x-men-united#0', 'optic-blast#0', 'a-day#0'],
+      {
+        'x-men-united#0': { heroClass: 'ranged', team: 'x-men' },
+        'optic-blast#0': { heroClass: 'ranged', team: 'x-men' },
+        'a-day#0': { heroClass: 'covert', team: 'avengers' },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'x-men-played-this-turn', 'x-men-united#0');
+    assert.deepStrictEqual(inputs, ['optic-blast#0'], 'the other X-Men card only, self-excluded');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'x-men-played-this-turn', 'x-men-united#0'),
       inputs.length,
       'count === countedInputs.length',
     );

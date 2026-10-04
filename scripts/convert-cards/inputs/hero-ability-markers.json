@@ -175,6 +175,12 @@
       "markupToken": "[keyword:discard-to-play:1]"
     },
     {
+      "heroSlug": "cyclops",
+      "cardSlug": "x-men-united",
+      "abilityIndex": 2,
+      "markupToken": "[keyword:attack-per-count:x-men-played-this-turn:1]"
+    },
+    {
       "heroSlug": "thor",
       "cardSlug": "glory-of-asgard",
       "abilityIndex": 0,
@@ -379,6 +385,12 @@
       "cardSlug": "unending-energy",
       "abilityIndex": 0,
       "markupToken": "[keyword:return-on-discard]"
+    },
+    {
+      "heroSlug": "cyclops",
+      "cardSlug": "x-men-united",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:x-men-played-this-turn:2]"
     },
     {
       "heroSlug": "hulk",

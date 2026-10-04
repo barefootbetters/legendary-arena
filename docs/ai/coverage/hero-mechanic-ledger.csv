@@ -164,6 +164,7 @@ co2e/black-widow,Black Widow,co2e,optional-ko-reward,executable,WP-248,D-24019,p
 co2e/black-widow,Black Widow,co2e,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,gather-intel|intelligence-network
 co2e/captain-america,Captain America,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,a-day-unlike-any-other|perfect-teamwork
 co2e/captain-america,Captain America,co2e,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
+co2e/cyclops,Cyclops,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,x-men-united
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
 co2e/emma-frost,Emma Frost,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
@@ -193,6 +194,7 @@ core/black-widow,Black Widow,core,rescue,executable,WP-215,D-21501,packages/game
 core/captain-america,Captain America,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,a-day-unlike-any-other|perfect-teamwork
 core/captain-america,Captain America,core,diving-block,executable,WP-682,D-24499,packages/game-engine/src/hero/heroEffects.execute.ts#diving-block,diving-block
 core/captain-america,Captain America,core,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
+core/cyclops,Cyclops,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,x-men-united
 core/cyclops,Cyclops,core,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast
 core/cyclops,Cyclops,core,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
 core/deadpool,Deadpool,core,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,oddball
