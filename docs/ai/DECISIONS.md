@@ -46418,6 +46418,27 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24654 — A Master Strike resolves only its printed text: the generic capture-a-Bystander placeholder is removed (supersedes D-15401 and D-24383) (Drafted 2026-10-04; not yet landed — WP-792 / EC-829)
+
+**Context.** D-15401 (WP-154, Immutable) made every Master Strike, for every Mastermind, capture the top Bystander onto the Mastermind. It was an MVP shortcut to unblock the projection, not a rule: rules v23 (~L3429) says "When a Master Strike occurs, each Mastermind does its Master Strike ability", and core Magneto's printed strike captures nothing. D-24383 (WP-574) later logged the capture on success. In Jeff's solo match `PyK5YS2L8Bo` (Magneto), two of the three Bystanders rescued by a tactic defeat were invented by the placeholder (log `6.1.1`, `7.1.1`), so Bystander VP read 3 instead of 1. Every score that counts rescued Bystanders was inflated, for every Mastermind.
+
+**Decision.**
+1. `mastermindStrikeHandler` no longer captures a Bystander. **Supersedes D-15401** in full. `G.mastermind.attachedBystanders` stays the Mastermind-side store (D-12805 Interpretation B); its writers are the Villain-Deck Bystander revealed with an empty City and `captureBystanderToMastermind` (Here, Hold This, D-24500; the kidnap fallback, D-24537). Rescue on tactic defeat is unchanged.
+2. No printed Master Strike capture is modeled yet. Every Bystander-capturing strike in the card data comes with a printed rule that makes those Bystanders cost the player (Mr. Sinister's +1 attack per Bystander, Madelyne Pryor's Demon Goblins, Human Shields, Hidden Witnesses, …). A printed capture is modeled only together with that rule; a capture alone would reintroduce free Bystander VP.
+3. **Supersedes D-24383.** Its success line and the D-15401 empty-supply line stop firing, and the now-unused `captureBystanderOntoMastermind` helper that held them is deleted.
+4. Follow-ups: dkcy Mr. Sinister, ssw1 Madelyne Pryor, anni Annihilus, xmen Mojo and Arcade, noir The Goblin and Charles Xavier, wwhk Red Hulk, msmc Bastion, ca75 Zemo, mdns Lilith.
+5. **Determinism and scoring.**
+   - The sentinel `finalStateHash` and its messages are re-recorded. `PRE_WP080_HASH` is unchanged (its replay fires no strike).
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated.
+   - The diagnostic PAR profiles are re-pinned by a follow-up `INFRA:` PR, opened immediately after the WP-792 execution merges (operator ruling 2026-10-04, Jeff, WP-792 OD-2). Seed PAR is rating-driven and unaffected.
+   - **Matches in progress** switch at the next strike after deploy. Bystanders the Mastermind already holds stay and are rescued normally; there is no migration.
+   - A **competitive match** captured before the deploy and submitted after it fails `replay_verification_failed`. This is an accepted window, as with WP-790 / WP-726. Read-time re-execution of pre-deploy replays (the coach, submit by `replayHash`) also reflects the post-deploy rules; replays are durable in `bgio.replay_artifacts`, so for an unsubmitted pre-deploy match the window is permanent. Accepted; no migration.
+   - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Operator ruling 2026-10-04 (Jeff, WP-792 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+
+**Reserved by:** NUMBER-LEDGER D-24654 (#2578). Related: WP-792 / EC-829, D-15401 (superseded), D-24383 (superseded), D-12805, D-24500, D-24537, D-24616 §5, D-24081.
+
+---
+
 ### D-24655 — X-Men United grants its bonus per other X-Men Hero played, not a flat +2 (direct fix, no WP) (Active 2026-10-04)
 
 **Context.** Cyclops' **X-Men United** prints "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn" (core; the co2e reprint prints "+1 … for each other X-Men Hero" as its third ability). No count source modeled "other X-Men played this turn", so neither line carried a count-scaled marker: the synergy-gated `+2[icon:attack]` parsed to a **flat +2**. It was right only when exactly one other X-Men Hero had been played and under-granted with two or more. Because the line resolved as a plain attack, the hero ledger carried no row for it and `/coverage` never showed the gap. Surfaced in Jeff's solo match `PyK5YS2L8Bo` (2026-10-04, build `afd76ff`), where the diagnostics effect trace showed `effect: "attack", magnitude: 2`.
