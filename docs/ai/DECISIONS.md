@@ -46433,7 +46433,7 @@ parity), D-24568 (the WP-745 sweep).
    - The diagnostic PAR profiles are re-pinned by a follow-up `INFRA:` PR. Seed PAR is rating-driven and unaffected.
    - **Matches in progress** switch at the next strike after deploy. Bystanders the Mastermind already holds stay and are rescued normally; there is no migration.
    - A **competitive match** captured before the deploy and submitted after it fails `replay_verification_failed`. This is an accepted window, as with WP-790 / WP-726. Read-time re-execution of pre-deploy replays (the coach, submit by `replayHash`) also reflects the post-deploy rules; replays are durable in `bgio.replay_artifacts`, so for an unsubmitted pre-deploy match the window is permanent. Accepted; no migration.
-   - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Any annotation or season boundary is an operator decision.
+   - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Operator ruling 2026-10-04 (Jeff, WP-792 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
 
 **Reserved by:** NUMBER-LEDGER D-24654 (#2578). Related: WP-792 / EC-829, D-15401 (superseded), D-24383 (superseded), D-12805, D-24500, D-24537, D-24616 §5, D-24081.
 
