@@ -46455,6 +46455,61 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24656 — A Villain escape runs the rulebook procedure: HQ KO (≤ 6, current player chooses), then a one-card discard per player if Bystanders were carried, then the Escape effect; the generic escape Wound is removed (supersedes D-1702 and D-24439) (Drafted 2026-10-04; not yet landed — WP-793 / EC-830)
+
+**Context.** D-1702 (WP-017) gave the current player a Wound on every escape as "a reasonable MVP default". D-24439 later found it had no basis in any card, scheme or rule and gated it to Villains without an Escape ability, keeping it only so ability-less escapes had some penalty. The rulebook has a real penalty that was never modeled (rules v23 L556–L570, "in this order"):
+1. the escaping Villain KOs a Hero costing 6 or less from the HQ, the player whose turn it is choosing, and the HQ refills;
+2. if it had captured Bystanders, each player discards one card from hand, one card no matter how many Bystanders;
+3. its Escape effect.
+
+In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escaped twice carrying Bystanders. Each time the log showed the Wound and the carry, and no KO or discard. Mystique escaped with no Wound, KO or discard. No scheme or Mastermind prints a per-escape Wound.
+
+**Decision.**
+1. **Order and source.** Every escape runs the three steps, sourced from rules v23 L556–L570. Escapes caused by card effects run them too (L1037, L2826). Step 3 (the onEscape dispatch, then the captured-Hero KO, the Mystique become-scheme-twist branch and the escaped-pile resource-loss check) keeps its code and order inside the move. It still resolves before the entering Villain's Ambush (L573).
+2. **Step 1.** Eligible = HQ Heroes whose cost is ≤ 6. Haunted Heroes are included and the haunter stays (L1533).
+   - 0 eligible: a logged no-op.
+   - 1 eligible: KO'd automatically. This is the 0 / 1 / 2+ rule of D-24006, D-24007, D-24343 and D-24644.
+   - 2+ eligible: a single-seat `PendingSeatChoice` of kind `escape-hq-ko`, addressed to the player whose turn it was. Options are sorted cost then slot; the default is option 0.
+
+   The KO goes to `G.ko` and the slot refills with `refillHqSlot`. An empty Hero Deck leaves the slot `null` (D-13503). Hero-Deck depletion (Super Hero Civil War, the draw latch) is caught by the post-opener re-check (point 4) and, inside the opener, by a depletion check after each automatic KO.
+3. **Step 2.** Only when the carry moved ≥ 1 Bystander into `G.escapedPile`, and once per escape. It is a simultaneous multi-seat `PendingSeatChoice` of kind `escape-bystander-discard` (D-24501, copied from D-24511's Monarch's discard):
+   - every seat holding a card is addressed, with one option per hand card and default 0. A seat with an empty hand is not addressed;
+   - each seat discards through `discardFromHand`, so return-on-discard (D-24301) and teleport-on-discard see a card-effect discard;
+   - a one-card hand still prompts, because the multi-seat apply is atomic;
+   - the choice is parked with **no** active-seat stage-ride skip, as Random Acts' pass-left is. Skipping the active
+     seat in a mixed ride would set `activePlayers` to the non-active seats only, and the active seat could not submit
+     until they all did. The D-24648 skip applies only to a one-seat choice addressed to the active player (the step-1
+     KO).
+
+   Each player chooses their own card; the D-24284 "others auto-pick" split is not used.
+4. **Queue and accepted deviation.** `resolveVillainEscape` has no `events` and can run several times per move, so it appends a `PendingEscapeProcedure` to `G.pendingEscapeProcedures`. That field is lazy; the key is deleted when the queue empties, and only `dropAllPendingPlayerChoices` assigns `undefined`. The play-phase `turn.onMove` drains the queue, before the Diving Block opener:
+   - each escape's step 1 before its step 2, and escapes in the order they happened;
+   - never while any pending player choice is open. That is the `phaseCard.ts` `hasAnyPendingChoice` aggregate (seat choice, return-on-discard, every active-player queue) plus `pendingHeroChoice`. A step-3 choice such as the Juggernaut Escape's hand KO therefore resolves before that escape's steps 1–2 open, and prompts never stack;
+   - never once `evaluateEndgame(G)` is non-null, checked at every loop iteration.
+
+   After the openers, `turn.onMove` re-runs the idempotent final-turn latch and pile-depletion checks, so an automatic KO's refill that empties the Hero Deck is caught on the same move. The sim runner and PAR aggregator mirror the openers at every post-move site, with the loop's active seat as `currentPlayer`; `runFixture` mirrors them too.
+
+   **Accepted deviation:** steps 1–2 resolve after the move that caused the escape. Step 3, the Ambush and the rest of the reveal resolve first, and the HQ and hands are read when the choice opens. The engine cannot suspend a move halfway. Deferring step 3 too would put the Ambush before the Escape (against L573). The universal pending-choice model already parks and continues (D-24284, D-24644). A strict-order continuation is a follow-up.
+5. **Every escape path.** The Villain-Deck reveal push-off and the Haunt exorcise release already call `resolveVillainEscape`. The Secret Invasion Skrull push (`schemeTwistResolvers.ts`) replaces its reduced copy with `resolveVillainEscape`, so it also gains the onEscape dispatch, the Mystique check and the shared log line. Its vacated HQ slot now refills before the escape resolves, as the rule's "immediately flip" requires.
+6. **Non-active return-on-discard.** A front `G.pendingReturnOnDiscard` entry owned by a non-active seat is opened from `turn.onMove` as a single-seat seat choice of kind `return-on-discard` for that seat. The options are return (default) and leave. The apply duplicates `resolveReturnOnDiscard`'s short decline/return mutation: duplicate first, abstract at the third copy. Before this, such an entry froze the turn, because only the current player can submit `resolveReturnOnDiscard`. While that seat choice is open, `resolveReturnOnDiscard` is a no-op, so a stale or crafted legacy submission cannot pop the entry; this is defense in depth. Any off-prompt move from a ridden seat still spends its single admitted move. That is pre-existing for every D-24501 seat choice, and hardening it is a follow-up. The new discard makes that case common in 2+ player and bot-ally matches; the fix also covers Monarch's discard. Active-player entries are unchanged. The legacy `pendingReturnOnDiscard` projection is emitted only for an active-player front entry. Otherwise a non-active owner could answer through the old prompt, spend its one stage-ride move, and strand the seat choice.
+7. **Supersessions and determinism.**
+   - **Supersedes D-1702** (the WP-017 escape Wound) and **D-24439** (its gate). No escape gives a generic Wound or touches `turnEconomy.woundsDrawn`. Printed Escape Wounds are unchanged.
+   - No new move, `hasPending*` guard or `UIState` field. The choices ride the projected `pendingSeatChoice`, and the client adds three headings.
+   - The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (neither replays an escape).
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903.
+   - The diagnostic PAR profiles are re-pinned by one combined follow-up `INFRA:` PR for WP-749 + WP-793, opened immediately after both merge; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs (operator ruling 2026-10-04, Jeff, WP-793 OD-2). WP-792 keeps its own immediate re-pin.
+   - Live play in a match in progress at deploy continues; its next escape runs the new procedure. **Re-executing any log that contains a pre-deploy escape stalls.** That escape now parks a seat choice the log never answers, so every later recorded move is a block-all no-op. This hits:
+     - competitive verification (`replay_verification_failed`);
+     - coach `reduceReplayByHash`;
+     - every match in progress at deploy.
+     It is permanent for durable pre-deploy replays. It is wider than the Master Strike capture removal's window (D-24654, WP-792, drafted in PR #2580). Accepted; no migration.
+   - Stored `competitive_scores` rows are frozen (D-24616 §5). Operator ruling 2026-10-04 (Jeff, WP-793 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+   - Multi-player sims depend on WP-749 / D-24573.
+
+**Reserved by:** NUMBER-LEDGER D-24656 (#2578). Related: WP-793 / EC-830, D-1702 (superseded), D-24439 (superseded), D-24440, D-24314, D-24315, D-18603, D-24287, D-24587, D-24501, D-24511, D-24499, D-24648, D-24301, D-24527, D-24644, D-24284, D-24006, D-24007, D-13503, D-24318, D-24616 §5, D-24573, D-24654.
+
+---
+
 ### D-24657 — A Villain escaping with captured Heroes carries them into the Escape Pile instead of KOing them (direct fix, no WP) (Active 2026-10-04)
 
 **Context.** Villains such as Skrull Queen Veranke and the Skrull Shapeshifters capture Heroes from the HQ (`G.villainAttachedHeroes`, WP-214 / D-21401). When the captor escaped, both escape paths (the Villain-Deck reveal in `villainDeck.reveal.ts` and the scheme-twist push in `schemeTwistResolvers.ts`) called `koAttachedHeroesOnEscape`, which moved the captured Heroes to `G.ko`. Its comment cited "tabletop rules", but Universal Rules v23 "Villains Escaping with Captured Heroes" says the opposite: "If a Villain escapes with captured Heroes, that doesn't cause any discarding. The captured Heroes just stay in the Escape Pile." Found while drafting WP-793 (the rulebook escape procedure, D-24656).
