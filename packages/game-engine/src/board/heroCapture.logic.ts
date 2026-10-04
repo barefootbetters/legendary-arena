@@ -5,7 +5,7 @@
  * - captureHeroFromHq: remove a hero from HQ by selector, attach to villain,
  *   refill HQ slot from hero deck
  * - awardAttachedHeroes: award captured heroes to player's discard on defeat
- * - koAttachedHeroesOnEscape: KO captured heroes when villain escapes
+ * - moveAttachedHeroesToEscapedPile: captured heroes go to the Escaped Villains pile when their captor escapes (D-24657)
  *
  * All functions operate on G directly (not returning new objects) to match
  * the existing villain-effect mutation pattern. No boardgame.io import.
@@ -165,18 +165,22 @@ export function awardAttachedHeroes(
 }
 
 /**
- * KOs all heroes attached to an escaping villain.
+ * Moves all heroes attached to an escaping villain into the Escaped Villains pile.
  *
- * Called from villainDeck.reveal.ts escape branch after executeVillainAbilities.
- * Moves every hero in G.villainAttachedHeroes[villainCardId] to G.ko.
- * Deletes the mapping entry (not set to []).
+ * Called from both escape paths (villainDeck.reveal.ts and the scheme-twist push
+ * in schemeTwistResolvers.ts). Appends every hero in
+ * G.villainAttachedHeroes[villainCardId] to G.escapedPile and deletes the mapping
+ * entry (not set to []).
  *
  * @param G - Game state (mutated directly).
  * @param villainCardId - The escaping villain zone-instance ext_id.
  */
-// why: heroes KO'd on escape per tabletop rules — captured heroes do not
-// return to HQ when their captor escapes
-export function koAttachedHeroesOnEscape(
+// why: D-24657 — Universal Rules v23 "Villains Escaping with Captured Heroes":
+// "If a Villain escapes with captured Heroes, that doesn't cause any discarding.
+// The captured Heroes just stay in the Escape Pile." They used to be KO'd. A hero
+// ext_id carries no villainDeckCardTypes entry and is not a Bystander, so the
+// escaped-pile scheme-loss and bystander-lost counters do not count it.
+export function moveAttachedHeroesToEscapedPile(
   G: LegendaryGameState,
   villainCardId: CardExtId,
 ): void {
@@ -188,9 +192,7 @@ export function koAttachedHeroesOnEscape(
     return;
   }
 
-  for (const heroId of capturedHeroes) {
-    G.ko.push(heroId);
-  }
+  G.escapedPile = [...G.escapedPile, ...capturedHeroes];
 
   // why: delete entry rather than setting to [] — zone integrity rule:
   // G.villainAttachedHeroes[v] exists only while length > 0 (D-21401)

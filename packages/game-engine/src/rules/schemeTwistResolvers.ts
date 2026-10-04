@@ -25,7 +25,7 @@ import { performVillainReveal } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot, pushVillainIntoCity } from '../board/city.logic.js';
 import { attachBystanderToVillain, carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
-import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
+import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 import { applyEscapedPileResourceLoss } from './schemeResourceLoss.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import {
@@ -735,7 +735,7 @@ function secretInvasion(
       );
       gameState.attachedBystanders = carryResult.attachedBystanders;
       gameState.escapedPile = carryResult.escapedPile;
-      koAttachedHeroesOnEscape(gameState, pushResult.escapedCard);
+      moveAttachedHeroesToEscapedPile(gameState, pushResult.escapedCard);
       applyEscapedPileResourceLoss(gameState);
     }
 

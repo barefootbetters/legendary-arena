@@ -80,7 +80,7 @@ almost every game.
     ctx.currentPlayer)`, `G.turnEconomy.woundsDrawn += 1`, log "Player N gained a wound from villain escape.";
   - `carryEscapedBystandersToPile` and its log (~L617–635);
   - `executeVillainAbilities(…, 'onEscape', …)` and the "Escape effect:" log (~L637–676);
-  - `koAttachedHeroesOnEscape` (~L678), the Mystique become-scheme-twist branch (~L680–721),
+  - `moveAttachedHeroesToEscapedPile` (~L678; renamed from `koAttachedHeroesOnEscape` by D-24657, #2582), the Mystique become-scheme-twist branch (~L680–721),
     `applyEscapedPileResourceLoss` (~L723–730).
   - Its context is `RevealContext` (`{ random, ctx: { currentPlayer } }`, ~L84–89). It has **no `events`**, so it
     cannot admit a non-active seat to a seat choice.
@@ -695,8 +695,9 @@ It locks:
   or annotation.
 - `VP_WOUND` (D-2001) and any other scoring weight.
 - Two pre-existing defects found during drafting, each a separate `INFRA:` fix:
-  - `koAttachedHeroesOnEscape` KOs a Villain's captured Heroes on escape. Rules v23 L3447–L3449 say "The captured
-    Heroes just stay in the Escape Pile". This packet leaves that step-3 line as it is.
+  - ~~`koAttachedHeroesOnEscape` KOs a Villain's captured Heroes on escape.~~ **Fixed by D-24657 (#2582, merged
+    2026-10-04):** the renamed `moveAttachedHeroesToEscapedPile` now leaves them in the Escape Pile per rules v23
+    L3447–L3449. This packet keeps that step-3 call as it is.
   - A Diving Block wave addressed to both the active seat and a non-active seat already locks the active seat out
     until the others answer, because `buildSeatChoiceActivePlayersValue` skips the active seat in a mixed ride. This
     packet avoids that for its own discard by parking with no skip, and does not change the shared builder.
@@ -1003,8 +1004,8 @@ same conditional form as the WP-758 precedent.
 - **RS items applied:** the endgame guards, the depletion re-check and the in-loop depletion check, the Secret
   Invasion refill before the escape, the import removals and the comment paraphrase, the cycle notes, the pure-return
   KO mutation, the wait on return-on-discard, the dropped unused export, and the title-first D-24654 reference.
-- Out-of-scope papercuts recorded: `koAttachedHeroesOnEscape` vs rules L3447, and the Diving Block mixed-ride
-  lockout.
+- Out-of-scope papercuts recorded: the captured-Hero escape KO vs rules L3447 (since fixed by D-24657, #2582), and
+  the Diving Block mixed-ride lockout.
 - **Delta re-checks: READY** (twice).
   - The second covered the copilot fixes, including the export-only `moves/phaseCard.ts` allowlist addition: no body
     change, no new layer edge, a safe import cycle, no deadlock from the broader wait.
