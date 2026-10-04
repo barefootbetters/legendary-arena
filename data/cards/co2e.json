@@ -293,7 +293,7 @@
           "abilities": [
             "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]",
             "You get +1[icon:attack] for each card you discarded from your hand this turn.",
-            "[team:x-men]: You also get +1[icon:attack] for each other [team:x-men] Hero you played this turn."
+            "[team:x-men]: You also get +1[icon:attack] for each other [team:x-men] Hero you played this turn. [keyword:attack-per-count:x-men-played-this-turn:1]"
           ]
         }
       ],

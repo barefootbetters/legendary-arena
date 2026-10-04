@@ -930,6 +930,40 @@ describe('buildHeroAbilityHooks — per-hero-class-played count-scaled grants (W
 });
 
 // ---------------------------------------------------------------------------
+// X-Men United — other-X-Men count-scaled attack (D-24655)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — X-Men United other-X-Men count (D-24655)', () => {
+  // why: the exact generated lines (printed text + the marker the markers pass appends).
+  // Before D-24655 the core line parsed to a flat +2 attack, which under-granted whenever
+  // two or more other X-Men Heroes were played (live match PyK5YS2L8Bo surfaced it).
+  const CORE_X_MEN_UNITED =
+    '[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn. [keyword:attack-per-count:x-men-played-this-turn:2]';
+  const CO2E_X_MEN_UNITED =
+    '[team:x-men]: You also get +1[icon:attack] for each other [team:x-men] Hero you played this turn. [keyword:attack-per-count:x-men-played-this-turn:1]';
+
+  const cases = [
+    { name: 'core X-Men United (mag 2)', ability: CORE_X_MEN_UNITED, magnitude: 2 },
+    { name: 'co2e X-Men United (mag 1)', ability: CO2E_X_MEN_UNITED, magnitude: 1 },
+  ];
+
+  for (const testCase of cases) {
+    it(`${testCase.name}: attack-per-count on x-men-played-this-turn, flat icon suppressed`, () => {
+      const registry = makeRegistry('core', 'cyclops', [{ slug: 'x-men-united', abilities: [testCase.ability] }]);
+      const hooks = buildHeroAbilityHooks(registry, makeConfig('core/cyclops'));
+      const effect = hooks.flatMap((hook) => hook.effects ?? []).find((entry) => entry.type === 'attack-per-count');
+      assert.ok(effect !== undefined, 'an attack-per-count effect is emitted');
+      assert.equal(effect!.countSource, 'x-men-played-this-turn', 'the count source is x-men-played-this-turn');
+      assert.equal(effect!.magnitude, testCase.magnitude, 'the per-unit rate matches the printed +N');
+      for (const hook of hooks) {
+        assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword alongside the count-scaled effect');
+        assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'attack'), 'no phantom flat attack effect');
+      }
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // cost-four-plus count-scaled attack/recruit siblings (WP-674 / EC-711 / D-24489)
 // ---------------------------------------------------------------------------
 

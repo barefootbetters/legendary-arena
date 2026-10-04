@@ -46439,6 +46439,22 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24655 — X-Men United grants its bonus per other X-Men Hero played, not a flat +2 (direct fix, no WP) (Active 2026-10-04)
+
+**Context.** Cyclops' **X-Men United** prints "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn" (core; the co2e reprint prints "+1 … for each other X-Men Hero" as its third ability). No count source modeled "other X-Men played this turn", so neither line carried a count-scaled marker: the synergy-gated `+2[icon:attack]` parsed to a **flat +2**. It was right only when exactly one other X-Men Hero had been played and under-granted with two or more. Because the line resolved as a plain attack, the hero ledger carried no row for it and `/coverage` never showed the gap. Surfaced in Jeff's solo match `PyK5YS2L8Bo` (2026-10-04, build `afd76ff`), where the diagnostics effect trace showed `effect: "attack", magnitude: 2`.
+
+**Decision.**
+1. New `HeroCountSource` **`x-men-played-this-turn`**: the count of OTHER cards played this turn on the X-Men team, via `countTeamCardsPlayedThisTurn(…, 'x-men')` (`cardHasTeamWhenPlayed`, so a Copy-Powers team grant counts per D-24391). Self-exclusive and play-area only, the exact X-Men analogue of `avengers-played-this-turn` (WP-680 / D-24497). This is "you played this turn", not the hand + play "Heroes you have" reading (D-24529).
+2. Curated markers (`hero-ability-markers.json`): core `cyclops/x-men-united` ability 0 → `[keyword:attack-per-count:x-men-played-this-turn:2]`; co2e `cyclops/x-men-united` ability 2 → `…:1`. The existing D-24016 suppression drops the flat `+N[icon:attack]`, so there is no double grant. The leading `[team:x-men]:` gate is unchanged.
+3. `HERO_COUNT_SOURCES` 14 → 15, with the union and canonical array moved together (runtime drift pin).
+4. Out of scope: co2e X-Men United's ability 1 ("+1 per card discarded from your hand this turn", a different count source); nmut's Sunlight-gated "+1 per other X-Men card"; and three Avengers lines that already have a source but no marker (antm, co2e Captain America, msp1 A Day Unlike Any Other). These are recorded as follow-ups, not fixed here.
+
+**Gates.** game-engine 4842 / 0 fail (+2 count-source tests: resolver and countedInputs parity; +2 parse tests: core and co2e emit `attack-per-count` on `x-men-played-this-turn` with no phantom flat attack). Card-data `cards:check` reproducible (2 lines). Hero ledger +2 rows (core + co2e Cyclops `attack-per-count`), `card-mechanics.json` and the effect index regenerated; villain ledger and runtime-observed unchanged; `sim:coverage --check` OK. No fixture or hash re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24655 (#2578). Related: D-24497 (team-played count sources), D-24016 (flat-icon suppression), D-24391 (effective team in play), D-24529 ("you have" vs "you played").
+
+---
+
 ### D-24657 — A Villain escaping with captured Heroes carries them into the Escape Pile instead of KOing them (direct fix, no WP) (Active 2026-10-04)
 
 **Context.** Villains such as Skrull Queen Veranke and the Skrull Shapeshifters capture Heroes from the HQ (`G.villainAttachedHeroes`, WP-214 / D-21401). When the captor escaped, both escape paths (the Villain-Deck reveal in `villainDeck.reveal.ts` and the scheme-twist push in `schemeTwistResolvers.ts`) called `koAttachedHeroesOnEscape`, which moved the captured Heroes to `G.ko`. Its comment cited "tabletop rules", but Universal Rules v23 "Villains Escaping with Captured Heroes" says the opposite: "If a Villain escapes with captured Heroes, that doesn't cause any discarding. The captured Heroes just stay in the Escape Pile." Found while drafting WP-793 (the rulebook escape procedure, D-24656).

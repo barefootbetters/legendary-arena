@@ -419,6 +419,10 @@ export function resolveCountSource(
     case 'shield-heroes-played-this-turn': {
       return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'shield');
     }
+    case 'x-men-played-this-turn': {
+      // why: D-24655 — X-Men United's "each other X-Men Hero you played this turn".
+      return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'x-men');
+    }
     case 'odd-cost-heroes-played-this-turn': {
       return countOddCostCardsPlayedThisTurn(G, playerID, triggeringCardId);
     }
@@ -764,6 +768,9 @@ export function explainCountSourceInputs(
     }
     case 'shield-heroes-played-this-turn': {
       return collectTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'shield');
+    }
+    case 'x-men-played-this-turn': {
+      return collectTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'x-men');
     }
     case 'odd-cost-heroes-played-this-turn': {
       return collectOddCostCardsPlayedThisTurn(G, playerID, triggeringCardId);
