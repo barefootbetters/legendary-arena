@@ -2181,6 +2181,11 @@ This is the summary index; the individual gotchas and their nuances live in
   row no longer names NameHero as the brain host. Recorded as a shopping note
   only; the arena migration stays DigitalOcean. No Locked row moved, and there
   is no `DECISIONS.md` entry.
+- **2026-10-04 — first market named (descriptive, no re-lock).** Open Question
+  7 records the operator's direction: seminary teachers are the first market,
+  a single seminary teacher's ship is the pilot, and a successful pilot becomes
+  a brand other seminary teachers can buy. Which line sells it, packaging, and
+  price stay open. No Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2311,6 +2316,14 @@ is built.
    one's own. A sold offering keeps the license and attribution and brands its own
    layer: the plumbing, the governance, and the setup work. **Open** — a business
    decision, not an architecture one.
+
+   *Market direction (2026-10-04):* the first market is **seminary teachers**.
+   The pilot is one seminary teacher's ship, the
+   [Positioning](#positioning-the-owner-stays-captain) demo made real. If the
+   pilot works, it becomes a brand other seminary teachers buy, so they own
+   their study archive independent of any AI platform. That promise is
+   *Model Independence* plus "your data never leaves", sold as a product. Still
+   open: the pilot's success criteria, which set whether it "works".
 
 ## References
 
