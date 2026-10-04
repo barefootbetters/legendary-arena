@@ -63,10 +63,10 @@
       "card": "Captain America",
       "ability": "A Day Unlike Any Other, Perfect Teamwork",
       "wp": "WP-247",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "A Day Unlike Any Other confirmed (+3 per other Avengers Hero). Perfect Teamwork not played."
+      "evidence": "Solo Magneto matches PyK5YS2L8Bo + trJwnB0oLeg (build afd76ff)",
+      "note": "A Day Unlike Any Other (+3 per other Avengers; correctly inactive with none) and Perfect Teamwork (counts colors in hand + play)."
     },
     {
       "key": "core/captain-america|diving-block",
@@ -77,7 +77,7 @@
       "state": "pending",
       "date": "",
       "evidence": "",
-      "note": "Re-test after D-24651 (works after it has been played)."
+      "note": "Re-test after D-24651. Played only for attack in match trJwnB0oLeg — no Wound was ever gained. Needs a game where you take a Wound with it in hand."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -107,10 +107,10 @@
       "card": "Cyclops",
       "ability": "Unending Energy",
       "wp": "WP-498",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
+      "note": "Unending Energy returned to hand three times after paying Determination / Optic Blast discard costs."
     },
     {
       "key": "core/deadpool|attack-per-count",
@@ -450,8 +450,8 @@
       "wp": "WP-253",
       "state": "partial",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "The Amazing Spider-Man confirmed. Astonishing Strength, Great Responsibility and Web-Shooters not played."
+      "evidence": "Solo Magneto matches PyK5YS2L8Bo + trJwnB0oLeg (build afd76ff)",
+      "note": "The Amazing Spider-Man, Astonishing Strength and Great Responsibility confirmed. Web-Shooters not played."
     },
     {
       "key": "core/spider-man|reveal-count",
@@ -558,10 +558,10 @@
       "card": "Blob",
       "ability": "setup:require-to-defeat",
       "wp": "WP-292",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
+      "note": "Defeated twice with an X-Men Hero in play. The blocked case (no X-Men Hero) is untested."
     },
     {
       "key": "core-villain-enemies-of-asgard-destroyer|ko-heroes-current-by-trait",
@@ -715,7 +715,7 @@
       "state": "pending",
       "date": "",
       "evidence": "",
-      "note": ""
+      "note": "Fought before it could escape (match trJwnB0oLeg). Needs Mystique to escape the City."
     },
     {
       "key": "core-villain-skrulls-paibok-the-power-skrull|give-hq-hero-each-player",
@@ -734,10 +734,10 @@
       "card": "Sabretooth",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
+      "note": "Reveal branch confirmed (X-Men Hero revealed, no Wound). The gain-a-Wound branch is untested."
     },
     {
       "key": "henchman-savage-land-mutates|add-next-hand-size",
@@ -987,10 +987,10 @@
       "card": "Magneto",
       "ability": "Tactic: Crushing Shockwave",
       "wp": "WP-506",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
+      "note": "Prints \"each other player\": a correct no-op solo. Needs a 2-player game to see the reveal-or-gain-two-Wounds."
     },
     {
       "key": "mastermind:core/magneto|bitter-captor",
@@ -1265,7 +1265,7 @@
       "state": "pending",
       "date": "",
       "evidence": "",
-      "note": "Found in match PyK5YS2L8Bo: granted a flat +2, not +2 per other X-Men Hero. Fixed by D-24655 (#2579). Re-test after deploy: play it after two other X-Men Heroes, expect +4."
+      "note": "Under-grant confirmed live again in match trJwnB0oLeg: +2 with two other X-Men Heroes played (turns 9 and 20). Fixed by D-24655 (#2579). Re-test after deploy: expect +4."
     }
   ]
 }
