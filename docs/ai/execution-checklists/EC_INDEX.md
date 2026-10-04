@@ -959,6 +959,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-826 | WP-789    | Game Engine + Arena Client (`applyRevealRules` emits on a miss + optional `HeroEffectResolvedEvent.revealedCardId`; `eventCardId` branch + reveal card image on `NotableEventOverlay.vue` + `UIState.notableEventCards` (types/build/filter) + `PlayDesktop.vue` lookup fold + reorder event buffer) | **WP-789 — Reveal card visible.** D-24637. | Done |
 | EC-827 | WP-790    | Game Engine + Arena Client (lazy `TurnEconomy.restrictedAttack` + target-aware `getSpendableAttackForTarget` / `spendFightCostForTarget` in both fight moves and the bot; `HeroEffectDescriptor.attackRestriction` parsed from "usable only against …" + the Storm/Electro widen fusion; active-only `UITurnEconomyState.restrictedAttack`; target-aware `canFight` in CityRow / MastermindTile + EconomyBar chips) | **WP-790 — Location-restricted attack.** D-24652. | Done |
 | EC-828 | WP-791    | App Dashboard (`BusinessPulseWidget.vue` [new] + `useOperatingInputs.ts` [new] + `utils/overviewPulse.ts` [new] + `EngagementStripWidget.vue` [new] + `OpsAtAGlanceStripWidget` real Server/DR cards + `LOCAL` freshness label + Overview/Vision/Players page wiring) | **WP-791 — Dashboard Overview, business first.** D-24653. | Done |
+| EC-829 | WP-792    | Game Engine (`mastermindStrikeHandler` drops the D-15401 generic capture + the dead `captureBystanderOntoMastermind` helper; sentinel + runtime-observed + dashboard totalObs re-pins) | **WP-792 — Master Strikes stop capturing a Bystander.** D-24654. | Draft |
 ---
 
 ## Rules
