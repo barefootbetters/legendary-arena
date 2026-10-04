@@ -63,10 +63,10 @@
       "card": "Captain America",
       "ability": "A Day Unlike Any Other, Perfect Teamwork",
       "wp": "WP-247",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "A Day Unlike Any Other confirmed (+3 per other Avengers Hero). Perfect Teamwork not played."
     },
     {
       "key": "core/captain-america|diving-block",
@@ -85,10 +85,10 @@
       "card": "Captain America",
       "ability": "Avengers Assemble!",
       "wp": "WP-674",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Avengers Assemble! counts Hero classes across hand + play (diagnostics countedInputs)."
     },
     {
       "key": "core/cyclops|discard-to-play",
@@ -96,10 +96,10 @@
       "card": "Cyclops",
       "ability": "Determination, Optic Blast",
       "wp": "WP-383",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Optic Blast and Determination both demanded and took a discard."
     },
     {
       "key": "core/cyclops|return-on-discard",
@@ -448,10 +448,10 @@
       "card": "Spider-Man",
       "ability": "Astonishing Strength, Great Responsibility, The Amazing Spider-Man, Web-Shooters",
       "wp": "WP-253",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "The Amazing Spider-Man confirmed. Astonishing Strength, Great Responsibility and Web-Shooters not played."
     },
     {
       "key": "core/spider-man|reveal-count",
@@ -459,10 +459,10 @@
       "card": "Spider-Man",
       "ability": "The Amazing Spider-Man",
       "wp": "WP-478",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "The Amazing Spider-Man revealed 3 each play."
     },
     {
       "key": "core/spider-man|reveal-reorder",
@@ -756,10 +756,10 @@
       "card": "Sentinel",
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Four fights, KO choice each time."
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
@@ -976,10 +976,10 @@
       "card": "Magneto",
       "ability": "Master Strike — reveal X-Men or discard to 4",
       "wp": "WP-476",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Both branches: revealed an X-Men Hero (blocked), and the discard-down-to-4 choice."
     },
     {
       "key": "mastermind:core/magneto|crushing-shockwave",
@@ -998,10 +998,10 @@
       "card": "Magneto",
       "ability": "Tactic: Bitter Captor",
       "wp": "WP-692",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Gained Unending Energy (X-Men) from the HQ for free."
     },
     {
       "key": "mastermind:core/magneto|electromagnetic-bubble",
@@ -1174,10 +1174,10 @@
       "card": "Super Hero Civil War",
       "ability": "Twist KOs all Heroes in the HQ",
       "wp": "WP-540",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Four twists, each KO'd all 5 HQ Heroes."
     },
     {
       "key": "scheme:core/super-hero-civil-war|hero-deck-loss",
@@ -1185,10 +1185,10 @@
       "card": "Super Hero Civil War",
       "ability": "Evil Wins when the Hero Deck runs out; 4 heroes at 2 players",
       "wp": "WP-510",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Setup sizing: WP-515 / WP-576."
+      "state": "partial",
+      "date": "2026-10-04",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "note": "Evil Wins fired when the Hero Deck ran out (turn 12). The 2-player 4-hero setup cannot be exercised solo."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",
@@ -1255,6 +1255,17 @@
       "date": "",
       "evidence": "",
       "note": ""
+    },
+    {
+      "key": "core/cyclops|x-men-united",
+      "kind": "hero",
+      "card": "Cyclops",
+      "ability": "X-Men United",
+      "wp": "",
+      "state": "pending",
+      "date": "",
+      "evidence": "",
+      "note": "Engine grants a flat +2 attack, not +2 per other X-Men Hero played — correct only with exactly one other X-Men Hero. Needs an x-men-played-this-turn count source."
     }
   ]
 }
