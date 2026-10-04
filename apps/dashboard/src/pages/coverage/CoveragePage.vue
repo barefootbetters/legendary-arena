@@ -3,8 +3,15 @@ import { computed, ref } from 'vue';
 import { useCoverageLedger, statusLabel } from '../../composables/useCoverageLedger.js';
 import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
 import { useParFidelity } from '../../composables/useParFidelity.js';
+import { useLiveVerify, liveVerifyLabel, entryMechanic } from '../../composables/useLiveVerify.js';
 import ParSweetSpotChart from '../../components/charts/ParSweetSpotChart.vue';
-import type { LedgerRow, LedgerStatus, RuntimeObservedEntry } from '../../types/coverage.js';
+import type {
+  LedgerRow,
+  LedgerStatus,
+  LiveVerifyEntry,
+  LiveVerifyState,
+  RuntimeObservedEntry,
+} from '../../types/coverage.js';
 import type { ParFidelityRow } from '../../types/parFidelity.js';
 
 const {
@@ -99,6 +106,54 @@ const STATUS_FILTERS: readonly (LedgerStatus | 'all')[] = [
   'executable',
   'all',
 ];
+
+// Live-verify record (D-24026): did the ability do the right thing in a real
+// match? A third question, separate from Status (implemented?) and the runtime
+// overlay (hollow in a sim sweep?) — an Executable ability can still misfire live.
+const {
+  entries: liveVerifyEntries,
+  summary: liveVerifySummary,
+  entryForRow: liveVerifyForRow,
+  error: liveVerifyError,
+} = useLiveVerify();
+
+const LIVE_VERIFY_FILTERS: readonly (LiveVerifyState | 'all')[] = [
+  'pending',
+  'partial',
+  'verified',
+  'all',
+];
+const liveVerifyFilter = ref<LiveVerifyState | 'all'>('pending');
+
+const filteredLiveVerifyEntries = computed(() => {
+  const result = [];
+  for (const entry of liveVerifyEntries.value) {
+    if (liveVerifyFilter.value === 'all' || entry.state === liveVerifyFilter.value) {
+      result.push(entry);
+    }
+  }
+  return result;
+});
+
+/** Maps a live-verify state to its badge color class. */
+function liveVerifyClass(state: LiveVerifyState): string {
+  return `lv-${state}`;
+}
+
+/** Hover text for a Verified badge: the confirming date, evidence and note. */
+function liveVerifyTitle(entry: LiveVerifyEntry): string {
+  const parts = [];
+  if (entry.date !== '') {
+    parts.push(entry.date);
+  }
+  if (entry.evidence !== '') {
+    parts.push(entry.evidence);
+  }
+  if (entry.note !== '') {
+    parts.push(entry.note);
+  }
+  return parts.join(' — ');
+}
 
 // PAR Fidelity panel (WP-598 / D-24407): the WP-597 sweep rendered — summary
 // tiles + a ranked too-easy table + a click-to-expand per-scenario sweet-spot
@@ -232,6 +287,7 @@ function winRateClass(row: ParFidelityRow): string {
             <th>Set</th>
             <th>Mechanic</th>
             <th>Status</th>
+            <th>Verified</th>
             <th>WP</th>
             <th>Decision</th>
             <th>Handler</th>
@@ -253,11 +309,100 @@ function winRateClass(row: ParFidelityRow): string {
                 statusLabel(row.status)
               }}</span>
             </td>
+            <!-- why: the hand-curated live-verify record (docs/ai/coverage/live-verify.json);
+                 "—" means the row is not tracked yet (only Core is seeded), not "failed". -->
+            <td>
+              <span
+                v-if="liveVerifyForRow(row)"
+                class="badge"
+                :class="liveVerifyClass(liveVerifyForRow(row)!.state)"
+                :title="liveVerifyTitle(liveVerifyForRow(row)!)"
+                >{{ liveVerifyLabel(liveVerifyForRow(row)!.state) }}</span
+              >
+              <span v-else class="dim">—</span>
+            </td>
             <td class="mono dim">{{ row.wp || '—' }}</td>
             <!-- why: WP-496 — the DECISIONS.md id governing this mechanic, mirroring the
                  by-mechanic table + /debug/effects; "—" for an unattributed row (never fabricated). -->
             <td class="mono dim">{{ row.decision || '—' }}</td>
             <td class="mono dim handler">{{ row.handler || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block">
+      <h2>Core playtest — verified in a real match</h2>
+      <p class="block-note">
+        Every Core card ability, villain, mastermind and scheme, and whether it has been confirmed
+        to do the right thing in a live match on play.legendary-arena.com (D-24026). Separate from
+        Status: an Executable ability can still misfire live. Source:
+        <code>docs/ai/coverage/live-verify.json</code> (hand-edited after a match — cite the match
+        id or PR).
+      </p>
+      <p v-if="liveVerifyError" class="cov-error">
+        Live-verify record failed to load: {{ liveVerifyError }}
+      </p>
+      <div class="summary-chips lv-chips">
+        <div class="count-chip lv-verified">
+          <span class="count-num">{{ liveVerifySummary.verified }}</span
+          ><span>Verified</span>
+        </div>
+        <div class="count-chip lv-partial">
+          <span class="count-num">{{ liveVerifySummary.partial }}</span
+          ><span>Partial</span>
+        </div>
+        <div class="count-chip lv-pending">
+          <span class="count-num">{{ liveVerifySummary.pending }}</span
+          ><span>Not yet</span>
+        </div>
+      </div>
+      <div class="filter-buttons lv-filters">
+        <button
+          v-for="filter in LIVE_VERIFY_FILTERS"
+          :key="filter"
+          type="button"
+          :class="{ active: liveVerifyFilter === filter }"
+          @click="liveVerifyFilter = filter"
+        >
+          {{ filter === 'all' ? 'All' : liveVerifyLabel(filter) }}
+        </button>
+      </div>
+      <table class="cov-table">
+        <thead>
+          <tr>
+            <th>Kind</th>
+            <th>Card</th>
+            <th>Ability</th>
+            <th>Verified</th>
+            <th>Evidence</th>
+            <th>WP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="entry in filteredLiveVerifyEntries" :key="entry.key">
+            <td class="dim">{{ entry.kind }}</td>
+            <td>{{ entry.card }}</td>
+            <td>
+              {{ entry.ability || '—' }}
+              <!-- why: one hero design can carry two mechanics (draw + rescue); the
+                   mechanic tells the otherwise-identical rows apart. -->
+              <span v-if="entry.kind === 'hero'" class="mono dim ext">{{
+                entryMechanic(entry)
+              }}</span>
+            </td>
+            <td>
+              <span class="badge" :class="liveVerifyClass(entry.state)">{{
+                liveVerifyLabel(entry.state)
+              }}</span>
+            </td>
+            <td class="dim">
+              <span v-if="entry.date" class="mono">{{ entry.date }}</span>
+              {{ entry.evidence }}
+              <span v-if="entry.note" class="lv-note">{{ entry.note }}</span>
+              <span v-if="!entry.date && !entry.evidence && !entry.note">—</span>
+            </td>
+            <td class="mono dim lv-wp">{{ entry.wp || '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -644,6 +789,33 @@ function winRateClass(row: ParFidelityRow): string {
 .runtime-note {
   display: block;
   margin-top: 0.35rem;
+}
+
+/* why: live-verify reuses the status palette's meaning — green = confirmed,
+   amber = half-confirmed, muted = not yet played — so it reads at a glance. */
+.lv-verified {
+  color: var(--p-green-500, #22c55e);
+}
+.lv-partial {
+  color: var(--p-amber-500, #f59e0b);
+}
+.lv-pending {
+  color: var(--p-text-muted-color);
+}
+
+.lv-chips,
+.lv-filters {
+  margin-bottom: 0.75rem;
+}
+
+.lv-wp {
+  white-space: nowrap;
+}
+
+.lv-note {
+  display: block;
+  font-size: 0.72rem;
+  font-style: italic;
 }
 
 /* PAR Fidelity panel (WP-598) */

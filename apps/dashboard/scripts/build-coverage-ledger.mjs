@@ -3,11 +3,12 @@
  * build-coverage-ledger.mjs — Build-time copy of the committed coverage
  * artifacts into the dashboard bundle.
  *
- * Copies two canonical generated artifacts into gitignored `src/data` (the
+ * Copies three committed coverage artifacts into gitignored `src/data` (the
  * dashboard cannot statically import a file outside its package root, so the
- * data is copied in at build time and imported by `useCoverageLedger`):
+ * data is copied in at build time and imported by the Coverage composables):
  *   - docs/ai/coverage/hero-mechanic-ledger.json     → src/data/coverage-ledger.json
  *   - docs/ai/coverage/runtime-observed-hollows.json → src/data/runtime-observed-hollows.json  (WP-259)
+ *   - docs/ai/coverage/live-verify.json              → src/data/live-verify.json  (hand-curated D-24026 record)
  *
  * On any read/parse failure for an artifact this writes that artifact's empty
  * stub (with an `error` field) and continues — aborting the build is strictly
@@ -28,6 +29,8 @@ const LEDGER_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/hero-mechanic-ledge
 const LEDGER_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/coverage-ledger.json');
 const RUNTIME_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/runtime-observed-hollows.json');
 const RUNTIME_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/runtime-observed-hollows.json');
+const LIVE_VERIFY_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/live-verify.json');
+const LIVE_VERIFY_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/live-verify.json');
 
 const EMPTY_LEDGER_STUB = {
   schemaVersion: 1,
@@ -55,6 +58,10 @@ const EMPTY_RUNTIME_STUB = {
   },
   byMechanic: {},
 };
+
+// why: an empty record renders the Verified column as "not tracked" and the Core
+// playtest table as empty, rather than failing the build.
+const EMPTY_LIVE_VERIFY_STUB = { schemaVersion: 1, about: '', entries: [] };
 
 /**
  * Copies one canonical artifact into the dashboard bundle; on any failure writes
@@ -92,3 +99,4 @@ async function copyArtifact(sourcePath, outputPath, emptyStub) {
 
 await copyArtifact(LEDGER_SOURCE_PATH, LEDGER_OUTPUT_PATH, EMPTY_LEDGER_STUB);
 await copyArtifact(RUNTIME_SOURCE_PATH, RUNTIME_OUTPUT_PATH, EMPTY_RUNTIME_STUB);
+await copyArtifact(LIVE_VERIFY_SOURCE_PATH, LIVE_VERIFY_OUTPUT_PATH, EMPTY_LIVE_VERIFY_STUB);

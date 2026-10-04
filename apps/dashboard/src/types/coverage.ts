@@ -195,3 +195,52 @@ export interface InPlayCoverageMetric {
   totalObs: number;
   remaining: readonly RemainingMechanic[];
 }
+
+/**
+ * The three live-verify states (drift-pinned by `types/coverage.drift.test.ts`).
+ * `partial` means one branch of the ability was confirmed live and another was not.
+ */
+export type LiveVerifyState = 'verified' | 'partial' | 'pending';
+
+export const LIVE_VERIFY_STATES: readonly LiveVerifyState[] = ['verified', 'partial', 'pending'];
+
+/**
+ * One hand-curated live-verify entry (D-24026): did this card ability fire and do
+ * the right thing in a real match on play.legendary-arena.com? Distinct from the
+ * ledger status (implemented?) and the runtime overlay (hollow in a sim sweep?).
+ */
+export interface LiveVerifyEntry {
+  /** `<ledger extId>|<mechanic>` for hero/villain rows; a `mastermind:`/`scheme:` key otherwise. */
+  key: string;
+  /** hero | villain | henchman | mastermind | scheme. */
+  kind: string;
+  card: string;
+  ability: string;
+  wp: string;
+  state: LiveVerifyState;
+  /** ISO date of the confirming match (blank when pending). */
+  date: string;
+  /** Match id and/or PR that recorded the confirmation (blank when pending). */
+  evidence: string;
+  note: string;
+}
+
+/**
+ * The live-verify record. Runtime data is `src/data/live-verify.json`, a build-time
+ * copy of the committed, hand-edited `docs/ai/coverage/live-verify.json`.
+ */
+export interface LiveVerifyRecord {
+  schemaVersion: number;
+  about: string;
+  entries: readonly LiveVerifyEntry[];
+  /** Present only when the build-time copy failed (empty-stub path). */
+  error?: string;
+}
+
+/** Per-state counts for the Core playtest summary. */
+export interface LiveVerifySummary {
+  verified: number;
+  partial: number;
+  pending: number;
+  total: number;
+}
