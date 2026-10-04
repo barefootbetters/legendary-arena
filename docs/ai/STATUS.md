@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24657 — Heroes captured by an escaping Villain go to the Escape Pile, not the KO pile (direct fix) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When a Villain that captured a Hero from the HQ
+(Skrull Queen Veranke, Skrull Shapeshifters and similar) escapes, the captured Hero now goes into the Escape Pile
+with it, as the rules say, instead of being KO'd.
+
+- **Engine only.** The helper is renamed `moveAttachedHeroesToEscapedPile` and is used on both escape paths. No new state,
+  move or UI field; escape-loss counts and scoring ignore the Hero.
+- **Counts.** game-engine 4839 / 0 fail; `pnpm -r --no-bail test` 0 fail; CI data gates current; no re-pin.
+- **Live-verify (D-24026): pending.** In a Skrulls game, let a Villain holding a captured Hero escape. The Hero should
+  appear in the Escape Pile and not in the KO pile.
+
 ### WP-791 — Dashboard Overview, business first (EC-828 / D-24653) (2026-10-03)
 
 **User-visible: dashboard Overview leads with money, engagement, real health** (`dashboard.legendary-arena.com/overview`,
