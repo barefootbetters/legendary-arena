@@ -94,8 +94,9 @@ the brain's private contents live in the ship repo,
 on GitHub while signed in; its Markdown renders as pages). Personal context
 (priorities, voice, notes) is linked from here, never copied here.*
 
-**As of 2026-09-29: the ship is launched and onboarded; no platform services run
-yet.**
+**As of 2026-10-04: the ship is launched, audited, and readable as a private
+web viewer, and the first notes-migration pilot client is engaged. No platform
+services run yet, and the Day 2 tool connection is overdue.**
 
 | Milestone | Status | Date | Where to look |
 |---|---|---|---|
@@ -107,14 +108,19 @@ yet.**
 | First personal capture versioned in `notes/` | Done | 2026-09-29 | [`notes/`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/tree/main/notes) |
 | `/onboard` — Day-1 context written | Done | 2026-09-29 | [corporate-memory#2](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/2); [`context/priorities.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/priorities.md) |
 | Note skeleton: `inbox/`, `engineering/`, `research/`, `consulting/`, the note template, README note rules; first note (Mastermind exit cost) | Done | 2026-09-29 | [corporate-memory#3](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/3); [`_templates/note.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/_templates/note.md); [`notes/mastermind-exit-cost.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/notes/mastermind-exit-cost.md) |
-| Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
-| Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
+| Baseline `/audit`: **29/100, Foundation** (Context 11, Connections 3, Capabilities 13, Cadence 2). Top findings: the engine route read a stale local checkout, and the beta deliverables had no route | Done | 2026-09-29 | The report stays on the machine (`audits/` is gitignored) |
+| Audit findings -01 to -08 fixed: the engine and repos are read from GitHub `main`, the 2026-10-30 beta-session checklist is in `priorities.md`, the planned jeff-ai stack is labelled as planned, and the connections registry has rows 9–10 | Done | 2026-09-29 | corporate-memory [#6](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/6)–[#11](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/11) |
+| Weekly check scheduled (Task Scheduler, Fridays 07:00); scripts ported to PowerShell | Done; first automatic run **PASS** 2026-10-02 | 2026-09-29 | corporate-memory [#10](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/10), [#12](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/12); [`reviews/log.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/reviews/log.md) |
+| Private web viewer: the ship's Markdown as pages with search, at **brain.barefootbetters.com** behind Cloudflare Access (the ewiki's sign-in) | Done | 2026-10-04 | corporate-memory [#16](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/16)–[#18](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/18); [`viewer/README.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/viewer/README.md) |
+| First notes-migration pilot client engaged (a seminary teacher; seminary teachers are the first market — see [Open Questions](#open-questions) #7) | Done; pilot success criteria still open | 2026-10-04 | Engagement details stay in the private ship: [corporate-memory#15](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/15) |
+| Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | **Overdue**: only the GitHub repo routes are connected | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
+| Map Day 7: `/audit` re-run, scored against the 29/100 baseline | Scheduled | ~2026-10-06 | Its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
-| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Stalled since 2026-07-25 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Cost baseline](#hosting-and-security-posture) |
+| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Stalled since 2026-07-25. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
-Open intake items: two answers are still marked `[CONFIRM]` in
+Open intake items: three answers are still marked `[CONFIRM]` in
 [`aios-intake.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/aios-intake.md).
 
 ### Goals
@@ -2186,6 +2192,17 @@ This is the summary index; the individual gotchas and their nuances live in
   a single seminary teacher's ship is the pilot, and a successful pilot becomes
   a brand other seminary teachers can buy. Which line sells it, packaging, and
   price stay open. No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-04 — Build status refreshed (descriptive, no re-lock).** Added
+  rows for:
+  - the 2026-09-29 baseline `/audit` (29/100, Foundation) and the fixes for
+    its findings -01 to -08;
+  - the scheduled weekly check (first automatic run passed 2026-10-02);
+  - the private web viewer at brain.barefootbetters.com;
+  - the first notes-migration pilot client.
+
+  Map Day 2 is marked overdue, the Day 7 audit is now a re-run against the
+  baseline, and the open-intake count is corrected from two to three. No
+  Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
