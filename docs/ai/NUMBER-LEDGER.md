@@ -431,6 +431,7 @@ high-water: 422
 - WP-790 — location-restricted-attack (Game Engine + App arena-client. Hero attack printed "usable only against Villains in <city space(s)>" — 17 cards, e.g. co2e Storm Lightning Bolt / Tidal Wave — is tracked as restricted attack that can be spent only on fights in the named City spaces, instead of plain attack spendable anywhere. reserved 2026-10-01, claude/reserve-wp790-location-attack)
 - WP-791 — dashboard-overview-business-first (App dashboard. The Overview page leads with whether the business is making or losing money — revenue vs. real costs, engagement, and real health — and carries no MOCK tile; governance widgets move to Vision & Roadmap. reserved 2026-10-02, claude/reserve-wp791-overview)
 - WP-792 — master-strike-no-bystander-capture (Game Engine + scoring/PAR re-pin. Retire the D-15401 MVP placeholder: a Master Strike no longer captures a Bystander onto the Mastermind for every mastermind; only printed strike text resolves (rules v23 "each Mastermind does its Master Strike"). Surfaced in solo match PyK5YS2L8Bo — 2 of 3 rescued Bystanders were invented. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- WP-793 — villain-escape-rulebook-procedure (Game Engine + Arena Client. Make a Villain escape follow rules v23 p.15 in order: (1) the escaping Villain KOs a Hero costing 6 or less from the HQ, current player chooses, HQ refills; (2) if it had captured Bystanders, each player discards one card; (3) its printed Escape effect. Retires the WP-015 / D-24439 generic per-escape Wound placeholder. Surfaced in solo match jjChx_MJ2gl. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 
 ## EC
 
@@ -823,6 +824,7 @@ high-water: 457
 - EC-827 — location-restricted-attack (WP-790; Game Engine + App arena-client. reserved 2026-10-01, claude/reserve-wp790-location-attack)
 - EC-828 — dashboard-overview-business-first (WP-791; App dashboard. reserved 2026-10-02, claude/reserve-wp791-overview)
 - EC-829 — master-strike-no-bystander-capture (WP-792; Game Engine + scoring/PAR re-pin. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- EC-830 — villain-escape-rulebook-procedure (WP-793; Game Engine + Arena Client. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 
 ## D
 
@@ -1257,3 +1259,4 @@ section below) and the allocation protocol in
 - D-24653 — dashboard-overview-business-first (WP-791 — the Overview content contract: business-first row order and the no-MOCK-tile-on-Overview rule. reserved 2026-10-02, claude/reserve-wp791-overview)
 - D-24654 — master-strike-no-bystander-capture (WP-792 — supersedes D-15401: Master Strikes resolve only their printed text; the generic capture-onto-Mastermind is removed. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 - D-24655 — x-men-united-per-count (direct fix, no WP — core Cyclops X-Men United grants +2 attack per other X-Men Hero played this turn via a new x-men-played-this-turn count source, instead of a flat +2. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- D-24656 — villain-escape-rulebook-procedure (WP-793 — the rulebook escape procedure (HQ KO <= 6 by current-player choice, Bystander-carry discard per player, then the Escape effect) supersedes the WP-015 generic per-escape Wound and D-24439. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
