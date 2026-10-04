@@ -39,7 +39,7 @@ source:
   - ../docs/ai/work-packets/WP-019-mastermind-tactics-boss-fight-minimal-mvp.md
   - ../docs/ai/DECISIONS.md
   - ../docs/10-GLOSSARY.md
-last-reviewed: 2026-09-22
+last-reviewed: 2026-10-04
 ---
 
 # Master Strike
@@ -48,10 +48,11 @@ last-reviewed: 2026-09-22
 
 Master Strike is the mechanic fired when a `mastermind-strike` card is
 revealed from the villain deck. The trigger fires at stage `start` as
-part of the reveal pipeline. Every fire increments a counter, captures a
-bystander onto the Mastermind, and queues a deterministic log entry;
-the mastermind's *printed* strike text is then resolved by a
-per-mastermind branch. **Eight** masterminds now have a resolver (see the
+part of the reveal pipeline. Every fire increments a counter and queues a
+deterministic log entry; the mastermind's *printed* strike text is then
+resolved by a per-mastermind branch. A strike does **only** what the
+printed text says — it captures no Bystander on its own (D-24654, which
+superseded the D-15401 MVP placeholder in WP-792). **Eight** masterminds now have a resolver (see the
 [table below](#default-handler-behaviour)); three of them — the
 **reveal-and-keep** Master Strikes (core Magneto / core Dr. Doom / core
 Loki) — also announce an *avoided* strike by emitting a `strikeBlocked`
@@ -85,13 +86,9 @@ returns the two generic `RuleEffect` entries on every fire:
 
 **It is no longer effect-only or per-mastermind agnostic.** The MVP
 description ("does not read or mutate `G`… per-mastermind agnostic") has
-been superseded. A fire now does three things in order:
+been superseded. A fire now does two things in order:
 
-1. **Generic bystander capture (D-15401)** — `captureBystanderOntoMastermind`
-   moves one bystander from `G.piles.bystanders` onto
-   `G.mastermind.attachedBystanders`, **mutating `G` directly**. An empty
-   supply logs a message and captures nothing.
-2. **Per-mastermind text effect** — the handler branches on
+1. **Per-mastermind text effect** — the handler branches on
    `G.selection.mastermindId` and, for the masterminds whose printed strike
    text is implemented, calls a resolver that also mutates `G` directly:
 
@@ -107,14 +104,30 @@ been superseded. A fire now does three things in order:
    | `co2e/doctor-octopus` | `resolveDoctorOctopusStrike` | may discard a `[team:spider-friends]` Hero; otherwise reveals the top 8 and discards non-grey Heroes | — (discard / reveal-deck) |
 
    A mastermind **not** in this table takes no branch — the strike is
-   generic counter-plus-capture only, and its printed text is **not**
-   applied. Of the columns, only **`strikeBlocked`** is a live engine claim
+   the generic counter only, and its printed text is **not** applied. Of
+   the columns, only **`strikeBlocked`** is a live engine claim
    (source-verified against the resolvers); the printed-effect column
    paraphrases each card's text.
-3. **Terminal emission (WP-200)** — `mastermindStrikeResolved`, after both
-   the capture and the text effect, with the payload's `cardId` narrowed
-   defensively (a malformed payload yields an empty `strikeCardId` rather
-   than throwing — moves never throw).
+2. **Terminal emission (WP-200)** — `mastermindStrikeResolved`, after the
+   text effect, with the payload's `cardId` narrowed defensively (a
+   malformed payload yields an empty `strikeCardId` rather than throwing —
+   moves never throw).
+
+**No Bystander capture (D-24654, WP-792).** Rules v23: *"When a Master
+Strike occurs, each Mastermind does its Master Strike ability."* There is
+no generic Bystander effect. The MVP placeholder (D-15401, superseded) put
+the top Bystander on the Mastermind on every strike, for every Mastermind,
+which handed players Bystander VP the rules never offered. It is removed,
+and so are its two log lines (`[Master Strike] … captured a Bystander.` and
+the empty-supply line). `G.mastermind.attachedBystanders` still fills from
+the real capture paths — a Villain-Deck Bystander revealed with an empty
+City, Deadpool's Here, Hold This (D-24500) and the kidnap fallback
+(D-24537) — and a tactic defeat still rescues whatever it holds. No printed
+strike capture is modeled yet: Mr. Sinister and Madelyne Pryor print one,
+but each also prints a cost for the captured Bystanders (his +1 attack per
+Bystander, her Demon Goblins), and a capture without its cost would bring
+the free VP back. Those, plus Annihilus, Mojo, Arcade, The Goblin, Charles
+Xavier, Red Hulk, Bastion, Zemo and Lilith, are follow-ups.
 
 Three details worth knowing when adding the next mastermind:
 
@@ -184,8 +197,8 @@ share the same Mastermind entity.
   observability counter; only Scheme Twist additionally writes an
   `ENDGAME_CONDITIONS` counter (`SCHEME_LOSS`). Master Strike's
   `masterStrikeCount` does not feed `evaluateEndgame`.
-- **Mastermind state.** The strike handler writes
-  `G.mastermind.attachedBystanders` (D-15401 capture) and never touches
+- **Mastermind state.** The strike handler does not write
+  `G.mastermind.attachedBystanders` (D-24654) and never touches
   `G.mastermind.tacticsDeck` / `tacticsDefeated`, which are read at
   setup and during combat resolution.
 - **Combat (defeat tactic).** The combat-side path —
@@ -256,8 +269,8 @@ share the same Mastermind entity.
   grown.** **Eight** masterminds now have a resolver (see the table above):
   core Magneto / core Dr. Doom / core Loki, Red Skull, and four co2e faces
   (co2e Doctor Doom / Loki / Magneto / Doctor Octopus). For every *other*
-  mastermind a Strike is counter-plus-bystander-capture plus a log line — no
-  wound, discard, or KO derived from its own "Master Strike:" ability. The gap
+  mastermind a Strike is the counter plus a log line — no wound, discard, KO
+  or Bystander capture derived from its own "Master Strike:" ability. The gap
   is still wide (most masterminds' authored strike text is data, not
   engine-resolved), but the earlier "only Magneto and Red Skull have resolvers"
   is retired.
@@ -296,9 +309,8 @@ share the same Mastermind entity.
   there is no "strike-before-card-revealed" intermediate state.
 - **Strike card destination.** The strike card moves to
   `G.villainDeck.discard` after triggers resolve. It does not enter
-  the City, and no bystander attaches *to the strike card* — the
-  D-15401 capture attaches to the **Mastermind**
-  (`G.mastermind.attachedBystanders`), not to the revealed card.
+  the City, and no bystander attaches to the strike card or, since
+  D-24654, to the **Mastermind** (`G.mastermind.attachedBystanders`).
 - **Counter key is a string literal.** `'masterStrikeCount'` is
   written directly by the handler and is not exported as a constant
   in `ENDGAME_CONDITIONS`. Any code that wants to read this counter
@@ -307,8 +319,7 @@ share the same Mastermind entity.
 ## Code Touchpoints
 
 - [`packages/game-engine/src/rules/mastermindHandlers.ts`](../packages/game-engine/src/rules/mastermindHandlers.ts)
-  — `mastermindStrikeHandler` (dispatcher), `captureBystanderOntoMastermind`,
-  the **eight** per-mastermind resolvers (`resolveMagnetoStrike`,
+  — `mastermindStrikeHandler` (dispatcher), the **eight** per-mastermind resolvers (`resolveMagnetoStrike`,
   `resolveCoreDoomStrike`, `resolveRedSkullStrike`, `resolveDoctorDoomStrike`,
   `resolveCoreLokiStrike`, `resolveLokiStrike`, `resolveCo2eMagnetoStrike`,
   `resolveDoctorOctopusStrike`), `selectRedSkullKoTarget`, and the
@@ -343,7 +354,7 @@ share the same Mastermind entity.
 - WP-014A: `onMastermindStrikeRevealed` trigger introduced; emitted from the villain-deck reveal pipeline on `mastermind-strike` classification
 - WP-019: `MastermindState` added to `G`; tactics deck and combat-side tactic defeat introduced (separate path from the strike trigger)
 - WP-200: terminal `mastermindStrikeResolved` emission added, with defensive `cardId` narrowing
-- D-15401: generic bystander capture onto the Mastermind on every strike — the handler begins mutating `G`
+- D-15401: an MVP placeholder captured one Bystander onto the Mastermind on every strike — the handler begins mutating `G` (superseded by D-24654)
 - Magneto: first per-mastermind branch (`resolveMagnetoStrike`), taking the punitive discard-to-four branch of the printed "or" clause
 - WP-386 / D-24188: `resolveRedSkullStrike` — each player KOs a Hero from hand, auto-picked deterministically (lowest cost, tie → lowest hand index). Establishes the pattern for subsequent masterminds and the `MASTERMINDS_RED_SKULL` multi-set id list
 - co2e data pass (2026-07-17): ten authored Master Strike texts added as card data; only the base Red Skull face is engine-resolved
@@ -355,6 +366,7 @@ share the same Mastermind entity.
 - D-24518 (2026-09-15, bug fix, no WP): a Tactic that **vanquishes** the Mastermind no longer leaves its Fight ability's parked **pending choice** dangling on the won game. `defeatMastermindTacticCore` drops every `pending*` field when `MASTERMIND_DEFEATED === 1` (the true vanquish — not `areAllTacticsDefeated`, so a deferred Final Blow 4th-Tactic defeat is unaffected), after immediate VP effects apply. Audit-hardened from an initial six-queue drop to all pending fields after a reactive-park gap (a Tactic Wound → Diving Block parks a companion `pendingDivingBlockWounds` queue). No hash re-pin. Surfaced by a real `play.legendary-arena.com` heroes-win (Magneto / Cosmic Cube) whose diagnostics carried an active `pendingElectromagneticBubbleChoice`
 - WP-651 / D-24463 (2026-09-05): **completes the reveal-to-avoid family** (no new *Master Strike* producer). The same `reveal-or-wound` villain handler (`villainEffectRevealOrWound`, WP-646) now emits `strikeBlocked` at its `onFight` + `onEscape` timings too, adding the `fight` (amber, *"The villain's attack was blocked."*) and `escape` (teal, *"The Escape penalty was blocked."* — the villain still escapes; only the Wound is dodged) `threatKind`s. These are villain **Fight/Escape abilities**, not master strikes, so `mastermindHandlers.ts` is untouched — but the shield-block VFX now recolours across all **five** threat classes (Master Strike red / Scheme Twist purple / Ambush green / Fight amber / Escape teal). Surfaced by a live playtest where a Frost-Giant Fight reveal-block rendered no shield beside an identical Ambush block
 - WP-732 / D-24553 (2026-09-22): **defeating the Mastermind finishes the turn.** Per Universal Rules v23 *"End of the Game: Players Win,"* the vanquish no longer ends the match immediately — the current player finishes their turn (accruing Victory Points) and the game ends `heroes-win` at `turn.onEnd`. The vanquish latches the new non-terminal `ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING` (victory assured); `evaluateEndgame` suppresses a scheme-loss / deck-tie while it is set; `promoteMastermindVictoryIfPending` (`endgame/mastermindVictory.logic.ts`) promotes it to terminal `MASTERMIND_DEFEATED` at turn end — mirroring the deck-exhaustion final-turn latch (`endgame/finalTurn.logic.ts`). *"Evil Wins"* stays immediate ("Don't finish the turn") — the asymmetry is deliberate. The D-24518 pending-choice drop moved from the vanquish to the turn-end promotion (a choice the final Tactic's Fight ability parks stays resolvable during the turn — a latent bug this also cured). Applies to both the default 4th-Tactic vanquish and the optional Final Blow 5th fight. Live-verified 2026-09-22 (Magneto / Midtown: vanquish → *"Victory is assured; finish your turn"* → the player recruits more → *"The turn ends — … the heroes win"*)
+- WP-792 / D-24654 (2026-10-04): **a Master Strike resolves only its printed text.** The D-15401 placeholder capture (and the D-24383 success log line) is removed, so a strike no longer puts a Bystander on the Mastermind. Surfaced by Jeff's solo Magneto match `PyK5YS2L8Bo`, where 2 of the 3 Bystanders rescued by a tactic defeat came from the placeholder (Bystander VP 3 instead of 1). The real capture paths (Villain-Deck Bystander with an empty City, Here, Hold This, the kidnap fallback) and the tactic rescue are unchanged; printed strike captures (Mr. Sinister, Madelyne Pryor, …) are follow-ups modeled with their printed cost
 
 ## References
 

@@ -39,10 +39,12 @@ export interface MastermindState {
   /** Resolved mastermind-strike cards — append-only, chronological. */
   strikePile: CardExtId[];
 
-  // why: D-15401 — mastermind-side bystander captures only (D-12805
-  // Interpretation B separates from city-villain G.attachedBystanders).
-  // Append-only during strike resolution; no removal in MVP.
-  /** Bystanders captured by mastermind strikes — append-only. */
+  // why: mastermind-side bystander captures only (D-12805 Interpretation B
+  // separates from city-villain G.attachedBystanders). Written by the
+  // Villain-Deck reveal with an empty City, Here, Hold This and the kidnap
+  // fallback; a Master Strike captures nothing (D-24654). Cleared when a
+  // tactic is defeated.
+  /** Bystanders the Mastermind holds (Villain-Deck reveal with an empty City, Here, Hold This, the kidnap fallback — D-24654); cleared when a tactic is defeated. */
   attachedBystanders: CardExtId[];
 
   // why: WP-398 / D-24201 — Hypno-Thralls are the non-grey Heroes co2e Loki's

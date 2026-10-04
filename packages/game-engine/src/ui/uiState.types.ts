@@ -669,10 +669,10 @@ export interface UIHQState {
  * (e.g., "core/dr-doom"). UI consumers never see the join key.
  *
  * // why: WP-128 / D-12805 — `attachedBystanders` represents bystanders
- * captured by the mastermind itself (Master Strike effects, per
- * Interpretation B). This IS populated at runtime (WP-154 / D-15401 wired
- * `G.mastermind.attachedBystanders`; `mastermindHandlers.ts` captures onto
- * it). **Still do NOT flatten `G.attachedBystanders`** (the top-level
+ * captured by the mastermind itself (per Interpretation B). This IS populated
+ * at runtime from the D-24654 capture sources (a Villain-Deck Bystander
+ * revealed with an empty City, Here, Hold This, the kidnap fallback); a
+ * Master Strike captures nothing. **Still do NOT flatten `G.attachedBystanders`** (the top-level
  * city-villain captures) onto the mastermind tile — those are a separate
  * capture store, rendered on the city row as `UICityCard.attachedBystanderCount`
  * (WP-505 / D-24311), never here.
