@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
   - ../render.yaml
-last-reviewed: 2026-10-02
+last-reviewed: 2026-10-04
 ---
 
 # AI Second Brain
@@ -642,8 +642,9 @@ corrupts recall or the store:
   **ownership and open formats, never a provider**, so the vendor for the
   eventual *dedicated* brain host is a shopping decision, not an architectural
   one. As of 2026-08, candidates in this class were:
-  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier (a 2026-08 figure;
-    get a current quote, since it may be a promo price), familiar support.
+  - **NameHero** — US-centric, familiar support. The 2026-08 "~$7/mo for the
+    8 GB tier" was a 3-year promo; renewal is $15.92 (Plus) and $27.94 (Turbo).
+    See the [host shopping note](#hosting-and-security-posture) below.
   - **Hetzner Cloud** — often the best price/performance for a self-hosted
     Postgres + Docker stack; US and EU regions.
   - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
@@ -694,6 +695,64 @@ corrupts recall or the store:
   production alone. That makes "co-locate to bootstrap" a cost decision, not
   only a convenience. The resource-contention caution in the deployment callout
   still applies, and a dedicated host is still the end-state.
+- **Host shopping note (2026-10-04).** The vendor for the brain host is still
+  unlocked. This note prices the candidates against the stack this page runs.
+  It does not move the arena migration: `api.legendary-arena.com` and its
+  Postgres stay on the DigitalOcean droplet
+  ([Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md), vendor reconfirmed
+  2026-10-02). NameHero remains a candidate only for the brain's eventual
+  dedicated host.
+
+  The size bar is unchanged: 8 GB / 2 vCPU is the lower tier for Postgres +
+  LiteLLM + Open WebUI + CPU embeddings, and 16 GB is the floor once local
+  Whisper and a TTS sidecar run at the same time. Ubuntu 24.04 LTS. Backups are
+  the operator's (`pg_dump` and the Git corpus to R2); a host snapshot is a
+  convenience, not the recovery path.
+
+  NameHero's published prices, checked 2026-10-04. The promo is the first
+  invoice of a 3-year term; budget the renewal.
+
+  | Plan | vCPU | RAM | Disk | Transfer | Promo | Renewal | Fits the brain? |
+  |---|---|---|---|---|---|---|---|
+  | AI Agent VPS | 2 | 4 GB | 100 GB NVMe | 4 TB | $6.49 (3-year, $233.77 prepaid) | $9.99 | No. Half the lower tier, and the image is Ubuntu 22.04. |
+  | Unmanaged Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $6.85 | $15.92 | Lower tier only, no voice. |
+  | Unmanaged Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $12.01 | $27.94 | The honest floor once voice is on. |
+  | Unmanaged Business | 8 | 32 GB | 400 GB NVMe | 32 TB | $20.68 | $48.09 | Headroom; same dollars as the arena droplet. |
+
+  DigitalOcean Basic, same day, month-to-month with no promo cliff: 2 vCPU /
+  4 GB / 80 GB SSD is $24 and 4 vCPU / 8 GB / 160 GB SSD is $48 (`sfo3`). There
+  is no Basic 2 vCPU / 8 GB; CPU-Optimized 4 vCPU / 8 GB is $84, and weekly
+  backups add 20%. Full side-by-side:
+  [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+
+  Plus and Turbo at renewal still undercut DigitalOcean on RAM and disk per
+  dollar. Neither is in San Francisco; NameHero's NVMe US site is Lenexa,
+  Kansas — fine for a single-operator brain reached over Tailscale, the wrong
+  pin for the arena origin.
+
+  **Do not order the AI Agent VPS for this platform.** It is a checkout
+  installer (OpenClaw, n8n, Hermes, Docker, Claude Code, Open WebUI) on a 4 GB
+  Ubuntu 22.04 box, and it misses three ways:
+  - 4 GB cannot hold Postgres + LiteLLM + Open WebUI + CPU embeddings, let
+    alone voice.
+  - The image is 22.04; the host pin is 24.04. Replacing the image throws away
+    the one-click install it is priced around.
+  - One-click Open WebUI ships its document upload and built-in RAG switched on,
+    which the "Open WebUI collections are not a knowledge base" anti-goal
+    ([Edge Cases](#edge-cases)) turns off in v1. A preinstalled agent is an
+    agent-layer choice ([The agent layer is replaceable](#the-agent-layer-is-replaceable)),
+    not a reason to pick a host.
+
+  If a NameHero box is bought for the brain, it is unmanaged **Turbo** at the
+  renewal price: Ubuntu 24.04, no preinstalled app, dumps to R2, Tailscale in
+  front, no coupling to the arena deploy. **Plus** is the pilot only if voice
+  stays off. The AI Agent SKU is out.
+
+  No quote has been requested. If the vendor is reopened, ask for Turbo
+  month-to-month (not 3-year prepay), Ubuntu 24.04 with no checkout app, and
+  whether a West Coast site exists. Until that quote is in writing, the
+  bootstrap host is the DigitalOcean droplet the migration stands up, and a
+  dedicated brain host stays a later split.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -1003,7 +1062,7 @@ The options, cheapest first:
 | **B. In-server routing shim** — a small Node module owns the model id + per-model config (thinking / output budget), read from env | none | ✅ (env / config) | ✅ | *now* — one LLM surface; lowest cost; delivers the principle with no infra |
 | **C. Hosted gateway** (e.g. OpenRouter) | none (external dependency) | ✅ | ✅ | you want a real gateway with zero ops and accept a third party in the path |
 | **D1. Self-hosted LiteLLM on Render**, beside `apps/server` | one small service, co-located | ✅ | ✅ | a second LLM surface appears and you want ownership + cost control near the server |
-| **D2. Self-hosted LiteLLM on the brain host** (NameHero) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
+| **D2. Self-hosted LiteLLM on the brain host** (vendor open) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
 
 **Recommendation.** Take **B now.** It is the model-independence *principle*
 (model as config; quirks off the feature client) at the cost of a small, testable
@@ -2111,6 +2170,17 @@ This is the summary index; the individual gotchas and their nuances live in
   rather than zero. [Build status](#build-status) gained a row for the host, and
   Open Question 3 points at the baseline. No Locked row moved, and there is no
   `DECISIONS.md` entry.
+- **2026-10-04 — host shopping note (descriptive, no re-lock).** Priced
+  NameHero's current unmanaged plans and its AI Agent VPS against the brain's
+  size bar and against DigitalOcean Basic. The 2026-08 "~$7/mo for 8 GB" figure
+  was the Plus promo; renewal is $15.92 (Plus, 2 vCPU / 8 GB) and $27.94 (Turbo,
+  4 vCPU / 16 GB). The AI Agent VPS ($9.99 regular, $6.49 on a 3-year prepay) is
+  2 vCPU / 4 GB on Ubuntu 22.04 with a one-click agent install — below the 8 GB
+  lower tier, on the wrong image, and at odds with the Open WebUI built-in-RAG
+  anti-goal. Open Question 3 now points at the note, and the gateway table's D2
+  row no longer names NameHero as the brain host. Recorded as a shopping note
+  only; the arena migration stays DigitalOcean. No Locked row moved, and there
+  is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2156,9 +2226,11 @@ is built.
    in [Hosting and security posture](#hosting-and-security-posture)). The
    cost ceiling for the brain is best set against that Render figure. The lower tier for
    the eventual dedicated box is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04
-   (NameHero, Hetzner, or DigitalOcean / Vultr / Linode are 2026-08 candidates —
-   vendor is unlocked; compare current plans and weight reliability + owned
-   backups, see [Hosting and security posture](#hosting-and-security-posture)) for
+   (vendor is unlocked; current NameHero renewal prices and DigitalOcean Basic
+   are compared in the 2026-10-04 host shopping note under
+   [Hosting and security posture](#hosting-and-security-posture) — NameHero
+   Turbo at $27.94 is the floor once voice is on — and weight reliability +
+   owned backups over promo price) for
    a navigation-plus-vector brain that leans on hosted inference; the upper tier,
    if local reasoning quality on sensitive domains is wanted, is a unified-memory
    accelerated box (Spark / GB10 class — order $8–10k as of 2026-08 for a
