@@ -437,8 +437,10 @@ git status --porcelain
   `competitive_scores` rows from before the deploy include placeholder Bystander VP (up to 200 points per
   placeholder rescue). They stay exactly as recorded (the D-24616 §5 precedent): no rewrite, no leaderboard
   annotation, no new gauntlet season. The executor makes no change to stored scores or leaderboard surfaces.
-- **OD-2 — PAR profile re-pin timing.** The follow-up `INFRA:` re-pin of `data/par/profile/v1/**` runs after merge
-  (precedent #2405). It can also wait for the next calibration pass, since the profiles are diagnostic only.
+- **OD-2 — PAR profile re-pin timing. RESOLVED 2026-10-04 (Jeff): immediately after the WP-792 execution merges.**
+  The follow-up `INFRA:` re-pin of `data/par/profile/v1/**` (precedent #2405) is opened right after the
+  execution PR lands on `main`, not deferred to the next calibration pass. It stays a separate PR, so this WP's
+  allowlist does not grow.
 - **OD-3 — the deferred printed Bystander strikes** (D-24654 point 4): which to schedule, if any. Mr. Sinister and
   Madelyne Pryor are the cheapest. Each needs its capture plus the printed cost: his per-Bystander attack and discard
   count; her Demon Goblins.
