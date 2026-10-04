@@ -46418,6 +46418,27 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24654 — A Master Strike resolves only its printed text: the generic capture-a-Bystander placeholder is removed (supersedes D-15401 and D-24383) (Drafted 2026-10-04; not yet landed — WP-792 / EC-829)
+
+**Context.** D-15401 (WP-154, Immutable) made every Master Strike, for every Mastermind, capture the top Bystander onto the Mastermind. It was an MVP shortcut to unblock the projection, not a rule: rules v23 (~L3429) says "When a Master Strike occurs, each Mastermind does its Master Strike ability", and core Magneto's printed strike captures nothing. D-24383 (WP-574) later logged the capture on success. In Jeff's solo match `PyK5YS2L8Bo` (Magneto), two of the three Bystanders rescued by a tactic defeat were invented by the placeholder (log `6.1.1`, `7.1.1`), so Bystander VP read 3 instead of 1. Every score that counts rescued Bystanders was inflated, for every Mastermind.
+
+**Decision.**
+1. `mastermindStrikeHandler` no longer captures a Bystander. **Supersedes D-15401** in full. `G.mastermind.attachedBystanders` stays the Mastermind-side store (D-12805 Interpretation B); its writers are the Villain-Deck Bystander revealed with an empty City and `captureBystanderToMastermind` (Here, Hold This, D-24500; the kidnap fallback, D-24537). Rescue on tactic defeat is unchanged.
+2. No printed Master Strike capture is modeled yet. Every Bystander-capturing strike in the card data comes with a printed rule that makes those Bystanders cost the player (Mr. Sinister's +1 attack per Bystander, Madelyne Pryor's Demon Goblins, Human Shields, Hidden Witnesses, …). A printed capture is modeled only together with that rule; a capture alone would reintroduce free Bystander VP.
+3. **Supersedes D-24383.** Its success line and the D-15401 empty-supply line stop firing, and the now-unused `captureBystanderOntoMastermind` helper that held them is deleted.
+4. Follow-ups: dkcy Mr. Sinister, ssw1 Madelyne Pryor, anni Annihilus, xmen Mojo and Arcade, noir The Goblin and Charles Xavier, wwhk Red Hulk, msmc Bastion, ca75 Zemo, mdns Lilith.
+5. **Determinism and scoring.**
+   - The sentinel `finalStateHash` and its messages are re-recorded. `PRE_WP080_HASH` is unchanged (its replay fires no strike).
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated.
+   - The diagnostic PAR profiles are re-pinned by a follow-up `INFRA:` PR, opened immediately after the WP-792 execution merges (operator ruling 2026-10-04, Jeff, WP-792 OD-2). Seed PAR is rating-driven and unaffected.
+   - **Matches in progress** switch at the next strike after deploy. Bystanders the Mastermind already holds stay and are rescued normally; there is no migration.
+   - A **competitive match** captured before the deploy and submitted after it fails `replay_verification_failed`. This is an accepted window, as with WP-790 / WP-726. Read-time re-execution of pre-deploy replays (the coach, submit by `replayHash`) also reflects the post-deploy rules; replays are durable in `bgio.replay_artifacts`, so for an unsubmitted pre-deploy match the window is permanent. Accepted; no migration.
+   - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Operator ruling 2026-10-04 (Jeff, WP-792 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+
+**Reserved by:** NUMBER-LEDGER D-24654 (#2578). Related: WP-792 / EC-829, D-15401 (superseded), D-24383 (superseded), D-12805, D-24500, D-24537, D-24616 §5, D-24081.
+
+---
+
 ### D-24656 — A Villain escape runs the rulebook procedure: HQ KO (≤ 6, current player chooses), then a one-card discard per player if Bystanders were carried, then the Escape effect; the generic escape Wound is removed (supersedes D-1702 and D-24439) (Drafted 2026-10-04; not yet landed — WP-793 / EC-830)
 
 **Context.** D-1702 (WP-017) gave the current player a Wound on every escape as "a reasonable MVP default". D-24439 later found it had no basis in any card, scheme or rule and gated it to Villains without an Escape ability, keeping it only so ability-less escapes had some penalty. The rulebook has a real penalty that was never modeled (rules v23 L556–L570, "in this order"):
@@ -46460,13 +46481,13 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
    - No new move, `hasPending*` guard or `UIState` field. The choices ride the projected `pendingSeatChoice`, and the client adds three headings.
    - The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (neither replays an escape).
    - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903.
-   - The diagnostic PAR profiles are re-pinned by a follow-up `INFRA:` PR after WP-749. Seed PAR files are unchanged, but the WP-591 per-scheme anchors (Midtown Bank Robbery included) were calibrated under the old escape costs, so grades shift until a re-anchoring pass (OD-2).
+   - The diagnostic PAR profiles are re-pinned by one combined follow-up `INFRA:` PR for WP-749 + WP-793, opened immediately after both merge; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs (operator ruling 2026-10-04, Jeff, WP-793 OD-2). WP-792 keeps its own immediate re-pin.
    - Live play in a match in progress at deploy continues; its next escape runs the new procedure. **Re-executing any log that contains a pre-deploy escape stalls.** That escape now parks a seat choice the log never answers, so every later recorded move is a block-all no-op. This hits:
      - competitive verification (`replay_verification_failed`);
      - coach `reduceReplayByHash`;
      - every match in progress at deploy.
      It is permanent for durable pre-deploy replays. It is wider than the Master Strike capture removal's window (D-24654, WP-792, drafted in PR #2580). Accepted; no migration.
-   - Stored `competitive_scores` rows are frozen (D-24616 §5).
+   - Stored `competitive_scores` rows are frozen (D-24616 §5). Operator ruling 2026-10-04 (Jeff, WP-793 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
    - Multi-player sims depend on WP-749 / D-24573.
 
 **Reserved by:** NUMBER-LEDGER D-24656 (#2578). Related: WP-793 / EC-830, D-1702 (superseded), D-24439 (superseded), D-24440, D-24314, D-24315, D-18603, D-24287, D-24587, D-24501, D-24511, D-24499, D-24648, D-24301, D-24527, D-24644, D-24284, D-24006, D-24007, D-13503, D-24318, D-24616 §5, D-24573, D-24654.

@@ -55,8 +55,8 @@ almost every game.
   Hero-Deck draw and Super Hero Civil War's loss closer). A Bystander-carrying escape costs every player a card.
 - **Midtown Bank Robbery changes most.** Its whole threat is Bystander-carrying escapes, so almost every escape now
   costs every player a card.
-- Scores on the same scenario before and after the deploy are not comparable. Stored competitive rows stay frozen;
-  the history choice is OD-1.
+- Scores on the same scenario before and after the deploy are not comparable. Stored competitive rows stay frozen
+  (OD-1, resolved).
 
 ## Assumes
 
@@ -315,7 +315,8 @@ Wound**, so the placeholder was not standing in for any printed text.
 - **Merge-conflict surfaces:** the `DECISIONS.md` tail (both append before "Protect this file."), the top of
   `WORK_INDEX.md`, the `EC_INDEX.md` tail, the mindmap and its generated count table (regenerate with
   `pnpm roadmap:counts:write`, never hand-merge), and `docs/ai/STATUS.md` at govern-close.
-- **PAR.** A single PAR profile re-pin after both packets and WP-749 is the cheapest path (OD-2).
+- **PAR.** WP-792 re-pins right after its own execution merges; WP-749 + WP-793 share one combined re-pin right
+  after both merge (OD-2, resolved).
 
 ## Non-Negotiable Constraints
 
@@ -877,19 +878,18 @@ git status --porcelain
 
 ## Open Operator Decisions (do not block execution)
 
-- **OD-1 — competitive history.** Stored `competitive_scores` rows from before the deploy include escape Wounds
-  (−1 VP each) and lack the HQ-KO and discard costs. Options:
-  - leave them as-is (the default; D-24616 §5, as WP-792 OD-1 proposes);
-  - annotate the leaderboard with the deploy date;
-  - start a new gauntlet season covering both WP-792 and WP-793.
-  Rewriting stored scores is not proposed. Whatever is chosen, replays with a pre-deploy escape stop re-executing at
-  that escape (§Context), so coach and verification for those matches fail permanently.
-- **OD-2 — PAR profile re-pin timing.** The multi-player profiles can only be regenerated after WP-749. The
-  recommendation is one follow-up `INFRA:` re-pin of `data/par/profile/v1/**` after WP-792, WP-749 and WP-793 have
-  all merged (precedent #2405), rather than one per packet. It can also wait for the next calibration pass, since the
-  profiles are diagnostic only. The same pass should re-anchor seed PAR for Midtown Bank Robbery and the other
-  Bystander-heavy schemes. Their WP-591 anchors were calibrated under the old escape costs, so grades drift until
-  then.
+- **OD-1 — competitive history. RESOLVED 2026-10-04 (Jeff): leave stored scores frozen**, the same ruling as WP-792
+  OD-1. Stored `competitive_scores` rows from before the deploy include escape Wounds (−1 VP each) and lack the
+  HQ-KO and discard costs. They stay exactly as recorded (D-24616 §5): no rewrite, no leaderboard annotation, no
+  new season. The executor makes no change to stored scores or leaderboard surfaces. Replays with a pre-deploy
+  escape still stop re-executing at that escape (§Context), so coach and verification for those matches fail
+  permanently; that is accepted.
+- **OD-2 — PAR profile re-pin timing. RESOLVED 2026-10-04 (Jeff).** WP-792's own re-pin runs immediately after its
+  execution merges (WP-792 OD-2), unchanged. The multi-player profiles can only be regenerated after WP-749, so
+  WP-749 and WP-793 share **one combined follow-up `INFRA:` re-pin** of `data/par/profile/v1/**` (precedent #2405),
+  opened immediately after both have merged, not deferred to a calibration pass. That same follow-up re-anchors
+  seed PAR for Midtown Bank Robbery and the other Bystander-heavy schemes, whose WP-591 anchors were calibrated
+  under the old escape costs. It stays a separate PR, so this WP's allowlist does not grow.
 - **OD-3 — follow-ups**, which to schedule, if any:
   - the printed Escape texts that reference "the normal Escape KO" (hollow today);
   - a strict-order reveal continuation (steps 1–2 before the escape's other consequences);
@@ -917,7 +917,7 @@ git status --porcelain
 - **Conflict assertion:** No conflict: this WP preserves all touched clauses.
 - **Determinism and scoring:** the change is deterministic and replay-faithful. The bgio reducer replays the same
   `turn.onMove` openers, and the sim loops mirror them. Scores change because the rules changed; the accepted replay
-  window and the frozen rows are in §Context, and the history choice is OD-1.
+  window and the frozen rows are in §Context; OD-1 is resolved (stored scores stay frozen).
 
 ## Funding Surface Gate
 
