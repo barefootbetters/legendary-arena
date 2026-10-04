@@ -232,6 +232,17 @@ already written for DigitalOcean.
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
+
+  **Account status (2026-10-04).** The account is open but has **no payment
+  method**, so it cannot create a droplet yet. Usage is $0 and no resources
+  exist. The account also holds a $5 "Inference Cloud Trial" credit that
+  expires 2026-10-21. It is named for the inference products, so do not count
+  on it covering droplet usage. Remaining setup, in order:
+  1. Add a payment method (operator only).
+  2. Set a spend alert a little above the planned droplet price, for example
+     $60 a month for the $48 box. The billing page now offers spend alerts.
+  3. Upload the SSH public key, and create an API token if provisioning goes
+     through `doctl` or Terraform.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
