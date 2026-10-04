@@ -1257,7 +1257,7 @@
       "note": ""
     },
     {
-      "key": "core/cyclops|x-men-united",
+      "key": "core/cyclops|attack-per-count",
       "kind": "hero",
       "card": "Cyclops",
       "ability": "X-Men United",
@@ -1265,7 +1265,7 @@
       "state": "pending",
       "date": "",
       "evidence": "",
-      "note": "Engine grants a flat +2 attack, not +2 per other X-Men Hero played — correct only with exactly one other X-Men Hero. Needs an x-men-played-this-turn count source."
+      "note": "Found in match PyK5YS2L8Bo: granted a flat +2, not +2 per other X-Men Hero. Fixed by D-24655 (#2579). Re-test after deploy: play it after two other X-Men Heroes, expect +4."
     }
   ]
 }
