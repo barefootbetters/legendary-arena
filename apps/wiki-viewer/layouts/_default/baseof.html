@@ -92,7 +92,7 @@
         script.onload = function () {
           if (typeof PagefindUI !== 'undefined') {
             // why: preserve whatever the user typed into the stub before
-            // Pagefind replaced it, so their first keystrokes are not lost
+            // Pagefind mounted, so their first keystrokes are not lost
             // across the lazy swap.
             var stub = document.getElementById('wiki-search-stub');
             var carryValue = stub ? stub.value : '';
@@ -101,10 +101,15 @@
               showSubResults: true,
               resetStyles: false
             });
+            // why: PagefindUI APPENDS its UI into #wiki-search; it does not
+            // replace the stub, so the header showed two search boxes after the
+            // first click (observed on the brain viewer, which shares this
+            // loader, 2026-10-04). The stub's text is carried over below, so
+            // remove it — which also lets focusSearch() find the real input.
+            if (stub) stub.remove();
             pagefindMounted = true;
-            // why: PagefindUI replaces #wiki-search's children synchronously on
-            // construct. Focus the new real input and replay any carry-over text
-            // on the next tick so the user's intent survives the swap.
+            // why: focus the new real input and replay any carry-over text on
+            // the next tick so the user's intent survives the swap.
             setTimeout(function () {
               var realInput = document.querySelector('#wiki-search input.pagefind-ui__search-input');
               if (realInput) {
