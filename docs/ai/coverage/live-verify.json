@@ -558,10 +558,10 @@
       "card": "Blob",
       "ability": "setup:require-to-defeat",
       "wp": "WP-292",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-04",
       "evidence": "Solo Magneto / Midtown matches trJwnB0oLeg + jjChx_MJ2gl (build afd76ff)",
-      "note": "Defeated with X-Men in play; with no X-Men Hero (Hulk game) never defeated and escaped twice. Confirm the Fight button was blocked."
+      "note": "Both cases: defeated with an X-Men Hero in play; with no X-Men Hero (Hulk game) the game would not let Jeff fight him."
     },
     {
       "key": "core-villain-enemies-of-asgard-destroyer|ko-heroes-current-by-trait",
