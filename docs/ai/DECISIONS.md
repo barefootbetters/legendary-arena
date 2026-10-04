@@ -46455,4 +46455,20 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
+### D-24657 — A Villain escaping with captured Heroes carries them into the Escape Pile instead of KOing them (direct fix, no WP) (Active 2026-10-04)
+
+**Context.** Villains such as Skrull Queen Veranke and the Skrull Shapeshifters capture Heroes from the HQ (`G.villainAttachedHeroes`, WP-214 / D-21401). When the captor escaped, both escape paths (the Villain-Deck reveal in `villainDeck.reveal.ts` and the scheme-twist push in `schemeTwistResolvers.ts`) called `koAttachedHeroesOnEscape`, which moved the captured Heroes to `G.ko`. Its comment cited "tabletop rules", but Universal Rules v23 "Villains Escaping with Captured Heroes" says the opposite: "If a Villain escapes with captured Heroes, that doesn't cause any discarding. The captured Heroes just stay in the Escape Pile." Found while drafting WP-793 (the rulebook escape procedure, D-24656).
+
+**Decision.**
+1. The helper is renamed `moveAttachedHeroesToEscapedPile` and appends the captured Heroes to `G.escapedPile`, in captor order, after the escaped Villain. It still deletes the `G.villainAttachedHeroes` entry (D-21401 zone integrity). Both escape paths call it at the same point as before.
+2. No discard is added for captured Heroes, matching the rule. The Bystander-carry discard is WP-793's step 2 and is unaffected.
+3. Counting stays correct. A hero ext_id has no `villainDeckCardTypes` entry and is not a supply Bystander, so `countEscapedPileByType`, the bystander-lost scoring loop and the PAR aggregator do not count it. Escaped-villain loss counts (Negative Zone, Killbots, Secret Invasion) are unchanged.
+4. The Escape Pile display now shows captured Heroes alongside their captor. That is display only, through the existing `city.escapedPile` projection with no new field.
+
+**Gates.** game-engine 4839 / 0 fail (the 4 escape-lifecycle tests in `heroCapture.logic.test.ts` rewritten for the intended behavior change, plus 1 new `schemeResourceLoss.test.ts` guard that a captured Hero in the pile is not counted as a Villain, Henchman or Bystander). `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages. `sim:runtime-observed`, `sim:coverage`, both ledgers, mechanics metadata and the effect index all current with no regeneration; no fixture or hash re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24657. Related: WP-214 / D-21401 (hero capture), D-24314 (bystander carry), D-24656 / WP-793 (rulebook escape procedure), D-24315 / D-24325 (escaped-pile loss counts).
+
+---
+
 Protect this file.
