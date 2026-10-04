@@ -430,6 +430,7 @@ high-water: 422
 - WP-789 — reveal-card-visible (Game Engine + App arena-client. Auto-resolving deck-top reveals (Card Shark, High Stakes Jackpot and the rest of the reveal family) show the revealed card: the overlay also fires on a miss ("left on top"), and the heroEffectResolved event carries an optional revealedCardId the overlay renders as the card image — the D-24547 named follow-up. reserved 2026-09-29, claude/reserve-reveal-card-visible)
 - WP-790 — location-restricted-attack (Game Engine + App arena-client. Hero attack printed "usable only against Villains in <city space(s)>" — 17 cards, e.g. co2e Storm Lightning Bolt / Tidal Wave — is tracked as restricted attack that can be spent only on fights in the named City spaces, instead of plain attack spendable anywhere. reserved 2026-10-01, claude/reserve-wp790-location-attack)
 - WP-791 — dashboard-overview-business-first (App dashboard. The Overview page leads with whether the business is making or losing money — revenue vs. real costs, engagement, and real health — and carries no MOCK tile; governance widgets move to Vision & Roadmap. reserved 2026-10-02, claude/reserve-wp791-overview)
+- WP-792 — master-strike-no-bystander-capture (Game Engine + scoring/PAR re-pin. Retire the D-15401 MVP placeholder: a Master Strike no longer captures a Bystander onto the Mastermind for every mastermind; only printed strike text resolves (rules v23 "each Mastermind does its Master Strike"). Surfaced in solo match PyK5YS2L8Bo — 2 of 3 rescued Bystanders were invented. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 
 ## EC
 
@@ -821,6 +822,7 @@ high-water: 457
 - EC-826 — reveal-card-visible (WP-789; Game Engine + App arena-client. reserved 2026-09-29, claude/reserve-reveal-card-visible)
 - EC-827 — location-restricted-attack (WP-790; Game Engine + App arena-client. reserved 2026-10-01, claude/reserve-wp790-location-attack)
 - EC-828 — dashboard-overview-business-first (WP-791; App dashboard. reserved 2026-10-02, claude/reserve-wp791-overview)
+- EC-829 — master-strike-no-bystander-capture (WP-792; Game Engine + scoring/PAR re-pin. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 
 ## D
 
@@ -1253,3 +1255,5 @@ section below) and the allocation protocol in
 - D-24651 — diving-block-played-cards (direct fix, no WP — Diving Block counts copies in hand plus played this turn, per rules v23 "Revealing a Card"; amends D-24499 §1; one-copy-per-Wound unchanged. reserved 2026-10-01, claude/diving-block-played-cards)
 - D-24652 — location-restricted-attack (WP-790 — the restricted-attack pool contract: how "usable only against Villains in <city space>" attack is tracked and spent. reserved 2026-10-01, claude/reserve-wp790-location-attack)
 - D-24653 — dashboard-overview-business-first (WP-791 — the Overview content contract: business-first row order and the no-MOCK-tile-on-Overview rule. reserved 2026-10-02, claude/reserve-wp791-overview)
+- D-24654 — master-strike-no-bystander-capture (WP-792 — supersedes D-15401: Master Strikes resolve only their printed text; the generic capture-onto-Mastermind is removed. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- D-24655 — x-men-united-per-count (direct fix, no WP — core Cyclops X-Men United grants +2 attack per other X-Men Hero played this turn via a new x-men-played-this-turn count source, instead of a flat +2. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
