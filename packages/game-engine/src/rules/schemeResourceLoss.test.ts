@@ -73,6 +73,21 @@ describe('countEscapedPileByType', () => {
     assert.equal(countEscapedPileByType(state, ['henchman']), 1);
   });
 
+  it('does not count a captured Hero carried into the pile as a Villain, Henchman or Bystander (D-24657)', () => {
+    // why: D-24657 — an escaping Villain now carries its captured Heroes into the
+    // Escape Pile (rules v23). A hero ext_id has no villainDeckCardTypes entry and is
+    // not a supply Bystander, so no escaped-pile loss count may include it.
+    const state = makeState(MIDTOWN, [
+      'core-villain-skrulls-skrull-shapeshifters-00',
+      'core/spider-man/web-shooters#1',
+    ], {
+      'core-villain-skrulls-skrull-shapeshifters-00': 'villain',
+    });
+
+    assert.equal(countEscapedPileByType(state, ['villain']), 1);
+    assert.equal(countEscapedPileByType(state, ['villain', 'henchman', 'bystander']), 1);
+  });
+
   it('classifies supply bystanders (BYSTANDER_EXT_ID) as bystander despite no villainDeckCardTypes entry', () => {
     // why: Midtown's twist captures from the shared supply (pile-bystander),
     // which is NOT a villain-deck card — it must still count as a bystander,

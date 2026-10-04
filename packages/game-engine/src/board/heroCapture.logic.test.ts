@@ -2,7 +2,7 @@
  * Tests for hero capture helpers (WP-214).
  *
  * Covers captureHeroFromHq (all three selectors), awardAttachedHeroes,
- * and koAttachedHeroesOnEscape. Uses node:test only — no boardgame.io imports.
+ * and moveAttachedHeroesToEscapedPile. Uses node:test only — no boardgame.io imports.
  */
 
 import { describe, it } from 'node:test';
@@ -12,7 +12,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import {
   captureHeroFromHq,
   awardAttachedHeroes,
-  koAttachedHeroesOnEscape,
+  moveAttachedHeroesToEscapedPile,
 } from './heroCapture.logic.js';
 
 /**
@@ -26,6 +26,7 @@ function makeG(options: {
   villainAttachedHeroes?: Record<string, CardExtId[]>;
   playerZones?: Record<string, { discard: CardExtId[] }>;
   ko?: CardExtId[];
+  escapedPile?: CardExtId[];
 }): LegendaryGameState {
   const hqSlots = options.hq ?? [null, null, null, null, null];
   return {
@@ -35,6 +36,7 @@ function makeG(options: {
     villainAttachedHeroes: options.villainAttachedHeroes ?? {},
     playerZones: options.playerZones ?? {},
     ko: options.ko ?? [],
+    escapedPile: options.escapedPile ?? [],
   } as unknown as LegendaryGameState;
 }
 
@@ -299,38 +301,44 @@ describe('awardAttachedHeroes — fight lifecycle', () => {
 });
 
 // ---------------------------------------------------------------------------
-// koAttachedHeroesOnEscape — escape lifecycle
+// moveAttachedHeroesToEscapedPile — escape lifecycle
 // ---------------------------------------------------------------------------
 
-describe('koAttachedHeroesOnEscape — escape lifecycle', () => {
-  it('moves captured heroes to G.ko', () => {
+describe('moveAttachedHeroesToEscapedPile — escape lifecycle', () => {
+  // why: D-24657 — behavior intentionally changed. Rules v23 "Villains Escaping with
+  // Captured Heroes": the captured Heroes stay in the Escape Pile; they are NOT KO'd.
+  it('moves captured heroes to the Escaped Villains pile, not the KO pile', () => {
     const G = makeG({
       villainAttachedHeroes: { 'villain-a': ['h1' as CardExtId, 'h2' as CardExtId] },
     });
-    koAttachedHeroesOnEscape(G, 'villain-a' as CardExtId);
-    assert.deepStrictEqual(G.ko, ['h1', 'h2']);
+    moveAttachedHeroesToEscapedPile(G, 'villain-a' as CardExtId);
+    assert.deepStrictEqual(G.escapedPile, ['h1', 'h2']);
+    assert.deepStrictEqual(G.ko, [], 'nothing is KO\'d');
   });
 
-  it('deletes the villain entry after KO (not set to [])', () => {
+  it('deletes the villain entry after the move (not set to [])', () => {
     const G = makeG({
       villainAttachedHeroes: { 'villain-a': ['h1' as CardExtId] },
     });
-    koAttachedHeroesOnEscape(G, 'villain-a' as CardExtId);
+    moveAttachedHeroesToEscapedPile(G, 'villain-a' as CardExtId);
     assert.equal(G.villainAttachedHeroes['villain-a'], undefined);
   });
 
   it('no-op when villain has no attached heroes (backward compatible)', () => {
-    const G = makeG({ ko: ['existing-ko' as CardExtId] });
-    koAttachedHeroesOnEscape(G, 'villain-a' as CardExtId);
+    const G = makeG({ ko: ['existing-ko' as CardExtId], escapedPile: ['villain-a' as CardExtId] });
+    moveAttachedHeroesToEscapedPile(G, 'villain-a' as CardExtId);
     assert.deepStrictEqual(G.ko, ['existing-ko']);
+    assert.deepStrictEqual(G.escapedPile, ['villain-a']);
   });
 
-  it('appends to existing KO pile', () => {
+  it('appends after the escaped villain already in the pile, leaving the KO pile untouched', () => {
     const G = makeG({
       villainAttachedHeroes: { 'villain-a': ['h1' as CardExtId] },
       ko: ['pre-existing-ko' as CardExtId],
+      escapedPile: ['villain-a' as CardExtId],
     });
-    koAttachedHeroesOnEscape(G, 'villain-a' as CardExtId);
-    assert.deepStrictEqual(G.ko, ['pre-existing-ko', 'h1']);
+    moveAttachedHeroesToEscapedPile(G, 'villain-a' as CardExtId);
+    assert.deepStrictEqual(G.escapedPile, ['villain-a', 'h1']);
+    assert.deepStrictEqual(G.ko, ['pre-existing-ko']);
   });
 });

@@ -28,7 +28,7 @@ import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
 import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
-import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
+import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
@@ -555,7 +555,7 @@ export function performVillainReveal(
 /**
  * Resolves one Villain escaping the City: the escape counter + Escaped Villains pile,
  * the generic per-escape wound (only when the escaper has no Escape ability of its
- * own), bystander carry-away, card-text Escape effects, captured-hero KO, the
+ * own), bystander carry-away, card-text Escape effects, captured heroes to the Escape Pile (D-24657), the
  * escape→Scheme-Twist branch (Mystique) and the escaped-pile resource-loss check.
  *
  * // why: WP-757 / D-24587 — extracted mechanically from performVillainReveal's escape
@@ -674,8 +674,8 @@ export function resolveVillainEscape(
       `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
     );
   }
-  // why: captured heroes KO'd when villain escapes (tabletop rules)
-  koAttachedHeroesOnEscape(G, escapedCardId);
+  // why: D-24657 — captured heroes stay in the Escape Pile with their captor (rules v23)
+  moveAttachedHeroesToEscapedPile(G, escapedCardId);
 
   // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
   // takes effect immediately." The executor's become-scheme-twist handler is a
@@ -686,7 +686,7 @@ export function resolveVillainEscape(
   // increments, and the loss threshold is checked. The escaped card stays in the
   // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
   // notableEvent, never to route a card. "Takes effect immediately" → after the
-  // escape's own consequences (wound / bystander release / escape effects / hero KO).
+  // escape's own consequences (wound / bystander release / escape effects / captured heroes to the Escape Pile).
   if (villainCardEscapeTriggersSchemeTwist(G, escapedCardId)) {
     pushLog(G,
       `Escape effect: ${formatCardRef(G.cardDisplayData, escapedCardId)} becomes a Scheme Twist that takes effect immediately.`,
@@ -723,7 +723,7 @@ export function resolveVillainEscape(
   // why: D-24315 — evaluate the active scheme's escaped-pile resource-loss
   // condition at the END of the escape branch, after every escape
   // consequence has settled (bystander carry-away, current-player wound,
-  // card-text Escape: effects, captured-hero KO, and the Mystique
+  // card-text Escape: effects, captured heroes to the Escape Pile, and the Mystique
   // escape→scheme-twist path). This is the only place G.escapedPile grows,
   // so the count reflects the full escape. No-op for schemes with no
   // resourceLossCondition.
