@@ -46499,7 +46499,7 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
    - No new move, `hasPending*` guard or `UIState` field. The choices ride the projected `pendingSeatChoice`, and the client adds three headings.
    - The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (neither replays an escape).
    - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903.
-   - The diagnostic PAR profiles are re-pinned by one combined follow-up `INFRA:` PR for WP-749 + WP-793, opened immediately after both merge; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs (operator ruling 2026-10-04, Jeff, WP-793 OD-2). WP-792 keeps its own immediate re-pin.
+   - The diagnostic PAR profiles are re-pinned by WP-793's own follow-up `INFRA:` PR, opened immediately after its execution merges; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs. WP-792 re-pinned separately (#2586) and WP-749 re-pins inside its own `EC-786:` commit; there is no combined re-pin (operator ruling 2026-10-04, amended 2026-10-05, Jeff, WP-793 OD-2).
    - Live play in a match in progress at deploy continues; its next escape runs the new procedure. **Re-executing any log that contains a pre-deploy escape stalls.** That escape now parks a seat choice the log never answers, so every later recorded move is a block-all no-op. This hits:
      - competitive verification (`replay_verification_failed`);
      - coach `reduceReplayByHash`;
