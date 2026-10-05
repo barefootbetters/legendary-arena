@@ -132,20 +132,34 @@ happens before triggers fire:
   is contractual — reveal.ts):
   1. increment `ENDGAME_CONDITIONS.ESCAPED_VILLAINS` and append the card
      to `G.escapedPile`;
-  2. the current player gains **1 Wound** (the MVP system-level escape
-     penalty, WP-015 — supply-gated; this is *not* the tabletop "KO a Hero
-     ≤6 from the HQ" procedure, which is not modeled);
-  3. **carry** the escaped villain's attached bystanders into `G.escapedPile`
+  2. **carry** the escaped villain's attached bystanders into `G.escapedPile`
      alongside it (WP-508 / D-24314, `carryEscapedBystandersToPile`) — the
      tabletop *"Bystanders carried away by escaping Villains"*, **not** released
      back to the supply (the pre-WP-508 behaviour). This is what makes the escaped
      pile a **countable resource** for the resource-loss schemes (see Endgame);
+  3. **record the rulebook escape procedure the escape owes** (WP-793 /
+     D-24656, rules v23 L556–L570) on `G.pendingEscapeProcedures`: (a) KO a
+     Hero costing 6 or less from the HQ — 0 eligible is a logged no-op, 1 is
+     KO'd automatically, 2+ is the current player's `escape-hq-ko` seat choice,
+     and the HQ space refills from the Hero Deck; then (b) if it carried any
+     Bystanders, every player with a card in hand discards one (a simultaneous
+     `escape-bystander-discard` seat choice, through `discardFromHand`). These
+     two steps resolve **after the move**, opened by the play-phase
+     `turn.onMove` escape opener (the accepted ordering deviation, D-24656
+     point 4); no escape gives a generic Wound (D-24656 retired the D-1702 /
+     D-24439 placeholder);
   4. fire the card's `onEscape` / `Overrun:` abilities via
-     `executeVillainAbilities`;
-  5. KO any heroes captured on the escaped villain;
+     `executeVillainAbilities` — step 3 of the rulebook procedure, which stays
+     inside the move so it resolves before the next Villain's Ambush (L573);
+  5. move any heroes captured on the escaped villain into the Escape Pile with
+     it (D-24657);
   6. if the escaped card carries a `become-scheme-twist` hook (Mystique),
      fire `onSchemeTwistRevealed` — a second trigger path (WP-481 /
      D-24287; see Edge Cases).
+
+  Every escape path runs this same sequence through `resolveVillainEscape`:
+  a villain-deck reveal push-off, a Haunt exorcise release
+  (`enterCityIgnoringAmbush`) and the Secret Invasion Skrull push (D-24656).
 
   **Ambush fires only after the escape sequence fully resolves.** Ambush is
   *not* a hardcoded "every player gains a Wound" — that loop was deleted
@@ -222,9 +236,9 @@ The full step contract is also documented inline in
 - **City** — `villain` and `henchman` reveals push into `G.city` via
   `pushVillainIntoCity`. A push that overflows the city escapes the
   card at index 4, increments `ENDGAME_CONDITIONS.ESCAPED_VILLAINS`,
-  triggers a wound for the current player, and **carries** its attached
-  bystanders into `G.escapedPile` with it (WP-508 / D-24314) — not back
-  to the supply.
+  **carries** its attached bystanders into `G.escapedPile` with it (WP-508 /
+  D-24314) — not back to the supply — and owes the rulebook HQ KO +
+  Bystander discard, opened after the move (WP-793 / D-24656).
 - **[Board Keywords](board-keywords.md) (Ambush).** A card entering the
   City with the Ambush keyword runs its **printed** `[effect:]` text via
   `executeVillainAbilities(…, 'onAmbush')`, gated by a `hasAmbush`
@@ -325,7 +339,8 @@ The full step contract is also documented inline in
 - **Ambush gates on supply.** Ambush wound application is gated on
   `G.piles.wounds.length > 0` — once the wound supply is exhausted,
   Ambush degrades silently for the remaining players. Same gating
-  applies to escape-induced wounds.
+  applies to a printed Escape effect's wounds (an escape itself gives no
+  Wound — D-24656).
 - **Reveal is start-stage only.** Calling `revealVillainCard` outside
   `G.currentStage === 'start'` returns silently — never throws.
   Moves never throw per
@@ -354,13 +369,12 @@ drift tests), not a card-data edit:
 - **Locations, Traps, Villainous Weapons, ambush-schemes** — none exist as
   a revealed card type; the engine has no Location zone, Trap challenge
   queue, or weapon-attachment/Artifact conversion.
-- **The full tabletop escape procedure** — a real escape has the escaping
-  villain KO a Hero of cost ≤ 6 from the HQ, and (per some schemes) triggers
-  per-player discards. The engine substitutes a single current-player Wound
-  (see Step 4). The *"Bystanders carried away by escaping Villains"* half **is**
-  now modeled (WP-508 — attached bystanders travel into `G.escapedPile`, which the
-  resource-loss schemes count); the KO-a-Hero and per-player-discard steps remain
-  unmodeled MVP simplifications.
+- **Strict escape-procedure timing** — the rulebook HQ KO and Bystander
+  discard (Step 4, WP-793 / D-24656) resolve after the move that caused the
+  escape, so the escape's other consequences and the next Villain's Ambush
+  resolve first; a hand-reading Escape effect sees the hand before the discard.
+  Suspending the reveal pipeline mid-move is out of scope (D-24656 point 4).
+  Printed Escape texts that reference "the normal Escape KO" remain unmodeled.
 - **Warmup Round** — the 4–5 player first-turn skip of the villain reveal is
   not implemented; the only gate is `G.currentStage === 'start'`.
 

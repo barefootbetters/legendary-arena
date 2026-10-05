@@ -361,3 +361,120 @@ describe('non-active seat-choice dispatch — sim and runFixture (WP-749 / D-245
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-793 / D-24656 — the escape procedure's Bystander discard addresses EVERY seat
+// holding a card, so in a two-seat sim the non-active seat owes a seat choice on every
+// Bystander-carrying escape. This drives a seeded two-seat game whose Villains cannot
+// be fought, so Bystander-carrying escapes are certain, through the sim (the escape
+// opener mirrors + the WP-749 non-active dispatch) and replays the capture through
+// runFixture (its opener mirrors). WP-749's harness builds G only from a setup config,
+// so this is a seeded-game case rather than the hand-built-G case WP-793 §Scope F
+// sketched; the non-active return-on-discard leg is covered by the game.test.ts
+// turn.onMove wiring case and resolveReturnOnDiscard.test.ts.
+// ---------------------------------------------------------------------------
+
+// why: the locked WP-793 per-seat discard line (villainEscapeProcedure.ts), matched as a
+// substring of LogEntry.text.
+const ESCAPE_DISCARD_LINE_PATTERN = /Player (\d) discarded .+ \(Bystanders carried away\)\./;
+const ESCAPE_SEED = 'wp793-escape-discard-seed';
+
+/**
+ * Builds a registry whose Villains and Henchmen can never be fought (vAttack 99), so
+ * every Villain eventually escapes, including those that captured a revealed Bystander.
+ *
+ * @returns A hand-built registry reader (engine tests never import the registry layer).
+ */
+function buildUnfightableRegistry(): CardRegistryReader {
+  const lokiRegistry = buildLokiRegistry() as unknown as {
+    getSet: (abbr: string) => { villains: Array<{ cards: Array<{ vAttack: string }> }>; henchmen: Array<{ vAttack: string }> };
+  };
+  const setData = structuredClone(lokiRegistry.getSet('core'));
+  for (const group of setData.villains) {
+    for (const card of group.cards) {
+      card.vAttack = '99';
+    }
+  }
+  for (const henchman of setData.henchmen) {
+    henchman.vAttack = '99';
+  }
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'core' }],
+    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+  } as unknown as CardRegistryReader;
+}
+
+/**
+ * A policy that answers any seat choice it is offered, otherwise reveals, advances and
+ * ends its turn — it never fights or recruits.
+ *
+ * @param seat - The seat this policy drives.
+ * @returns The AIPolicy for the seat.
+ */
+function createEscapePolicy(seat: string): AIPolicy {
+  return {
+    name: `wp793-escape-seat-${seat}`,
+    decideTurn(playerView: UIState, legalMoves: LegalMove[]): ClientTurnIntent {
+      const chosen =
+        findMove(legalMoves, 'resolveSeatChoice') ??
+        findMove(legalMoves, 'revealVillainCard') ??
+        findMove(legalMoves, 'advanceStage') ??
+        findMove(legalMoves, 'endTurn') ??
+        { name: 'endTurn', args: {} };
+      return {
+        matchId: `simulation-${ESCAPE_SEED}`,
+        playerId: playerView.game.activePlayerId,
+        turnNumber: playerView.game.turn,
+        move: { name: chosen.name, args: chosen.args },
+      };
+    },
+  };
+}
+
+describe('escape-procedure discard across the rebuilt turn loops (WP-793 / D-24656)', () => {
+  test('a Bystander-carrying escape\'s two-seat discard is answered by both seats, the game terminates, and runFixture replays it', () => {
+    const setupConfig = buildLokiConfig();
+    const registry = buildUnfightableRegistry();
+    const policies: AIPolicy[] = [createEscapePolicy('0'), createEscapePolicy('1')];
+
+    const captured = simulateOneGameAndCaptureMoves(setupConfig, registry, policies, ESCAPE_SEED, 0);
+    const fixture = buildFixtureFromCapture(captured.moves, ESCAPE_SEED, setupConfig, 'wp793-escape-discard');
+    const replay = runFixture(fixture, registry);
+
+    const discardSeats: string[] = [];
+    for (const entry of replay.messages) {
+      const match = ESCAPE_DISCARD_LINE_PATTERN.exec(entry.text);
+      if (match !== null) {
+        discardSeats.push(match[1]!);
+      }
+    }
+    // Loud precondition: a Bystander-carrying escape happened and its discard resolved.
+    assert.notEqual(
+      discardSeats.length,
+      0,
+      'Precondition failed: no Bystander-carrying escape discard resolved; the locked seed no longer brings a Bystander escape.',
+    );
+    assert.ok(discardSeats.includes('0') && discardSeats.includes('1'), 'both seats discarded for a carried Bystander');
+
+    // The non-active seat answered through the WP-749 dispatch: a resolveSeatChoice by the
+    // seat whose turn it was NOT is in the capture.
+    let previousTurnSeat = '0';
+    let hasNonActiveSeatChoice = false;
+    for (const move of captured.moves) {
+      if (move.moveName === 'resolveSeatChoice' && move.playerId !== previousTurnSeat) {
+        hasNonActiveSeatChoice = true;
+      }
+      if (move.moveName === 'endTurn') {
+        previousTurnSeat = move.playerId === '0' ? '1' : '0';
+      }
+    }
+    assert.equal(hasNonActiveSeatChoice, true, 'a non-active seat resolved its own discard (WP-749 dispatch)');
+    assert.equal(captured.endgameReached, true, 'the game terminates rather than being flagged stuck');
+    assert.equal(
+      replay.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      false,
+      'no generic escape Wound',
+    );
+  });
+});

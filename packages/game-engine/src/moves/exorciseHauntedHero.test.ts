@@ -266,7 +266,12 @@ describe('exorciseHauntedHero — success', () => {
     assert.ok(G.escapedPile.includes('city-v4'), 'the escaped Villain is in the escaped pile');
     assert.ok(G.escapedPile.includes('captured-bystander'), 'its bystander was carried into the escaped pile');
     assert.equal(G.attachedBystanders['city-v4'], undefined, 'the attached-bystander entry was cleared');
-    assert.deepStrictEqual(G.playerZones['0']!.discard, ['wound-1'], 'the current player took the generic escape wound');
+    // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'the current player takes no escape wound (D-24656)');
+    assert.ok(
+      !G.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'no generic escape-Wound line is logged',
+    );
     assert.deepStrictEqual(G.playerZones['1']!.discard, [], 'the other player was not wounded (no Ambush)');
   });
 

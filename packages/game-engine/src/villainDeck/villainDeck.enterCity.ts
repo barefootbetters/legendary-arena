@@ -26,10 +26,11 @@ import type { RevealContext } from './villainDeck.reveal.js';
  *
  * // why: WP-757 / D-24587 — an exorcise is NOT a reveal, so onAmbush and the
  * onCardRevealed rule hooks never fire here. An escape it causes is still a normal
- * escape, so it keeps full reveal parity by calling resolveVillainEscape (the generic
- * wound, card-text Escape effects, bystander carry-away, captured-hero KO, the
- * escape→Scheme-Twist branch and the escaped-pile resource-loss check). Secret
- * Invasion's reduced push handling is deliberately NOT copied.
+ * escape, so it keeps full reveal parity by calling resolveVillainEscape (the rulebook
+ * escape procedure — the owed HQ KO + Bystander discard, opened after the move, then
+ * card-text Escape effects — plus bystander carry-away, captured heroes to the Escape
+ * Pile, the escape→Scheme-Twist branch and the escaped-pile resource-loss check;
+ * D-24656). The Secret Invasion Skrull push now runs the same procedure (D-24656).
  *
  * @param G - The game state to mutate (`G.city`, plus escape consequences).
  * @param context - Narrow reveal context (random + ctx.currentPlayer) for the escape.

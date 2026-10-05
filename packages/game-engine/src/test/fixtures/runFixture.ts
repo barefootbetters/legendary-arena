@@ -40,6 +40,11 @@ import { CORE_MOVE_NAMES } from '../../moves/coreMoves.types.js';
 import { drawCards, playCard, endTurn } from '../../moves/coreMoves.impl.js';
 import { applyOnBeginParity } from '../../simulation/onBeginParity.js';
 import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
+// why: WP-793 / D-24656 — the two turn.onMove openers this harness mirrors (see
+// dispatchSingleMove). Plain G-mutating helpers; their modules' import cycles with
+// seatChoice.resolve reference each other only inside function bodies.
+import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
+import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../../moves/fightVillain.js';
@@ -386,13 +391,26 @@ function dispatchSingleMove(
   // per-move resolve (the D-24273 capture -> replay contract): record-game-fixture.mjs
   // records through this runner, so a sim-captured trace that fires a deferred grant
   // must fire it here too, or the recorded messages / finalStateHash would diverge
-  // from the sim that produced the trace. This harness mirrors no other onMove effect
-  // (pile depletion included), so there is no earlier call to order against. Receives
+  // from the sim that produced the trace. Besides the two WP-793 openers below, this
+  // harness mirrors no other onMove effect (pile depletion included), so there is no
+  // earlier call to order against. Receives
   // the dispatched move's own context so a grant that draws uses this runner's seeded
   // Shuffle and the real ctx.turn. The context's `events` is inert for the resolver:
   // no hero effect calls endTurn / setPhase, and setActivePlayers is typeof-guarded
   // (absent here), which matches live passing an events-less `{ G, ctx, random }`.
   resolveDeferredHeroGrants(gameState, moveContext);
+
+  // why: WP-793 / D-24656 — the LOCKSTEP PARTNER of the simulation.runner.ts opener mirror
+  // (the D-24273 capture -> replay contract): mirror the live turn.onMove openers in their
+  // live order after the deferred-grant resolve — the non-active return-on-discard opener,
+  // then the escape-procedure opener (the rulebook HQ KO + Bystander discard every escape
+  // this move recorded). A sim-captured trace answers the choices they park with
+  // resolveSeatChoice moves, so the replay must park them too. events is undefined (no stage
+  // ride here) and the seat argument is the harness's ACTIVE seat (cursor.currentPlayer),
+  // never the acting move.playerId. No depletion re-check: this harness mirrors no pile
+  // depletion (out of scope since WP-749).
+  openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

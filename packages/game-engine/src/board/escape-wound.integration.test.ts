@@ -1,9 +1,10 @@
 /**
  * Integration tests for escape-wound-bystander interactions (WP-017).
  *
- * Exercises the interaction between escape detection, wound gain,
- * bystander attachment, bystander award on defeat, and bystander
- * resolution on escape. Tests use revealVillainCard and fightVillain
+ * Exercises the interaction between escape detection, bystander
+ * attachment, bystander award on defeat, and bystander resolution on
+ * escape. Since WP-793 / D-24656 no escape gives a generic Wound (the
+ * rulebook HQ KO + Bystander discard replace it; villainEscapeProcedure.test.ts). Tests use revealVillainCard and fightVillain
  * directly with mock game state.
  *
  * Uses node:test, node:assert, and makeMockCtx — no boardgame.io imports.
@@ -119,7 +120,9 @@ function createMockMoveContext(gameState: LegendaryGameState): MockMoveContext {
 }
 
 describe('escape-wound integration', () => {
-  it('villain escape triggers wound gain for current player', () => {
+  // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic
+  // escape Wound is removed (rules v23 L556–L570 owe an HQ KO + Bystander discard instead).
+  it('villain escape gives the current player no Wound (D-24656)', () => {
     // City full with 5 villains; pushing one more causes escape
     const gameState = createMockGameState({
       deck: ['new-villain'],
@@ -138,14 +141,19 @@ describe('escape-wound integration', () => {
     const moveContext = createMockMoveContext(gameState);
     revealVillainCard(moveContext);
 
-    assert.ok(
-      gameState.playerZones['0']!.discard.includes('wound-1'),
-      'Current player must have gained a wound in discard',
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      [],
+      'an escape gives the current player no Wound — the discard is unchanged',
     );
     assert.equal(
       gameState.piles.wounds.length,
-      1,
-      'Wounds pile must have one fewer wound',
+      2,
+      'the wound pile is unchanged by an escape',
+    );
+    assert.ok(
+      !gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'no generic escape-Wound line is logged',
     );
   });
 
@@ -218,9 +226,10 @@ describe('escape-wound integration', () => {
     );
   });
 
-  it('a plain villain (no onEscape ability) still takes the generic escape wound', () => {
-    // why: control for the gate above — identical setup with no onEscape hook, so
-    // the generic baseline wound still fires for a plain villain escape.
+  // why: WP-793 / D-24656 — intentional behavior change: the control for the gate above
+  // used to prove a plain villain still took the generic Wound; the Wound is removed for
+  // every escape, so a plain villain now takes none either.
+  it('a plain villain (no onEscape ability) takes no escape wound either (D-24656)', () => {
     const gameState = createMockGameState({
       deck: ['new-villain'],
       cardTypes: {
@@ -239,9 +248,15 @@ describe('escape-wound integration', () => {
     revealVillainCard(moveContext);
 
     assert.ok(
-      gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
-      'a plain villain (no escape ability) still triggers the generic escape wound',
+      !gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'a plain villain escape logs no generic escape-Wound line',
     );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      [],
+      'a plain villain escape leaves the current player\'s discard unchanged',
+    );
+    assert.equal(gameState.piles.wounds.length, 2, 'the wound pile is unchanged by an escape');
   });
 
   it('JSON.stringify(G) succeeds after escape + wound', () => {

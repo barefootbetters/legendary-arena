@@ -546,8 +546,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // gate-only 482 -> 485). totalObs
   // 8884 -> 8878 (-6, equal to the raw feed drop); resolvedObs stays 1235, so percentResolved
   // stays 13.9 (1235 / 8878). A sweep-trajectory artifact, not a regression.
+  // 2026-10-05 (WP-793 / D-24656, re-pin): a Villain escape no longer gives the current player
+  // a generic Wound and instead KOs an HQ Hero costing 6 or less (and, when it carried Bystanders,
+  // costs each player a card), so the fixed-seed sweep's hands, HQ and Hero Deck shift (feed
+  // regenerated on top of WP-749 #2587: 7953 -> 7974 raw observations, 80 -> 81 mechanics with
+  // `last-stand` newly reached (1 obs), 0 dropped, all 312 games terminate). totalObs
+  // 8878 -> 8897; resolvedObs stays 1235, so percentResolved stays 13.9 (1235 / 8897). A
+  // sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8878);
+  assert.equal(view.totalObs.value, 8897);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });

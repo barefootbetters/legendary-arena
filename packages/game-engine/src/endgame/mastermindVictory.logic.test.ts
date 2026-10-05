@@ -120,7 +120,7 @@ describe('promoteMastermindVictoryIfPending (WP-732 / D-24553)', () => {
 const ALL_PENDING_FIELDS = [
   'pendingCopyPowersChoices', 'pendingCountScaledChoice', 'pendingDefeatChoices',
   'pendingDiscardChoices', 'pendingDiscardToPlay', 'pendingDivingBlockWounds',
-  'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices',
+  'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices', 'pendingEscapeProcedures',
   'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
   'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
   'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',

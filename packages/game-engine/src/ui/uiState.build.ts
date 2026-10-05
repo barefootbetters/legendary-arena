@@ -2108,10 +2108,15 @@ export function buildUIState(
   // the prompt would only offer a dead-click; the projection mirrors the block-all
   // priority (discard-to-play outranks return-on-discard) so the client is shown only
   // the actionable choice. The return prompt reappears once the cost is fully paid.
+  // why: WP-793 / D-24656 — project only an ACTIVE-player front entry. A non-active owner
+  // answers only through its 'return-on-discard' seat choice (opened in turn.onMove); showing
+  // it the legacy prompt too would let one click pop the entry and spend the seat's single
+  // stage-ride move (moveLimit 1), stranding the seat choice addressed to it.
   let pendingReturnOnDiscard: UIPendingReturnOnDiscard | undefined;
   if (
     gameState.pendingReturnOnDiscard !== undefined &&
     gameState.pendingReturnOnDiscard.length > 0 &&
+    gameState.pendingReturnOnDiscard[0]!.playerID === ctx.currentPlayer &&
     !hasPendingDiscardToPlay(gameState)
   ) {
     const frontReturn = gameState.pendingReturnOnDiscard[0]!;

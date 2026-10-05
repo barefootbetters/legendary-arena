@@ -15,16 +15,47 @@
  * and resolve). A stale/absent/mismatched target is a silent no-op that leaves
  * the queue intact so the player can resubmit.
  *
+ * A NON-ACTIVE seat's front entry (a discard forced on another player's turn —
+ * Monarch's Decree, an escape's Bystander discard) cannot be answered through this
+ * move, because boardgame.io admits only the current player. The play-phase turn.onMove
+ * opener `openNonActiveReturnOnDiscardSeatChoiceIfNeeded` converts it into a single-seat
+ * WP-684 seat choice ('return-on-discard') for that seat instead (WP-793 / D-24656).
+ *
  * No registry imports. No .reduce(). Moves never throw.
  */
 
 import type { FnContext, PlayerID } from 'boardgame.io';
-import type { LegendaryGameState } from '../types.js';
+import type { LegendaryGameState, PendingSeatChoice } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { hasPendingDiscardToPlay } from './resolveDiscardToPlay.js';
-import { formatCardRef } from '../log/logDisplay.js';
+// why: WP-793 / D-24656 — the park entry point for the non-active seat's choice.
+// seatChoice.resolve imports this module's seat-choice apply, so the two form a
+// runtime-safe import cycle (each references the other ONLY inside function bodies, never
+// at module top level), so ESM resolves both bindings by call time (the
+// divingBlock.logic.ts precedent).
+import { parkSeatChoice } from './seatChoice.resolve.js';
+import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+
+/** The seat-choice kind a non-active seat answers its return-on-discard through (WP-793). */
+export const RETURN_ON_DISCARD_SEAT_CHOICE_KIND = 'return-on-discard';
+
+// why: WP-793 / D-24656 — option 0 returns the card (the bot's existing
+// return-when-eligible default), option 1 leaves it in the discard pile.
+const RETURN_ON_DISCARD_RETURN_OPTION_INDEX = 0;
+
+/**
+ * Minimal boardgame.io events surface the opener needs (setActivePlayers via
+ * parkSeatChoice). Optional so a unit / sim / replay context is a guarded no-op.
+ */
+interface SeatChoiceEvents {
+  setActivePlayers?: (arg: {
+    value: Record<string, { stage: string; moveLimit: number }>;
+    revert?: boolean;
+  }) => void;
+}
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -107,6 +138,16 @@ export function resolveReturnOnDiscard(
   { G, playerID }: MoveContext,
   args: ResolveReturnOnDiscardArgs,
 ): void {
+  // why: WP-793 / D-24656 — while the front entry is being answered through its
+  // 'return-on-discard' seat choice, the ridden seat's empty stage still accepts global
+  // moves, so a stale client or crafted legacy submission would pop the entry out from
+  // under the choice. No-op (defense in depth; the projection gate keeps a well-formed
+  // client from offering this prompt). Unreachable before WP-793, so every previously
+  // reachable state behaves byte-identically.
+  if (G.pendingSeatChoice?.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {
+    return;
+  }
+
   // Step 1: Validate args — exactly one of { decline: true } / { cardId }.
   const isDecline = (args as { decline?: unknown }).decline === true;
   const cardId = (args as { cardId?: unknown }).cardId;
@@ -174,5 +215,112 @@ export function resolveReturnOnDiscard(
   pushLog(G,
     `Player ${playerID} returned ${formatCardRef(G.cardDisplayData, targetCardId)} from their discard pile to their hand.`,
   );
+  queue.shift();
+}
+
+/**
+ * Converts a NON-ACTIVE seat's front return-on-discard entry into a single-seat seat
+ * choice for that seat ("Return X to your hand" / "Leave X in your discard pile").
+ * Called from the play-phase turn.onMove (and its sim / fixture mirrors) after every move.
+ *
+ * Returns at once while any seat choice is open, when the front entry belongs to the
+ * active player (who keeps answering through resolveReturnOnDiscard, unchanged), when the
+ * active player is unknown, or once the match is decided.
+ *
+ * // why: WP-793 / D-24656 — boardgame.io admits only the current player's moves, so a
+ * non-active seat's entry (Monarch's Decree, an escape's Bystander discard) froze the turn:
+ * the block-all guard waited on a reaction nobody could submit. The seat choice stage-rides
+ * that seat so it answers its own reaction.
+ *
+ * @param G - The game state, mutated in place (G.pendingSeatChoice set).
+ * @param events - The move context's boardgame.io events (for the stage ride), or undefined.
+ * @param currentPlayer - The active player id (ctx.currentPlayer, or the sim loop's seat).
+ */
+export function openNonActiveReturnOnDiscardSeatChoiceIfNeeded(
+  G: LegendaryGameState,
+  events: SeatChoiceEvents | undefined,
+  currentPlayer?: string,
+): void {
+  if (G.pendingSeatChoice !== undefined) {
+    return;
+  }
+  const front = G.pendingReturnOnDiscard?.[0];
+  // why: an unknown active player (a unit test that invokes onMove with only { G }) cannot
+  // tell an active entry from a non-active one; leave the queue to the legacy move.
+  if (front === undefined || currentPlayer === undefined || front.playerID === currentPlayer) {
+    return;
+  }
+  if (evaluateEndgame(G) !== null) {
+    return;
+  }
+  const cardName = resolveCardName(G.cardDisplayData, front.cardId);
+  const choice: PendingSeatChoice = {
+    kind: RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
+    addressedSeats: [front.playerID],
+    seatPrompts: {
+      [front.playerID]: {
+        options: [
+          { label: `Return ${cardName} to your hand`, cardId: front.cardId },
+          { label: `Leave ${cardName} in your discard pile`, cardId: front.cardId },
+        ],
+      },
+    },
+    submissions: {},
+    defaultOptionIndex: RETURN_ON_DISCARD_RETURN_OPTION_INDEX,
+  };
+  parkSeatChoice(G, events, choice, currentPlayer);
+}
+
+/**
+ * Applies a fully-submitted 'return-on-discard' seat choice: option 0 returns the card
+ * from the seat's discard pile to its hand, option 1 leaves it; the front entry is
+ * front-popped either way. Proceeds only while the queue's front entry still matches the
+ * addressed seat and the option's card, else a logged no-op.
+ *
+ * // why: WP-793 / D-24656 — duplicates resolveReturnOnDiscard steps 3–5 (00.6: duplicate
+ * first, abstract only at a third copy); the legacy move body is untouched. Unlike the
+ * legacy move, a card no longer in the discard pile still front-pops (logged), because a
+ * seat choice clears on apply and re-opening it would ask the same seat again forever.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'return-on-discard').
+ */
+export function applyReturnOnDiscardSeatChoice(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+): void {
+  const seat = choice.addressedSeats[0];
+  const submission = seat === undefined ? undefined : choice.submissions[seat];
+  const option = seat === undefined || submission === undefined
+    ? undefined
+    : choice.seatPrompts[seat]?.options[submission.optionIndex];
+  const queue = G.pendingReturnOnDiscard;
+  const front = queue?.[0];
+  if (
+    seat === undefined || submission === undefined || option === undefined ||
+    queue === undefined || front === undefined ||
+    front.playerID !== seat || front.cardId !== option.cardId
+  ) {
+    pushLog(G, 'The return-on-discard choice no longer matches a pending return — nothing changed.');
+    return;
+  }
+  const cardRef = formatCardRef(G.cardDisplayData, front.cardId);
+  if (submission.optionIndex !== RETURN_ON_DISCARD_RETURN_OPTION_INDEX) {
+    queue.shift();
+    pushLog(G, `Player ${seat} declined to return ${cardRef} to their hand.`);
+    return;
+  }
+  const playerZones = G.playerZones[seat];
+  const moveResult = playerZones === undefined
+    ? undefined
+    : moveCardFromZone(playerZones.discard, playerZones.hand, front.cardId);
+  if (playerZones === undefined || moveResult === undefined || !moveResult.found) {
+    queue.shift();
+    pushLog(G, `Player ${seat} could not return ${cardRef} — it is no longer in their discard pile.`);
+    return;
+  }
+  playerZones.discard = moveResult.from;
+  playerZones.hand = moveResult.to;
+  pushLog(G, `Player ${seat} returned ${cardRef} from their discard pile to their hand.`);
   queue.shift();
 }
