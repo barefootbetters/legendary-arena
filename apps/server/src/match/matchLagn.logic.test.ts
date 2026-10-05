@@ -288,6 +288,22 @@ describe('buildMatchLagn — nine-field drift + corrupt input', () => {
     assert.equal(JSON.stringify(fromExtra).includes('sneakyExtraField'), false);
   });
 
+  test('a Final Blow match carries setup.final_blow: true and still validates (D-24658)', () => {
+    // why: D-24658 — the optional Final Blow flag rides the persisted
+    // matchConfiguration envelope; the loadout must record it so the Battle Brief
+    // and every download say the match needs a 5th, final fight.
+    const lagn = buildMatchLagn('m', { ...VALID_COMPOSITION, finalBlow: true }, 1, identityResolver);
+    assert.equal(lagn.setup.final_blow, true);
+    assert.equal(validate(lagn).valid, true);
+  });
+
+  test('final_blow is omitted when Final Blow is off or absent (D-24658)', () => {
+    for (const composition of [VALID_COMPOSITION, { ...VALID_COMPOSITION, finalBlow: false }]) {
+      const lagn = buildMatchLagn('m', composition, 1, identityResolver);
+      assert.equal(Object.prototype.hasOwnProperty.call(lagn.setup, 'final_blow'), false);
+    }
+  });
+
   test('a corrupt numPlayers yields a document that fails validation (no coercion)', () => {
     for (const badSeatCount of [0, 8, -1]) {
       const lagn = buildMatchLagn('m', VALID_COMPOSITION, badSeatCount, identityResolver);

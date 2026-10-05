@@ -58,6 +58,11 @@ export interface MatchLagnComposition {
   readonly woundsCount: number;
   readonly officersCount: number;
   readonly sidekicksCount: number;
+  /**
+   * The optional Final Blow rule flag (WP-686 / D-24503), carried on the same
+   * persisted `matchConfiguration` envelope as the composition. Absent = off.
+   */
+  readonly finalBlow?: boolean;
 }
 
 /** The composition + seat count read from a single match's blob. */
@@ -283,6 +288,11 @@ export function buildMatchLagn(
       // S.H.I.E.L.D. officer pile, 00.2 §7) is LAGN's `shield_officers_count`.
       shield_officers_count: composition.officersCount,
       sidekicks_count: composition.sidekicksCount,
+      // why: D-24658 — a Final Blow match records the rule in its loadout (LAGN
+      // 1.6.0 `setup.final_blow`, WP-698), so the Battle Brief and every download
+      // say so. Omit-when-off, matching the engine's own omit-when-off G field and
+      // the lagn-spec example; read from matchConfiguration only (D-24153 carve-out).
+      ...(composition.finalBlow === true ? { final_blow: true } : {}),
     },
   };
 }

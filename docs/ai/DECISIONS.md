@@ -46550,4 +46550,20 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
 
 ---
 
+### D-24658 — The match loadout records the Final Blow rule, and the Battle Brief states it (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** The optional Final Blow rule (WP-686 / WP-687, D-24503 / D-24504) is chosen with a lobby checkbox, and it changes how the table wins: after the last Tactic, one more fight against the Mastermind. The Battle Brief (WP-786 / D-24634) never said whether it was on (Jeff, 2026-10-05). The brief reads group and hero names from the public match LAGN (`GET /api/match/:matchId/lagn`, D-24446), but `buildMatchLagn` never wrote LAGN 1.6.0's `setup.final_blow` (WP-698). So the match loadout, its "View loadout" download and the result LAGN all dropped the rule. The flag is already persisted: `buildInitialGameState` stores the full payload as `G.matchConfiguration`, including `finalBlow: true` when set.
+
+**Decision.**
+1. `MatchLagnComposition` gains the optional `finalBlow` envelope flag, and `buildMatchLagn` writes `setup.final_blow: true` only when it is `true` (omit-when-off, matching the engine's own omit-when-off `G.finalBlow` and the lagn-spec `tier1-final-blow` example). The read stays inside the D-24153 carve-out: it uses only `initial_state.G.matchConfiguration`, never `G.finalBlow`. The result LAGN inherits the field because it reuses `buildMatchLagn`.
+2. The client `summarizeLoadout` gains `finalBlow: boolean`, true only for a literal `true`, so a misshaped value never reads as on.
+3. The Battle Brief always shows a full-width **Final Blow** tile under the lineup: "On — win only after a 5th, final fight against the Mastermind" (the lobby toggle's wording) or "Off — defeating the Mastermind's last Tactic wins". No UIState field is added (the brief's existing D-24446 LAGN path), so the Board-Visible Field Rule is untouched.
+4. The `api-endpoints.md` row for `GET /api/match/:matchId/lagn` is replaced whole (D-11804). It also corrects the stale `1.5.0` version stamp to the current `1.6.0`.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1661, +2 `buildMatchLagn` cases: Final Blow on writes and validates, off or absent omits; arena-client 2266, +1 `summarizeLoadout` case and +2 Battle Brief cases, and the two whole-object `summarizeLoadout` expectations gain `finalBlow: false`); arena-client `vue-tsc --noEmit` 0. No engine change and no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24658. Related: WP-686 / D-24503 and WP-687 / D-24504 (Final Blow), WP-698 (LAGN 1.6.0 `setup.final_blow`), WP-786 / D-24634 (Battle Brief), WP-361 / D-24153 (match LAGN projection and blob-read carve-out), D-24446 (public read), D-11804 (catalog row semantics).
+
+---
+
 Protect this file.
