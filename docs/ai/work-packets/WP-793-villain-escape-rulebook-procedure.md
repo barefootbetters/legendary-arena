@@ -315,8 +315,8 @@ Wound**, so the placeholder was not standing in for any printed text.
 - **Merge-conflict surfaces:** the `DECISIONS.md` tail (both append before "Protect this file."), the top of
   `WORK_INDEX.md`, the `EC_INDEX.md` tail, the mindmap and its generated count table (regenerate with
   `pnpm roadmap:counts:write`, never hand-merge), and `docs/ai/STATUS.md` at govern-close.
-- **PAR.** WP-792 re-pins right after its own execution merges; WP-749 + WP-793 share one combined re-pin right
-  after both merge (OD-2, resolved).
+- **PAR.** WP-792 re-pinned right after its execution merged (#2586); WP-749 re-pins inside its own `EC-786:`
+  commit; WP-793 re-pins (plus the seed-PAR re-anchor) in a follow-up right after its execution merges (OD-2, resolved).
 
 ## Non-Negotiable Constraints
 
@@ -885,12 +885,15 @@ git status --porcelain
   new season. The executor makes no change to stored scores or leaderboard surfaces. Replays with a pre-deploy
   escape still stop re-executing at that escape (§Context), so coach and verification for those matches fail
   permanently; that is accepted.
-- **OD-2 — PAR profile re-pin timing. RESOLVED 2026-10-04 (Jeff).** WP-792's own re-pin runs immediately after its
-  execution merges (WP-792 OD-2), unchanged. The multi-player profiles can only be regenerated after WP-749, so
-  WP-749 and WP-793 share **one combined follow-up `INFRA:` re-pin** of `data/par/profile/v1/**` (precedent #2405),
-  opened immediately after both have merged, not deferred to a calibration pass. That same follow-up re-anchors
-  seed PAR for Midtown Bank Robbery and the other Bystander-heavy schemes, whose WP-591 anchors were calibrated
-  under the old escape costs. It stays a separate PR, so this WP's allowlist does not grow.
+- **OD-2 — PAR profile re-pin timing. RESOLVED 2026-10-04, amended 2026-10-05 (Jeff).** Each packet re-pins
+  separately; there is no combined re-pin.
+  - WP-792 re-pinned immediately after its execution merged (#2586).
+  - WP-749 re-pins `data/par/profile/v1/**` inside its own `EC-786:` commit, as EC-786 requires. That regeneration
+    is its proof that the stuck multi-player games are gone.
+  - WP-793 gets its own follow-up `INFRA:` re-pin (precedent #2405), opened immediately after this packet's
+    execution merges, on top of WP-749's profiles, not deferred to a calibration pass. That follow-up also
+    re-anchors seed PAR for Midtown Bank Robbery and the other Bystander-heavy schemes, whose WP-591 anchors were
+    calibrated under the old escape costs. It stays a separate PR, so this WP's allowlist does not grow.
 - **OD-3 — follow-ups**, which to schedule, if any:
   - the printed Escape texts that reference "the normal Escape KO" (hollow today);
   - a strict-order reveal continuation (steps 1–2 before the escape's other consequences);
