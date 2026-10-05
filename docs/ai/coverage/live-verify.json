@@ -8,10 +8,10 @@
       "card": "Black Widow",
       "ability": "Covert Operation",
       "wp": "WP-247",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Covert Operation: +1 attack per Victory-Pile Bystander (+7, then +11)."
     },
     {
       "key": "core/black-widow|defeat-with-bystander",
@@ -360,10 +360,10 @@
       "card": "Nick Fury",
       "ability": "High-Tech Weaponry",
       "wp": "WP-681",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "High-Tech Weaponry: +1 attack only after another Tech Hero was played this turn."
     },
     {
       "key": "core/nick-fury|attack-per-count",
@@ -371,10 +371,10 @@
       "card": "Nick Fury",
       "ability": "Legendary Commander",
       "wp": "WP-247",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Legendary Commander: +1 per other S.H.I.E.L.D. Hero played (counts 1, 2, 3, 4, 6), and stayed off when played first."
     },
     {
       "key": "core/nick-fury|optional-ko-shield-officer",
@@ -393,10 +393,10 @@
       "card": "Nick Fury",
       "ability": "Pure Fury",
       "wp": "WP-682",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Defeated three Dr. Doom Tactics, each with Doom's attack below the S.H.I.E.L.D. count in the KO pile. (Its trace also logs a phantom attack no-handler hollow.)"
     },
     {
       "key": "core/rogue|copy-powers",
@@ -547,10 +547,10 @@
       "card": "Baron Zemo",
       "ability": "rescue-bystanders-current-by-trait-count",
       "wp": "WP-485",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
-      "note": "Zero case confirmed: no Avengers Hero in hand or play, rescued 0. Rescuing with Avengers held is untested."
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
+      "note": "0 rescued with no Avengers Hero, 1 rescued with one (Covert Operation)."
     },
     {
       "key": "core-villain-brotherhood-blob|setup:require-to-defeat",
@@ -888,10 +888,10 @@
       "card": "Whirlwind",
       "ability": "ko-hero",
       "wp": "WP-252",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
-      "note": "Deny path confirmed: fought in the Sewers, no effect. Fighting him on the Rooftops or Bridge (KO two Heroes) is untested."
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
+      "note": "Both: fought in the Sewers, no effect; fought on the Bridge, KO two Heroes of your choice."
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|ko-wounds-current-hand-and-discard",
@@ -932,10 +932,10 @@
       "card": "Ultron",
       "ability": "Dynamic victory points",
       "wp": "WP-553",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Scored 8 = printed 2 + 6 Tech Heroes owned at game end (villain VP 20 reconciles)."
     },
     {
       "key": "mastermind:core/red-skull|master-strike",
@@ -1086,10 +1086,10 @@
       "card": "Dr. Doom",
       "ability": "Master Strike — reveal Tech or put 2 cards on top",
       "wp": "WP-538",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
-      "note": "Put-2-on-top branch confirmed (6 cards, no Tech); no Bystander capture (WP-792 live). The Tech-reveal branch is untested."
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
+      "note": "Both branches: put 2 cards back with no Tech Hero (5 strikes), and revealed a Tech Hero to skip it (turn 21). No Bystander capture (WP-792 live)."
     },
     {
       "key": "mastermind:core/dr-doom|dark-technology",
@@ -1097,10 +1097,10 @@
       "card": "Dr. Doom",
       "ability": "Tactic: Dark Technology",
       "wp": "WP-692",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Defeated last: recruited Card Shark (Ranged) from the HQ for free, with a decline option."
     },
     {
       "key": "mastermind:core/dr-doom|monarchs-decree",
@@ -1108,10 +1108,10 @@
       "card": "Dr. Doom",
       "ability": "Tactic: Monarch's Decree",
       "wp": "WP-694",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Solo: it still asked \"each other player draws or discards\" with no other players. Needs a 2-player game."
     },
     {
       "key": "mastermind:core/dr-doom|secrets-of-time-travel",
@@ -1119,10 +1119,10 @@
       "card": "Dr. Doom",
       "ability": "Tactic: Secrets of Time Travel",
       "wp": "WP-696",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Logged \"will take another turn after this one\"; in solo an extra turn is indistinguishable from the next turn. Needs a 2-player game to see the turn order skip."
     },
     {
       "key": "mastermind:core/dr-doom|treasures-of-latveria",
@@ -1130,10 +1130,10 @@
       "card": "Dr. Doom",
       "ability": "Tactic: Treasures of Latveria",
       "wp": "WP-691",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
+      "note": "Logged \"will draw 9 cards on their next hand (+3 extra)\"; the game ended that turn, so the 9-card hand was never drawn."
     },
     {
       "key": "scheme:core/midtown-bank-robbery|bystander-attack",
