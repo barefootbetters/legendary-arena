@@ -45,9 +45,12 @@ match `PyK5YS2L8Bo`, 2 of the 3 rescued Bystanders came from this placeholder, s
 - **Scores.** Live scores drop where the placeholder inflated them. Stored `competitive_scores` stay frozen (OD-1).
   A competitive match captured before the deploy and submitted after it fails `replay_verification_failed`
   (accepted). The PAR profile re-pin follows as a separate `INFRA:` PR (OD-2).
-- **Live-verify (D-24026): pending.** In a core Magneto game, let a Master Strike resolve. The log must have no
-  `[Master Strike] Magneto captured a Bystander.` line, and the Mastermind tile shows no badge unless a Villain-Deck
-  Bystander was captured with an empty City.
+- **Live-verify (D-24026): log half PASS (2026-10-05, Jeff, solo Dr. Doom / The Legacy Virus, production build
+  `4e64cdd`, match `kjkmEBIn3o0`).** Dr. Doom's Master Strike (turn 10) resolved its printed text only ("must put 2
+  cards on top of their deck") with no `[Master Strike] … captured a Bystander.` line, and no Master Strike capture
+  appears anywhere in the log. The removal is mastermind-agnostic, so this covers the Magneto case too.
+  **Tile half pending:** confirm the Mastermind tile shows no Bystander badge unless a Villain-Deck Bystander was
+  captured with an empty City.
 
 ### D-24657 — Heroes captured by an escaping Villain go to the Escape Pile, not the KO pile (direct fix) (2026-10-04)
 
