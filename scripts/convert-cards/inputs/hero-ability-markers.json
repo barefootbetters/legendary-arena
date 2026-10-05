@@ -965,6 +965,12 @@
       "cardSlug": "perfect-teamwork",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "nick-fury",
+      "cardSlug": "pure-fury",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:pure-fury]"
     }
   ],
   "smhc": [

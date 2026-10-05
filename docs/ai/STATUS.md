@@ -7,6 +7,19 @@
 
 ## Current State
 
+### msp1 Nick Fury's Pure Fury works (card-data fix, follow-up to D-24660) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** In the Marvel Studios Phase 1 set, Nick Fury's **Pure
+Fury** now defeats a Villain or Mastermind whose attack is less than the number of S.H.I.E.L.D. Heroes in the KO
+pile, the same as core. Its text is identical to core's, but it lacked the `[keyword:pure-fury]` marker, so it did
+nothing. It also carried the old spurious "needs another S.H.I.E.L.D. Hero" play gate (D-24530 suppresses it only
+on marked lines).
+
+- **Data only.** A curated `hero-ability-markers.json` entry, applied to `data/cards/msp1.json`. `cards:check`
+  reproducible; hero ledger msp1 Nick Fury `(unmarked)` → `pure-fury` executable; card-mechanics and effect index
+  regenerated; `sim:coverage` baseline msp1 noEffect 14 → 13. No engine change.
+- **Live-verify (D-24026): pending.** In an msp1 game, play Pure Fury with enough S.H.I.E.L.D. Heroes in the KO pile.
+
 ### D-24660 — Pure Fury no longer logs a phantom "attack" hollow effect (direct fix) (2026-10-05)
 
 **Diagnostics / coverage only, no gameplay change.** Pure Fury's "whose [icon:attack] is less than …" describes the
