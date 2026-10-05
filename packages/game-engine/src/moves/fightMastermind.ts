@@ -362,13 +362,14 @@ export function defeatMastermindTacticCore(
   // §Mastermind Card), but that gates the WIN, not the rescue. Earlier code
   // awarded captured bystanders only on the final tactic — the bug reported
   // on play.legendary-arena.com. G.mastermind.attachedBystanders is the
-  // complete capture set as of this fight: Master Strike captures (D-15401,
-  // stored only here) plus bystanders revealed while the City was empty
-  // (villainDeck.reveal mirrors those into this field too). The fighting
+  // complete capture set as of this fight. A Master Strike captures no
+  // Bystander (D-24654); the field holds Villain-Deck Bystanders revealed
+  // while the City was empty (villainDeck.reveal) plus the no-Villain capture
+  // fallback (Here, Hold This, D-24500; count-scaled captures, D-24537). The fighting
   // player earns all of them in their victory pile (rescued bystanders are
   // VP cards). `?? []` guards legacy test fixtures that omit the field;
   // production setup always populates it. The store is cleared after the
-  // award so a later Master Strike re-capture is rescued by the next fight.
+  // award so a later capture is rescued by the next fight.
   const mastermindBaseCardId = G.mastermind.baseCardId;
   const rescuedBystanders = G.mastermind.attachedBystanders ?? [];
   for (const bystanderCardId of rescuedBystanders) {
