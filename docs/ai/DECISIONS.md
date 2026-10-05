@@ -46567,4 +46567,38 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
 
 ---
 
+### D-24659 — Monarch's Decree is a no-op with no other player: no draw-vs-discard prompt in solo (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Core Dr. Doom's tactic Monarch's Decree prints "Choose one: each other player draws a card OR each other player discards a card." `resolveMonarchsDecree` (WP-694 / D-24511) always parked the draw-vs-discard mode choice for the defeating player. In a solo match there is no other player, so both options do nothing, yet the player was still asked to choose. Live solo match `f4JyVOX_Tq3` (2026-10-05) logged "must choose — each other player draws a card, or each other player discards a card" with nothing to follow.
+
+**Decision.** When `G.playerZones` holds no seat other than the defeating player, `resolveMonarchsDecree` logs "there is no other player to draw or discard (Monarch's Decree)" and parks nothing. That mirrors Vanishing Illusions, which already parks nothing when no other seat qualifies. With at least one other seat, behavior is unchanged: the mode choice parks for the defeating player, draw applies to every other seat, and discard chains the multi-seat discard. No new G field, move or UIState field.
+
+**Gates.** game-engine 4876 / 0 fail (+1 `tacticHandlers.test.ts` solo case: no choice parked, no seat admitted, the no-op logged; revert-proofed to fail without the guard). `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24659. Related: WP-694 / D-24511 (Monarch's Decree), WP-684 / D-24501 (seat-choice model), D-24658 (held by #2591).
+
+---
+
+### D-24660 — "whose [icon:attack] is less than …" names the target's attack, never a grant (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Core Nick Fury's Pure Fury prints "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile." The parser's Step 3 icon→keyword read turned the bare `[icon:attack]` into a magnitude-less `attack` keyword. The real `pure-fury` effect fired correctly, but every play also traced a phantom `attack` / `no-handler` hollow (live solo match `f4JyVOX_Tq3`: three plays, three phantom hollows). The same phrase is on five more hero lines in `data/cards`:
+- co2e Pure Fury;
+- msp1 Pure Fury;
+- ssw1 Thanos, Utter Annihilation;
+- wwhk Hiroim, Blade of the People;
+- the Adversary-side hydra line.
+
+In every one it describes the target's attack.
+
+**Decision.**
+1. `ADVERSARY_STAT_ICON_PATTERN` (D-24605) gains `whose\s+\[icon:attack\]`, so the positional suppression excludes that icon from the Step 2b and Step 3 reads. A real grant icon elsewhere on the same line is unaffected.
+2. `sim:coverage`'s baseline is updated for the intended correction. Core Pure Fury loses its phantom executable `attack` hook (core executable 134 → 133). The four sibling lines with no handler (co2e and msp1 Pure Fury, Thanos Utter Annihilation, Hiroim Blade of the People) lose the phantom "effect" that made them look covered and now count as `noEffect` (+1 each in co2e, msp1, ssw1, wwhk; total executable 2585 → 2580, noEffect 2647 → 2651).
+3. Found in passing, not fixed here: msp1 Pure Fury has core's exact text but no `[keyword:pure-fury]` marker, so it is hollow. That is a one-line curated-marker follow-up.
+
+**Gates.** game-engine 4876 / 0 fail (+2 `adversaryStatIconSuppression.test.ts` cases: the exact core Pure Fury line yields no attack grant and keeps `pure-fury`, and a real "+2[icon:attack]" on the same line still grants; revert-proofed). `ledger:heroes`, `ledger:villains`, `mechanics:metadata`, `effect-index` and `sim:runtime-observed` checks are current with no regeneration. `sim:coverage --check` OK after `--update-baseline`.
+
+**Reserved by:** NUMBER-LEDGER D-24660. Related: D-24605 (adversary-stat icon suppression), D-24499 / D-24530 (Pure Fury), D-24649 (magnitude-dropped hollows), D-24471 / D-24486 (positional icon suppression).
+
+---
+
 Protect this file.

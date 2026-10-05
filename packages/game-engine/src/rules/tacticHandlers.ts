@@ -989,6 +989,17 @@ export function resolveMonarchsDecree(
   events: TacticSeatChoiceEvents | undefined,
   currentPlayer: string,
 ): void {
+  // why: D-24659 — both branches only affect "each OTHER player", so with no other
+  // seat (a solo match) the draw-vs-discard choice is meaningless. Log the no-op and
+  // park nothing instead of prompting the player (the Vanishing Illusions precedent).
+  const hasOtherSeat = Object.keys(G.playerZones).some((seat) => seat !== currentPlayer);
+  if (!hasOtherSeat) {
+    pushLog(G,
+      `Fight effect: there is no other player to draw or discard (Monarch's Decree).`,
+      'neutral',
+    );
+    return;
+  }
   const modeChoice = buildMonarchsDecreeModeChoice(currentPlayer);
   parkSeatChoice(G, events, modeChoice);
   pushLog(G,
