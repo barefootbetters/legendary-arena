@@ -12,11 +12,13 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** The Battle Brief now has a **Final Blow** tile under
 the lineup. It reads "On — win only after a 5th, final fight against the Mastermind" when the match was created with
 the optional rule, and "Off — defeating the Mastermind's last Tactic wins" otherwise. The match's loadout download
-(and the result LAGN) now records `setup.final_blow: true` for a Final Blow match instead of dropping it.
+(and the result LAGN) now records `setup.final_blow: true` for a Final Blow match instead of dropping it. Loading a
+saved loadout in the Arena Workshop now pre-ticks a **Final Blow** checkbox in the loadout preview when the loadout
+has the rule, and the match is created with it. Before, a Final Blow loadout silently started a normal match.
 
-- **Server + client.** `buildMatchLagn` writes the flag from `matchConfiguration`; `summarizeLoadout` reads it. No
-  engine or UIState change.
-- **Counts.** `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1661, arena-client 2266); arena-client
+- **Server + client.** `buildMatchLagn` writes the flag from `matchConfiguration`; `summarizeLoadout` and the lobby's
+  `convertLagnUpload` read it; both loadout launch buttons send it. No engine or UIState change.
+- **Counts.** `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1661, arena-client 2270); arena-client
   `vue-tsc` 0.
 - **Live-verify (D-24026): pending.** Create a match with the Final Blow box ticked: the brief shows "Final Blow · On".
   Create one without it: the brief shows "Off".
