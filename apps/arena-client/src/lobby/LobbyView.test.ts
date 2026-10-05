@@ -976,3 +976,91 @@ test('WP-687: an unchecked Final Blow omits finalBlow from the create setupData 
 
   assert.equal(createSetupData(calls).finalBlow, undefined, 'unchecked Final Blow is omitted (off = byte-identical)');
 });
+
+// --- D-24658: a loadout's Final Blow rides the loadout path into the create setupData ---
+
+/**
+ * A 2-player LAGN loadout (2 villain groups, 1 henchman group, 5 heroes) that
+ * matches the 2p setup requirements, optionally naming the Final Blow rule.
+ *
+ * @param isFinalBlow When true, the loadout carries `setup.final_blow: true`.
+ * @returns The LAGN document as JSON text.
+ */
+function buildTwoPlayerLagn(isFinalBlow: boolean): string {
+  const entity = (id: string) => ({ id, name: id });
+  return JSON.stringify({
+    lagn_version: '1.6.0',
+    game_id: '22222222-2222-4222-8222-222222222222',
+    variant: 'cooperative',
+    player_count: 2,
+    setup: {
+      mastermind: entity('core/dr-doom'),
+      scheme: entity('core/portals-to-the-dark-dimension'),
+      villain_groups: [entity('core/masters-of-evil'), entity('core/hydra')],
+      henchmen_groups: [entity('core/doombot-legion')],
+      heroes: ['core/black-widow', 'core/gambit', 'core/nick-fury', 'core/hulk', 'core/storm'].map(entity),
+      bystanders_count: 2,
+      wounds_count: 30,
+      shield_officers_count: 30,
+      sidekicks_count: 0,
+      ...(isFinalBlow ? { final_blow: true } : {}),
+    },
+  });
+}
+
+test('D-24658: a LAGN loadout with final_blow pre-ticks the preview and creates with finalBlow:true', async () => {
+  setSearch('?route=lobby');
+  const calls = stubCreateCapture();
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Host');
+  await wrapper.find('#loadoutPaste').setValue(buildTwoPlayerLagn(true));
+  await wrapper.find('[data-testid="lobby-loadout-parse"]').trigger('click');
+  await flushPromises();
+
+  const checkbox = wrapper.find('[data-testid="preview-final-blow"]').element as HTMLInputElement;
+  assert.equal(checkbox.checked, true, 'the loadout preview shows Final Blow ticked');
+
+  await wrapper.find('[data-testid="lobby-submit-from-json"]').trigger('click');
+  await flushPromises();
+
+  const setupData = createSetupData(calls);
+  assert.equal(setupData.finalBlow, true, 'the loadout path sends the Final Blow flag');
+  assert.equal(setupData.mastermindId, 'core/dr-doom');
+});
+
+test('D-24658: a LAGN loadout without final_blow leaves the preview unticked and omits finalBlow', async () => {
+  setSearch('?route=lobby');
+  const calls = stubCreateCapture();
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Host');
+  await wrapper.find('#loadoutPaste').setValue(buildTwoPlayerLagn(false));
+  await wrapper.find('[data-testid="lobby-loadout-parse"]').trigger('click');
+  await flushPromises();
+
+  const checkbox = wrapper.find('[data-testid="preview-final-blow"]').element as HTMLInputElement;
+  assert.equal(checkbox.checked, false);
+
+  await wrapper.find('[data-testid="lobby-submit-from-json"]').trigger('click');
+  await flushPromises();
+
+  assert.equal(createSetupData(calls).finalBlow, undefined, 'off is omitted (byte-identical)');
+});
+
+test('D-24658: ticking the preview Final Blow box on a loadout sends finalBlow:true', async () => {
+  setSearch('?route=lobby');
+  const calls = stubCreateCapture();
+  const wrapper = mountLobbySignedIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Host');
+  await wrapper.find('#loadoutPaste').setValue(buildTwoPlayerLagn(false));
+  await wrapper.find('[data-testid="lobby-loadout-parse"]').trigger('click');
+  await flushPromises();
+  await wrapper.find('[data-testid="preview-final-blow"]').setValue(true);
+
+  await wrapper.find('[data-testid="lobby-submit-from-json"]').trigger('click');
+  await flushPromises();
+
+  assert.equal(createSetupData(calls).finalBlow, true);
+});

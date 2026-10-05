@@ -38,13 +38,14 @@ export interface LagnDisplayNames {
  * - `not_lagn`: the document is not a LAGN file; the caller falls through to
  *   the MATCH-SETUP parseLoadoutJson path.
  * - `ok`: a well-formed LAGN file; `documentJson` is the composition document
- *   ready for parseLoadoutJson, and `displayNames` drives the preview.
+ *   ready for parseLoadoutJson, `displayNames` drives the preview, and
+ *   `finalBlow` is true when the file names the optional Final Blow rule.
  * - `error`: the document is a LAGN file but structurally malformed; `message`
  *   is a full-sentence explanation.
  */
 export type LagnConversion =
   | { kind: 'not_lagn' }
-  | { kind: 'ok'; documentJson: string; displayNames: LagnDisplayNames }
+  | { kind: 'ok'; documentJson: string; displayNames: LagnDisplayNames; finalBlow: boolean }
   | { kind: 'error'; message: string };
 
 /** Type guard for non-null, non-array plain objects. */
@@ -215,5 +216,9 @@ export function convertLagnUpload(input: string): LagnConversion {
     kind: 'ok',
     documentJson: JSON.stringify(compositionDocument),
     displayNames,
+    // why: D-24658 — LAGN 1.6.0 `setup.final_blow` is envelope-level (never part of
+    // the 9-field composition parseLoadoutJson validates), so it rides alongside the
+    // document. Only a literal `true` turns it on; absence means off.
+    finalBlow: setup['final_blow'] === true,
   };
 }

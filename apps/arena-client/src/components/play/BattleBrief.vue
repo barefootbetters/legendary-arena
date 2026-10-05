@@ -275,6 +275,16 @@ export default defineComponent({
         <p class="battle-brief__label">Heroes</p>
         <p class="battle-brief__names">{{ lineup.heroes.join(', ') }}</p>
       </div>
+      <!-- why: D-24658 — the optional Final Blow rule changes how the table wins, so
+           the brief always states it, on or off, from the match loadout's
+           setup.final_blow. Wording mirrors the lobby toggle. -->
+      <div class="battle-brief__tile battle-brief__tile--wide" data-testid="battle-brief-final-blow">
+        <p class="battle-brief__label">Final Blow</p>
+        <p v-if="lineup.finalBlow" class="battle-brief__names">
+          On — win only after a 5th, final fight against the Mastermind
+        </p>
+        <p v-else class="battle-brief__names">Off — defeating the Mastermind's last Tactic wins</p>
+      </div>
     </div>
     <p
       v-else-if="isLineupUnavailable"
@@ -425,6 +435,10 @@ export default defineComponent({
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--la-color-bg-secondary);
+}
+
+.battle-brief__tile--wide {
+  grid-column: 1 / -1;
 }
 
 .battle-brief__names {

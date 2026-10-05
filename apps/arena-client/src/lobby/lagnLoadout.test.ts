@@ -150,4 +150,22 @@ describe('convertLagnUpload (D-24018)', () => {
       assert.match(result.message, /count/);
     }
   });
+
+  test('carries setup.final_blow as finalBlow; only a literal true turns it on (D-24658)', () => {
+    const withFinalBlow = buildValidLagn();
+    (withFinalBlow['setup'] as Record<string, unknown>)['final_blow'] = true;
+    const on = convertLagnUpload(JSON.stringify(withFinalBlow));
+    assert.equal(on.kind, 'ok');
+    assert.equal(on.kind === 'ok' && on.finalBlow, true);
+    // why: the envelope flag never leaks into the 9-field composition document.
+    assert.equal(on.kind === 'ok' && 'finalBlow' in JSON.parse(on.documentJson).composition, false);
+
+    const off = convertLagnUpload(JSON.stringify(buildValidLagn()));
+    assert.equal(off.kind === 'ok' && off.finalBlow, false);
+
+    const misshaped = buildValidLagn();
+    (misshaped['setup'] as Record<string, unknown>)['final_blow'] = 'yes';
+    const notOn = convertLagnUpload(JSON.stringify(misshaped));
+    assert.equal(notOn.kind === 'ok' && notOn.finalBlow, false);
+  });
 });
