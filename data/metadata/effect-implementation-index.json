@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 556,
+      "executable": 557,
       "deferred": 16,
       "condition": 49,
       "unsupported": 297,
-      "unmarked": 1047,
+      "unmarked": 1046,
       "subsystem": 4
     }
   },
@@ -16180,11 +16180,17 @@
       "name": "Nick Fury",
       "set": "msp1",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "pure-fury",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "designs": [
+        {
+          "slug": "pure-fury",
+          "name": "Pure Fury"
+        }
+      ]
     },
     {
       "extId": "msp1/thor",
@@ -33611,7 +33617,7 @@
     "msp1/nick-fury": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "pure-fury"
       ]
     },
     "msp1/thor": {

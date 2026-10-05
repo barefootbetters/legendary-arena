@@ -3,8 +3,8 @@
     "executable": 2580,
     "heroes": 324,
     "hooks": 6380,
-    "noEffect": 2651,
-    "parsedNotExecuted": 1149
+    "noEffect": 2650,
+    "parsedNotExecuted": 1150
   },
   "perSet": {
     "2099": {
@@ -135,7 +135,7 @@
     "msp1": {
       "executable": 78,
       "hooks": 109,
-      "noEffect": 14
+      "noEffect": 13
     },
     "nmut": {
       "executable": 26,

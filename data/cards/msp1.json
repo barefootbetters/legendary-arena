@@ -615,7 +615,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile."
+            "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile. [keyword:pure-fury]"
           ]
         }
       ],

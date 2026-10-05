@@ -4,11 +4,11 @@
   "summary": {
     "totalRows": 791,
     "byStatus": {
-      "executable": 399,
+      "executable": 400,
       "deferred": 16,
       "condition": 49,
       "unsupported": 296,
-      "unmarked": 29,
+      "unmarked": 28,
       "subsystem": 2
     },
     "distinctMechanics": 159
@@ -8178,12 +8178,17 @@
       "extId": "msp1/nick-fury",
       "heroName": "Nick Fury",
       "set": "msp1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "pure-fury",
+      "status": "executable",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury",
+      "designs": [
+        {
+          "slug": "pure-fury",
+          "name": "Pure Fury"
+        }
+      ]
     },
     {
       "extId": "msp1/thor",
