@@ -79,8 +79,9 @@ function buildSnapshot(options: SnapshotOptions = {}): UIState {
  * Stubs fetch so the match LAGN read returns the given status.
  *
  * @param status HTTP status for the LAGN read.
+ * @param isFinalBlow When true, the served loadout carries `setup.final_blow: true`.
  */
-function stubLagn(status: number): void {
+function stubLagn(status: number, isFinalBlow: boolean = false): void {
   globalThis.fetch = (async () => {
     fetchCount++;
     if (status !== 200) {
@@ -100,6 +101,7 @@ function stubLagn(status: number): void {
               { id: 'core/hulk', name: 'Hulk' },
               { id: 'core/wolverine', name: 'Wolverine' },
             ],
+            ...(isFinalBlow ? { final_blow: true } : {}),
           },
         },
       }),
@@ -182,6 +184,23 @@ describe('BattleBrief (WP-786)', () => {
     assert.match(lineup, /Sentinel/);
     assert.match(lineup, /Spider-Man, Hulk, Wolverine/);
     assert.equal(fetchCount, 1);
+  });
+
+  test('the brief states Final Blow is off when the loadout carries no final_blow (D-24658)', async () => {
+    stubLagn(200);
+    const { wrapper } = mountBrief(buildSnapshot());
+    await flushPromises();
+    const finalBlow = wrapper.find('[data-testid="battle-brief-final-blow"]').text();
+    assert.match(finalBlow, /Final Blow/);
+    assert.match(finalBlow, /Off — defeating the Mastermind's last Tactic wins/);
+  });
+
+  test('the brief states Final Blow is on when the loadout carries final_blow: true (D-24658)', async () => {
+    stubLagn(200, true);
+    const { wrapper } = mountBrief(buildSnapshot());
+    await flushPromises();
+    const finalBlow = wrapper.find('[data-testid="battle-brief-final-blow"]').text();
+    assert.match(finalBlow, /On — win only after a 5th, final fight against the Mastermind/);
   });
 
   test('a failed loadout read shows the unavailable line and leaves Begin the Battle enabled', async () => {

@@ -53,6 +53,11 @@ export interface LoadoutSummary {
   readonly woundsCount: number | null;
   readonly officersCount: number | null;
   readonly sidekicksCount: number | null;
+  /**
+   * Whether the optional Final Blow rule is on (`setup.final_blow === true`,
+   * LAGN 1.6.0). False when absent or misshaped — absence means off.
+   */
+  readonly finalBlow: boolean;
 }
 
 /** Type guard for non-null, non-array plain objects. */
@@ -138,5 +143,8 @@ export function summarizeLoadout(lagn: unknown): LoadoutSummary {
     woundsCount: readCount(setup['wounds_count']),
     officersCount: readCount(setup['shield_officers_count']),
     sidekicksCount: readCount(setup['sidekicks_count']),
+    // why: D-24658 — only a literal `true` turns the rule on; the server omits the
+    // field when Final Blow is off, and a misshaped value must not read as on.
+    finalBlow: setup['final_blow'] === true,
   };
 }
