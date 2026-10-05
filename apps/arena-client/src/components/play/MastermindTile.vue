@@ -16,8 +16,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * + WP-128 `attachedBystanders` array. Click fires `fightMastermind`.
  *
  * `mastermind.attachedBystanders` (D-12805 Interpretation B) is bystanders
- * captured by the mastermind itself via Master Strike — populated at runtime
- * since WP-154 / D-15401. Per WP-505 it renders as a count-only "N captured"
+ * captured by the mastermind itself. Per D-24654 a Master Strike captures
+ * none; the store fills from a Villain-Deck Bystander revealed while the City
+ * is empty, and from the no-Villain capture fallback (Here, Hold This, D-24500;
+ * count-scaled captures, D-24537). Per WP-505 it renders as a count-only "N captured"
  * badge (face-down = identity hidden), matching the city-villain badge; these
  * are the mastermind's own captures, never the top-level city-villain
  * `G.attachedBystanders` (which render on the city row).
