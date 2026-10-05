@@ -7,6 +7,25 @@
 
 ## Current State
 
+### WP-749 — Sim / PAR loops resolve a seat choice addressed to a non-active seat (EC-786 / D-24573) (2026-10-05)
+
+**No user-observable change — infrastructure only.** The simulation runner and the PAR aggregator no longer
+freeze when a card or tactic asks **another** player to choose (Loki's Vanishing Illusions; the non-active part of
+Random Acts' pass-left). They now resolve it for that seat with the same deterministic default the live
+disconnect/timeout path uses, then play on. The live game already routed the choice to the right seat and is
+unchanged. Live-verify (D-24026): N/A — no player-facing surface.
+
+- **Engine harnesses only.** `simulation.runner.ts`, `par.aggregator.ts` and `runFixture.ts` (map entry). No
+  change under `game.ts`, `moves/**`, `rules/**` or `ai.legalMoves.ts`. D-24573 is Active.
+- **Counts.** game-engine 4843 / 1111 suites → 4844 / 1112, 0 fail; `pnpm -r --no-bail test` 0 fail in all 12
+  packages. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged; `sim:runtime-observed:check` and
+  `sim:coverage --check` current with no regeneration.
+- **The only derived shift: the PAR profiles regenerated (Loki stuck → finished).** Aggregate win / loss / stuck
+  10910 / 13028 / 1662 → 12073 / 13400 / 127. The 32 Loki scenarios went from 1546 stuck to 11, none of them a
+  seat choice. The operator dashboard's PAR-fidelity view now reflects Loki's difficulty, not a harness gap.
+- **Unblocks** WP-793 (escape procedure) and WP-758 (Zarathos). WP-793's planned PAR re-pin now covers only its
+  own change.
+
 ### WP-792 — A Master Strike no longer captures a Bystander (EC-829 / D-24654) (2026-10-04)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A Master Strike now does only what the Mastermind's

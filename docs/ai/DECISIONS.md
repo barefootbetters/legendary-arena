@@ -46528,4 +46528,22 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
 
 ---
 
+### D-24573 — The observation harnesses resolve a non-active seat choice with its deterministic default (Active 2026-10-05 — WP-749 / EC-786)
+
+**Status:** Active — landed 2026-10-05 (WP-749 / EC-786).
+
+**Context.** The simulation runner and the PAR aggregator only ever drive the current player. When a WP-684 / D-24501 seat choice is addressed to a **different** seat (Loki's Vanishing Illusions, the non-active part of Random Acts' pass-left), the active seat is correctly blocked, its legal list is empty, the policy falls back to `endTurn` outside cleanup and the game was recorded as stuck. Found by the #2297 PAR re-pin; at execution HEAD the 32 Loki PAR profiles held 1546 stuck games of 6400. D-24590 / D-24593 closed the same gap in the server autoplay and bot-ally drivers; this is the engine-harness counterpart.
+
+**Decision.**
+1. When `G.pendingSeatChoice` is open and the current player is not an outstanding addressed seat, `simulation.runner.ts` `runPerTurnLoop` and `par.aggregator.ts` `simulateOneGame` dispatch, for `getOutstandingSeats(choice)[0]`, the single `resolveSeatChoice` that `getLegalMoves` returns for that seat (`defaultOptionIndex`, the disconnect/timeout default), with a move context built for that seat. No policy is consulted and no decision log is pushed, so a game that never opens such a choice is byte-identical. The branch runs right after `evaluateEndgame`, then the per-move `onMove` mirrors (pile depletion, then deferred grants), then `continue`; it counts against `MAX_MOVE_STEPS_PER_TURN` / `MAX_MOVES_PER_GAME`.
+2. A seat whose legal list is not exactly one `resolveSeatChoice` ends the game as stuck with a full-sentence warning (fail loud, no retry).
+3. The sim captures the move under the acting seat's `playerId` (D-24273), and `runFixture`'s `MOVE_MAP` replays it. `replay.execute.ts` stays core-moves-only (D-0205).
+4. **Open parity questions.** Opening Diving Block's wave (`openDivingBlockSeatChoiceIfNeeded`) in the loops is still unmirrored. The dispatched context carries `ctx.currentPlayer = <acting seat>`, while live `onMove` keeps the active seat there; this only matters if a non-active seat's resolve trips a deferred grant that reads bare `ctx.currentPlayer`. `runFixture` builds its context the same way, so the sim ↔ fixture lockstep holds.
+
+**Gates.** game-engine 4843 / 1111 suites → 4844 / 1112 (new `seatChoiceDispatch.test.ts`, mutation-checked), 0 fail; sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged; `sim:runtime-observed:check` and `sim:coverage --check` current with no regeneration; `pnpm -r --no-bail test` 0 fail. PAR profiles regenerated (the attribution baseline showed no prior drift): aggregate win / loss / stuck 10910 / 13028 / 1662 → 12073 / 13400 / 127 (25600); Loki 1094 / 3760 / 1546 → 2257 / 4132 / 11, none of the 11 a seat choice; control scenario unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24573. Related: WP-684 / D-24501 (seat-choice model), WP-694 / D-24511 (Vanishing Illusions), WP-744 / D-24567 (loop `onMove` parity), WP-732 / D-24553, D-24273 (capture → replay), D-0205, D-24590 / D-24593 (server-driver counterparts), WP-793 / D-24656 (unblocked).
+
+---
+
 Protect this file.

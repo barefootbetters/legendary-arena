@@ -89,7 +89,7 @@ import { resolveSplitFaceChoice } from '../moves/splitFaceChoice.resolve.js';
 // MUST be dispatchable here or a parked count-scaled choice hangs the PAR loop.
 import { resolveCountScaledChoice } from '../moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice } from '../moves/undercover.resolve.js';
-import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
+import { getOutstandingSeats, resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 // why: WP-676 / D-24492 — resolveSmashDiscard can be the only legal move (block-all); it
 // MUST be dispatchable here or a parked Smash choice hangs the PAR loop.
 import { resolveSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -687,6 +687,71 @@ function simulateOneGame(
     const endgameResult = evaluateEndgame(gameState);
     if (endgameResult !== null) {
       break;
+    }
+
+    // why: WP-749 / D-24573 — a WP-684 / D-24501 seat choice can be addressed to a seat
+    // other than the current player (Loki's Vanishing Illusions, the non-active part of
+    // Random Acts' pass-left). The live framework routes it to the addressed seat, but this
+    // aggregator only ever drives currentPlayer, whose legal list is empty while it is
+    // blocked — so the policy fell back to endTurn outside cleanup and the game was
+    // recorded stuck. The outstanding seats act BEFORE the blocked active seat (live blocks
+    // the active seat until every addressed seat submits), so the first outstanding seat
+    // dispatches the one move getLegalMoves already offers it: resolveSeatChoice at
+    // defaultOptionIndex, the disconnect/timeout default, so an all-bot resolution is
+    // replay-identical. No policy is consulted, so the policy's PRNG stream is untouched
+    // and a game that never opens such a choice is byte-identical. When the current player
+    // is itself outstanding the existing path already resolves it, so this branch skips it.
+    // Same block as the simulation.runner.ts loop (RS-10 deliberate duplication).
+    const pendingSeatChoice = gameState.pendingSeatChoice;
+    if (pendingSeatChoice !== undefined) {
+      const outstandingSeats = getOutstandingSeats(pendingSeatChoice);
+      if (outstandingSeats.length > 0 && !outstandingSeats.includes(currentPlayer)) {
+        const actingSeat = outstandingSeats[0]!;
+        const seatLegalMoves: LegalMove[] = getLegalMoves(gameState, {
+          phase: 'play',
+          turn,
+          currentPlayer: actingSeat,
+          numPlayers,
+        });
+        const seatChoiceMove = seatLegalMoves[0];
+        const seatChoiceMoveFn = MOVE_MAP.resolveSeatChoice;
+        if (
+          seatLegalMoves.length !== 1 ||
+          seatChoiceMove === undefined ||
+          seatChoiceMove.name !== 'resolveSeatChoice' ||
+          seatChoiceMoveFn === undefined
+        ) {
+          // why: fail loudly rather than retry — the acting seat has nothing this
+          // aggregator can dispatch, so spinning would only burn the move budget.
+          // getLegalMoves does not clamp defaultOptionIndex (unlike the live timeout
+          // path), so an out-of-range default is rejected silently by resolveSeatChoice and
+          // the choice never clears; that case is backstopped by MAX_MOVES_PER_GAME above.
+          pushLog(
+            gameState,
+            `PAR aggregator warning: seat ${actingSeat} owes a seat choice but has no single resolveSeatChoice move — flagging game as stuck.`,
+          );
+          turnsElapsed = MAX_TURNS_PER_GAME;
+          break;
+        }
+        const seatChoiceContext = buildMoveContext(
+          gameState,
+          actingSeat,
+          'play',
+          turn,
+          numPlayers,
+          { triggered: false },
+          nextRandom,
+        );
+        seatChoiceMoveFn(seatChoiceContext, seatChoiceMove.args);
+        movesDispatched += 1;
+        // why: live game.ts turn.onMove fires after every move, a non-active seat's
+        // included — run the same two per-move mirrors, in the live order, that this
+        // aggregator runs after any dispatched move (WP-510 pile depletion, then WP-744 /
+        // D-24567 deferred grants).
+        applyPileDepletionResourceLoss(gameState);
+        resolveDeferredHeroGrants(gameState, seatChoiceContext);
+        continue;
+      }
     }
 
     const lifecycleContext: SimulationLifecycleContext = {

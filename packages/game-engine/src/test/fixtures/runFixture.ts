@@ -47,6 +47,7 @@ import { recruitHero } from '../../moves/recruitHero.js';
 import { fightMastermind } from '../../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../../lobby/lobby.moves.js';
 import { resolvePutCardsOnDeckChoice } from '../../moves/putCardsOnDeckChoice.resolve.js';
+import { resolveSeatChoice } from '../../moves/seatChoice.resolve.js';
 import { advanceTurnStage } from '../../turn/turnLoop.js';
 import { hashGameState } from './hashGameState.js';
 
@@ -160,11 +161,12 @@ function fixtureAdvanceStage(context: FixtureMoveContext): void {
 // because the canonical array is locked at exactly three entries by the
 // drift-detection test in coreMoves.types.test.ts; if a future packet
 // extends it, this file refuses to compile rather than silently drift.
-// The seven non-core entries (advanceStage / revealVillainCard /
+// The nine non-core entries (advanceStage / revealVillainCard /
 // fightVillain / recruitHero / fightMastermind / setPlayerReady /
-// startMatchIfReady) use string literals because no canonical move-name
-// array covers them — same pragmatic gap that simulation.runner.ts and
-// replay.execute.ts already exhibit. The closed set of dispatchable
+// startMatchIfReady / resolvePutCardsOnDeckChoice / resolveSeatChoice) use
+// string literals because no canonical move-name array covers them — same
+// pragmatic gap that simulation.runner.ts and replay.execute.ts already
+// exhibit. The closed set of dispatchable
 // names is enforced by the type system anyway: every entry corresponds
 // to a directly imported move function. Unknown names throw via the
 // runtime check in `dispatchSingleMove` below (NOT the warn-and-continue
@@ -194,6 +196,14 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   // or the block-all guard freezes the scripted tail. Reads only G + playerID.
   resolvePutCardsOnDeckChoice: (context, args) =>
     resolvePutCardsOnDeckChoice(context as never, args as never),
+  // why: WP-749 / D-24573 — the sim capture -> fixture replay lockstep (D-24273). The
+  // simulation runner now dispatches a non-active seat's resolveSeatChoice (a WP-684
+  // seat choice addressed to another seat, e.g. Loki's Vanishing Illusions) and captures
+  // it under that seat's playerId; without this entry a captured trace throws "unknown
+  // move name" here. dispatchSingleMove already passes move.playerId as playerID, so the
+  // move replays as the addressed seat with no other change.
+  resolveSeatChoice: (context, args) =>
+    resolveSeatChoice(context as never, args as never),
 };
 
 /**

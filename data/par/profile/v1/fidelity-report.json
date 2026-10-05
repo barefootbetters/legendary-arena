@@ -4,72 +4,6 @@
   "scenarioCount": 128,
   "scenarios": [
     {
-      "binCount": 15,
-      "lossRate": 0.75,
-      "minWinningTurn": 32,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard",
-      "stuckAtCapCount": 180,
-      "tooEasyRank": 1,
-      "winRate": 0.25
-    },
-    {
-      "binCount": 10,
-      "lossRate": 0.8,
-      "minWinningTurn": 31,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard",
-      "stuckAtCapCount": 185,
-      "tooEasyRank": 2,
-      "winRate": 0.2
-    },
-    {
-      "binCount": 21,
-      "lossRate": 0.89,
-      "minWinningTurn": 27,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard",
-      "stuckAtCapCount": 164,
-      "tooEasyRank": 3,
-      "winRate": 0.11
-    },
-    {
-      "binCount": 36,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard+hydra",
-      "stuckAtCapCount": 91,
-      "tooEasyRank": 4,
-      "winRate": 0
-    },
-    {
-      "binCount": 23,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+radiation",
-      "stuckAtCapCount": 152,
-      "tooEasyRank": 5,
-      "winRate": 0
-    },
-    {
-      "binCount": 24,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": true,
-      "sampleSize": 200,
-      "scenarioKey": "super-hero-civil-war::loki::brotherhood+hydra+radiation",
-      "stuckAtCapCount": 26,
-      "tooEasyRank": 6,
-      "winRate": 0
-    },
-    {
       "binCount": 17,
       "lossRate": 0,
       "minWinningTurn": 8,
@@ -77,7 +11,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::red-skull::hydra",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 7,
+      "tooEasyRank": 1,
       "winRate": 1
     },
     {
@@ -88,7 +22,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 8,
+      "tooEasyRank": 2,
       "winRate": 1
     },
     {
@@ -99,7 +33,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::magneto::brotherhood",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 9,
+      "tooEasyRank": 3,
       "winRate": 1
     },
     {
@@ -110,7 +44,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 10,
+      "tooEasyRank": 4,
       "winRate": 1
     },
     {
@@ -121,7 +55,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::magneto::brotherhood",
       "stuckAtCapCount": 34,
-      "tooEasyRank": 11,
+      "tooEasyRank": 5,
       "winRate": 1
     },
     {
@@ -132,7 +66,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 12,
+      "tooEasyRank": 6,
       "winRate": 1
     },
     {
@@ -143,7 +77,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::magneto::brotherhood",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 13,
+      "tooEasyRank": 7,
       "winRate": 1
     },
     {
@@ -154,7 +88,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::dr-doom::masters-of-evil",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 14,
+      "tooEasyRank": 8,
       "winRate": 1
     },
     {
@@ -165,7 +99,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::dr-doom::masters-of-evil",
       "stuckAtCapCount": 12,
-      "tooEasyRank": 15,
+      "tooEasyRank": 9,
       "winRate": 1
     },
     {
@@ -176,7 +110,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::magneto::brotherhood",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 16,
+      "tooEasyRank": 10,
       "winRate": 1
     },
     {
@@ -187,7 +121,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::loki::enemies-of-asgard",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 17,
+      "tooEasyRank": 11,
       "winRate": 1
     },
     {
@@ -198,7 +132,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::loki::enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 18,
+      "tooEasyRank": 12,
       "winRate": 1
     },
     {
@@ -209,7 +143,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::magneto::brotherhood",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 19,
+      "tooEasyRank": 13,
       "winRate": 1
     },
     {
@@ -220,7 +154,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::loki::enemies-of-asgard",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 20,
+      "tooEasyRank": 14,
       "winRate": 1
     },
     {
@@ -231,7 +165,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::magneto::brotherhood",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 21,
+      "tooEasyRank": 15,
       "winRate": 0.99
     },
     {
@@ -242,7 +176,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::dr-doom::masters-of-evil",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 22,
+      "tooEasyRank": 16,
       "winRate": 0.99
     },
     {
@@ -253,7 +187,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::dr-doom::masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 23,
+      "tooEasyRank": 17,
       "winRate": 0.99
     },
     {
@@ -264,7 +198,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::dr-doom::masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 24,
+      "tooEasyRank": 18,
       "winRate": 0.99
     },
     {
@@ -275,8 +209,19 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::radiation",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 25,
+      "tooEasyRank": 19,
       "winRate": 0.98
+    },
+    {
+      "binCount": 70,
+      "lossRate": 0.06,
+      "minWinningTurn": 27,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard",
+      "stuckAtCapCount": 4,
+      "tooEasyRank": 20,
+      "winRate": 0.94
     },
     {
       "binCount": 18,
@@ -286,7 +231,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 26,
+      "tooEasyRank": 21,
       "winRate": 0.93
     },
     {
@@ -297,7 +242,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 27,
+      "tooEasyRank": 22,
       "winRate": 0.92
     },
     {
@@ -308,7 +253,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 28,
+      "tooEasyRank": 23,
       "winRate": 0.91
     },
     {
@@ -319,7 +264,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::red-skull::brotherhood+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 29,
+      "tooEasyRank": 24,
       "winRate": 0.91
     },
     {
@@ -330,7 +275,18 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::red-skull::hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 30,
+      "tooEasyRank": 25,
+      "winRate": 0.9
+    },
+    {
+      "binCount": 46,
+      "lossRate": 0.1,
+      "minWinningTurn": 25,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard",
+      "stuckAtCapCount": 3,
+      "tooEasyRank": 26,
       "winRate": 0.9
     },
     {
@@ -341,7 +297,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::dr-doom::masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 31,
+      "tooEasyRank": 27,
       "winRate": 0.89
     },
     {
@@ -352,7 +308,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::magneto::brotherhood+spider-foes",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 32,
+      "tooEasyRank": 28,
       "winRate": 0.89
     },
     {
@@ -363,7 +319,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 31,
-      "tooEasyRank": 33,
+      "tooEasyRank": 29,
       "winRate": 0.88
     },
     {
@@ -374,7 +330,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 34,
+      "tooEasyRank": 30,
       "winRate": 0.87
     },
     {
@@ -385,7 +341,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::dr-doom::brotherhood+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 35,
+      "tooEasyRank": 31,
       "winRate": 0.86
     },
     {
@@ -396,7 +352,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::dr-doom::enemies-of-asgard+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 36,
+      "tooEasyRank": 32,
       "winRate": 0.85
     },
     {
@@ -407,7 +363,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::red-skull::hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 37,
+      "tooEasyRank": 33,
       "winRate": 0.84
     },
     {
@@ -418,7 +374,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::dr-doom::masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 38,
+      "tooEasyRank": 34,
       "winRate": 0.84
     },
     {
@@ -429,7 +385,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::red-skull::brotherhood+hydra",
       "stuckAtCapCount": 4,
-      "tooEasyRank": 39,
+      "tooEasyRank": 35,
       "winRate": 0.82
     },
     {
@@ -440,7 +396,18 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::red-skull::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 40,
+      "tooEasyRank": 36,
+      "winRate": 0.82
+    },
+    {
+      "binCount": 49,
+      "lossRate": 0.18,
+      "minWinningTurn": 21,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard",
+      "stuckAtCapCount": 2,
+      "tooEasyRank": 37,
       "winRate": 0.82
     },
     {
@@ -451,7 +418,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::dr-doom::brotherhood+masters-of-evil",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 41,
+      "tooEasyRank": 38,
       "winRate": 0.81
     },
     {
@@ -462,7 +429,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::dr-doom::masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 42,
+      "tooEasyRank": 39,
       "winRate": 0.8
     },
     {
@@ -473,7 +440,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 43,
+      "tooEasyRank": 40,
       "winRate": 0.79
     },
     {
@@ -484,7 +451,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 44,
+      "tooEasyRank": 41,
       "winRate": 0.76
     },
     {
@@ -495,7 +462,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::magneto::brotherhood",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 45,
+      "tooEasyRank": 42,
       "winRate": 0.76
     },
     {
@@ -506,7 +473,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::dr-doom::enemies-of-asgard+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 46,
+      "tooEasyRank": 43,
       "winRate": 0.73
     },
     {
@@ -517,8 +484,19 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 47,
+      "tooEasyRank": 44,
       "winRate": 0.71
+    },
+    {
+      "binCount": 41,
+      "lossRate": 0.31,
+      "minWinningTurn": 26,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 45,
+      "winRate": 0.7
     },
     {
       "binCount": 28,
@@ -528,7 +506,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::dr-doom::masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 48,
+      "tooEasyRank": 46,
       "winRate": 0.68
     },
     {
@@ -539,7 +517,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::dr-doom::masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 49,
+      "tooEasyRank": 47,
       "winRate": 0.65
     },
     {
@@ -550,7 +528,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::red-skull::brotherhood+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 50,
+      "tooEasyRank": 48,
       "winRate": 0.65
     },
     {
@@ -561,7 +539,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::red-skull::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 51,
+      "tooEasyRank": 49,
       "winRate": 0.65
     },
     {
@@ -572,8 +550,19 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 52,
+      "tooEasyRank": 50,
       "winRate": 0.62
+    },
+    {
+      "binCount": 73,
+      "lossRate": 0.39,
+      "minWinningTurn": 31,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard+hydra",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 51,
+      "winRate": 0.61
     },
     {
       "binCount": 34,
@@ -583,7 +572,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::red-skull::enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 53,
+      "tooEasyRank": 52,
       "winRate": 0.6
     },
     {
@@ -594,7 +583,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::dr-doom::enemies-of-asgard+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 54,
+      "tooEasyRank": 53,
       "winRate": 0.6
     },
     {
@@ -605,7 +594,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::red-skull::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 55,
+      "tooEasyRank": 54,
       "winRate": 0.59
     },
     {
@@ -616,7 +605,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 56,
+      "tooEasyRank": 55,
       "winRate": 0.59
     },
     {
@@ -627,7 +616,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::magneto::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 17,
-      "tooEasyRank": 57,
+      "tooEasyRank": 56,
       "winRate": 0.55
     },
     {
@@ -638,7 +627,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::red-skull::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 58,
+      "tooEasyRank": 57,
       "winRate": 0.53
     },
     {
@@ -649,7 +638,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::magneto::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 59,
+      "tooEasyRank": 58,
       "winRate": 0.49
     },
     {
@@ -660,7 +649,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::red-skull::brotherhood+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 60,
+      "tooEasyRank": 59,
       "winRate": 0.47
     },
     {
@@ -671,7 +660,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::red-skull::hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 61,
+      "tooEasyRank": 60,
       "winRate": 0.46
     },
     {
@@ -682,7 +671,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::red-skull::enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 62,
+      "tooEasyRank": 61,
       "winRate": 0.46
     },
     {
@@ -693,7 +682,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::red-skull::hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 63,
+      "tooEasyRank": 62,
       "winRate": 0.45
     },
     {
@@ -704,7 +693,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 64,
+      "tooEasyRank": 63,
       "winRate": 0.42
     },
     {
@@ -715,7 +704,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::dr-doom::brotherhood+enemies-of-asgard+masters-of-evil",
       "stuckAtCapCount": 2,
-      "tooEasyRank": 65,
+      "tooEasyRank": 64,
       "winRate": 0.42
     },
     {
@@ -726,7 +715,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 66,
+      "tooEasyRank": 65,
       "winRate": 0.42
     },
     {
@@ -737,7 +726,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::red-skull::brotherhood+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 67,
+      "tooEasyRank": 66,
       "winRate": 0.41
     },
     {
@@ -748,8 +737,19 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::red-skull::enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 68,
+      "tooEasyRank": 67,
       "winRate": 0.41
+    },
+    {
+      "binCount": 61,
+      "lossRate": 0.61,
+      "minWinningTurn": 36,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard+hydra",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 68,
+      "winRate": 0.4
     },
     {
       "binCount": 14,
@@ -796,6 +796,17 @@
       "winRate": 0.38
     },
     {
+      "binCount": 64,
+      "lossRate": 0.66,
+      "minWinningTurn": 35,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard+hydra",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 73,
+      "winRate": 0.34
+    },
+    {
       "binCount": 37,
       "lossRate": 0.67,
       "minWinningTurn": 20,
@@ -803,7 +814,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::magneto::brotherhood+hydra+spider-foes",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 73,
+      "tooEasyRank": 74,
       "winRate": 0.33
     },
     {
@@ -814,7 +825,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::magneto::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 74,
+      "tooEasyRank": 75,
       "winRate": 0.32
     },
     {
@@ -825,7 +836,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::magneto::brotherhood+spider-foes",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 75,
+      "tooEasyRank": 76,
       "winRate": 0.3
     },
     {
@@ -836,7 +847,7 @@
       "sampleSize": 200,
       "scenarioKey": "unleash-the-power-of-the-cosmic-cube::dr-doom::enemies-of-asgard+hydra+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 76,
+      "tooEasyRank": 77,
       "winRate": 0.29
     },
     {
@@ -847,7 +858,18 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::dr-doom::brotherhood+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 77,
+      "tooEasyRank": 78,
+      "winRate": 0.28
+    },
+    {
+      "binCount": 21,
+      "lossRate": 0.73,
+      "minWinningTurn": 22,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 79,
       "winRate": 0.28
     },
     {
@@ -858,7 +880,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 78,
+      "tooEasyRank": 80,
       "winRate": 0.28
     },
     {
@@ -869,7 +891,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::dr-doom::brotherhood+enemies-of-asgard+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 79,
+      "tooEasyRank": 81,
       "winRate": 0.28
     },
     {
@@ -880,7 +902,18 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::dr-doom::brotherhood+masters-of-evil",
       "stuckAtCapCount": 3,
-      "tooEasyRank": 80,
+      "tooEasyRank": 82,
+      "winRate": 0.26
+    },
+    {
+      "binCount": 52,
+      "lossRate": 0.75,
+      "minWinningTurn": 30,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+hydra+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 83,
       "winRate": 0.26
     },
     {
@@ -891,7 +924,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::magneto::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 81,
+      "tooEasyRank": 84,
       "winRate": 0.22
     },
     {
@@ -902,7 +935,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::dr-doom::masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 82,
+      "tooEasyRank": 85,
       "winRate": 0.2
     },
     {
@@ -913,7 +946,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::dr-doom::masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 83,
+      "tooEasyRank": 86,
       "winRate": 0.18
     },
     {
@@ -924,7 +957,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::dr-doom::brotherhood+enemies-of-asgard+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 84,
+      "tooEasyRank": 87,
       "winRate": 0.18
     },
     {
@@ -935,7 +968,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 85,
+      "tooEasyRank": 88,
       "winRate": 0.16
     },
     {
@@ -946,7 +979,7 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::dr-doom::enemies-of-asgard+hydra+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 86,
+      "tooEasyRank": 89,
       "winRate": 0.15
     },
     {
@@ -957,7 +990,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::magneto::brotherhood+hydra+spider-foes",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 87,
+      "tooEasyRank": 90,
       "winRate": 0.14
     },
     {
@@ -968,7 +1001,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::magneto::brotherhood+hydra+masters-of-evil+spider-foes",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 88,
+      "tooEasyRank": 91,
       "winRate": 0.14
     },
     {
@@ -979,7 +1012,18 @@
       "sampleSize": 200,
       "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::magneto::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 89,
+      "tooEasyRank": 92,
+      "winRate": 0.14
+    },
+    {
+      "binCount": 70,
+      "lossRate": 0.86,
+      "minWinningTurn": 68,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 93,
       "winRate": 0.14
     },
     {
@@ -990,7 +1034,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 90,
+      "tooEasyRank": 94,
       "winRate": 0.12
     },
     {
@@ -1001,7 +1045,29 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::magneto::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 1,
-      "tooEasyRank": 91,
+      "tooEasyRank": 95,
+      "winRate": 0.11
+    },
+    {
+      "binCount": 60,
+      "lossRate": 0.89,
+      "minWinningTurn": 61,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 96,
+      "winRate": 0.11
+    },
+    {
+      "binCount": 63,
+      "lossRate": 0.89,
+      "minWinningTurn": 64,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 97,
       "winRate": 0.11
     },
     {
@@ -1012,7 +1078,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::loki::radiation",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 92,
+      "tooEasyRank": 98,
       "winRate": 0.1
     },
     {
@@ -1023,7 +1089,7 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::dr-doom::enemies-of-asgard+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 93,
+      "tooEasyRank": 99,
       "winRate": 0.1
     },
     {
@@ -1034,8 +1100,30 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::dr-doom::enemies-of-asgard+hydra+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 94,
+      "tooEasyRank": 100,
       "winRate": 0.1
+    },
+    {
+      "binCount": 63,
+      "lossRate": 0.9,
+      "minWinningTurn": 56,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+hydra+masters-of-evil+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 101,
+      "winRate": 0.1
+    },
+    {
+      "binCount": 18,
+      "lossRate": 0.92,
+      "minWinningTurn": 25,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 102,
+      "winRate": 0.09
     },
     {
       "binCount": 38,
@@ -1045,7 +1133,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 95,
+      "tooEasyRank": 103,
       "winRate": 0.09
     },
     {
@@ -1056,7 +1144,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::magneto::brotherhood+enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 96,
+      "tooEasyRank": 104,
       "winRate": 0.08
     },
     {
@@ -1067,7 +1155,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::magneto::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 97,
+      "tooEasyRank": 105,
       "winRate": 0.07
     },
     {
@@ -1078,7 +1166,18 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::red-skull::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 98,
+      "tooEasyRank": 106,
+      "winRate": 0.06
+    },
+    {
+      "binCount": 24,
+      "lossRate": 0.95,
+      "minWinningTurn": 37,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard+hydra",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 107,
       "winRate": 0.06
     },
     {
@@ -1089,7 +1188,7 @@
       "sampleSize": 200,
       "scenarioKey": "portals-to-the-dark-dimension::dr-doom::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 99,
+      "tooEasyRank": 108,
       "winRate": 0.06
     },
     {
@@ -1100,7 +1199,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::loki::enemies-of-asgard",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 100,
+      "tooEasyRank": 109,
       "winRate": 0.05
     },
     {
@@ -1111,7 +1210,7 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::magneto::brotherhood+hydra+masters-of-evil+spider-foes",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 101,
+      "tooEasyRank": 110,
       "winRate": 0.05
     },
     {
@@ -1122,7 +1221,7 @@
       "sampleSize": 200,
       "scenarioKey": "negative-zone-prison-breakout::magneto::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 4,
-      "tooEasyRank": 102,
+      "tooEasyRank": 111,
       "winRate": 0.05
     },
     {
@@ -1133,7 +1232,7 @@
       "sampleSize": 200,
       "scenarioKey": "replace-earths-leaders-with-killbots::dr-doom::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 103,
+      "tooEasyRank": 112,
       "winRate": 0.05
     },
     {
@@ -1144,8 +1243,19 @@
       "sampleSize": 200,
       "scenarioKey": "super-hero-civil-war::dr-doom::enemies-of-asgard+hydra+masters-of-evil+skrulls",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 104,
+      "tooEasyRank": 113,
       "winRate": 0.04
+    },
+    {
+      "binCount": 21,
+      "lossRate": 0.97,
+      "minWinningTurn": 23,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "super-hero-civil-war::loki::brotherhood+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 114,
+      "winRate": 0.03
     },
     {
       "binCount": 34,
@@ -1155,7 +1265,18 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::red-skull::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 105,
+      "tooEasyRank": 115,
+      "winRate": 0.03
+    },
+    {
+      "binCount": 35,
+      "lossRate": 0.98,
+      "minWinningTurn": 52,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 116,
       "winRate": 0.03
     },
     {
@@ -1166,8 +1287,30 @@
       "sampleSize": 200,
       "scenarioKey": "midtown-bank-robbery::dr-doom::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 106,
+      "tooEasyRank": 117,
       "winRate": 0.03
+    },
+    {
+      "binCount": 27,
+      "lossRate": 0.98,
+      "minWinningTurn": 38,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+hydra+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 118,
+      "winRate": 0.02
+    },
+    {
+      "binCount": 22,
+      "lossRate": 1,
+      "minWinningTurn": 22,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "legacy-virus-the::loki::brotherhood+enemies-of-asgard",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 119,
+      "winRate": 0.01
     },
     {
       "binCount": 27,
@@ -1177,7 +1320,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::dr-doom::brotherhood+enemies-of-asgard+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 107,
+      "tooEasyRank": 120,
       "winRate": 0.01
     },
     {
@@ -1188,7 +1331,18 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::magneto::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 108,
+      "tooEasyRank": 121,
+      "winRate": 0.01
+    },
+    {
+      "binCount": 36,
+      "lossRate": 1,
+      "minWinningTurn": 47,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "super-hero-civil-war::loki::brotherhood+hydra+masters-of-evil+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 122,
       "winRate": 0.01
     },
     {
@@ -1199,7 +1353,18 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::magneto::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 109,
+      "tooEasyRank": 123,
+      "winRate": 0.01
+    },
+    {
+      "binCount": 44,
+      "lossRate": 1,
+      "minWinningTurn": 54,
+      "monotoneImproving": false,
+      "sampleSize": 200,
+      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+hydra+masters-of-evil+radiation",
+      "stuckAtCapCount": 0,
+      "tooEasyRank": 124,
       "winRate": 0.01
     },
     {
@@ -1210,18 +1375,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::dr-doom::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 110,
-      "winRate": 0
-    },
-    {
-      "binCount": 20,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "legacy-virus-the::loki::brotherhood+enemies-of-asgard",
-      "stuckAtCapCount": 5,
-      "tooEasyRank": 111,
+      "tooEasyRank": 125,
       "winRate": 0
     },
     {
@@ -1232,7 +1386,7 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::loki::brotherhood+enemies-of-asgard+hydra",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 112,
+      "tooEasyRank": 126,
       "winRate": 0
     },
     {
@@ -1243,171 +1397,17 @@
       "sampleSize": 200,
       "scenarioKey": "legacy-virus-the::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
       "stuckAtCapCount": 0,
-      "tooEasyRank": 113,
-      "winRate": 0
-    },
-    {
-      "binCount": 35,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard+hydra",
-      "stuckAtCapCount": 75,
-      "tooEasyRank": 114,
-      "winRate": 0
-    },
-    {
-      "binCount": 46,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "midtown-bank-robbery::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
-      "stuckAtCapCount": 26,
-      "tooEasyRank": 115,
-      "winRate": 0
-    },
-    {
-      "binCount": 22,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard+hydra",
-      "stuckAtCapCount": 123,
-      "tooEasyRank": 116,
-      "winRate": 0
-    },
-    {
-      "binCount": 42,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "negative-zone-prison-breakout::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
-      "stuckAtCapCount": 22,
-      "tooEasyRank": 117,
-      "winRate": 0
-    },
-    {
-      "binCount": 44,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+hydra+masters-of-evil+radiation",
-      "stuckAtCapCount": 14,
-      "tooEasyRank": 118,
-      "winRate": 0
-    },
-    {
-      "binCount": 26,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+hydra+radiation",
-      "stuckAtCapCount": 34,
-      "tooEasyRank": 119,
-      "winRate": 0
-    },
-    {
-      "binCount": 18,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "portals-to-the-dark-dimension::loki::brotherhood+radiation",
-      "stuckAtCapCount": 59,
-      "tooEasyRank": 120,
-      "winRate": 0
-    },
-    {
-      "binCount": 51,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "replace-earths-leaders-with-killbots::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
-      "stuckAtCapCount": 32,
-      "tooEasyRank": 121,
-      "winRate": 0
-    },
-    {
-      "binCount": 54,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+hydra+masters-of-evil+radiation",
-      "stuckAtCapCount": 32,
-      "tooEasyRank": 122,
-      "winRate": 0
-    },
-    {
-      "binCount": 41,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "secret-invasion-of-the-skrull-shapeshifters::loki::brotherhood+hydra+radiation",
-      "stuckAtCapCount": 65,
-      "tooEasyRank": 123,
-      "winRate": 0
-    },
-    {
-      "binCount": 34,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "super-hero-civil-war::loki::brotherhood+hydra+masters-of-evil+radiation",
-      "stuckAtCapCount": 26,
-      "tooEasyRank": 124,
-      "winRate": 0
-    },
-    {
-      "binCount": 21,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "super-hero-civil-war::loki::brotherhood+radiation",
-      "stuckAtCapCount": 36,
-      "tooEasyRank": 125,
-      "winRate": 0
-    },
-    {
-      "binCount": 15,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard",
-      "stuckAtCapCount": 97,
-      "tooEasyRank": 126,
-      "winRate": 0
-    },
-    {
-      "binCount": 23,
-      "lossRate": 1,
-      "minWinningTurn": null,
-      "monotoneImproving": false,
-      "sampleSize": 200,
-      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard+hydra",
-      "stuckAtCapCount": 57,
       "tooEasyRank": 127,
       "winRate": 0
     },
     {
-      "binCount": 35,
+      "binCount": 24,
       "lossRate": 1,
       "minWinningTurn": null,
       "monotoneImproving": false,
       "sampleSize": 200,
-      "scenarioKey": "unleash-the-power-of-the-cosmic-cube::loki::brotherhood+enemies-of-asgard+hydra+masters-of-evil",
-      "stuckAtCapCount": 43,
+      "scenarioKey": "super-hero-civil-war::loki::brotherhood+hydra+radiation",
+      "stuckAtCapCount": 0,
       "tooEasyRank": 128,
       "winRate": 0
     }
