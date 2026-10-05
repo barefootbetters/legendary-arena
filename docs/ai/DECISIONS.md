@@ -46550,4 +46550,16 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
 
 ---
 
+### D-24659 — Monarch's Decree is a no-op with no other player: no draw-vs-discard prompt in solo (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Core Dr. Doom's tactic Monarch's Decree prints "Choose one: each other player draws a card OR each other player discards a card." `resolveMonarchsDecree` (WP-694 / D-24511) always parked the draw-vs-discard mode choice for the defeating player. In a solo match there is no other player, so both options do nothing, yet the player was still asked to choose. Live solo match `f4JyVOX_Tq3` (2026-10-05) logged "must choose — each other player draws a card, or each other player discards a card" with nothing to follow.
+
+**Decision.** When `G.playerZones` holds no seat other than the defeating player, `resolveMonarchsDecree` logs "there is no other player to draw or discard (Monarch's Decree)" and parks nothing. That mirrors Vanishing Illusions, which already parks nothing when no other seat qualifies. With at least one other seat, behavior is unchanged: the mode choice parks for the defeating player, draw applies to every other seat, and discard chains the multi-seat discard. No new G field, move or UIState field.
+
+**Gates.** game-engine 4876 / 0 fail (+1 `tacticHandlers.test.ts` solo case: no choice parked, no seat admitted, the no-op logged; revert-proofed to fail without the guard). `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24659. Related: WP-694 / D-24511 (Monarch's Decree), WP-684 / D-24501 (seat-choice model), D-24658 (held by #2591).
+
+---
+
 Protect this file.

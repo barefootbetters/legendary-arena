@@ -7,6 +7,16 @@
 
 ## Current State
 
+### D-24659 — Monarch's Decree no longer asks a solo player to choose (direct fix) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Defeating Dr. Doom's Monarch's Decree in a solo match
+no longer asks "each other player draws or discards". There is no other player, so it now logs that and moves on.
+Multiplayer behavior is unchanged.
+
+- **Engine only** (`tacticHandlers.ts`). game-engine 4876 / 0 fail.
+- **Live-verify (D-24026): pending.** In a solo Dr. Doom game, defeat Monarch's Decree: no prompt appears, and the log
+  reads "there is no other player to draw or discard".
+
 ### WP-793 — A Villain escape follows the rulebook: HQ KO, Bystander discard, then the Escape effect (EC-830 / D-24656) (2026-10-05)
 
 **User-visible on `play.legendary-arena.com` (after deploy). D-24026 live-verify pending.** When a Villain escapes,

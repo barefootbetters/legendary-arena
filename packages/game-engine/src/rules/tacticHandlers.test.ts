@@ -887,6 +887,21 @@ describe('dispatchTacticOnFight — Monarch\'s Decree (WP-694 / D-24511)', () =>
     assert.equal(events.admitted.length, 1, 'the addressed seat was admitted via setActivePlayers');
   });
 
+  it('solo: with no other player it parks nothing, admits nobody, and logs the no-op (D-24659)', () => {
+    // why: D-24659 — both branches only affect "each other player"; live solo match
+    // f4JyVOX_Tq3 prompted a meaningless draw-vs-discard choice.
+    const G = makeSeatState({ '0': { deck: ['a0'], hand: ['h0'] } });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, events);
+    assert.equal(G.pendingSeatChoice, undefined, 'no choice is parked in a solo match');
+    assert.equal(events.admitted.length, 0, 'no seat is admitted');
+    assert.deepEqual(G.playerZones['0']!.hand, ['h0'], 'the defeating player is untouched');
+    assert.ok(
+      G.messages.some((entry) => /no other player to draw or discard \(Monarch's Decree\)/.test(entry.text)),
+      'the no-op is logged',
+    );
+  });
+
   it('AC-2 draw branch: each OTHER player draws one card; the defeating player draws nothing', () => {
     const G = makeSeatState({ '0': { deck: ['a0'] }, '1': { deck: ['b0', 'b1'] }, '2': { deck: ['c0', 'c1'] } });
     dispatchTacticOnFight(G, { currentPlayer: '0' }, MONARCHS_DECREE_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
