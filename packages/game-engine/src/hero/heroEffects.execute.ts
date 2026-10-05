@@ -3682,6 +3682,17 @@ function heroEffectCoveringFire(
   // why: D-24541 — lazy-init at the park site (mirrors the Do-Over park) — never in Game.setup,
   // so a game that never plays Covering Fire carries no new field and both hash oracles stay
   // byte-unchanged. The park is SILENT; resolveCoveringFireChoice logs the per-seat outcomes.
+  // why: D-24661 — both branches only affect "each OTHER player", so with no other seat
+  // (a solo match) the choice is meaningless. Log the no-op and park nothing instead of
+  // prompting (the Monarch's Decree D-24659 precedent).
+  const hasOtherSeat = Object.keys(G.playerZones).some((seat) => seat !== playerID);
+  if (!hasOtherSeat) {
+    pushLog(G,
+      `${formatCardRef(G.cardDisplayData, cardId)}: there is no other player to draw or discard (Covering Fire).`,
+      'neutral',
+    );
+    return;
+  }
   if (!G.pendingCoveringFireChoices) { G.pendingCoveringFireChoices = []; }
   G.pendingCoveringFireChoices.push({ playerID, sourceCardId: cardId });
 }

@@ -325,4 +325,23 @@ describe('heroEffectCoveringFire park handler + [hc:tech] gate (WP-719 / D-24541
     executeHeroEffects(gameState, makeMockCtx({ numPlayers: 2 }), '0', 'hawkeye-covering-fire' as string);
     assert.equal(hasPendingCoveringFireChoice(gameState), false);
   });
+
+  it('D-24661: solo (no other seat) parks NOTHING and logs the no-op', () => {
+    const gameState = makeTestGameState(
+      { '0': { inPlay: ['hawkeye-covering-fire', 'iron-man'] as CardExtId[] } },
+      {
+        heroAbilityHooks: [coveringFireHook],
+        cardTraits: {
+          'hawkeye-covering-fire': { heroClass: 'tech', team: null },
+          'iron-man': { heroClass: 'tech', team: null },
+        },
+      },
+    );
+    executeHeroEffects(gameState, makeMockCtx({ numPlayers: 1 }), '0', 'hawkeye-covering-fire' as string);
+    assert.equal(hasPendingCoveringFireChoice(gameState), false, 'no meaningless prompt in solo');
+    assert.ok(
+      gameState.messages.some((entry) => /no other player to draw or discard \(Covering Fire\)/.test(entry.text)),
+      'the solo no-op is logged',
+    );
+  });
 });

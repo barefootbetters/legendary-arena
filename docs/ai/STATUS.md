@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24661 — solo Covering Fire and Whispers and Lies say they did nothing; Cruel Ruler names its free defeat (direct fix) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** From solo Loki / Cosmic Cube match `aK-n8zNOteC`:
+- **Hawkeye's Covering Fire** no longer asks a solo player to choose "each other player draws or discards". With nobody to affect, it logs that and moves on.
+- **Loki's Whispers and Lies** now logs that there is no other player, instead of resolving silently.
+- **Loki's Cruel Ruler**, with one Villain in the City, logs "defeats {Villain} for free (Cruel Ruler)" before the defeat. The free defeat no longer reads like a paid fight.
+
+Multiplayer behavior is unchanged.
+
+- **Engine only** (`heroEffects.execute.ts`, `tacticHandlers.ts`). game-engine 4879 / 0 fail (+3, revert-proofed); server 1455 / 0; `sim:coverage` and `sim:runtime-observed` checks pass.
+- **Live-verify (D-24026): pending.** In a solo game, play Covering Fire with another Tech Hero: there should be no prompt, just the no-op line. Defeat Cruel Ruler with one Villain in the City and look for the "for free (Cruel Ruler)" line.
+
 ### msp1 Nick Fury's Pure Fury works (card-data fix, follow-up to D-24660) (2026-10-05)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** In the Marvel Studios Phase 1 set, Nick Fury's **Pure

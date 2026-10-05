@@ -721,6 +721,18 @@ export function resolveWhispersAndLies(
 ): void {
   const playerIds = Object.keys(G.playerZones).sort();
 
+  // why: D-24661 — with no other seat (a solo match) the effect has no one to
+  // penalize; log the no-op so the tactic does not resolve silently (the
+  // Monarch's Decree D-24659 precedent).
+  const hasOtherSeat = playerIds.some((seat) => seat !== currentPlayer);
+  if (!hasOtherSeat) {
+    pushLog(G,
+      `Fight effect: there is no other player to KO Bystanders from (Whispers and Lies).`,
+      'neutral',
+    );
+    return;
+  }
+
   for (const playerId of playerIds) {
     // why: "each OTHER player" — a tactic Fight penalizes the defeater's opponents,
     // not the defeater. Skip currentPlayer entirely (the most common Whispers bug).
@@ -1083,6 +1095,12 @@ export function resolveCruelRuler(
   if (targets.length === 1) {
     // why: exactly one City Villain is a FORCED free defeat — auto-resolve it now
     // (no prompt), mirroring the exactly-1 auto path of the shared free-defeat family.
+    // D-24661: log the attribution first — the defeat core logs an ordinary "fought"
+    // line, which otherwise reads as a paid fight.
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} defeats ${formatCardRef(G.cardDisplayData, targets[0]!.cardId)} for free (Cruel Ruler).`,
+      'applied',
+    );
     dispatchDefeatWithBystanderTarget(G, ctx, targets[0]!, shuffleContext);
     return;
   }

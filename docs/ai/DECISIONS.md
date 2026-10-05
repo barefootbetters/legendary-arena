@@ -46601,4 +46601,28 @@ In every one it describes the target's attack.
 
 ---
 
+### D-24661 — "Each other player" effects log a no-op in solo, and Cruel Ruler's automatic free defeat is attributed (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Live solo match `aK-n8zNOteC` (Loki / Unleash the Power of the Cosmic Cube, build `ae8fae3`, 2026-10-05) left three effects with no visible result:
+- **Hawkeye's Covering Fire** ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card"). `heroEffectCoveringFire` (WP-719 / D-24541) parked the draw-vs-discard choice even with no other seat. The player was prompted three times, and the resolve logged nothing, because there was no seat to draw or discard.
+- **Loki's Whispers and Lies** ("each other player KOs two Bystanders from their Victory Pile"). `resolveWhispersAndLies` skips the defeater, so in solo it ran an empty loop and logged nothing.
+- **Loki's Cruel Ruler** ("Defeat a Villain in the City for free"). With exactly one City Villain, `resolveCruelRuler` auto-defeats it through `dispatchDefeatWithBystanderTarget`. The defeat core logs an ordinary "fought X at city space N" line, so the free defeat could not be told apart from a paid fight.
+
+**Decision.**
+- Covering Fire and Whispers and Lies: when `G.playerZones` holds no seat other than the acting player, log "there is no other player to … (Card)" and return. Covering Fire parks nothing. This is the Monarch's Decree (D-24659) and Vanishing Illusions precedent.
+- Cruel Ruler: the exactly-one auto path first logs "Player N defeats {Villain} for free (Cruel Ruler)", then dispatches the defeat.
+
+Multiplayer behavior is unchanged in all three. No new G field, move, UIState field or trace status. The Covering Fire hook still traces `fired`, because its handler ran and logged.
+
+**Gates.** game-engine 4879 / 0 fail, with 3 new cases, each revert-proofed to fail without the fix:
+- `coveringFireChoice.resolve.test.ts`: solo parks nothing and logs the no-op.
+- `tacticHandlers.test.ts`: solo Whispers and Lies KOs nothing and logs the no-op.
+- `tacticHandlers.loki693.test.ts`: the Cruel Ruler one-target attribution line.
+
+Also: server 1455 / 0; `sim:coverage --check` OK; `sim:runtime-observed --check` current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24661. Related: D-24659 (Monarch's Decree solo no-op), WP-719 / D-24541 (Covering Fire), WP-691 / D-24508 (Whispers and Lies), WP-693 / D-24510 (Cruel Ruler).
+
+---
+
 Protect this file.

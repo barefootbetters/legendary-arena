@@ -506,6 +506,14 @@ describe('resolveWhispersAndLies (WP-691 / D-24508)', () => {
     assert.deepEqual(G.ko, ['pile-bystander', 'pile-bystander']);
   });
 
+  it('D-24661: solo (no other seat) KOs nothing and logs the no-op', () => {
+    const G = makeWhispersState({ '0': ['pile-bystander', 'pile-bystander'] });
+    resolveWhispersAndLies(G, '0');
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.deepEqual(G.ko, []);
+    assert.ok(G.messages.some((entry) => /no other player to KO Bystanders from \(Whispers and Lies\)/.test(entry.text)));
+  });
+
   it('a player with fewer than two Bystanders KOs all they have', () => {
     const G = makeWhispersState({
       '0': [],
